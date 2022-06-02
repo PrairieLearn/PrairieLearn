@@ -9,6 +9,7 @@ const hash = require('crypto').createHash;
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const { promisify, callbackify } = require('util');
+const { instrumented } = require('@prairielearn/opentelemetry');
 
 const schemas = require('../schemas');
 const config = require('../lib/config');
@@ -1095,27 +1096,25 @@ module.exports = {
     });
   },
 
-  renderPanel: function (
-    panel,
-    pc,
-    variant,
-    question,
-    submission,
-    course,
-    locals,
-    context,
-    callback
-  ) {
+  renderPanel: function (panel, pc, variant, submission, course, locals, context, callback) {
     debug(`renderPanel(${panel})`);
     // broken variant kills all rendering
-    if (variant.broken) return callback(null, [], 'Broken question due to error in question code');
+    if (variant.broken) {
+      return callback(null, {
+        courseIssues: [],
+        html: 'Broken question due to error in question code',
+      });
+    }
 
     // broken submission kills the submission panel, but we can
     // proceed with other panels, treating the submission as
     // missing
     if (submission && submission.broken) {
       if (panel === 'submission') {
-        return callback(null, [], 'Broken submission due to error in question code');
+        return callback(null, {
+          courseIssues: [],
+          html: 'Broken submission due to error in question code',
+        });
       } else {
         submission = null;
       }
@@ -1146,6 +1145,8 @@ module.exports = {
     data.options.workspace_url = locals.workspaceUrl || null;
 
     // Put key paths in data.options
+    console.log('ARGS HERE');
+    console.log(arguments);
     _.extend(data.options, module.exports.getContextOptions(context));
 
     module.exports.getCachedDataOrCompute(
@@ -1173,11 +1174,42 @@ module.exports = {
       (cachedData, cacheHit) => {
         // function to process the cachedData, whether we
         // just rendered it or whether it came from cache
-        const { courseIssues, html, renderedElementNames } = cachedData;
-        callback(null, courseIssues, html, renderedElementNames, cacheHit);
+        callback(null, {
+          ...cachedData,
+          cacheHit,
+        });
       },
       callback // error-handling function
     );
+  },
+
+  renderPanelInstrumented: async function (
+    panel,
+    pc,
+    submission,
+    variant,
+    question,
+    course,
+    locals,
+    context
+  ) {
+    return instrumented('renderPanel', (span) => {
+      span.setAttributes({
+        panel,
+        'variant.id': variant.id,
+        'question.id': question.id,
+        'course.id': course.id,
+      });
+      return promisify(module.exports.renderPanel)(
+        panel,
+        pc,
+        variant,
+        submission,
+        course,
+        locals,
+        context
+      );
+    });
   },
 
   render: function (
@@ -1210,83 +1242,82 @@ module.exports = {
         async.series(
           [
             // FIXME: support 'header'
-            (callback) => {
-              if (!renderSelection.question) return callback(null);
-              module.exports.renderPanel(
+            async () => {
+              if (!renderSelection.question) return;
+
+              const {
+                courseIssues: newCourseIssues,
+                html,
+                renderedElementNames,
+                cacheHit,
+              } = await module.exports.renderPanelInstrumented(
                 'question',
                 pc,
+                submission,
                 variant,
                 question,
-                submission,
                 course,
                 locals,
-                context,
-                (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
-                  if (ERR(err, callback)) return;
-                  courseIssues.push(...ret_courseIssues);
-                  htmls.questionHtml = html;
-                  panelCount++;
-                  if (cacheHit) cacheHitCount++;
-                  allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
-                  callback(null);
-                }
+                context
               );
+
+              courseIssues.push(...newCourseIssues);
+              htmls.questionHtml = html;
+              panelCount++;
+              if (cacheHit) cacheHitCount++;
+              allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
             },
-            (callback) => {
-              if (!renderSelection.submissions) return callback(null);
-              async.mapSeries(
-                submissions,
-                (submission, callback) => {
-                  module.exports.renderPanel(
-                    'submission',
-                    pc,
-                    variant,
-                    question,
-                    submission,
-                    course,
-                    locals,
-                    context,
-                    (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
-                      if (ERR(err, callback)) return;
-                      courseIssues.push(...ret_courseIssues);
-                      panelCount++;
-                      if (cacheHit) cacheHitCount++;
-                      allRenderedElementNames = _.union(
-                        allRenderedElementNames,
-                        renderedElementNames
-                      );
-                      callback(null, html);
-                    }
-                  );
-                },
-                (err, submissionHtmls) => {
-                  if (ERR(err, callback)) return;
-                  htmls.submissionHtmls = submissionHtmls;
-                  callback(null);
-                }
-              );
+            async () => {
+              if (!renderSelection.submissions) return;
+
+              htmls.submissionHtmls = await async.mapSeries(submissions, async (submission) => {
+                const {
+                  courseIssues: newCourseIssues,
+                  html,
+                  renderedElementNames,
+                  cacheHit,
+                } = await module.exports.renderPanelInstrumented(
+                  'submission',
+                  pc,
+                  submission,
+                  variant,
+                  question,
+                  course,
+                  locals,
+                  context
+                );
+
+                courseIssues.push(...newCourseIssues);
+                panelCount++;
+                if (cacheHit) cacheHitCount++;
+                allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
+                return html;
+              });
             },
-            (callback) => {
-              if (!renderSelection.answer) return callback(null);
-              module.exports.renderPanel(
+            async () => {
+              if (!renderSelection.answer) return;
+
+              const {
+                courseIssues: newCourseIssues,
+                html,
+                renderedElementNames,
+                cacheHit,
+              } = await module.exports.renderPanelInstrumented(
                 'answer',
                 pc,
+                submission,
                 variant,
                 question,
-                submission,
                 course,
                 locals,
-                context,
-                (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
-                  if (ERR(err, callback)) return;
-                  courseIssues.push(...ret_courseIssues);
-                  htmls.answerHtml = html;
-                  panelCount++;
-                  if (cacheHit) cacheHitCount++;
-                  allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
-                  callback(null);
-                }
+                context
               );
+
+              courseIssues.push(...newCourseIssues);
+              htmls.answerHtml = html;
+              panelCount++;
+              if (cacheHit) cacheHitCount++;
+              allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
             },
             (callback) => {
               // The logPageView middleware knows to write this to the DB

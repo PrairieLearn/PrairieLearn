@@ -1,4 +1,3 @@
-import process from 'process';
 import { Metadata, credentials } from '@grpc/grpc-js';
 
 import { tracing } from '@opentelemetry/sdk-node';
@@ -9,7 +8,7 @@ import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions'
 import { OTLPTraceExporter } from '@opentelemetry/exporter-otlp-grpc';
 import { ExpressLayerType } from '@opentelemetry/instrumentation-express';
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
-import { Sampler } from '@opentelemetry/api';
+import { Sampler, Span, SpanStatusCode, context, trace } from '@opentelemetry/api';
 import {
   ParentBasedSampler,
   TraceIdRatioBasedSampler,
@@ -30,6 +29,7 @@ import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis';
 // Resource detectors go here.
 import { awsEc2Detector } from '@opentelemetry/resource-detector-aws';
 import { processDetector, envDetector } from '@opentelemetry/resources';
+import { createBaggage } from '@opentelemetry/api/build/src/baggage/utils';
 
 /**
  * Extends `BatchSpanProcessor` to give it the ability to filter out spans
@@ -221,6 +221,30 @@ export async function shutdown(): Promise<void> {
   if (tracerProvider) {
     await tracerProvider.shutdown();
   }
+}
+
+export async function instrumented<T>(
+  name: string,
+  fn: (span: Span) => Promise<T> | T
+): Promise<T> {
+  return trace
+    .getTracer('default')
+    .startActiveSpan<(span: Span) => Promise<T>>(name, async (span) => {
+      try {
+        const result = await fn(span);
+        span.setStatus({ code: SpanStatusCode.OK });
+        return result;
+      } catch (e) {
+        span.setStatus({
+          code: SpanStatusCode.ERROR,
+          message: e.message,
+        });
+        span.recordException(e);
+        throw e;
+      } finally {
+        span.end();
+      }
+    });
 }
 
 export { trace, context, SpanStatusCode } from '@opentelemetry/api';

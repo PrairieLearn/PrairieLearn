@@ -26,7 +26,7 @@ This will automatically instrument a variety of commonly-used Node packages.
 To manually instrument code, you can use the `trace` export:
 
 ```ts
-import { trace } from '@prairielearn/opentelemetry';
+import { trace, SpanStatusCode } from '@prairielearn/opentelemetry';
 
 const tracer = trace.getTracer('lib-name');
 await tracer.startActiveSpan('span-name', async (span) => {
