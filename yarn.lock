@@ -1402,10 +1402,10 @@
   resolved "https://registry.yarnpkg.com/@tsconfig/node16/-/node16-1.0.2.tgz#423c77877d0569db20e1fc80885ac4118314010e"
   integrity sha512-eZxlbI8GZscaGS7kkc/trHTT5xgrjH3/1n2JDwusC9iahPKWMRvRjJSAN5mCXviuTGQ/lHnhvv8Q1YTpnfz9gA==
 
-"@types/async@^3.2.12":
-  version "3.2.12"
-  resolved "https://registry.yarnpkg.com/@types/async/-/async-3.2.12.tgz#0ebbfaf3f249ffa0fdc50179b07705f69c90d70c"
-  integrity sha512-4i4w4tfNDo73BOjk0qHcB2YJ8A2SjITCrU4BTsgdJFTsVr6atPDXa0T9r0QZTrX3axtWwkqpZqF4B3gR0TqBGw==
+"@types/async@^3.2.13":
+  version "3.2.13"
+  resolved "https://registry.yarnpkg.com/@types/async/-/async-3.2.13.tgz#ec023074c70180d17cbc9117ddc3cec2f3894ea4"
+  integrity sha512-7Q3awrhnvm89OzfsmqeqRQh8mh+8Pxfgq1UvSAn2nWQ5y/F3+NrbIF0RbkWq8+5dY99ozgap2b3DNBNwjLVOxw==
 
 "@types/babel__core@^7.0.0", "@types/babel__core@^7.1.14":
   version "7.1.16"
@@ -2194,10 +2194,10 @@ asynckit@^0.4.0:
   resolved "https://registry.yarnpkg.com/asynckit/-/asynckit-0.4.0.tgz#c79ed97f7f34cb8f2ba1bc9790bcc366474b4b79"
   integrity sha1-x57Zf380y48robyXkLzDZkdLS3k=
 
-aws-sdk@^2.1144.0, aws-sdk@^2.293.0, aws-sdk@^2.80.0:
-  version "2.1144.0"
-  resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.1144.0.tgz#e0f548e45e6a3c774bc8e4e387968f638402c69b"
-  integrity sha512-0QZNPezu+MJOgvRRVeE1LyNPgZD4MaomHTAbZpRgCBca9fu2C7rJCm3eX/xwfNvvqVZ0RZfEpagcFXAxk9HITg==
+aws-sdk@^2.1147.0, aws-sdk@^2.293.0, aws-sdk@^2.80.0:
+  version "2.1147.0"
+  resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.1147.0.tgz#5d279abee153a0627ae502cdbb57d321388b534c"
+  integrity sha512-+CO8FnBgqHgxMJH0s8fv17Xqrh6V0lJ8zKOt3lHU+8QTiSoX5aLgr8zwmi0m7msHtyVeDWh50kiWAlvUs7U8Gw==
   dependencies:
     buffer "4.9.2"
     events "1.1.1"
@@ -2206,7 +2206,7 @@ aws-sdk@^2.1144.0, aws-sdk@^2.293.0, aws-sdk@^2.80.0:
     querystring "0.2.0"
     sax "1.2.1"
     url "0.10.3"
-    uuid "3.3.2"
+    uuid "8.0.0"
     xml2js "0.4.19"
 
 aws-sign2@~0.7.0:
@@ -10415,10 +10415,10 @@ utils-merge@1.0.1, utils-merge@^1.0.1:
   resolved "https://registry.yarnpkg.com/utils-merge/-/utils-merge-1.0.1.tgz#9f95710f50a267947b2ccc124741c1028427e713"
   integrity sha1-n5VxD1CiZ5R7LMwSR0HBAoQn5xM=
 
-uuid@3.3.2:
-  version "3.3.2"
-  resolved "https://registry.yarnpkg.com/uuid/-/uuid-3.3.2.tgz#1b4af4955eb3077c501c23872fc6513811587131"
-  integrity sha512-yXJmeNaw3DnnKAOKJE51sL/ZaYfWJRl1pK9dr19YFCu0ObS231AB1/LbqTKRAQ5kw8A90rA6fr4riOUpTZvQZA==
+uuid@8.0.0:
+  version "8.0.0"
+  resolved "https://registry.yarnpkg.com/uuid/-/uuid-8.0.0.tgz#bc6ccf91b5ff0ac07bbcdbf1c7c4e150db4dbb6c"
+  integrity sha512-jOXGuXZAWdsTH7eZLtyXMqUb9EcWMGZNbL9YcGBJl4MH4nrxHmZJhEHvyLFrkxo+28uLb/NYRcStH48fnD0Vzw==
 
 uuid@^3.3.2, uuid@^3.3.3:
   version "3.4.0"

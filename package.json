@@ -18,7 +18,7 @@
         "archiver": "^5.3.1",
         "async": "^3.2.3",
         "async-stacktrace": "0.0.2",
-        "aws-sdk": "^2.1144.0",
+        "aws-sdk": "^2.1147.0",
         "backbone": "^1.4.1",
         "base64url": "^3.0.1",
         "better-ajv-errors": "^1.2.0",
@@ -128,7 +128,7 @@
     },
     "devDependencies": {
         "@changesets/cli": "^2.22.0",
-        "@types/async": "^3.2.12",
+        "@types/async": "^3.2.13",
         "@types/chai": "^4.3.0",
         "@types/cheerio": "^0.22.31",
         "@types/dockerode": "^3.3.9",
