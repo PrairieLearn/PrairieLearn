@@ -54,7 +54,7 @@
         "express-async-handler": "^1.2.0",
         "fabric": "^4.6.0",
         "file-type": "^16.5.3",
-        "filesize": "^6.4.0",
+        "filesize": "^9.0.1",
         "folder-hash": "^4.0.2",
         "fs-extra": "^10.1.0",
         "googleapis": "^100.0.0",
@@ -128,7 +128,7 @@
     },
     "devDependencies": {
         "@changesets/cli": "^2.22.0",
-        "@types/async": "^3.2.12",
+        "@types/async": "^3.2.13",
         "@types/chai": "^4.3.0",
         "@types/cheerio": "^0.22.31",
         "@types/dockerode": "^3.3.9",
