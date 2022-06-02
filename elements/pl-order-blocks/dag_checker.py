@@ -15,6 +15,23 @@ def validate_grouping(graph, group_belonging):
                 return False
     return True
 
+def solve_dag(depends_graph, group_belonging):
+    graph = dag_to_nx(depends_graph)
+    add_edges_for_groups(graph, group_belonging)
+    sort = list(nx.topological_sort(graph))
+
+    # We need to ensure that blocks from the same goup occur contiguously. Because we enforce the syntactic
+    # constraint that dependence relationships (edges in the DAG) can't cross group boundaries, we can move
+    # blocks in each group next to one another while maintaining a topological sort
+    for group_tag in set(group_belonging.values()):
+        if group_tag is None:
+            continue
+        group = [node for node in sort if group_belonging[node] == group_tag]
+        group_start = sort.index(group[0])
+        not_in_group = [node for node in sort if group_belonging[node] != group_tag]
+        sort = not_in_group[:group_start] + group + not_in_group[group_start:]
+
+    return sort
 
 def check_topological_sorting(submission, graph):
     """

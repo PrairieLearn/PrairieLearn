@@ -1,4 +1,4 @@
-from dag_checker import grade_dag, lcs_partial_credit, validate_grouping, dag_to_nx
+from dag_checker import grade_dag, lcs_partial_credit, validate_grouping, dag_to_nx, solve_dag
 
 problem_1_dag = {'1': [], '2': ['1'], '3': ['1'], '4': ['2', '3'], '5': ['1'], '6': ['2'], '7': ['4', '5', '6'], '8': [], '9': ['7', '8'], '10': ['9']}
 problem_1_groups = {str(i): None for i in range(1, 11)}
@@ -77,7 +77,7 @@ problem_3_invalid_dag_1 = {'1': [], '2': ['1'], '3': ['2'], '4': ['1'], '5': ['4
 problem_3_invalid_dag_2 = {'1': [], '2': [], '3': ['2'], '4': [], '5': ['4'], '6': ['3', '5']}
 problem_3_invalid_dag_3 = {'1': [], '2': [], '3': ['2'], '4': [], '5': ['4', 'g1'], '6': ['g1', 'g2']}
 problem_3_dag = {'1': [], '2': [], '3': ['2'], '4': [], '5': ['4'], '6': ['g1', 'g2'], 'g1': [], 'g2': []}
-problem_3_groups = {'1': None, '2': 'g1', '3': 'g1', '4': 'g2', '5': 'g2'}
+problem_3_groups = {'1': None, '2': 'g1', '3': 'g1', '4': 'g2', '5': 'g2', '6': None}
 
 
 def test_problem_validation():
@@ -87,3 +87,10 @@ def test_problem_validation():
     assert not validate_grouping(dag_to_nx(problem_3_invalid_dag_2), problem_3_groups)
     assert not validate_grouping(dag_to_nx(problem_3_invalid_dag_3), problem_3_groups)
     assert validate_grouping(dag_to_nx(problem_3_dag), problem_3_groups)
+
+
+def test_solve_dag():
+    problems = [(problem_1_dag, problem_1_groups), (problem_2_dag, problem_2_groups), (problem_3_dag, problem_3_groups)]
+    for depends_graph, group_belonging in problems:
+        solution = solve_dag(depends_graph, group_belonging)
+        assert len(solution) == grade_dag(solution, depends_graph, group_belonging)[0]
