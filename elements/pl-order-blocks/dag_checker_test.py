@@ -1,3 +1,4 @@
+import pytest
 from dag_checker import grade_dag, lcs_partial_credit, validate_grouping, dag_to_nx, solve_dag
 
 problem_1_dag = {'1': [], '2': ['1'], '3': ['1'], '4': ['2', '3'], '5': ['1'], '6': ['2'], '7': ['4', '5', '6'], '8': [], '9': ['7', '8'], '10': ['9']}
@@ -81,12 +82,15 @@ problem_3_groups = {'1': None, '2': 'g1', '3': 'g1', '4': 'g2', '5': 'g2', '6': 
 
 
 def test_problem_validation():
-    assert validate_grouping(dag_to_nx(problem_1_dag), problem_1_groups)
-    assert validate_grouping(dag_to_nx(problem_2_dag), problem_2_groups)
-    assert not validate_grouping(dag_to_nx(problem_3_invalid_dag_1), problem_3_groups)
-    assert not validate_grouping(dag_to_nx(problem_3_invalid_dag_2), problem_3_groups)
-    assert not validate_grouping(dag_to_nx(problem_3_invalid_dag_3), problem_3_groups)
-    assert validate_grouping(dag_to_nx(problem_3_dag), problem_3_groups)
+    dag_to_nx(problem_1_dag, problem_1_groups)
+    dag_to_nx(problem_2_dag, problem_2_groups)
+    with pytest.raises(Exception):
+        dag_to_nx(problem_3_invalid_dag_1, problem_3_groups)
+    with pytest.raises(Exception):
+        dag_to_nx(problem_3_invalid_dag_2, problem_3_groups)
+    with pytest.raises(Exception):
+        dag_to_nx(problem_3_invalid_dag_3, problem_3_groups)
+    dag_to_nx(problem_3_dag, problem_3_groups)
 
 
 def test_solve_dag():

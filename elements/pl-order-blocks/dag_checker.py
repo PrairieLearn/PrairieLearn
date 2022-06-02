@@ -16,16 +16,15 @@ def validate_grouping(graph, group_belonging):
     return True
 
 def solve_dag(depends_graph, group_belonging):
-    graph = dag_to_nx(depends_graph)
-    add_edges_for_groups(graph, group_belonging)
+    graph = dag_to_nx(depends_graph, group_belonging)
     sort = list(nx.topological_sort(graph))
 
     # We need to ensure that blocks from the same goup occur contiguously. Because we enforce the syntactic
     # constraint that dependence relationships (edges in the DAG) can't cross group boundaries, we can move
-    # blocks in each group next to one another while maintaining a topological sort
-    for group_tag in set(group_belonging.values()):
-        if group_tag is None:
-            continue
+    # blocks in each group next to one another while maintaining a topological sort.
+    groups = set(group_belonging.values())
+    groups.remove(None)
+    for group_tag in groups:
         group = [node for node in sort if group_belonging[node] == group_tag]
         group_start = sort.index(group[0])
         not_in_group = [node for node in sort if group_belonging[node] != group_tag]
@@ -75,7 +74,7 @@ def check_grouping(submission, group_belonging):
     return len(submission)
 
 
-def dag_to_nx(depends_graph):
+def dag_to_nx(depends_graph, group_belonging):
     """Convert input graph format into NetworkX object to utilize their algorithms."""
     graph = nx.DiGraph()
     for node in depends_graph:
@@ -83,6 +82,12 @@ def dag_to_nx(depends_graph):
         for node2 in depends_graph[node]:
             # the depends graph lists the *incoming* edges of a node
             graph.add_edge(node2, node)
+
+    add_edges_for_groups(graph, group_belonging)
+
+    if not nx.is_directed_acyclic_graph(graph):
+        raise Exception('Dependency between blocks does not form a Directed Acyclic Graph; Problem unsolvable.')
+
     return graph
 
 
@@ -117,11 +122,7 @@ def grade_dag(submission, depends_graph, group_belonging):
     :return: tuple containing length of list that meets both correctness conditions, starting from the beginning,
     and the length of any correct solution
     """
-    graph = dag_to_nx(depends_graph)
-    add_edges_for_groups(graph, group_belonging)
-
-    if not nx.is_directed_acyclic_graph(graph):
-        raise Exception('Dependency between blocks does not form a Directed Acyclic Graph; Problem unsolvable.')
+    graph = dag_to_nx(depends_graph, group_belonging)
 
     top_sort_correctness = check_topological_sorting(submission, graph)
     grouping_correctness = check_grouping(submission, group_belonging)
@@ -157,8 +158,7 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
     :param group_belonging: which pl-block-group each block belongs to, specified in the question
     :return: edit distance from the student submission to some correct solution
     """
-    graph = dag_to_nx(depends_graph)
-    add_edges_for_groups(graph, group_belonging)
+    graph = dag_to_nx(depends_graph, group_belonging)
     trans_clos = nx.algorithms.dag.transitive_closure(graph)
 
     # if node1 must occur before node2 in any correct solution, but node2 occurs before
