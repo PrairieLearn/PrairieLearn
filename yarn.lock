@@ -2446,10 +2446,10 @@ bootstrap-icons@^1.8.3:
   resolved "https://registry.yarnpkg.com/bootstrap-icons/-/bootstrap-icons-1.8.3.tgz#14c15e26deaddd42af9f88c4d81f7c45bf26aa98"
   integrity sha512-s5kmttnbq4BXbx3Bwnj39y+t7Vc3blTtyD77W3aYQ1LlNoS3lNbbGvSYhIbg26Im8KmjScyFpHEevlPOBcIDdA==
 
-bootstrap-table@^1.19.1:
-  version "1.19.1"
-  resolved "https://registry.yarnpkg.com/bootstrap-table/-/bootstrap-table-1.19.1.tgz#c88384a2993d8df9618b80fee147f1bf1cb2d7c1"
-  integrity sha512-WvV+l1AI/C+zThaKmfHmi/IuayVNB0qdFyEhFx1jyZhO0oLtNJNANkCR3rvJf6Dkh72dsLElxpE/bzK9seEQLA==
+bootstrap-table@^1.20.2:
+  version "1.20.2"
+  resolved "https://registry.yarnpkg.com/bootstrap-table/-/bootstrap-table-1.20.2.tgz#187fcd1812fa3422f964e3b32e3fc3d266108a83"
+  integrity sha512-6j9zfjjK6VZyJj8KsH+LnGczqglmMvMctGAoEAKDvrQ92ExQbA3mHGYPQr9iPrzoyeGL8+6Dyx6LqJbWmWmBoA==
 
 bootstrap@^4.6.0:
   version "4.6.0"
