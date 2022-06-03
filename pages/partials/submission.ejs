@@ -22,7 +22,7 @@
 </div>
 <% } %>
 
-<div class="card mb-4 pastsubmission-block">
+<div class="card mb-4" data-testid="submission-block">
   <div class="card-header bg-light text-dark d-flex align-items-center submission-header <% if (submission.submission_number != submissionCount) { %> collapsed <% } %>" data-toggle="collapse" data-target="#submission-<%= submission.id %>-body">
     <div class="mr-auto">
       <div>

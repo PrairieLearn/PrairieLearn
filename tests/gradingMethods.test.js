@@ -155,8 +155,8 @@ describe('Grading method(s)', function () {
           const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
           assert.lengthOf(grading_jobs, 1);
         });
-        it('should result in 1 "pastsubmission-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
+        it('should result in 1 "submission-block" component being rendered', () => {
+          assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
         it('should display submission status', async () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), 'correct: 100%');
@@ -192,8 +192,8 @@ describe('Grading method(s)', function () {
           const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
           assert.lengthOf(grading_jobs, 0);
         });
-        it('should result in 1 "pastsubmission-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
+        it('should result in 1 "submission-block" component being rendered', () => {
+          assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
         it('should display submission status', async () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
@@ -299,8 +299,8 @@ describe('Grading method(s)', function () {
           const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
           assert.lengthOf(grading_jobs, 1);
         });
-        it('should result in 1 "pastsubmission-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
+        it('should result in 1 "submission-block" component being rendered', () => {
+          assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
         it('should display submission status', async () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), 'correct: 100%');
@@ -336,8 +336,8 @@ describe('Grading method(s)', function () {
           const grading_jobs = (await sqlDb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
           assert.lengthOf(grading_jobs, 0);
         });
-        it('should result in 1 "pastsubmission-block" component being rendered', () => {
-          assert.lengthOf($questionsPage('.pastsubmission-block'), 1);
+        it('should result in 1 "submission-block" component being rendered', () => {
+          assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
         it('should display submission status', async () => {
           assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
