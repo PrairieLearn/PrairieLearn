@@ -104,7 +104,7 @@ const loadHomeworkPage = async (user) => {
  * @returns {string}
  */
 function getLatestSubmissionStatus($) {
-  return $('.submission-status .badge').first().text();
+  return $('[data-testid="submission-status"] .badge').first().text();
 }
 
 describe('Grading method(s)', function () {

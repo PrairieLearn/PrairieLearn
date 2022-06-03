@@ -15,7 +15,7 @@
     </button>
   </div>
   <div class="collapse <% if (submission.submission_number == submissionCount) { %>show<% } %>" id="submission-feedback-<%= submission.id %>-body">
-    <div class="card-body feedback-body">
+    <div class="card-body" data-testid="feedback-body">
       <%- submission.feedback_manual_html %>
     </div>
   </div>
@@ -32,7 +32,7 @@
           <%= submission.submission_number %>
           <% } %>
         </span>
-        <span class="submission-status"><%- include('submissionStatus', {submission: submission}); %></span>
+        <span data-testid="submission-status"><%- include('submissionStatus', {submission: submission}); %></span>
       </div>
       <small>Submitted at <%- submission.formatted_date %></small>
     </div>

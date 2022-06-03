@@ -75,7 +75,7 @@ const loadHomeworkQuestionUrl = async (user) => {
  * @returns {string}
  */
 const getLatestSubmissionStatus = ($) => {
-  return $('.submission-status .badge').first().text();
+  return $('[data-testid="submission-status"] .badge').first().text();
 };
 
 describe('Manual Grading', function () {
@@ -452,7 +452,10 @@ describe('Manual Grading', function () {
           .trim(),
         `${score_points}/6`
       );
-      assert.equal($questionsPage('.feedback-body').first().text().trim(), feedback_note);
+      assert.equal(
+        $questionsPage('[data-testid="feedback-body"]').first().text().trim(),
+        feedback_note
+      );
     });
   });
 });
