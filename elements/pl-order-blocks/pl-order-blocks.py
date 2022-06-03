@@ -47,12 +47,14 @@ def get_graph_info(html_tags):
     depends = [tag.strip() for tag in depends.split(',')] if depends else []
     return tag, depends
 
+
 def extract_dag(answers_list):
     depends_graph = {ans['tag']: ans['depends'] for ans in answers_list}
     group_belonging = {ans['tag']: ans['group_info']['tag'] for ans in answers_list}
     group_depends = {ans['group_info']['tag']: ans['group_info']['depends'] for ans in answers_list if ans['group_info']['depends'] is not None}
     depends_graph.update(group_depends)
     return depends_graph, group_belonging
+
 
 def solve_problem(answers_list, grading_method):
     if grading_method in ['external', 'unordered']:
@@ -187,12 +189,20 @@ def prepare(element_html, data):
     else:
         raise Exception('The specified option for the "source-blocks-order" attribute is invalid.')
 
-    # data['params'][answer_name] = filter_keys_from_array(mcq_options, 'inner_html')
     for option in mcq_options:
         option['uuid'] = pl.get_uuid()
 
     data['params'][answer_name] = mcq_options
     data['correct_answers'][answer_name] = correct_answers
+
+    # if the order of the blocks in the HTML is a correct solution, leave it unchanged, but if it
+    # isn't we need to change it into a solution before displaying it as such
+    data_copy = deepcopy(data)
+    data_copy['submitted_answers'] = {answer_name: correct_answers}
+    data_copy['partial_scores'] = {}
+    grade(element_html, data_copy)
+    if data_copy['partial_scores'][answer_name]['score'] != 1:
+        data['correct_answers'][answer_name] = solve_problem(correct_answers, grading_method)
 
 
 def render(element_html, data):
@@ -321,19 +331,10 @@ def render(element_html, data):
         check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
         indentation_message = ', with correct indentation' if check_indentation is True else None
 
-        # if the order of the blocks in the HTML is a correct solution, leave it unchanged, but if it
-        # isn't we need to change it into a solution before displaying it as such
-        solution = data['correct_answers'][answer_name]
-        data_copy = deepcopy(data)
-        data_copy['submitted_answers'][answer_name] = solution
-        grade(element_html, data_copy)
-        if data_copy['partial_scores'][answer_name]['score'] != 1:
-            solution = solve_problem(solution, grading_method)
-
         question_solution = [{
-            'inner_html': answer['inner_html'],
-            'indent': ((answer['indent'] or 0) * TAB_SIZE_PX) + INDENT_OFFSET
-        } for answer in solution]
+            'inner_html': solution['inner_html'],
+            'indent': ((solution['indent'] or 0) * TAB_SIZE_PX) + INDENT_OFFSET
+        } for solution in data['correct_answers'][answer_name]]
 
         html_params = {
             'true_answer': True,
@@ -508,14 +509,14 @@ def test(element_html, data):
     # TODO grading modes 'unordered,' 'dag,' and 'ranking' allow multiple different possible
     # correct answers, we should check them at random instead of just the provided solution
     elif data['test_type'] == 'correct':
-        answer = solve_problem(data['correct_answers'][answer_name], grading_mode)
+        answer = data['correct_answers'][answer_name]
         data['raw_submitted_answers'][answer_name_field] = json.dumps(answer)
         data['partial_scores'][answer_name] = {'score': 1, 'weight': weight, 'feedback': '', 'first_wrong': -1}
 
     # TODO: The only wrong answer being tested is the correct answer with the first
     # block mising. We should instead do a random selection of correct and incorrect blocks.
     elif data['test_type'] == 'incorrect':
-        answer = solve_problem(data['correct_answers'][answer_name], grading_mode)
+        answer = data['correct_answers'][answer_name]
         answer.pop(0)
         score = 0
         if grading_mode == 'unordered' or (grading_mode in ['dag', 'ranking'] and partial_credit_type == 'lcs'):

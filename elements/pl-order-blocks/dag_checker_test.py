@@ -1,5 +1,5 @@
 import pytest
-from dag_checker import grade_dag, lcs_partial_credit, validate_grouping, dag_to_nx, solve_dag
+from dag_checker import grade_dag, lcs_partial_credit, dag_to_nx, solve_dag
 
 problem_1_dag = {'1': [], '2': ['1'], '3': ['1'], '4': ['2', '3'], '5': ['1'], '6': ['2'], '7': ['4', '5', '6'], '8': [], '9': ['7', '8'], '10': ['9']}
 problem_1_groups = {str(i): None for i in range(1, 11)}

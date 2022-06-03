@@ -15,11 +15,18 @@ def validate_grouping(graph, group_belonging):
                 return False
     return True
 
+
 def solve_dag(depends_graph, group_belonging):
+    """Solve the given problem
+    :param depends_graph: The dependency graph between blocks specified in the question
+    :param group_belonging: which pl-block-group each block belongs to, specified in the question
+    :return: a list that is a topological sort of the input DAG with blocks in the same group occuring
+    contiguously, making it a solution to the given problem
+    """
     graph = dag_to_nx(depends_graph, group_belonging)
     sort = list(nx.topological_sort(graph))
 
-    # We need to ensure that blocks from the same goup occur contiguously. Because we enforce the syntactic
+    # We need to ensure that blocks from the same block group occur contiguously. Because we enforce the syntactic
     # constraint that dependence relationships (edges in the DAG) can't cross group boundaries, we can move
     # blocks in each group next to one another while maintaining a topological sort.
     groups = set(group_belonging.values())
@@ -31,6 +38,7 @@ def solve_dag(depends_graph, group_belonging):
         sort = not_in_group[:group_start] + group + not_in_group[group_start:]
 
     return sort
+
 
 def check_topological_sorting(submission, graph):
     """
