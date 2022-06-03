@@ -509,14 +509,14 @@ def test(element_html, data):
     # TODO grading modes 'unordered,' 'dag,' and 'ranking' allow multiple different possible
     # correct answers, we should check them at random instead of just the provided solution
     elif data['test_type'] == 'correct':
-        answer = data['correct_answers'][answer_name]
+        answer = filter_multiple_from_array(data['correct_answers'][answer_name], ['inner_html', 'indent', 'uuid'])
         data['raw_submitted_answers'][answer_name_field] = json.dumps(answer)
         data['partial_scores'][answer_name] = {'score': 1, 'weight': weight, 'feedback': '', 'first_wrong': -1}
 
     # TODO: The only wrong answer being tested is the correct answer with the first
     # block mising. We should instead do a random selection of correct and incorrect blocks.
     elif data['test_type'] == 'incorrect':
-        answer = data['correct_answers'][answer_name]
+        answer = filter_multiple_from_array(data['correct_answers'][answer_name], ['inner_html', 'indent', 'uuid'])
         answer.pop(0)
         score = 0
         if grading_mode == 'unordered' or (grading_mode in ['dag', 'ranking'] and partial_credit_type == 'lcs'):
