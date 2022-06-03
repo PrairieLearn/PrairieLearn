@@ -94,7 +94,7 @@ describe('Manual Grading', function () {
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
-  before('ensure course has manual grading visible', async () => {
+  before('ensure course has manual grading enabled', async () => {
     await sqlDb.queryAsync(sql.enable_manual_grading, {});
   });
 
