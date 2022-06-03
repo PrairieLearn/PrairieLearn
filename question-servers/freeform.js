@@ -1096,6 +1096,24 @@ module.exports = {
     });
   },
 
+  /**
+   * @typedef {Object} RenderPanelResult
+   * @property {any[]} courseIssues
+   * @property {string} html
+   * @property {string[]} [renderedElementNames]
+   * @property {boolean} cacheHit
+   */
+
+  /**
+   * @param {'question' | 'answer' | 'submission'} panel
+   * @param {import('../lib/code-caller').PythonCaller} pc
+   * @param {any} variant
+   * @param {any} submission
+   * @param {any} course
+   * @param {any} locals
+   * @param {any} context
+   * @param {(err: Error, result: RenderPanelResult) => void} callback
+   */
   renderPanel: function (panel, pc, variant, submission, course, locals, context, callback) {
     debug(`renderPanel(${panel})`);
     // broken variant kills all rendering
@@ -1191,14 +1209,15 @@ module.exports = {
     locals,
     context
   ) {
-    return instrumented('renderPanel', (span) => {
+    return instrumented(`freeform.renderPanel:${panel}`, async (span) => {
       span.setAttributes({
         panel,
         'variant.id': variant.id,
         'question.id': question.id,
         'course.id': course.id,
       });
-      return promisify(module.exports.renderPanel)(
+      /** @type {RenderPanelResult} */
+      const result = await promisify(module.exports.renderPanel)(
         panel,
         pc,
         variant,
@@ -1207,6 +1226,8 @@ module.exports = {
         locals,
         context
       );
+      span.setAttribute('cache.status', result.cacheHit ? 'hit' : 'miss');
+      return result;
     });
   },
 
