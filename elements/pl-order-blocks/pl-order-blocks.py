@@ -314,23 +314,23 @@ def render(element_html, data):
 
         grading_mode = pl.get_string_attrib(element, 'grading-method', 'ordered')
         if grading_mode == 'unordered':
-            grading_mode = 'in any order'
+            ordering_message = 'in any order'
         elif grading_mode == 'dag' or grading_mode == 'ranking':
-            grading_mode = 'one possible correct order'
+            ordering_message = 'one possible correct order'
         else:
-            grading_mode = 'in the specified order'
+            ordering_message = 'in the specified order'
         check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
         indentation_message = ', with correct indentation' if check_indentation is True else None
 
-        solution = data['correct_answers'][answer_name]
         if answer_name in data['correct_answers']:
             # if the order of the blocks in the HTML is a correct solution, leave it unchanged, but if it
             # isn't we need to change it into a solution before displaying it as such
+            solution = data['correct_answers'][answer_name]
             data_copy = deepcopy(data)
-            data_copy['submitted_answers'][answer_name] = data['correct_answers'][answer_name]
+            data_copy['submitted_answers'][answer_name] = solution
             grade(element_html, data_copy)
             if data_copy['partial_scores'][answer_name]['score'] != 1:
-                solution = solve_problem(solution)
+                solution = solve_problem(solution, grading_mode)
 
             question_solution = [{
                 'inner_html': answer['inner_html'],
@@ -340,7 +340,7 @@ def render(element_html, data):
             html_params = {
                 'true_answer': True,
                 'question_solution': question_solution,
-                'grading_mode': grading_mode,
+                'ordering_message': ordering_message,
                 'indentation_message': indentation_message
             }
             with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
@@ -511,14 +511,14 @@ def test(element_html, data):
     # TODO grading modes 'unordered,' 'dag,' and 'ranking' allow multiple different possible
     # correct answers, we should check them at random instead of just the provided solution
     elif data['test_type'] == 'correct':
-        answer = filter_multiple_from_array(data['correct_answers'][answer_name], ['inner_html', 'indent', 'uuid'])
+        answer = solve_problem(data['correct_answers'][answer_name], grading_mode)
         data['raw_submitted_answers'][answer_name_field] = json.dumps(answer)
         data['partial_scores'][answer_name] = {'score': 1, 'weight': weight, 'feedback': '', 'first_wrong': -1}
 
     # TODO: The only wrong answer being tested is the correct answer with the first
     # block mising. We should instead do a random selection of correct and incorrect blocks.
     elif data['test_type'] == 'incorrect':
-        answer = filter_multiple_from_array(data['correct_answers'][answer_name], ['inner_html', 'indent', 'uuid'])
+        answer = solve_problem(data['correct_answers'][answer_name], grading_mode)
         answer.pop(0)
         score = 0
         if grading_mode == 'unordered' or (grading_mode in ['dag', 'ranking'] and partial_credit_type == 'lcs'):
