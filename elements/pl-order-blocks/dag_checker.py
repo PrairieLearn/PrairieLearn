@@ -60,10 +60,10 @@ def check_grouping(submission, group_belonging):
         group_id = group_belonging.get(node)
         if group_id is not None and cur_group is None:
             cur_group = group_id
-            cur_group_size = 1
         elif group_id is None and cur_group is not None:
             return i
-        elif group_id is not None and cur_group is not None:
+
+        if group_id is not None and cur_group is not None:
             if group_id == cur_group:
                 cur_group_size += 1
                 if cur_group_size == group_sizes[cur_group]:
