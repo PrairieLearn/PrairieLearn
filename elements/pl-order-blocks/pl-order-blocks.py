@@ -42,7 +42,7 @@ def filter_multiple_from_array(data, keys):
 
 
 def get_graph_info(html_tags):
-    tag = pl.get_string_attrib(html_tags, 'tag', pl.get_uuid())
+    tag = pl.get_string_attrib(html_tags, 'tag', pl.get_uuid()).strip()
     depends = pl.get_string_attrib(html_tags, 'depends', '')
     depends = [tag.strip() for tag in depends.split(',')] if depends else []
     return tag, depends
