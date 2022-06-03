@@ -2,7 +2,12 @@ import { Metadata, credentials } from '@grpc/grpc-js';
 
 import { tracing } from '@opentelemetry/sdk-node';
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
-import type { SpanExporter, ReadableSpan } from '@opentelemetry/sdk-trace-base';
+import {
+  SpanExporter,
+  ReadableSpan,
+  SpanProcessor,
+  SimpleSpanProcessor,
+} from '@opentelemetry/sdk-trace-base';
 import { detectResources, Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-otlp-grpc';
@@ -115,9 +120,10 @@ let tracerProvider: NodeTracerProvider;
 
 export interface OpenTelemetryConfig {
   openTelemetryEnabled: boolean;
-  openTelemetryExporter?: 'console' | 'honeycomb';
-  openTelemetrySamplerType?: 'always-on' | 'always-off' | 'trace-id-ratio';
+  openTelemetryExporter: 'console' | 'honeycomb' | SpanExporter;
+  openTelemetrySamplerType: 'always-on' | 'always-off' | 'trace-id-ratio';
   openTelemetrySampleRate?: number;
+  openTelemetrySpanProcessor?: 'batch' | 'simple';
   honeycombApiKey?: string;
   honeycombDataset?: string;
   serviceName?: string;
@@ -141,33 +147,37 @@ export async function init(config: OpenTelemetryConfig) {
   }
 
   let exporter: SpanExporter;
-  switch (config.openTelemetryExporter) {
-    case 'console': {
-      // Export spans to the console for testing purposes.
-      exporter = new tracing.ConsoleSpanExporter();
-      break;
-    }
-    case 'honeycomb': {
-      // Create a Honeycomb exporter with the appropriate metadata from the
-      // config we've been provided with.
-      const metadata = new Metadata();
+  if (typeof config.openTelemetryExporter === 'object') {
+    exporter = config.openTelemetryExporter;
+  } else {
+    switch (config.openTelemetryExporter) {
+      case 'console': {
+        // Export spans to the console for testing purposes.
+        exporter = new tracing.ConsoleSpanExporter();
+        break;
+      }
+      case 'honeycomb': {
+        // Create a Honeycomb exporter with the appropriate metadata from the
+        // config we've been provided with.
+        const metadata = new Metadata();
 
-      metadata.set('x-honeycomb-team', config.honeycombApiKey);
-      metadata.set('x-honeycomb-dataset', config.honeycombDataset);
+        metadata.set('x-honeycomb-team', config.honeycombApiKey);
+        metadata.set('x-honeycomb-dataset', config.honeycombDataset);
 
-      exporter = new OTLPTraceExporter({
-        url: 'grpc://api.honeycomb.io:443/',
-        credentials: credentials.createSsl(),
-        metadata,
-      });
-      break;
+        exporter = new OTLPTraceExporter({
+          url: 'grpc://api.honeycomb.io:443/',
+          credentials: credentials.createSsl(),
+          metadata,
+        });
+        break;
+      }
+      default:
+        throw new Error(`Unknown OpenTelemetry exporter: ${config.openTelemetryExporter}`);
     }
-    default:
-      throw new Error(`Unknown OpenTelemetry exporter: ${config.openTelemetryExporter}`);
   }
 
   let sampler: Sampler;
-  switch (config.openTelemetrySamplerType) {
+  switch (config.openTelemetrySamplerType ?? 'always-on') {
     case 'always-on': {
       sampler = new AlwaysOnSampler();
       break;
@@ -186,6 +196,21 @@ export async function init(config: OpenTelemetryConfig) {
       throw new Error(`Unknown OpenTelemetry sampler type: ${config.openTelemetrySamplerType}`);
   }
 
+  let spanProcessor: SpanProcessor;
+  switch (config.openTelemetrySpanProcessor ?? 'batch') {
+    case 'batch': {
+      spanProcessor = new FilterBatchSpanProcessor(exporter, filter);
+      break;
+    }
+    case 'simple': {
+      spanProcessor = new SimpleSpanProcessor(exporter);
+      break;
+    }
+    default: {
+      throw new Error(`Unknown OpenTelemetry span processor: ${config.openTelemetrySpanProcessor}`);
+    }
+  }
+
   // Much of this functionality is copied from `@opentelemetry/sdk-node`, but
   // we can't use the SDK directly because of the fact that we load our config
   // asynchronously. We need to initialize our instrumentations first; only
@@ -202,11 +227,10 @@ export async function init(config: OpenTelemetryConfig) {
     );
   }
 
-  const tracerProvider = new NodeTracerProvider({
+  tracerProvider = new NodeTracerProvider({
     sampler,
     resource,
   });
-  const spanProcessor = new FilterBatchSpanProcessor(exporter, filter);
   tracerProvider.addSpanProcessor(spanProcessor);
   tracerProvider.register();
 
@@ -219,7 +243,10 @@ export async function init(config: OpenTelemetryConfig) {
  */
 export async function shutdown(): Promise<void> {
   if (tracerProvider) {
+    console.log('shutting down...');
     await tracerProvider.shutdown();
+    console.log('shut down!');
+    tracerProvider = null;
   }
 }
 
