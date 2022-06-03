@@ -243,9 +243,7 @@ export async function init(config: OpenTelemetryConfig) {
  */
 export async function shutdown(): Promise<void> {
   if (tracerProvider) {
-    console.log('shutting down...');
     await tracerProvider.shutdown();
-    console.log('shut down!');
     tracerProvider = null;
   }
 }
