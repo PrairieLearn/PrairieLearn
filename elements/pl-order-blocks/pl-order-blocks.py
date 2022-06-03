@@ -1,3 +1,4 @@
+from copy import deepcopy
 import prairielearn as pl
 import lxml.html
 from lxml import etree
@@ -7,7 +8,7 @@ import base64
 import os
 import json
 import math
-from dag_checker import grade_dag, lcs_partial_credit
+from dag_checker import grade_dag, lcs_partial_credit, solve_dag
 
 PL_ANSWER_CORRECT_DEFAULT = True
 PL_ANSWER_INDENT_DEFAULT = -1
@@ -45,6 +46,23 @@ def get_graph_info(html_tags):
     depends = pl.get_string_attrib(html_tags, 'depends', '')
     depends = depends.strip().split(',') if depends else []
     return tag, depends
+
+def extract_dag(answers_list):
+    depends_graph = {ans['tag']: ans['depends'] for ans in answers_list}
+    group_belonging = {ans['tag']: ans['group_info']['tag'] for ans in answers_list}
+    group_depends = {ans['group_info']['tag']: ans['group_info']['depends'] for ans in answers_list if ans['group_info']['depends'] is not None}
+    depends_graph.update(group_depends)
+    return depends_graph, group_belonging
+
+def solve_problem(answers_list, grading_method):
+    if grading_method in ['external', 'unordered']:
+        return answers_list
+    elif grading_method in ['ranking', 'ordered']:
+        return sorted(answers_list, key=lambda x: int(x['ranking']))
+    elif grading_method == 'dag':
+        depends_graph, group_belonging = extract_dag(answers_list)
+        solution = solve_dag(depends_graph, group_belonging)
+        return sorted(answers_list, key=lambda x: solution.index(x['tag']))
 
 
 def prepare(element_html, data):
@@ -304,11 +322,20 @@ def render(element_html, data):
         check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
         indentation_message = ', with correct indentation' if check_indentation is True else None
 
+        solution = data['correct_answers'][answer_name]
         if answer_name in data['correct_answers']:
+            # if the order of the blocks in the HTML is a correct solution, leave it unchanged, but if it
+            # isn't we need to change it into a solution before displaying it as such
+            data_copy = deepcopy(data)
+            data_copy['submitted_answers'][answer_name] = data['correct_answers'][answer_name]
+            grade(element_html, data_copy)
+            if data_copy['partial_scores'][answer_name]['score'] != 1:
+                solution = solve_problem(solution)
+
             question_solution = [{
-                'inner_html': solution['inner_html'],
-                'indent': ((solution['indent'] or 0) * TAB_SIZE_PX) + INDENT_OFFSET
-            } for solution in data['correct_answers'][answer_name]]
+                'inner_html': answer['inner_html'],
+                'indent': ((answer['indent'] or 0) * TAB_SIZE_PX) + INDENT_OFFSET
+            } for answer in solution]
 
             html_params = {
                 'true_answer': True,
@@ -433,10 +460,7 @@ def grade(element_html, data):
                 prev_rank = ranking
 
         elif grading_mode == 'dag':
-            depends_graph = {ans['tag']: ans['depends'] for ans in true_answer_list}
-            group_belonging = {ans['tag']: ans['group_info']['tag'] for ans in true_answer_list}
-            group_depends = {ans['group_info']['tag']: ans['group_info']['depends'] for ans in true_answer_list if ans['group_info']['depends'] is not None}
-            depends_graph.update(group_depends)
+            depends_graph, group_belonging = extract_dag(true_answer_list)
 
         num_initial_correct, true_answer_length = grade_dag(submission, depends_graph, group_belonging)
         first_wrong = -1 if num_initial_correct == len(submission) else num_initial_correct
