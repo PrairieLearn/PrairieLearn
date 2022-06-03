@@ -1145,8 +1145,6 @@ module.exports = {
     data.options.workspace_url = locals.workspaceUrl || null;
 
     // Put key paths in data.options
-    console.log('ARGS HERE');
-    console.log(arguments);
     _.extend(data.options, module.exports.getContextOptions(context));
 
     module.exports.getCachedDataOrCompute(
