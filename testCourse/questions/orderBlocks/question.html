@@ -61,15 +61,22 @@ has become increasingly complex, with many different possible combinations of op
 </pl-order-blocks>
 
 
-<!-- <pl-order-blocks answers-name="test-solving2" source-blocks-order="random" grading-method="dag">
-  <pl-answer correct="true" tag="1"> Proof by Cases:</pl-answer>
+<pl-order-blocks answers-name="test-solving2" source-blocks-order="random" grading-method="dag">
+  <pl-answer correct="true" tag="1"> 1</pl-answer>
+  <pl-block-group tag="g3" depends="1, g2">
+    <pl-answer correct="true" tag="10">10</pl-answer>
+  </pl-block-group>
   <pl-block-group tag="g1" depends="1">
-    <pl-answer correct="true" tag="2"> Case $A \land C$: </pl-answer>
-    <pl-answer correct="true" tag="3" depends="2"> Since $A \land C$ is true, we know $A$ is true.</pl-answer>
+    <pl-answer correct="true" tag="5" depends="3,4"> 5</pl-answer>
+    <pl-answer correct="true" tag="4">4 </pl-answer>
+    <pl-answer correct="true" tag="3" depends="2"> 3</pl-answer>
+    <pl-answer correct="true" tag="2"> 2</pl-answer>
   </pl-block-group>
   <pl-block-group tag="g2" depends="1">
-    <pl-answer correct="true" tag="4"> Case $A \land B$: </pl-answer>
-    <pl-answer correct="true" tag="5" depends="4"> Since $A \land B$ is true, we know $A$ is true.</pl-answer>
+    <pl-answer correct="true" tag="6"> 6</pl-answer>
+    <pl-answer correct="true" tag="7" depends="8"> 7</pl-answer>
+    <pl-answer correct="true" tag="8"> 8</pl-answer>
+    <pl-answer correct="true" tag="9" depends="7"> 9</pl-answer>
   </pl-block-group>
-  <pl-answer correct="true" tag="6" depends="g1,g2">This completes the proof.</pl-answer>
-</pl-order-blocks> -->
+  <pl-answer correct="true" tag="11" depends="g1,g2,g3">11</pl-answer>
+</pl-order-blocks>

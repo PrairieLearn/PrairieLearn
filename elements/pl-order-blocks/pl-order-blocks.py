@@ -44,7 +44,7 @@ def filter_multiple_from_array(data, keys):
 def get_graph_info(html_tags):
     tag = pl.get_string_attrib(html_tags, 'tag', pl.get_uuid())
     depends = pl.get_string_attrib(html_tags, 'depends', '')
-    depends = depends.strip().split(',') if depends else []
+    depends = [tag.strip() for tag in depends.split(',')] if depends else []
     return tag, depends
 
 def extract_dag(answers_list):
@@ -198,6 +198,7 @@ def prepare(element_html, data):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
+    grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
 
     if data['panel'] == 'question':
         mcq_options = []
@@ -208,7 +209,6 @@ def render(element_html, data):
         answer_name = pl.get_string_attrib(element, 'answers-name')
         source_header = pl.get_string_attrib(element, 'source-header', SOURCE_HEADER_DEFAULT)
         solution_header = pl.get_string_attrib(element, 'solution-header', SOLUTION_HEADER_DEFAULT)
-        grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
 
         mcq_options = data['params'][answer_name]
         mcq_options = filter_multiple_from_array(mcq_options, ['inner_html', 'uuid'])
@@ -262,7 +262,7 @@ def render(element_html, data):
         return html
 
     elif data['panel'] == 'submission':
-        if pl.get_string_attrib(element, 'grading-method', 'ordered') == 'external':
+        if grading_method == 'external':
             return ''  # external grader is responsible for displaying results screen
 
         student_submission = ''
@@ -302,7 +302,7 @@ def render(element_html, data):
         return html
 
     elif data['panel'] == 'answer':
-        if pl.get_string_attrib(element, 'grading-method', 'ordered') == 'external':
+        if grading_method == 'external':
             try:
                 base_path = data['options']['question_path']
                 file_lead_path = os.path.join(base_path, 'tests/ans.py')
@@ -312,42 +312,39 @@ def render(element_html, data):
             except FileNotFoundError:
                 return 'The reference solution is not provided for this question.'
 
-        grading_mode = pl.get_string_attrib(element, 'grading-method', 'ordered')
-        if grading_mode == 'unordered':
+        if grading_method == 'unordered':
             ordering_message = 'in any order'
-        elif grading_mode == 'dag' or grading_mode == 'ranking':
+        elif grading_method == 'dag' or grading_method == 'ranking':
             ordering_message = 'one possible correct order'
         else:
             ordering_message = 'in the specified order'
         check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
         indentation_message = ', with correct indentation' if check_indentation is True else None
 
-        if answer_name in data['correct_answers']:
-            # if the order of the blocks in the HTML is a correct solution, leave it unchanged, but if it
-            # isn't we need to change it into a solution before displaying it as such
-            solution = data['correct_answers'][answer_name]
-            data_copy = deepcopy(data)
-            data_copy['submitted_answers'][answer_name] = solution
-            grade(element_html, data_copy)
-            if data_copy['partial_scores'][answer_name]['score'] != 1:
-                solution = solve_problem(solution, grading_mode)
+        # if the order of the blocks in the HTML is a correct solution, leave it unchanged, but if it
+        # isn't we need to change it into a solution before displaying it as such
+        solution = data['correct_answers'][answer_name]
+        data_copy = deepcopy(data)
+        data_copy['submitted_answers'][answer_name] = solution
+        grade(element_html, data_copy)
+        if data_copy['partial_scores'][answer_name]['score'] != 1:
+            solution = solve_problem(solution, grading_method)
 
-            question_solution = [{
-                'inner_html': answer['inner_html'],
-                'indent': ((answer['indent'] or 0) * TAB_SIZE_PX) + INDENT_OFFSET
-            } for answer in solution]
+        question_solution = [{
+            'inner_html': answer['inner_html'],
+            'indent': ((answer['indent'] or 0) * TAB_SIZE_PX) + INDENT_OFFSET
+        } for answer in solution]
 
-            html_params = {
-                'true_answer': True,
-                'question_solution': question_solution,
-                'ordering_message': ordering_message,
-                'indentation_message': indentation_message
-            }
-            with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
-                html = chevron.render(f, html_params)
-            return html
-        else:
-            return ''
+        html_params = {
+            'true_answer': True,
+            'question_solution': question_solution,
+            'ordering_message': ordering_message,
+            'indentation_message': indentation_message
+        }
+        with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
+            html = chevron.render(f, html_params)
+        return html
+
     else:
         raise Exception('Invalid panel type')
 
