@@ -189,11 +189,23 @@ def evaluate(expr, locals_for_eval={}):
     from sympy.parsing.sympy_parser import standard_transformations
     from sympy.parsing.sympy_parser import implicit_multiplication_application
     # TODO: may want `function_exponentiation` as well
-    T = standard_transformations + (implicit_multiplication_application, )
-    # TODO: we probably need this to avoid sin -> s*i*n.  How does this relate
-    # to the allow list below?
-    global_dict = {}
 
+    # copy-paste job from sympy/parsing/sympy_parser.py to build global_dict
+    # TODO: maybe we can ask SymPy to split out to `_make_std_global_dict()`
+    import types
+    import builtins
+    from sympy.functions.elementary.miscellaneous import Max, Min
+
+    global_dict = {}
+    exec('from sympy import *', global_dict)
+    builtins_dict = vars(builtins)
+    for name, obj in builtins_dict.items():
+        if isinstance(obj, types.BuiltinFunctionType):
+            global_dict[name] = obj
+    global_dict['max'] = Max
+    global_dict['min'] = Min
+
+    T = standard_transformations + (implicit_multiplication_application, )
     expr = stringify_expr(expr, locals_for_eval, global_dict, T)
 
     # Parse (convert string to AST)
