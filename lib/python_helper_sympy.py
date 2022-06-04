@@ -206,6 +206,7 @@ def evaluate(expr, locals_for_eval={}):
     global_dict['min'] = Min
 
     T = standard_transformations + (implicit_multiplication_application, )
+    # TODO: is `locals_for_eval` appropriate as local_dict here?
     expr = stringify_expr(expr, locals_for_eval, global_dict, T)
 
     # Parse (convert string to AST)
