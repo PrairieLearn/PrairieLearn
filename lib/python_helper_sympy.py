@@ -185,6 +185,17 @@ def evaluate(expr, locals_for_eval={}):
     if '#' in expr:
         raise HasCommentError(expr.find('#'))
 
+    from sympy.parsing.sympy_parser import stringify_expr
+    from sympy.parsing.sympy_parser import standard_transformations
+    from sympy.parsing.sympy_parser import implicit_multiplication_application
+    # TODO: may want `function_exponentiation` as well
+    T = standard_transformations + (implicit_multiplication_application, )
+    # TODO: we probably need this to avoid sin -> s*i*n.  How does this relate
+    # to the allow list below?
+    global_dict = {}
+
+    expr = stringify_expr(expr, locals_for_eval, global_dict, T)
+
     # Parse (convert string to AST)
     try:
         root = ast.parse(expr, mode='eval')
