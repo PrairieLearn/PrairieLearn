@@ -1105,8 +1105,13 @@ async function validateAssessment(assessment, questions) {
   // Because of how Homework-type assessments work, we don't allow
   // real-time grading to be disabled for them.
   const allowRealTimeGrading = _.get(assessment, 'allowRealTimeGrading', true);
-  if (!allowRealTimeGrading && assessment.type === 'Homework') {
-    errors.push(`Real-time grading cannot be disabled for Homework-type assessments`);
+  if (assessment.type === 'Homework') {
+    if (!allowRealTimeGrading) {
+      errors.push(`Real-time grading cannot be disabled for Homework-type assessments`);
+    }
+    if (assessment.multipleInstance) {
+      errors.push(`Homework cannot have multiple instances`);
+    }
   }
 
   // Check assessment access rules
