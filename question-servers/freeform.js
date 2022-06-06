@@ -31,7 +31,7 @@ let courseElementsCache = {};
 let courseExtensionsCache = {};
 
 module.exports = {
-  init: async function () {
+  async init() {
     // Populate the list of PrairieLearn elements
     coreElementsCache = await module.exports.loadElements(
       path.join(__dirname, '..', 'elements'),
@@ -53,7 +53,7 @@ module.exports = {
    * @param {string}   sourceDir Absolute path to the directory of elements
    * @param {'core' | 'course'} elementType The type of element to be loaded
    */
-  loadElements: async function (sourceDir, elementType) {
+  async loadElements(sourceDir, elementType) {
     let elementSchema;
     switch (elementType) {
       case 'core':
@@ -121,7 +121,7 @@ module.exports = {
     return elements;
   },
 
-  async loadElementsForCourseAsync(course) {
+  async loadElementsForCourse(course) {
     if (
       courseElementsCache[course.id] !== undefined &&
       courseElementsCache[course.id].commit_hash &&
@@ -145,7 +145,7 @@ module.exports = {
    * that contains relevant extension scripts and styles.
    * @param  {String}   sourceDir Absolute path to the directory of extensions
    */
-  async loadExtensionsAsync(sourceDir) {
+  async loadExtensions(sourceDir) {
     const readdir = promisify(fs.readdir);
     const readJson = promisify(fs.readJson);
 
@@ -209,7 +209,7 @@ module.exports = {
     return elements;
   },
 
-  async loadExtensionsForCourseAsync(course) {
+  async loadExtensionsForCourse(course) {
     if (
       courseExtensionsCache[course.id] !== undefined &&
       courseExtensionsCache[course.id].commit_hash &&
@@ -219,7 +219,7 @@ module.exports = {
     }
 
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-    let extensions = await module.exports.loadExtensionsAsync(
+    let extensions = await module.exports.loadExtensions(
       path.join(coursePath, 'elementExtensions')
     );
     courseExtensionsCache[course.id] = {
@@ -233,12 +233,12 @@ module.exports = {
    * Wipes the element and extension cache.  This is only needed in
    * dev mode because each cache tracks Git commit hashes.
    */
-  flushElementCache: function () {
+  flushElementCache() {
     courseElementsCache = {};
     courseExtensionsCache = {};
   },
 
-  resolveElement: function (elementName, context) {
+  resolveElement(elementName, context) {
     if (_.has(context.course_elements, elementName)) {
       return context.course_elements[elementName];
     } else if (_.has(coreElementsCache, elementName)) {
@@ -248,7 +248,7 @@ module.exports = {
     }
   },
 
-  getElementController: function (elementName, context) {
+  getElementController(elementName, context) {
     const element = module.exports.resolveElement(elementName, context);
     return path.join(element.directory, element.controller);
   },
@@ -257,7 +257,7 @@ module.exports = {
    * Add clientFiles urls for elements and extensions.
    * Returns a copy of data with the new urls inserted.
    */
-  getElementClientFiles: function (data, elementName, context) {
+  getElementClientFiles(data, elementName, context) {
     let dataCopy = _.cloneDeep(data);
     // The options field wont contain URLs unless in the 'render' stage, so
     // check if it is populated before adding the element url
@@ -288,7 +288,7 @@ module.exports = {
     return dataCopy;
   },
 
-  elementFunction: async function (pc, fcn, elementName, elementHtml, data, context) {
+  async elementFunction(pc, fcn, elementName, elementHtml, data, context) {
     return new Promise((resolve, reject) => {
       const resolvedElement = module.exports.resolveElement(elementName, context);
       const cwd = resolvedElement.directory;
@@ -316,7 +316,7 @@ module.exports = {
     });
   },
 
-  legacyElementFunction: function (pc, fcn, elementName, $, element, data, context, callback) {
+  async legacyElementFunction(pc, fcn, elementName, $, element, data, context, callback) {
     let resolvedElement;
     try {
       resolvedElement = module.exports.resolveElement(elementName, context);
@@ -362,7 +362,7 @@ module.exports = {
     }
   },
 
-  defaultElementFunctionRet: function (phase, data) {
+  defaultElementFunctionRet(phase, data) {
     if (phase === 'render') {
       return '';
     } else if (phase === 'file') {
@@ -372,7 +372,7 @@ module.exports = {
     }
   },
 
-  defaultServerRet: function (phase, data, html, _context) {
+  defaultServerRet(phase, data, html, _context) {
     if (phase === 'render') {
       return html;
     } else if (phase === 'file') {
@@ -382,7 +382,7 @@ module.exports = {
     }
   },
 
-  execPythonServer: function (pc, phase, data, html, context, callback) {
+  execPythonServer(pc, phase, data, html, context, callback) {
     const pythonFile = 'server';
     const pythonFunction = phase;
     const pythonArgs = [data];
@@ -417,7 +417,7 @@ module.exports = {
     });
   },
 
-  execTemplate: function (htmlFilename, data, callback) {
+  execTemplate(htmlFilename, data, callback) {
     fs.readFile(htmlFilename, { encoding: 'utf8' }, (err, rawFile) => {
       if (ERR(err, callback)) return;
       let html;
@@ -447,7 +447,7 @@ module.exports = {
     });
   },
 
-  checkData: function (data, origData, phase) {
+  checkData(data, origData, phase) {
     const checked = [];
     const checkProp = (prop, type, presentPhases, editPhases) => {
       if (!presentPhases.includes(phase)) return null;
@@ -552,7 +552,7 @@ module.exports = {
     return null;
   },
 
-  traverseQuestionAndExecuteFunctions: async function (phase, pc, data, context, html, callback) {
+  async traverseQuestionAndExecuteFunctions(phase, pc, data, context, html, callback) {
     const origData = JSON.parse(JSON.stringify(data));
     const renderedElementNames = [];
     const courseIssues = [];
@@ -675,7 +675,7 @@ module.exports = {
     callback(courseIssues, data, questionHtml, fileData, renderedElementNames);
   },
 
-  legacyTraverseQuestionAndExecuteFunctions: function (phase, pc, data, context, $, callback) {
+  legacyTraverseQuestionAndExecuteFunctions(phase, pc, data, context, $, callback) {
     const origData = JSON.parse(JSON.stringify(data));
     const renderedElementNames = [];
     const courseIssues = [];
@@ -796,7 +796,7 @@ module.exports = {
     );
   },
 
-  processQuestionHtml: function (phase, pc, data, context, callback) {
+  processQuestionHtml(phase, pc, data, context, callback) {
     const courseIssues = [];
     const origData = JSON.parse(JSON.stringify(data));
 
@@ -863,7 +863,7 @@ module.exports = {
     });
   },
 
-  processQuestionServer: function (phase, pc, data, html, fileData, context, callback) {
+  processQuestionServer(phase, pc, data, html, fileData, context, callback) {
     const courseIssues = [];
     const origData = JSON.parse(JSON.stringify(data));
 
@@ -940,7 +940,7 @@ module.exports = {
     });
   },
 
-  processQuestion: function (phase, pc, data, context, callback) {
+  processQuestion(phase, pc, data, context, callback) {
     if (phase === 'generate') {
       module.exports.processQuestionServer(
         phase,
@@ -987,7 +987,7 @@ module.exports = {
    * These include file paths that are relevant for questions and elements.
    * URLs are not included here because those are only applicable during 'render'.
    */
-  getContextOptions: function (context) {
+  getContextOptions(context) {
     let options = {};
     options.question_path = context.question_dir;
     options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
@@ -997,7 +997,7 @@ module.exports = {
     return options;
   },
 
-  generate: function (question, course, variant_seed, callback) {
+  generate(question, course, variant_seed, callback) {
     debug('generate()');
     module.exports.getContext(question, course, (err, context) => {
       if (ERR(err, callback)) return;
@@ -1034,7 +1034,7 @@ module.exports = {
     });
   },
 
-  prepare: function (question, course, variant, callback) {
+  prepare(question, course, variant, callback) {
     debug('prepare()');
     if (variant.broken) return callback(new Error('attemped to prepare broken variant'));
     module.exports.getContext(question, course, (err, context) => {
@@ -1090,7 +1090,7 @@ module.exports = {
    * @param {any} context
    * @param {(err: Error, result: RenderPanelResult) => void} callback
    */
-  renderPanel: function (panel, pc, variant, submission, course, locals, context, callback) {
+  renderPanel(panel, pc, variant, submission, course, locals, context, callback) {
     debug(`renderPanel(${panel})`);
     // broken variant kills all rendering
     if (variant.broken) {
@@ -1175,16 +1175,7 @@ module.exports = {
     );
   },
 
-  renderPanelInstrumented: async function (
-    panel,
-    pc,
-    submission,
-    variant,
-    question,
-    course,
-    locals,
-    context
-  ) {
+  async renderPanelInstrumented(panel, pc, submission, variant, question, course, locals, context) {
     return instrumented(`freeform.renderPanel:${panel}`, async (span) => {
       span.setAttributes({
         panel,
@@ -1207,7 +1198,7 @@ module.exports = {
     });
   },
 
-  render: function (
+  render(
     renderSelection,
     variant,
     question,
@@ -1555,7 +1546,7 @@ module.exports = {
     });
   },
 
-  file: function (filename, variant, question, course, callback) {
+  file(filename, variant, question, course, callback) {
     debug(`file()`);
     if (variant.broken) return callback(new Error('attemped to get a file for a broken variant'));
     module.exports.getContext(question, course, (err, context) => {
@@ -1607,7 +1598,7 @@ module.exports = {
     });
   },
 
-  parse: function (submission, variant, question, course, callback) {
+  parse(submission, variant, question, course, callback) {
     debug(`parse()`);
     if (variant.broken) return callback(new Error('attemped to parse broken variant'));
     module.exports.getContext(question, course, (err, context) => {
@@ -1653,7 +1644,7 @@ module.exports = {
     });
   },
 
-  grade: function (submission, variant, question, course, callback) {
+  grade(submission, variant, question, course, callback) {
     debug(`grade()`);
     if (variant.broken) return callback(new Error('attemped to grade broken variant'));
     if (submission.broken) return callback(new Error('attemped to grade broken submission'));
@@ -1706,7 +1697,7 @@ module.exports = {
     });
   },
 
-  test: function (variant, question, course, test_type, callback) {
+  test(variant, question, course, test_type, callback) {
     debug(`test()`);
     if (variant.broken) return callback(new Error('attemped to test broken variant'));
     module.exports.getContext(question, course, (err, context) => {
@@ -1787,8 +1778,8 @@ module.exports = {
     };
 
     // Load elements and any extensions
-    const elements = await module.exports.loadElementsForCourseAsync(course);
-    const extensions = await module.exports.loadExtensionsForCourseAsync(course);
+    const elements = await module.exports.loadElementsForCourse(course);
+    const extensions = await module.exports.loadExtensionsForCourse(course);
 
     context.course_elements = elements;
     context.course_element_extensions = extensions;
@@ -1796,14 +1787,14 @@ module.exports = {
     return context;
   },
 
-  getContext: function (question, course, callback) {
+  getContext(question, course, callback) {
     return callbackify(module.exports.getContextAsync)(question, course, (err, context) => {
       if (ERR(err, callback)) return;
       callback(null, context);
     });
   },
 
-  getCacheKey: function (course, data, context, callback) {
+  getCacheKey(course, data, context, callback) {
     courseUtil.getOrUpdateCourseCommitHash(course, (err, commitHash) => {
       if (ERR(err, callback)) return;
       const dataHash = hash('sha1').update(JSON.stringify({ data, context })).digest('base64');
@@ -1811,7 +1802,7 @@ module.exports = {
     });
   },
 
-  getCachedDataOrCompute: function (course, data, context, computeFcn, processFcn, errorFcn) {
+  getCachedDataOrCompute(course, data, context, computeFcn, processFcn, errorFcn) {
     // This function will compute the cachedData and cache it if
     // cacheKey is not null
     const doCompute = (cacheKey) => {
