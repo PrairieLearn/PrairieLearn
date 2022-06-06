@@ -130,12 +130,9 @@ module.exports = {
               callback(null);
             });
           },
-          function (callback) {
+          async function () {
             debug('before(): initialize freeform server');
-            freeformServer.init(function (err) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
+            await freeformServer.init();
           },
           function (callback) {
             externalGrader.init(function (err) {

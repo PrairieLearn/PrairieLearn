@@ -31,13 +31,12 @@ let courseElementsCache = {};
 let courseExtensionsCache = {};
 
 module.exports = {
-  init: function (callback) {
+  init: async function () {
     // Populate the list of PrairieLearn elements
-    module.exports.loadElements(path.join(__dirname, '..', 'elements'), 'core', (err, results) => {
-      if (ERR(err, callback)) return;
-      coreElementsCache = results;
-      return callback(null);
-    });
+    coreElementsCache = await module.exports.loadElements(
+      path.join(__dirname, '..', 'elements'),
+      'core'
+    );
   },
 
   close: function (callback) {
@@ -50,96 +49,76 @@ module.exports = {
   /**
    * Takes a directory containing element directories and returns an object
    * mapping element names to that element's controller, dependencies, etc.
-   * @param  {String}   sourceDir Absolute path to the directory of elements
-   * @param  {Function} callback  Called with any errors and the results
+   *
+   * @param {string}   sourceDir Absolute path to the directory of elements
+   * @param {'core' | 'course'} elementType The type of element to be loaded
    */
-  loadElements: function (sourceDir, elementType, callback) {
+  loadElements: async function (sourceDir, elementType) {
     let elementSchema;
-    async.waterfall(
-      [
-        (callback) => {
-          switch (elementType) {
-            case 'core':
-              elementSchema = schemas.infoElementCore;
-              break;
-            case 'course':
-              elementSchema = schemas.infoElementCourse;
-              break;
-            default:
-              return callback(new Error(`Unknown element type ${elementType}`));
-          }
-          callback(null);
-        },
-        (callback) => {
-          // Read all files in the given path
-          fs.readdir(sourceDir, (err, files) => {
-            if (err && err.code === 'ENOENT') {
-              // Directory doesn't exist, most likely a course with not elements
-              // Proceed with an empty array
-              return callback(null, []);
-            }
-            if (ERR(err, callback)) return;
-            return callback(null, files);
-          });
-        },
-        async (files) => {
-          // Filter out any non-directories
-          return async.filter(files, async (file) => {
-            const stats = await fs.promises.lstat(path.join(sourceDir, file));
-            return stats.isDirectory();
-          });
-        },
-        (elementNames, callback) => {
-          const elements = {};
-          async.each(
-            elementNames,
-            (elementName, callback) => {
-              const elementInfoPath = path.join(sourceDir, elementName, 'info.json');
-              fs.readJson(elementInfoPath, (err, info) => {
-                if (err && err.code === 'ENOENT') {
-                  // This must not be an element directory, skip it
-                  logger.verbose(`${elementInfoPath} not found, skipping...`);
-                  return callback(null);
-                }
-                if (ERR(err, callback)) return;
-                jsonLoader.validateJSON(info, elementSchema, (err) => {
-                  if (ERR(err, callback)) return;
-                  info.name = elementName;
-                  info.directory = path.join(sourceDir, elementName);
-                  info.type = elementType;
-                  elements[elementName] = info;
-                  // For backwards compatibility
-                  // TODO remove once everyone is using the new version
-                  if (elementType === 'core') {
-                    elements[elementName.replace(/-/g, '_')] = info;
+    switch (elementType) {
+      case 'core':
+        elementSchema = schemas.infoElementCore;
+        break;
+      case 'course':
+        elementSchema = schemas.infoElementCourse;
+        break;
+      default:
+        throw new Error(`Unknown element type ${elementType}`);
+    }
 
-                    if ('additionalNames' in info) {
-                      info.additionalNames.forEach((name) => {
-                        elements[name] = info;
-                        elements[name.replace(/-/g, '_')] = info;
-                      });
-                    }
-                  }
-                  callback(null);
-                });
-              });
-            },
-            (err) => {
-              if (ERR(err, callback)) return;
-              return callback(null, elements);
-            }
-          );
-        },
-      ],
-      (err, elements) => {
-        if (ERR(err, callback)) return;
-        return callback(null, elements);
+    let files;
+    try {
+      files = await fs.readdir(sourceDir);
+    } catch (err) {
+      if (err && err.code === 'ENOENT') {
+        // Directory doesn't exist, most likely a course with not elements.
+        // Proceed with an empty array.
+        return [];
       }
-    );
-  },
+    }
 
-  async loadElementsAsync(sourceDir, elementType) {
-    return promisify(module.exports.loadElements)(sourceDir, elementType);
+    // Filter out any non-directories.
+    const elementNames = async.filter(files, async (file) => {
+      const stats = await fs.promises.lstat(path.join(sourceDir, file));
+      return stats.isDirectory();
+    });
+
+    // Construct a dictionary mapping element names to their info.
+    const elements = {};
+    await async.each(elementNames, async (elementName) => {
+      const elementInfoPath = path.join(sourceDir, elementName, 'info.json');
+      let info;
+      try {
+        info = await fs.readJSON(elementInfoPath);
+      } catch (err) {
+        if (err && err.code === 'ENOENT') {
+          // This must not be an element directory, skip it
+          logger.verbose(`${elementInfoPath} not found, skipping...`);
+          return;
+        }
+      }
+
+      await jsonLoader.validateJSONAsync(info, elementSchema);
+      info.name = elementName;
+      info.directory = path.join(sourceDir, elementName);
+      info.type = elementType;
+      elements[elementName] = info;
+
+      // For backwards compatibility.
+      // TODO remove once everyone is using the new version.
+      if (elementType === 'core') {
+        elements[elementName.replace(/-/g, '_')] = info;
+
+        if ('additionalNames' in info) {
+          info.additionalNames.forEach((name) => {
+            elements[name] = info;
+            elements[name.replace(/-/g, '_')] = info;
+          });
+        }
+      }
+    });
+
+    return elements;
   },
 
   async loadElementsForCourseAsync(course) {
@@ -152,10 +131,7 @@ module.exports = {
     }
 
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-    const elements = await module.exports.loadElementsAsync(
-      path.join(coursePath, 'elements'),
-      'course'
-    );
+    const elements = await module.exports.loadElements(path.join(coursePath, 'elements'), 'course');
     courseElementsCache[course.id] = {
       commit_hash: course.commit_hash,
       data: elements,
