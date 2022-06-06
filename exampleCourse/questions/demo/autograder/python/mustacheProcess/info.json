@@ -5,9 +5,6 @@
     "tags": [
         "code"
     ],
-    "dependencies": {
-        "clientFilesQuestionStyles": ["style.css"]
-    },
     "type": "v3",
     "singleVariant": true,
     "gradingMethod": "External",
