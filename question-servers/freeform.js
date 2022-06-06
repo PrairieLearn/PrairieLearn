@@ -39,11 +39,8 @@ module.exports = {
     );
   },
 
-  close: function (callback) {
-    codeCaller.waitForFinish((err) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
+  async close() {
+    await codeCaller.waitForFinish();
   },
 
   /**

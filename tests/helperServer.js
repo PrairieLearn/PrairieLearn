@@ -170,12 +170,9 @@ module.exports = {
             callback(null);
           });
         },
-        function (callback) {
+        async () => {
           debug('after(): close freeform server');
-          freeformServer.close(function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await freeformServer.close();
         },
         function (callback) {
           debug('after(): close load estimators');
