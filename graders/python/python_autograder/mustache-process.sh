@@ -4,10 +4,11 @@
 # Bash script template based on https://betterdev.blog/minimal-safe-bash-script-template/
 #
 #
-# For use in a PrairieLearn autograder: Ensure your Docker image has mustache. E.g., add
-# this or the equivalent for your installation system to your Dockerfile:
+# For use in a PrairieLearn autograder: Ensure your Docker image has chevron (or another
+# mustache implementation, in which case update the MUSTACHE_EXECUTABLE_NAME and its use 
+# below). E.g., add this or equivalent for your installation system to your Dockerfile:
 # 
-#   RUN yum install -y rubygems && gem install mustache
+#   RUN pip install chevron
 #
 # Then, place this script in your autograder server files (or your Docker image).
 # Then, run this script with no arguments as part of your entrypoint script in whatever 
@@ -19,7 +20,8 @@
 # it's also handy in your testing directory to soft-link your .mustache file to a
 # non-.mustache version (which you can then use as your test harness, if you're
 # careful with how you use {{...}}). If you do that and use -d, you'll end up just
-# deleting both files.
+# deleting both files. (If you do NOT use -d, then you risk exposing template
+# information into student spaces.)
 #
 # (You'll adjust that to get the mustache-process.sh path right, most likely changing
 # "autograder".) You almost certainly want to perform processing before testing student
@@ -31,6 +33,7 @@
 set -Eeuo pipefail
 shopt -s globstar extglob nullglob
 
+MUSTACHE_EXECUTABLE_NAME="chevron"
 MUSTACHE_FILE_PATTERN=".mustache"
 EXTENSION_GLOB="**/?*${MUSTACHE_FILE_PATTERN}?(.*)"
 DEFAULT_DATA_SOURCE=/grade/data/data.json
@@ -119,9 +122,9 @@ parse_params "$@"
 
 # script logic here
 
-if [[ ! -x $(command -v mustache) ]]
+if [[ ! -x $(command -v $MUSTACHE_EXECUTABLE_NAME) ]]
 then
-    die "mustache command not found; see https://mustache.github.io/"
+    die "$MUSTACHE_EXECUTABLE_NAME command not found; see https://mustache.github.io/"
 fi
 
 if [[ ! -f "${DATA_SOURCE}" ]]
@@ -132,7 +135,7 @@ fi
 msg "Using formatter: ${DATA_SOURCE}"
 
 # Test formatting of data source
-mustache "${DATA_SOURCE}" /dev/null 2> /dev/null || die "Not recognized as valid YAML/JSON formatter: ${DATA_SOURCE}"
+$MUSTACHE_EXECUTABLE_NAME -d "${DATA_SOURCE}" /dev/null 2> /dev/null || die "Not recognized as valid YAML/JSON formatter: ${DATA_SOURCE}"
 
 matches=($EXTENSION_GLOB)
 msg "Processing ${MUSTACHE_FILE_PATTERN} files."
@@ -141,7 +144,7 @@ do
     basei="${i/.mustache/}"
     msg "  Processing ${i}"
     # Inserting a temporary file in case one file is a symlink to the other!
-    mustache "${DATA_SOURCE}" "${i}" >&3 && cat <&4 > "${basei}"
+    $MUSTACHE_EXECUTABLE_NAME -d "${DATA_SOURCE}" "${i}" >&3 && cat <&4 > "${basei}"
     if [[ "${RETAIN}" != "yes" ]] 
     then
       rm "${i}"

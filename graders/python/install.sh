@@ -9,9 +9,6 @@ yum install -y \
     dos2unix \
     graphviz \
     graphviz-devel \
-    rubygems
-
-gem install mustache
 
 echo "setting up conda..."
 cd /
