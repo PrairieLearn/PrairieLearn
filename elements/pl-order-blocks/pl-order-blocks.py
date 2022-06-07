@@ -111,9 +111,9 @@ def prepare(element_html, data):
 
         if grading_method == 'external':
             pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct'])
-        elif grading_method in ['unordered', 'ordered']:
+        elif grading_method == 'unordered':
             pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'indent'])
-        elif grading_method == 'ranking':
+        elif grading_method in ['ranking', 'ordered']:
             pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
         elif grading_method == 'dag':
             pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'tag', 'depends', 'comment', 'indent'])
