@@ -1139,7 +1139,7 @@ function testUploadFile(params) {
   describe(`GET to ${params.url}`, () => {
     it('should load successfully', async () => {
       page = await requestp(params.url);
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
     it('should have a CSRF token and either a file_path or a working_path', () => {
       elemList = locals.$(`button[id="instructorFileUploadForm-${params.id}"]`);
@@ -1193,7 +1193,7 @@ function testUploadFile(params) {
       else if (locals.working_path) options.formData.working_path = locals.working_path;
       else assert.fail('found neither file_path nor working_path');
       page = await requestp.post(options);
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
   });
 
@@ -1204,7 +1204,7 @@ function testRenameFile(params) {
   describe(`GET to ${params.url}`, () => {
     it('should load successfully', async () => {
       page = await requestp(params.url);
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
     it('should have a CSRF token, old_file_name, working_path', () => {
       elemList = locals.$(`button[id="instructorFileRenameForm-${params.id}"]`);
@@ -1249,7 +1249,7 @@ function testRenameFile(params) {
         new_file_name: params.new_file_name,
       };
       page = await requestp.post(options);
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
   });
 
@@ -1260,7 +1260,7 @@ function testDeleteFile(params) {
   describe(`GET to ${params.url}`, () => {
     it('should load successfully', async () => {
       page = await requestp(params.url);
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
     it('should have a CSRF token and a file_path', () => {
       elemList = locals.$(`button[id="instructorFileDeleteForm-${params.id}"]`);
@@ -1294,7 +1294,7 @@ function testDeleteFile(params) {
         file_path: locals.file_path,
       };
       page = await requestp.post(options);
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
   });
 
