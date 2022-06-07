@@ -621,7 +621,7 @@ module.exports = {
         }
       }
       // the following line is safe because we can't be in multiple copies of this function simultaneously
-      node.childNodes = newChildren; // eslint-disable-line require-atomic-updates
+      node.childNodes = newChildren;
       return node;
     };
     let questionHtml = '';
@@ -802,6 +802,7 @@ module.exports = {
         args = [phase, pc, data, context, $];
       }
 
+      // TODO: this needs to use promises
       processFunction(
         ...args,
         (courseIssues, data, questionHtml, fileData, renderedElementNames) => {
