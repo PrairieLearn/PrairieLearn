@@ -72,6 +72,8 @@ module.exports = {
         // Proceed with an empty array.
         return [];
       }
+
+      throw err;
     }
 
     // Filter out any non-directories.
@@ -93,6 +95,8 @@ module.exports = {
           logger.verbose(`${elementInfoPath} not found, skipping...`);
           return;
         }
+
+        throw err;
       }
 
       await jsonLoader.validateJSONAsync(info, elementSchema);
@@ -154,9 +158,9 @@ module.exports = {
       if (err.code === 'ENOENT') {
         // We don't really care if there are no extensions, just return an empty array.
         return [];
-      } else {
-        throw err;
       }
+
+      throw err;
     }
 
     // Get extensions from each element folder.  Each is stored as [ 'element name', 'extension name' ]
@@ -286,76 +290,33 @@ module.exports = {
   },
 
   async elementFunction(pc, fcn, elementName, elementHtml, data, context) {
-    return new Promise((resolve, reject) => {
-      const resolvedElement = module.exports.resolveElement(elementName, context);
-      const cwd = resolvedElement.directory;
-      const controller = resolvedElement.controller;
-      const dataCopy = module.exports.getElementClientFiles(data, elementName, context);
-
-      const pythonArgs = [elementHtml, dataCopy];
-      const pythonFile = controller.replace(/\.[pP][yY]$/, '');
-      const paths = [path.join(__dirname, 'freeformPythonLib')];
-      if (resolvedElement.type === 'course') {
-        paths.push(path.join(context.course_dir, 'serverFilesCourse'));
-      }
-      const opts = {
-        cwd,
-        paths,
-      };
-      pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
-        if (err instanceof codeCaller.FunctionMissingError) {
-          // function wasn't present in server
-          return resolve([module.exports.defaultElementFunctionRet(fcn, dataCopy), '']);
-        }
-        if (ERR(err, reject)) return;
-        resolve([ret, consoleLog]);
-      });
-    });
-  },
-
-  async legacyElementFunction(pc, fcn, elementName, $, element, data, context, callback) {
-    let resolvedElement;
-    try {
-      resolvedElement = module.exports.resolveElement(elementName, context);
-    } catch (e) {
-      return callback(e);
-    }
-
+    const resolvedElement = module.exports.resolveElement(elementName, context);
     const cwd = resolvedElement.directory;
     const controller = resolvedElement.controller;
     const dataCopy = module.exports.getElementClientFiles(data, elementName, context);
 
-    if (_.isString(controller)) {
-      // python module
-      const elementHtml = $(element).clone().wrap('<container/>').parent().html();
-      const pythonArgs = [elementHtml, dataCopy];
-      const pythonFile = controller.replace(/\.[pP][yY]$/, '');
-      const paths = [path.join(__dirname, 'freeformPythonLib')];
-      if (resolvedElement.type === 'course') {
-        paths.push(path.join(context.course_dir, 'serverFilesCourse'));
+    const pythonArgs = [elementHtml, dataCopy];
+    const pythonFile = controller.replace(/\.[pP][yY]$/, '');
+    const paths = [path.join(__dirname, 'freeformPythonLib')];
+    if (resolvedElement.type === 'course') {
+      paths.push(path.join(context.course_dir, 'serverFilesCourse'));
+    }
+    const opts = {
+      cwd,
+      paths,
+    };
+
+    try {
+      return await pc.callAsync(pythonFile, fcn, pythonArgs, opts);
+    } catch (err) {
+      if (err instanceof codeCaller.FunctionMissingError) {
+        // function wasn't present in server
+        return {
+          result: module.exports.defaultElementFunctionRet(fcn, dataCopy),
+          output: '',
+        };
       }
-      const opts = {
-        cwd,
-        paths,
-      };
-      debug(`elementFunction(): pc.call(pythonFile=${pythonFile}, pythonFunction=${fcn})`);
-      pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
-        if (err instanceof codeCaller.FunctionMissingError) {
-          // function wasn't present in server
-          debug(`elementFunction(): function not present`);
-          return callback(null, module.exports.defaultElementFunctionRet(fcn, dataCopy), '');
-        }
-        if (ERR(err, callback)) return;
-        debug(`elementFunction(): completed`);
-        callback(null, ret, consoleLog);
-      });
-    } else {
-      // JS module (FIXME: delete this block of code in future)
-      const jsArgs = [$, element, null, dataCopy];
-      controller[fcn](...jsArgs, (err, ret) => {
-        if (ERR(err, callback)) return;
-        callback(null, ret, '');
-      });
+      throw err;
     }
   },
 
@@ -549,7 +510,7 @@ module.exports = {
     return null;
   },
 
-  async traverseQuestionAndExecuteFunctions(phase, pc, data, context, html, callback) {
+  async traverseQuestionAndExecuteFunctions(phase, pc, data, context, html) {
     const origData = JSON.parse(JSON.stringify(data));
     const renderedElementNames = [];
     const courseIssues = [];
@@ -595,6 +556,7 @@ module.exports = {
           // We'll catch this and add it to the course issues list
           throw courseIssue;
         }
+
         // We'll be sneaky and remove the extensions, since they're not used elsewhere.
         delete data.extensions;
         delete ret_val.extensions;
@@ -669,10 +631,17 @@ module.exports = {
     } catch (e) {
       courseIssues.push(e);
     }
-    callback(courseIssues, data, questionHtml, fileData, renderedElementNames);
+
+    return {
+      courseIssues,
+      data,
+      html: questionHtml,
+      fileData,
+      renderedElementNames,
+    };
   },
 
-  legacyTraverseQuestionAndExecuteFunctions(phase, pc, data, context, $, callback) {
+  legacyTraverseQuestionAndExecuteFunctions(phase, pc, data, context, $) {
     const origData = JSON.parse(JSON.stringify(data));
     const renderedElementNames = [];
     const courseIssues = [];
@@ -682,115 +651,122 @@ module.exports = {
       ..._.keys(context.course_elements),
     ]).values();
 
-    async.eachSeries(
-      questionElements,
-      (elementName, callback) => {
-        async.eachSeries(
-          $(elementName).toArray(),
-          (element, callback) => {
-            if (phase === 'render' && !_.includes(renderedElementNames, element)) {
-              renderedElementNames.push(elementName);
-            }
+    try {
+      async.eachSeries(questionElements, async (elementName) => {
+        async.eachSeries($(elementName).toArray(), async (element) => {
+          if (phase === 'render' && !_.includes(renderedElementNames, element)) {
+            renderedElementNames.push(elementName);
+          }
 
-            const elementFile = module.exports.getElementController(elementName, context);
-            // Populate the extensions used by this element
-            data.extensions = [];
-            if (_.has(context.course_element_extensions, elementName)) {
-              data.extensions = context.course_element_extensions[elementName];
-            }
+          const elementFile = module.exports.getElementController(elementName, context);
+          // Populate the extensions used by this element
+          data.extensions = [];
+          if (_.has(context.course_element_extensions, elementName)) {
+            data.extensions = context.course_element_extensions[elementName];
+          }
 
-            module.exports.legacyElementFunction(
+          const elementHtml = $(element).clone().wrap('<container/>').parent().html();
+
+          let result, output;
+          try {
+            ({ result, output } = module.exports.elementFunction(
               pc,
               phase,
               elementName,
-              $,
-              element,
+              elementHtml,
               data,
-              context,
-              (err, ret_val, consoleLog) => {
-                if (err) {
-                  const courseIssue = new Error(
-                    elementFile + ': Error calling ' + phase + '(): ' + err.toString()
-                  );
-                  courseIssue.data = err.data;
-                  courseIssue.fatal = true;
-                  courseIssues.push(courseIssue);
-                  return callback(courseIssue);
-                }
-                delete data.extensions;
-                delete ret_val.extensions;
-                if (_.isString(consoleLog) && consoleLog.length > 0) {
-                  const courseIssue = new Error(
-                    elementFile + ': output logged on console during ' + phase + '()'
-                  );
-                  courseIssue.data = { outputBoth: consoleLog };
-                  courseIssue.fatal = false;
-                  courseIssues.push(courseIssue);
-                }
-
-                if (phase === 'render') {
-                  if (!_.isString(ret_val)) {
-                    const courseIssue = new Error(
-                      elementFile + ': Error calling ' + phase + '(): return value is not a string'
-                    );
-                    courseIssue.data = { ret_val };
-                    courseIssue.fatal = true;
-                    courseIssues.push(courseIssue);
-                    return callback(courseIssue);
-                  }
-                  $(element).replaceWith(ret_val);
-                } else if (phase === 'file') {
-                  // Convert ret_val from base64 back to buffer (this always works,
-                  // whether or not ret_val is valid base64)
-                  var buf = Buffer.from(ret_val, 'base64');
-
-                  // If the buffer has non-zero length...
-                  if (buf.length > 0) {
-                    if (fileData.length > 0) {
-                      // If fileData already has non-zero length, throw an error
-                      const courseIssue = new Error(
-                        elementFile +
-                          ': Error calling ' +
-                          phase +
-                          '(): attempting to overwrite non-empty fileData'
-                      );
-                      courseIssue.fatal = true;
-                      courseIssues.push(courseIssue);
-                      return callback(courseIssue);
-                    } else {
-                      // If not, replace fileData with buffer
-                      fileData = buf;
-                    }
-                  }
-                } else {
-                  data = ret_val;
-                  const checkErr = module.exports.checkData(data, origData, phase);
-                  if (checkErr) {
-                    const courseIssue = new Error(
-                      elementFile + ': Invalid state after ' + phase + '(): ' + checkErr
-                    );
-                    courseIssue.fatal = true;
-                    courseIssues.push(courseIssue);
-                    return callback(courseIssue);
-                  }
-                }
-
-                callback(null);
-              }
+              context
+            ));
+          } catch (err) {
+            const courseIssue = new Error(
+              elementFile + ': Error calling ' + phase + '(): ' + err.toString()
             );
-          },
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
+            courseIssue.data = err.data;
+            courseIssue.fatal = true;
+            courseIssues.push(courseIssue);
+
+            // We won't actually use this error, but we do still need to throw
+            // it to abort the current traversal.
+            throw courseIssue;
           }
-        );
-      },
-      (err) => {
-        // Black-hole any errors, they were (should have been) handled by course issues
-        ERR(err, () => {});
-        callback(courseIssues, data, $.html(), fileData, renderedElementNames);
-      }
-    );
+
+          delete data.extensions;
+          delete result.extensions;
+          if (_.isString(output) && output.length > 0) {
+            const courseIssue = new Error(
+              elementFile + ': output logged on console during ' + phase + '()'
+            );
+            courseIssue.data = { outputBoth: output };
+            courseIssue.fatal = false;
+            courseIssues.push(courseIssue);
+          }
+
+          if (phase === 'render') {
+            if (!_.isString(output)) {
+              const courseIssue = new Error(
+                elementFile + ': Error calling ' + phase + '(): return value is not a string'
+              );
+              courseIssue.data = { result };
+              courseIssue.fatal = true;
+              courseIssues.push(courseIssue);
+
+              // As above, we just throw to abort the traversal.
+              throw courseIssue;
+            }
+
+            $(element).replaceWith(result);
+          } else if (phase === 'file') {
+            // Convert ret_val from base64 back to buffer (this always works,
+            // whether or not ret_val is valid base64)
+            const buf = Buffer.from(result, 'base64');
+
+            // If the buffer has non-zero length...
+            if (buf.length > 0) {
+              if (fileData.length > 0) {
+                // If fileData already has non-zero length, throw an error
+                const courseIssue = new Error(
+                  elementFile +
+                    ': Error calling ' +
+                    phase +
+                    '(): attempting to overwrite non-empty fileData'
+                );
+                courseIssue.fatal = true;
+                courseIssues.push(courseIssue);
+
+                // As above, throw the error to abort the traversal.
+                throw courseIssue;
+              } else {
+                // If not, replace fileData with buffer
+                fileData = buf;
+              }
+            }
+          } else {
+            data = result;
+            const checkErr = module.exports.checkData(data, origData, phase);
+            if (checkErr) {
+              const courseIssue = new Error(
+                elementFile + ': Invalid state after ' + phase + '(): ' + checkErr
+              );
+              courseIssue.fatal = true;
+              courseIssues.push(courseIssue);
+
+              // As above, throw the error to abort the traversal.
+              throw courseIssue;
+            }
+          }
+        });
+      });
+    } catch (err) {
+      // Black-hole any errors, they were (should have been) handled by course issues
+    }
+
+    return {
+      courseIssues,
+      data,
+      html: $.html(),
+      fileData,
+      renderedElementNames,
+    };
   },
 
   processQuestionHtml(phase, pc, data, context, callback) {
