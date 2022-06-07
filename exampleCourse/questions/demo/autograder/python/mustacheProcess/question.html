@@ -2,9 +2,27 @@
     <p>
         <i>
             This is a small example question that shows how we can use mustache processing on test files
-            much like <code>question.html</code>.  <code>server.py</code> randomizes a function name and 
-            a list of input/output pairs the function must correctly handle plus a default output for every 
+            much like <code>question.html</code>. <code>server.py</code> randomizes a function name and
+            a list of input/output pairs the function must correctly handle plus a default output for every
             other case. The test file checks these pairs and the default output.
+        </i>
+    </p>
+    <p>
+        <i>
+            To enable mustache processing, you must <strong>ensure the environment variable
+                <code>PRAIRIELEARN_PROCESS_MUSTACHE_TEMPLATES</code> exists with the value <code>true</code></strong>.
+            A good way to do that is to include the following in your <code>info.json</code> file:
+
+            <pre>
+                {
+                    "externalGradingOptions": {
+                        "image": "prairielearn/grader-python",
+                        "environment": {
+                            "PRAIRIELEARN_PROCESS_MUSTACHE_TEMPLATES": "true"
+                        }
+                    }
+                }
+            </pre>
         </i>
     </p>
     <p>
@@ -29,9 +47,7 @@
         For any other input, it should produce <code>"{{default_output}}"</code>.
     </p>
 
-    <pl-file-editor
-        file-name="user_code.py"
-        ace-mode="ace/mode/python">
+<pl-file-editor file-name="user_code.py" ace-mode="ace/mode/python">
 def {{function_name}}(input):
     # Insert your code here!
 </pl-file-editor>

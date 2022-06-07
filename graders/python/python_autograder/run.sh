@@ -27,12 +27,14 @@ export MERGE_DIR=$JOB_DIR'/run'
 # files starting with .mustache are not processed.)
 MUSTACHE_PROCESSOR="/python_autograder/mustache-process.sh"
 
-if [[ -f $MUSTACHE_PROCESSOR ]]
+if [[ "${PRAIRIELEARN_PROCESS_MUSTACHE_TEMPLATES}" == true ]]
 then
-    chmod u+x $MUSTACHE_PROCESSOR
-    (cd $TEST_DIR && $MUSTACHE_PROCESSOR)
+  if [[ -f $MUSTACHE_PROCESSOR ]]
+  then
+      chmod u+x $MUSTACHE_PROCESSOR
+      (cd $TEST_DIR && $MUSTACHE_PROCESSOR -v)
+  fi
 fi
-
 
 # now set up the stuff so that our run.sh can work
 mkdir $MERGE_DIR
