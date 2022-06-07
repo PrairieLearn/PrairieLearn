@@ -1,10 +1,11 @@
 {
   "name": "@prairielearn/opentelemetry",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput"
+    "dev": "tsc --watch --preserveWatchOutput",
+    "test": "mocha --no-config --require ts-node/register src/index.test.ts"
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.6.7",
@@ -16,9 +17,9 @@
     "@opentelemetry/instrumentation-dns": "^0.27.1",
     "@opentelemetry/instrumentation-express": "^0.28.0",
     "@opentelemetry/instrumentation-http": "^0.27.0",
-    "@opentelemetry/instrumentation-pg": "^0.28.0",
+    "@opentelemetry/instrumentation-pg": "^0.29.0",
     "@opentelemetry/instrumentation-redis": "^0.28.0",
-    "@opentelemetry/resource-detector-aws": "^1.0.3",
+    "@opentelemetry/resource-detector-aws": "^1.1.0",
     "@opentelemetry/resources": "^1.2.0",
     "@opentelemetry/sdk-node": "^0.27.0",
     "@opentelemetry/sdk-trace-base": "^1.0.1",
@@ -27,6 +28,8 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "*",
+    "mocha": "^10.0.0",
+    "ts-node": "^10.8.0",
     "typescript": "^4.7.2"
   }
 }

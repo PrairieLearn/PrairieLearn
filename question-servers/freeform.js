@@ -9,6 +9,7 @@ const hash = require('crypto').createHash;
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const { promisify, callbackify } = require('util');
+const { instrumented } = require('@prairielearn/opentelemetry');
 
 const schemas = require('../schemas');
 const config = require('../lib/config');
@@ -1095,27 +1096,43 @@ module.exports = {
     });
   },
 
-  renderPanel: function (
-    panel,
-    pc,
-    variant,
-    question,
-    submission,
-    course,
-    locals,
-    context,
-    callback
-  ) {
+  /**
+   * @typedef {Object} RenderPanelResult
+   * @property {any[]} courseIssues
+   * @property {string} html
+   * @property {string[]} [renderedElementNames]
+   * @property {boolean} cacheHit
+   */
+
+  /**
+   * @param {'question' | 'answer' | 'submission'} panel
+   * @param {import('../lib/code-caller').PythonCaller} pc
+   * @param {any} variant
+   * @param {any} submission
+   * @param {any} course
+   * @param {any} locals
+   * @param {any} context
+   * @param {(err: Error, result: RenderPanelResult) => void} callback
+   */
+  renderPanel: function (panel, pc, variant, submission, course, locals, context, callback) {
     debug(`renderPanel(${panel})`);
     // broken variant kills all rendering
-    if (variant.broken) return callback(null, [], 'Broken question due to error in question code');
+    if (variant.broken) {
+      return callback(null, {
+        courseIssues: [],
+        html: 'Broken question due to error in question code',
+      });
+    }
 
     // broken submission kills the submission panel, but we can
     // proceed with other panels, treating the submission as
     // missing
     if (submission && submission.broken) {
       if (panel === 'submission') {
-        return callback(null, [], 'Broken submission due to error in question code');
+        return callback(null, {
+          courseIssues: [],
+          html: 'Broken submission due to error in question code',
+        });
       } else {
         submission = null;
       }
@@ -1173,11 +1190,45 @@ module.exports = {
       (cachedData, cacheHit) => {
         // function to process the cachedData, whether we
         // just rendered it or whether it came from cache
-        const { courseIssues, html, renderedElementNames } = cachedData;
-        callback(null, courseIssues, html, renderedElementNames, cacheHit);
+        callback(null, {
+          ...cachedData,
+          cacheHit,
+        });
       },
       callback // error-handling function
     );
+  },
+
+  renderPanelInstrumented: async function (
+    panel,
+    pc,
+    submission,
+    variant,
+    question,
+    course,
+    locals,
+    context
+  ) {
+    return instrumented(`freeform.renderPanel:${panel}`, async (span) => {
+      span.setAttributes({
+        panel,
+        'variant.id': variant.id,
+        'question.id': question.id,
+        'course.id': course.id,
+      });
+      /** @type {RenderPanelResult} */
+      const result = await promisify(module.exports.renderPanel)(
+        panel,
+        pc,
+        variant,
+        submission,
+        course,
+        locals,
+        context
+      );
+      span.setAttribute('cache.status', result.cacheHit ? 'hit' : 'miss');
+      return result;
+    });
   },
 
   render: function (
@@ -1210,83 +1261,82 @@ module.exports = {
         async.series(
           [
             // FIXME: support 'header'
-            (callback) => {
-              if (!renderSelection.question) return callback(null);
-              module.exports.renderPanel(
+            async () => {
+              if (!renderSelection.question) return;
+
+              const {
+                courseIssues: newCourseIssues,
+                html,
+                renderedElementNames,
+                cacheHit,
+              } = await module.exports.renderPanelInstrumented(
                 'question',
                 pc,
+                submission,
                 variant,
                 question,
-                submission,
                 course,
                 locals,
-                context,
-                (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
-                  if (ERR(err, callback)) return;
-                  courseIssues.push(...ret_courseIssues);
-                  htmls.questionHtml = html;
-                  panelCount++;
-                  if (cacheHit) cacheHitCount++;
-                  allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
-                  callback(null);
-                }
+                context
               );
+
+              courseIssues.push(...newCourseIssues);
+              htmls.questionHtml = html;
+              panelCount++;
+              if (cacheHit) cacheHitCount++;
+              allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
             },
-            (callback) => {
-              if (!renderSelection.submissions) return callback(null);
-              async.mapSeries(
-                submissions,
-                (submission, callback) => {
-                  module.exports.renderPanel(
-                    'submission',
-                    pc,
-                    variant,
-                    question,
-                    submission,
-                    course,
-                    locals,
-                    context,
-                    (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
-                      if (ERR(err, callback)) return;
-                      courseIssues.push(...ret_courseIssues);
-                      panelCount++;
-                      if (cacheHit) cacheHitCount++;
-                      allRenderedElementNames = _.union(
-                        allRenderedElementNames,
-                        renderedElementNames
-                      );
-                      callback(null, html);
-                    }
-                  );
-                },
-                (err, submissionHtmls) => {
-                  if (ERR(err, callback)) return;
-                  htmls.submissionHtmls = submissionHtmls;
-                  callback(null);
-                }
-              );
+            async () => {
+              if (!renderSelection.submissions) return;
+
+              htmls.submissionHtmls = await async.mapSeries(submissions, async (submission) => {
+                const {
+                  courseIssues: newCourseIssues,
+                  html,
+                  renderedElementNames,
+                  cacheHit,
+                } = await module.exports.renderPanelInstrumented(
+                  'submission',
+                  pc,
+                  submission,
+                  variant,
+                  question,
+                  course,
+                  locals,
+                  context
+                );
+
+                courseIssues.push(...newCourseIssues);
+                panelCount++;
+                if (cacheHit) cacheHitCount++;
+                allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
+                return html;
+              });
             },
-            (callback) => {
-              if (!renderSelection.answer) return callback(null);
-              module.exports.renderPanel(
+            async () => {
+              if (!renderSelection.answer) return;
+
+              const {
+                courseIssues: newCourseIssues,
+                html,
+                renderedElementNames,
+                cacheHit,
+              } = await module.exports.renderPanelInstrumented(
                 'answer',
                 pc,
+                submission,
                 variant,
                 question,
-                submission,
                 course,
                 locals,
-                context,
-                (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
-                  if (ERR(err, callback)) return;
-                  courseIssues.push(...ret_courseIssues);
-                  htmls.answerHtml = html;
-                  panelCount++;
-                  if (cacheHit) cacheHitCount++;
-                  allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
-                  callback(null);
-                }
+                context
               );
+
+              courseIssues.push(...newCourseIssues);
+              htmls.answerHtml = html;
+              panelCount++;
+              if (cacheHit) cacheHitCount++;
+              allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
             },
             (callback) => {
               // The logPageView middleware knows to write this to the DB
@@ -1296,238 +1346,224 @@ module.exports = {
               callback(null);
             },
             (callback) => {
-              module.exports.getContext(question, course, (err, context) => {
-                if (ERR(err, callback)) return;
+              const extensions = context.course_element_extensions;
+              const dependencies = {
+                coreStyles: [],
+                coreScripts: [],
+                nodeModulesStyles: [],
+                nodeModulesScripts: [],
+                coreElementStyles: [],
+                coreElementScripts: [],
+                courseElementStyles: [],
+                courseElementScripts: [],
+                extensionStyles: [],
+                extensionScripts: [],
+                clientFilesCourseStyles: [],
+                clientFilesCourseScripts: [],
+                clientFilesQuestionStyles: [],
+                clientFilesQuestionScripts: [],
+              };
 
-                const extensions = context.course_element_extensions;
-                const dependencies = {
-                  coreStyles: [],
-                  coreScripts: [],
-                  nodeModulesStyles: [],
-                  nodeModulesScripts: [],
-                  coreElementStyles: [],
-                  coreElementScripts: [],
-                  courseElementStyles: [],
-                  courseElementScripts: [],
-                  extensionStyles: [],
-                  extensionScripts: [],
-                  clientFilesCourseStyles: [],
-                  clientFilesCourseScripts: [],
-                  clientFilesQuestionStyles: [],
-                  clientFilesQuestionScripts: [],
-                };
+              // Question dependencies are checked via schema on sync-time, so
+              // there's no need for sanity checks here.
+              for (let type in question.dependencies) {
+                for (let dep of question.dependencies[type]) {
+                  if (!_.includes(dependencies[type], dep)) {
+                    dependencies[type].push(dep);
+                  }
+                }
+              }
 
-                // Question dependencies are checked via schema on sync-time, so
-                // there's no need for sanity checks here.
-                for (let type in question.dependencies) {
-                  for (let dep of question.dependencies[type]) {
-                    if (!_.includes(dependencies[type], dep)) {
-                      dependencies[type].push(dep);
+              // Gather dependencies for all rendered elements
+              allRenderedElementNames.forEach((elementName) => {
+                let resolvedElement = module.exports.resolveElement(elementName, context);
+                const elementDependencies = _.cloneDeep(resolvedElement.dependencies || {});
+
+                // Transform non-global dependencies to be prefixed by the element name,
+                // since they'll be served from their element's directory
+                if (_.has(elementDependencies, 'elementStyles')) {
+                  elementDependencies.elementStyles = elementDependencies.elementStyles.map(
+                    (dep) => `${resolvedElement.name}/${dep}`
+                  );
+                }
+                if (_.has(elementDependencies, 'elementScripts')) {
+                  elementDependencies.elementScripts = elementDependencies.elementScripts.map(
+                    (dep) => `${resolvedElement.name}/${dep}`
+                  );
+                }
+
+                // Rename properties so we can track core and course
+                // element dependencies separately
+                if (resolvedElement.type === 'course') {
+                  if (_.has(elementDependencies, 'elementStyles')) {
+                    elementDependencies.courseElementStyles = elementDependencies.elementStyles;
+                    delete elementDependencies.elementStyles;
+                  }
+                  if (_.has(elementDependencies, 'elementScripts')) {
+                    elementDependencies.courseElementScripts = elementDependencies.elementScripts;
+                    delete elementDependencies.elementScripts;
+                  }
+                } else {
+                  if (_.has(elementDependencies, 'elementStyles')) {
+                    elementDependencies.coreElementStyles = elementDependencies.elementStyles;
+                    delete elementDependencies.elementStyles;
+                  }
+                  if (_.has(elementDependencies, 'elementScripts')) {
+                    elementDependencies.coreElementScripts = elementDependencies.elementScripts;
+                    delete elementDependencies.elementScripts;
+                  }
+                }
+
+                const dependencyTypes = [
+                  'coreStyles',
+                  'coreScripts',
+                  'nodeModulesStyles',
+                  'nodeModulesScripts',
+                  'clientFilesCourseStyles',
+                  'clientFilesCourseScripts',
+                  'coreElementStyles',
+                  'coreElementScripts',
+                  'courseElementStyles',
+                  'courseElementScripts',
+                ];
+                for (const type of dependencyTypes) {
+                  if (_.has(elementDependencies, type)) {
+                    if (_.isArray(elementDependencies[type])) {
+                      for (const dep of elementDependencies[type]) {
+                        if (!_.includes(dependencies[type], dep)) {
+                          dependencies[type].push(dep);
+                        }
+                      }
+                    } else {
+                      const courseIssue = new Error(
+                        `Error getting dependencies for ${resolvedElement.name}: "${type}" is not an array`
+                      );
+                      courseIssue.data = { elementDependencies };
+                      courseIssue.fatal = true;
+                      courseIssues.push(courseIssue);
                     }
                   }
                 }
 
-                // Gather dependencies for all rendered elements
-                allRenderedElementNames.forEach((elementName) => {
-                  let resolvedElement = module.exports.resolveElement(elementName, context);
-                  const elementDependencies = _.cloneDeep(resolvedElement.dependencies || {});
-
-                  // Transform non-global dependencies to be prefixed by the element name,
-                  // since they'll be served from their element's directory
-                  if (_.has(elementDependencies, 'elementStyles')) {
-                    elementDependencies.elementStyles = elementDependencies.elementStyles.map(
-                      (dep) => `${resolvedElement.name}/${dep}`
-                    );
-                  }
-                  if (_.has(elementDependencies, 'elementScripts')) {
-                    elementDependencies.elementScripts = elementDependencies.elementScripts.map(
-                      (dep) => `${resolvedElement.name}/${dep}`
-                    );
-                  }
-
-                  // Rename properties so we can track core and course
-                  // element dependencies separately
-                  if (resolvedElement.type === 'course') {
-                    if (_.has(elementDependencies, 'elementStyles')) {
-                      elementDependencies.courseElementStyles = elementDependencies.elementStyles;
-                      delete elementDependencies.elementStyles;
+                // Load any extensions if they exist
+                if (_.has(extensions, elementName)) {
+                  for (const extensionName of Object.keys(extensions[elementName])) {
+                    if (!_.has(extensions[elementName][extensionName], 'dependencies')) {
+                      continue;
                     }
-                    if (_.has(elementDependencies, 'elementScripts')) {
-                      elementDependencies.courseElementScripts = elementDependencies.elementScripts;
-                      delete elementDependencies.elementScripts;
+
+                    const extension = _.cloneDeep(
+                      extensions[elementName][extensionName]
+                    ).dependencies;
+                    if (_.has(extension, 'extensionStyles')) {
+                      extension.extensionStyles = extension.extensionStyles.map(
+                        (dep) => `${elementName}/${extensionName}/${dep}`
+                      );
                     }
-                  } else {
-                    if (_.has(elementDependencies, 'elementStyles')) {
-                      elementDependencies.coreElementStyles = elementDependencies.elementStyles;
-                      delete elementDependencies.elementStyles;
+                    if (_.has(extension, 'extensionScripts')) {
+                      extension.extensionScripts = extension.extensionScripts.map(
+                        (dep) => `${elementName}/${extensionName}/${dep}`
+                      );
                     }
-                    if (_.has(elementDependencies, 'elementScripts')) {
-                      elementDependencies.coreElementScripts = elementDependencies.elementScripts;
-                      delete elementDependencies.elementScripts;
-                    }
-                  }
 
-                  const dependencyTypes = [
-                    'coreStyles',
-                    'coreScripts',
-                    'nodeModulesStyles',
-                    'nodeModulesScripts',
-                    'clientFilesCourseStyles',
-                    'clientFilesCourseScripts',
-                    'coreElementStyles',
-                    'coreElementScripts',
-                    'courseElementStyles',
-                    'courseElementScripts',
-                  ];
-                  for (const type of dependencyTypes) {
-                    if (_.has(elementDependencies, type)) {
-                      if (_.isArray(elementDependencies[type])) {
-                        for (const dep of elementDependencies[type]) {
-                          if (!_.includes(dependencies[type], dep)) {
-                            dependencies[type].push(dep);
-                          }
-                        }
-                      } else {
-                        const courseIssue = new Error(
-                          `Error getting dependencies for ${resolvedElement.name}: "${type}" is not an array`
-                        );
-                        courseIssue.data = { elementDependencies };
-                        courseIssue.fatal = true;
-                        courseIssues.push(courseIssue);
-                      }
-                    }
-                  }
+                    const dependencyTypes = [
+                      'coreStyles',
+                      'coreScripts',
+                      'nodeModulesStyles',
+                      'nodeModulesScripts',
+                      'clientFilesCourseStyles',
+                      'clientFilesCourseScripts',
+                      'extensionStyles',
+                      'extensionScripts',
+                    ];
 
-                  // Load any extensions if they exist
-                  if (_.has(extensions, elementName)) {
-                    for (const extensionName of Object.keys(extensions[elementName])) {
-                      if (!_.has(extensions[elementName][extensionName], 'dependencies')) {
-                        continue;
-                      }
-
-                      const extension = _.cloneDeep(
-                        extensions[elementName][extensionName]
-                      ).dependencies;
-                      if (_.has(extension, 'extensionStyles')) {
-                        extension.extensionStyles = extension.extensionStyles.map(
-                          (dep) => `${elementName}/${extensionName}/${dep}`
-                        );
-                      }
-                      if (_.has(extension, 'extensionScripts')) {
-                        extension.extensionScripts = extension.extensionScripts.map(
-                          (dep) => `${elementName}/${extensionName}/${dep}`
-                        );
-                      }
-
-                      const dependencyTypes = [
-                        'coreStyles',
-                        'coreScripts',
-                        'nodeModulesStyles',
-                        'nodeModulesScripts',
-                        'clientFilesCourseStyles',
-                        'clientFilesCourseScripts',
-                        'extensionStyles',
-                        'extensionScripts',
-                      ];
-
-                      for (const type of dependencyTypes) {
-                        if (_.has(extension, type)) {
-                          if (_.isArray(extension[type])) {
-                            for (const dep of extension[type]) {
-                              if (!_.includes(dependencies[type], dep)) {
-                                dependencies[type].push(dep);
-                              }
+                    for (const type of dependencyTypes) {
+                      if (_.has(extension, type)) {
+                        if (_.isArray(extension[type])) {
+                          for (const dep of extension[type]) {
+                            if (!_.includes(dependencies[type], dep)) {
+                              dependencies[type].push(dep);
                             }
-                          } else {
-                            const courseIssue = new Error(
-                              `Error getting dependencies for extension ${extension.name}: "${type}" is not an array`
-                            );
-                            courseIssue.data = { elementDependencies };
-                            courseIssue.fatal = true;
-                            courseIssues.push(courseIssue);
                           }
+                        } else {
+                          const courseIssue = new Error(
+                            `Error getting dependencies for extension ${extension.name}: "${type}" is not an array`
+                          );
+                          courseIssue.data = { elementDependencies };
+                          courseIssue.fatal = true;
+                          courseIssues.push(courseIssue);
                         }
                       }
                     }
                   }
-                });
-
-                // Transform dependency list into style/link tags
-                const coreScriptUrls = [];
-                const scriptUrls = [];
-                const styleUrls = [];
-                dependencies.coreStyles.forEach((file) =>
-                  styleUrls.push(assets.assetPath(`stylesheets/${file}`))
-                );
-                dependencies.coreScripts.forEach((file) =>
-                  coreScriptUrls.push(assets.assetPath(`javascripts/${file}`))
-                );
-                dependencies.nodeModulesStyles.forEach((file) =>
-                  styleUrls.push(assets.nodeModulesAssetPath(file))
-                );
-                dependencies.nodeModulesScripts.forEach((file) =>
-                  coreScriptUrls.push(assets.nodeModulesAssetPath(file))
-                );
-                dependencies.clientFilesCourseStyles.forEach((file) =>
-                  styleUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`)
-                );
-                dependencies.clientFilesCourseScripts.forEach((file) =>
-                  scriptUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`)
-                );
-                dependencies.clientFilesQuestionStyles.forEach((file) =>
-                  styleUrls.push(`${locals.clientFilesQuestionUrl}/${file}`)
-                );
-                dependencies.clientFilesQuestionScripts.forEach((file) =>
-                  scriptUrls.push(`${locals.clientFilesQuestionUrl}/${file}`)
-                );
-                dependencies.coreElementStyles.forEach((file) =>
-                  styleUrls.push(assets.coreElementAssetPath(file))
-                );
-                dependencies.coreElementScripts.forEach((file) =>
-                  scriptUrls.push(assets.coreElementAssetPath(file))
-                );
-                dependencies.courseElementStyles.forEach((file) =>
-                  styleUrls.push(
-                    assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file)
-                  )
-                );
-                dependencies.courseElementScripts.forEach((file) =>
-                  scriptUrls.push(
-                    assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file)
-                  )
-                );
-                dependencies.extensionStyles.forEach((file) =>
-                  styleUrls.push(
-                    assets.courseElementExtensionAssetPath(
-                      course.commit_hash,
-                      locals.urlPrefix,
-                      file
-                    )
-                  )
-                );
-                dependencies.extensionScripts.forEach((file) =>
-                  scriptUrls.push(
-                    assets.courseElementExtensionAssetPath(
-                      course.commit_hash,
-                      locals.urlPrefix,
-                      file
-                    )
-                  )
-                );
-
-                const headerHtmls = [
-                  ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
-                  // It's important that any library-style scripts come first
-                  ...coreScriptUrls.map(
-                    (url) => `<script type="text/javascript" src="${url}"></script>`
-                  ),
-                  ...scriptUrls.map(
-                    (url) => `<script type="text/javascript" src="${url}"></script>`
-                  ),
-                ];
-                htmls.extraHeadersHtml = headerHtmls.join('\n');
-                callback(null);
+                }
               });
+
+              // Transform dependency list into style/link tags
+              const coreScriptUrls = [];
+              const scriptUrls = [];
+              const styleUrls = [];
+              dependencies.coreStyles.forEach((file) =>
+                styleUrls.push(assets.assetPath(`stylesheets/${file}`))
+              );
+              dependencies.coreScripts.forEach((file) =>
+                coreScriptUrls.push(assets.assetPath(`javascripts/${file}`))
+              );
+              dependencies.nodeModulesStyles.forEach((file) =>
+                styleUrls.push(assets.nodeModulesAssetPath(file))
+              );
+              dependencies.nodeModulesScripts.forEach((file) =>
+                coreScriptUrls.push(assets.nodeModulesAssetPath(file))
+              );
+              dependencies.clientFilesCourseStyles.forEach((file) =>
+                styleUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`)
+              );
+              dependencies.clientFilesCourseScripts.forEach((file) =>
+                scriptUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`)
+              );
+              dependencies.clientFilesQuestionStyles.forEach((file) =>
+                styleUrls.push(`${locals.clientFilesQuestionUrl}/${file}`)
+              );
+              dependencies.clientFilesQuestionScripts.forEach((file) =>
+                scriptUrls.push(`${locals.clientFilesQuestionUrl}/${file}`)
+              );
+              dependencies.coreElementStyles.forEach((file) =>
+                styleUrls.push(assets.coreElementAssetPath(file))
+              );
+              dependencies.coreElementScripts.forEach((file) =>
+                scriptUrls.push(assets.coreElementAssetPath(file))
+              );
+              dependencies.courseElementStyles.forEach((file) =>
+                styleUrls.push(
+                  assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file)
+                )
+              );
+              dependencies.courseElementScripts.forEach((file) =>
+                scriptUrls.push(
+                  assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file)
+                )
+              );
+              dependencies.extensionStyles.forEach((file) =>
+                styleUrls.push(
+                  assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file)
+                )
+              );
+              dependencies.extensionScripts.forEach((file) =>
+                scriptUrls.push(
+                  assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file)
+                )
+              );
+
+              const headerHtmls = [
+                ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
+                // It's important that any library-style scripts come first
+                ...coreScriptUrls.map(
+                  (url) => `<script type="text/javascript" src="${url}"></script>`
+                ),
+                ...scriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
+              ];
+              htmls.extraHeadersHtml = headerHtmls.join('\n');
+              callback(null);
             },
           ],
           (err) => {
