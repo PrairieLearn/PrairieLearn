@@ -70,7 +70,11 @@ WINDOW
                         WHEN a.shuffle_questions THEN iq.order_by
                         ELSE aq.number
                     END
-                WHEN a.type = 'Exam' THEN iq.order_by
+                WHEN a.type = 'Exam' THEN
+                    CASE
+                        WHEN a.shuffle_questions THEN iq.order_by
+                        ELSE aq.number
+                    END
                 ELSE aq.number
             END,
             iq.id
