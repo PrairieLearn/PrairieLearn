@@ -121,7 +121,7 @@ describe('Assessment syncing', () => {
     assert.isTrue(syncedData.assessment.shuffle_questions);
   });
 
-  it('checks that shuffleQuestions can be set to false for exam-type assessments', async () => {
+  it('allows shuffleQuestions to be set to false for an Exam-type assessment', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Exam');
     assessment.shuffleQuestions = false;
