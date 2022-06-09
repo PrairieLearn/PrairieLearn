@@ -111,7 +111,7 @@ describe('Assessment syncing', () => {
     assert.equal(syncedData.assessment_questions[1].question.qid, util.ALTERNATIVE_QUESTION_ID);
   });
 
-  it('checks that shuffleQuestions defaults to true for exam-type assessments', async () => {
+  it('defaults shuffleQuestions to true for an Exam-type assessment', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Exam');
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
