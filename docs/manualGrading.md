@@ -57,7 +57,7 @@ Each question will have its score and/or feedback updated and the total assessme
 
 If you prefer to use points rather than a percentage score, rename the `score_perc` column in the CSV file to `points`.
 
-If a feedback column is provided, it will be shown by default to the student above the submission panel, as seen in the image below. This feedback accept Markdown formatting.
+If a `feedback` column is provided, it will be shown by default to the student above the submission panel, as seen in the image below. The feedback can utilize Markdown formatting.
 
 ![Feedback shown above student panel](manualGradingFeedback.png)
 
