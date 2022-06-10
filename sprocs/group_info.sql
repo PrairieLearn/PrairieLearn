@@ -4,7 +4,8 @@ CREATE FUNCTION
     ) RETURNS TABLE (
         id bigint,
         name text,
-        uid_list text[]
+        uid_list text[],
+        user_name_list text[]
     )
 AS $$
 BEGIN
@@ -12,7 +13,8 @@ BEGIN
     SELECT
         g.id AS id,
         g.name AS name,
-        array_agg(u.uid) AS uid_list
+        array_agg(u.uid) AS uid_list,
+        array_agg(u.name) AS user_name_list
     FROM
         group_configs AS gc
         JOIN groups AS g ON (g.group_config_id = gc.id)

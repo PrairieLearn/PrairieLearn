@@ -75,7 +75,7 @@ const loadHomeworkQuestionUrl = async (user) => {
  * @returns {string}
  */
 const getLatestSubmissionStatus = ($) => {
-  return $('.card[id^="submission"] .card-header .badge').first().text();
+  return $('[data-testid="submission-status"] .badge').first().text();
 };
 
 describe('Manual Grading', function () {
@@ -93,6 +93,10 @@ describe('Manual Grading', function () {
 
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
+
+  before('ensure course has manual grading enabled', async () => {
+    await sqlDb.queryAsync(sql.enable_manual_grading, {});
+  });
 
   before('build assessment manual grading page URL', async () => {
     const assessments = (await sqlDb.queryAsync(sql.get_assessment, {})).rows;
@@ -447,6 +451,10 @@ describe('Manual Grading', function () {
           .text()
           .trim(),
         `${score_points}/6`
+      );
+      assert.equal(
+        $questionsPage('[data-testid="feedback-body"]').first().text().trim(),
+        feedback_note
       );
     });
   });
