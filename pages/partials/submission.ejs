@@ -2,8 +2,8 @@
 <div data-grading-job-status="<%= submission.grading_job_status %>" data-grading-job-id="<%= submission.grading_job_id %>" id="submission-<%= submission.id %>">
 
 <% if (course.manual_grading_visible && submission.feedback?.manual) { %>
-<div class="card mb-4 grading-block border-danger">
-  <div class="card-header bg-danger text-white d-flex submission-header <% if (submission.submission_number != submissionCount) { %> collapsed<% } %>" data-toggle="collapse" data-target="#submission-feedback-<%= submission.id %>-body">
+<div class="card mb-4 grading-block border-info">
+  <div class="card-header bg-info text-white d-flex submission-header <% if (submission.submission_number != submissionCount) { %> collapsed<% } %>" data-toggle="collapse" data-target="#submission-feedback-<%= submission.id %>-body">
     <div class="mr-auto">
       Grader feedback
       <% if (submissionCount > 1) { %>
