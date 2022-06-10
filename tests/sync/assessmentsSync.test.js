@@ -1242,4 +1242,18 @@ describe('Assessment syncing', () => {
       assert.isUndefined(syncedAssessment);
     }
   });
+
+  it('records an error if multipleInstance is true for Homework-type assessments', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.type = 'Homework';
+    assessment.multipleInstance = true;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.equal(
+      syncedAssessment.sync_errors,
+      `"multipleInstance" cannot be used for Homework-type assessments`
+    );
+  });
 });
