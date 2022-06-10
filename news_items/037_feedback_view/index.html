@@ -23,22 +23,28 @@
   Thanks to the work of numerous contributors, the PrairieLearn
   development team is looking forward to introducing improvements in
   the instructor's experience for manually-graded questions in the
-  coming months. As part of these improvements, some changes in visual
-  elements for the student's question view become necessary. So if you
-  have any questions that use manual grading, you may need to review
-  some of your questions.
+  coming months. As part of these improvements, manual grading
+  feedback will be shown automatically to students, when available. If
+  you have been using manual grading feedback, then you can remove
+  references to <code>{{{feedback.manual}}}</code> from your questions
+  to avoid showing this feedback twice. More details are below.
 </p>
 <p>
-  One of the features of manual grading is the ability to provide
-  open-ended feedback to students, which allows students to understand
-  their misconceptions and improve their learning experience. This
-  feedback is typically provided
+  One of the existing features of manual grading is the ability to
+  provide open-ended feedback to students, which allows students to
+  understand their misconceptions and improve their learning
+  experience. This feedback is typically provided
   using <a href="https://prairielearn.readthedocs.io/en/latest/manualGrading/#uploading-the-scores-and-feedback"
   target="_blank">the grade upload feature</a>, and so far required
   question creators to include it explicitly in
-  the <code>question.html</code> file. However, a recent change has
-  updated the student's question page to show this feedback by default
-  instead.
+  the <code>question.html</code> file.
+</p>
+<p>
+  Some upcoming features in manual grading will enable more detailed
+  feedback options, which require changes in visual elements for the
+  student's question view. In order to simplify some of these changes,
+  the student's question page now shows manual grading feedback by
+  default, in a separate panel, as shown below.
 </p>
 <p>
   <img src="manualGradingFeedback.png" class="border rounded w-75" alt="The feedback content is shown in a panel just above the submission panel.">
@@ -56,8 +62,9 @@
   For most instructors using manual feedback, the question will
   include a reference to <code>{{{feedback.manual}}}</code> somewhere
   in the question file. For reference, the manual grading
-  documentation had the following snippet as a suggestion. You are
-  encouraged to remove this snippet from your questions.
+  documentation used to have the following snippet as a
+  suggestion. You are encouraged to remove this snippet from your
+  questions.
 </p>
 <pre class="border rounded bg-light p-2">
 &lt;pl-submission-panel&gt;
