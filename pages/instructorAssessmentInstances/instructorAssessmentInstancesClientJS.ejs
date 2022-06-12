@@ -14,7 +14,19 @@ $(function() {
                     table.data('filter-student-only', filterOn);
 
                     $('.columns button[name=studentsOnly]').toggleClass('active', filterOn);
-                    table.bootstrapTable('filterBy', filterOn ? { role: 'Student' } : {});
+                    <% if (assessment.group_work) { %>
+                        table.bootstrapTable('filterBy', {id: 1}, {
+                            'filterAlgorithm': (row, filters) => {
+                                if (filterOn) {
+                                    return row.group_roles.includes('Student');
+                                } else {
+                                    return true;
+                                }
+                            }
+                        })
+                    <% } else { %>
+                        table.bootstrapTable('filterBy', filterOn ? { role: 'Student' } : {});
+                    <% } %>
                 },
             },
         },

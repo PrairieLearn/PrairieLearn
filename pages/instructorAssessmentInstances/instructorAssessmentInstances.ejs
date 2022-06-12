@@ -234,6 +234,15 @@
                   data-class="text-center align-middle text-wrap"
                   data-formatter="listFormatter"
                   data-switchable="true">Group Member Names</th>
+              <th data-field="group_roles"
+                  data-sortable="true"
+                  data-sorter="roleSorter"
+                  data-class="text-center align-middle text-nowrap"
+                  data-switchable="true">Roles
+                <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help">
+                  <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                </button>
+              </th>
               <% } else { %>
               <th data-field="uid"
                   data-visible="false"

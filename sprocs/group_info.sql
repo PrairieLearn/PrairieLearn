@@ -5,7 +5,8 @@ CREATE FUNCTION
         id bigint,
         name text,
         uid_list text[],
-        user_name_list text[]
+        user_name_list text[],
+        user_id_list bigint[]
     )
 AS $$
 BEGIN
@@ -14,7 +15,8 @@ BEGIN
         g.id AS id,
         g.name AS name,
         array_agg(u.uid) AS uid_list,
-        array_agg(u.name) AS user_name_list
+        array_agg(u.name) AS user_name_list,
+        array_agg(u.user_id) as user_id_list
     FROM
         group_configs AS gc
         JOIN groups AS g ON (g.group_config_id = gc.id)
