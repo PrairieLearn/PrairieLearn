@@ -33,8 +33,13 @@ RUN apt-get update && apt-get install -y \
 	r-cran-gh \
 	r-cran-git2r \
 	r-cran-igraph \
+	r-cran-lahman \
 	r-cran-memoise \
+	r-cran-microbenchmark \
+	r-cran-nycflights13 \
+	r-cran-palmerpenguins \
 	r-cran-png \
+	r-cran-profmem \
 	r-cran-rcpparmadillo \
 	r-cran-rex \
 	r-cran-rsqlite \
@@ -50,7 +55,7 @@ RUN apt-get update && apt-get install -y \
         && echo "options(diffobj.brightness=\"dark\")" >> /etc/R/Rprofile.site
 
 # Install additional R packages from CRAN (on top of the ones pre-built as r-cran-*)
-RUN install.r bench flexdashboard microbenchmark lintr ttdo unix
+RUN install.r bench flexdashboard gapminder lintr ttdo unix
 
 # Install plr (from sibbling PL repo), and visualTest from Mango
 RUN installGithub.r PrairieLearn/pl-r-helpers MangoTheCat/visualTest

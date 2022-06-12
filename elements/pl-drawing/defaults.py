@@ -26,6 +26,7 @@ drawing_defaults = {
     'angle': 0,
     'end-angle': 60,
     'radius': 20,
+    'opacity': 1,
     'stroke-width': 2,
     'selectable': False,
     'font-size': 16,

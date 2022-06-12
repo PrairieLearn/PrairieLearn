@@ -32,27 +32,30 @@
           </p>
           <% } %>
 
-          <% if (locals.assessment.require_honor_code) { %>
-          <div class="card card-secondary mb-4 test-class-honor-code">
-            <ul class="list-group list-group-flush">
-              <li class="list-group-item py-2">I certify that I am <%= user.name %> and I am allowed to take this assessment.</li>
-              <li class="list-group-item py-2">I pledge on my honor that I will not give or receive any unauthorized assistance on this assessment and that all work will be my own.</li>
-            </ul>
+          <% if (locals.assessment.group_work) { %>
+            <%- include('../partials/studentGroupControls.ejs', {groupsize: groupsize}); %>
+          <% } else { %>
+            <% if (locals.assessment.require_honor_code) { %>
+            <div class="card card-secondary mb-4 test-class-honor-code">
+              <ul class="list-group list-group-flush">
+                <li class="list-group-item py-2">I certify that I am <%= user.name %> and I am allowed to take this assessment.</li>
+                <li class="list-group-item py-2">I pledge on my honor that I will not give or receive any unauthorized assistance on this assessment and that all work will be my own.</li>
+              </ul>
 
-            <div class="card-footer text-center border-top-0 py-2">
-              <span class="form-check d-inline">
-                <input type="checkbox" class="form-check-input" id="certify-pledge">
-                <label class="form-check-label font-weight-bold" for="certify-pledge">I certify and pledge the above.</label>
-              </span>
+              <div class="card-footer text-center border-top-0 py-2">
+                <span class="form-check d-inline">
+                  <input type="checkbox" class="form-check-input" id="certify-pledge">
+                  <label class="form-check-label font-weight-bold" for="certify-pledge">I certify and pledge the above.</label>
+                </span>
+              </div>
             </div>
-          </div>
+            <% } %>
+            <form id="confirm-form" name="confirm-form" method="POST" class="d-flex justify-content-center">
+              <input type="hidden" name="__action" value="new_instance">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+              <button id="start-assessment" type="submit" class="btn btn-primary"<% if (locals.assessment.require_honor_code) { %> disabled<% } %>>Start assessment</button>
+            </form>
           <% } %>
-
-          <form id="confirm-form" name="confirm-form" method="POST" class="d-flex justify-content-center">
-            <input type="hidden" name="__action" value="new_instance">
-            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-            <button id="start-assessment" type="submit" class="btn btn-primary"<% if (locals.assessment.require_honor_code) { %> disabled<% } %>>Start assessment</button>
-          </form>
 
           <script>
             const certify = $('#certify-pledge')[0];

@@ -1,3 +1,4 @@
+<% if (question_context !== 'manual_grading') { %>
   <div class="card-footer" id="question-panel-footer">
 <% if (question.type == 'Freeform') { %>
     <% if (showTrueAnswer && (question_context == 'student_exam')) { %>
@@ -142,6 +143,7 @@
     </form>
 <% } %>
   </div>
+<% } %>
 <script>
   // Install on page load and reinstall on websocket re-render
   $('a.disable-on-click').on('click', function() {

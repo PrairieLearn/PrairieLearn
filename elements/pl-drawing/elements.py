@@ -732,7 +732,8 @@ class ArcVector(BaseElement):
             'offset_forward': offset_forward,
             'offset_backward': offset_backward,
             'originY': 'center',
-            'selectable': drawing_defaults['selectable']
+            'selectable': drawing_defaults['selectable'],
+            'clockwiseDirection': clockwise_direction
         }
 
     def is_gradable():
@@ -933,6 +934,7 @@ class Point(BaseElement):
             'offsety': pl.get_float_attrib(el, 'offsety', 5),
             'originX': 'center',
             'originY': 'center',
+            'opacity': pl.get_float_attrib(el, 'opacity', drawing_defaults['opacity']),
             'fill': color,
             'selectable': drawing_defaults['selectable'],
             'evented': drawing_defaults['selectable']
@@ -952,7 +954,7 @@ class Point(BaseElement):
         return True
 
     def get_attributes():
-        return ['x1', 'y1', 'radius', 'label', 'offsetx', 'offsety', 'color']
+        return ['x1', 'y1', 'radius', 'label', 'offsetx', 'offsety', 'opacity', 'color']
 
 
 class Coordinates(BaseElement):
@@ -1091,6 +1093,7 @@ class Rectangle(BaseElement):
             'angle': pl.get_float_attrib(el, 'angle', drawing_defaults['angle']),
             'originX': 'center',
             'originY': 'center',
+            'opacity': pl.get_float_attrib(el, 'opacity', drawing_defaults['opacity']),
             'fill': color,
             'stroke': stroke_color,
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width'] / 2),
@@ -1100,7 +1103,7 @@ class Rectangle(BaseElement):
         }
 
     def get_attributes():
-        return ['x1', 'y1', 'height', 'width', 'angle', 'color', 'stroke-color', 'stroke-width', 'selectable']
+        return ['x1', 'y1', 'height', 'width', 'angle', 'opacity', 'color', 'stroke-color', 'stroke-width', 'selectable']
 
 
 class Triangle(BaseElement):
@@ -1112,6 +1115,7 @@ class Triangle(BaseElement):
             'p2': {'x': pl.get_float_attrib(el, 'x2', 60), 'y': pl.get_float_attrib(el, 'y2', 40)},
             'p3': {'x': pl.get_float_attrib(el, 'x3', 40), 'y': pl.get_float_attrib(el, 'y3', 20)},
             'fill': color,
+            'opacity': pl.get_float_attrib(el, 'opacity', drawing_defaults['opacity']),
             'stroke': stroke_color,
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width'] / 2),
             'strokeUniform': True,
@@ -1122,7 +1126,7 @@ class Triangle(BaseElement):
         }
 
     def get_attributes():
-        return ['x1', 'y1', 'x2', 'y2', 'x3', 'y3', 'color', 'stroke-color', 'stroke-width', 'selectable']
+        return ['x1', 'y1', 'x2', 'y2', 'x3', 'y3', 'color', 'opacity', 'stroke-color', 'stroke-width', 'selectable']
 
 
 class Circle(BaseElement):
@@ -1138,6 +1142,7 @@ class Circle(BaseElement):
             'offsety': pl.get_float_attrib(el, 'offsety', 5),
             'originX': 'center',
             'originY': 'center',
+            'opacity': pl.get_float_attrib(el, 'opacity', drawing_defaults['opacity']),
             'stroke': stroke_color,
             'fill': color,
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width'] / 2),
@@ -1148,7 +1153,7 @@ class Circle(BaseElement):
         }
 
     def get_attributes():
-        return ['x1', 'y1', 'radius', 'color', 'stroke-color', 'stroke-width', 'label', 'offsetx', 'offsety', 'selectable']
+        return ['x1', 'y1', 'radius', 'opacity', 'color', 'stroke-color', 'stroke-width', 'label', 'offsetx', 'offsety', 'selectable']
 
 
 class Polygon(BaseElement):
@@ -1158,6 +1163,7 @@ class Polygon(BaseElement):
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         return {
             'pointlist': pointlist,
+            'opacity': pl.get_float_attrib(el, 'opacity', drawing_defaults['opacity']),
             'fill': color,
             'stroke': stroke_color,
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', 1),
@@ -1167,7 +1173,7 @@ class Polygon(BaseElement):
         }
 
     def get_attributes():
-        return ['plist', 'color', 'stroke-color', 'stroke-width', 'selectable']
+        return ['plist', 'opacity', 'color', 'stroke-color', 'stroke-width', 'selectable']
 
 
 class Spring(BaseElement):
@@ -1227,6 +1233,7 @@ class Line(BaseElement):
             'y2': y2,
             'originX': 'center',
             'originY': 'center',
+            'opacity': pl.get_float_attrib(el, 'opacity', drawing_defaults['opacity']),
             'stroke': stroke_color,
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'strokeDashArray': dashed_array,
@@ -1235,7 +1242,7 @@ class Line(BaseElement):
         }
 
     def get_attributes():
-        return ['x1', 'y1', 'width', 'angle', 'x2', 'y2', 'stroke-color', 'stroke-width', 'dashed-size']
+        return ['x1', 'y1', 'width', 'angle', 'x2', 'y2', 'opacity', 'stroke-color', 'stroke-width', 'dashed-size']
 
 
 class Arc(BaseElement):
@@ -1253,6 +1260,7 @@ class Arc(BaseElement):
             'radius': pl.get_float_attrib(el, 'radius', drawing_defaults['radius']),
             'startAngle': theta1,
             'endAngle': theta2,
+            'opacity': pl.get_float_attrib(el, 'opacity', drawing_defaults['opacity']),
             'stroke': stroke_color,
             'strokeWidth': pl.get_float_attrib(el, 'stroke-width', drawing_defaults['stroke-width']),
             'strokeDashArray': dashed_array,
@@ -1264,7 +1272,7 @@ class Arc(BaseElement):
         }
 
     def get_attributes():
-        return ['x1', 'y1', 'radius', 'start-angle', 'end-angle', 'stroke-color', 'stroke-width', 'dashed-size']
+        return ['x1', 'y1', 'radius', 'start-angle', 'end-angle', 'opacity', 'stroke-color', 'stroke-width', 'dashed-size']
 
 
 class Text(BaseElement):
@@ -1353,19 +1361,19 @@ class GraphLine(BaseElement):
 
         if 'end-gradients' in el.attrib:
             if curved_line:
-                raise Exception('You should either provide three points to make a curve or the gradient, but not both.')
+                raise Exception('pl-graph-line error: The end-gradients attribute conflicts with an end-points attribute of length 3. You should either provide three points to make a curve or the gradient, but not both.')
             else:
-                curved_line = True
-                line = json.loads(pl.get_string_attrib(el, 'end-gradients'))
-                if len(line) != 2:
+                grads = json.loads(pl.get_string_attrib(el, 'end-gradients'))
+                if len(grads) != 2:
                     raise Exception('pl-graph-line error: the attribute end-gradients expects an array with 2 values, one for each end point.')
-                dy1 = line[0]
-                dy2 = line[1]
-                if abs(dy1 - dy2) < 1e-9:
+                grad1 = grads[0]
+                grad2 = grads[1]
+                if abs(grad1 - grad2) < 1e-9:
                     raise Exception('The provided gradients are not compatible to compute a quadratic curve between the given points.')
                 else:
-                    x3 = ((y2 - dy2 * x2) - (y1 - dy1 * x1)) / (dy1 - dy2)
-                    y3 = (y1 - dy1 * x1) + dy1 * x3
+                    x3 = ((y2 - grad2 * x2) - (y1 - grad1 * x1)) / (grad1 - grad2)
+                    y3 = (y1 - grad1 * x1) + grad1 * x3
+                    curved_line = True
 
         if 'draw-error-box' in el.attrib:
             obj_draw = el.attrib['draw-error-box'] == 'true'
@@ -1419,8 +1427,18 @@ class GraphLine(BaseElement):
         curved_line = False
         if 'end-points' in element.attrib:
             line = json.loads(pl.get_string_attrib(element, 'end-points'))
+            grads = json.loads(pl.get_string_attrib(element, 'end-gradients', '[]'))
             n_end_points = len(line)
+            n_grads = len(grads)
+            if n_end_points < 2 or n_end_points > 3:
+                raise Exception('pl-graph-line error: the attribute end-points expects a list of size 2 or 3.')
+            if n_grads != 0 and n_grads != 2:
+                raise Exception('pl-graph-line error: the attribute end-gradients expects an array with 2 values, one for each end point.')
+            if n_end_points > 2 and n_grads > 0:
+                raise Exception('pl-graph-line error: The end-gradients attribute conflicts with an end-points attribute of length 3. You should either provide three points to make a curve or the gradient, but not both.')
             if n_end_points == 3:
+                curved_line = True
+            if n_end_points == 2 and len(grads) == 2:
                 curved_line = True
         if not curved_line:
             return 'pl-controlled-line'

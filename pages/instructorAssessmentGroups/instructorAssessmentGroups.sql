@@ -48,15 +48,3 @@ WHERE
     AND e.course_instance_id = $course_instance_id
     AND NOT users_is_instructor_in_course(e.user_id, e.course_instance_id)
 ORDER BY u.uid;
-
---BLOCK config_group
-UPDATE
-    group_configs
-SET
-    minimum = $minsize,
-    maximum = $maxsize,
-    student_authz_join = $joincheck,
-    student_authz_create = $createcheck,
-    student_authz_leave = $leavecheck
-WHERE
-    assessment_id = $assessment_id AND deleted_at IS NULL;

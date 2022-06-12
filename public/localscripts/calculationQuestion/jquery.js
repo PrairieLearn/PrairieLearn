@@ -6495,7 +6495,7 @@ function css_defaultDisplay( nodeName ) {
 
 			// Always write a new HTML skeleton so Webkit and Firefox don't choke on reuse
 			doc = ( iframe[0].contentWindow || iframe[0].contentDocument ).document;
-			doc.write("<!doctype html><html lang="en"><body>");
+			doc.write("<!doctype html><html><body>");
 			doc.close();
 
 			display = actualDisplay( nodeName, doc );

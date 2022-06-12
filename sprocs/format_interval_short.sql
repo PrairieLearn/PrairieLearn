@@ -6,10 +6,10 @@ DECLARE
     secs integer;
     s text;
 BEGIN
-    days := div(CAST(floor(EXTRACT(EPOCH FROM d)) AS integer), 60 * 60 * 24);
-    hours := mod(div(CAST(floor(EXTRACT(EPOCH FROM d)) AS integer), 60 * 60), 24);
-    mins := mod(div(CAST(floor(EXTRACT(EPOCH FROM d)) AS integer), 60), 60);
-    secs := mod(CAST(floor(EXTRACT(EPOCH FROM d)) AS integer), 60);
+    days := div(CAST(floor(DATE_PART('epoch', d)) AS integer), 60 * 60 * 24);
+    hours := mod(div(CAST(floor(DATE_PART('epoch', d)) AS integer), 60 * 60), 24);
+    mins := mod(div(CAST(floor(DATE_PART('epoch', d)) AS integer), 60), 60);
+    secs := mod(CAST(floor(DATE_PART('epoch', d)) AS integer), 60);
     s := '';
     IF days > 0 THEN
         s := s || days::text || 'd';

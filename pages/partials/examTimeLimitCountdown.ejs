@@ -7,9 +7,13 @@
   window.allowQuestionUnload = false;
   
   window.submitTimeLimitFinish = function() {
+      <% if (locals.authz_result && (!authz_result.authorized_edit)) { %>
+      // viewing exam as a different effective user, do not trigger time limit finish
+      <% } else { %>
       // do not trigger unsaved warning dialog
       window.allowQuestionUnload = true;
       document.forms['time-limit-finish-form'].submit();
+      <% } %>
   };
   window.timeLimitBGColor = function(remainingSec) {
       if (remainingSec >= 180) {

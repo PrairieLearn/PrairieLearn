@@ -1,0 +1,66 @@
+<pl-question-panel>
+<p>
+Consider the I-beam cross-section:
+</p>
+<p>
+<pl-drawing grid-size="0"  width=260 height=260>
+    <pl-drawing-initial>
+      <pl-polygon plist="{{params.polygon}}"></pl-polygon>
+      <pl-dimensions x1={{params.x1}} y1={{params.y1}} x2={{params.x2}} y2={{params.y2}} dim-offset="-20" label="w" ></pl-dimensions>
+      <pl-dimensions x1={{params.x1}} y1={{params.y1}} x2={{params.x3}} y2={{params.y3}} dim-offset="20" label="h" ></pl-dimensions>
+      <pl-coordinates x1={{params.ox}} y1={{params.oy}}></pl-coordinates>
+    </pl-drawing-initial>
+</pl-drawing>
+</p>
+
+<hr></hr>
+<p>
+The table below has the geometric properties for different specifications for a steel beam:
+</p>
+
+<pl-python-variable params-name="df" show-dimensions="false" show-index="false"></pl-python-variable>
+<hr></hr>
+<p>
+For the beam designations indicated below, determine the maximum normal stress $\sigma_x$ assuming that the maximum
+ moment is equal to $M_{max} = {{params.M}} \times 10^5 \rm\ lb \cdot in$.
+</p>
+</pl-question-panel>
+
+<p>
+<table class="table table-striped table-bordered table-condensed" style="width:50%;  margin: 0 auto">
+  <thead>
+  <tr>
+  <th style="width: 33%; text-align: center;">Designation</th>
+  <th style="width: 66%; text-align: center;">$\sigma_x$</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr>
+  <td style="text-align: center;">{{params.name1}}</td>
+  <td style="text-align: center;"><pl-number-input answers-name="sigma1" display="inline"  size="16" show-help-text="false"></pl-number-input></td>
+  </tr>
+  <tr>
+  <td style="text-align: center;">{{params.name2}}</td>
+  <td style="text-align: center;"><pl-number-input answers-name="sigma2" display="inline"  size="16" show-help-text="false"></pl-number-input></td>
+  </tr>
+  <tr>
+  <td style="text-align: center;">{{params.name3}}</td>
+  <td style="text-align: center;"><pl-number-input answers-name="sigma3" display="inline"  size="16" show-help-text="false"></pl-number-input></td>
+  </tr>
+  <tr>
+  <td style="text-align: center;">{{params.name4}}</td>
+  <td style="text-align: center;"><pl-number-input answers-name="sigma4" display="inline"  size="16" show-help-text="false"></pl-number-input></td>
+  </tr>
+  </tbody>
+</table>
+</p>
+
+<pl-question-panel>
+  <!-- This is not part of the question, and is included for documentation purposes-->
+  <p></p>
+  <div class="alert alert-info p-2" role="alert">
+      <small>Note: this is an example of <i>repeated variant</i> question.
+        Read more <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/homework/template/__docs/docs.md" target="_blank">here</a>.</small>
+        <pl-github-link></pl-github-link>
+  </div>
+</pl-question-panel>

@@ -1,3 +1,3 @@
-define(["MTFServer"], function(MTFServer) {
-    return new MTFServer();
+define(['MTFServer'], function (MTFServer) {
+  return new MTFServer();
 });

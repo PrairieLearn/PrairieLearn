@@ -3,8 +3,8 @@ CREATE FUNCTION
     WITH candidates AS (
         SELECT
             step,
-            EXTRACT(EPOCH FROM greatest(duration, interval '10m'))
-                / EXTRACT(EPOCH FROM step)
+            DATE_PART('epoch', greatest(duration, interval '10m'))
+                / DATE_PART('epoch', step)
                 AS num_steps
         FROM (
             VALUES
@@ -48,7 +48,7 @@ $$ LANGUAGE SQL IMMUTABLE;
 
 CREATE FUNCTION
     interval_array_to_seconds (durations INTERVAL[]) RETURNS DOUBLE PRECISION[] AS $$
-    SELECT array_agg(EXTRACT(EPOCH FROM d))
+    SELECT array_agg(DATE_PART('epoch', d))
     FROM unnest(durations) AS vals (d)
 $$ LANGUAGE SQL IMMUTABLE;
 
