@@ -51,9 +51,17 @@
               <span class="modal-number"></span> of
               <strong><%= assessment_set.name %>
               <%= assessment.number %></strong> for
-              <strong><span class="modal-name"></span></strong>
-              (<span class="modal-uid"></span>) started at
-              <strong><span class="modal-date"></span></strong> with a
+              <% if (assessment.group_work) { %>
+                <strong><span class="modal-group-name"></span></strong>
+              <% } else { %>
+                <strong><span class="modal-name"></span></strong>
+              <% } %>
+              <% if (assessment.group_work) { %>
+                (<span class="modal-uid-list"></span>)
+              <% } else { %>
+                (<span class="modal-uid"></span>)
+              <% } %>
+              started at <strong><span class="modal-date"></span></strong> with a
               score of
               <strong><span class="modal-score-perc"></span>%</strong>?
             </div>
