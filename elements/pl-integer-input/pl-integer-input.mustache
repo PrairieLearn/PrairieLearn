@@ -11,11 +11,13 @@
 
 {{#inline}}<span class="form-inline d-inline-block ml-2">{{/inline}}
     <span id="pl-integer-input-{{uuid}}" class="input-group pl-integer-input">
+
         {{#label}}
         <span class="input-group-prepend">
             <span class="input-group-text" id="pl-integer-input-{{uuid}}-label">{{{label}}}</span>
         </span>
         {{/label}}
+        
         <input name="{{name}}" type="text" class="form-control pl-integer-input-input {{^display_append_span}}rounded-right{{/display_append_span}}" size="{{size}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="pl-integer-input-{{uuid}}-label pl-integer-input-{{uuid}}-suffix" {{#show_placeholder}}placeholder="{{shortinfo}}"{{/show_placeholder}} />
         <span class="input-group-append">
             {{#suffix}}
@@ -30,9 +32,6 @@
             <span class="d-flex align-items-center">
             {{/show_info}}
             
-            {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-            {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-            {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
 
             {{#show_info}}
             </a>
@@ -40,6 +39,11 @@
             {{^show_info}}
             </span>
             {{/show_info}}
+
+        {{#correct}}&nbsp;<span class="list-group-text d-inline-flex align-items-center"><span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span></span>{{/correct}}
+        {{#partial}}&nbsp;<span class="list-group-text d-inline-flex align-items-center"><span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span></span>{{/partial}}
+        {{#incorrect}}&nbsp;<span class="list-group-text d-inline-flex align-items-center"><span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span></span>{{/incorrect}}
+        
         </span>
     </span>
 {{#inline}}</span>{{/inline}}
