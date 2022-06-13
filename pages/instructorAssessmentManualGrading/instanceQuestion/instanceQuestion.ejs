@@ -69,6 +69,20 @@
         $(function() {$('#conflictGradingJobModal').modal({})})
       </script>
       <% } %>
+      <script>
+        $(function() {
+            $('.manual-grading-pts-perc-select')
+                .change(function () {
+                    const use_percentage = this.checked;
+                    $('.manual-grading-pts-perc-select').prop('checked', use_percentage);
+                    $('.manual-grading-points').toggle(!use_percentage);
+                    $('.manual-grading-percentage').toggle(use_percentage);
+                    Cookies.set('manual_grading_score_use', use_percentage ? 'percentage' : 'points');
+                })
+                .prop('checked', Cookies.get('manual_grading_score_use') === 'percentage')
+                .first().change();
+        })
+      </script>
       <div class="row">
         <div class="col-lg-9 col-sm-12">
           <%- include('../../partials/question', {question_context: 'manual_grading'}); %>
