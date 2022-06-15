@@ -339,8 +339,17 @@
                 "points": {
                     "$ref": "#/definitions/points"
                 },
+                "autoPoints": {
+                    "$ref": "#/definitions/points"
+                },
                 "maxPoints": {
                     "$ref": "#/definitions/pointsSingle"
+                },
+                "maxAutoPoints": {
+                    "$ref": "#/definitions/pointsSingle"
+                },
+                "manualPoints": {
+                    "$ref": "#/definitions/pointsManual"
                 },
                 "id": {
                     "$ref": "#/definitions/questionId"
@@ -405,8 +414,17 @@
                 "points": {
                     "$ref": "#/definitions/points"
                 },
+                "autoPoints": {
+                    "$ref": "#/definitions/points"
+                },
                 "maxPoints": {
                     "$ref": "#/definitions/pointsSingle"
+                },
+                "maxAutoPoints": {
+                    "$ref": "#/definitions/pointsSingle"
+                },
+                "manualPoints": {
+                    "$ref": "#/definitions/pointsManual"
                 },
                 "id": {
                     "$ref": "#/definitions/questionId"
@@ -452,6 +470,12 @@
             "items": {
                 "$ref": "#/definitions/points"
             }
+        },
+        "pointsManual": {
+            "description": "A single number of points to be used exclusively for manual grading. For questions with grading method set to Manual, it is equivalent to points and maxPoints. For other questions, manual points are in addition to regular points.",
+            "type": "number",
+            "minimum": 0,
+            "default": 0
         },
         "questionId": {
             "description": "Question ID (directory name of the question).",
