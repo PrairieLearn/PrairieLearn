@@ -88,6 +88,10 @@
             "description": "Whether the question is not randomized and only generates a single variant (defaults to \"false\").",
             "type": "boolean"
         },
+        "hideCorrectAnswer": {
+            "description": "Whether to hide the correct answer panel (defaults to \"false\").",
+            "type": "boolean"
+        },
         "partialCredit": {
             "description": "Whether the question will give partial points for fractional scores (defaults to \"false\" for v2 questions and \"true\" for v3.).",
             "type": "boolean"

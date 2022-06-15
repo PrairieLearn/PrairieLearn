@@ -120,6 +120,7 @@ BEGIN
         partial_credit = (src.data->>'partial_credit')::boolean,
         grading_method = (src.data->>'grading_method')::enum_grading_method,
         single_variant = (src.data->>'single_variant')::boolean,
+        hide_correct_answer = (src.data->>'hide_correct_answer')::boolean,
         template_directory = src.data->>'template_directory',
         topic_id = aggregates.topic_id,
         external_grading_enabled = (src.data->>'external_grading_enabled')::boolean,
