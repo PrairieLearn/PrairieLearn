@@ -383,7 +383,7 @@ const FILE_UUID_REGEX =
  * @property {string} template
  * @property {"Internal" | "External" | "Manual"} gradingMethod
  * @property {boolean} singleVariant
- * @property {boolean} hideCorrectAnswer
+ * @property {boolean} showCorrectAnswer
  * @property {boolean} partialCredit
  * @property {Object} options
  * @property {QuestionExternalGradingOptions} externalGradingOptions

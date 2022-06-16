@@ -1,1 +1,0 @@
-ALTER TABLE questions ADD COLUMN IF NOT EXISTS hide_correct_answer BOOLEAN DEFAULT FALSE;
