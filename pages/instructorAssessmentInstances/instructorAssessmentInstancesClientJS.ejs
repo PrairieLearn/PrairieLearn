@@ -15,8 +15,8 @@ $(function() {
 
                     $('.columns button[name=studentsOnly]').toggleClass('active', filterOn);
                     <% if (assessment.group_work) { %>
-                        table.bootstrapTable('filterBy', {id: 1}, {
-                            'filterAlgorithm': (row, filters) => {
+                        table.bootstrapTable('filterBy', {dummy: "dummy placeholder"}, { // the "filter" parameter has to be specified, hence we place a dummy placeholder here 
+                            'filterAlgorithm': (row, _) => {
                                 if (filterOn) {
                                     return row.group_roles.includes('Student');
                                 } else {
