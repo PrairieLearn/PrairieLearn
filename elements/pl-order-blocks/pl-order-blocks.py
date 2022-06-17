@@ -52,7 +52,7 @@ def prepare(element_html, data):
     answer_name = pl.get_string_attrib(element, 'answers-name')
 
     if answer_name in data['answers_names']:
-        raise Exception('duplicate answer-name attribute: %s' % name)
+        raise Exception('duplicate answer-name attribute: %s' % answer_name)
     else:
         data['answers_names'][answer_name] = True
 

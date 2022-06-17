@@ -30,7 +30,7 @@ def prepare(element_html, data):
         raise Exception('duplicate answer-name attribute: %s' % name)
     else:
         data['answers_names'][name] = True
-    
+
     if name not in data['correct_answers']:
         m = pl.get_integer_attrib(element, 'rows', None)
         if m is None:

@@ -34,7 +34,7 @@ def prepare(element_html, data):
         raise Exception('duplicate answer-name attribute: %s' % name)
     else:
         data['answers_names'][name] = True
-    
+
     correct_answer = pl.get_string_attrib(element, 'correct-answer', CORRECT_ANSWER_DEFAULT)
 
     if correct_answer is not None:
