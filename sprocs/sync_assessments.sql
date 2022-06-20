@@ -27,6 +27,11 @@ DECLARE
     bad_assessments text;
     new_group_role_names text[];
     new_group_role_name text;
+    question_grading_method enum_grading_method;
+    computed_manual_points double precision;
+    computed_init_points double precision;
+    computed_points_list jsonb;
+    computed_max_auto_points double precision;
 BEGIN
     -- The sync algorithm used here is described in the preprint
     -- "Preserving identity during opportunistic unidirectional
@@ -354,11 +359,35 @@ BEGIN
 
                 -- Insert an assessment question for each question in this alternative group
                 FOR assessment_question IN SELECT * FROM JSONB_ARRAY_ELEMENTS(alternative_group->'questions') LOOP
+                    IF (assessment_question->>'grade_split')::boolean THEN
+                        computed_manual_points := (assessment_question->>'manual_points')::double precision;
+                        computed_init_points := (assessment_question->>'init_points')::double precision;
+                        computed_points_list := assessment_question->>'points_list';
+                        computed_max_auto_points := (assessment_question->>'max_points')::double precision;
+                    ELSE
+                        SELECT grading_method INTO question_grading_method
+                        FROM questions q
+                        WHERE q.id = (assessment_question->>'question_id')::bigint;
+
+                        IF FOUND AND question_grading_method = 'Manual' THEN
+                            computed_manual_points := (assessment_question->>'max_points')::double precision;
+                            computed_init_points := 0;
+                            computed_points_list := NULL;
+                            computed_max_auto_points := 0;
+                        ELSE
+                            computed_manual_points := 0;
+                            computed_init_points := (assessment_question->>'init_points')::double precision;
+                            computed_points_list := assessment_question->>'points_list';
+                            computed_max_auto_points := (assessment_question->>'max_points')::double precision;
+                        END IF;
+                    END IF;
                     INSERT INTO assessment_questions AS aq (
                         number,
                         max_points,
                         init_points,
                         points_list,
+                        manual_points,
+                        max_auto_points,
                         force_max_points,
                         tries_per_variant,
                         grade_rate_minutes,
@@ -371,9 +400,11 @@ BEGIN
                         effective_advance_score_perc
                     ) VALUES (
                         (assessment_question->>'number')::integer,
-                        (assessment_question->>'max_points')::double precision,
-                        (assessment_question->>'init_points')::double precision,
-                        jsonb_array_to_double_precision_array(assessment_question->'points_list'),
+                        COALESCE(computed_manual_points, 0) + COALESCE(computed_max_auto_points, 0),
+                        computed_init_points,
+                        jsonb_array_to_double_precision_array(computed_points_list),
+                        computed_manual_points,
+                        computed_max_auto_points,
                         (assessment_question->>'force_max_points')::boolean,
                         (assessment_question->>'tries_per_variant')::integer,
                         (assessment_question->>'grade_rate_minutes')::double precision,

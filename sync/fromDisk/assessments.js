@@ -127,11 +127,11 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
         alternatives = _.map(question.alternatives, function (alternative) {
           return {
             qid: alternative.id,
-            maxPoints: alternative.maxPoints || question.maxPoints,
-            points: alternative.points || question.points,
-            maxAutoPoints: alternative.maxAutoPoints || question.maxAutoPoints,
-            autoPoints: alternative.autoPoints || question.autoPoints,
-            manualPoints: alternative.manualPoints || question.manualPoints,
+            maxPoints: alternative.maxPoints ?? question.maxPoints ?? null,
+            points: alternative.points ?? question.points ?? null,
+            maxAutoPoints: alternative.maxAutoPoints ?? question.maxAutoPoints ?? null,
+            autoPoints: alternative.autoPoints ?? question.autoPoints ?? null,
+            manualPoints: alternative.manualPoints ?? question.manualPoints ?? null,
             forceMaxPoints: _.has(alternative, 'forceMaxPoints')
               ? alternative.forceMaxPoints
               : _.has(question, 'forceMaxPoints')
@@ -158,11 +158,11 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
         alternatives = [
           {
             qid: question.id,
-            maxPoints: question.maxPoints,
-            points: question.points,
-            autoPoints: question.autoPoints,
-            maxAutoPoints: question.maxAutoPoints,
-            manualPoints: question.manualPoints,
+            maxPoints: question.maxPoints ?? null,
+            points: question.points ?? null,
+            autoPoints: question.autoPoints ?? null,
+            maxAutoPoints: question.maxAutoPoints ?? null,
+            manualPoints: question.manualPoints ?? null,
             forceMaxPoints: question.forceMaxPoints || false,
             triesPerVariant: question.triesPerVariant || 1,
             advanceScorePerc: question.advanceScorePerc,
@@ -174,31 +174,56 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
       }
 
       const normalizedAlternatives = alternatives.map((alternative) => {
+        const gradeSplit =
+          alternative.autoPoints !== null ||
+          alternative.maxAutoPoints !== null ||
+          alternative.manualPoints !== null;
+        let pointsList;
+        let initPoints;
+        let maxPoints;
+
+        if ((alternative.points !== null || alternative.maxPoints !== null) && gradeSplit) {
+          infofile.addWarning(
+            assessmentInfoFile,
+            `Question ${alternative.qid} uses autoPoints, maxAutoPoints or manualPoints. Values for points and maxPoints values are being ignored.`
+          );
+          alternative.points = null;
+          alternative.maxPoints = null;
+        }
+
+        const autoPoints = gradeSplit ? alternative.autoPoints : alternative.points;
+
         if (assessment.type === 'Exam') {
-          const autoPoints = alternative.autoPoints ?? alternative.points;
-          const autoPointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
-          const maxAutoPoints = Math.max(...autoPointsList);
-          return {
-            ...alternative,
-            maxAutoPoints,
-            autoPointsList,
-            initPoints: undefined,
-          };
+          const maxPointsFromAlternative = alternative.maxAutoPoints ?? alternative.maxPoints;
+          pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
+          maxPoints = Math.max(...pointsList);
+
+          if (maxPointsFromAlternative !== null && maxPointsFromAlternative !== maxPoints) {
+            infofile.addWarning(
+              assessmentInfoFile,
+              `Question ${alternative.qid} uses maxPoints or maxAutoPoints in an Exam-type assessment. These values are being ignored.`
+            );
+          }
+        } else if (assessment.type === 'Homework') {
+          initPoints = autoPoints;
+
+          if (Array.isArray(initPoints)) {
+            infofile.addWarning(
+              assessmentInfoFile,
+              `Question ${alternative.qid} uses an array of points. Arrays cannot be used in Homework-type assessments.`
+            );
+            initPoints = initPoints[0];
+          }
+          maxPoints = alternative.maxAutoPoints ?? alternative.maxPoints ?? autoPoints;
         }
-        if (assessment.type === 'Homework') {
-          const maxAutoPoints =
-            alternative.maxAutoPoints ||
-            alternative.maxPoints ||
-            alternative.autoPoints ||
-            alternative.points;
-          const initPoints = alternative.autoPoints || alternative.points;
-          return {
-            ...alternative,
-            maxAutoPoints,
-            initPoints,
-            pointsList: undefined,
-          };
-        }
+
+        return {
+          ...alternative,
+          gradeSplit,
+          maxPoints,
+          initPoints, // may be undefined (for Exam type)
+          pointsList, // may be undefined (for Homework type)
+        };
       });
 
       alternativeGroupNumber++;
@@ -214,9 +239,11 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
           const questionId = questionIds[alternative.qid];
           return {
             number: assessmentQuestionNumber,
-            max_points: alternative.maxPoints,
+            grade_split: alternative.gradeSplit,
             points_list: alternative.pointsList,
             init_points: alternative.initPoints,
+            max_points: alternative.maxPoints,
+            manual_points: alternative.manualPoints,
             force_max_points: alternative.forceMaxPoints,
             tries_per_variant: alternative.triesPerVariant,
             grade_rate_minutes: alternative.gradeRateMinutes,
