@@ -118,7 +118,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
       ? zone.gradeRateMinutes
       : assessment.gradeRateMinutes || 0;
     return zone.questions.map((question) => {
-      /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number, canView: string[], canSubmit: string[], advanceScorePerc: number }[]} */
+      /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], maxAutoPoints: number | number[], autoPoints: number | number[], manualPoints: number, forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number, canView: string[], canSubmit: string[], advanceScorePerc: number }[]} */
       let alternatives;
       let questionGradeRateMinutes = _.has(question, 'gradeRateMinutes')
         ? question.gradeRateMinutes
@@ -129,6 +129,9 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             qid: alternative.id,
             maxPoints: alternative.maxPoints || question.maxPoints,
             points: alternative.points || question.points,
+            maxAutoPoints: alternative.maxAutoPoints || question.maxAutoPoints,
+            autoPoints: alternative.autoPoints || question.autoPoints,
+            manualPoints: alternative.manualPoints || question.manualPoints,
             forceMaxPoints: _.has(alternative, 'forceMaxPoints')
               ? alternative.forceMaxPoints
               : _.has(question, 'forceMaxPoints')
@@ -157,6 +160,9 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             qid: question.id,
             maxPoints: question.maxPoints,
             points: question.points,
+            autoPoints: question.autoPoints,
+            maxAutoPoints: question.maxAutoPoints,
+            manualPoints: question.manualPoints,
             forceMaxPoints: question.forceMaxPoints || false,
             triesPerVariant: question.triesPerVariant || 1,
             advanceScorePerc: question.advanceScorePerc,
@@ -169,25 +175,26 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
 
       const normalizedAlternatives = alternatives.map((alternative) => {
         if (assessment.type === 'Exam') {
-          const pointsList = Array.isArray(alternative.points)
-            ? alternative.points
-            : [alternative.points];
-          const maxPoints = Math.max(...pointsList);
+          const autoPoints = alternative.autoPoints ?? alternative.points;
+          const autoPointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
+          const maxAutoPoints = Math.max(...autoPointsList);
           return {
             ...alternative,
-            // Exlude 'points' prop
-            points: undefined,
-            maxPoints,
-            pointsList,
+            maxAutoPoints,
+            autoPointsList,
             initPoints: undefined,
           };
         }
         if (assessment.type === 'Homework') {
-          const maxPoints = alternative.maxPoints || alternative.points;
-          const initPoints = alternative.points;
+          const maxAutoPoints =
+            alternative.maxAutoPoints ||
+            alternative.maxPoints ||
+            alternative.autoPoints ||
+            alternative.points;
+          const initPoints = alternative.autoPoints || alternative.points;
           return {
             ...alternative,
-            maxPoints,
+            maxAutoPoints,
             initPoints,
             pointsList: undefined,
           };
