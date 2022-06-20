@@ -284,7 +284,10 @@ const FILE_UUID_REGEX =
 /**
  * @typedef {Object} ZoneQuestion
  * @property {number | number[]} points
- * @property {number | number[]} maxPoints
+ * @property {number | number[]} autoPoints
+ * @property {number} maxPoints
+ * @property {number} manualPoints
+ * @property {number} maxAutoPoints
  * @property {string} [id]
  * @property {boolean} forceMaxPoints
  * @property {QuestionAlternative[]} [alternatives]
