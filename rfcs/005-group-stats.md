@@ -76,4 +76,4 @@ Also add a button to compute/recompute statistics when needed.
 
 
 # Unresolved Questions and Concerns
-The existing codebase currently has all group-related code at the assessment-level, it is unclear how to upload and store group assignments at the course-instance level.
+The existing codebase currently has all group-related code at the assessment-level, it is unclear how to upload, store,and work with group assignments at the course-instance level.
