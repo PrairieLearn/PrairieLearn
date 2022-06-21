@@ -194,26 +194,10 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
         const autoPoints = gradeSplit ? alternative.autoPoints : alternative.points;
 
         if (assessment.type === 'Exam') {
-          const maxPointsFromAlternative = alternative.maxAutoPoints ?? alternative.maxPoints;
           pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
           maxPoints = Math.max(...pointsList);
-
-          if (maxPointsFromAlternative !== null && maxPointsFromAlternative !== maxPoints) {
-            infofile.addWarning(
-              assessmentInfoFile,
-              `Question ${alternative.qid} uses maxPoints or maxAutoPoints in an Exam-type assessment. These values are being ignored.`
-            );
-          }
         } else if (assessment.type === 'Homework') {
           initPoints = autoPoints;
-
-          if (Array.isArray(initPoints)) {
-            infofile.addWarning(
-              assessmentInfoFile,
-              `Question ${alternative.qid} uses an array of points. Arrays cannot be used in Homework-type assessments.`
-            );
-            initPoints = initPoints[0];
-          }
           maxPoints = alternative.maxAutoPoints ?? alternative.maxPoints ?? autoPoints;
         }
 

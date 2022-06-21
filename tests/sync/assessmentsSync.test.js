@@ -143,13 +143,17 @@ describe('Assessment syncing', () => {
       (aq) => aq.question.qid === util.QUESTION_ID
     );
     assert.equal(firstAssessmentQuestion.max_points, 10);
+    assert.equal(firstAssessmentQuestion.max_auto_points, 10);
     assert.deepEqual(firstAssessmentQuestion.points_list, [10]);
+    assert.equal(firstAssessmentQuestion.manual_points, 0);
 
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID
     );
     assert.equal(secondAssessmentQuestion.max_points, 5);
+    assert.equal(secondAssessmentQuestion.max_auto_points, 5);
     assert.deepEqual(secondAssessmentQuestion.points_list, [5]);
+    assert.equal(secondAssessmentQuestion.manual_points, 0);
   });
 
   it('syncs alternatives in a Homework zone', async () => {
@@ -187,12 +191,16 @@ describe('Assessment syncing', () => {
     );
     assert.equal(firstAssessmentQuestion.init_points, 10);
     assert.equal(firstAssessmentQuestion.max_points, 20);
+    assert.equal(firstAssessmentQuestion.max_auto_points, 20);
+    assert.equal(firstAssessmentQuestion.manual_points, 0);
 
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID
     );
     assert.equal(secondAssessmentQuestion.init_points, 5);
     assert.equal(secondAssessmentQuestion.max_points, 15);
+    assert.equal(secondAssessmentQuestion.max_auto_points, 15);
+    assert.equal(secondAssessmentQuestion.manual_points, 0);
   });
 
   it('reuses assessment questions when questions are removed and added again', async () => {
