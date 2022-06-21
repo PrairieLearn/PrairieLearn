@@ -339,7 +339,7 @@ const questions = {
     type: 'Calculation',
   },
   [module.exports.MANUAL_GRADING_QUESTION_ID]: {
-    uuid: 'f4ff2429-926e-4358-9e1f-d2f377e2036a',
+    uuid: '2798b1ba-06e0-4ddf-9e5d-765fcca08a46',
     title: 'Test question',
     topic: 'Test',
     gradingMethod: 'Manual',
