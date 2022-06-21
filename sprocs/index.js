@@ -135,6 +135,7 @@ module.exports.init = function (callback) {
       'server_usage_current.sql',
       'assessment_questions_calculate_stats_for_assessment.sql',
       'assessment_questions_calculate_stats.sql',
+      'assessment_questions_select_manual_points.sql',
       'instance_questions_calculate_stats.sql',
       'issues_select_with_filter.sql',
       'access_tokens_insert.sql',

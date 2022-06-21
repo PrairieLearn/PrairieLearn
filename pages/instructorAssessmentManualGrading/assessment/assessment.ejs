@@ -22,7 +22,8 @@
               <tr>
                 <th></th>
                 <th>QID</th>
-                <th>Points</th>
+                <th>Auto Points</th>
+                <th>Manual Points</th>
                 <th colspan="2">Submissions to grade</th>
                 <th>Grading assigned to</th>
                 <th>Graded by</th>
@@ -44,9 +45,12 @@
                 </td>
                 <td><%= question.qid %></td>
                 <td class="text-center">
+                  <% if (question.max_auto_points) { %>
                   <% if (assessment.type == "Exam") { %><%= question.points_list %><% } %>
-                  <% if (assessment.type == "Homework") { %><%= question.init_points %>/<%= question.max_points %><% } %>
+                  <% if (assessment.type == "Homework") { %><%= question.init_points %>/<%= question.max_auto_points %><% } %>
+                  <% } else { %>—<% } %>
                 </td>
+                <td class="text-center"><%= question.manual_points || '—' %></td>
                 <td class="text-center">
                   <%= question.num_instance_questions_to_grade ?? 0 %> /
                   <%= question.num_instance_questions ?? 0 %>
