@@ -1154,11 +1154,9 @@ async function validateAssessment(assessment, questions) {
   };
   (assessment.zones || []).forEach((zone) => {
     (zone.questions || []).map((zoneQuestion) => {
-      if (
-        !allowRealTimeGrading &&
-        Array.isArray(zoneQuestion.autoPoints ?? zoneQuestion.points) &&
-        (zoneQuestion.autoPoints ?? zoneQuestion.points).length > 1
-      ) {
+      /** @type {number | number[]} */
+      const autoPoints = zoneQuestion.autoPoints ?? zoneQuestion.points;
+      if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
         errors.push(
           `Cannot specify an array of multiple point values for a question if real-time grading is disabled`
         );
@@ -1172,11 +1170,9 @@ async function validateAssessment(assessment, questions) {
       } else if ('alternatives' in zoneQuestion) {
         zoneQuestion.alternatives.forEach((alternative) => checkAndRecordQid(alternative.id));
         alternatives = zoneQuestion.alternatives.map((alternative) => {
-          if (
-            !allowRealTimeGrading &&
-            Array.isArray(alternative.autoPoints ?? alternative.points) &&
-            (alternative.autoPoints ?? alternative.points).length > 1
-          ) {
+          /** @type {number | number[]} */
+          const autoPoints = alternative.autoPoints ?? alternative.points;
+          if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
             errors.push(
               `Cannot specify an array of multiple point values for an alternative if real-time grading is disabled`
             );
