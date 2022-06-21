@@ -87,7 +87,10 @@ const syncFromDisk = require('../../sync/syncFromDisk');
 /**
  * @typedef {Object} QuestionAlternative
  * @property {number | number[]} points
- * @property {numer | number[]} maxPoints
+ * @property {number | number[]} autoPoints
+ * @property {number} maxPoints
+ * @property {number} maxAutoPoints
+ * @property {number} manualPoints
  * @property {string} id
  * @property {boolean} forceMaxPoints
  * @property {number} triesPerVariant
@@ -96,7 +99,10 @@ const syncFromDisk = require('../../sync/syncFromDisk');
 /**
  * @typedef {Object} ZoneQuestion
  * @property {number | number[]} points
- * @property {number | []} maxPoints
+ * @property {number | number[]} autoPoints
+ * @property {number} maxPoints
+ * @property {number} maxAutoPoints
+ * @property {number} manualPoints
  * @property {string} id
  * @property {boolean} forceMaxPoints
  * @property {QuestionAlternative[]} alternatives
@@ -252,6 +258,7 @@ module.exports.writeCourseToDirectory = async function (courseData, coursePath) 
 
 module.exports.QUESTION_ID = 'test';
 module.exports.ALTERNATIVE_QUESTION_ID = 'test2';
+module.exports.MANUAL_GRADING_QUESTION_ID = 'test_manual';
 module.exports.COURSE_INSTANCE_ID = 'Fa19';
 
 /** @type {Course} */
@@ -330,6 +337,15 @@ const questions = {
     secondaryTopics: [],
     tags: ['test'],
     type: 'Calculation',
+  },
+  [module.exports.MANUAL_GRADING_QUESTION_ID]: {
+    uuid: 'f4ff2429-926e-4358-9e1f-d2f377e2036a',
+    title: 'Test question',
+    topic: 'Test',
+    gradingMethod: 'Manual',
+    secondaryTopics: [],
+    tags: ['test'],
+    type: 'v3',
   },
   [module.exports.WORKSPACE_QUESTION_ID]: {
     uuid: '894927f7-19b3-451d-8ad1-75974ad2ffb7',

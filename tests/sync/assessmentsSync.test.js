@@ -203,6 +203,66 @@ describe('Assessment syncing', () => {
     assert.equal(secondAssessmentQuestion.manual_points, 0);
   });
 
+  it('syncs auto and manual points in a Homework zone', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones.push({
+      title: 'zone 1',
+      questions: [
+        {
+          maxAutoPoints: 20,
+          autoPoints: 10,
+          manualPoints: 3,
+          alternatives: [
+            {
+              id: util.QUESTION_ID,
+            },
+            {
+              id: util.ALTERNATIVE_QUESTION_ID,
+              maxAutoPoints: 15,
+              autoPoints: 5,
+            },
+          ],
+        },
+        {
+          manualPoints: 7,
+          id: util.MANUAL_GRADING_QUESTION_ID,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['hwwithmanual1'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('hwwithmanual1');
+    assert.lengthOf(syncedData.zones, 1);
+    assert.lengthOf(syncedData.alternative_groups, 2);
+    assert.lengthOf(syncedData.assessment_questions, 3);
+
+    const firstAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.QUESTION_ID
+    );
+    assert.equal(firstAssessmentQuestion.init_points, 10);
+    assert.equal(firstAssessmentQuestion.max_points, 23);
+    assert.equal(firstAssessmentQuestion.max_auto_points, 20);
+    assert.equal(firstAssessmentQuestion.manual_points, 3);
+
+    const secondAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID
+    );
+    assert.equal(secondAssessmentQuestion.init_points, 5);
+    assert.equal(secondAssessmentQuestion.max_points, 18);
+    assert.equal(secondAssessmentQuestion.max_auto_points, 15);
+    assert.equal(secondAssessmentQuestion.manual_points, 3);
+
+    const thirdAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID
+    );
+    assert.equal(thirdAssessmentQuestion.init_points, 0);
+    assert.equal(thirdAssessmentQuestion.max_points, 7);
+    assert.equal(thirdAssessmentQuestion.max_auto_points, 0);
+    assert.equal(thirdAssessmentQuestion.manual_points, 7);
+  });
+
   it('reuses assessment questions when questions are removed and added again', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
@@ -784,7 +844,7 @@ describe('Assessment syncing', () => {
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.match(
       syncedAssessment.sync_errors,
-      /Cannot specify "maxPoints" for a question in an "Exam" assessment/
+      /Cannot specify "maxPoints" or "maxAutoPoints" for a question in an "Exam" assessment/
     );
   });
 
@@ -804,7 +864,7 @@ describe('Assessment syncing', () => {
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.match(
       syncedAssessment.sync_errors,
-      /Must specify "points" for a question in an "Exam" assessment/
+      /Must specify "points", "autoPoints" or "manualPoints" for a question/
     );
   });
 
@@ -824,7 +884,7 @@ describe('Assessment syncing', () => {
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.match(
       syncedAssessment.sync_errors,
-      /Must specify "points" for a question in a "Homework" assessment/
+      /Must specify "points", "autoPoints" or "manualPoints" for a question/
     );
   });
 
@@ -846,7 +906,7 @@ describe('Assessment syncing', () => {
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.match(
       syncedAssessment.sync_errors,
-      /Cannot specify "points" as a list for a question in a "Homework" assessment/
+      /Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment/
     );
   });
 
