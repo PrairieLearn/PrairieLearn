@@ -274,7 +274,10 @@ const FILE_UUID_REGEX =
 /**
  * @typedef {Object} QuestionAlternative
  * @property {number | number[]} points
- * @property {number | number[]} maxPoints
+ * @property {number | number[]} autoPoints
+ * @property {number} maxPoints
+ * @property {number} manualPoints
+ * @property {number} maxAutoPoints
  * @property {string} id
  * @property {boolean} forceMaxPoints
  * @property {number} triesPerVariant
@@ -1153,8 +1156,8 @@ async function validateAssessment(assessment, questions) {
     (zone.questions || []).map((zoneQuestion) => {
       if (
         !allowRealTimeGrading &&
-        Array.isArray(zoneQuestion.points) &&
-        zoneQuestion.points.length > 1
+        Array.isArray(zoneQuestion.autoPoints ?? zoneQuestion.points) &&
+        (zoneQuestion.autoPoints ?? zoneQuestion.points).length > 1
       ) {
         errors.push(
           `Cannot specify an array of multiple point values for a question if real-time grading is disabled`
@@ -1162,7 +1165,7 @@ async function validateAssessment(assessment, questions) {
       }
       // We'll normalize either single questions or alternative groups
       // to make validation easier
-      /** @type {{ points: number | number[], maxPoints: number | number[] }[]} */
+      /** @type {{ points: number | number[], autoPoints: number | number[], maxPoints: number, maxAutoPoints: number, manualPoints: number }[]} */
       let alternatives = [];
       if ('alternatives' in zoneQuestion && 'id' in zoneQuestion) {
         errors.push('Cannot specify both "alternatives" and "id" in one question');
@@ -1171,16 +1174,19 @@ async function validateAssessment(assessment, questions) {
         alternatives = zoneQuestion.alternatives.map((alternative) => {
           if (
             !allowRealTimeGrading &&
-            Array.isArray(alternative.points) &&
-            alternative.points.length > 1
+            Array.isArray(alternative.autoPoints ?? alternative.points) &&
+            (alternative.autoPoints ?? alternative.points).length > 1
           ) {
             errors.push(
               `Cannot specify an array of multiple point values for an alternative if real-time grading is disabled`
             );
           }
           return {
-            points: alternative.points || zoneQuestion.points,
-            maxPoints: alternative.maxPoints || zoneQuestion.maxPoints,
+            points: alternative.points ?? zoneQuestion.points,
+            maxPoints: alternative.maxPoints ?? zoneQuestion.maxPoints,
+            maxAutoPoints: alternative.maxAutoPoints ?? zoneQuestion.maxAutoPoints,
+            autoPoints: alternative.autoPoints ?? zoneQuestion.autoPoints,
+            manualPoints: alternative.manualPoints ?? zoneQuestion.manualPoints,
           };
         });
       } else if ('id' in zoneQuestion) {
@@ -1189,6 +1195,9 @@ async function validateAssessment(assessment, questions) {
           {
             points: zoneQuestion.points,
             maxPoints: zoneQuestion.maxPoints,
+            maxAutoPoints: zoneQuestion.maxAutoPoints,
+            autoPoints: zoneQuestion.autoPoints,
+            manualPoints: zoneQuestion.manualPoints,
           },
         ];
       } else {
@@ -1196,21 +1205,44 @@ async function validateAssessment(assessment, questions) {
       }
 
       alternatives.forEach((alternative) => {
+        if (
+          alternative.points === undefined &&
+          alternative.autoPoints === undefined &&
+          alternative.manualPoints === undefined
+        ) {
+          errors.push('Must specify "points", "autoPoints" or "manualPoints" for a question');
+        }
+        if (
+          alternative.points !== undefined &&
+          (alternative.autoPoints !== undefined ||
+            alternative.manualPoints !== undefined ||
+            alternative.maxAutoPoints !== undefined)
+        ) {
+          errors.push(
+            'Cannot specify "points" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified'
+          );
+        }
         if (assessment.type === 'Exam') {
-          if (alternative.maxPoints !== undefined) {
-            errors.push('Cannot specify "maxPoints" for a question in an "Exam" assessment');
-          }
-          if (alternative.points === undefined) {
-            errors.push('Must specify "points" for a question in an "Exam" assessment');
+          if (alternative.maxPoints !== undefined || alternative.maxAutoPoints !== undefined) {
+            errors.push(
+              'Cannot specify "maxPoints" or "maxAutoPoints" for a question in an "Exam" assessment'
+            );
           }
         }
         if (assessment.type === 'Homework') {
-          if (alternative.points === undefined) {
-            errors.push('Must specify "points" for a question in a "Homework" assessment');
-          }
-          if (Array.isArray(alternative.points)) {
+          if (
+            alternative.maxPoints !== undefined &&
+            (alternative.autoPoints !== undefined ||
+              alternative.manualPoints !== undefined ||
+              alternative.maxAutoPoints !== undefined)
+          ) {
             errors.push(
-              'Cannot specify "points" as a list for a question in a "Homework" assessment'
+              'Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified'
+            );
+          }
+          if (Array.isArray(alternative.autoPoints ?? alternative.points)) {
+            errors.push(
+              'Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment'
             );
           }
         }

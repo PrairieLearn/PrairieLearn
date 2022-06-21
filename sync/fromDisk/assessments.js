@@ -178,36 +178,31 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
           alternative.autoPoints !== null ||
           alternative.maxAutoPoints !== null ||
           alternative.manualPoints !== null;
-        let pointsList;
-        let initPoints;
-        let maxPoints;
-
-        if ((alternative.points !== null || alternative.maxPoints !== null) && gradeSplit) {
-          infofile.addWarning(
-            assessmentInfoFile,
-            `Question ${alternative.qid} uses autoPoints, maxAutoPoints or manualPoints. Values for points and maxPoints values are being ignored.`
-          );
-          alternative.points = null;
-          alternative.maxPoints = null;
-        }
-
-        const autoPoints = gradeSplit ? alternative.autoPoints : alternative.points;
+        const autoPoints = (gradeSplit ? alternative.autoPoints : alternative.points) ?? 0;
 
         if (assessment.type === 'Exam') {
-          pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
-          maxPoints = Math.max(...pointsList);
-        } else if (assessment.type === 'Homework') {
-          initPoints = autoPoints;
-          maxPoints = alternative.maxAutoPoints ?? alternative.maxPoints ?? autoPoints;
-        }
+          const pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
+          const maxPoints = Math.max(...pointsList);
 
-        return {
-          ...alternative,
-          gradeSplit,
-          maxPoints,
-          initPoints, // may be undefined (for Exam type)
-          pointsList, // may be undefined (for Homework type)
-        };
+          return {
+            ...alternative,
+            gradeSplit,
+            maxPoints,
+            initPoints: undefined,
+            pointsList,
+          };
+        } else if (assessment.type === 'Homework') {
+          const initPoints = autoPoints;
+          const maxPoints = alternative.maxAutoPoints ?? alternative.maxPoints ?? autoPoints;
+
+          return {
+            ...alternative,
+            gradeSplit,
+            maxPoints,
+            initPoints,
+            pointsList: undefined,
+          };
+        }
       });
 
       alternativeGroupNumber++;
