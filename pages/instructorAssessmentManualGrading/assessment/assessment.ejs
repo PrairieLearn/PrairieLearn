@@ -51,7 +51,7 @@
                   <% } else { %>—<% } %>
                 </td>
                 <td class="text-center"><%= question.manual_points || '—' %></td>
-                <td class="text-center">
+                <td class="text-center" data-testid="iq-to-grade-count">
                   <%= question.num_instance_questions_to_grade ?? 0 %> /
                   <%= question.num_instance_questions ?? 0 %>
                 </td>

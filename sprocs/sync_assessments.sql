@@ -371,7 +371,7 @@ BEGIN
 
                         IF FOUND AND question_grading_method = 'Manual' THEN
                             computed_manual_points := (assessment_question->>'max_points')::double precision;
-                            computed_init_points := NULL;
+                            computed_init_points := 0;
                             computed_points_list := NULL;
                             computed_max_auto_points := 0;
                         ELSE

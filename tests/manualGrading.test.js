@@ -166,7 +166,7 @@ describe('Manual Grading', function () {
     step('manual grading page should list one question requiring grading', async () => {
       const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
       assert.equal(row.length, 1);
-      const count = row.find('td:nth-child(4)').text().replace(/\s/g, '');
+      const count = row.find('td[data-testid="iq-to-grade-count"]').text().replace(/\s/g, '');
       assert.equal(count, '1/1');
       const nextButton = row.find('.btn:contains("next submission")');
       assert.equal(nextButton.length, 1);
@@ -317,7 +317,7 @@ describe('Manual Grading', function () {
       $manualGradingPage = cheerio.load(manualGradingPage);
       const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
       assert.equal(row.length, 1);
-      const count = row.find('td:nth-child(4)').text().replace(/\s/g, '');
+      const count = row.find('td[data-testid="iq-to-grade-count"]').text().replace(/\s/g, '');
       assert.equal(count, '1/1');
       const nextButton = row.find('.btn:contains("next submission")');
       assert.equal(nextButton.length, 1);
@@ -331,7 +331,7 @@ describe('Manual Grading', function () {
         $manualGradingPage = cheerio.load(manualGradingPage);
         const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
         assert.equal(row.length, 1);
-        const count = row.find('td:nth-child(4)').text().replace(/\s/g, '');
+        const count = row.find('td[data-testid="iq-to-grade-count"]').text().replace(/\s/g, '');
         assert.equal(count, '1/1');
         const nextButton = row.find('.btn:contains("next submission")');
         assert.equal(nextButton.length, 0);
@@ -422,7 +422,7 @@ describe('Manual Grading', function () {
         $manualGradingPage = cheerio.load(manualGradingPage);
         const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
         assert.equal(row.length, 1);
-        const count = row.find('td:nth-child(4)').text().replace(/\s/g, '');
+        const count = row.find('td[data-testid="iq-to-grade-count"]').text().replace(/\s/g, '');
         assert.equal(count, '0/1');
         const nextButton = row.find('.btn:contains("next submission")');
         assert.equal(nextButton.length, 0);
@@ -532,7 +532,7 @@ describe('Manual Grading', function () {
         $manualGradingPage = cheerio.load(manualGradingPage);
         const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
         assert.equal(row.length, 1);
-        const count = row.find('td:nth-child(4)').text().replace(/\s/g, '');
+        const count = row.find('td[data-testid="iq-to-grade-count"]').text().replace(/\s/g, '');
         assert.equal(count, '0/1');
         const nextButton = row.find('.btn:contains("next submission")');
         assert.equal(nextButton.length, 0);
