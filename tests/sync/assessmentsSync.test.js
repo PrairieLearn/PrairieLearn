@@ -1088,6 +1088,72 @@ describe('Assessment syncing', () => {
     );
   });
 
+  it('records an error if a question specifies points and autoPoints', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 5,
+          autoPoints: 5,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(
+      syncedAssessment.sync_errors,
+      /Cannot specify "points" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified/
+    );
+  });
+
+  it('records an error if a question specifies points and manualPoints', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 5,
+          manualPoints: 5,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(
+      syncedAssessment.sync_errors,
+      /Cannot specify "points" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified/
+    );
+  });
+
+  it('records an error if a question specifies maxPoints and autoPoints', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          maxPoints: 15,
+          autoPoints: 5,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(
+      syncedAssessment.sync_errors,
+      /Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified/
+    );
+  });
+
   it('records an error if a question specifies points as an array an Homework-type assessment', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
