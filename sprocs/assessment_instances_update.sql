@@ -29,27 +29,17 @@ BEGIN
     updated := false;
     new_instance_question_ids = array[]::bigint[];
 
-    SELECT 
-        a.group_work
-    INTO 
-        group_work
-    FROM
-        assessment_instances AS ai
-        JOIN assessments AS a ON (a.id = ai.assessment_id)
-    WHERE 
-        ai.id = assessment_instance_id;
-    
-     -- get basic data about existing objects
+    -- get basic data about existing objects
     SELECT
         c.id,      g.id,   u.user_id,            a.id,          a.type,
         a.max_points,          ai.max_points,
         COALESCE(a.max_bonus_points, 0),    ai.max_bonus_points,
-        ai.open
+        ai.open, a.group_work
     INTO
         course_id, group_id,  user_id,   assessment_id, assessment_type,
         assessment_max_points, old_assessment_instance_max_points,
         assessment_max_bonus_points, old_assessment_instance_max_bonus_points,
-        assessment_instance_open
+        assessment_instance_open, group_work
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
