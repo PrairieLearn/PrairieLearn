@@ -92,7 +92,8 @@ SELECT
     aqsmp.points_list,
     to_jsonb(q) AS question
 FROM
-    z_chosen_assessment_questions AS aq
+    z_chosen_assessment_questions AS caq
+    JOIN assessment_questions AS aq ON (caq.id = aq.id)
     JOIN questions AS q ON (q.id = aq.question_id)
     JOIN assessment_questions_select_manual_points(aq, q) AS aqsmp ON (TRUE)
 WHERE

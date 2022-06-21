@@ -92,7 +92,6 @@ BEGIN
     -- update all parent objects
 
     IF assessment_instance_id IS NOT NULL THEN
-        PERFORM instance_questions_update_in_grading(instance_question_id, authn_user_id);
         PERFORM assessment_instances_grade(assessment_instance_id, authn_user_id, credit);
     END IF;
 END;

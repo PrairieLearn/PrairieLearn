@@ -8,11 +8,18 @@ CREATE FUNCTION
 AS $$
 DECLARE
     instance_question_open boolean;
+    manual_points double precision;
+    max_points double precision;
+    new_score_perc double precision;
     new_values record;
     new_instance_question instance_questions%ROWTYPE;
 BEGIN
-    SELECT iq.open INTO instance_question_open
-    FROM instance_questions AS iq WHERE iq.id = instance_question_id;
+    SELECT iq.open, COALESCE(iq.manual_points, 0), aq.max_points
+    INTO instance_question_open, manual_points, max_points
+    FROM
+        instance_questions AS iq
+        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+    WHERE iq.id = instance_question_id;
 
     IF NOT instance_question_open THEN
         -- this shouldn't happen, so log an error
@@ -30,18 +37,20 @@ BEGIN
         RETURN;
     END IF;
 
-    SELECT *
+    SELECT *, auto_points + instance_question_manual_points AS points
     INTO new_values
     FROM instance_questions_points(instance_question_id, submission_score);
+
+    new_score_perc := new_values.points / (CASE WHEN max_points = 0 THEN 1 ELSE max_points END) * 100;
 
     UPDATE instance_questions AS iq
     SET
         open = new_values.open,
         status = new_values.status,
+        auto_points = new_values.auto_points,
         points = new_values.points,
-        points_in_grading = 0,
-        score_perc = new_values.score_perc,
-        score_perc_in_grading = 0,
+        auto_score_perc = new_values.auto_score_perc,
+        score_perc = new_score_perc,
         highest_submission_score = new_values.highest_submission_score,
         current_value = new_values.current_value,
         points_list = new_values.points_list,
@@ -51,11 +60,13 @@ BEGIN
         iq.id = instance_question_id;
 
     INSERT INTO question_score_logs
-        (instance_question_id, auth_user_id,  max_points,
-                   points,            score_perc, grading_job_id)
+        (instance_question_id, auth_user_id, max_points,
+         points, auto_points, score_perc, auto_score_perc,
+         grading_job_id)
     VALUES
-        (instance_question_id, authn_user_id, new_values.max_points,
-        new_values.points, new_values.score_perc, grading_job_id);
+        (instance_question_id, authn_user_id, max_points, new_values.max_auto_points,
+         new_values.points, new_values.auto_points, new_score_perc, new_values.auto_score_perc,
+         grading_job_id);
 
     PERFORM instance_questions_calculate_stats(instance_question_id);
 END;

@@ -4,13 +4,13 @@ CREATE FUNCTION
         IN submission_score DOUBLE PRECISION,
         OUT open BOOLEAN,
         OUT status enum_instance_question_status,
-        OUT points DOUBLE PRECISION,
-        OUT score_perc DOUBLE PRECISION,
+        OUT auto_points DOUBLE PRECISION,
+        OUT auto_score_perc DOUBLE PRECISION,
         OUT highest_submission_score DOUBLE PRECISION,
         OUT current_value DOUBLE PRECISION,
         OUT points_list DOUBLE PRECISION[],
         OUT variants_points_list DOUBLE PRECISION[],
-        OUT max_points DOUBLE PRECISION
+        OUT max_auto_points DOUBLE PRECISION
     )
 AS $$
 DECLARE
@@ -24,9 +24,15 @@ DECLARE
 
 BEGIN
     SELECT * INTO iq FROM instance_questions WHERE id = instance_question_id;
-    SELECT * INTO aq FROM assessment_questions WHERE id = iq.assessment_question_id;
+    SELECT aq.*, aqsmp.* INTO aq
+    FROM
+        assessment_questions aq
+        JOIN questions AS q ON (q.id = aq.question_id)
+        JOIN assessment_questions_select_manual_points(aq, q) as aqsmp ON (TRUE)
+    WHERE
+        id = iq.assessment_question_id;
 
-    max_points := aq.max_points;
+    max_auto_points := aq.max_auto_points;
     highest_submission_score := greatest(submission_score, coalesce(iq.highest_submission_score, 0));
 
     open := TRUE;
@@ -58,19 +64,19 @@ BEGIN
 
     -- if the submission was correct, increment current_value
     IF correct AND NOT constant_question_value THEN
-        current_value := least(iq.current_value + aq.init_points, aq.max_points);
+        current_value := least(iq.current_value + aq.init_points, aq.max_auto_points);
     END IF;
 
     -- points is the sum of all elements in variants_points_list (which now must be non-empty)
     length := cardinality(variants_points_list);
-    points := 0;
+    auto_points := 0;
     FOR i in 1..length LOOP
-        points := points + variants_points_list[i];
+        auto_points := auto_points + variants_points_list[i];
     END LOOP;
-    points := least(points, aq.max_points);
+    auto_points := least(auto_points, aq.max_auto_points);
 
     -- score_perc
-    score_perc := points / (CASE WHEN aq.max_points > 0 THEN aq.max_points ELSE 1 END) * 100;
+    auto_score_perc := auto_points / (CASE WHEN aq.max_auto_points > 0 THEN aq.max_auto_points ELSE 1 END) * 100;
 
     -- status
     IF correct THEN

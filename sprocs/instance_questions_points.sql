@@ -4,13 +4,13 @@ CREATE FUNCTION
         IN submission_score DOUBLE PRECISION,
         OUT open BOOLEAN,
         OUT status enum_instance_question_status,
-        OUT points DOUBLE PRECISION,
-        OUT score_perc DOUBLE PRECISION,
+        OUT auto_points DOUBLE PRECISION,
+        OUT auto_score_perc DOUBLE PRECISION,
         OUT highest_submission_score DOUBLE PRECISION,
         OUT current_value DOUBLE PRECISION,
         OUT points_list DOUBLE PRECISION[],
         OUT variants_points_list DOUBLE PRECISION[],
-        OUT max_points DOUBLE PRECISION
+        OUT max_auto_points DOUBLE PRECISION
     ) AS $$
 DECLARE
     type enum_assessment_type;
@@ -32,12 +32,12 @@ BEGIN
 
     CASE type
         WHEN 'Exam' THEN
-            SELECT * INTO open, status, points, score_perc, highest_submission_score,
-                current_value, points_list, variants_points_list, max_points
+            SELECT * INTO open, status, auto_points, auto_score_perc, highest_submission_score,
+                current_value, points_list, variants_points_list, max_auto_points
             FROM instance_questions_points_exam(instance_question_id, submission_score);
         WHEN 'Homework' THEN
-            SELECT * INTO open, status, points, score_perc, highest_submission_score,
-                current_value, points_list, variants_points_list, max_points
+            SELECT * INTO open, status, auto_points, auto_score_perc, highest_submission_score,
+                current_value, points_list, variants_points_list, max_auto_points
             FROM instance_questions_points_homework(instance_question_id, submission_score);
         ELSE
             RAISE EXCEPTION 'Unknown assessment type: %', type;

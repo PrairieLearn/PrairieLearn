@@ -4,13 +4,13 @@ CREATE FUNCTION
         IN submission_score DOUBLE PRECISION,
         OUT open BOOLEAN,
         OUT status enum_instance_question_status,
-        OUT points DOUBLE PRECISION,
-        OUT score_perc DOUBLE PRECISION,
+        OUT auto_points DOUBLE PRECISION,
+        OUT auto_score_perc DOUBLE PRECISION,
         OUT highest_submission_score DOUBLE PRECISION,
         OUT current_value DOUBLE PRECISION,
         OUT points_list DOUBLE PRECISION[],
         OUT variants_points_list DOUBLE PRECISION[],
-        OUT max_points DOUBLE PRECISION
+        OUT max_auto_points DOUBLE PRECISION
     )
 AS $$
 DECLARE
@@ -19,25 +19,31 @@ DECLARE
     correct boolean;
 BEGIN
     SELECT * INTO iq FROM instance_questions WHERE id = instance_question_id;
-    SELECT * INTO aq FROM assessment_questions WHERE id = iq.assessment_question_id;
+    SELECT aq.*, aqsmp.* INTO aq
+    FROM
+        assessment_questions aq
+        JOIN questions AS q ON (q.id = aq.question_id)
+        JOIN assessment_questions_select_manual_points(aq, q) as aqsmp ON (TRUE)
+    WHERE
+        id = iq.assessment_question_id;
 
     -- exams don't use this, so just copy whatever was there before
     variants_points_list := iq.variants_points_list;
 
-    max_points := COALESCE(aq.max_points, 0);
+    max_auto_points := COALESCE(aq.max_auto_points, 0);
 
     -- Update points (instance_question will be closed when number_attempts exceeds bound,
     -- so we don't have to worry about accessing a non-existent entry in points_list_original,
     -- but use coalesce just to be safe)
-    points := iq.points + iq.points_list_original[iq.number_attempts + 1] * GREATEST(0, submission_score - coalesce(iq.highest_submission_score, 0));
+    auto_points := COALESCE(iq.auto_points, 0) + iq.points_list_original[iq.number_attempts + 1] * GREATEST(0, submission_score - coalesce(iq.highest_submission_score, 0));
 
     -- Handle the special case in which points_list is constant (e.g., [10 10 10 10])
-    IF (submission_score >= 1) AND (iq.points_list_original[iq.number_attempts + 1] = max_points) THEN
-        points := max_points;
+    IF (submission_score >= 1) AND (iq.points_list_original[iq.number_attempts + 1] = max_auto_points) THEN
+        auto_points := max_auto_points;
     END IF;
 
     -- Update score_perc
-    score_perc := points / (CASE WHEN max_points > 0 THEN max_points ELSE 1 END) * 100;
+    auto_score_perc := auto_points / (CASE WHEN max_auto_points > 0 THEN max_auto_points ELSE 1 END) * 100;
 
     -- Update highest_submission_score
     highest_submission_score := GREATEST(submission_score, coalesce(iq.highest_submission_score, 0));
