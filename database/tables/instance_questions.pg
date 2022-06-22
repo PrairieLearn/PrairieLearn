@@ -18,7 +18,6 @@ columns
     last_grader: bigint
     last_submission_score: double precision
     manual_points: double precision
-    manual_score_perc: double precision
     max_submission_score: double precision
     modified_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     number: integer
