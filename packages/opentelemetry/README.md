@@ -23,13 +23,28 @@ await init({
 
 This will automatically instrument a variety of commonly-used Node packages.
 
-To manually instrument code, you can use the `trace` export:
+To easily instrument individual pieces of functionality, you can use the `instrumented()` helper function:
 
 ```ts
-import { trace } from '@prairielearn/opentelemetry';
+import { instrumented } from '@prairielearn/opentelemetry';
 
-const tracer = trace.getTracer('lib-name');
-await tracer.startActiveSpan('span-name', async (span) => {
+async function doThing() {
+  return instrumented('span.name', async (span) => {
+    span.setAttribute('attribute.name', 'value');
+    await doThing();
+  });
+}
+```
+
+This will automatically set the span status and record any exceptions that occur.
+
+If you have a more complex use case, you can manually instrument code with the `trace` export:
+
+```ts
+import { trace, SpanStatusCode } from '@prairielearn/opentelemetry';
+
+const tracer = trace.getTracer('default');
+await tracer.startActiveSpan('span.name', async (span) => {
   try {
     await doWork();
     span.setStatus({ status: SpanStatusCode.OK });
