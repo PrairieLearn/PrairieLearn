@@ -15,7 +15,7 @@ CREATE FUNCTION
 AS $$
 DECLARE
     iq instance_questions%ROWTYPE;
-    aq assessment_questions%ROWTYPE;
+    assessment_question assessment_questions%ROWTYPE;
     correct boolean;
     constant_question_value boolean;
     length integer;
@@ -24,15 +24,15 @@ DECLARE
 
 BEGIN
     SELECT * INTO iq FROM instance_questions WHERE id = instance_question_id;
-    SELECT aq.*, aqsmp.* INTO aq
+    SELECT aq.*, aqsmp.* INTO assessment_question
     FROM
         assessment_questions aq
         JOIN questions AS q ON (q.id = aq.question_id)
         JOIN assessment_questions_select_manual_points(aq, q) as aqsmp ON (TRUE)
     WHERE
-        id = iq.assessment_question_id;
+        aq.id = iq.assessment_question_id;
 
-    max_auto_points := aq.max_auto_points;
+    max_auto_points := assessment_question.max_auto_points;
     highest_submission_score := greatest(submission_score, coalesce(iq.highest_submission_score, 0));
 
     open := TRUE;
@@ -41,7 +41,7 @@ BEGIN
     -- if the submission was not correct, then immediately reset current_value
     correct := (submission_score >= 1.0);
     IF NOT correct THEN
-        current_value := aq.init_points;
+        current_value := assessment_question.init_points;
     ELSE
         current_value := iq.current_value;
     END IF;
@@ -51,7 +51,7 @@ BEGIN
     length := cardinality(variants_points_list);
     var_points_old := coalesce(variants_points_list[length], 0);
     var_points_new := submission_score*current_value;
-    IF (length > 0) AND (var_points_old < aq.init_points) THEN
+    IF (length > 0) AND (var_points_old < assessment_question.init_points) THEN
         IF (var_points_old < var_points_new) THEN
             variants_points_list[length] = var_points_new;
         END IF;
@@ -60,11 +60,11 @@ BEGIN
     END IF;
 
     -- get property that says if we should change current_value or not
-    SELECT a.constant_question_value INTO constant_question_value FROM assessments AS a WHERE a.id = aq.assessment_id;
+    SELECT a.constant_question_value INTO constant_question_value FROM assessments AS a WHERE a.id = assessment_question.assessment_id;
 
     -- if the submission was correct, increment current_value
     IF correct AND NOT constant_question_value THEN
-        current_value := least(iq.current_value + aq.init_points, aq.max_auto_points);
+        current_value := least(iq.current_value + assessment_question.init_points, assessment_question.max_auto_points);
     END IF;
 
     -- points is the sum of all elements in variants_points_list (which now must be non-empty)
@@ -73,10 +73,10 @@ BEGIN
     FOR i in 1..length LOOP
         auto_points := auto_points + variants_points_list[i];
     END LOOP;
-    auto_points := least(auto_points, aq.max_auto_points);
+    auto_points := least(auto_points, assessment_question.max_auto_points);
 
     -- score_perc
-    auto_score_perc := auto_points / (CASE WHEN aq.max_auto_points > 0 THEN aq.max_auto_points ELSE 1 END) * 100;
+    auto_score_perc := auto_points / (CASE WHEN assessment_question.max_auto_points > 0 THEN assessment_question.max_auto_points ELSE 1 END) * 100;
 
     -- status
     IF correct THEN
