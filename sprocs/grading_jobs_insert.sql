@@ -31,6 +31,10 @@ BEGIN
 
     IF NOT FOUND THEN RAISE EXCEPTION 'no such submission_id: %', submission_id; END IF;
 
+    -- This method is only called for manual grading questions if
+    -- auto_points > 0, in that case it is treated as internal.
+    IF grading_method = 'Manual' THEN grading_method := 'Internal' END IF;
+
     -- ######################################################################
     -- cancel any outstanding grading jobs
 

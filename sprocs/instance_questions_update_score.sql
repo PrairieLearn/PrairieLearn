@@ -55,8 +55,8 @@ BEGIN
         iq.id,
         ai.id,
         aq.max_points,
-        aqsmp.max_auto_points,
-        aqsmp.manual_points,
+        aq.max_auto_points,
+        aq.manual_points,
         COALESCE(g.name, u.uid),
         q.qid,
         s.partial_scores,
@@ -80,7 +80,6 @@ BEGIN
         instance_questions AS iq
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q on (q.id = aq.question_id)
-        JOIN assessment_questions_select_manual_points(aq, q) as aqsmp ON (TRUE)
         JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
         LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.deleted_at IS NULL)
         LEFT JOIN users AS u ON (u.user_id = ai.user_id)

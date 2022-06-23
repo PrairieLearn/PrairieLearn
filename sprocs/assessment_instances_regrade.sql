@@ -51,15 +51,13 @@ BEGIN
         UPDATE instance_questions AS iq
         SET
             points = aq.max_points,
-            auto_points = aqsmp.max_auto_points,
-            manual_points = aqsmp.manual_points,
+            auto_points = aq.max_auto_points,
+            manual_points = aq.manual_points,
             score_perc = 100,
             auto_score_perc = 100,
             modified_at = now()
         FROM
             assessment_questions AS aq
-            JOIN questions AS q ON (q.id = aq.question_id)
-            JOIN assessment_questions_select_manual_points(aq, q) as aqsmp ON (TRUE)
         WHERE
             aq.id = iq.assessment_question_id
             AND iq.assessment_instance_id = assessment_instances_regrade.assessment_instance_id

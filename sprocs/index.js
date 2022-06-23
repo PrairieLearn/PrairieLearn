@@ -36,7 +36,6 @@ module.exports.init = function (callback) {
       'check_course_instance_access.sql',
       'check_assessment_access_rule.sql',
       'check_assessment_access.sql',
-      'assessment_questions_select_manual_points.sql',
       'assessment_instances_lock.sql',
       'assessment_instances_insert.sql',
       'assessment_instances_duration.sql',

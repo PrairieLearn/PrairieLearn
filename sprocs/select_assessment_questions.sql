@@ -88,14 +88,12 @@ z_chosen_assessment_questions AS (
 -- Finally format the data for easy question creation.
 SELECT
     aq.id,
-    aqsmp.init_points,
-    aqsmp.points_list,
+    aq.init_points,
+    aq.points_list,
     to_jsonb(q) AS question
 FROM
-    z_chosen_assessment_questions AS caq
-    JOIN assessment_questions AS aq ON (caq.id = aq.id)
+    z_chosen_assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)
-    JOIN assessment_questions_select_manual_points(aq, q) AS aqsmp ON (TRUE)
 WHERE
     q.deleted_at IS NULL;
 $$ LANGUAGE SQL VOLATILE;

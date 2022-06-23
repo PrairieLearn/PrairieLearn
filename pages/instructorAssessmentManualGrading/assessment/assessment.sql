@@ -27,7 +27,7 @@ open_instances AS (
           AND ai.open
 )
 SELECT
-    aq.*, aqsmp.*,
+    aq.*,
     q.qid,
     q.title,
     q.id AS question_id,
@@ -44,7 +44,6 @@ SELECT
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)
-    JOIN assessment_questions_select_manual_points(aq, q) as aqsmp ON (TRUE)
     JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
     LEFT JOIN instance_questions_with_submission iqs ON (iqs.assessment_question_id = aq.id)
     LEFT JOIN open_instances oi ON (TRUE)

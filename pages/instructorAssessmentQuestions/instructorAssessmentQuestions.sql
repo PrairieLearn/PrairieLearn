@@ -38,7 +38,7 @@ tags_list AS (
         aq.id
 )
 SELECT
-    aq.*, aqsmp.*,
+    aq.*,
     q.qid,q.title,tags_list.tags_string,row_to_json(top) AS topic,
     q.id AS question_id,
     admin_assessment_question_number(aq.id) as number,
@@ -63,7 +63,6 @@ SELECT
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)
-    JOIN assessment_questions_select_manual_points(aq, q) as aqsmp ON (TRUE)
     JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
     JOIN zones AS z ON (z.id = ag.zone_id)
     JOIN topics AS top ON (top.id = q.topic_id)

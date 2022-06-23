@@ -15,22 +15,16 @@ CREATE FUNCTION
 AS $$
 DECLARE
     iq instance_questions%ROWTYPE;
-    assessment_question assessment_questions%ROWTYPE;
+    aq assessment_questions%ROWTYPE;
     correct boolean;
 BEGIN
     SELECT * INTO iq FROM instance_questions WHERE id = instance_question_id;
-    SELECT aq.*, aqsmp.* INTO assessment_question
-    FROM
-        assessment_questions aq
-        JOIN questions AS q ON (q.id = aq.question_id)
-        JOIN assessment_questions_select_manual_points(aq, q) as aqsmp ON (TRUE)
-    WHERE
-        aq.id = iq.assessment_question_id;
+    SELECT * INTO aq FROM assessment_questions WHERE id = iq.assessment_question_id;
 
     -- exams don't use this, so just copy whatever was there before
     variants_points_list := iq.variants_points_list;
 
-    max_auto_points := COALESCE(assessment_question.max_auto_points, 0);
+    max_auto_points := COALESCE(aq.max_auto_points, 0);
 
     -- Update points (instance_question will be closed when number_attempts exceeds bound,
     -- so we don't have to worry about accessing a non-existent entry in points_list_original,

@@ -42,7 +42,7 @@ BEGIN
     SELECT
         iq.id,
         ai.id,
-        aqsmp.manual_points
+        COALESCE(aq.manual_points, 0)
     INTO
         instance_question_id,
         assessment_instance_id,
@@ -52,8 +52,6 @@ BEGIN
         LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
         LEFT JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-        LEFT JOIN questions AS q ON (q.id = aq.question_id)
-        LEFT JOIN assessment_questions_select_manual_points(aq, q) as aqsmp ON (TRUE)
     WHERE v.id = variant_id;
 
     -- ######################################################################
