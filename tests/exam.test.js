@@ -320,7 +320,7 @@ describe('Exam assessment', function () {
           submission_score: null,
           submission_correct: null,
           instance_question_points: 0,
-          instance_question_score_perc: (0 / 11) * 100,
+          instance_question_score_perc: (0 / 21) * 100,
           instance_question_auto_points: 0,
           instance_question_auto_score_perc: (0 / 11) * 100,
           instance_question_manual_points: 0,
@@ -351,7 +351,7 @@ describe('Exam assessment', function () {
           submission_score: 0,
           submission_correct: false,
           instance_question_points: 0,
-          instance_question_score_perc: (0 / 11) * 100,
+          instance_question_score_perc: (0 / 21) * 100,
           instance_question_auto_points: 0,
           instance_question_auto_score_perc: (0 / 11) * 100,
           instance_question_manual_points: 0,
@@ -804,11 +804,11 @@ describe('Exam assessment', function () {
           locals.expectedResult = {
             submission_score: 0,
             submission_correct: false,
-            instance_question_points: 11,
-            instance_question_score_perc: (11 / 11) * 100,
+            instance_question_points: 21,
+            instance_question_score_perc: (21 / 21) * 100,
             instance_question_auto_points: 11,
             instance_question_auto_score_perc: (11 / 11) * 100,
-            instance_question_manual_points: 0,
+            instance_question_manual_points: 10,
           };
         });
       });
@@ -831,8 +831,8 @@ describe('Exam assessment', function () {
       describe('setting up the expected assessment results', function () {
         it('should succeed', function () {
           locals.expectedResult = {
-            assessment_instance_points: 14,
-            assessment_instance_score_perc: (14 / helperExam.assessmentMaxPoints) * 100,
+            assessment_instance_points: 24,
+            assessment_instance_score_perc: (24 / helperExam.assessmentMaxPoints) * 100,
           };
         });
       });
@@ -868,11 +868,11 @@ describe('Exam assessment', function () {
         it('should succeed', function () {
           locals.question = helperExam.questions.addVectors;
           locals.expectedResult = {
-            instance_question_points: 5.5,
-            instance_question_score_perc: (5.5 / 11) * 100,
+            instance_question_points: 10.5,
+            instance_question_score_perc: (10.5 / 21) * 100,
             instance_question_auto_points: 11,
             instance_question_auto_score_perc: (11 / 11) * 100,
-            instance_question_manual_points: -5.5,
+            instance_question_manual_points: -0.5,
           };
         });
       });
@@ -893,8 +893,8 @@ describe('Exam assessment', function () {
       describe('setting up the expected assessment results', function () {
         it('should succeed', function () {
           locals.expectedResult = {
-            assessment_instance_points: 7.5,
-            assessment_instance_score_perc: (7.5 / helperExam.assessmentMaxPoints) * 100,
+            assessment_instance_points: 12.5,
+            assessment_instance_score_perc: (12.5 / helperExam.assessmentMaxPoints) * 100,
           };
         });
       });
@@ -977,7 +977,7 @@ describe('Exam assessment', function () {
           locals.question = helperExam.questions.addVectors;
           locals.expectedResult = {
             instance_question_points: 1.2,
-            instance_question_score_perc: (1.2 / 11) * 100,
+            instance_question_score_perc: (1.2 / 21) * 100,
             instance_question_auto_points: 11,
             instance_question_auto_score_perc: (11 / 11) * 100,
             instance_question_manual_points: -9.8,
@@ -1096,7 +1096,7 @@ describe('Exam assessment', function () {
           locals.question = helperExam.questions.addVectors;
           locals.expectedResult = {
             instance_question_points: 1.2,
-            instance_question_score_perc: (1.2 / 11) * 100,
+            instance_question_score_perc: (1.2 / 21) * 100,
             instance_question_auto_points: 11,
             instance_question_auto_score_perc: (11 / 11) * 100,
             instance_question_manual_points: -9.8,
@@ -1155,7 +1155,7 @@ describe('Exam assessment', function () {
           locals.question = helperExam.questions.addVectors;
           locals.expectedResult = {
             instance_question_points: 1.2,
-            instance_question_score_perc: (1.2 / 11) * 100,
+            instance_question_score_perc: (1.2 / 21) * 100,
             instance_question_auto_points: 11,
             instance_question_auto_score_perc: (11 / 11) * 100,
             instance_question_manual_points: -9.8,
@@ -1234,7 +1234,7 @@ describe('Exam assessment', function () {
           locals.question = helperExam.questions.addVectors;
           locals.expectedResult = {
             instance_question_points: 0.9,
-            instance_question_score_perc: (0.9 / 11) * 100,
+            instance_question_score_perc: (0.9 / 21) * 100,
             instance_question_auto_points: 10.7,
             instance_question_auto_score_perc: (10.7 / 11) * 100,
             instance_question_manual_points: -9.8,
@@ -1372,11 +1372,11 @@ describe('Exam assessment', function () {
         it('should succeed', function () {
           locals.question = helperExam.questions.addVectors;
           locals.expectedResult = {
-            instance_question_points: 10.7,
-            instance_question_score_perc: (10.7 / 11) * 100,
+            instance_question_points: 12.7,
+            instance_question_score_perc: (12.7 / 21) * 100,
             instance_question_auto_points: 10.7,
             instance_question_auto_score_perc: (10.7 / 11) * 100,
-            instance_question_manual_points: 0,
+            instance_question_manual_points: 2,
           };
         });
       });
@@ -1397,8 +1397,8 @@ describe('Exam assessment', function () {
       describe('setting up the expected assessment results', function () {
         it('should succeed', function () {
           locals.expectedResult = {
-            assessment_instance_points: 20.9,
-            assessment_instance_score_perc: (20.9 / helperExam.assessmentMaxPoints) * 100,
+            assessment_instance_points: 22.9,
+            assessment_instance_score_perc: (22.9 / helperExam.assessmentMaxPoints) * 100,
           };
         });
       });
