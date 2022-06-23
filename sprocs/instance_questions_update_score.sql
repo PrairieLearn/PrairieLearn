@@ -40,16 +40,17 @@ DECLARE
     max_auto_points double precision;
     grading_job_id bigint;
 
+    current_partial_score jsonb;
+    current_auto_points double precision;
+    current_auto_score_perc double precision;
+    current_manual_points double precision;
+
     new_score_perc double precision;
     new_auto_score_perc double precision;
     new_points double precision;
     new_manual_points double precision;
     new_auto_points double precision;
-
     new_correct boolean;
-    current_partial_score jsonb;
-    current_auto_points double precision;
-    current_auto_score_perc double precision;
 BEGIN
     -- ##################################################################
     -- get the assessment_instance, max_points, and (possibly) submission_id
@@ -66,6 +67,7 @@ BEGIN
         s.partial_scores,
         COALESCE(iq.auto_points, iq.points),
         COALESCE(iq.auto_score_perc, iq.score_perc),
+        COALESCE(iq.manual_points, 0),
         iq.modified_at
     INTO
         found_submission_id,
@@ -79,6 +81,7 @@ BEGIN
         current_partial_score,
         current_auto_points,
         current_auto_score_perc,
+        current_manual_points,
         current_modified_at
     FROM
         instance_questions AS iq
@@ -162,7 +165,7 @@ BEGIN
     IF arg_auto_score_perc IS NOT NULL THEN
         IF arg_auto_points IS NOT NULL THEN RAISE EXCEPTION 'Cannot set both auto_score_perc and auto_points'; END IF;
         IF arg_score_perc IS NOT NULL THEN RAISE EXCEPTION 'Cannot set both auto_score_perc and score_perc'; END IF;
-        new_auto_score_perc := arg_score_perc;
+        new_auto_score_perc := arg_auto_score_perc;
         new_auto_points := new_auto_score_perc / 100 * max_auto_points;
     ELSIF arg_auto_points IS NOT NULL THEN
         IF arg_points IS NOT NULL THEN RAISE EXCEPTION 'Cannot set both auto_points and points'; END IF;
