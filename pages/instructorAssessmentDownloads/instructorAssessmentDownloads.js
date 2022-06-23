@@ -225,7 +225,9 @@ router.get('/:filename', function (req, res, next) {
     sqldb.query(sql.submissions_for_manual_grading, params, function (err, result) {
       if (ERR(err, next)) return;
       // Replace user-friendly column names with upload-friendly names
-      identityColumn = identityColumn.map((pair) => [pair[1], pair[1]]);
+      identityColumn = (res.locals.assessment.group_work ? groupNameColumn : studentColumn).map(
+        (pair) => [pair[1], pair[1]]
+      );
       let columns = identityColumn.concat([
         ['qid', 'qid'],
         ['old_score_perc', 'old_score_perc'],
