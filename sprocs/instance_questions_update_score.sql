@@ -15,6 +15,10 @@ CREATE FUNCTION
         -- specify what should be updated
         IN arg_score_perc double precision,
         IN arg_points double precision,
+        IN arg_manual_score_perc double precision,
+        IN arg_manual_points double precision,
+        IN arg_auto_score_perc double precision,
+        IN arg_auto_points double precision,
         IN arg_feedback jsonb,
         IN arg_partial_scores jsonb,
         IN arg_authn_user_id bigint,
@@ -150,13 +154,36 @@ BEGIN
           INTO new_auto_score_perc
           FROM jsonb_each(arg_partial_scores) AS p(k, val);
         new_auto_points := new_auto_score_perc / 100 * max_auto_points;
-        new_correct := (new_auto_score_perc > 50);
     END IF;
 
     -- ##################################################################
     -- compute the new score_perc/points
 
-    IF arg_score_perc IS NOT NULL THEN
+    IF arg_auto_score_perc IS NOT NULL THEN
+        IF arg_auto_points IS NOT NULL THEN RAISE EXCEPTION 'Cannot set both auto_score_perc and auto_points'; END IF;
+        IF arg_score_perc IS NOT NULL THEN RAISE EXCEPTION 'Cannot set both auto_score_perc and score_perc'; END IF;
+        new_auto_score_perc := arg_score_perc;
+        new_auto_points := new_auto_score_perc / 100 * max_auto_points;
+    ELSIF arg_auto_points IS NOT NULL THEN
+        IF arg_points IS NOT NULL THEN RAISE EXCEPTION 'Cannot set both auto_points and points'; END IF;
+        new_auto_points := arg_auto_points;
+        new_auto_score_perc := (CASE WHEN max_auto_points > 0 THEN new_auto_points / max_auto_points ELSE 0 END) * 100;
+    END IF;
+
+    IF new_auto_score_perc IS NOT NULL THEN new_correct := new_auto_score_perc > 50; END IF;
+
+    IF arg_manual_score_perc IS NOT NULL THEN
+        IF arg_manual_points IS NOT NULL THEN RAISE EXCEPTION 'Cannot set both manual_score_perc and manual_points'; END IF;
+        IF arg_score_perc IS NOT NULL THEN RAISE EXCEPTION 'Cannot set both manual_score_perc and score_perc'; END IF;
+        new_manual_points := arg_manual_score_perc / 100 * max_manual_points;
+        new_points := new_manual_points + COALESCE(new_auto_points, current_auto_points, 0);
+        new_score_perc := (CASE WHEN max_points > 0 THEN new_points / max_points ELSE 0 END) * 100;
+    ELSIF arg_manual_points IS NOT NULL THEN
+        IF arg_points IS NOT NULL THEN RAISE EXCEPTION 'Cannot set both manual_points and points'; END IF;
+        new_manual_points := arg_manual_points;
+        new_points := new_manual_points + COALESCE(new_auto_points, current_auto_points, 0);
+        new_score_perc := (CASE WHEN max_points > 0 THEN new_points / max_points ELSE 0 END) * 100;
+    ELSIF arg_score_perc IS NOT NULL THEN
         IF arg_points IS NOT NULL THEN RAISE EXCEPTION 'Cannot set both score_perc and points'; END IF;
         new_score_perc := arg_score_perc;
         new_points := new_score_perc / 100 * max_points;
@@ -203,7 +230,6 @@ BEGIN
                     ELSE arg_partial_scores
                 END,
                 graded_at = now(),
-                grading_method = 'Manual',
                 override_score = COALESCE(new_auto_score_perc / 100, override_score),
                 score = COALESCE(new_auto_score_perc / 100, score),
                 correct = COALESCE(new_correct, correct),

@@ -146,6 +146,10 @@ router.post('/', (req, res, next) => {
       req.body.modified_at,
       null, // score_perc
       req.body.points,
+      null, // manual_score_perc
+      null, // manual_points
+      null, // auto_score_perc
+      null, // auto_points
       null, // feedback
       null, // partial_scores
       res.locals.authn_user.user_id,
@@ -174,6 +178,10 @@ router.post('/', (req, res, next) => {
       req.body.modified_at,
       req.body.score_perc,
       null, // points
+      null, // manual_score_perc
+      null, // manual_points
+      null, // auto_score_perc
+      null, // auto_points
       null, // feedback
       null, // partial_scores
       res.locals.authn_user.user_id,
