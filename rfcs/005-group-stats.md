@@ -48,7 +48,7 @@ As group assessments are now a familiar feature of PrairieLearn, is important th
 * Allow filters and parameters to serve a variety of instructor needs
 
 # Proposed Solution
-Adding a Group Statistics tab (```pages/instructorGroupStatistics```) to the Course Instance-level where PrairieLearn will provide statistics on group performances across group submissions. 
+Adding a Group Statistics tab (`pages/instructorGroupStatistics`) to the Course Instance-level where PrairieLearn will provide statistics on group performances across group submissions. 
 
 **Input:** CSV of desired group assignments to compare against. 
 Also add a button to compute/recompute statistics when needed. 
