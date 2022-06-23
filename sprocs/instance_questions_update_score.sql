@@ -67,7 +67,7 @@ BEGIN
         s.partial_scores,
         COALESCE(iq.auto_points, LEAST(iq.points, aq.max_auto_points)),
         COALESCE(iq.auto_score_perc, CASE WHEN aq.max_auto_points > 0 THEN LEAST(iq.points * 100 / aq.max_auto_points, 100) ELSE 0 END),
-        COALESCE(iq.manual_points, iq.points - LEAST(iq.points, aq.max_auto_points)),
+        COALESCE(iq.manual_points, GREATEST(0, iq.points - aq.max_auto_points)),
         iq.modified_at
     INTO
         found_submission_id,
