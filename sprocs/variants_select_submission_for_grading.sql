@@ -15,7 +15,7 @@ BEGIN
     INTO instance_question_id, grading_method, max_auto_points
     FROM
         variants AS v
-        JOIN questions AS q ON (q.id = aq.question_id)
+        JOIN questions AS q ON (q.id = v.question_id)
         LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         LEFT JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
     WHERE

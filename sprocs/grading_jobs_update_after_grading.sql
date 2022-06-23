@@ -66,7 +66,7 @@ BEGIN
 
     -- This method is only called for manual grading questions if
     -- auto_points > 0, in that case it is treated as internal.
-    IF grading_method = 'Manual' THEN grading_method := 'Internal' END IF;
+    IF grading_method = 'Manual' THEN grading_method := 'Internal'; END IF;
 
     -- ######################################################################
     -- check that everything is ok
