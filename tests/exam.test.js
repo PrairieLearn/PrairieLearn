@@ -321,6 +321,9 @@ describe('Exam assessment', function () {
           submission_correct: null,
           instance_question_points: 0,
           instance_question_score_perc: (0 / 11) * 100,
+          instance_question_auto_points: 0,
+          instance_question_auto_score_perc: (0 / 11) * 100,
+          instance_question_manual_points: 0,
           assessment_instance_points: 0,
           assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
         };
@@ -349,6 +352,9 @@ describe('Exam assessment', function () {
           submission_correct: false,
           instance_question_points: 0,
           instance_question_score_perc: (0 / 11) * 100,
+          instance_question_auto_points: 0,
+          instance_question_auto_score_perc: (0 / 11) * 100,
+          instance_question_manual_points: 0,
           assessment_instance_points: 0,
           assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
         };
@@ -377,6 +383,9 @@ describe('Exam assessment', function () {
           submission_correct: false,
           instance_question_points: 0,
           instance_question_score_perc: (0 / 5) * 100,
+          instance_question_auto_points: 0,
+          instance_question_auto_score_perc: (0 / 5) * 100,
+          instance_question_manual_points: 0,
           assessment_instance_points: 0,
           assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
         };
@@ -404,6 +413,9 @@ describe('Exam assessment', function () {
           submission_correct: false,
           instance_question_points: 0,
           instance_question_score_perc: (0 / 17) * 100,
+          instance_question_auto_points: 0,
+          instance_question_auto_score_perc: (0 / 17) * 100,
+          instance_question_manual_points: 0,
           assessment_instance_points: 0,
           assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
         };
@@ -431,6 +443,9 @@ describe('Exam assessment', function () {
           submission_correct: null,
           instance_question_points: 0,
           instance_question_score_perc: (0 / 17) * 100,
+          instance_question_auto_points: 0,
+          instance_question_auto_score_perc: (0 / 17) * 100,
+          instance_question_manual_points: 0,
           assessment_instance_points: 0,
           assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
         };
@@ -572,6 +587,9 @@ describe('Exam assessment', function () {
           submission_correct: true,
           instance_question_points: 3,
           instance_question_score_perc: (3 / 5) * 100,
+          instance_question_auto_points: 3,
+          instance_question_auto_score_perc: (3 / 5) * 100,
+          instance_question_manual_points: 0,
           assessment_instance_points: 3,
           assessment_instance_score_perc: (3 / helperExam.assessmentMaxPoints) * 100,
         };
@@ -620,6 +638,9 @@ describe('Exam assessment', function () {
           submission_correct: null,
           instance_question_points: 0,
           instance_question_score_perc: (0 / 17) * 100,
+          instance_question_auto_points: 0,
+          instance_question_auto_score_perc: (0 / 17) * 100,
+          instance_question_manual_points: 0,
           assessment_instance_points: 3,
           assessment_instance_score_perc: (3 / helperExam.assessmentMaxPoints) * 100,
         };
@@ -663,6 +684,9 @@ describe('Exam assessment', function () {
           submission_correct: false,
           instance_question_points: 0,
           instance_question_score_perc: (0 / 11) * 100,
+          instance_question_auto_points: 0,
+          instance_question_auto_score_perc: (0 / 11) * 100,
+          instance_question_manual_points: 0,
           assessment_instance_points: 3,
           assessment_instance_score_perc: (3 / helperExam.assessmentMaxPoints) * 100,
         };
@@ -767,6 +791,9 @@ describe('Exam assessment', function () {
             submission_correct: true,
             instance_question_points: 3,
             instance_question_score_perc: (3 / 5) * 100,
+            instance_question_auto_points: 3,
+            instance_question_auto_score_perc: (3 / 5) * 100,
+            instance_question_manual_points: 0,
           };
         });
       });
@@ -779,6 +806,9 @@ describe('Exam assessment', function () {
             submission_correct: false,
             instance_question_points: 11,
             instance_question_score_perc: (11 / 11) * 100,
+            instance_question_auto_points: 11,
+            instance_question_auto_score_perc: (11 / 11) * 100,
+            instance_question_manual_points: 0,
           };
         });
       });
@@ -791,6 +821,9 @@ describe('Exam assessment', function () {
             submission_correct: null,
             instance_question_points: 0,
             instance_question_score_perc: (0 / 17) * 100,
+            instance_question_auto_points: 0,
+            instance_question_auto_score_perc: (0 / 17) * 100,
+            instance_question_manual_points: 0,
           };
         });
       });
@@ -824,6 +857,9 @@ describe('Exam assessment', function () {
           locals.expectedResult = {
             instance_question_points: 2,
             instance_question_score_perc: (2 / 5) * 100,
+            instance_question_auto_points: 3,
+            instance_question_auto_score_perc: (3 / 5) * 100,
+            instance_question_manual_points: -1,
           };
         });
       });
@@ -834,6 +870,9 @@ describe('Exam assessment', function () {
           locals.expectedResult = {
             instance_question_points: 5.5,
             instance_question_score_perc: (5.5 / 11) * 100,
+            instance_question_auto_points: 11,
+            instance_question_auto_score_perc: (11 / 11) * 100,
+            instance_question_manual_points: -5.5,
           };
         });
       });
@@ -844,6 +883,9 @@ describe('Exam assessment', function () {
           locals.expectedResult = {
             instance_question_points: 0,
             instance_question_score_perc: (0 / 17) * 100,
+            instance_question_auto_points: 0,
+            instance_question_auto_score_perc: (0 / 17) * 100,
+            instance_question_manual_points: 0,
           };
         });
       });
@@ -923,6 +965,9 @@ describe('Exam assessment', function () {
           locals.expectedResult = {
             instance_question_points: 4.7,
             instance_question_score_perc: (4.7 / 5) * 100,
+            instance_question_auto_points: 3,
+            instance_question_auto_score_perc: (3 / 5) * 100,
+            instance_question_manual_points: 1.7,
           };
         });
       });
@@ -933,6 +978,9 @@ describe('Exam assessment', function () {
           locals.expectedResult = {
             instance_question_points: 1.2,
             instance_question_score_perc: (1.2 / 11) * 100,
+            instance_question_auto_points: 11,
+            instance_question_auto_score_perc: (11 / 11) * 100,
+            instance_question_manual_points: -9.8,
           };
         });
       });
@@ -943,6 +991,9 @@ describe('Exam assessment', function () {
           locals.expectedResult = {
             instance_question_points: 0,
             instance_question_score_perc: (0 / 17) * 100,
+            instance_question_auto_points: 0,
+            instance_question_auto_score_perc: (0 / 17) * 100,
+            instance_question_manual_points: 0,
           };
         });
       });
@@ -1033,6 +1084,9 @@ describe('Exam assessment', function () {
           locals.expectedResult = {
             instance_question_points: 4.7,
             instance_question_score_perc: (4.7 / 5) * 100,
+            instance_question_auto_points: 3,
+            instance_question_auto_score_perc: (3 / 5) * 100,
+            instance_question_manual_points: 1.7,
           };
         });
       });
@@ -1043,6 +1097,9 @@ describe('Exam assessment', function () {
           locals.expectedResult = {
             instance_question_points: 1.2,
             instance_question_score_perc: (1.2 / 11) * 100,
+            instance_question_auto_points: 11,
+            instance_question_auto_score_perc: (11 / 11) * 100,
+            instance_question_manual_points: -9.8,
           };
         });
       });
@@ -1053,6 +1110,9 @@ describe('Exam assessment', function () {
           locals.expectedResult = {
             instance_question_points: 0,
             instance_question_score_perc: (0 / 17) * 100,
+            instance_question_auto_points: 0,
+            instance_question_auto_score_perc: (0 / 17) * 100,
+            instance_question_manual_points: 0,
           };
         });
       });
@@ -1083,6 +1143,9 @@ describe('Exam assessment', function () {
           locals.expectedResult = {
             instance_question_points: 4.7,
             instance_question_score_perc: (4.7 / 5) * 100,
+            instance_question_auto_points: 3,
+            instance_question_auto_score_perc: (3 / 5) * 100,
+            instance_question_manual_points: 1.7,
           };
         });
       });
@@ -1093,6 +1156,9 @@ describe('Exam assessment', function () {
           locals.expectedResult = {
             instance_question_points: 1.2,
             instance_question_score_perc: (1.2 / 11) * 100,
+            instance_question_auto_points: 11,
+            instance_question_auto_score_perc: (11 / 11) * 100,
+            instance_question_manual_points: -9.8,
           };
         });
       });
@@ -1103,6 +1169,9 @@ describe('Exam assessment', function () {
           locals.expectedResult = {
             instance_question_points: 0,
             instance_question_score_perc: (0 / 17) * 100,
+            instance_question_auto_points: 0,
+            instance_question_auto_score_perc: (0 / 17) * 100,
+            instance_question_manual_points: 0,
           };
         });
       });
@@ -1168,6 +1237,10 @@ describe('Exam assessment', function () {
                 instance_question_points: locals.question.points,
                 instance_question_score_perc:
                   (locals.question.points / locals.question.maxPoints) * 100,
+                instance_question_auto_points: locals.question.points,
+                instance_question_auto_score_perc:
+                  (locals.question.points / locals.question.maxPoints) * 100,
+                instance_question_manual_points: 0,
                 assessment_instance_points: locals.totalPoints,
                 assessment_instance_score_perc:
                   (locals.totalPoints / helperExam.assessmentMaxPoints) * 100,
