@@ -65,9 +65,9 @@ BEGIN
         COALESCE(g.name, u.uid),
         q.qid,
         s.partial_scores,
-        COALESCE(iq.auto_points, iq.points),
-        COALESCE(iq.auto_score_perc, iq.score_perc),
-        COALESCE(iq.manual_points, 0),
+        COALESCE(iq.auto_points, LEAST(iq.points, aq.max_auto_points)),
+        COALESCE(iq.auto_score_perc, CASE WHEN aq.max_auto_points > 0 THEN LEAST(iq.points * 100 / aq.max_auto_points, 100) ELSE 0 END),
+        COALESCE(iq.manual_points, iq.points - LEAST(iq.points, aq.max_auto_points)),
         iq.modified_at
     INTO
         found_submission_id,
@@ -121,19 +121,6 @@ BEGIN
     END IF;
 
     modified_at_conflict = arg_modified_at IS NOT NULL AND current_modified_at != arg_modified_at;
-
-    -- ##################################################################
-    -- check if there is a pending grading job (not graded and not canceled)
-    SELECT gj.id INTO grading_job_id
-    FROM grading_jobs AS gj
-    WHERE
-        gj.submission_id = found_submission_id
-        AND gj.graded_at IS NULL
-        AND gj.grading_request_canceled_at IS NULL;
-
-    IF FOUND THEN
-        RAISE EXCEPTION 'submission has a pending grading job with id=%, manual grading cannot proceed until it is complete or canceled.', grading_job_id;
-    END IF;
 
     -- ##################################################################
     -- check if partial_scores is an object

@@ -29,7 +29,7 @@ BEGIN
     -- Update points (instance_question will be closed when number_attempts exceeds bound,
     -- so we don't have to worry about accessing a non-existent entry in points_list_original,
     -- but use coalesce just to be safe)
-    auto_points := COALESCE(iq.auto_points, 0) + iq.points_list_original[iq.number_attempts + 1] * GREATEST(0, submission_score - coalesce(iq.highest_submission_score, 0));
+    auto_points := COALESCE(iq.auto_points, iq.points) + iq.points_list_original[iq.number_attempts + 1] * GREATEST(0, submission_score - coalesce(iq.highest_submission_score, 0));
 
     -- Handle the special case in which points_list is constant (e.g., [10 10 10 10])
     IF (submission_score >= 1) AND (iq.points_list_original[iq.number_attempts + 1] = max_auto_points) THEN

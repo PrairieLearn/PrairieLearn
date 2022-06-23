@@ -421,7 +421,7 @@ module.exports = {
       it('should have the correct instance_question auto_points', function () {
         if (!_.has(locals.expectedResult, 'instance_question_auto_points')) return; // skip check
         assert.approximately(
-          locals.instance_question.auto_points ?? 0,
+          locals.instance_question.auto_points,
           locals.expectedResult.instance_question_auto_points,
           1e-6
         );
@@ -429,7 +429,7 @@ module.exports = {
       it('should have the correct instance_question auto_score_perc', function () {
         if (!_.has(locals.expectedResult, 'instance_question_auto_score_perc')) return; // skip check
         assert.approximately(
-          locals.instance_question.auto_score_perc ?? 0,
+          locals.instance_question.auto_score_perc,
           locals.expectedResult.instance_question_auto_score_perc,
           1e-6
         );
@@ -437,7 +437,7 @@ module.exports = {
       it('should have the correct instance_question manual_points', function () {
         if (!_.has(locals.expectedResult, 'instance_question_manual_points')) return; // skip check
         assert.approximately(
-          locals.instance_question.manual_points ?? 0,
+          locals.instance_question.manual_points,
           locals.expectedResult.instance_question_manual_points,
           1e-6
         );

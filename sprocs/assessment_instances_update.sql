@@ -61,14 +61,16 @@ BEGIN
     WITH
     inserted_instance_questions AS (
         INSERT INTO instance_questions AS iq
-            (authn_user_id, assessment_instance_id, assessment_question_id, current_value, points_list, points_list_original)
+            (authn_user_id, assessment_instance_id, assessment_question_id, current_value, points_list,
+            points_list_original, auto_points, auto_score_perc, manual_points)
         SELECT
              authn_user_id,
              assessment_instance_id,
              assessment_question_id,
              coalesce(aq.init_points, aq.points_list[1], 0),
              aq.points_list,
-             aq.points_list
+             aq.points_list,
+             0, 0, 0 -- These points are updated manually to distinguish them from instance questions created before these fields existed
         FROM
             select_assessment_questions(assessment_id, assessment_instance_id) AS aq
         ON CONFLICT
