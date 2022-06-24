@@ -33,11 +33,13 @@ let courseExtensionsCache = {};
 
 module.exports = {
   async init() {
+    console.log('freeform init()');
     // Populate the list of PrairieLearn elements
     coreElementsCache = await module.exports.loadElements(
       path.join(__dirname, '..', 'elements'),
       'core'
     );
+    console.log('coreElementsCache:', coreElementsCache);
   },
 
   async close() {
@@ -78,14 +80,17 @@ module.exports = {
     }
 
     // Filter out any non-directories.
-    const elementNames = async.filter(files, async (file) => {
+    console.log('files', files);
+    const elementNames = await async.filter(files, async (file) => {
       const stats = await fs.promises.lstat(path.join(sourceDir, file));
       return stats.isDirectory();
     });
+    console.log('elementNames', elementNames);
 
     // Construct a dictionary mapping element names to their info.
     const elements = {};
     await async.each(elementNames, async (elementName) => {
+      console.log('processing', elementName);
       const elementInfoPath = path.join(sourceDir, elementName, 'info.json');
       let info;
       try {
@@ -544,6 +549,7 @@ module.exports = {
       ..._.keys(coreElementsCache),
       ..._.keys(context.course_elements),
     ]);
+    console.log('questionElements', questionElements);
 
     const visitNode = async (node) => {
       if (node.tagName && questionElements.has(node.tagName)) {
@@ -564,15 +570,16 @@ module.exports = {
         });
         let ret_val, consoleLog;
         try {
-          [ret_val, consoleLog] = await module.exports.elementFunction(
+          ({ result: ret_val, output: consoleLog } = await module.exports.elementFunction(
             pc,
             phase,
             elementName,
             serializedNode,
             data,
             context
-          );
+          ));
         } catch (e) {
+          console.error(e);
           const courseIssue = new Error(
             `${elementFile}: Error calling ${phase}(): ${e.toString()}`
           );
@@ -694,7 +701,7 @@ module.exports = {
 
           let result, output;
           try {
-            ({ result, output } = module.exports.elementFunction(
+            ({ result, output } = await module.exports.elementFunction(
               pc,
               phase,
               elementName,
@@ -846,6 +853,9 @@ module.exports = {
       renderedElementNames,
     } = await processFunction(...args);
 
+    console.log('context', context);
+    console.log('processedHtml', processedHtml);
+
     if (phase === 'grade' || phase === 'test') {
       if (context.question.partial_credit) {
         let total_weight = 0,
@@ -942,7 +952,7 @@ module.exports = {
           );
           courseIssue.fatal = true;
           courseIssues.push(courseIssue);
-          return callback(null, courseIssues, data);
+          return { courseIssues, data };
         } else {
           // If not, replace fileData with a copy of buffer
           fileData = Buffer.from(buf);
@@ -1333,9 +1343,7 @@ module.exports = {
           // when we log the page view - sorry for mutable object hell
           locals.panel_render_count = panelCount;
           locals.panel_render_cache_hit_count = cacheHitCount;
-          callback(null);
-        },
-        (callback) => {
+
           const extensions = context.course_element_extensions;
           const dependencies = {
             coreStyles: [],
