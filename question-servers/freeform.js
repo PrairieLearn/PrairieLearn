@@ -9,7 +9,6 @@ const cheerio = require('cheerio');
 const hash = require('crypto').createHash;
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const { promisify, callbackify } = require('util');
 const { instrumented } = require('@prairielearn/opentelemetry');
 
 const schemas = require('../schemas');
@@ -33,13 +32,11 @@ let courseExtensionsCache = {};
 
 module.exports = {
   async init() {
-    console.log('freeform init()');
     // Populate the list of PrairieLearn elements
     coreElementsCache = await module.exports.loadElements(
       path.join(__dirname, '..', 'elements'),
       'core'
     );
-    console.log('coreElementsCache:', coreElementsCache);
   },
 
   async close() {
@@ -80,17 +77,14 @@ module.exports = {
     }
 
     // Filter out any non-directories.
-    console.log('files', files);
     const elementNames = await async.filter(files, async (file) => {
       const stats = await fs.promises.lstat(path.join(sourceDir, file));
       return stats.isDirectory();
     });
-    console.log('elementNames', elementNames);
 
     // Construct a dictionary mapping element names to their info.
     const elements = {};
     await async.each(elementNames, async (elementName) => {
-      console.log('processing', elementName);
       const elementInfoPath = path.join(sourceDir, elementName, 'info.json');
       let info;
       try {
@@ -153,13 +147,10 @@ module.exports = {
    * @param  {String}   sourceDir Absolute path to the directory of extensions
    */
   async loadExtensions(sourceDir) {
-    const readdir = promisify(fs.readdir);
-    const readJson = promisify(fs.readJson);
-
     // Load each root element extension folder
     let elementFolders;
     try {
-      elementFolders = await readdir(sourceDir);
+      elementFolders = await fs.readdir(sourceDir);
     } catch (err) {
       if (err.code === 'ENOENT') {
         // We don't really care if there are no extensions, just return an empty array.
@@ -172,7 +163,7 @@ module.exports = {
     // Get extensions from each element folder.  Each is stored as [ 'element name', 'extension name' ]
     const elementArrays = (
       await async.map(elementFolders, async (element) => {
-        const extensions = await readdir(path.join(sourceDir, element));
+        const extensions = await fs.readdir(path.join(sourceDir, element));
         return extensions.map((ext) => [element, ext]);
       })
     ).flat();
@@ -192,7 +183,7 @@ module.exports = {
 
       let info;
       try {
-        info = await readJson(infoPath);
+        info = await fs.readJson(infoPath);
       } catch (err) {
         if (err.code === 'ENOENT') {
           // Not an extension directory, skip it.
@@ -549,7 +540,6 @@ module.exports = {
       ..._.keys(coreElementsCache),
       ..._.keys(context.course_elements),
     ]);
-    console.log('questionElements', questionElements);
 
     const visitNode = async (node) => {
       if (node.tagName && questionElements.has(node.tagName)) {
@@ -579,7 +569,6 @@ module.exports = {
             context
           ));
         } catch (e) {
-          console.error(e);
           const courseIssue = new Error(
             `${elementFile}: Error calling ${phase}(): ${e.toString()}`
           );
@@ -853,9 +842,6 @@ module.exports = {
       renderedElementNames,
     } = await processFunction(...args);
 
-    console.log('context', context);
-    console.log('processedHtml', processedHtml);
-
     if (phase === 'grade' || phase === 'test') {
       if (context.question.partial_credit) {
         let total_weight = 0,
@@ -976,7 +962,6 @@ module.exports = {
   },
 
   async processQuestionAsync(phase, pc, data, context) {
-    debug('processQuestion()');
     if (phase === 'generate') {
       return module.exports.processQuestionServerAsync(
         phase,
@@ -1044,8 +1029,6 @@ module.exports = {
   },
 
   async generateAsync(question, course, variant_seed) {
-    debug('generate()');
-
     const context = await module.exports.getContextAsync(question, course);
     const data = {
       params: {},
@@ -1084,7 +1067,6 @@ module.exports = {
   },
 
   async prepareAsync(question, course, variant) {
-    debug('prepare()');
     if (variant.broken) throw new Error('attemped to prepare broken variant');
 
     const context = await module.exports.getContextAsync(question, course);
@@ -1097,14 +1079,12 @@ module.exports = {
     _.extend(data.options, module.exports.getContextOptions(context));
 
     return await workers.withPythonCaller(async (pc) => {
-      debug('got worker');
       const { courseIssues, data: resultData } = await module.exports.processQuestionAsync(
         'prepare',
         pc,
         data,
         context
       );
-      debug(`prepare(): completed`);
       return {
         courseIssues,
         data: {
@@ -1848,111 +1828,94 @@ module.exports = {
     return context;
   },
 
-  getCacheKey(course, data, context, callback) {
-    courseUtil.getOrUpdateCourseCommitHash(course, (err, commitHash) => {
-      if (ERR(err, callback)) return;
+  async getCacheKey(course, data, context) {
+    try {
+      const commitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(course);
       const dataHash = hash('sha1').update(JSON.stringify({ data, context })).digest('base64');
-      callback(null, `${commitHash}-${dataHash}`);
-    });
+      return `${commitHash}-${dataHash}`;
+    } catch (err) {
+      return null;
+    }
   },
 
-  async getCachedDataOrComputeAsync(course, data, context, computeFn) {
-    return new Promise((resolve, reject) => {
-      module.exports.getCachedDataOrCompute(
-        course,
-        data,
-        context,
-        (callback) => {
-          callbackify(computeFn)(data, context, (err, result) => {
-            if (ERR(err, callback)) return;
-            callback(null, result);
-          });
-        },
-        (cachedData, cacheHit) => {
-          resolve({ data: cachedData, cacheHit });
-        },
-        (err) => {
-          reject(err);
-        }
-      );
-    });
-  },
-
-  getCachedDataOrCompute(course, data, context, computeFcn, processFcn, errorFcn) {
+  async getCachedDataOrComputeAsync(course, data, context, computeFcn) {
     // This function will compute the cachedData and cache it if
     // cacheKey is not null
-    const doCompute = (cacheKey) => {
-      computeFcn((err, cachedData) => {
-        if (ERR(err, errorFcn)) return;
+    const doCompute = async (cacheKey) => {
+      const computedData = await computeFcn();
 
-        // Course issues during question/file rendering aren't actually
-        // treated as errors - that is, the `err` value in this callback
-        // will be undefined, even if there are course issues. However,
-        // we still want to avoid caching anything that produced a course
-        // issue, as that might be a transitive error that would go away
-        // if the user refreshed, even if they didn't create a new variant.
-        // Also, the `Error` objects that we use for course issues can't be
-        // easily round-tripped through a cache, which means that pulling
-        // an error out of the cache means the instructor would see an
-        // error message of `[object Object]` which is useless.
-        //
-        // tl;dr: don't cache any results that would create course issues.
-        const hasCourseIssues = cachedData?.courseIssues?.length > 0;
-        if (cacheKey && !hasCourseIssues) {
-          cache.set(cacheKey, cachedData);
-        }
+      // Course issues during question/file rendering aren't actually
+      // treated as errors - that is, the above function won't throw
+      // an error, even if there are course issues. However, we
+      // still want to avoid caching anything that produced a course
+      // issue, as that might be a transitive error that would go away
+      // if the user refreshed, even if they didn't create a new variant.
+      // Also, the `Error` objects that we use for course issues can't be
+      // easily round-tripped through a cache, which means that pulling
+      // an error out of the cache means the instructor would see an
+      // error message of `[object Object]` which is useless.
+      //
+      // tl;dr: don't cache any results that would create course issues.
+      const hasCourseIssues = computedData?.courseIssues?.length > 0;
+      if (cacheKey && !hasCourseIssues) {
+        cache.set(cacheKey, computedData);
+      }
 
-        const cacheHit = false;
-        processFcn(cachedData, cacheHit);
-      });
+      return {
+        data: computedData,
+        cacheHit: false,
+      };
     };
 
     // This function will check the cache for the specified
     // cacheKey and either return the cachedData for a cache hit,
     // or compute the cachedData for a cache miss
-    const getFromCacheOrCompute = (cacheKey) => {
-      cache.get(cacheKey, (err, cachedData) => {
+    const getFromCacheOrCompute = async (cacheKey) => {
+      let cachedData;
+
+      try {
+        cachedData = await cache.getAsync(cacheKey);
+      } catch (err) {
         // We don't actually want to fail if the cache has an error; we'll
         // just compute the cachedData as normal
-        ERR(err, (e) => logger.error('Error in cache.get()', e));
+        logger.error('Error in cache.get()', err);
+      }
 
-        const hasCachedData = !err && cachedData;
-        // Previously, there was a bug where we would cache operations
-        // that failed with a course issue. We've since fixed that bug,
-        // but so that we can gracefully deploy the fix alongside code
-        // that may still be incorrectly caching errors, we'll ignore
-        // any result from the cache that has course issues and
-        // unconditionally recompute it.
-        //
-        // TODO: once this has been deployed in production for a while,
-        // we can safely remove this check, as we can guarantee that the
-        // cache will no longer contain any entries with `courseIssues`.
-        const hasCachedCourseIssues = cachedData?.courseIssues?.length > 0;
-        if (hasCachedData && !hasCachedCourseIssues) {
-          const cacheHit = true;
-          processFcn(cachedData, cacheHit);
-        } else {
-          doCompute(cacheKey);
-        }
-      });
+      // Previously, there was a bug where we would cache operations
+      // that failed with a course issue. We've since fixed that bug,
+      // but so that we can gracefully deploy the fix alongside code
+      // that may still be incorrectly caching errors, we'll ignore
+      // any result from the cache that has course issues and
+      // unconditionally recompute it.
+      //
+      // TODO: once this has been deployed in production for a while,
+      // we can safely remove this check, as we can guarantee that the
+      // cache will no longer contain any entries with `courseIssues`.
+      const hasCachedCourseIssues = cachedData?.courseIssues?.length > 0;
+      if (cachedData && !hasCachedCourseIssues) {
+        return {
+          data: cachedData,
+          cacheHit: true,
+        };
+      } else {
+        doCompute(cacheKey);
+      }
     };
 
     if (config.devMode) {
       // In dev mode, we should skip caching so that we'll immediately
       // pick up new changes from disk
-      doCompute(null);
+      return doCompute(null);
     } else {
-      module.exports.getCacheKey(course, data, context, (err, cacheKey) => {
-        // If for some reason we failed to get a cache key, don't
-        // actually fail the request, just skip the cache entirely
-        // and compute as usual
-        ERR(err, (e) => logger.error('Error in getCacheKey()', e));
-        if (err || !cacheKey) {
-          doCompute(null);
-        } else {
-          getFromCacheOrCompute(cacheKey);
-        }
-      });
+      const cacheKey = await module.exports.getCacheKey(course, data, context);
+      // If for some reason we failed to get a cache key, don't
+      // actually fail the request, just skip the cache entirely
+      // and compute as usual
+      if (!cacheKey) {
+        return doCompute(null);
+      } else {
+        return getFromCacheOrCompute(cacheKey);
+      }
     }
   },
 };
