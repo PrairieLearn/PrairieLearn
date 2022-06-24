@@ -1,5 +1,4 @@
 // @ts-check
-const ERR = require('async-stacktrace');
 const async = require('async');
 const _ = require('lodash');
 const fs = require('fs-extra');
@@ -29,6 +28,58 @@ let coreElementsCache = {};
 let courseElementsCache = {};
 // Maps course IDs to course element extension info
 let courseExtensionsCache = {};
+
+/**
+ * This subclass of Error supports chaining.
+ * If available, it uses the built-in support for property `.cause`.
+ * Otherwise, it sets it up itself.
+ *
+ * @see https://github.com/tc39/proposal-error-cause
+ */
+class CausedError extends Error {
+  /**
+   *
+   * @param {string} message
+   * @param {{ cause?: Error }} [options]
+   */
+  constructor(message, options) {
+    // @ts-expect-error -- Node 14 does not yet support `.cause`
+    super(message, options);
+    if (isObject(options) && 'cause' in options && !('cause' in this)) {
+      const cause = options.cause;
+      // @ts-expect-error -- Node 14 does not yet support `.cause`
+      this.cause = cause;
+      if ('stack' in cause) {
+        // @ts-expect-error -- Node 14 does not yet support `.cause`
+        this.stack = this.stack + '\nCAUSE: ' + cause.stack;
+      }
+    }
+  }
+}
+
+function isObject(value) {
+  return value !== null && typeof value === 'object';
+}
+
+/**
+ * @typedef {Object} CourseIssueErrorOptions
+ * @property {any} [data]
+ * @property {boolean} [fatal]
+ * @property {Error} [cause]
+ */
+class CourseIssueError extends CausedError {
+  /**
+   *
+   * @param {string} message
+   * @param {CourseIssueErrorOptions} options
+   */
+  constructor(message, options) {
+    super(message, { cause: options?.cause });
+    this.name = 'CourseIssueError';
+    this.data = options.data;
+    this.fatal = options.fatal;
+  }
+}
 
 module.exports = {
   async init() {
@@ -338,18 +389,6 @@ module.exports = {
   },
 
   async execPythonServerAsync(pc, phase, data, html, context) {
-    return new Promise((resolve, reject) => {
-      module.exports.execPythonServer(pc, phase, data, html, context, (err, result, output) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve({ result, output });
-        }
-      });
-    });
-  },
-
-  execPythonServer(pc, phase, data, html, context, callback) {
     const pythonFile = 'server';
     const pythonFunction = phase;
     const pythonArgs = [data];
@@ -362,68 +401,41 @@ module.exports = {
       ],
     };
     const fullFilename = path.join(context.question_dir, 'server.py');
-    fs.access(fullFilename, fs.constants.R_OK, (err) => {
-      if (err) {
-        // server.py does not exist
-        return callback(null, module.exports.defaultServerRet(phase, data, html, context), '');
-      }
+    try {
+      await fs.access(fullFilename, fs.constants.R_OK);
+    } catch (err) {
+      // server.py does not exist
+      return { result: module.exports.defaultServerRet(phase, data, html, context), output: '' };
+    }
 
-      debug(
-        `execPythonServer(): pc.call(pythonFile=${pythonFile}, pythonFunction=${pythonFunction})`
-      );
-      pc.call(pythonFile, pythonFunction, pythonArgs, opts, (err, ret, consoleLog) => {
-        if (err instanceof codeCaller.FunctionMissingError) {
-          // function wasn't present in server
-          debug(`execPythonServer(): function not present`);
-          return callback(null, module.exports.defaultServerRet(phase, data, html, context), '');
-        }
-        if (ERR(err, callback)) return;
-        debug(`execPythonServer(): completed`);
-        callback(null, ret, consoleLog);
-      });
-    });
+    debug(
+      `execPythonServer(): pc.call(pythonFile=${pythonFile}, pythonFunction=${pythonFunction})`
+    );
+    try {
+      const { result, output } = await pc.callAsync(pythonFile, pythonFunction, pythonArgs, opts);
+      debug(`execPythonServer(): completed`);
+      return { result, output };
+    } catch (err) {
+      if (err instanceof codeCaller.FunctionMissingError) {
+        // function wasn't present in server
+        debug(`execPythonServer(): function not present`);
+        return {
+          result: module.exports.defaultServerRet(phase, data, html, context),
+          output: '',
+        };
+      }
+      throw err;
+    }
   },
 
   async execTemplateAsync(htmlFilename, data) {
-    return new Promise((resolve, reject) => {
-      module.exports.execTemplate(htmlFilename, data, (err, html, $) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve({ html, $ });
-        }
-      });
+    const rawFile = await fs.readFile(htmlFilename, { encoding: 'utf8' });
+    let html = mustache.render(rawFile, data);
+    html = markdown.processQuestion(html);
+    const $ = cheerio.load(html, {
+      recognizeSelfClosing: true,
     });
-  },
-
-  execTemplate(htmlFilename, data, callback) {
-    fs.readFile(htmlFilename, { encoding: 'utf8' }, (err, rawFile) => {
-      if (ERR(err, callback)) return;
-      let html;
-      err = null;
-      try {
-        html = mustache.render(rawFile, data);
-      } catch (e) {
-        err = e;
-      }
-      if (ERR(err, callback)) return;
-      try {
-        html = markdown.processQuestion(html);
-      } catch (e) {
-        err = e;
-      }
-      if (ERR(err, callback)) return;
-      let $;
-      try {
-        $ = cheerio.load(html, {
-          recognizeSelfClosing: true,
-        });
-      } catch (e) {
-        err = e;
-      }
-      if (ERR(err, callback)) return;
-      callback(null, html, $);
-    });
+    return { html, $ };
   },
 
   checkData(data, origData, phase) {
@@ -569,34 +581,31 @@ module.exports = {
             context
           ));
         } catch (e) {
-          const courseIssue = new Error(
-            `${elementFile}: Error calling ${phase}(): ${e.toString()}`
-          );
-          courseIssue.data = e.data;
-          courseIssue.fatal = true;
           // We'll catch this and add it to the course issues list
-          throw courseIssue;
+          throw new CourseIssueError(`${elementFile}: Error calling ${phase}(): ${e.toString()}`, {
+            cause: e,
+            data: e.data,
+            fatal: true,
+          });
         }
 
         // We'll be sneaky and remove the extensions, since they're not used elsewhere.
         delete data.extensions;
         delete ret_val.extensions;
         if (_.isString(consoleLog) && consoleLog.length > 0) {
-          const courseIssue = new Error(
-            `${elementFile}: output logged on console during ${phase}()`
+          courseIssues.push(
+            new CourseIssueError(`${elementFile}: output logged on console during ${phase}()`, {
+              data: { outputBoth: consoleLog },
+              fatal: false,
+            })
           );
-          courseIssue.data = { outputBoth: consoleLog };
-          courseIssue.fatal = false;
-          courseIssues.push(courseIssue);
         }
         if (phase === 'render') {
           if (!_.isString(ret_val)) {
-            const courseIssue = new Error(
-              `${elementFile}: Error calling ${phase}(): return value is not a string`
+            throw new CourseIssueError(
+              `${elementFile}: Error calling ${phase}(): return value is not a string`,
+              { data: ret_val, fatal: true }
             );
-            courseIssue.data = { ret_val };
-            courseIssue.fatal = true;
-            throw courseIssue;
           }
           node = parse5.parseFragment(ret_val);
         } else if (phase === 'file') {
@@ -607,11 +616,10 @@ module.exports = {
           if (buf.length > 0) {
             if (fileData.length > 0) {
               // If fileData already has non-zero length, throw an error
-              const courseIssue = new Error(
-                `${elementFile}: Error calling ${phase}(): attempting to overwrite non-empty fileData`
+              throw new CourseIssueError(
+                `${elementFile}: Error calling ${phase}(): attempting to overwrite non-empty fileData`,
+                { fatal: true }
               );
-              courseIssue.fatal = true;
-              throw courseIssue;
             } else {
               // If not, replace fileData with buffer
               fileData = buf;
@@ -622,11 +630,10 @@ module.exports = {
           data = ret_val; // eslint-disable-line require-atomic-updates
           const checkErr = module.exports.checkData(data, origData, phase);
           if (checkErr) {
-            const courseIssue = new Error(
-              `${elementFile}: Invalid state after ${phase}(): ${checkErr}`
+            throw new CourseIssueError(
+              `${elementFile}: Invalid state after ${phase}(): ${checkErr}`,
+              { fatal: true }
             );
-            courseIssue.fatal = true;
-            throw courseIssue;
           }
         }
       }
@@ -699,11 +706,10 @@ module.exports = {
               context
             ));
           } catch (err) {
-            const courseIssue = new Error(
-              elementFile + ': Error calling ' + phase + '(): ' + err.toString()
+            const courseIssue = new CourseIssueError(
+              `${elementFile}: Error calling ${phase}(): ${err.toString()}`,
+              { data: err.data, fatal: true }
             );
-            courseIssue.data = err.data;
-            courseIssue.fatal = true;
             courseIssues.push(courseIssue);
 
             // We won't actually use this error, but we do still need to throw
@@ -714,21 +720,20 @@ module.exports = {
           delete data.extensions;
           delete result.extensions;
           if (_.isString(output) && output.length > 0) {
-            const courseIssue = new Error(
-              elementFile + ': output logged on console during ' + phase + '()'
+            courseIssues.push(
+              new CourseIssueError(
+                elementFile + ': output logged on console during ' + phase + '()',
+                { data: { outputBoth: output }, fatal: false }
+              )
             );
-            courseIssue.data = { outputBoth: output };
-            courseIssue.fatal = false;
-            courseIssues.push(courseIssue);
           }
 
           if (phase === 'render') {
             if (!_.isString(output)) {
-              const courseIssue = new Error(
-                elementFile + ': Error calling ' + phase + '(): return value is not a string'
+              const courseIssue = new CourseIssueError(
+                elementFile + ': Error calling ' + phase + '(): return value is not a string',
+                { data: { result }, fatal: true }
               );
-              courseIssue.data = { result };
-              courseIssue.fatal = true;
               courseIssues.push(courseIssue);
 
               // As above, we just throw to abort the traversal.
@@ -745,13 +750,10 @@ module.exports = {
             if (buf.length > 0) {
               if (fileData.length > 0) {
                 // If fileData already has non-zero length, throw an error
-                const courseIssue = new Error(
-                  elementFile +
-                    ': Error calling ' +
-                    phase +
-                    '(): attempting to overwrite non-empty fileData'
+                const courseIssue = new CourseIssueError(
+                  `${elementFile}: Error calling ${phase}(): attempting to overwrite non-empty fileData`,
+                  { fatal: true }
                 );
-                courseIssue.fatal = true;
                 courseIssues.push(courseIssue);
 
                 // As above, throw the error to abort the traversal.
@@ -765,10 +767,10 @@ module.exports = {
             data = result;
             const checkErr = module.exports.checkData(data, origData, phase);
             if (checkErr) {
-              const courseIssue = new Error(
-                elementFile + ': Invalid state after ' + phase + '(): ' + checkErr
+              const courseIssue = new CourseIssueError(
+                `${elementFile}: Invalid state after ${phase}(): ${checkErr}`,
+                { fatal: true }
               );
-              courseIssue.fatal = true;
               courseIssues.push(courseIssue);
 
               // As above, throw the error to abort the traversal.
@@ -795,10 +797,10 @@ module.exports = {
 
     const checkErr = module.exports.checkData(data, origData, phase);
     if (checkErr) {
-      const courseIssue = new Error('Invalid state before ' + phase + ': ' + checkErr);
-      courseIssue.fatal = true;
       return {
-        courseIssues: [courseIssue],
+        courseIssues: [
+          new CourseIssueError(`Invalid state before ${phase}(): ${checkErr}`, { fatal: true }),
+        ],
         data,
         html: '',
         fileData: Buffer.from(''),
@@ -811,10 +813,8 @@ module.exports = {
     try {
       ({ html, $ } = await module.exports.execTemplateAsync(htmlFilename, data));
     } catch (err) {
-      const courseIssue = new Error(htmlFilename + ': ' + err.toString());
-      courseIssue.fatal = true;
       return {
-        courseIssues: [courseIssue],
+        courseIssues: [new CourseIssueError(htmlFilename + ': ' + err.toString(), { fatal: true })],
         data,
         html: '',
         fileData: Buffer.from(''),
@@ -882,11 +882,11 @@ module.exports = {
 
     const checkErrBefore = module.exports.checkData(data, origData, phase);
     if (checkErrBefore) {
-      const courseIssue = new Error(
-        'Invalid state before calling server.' + phase + '(): ' + checkErrBefore
+      courseIssues.push(
+        new CourseIssueError(`Invalid state before calling server ${phase}(): ${checkErrBefore}`, {
+          fatal: true,
+        })
       );
-      courseIssue.fatal = true;
-      courseIssues.push(courseIssue);
       return { courseIssues, data, html: '', fileData: Buffer.from('') };
     }
 
@@ -901,21 +901,24 @@ module.exports = {
       ));
     } catch (err) {
       const serverFile = path.join(context.question_dir, 'server.py');
-      const courseIssue = new Error(
-        serverFile + ': Error calling ' + phase + '(): ' + err.toString()
+      courseIssues.push(
+        new CourseIssueError(`${serverFile}: Error calling ${phase}(): ${err.toString()}`, {
+          data: err.data,
+          fatal: true,
+          cause: err,
+        })
       );
-      courseIssue.data = err.data;
-      courseIssue.fatal = true;
-      courseIssues.push(courseIssue);
       return { courseIssues, data };
     }
 
     if (_.isString(output) && output.length > 0) {
       const serverFile = path.join(context.question_dir, 'server.py');
-      const courseIssue = new Error(serverFile + ': output logged on console');
-      courseIssue.data = { outputBoth: output };
-      courseIssue.fatal = false;
-      courseIssues.push(courseIssue);
+      courseIssues.push(
+        new CourseIssueError(`${serverFile}: output logged on console`, {
+          data: { outputBoth: output },
+          fatal: false,
+        })
+      );
     }
 
     if (phase === 'render') {
@@ -930,14 +933,12 @@ module.exports = {
         if (fileData.length > 0) {
           // If fileData already has non-zero length, throw an error
           const serverFile = path.join(context.question_dir, 'server.py');
-          const courseIssue = new Error(
-            serverFile +
-              ': Error calling ' +
-              phase +
-              '(): attempting to overwrite non-empty fileData'
+          courseIssues.push(
+            new CourseIssueError(
+              `${serverFile}: Error calling ${phase}(): attempting to overwrite non-empty fileData`,
+              { fatal: true }
+            )
           );
-          courseIssue.fatal = true;
-          courseIssues.push(courseIssue);
           return { courseIssues, data };
         } else {
           // If not, replace fileData with a copy of buffer
@@ -950,11 +951,11 @@ module.exports = {
     const checkErrAfter = module.exports.checkData(data, origData, phase);
     if (checkErrAfter) {
       const serverFile = path.join(context.question_dir, 'server.py');
-      const courseIssue = new Error(
-        serverFile + ': Invalid state after ' + phase + '(): ' + checkErrAfter
+      courseIssues.push(
+        new CourseIssueError(`${serverFile}: Invalid state after ${phase}(): ${checkErrAfter}`, {
+          fatal: true,
+        })
       );
-      courseIssue.fatal = true;
-      courseIssues.push(courseIssue);
       return { courseIssues, data };
     }
 
@@ -1413,12 +1414,12 @@ module.exports = {
                     }
                   }
                 } else {
-                  const courseIssue = new Error(
-                    `Error getting dependencies for ${resolvedElement.name}: "${type}" is not an array`
+                  courseIssues.push(
+                    new CourseIssueError(
+                      `Error getting dependencies for ${resolvedElement.name}: "${type}" is not an array`,
+                      { data: { elementDependencies }, fatal: true }
+                    )
                   );
-                  courseIssue.data = { elementDependencies };
-                  courseIssue.fatal = true;
-                  courseIssues.push(courseIssue);
                 }
               }
             }
@@ -1462,12 +1463,12 @@ module.exports = {
                         }
                       }
                     } else {
-                      const courseIssue = new Error(
-                        `Error getting dependencies for extension ${extension.name}: "${type}" is not an array`
+                      courseIssues.push(
+                        new CourseIssueError(
+                          `Error getting dependencies for extension ${extension.name}: "${type}" is not an array`,
+                          { data: elementDependencies, fatal: true }
+                        )
                       );
-                      courseIssue.data = { elementDependencies };
-                      courseIssue.fatal = true;
-                      courseIssues.push(courseIssue);
                     }
                   }
                 }
@@ -1595,7 +1596,7 @@ module.exports = {
       course,
       data,
       context,
-      async (callback) => {
+      async () => {
         // function to compute the file data and return the cachedData
         return workers.withPythonCaller(async (pc) => {
           const { courseIssues, fileData } = await module.exports.processQuestionAsync(
@@ -1605,8 +1606,7 @@ module.exports = {
             context
           );
           const fileDataBase64 = (fileData || '').toString('base64');
-          const cachedData = { courseIssues, fileDataBase64 };
-          callback(null, cachedData);
+          return { courseIssues, fileDataBase64 };
         });
       }
     );
