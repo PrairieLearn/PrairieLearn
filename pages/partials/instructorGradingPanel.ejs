@@ -1,12 +1,22 @@
 <% if (authz_data.has_course_instance_permission_view) { %>
+
 <form name="instance_question-manual-grade-update-form" method="POST">
   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
   <input type="hidden" name="assessment_id" value="<%= assessment_instance.assessment_id %>">
   <input type="hidden" name="assessment_question_id" value="<%= instance_question.assessment_question_id %>">
   <input type="hidden" name="modified_at" value="<%= instance_question.modified_at %>">
+  <div class="form-group row justify-content-center">
+    <label class="custom-control-inline col-auto mx-0">
+      <span class="">Points</span>
+      <div class="custom-control custom-switch mx-2">
+        <input class="custom-control-input manual-grading-pts-perc-select" name="use_score_perc" type="checkbox">
+        <span class="custom-control-label">Percentage</span>
+      </div>
+    </label>
+  </div>
   <div class="form-group">
     <label>Score:</label>
-    <div class="input-group">
+    <div class="input-group manual-grading-points">
       <input type="number" min="0" max="<%= assessment_question.max_points %>" step="any" class="form-control"
              name="submission_score_points" value="<%= locals.points ?? instance_question.points %>" aria-describedby="scoreHelpBlock"
              <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %>
@@ -14,7 +24,7 @@
              />
       <span class="input-group-append input-group-text">/ <%= assessment_question.max_points %></span>
     </div>
-    <div class="input-group">
+    <div class="input-group manual-grading-percentage">
       <input type="number" min="0" max="100" step="any" class="form-control"
              name="submission_score_percent" value="<%= locals.score_perc ?? instance_question.score_perc %>" aria-describedby="scoreHelpBlock"
              <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %>

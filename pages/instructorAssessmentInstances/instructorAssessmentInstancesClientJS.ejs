@@ -66,6 +66,8 @@ $(function() {
         var uid = button.data('uid'); // Extract info from data-* attributes
         var name = button.data('name');
         var number = button.data('number');
+        var group_name = button.data('group-name');
+        var uid_list = button.data('uid-list');
         var date_formatted = button.data('date-formatted');
         var score_perc = button.data('score-perc');
         var assessment_instance_id = button.data('assessment-instance-id');
@@ -81,6 +83,8 @@ $(function() {
         
         modal.find('.modal-uid').text(uid);
         modal.find('.modal-name').text(name);
+        modal.find('.modal-group-name').text(group_name);
+        modal.find('.modal-uid-list').text(uid_list);
         modal.find('.modal-number').text(number);
         modal.find('.modal-date').text(date_formatted);
         modal.find('.modal-score-perc').text(score_perc);
@@ -301,6 +305,8 @@ function actionButtonFormatter(_value, row, index) {
         .attr('data-name', row.name)
         .attr('data-number', row.number)
         .attr('data-date-formatted', row.date_formatted)
+        .attr('data-group-name', row.group_name)
+        .attr('data-uid-list', row.uid_list?.join(', ') || 'empty')
         .attr('data-score-perc', Math.floor(row.score_perc))
         .attr('data-assessment-instance-id', row.assessment_instance_id)
         .append($('<i>').addClass('fas fa-times mr-2')
