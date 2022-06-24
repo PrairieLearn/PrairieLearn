@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const async = require('async');
 const _ = require('lodash');
@@ -794,89 +795,89 @@ module.exports = {
   },
 
   async processQuestionHtmlAsync(phase, pc, data, context) {
-    return new Promise((resolve, reject) => {
-      module.exports.processQuestionHtml(
-        phase,
-        pc,
-        data,
-        context,
-        (err, courseIssues, data, questionHtml, fileData, renderedElementNames) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve({ courseIssues, data, questionHtml, fileData, renderedElementNames });
-          }
-        }
-      );
-    });
-  },
-
-  processQuestionHtml(phase, pc, data, context, callback) {
-    const courseIssues = [];
     const origData = JSON.parse(JSON.stringify(data));
 
     const checkErr = module.exports.checkData(data, origData, phase);
     if (checkErr) {
       const courseIssue = new Error('Invalid state before ' + phase + ': ' + checkErr);
       courseIssue.fatal = true;
-      courseIssues.push(courseIssue);
-      return callback(null, courseIssues, data, '', Buffer.from(''));
+      return {
+        courseIssues: [courseIssue],
+        data,
+        questionHtml: '',
+        fileData: Buffer.from(''),
+        renderedElementNames: [],
+      };
     }
 
     const htmlFilename = path.join(context.question_dir, 'question.html');
-    module.exports.execTemplate(htmlFilename, data, (err, html, $) => {
-      if (err) {
-        const courseIssue = new Error(htmlFilename + ': ' + err.toString());
-        courseIssue.fatal = true;
-        courseIssues.push(courseIssue);
-        return callback(null, courseIssues, data, '', Buffer.from(''));
-      }
+    let html, $;
+    try {
+      ({ html, $ } = await module.exports.execTemplateAsync(htmlFilename, data));
+    } catch (err) {
+      const courseIssue = new Error(htmlFilename + ': ' + err.toString());
+      courseIssue.fatal = true;
+      return {
+        courseIssues: [courseIssue],
+        data,
+        questionHtml: '',
+        fileData: Buffer.from(''),
+        renderedElementNames: [],
+      };
+    }
 
-      // Switch based on which renderer is enabled for this course
-      const useNewQuestionRenderer = _.get(context, 'course.options.useNewQuestionRenderer', false);
-      let processFunction;
-      let args;
-      if (useNewQuestionRenderer) {
-        processFunction = module.exports.traverseQuestionAndExecuteFunctions;
-        args = [phase, pc, data, context, html];
+    // Switch based on which renderer is enabled for this course
+    const useNewQuestionRenderer = _.get(context, 'course.options.useNewQuestionRenderer', false);
+    let processFunction;
+    let args;
+    if (useNewQuestionRenderer) {
+      processFunction = module.exports.traverseQuestionAndExecuteFunctions;
+      args = [phase, pc, data, context, html];
+    } else {
+      processFunction = module.exports.legacyTraverseQuestionAndExecuteFunctions;
+      args = [phase, pc, data, context, $];
+    }
+
+    const {
+      courseIssues,
+      data: resultData,
+      questionHtml,
+      fileData,
+      renderedElementNames,
+    } = await processFunction(...args);
+
+    if (phase === 'grade' || phase === 'test') {
+      if (context.question.partial_credit) {
+        let total_weight = 0,
+          total_weight_score = 0;
+        _.each(resultData.partial_scores, (value) => {
+          const score = _.get(value, 'score', 0);
+          const weight = _.get(value, 'weight', 1);
+          total_weight += weight;
+          total_weight_score += weight * score;
+        });
+        resultData.score = total_weight_score / (total_weight === 0 ? 1 : total_weight);
+        resultData.feedback = {};
       } else {
-        processFunction = module.exports.legacyTraverseQuestionAndExecuteFunctions;
-        args = [phase, pc, data, context, $];
-      }
-
-      // TODO: this needs to use promises
-      processFunction(
-        ...args,
-        (courseIssues, data, questionHtml, fileData, renderedElementNames) => {
-          if (phase === 'grade' || phase === 'test') {
-            if (context.question.partial_credit) {
-              let total_weight = 0,
-                total_weight_score = 0;
-              _.each(data.partial_scores, (value) => {
-                const score = _.get(value, 'score', 0);
-                const weight = _.get(value, 'weight', 1);
-                total_weight += weight;
-                total_weight_score += weight * score;
-              });
-              data.score = total_weight_score / (total_weight === 0 ? 1 : total_weight);
-              data.feedback = {};
-            } else {
-              let score = 0;
-              if (
-                _.size(data.partial_scores) > 0 &&
-                _.every(data.partial_scores, (value) => _.get(value, 'score', 0) >= 1)
-              ) {
-                score = 1;
-              }
-              data.score = score;
-              data.feedback = {};
-            }
-          }
-
-          callback(null, courseIssues, data, questionHtml, fileData, renderedElementNames);
+        let score = 0;
+        if (
+          _.size(resultData.partial_scores) > 0 &&
+          _.every(resultData.partial_scores, (value) => _.get(value, 'score', 0) >= 1)
+        ) {
+          score = 1;
         }
-      );
-    });
+        resultData.score = score;
+        resultData.feedback = {};
+      }
+    }
+
+    return {
+      courseIssues,
+      data: resultData,
+      questionHtml,
+      fileData,
+      renderedElementNames,
+    };
   },
 
   async processQuestionServerAsync(phase, pc, data, html, fileData, context) {
@@ -989,6 +990,7 @@ module.exports = {
         data,
         context,
         (err, courseIssues, data, html, fileData, renderedElementNames) => {
+          debug('processQuestion done');
           if (err) {
             reject(err);
           } else {
@@ -1006,6 +1008,7 @@ module.exports = {
   },
 
   processQuestion(phase, pc, data, context, callback) {
+    debug('processQuestion()');
     if (phase === 'generate') {
       module.exports.processQuestionServer(
         phase,
@@ -1026,6 +1029,7 @@ module.exports = {
         data,
         context,
         (err, courseIssues, data, html, fileData, renderedElementNames) => {
+          debug('processQuestionHtml done');
           if (ERR(err, callback)) return;
           const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
           if (hasFatalError) return callback(null, courseIssues, data, html, fileData);
@@ -1037,6 +1041,7 @@ module.exports = {
             fileData,
             context,
             (err, ret_courseIssues, data, html, fileData) => {
+              debug('processQuestionServer done');
               if (ERR(err, callback)) return;
               courseIssues.push(...ret_courseIssues);
               callback(null, courseIssues, data, html, fileData, renderedElementNames);
@@ -1074,8 +1079,8 @@ module.exports = {
     };
     _.extend(data.options, module.exports.getContextOptions(context));
 
-    await workers.withPythonCaller(async (pc) => {
-      const { courseIssues, data } = await module.exports.processQuestionAsync(
+    return await workers.withPythonCaller(async (pc) => {
+      const { courseIssues, data: resultData } = await module.exports.processQuestionAsync(
         'generate',
         pc,
         data,
@@ -1084,8 +1089,8 @@ module.exports = {
       return {
         courseIssues,
         data: {
-          params: data.params,
-          true_answer: data.correct_answers,
+          params: resultData.params,
+          true_answer: resultData.correct_answers,
         },
       };
     });
@@ -1115,8 +1120,9 @@ module.exports = {
     };
     _.extend(data.options, module.exports.getContextOptions(context));
 
-    await workers.withPythonCaller(async (pc) => {
-      const { courseIssues, data } = await module.exports.processQuestionAsync(
+    return await workers.withPythonCaller(async (pc) => {
+      debug('got worker');
+      const { courseIssues, data: resultData } = await module.exports.processQuestionAsync(
         'prepare',
         pc,
         data,
@@ -1126,8 +1132,8 @@ module.exports = {
       return {
         courseIssues,
         data: {
-          params: data.params,
-          true_answer: data.correct_answers,
+          params: resultData.params,
+          true_answer: resultData.correct_answers,
         },
       };
     });
@@ -1149,7 +1155,7 @@ module.exports = {
    * @property {any[]} courseIssues
    * @property {string} html
    * @property {string[]} [renderedElementNames]
-   * @property {boolean} cacheHit
+   * @property {boolean} [cacheHit]
    */
 
   /**
@@ -1804,6 +1810,7 @@ module.exports = {
 
   async getContextAsync(question, course) {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+    /** @type {chunks.Chunk[]} */
     const chunksToLoad = [
       {
         type: 'question',
