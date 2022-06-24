@@ -983,72 +983,55 @@ module.exports = {
   },
 
   async processQuestionAsync(phase, pc, data, context) {
-    return new Promise((resolve, reject) => {
-      module.exports.processQuestion(
-        phase,
-        pc,
-        data,
-        context,
-        (err, courseIssues, data, html, fileData, renderedElementNames) => {
-          debug('processQuestion done');
-          if (err) {
-            reject(err);
-          } else {
-            resolve({
-              courseIssues,
-              data,
-              html,
-              fileData,
-              renderedElementNames,
-            });
-          }
-        }
-      );
-    });
-  },
-
-  processQuestion(phase, pc, data, context, callback) {
     debug('processQuestion()');
     if (phase === 'generate') {
-      module.exports.processQuestionServer(
+      return module.exports.processQuestionServerAsync(
         phase,
         pc,
         data,
         '',
         Buffer.from(''),
-        context,
-        (err, courseIssues, data, html, fileData) => {
-          if (ERR(err, callback)) return;
-          callback(null, courseIssues, data, html, fileData);
-        }
+        context
       );
     } else {
-      module.exports.processQuestionHtml(
+      const {
+        courseIssues,
+        data: htmlData,
+        questionHtml,
+        fileData,
+        renderedElementNames,
+      } = await module.exports.processQuestionHtmlAsync(phase, pc, data, context);
+      const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
+      if (hasFatalError) {
+        return {
+          courseIssues,
+          data,
+          html: questionHtml,
+          fileData,
+          renderedElementNames,
+        };
+      }
+      const {
+        courseIssues: serverCourseIssues,
+        data: serverData,
+        html: serverHtml,
+        fileData: serverFileData,
+      } = await module.exports.processQuestionServerAsync(
         phase,
         pc,
-        data,
-        context,
-        (err, courseIssues, data, html, fileData, renderedElementNames) => {
-          debug('processQuestionHtml done');
-          if (ERR(err, callback)) return;
-          const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
-          if (hasFatalError) return callback(null, courseIssues, data, html, fileData);
-          module.exports.processQuestionServer(
-            phase,
-            pc,
-            data,
-            html,
-            fileData,
-            context,
-            (err, ret_courseIssues, data, html, fileData) => {
-              debug('processQuestionServer done');
-              if (ERR(err, callback)) return;
-              courseIssues.push(...ret_courseIssues);
-              callback(null, courseIssues, data, html, fileData, renderedElementNames);
-            }
-          );
-        }
+        htmlData,
+        questionHtml,
+        fileData,
+        context
       );
+      courseIssues.push(...serverCourseIssues);
+      return {
+        courseIssues,
+        data: serverData,
+        html: serverHtml,
+        fileData: serverFileData,
+        renderedElementNames,
+      };
     }
   },
 
@@ -1259,7 +1242,7 @@ module.exports = {
     });
   },
 
-  render(
+  async renderAsync(
     renderSelection,
     variant,
     question,
@@ -1267,8 +1250,7 @@ module.exports = {
     submissions,
     course,
     course_instance,
-    locals,
-    callback
+    locals
   ) {
     debug(`render()`);
     const htmls = {
@@ -1281,165 +1263,212 @@ module.exports = {
     const courseIssues = [];
     let panelCount = 0,
       cacheHitCount = 0;
-    module.exports.getContext(question, course, (err, context) => {
-      if (ERR(err, callback)) return;
+    const context = await module.exports.getContextAsync(question, course);
 
-      workers.getPythonCaller((err, pc) => {
-        if (ERR(err, callback)) return;
-        async.series(
-          [
-            // FIXME: support 'header'
-            async () => {
-              if (!renderSelection.question) return;
+    return workers.withPythonCaller(async (pc) => {
+      await async.series([
+        // FIXME: support 'header'
+        async () => {
+          if (!renderSelection.question) return;
 
-              const {
-                courseIssues: newCourseIssues,
-                html,
-                renderedElementNames,
-                cacheHit,
-              } = await module.exports.renderPanelInstrumented(
-                'question',
-                pc,
-                submission,
-                variant,
-                question,
-                course,
-                locals,
-                context
-              );
+          const {
+            courseIssues: newCourseIssues,
+            html,
+            renderedElementNames,
+            cacheHit,
+          } = await module.exports.renderPanelInstrumented(
+            'question',
+            pc,
+            submission,
+            variant,
+            question,
+            course,
+            locals,
+            context
+          );
 
-              courseIssues.push(...newCourseIssues);
-              htmls.questionHtml = html;
-              panelCount++;
-              if (cacheHit) cacheHitCount++;
-              allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
-            },
-            async () => {
-              if (!renderSelection.submissions) return;
+          courseIssues.push(...newCourseIssues);
+          htmls.questionHtml = html;
+          panelCount++;
+          if (cacheHit) cacheHitCount++;
+          allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
+        },
+        async () => {
+          if (!renderSelection.submissions) return;
 
-              htmls.submissionHtmls = await async.mapSeries(submissions, async (submission) => {
-                const {
-                  courseIssues: newCourseIssues,
-                  html,
-                  renderedElementNames,
-                  cacheHit,
-                } = await module.exports.renderPanelInstrumented(
-                  'submission',
-                  pc,
-                  submission,
-                  variant,
-                  question,
-                  course,
-                  locals,
-                  context
-                );
+          htmls.submissionHtmls = await async.mapSeries(submissions, async (submission) => {
+            const {
+              courseIssues: newCourseIssues,
+              html,
+              renderedElementNames,
+              cacheHit,
+            } = await module.exports.renderPanelInstrumented(
+              'submission',
+              pc,
+              submission,
+              variant,
+              question,
+              course,
+              locals,
+              context
+            );
 
-                courseIssues.push(...newCourseIssues);
-                panelCount++;
-                if (cacheHit) cacheHitCount++;
-                allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
-                return html;
-              });
-            },
-            async () => {
-              if (!renderSelection.answer) return;
+            courseIssues.push(...newCourseIssues);
+            panelCount++;
+            if (cacheHit) cacheHitCount++;
+            allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
+            return html;
+          });
+        },
+        async () => {
+          if (!renderSelection.answer) return;
 
-              const {
-                courseIssues: newCourseIssues,
-                html,
-                renderedElementNames,
-                cacheHit,
-              } = await module.exports.renderPanelInstrumented(
-                'answer',
-                pc,
-                submission,
-                variant,
-                question,
-                course,
-                locals,
-                context
-              );
+          const {
+            courseIssues: newCourseIssues,
+            html,
+            renderedElementNames,
+            cacheHit,
+          } = await module.exports.renderPanelInstrumented(
+            'answer',
+            pc,
+            submission,
+            variant,
+            question,
+            course,
+            locals,
+            context
+          );
 
-              courseIssues.push(...newCourseIssues);
-              htmls.answerHtml = html;
-              panelCount++;
-              if (cacheHit) cacheHitCount++;
-              allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
-            },
-            (callback) => {
-              // The logPageView middleware knows to write this to the DB
-              // when we log the page view - sorry for mutable object hell
-              locals.panel_render_count = panelCount;
-              locals.panel_render_cache_hit_count = cacheHitCount;
-              callback(null);
-            },
-            (callback) => {
-              const extensions = context.course_element_extensions;
-              const dependencies = {
-                coreStyles: [],
-                coreScripts: [],
-                nodeModulesStyles: [],
-                nodeModulesScripts: [],
-                coreElementStyles: [],
-                coreElementScripts: [],
-                courseElementStyles: [],
-                courseElementScripts: [],
-                extensionStyles: [],
-                extensionScripts: [],
-                clientFilesCourseStyles: [],
-                clientFilesCourseScripts: [],
-                clientFilesQuestionStyles: [],
-                clientFilesQuestionScripts: [],
-              };
+          courseIssues.push(...newCourseIssues);
+          htmls.answerHtml = html;
+          panelCount++;
+          if (cacheHit) cacheHitCount++;
+          allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
+        },
+        (callback) => {
+          // The logPageView middleware knows to write this to the DB
+          // when we log the page view - sorry for mutable object hell
+          locals.panel_render_count = panelCount;
+          locals.panel_render_cache_hit_count = cacheHitCount;
+          callback(null);
+        },
+        (callback) => {
+          const extensions = context.course_element_extensions;
+          const dependencies = {
+            coreStyles: [],
+            coreScripts: [],
+            nodeModulesStyles: [],
+            nodeModulesScripts: [],
+            coreElementStyles: [],
+            coreElementScripts: [],
+            courseElementStyles: [],
+            courseElementScripts: [],
+            extensionStyles: [],
+            extensionScripts: [],
+            clientFilesCourseStyles: [],
+            clientFilesCourseScripts: [],
+            clientFilesQuestionStyles: [],
+            clientFilesQuestionScripts: [],
+          };
 
-              // Question dependencies are checked via schema on sync-time, so
-              // there's no need for sanity checks here.
-              for (let type in question.dependencies) {
-                for (let dep of question.dependencies[type]) {
-                  if (!_.includes(dependencies[type], dep)) {
-                    dependencies[type].push(dep);
-                  }
-                }
+          // Question dependencies are checked via schema on sync-time, so
+          // there's no need for sanity checks here.
+          for (let type in question.dependencies) {
+            for (let dep of question.dependencies[type]) {
+              if (!_.includes(dependencies[type], dep)) {
+                dependencies[type].push(dep);
               }
+            }
+          }
 
-              // Gather dependencies for all rendered elements
-              allRenderedElementNames.forEach((elementName) => {
-                let resolvedElement = module.exports.resolveElement(elementName, context);
-                const elementDependencies = _.cloneDeep(resolvedElement.dependencies || {});
+          // Gather dependencies for all rendered elements
+          allRenderedElementNames.forEach((elementName) => {
+            let resolvedElement = module.exports.resolveElement(elementName, context);
+            const elementDependencies = _.cloneDeep(resolvedElement.dependencies || {});
 
-                // Transform non-global dependencies to be prefixed by the element name,
-                // since they'll be served from their element's directory
-                if (_.has(elementDependencies, 'elementStyles')) {
-                  elementDependencies.elementStyles = elementDependencies.elementStyles.map(
-                    (dep) => `${resolvedElement.name}/${dep}`
-                  );
-                }
-                if (_.has(elementDependencies, 'elementScripts')) {
-                  elementDependencies.elementScripts = elementDependencies.elementScripts.map(
-                    (dep) => `${resolvedElement.name}/${dep}`
-                  );
-                }
+            // Transform non-global dependencies to be prefixed by the element name,
+            // since they'll be served from their element's directory
+            if (_.has(elementDependencies, 'elementStyles')) {
+              elementDependencies.elementStyles = elementDependencies.elementStyles.map(
+                (dep) => `${resolvedElement.name}/${dep}`
+              );
+            }
+            if (_.has(elementDependencies, 'elementScripts')) {
+              elementDependencies.elementScripts = elementDependencies.elementScripts.map(
+                (dep) => `${resolvedElement.name}/${dep}`
+              );
+            }
 
-                // Rename properties so we can track core and course
-                // element dependencies separately
-                if (resolvedElement.type === 'course') {
-                  if (_.has(elementDependencies, 'elementStyles')) {
-                    elementDependencies.courseElementStyles = elementDependencies.elementStyles;
-                    delete elementDependencies.elementStyles;
-                  }
-                  if (_.has(elementDependencies, 'elementScripts')) {
-                    elementDependencies.courseElementScripts = elementDependencies.elementScripts;
-                    delete elementDependencies.elementScripts;
+            // Rename properties so we can track core and course
+            // element dependencies separately
+            if (resolvedElement.type === 'course') {
+              if (_.has(elementDependencies, 'elementStyles')) {
+                elementDependencies.courseElementStyles = elementDependencies.elementStyles;
+                delete elementDependencies.elementStyles;
+              }
+              if (_.has(elementDependencies, 'elementScripts')) {
+                elementDependencies.courseElementScripts = elementDependencies.elementScripts;
+                delete elementDependencies.elementScripts;
+              }
+            } else {
+              if (_.has(elementDependencies, 'elementStyles')) {
+                elementDependencies.coreElementStyles = elementDependencies.elementStyles;
+                delete elementDependencies.elementStyles;
+              }
+              if (_.has(elementDependencies, 'elementScripts')) {
+                elementDependencies.coreElementScripts = elementDependencies.elementScripts;
+                delete elementDependencies.elementScripts;
+              }
+            }
+
+            const dependencyTypes = [
+              'coreStyles',
+              'coreScripts',
+              'nodeModulesStyles',
+              'nodeModulesScripts',
+              'clientFilesCourseStyles',
+              'clientFilesCourseScripts',
+              'coreElementStyles',
+              'coreElementScripts',
+              'courseElementStyles',
+              'courseElementScripts',
+            ];
+            for (const type of dependencyTypes) {
+              if (_.has(elementDependencies, type)) {
+                if (_.isArray(elementDependencies[type])) {
+                  for (const dep of elementDependencies[type]) {
+                    if (!_.includes(dependencies[type], dep)) {
+                      dependencies[type].push(dep);
+                    }
                   }
                 } else {
-                  if (_.has(elementDependencies, 'elementStyles')) {
-                    elementDependencies.coreElementStyles = elementDependencies.elementStyles;
-                    delete elementDependencies.elementStyles;
-                  }
-                  if (_.has(elementDependencies, 'elementScripts')) {
-                    elementDependencies.coreElementScripts = elementDependencies.elementScripts;
-                    delete elementDependencies.elementScripts;
-                  }
+                  const courseIssue = new Error(
+                    `Error getting dependencies for ${resolvedElement.name}: "${type}" is not an array`
+                  );
+                  courseIssue.data = { elementDependencies };
+                  courseIssue.fatal = true;
+                  courseIssues.push(courseIssue);
+                }
+              }
+            }
+
+            // Load any extensions if they exist
+            if (_.has(extensions, elementName)) {
+              for (const extensionName of Object.keys(extensions[elementName])) {
+                if (!_.has(extensions[elementName][extensionName], 'dependencies')) {
+                  continue;
+                }
+
+                const extension = _.cloneDeep(extensions[elementName][extensionName]).dependencies;
+                if (_.has(extension, 'extensionStyles')) {
+                  extension.extensionStyles = extension.extensionStyles.map(
+                    (dep) => `${elementName}/${extensionName}/${dep}`
+                  );
+                }
+                if (_.has(extension, 'extensionScripts')) {
+                  extension.extensionScripts = extension.extensionScripts.map(
+                    (dep) => `${elementName}/${extensionName}/${dep}`
+                  );
                 }
 
                 const dependencyTypes = [
@@ -1449,22 +1478,21 @@ module.exports = {
                   'nodeModulesScripts',
                   'clientFilesCourseStyles',
                   'clientFilesCourseScripts',
-                  'coreElementStyles',
-                  'coreElementScripts',
-                  'courseElementStyles',
-                  'courseElementScripts',
+                  'extensionStyles',
+                  'extensionScripts',
                 ];
+
                 for (const type of dependencyTypes) {
-                  if (_.has(elementDependencies, type)) {
-                    if (_.isArray(elementDependencies[type])) {
-                      for (const dep of elementDependencies[type]) {
+                  if (_.has(extension, type)) {
+                    if (_.isArray(extension[type])) {
+                      for (const dep of extension[type]) {
                         if (!_.includes(dependencies[type], dep)) {
                           dependencies[type].push(dep);
                         }
                       }
                     } else {
                       const courseIssue = new Error(
-                        `Error getting dependencies for ${resolvedElement.name}: "${type}" is not an array`
+                        `Error getting dependencies for extension ${extension.name}: "${type}" is not an array`
                       );
                       courseIssue.data = { elementDependencies };
                       courseIssue.fatal = true;
@@ -1472,139 +1500,110 @@ module.exports = {
                     }
                   }
                 }
+              }
+            }
+          });
 
-                // Load any extensions if they exist
-                if (_.has(extensions, elementName)) {
-                  for (const extensionName of Object.keys(extensions[elementName])) {
-                    if (!_.has(extensions[elementName][extensionName], 'dependencies')) {
-                      continue;
-                    }
+          // Transform dependency list into style/link tags
+          const coreScriptUrls = [];
+          const scriptUrls = [];
+          const styleUrls = [];
+          dependencies.coreStyles.forEach((file) =>
+            styleUrls.push(assets.assetPath(`stylesheets/${file}`))
+          );
+          dependencies.coreScripts.forEach((file) =>
+            coreScriptUrls.push(assets.assetPath(`javascripts/${file}`))
+          );
+          dependencies.nodeModulesStyles.forEach((file) =>
+            styleUrls.push(assets.nodeModulesAssetPath(file))
+          );
+          dependencies.nodeModulesScripts.forEach((file) =>
+            coreScriptUrls.push(assets.nodeModulesAssetPath(file))
+          );
+          dependencies.clientFilesCourseStyles.forEach((file) =>
+            styleUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`)
+          );
+          dependencies.clientFilesCourseScripts.forEach((file) =>
+            scriptUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`)
+          );
+          dependencies.clientFilesQuestionStyles.forEach((file) =>
+            styleUrls.push(`${locals.clientFilesQuestionUrl}/${file}`)
+          );
+          dependencies.clientFilesQuestionScripts.forEach((file) =>
+            scriptUrls.push(`${locals.clientFilesQuestionUrl}/${file}`)
+          );
+          dependencies.coreElementStyles.forEach((file) =>
+            styleUrls.push(assets.coreElementAssetPath(file))
+          );
+          dependencies.coreElementScripts.forEach((file) =>
+            scriptUrls.push(assets.coreElementAssetPath(file))
+          );
+          dependencies.courseElementStyles.forEach((file) =>
+            styleUrls.push(
+              assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file)
+            )
+          );
+          dependencies.courseElementScripts.forEach((file) =>
+            scriptUrls.push(
+              assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file)
+            )
+          );
+          dependencies.extensionStyles.forEach((file) =>
+            styleUrls.push(
+              assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file)
+            )
+          );
+          dependencies.extensionScripts.forEach((file) =>
+            scriptUrls.push(
+              assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file)
+            )
+          );
 
-                    const extension = _.cloneDeep(
-                      extensions[elementName][extensionName]
-                    ).dependencies;
-                    if (_.has(extension, 'extensionStyles')) {
-                      extension.extensionStyles = extension.extensionStyles.map(
-                        (dep) => `${elementName}/${extensionName}/${dep}`
-                      );
-                    }
-                    if (_.has(extension, 'extensionScripts')) {
-                      extension.extensionScripts = extension.extensionScripts.map(
-                        (dep) => `${elementName}/${extensionName}/${dep}`
-                      );
-                    }
+          const headerHtmls = [
+            ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
+            // It's important that any library-style scripts come first
+            ...coreScriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
+            ...scriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
+          ];
+          htmls.extraHeadersHtml = headerHtmls.join('\n');
+          callback(null);
+        },
+      ]);
 
-                    const dependencyTypes = [
-                      'coreStyles',
-                      'coreScripts',
-                      'nodeModulesStyles',
-                      'nodeModulesScripts',
-                      'clientFilesCourseStyles',
-                      'clientFilesCourseScripts',
-                      'extensionStyles',
-                      'extensionScripts',
-                    ];
-
-                    for (const type of dependencyTypes) {
-                      if (_.has(extension, type)) {
-                        if (_.isArray(extension[type])) {
-                          for (const dep of extension[type]) {
-                            if (!_.includes(dependencies[type], dep)) {
-                              dependencies[type].push(dep);
-                            }
-                          }
-                        } else {
-                          const courseIssue = new Error(
-                            `Error getting dependencies for extension ${extension.name}: "${type}" is not an array`
-                          );
-                          courseIssue.data = { elementDependencies };
-                          courseIssue.fatal = true;
-                          courseIssues.push(courseIssue);
-                        }
-                      }
-                    }
-                  }
-                }
-              });
-
-              // Transform dependency list into style/link tags
-              const coreScriptUrls = [];
-              const scriptUrls = [];
-              const styleUrls = [];
-              dependencies.coreStyles.forEach((file) =>
-                styleUrls.push(assets.assetPath(`stylesheets/${file}`))
-              );
-              dependencies.coreScripts.forEach((file) =>
-                coreScriptUrls.push(assets.assetPath(`javascripts/${file}`))
-              );
-              dependencies.nodeModulesStyles.forEach((file) =>
-                styleUrls.push(assets.nodeModulesAssetPath(file))
-              );
-              dependencies.nodeModulesScripts.forEach((file) =>
-                coreScriptUrls.push(assets.nodeModulesAssetPath(file))
-              );
-              dependencies.clientFilesCourseStyles.forEach((file) =>
-                styleUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`)
-              );
-              dependencies.clientFilesCourseScripts.forEach((file) =>
-                scriptUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`)
-              );
-              dependencies.clientFilesQuestionStyles.forEach((file) =>
-                styleUrls.push(`${locals.clientFilesQuestionUrl}/${file}`)
-              );
-              dependencies.clientFilesQuestionScripts.forEach((file) =>
-                scriptUrls.push(`${locals.clientFilesQuestionUrl}/${file}`)
-              );
-              dependencies.coreElementStyles.forEach((file) =>
-                styleUrls.push(assets.coreElementAssetPath(file))
-              );
-              dependencies.coreElementScripts.forEach((file) =>
-                scriptUrls.push(assets.coreElementAssetPath(file))
-              );
-              dependencies.courseElementStyles.forEach((file) =>
-                styleUrls.push(
-                  assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file)
-                )
-              );
-              dependencies.courseElementScripts.forEach((file) =>
-                scriptUrls.push(
-                  assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file)
-                )
-              );
-              dependencies.extensionStyles.forEach((file) =>
-                styleUrls.push(
-                  assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file)
-                )
-              );
-              dependencies.extensionScripts.forEach((file) =>
-                scriptUrls.push(
-                  assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file)
-                )
-              );
-
-              const headerHtmls = [
-                ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
-                // It's important that any library-style scripts come first
-                ...coreScriptUrls.map(
-                  (url) => `<script type="text/javascript" src="${url}"></script>`
-                ),
-                ...scriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
-              ];
-              htmls.extraHeadersHtml = headerHtmls.join('\n');
-              callback(null);
-            },
-          ],
-          (err) => {
-            // don't immediately error here; we have to return the pythonCaller
-            workers.returnPythonCaller(pc, (pcErr) => {
-              if (ERR(pcErr, callback)) return;
-              if (ERR(err, callback)) return;
-              callback(null, courseIssues, htmls);
-            });
-          }
-        );
-      });
+      return { courseIssues, htmls };
     });
+  },
+
+  render(
+    renderSelection,
+    variant,
+    question,
+    submission,
+    submissions,
+    course,
+    course_instance,
+    locals,
+    callback
+  ) {
+    module.exports
+      .renderAsync(
+        renderSelection,
+        variant,
+        question,
+        submission,
+        submissions,
+        course,
+        course_instance,
+        locals
+      )
+      .then(
+        ({ courseIssues, htmls }) => {
+          callback(null, courseIssues, htmls);
+        },
+        (err) => {
+          callback(err);
+        }
+      );
   },
 
   async fileAsync(filename, variant, question, course) {
@@ -1659,153 +1658,162 @@ module.exports = {
     );
   },
 
-  parse(submission, variant, question, course, callback) {
+  async parseAsync(submission, variant, question, course) {
     debug(`parse()`);
-    if (variant.broken) return callback(new Error('attemped to parse broken variant'));
-    module.exports.getContext(question, course, (err, context) => {
-      if (ERR(err, callback)) return;
+    if (variant.broken) throw new Error('attemped to parse broken variant');
 
-      const data = {
-        params: _.get(variant, 'params', {}),
-        correct_answers: _.get(variant, 'true_answer', {}),
-        submitted_answers: _.get(submission, 'submitted_answer', {}),
-        format_errors: _.get(submission, 'format_errors', {}),
-        variant_seed: parseInt(variant.variant_seed, 36),
-        options: _.get(variant, 'options', {}),
-        raw_submitted_answers: _.get(submission, 'raw_submitted_answer', {}),
-        gradable: _.get(submission, 'gradable', true),
+    const context = await module.exports.getContext(question, course);
+    const data = {
+      params: _.get(variant, 'params', {}),
+      correct_answers: _.get(variant, 'true_answer', {}),
+      submitted_answers: _.get(submission, 'submitted_answer', {}),
+      format_errors: _.get(submission, 'format_errors', {}),
+      variant_seed: parseInt(variant.variant_seed, 36),
+      options: _.get(variant, 'options', {}),
+      raw_submitted_answers: _.get(submission, 'raw_submitted_answer', {}),
+      gradable: _.get(submission, 'gradable', true),
+    };
+    _.extend(data.options, module.exports.getContextOptions(context));
+    return workers.withPythonCaller(async (pc) => {
+      const { courseIssues, data: resultData } = await module.exports.processQuestionAsync(
+        'parse',
+        pc,
+        data,
+        context
+      );
+      if (_.size(resultData.format_errors) > 0) resultData.gradable = false;
+      return {
+        courseIssues,
+        data: {
+          params: resultData.params,
+          true_answer: resultData.correct_answers,
+          submitted_answer: resultData.submitted_answers,
+          raw_submitted_answer: resultData.raw_submitted_answers,
+          format_errors: resultData.format_errors,
+          gradable: resultData.gradable,
+        },
       };
-      _.extend(data.options, module.exports.getContextOptions(context));
-      workers.getPythonCaller((err, pc) => {
-        if (ERR(err, callback)) return;
-        module.exports.processQuestion(
-          'parse',
-          pc,
-          data,
-          context,
-          (err, courseIssues, data, _html, _fileData) => {
-            // don't immediately error here; we have to return the pythonCaller
-            workers.returnPythonCaller(pc, (pcErr) => {
-              if (ERR(pcErr, callback)) return;
-              if (ERR(err, callback)) return;
-              if (_.size(data.format_errors) > 0) data.gradable = false;
-              const ret_vals = {
-                params: data.params,
-                true_answer: data.correct_answers,
-                submitted_answer: data.submitted_answers,
-                raw_submitted_answer: data.raw_submitted_answers,
-                format_errors: data.format_errors,
-                gradable: data.gradable,
-              };
-              callback(null, courseIssues, ret_vals);
-            });
-          }
-        );
-      });
+    });
+  },
+
+  parse(submission, variant, question, course, callback) {
+    module.exports.parseAsync(submission, variant, question, course).then(
+      ({ courseIssues, data: resultData }) => {
+        callback(courseIssues, resultData);
+      },
+      (err) => {
+        callback(err);
+      }
+    );
+  },
+
+  async gradeAsync(submission, variant, question, course) {
+    debug(`grade()`);
+    if (variant.broken) throw new Error('attemped to grade broken variant');
+    if (submission.broken) throw new Error('attemped to grade broken submission');
+
+    const context = await module.exports.getContextAsync(question, course);
+    let data = {
+      params: variant.params,
+      correct_answers: variant.true_answer,
+      submitted_answers: submission.submitted_answer,
+      format_errors: submission.format_errors,
+      partial_scores: submission.partial_scores == null ? {} : submission.partial_scores,
+      score: submission.score == null ? 0 : submission.score,
+      feedback: submission.feedback == null ? {} : submission.feedback,
+      variant_seed: parseInt(variant.variant_seed, 36),
+      options: _.get(variant, 'options', {}),
+      raw_submitted_answers: submission.raw_submitted_answer,
+      gradable: submission.gradable,
+    };
+    _.extend(data.options, module.exports.getContextOptions(context));
+    return workers.withPythonCaller(async (pc) => {
+      const { courseIssues, data: resultData } = await module.exports.processQuestionAsync(
+        'grade',
+        pc,
+        data,
+        context
+      );
+      if (_.size(resultData.format_errors) > 0) resultData.gradable = false;
+      return {
+        courseIssues,
+        data: {
+          params: resultData.params,
+          true_answer: resultData.correct_answers,
+          submitted_answer: resultData.submitted_answers,
+          format_errors: resultData.format_errors,
+          raw_submitted_answer: resultData.raw_submitted_answers,
+          partial_scores: resultData.partial_scores,
+          score: resultData.score,
+          feedback: data.feedback,
+          gradable: resultData.gradable,
+        },
+      };
     });
   },
 
   grade(submission, variant, question, course, callback) {
-    debug(`grade()`);
-    if (variant.broken) return callback(new Error('attemped to grade broken variant'));
-    if (submission.broken) return callback(new Error('attemped to grade broken submission'));
-    module.exports.getContext(question, course, (err, context) => {
-      if (ERR(err, callback)) return;
+    module.exports.gradeAsync(submission, variant, question, course).then(
+      ({ courseIssues, data: resultData }) => {
+        callback(null, courseIssues, resultData);
+      },
+      (err) => {
+        callback(err);
+      }
+    );
+  },
 
-      let data = {
-        params: variant.params,
-        correct_answers: variant.true_answer,
-        submitted_answers: submission.submitted_answer,
-        format_errors: submission.format_errors,
-        partial_scores: submission.partial_scores == null ? {} : submission.partial_scores,
-        score: submission.score == null ? 0 : submission.score,
-        feedback: submission.feedback == null ? {} : submission.feedback,
-        variant_seed: parseInt(variant.variant_seed, 36),
-        options: _.get(variant, 'options', {}),
-        raw_submitted_answers: submission.raw_submitted_answer,
-        gradable: submission.gradable,
+  async testAsync(variant, question, course, test_type) {
+    debug(`test()`);
+    if (variant.broken) throw new Error('attemped to test broken variant');
+
+    const context = await module.exports.getContextAsync(question, course);
+    let data = {
+      params: variant.params,
+      correct_answers: variant.true_answer,
+      format_errors: {},
+      partial_scores: {},
+      score: 0,
+      feedback: {},
+      variant_seed: parseInt(variant.variant_seed, 36),
+      options: _.get(variant, 'options', {}),
+      raw_submitted_answers: {},
+      gradable: true,
+      test_type: test_type,
+    };
+    _.extend(data.options, module.exports.getContextOptions(context));
+    return workers.withPythonCaller(async (pc) => {
+      const { courseIssues, data: resultData } = await module.exports.processQuestionAsync(
+        'test',
+        pc,
+        data,
+        context
+      );
+      if (_.size(resultData.format_errors) > 0) resultData.gradable = false;
+      return {
+        courseIssues,
+        data: {
+          params: resultData.params,
+          true_answer: resultData.correct_answers,
+          format_errors: resultData.format_errors,
+          raw_submitted_answer: resultData.raw_submitted_answers,
+          partial_scores: resultData.partial_scores,
+          score: resultData.score,
+          gradable: resultData.gradable,
+        },
       };
-      _.extend(data.options, module.exports.getContextOptions(context));
-      workers.getPythonCaller((err, pc) => {
-        if (ERR(err, callback)) return;
-        module.exports.processQuestion(
-          'grade',
-          pc,
-          data,
-          context,
-          (err, courseIssues, data, _html, _fileData) => {
-            // don't immediately error here; we have to return the pythonCaller
-            workers.returnPythonCaller(pc, (pcErr) => {
-              if (ERR(pcErr, callback)) return;
-              if (ERR(err, callback)) return;
-              if (_.size(data.format_errors) > 0) data.gradable = false;
-              const ret_vals = {
-                params: data.params,
-                true_answer: data.correct_answers,
-                submitted_answer: data.submitted_answers,
-                format_errors: data.format_errors,
-                raw_submitted_answer: data.raw_submitted_answers,
-                partial_scores: data.partial_scores,
-                score: data.score,
-                feedback: data.feedback,
-                gradable: data.gradable,
-              };
-              callback(null, courseIssues, ret_vals);
-            });
-          }
-        );
-      });
     });
   },
 
   test(variant, question, course, test_type, callback) {
-    debug(`test()`);
-    if (variant.broken) return callback(new Error('attemped to test broken variant'));
-    module.exports.getContext(question, course, (err, context) => {
-      if (ERR(err, callback)) return;
-
-      let data = {
-        params: variant.params,
-        correct_answers: variant.true_answer,
-        format_errors: {},
-        partial_scores: {},
-        score: 0,
-        feedback: {},
-        variant_seed: parseInt(variant.variant_seed, 36),
-        options: _.get(variant, 'options', {}),
-        raw_submitted_answers: {},
-        gradable: true,
-        test_type: test_type,
-      };
-      _.extend(data.options, module.exports.getContextOptions(context));
-      workers.getPythonCaller((err, pc) => {
-        if (ERR(err, callback)) return;
-        module.exports.processQuestion(
-          'test',
-          pc,
-          data,
-          context,
-          (err, courseIssues, data, _html, _fileData) => {
-            // don't immediately error here; we have to return the pythonCaller
-            workers.returnPythonCaller(pc, (pcErr) => {
-              if (ERR(pcErr, callback)) return;
-              if (ERR(err, callback)) return;
-              if (_.size(data.format_errors) > 0) data.gradable = false;
-              const ret_vals = {
-                params: data.params,
-                true_answer: data.correct_answers,
-                format_errors: data.format_errors,
-                raw_submitted_answer: data.raw_submitted_answers,
-                partial_scores: data.partial_scores,
-                score: data.score,
-                gradable: data.gradable,
-              };
-              callback(null, courseIssues, ret_vals);
-            });
-          }
-        );
-      });
-    });
+    module.exports.testAsync(variant, question, course, test_type).then(
+      ({ courseIssues, data }) => {
+        callback(null, courseIssues, data);
+      },
+      (err) => {
+        callback(err);
+      }
+    );
   },
 
   async getContextAsync(question, course) {
