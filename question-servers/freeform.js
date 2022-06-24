@@ -1064,8 +1064,8 @@ module.exports = {
 
   async generateAsync(question, course, variant_seed) {
     debug('generate()');
-    const context = await module.exports.getContextAsync(question, course);
 
+    const context = await module.exports.getContextAsync(question, course);
     const data = {
       params: {},
       correct_answers: {},
@@ -1073,7 +1073,8 @@ module.exports = {
       options: _.defaults({}, course.options, question.options),
     };
     _.extend(data.options, module.exports.getContextOptions(context));
-    workers.withPythonCaller(async (pc) => {
+
+    await workers.withPythonCaller(async (pc) => {
       const { courseIssues, data } = await module.exports.processQuestionAsync(
         'generate',
         pc,
@@ -1101,42 +1102,46 @@ module.exports = {
     );
   },
 
-  prepare(question, course, variant, callback) {
+  async prepareAsync(question, course, variant) {
     debug('prepare()');
-    if (variant.broken) return callback(new Error('attemped to prepare broken variant'));
-    module.exports.getContext(question, course, (err, context) => {
-      if (ERR(err, callback)) return;
+    if (variant.broken) throw new Error('attemped to prepare broken variant');
 
-      const data = {
-        params: _.get(variant, 'params', {}),
-        correct_answers: _.get(variant, 'true_answer', {}),
-        variant_seed: parseInt(variant.variant_seed, 36),
-        options: _.get(variant, 'options', {}),
+    const context = await module.exports.getContextAsync(question, course);
+    const data = {
+      params: _.get(variant, 'params', {}),
+      correct_answers: _.get(variant, 'true_answer', {}),
+      variant_seed: parseInt(variant.variant_seed, 36),
+      options: _.get(variant, 'options', {}),
+    };
+    _.extend(data.options, module.exports.getContextOptions(context));
+
+    await workers.withPythonCaller(async (pc) => {
+      const { courseIssues, data } = await module.exports.processQuestionAsync(
+        'prepare',
+        pc,
+        data,
+        context
+      );
+      debug(`prepare(): completed`);
+      return {
+        courseIssues,
+        data: {
+          params: data.params,
+          true_answer: data.correct_answers,
+        },
       };
-      _.extend(data.options, module.exports.getContextOptions(context));
-      workers.getPythonCaller((err, pc) => {
-        if (ERR(err, callback)) return;
-        module.exports.processQuestion(
-          'prepare',
-          pc,
-          data,
-          context,
-          (err, courseIssues, data, _html, _fileData, _renderedElementNames) => {
-            // don't immediately error here; we have to return the pythonCaller
-            workers.returnPythonCaller(pc, (pcErr) => {
-              if (ERR(pcErr, callback)) return;
-              if (ERR(err, callback)) return;
-              const ret_vals = {
-                params: data.params,
-                true_answer: data.correct_answers,
-              };
-              debug(`prepare(): completed`);
-              callback(null, courseIssues, ret_vals);
-            });
-          }
-        );
-      });
     });
+  },
+
+  async prepare(question, course, variant, callback) {
+    module.exports.prepareAsync(question, course, variant).then(
+      ({ courseIssues, data }) => {
+        callback(null, courseIssues, data);
+      },
+      (err) => {
+        callback(err);
+      }
+    );
   },
 
   /**
