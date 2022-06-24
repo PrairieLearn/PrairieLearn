@@ -340,6 +340,18 @@ module.exports = {
     }
   },
 
+  async execPythonServerAsync(pc, phase, data, html, context) {
+    return new Promise((resolve, reject) => {
+      module.exports.execPythonServer(pc, phase, data, html, context, (err, result, output) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({ result, output });
+        }
+      });
+    });
+  },
+
   execPythonServer(pc, phase, data, html, context, callback) {
     const pythonFile = 'server';
     const pythonFunction = phase;
@@ -371,6 +383,18 @@ module.exports = {
         if (ERR(err, callback)) return;
         debug(`execPythonServer(): completed`);
         callback(null, ret, consoleLog);
+      });
+    });
+  },
+
+  async execTemplateAsync(htmlFilename, data) {
+    return new Promise((resolve, reject) => {
+      module.exports.execTemplate(htmlFilename, data, (err, html, $) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({ html, $ });
+        }
       });
     });
   },
@@ -769,6 +793,24 @@ module.exports = {
     };
   },
 
+  async processQuestionHtmlAsync(phase, pc, data, context) {
+    return new Promise((resolve, reject) => {
+      module.exports.processQuestionHtml(
+        phase,
+        pc,
+        data,
+        context,
+        (err, courseIssues, data, questionHtml, fileData, renderedElementNames) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve({ courseIssues, data, questionHtml, fileData, renderedElementNames });
+          }
+        }
+      );
+    });
+  },
+
   processQuestionHtml(phase, pc, data, context, callback) {
     const courseIssues = [];
     const origData = JSON.parse(JSON.stringify(data));
@@ -832,6 +874,31 @@ module.exports = {
           }
 
           callback(null, courseIssues, data, questionHtml, fileData, renderedElementNames);
+        }
+      );
+    });
+  },
+
+  async processQuestionServerAsync(phase, pc, data, html, fileData, context) {
+    return new Promise((resolve, reject) => {
+      module.exports.processQuestionServer(
+        phase,
+        pc,
+        data,
+        html,
+        fileData,
+        context,
+        (err, courseIssues, data, questionHtml, fileData) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve({
+              courseIssues,
+              data,
+              questionHtml,
+              fileData,
+            });
+          }
         }
       );
     });
@@ -914,6 +981,30 @@ module.exports = {
     });
   },
 
+  async processQuestionAsync(phase, pc, data, context) {
+    return new Promise((resolve, reject) => {
+      module.exports.processQuestion(
+        phase,
+        pc,
+        data,
+        context,
+        (err, courseIssues, data, html, fileData, renderedElementNames) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve({
+              courseIssues,
+              data,
+              html,
+              fileData,
+              renderedElementNames,
+            });
+          }
+        }
+      );
+    });
+  },
+
   processQuestion(phase, pc, data, context, callback) {
     if (phase === 'generate') {
       module.exports.processQuestionServer(
@@ -971,41 +1062,43 @@ module.exports = {
     return options;
   },
 
-  generate(question, course, variant_seed, callback) {
+  async generateAsync(question, course, variant_seed) {
     debug('generate()');
-    module.exports.getContext(question, course, (err, context) => {
-      if (ERR(err, callback)) return;
+    const context = await module.exports.getContextAsync(question, course);
 
-      const data = {
-        params: {},
-        correct_answers: {},
-        variant_seed: parseInt(variant_seed, 36),
-        options: _.defaults({}, course.options, question.options),
+    const data = {
+      params: {},
+      correct_answers: {},
+      variant_seed: parseInt(variant_seed, 36),
+      options: _.defaults({}, course.options, question.options),
+    };
+    _.extend(data.options, module.exports.getContextOptions(context));
+    workers.withPythonCaller(async (pc) => {
+      const { courseIssues, data } = await module.exports.processQuestionAsync(
+        'generate',
+        pc,
+        data,
+        context
+      );
+      return {
+        courseIssues,
+        data: {
+          params: data.params,
+          true_answer: data.correct_answers,
+        },
       };
-      _.extend(data.options, module.exports.getContextOptions(context));
-      workers.getPythonCaller((err, pc) => {
-        if (ERR(err, callback)) return;
-        module.exports.processQuestion(
-          'generate',
-          pc,
-          data,
-          context,
-          (err, courseIssues, data, _html, _fileData, _renderedElementNames) => {
-            // don't immediately error here; we have to return the pythonCaller
-            workers.returnPythonCaller(pc, (pcErr) => {
-              if (ERR(pcErr, callback)) return;
-              if (ERR(err, callback)) return;
-              const ret_vals = {
-                params: data.params,
-                true_answer: data.correct_answers,
-              };
-              debug(`generate(): completed`);
-              callback(null, courseIssues, ret_vals);
-            });
-          }
-        );
-      });
     });
+  },
+
+  generate(question, course, variant_seed, callback) {
+    module.exports.generateAsync(question, course, variant_seed).then(
+      ({ courseIssues, data }) => {
+        callback(null, courseIssues, data);
+      },
+      (err) => {
+        callback(err);
+      }
+    );
   },
 
   prepare(question, course, variant, callback) {
