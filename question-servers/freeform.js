@@ -1601,56 +1601,56 @@ module.exports = {
     });
   },
 
-  file(filename, variant, question, course, callback) {
+  async fileAsync(filename, variant, question, course) {
     debug(`file()`);
-    if (variant.broken) return callback(new Error('attemped to get a file for a broken variant'));
-    module.exports.getContext(question, course, (err, context) => {
-      if (ERR(err, callback)) return;
+    if (variant.broken) throw new Error('attemped to get a file for a broken variant');
 
-      const data = {
-        params: _.get(variant, 'params', {}),
-        correct_answers: _.get(variant, 'true_answer', {}),
-        variant_seed: parseInt(variant.variant_seed, 36),
-        options: _.get(variant, 'options', {}),
-        filename: filename,
-      };
+    const context = await module.exports.getContextAsync(question, course);
 
-      module.exports.getCachedDataOrCompute(
-        course,
-        data,
-        context,
-        (callback) => {
-          // function to compute the file data and return the cachedData
-          workers.getPythonCaller((err, pc) => {
-            if (ERR(err, callback)) return;
-            module.exports.processQuestion(
-              'file',
-              pc,
-              data,
-              context,
-              (err, courseIssues, _data, _html, fileData) => {
-                // don't immediately error here; we have to return the pythonCaller
-                workers.returnPythonCaller(pc, (pcErr) => {
-                  if (ERR(pcErr, callback)) return;
-                  if (ERR(err, callback)) return;
-                  const fileDataBase64 = (fileData || '').toString('base64');
-                  const cachedData = { courseIssues, fileDataBase64 };
-                  callback(null, cachedData);
-                });
-              }
-            );
-          });
-        },
-        (cachedData, _cacheHit) => {
-          // function to process the cachedData, whether we
-          // just rendered it or whether it came from cache
-          const { courseIssues, fileDataBase64 } = cachedData;
-          const fileData = Buffer.from(fileDataBase64, 'base64');
-          callback(null, courseIssues, fileData);
-        },
-        callback // error-handling function
-      );
-    });
+    const data = {
+      params: _.get(variant, 'params', {}),
+      correct_answers: _.get(variant, 'true_answer', {}),
+      variant_seed: parseInt(variant.variant_seed, 36),
+      options: _.get(variant, 'options', {}),
+      filename: filename,
+    };
+
+    const { data: cachedData } = module.exports.getCachedDataOrCompute(
+      course,
+      data,
+      context,
+      async (callback) => {
+        // function to compute the file data and return the cachedData
+        return workers.withPythonCaller(async (pc) => {
+          const { courseIssues, fileData } = await module.exports.processQuestionAsync(
+            'file',
+            pc,
+            data,
+            context
+          );
+          const fileDataBase64 = (fileData || '').toString('base64');
+          const cachedData = { courseIssues, fileDataBase64 };
+          callback(null, cachedData);
+        });
+      }
+    );
+
+    // function to process the cachedData, whether we
+    // just rendered it or whether it came from cache
+    const { courseIssues, fileDataBase64 } = cachedData;
+    const fileData = Buffer.from(fileDataBase64, 'base64');
+    return { courseIssues, fileData };
+  },
+
+  file(filename, variant, question, course, callback) {
+    module.exports.fileAsync(filename, variant, question, course).then(
+      ({ courseIssues, fileData }) => {
+        callback(null, courseIssues, fileData);
+      },
+      (err) => {
+        callback(err);
+      }
+    );
   },
 
   parse(submission, variant, question, course, callback) {
