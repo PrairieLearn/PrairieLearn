@@ -804,7 +804,7 @@ module.exports = {
       return {
         courseIssues: [courseIssue],
         data,
-        questionHtml: '',
+        html: '',
         fileData: Buffer.from(''),
         renderedElementNames: [],
       };
@@ -820,7 +820,7 @@ module.exports = {
       return {
         courseIssues: [courseIssue],
         data,
-        questionHtml: '',
+        html: '',
         fileData: Buffer.from(''),
         renderedElementNames: [],
       };
@@ -841,7 +841,7 @@ module.exports = {
     const {
       courseIssues,
       data: resultData,
-      questionHtml,
+      html: processedHtml,
       fileData,
       renderedElementNames,
     } = await processFunction(...args);
@@ -874,112 +874,95 @@ module.exports = {
     return {
       courseIssues,
       data: resultData,
-      questionHtml,
+      html: processedHtml,
       fileData,
       renderedElementNames,
     };
   },
 
   async processQuestionServerAsync(phase, pc, data, html, fileData, context) {
-    return new Promise((resolve, reject) => {
-      module.exports.processQuestionServer(
-        phase,
-        pc,
-        data,
-        html,
-        fileData,
-        context,
-        (err, courseIssues, data, questionHtml, fileData) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve({
-              courseIssues,
-              data,
-              questionHtml,
-              fileData,
-            });
-          }
-        }
-      );
-    });
-  },
-
-  processQuestionServer(phase, pc, data, html, fileData, context, callback) {
     const courseIssues = [];
     const origData = JSON.parse(JSON.stringify(data));
 
-    const checkErr = module.exports.checkData(data, origData, phase);
-    if (checkErr) {
+    const checkErrBefore = module.exports.checkData(data, origData, phase);
+    if (checkErrBefore) {
       const courseIssue = new Error(
-        'Invalid state before calling server.' + phase + '(): ' + checkErr
+        'Invalid state before calling server.' + phase + '(): ' + checkErrBefore
       );
       courseIssue.fatal = true;
       courseIssues.push(courseIssue);
-      return callback(null, courseIssues, data, '');
+      return { courseIssues, data, html: '', fileData: Buffer.from('') };
     }
 
-    module.exports.execPythonServer(pc, phase, data, html, context, (err, ret_val, consoleLog) => {
-      if (err) {
-        const serverFile = path.join(context.question_dir, 'server.py');
-        const courseIssue = new Error(
-          serverFile + ': Error calling ' + phase + '(): ' + err.toString()
-        );
-        courseIssue.data = err.data;
-        courseIssue.fatal = true;
-        courseIssues.push(courseIssue);
-        return callback(null, courseIssues, data);
-      }
-      if (_.isString(consoleLog) && consoleLog.length > 0) {
-        const serverFile = path.join(context.question_dir, 'server.py');
-        const courseIssue = new Error(serverFile + ': output logged on console');
-        courseIssue.data = { outputBoth: consoleLog };
-        courseIssue.fatal = false;
-        courseIssues.push(courseIssue);
-      }
+    let result, output;
+    try {
+      ({ result, output } = await module.exports.execPythonServerAsync(
+        pc,
+        phase,
+        data,
+        html,
+        context
+      ));
+    } catch (err) {
+      const serverFile = path.join(context.question_dir, 'server.py');
+      const courseIssue = new Error(
+        serverFile + ': Error calling ' + phase + '(): ' + err.toString()
+      );
+      courseIssue.data = err.data;
+      courseIssue.fatal = true;
+      courseIssues.push(courseIssue);
+      return { courseIssues, data };
+    }
 
-      if (phase === 'render') {
-        html = ret_val;
-      } else if (phase === 'file') {
-        // Convert ret_val from base64 back to buffer (this always works,
-        // whether or not ret_val is valid base64)
-        var buf = Buffer.from(ret_val, 'base64');
+    if (_.isString(output) && output.length > 0) {
+      const serverFile = path.join(context.question_dir, 'server.py');
+      const courseIssue = new Error(serverFile + ': output logged on console');
+      courseIssue.data = { outputBoth: output };
+      courseIssue.fatal = false;
+      courseIssues.push(courseIssue);
+    }
 
-        // If the buffer has non-zero length...
-        if (buf.length > 0) {
-          if (fileData.length > 0) {
-            // If fileData already has non-zero length, throw an error
-            const serverFile = path.join(context.question_dir, 'server.py');
-            const courseIssue = new Error(
-              serverFile +
-                ': Error calling ' +
-                phase +
-                '(): attempting to overwrite non-empty fileData'
-            );
-            courseIssue.fatal = true;
-            courseIssues.push(courseIssue);
-            return callback(null, courseIssues, data);
-          } else {
-            // If not, replace fileData with a copy of buffer
-            fileData = Buffer.from(buf);
-          }
+    if (phase === 'render') {
+      html = result;
+    } else if (phase === 'file') {
+      // Convert ret_val from base64 back to buffer (this always works,
+      // whether or not ret_val is valid base64)
+      var buf = Buffer.from(result, 'base64');
+
+      // If the buffer has non-zero length...
+      if (buf.length > 0) {
+        if (fileData.length > 0) {
+          // If fileData already has non-zero length, throw an error
+          const serverFile = path.join(context.question_dir, 'server.py');
+          const courseIssue = new Error(
+            serverFile +
+              ': Error calling ' +
+              phase +
+              '(): attempting to overwrite non-empty fileData'
+          );
+          courseIssue.fatal = true;
+          courseIssues.push(courseIssue);
+          return callback(null, courseIssues, data);
+        } else {
+          // If not, replace fileData with a copy of buffer
+          fileData = Buffer.from(buf);
         }
-      } else {
-        data = ret_val;
       }
-      const checkErr = module.exports.checkData(data, origData, phase);
-      if (checkErr) {
-        const serverFile = path.join(context.question_dir, 'server.py');
-        const courseIssue = new Error(
-          serverFile + ': Invalid state after ' + phase + '(): ' + checkErr
-        );
-        courseIssue.fatal = true;
-        courseIssues.push(courseIssue);
-        return callback(null, courseIssues, data);
-      }
+    } else {
+      data = result;
+    }
+    const checkErrAfter = module.exports.checkData(data, origData, phase);
+    if (checkErrAfter) {
+      const serverFile = path.join(context.question_dir, 'server.py');
+      const courseIssue = new Error(
+        serverFile + ': Invalid state after ' + phase + '(): ' + checkErrAfter
+      );
+      courseIssue.fatal = true;
+      courseIssues.push(courseIssue);
+      return { courseIssues, data };
+    }
 
-      callback(null, courseIssues, data, html, fileData);
-    });
+    return { courseIssues, data, html, fileData };
   },
 
   async processQuestionAsync(phase, pc, data, context) {
@@ -997,7 +980,7 @@ module.exports = {
       const {
         courseIssues,
         data: htmlData,
-        questionHtml,
+        html,
         fileData,
         renderedElementNames,
       } = await module.exports.processQuestionHtmlAsync(phase, pc, data, context);
@@ -1006,7 +989,7 @@ module.exports = {
         return {
           courseIssues,
           data,
-          html: questionHtml,
+          html: html,
           fileData,
           renderedElementNames,
         };
@@ -1020,7 +1003,7 @@ module.exports = {
         phase,
         pc,
         htmlData,
-        questionHtml,
+        html,
         fileData,
         context
       );
@@ -1662,7 +1645,7 @@ module.exports = {
     debug(`parse()`);
     if (variant.broken) throw new Error('attemped to parse broken variant');
 
-    const context = await module.exports.getContext(question, course);
+    const context = await module.exports.getContextAsync(question, course);
     const data = {
       params: _.get(variant, 'params', {}),
       correct_answers: _.get(variant, 'true_answer', {}),
@@ -1699,7 +1682,7 @@ module.exports = {
   parse(submission, variant, question, course, callback) {
     module.exports.parseAsync(submission, variant, question, course).then(
       ({ courseIssues, data: resultData }) => {
-        callback(courseIssues, resultData);
+        callback(null, courseIssues, resultData);
       },
       (err) => {
         callback(err);
@@ -1855,13 +1838,6 @@ module.exports = {
     context.course_element_extensions = extensions;
 
     return context;
-  },
-
-  getContext(question, course, callback) {
-    return callbackify(module.exports.getContextAsync)(question, course, (err, context) => {
-      if (ERR(err, callback)) return;
-      callback(null, context);
-    });
   },
 
   getCacheKey(course, data, context, callback) {
