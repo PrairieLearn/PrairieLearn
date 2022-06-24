@@ -1160,16 +1160,16 @@ module.exports = {
    * @param {any} course
    * @param {any} locals
    * @param {any} context
-   * @param {(err: Error, result: RenderPanelResult) => void} callback
+   * @returns {Promise<RenderPanelResult>}
    */
-  renderPanel(panel, pc, variant, submission, course, locals, context, callback) {
+  async renderPanel(panel, pc, variant, submission, course, locals, context) {
     debug(`renderPanel(${panel})`);
     // broken variant kills all rendering
     if (variant.broken) {
-      return callback(null, {
+      return {
         courseIssues: [],
         html: 'Broken question due to error in question code',
-      });
+      };
     }
 
     // broken submission kills the submission panel, but we can
@@ -1177,10 +1177,10 @@ module.exports = {
     // missing
     if (submission && submission.broken) {
       if (panel === 'submission') {
-        return callback(null, {
+        return {
           courseIssues: [],
           html: 'Broken submission due to error in question code',
-        });
+        };
       } else {
         submission = null;
       }
@@ -1213,38 +1213,21 @@ module.exports = {
     // Put key paths in data.options
     _.extend(data.options, module.exports.getContextOptions(context));
 
-    module.exports.getCachedDataOrCompute(
+    const { data: cachedData, cacheHit } = await module.exports.getCachedDataOrComputeAsync(
       course,
       data,
       context,
-      (callback) => {
-        // function to do the actual render and return the cachedData
-        module.exports.processQuestion(
-          'render',
-          pc,
-          data,
-          context,
-          (err, courseIssues, _data, html, _fileData, renderedElementNames) => {
-            if (ERR(err, callback)) return;
-            const cachedData = {
-              courseIssues,
-              html,
-              renderedElementNames,
-            };
-            callback(null, cachedData);
-          }
-        );
-      },
-      (cachedData, cacheHit) => {
-        // function to process the cachedData, whether we
-        // just rendered it or whether it came from cache
-        callback(null, {
-          ...cachedData,
-          cacheHit,
-        });
-      },
-      callback // error-handling function
+      async () => {
+        const { courseIssues, html, renderedElementNames } =
+          await module.exports.processQuestionAsync('render', pc, data, context);
+        return { courseIssues, html, renderedElementNames };
+      }
     );
+
+    return {
+      ...cachedData,
+      cacheHit,
+    };
   },
 
   async renderPanelInstrumented(panel, pc, submission, variant, question, course, locals, context) {
@@ -1256,7 +1239,7 @@ module.exports = {
         'course.id': course.id,
       });
       /** @type {RenderPanelResult} */
-      const result = await promisify(module.exports.renderPanel)(
+      const result = await module.exports.renderPanel(
         panel,
         pc,
         variant,
@@ -1871,6 +1854,28 @@ module.exports = {
       if (ERR(err, callback)) return;
       const dataHash = hash('sha1').update(JSON.stringify({ data, context })).digest('base64');
       callback(null, `${commitHash}-${dataHash}`);
+    });
+  },
+
+  async getCachedDataOrComputeAsync(course, data, context, computeFn) {
+    return new Promise((resolve, reject) => {
+      module.exports.getCachedDataOrCompute(
+        course,
+        data,
+        context,
+        (callback) => {
+          callbackify(computeFn)(data, context, (err, result) => {
+            if (ERR(err, callback)) return;
+            callback(null, result);
+          });
+        },
+        (cachedData, cacheHit) => {
+          resolve({ data: cachedData, cacheHit });
+        },
+        (err) => {
+          reject(err);
+        }
+      );
     });
   },
 
