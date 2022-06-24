@@ -197,13 +197,14 @@ router.get('/:filename', function (req, res, next) {
         ['Max points', 'max_points'],
         ['Question % score', 'score_perc'],
       ]);
-      if (res.locals.course.manual_grading_visible)
+      if (res.locals.course.manual_grading_visible) {
         columns = columns.concat([
           ['Auto points', 'auto_points'],
           ['Max auto points', 'max_auto_points'],
           ['Manual points', 'manual_points'],
           ['Max manual points', 'max_manual_points'],
         ]);
+      }
       columns = columns.concat([
         ['Date', 'date_formatted'],
         ['Highest submission score', 'highest_submission_score'],
@@ -233,11 +234,12 @@ router.get('/:filename', function (req, res, next) {
         ['old_score_perc', 'old_score_perc'],
         ['old_feedback', 'old_feedback'],
       ]);
-      if (res.locals.course.manual_grading_visible)
+      if (res.locals.course.manual_grading_visible) {
         columns = columns.concat([
           ['old_auto_points', 'old_auto_points'],
           ['old_manual_points', 'old_manual_points'],
         ]);
+      }
       columns = columns.concat([
         ['submission_id', 'submission_id'],
         ['params', 'params'],
@@ -301,13 +303,14 @@ router.get('/:filename', function (req, res, next) {
         ['Max points', 'max_points'],
         ['Question % score', 'score_perc'],
       ]);
-      if (res.locals.course.manual_grading_visible)
+      if (res.locals.course.manual_grading_visible) {
         columns = columns.concat([
           ['Auto points', 'auto_points'],
           ['Max auto points', 'max_auto_points'],
           ['Manual points', 'manual_points'],
           ['Max manual points', 'max_manual_points'],
         ]);
+      }
       csvMaker.rowsToCsv(result.rows, columns, function (err, csv) {
         if (ERR(err, next)) return;
         res.attachment(req.params.filename);
