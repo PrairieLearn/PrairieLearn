@@ -1251,6 +1251,29 @@ async function validateAssessment(assessment, questions) {
     });
   });
 
+  // TODO: Better variable names?
+  // TODO: Better error messages
+  if (assessment.groupRoles) {
+    let foundCanAssignRolesAtStart = false;
+    let foundCanAssignRolesDuringAssessment = false;
+
+    assessment.groupRoles.forEach((role) => {
+      if (role.canAssignRolesAtStart && role.minimum >= 1) {
+        foundCanAssignRolesAtStart = true;
+      }
+      if (role.canAssignRolesDuringAssessment && role.minimum >= 1) {
+        foundCanAssignRolesDuringAssessment = true;
+      }
+    })
+
+    if (!foundCanAssignRolesAtStart) {
+      errors.push("Could not find a role with minumum >= 1 and \"can_assign_roles_at_start\" set to \"true\".")
+    }
+    if (!foundCanAssignRolesDuringAssessment) {
+      errors.push("Could not find a role with minumum >= 1 and \"can_assign_roles_during_assessment\" set to \"true\".")
+    }
+  }
+
   return { warnings, errors };
 }
 
