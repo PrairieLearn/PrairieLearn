@@ -1,5 +1,11 @@
 # @prairielearn/opentelemetry
 
+## 1.3.0
+
+### Minor Changes
+
+- 24a37b4b7: Bump OpenTelemetry dependencies to their latest versions
+
 ## 1.2.0
 
 ### Minor Changes
