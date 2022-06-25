@@ -219,6 +219,13 @@ function listFormatter(list, row) {
     return '<small>' + list.join(', ') + '</small>';
 }
 
+function uniqueListFormatter(list, row) {
+
+    if (!list || !list[0]) list = ['(empty)'];
+    uniq = [...new Set(list)];
+    return '<small>' + uniq.join(', ') + '</small>';
+}
+
 function timeRemainingLimitFormatter(value, row) {
     //<% if (authz_data.has_course_instance_permission_edit) { %>
     var container = $('<span>');
