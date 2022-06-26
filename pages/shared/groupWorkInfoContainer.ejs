@@ -45,7 +45,11 @@
       <% } %>
       <span id='group-member'><b>Group members: </b></span>
       <% group_info.forEach(function(row) {%>
-      <li><%= row.uid %> - <%= row.role_name ? row.role_name : "None"%></li>
+      <% if (usingGroupRoles) { %>
+        <li><%= row.uid %> - <%= row.role_name ? row.role_name : "None"%></li>
+      <% } else { %>
+        <li><%= row.uid %></li>
+      <% } %>
       <% }); %>
     </div>
   </div>

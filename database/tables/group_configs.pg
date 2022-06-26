@@ -10,6 +10,7 @@ columns
     student_authz_create: boolean default false
     student_authz_join: boolean default false
     student_authz_leave: boolean default false
+    using_group_roles: boolean default false
 
 indexes
     group_configs_pkey: PRIMARY KEY (id) USING btree (id)

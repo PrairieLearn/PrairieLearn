@@ -37,6 +37,7 @@ router.get('/', function (req, res, next) {
           maxsize,
           groupsize,
           needsize,
+          usingGroupRoles,
           group_info,
           join_code,
           start,
@@ -48,6 +49,7 @@ router.get('/', function (req, res, next) {
           res.locals.maxsize = maxsize;
           res.locals.groupsize = groupsize;
           res.locals.needsize = needsize;
+          res.locals.usingGroupRoles = usingGroupRoles;
           res.locals.group_info = group_info;
           res.locals.join_code = join_code;
           res.locals.start = start;
@@ -79,6 +81,7 @@ router.get('/', function (req, res, next) {
               maxsize,
               groupsize,
               needsize,
+              usingGroupRoles,
               group_info,
               join_code,
               start,
@@ -90,6 +93,7 @@ router.get('/', function (req, res, next) {
               res.locals.maxsize = maxsize;
               res.locals.groupsize = groupsize;
               res.locals.needsize = needsize;
+              res.locals.usingGroupRoles = usingGroupRoles;
               res.locals.group_info = group_info;
               res.locals.join_code = join_code;
               res.locals.start = start;
