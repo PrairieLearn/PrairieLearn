@@ -48,7 +48,7 @@ SELECT $authn_user_id, $user_id, cg.id, 'join' FROM create_group AS cg;
 
 -- BLOCK get_group_info
 SELECT
-    gu.group_id, g.name, g.join_code, u.uid, gc.minimum, gc.maximum,gc.student_authz_join, gc.student_authz_create, gc.student_authz_leave
+    gu.group_id, g.name, g.join_code, u.uid, gr.role_name, gc.minimum, gc.maximum,gc.student_authz_join, gc.student_authz_create, gc.student_authz_leave
 FROM
     assessments AS a
     JOIN group_configs AS gc ON gc.assessment_id = a.id
@@ -56,6 +56,7 @@ FROM
     JOIN group_users AS gu ON gu.group_id = g.id
     JOIN group_users AS gu2 ON gu2.group_id = gu.group_id
     JOIN users AS u ON u.user_id = gu2.user_id
+    LEFT JOIN group_roles AS gr ON gr.id = gu2.group_role_id
 WHERE
     a.id = $assessment_id
     AND gu.user_id = $user_id
