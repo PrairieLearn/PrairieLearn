@@ -77,8 +77,8 @@ router.post(
         null, // assessment_instance_number
         null, // qid
         req.body.modified_at,
-        req.body.submission_score_percent, // score_perc
-        null, // points
+        req.body.use_score_perc ? req.body.submission_score_percent : null, // score_perc
+        req.body.use_score_perc ? null : req.body.submission_score_points, // points
         { manual: req.body.submission_note }, // feedback
         null, // partial_scores
         res.locals.authn_user.user_id,
