@@ -11,17 +11,17 @@
       <tr>
         <td><%= row.uid %></td>
         <td>
-          <% ['Manager', 'Reflector', 'Recorder', 'Contributor'].forEach(function (role) { %>
+          <% group_roles.forEach(function (role) { %>
             <input
               class="ml-2"
               type="checkbox"
-              id="<%= role %>-<%= row.uid %>"
-              name="<%= role %>-<%= row.uid %>"
+              id="<%= role.role_name %>-<%= row.uid %>"
+              name="<%= role.role_name %>-<%= row.uid %>"
               value="checked"
               form="role-select-form"
             >
-            <label for="<%= role %>-<%= row.uid %>">
-              <%= role %>
+            <label for="<%= role.role_name %>-<%= row.uid %>">
+              <%= role.role_name %>
             </label>
           <% }) %>
         </td>

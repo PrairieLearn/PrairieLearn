@@ -76,7 +76,15 @@ router.get('/', function (req, res, next) {
             res.locals.join_code = join_code;
             res.locals.start = start;
             res.locals.used_join_code = used_join_code;
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            if (usingGroupRoles) {
+              sqldb.query(sql.get_group_roles, params, function (err, result) {
+                if (ERR(err, next)) return;
+                res.locals.group_roles = result.rows;
+                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+              });
+            } else {
+              res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            }
           }
         );
       } else {
