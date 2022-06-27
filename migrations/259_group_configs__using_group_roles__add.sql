@@ -1,0 +1,1 @@
+ALTER TABLE group_configs ADD COLUMN using_group_roles boolean DEFAULT false;
