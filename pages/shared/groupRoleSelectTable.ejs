@@ -1,0 +1,37 @@
+<form id="role-select-form" name="role-select-form" method="POST">
+  <table class="table table-bordered table-striped mt-3 pl-3 pr-3">
+    <thead>
+      <tr>
+        <th scope="col">Select Role</th>
+        <th scope="col">Roles</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% group_info.forEach(function (row) { %>
+      <tr>
+        <td><%= row.uid %></td>
+        <td>
+          <% ['Manager', 'Reflector', 'Recorder', 'Contributor'].forEach(function (role) { %>
+            <input
+              class="ml-2"
+              type="checkbox"
+              id="<%= role %>-<%= row.uid %>"
+              name="<%= role %>-<%= row.uid %>"
+              value="checked"
+              form="role-select-form"
+            >
+            <label for="<%= role %>-<%= row.uid %>">
+              <%= role %>
+            </label>
+          <% }) %>
+        </td>
+      </tr>
+      <% }) %>
+    </tbody>
+  </table>
+  <div class="mt-4 d-flex justify-content-center">
+    <input type="hidden" name="__action" value="claim_role" />
+    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>" />
+    <button type="submit" class="btn btn-primary">Claim role</button>
+  </div>
+</form>
