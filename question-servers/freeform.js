@@ -45,7 +45,7 @@ class CausedError extends Error {
   constructor(message, options) {
     // @ts-expect-error -- Node 14 does not yet support `.cause`
     super(message, options);
-    if (isObject(options) && 'cause' in options && !('cause' in this)) {
+    if (options?.cause && !('cause' in this)) {
       const cause = options.cause;
       // @ts-expect-error -- Node 14 does not yet support `.cause`
       this.cause = cause;
@@ -55,10 +55,6 @@ class CausedError extends Error {
       }
     }
   }
-}
-
-function isObject(value) {
-  return value !== null && typeof value === 'object';
 }
 
 /**
