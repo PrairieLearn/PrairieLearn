@@ -3,7 +3,7 @@ SELECT
     (aset.name || ' ' || a.number) AS assessment_label,
     u.user_id, u.uid, u.name,
     users_get_displayed_role(u.user_id, ci.id) AS role,
-    gi.id AS group_id, gi.name AS group_name, gi.uid_list,
+    gi.id AS group_id, gi.name AS group_name, gi.uid_list, gi.user_name_list, gi.user_roles_list as group_roles,
     substring(u.uid from '^[^@]+') AS username,
     ai.score_perc, ai.points, ai.max_points,
     ai.number,ai.id AS assessment_instance_id,ai.open,

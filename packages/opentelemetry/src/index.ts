@@ -1,15 +1,19 @@
-import process from 'process';
 import { Metadata, credentials } from '@grpc/grpc-js';
 
 import { tracing } from '@opentelemetry/sdk-node';
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
-import type { SpanExporter, ReadableSpan } from '@opentelemetry/sdk-trace-base';
+import {
+  SpanExporter,
+  ReadableSpan,
+  SpanProcessor,
+  SimpleSpanProcessor,
+} from '@opentelemetry/sdk-trace-base';
 import { detectResources, Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-otlp-grpc';
 import { ExpressLayerType } from '@opentelemetry/instrumentation-express';
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
-import { Sampler } from '@opentelemetry/api';
+import { Sampler, Span, SpanStatusCode, context, trace } from '@opentelemetry/api';
 import {
   ParentBasedSampler,
   TraceIdRatioBasedSampler,
@@ -30,6 +34,7 @@ import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis';
 // Resource detectors go here.
 import { awsEc2Detector } from '@opentelemetry/resource-detector-aws';
 import { processDetector, envDetector } from '@opentelemetry/resources';
+import { createBaggage } from '@opentelemetry/api/build/src/baggage/utils';
 
 /**
  * Extends `BatchSpanProcessor` to give it the ability to filter out spans
@@ -115,9 +120,10 @@ let tracerProvider: NodeTracerProvider;
 
 export interface OpenTelemetryConfig {
   openTelemetryEnabled: boolean;
-  openTelemetryExporter?: 'console' | 'honeycomb';
-  openTelemetrySamplerType?: 'always-on' | 'always-off' | 'trace-id-ratio';
+  openTelemetryExporter: 'console' | 'honeycomb' | SpanExporter;
+  openTelemetrySamplerType: 'always-on' | 'always-off' | 'trace-id-ratio';
   openTelemetrySampleRate?: number;
+  openTelemetrySpanProcessor?: 'batch' | 'simple';
   honeycombApiKey?: string;
   honeycombDataset?: string;
   serviceName?: string;
@@ -141,33 +147,37 @@ export async function init(config: OpenTelemetryConfig) {
   }
 
   let exporter: SpanExporter;
-  switch (config.openTelemetryExporter) {
-    case 'console': {
-      // Export spans to the console for testing purposes.
-      exporter = new tracing.ConsoleSpanExporter();
-      break;
-    }
-    case 'honeycomb': {
-      // Create a Honeycomb exporter with the appropriate metadata from the
-      // config we've been provided with.
-      const metadata = new Metadata();
+  if (typeof config.openTelemetryExporter === 'object') {
+    exporter = config.openTelemetryExporter;
+  } else {
+    switch (config.openTelemetryExporter) {
+      case 'console': {
+        // Export spans to the console for testing purposes.
+        exporter = new tracing.ConsoleSpanExporter();
+        break;
+      }
+      case 'honeycomb': {
+        // Create a Honeycomb exporter with the appropriate metadata from the
+        // config we've been provided with.
+        const metadata = new Metadata();
 
-      metadata.set('x-honeycomb-team', config.honeycombApiKey);
-      metadata.set('x-honeycomb-dataset', config.honeycombDataset);
+        metadata.set('x-honeycomb-team', config.honeycombApiKey);
+        metadata.set('x-honeycomb-dataset', config.honeycombDataset);
 
-      exporter = new OTLPTraceExporter({
-        url: 'grpc://api.honeycomb.io:443/',
-        credentials: credentials.createSsl(),
-        metadata,
-      });
-      break;
+        exporter = new OTLPTraceExporter({
+          url: 'grpc://api.honeycomb.io:443/',
+          credentials: credentials.createSsl(),
+          metadata,
+        });
+        break;
+      }
+      default:
+        throw new Error(`Unknown OpenTelemetry exporter: ${config.openTelemetryExporter}`);
     }
-    default:
-      throw new Error(`Unknown OpenTelemetry exporter: ${config.openTelemetryExporter}`);
   }
 
   let sampler: Sampler;
-  switch (config.openTelemetrySamplerType) {
+  switch (config.openTelemetrySamplerType ?? 'always-on') {
     case 'always-on': {
       sampler = new AlwaysOnSampler();
       break;
@@ -186,6 +196,21 @@ export async function init(config: OpenTelemetryConfig) {
       throw new Error(`Unknown OpenTelemetry sampler type: ${config.openTelemetrySamplerType}`);
   }
 
+  let spanProcessor: SpanProcessor;
+  switch (config.openTelemetrySpanProcessor ?? 'batch') {
+    case 'batch': {
+      spanProcessor = new FilterBatchSpanProcessor(exporter, filter);
+      break;
+    }
+    case 'simple': {
+      spanProcessor = new SimpleSpanProcessor(exporter);
+      break;
+    }
+    default: {
+      throw new Error(`Unknown OpenTelemetry span processor: ${config.openTelemetrySpanProcessor}`);
+    }
+  }
+
   // Much of this functionality is copied from `@opentelemetry/sdk-node`, but
   // we can't use the SDK directly because of the fact that we load our config
   // asynchronously. We need to initialize our instrumentations first; only
@@ -202,11 +227,10 @@ export async function init(config: OpenTelemetryConfig) {
     );
   }
 
-  const tracerProvider = new NodeTracerProvider({
+  tracerProvider = new NodeTracerProvider({
     sampler,
     resource,
   });
-  const spanProcessor = new FilterBatchSpanProcessor(exporter, filter);
   tracerProvider.addSpanProcessor(spanProcessor);
   tracerProvider.register();
 
@@ -220,7 +244,32 @@ export async function init(config: OpenTelemetryConfig) {
 export async function shutdown(): Promise<void> {
   if (tracerProvider) {
     await tracerProvider.shutdown();
+    tracerProvider = null;
   }
+}
+
+export async function instrumented<T>(
+  name: string,
+  fn: (span: Span) => Promise<T> | T
+): Promise<T> {
+  return trace
+    .getTracer('default')
+    .startActiveSpan<(span: Span) => Promise<T>>(name, async (span) => {
+      try {
+        const result = await fn(span);
+        span.setStatus({ code: SpanStatusCode.OK });
+        return result;
+      } catch (e) {
+        span.setStatus({
+          code: SpanStatusCode.ERROR,
+          message: e.message,
+        });
+        span.recordException(e);
+        throw e;
+      } finally {
+        span.end();
+      }
+    });
 }
 
 export { trace, context, SpanStatusCode } from '@opentelemetry/api';
