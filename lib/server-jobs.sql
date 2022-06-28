@@ -67,7 +67,7 @@ WITH updated_jobs AS (
     WHERE
         j.id = $job_id
         -- Ensure we can't finish the same job multiple times.
-        AND status = 'Running'::enum_job_status
+        AND status = 'Running'
     RETURNING
         j.*
 ),
