@@ -41,7 +41,7 @@ function doTest(issuesUrl, label) {
 
     step('should get question preview page', async () => {
       page = await requestp(questionUrl);
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
 
     step('should have a __csrf_token and a __variant_id', () => {
@@ -70,8 +70,8 @@ function doTest(issuesUrl, label) {
         __variant_id: locals.__variant_id,
       };
       page = await requestp.post(options);
-      locals.url = page.request.href; // eslint-disable-line require-atomic-updates
-      locals.$ = cheerio.load(page.body); // eslint-disable-line require-atomic-updates
+      locals.url = page.request.href;
+      locals.$ = cheerio.load(page.body);
     });
 
     step('should have one open issue', (callback) => {
@@ -92,7 +92,7 @@ function doTest(issuesUrl, label) {
 
     step('should get issues page successfully', async () => {
       page = await requestp(issuesUrl);
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
 
     step('should have a __csrf_token', () => {
@@ -114,8 +114,8 @@ function doTest(issuesUrl, label) {
         __csrf_token: locals.__csrf_token,
       };
       page = await requestp.post(options);
-      locals.url = page.request.href; // eslint-disable-line require-atomic-updates
-      locals.$ = cheerio.load(page.body); // eslint-disable-line require-atomic-updates
+      locals.url = page.request.href;
+      locals.$ = cheerio.load(page.body);
     });
 
     step('should have zero open issues', (callback) => {
