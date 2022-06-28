@@ -111,6 +111,50 @@ describe('Assessment syncing', () => {
     assert.equal(syncedData.assessment_questions[1].question.qid, util.ALTERNATIVE_QUESTION_ID);
   });
 
+  it('defaults shuffleQuestions to true for an Exam-type assessment', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('newexam');
+    assert.isTrue(syncedData.assessment.shuffle_questions);
+  });
+
+  it('allows shuffleQuestions to be set to false for an Exam-type assessment', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.shuffleQuestions = false;
+
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('newexam');
+    assert.isFalse(syncedData.assessment.shuffle_questions);
+  });
+
+  it('defaults shuffleQuestions to false for a Homework-type assessment', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newhomework'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('newhomework');
+    assert.isFalse(syncedData.assessment.shuffle_questions);
+  });
+
+  it('allows shuffleQuestions to be set to true for a Homework-type assessment', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.shuffleQuestions = true;
+
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newhomework'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('newhomework');
+    assert.isTrue(syncedData.assessment.shuffle_questions);
+  });
+
   it('syncs alternatives in an Exam zone', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Exam');
