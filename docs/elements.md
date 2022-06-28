@@ -1764,7 +1764,7 @@ Displays the contents of question directions.
 <pl-question-panel> This is question-panel text. </pl-question-panel>
 ```
 
-### Details
+#### Details
 
 Contents are only shown during question input portion. When a student
 either makes a submission or receives the correct answer, the information
