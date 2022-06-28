@@ -1176,7 +1176,7 @@ module.exports = {
     // Put key paths in data.options
     _.extend(data.options, module.exports.getContextOptions(context));
 
-    const { data: cachedData, cacheHit } = await module.exports.getCachedDataOrComputeAsync(
+    const { data: cachedData, cacheHit } = await module.exports.getCachedDataOrCompute(
       course,
       data,
       context,
@@ -1592,7 +1592,7 @@ module.exports = {
       filename: filename,
     };
 
-    const { data: cachedData } = module.exports.getCachedDataOrCompute(
+    const { data: cachedData } = await module.exports.getCachedDataOrCompute(
       course,
       data,
       context,
@@ -1838,7 +1838,7 @@ module.exports = {
     }
   },
 
-  async getCachedDataOrComputeAsync(course, data, context, computeFcn) {
+  async getCachedDataOrCompute(course, data, context, computeFcn) {
     // This function will compute the cachedData and cache it if
     // cacheKey is not null
     const doCompute = async (cacheKey) => {
