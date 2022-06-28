@@ -72,7 +72,7 @@
         "klaw": "^3.0.0",
         "lodash": "^4.17.21",
         "logform": "^2.4.0",
-        "lru-cache": "^6.0.0",
+        "lru-cache": "^7.10.2",
         "mathjax": "^3.2.1",
         "mersenne": "0.0.4",
         "moment": "^2.29.3",
