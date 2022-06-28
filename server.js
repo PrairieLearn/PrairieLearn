@@ -49,7 +49,7 @@ const workers = require('./lib/workers');
 const assets = require('./lib/assets');
 const namedLocks = require('./lib/named-locks');
 
-process.on('warning', (e) => console.warn(e)); // eslint-disable-line no-console
+process.on('warning', (e) => console.warn(e));
 
 // If there is only one argument, legacy it into the config option
 if (argv['_'].length === 1) {
@@ -66,7 +66,7 @@ if ('h' in argv || 'help' in argv) {
     --exit                              Run all the initialization and exit
 `;
 
-  console.log(msg); // eslint-disable-line no-console
+  console.log(msg);
   process.exit(0);
 }
 
@@ -1720,7 +1720,7 @@ if (config.startServer) {
             (time, stack) => {
               const msg = `BLOCKED-AT: Blocked for ${time}ms`;
               logger.verbose(msg, { time, stack });
-              console.log(msg + '\n' + stack.join('\n')); // eslint-disable-line no-console
+              console.log(msg + '\n' + stack.join('\n'));
             },
             { threshold: config.blockedWarnThresholdMS }
           ); // threshold in milliseconds
@@ -1729,7 +1729,7 @@ if (config.startServer) {
             (time) => {
               const msg = `BLOCKED: Blocked for ${time}ms (set config.blockedAtWarnEnable for stack trace)`;
               logger.verbose(msg, { time });
-              console.log(msg); // eslint-disable-line no-console
+              console.log(msg);
             },
             { threshold: config.blockedWarnThresholdMS }
           ); // threshold in milliseconds
