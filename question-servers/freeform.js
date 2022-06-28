@@ -388,7 +388,7 @@ module.exports = {
     }
   },
 
-  async execPythonServerAsync(pc, phase, data, html, context) {
+  async execPythonServer(pc, phase, data, html, context) {
     const pythonFile = 'server';
     const pythonFunction = phase;
     const pythonArgs = [data];
@@ -428,7 +428,7 @@ module.exports = {
     }
   },
 
-  async execTemplateAsync(htmlFilename, data) {
+  async execTemplate(htmlFilename, data) {
     const rawFile = await fs.readFile(htmlFilename, { encoding: 'utf8' });
     let html = mustache.render(rawFile, data);
     html = markdown.processQuestion(html);
@@ -792,7 +792,7 @@ module.exports = {
     };
   },
 
-  async processQuestionHtmlAsync(phase, pc, data, context) {
+  async processQuestionHtml(phase, pc, data, context) {
     const origData = JSON.parse(JSON.stringify(data));
 
     const checkErr = module.exports.checkData(data, origData, phase);
@@ -811,7 +811,7 @@ module.exports = {
     const htmlFilename = path.join(context.question_dir, 'question.html');
     let html, $;
     try {
-      ({ html, $ } = await module.exports.execTemplateAsync(htmlFilename, data));
+      ({ html, $ } = await module.exports.execTemplate(htmlFilename, data));
     } catch (err) {
       return {
         courseIssues: [new CourseIssueError(htmlFilename + ': ' + err.toString(), { fatal: true })],
@@ -876,7 +876,7 @@ module.exports = {
     };
   },
 
-  async processQuestionServerAsync(phase, pc, data, html, fileData, context) {
+  async processQuestionServer(phase, pc, data, html, fileData, context) {
     const courseIssues = [];
     const origData = JSON.parse(JSON.stringify(data));
 
@@ -892,13 +892,7 @@ module.exports = {
 
     let result, output;
     try {
-      ({ result, output } = await module.exports.execPythonServerAsync(
-        pc,
-        phase,
-        data,
-        html,
-        context
-      ));
+      ({ result, output } = await module.exports.execPythonServer(pc, phase, data, html, context));
     } catch (err) {
       const serverFile = path.join(context.question_dir, 'server.py');
       courseIssues.push(
@@ -962,16 +956,9 @@ module.exports = {
     return { courseIssues, data, html, fileData };
   },
 
-  async processQuestionAsync(phase, pc, data, context) {
+  async processQuestion(phase, pc, data, context) {
     if (phase === 'generate') {
-      return module.exports.processQuestionServerAsync(
-        phase,
-        pc,
-        data,
-        '',
-        Buffer.from(''),
-        context
-      );
+      return module.exports.processQuestionServer(phase, pc, data, '', Buffer.from(''), context);
     } else {
       const {
         courseIssues,
@@ -979,7 +966,7 @@ module.exports = {
         html,
         fileData,
         renderedElementNames,
-      } = await module.exports.processQuestionHtmlAsync(phase, pc, data, context);
+      } = await module.exports.processQuestionHtml(phase, pc, data, context);
       const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
       if (hasFatalError) {
         return {
@@ -995,14 +982,7 @@ module.exports = {
         data: serverData,
         html: serverHtml,
         fileData: serverFileData,
-      } = await module.exports.processQuestionServerAsync(
-        phase,
-        pc,
-        htmlData,
-        html,
-        fileData,
-        context
-      );
+      } = await module.exports.processQuestionServer(phase, pc, htmlData, html, fileData, context);
       courseIssues.push(...serverCourseIssues);
       return {
         courseIssues,
@@ -1030,7 +1010,7 @@ module.exports = {
   },
 
   async generateAsync(question, course, variant_seed) {
-    const context = await module.exports.getContextAsync(question, course);
+    const context = await module.exports.getContext(question, course);
     const data = {
       params: {},
       correct_answers: {},
@@ -1040,7 +1020,7 @@ module.exports = {
     _.extend(data.options, module.exports.getContextOptions(context));
 
     return await workers.withPythonCaller(async (pc) => {
-      const { courseIssues, data: resultData } = await module.exports.processQuestionAsync(
+      const { courseIssues, data: resultData } = await module.exports.processQuestion(
         'generate',
         pc,
         data,
@@ -1070,7 +1050,7 @@ module.exports = {
   async prepareAsync(question, course, variant) {
     if (variant.broken) throw new Error('attemped to prepare broken variant');
 
-    const context = await module.exports.getContextAsync(question, course);
+    const context = await module.exports.getContext(question, course);
     const data = {
       params: _.get(variant, 'params', {}),
       correct_answers: _.get(variant, 'true_answer', {}),
@@ -1080,7 +1060,7 @@ module.exports = {
     _.extend(data.options, module.exports.getContextOptions(context));
 
     return await workers.withPythonCaller(async (pc) => {
-      const { courseIssues, data: resultData } = await module.exports.processQuestionAsync(
+      const { courseIssues, data: resultData } = await module.exports.processQuestion(
         'prepare',
         pc,
         data,
@@ -1181,8 +1161,12 @@ module.exports = {
       data,
       context,
       async () => {
-        const { courseIssues, html, renderedElementNames } =
-          await module.exports.processQuestionAsync('render', pc, data, context);
+        const { courseIssues, html, renderedElementNames } = await module.exports.processQuestion(
+          'render',
+          pc,
+          data,
+          context
+        );
         return { courseIssues, html, renderedElementNames };
       }
     );
@@ -1237,7 +1221,7 @@ module.exports = {
     const courseIssues = [];
     let panelCount = 0,
       cacheHitCount = 0;
-    const context = await module.exports.getContextAsync(question, course);
+    const context = await module.exports.getContext(question, course);
 
     return workers.withPythonCaller(async (pc) => {
       await async.series([
@@ -1582,7 +1566,7 @@ module.exports = {
     debug(`file()`);
     if (variant.broken) throw new Error('attemped to get a file for a broken variant');
 
-    const context = await module.exports.getContextAsync(question, course);
+    const context = await module.exports.getContext(question, course);
 
     const data = {
       params: _.get(variant, 'params', {}),
@@ -1599,7 +1583,7 @@ module.exports = {
       async () => {
         // function to compute the file data and return the cachedData
         return workers.withPythonCaller(async (pc) => {
-          const { courseIssues, fileData } = await module.exports.processQuestionAsync(
+          const { courseIssues, fileData } = await module.exports.processQuestion(
             'file',
             pc,
             data,
@@ -1633,7 +1617,7 @@ module.exports = {
     debug(`parse()`);
     if (variant.broken) throw new Error('attemped to parse broken variant');
 
-    const context = await module.exports.getContextAsync(question, course);
+    const context = await module.exports.getContext(question, course);
     const data = {
       params: _.get(variant, 'params', {}),
       correct_answers: _.get(variant, 'true_answer', {}),
@@ -1646,7 +1630,7 @@ module.exports = {
     };
     _.extend(data.options, module.exports.getContextOptions(context));
     return workers.withPythonCaller(async (pc) => {
-      const { courseIssues, data: resultData } = await module.exports.processQuestionAsync(
+      const { courseIssues, data: resultData } = await module.exports.processQuestion(
         'parse',
         pc,
         data,
@@ -1683,7 +1667,7 @@ module.exports = {
     if (variant.broken) throw new Error('attemped to grade broken variant');
     if (submission.broken) throw new Error('attemped to grade broken submission');
 
-    const context = await module.exports.getContextAsync(question, course);
+    const context = await module.exports.getContext(question, course);
     let data = {
       params: variant.params,
       correct_answers: variant.true_answer,
@@ -1699,7 +1683,7 @@ module.exports = {
     };
     _.extend(data.options, module.exports.getContextOptions(context));
     return workers.withPythonCaller(async (pc) => {
-      const { courseIssues, data: resultData } = await module.exports.processQuestionAsync(
+      const { courseIssues, data: resultData } = await module.exports.processQuestion(
         'grade',
         pc,
         data,
@@ -1738,7 +1722,7 @@ module.exports = {
     debug(`test()`);
     if (variant.broken) throw new Error('attemped to test broken variant');
 
-    const context = await module.exports.getContextAsync(question, course);
+    const context = await module.exports.getContext(question, course);
     let data = {
       params: variant.params,
       correct_answers: variant.true_answer,
@@ -1754,7 +1738,7 @@ module.exports = {
     };
     _.extend(data.options, module.exports.getContextOptions(context));
     return workers.withPythonCaller(async (pc) => {
-      const { courseIssues, data: resultData } = await module.exports.processQuestionAsync(
+      const { courseIssues, data: resultData } = await module.exports.processQuestion(
         'test',
         pc,
         data,
@@ -1787,7 +1771,7 @@ module.exports = {
     );
   },
 
-  async getContextAsync(question, course) {
+  async getContext(question, course) {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
     /** @type {chunks.Chunk[]} */
     const chunksToLoad = [
