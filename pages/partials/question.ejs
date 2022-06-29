@@ -166,7 +166,7 @@
   <% if (showTrueAnswer) { %>
   <div class="card mb-4 grading-block">
     <div class="card-header bg-secondary text-white">Correct answer</div>
-    <div class="card-body answer-body">
+    <div class="card-body answer-body" data-cache-hit="<%= answerHtml.cacheHit %>" data-cache-key="<%= answerHtml.cacheKey %>">
       <%- answerHtml %>
     </div>
   </div>

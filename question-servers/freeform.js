@@ -1187,12 +1187,13 @@ module.exports = {
           }
         );
       },
-      (cachedData, cacheHit) => {
+      (cachedData, cacheHit, cacheKey) => {
         // function to process the cachedData, whether we
         // just rendered it or whether it came from cache
         callback(null, {
           ...cachedData,
           cacheHit,
+          cacheKey,
         });
       },
       callback // error-handling function
@@ -1269,6 +1270,7 @@ module.exports = {
                 html,
                 renderedElementNames,
                 cacheHit,
+                cacheKey,
               } = await module.exports.renderPanelInstrumented(
                 'question',
                 pc,
@@ -1281,7 +1283,8 @@ module.exports = {
               );
 
               courseIssues.push(...newCourseIssues);
-              htmls.questionHtml = html;
+              const comment = `<!-- cacheHit: ${cacheHit}, cacheKey: ${cacheKey} -->`;
+              htmls.questionHtml = comment + html;
               panelCount++;
               if (cacheHit) cacheHitCount++;
               allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
@@ -1295,6 +1298,7 @@ module.exports = {
                   html,
                   renderedElementNames,
                   cacheHit,
+                  cacheKey,
                 } = await module.exports.renderPanelInstrumented(
                   'submission',
                   pc,
@@ -1310,7 +1314,8 @@ module.exports = {
                 panelCount++;
                 if (cacheHit) cacheHitCount++;
                 allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
-                return html;
+                const comment = `<!-- cacheHit: ${cacheHit}, cacheKey: ${cacheKey} -->`;
+                return comment + html;
               });
             },
             async () => {
@@ -1321,6 +1326,7 @@ module.exports = {
                 html,
                 renderedElementNames,
                 cacheHit,
+                cacheKey,
               } = await module.exports.renderPanelInstrumented(
                 'answer',
                 pc,
@@ -1333,7 +1339,9 @@ module.exports = {
               );
 
               courseIssues.push(...newCourseIssues);
-              htmls.answerHtml = html;
+              const comment = `<!-- cacheHit: ${cacheHit}, cacheKey: ${cacheKey} -->`;
+              htmls.answerHtml = comment + html;
+              console.log(html.cacheHit, html.cacheKey);
               panelCount++;
               if (cacheHit) cacheHitCount++;
               allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
@@ -1860,7 +1868,7 @@ module.exports = {
         }
 
         const cacheHit = false;
-        processFcn(cachedData, cacheHit);
+        processFcn(cachedData, cacheHit, cacheKey);
       });
     };
 
@@ -1887,7 +1895,7 @@ module.exports = {
         const hasCachedCourseIssues = cachedData?.courseIssues?.length > 0;
         if (hasCachedData && !hasCachedCourseIssues) {
           const cacheHit = true;
-          processFcn(cachedData, cacheHit);
+          processFcn(cachedData, cacheHit, cacheKey);
         } else {
           doCompute(cacheKey);
         }
