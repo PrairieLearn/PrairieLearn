@@ -67,7 +67,7 @@ The `info.json` file for each question defines properties of the question. For e
 | `tags`                   | array   | Optional extra tags associated with the question (e.g., `["secret", "concept"]`). (Optional; default: no tags)                |
 | `gradingMethod`          | enum    | The grading method used for this question. Valid values: `Internal`, `External`, or `Manual`. (Optional; default: `Internal`) |
 | `singleVariant`          | boolean | Whether the question is not randomized and only generates a single variant. (Optional; default: `false`)                      |
-| `showCorrectAnswer`      | boolean | Whether the question should display the answer panel. (Optional; default: `true`)                      |
+| `showCorrectAnswer`      | boolean | Whether the question should display the answer panel. (Optional; default: `true`)                                             |
 | `partialCredit`          | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)                              |
 | `externalGradingOptions` | object  | Options for externally graded questions. See the [external grading docs](externalGrading.md). (Optional; default: none)       |
 | `dependencies`           | object  | External JavaScript or CSS dependencies to load. See below. (Optional; default: `{}`)                                         |
