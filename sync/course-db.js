@@ -1,10 +1,7 @@
 // @ts-check
-const ERR = require('async-stacktrace');
 const path = require('path');
 const _ = require('lodash');
 const fs = require('fs-extra');
-const fsPromises = require('fs').promises;
-const util = require('util');
 const async = require('async');
 const jju = require('jju');
 const Ajv = require('ajv').default;
@@ -563,7 +560,7 @@ module.exports.loadInfoFile = async function ({
     // we could potentially hit an EMFILE error, but we haven't seen that in
     // practice in years, so that's a risk we're willing to take. We explicitly
     // use the native Node fs API here to opt out of this queueing behavior.
-    contents = await fsPromises.readFile(absolutePath, 'utf8');
+    contents = await fs.readFile(absolutePath, 'utf8');
     // perf.end(`readfile:${absolutePath}`);
   } catch (err) {
     // perf.end(`readfile:${absolutePath}`);
