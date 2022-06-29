@@ -42,7 +42,7 @@ test-python:
 	
 lint: lint-js lint-python lint-html lint-links
 lint-js:
-	@yarn eslint --ext js "**/*.js"
+	@yarn eslint --ext js --report-unused-disable-directives "**/*.js"
 	@yarn prettier --check "**/*.{js,ts,md}"
 lint-python:
 	@python3 -m flake8 ./
@@ -61,16 +61,6 @@ typecheck-js:
 	@yarn tsc
 typecheck-python:
 	@yarn pyright
-
-depcheck:
-	-yarn depcheck --ignore-patterns=public/**
-	@echo WARNING:
-	@echo WARNING: Before removing an unused package, also check that it is not used
-	@echo WARNING: by client-side code. Do this by running '"git grep <packagename>"'
-	@echo WARNING:
-	@echo WARNING: Note that many devDependencies will show up as unused. This is not
-	@echo WARNING: a problem.
-	@echo WARNING:
 
 changeset:
 	@yarn changeset
