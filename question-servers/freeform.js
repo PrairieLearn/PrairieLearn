@@ -1283,7 +1283,7 @@ module.exports = {
               );
 
               courseIssues.push(...newCourseIssues);
-              const comment = `<!-- cacheHit: ${cacheHit}, cacheKey: ${cacheKey} -->`;
+              const comment = `<!-- cacheHit: ${cacheHit}, cacheKey: ${cacheKey}, submissionId: ${submission.id} -->`;
               htmls.questionHtml = comment + html;
               panelCount++;
               if (cacheHit) cacheHitCount++;
