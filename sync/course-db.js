@@ -405,70 +405,10 @@ const FILE_UUID_REGEX =
  */
 
 /**
- * TODO: Remove `logger` param when we do later refactoring.
- * @param {string} courseDir
- * @param {(err: Error | null, course?: any, newCourse?: CourseData) => void} callback
- */
-module.exports.loadFullCourse = function (courseDir, logger, callback) {
-  util.callbackify(this.loadFullCourseNew)(courseDir, (err, courseData) => {
-    if (ERR(err, callback)) return;
-
-    // First, scan through everything to check for errors, and if we find one, "throw" it
-    if (infofile.hasErrors(courseData.course)) {
-      return callback(new Error(infofile.stringifyErrors(courseData.course)));
-    }
-    for (const qid in courseData.questions) {
-      if (infofile.hasErrors(courseData.questions[qid])) {
-        return callback(new Error(infofile.stringifyErrors(courseData.questions[qid])));
-      }
-    }
-    for (const ciid in courseData.courseInstances) {
-      if (infofile.hasErrors(courseData.courseInstances[ciid].courseInstance)) {
-        return callback(
-          new Error(infofile.stringifyErrors(courseData.courseInstances[ciid].courseInstance))
-        );
-      }
-    }
-    for (const ciid in courseData.courseInstances) {
-      const courseInstance = courseData.courseInstances[ciid];
-      for (const tid in courseInstance.assessments) {
-        if (infofile.hasErrors(courseInstance.assessments[tid])) {
-          return callback(new Error(infofile.stringifyErrors(courseInstance.assessments[tid])));
-        }
-      }
-    }
-
-    const questions = {};
-    Object.entries(courseData.questions).forEach(
-      ([qid, question]) => (questions[qid] = question.data)
-    );
-
-    const courseInstances = {};
-    Object.entries(courseData.courseInstances).forEach(([ciid, courseInstance]) => {
-      const assessments = {};
-      Object.entries(courseInstance.assessments).forEach(([tid, assessment]) => {
-        assessments[tid] = assessment.data;
-      });
-      courseInstances[ciid] = {
-        ...courseInstance.courseInstance.data,
-        assessmentDB: assessments,
-      };
-    });
-
-    const course = {
-      courseInfo: courseData.course.data,
-      questionDB: questions,
-      courseInstanceDB: courseInstances,
-    };
-    callback(null, course, courseData);
-  });
-};
-
-/**
  * @param {string} courseDir
  * @returns {Promise<CourseData>}
  */
-module.exports.loadFullCourseNew = async function (courseDir) {
+module.exports.loadFullCourse = async function (courseDir) {
   const courseInfo = await module.exports.loadCourseInfo(courseDir);
   perf.start('loadQuestions');
   const questions = await module.exports.loadQuestions(courseDir);
