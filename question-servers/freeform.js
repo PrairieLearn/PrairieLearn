@@ -1314,7 +1314,7 @@ module.exports = {
                 panelCount++;
                 if (cacheHit) cacheHitCount++;
                 allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
-                const comment = `<!-- cacheHit: ${cacheHit}, cacheKey: ${cacheKey} -->`;
+                const comment = `<!-- cacheHit: ${cacheHit}, cacheKey: ${cacheKey}, submissionId: ${submission.id} -->`;
                 return comment + html;
               });
             },
