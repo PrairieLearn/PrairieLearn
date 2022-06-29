@@ -9,11 +9,3 @@ WHERE
     ai.assessment_id = $assessment_id
     AND ai.number = 1
     AND ((gu.user_id = $user_id) OR (ai.user_id = $user_id));
-
--- BLOCK get_group_roles
-SELECT
-    gr.*
-FROM
-    group_roles as gr
-WHERE
-    gr.assessment_id = $assessment_id
