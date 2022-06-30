@@ -6,8 +6,10 @@ $(function() {
     new window.PLFileEditor(UUID, {
         originalContents: "{{original_file_contents}}",
         currentContents: "{{current_file_contents}}",
+        readOnly: {{read_only}},
         aceMode: {{#ace_mode}}"{{ace_mode}}"{{/ace_mode}}{{^ace_mode}}undefined{{/ace_mode}},
         aceTheme: {{#ace_theme}}"{{ace_theme}}"{{/ace_theme}}{{^ace_theme}}undefined{{/ace_theme}},
+        fontSize: {{#font_size}}"{{font_size}}"{{/font_size}}{{^font_size}}undefined{{/font_size}},
         minLines: {{#min_lines}}{{min_lines}}{{/min_lines}}{{^min_lines}}undefined{{/min_lines}},
         maxLines: {{#max_lines}}{{max_lines}}{{/max_lines}}{{^max_lines}}undefined{{/max_lines}},
         autoResize: {{auto_resize}},

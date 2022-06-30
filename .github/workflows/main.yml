@@ -1,20 +1,23 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+      - master
+  pull_request:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2.3.4
+    - uses: actions/checkout@v3
       with:
         fetch-depth: 0
     - name: Set up QEMU
-      uses: docker/setup-qemu-action@v1 # https://github.com/marketplace/actions/docker-setup-qemu
+      uses: docker/setup-qemu-action@v2 # https://github.com/marketplace/actions/docker-setup-qemu
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1 # https://github.com/marketplace/actions/docker-setup-buildx
+      uses: docker/setup-buildx-action@v2 # https://github.com/marketplace/actions/docker-setup-buildx
     - name: Build the plbase docker image if needed
       run: sh ./tools/build-image-if-needed.sh images/plbase prairielearn/plbase
     - name: Build the grader-c docker image if needed
@@ -55,16 +58,10 @@ jobs:
       run: docker exec test_container /PrairieLearn/docker/typecheck_python.sh
     - name: Run the JavaScript tests
       run: docker exec test_container /PrairieLearn/docker/test_js.sh
+      # The JS tests hang relatively often when someone makes a mistake in a PR,
+      # and the GitHub Actions default timeout is 6 hours, so the CI run keeps
+      # spinning until it eventually times out. This shorter timeout helps
+      # ensure that the tests fail more quickly so that people can fix them.
+      timeout-minutes: 30
     - name: Run the Python tests
       run: docker exec test_container /PrairieLearn/docker/test_python.sh
-    - name: Copy code-coverage data out of container
-      run: docker cp test_container:/PrairieLearn/coverage coverage
-    - name: Directory listing for debug
-      run: ls -lR
-    - name: Head of lcov.info for debug
-      run: head -1000 coverage/lcov.info
-    - name: Send code-coverage data to Coveralls
-      uses: coverallsapp/github-action@master
-      with:
-        github-token: ${{ secrets.github_token }}
-      continue-on-error: true

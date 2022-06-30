@@ -75,6 +75,8 @@ The following **Conditional** elements are available:
 - [`pl-answer-panel`](#pl-answer-panel-element): Displays the correct
   answer to a given question.
 - [`pl-hide-in-panel`](#pl-hide-in-panel-element): Hides content in one or more display panels.
+- [`pl-hide-in-manual-grading`](#pl-hide-in-manual-grading-element): Hides content in the manual grading page.
+- [`pl-manual-grading-only`](#pl-manual-grading-only-element): Shows content only in manual grading.
 - [`pl-external-grader-results`](#pl-external-grader-results-element):
   Displays results from questions that are externally graded.
 
@@ -448,7 +450,7 @@ Different grading options are defined via the attribute `grading-method`:
   the correct answers (defined in `pl-answer`) appear in the HTML file. There is no partial credit for this option.
 - `unordered`: in this method, if `n` is the total number of correct blocks, each correct block moved to the solution area is given `1/n` points, and each incorrect block moved to the solution area is subtracted by `1/n` points. The final score will be at least 0 (the student cannot earn a negative score by only moving incorrect answers). Note the ordering of the blocks does not matter. That is, any permutation of the answers within the solution area is accepted. There is partial credit for this option.
 - `ranking`: in this method, the `ranking` attribute of the `pl-answer` options are used to check answer ordering. Every answer block _X_ should have a `ranking` integer that is less than or equal to the answer block immediately below _X_. That is, the sequence of `ranking` integers of all the answer blocks should form a _nonstrictly increasing_ sequence. If `n` is the total number of answers, each correctly ordered answer is worth `1/n`, up to the first incorrectly ordered answer. There is partial credit for this option.
-- `dag`: in this method, the `depends` attibute of the `pl-answer` options are used to declare the directed acyclic graph relation between the blocks, and a correct answer is any topological sort of that directed acyclic graph. If `pl-block-group` elements are used to divide some blocks into groups, then a correct answer is a topological sort of the lines of the proof with the added condition that the lines of each group must be listed contiguously.
+- `dag`: in this method, the `depends` attibute of the `pl-answer` options are used to declare the directed acyclic graph relation between the blocks, and a correct answer is any topological sort of that directed acyclic graph. If `pl-block-group` elements are used to divide some blocks into groups, then a correct answer is a topological sort of the lines of the proof with the added condition that the lines of each group must be listed contiguously (as an example, this is useful for expressing a [proof by cases][demo/proofblocks] when the `dag` grader is used for mathematical proofs). Blocks inside a `pl-block-group` element may only depend or be depended on by blocks within the same `pl-block-group`, and `pl-blocks-group`s can be given their own `tag` and `depends` properties so that a block may depend on an entire group, or a group may depend on a block or group.
 - `external`: in this method, the blocks moved to the solution area will be saved in the file `user_code.py`, and the correctness of the code will be checked using the external grader. Depending on the external grader grading code logic, it may be possible to enable or disable partial credit. The attribute `correct` for `pl-answer` can still be used in conjunction with `min-incorrect` and `max-incorrect` for display purposes only, but not used for grading purposes. The attributes `ranking` and `indent` are not allowed for this grading method.
 
 Different ordering of the blocks in the source area defined via the attribute `source-blocks-order`:
@@ -680,17 +682,18 @@ Given a list of statements, select a matching option for each entry from a drop-
 
 #### Customizations
 
-| Attribute           | Type                                                       | Default       | Description                                                                                                                                                                                                            |
-| ------------------- | ---------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`      | string                                                     | —             | Variable name to store data in.                                                                                                                                                                                        |
-| `weight`            | integer                                                    | 1             | Weight to use when computing a weighted average score over elements.                                                                                                                                                   |
-| `fixed-order`       | boolean                                                    | False         | Whether or not to display the statements in a fixed order; otherwise they are shuffled. Options are always shuffled.                                                                                                   |
-| `number-statements` | integer                                                    | special       | The number of statements to display. Defaults to all statements.                                                                                                                                                       |
-| `number-options`    | integer                                                    | special       | The number of options to display. Defaults to all options. The `none-of-the-above` option does not count towards this number.                                                                                          |
-| `none-of-the-above` | boolean                                                    | false         | Whether or not to add a "None of the above" to the end of the options.                                                                                                                                                 |
-| `blank`             | boolean                                                    | True          | Option to add blank dropdown entry as the default selection in each drop-down list.                                                                                                                                    |
-| `counter-type`      | "decimal" or "lower-alpha" or "upper-alpha" or "full-text" | "lower-alpha" | The type of counter to use when enumerating the options. If set to "full-text", the column of options will be hidden, and the text of each option will be used in the statements' dropdown lists, instead of counters. |
-| `hide-score-badge`  | boolean                                                    | false         | Whether or not to hide the correct/incorrect score badge next to each graded answer choice.                                                                                                                            |
+| Attribute             | Type                                                       | Default       | Description                                                                                                                                                                                                            |
+| --------------------- | ---------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name`        | string                                                     | —             | Variable name to store data in.                                                                                                                                                                                        |
+| `weight`              | integer                                                    | 1             | Weight to use when computing a weighted average score over elements.                                                                                                                                                   |
+| `fixed-order`         | boolean                                                    | False         | Whether or not to display the statements in a fixed order; otherwise they are shuffled.                                                                                                                                |
+| `fixed-options-order` | boolean                                                    | False         | Whether or not to display the options in a fixed order; otherwise they are shuffled. See the details of `pl-option` below for more information on option ordering.                                                     |
+| `number-statements`   | integer                                                    | special       | The number of statements to display. Defaults to all statements.                                                                                                                                                       |
+| `number-options`      | integer                                                    | special       | The number of options to display. Defaults to all options. The `none-of-the-above` option does not count towards this number.                                                                                          |
+| `none-of-the-above`   | boolean                                                    | false         | Whether or not to add a "None of the above" to the end of the options.                                                                                                                                                 |
+| `blank`               | boolean                                                    | True          | Option to add blank dropdown entry as the default selection in each drop-down list.                                                                                                                                    |
+| `counter-type`        | "decimal" or "lower-alpha" or "upper-alpha" or "full-text" | "lower-alpha" | The type of counter to use when enumerating the options. If set to "full-text", the column of options will be hidden, and the text of each option will be used in the statements' dropdown lists, instead of counters. |
+| `hide-score-badge`    | boolean                                                    | false         | Whether or not to hide the correct/incorrect score badge next to each graded answer choice.                                                                                                                            |
 
 Inside the `pl-matching` element, a series of `pl-statement` and `pl-option` elements specify the questions the student must answer and the options to which they can be matched, respectively. Statements are displayed in the left column, and options in the right.
 
@@ -703,6 +706,13 @@ The content of a `pl-statement` can be any HTML element, including other Prairie
 | `match`   | string | —       | Identifies the option as the correct response for this `pl-statement`. If `match` corresponds to the `name` of any `pl-option` element, the statement will be linked to that `pl-option`, otherwise a new option is implicitly created based on this `match` value. |
 
 The content of a `pl-option` can be any HTML element, including other PrairieLearn elements. `pl-option` elements are optional; options are created by default based on the `match` attribute of each `pl-statement`. Additional `pl-option` elements can be added to serve as distractors (an option that is always incorrect, such as "New York City" in the example above), or to render formatted HTML/PrairieLearn elements instead of plain text (see the last question in the demo problem linked in the "Example implementations" below).
+
+When the `fixed-options-order` feature is used, options are shown in the following order:
+
+1. Any explicitly-defined `pl-option` elements are shown first, in the order they are declared.
+2. Any implicitly-defined options defined by a `pl-statement` `match` attribute are shown next, in the order they are declared.
+
+It is recommended to explicitly define `pl-option` elements when using `fixed-options-order` to have complete certainty on the order they will be shown.
 
 A `pl-option` must be specified with these attributes:
 
@@ -873,13 +883,15 @@ Provides an in-browser rich text editor, aimed mostly at manual grading essay-ty
 
 #### Customizations
 
-| Attribute          | Type   | Default            | description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| ------------------ | ------ | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `file-name`        | string | -                  | The name of the output file; will be used to store the student's answer in the `_files` submitted answer                                                                                                                                                                                                                                                                                                                                              |
-| `quill-theme`      | string | `snow`             | Specifies a Quill editor theme; the most common themes are `snow` (which uses a default toolbar) or `bubble` (which hides the default toolbar, showing formatting options when text is selected). See [the Quill documentation](https://quilljs.com/docs/themes/) for more information about additional themes.                                                                                                                                       |
-| `source-file-name` | string | None               | Name of the source file with existing HTML content to be displayed in the editor.                                                                                                                                                                                                                                                                                                                                                                     |
-| `directory`        | string | special            | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `clientFilesCourse` or `serverFilesCourse`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory. |
-| `placeholder`      | string | "Your answer here" | Text to be shown in the editor as a placeholder when there is no student input.                                                                                                                                                                                                                                                                                                                                                                       |
+| Attribute            | Type    | Default            | description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| -------------------- | ------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `file-name`          | string  | -                  | The name of the output file; will be used to store the student's answer in the `_files` submitted answer                                                                                                                                                                                                                                                                                                                                              |
+| `quill-theme`        | string  | `snow`             | Specifies a Quill editor theme; the most common themes are `snow` (which uses a default toolbar) or `bubble` (which hides the default toolbar, showing formatting options when text is selected). See [the Quill documentation](https://quilljs.com/docs/themes/) for more information about additional themes.                                                                                                                                       |
+| `source-file-name`   | string  | None               | Name of the source file with existing content to be displayed in the editor. The format of this file must match the format specified in the `format` attribute.                                                                                                                                                                                                                                                                                       |
+| `directory`          | string  | special            | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `clientFilesCourse` or `serverFilesCourse`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory. |
+| `placeholder`        | string  | "Your answer here" | Text to be shown in the editor as a placeholder when there is no student input.                                                                                                                                                                                                                                                                                                                                                                       |
+| `format`             | string  | `html`             | Format used to save the student's response. The element supports `html` and `markdown` formats. This format also affects how the source file name or inner HTML is interpreted.                                                                                                                                                                                                                                                                       |
+| `markdown-shortcuts` | boolean | `true`             | Whether or not the editor accepts shortcuts based on markdown format (e.g., typing `_word_` causes the word to become italic).                                                                                                                                                                                                                                                                                                                        |
 
 #### Example implementations
 
@@ -921,6 +933,7 @@ def fib(n):
 | `file-name`          | string  | -                  | The name of this file; will be used to store this file in the `_files` submitted answer                                                                                                                                                                                                                                                                                                                                                               |
 | `ace-mode`           | string  | None               | Specifies an Ace editor mode to enable things like intelligent code indenting and syntax highlighting; see the full list of modes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/mode).                                                                                                                                                                                                                                                    |
 | `ace-theme`          | string  | `ace/theme/chrome` | Specifies an Ace editor theme; see the full list of themes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/theme).                                                                                                                                                                                                                                                                                                                          |
+| `font-size`          | string  | `12px`             | Sets the font size for the Ace editor. Specified as a CSS-style size (e.g., `1rem`, `110%`, `16pt`, or `20px`).                                                                                                                                                                                                                                                                                                                                       |
 | `source-file-name`   | string  | None               | Name of the source file with existing code to be displayed in the browser text editor (instead of writing the existing code between the element tags as illustrated in the above code snippet).                                                                                                                                                                                                                                                       |
 | `directory`          | string  | special            | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `clientFilesCourse` or `serverFilesCourse`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory. |
 | `min-lines`          | integer | None               | Minimum number of lines the editor should show initially.                                                                                                                                                                                                                                                                                                                                                                                             |
@@ -1751,12 +1764,12 @@ Displays the contents of question directions.
 <pl-question-panel> This is question-panel text. </pl-question-panel>
 ```
 
-### Details
+#### Details
 
 Contents are only shown during question input portion. When a student
 either makes a submission or receives the correct answer, the information
 between these tags is hidden. If content exists outside of a question panel,
-then it will be displayed alongside or answer.
+then it will be displayed alongside the answer.
 
 #### Example implementations
 
@@ -1872,6 +1885,66 @@ element contents only in a specific panel.
 - [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
 - [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
 - [`pl-external-grader-results` for showing the results from an externally graded code question.](#pl-external-grader-results-element)
+
+---
+
+### `pl-hide-in-manual-grading` element
+
+Hide the contents so that it is **not** displayed to graders in the manual grading page.
+
+#### Sample element
+
+```html
+<pl-hide-in-manual-grading>
+  This text will be shown to students, but not to graders.
+</pl-hide-in-manual-grading>
+```
+
+#### Details
+
+This element is typically used to abbreviate the question description and allow graders to focus on the actual answers during grading. It is the reverse of [the `pl-manual-grading-only` element](#pl-manual-grading-only-element), which explicitly shows content only during grading.
+
+#### Example implementations
+
+- [demo/manualGrade/codeUpload]
+
+#### See also
+
+- [`pl-manual-grading-only` to show content only during manual grading.](#pl-manual-grading-only-element)
+- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
+- [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
+- [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
+- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
+
+---
+
+### `pl-manual-grading-only` element
+
+Hide the contents so that it is **only** displayed to graders in the manual grading page.
+
+#### Sample element
+
+```html
+<pl-manual-grading-only>
+  This text will be shown to graders, but not to students.
+</pl-manual-grading-only>
+```
+
+#### Details
+
+This element is typically used to provide graders with additional information that may not be presented to students. Examples may include grading instructions, sample answers, acceptable values for individual results, random parameters used in the question generation, or pre-computed values calculated in explicit `parse` functions. It is the reverse of [the `pl-hide-in-manual-grading` element](#pl-hide-in-manual-grading-element), which explicitly hides content during grading.
+
+#### Example implementations
+
+- [demo/manualGrade/codeUpload]
+
+#### See also
+
+- [`pl-hide-in-manual-grading` to hide content during manual grading.](#pl-hide-in-manual-grading-element)
+- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
+- [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
+- [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
+- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
 
 ---
 

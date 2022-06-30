@@ -10,6 +10,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 module.exports = function (req, res, next) {
   var params = {
     instance_question_id: req.params.instance_question_id,
+    assessment_id: req.params.assessment_id,
     course_instance_id: res.locals.course_instance.id,
     authz_data: res.locals.authz_data,
     req_date: res.locals.req_date,

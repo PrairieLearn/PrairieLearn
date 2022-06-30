@@ -9,6 +9,7 @@ const hash = require('crypto').createHash;
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const { promisify, callbackify } = require('util');
+const { instrumented } = require('@prairielearn/opentelemetry');
 
 const schemas = require('../schemas');
 const config = require('../lib/config');
@@ -26,7 +27,7 @@ const assets = require('../lib/assets');
 let coreElementsCache = {};
 // Maps course IDs to course element info
 let courseElementsCache = {};
-/* Maps course IDs to course element extension info */
+// Maps course IDs to course element extension info
 let courseExtensionsCache = {};
 
 module.exports = {
@@ -82,7 +83,7 @@ module.exports = {
           });
         },
         async (files) => {
-          /* Filter out any non-directories */
+          // Filter out any non-directories
           return async.filter(files, async (file) => {
             const stats = await fs.promises.lstat(path.join(sourceDir, file));
             return stats.isDirectory();
@@ -172,7 +173,7 @@ module.exports = {
     const readdir = promisify(fs.readdir);
     const readJson = promisify(fs.readJson);
 
-    /* Load each root element extension folder */
+    // Load each root element extension folder
     let elementFolders;
     try {
       elementFolders = await readdir(sourceDir);
@@ -185,7 +186,7 @@ module.exports = {
       }
     }
 
-    /* Get extensions from each element folder.  Each is stored as [ 'element name', 'extension name' ] */
+    // Get extensions from each element folder.  Each is stored as [ 'element name', 'extension name' ]
     const elementArrays = (
       await async.map(elementFolders, async (element) => {
         const extensions = await readdir(path.join(sourceDir, element));
@@ -193,7 +194,7 @@ module.exports = {
       })
     ).flat();
 
-    /* Populate element map */
+    // Populate element map
     const elements = {};
     elementArrays.forEach((extension) => {
       if (!(extension[0] in elements)) {
@@ -201,7 +202,7 @@ module.exports = {
       }
     });
 
-    /* Load extensions */
+    // Load extensions
     await async.each(elementArrays, async (extension) => {
       const [element, extensionDir] = extension;
       const infoPath = path.join(sourceDir, element, extensionDir, 'info.json');
@@ -211,11 +212,11 @@ module.exports = {
         info = await readJson(infoPath);
       } catch (err) {
         if (err.code === 'ENOENT') {
-          /* Not an extension directory, skip it. */
+          // Not an extension directory, skip it.
           logger.verbose(`${infoPath} not found, skipping...`);
           return;
         } else if (err.code === 'ENOTDIR') {
-          /* Random file, skip it as well. */
+          // Random file, skip it as well.
           logger.verbose(`Found stray file ${infoPath}, skipping...`);
           return;
         } else {
@@ -282,11 +283,11 @@ module.exports = {
    */
   getElementClientFiles: function (data, elementName, context) {
     let dataCopy = _.cloneDeep(data);
-    /* The options field wont contain URLs unless in the 'render' stage, so check
-           if it is populated before adding the element url */
+    // The options field wont contain URLs unless in the 'render' stage, so
+    // check if it is populated before adding the element url
     if ('base_url' in data.options) {
-      /* Join the URL using Posix join to avoid generating a path with backslashes,
-               as would be the case when running on Windows */
+      // Join the URL using Posix join to avoid generating a path with
+      // backslashes, as would be the case when running on Windows.
       dataCopy.options.client_files_element_url = path.posix.join(
         data.options.base_url,
         'elements',
@@ -554,6 +555,9 @@ module.exports = {
     err = checkProp('editable',              'boolean', ['render'],                           []);
     if (err) return err;
     // prettier-ignore
+    err = checkProp('manual_grading',        'boolean', ['render'],                           []);
+    if (err) return err;
+    // prettier-ignore
     err = checkProp('panel',                 'string',  ['render'],                           []);
     if (err) return err;
     // prettier-ignore
@@ -589,7 +593,7 @@ module.exports = {
         if (phase === 'render' && !_.includes(renderedElementNames, elementName)) {
           renderedElementNames.push(elementName);
         }
-        /* Populate the extensions used by this element */
+        // Populate the extensions used by this element.
         data.extensions = [];
         if (_.has(context.course_element_extensions, elementName)) {
           data.extensions = context.course_element_extensions[elementName];
@@ -618,7 +622,7 @@ module.exports = {
           // We'll catch this and add it to the course issues list
           throw courseIssue;
         }
-        /* We'll be sneaky and remove the extensions, since they're not used elsewhere */
+        // We'll be sneaky and remove the extensions, since they're not used elsewhere.
         delete data.extensions;
         delete ret_val.extensions;
         if (_.isString(consoleLog) && consoleLog.length > 0) {
@@ -659,7 +663,7 @@ module.exports = {
           }
         } else {
           // the following line is safe because we can't be in multiple copies of this function simultaneously
-          data = ret_val; // eslint-disable-line require-atomic-updates
+          data = ret_val;
           const checkErr = module.exports.checkData(data, origData, phase);
           if (checkErr) {
             const courseIssue = new Error(
@@ -682,7 +686,7 @@ module.exports = {
         }
       }
       // the following line is safe because we can't be in multiple copies of this function simultaneously
-      node.childNodes = newChildren; // eslint-disable-line require-atomic-updates
+      node.childNodes = newChildren;
       return node;
     };
     let questionHtml = '';
@@ -716,7 +720,7 @@ module.exports = {
             }
 
             const elementFile = module.exports.getElementController(elementName, context);
-            /* Populate the extensions used by this element */
+            // Populate the extensions used by this element
             data.extensions = [];
             if (_.has(context.course_element_extensions, elementName)) {
               data.extensions = context.course_element_extensions[elementName];
@@ -1008,8 +1012,6 @@ module.exports = {
    * URLs are not included here because those are only applicable during 'render'.
    */
   getContextOptions: function (context) {
-    /* These options are always available in any phase. */
-
     let options = {};
     options.question_path = context.question_dir;
     options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
@@ -1022,9 +1024,8 @@ module.exports = {
   generate: function (question, course, variant_seed, callback) {
     debug('generate()');
     module.exports.getContext(question, course, (err, context) => {
-      if (err) {
-        return callback(new Error(`Error generating options: ${err}`));
-      }
+      if (ERR(err, callback)) return;
+
       const data = {
         params: {},
         correct_answers: {},
@@ -1061,9 +1062,7 @@ module.exports = {
     debug('prepare()');
     if (variant.broken) return callback(new Error('attemped to prepare broken variant'));
     module.exports.getContext(question, course, (err, context) => {
-      if (err) {
-        return callback(new Error(`Error generating options: ${err}`));
-      }
+      if (ERR(err, callback)) return;
 
       const data = {
         params: _.get(variant, 'params', {}),
@@ -1097,83 +1096,138 @@ module.exports = {
     });
   },
 
-  renderPanel: function (panel, pc, variant, question, submission, course, locals, callback) {
+  /**
+   * @typedef {Object} RenderPanelResult
+   * @property {any[]} courseIssues
+   * @property {string} html
+   * @property {string[]} [renderedElementNames]
+   * @property {boolean} cacheHit
+   */
+
+  /**
+   * @param {'question' | 'answer' | 'submission'} panel
+   * @param {import('../lib/code-caller').PythonCaller} pc
+   * @param {any} variant
+   * @param {any} submission
+   * @param {any} course
+   * @param {any} locals
+   * @param {any} context
+   * @param {(err: Error, result: RenderPanelResult) => void} callback
+   */
+  renderPanel: function (panel, pc, variant, submission, course, locals, context, callback) {
     debug(`renderPanel(${panel})`);
     // broken variant kills all rendering
-    if (variant.broken) return callback(null, [], 'Broken question due to error in question code');
+    if (variant.broken) {
+      return callback(null, {
+        courseIssues: [],
+        html: 'Broken question due to error in question code',
+      });
+    }
 
     // broken submission kills the submission panel, but we can
     // proceed with other panels, treating the submission as
     // missing
     if (submission && submission.broken) {
       if (panel === 'submission') {
-        return callback(null, [], 'Broken submission due to error in question code');
+        return callback(null, {
+          courseIssues: [],
+          html: 'Broken submission due to error in question code',
+        });
       } else {
         submission = null;
       }
     }
 
-    module.exports.getContext(question, course, (err, context) => {
-      if (err) {
-        return callback(new Error(`Error generating options: ${err}`));
-      }
+    const data = {
+      params: _.get(variant, 'params', {}),
+      correct_answers: _.get(variant, 'true_answer', {}),
+      submitted_answers: submission ? _.get(submission, 'submitted_answer', {}) : {},
+      format_errors: submission ? _.get(submission, 'format_errors', {}) : {},
+      partial_scores:
+        !submission || submission.partial_scores == null ? {} : submission.partial_scores,
+      score: !submission || submission.score == null ? 0 : submission.score,
+      feedback: !submission || submission.feedback == null ? {} : submission.feedback,
+      variant_seed: parseInt(variant.variant_seed, 36),
+      options: _.get(variant, 'options', {}),
+      raw_submitted_answers: submission ? _.get(submission, 'raw_submitted_answer', {}) : {},
+      editable: !!(locals.allowAnswerEditing && !locals.manualGradingInterface),
+      manual_grading: !!locals.manualGradingInterface,
+      panel: panel,
+    };
 
-      const data = {
-        params: _.get(variant, 'params', {}),
-        correct_answers: _.get(variant, 'true_answer', {}),
-        submitted_answers: submission ? _.get(submission, 'submitted_answer', {}) : {},
-        format_errors: submission ? _.get(submission, 'format_errors', {}) : {},
-        partial_scores:
-          !submission || submission.partial_scores == null ? {} : submission.partial_scores,
-        score: !submission || submission.score == null ? 0 : submission.score,
-        feedback: !submission || submission.feedback == null ? {} : submission.feedback,
-        variant_seed: parseInt(variant.variant_seed, 36),
-        options: _.get(variant, 'options', {}),
-        raw_submitted_answers: submission ? _.get(submission, 'raw_submitted_answer', {}) : {},
-        editable: !!locals.allowAnswerEditing,
-        panel: panel,
-      };
+    // Put base URLs in data.options for access by question code
+    data.options.client_files_question_url = locals.clientFilesQuestionUrl;
+    data.options.client_files_course_url = locals.clientFilesCourseUrl;
+    data.options.client_files_question_dynamic_url = locals.clientFilesQuestionGeneratedFileUrl;
+    data.options.base_url = locals.baseUrl;
+    data.options.workspace_url = locals.workspaceUrl || null;
 
-      // Put base URLs in data.options for access by question code
-      data.options.client_files_question_url = locals.clientFilesQuestionUrl;
-      data.options.client_files_course_url = locals.clientFilesCourseUrl;
-      data.options.client_files_question_dynamic_url = locals.clientFilesQuestionGeneratedFileUrl;
-      data.options.base_url = locals.baseUrl;
-      data.options.workspace_url = locals.workspaceUrl || null;
+    // Put key paths in data.options
+    _.extend(data.options, module.exports.getContextOptions(context));
 
-      // Put key paths in data.options
-      _.extend(data.options, module.exports.getContextOptions(context));
+    module.exports.getCachedDataOrCompute(
+      course,
+      data,
+      context,
+      (callback) => {
+        // function to do the actual render and return the cachedData
+        module.exports.processQuestion(
+          'render',
+          pc,
+          data,
+          context,
+          (err, courseIssues, _data, html, _fileData, renderedElementNames) => {
+            if (ERR(err, callback)) return;
+            const cachedData = {
+              courseIssues,
+              html,
+              renderedElementNames,
+            };
+            callback(null, cachedData);
+          }
+        );
+      },
+      (cachedData, cacheHit) => {
+        // function to process the cachedData, whether we
+        // just rendered it or whether it came from cache
+        callback(null, {
+          ...cachedData,
+          cacheHit,
+        });
+      },
+      callback // error-handling function
+    );
+  },
 
-      module.exports.getCachedDataOrCompute(
+  renderPanelInstrumented: async function (
+    panel,
+    pc,
+    submission,
+    variant,
+    question,
+    course,
+    locals,
+    context
+  ) {
+    return instrumented(`freeform.renderPanel:${panel}`, async (span) => {
+      span.setAttributes({
+        panel,
+        'variant.id': variant.id,
+        'question.id': question.id,
+        'course.id': course.id,
+      });
+      /** @type {RenderPanelResult} */
+      const result = await promisify(module.exports.renderPanel)(
+        panel,
+        pc,
+        variant,
+        submission,
         course,
-        data,
-        context,
-        (callback) => {
-          // function to do the actual render and return the cachedData
-          module.exports.processQuestion(
-            'render',
-            pc,
-            data,
-            context,
-            (err, courseIssues, _data, html, _fileData, renderedElementNames) => {
-              if (ERR(err, callback)) return;
-              const cachedData = {
-                courseIssues,
-                html,
-                renderedElementNames,
-              };
-              callback(null, cachedData);
-            }
-          );
-        },
-        (cachedData, cacheHit) => {
-          // function to process the cachedData, whether we
-          // just rendered it or whether it came from cache
-          const { courseIssues, html, renderedElementNames } = cachedData;
-          callback(null, courseIssues, html, renderedElementNames, cacheHit);
-        },
-        callback // error-handling function
+        locals,
+        context
       );
+      span.setAttribute('cache.status', result.cacheHit ? 'hit' : 'miss');
+      return result;
     });
   },
 
@@ -1199,99 +1253,99 @@ module.exports = {
     const courseIssues = [];
     let panelCount = 0,
       cacheHitCount = 0;
-    workers.getPythonCaller((err, pc) => {
+    module.exports.getContext(question, course, (err, context) => {
       if (ERR(err, callback)) return;
-      async.series(
-        [
-          // FIXME: support 'header'
-          (callback) => {
-            if (!renderSelection.question) return callback(null);
-            module.exports.renderPanel(
-              'question',
-              pc,
-              variant,
-              question,
-              submission,
-              course,
-              locals,
-              (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
-                if (ERR(err, callback)) return;
-                courseIssues.push(...ret_courseIssues);
-                htmls.questionHtml = html;
-                panelCount++;
-                if (cacheHit) cacheHitCount++;
-                allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
-                callback(null);
-              }
-            );
-          },
-          (callback) => {
-            if (!renderSelection.submissions) return callback(null);
-            async.mapSeries(
-              submissions,
-              (submission, callback) => {
-                module.exports.renderPanel(
+
+      workers.getPythonCaller((err, pc) => {
+        if (ERR(err, callback)) return;
+        async.series(
+          [
+            // FIXME: support 'header'
+            async () => {
+              if (!renderSelection.question) return;
+
+              const {
+                courseIssues: newCourseIssues,
+                html,
+                renderedElementNames,
+                cacheHit,
+              } = await module.exports.renderPanelInstrumented(
+                'question',
+                pc,
+                submission,
+                variant,
+                question,
+                course,
+                locals,
+                context
+              );
+
+              courseIssues.push(...newCourseIssues);
+              htmls.questionHtml = html;
+              panelCount++;
+              if (cacheHit) cacheHitCount++;
+              allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
+            },
+            async () => {
+              if (!renderSelection.submissions) return;
+
+              htmls.submissionHtmls = await async.mapSeries(submissions, async (submission) => {
+                const {
+                  courseIssues: newCourseIssues,
+                  html,
+                  renderedElementNames,
+                  cacheHit,
+                } = await module.exports.renderPanelInstrumented(
                   'submission',
                   pc,
+                  submission,
                   variant,
                   question,
-                  submission,
                   course,
                   locals,
-                  (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
-                    if (ERR(err, callback)) return;
-                    courseIssues.push(...ret_courseIssues);
-                    panelCount++;
-                    if (cacheHit) cacheHitCount++;
-                    allRenderedElementNames = _.union(
-                      allRenderedElementNames,
-                      renderedElementNames
-                    );
-                    callback(null, html);
-                  }
+                  context
                 );
-              },
-              (err, submissionHtmls) => {
-                if (ERR(err, callback)) return;
-                htmls.submissionHtmls = submissionHtmls;
-                callback(null);
-              }
-            );
-          },
-          (callback) => {
-            if (!renderSelection.answer) return callback(null);
-            module.exports.renderPanel(
-              'answer',
-              pc,
-              variant,
-              question,
-              submission,
-              course,
-              locals,
-              (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
-                if (ERR(err, callback)) return;
-                courseIssues.push(...ret_courseIssues);
-                htmls.answerHtml = html;
+
+                courseIssues.push(...newCourseIssues);
                 panelCount++;
                 if (cacheHit) cacheHitCount++;
                 allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
-                callback(null);
-              }
-            );
-          },
-          (callback) => {
-            // The logPageView middleware knows to write this to the DB
-            // when we log the page view - sorry for mutable object hell
-            locals.panel_render_count = panelCount;
-            locals.panel_render_cache_hit_count = cacheHitCount;
-            callback(null);
-          },
-          (callback) => {
-            module.exports.getContext(question, course, (err, context) => {
-              if (err) {
-                return callback(new Error(`Error generating options: ${err}`));
-              }
+                return html;
+              });
+            },
+            async () => {
+              if (!renderSelection.answer) return;
 
+              const {
+                courseIssues: newCourseIssues,
+                html,
+                renderedElementNames,
+                cacheHit,
+              } = await module.exports.renderPanelInstrumented(
+                'answer',
+                pc,
+                submission,
+                variant,
+                question,
+                course,
+                locals,
+                context
+              );
+
+              courseIssues.push(...newCourseIssues);
+              htmls.answerHtml = html;
+              panelCount++;
+              if (cacheHit) cacheHitCount++;
+              allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
+            },
+            (callback) => {
+              // The logPageView middleware knows to write this to the DB
+              // when we log the page view - sorry for mutable object hell
+              locals.panel_render_count = panelCount;
+              locals.panel_render_cache_hit_count = cacheHitCount;
+              callback(null);
+            },
+            (callback) => {
               const extensions = context.course_element_extensions;
               const dependencies = {
                 coreStyles: [],
@@ -1310,7 +1364,8 @@ module.exports = {
                 clientFilesQuestionScripts: [],
               };
 
-              /* Question dependencies are checked via schema on sync-time, so there's no need for sanity checks here. */
+              // Question dependencies are checked via schema on sync-time, so
+              // there's no need for sanity checks here.
               for (let type in question.dependencies) {
                 for (let dep of question.dependencies[type]) {
                   if (!_.includes(dependencies[type], dep)) {
@@ -1390,7 +1445,7 @@ module.exports = {
                   }
                 }
 
-                /* Load any extensions if they exist */
+                // Load any extensions if they exist
                 if (_.has(extensions, elementName)) {
                   for (const extensionName of Object.keys(extensions[elementName])) {
                     if (!_.has(extensions[elementName][extensionName], 'dependencies')) {
@@ -1509,18 +1564,18 @@ module.exports = {
               ];
               htmls.extraHeadersHtml = headerHtmls.join('\n');
               callback(null);
+            },
+          ],
+          (err) => {
+            // don't immediately error here; we have to return the pythonCaller
+            workers.returnPythonCaller(pc, (pcErr) => {
+              if (ERR(pcErr, callback)) return;
+              if (ERR(err, callback)) return;
+              callback(null, courseIssues, htmls);
             });
-          },
-        ],
-        (err) => {
-          // don't immediately error here; we have to return the pythonCaller
-          workers.returnPythonCaller(pc, (pcErr) => {
-            if (ERR(pcErr, callback)) return;
-            if (ERR(err, callback)) return;
-            callback(null, courseIssues, htmls);
-          });
-        }
-      );
+          }
+        );
+      });
     });
   },
 
@@ -1528,9 +1583,7 @@ module.exports = {
     debug(`file()`);
     if (variant.broken) return callback(new Error('attemped to get a file for a broken variant'));
     module.exports.getContext(question, course, (err, context) => {
-      if (err) {
-        return callback(new Error(`Error generating options: ${err}`));
-      }
+      if (ERR(err, callback)) return;
 
       const data = {
         params: _.get(variant, 'params', {}),
@@ -1582,9 +1635,7 @@ module.exports = {
     debug(`parse()`);
     if (variant.broken) return callback(new Error('attemped to parse broken variant'));
     module.exports.getContext(question, course, (err, context) => {
-      if (err) {
-        return callback(new Error(`Error generating options: ${err}`));
-      }
+      if (ERR(err, callback)) return;
 
       const data = {
         params: _.get(variant, 'params', {}),
@@ -1631,9 +1682,7 @@ module.exports = {
     if (variant.broken) return callback(new Error('attemped to grade broken variant'));
     if (submission.broken) return callback(new Error('attemped to grade broken submission'));
     module.exports.getContext(question, course, (err, context) => {
-      if (err) {
-        return callback(new Error(`Error generating options: ${err}`));
-      }
+      if (ERR(err, callback)) return;
 
       let data = {
         params: variant.params,
@@ -1685,9 +1734,7 @@ module.exports = {
     debug(`test()`);
     if (variant.broken) return callback(new Error('attemped to test broken variant'));
     module.exports.getContext(question, course, (err, context) => {
-      if (err) {
-        return callback(new Error(`Error generating options: ${err}`));
-      }
+      if (ERR(err, callback)) return;
 
       let data = {
         params: variant.params,
@@ -1763,7 +1810,7 @@ module.exports = {
       course_elements_dir: path.join(coursePath, 'elements'),
     };
 
-    /* Load elements and any extensions */
+    // Load elements and any extensions
     const elements = await module.exports.loadElementsForCourseAsync(course);
     const extensions = await module.exports.loadExtensionsForCourseAsync(course);
 

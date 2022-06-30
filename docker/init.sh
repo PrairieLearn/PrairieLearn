@@ -1,9 +1,9 @@
 #!/bin/bash
 
 echo 'Starting PrairieLearn...'
-make -s -C /PrairieLearn start-workspace-host
 if [[ $NODEMON == "true" ]]; then
-    make -s -C /PrairieLearn start-nodemon
+    # start-nodemon is listed first so it can use standard input
+    make -s -C /PrairieLearn -j 2 start-nodemon start-workspace-host
 else
-    make -s -C /PrairieLearn start
+    make -s -C /PrairieLearn -j 2 start start-workspace-host
 fi
