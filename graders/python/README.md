@@ -1,4 +1,4 @@
-# `prairielearn/python-grader`
+# `prairielearn/grader-python`
 
 View documentation at [`docs/python-grader/index.md`](../../docs/python-grader/index.md).
 
