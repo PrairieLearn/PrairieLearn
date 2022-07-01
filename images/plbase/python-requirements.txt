@@ -6,7 +6,7 @@ matplotlib==3.5.2
 networkx==2.8.2
 numpy==1.22.4
 pandas==1.4.2
-pycryptodome==3.14.1
+pycryptodome==3.15.0
 pyquaternion==0.9.9
 regex==2022.4.24
 scipy==1.8.1
