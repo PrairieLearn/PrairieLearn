@@ -208,7 +208,7 @@ describe('Assessment syncing', () => {
     );
     assert.equal(thirdAssessmentQuestion.max_points, 7);
     assert.equal(thirdAssessmentQuestion.max_auto_points, 0);
-    assert.equal(thirdAssessmentQuestion.points_list, null);
+    assert.deepEqual(thirdAssessmentQuestion.points_list, [0]);
     assert.equal(thirdAssessmentQuestion.manual_points, 7);
   });
 
@@ -444,7 +444,7 @@ describe('Assessment syncing', () => {
     );
     assert.equal(thirdAssessmentQuestion.max_points, 7);
     assert.equal(thirdAssessmentQuestion.max_auto_points, 0);
-    assert.equal(thirdAssessmentQuestion.points_list, null);
+    assert.deepEqual(thirdAssessmentQuestion.points_list, [0]);
     assert.equal(thirdAssessmentQuestion.manual_points, 7);
   });
 
