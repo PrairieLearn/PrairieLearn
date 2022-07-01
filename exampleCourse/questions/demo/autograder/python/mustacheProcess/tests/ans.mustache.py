@@ -1,8 +1,11 @@
-{{#params}}
+# {{#params}}
+
 def {{function_name}}(input):
-    {{#pairs}}
+    # {{#pairs}}
     if input == "{{input}}":
         return "{{output}}"
-    {{/pairs}}
+    # {{/pairs}}
+    
     return {{default_output}}
-{{/params}}
+
+# {{/params}}

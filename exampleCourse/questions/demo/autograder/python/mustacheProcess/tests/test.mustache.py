@@ -1,12 +1,13 @@
-from pl_helpers import name, points, not_repeated
-from pl_unit_test import PLTestCaseWithPlot, PLTestCase
+from pl_helpers import name, points
+from pl_unit_test import PLTestCase
 from code_feedback import Feedback
 from functools import wraps
 
-{{#params}}
-class Test(PLTestCaseWithPlot):
+# {{#params}}
+
+class Test(PLTestCase):
     # We generate one test for each input/output pair specified in server.py.
-{{#pairs}}
+    # {{#pairs}}
     @points(1)
     @name("test_input_{{input}}")
     def test_{{input}}(self):
@@ -14,7 +15,7 @@ class Test(PLTestCaseWithPlot):
             Feedback.set_score(1)
         else:
             Feedback.set_score(0)
-{{/pairs}}
+    # {{/pairs}}
 
     # And also check the default value.
     @points(1)
@@ -24,4 +25,5 @@ class Test(PLTestCaseWithPlot):
             Feedback.set_score(1)
         else:
             Feedback.set_score(0)
-{{/params}}
+
+# {{/params}}
