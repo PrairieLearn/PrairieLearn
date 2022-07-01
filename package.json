@@ -73,7 +73,7 @@
         "lodash": "^4.17.21",
         "logform": "^2.4.1",
         "lru-cache": "^6.0.0",
-        "mathjax": "^3.2.1",
+        "mathjax": "^3.2.2",
         "mersenne": "0.0.4",
         "moment": "^2.29.3",
         "multer": "^1.4.4",
