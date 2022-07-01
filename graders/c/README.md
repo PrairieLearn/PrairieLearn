@@ -1,3 +1,3 @@
 # `prairielearn/grader-c`
 
-View documentation at [`docs/c-grader/index.md`](../../docs/c-grader/index.md).
+View documentation at https://prairielearn.readthedocs.io/en/latest/c-grader.
