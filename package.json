@@ -135,7 +135,7 @@
         "@types/folder-hash": "^4.0.1",
         "@types/fs-extra": "^9.0.13",
         "@types/mocha": "^9.1.0",
-        "@types/node": "^16.7.10",
+        "@types/node": "^18.0.0",
         "@types/node-fetch": "^2.6.1",
         "@types/pg": "^8.6.5",
         "@types/tmp": "^0.2.3",
