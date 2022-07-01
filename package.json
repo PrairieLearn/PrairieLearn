@@ -71,7 +71,7 @@
         "json-stringify-safe": "^5.0.1",
         "klaw": "^3.0.0",
         "lodash": "^4.17.21",
-        "logform": "^2.4.0",
+        "logform": "^2.4.1",
         "lru-cache": "^6.0.0",
         "mathjax": "^3.2.1",
         "mersenne": "0.0.4",
