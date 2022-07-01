@@ -14,7 +14,19 @@ $(function() {
                     table.data('filter-student-only', filterOn);
 
                     $('.columns button[name=studentsOnly]').toggleClass('active', filterOn);
-                    table.bootstrapTable('filterBy', filterOn ? { role: 'Student' } : {});
+                    <% if (assessment.group_work) { %>
+                        table.bootstrapTable('filterBy', { group_roles: "Student" }, { // the "filter" parameter has to be specified, hence we place a dummy placeholder here 
+                            'filterAlgorithm': (row, _) => {
+                                if (filterOn) {
+                                    return row.group_roles.includes('Student');
+                                } else {
+                                    return true;
+                                }
+                            }
+                        })
+                    <% } else { %>
+                        table.bootstrapTable('filterBy', filterOn ? { role: 'Student' } : {});
+                    <% } %>
                 },
             },
         },
@@ -209,6 +221,13 @@ function listFormatter(list, row) {
 
     if (!list || !list[0]) list = ['(empty)'];
     return '<small>' + list.join(', ') + '</small>';
+}
+
+function uniqueListFormatter(list, row) {
+
+    if (!list || !list[0]) list = ['(empty)'];
+    uniq = [...new Set(list)];
+    return '<small>' + uniq.join(', ') + '</small>';
 }
 
 function timeRemainingLimitFormatter(value, row) {
