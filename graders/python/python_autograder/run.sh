@@ -27,7 +27,7 @@ export MERGE_DIR=$JOB_DIR'/run'
 # files starting with .mustache are not processed.)
 MUSTACHE_PROCESSOR="/python_autograder/mustache-process.sh"
 
-if [[ "${PRAIRIELEARN_PROCESS_MUSTACHE_TEMPLATES}" == true ]]
+if [[ "${PL_PROCESS_MUSTACHE_TEMPLATES}" == true ]]
 then
   if [[ -f $MUSTACHE_PROCESSOR ]]
   then

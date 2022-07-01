@@ -12,7 +12,7 @@
         "enabled": true,
         "image": "prairielearn/grader-python",
         "environment": {
-            "PRAIRIELEARN_PROCESS_MUSTACHE_TEMPLATES": "true"
+            "PL_PROCESS_MUSTACHE_TEMPLATES": "true"
         },
         "entrypoint": "/python_autograder/run.sh",
         "timeout": 60

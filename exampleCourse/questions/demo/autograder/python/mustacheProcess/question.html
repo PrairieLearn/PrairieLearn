@@ -10,7 +10,7 @@
     <p>
         <i>
             To enable mustache processing, you must <strong>ensure the environment variable
-                <code>PRAIRIELEARN_PROCESS_MUSTACHE_TEMPLATES</code> exists with the value <code>true</code></strong>.
+                <code>PL_PROCESS_MUSTACHE_TEMPLATES</code> exists with the value <code>true</code></strong>.
             A good way to do that is to include the following in your <code>info.json</code> file:
 
             <pre>
@@ -18,7 +18,7 @@
                     "externalGradingOptions": {
                         "image": "prairielearn/grader-python",
                         "environment": {
-                            "PRAIRIELEARN_PROCESS_MUSTACHE_TEMPLATES": "true"
+                            "PL_PROCESS_MUSTACHE_TEMPLATES": "true"
                         }
                     }
                 }
