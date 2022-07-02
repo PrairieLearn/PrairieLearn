@@ -266,7 +266,7 @@ class CGrader:
 
     def run_check_suite(self, exec_file, args=None,
                         use_suite_title=False, use_case_name=True, use_unit_test_id=True,
-                        use_iteration=False):
+                        use_iteration=False, sandboxed=True):
 
         if not args:
             args = []
@@ -275,10 +275,13 @@ class CGrader:
 
         log_file_dir = tempfile.mkdtemp()
         log_file = os.path.join(log_file_dir, 'tests.xml')
-        self.change_mode(log_file_dir, '777', change_parent=False)
+        if sandboxed: self.change_mode(log_file_dir, '777', change_parent=False)
     
         out = self.run_command([exec_file] + args,
-                               env={'CK_XML_LOG_FILE_NAME': log_file, 'TEMP': '/tmp'})
+                               env={'CK_XML_LOG_FILE_NAME': log_file, 'TEMP': '/tmp',
+                                    'SANDBOX_UID': self.run_command('id -u'),
+                                    'SANDBOX_GID': self.run_command('id -g') },
+                               sandboxed=sandboxed)
         print(out) # Printing so it shows in the grading job log
 
         # Copy log file to results directory so it becomes available to the instructor after execution
