@@ -248,7 +248,7 @@ def render(element_html, data):
                 if score >= 1:
                     answer_html['correct'] = True
                 elif score > 0:
-                    answer_html['partial'] = math.floor(score * 100)
+                    answer_html['partial'] = True
                 else:
                     answer_html['incorrect'] = True
             answerset.append(answer_html)
