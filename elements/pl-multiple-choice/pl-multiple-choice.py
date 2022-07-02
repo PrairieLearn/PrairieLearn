@@ -385,7 +385,7 @@ def test(element_html, data):
     if result == 'correct':
         data['raw_submitted_answers'][name] = data['correct_answers'][name]['key']
         feedback = data['correct_answers'][name].get('feedback', None)
-        data['partial_scores'][name] = {'score': 1, 'weight': weight, 'feedback': feedback}
+        data['partial_scores'][name] = {'score': 1.0, 'weight': weight, 'feedback': feedback}
     elif result == 'incorrect':
         if len(incorrect_keys) > 0:
             random_key = random.choice(incorrect_keys)
@@ -393,7 +393,8 @@ def test(element_html, data):
             for option in data['params'][name]:
                 if option['key'] == random_key:
                     feedback = option.get('feedback', None)
-            data['partial_scores'][name] = {'score': 0, 'weight': weight, 'feedback': feedback}
+                    score = option.get('score', 0.0)
+            data['partial_scores'][name] = {'score': score, 'weight': weight, 'feedback': feedback}
         else:
             # actually an invalid submission
             data['raw_submitted_answers'][name] = '0'
