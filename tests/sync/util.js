@@ -194,7 +194,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  */
 module.exports.writeCourseToTempDirectory = async function (courseData) {
   const { path: coursePath } = await tmp.dir({ unsafeCleanup: true });
-  await this.writeCourseToDirectory(courseData, coursePath);
+  await module.exports.writeCourseToDirectory(courseData, coursePath);
   return coursePath;
 };
 
@@ -419,7 +419,7 @@ module.exports.getFakeLogger = function () {
  * logger interface.
  */
 module.exports.syncCourseData = function (courseDir) {
-  const logger = this.getFakeLogger();
+  const logger = module.exports.getFakeLogger();
   return new Promise((resolve, reject) => {
     syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, (err) => {
       if (err) {
@@ -432,7 +432,7 @@ module.exports.syncCourseData = function (courseDir) {
 };
 
 module.exports.createAndSyncCourseData = async function () {
-  const courseData = this.getCourseData();
+  const courseData = module.exports.getCourseData();
   const courseDir = await module.exports.writeCourseToTempDirectory(courseData);
   await module.exports.syncCourseData(courseDir);
 
@@ -450,8 +450,8 @@ module.exports.createAndSyncCourseData = async function () {
  * @returns {Promise<string>} the path to the new temp directory
  */
 module.exports.writeAndSyncCourseData = async function (courseData) {
-  const courseDir = await this.writeCourseToTempDirectory(courseData);
-  await this.syncCourseData(courseDir);
+  const courseDir = await module.exports.writeCourseToTempDirectory(courseData);
+  await module.exports.syncCourseData(courseDir);
   return courseDir;
 };
 
@@ -462,8 +462,8 @@ module.exports.writeAndSyncCourseData = async function (courseData) {
  * @param {string} courseDir - The path to write the course data to
  */
 module.exports.overwriteAndSyncCourseData = async function (courseData, courseDir) {
-  await this.writeCourseToDirectory(courseData, courseDir);
-  await this.syncCourseData(courseDir);
+  await module.exports.writeCourseToDirectory(courseData, courseDir);
+  await module.exports.syncCourseData(courseDir);
 };
 
 /**
