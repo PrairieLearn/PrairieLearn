@@ -1,4 +1,5 @@
-/* global window, _, $, fabric, Sylvester, PLDrawingBaseElement, btoa, prompt, MathJax */
+/* eslint-env browser, jquery */
+/* global _, fabric, Sylvester, PLDrawingBaseElement, MathJax */
 
 var $V = Sylvester.Vector.create;
 Sylvester.Vector.prototype.multElementwise = function (other) {
