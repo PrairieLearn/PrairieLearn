@@ -10,7 +10,7 @@ const sqlEquiv = sqlLoader.loadSqlEquiv(__filename);
 const helperServer = require('./helperServer');
 const helperClient = require('./helperClient');
 
-describe('Course with assessments grouped by unit vs set', function () {
+describe('Course with assessments grouped by Set vs Module', function () {
   this.timeout(60000);
 
   const context = {};
@@ -24,7 +24,7 @@ describe('Course with assessments grouped by unit vs set', function () {
   });
   after('shut down testing server', helperServer.after);
 
-  step('testCourse should implicitly have assessments_group_by=Set after sync', async function () {
+  step('testCourse Sp15 should default to grouping by Set', async function () {
     const result = await sqldb.queryOneRowAsync(sqlEquiv.get_test_course, []);
     assert.equal(result.rows[0].assessments_group_by, 'Set');
   });
@@ -40,7 +40,7 @@ describe('Course with assessments grouped by unit vs set', function () {
     assert.lengthOf(
       headings,
       assessmentHeadings.length,
-      'If you recently added a new assessment to the testCourse, you need to set "unit":"misc".'
+      'If you recently added a new assessment to the testCourse, you need to set "module":"misc".'
     );
     headings.each((i, heading) => {
       let headingText = response.$(heading).text();
@@ -69,26 +69,29 @@ describe('Course with assessments grouped by unit vs set', function () {
     context.assessmentBadges = extractAssessmentSetBadgeText(response);
   });
 
-  step('set assessments_group_by=Unit in db', async function () {
-    const result = await sqldb.queryOneRowAsync(sqlEquiv.test_course_assessments_group_by_unit, []);
+  step('set assessments_group_by=Module in db', async function () {
+    const result = await sqldb.queryOneRowAsync(
+      sqlEquiv.test_course_assessments_group_by_module,
+      []
+    );
     assert(result.rows[0].id, 1);
   });
 
-  step('check heading and assessment order for assessments_group_by=Unit', async function () {
+  step('check heading and assessment order for assessments_group_by=Module', async function () {
     const response = await fetchAssessmentsPage();
 
-    const unitHeadings = [
+    const moduleHeadings = [
       'Intro to PrairieLearn',
       'Examination with proctors',
       'Alternate grading techniques',
       'Working with partners',
       'Miscellaneous assessments',
     ];
-    testHeadingOrder(response, unitHeadings);
+    testHeadingOrder(response, moduleHeadings);
 
     const badges = extractAssessmentSetBadgeText(response);
 
-    // only check the order for the first 3 units,
+    // only check the order for the first 3 modules,
     // to avoid breaking this test every time a new assessment gets added.
     const expectedBadges = [
       // intro
@@ -110,14 +113,14 @@ describe('Course with assessments grouped by unit vs set', function () {
     assert.sameOrderedMembers(
       badges.slice(0, expectedBadges.length),
       expectedBadges,
-      'First three units have assessments in expected order'
+      'First three modules have assessments in expected order'
     );
 
     // compare this new set of badges with the old one
     assert.sameMembers(
       badges,
       context.assessmentBadges,
-      'Assessments are consistent between assessments_group_by=Set and assessments_group_by=Unit'
+      'Assessments are consistent between assessments_group_by=Set and assessments_group_by=Module'
     );
   });
 });
