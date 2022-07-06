@@ -11,7 +11,12 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const helperServer = require('./helperServer');
 const helperClient = require('./helperClient');
-const { getCourseData, COURSE_INSTANCE_ID, writeCourseToTempDirectory } = require('./sync/util');
+const {
+  getCourseData,
+  COURSE_INSTANCE_ID,
+  writeCourseToTempDirectory,
+  overwriteAndSyncCourseData,
+} = require('./sync/util');
 
 describe('Course with assessments grouped by Set vs Module', function () {
   this.timeout(60000);
@@ -24,12 +29,36 @@ describe('Course with assessments grouped by Set vs Module', function () {
   context.assessmentsUrl = `${context.courseInstanceBaseUrl}/assessments`;
 
   const course = getCourseData();
+  course.course.assessmentSets = [
+    {
+      name: 'Homeworks',
+      abbreviation: 'HW',
+      heading: 'Homeworks',
+      color: 'red1',
+    },
+    {
+      name: 'Exams',
+      abbreviation: 'E',
+      heading: 'Exams',
+      color: 'red2',
+    },
+  ];
+  course.course.assessmentModules = [
+    {
+      name: 'Module 1',
+      heading: 'Module 1',
+    },
+    {
+      name: 'Module 2',
+      heading: 'Module 2',
+    },
+  ];
   course.courseInstances[COURSE_INSTANCE_ID].assessments = {
     'homework-1': {
       uuid: uuid(),
       title: 'Homework 1',
       type: 'Homework',
-      set: 'Exams',
+      set: 'Homeworks',
       module: 'Module 1',
       number: '1',
     },
@@ -41,6 +70,22 @@ describe('Course with assessments grouped by Set vs Module', function () {
       module: 'Module 1',
       number: '1',
     },
+    'homework-2': {
+      uuid: uuid(),
+      title: 'Homework 2',
+      type: 'Homework',
+      set: 'Homeworks',
+      module: 'Module 2',
+      number: '2',
+    },
+    'exam-2': {
+      uuid: uuid(),
+      title: 'Exam 2',
+      type: 'Exam',
+      set: 'Exams',
+      module: 'Module 2',
+      number: '2',
+    },
   };
 
   async function fetchAssessmentsPage() {
@@ -51,17 +96,10 @@ describe('Course with assessments grouped by Set vs Module', function () {
 
   function testHeadingOrder(response, assessmentHeadings) {
     const headings = response.$('table th[data-testid="assessment-group-heading"]');
-    assert.lengthOf(
-      headings,
-      assessmentHeadings.length,
-      'If you recently added a new assessment to the testCourse, you need to set "module":"misc".'
-    );
+    assert.lengthOf(headings, assessmentHeadings.length);
     headings.each((i, heading) => {
       let headingText = response.$(heading).text();
-      assert(
-        headingText.includes(assessmentHeadings[i]),
-        `expected ${headingText} to include ${assessmentHeadings[i]}`
-      );
+      assert.equal(headingText.trim(), assessmentHeadings[i]);
     });
   }
 
@@ -95,52 +133,30 @@ describe('Course with assessments grouped by Set vs Module', function () {
   });
 
   step('should use correct order when grouping by Module', async function () {
+    // Update course to group by Module
+    course.courseInstances[COURSE_INSTANCE_ID].groupBy = 'Module';
+    await overwriteAndSyncCourseData(course, context.courseDir);
+
     const result = await sqldb.queryOneRowAsync(sql.test_course_assessments_group_by_module, []);
-    assert(result.rows[0].id === 1);
 
     const response = await fetchAssessmentsPage();
 
-    const moduleHeadings = [
-      'Intro to PrairieLearn',
-      'Examination with proctors',
-      'Alternate grading techniques',
-      'Working with partners',
-      'Miscellaneous assessments',
-    ];
+    const moduleHeadings = ['Module 1', 'Module 2'];
     testHeadingOrder(response, moduleHeadings);
 
     const badges = extractAssessmentSetBadgeText(response);
 
-    // only check the order for the first 3 modules,
-    // to avoid breaking this test every time a new assessment gets added.
     const expectedBadges = [
-      // intro
+      // Module 1
       'HW1',
-      'HW2',
       'E1',
+      // Module 2
+      'HW2',
       'E2',
-      // cbtf
-      'E3',
-      'E4',
-      // grading
-      'HW3',
-      'HW4',
-      'E5',
-      'E6',
-      'E7',
-      'E8',
     ];
-    assert.sameOrderedMembers(
-      badges.slice(0, expectedBadges.length),
-      expectedBadges,
-      'First three modules have assessments in expected order'
-    );
+    assert.sameOrderedMembers(badges, expectedBadges);
 
     // compare this new set of badges with the old one
-    assert.sameMembers(
-      badges,
-      context.assessmentBadges,
-      'Assessments are consistent between assessments_group_by=Set and assessments_group_by=Module'
-    );
+    assert.sameMembers(badges, context.assessmentBadges);
   });
 });
