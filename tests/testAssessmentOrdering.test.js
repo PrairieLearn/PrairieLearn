@@ -21,12 +21,9 @@ const {
 describe('Course with assessments grouped by Set vs Module', function () {
   this.timeout(60000);
 
-  const context = {};
-  context.courseDir = null;
-  context.siteUrl = `http://localhost:${config.serverPort}`;
-  context.baseUrl = `${context.siteUrl}/pl`;
-  context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
-  context.assessmentsUrl = `${context.courseInstanceBaseUrl}/assessments`;
+  let courseDir = null;
+  let courseInstanceId = null;
+  let assessmentBadges = [];
 
   const course = getCourseData();
   course.course.assessmentSets = [
@@ -89,7 +86,8 @@ describe('Course with assessments grouped by Set vs Module', function () {
   };
 
   async function fetchAssessmentsPage() {
-    const response = await helperClient.fetchCheerio(context.assessmentsUrl);
+    const assessmentsUrl = `http://localhost:${config.serverPort}/pl/course_instance/${courseInstanceId}/assessments`;
+    const response = await helperClient.fetchCheerio(assessmentsUrl);
     assert.isTrue(response.ok);
     return response;
   }
@@ -112,8 +110,10 @@ describe('Course with assessments grouped by Set vs Module', function () {
   }
 
   before('set up testing server', async function () {
-    context.courseDir = await writeCourseToTempDirectory(course);
-    await util.promisify(helperServer.before(context.courseDir).bind(this))();
+    courseDir = await writeCourseToTempDirectory(course);
+    await util.promisify(helperServer.before(courseDir).bind(this))();
+    const courseInstanceResult = await sqldb.queryOneRowAsync(sql.get_test_course, {});
+    courseInstanceId = courseInstanceResult.rows[0].id;
   });
   after('shut down testing server', helperServer.after);
 
@@ -124,39 +124,31 @@ describe('Course with assessments grouped by Set vs Module', function () {
 
   step('should use correct order when grouping by Set', async function () {
     const response = await fetchAssessmentsPage();
-
-    const setHeadings = ['Homeworks', 'Exams'];
-    testHeadingOrder(response, setHeadings);
+    testHeadingOrder(response, ['Homeworks', 'Exams']);
 
     // save list of assessment badges to compare to future values
-    context.assessmentBadges = extractAssessmentSetBadgeText(response);
+    assessmentBadges = extractAssessmentSetBadgeText(response);
   });
 
   step('should use correct order when grouping by Module', async function () {
     // Update course to group by Module
-    course.courseInstances[COURSE_INSTANCE_ID].groupBy = 'Module';
-    await overwriteAndSyncCourseData(course, context.courseDir);
-
-    const result = await sqldb.queryOneRowAsync(sql.test_course_assessments_group_by_module, []);
+    course.courseInstances[COURSE_INSTANCE_ID].courseInstance.groupBy = 'Module';
+    await overwriteAndSyncCourseData(course, courseDir);
 
     const response = await fetchAssessmentsPage();
-
-    const moduleHeadings = ['Module 1', 'Module 2'];
-    testHeadingOrder(response, moduleHeadings);
+    testHeadingOrder(response, ['Module 1', 'Module 2']);
 
     const badges = extractAssessmentSetBadgeText(response);
-
-    const expectedBadges = [
+    assert.sameOrderedMembers(badges, [
       // Module 1
       'HW1',
       'E1',
       // Module 2
       'HW2',
       'E2',
-    ];
-    assert.sameOrderedMembers(badges, expectedBadges);
+    ]);
 
     // compare this new set of badges with the old one
-    assert.sameMembers(badges, context.assessmentBadges);
+    assert.sameMembers(badges, assessmentBadges);
   });
 });
