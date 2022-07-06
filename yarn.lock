@@ -1528,6 +1528,13 @@
   resolved "https://registry.yarnpkg.com/@types/long/-/long-4.0.2.tgz#b74129719fc8d11c01868010082d483b7545591a"
   integrity sha512-MqTGEo5bj5t157U6fA/BiDynNkn0YknVdh48CMPkTSpFTVmvao5UQmm7uEF6xBEo7qIMAlY/JSleYaE6VOdpaA==
 
+"@types/loopbench@^1.2.1":
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/@types/loopbench/-/loopbench-1.2.1.tgz#559c3a002577d62d8e47112606ddd2f606f89c6c"
+  integrity sha512-auFIe4x+/v9/f2/ujHqU2b3osb+h8zUOUy+fvX1r9PDGarsC73+WB53pMUBXBDnXcQF58i967K6MmtZuZ11bbA==
+  dependencies:
+    "@types/node" "*"
+
 "@types/markdown-it@^12.2.3":
   version "12.2.3"
   resolved "https://registry.yarnpkg.com/@types/markdown-it/-/markdown-it-12.2.3.tgz#0d6f6e5e413f8daaa26522904597be3d6cd93b51"
@@ -6838,6 +6845,11 @@ longest-streak@^2.0.0:
   version "2.0.4"
   resolved "https://registry.yarnpkg.com/longest-streak/-/longest-streak-2.0.4.tgz#b8599957da5b5dab64dee3fe316fa774597d90e4"
   integrity sha512-vM6rUVCVUJJt33bnmHiZEvr7wPT78ztX7rojL+LW51bHtLh6HTjx84LA5W4+oa6aKEJA7jJu5LR6vQRBpA5DVg==
+
+loopbench@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/loopbench/-/loopbench-2.0.0.tgz#49c462a6d18f59edebe5ae9239dcb508ea909f79"
+  integrity sha512-EhcsZK5OMIsSzLsQTFfXALSPcoIgAAocgvB57Ht3+G2jq8qh31JG8V8RvpgbQ2yyaiHttaO0i8J1BYTevei6xw==
 
 loupe@^2.3.1:
   version "2.3.1"
