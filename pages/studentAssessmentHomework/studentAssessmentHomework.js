@@ -196,6 +196,20 @@ router.post('/', function (req, res, next) {
         }
       }
     );
+  } else if (req.body.__action === 'update_group_roles') {
+    // Convert keys to map of group role IDs to user IDs
+    const roleKeys = Object.keys(req.body).filter((key) => !key.startsWith('__'));
+    console.log(roleKeys);
+    const groupRoleIdToUserIdsMap = {};
+    for (const roleKey of roleKeys) {
+      const [roleId, uid] = roleKey.split('-');
+      if (groupRoleIdToUserIdsMap[roleId] === undefined) {
+        groupRoleIdToUserIdsMap[roleId] = [];
+      }
+      groupRoleIdToUserIdsMap[roleId].push(uid);
+    }
+    console.log(res.locals);
+    res.redirect(req.originalUrl);
   } else if (req.body.__action === 'leave_group') {
     groupAssessmentHelper.leaveGroup(
       res.locals.assessment.id,
