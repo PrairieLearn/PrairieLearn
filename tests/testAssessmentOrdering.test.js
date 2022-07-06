@@ -7,7 +7,7 @@ const { v4: uuid } = require('uuid');
 const config = require('../lib/config');
 const sqldb = require('../prairielib/sql-db');
 const sqlLoader = require('../prairielib/sql-loader');
-const sqlEquiv = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const helperServer = require('./helperServer');
 const helperClient = require('./helperClient');
@@ -24,8 +24,8 @@ describe('Course with assessments grouped by Set vs Module', function () {
   context.assessmentsUrl = `${context.courseInstanceBaseUrl}/assessments`;
 
   const course = getCourseData();
-  course.courseInstances[COURSE_INSTANCE_ID].assessments = [
-    {
+  course.courseInstances[COURSE_INSTANCE_ID].assessments = {
+    'homework-1': {
       uuid: uuid(),
       title: 'Homework 1',
       type: 'Homework',
@@ -33,7 +33,7 @@ describe('Course with assessments grouped by Set vs Module', function () {
       module: 'Module 1',
       number: '1',
     },
-    {
+    'exam-1': {
       uuid: uuid(),
       title: 'Exam 1',
       type: 'Exam',
@@ -41,7 +41,7 @@ describe('Course with assessments grouped by Set vs Module', function () {
       module: 'Module 1',
       number: '1',
     },
-  ];
+  };
 
   async function fetchAssessmentsPage() {
     const response = await helperClient.fetchCheerio(context.assessmentsUrl);
@@ -80,7 +80,7 @@ describe('Course with assessments grouped by Set vs Module', function () {
   after('shut down testing server', helperServer.after);
 
   step('should default to grouping by Set', async function () {
-    const result = await sqldb.queryOneRowAsync(sqlEquiv.get_test_course, []);
+    const result = await sqldb.queryOneRowAsync(sql.get_test_course, []);
     assert.equal(result.rows[0].assessments_group_by, 'Set');
   });
 
@@ -95,10 +95,7 @@ describe('Course with assessments grouped by Set vs Module', function () {
   });
 
   step('should use correct order when grouping by Module', async function () {
-    const result = await sqldb.queryOneRowAsync(
-      sqlEquiv.test_course_assessments_group_by_module,
-      []
-    );
+    const result = await sqldb.queryOneRowAsync(sql.test_course_assessments_group_by_module, []);
     assert(result.rows[0].id === 1);
 
     const response = await fetchAssessmentsPage();

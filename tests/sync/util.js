@@ -119,24 +119,25 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {"Homework" | "Exam"} type
  * @property {string} title
  * @property {string} set
+ * @property {string} [module]
  * @property {string} number
- * @property {boolean} allowIssueReporting
- * @property {boolean} allowRealTimeGrading
- * @property {boolean} requireHonorCode
- * @property {boolean} multipleInstance
- * @property {boolean} shuffleQuestions
- * @property {AssessmentAllowAccess[]} allowAccess
- * @property {string} text
- * @property {number} maxPoints
- * @property {boolean} autoClose
- * @property {Zone[]} zones
- * @property {boolean} constantQuestionValue
- * @property {boolean} groupWork
- * @property {number} groupMaxSize
- * @property {number} groupMinSize
- * @property {boolean} studentGroupCreate
- * @property {boolean} studentGroupJoin
- * @property {boolean} studentGroupLeave
+ * @property {boolean} [allowIssueReporting]
+ * @property {boolean} [allowRealTimeGrading]
+ * @property {boolean} [requireHonorCode]
+ * @property {boolean} [multipleInstance]
+ * @property {boolean} [shuffleQuestions]
+ * @property {AssessmentAllowAccess[]} [allowAccess]
+ * @property {string} [text]
+ * @property {number} [maxPoints]
+ * @property {boolean} [autoClose]
+ * @property {Zone[]} [zones]
+ * @property {boolean} [constantQuestionValue]
+ * @property {boolean} [groupWork]
+ * @property {number} [groupMaxSize]
+ * @property {number} [groupMinSize]
+ * @property {boolean} [studentGroupCreate]
+ * @property {boolean} [studentGroupJoin]
+ * @property {boolean} [studentGroupLeave]
  */
 
 /**
