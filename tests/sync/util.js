@@ -35,6 +35,12 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  */
 
 /**
+ * @typedef {Object} Module
+ * @property {string} name
+ * @property {string} heading
+ */
+
+/**
  * @typedef {Object} Course
  * @property {string} uuid
  * @property {string} name
@@ -45,6 +51,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {Tag[]} tags
  * @property {Topic[]} topics
  * @property {AssessmentSet[]} assessmentSets
+ * @property {Module[]} [assessmentModules]
  */
 
 /**
@@ -279,6 +286,12 @@ const course = {
       abbreviation: 'Private',
       heading: 'Used by the default assessment, do not use in your own tests',
       color: 'red2',
+    },
+  ],
+  assessmentModules: [
+    {
+      name: 'TEST',
+      heading: 'Test module',
     },
   ],
   topics: [
