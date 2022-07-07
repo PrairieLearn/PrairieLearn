@@ -195,7 +195,7 @@
 
       <div id="more-submissions-collapser" class="collapse">
         <% submissions.slice(MAX_TOP_RECENTS).forEach(function(submission, idx) { %>
-          <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionHtml: submissionHtmls[idx]}); %>
+          <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionHtml: submissionHtmls[idx + MAX_TOP_RECENTS]}); %>
         <% }); %>
       </div>
 
