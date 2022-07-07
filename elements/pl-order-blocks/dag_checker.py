@@ -28,7 +28,7 @@ def solve_dag(depends_graph, group_belonging):
 
     # We need to ensure that blocks from the same block group occur contiguously. Because we enforce the syntactic
     # constraint that dependence relationships (edges in the DAG) can't cross group boundaries, we can move
-    # blocks in each group next to one another while maintaining a topological sort.
+    # blocks in each group back earlier to be next to one another while maintaining a topological sort.
     groups = set(group_belonging.values())
     groups.remove(None)
     for group_tag in groups:
