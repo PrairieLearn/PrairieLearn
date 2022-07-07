@@ -66,6 +66,8 @@ WITH updated_jobs AS (
         exit_signal = $exit_signal
     WHERE
         j.id = $job_id
+        -- Ensure we can't finish the same job multiple times.
+        AND status = 'Running'
     RETURNING
         j.*
 ),
@@ -109,6 +111,8 @@ WITH updated_jobs AS (
         error_message = $error_message
     WHERE
         j.id = $job_id
+        -- Ensure we can't finish the same job multiple times.
+        AND status = 'Running'::enum_job_status
     RETURNING
         j.*
 ),
