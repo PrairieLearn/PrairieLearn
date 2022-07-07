@@ -197,18 +197,30 @@ router.post('/', function (req, res, next) {
       }
     );
   } else if (req.body.__action === 'update_group_roles') {
-    // Convert keys to map of group role IDs to user IDs
+    // Convert form data to valid input format for a SQL function
     const roleKeys = Object.keys(req.body).filter((key) => !key.startsWith('__'));
-    console.log(roleKeys);
-    const groupRoleIdToUserIdsMap = {};
+    const uidToRoleIdMap = {};
     for (const roleKey of roleKeys) {
       const [roleId, uid] = roleKey.split('-');
-      if (groupRoleIdToUserIdsMap[roleId] === undefined) {
-        groupRoleIdToUserIdsMap[roleId] = [];
-      }
-      groupRoleIdToUserIdsMap[roleId].push(uid);
+      if (uidToRoleIdMap[uid] === undefined) {
+        uidToRoleIdMap[uid] = [roleId];
+      } else {
+        uidToRoleIdMap[uid].push(roleId);
+      }      
     }
-    console.log(res.locals);
+
+    const roleAssignments = [];
+    Object.entries(uidToRoleIdMap).forEach(entry => {
+      const roleAssignment = {
+        "uid": entry[0],
+        "group_role_ids": entry[1]
+      };
+      roleAssignments.push(roleAssignment);
+    });
+
+    console.log(roleAssignments);
+    
+
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'leave_group') {
     groupAssessmentHelper.leaveGroup(
