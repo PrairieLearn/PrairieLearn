@@ -23,7 +23,7 @@ describe('Assessment modules syncing', () => {
 
   beforeEach('reset testing database', helperDb.resetDatabase);
 
-  it('adds a new module', async () => {
+  it('adds a new assessment module', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
     const newAssessmentModule = {
       name: 'New Module',
@@ -36,5 +36,22 @@ describe('Assessment modules syncing', () => {
       (am) => am.name === newAssessmentModule.name
     );
     checkAssessmentModule(syncedAssessmentModule, newAssessmentModule);
+  });
+
+  it('removes an assessment module', async () => {
+    const { courseData, courseDir } = await util.createAndSyncCourseData();
+    const newAssessmentModule = {
+      name: 'New Module',
+      heading: 'This is a new module',
+    };
+    courseData.course.assessmentModules.push(newAssessmentModule);
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    courseData.course.assessmentModules.pop();
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+    const syncedAssessmentModules = await util.dumpTable('assessment_modules');
+    const syncedAssessmentModule = syncedAssessmentModules.find(
+      (am) => am.name === newAssessmentModule.name
+    );
+    assert.isUndefined(syncedAssessmentModule);
   });
 });
