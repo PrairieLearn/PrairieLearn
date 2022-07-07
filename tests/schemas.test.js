@@ -38,7 +38,6 @@ for (const schemaName of Object.keys(schemas)) {
       const ajv = new Ajv();
       const valid = ajv.validateSchema(schema);
       if (ajv.errors) {
-        // eslint-disable-next-line no-console
         console.error(ajv.errors);
       }
       assert.isTrue(valid);

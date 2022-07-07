@@ -1769,7 +1769,7 @@ Displays the contents of question directions.
 Contents are only shown during question input portion. When a student
 either makes a submission or receives the correct answer, the information
 between these tags is hidden. If content exists outside of a question panel,
-then it will be displayed alongside or answer.
+then it will be displayed alongside the answer.
 
 #### Example implementations
 

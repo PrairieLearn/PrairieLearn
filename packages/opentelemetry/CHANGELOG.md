@@ -1,5 +1,11 @@
 # @prairielearn/opentelemetry
 
+## 1.4.0
+
+### Minor Changes
+
+- c9a9286dd: Upgrade OpenTelemetry packages
+
 ## 1.3.0
 
 ### Minor Changes

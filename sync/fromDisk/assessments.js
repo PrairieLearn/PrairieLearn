@@ -55,7 +55,11 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
     number: assessment.number,
     title: assessment.title,
     multiple_instance: assessment.multipleInstance ? true : false,
-    shuffle_questions: assessment.shuffleQuestions ? true : false,
+    shuffle_questions:
+      (assessment.type === 'Exam' && assessment.shuffleQuestions === undefined) ||
+      assessment.shuffleQuestions
+        ? true
+        : false,
     allow_issue_reporting: allowIssueReporting,
     allow_real_time_grading: allowRealTimeGrading,
     require_honor_code: requireHonorCode,

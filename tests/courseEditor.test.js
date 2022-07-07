@@ -362,7 +362,7 @@ function testEdit(params) {
     if (params.url) {
       it('should load successfully', async () => {
         page = await requestp(params.url);
-        locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+        locals.$ = cheerio.load(page);
       });
     }
     it('should have a CSRF token', () => {
@@ -400,8 +400,8 @@ function testEdit(params) {
         options.form = { ...options.form, ...params.data };
       }
       page = await requestp.post(options);
-      locals.url = page.request.href; // eslint-disable-line require-atomic-updates
-      locals.$ = cheerio.load(page.body); // eslint-disable-line require-atomic-updates
+      locals.url = page.request.href;
+      locals.$ = cheerio.load(page.body);
     });
   });
 
