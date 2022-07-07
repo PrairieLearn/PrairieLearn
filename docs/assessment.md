@@ -36,8 +36,7 @@ You can select a set from the list of [standardized assessment sets](course.md#s
 
 ## Assessment modules
 
-Instructors may want to group their assessments by course modules (topics, sections or chapters in a course). When using `"groupBy" : "Module"` in `infoCourseInstance.json`, instructors can assign an assessment to a specific module by setting the `module` property in `infoAssessment.json`, as illustrated in the example above.
-If the property `module` is omitted, by default the assessment will have `"module" : "Default"`.
+Instructors may want to group their assessments by course modules (topics, sections or chapters in a course). When using `"groupAssessmentsBy" : "Module"` in `infoCourseInstance.json`, instructors can assign an assessment to a specific module by setting the `module` property in `infoAssessment.json`, as illustrated in the example above. If the property `module` is omitted, by default the assessment will have `"module" : "Default"`.
 
 For more information about how to create your own assessment modules, see [Course configuration](course.md#assessment-modules).
 

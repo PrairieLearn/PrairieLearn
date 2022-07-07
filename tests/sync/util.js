@@ -69,7 +69,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {number} [number]
  * @property {string} [timezone]
  * @property {CourseInstanceAllowAccess[]} [allowAccess]
- * @property {"Set" | "Module"} [groupBy]
+ * @property {"Set" | "Module"} [groupAssessmentsBy]
  */
 
 /**

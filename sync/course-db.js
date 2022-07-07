@@ -24,7 +24,7 @@ const DEFAULT_QUESTION_INFO = {
   clientFiles: ['client.js', 'question.html', 'answer.html'],
 };
 const DEFAULT_COURSE_INSTANCE_INFO = {
-  groupBy: 'Set',
+  groupAssessmentsBy: 'Set',
 };
 const DEFAULT_ASSESSMENT_INFO = {};
 
@@ -253,7 +253,7 @@ const FILE_UUID_REGEX =
  * @property {{ [uid: string]: "Student" | "TA" | "Instructor"}} userRoles
  * @property {CourseInstanceAllowAccess[]} allowAccess
  * @property {boolean} allowIssueReporting
- * @property {"Set" | "Module"} groupBy
+ * @property {"Set" | "Module"} groupAssessmentsBy
  */
 
 /**

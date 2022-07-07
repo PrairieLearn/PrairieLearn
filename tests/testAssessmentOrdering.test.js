@@ -132,7 +132,7 @@ describe('Course with assessments grouped by Set vs Module', function () {
 
   step('should use correct order when grouping by Module', async function () {
     // Update course to group by Module
-    course.courseInstances[COURSE_INSTANCE_ID].courseInstance.groupBy = 'Module';
+    course.courseInstances[COURSE_INSTANCE_ID].courseInstance.groupAssessmentsBy = 'Module';
     await overwriteAndSyncCourseData(course, courseDir);
 
     const response = await fetchAssessmentsPage();
