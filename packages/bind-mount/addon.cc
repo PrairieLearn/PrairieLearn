@@ -90,19 +90,14 @@ void Unmount(const Nan::FunctionCallbackInfo<v8::Value> &info) {
 
 #else
 
-  if (info.Length() != 1) {
-    Nan::ThrowError("Requires one argument");
-    return;
-  }
-
-  if (!info[0]->IsString()) {
-    Nan::ThrowError("Target must be a string");
+  if (info.Length() != 2) {
+    Nan::ThrowError("Requires two arguments");
     return;
   }
 
   MountContext *command = new MountContext();
   command->command = Command::UnmountCommand;
-  command->target = *Nan::Utf8String(info[0]);
+  command->target = *Nan::Utf8String(Nan::To<v8::String>(info[0]).ToLocalChecked());
 
   Nan::Callback *callback = new Nan::Callback(Nan::To<v8::Function>(info[1]).ToLocalChecked());
   Nan::AsyncQueueWorker(new BindMountWorker(callback, command));
