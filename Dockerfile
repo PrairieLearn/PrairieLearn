@@ -2,6 +2,9 @@ FROM prairielearn/plbase
 
 ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
 
+# We need gcc-c++ to build the native code in `packages/bind-mount`.
+RUN yum install -y gcc-c++
+
 # Install Python/NodeJS dependencies before copying code to limit download size
 # when code changes.
 #
