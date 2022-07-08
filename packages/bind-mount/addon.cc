@@ -20,13 +20,19 @@ public:
   ~BindMountWorker() {}
 
   void Execute() {
-    switch (command->command) {
+    int ret = 0;
+
+    switch (this->command->command) {
     case Command::MountCommand:
-      this->command->error = mount(command->source.c_str(), command->target.c_str(), NULL, MS_BIND, NULL);
+      ret = mount(this->command->source.c_str(), this->command->target.c_str(), NULL, MS_BIND, NULL);
       break;
     case Command::UnmountCommand:
-      this->command->error = umount(this->command->target.c_str());
+      ret = umount(this->command->target.c_str());
       break;
+    }
+
+    if (ret == -1) {
+      this->command->error = errno;
     }
   }
 
