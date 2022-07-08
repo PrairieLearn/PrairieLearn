@@ -1,13 +1,12 @@
 CREATE FUNCTION
     group_roles_update (
         arg_assessment_id bigint,
-        arg_user_id bigint,
         role_updates JSONB[]
     ) RETURNS void
 AS $$
 DECLARE
     arg_group_id bigint;
-    arg_user_id bigint;
+    arg_group_user_id bigint;
     arg_role_update JSONB;
 BEGIN
     -- Find group id
@@ -35,15 +34,15 @@ BEGIN
     FOREACH arg_role_update IN ARRAY role_updates LOOP
         -- Find user by uid
         SELECT u.user_id
-        INTO arg_user_id
+        INTO arg_group_user_id
         FROM users as u
-        WHERE u.uid = (arg_role_update->'uid')::text;
+        WHERE u.uid = (arg_role_update->>'uid')::text;
 
         -- Update role of user
         -- FIXME: later, we will have to update on multiple roles
         UPDATE group_users
-        SET group_role_id = (arg_role_update->'group_role_id')::bigint
-        WHERE user_id = arg_user_id;
+        SET group_role_id = (arg_role_update->>'group_role_id')::text::bigint
+        WHERE user_id = arg_group_user_id AND group_id = arg_group_id;
     END LOOP;
 
     -- TODO: log

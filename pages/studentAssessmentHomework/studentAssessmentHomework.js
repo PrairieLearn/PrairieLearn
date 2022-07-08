@@ -206,7 +206,7 @@ router.post('/', function (req, res, next) {
         uidToRoleIdMap[uid] = [roleId];
       } else {
         uidToRoleIdMap[uid].push(roleId);
-      }      
+      }
     }
 
     const roleAssignments = [];
@@ -217,8 +217,9 @@ router.post('/', function (req, res, next) {
       };
       roleAssignments.push(roleAssignment);
     });
+  
 
-    let params = [res.locals.assessment.id, res.locals.user.user_id, roleAssignments];
+    let params = [res.locals.assessment.id, roleAssignments];
     sqldb.call('group_roles_update', params, function (err, _result) {
       if (err) {
         if (ERR(err, next)) return;
