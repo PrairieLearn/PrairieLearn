@@ -213,13 +213,19 @@ router.post('/', function (req, res, next) {
     Object.entries(uidToRoleIdMap).forEach(entry => {
       const roleAssignment = {
         "uid": entry[0],
-        "group_role_ids": entry[1]
+        "group_role_id": parseInt(entry[1][0])  // FIXME: change this to the whole array when single assignment works
       };
       roleAssignments.push(roleAssignment);
     });
 
-    console.log(roleAssignments);
-    
+    let params = [res.locals.assessment.id, res.locals.user.user_id, roleAssignments];
+    sqldb.call('group_roles_update', params, function (err, _result) {
+      if (err) {
+        if (ERR(err, next)) return;
+        res.redirect(req.originalUrl);
+        // TODO: attach some error to response
+      }
+    });
 
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'leave_group') {

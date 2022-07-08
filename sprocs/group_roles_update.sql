@@ -8,7 +8,7 @@ AS $$
 DECLARE
     arg_group_id bigint;
     arg_user_id bigint;
-    role_update JSONB;
+    arg_role_update JSONB;
 BEGIN
     -- Find group id
     SELECT 
@@ -32,17 +32,17 @@ BEGIN
     SET group_role_id = NULL
     WHERE group_id = arg_group_id;
 
-    FOR role_update IN SELECT * FROM JSONB_ARRAY_ELEMENTS(role_updates) LOOP
+    FOREACH arg_role_update IN ARRAY role_updates LOOP
         -- Find user by uid
         SELECT u.user_id
         INTO arg_user_id
         FROM users as u
-        WHERE u.uid = (role_update->'uid')::text;
+        WHERE u.uid = (arg_role_update->'uid')::text;
 
         -- Update role of user
         -- FIXME: later, we will have to update on multiple roles
         UPDATE group_users
-        SET group_role_id = (role_update->'group_role_id')::bigint
+        SET group_role_id = (arg_role_update->'group_role_id')::bigint
         WHERE user_id = arg_user_id;
     END LOOP;
 
