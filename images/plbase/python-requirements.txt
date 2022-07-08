@@ -29,4 +29,3 @@ openpyxl==3.0.10
 pytest==7.1.2
 typing-extensions==4.3.0
 beartype==0.10.4
-
