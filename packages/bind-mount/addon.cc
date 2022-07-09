@@ -18,23 +18,23 @@ struct MountContext {
 
 class BindMountWorker : public Nan::AsyncWorker {
 public:
-  BindMountWorker(Nan::Callback *callback, MountContext *command): Nan::AsyncWorker(callback, "PrairieLearn:BindMountWorker"), command(command) {}
+  BindMountWorker(Nan::Callback *callback, MountContext *context): Nan::AsyncWorker(callback, "PrairieLearn:BindMountWorker"), context(context) {}
   ~BindMountWorker() {}
 
   void Execute() {
     int ret = 0;
 
-    switch (this->command->command) {
+    switch (this->context->command) {
     case Command::MountCommand:
-      ret = mount(this->command->source.c_str(), this->command->target.c_str(), NULL, MS_BIND, NULL);
+      ret = mount(this->context->source.c_str(), this->context->target.c_str(), NULL, MS_BIND, NULL);
       break;
     case Command::UnmountCommand:
-      ret = umount(this->command->target.c_str());
+      ret = umount(this->context->target.c_str());
       break;
     }
 
     if (ret == -1) {
-      this->command->error = errno;
+      this->context->error = errno;
     }
   }
 
@@ -43,18 +43,18 @@ public:
 
     v8::Local<v8::Value> argv[] = {Nan::Null()};
 
-    if (this->command->error > 0) {
-      const char *syscall = this->command->command == Command::MountCommand ? "mount" : "umount";
-      argv[0] = Nan::ErrnoException(this->command->error, syscall, "", this->command->target.c_str());
+    if (this->context->error > 0) {
+      const char *syscall = this->context->command == Command::MountCommand ? "mount" : "umount";
+      argv[0] = Nan::ErrnoException(this->context->error, syscall, "", this->context->target.c_str());
     }
 
     this->callback->Call(2, argv, this->async_resource);
 
-    delete this->command;
+    delete this->context;
   }
 
 private:
-  MountContext *command;
+  MountContext *context;
 };
 
 void Mount(const Nan::FunctionCallbackInfo<v8::Value> &info) {
@@ -66,13 +66,13 @@ void Mount(const Nan::FunctionCallbackInfo<v8::Value> &info) {
   const char *source = *Nan::Utf8String(info[0]);
   const char *target = *Nan::Utf8String(info[1]);
 
-  MountContext *command = new MountContext();
-  command->command = Command::MountCommand;
-  command->source = source;
-  command->target = target;
+  MountContext *context = new MountContext();
+  context->command = Command::MountCommand;
+  context->source = source;
+  context->target = target;
 
   Nan::Callback *callback = new Nan::Callback(Nan::To<v8::Function>(info[2]).ToLocalChecked());
-  Nan::AsyncQueueWorker(new BindMountWorker(callback, command));
+  Nan::AsyncQueueWorker(new BindMountWorker(callback, context));
 }
 
 void Unmount(const Nan::FunctionCallbackInfo<v8::Value> &info) {
@@ -81,12 +81,12 @@ void Unmount(const Nan::FunctionCallbackInfo<v8::Value> &info) {
     return;
   }
 
-  MountContext *command = new MountContext();
-  command->command = Command::UnmountCommand;
-  command->target = *Nan::Utf8String(Nan::To<v8::String>(info[0]).ToLocalChecked());
+  MountContext *context = new MountContext();
+  context->command = Command::UnmountCommand;
+  context->target = *Nan::Utf8String(Nan::To<v8::String>(info[0]).ToLocalChecked());
 
   Nan::Callback *callback = new Nan::Callback(Nan::To<v8::Function>(info[1]).ToLocalChecked());
-  Nan::AsyncQueueWorker(new BindMountWorker(callback, command));
+  Nan::AsyncQueueWorker(new BindMountWorker(callback, context));
 }
 
 #else
