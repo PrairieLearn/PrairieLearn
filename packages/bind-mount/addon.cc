@@ -14,6 +14,8 @@ struct MountContext {
   int error;
 };
 
+#ifdef __linux__
+
 class BindMountWorker : public Nan::AsyncWorker {
 public:
   BindMountWorker(Nan::Callback *callback, MountContext *command): Nan::AsyncWorker(callback, "PrairieLearn:BindMountWorker"), command(command) {}
@@ -56,13 +58,6 @@ private:
 };
 
 void Mount(const Nan::FunctionCallbackInfo<v8::Value> &info) {
-#ifndef __linux__
-
-  Nan::ThrowError("bind-mount is only supported on Linux");
-  return;
-
-#else
-
   if (info.Length() != 3) {
     Nan::ThrowError("Requires three arguments");
     return;
@@ -78,18 +73,9 @@ void Mount(const Nan::FunctionCallbackInfo<v8::Value> &info) {
 
   Nan::Callback *callback = new Nan::Callback(Nan::To<v8::Function>(info[2]).ToLocalChecked());
   Nan::AsyncQueueWorker(new BindMountWorker(callback, command));
-
-#endif
 }
 
 void Unmount(const Nan::FunctionCallbackInfo<v8::Value> &info) {
-#ifndef __linux__
-
-  Nan::ThrowError("bind-mount is only supported on Linux");
-  return;
-
-#else
-
   if (info.Length() != 2) {
     Nan::ThrowError("Requires two arguments");
     return;
@@ -101,9 +87,19 @@ void Unmount(const Nan::FunctionCallbackInfo<v8::Value> &info) {
 
   Nan::Callback *callback = new Nan::Callback(Nan::To<v8::Function>(info[1]).ToLocalChecked());
   Nan::AsyncQueueWorker(new BindMountWorker(callback, command));
+}
+
+#else
+
+void Mount(const Nan::FunctionCallbackInfo<v8::Value> &info) {
+  Nan::ThrowError("bind-mount is only supported on Linux");
+}
+
+void Unmount(const Nan::FunctionCallbackInfo<v8::Value> &info) {
+  Nan::ThrowError("bind-mount is only supported on Linux");
+}
 
 #endif
-}
 
 NAN_MODULE_INIT(Initialize) {
   NAN_EXPORT(target, Mount);
