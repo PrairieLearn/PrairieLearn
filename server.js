@@ -48,6 +48,7 @@ const { LocalCache } = require('./lib/local-cache');
 const workers = require('./lib/workers');
 const assets = require('./lib/assets');
 const namedLocks = require('./lib/named-locks');
+const nodeMetrics = require('./lib/node-metrics');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -1920,6 +1921,10 @@ if (config.startServer) {
           if (ERR(err, callback)) return;
           callback(null);
         });
+      },
+      function (callback) {
+        nodeMetrics.init();
+        callback(null);
       },
       async () => {
         await freeformServer.init();
