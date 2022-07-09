@@ -9,6 +9,6 @@
   },
   "scripts": {
     "build": "node-gyp rebuild",
-    "install": "node-byp rebuild"
+    "install": "node-gyp rebuild"
   }
 }
