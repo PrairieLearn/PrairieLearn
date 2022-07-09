@@ -115,7 +115,7 @@ module.exports = {
       files = await fs.readdir(sourceDir);
     } catch (err) {
       if (err && err.code === 'ENOENT') {
-        // Directory doesn't exist, most likely a course with not elements.
+        // Directory doesn't exist, most likely a course with no elements.
         // Proceed with an empty array.
         return [];
       }
