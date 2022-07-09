@@ -968,7 +968,7 @@ module.exports = {
         return {
           courseIssues,
           data,
-          html: html,
+          html,
           fileData,
           renderedElementNames,
         };
