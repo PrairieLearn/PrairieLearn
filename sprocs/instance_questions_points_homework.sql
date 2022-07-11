@@ -17,6 +17,8 @@ DECLARE
     iq instance_questions%ROWTYPE;
     aq assessment_questions%ROWTYPE;
     correct boolean;
+    current_auto_value double precision;
+    init_auto_points double precision;
     constant_question_value boolean;
     length integer;
     var_points_old double precision;
@@ -40,12 +42,15 @@ BEGIN
         current_value := iq.current_value;
     END IF;
 
+    current_auto_value := current_value - aq.manual_points;
+    init_auto_points := aq.init_points - aq.manual_points;
+
     -- modify variants_points_list
     variants_points_list := iq.variants_points_list;
     length := cardinality(variants_points_list);
     var_points_old := coalesce(variants_points_list[length], 0);
-    var_points_new := submission_score*current_value;
-    IF (length > 0) AND (var_points_old < aq.init_points) THEN
+    var_points_new := submission_score*current_auto_value;
+    IF (length > 0) AND (var_points_old < init_auto_points) THEN
         IF (var_points_old < var_points_new) THEN
             variants_points_list[length] = var_points_new;
         END IF;

@@ -25,14 +25,17 @@ BEGIN
     variants_points_list := iq.variants_points_list;
 
     max_auto_points := COALESCE(aq.max_auto_points, 0);
+    max_manual_points := COALESCE(aq.manual_points, 0);
 
     -- Update points (instance_question will be closed when number_attempts exceeds bound,
     -- so we don't have to worry about accessing a non-existent entry in points_list_original,
     -- but use coalesce just to be safe)
-    auto_points := COALESCE(iq.auto_points, iq.points) + iq.points_list_original[iq.number_attempts + 1] * GREATEST(0, submission_score - coalesce(iq.highest_submission_score, 0));
+    auto_points := COALESCE(iq.auto_points, iq.points) +
+                   (iq.points_list_original[iq.number_attempts + 1] - max_manual_points) *
+                   GREATEST(0, submission_score - coalesce(iq.highest_submission_score, 0));
 
     -- Handle the special case in which points_list is constant (e.g., [10 10 10 10])
-    IF (submission_score >= 1) AND (iq.points_list_original[iq.number_attempts + 1] = max_auto_points) THEN
+    IF (submission_score >= 1) AND (iq.points_list_original[iq.number_attempts + 1] - max_manual_points = max_auto_points) THEN
         auto_points := max_auto_points;
     END IF;
 
@@ -56,7 +59,7 @@ BEGIN
             current_value := iq.points_list[1];
             points_list := array[]::double precision[];
             FOR i in 1..(cardinality(iq.points_list_original)-(iq.number_attempts+1)) LOOP
-                points_list[i] := iq.points_list_original[iq.number_attempts+i+1] * (1 - highest_submission_score);
+                points_list[i] := (iq.points_list_original[iq.number_attempts+i+1] - max_manual_points) * (1 - highest_submission_score) + max_manual_points;
             END LOOP;
         ELSE
             open := FALSE;
