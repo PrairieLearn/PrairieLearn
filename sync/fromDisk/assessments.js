@@ -197,7 +197,8 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             pointsList: gradeSplit ? pointsList.map((p) => p + manualPoints) : pointsList,
           };
         } else if (assessment.type === 'Homework') {
-          const initPoints = autoPoints + manualPoints;
+          const initPoints =
+            (Array.isArray(autoPoints) ? autoPoints[0] : autoPoints) + manualPoints;
           const maxPoints = alternative.maxAutoPoints ?? alternative.maxPoints ?? autoPoints;
 
           return {
