@@ -665,7 +665,7 @@ module.exports = {
     };
   },
 
-  legacyTraverseQuestionAndExecuteFunctions(phase, pc, data, context, $) {
+  async legacyTraverseQuestionAndExecuteFunctions(phase, pc, data, context, $) {
     const origData = JSON.parse(JSON.stringify(data));
     const renderedElementNames = [];
     const courseIssues = [];
@@ -676,8 +676,8 @@ module.exports = {
     ]).values();
 
     try {
-      async.eachSeries(questionElements, async (elementName) => {
-        async.eachSeries($(elementName).toArray(), async (element) => {
+      await async.eachSeries(questionElements, async (elementName) => {
+        await async.eachSeries($(elementName).toArray(), async (element) => {
           if (phase === 'render' && !_.includes(renderedElementNames, element)) {
             renderedElementNames.push(elementName);
           }
