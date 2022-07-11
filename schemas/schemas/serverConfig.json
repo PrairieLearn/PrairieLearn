@@ -164,10 +164,6 @@
             "description": "Enables OAuth authentication",
             "type": "boolean"
         },
-        "useWorkers": {
-            "description": "Enable persistent, forking Python workers",
-            "type": "boolean"
-        },
         "workersCount": {
             "description": "The number of workers to use (or null to use workersPerCpu).",
             "type": "integer"
