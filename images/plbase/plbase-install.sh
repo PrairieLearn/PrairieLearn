@@ -29,7 +29,8 @@ yum -y install \
     git \
     graphviz \
     graphviz-devel \
-    libjpeg-devel # Needed by the Pillow package
+    libjpeg-devel  \ # Needed by the Pillow package
+    gcc-c++ # Needed to build the native bindings in `packages/bind-mount`
 
 yum clean all
 
