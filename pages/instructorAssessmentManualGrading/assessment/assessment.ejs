@@ -46,8 +46,8 @@
                 <td><%= question.qid %></td>
                 <td class="text-center">
                   <% if (question.max_auto_points) { %>
-                  <% if (assessment.type == "Exam") { %><%= question.points_list %><% } %>
-                  <% if (assessment.type == "Homework") { %><%= question.init_points %>/<%= question.max_auto_points %><% } %>
+                  <% if (assessment.type == "Exam") { %><%= (question.points_list || [question.manual_points]).map((p) => p - question.manual_points) %><% } %>
+                  <% if (assessment.type == "Homework") { %><%= question.init_points - question.manual_points %>/<%= question.max_auto_points %><% } %>
                   <% } else { %>—<% } %>
                 </td>
                 <td class="text-center"><%= question.manual_points || '—' %></td>

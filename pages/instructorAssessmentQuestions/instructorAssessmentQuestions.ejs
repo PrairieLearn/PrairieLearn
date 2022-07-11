@@ -126,15 +126,15 @@
                 <% if (course.manual_grading_visible) { %>
                 <td>
                   <% if (question.max_auto_points) { %>
-                  <% if (assessment.type == "Exam") { %><%= question.points_list %><% } %>
-                  <% if (assessment.type == "Homework") { %><%= question.init_points %>/<%= question.max_auto_points %><% } %>
+                  <% if (assessment.type == "Exam") { %><%= (question.points_list || [question.manual_points]).map((p) => p - question.manual_points) %><% } %>
+                  <% if (assessment.type == "Homework") { %><%= question.init_points - question.manual_points %>/<%= question.max_auto_points %><% } %>
                   <% } else { %>—<% } %>
                 </td>
                 <td><%= question.manual_points || '—' %></td>
                 <% } else { %>
                 <td>
-                  <% if (assessment.type == "Exam") { %><%= (question.points_list || [0]).map((p) => p + question.manual_points) %><% } %>
-                  <% if (assessment.type == "Homework") { %><%= question.init_points + question.manual_points %>/<%= question.max_points %><% } %>
+                  <% if (assessment.type == "Exam") { %><%= question.points_list %><% } %>
+                  <% if (assessment.type == "Homework") { %><%= question.init_points %>/<%= question.max_auto_points %><% } %>
                 </td>
                 <% } %>
                 <% if (showAdvanceScorePercCol) { %>

@@ -54,6 +54,11 @@ SELECT
     iq.number AS instance_question_number,
     iq.points,
     iq.score_perc,
+    -- If auto_points and manual_points are null, these columns were
+    -- not updated since the implementation of grade splits. This
+    -- computation, in practice, assigns manual_points if the question
+    -- is manually graded or for the extra if the points are above
+    -- max_auto_points.
     COALESCE(iq.auto_points, LEAST(iq.points, aq.max_auto_points)) AS auto_points,
     COALESCE(iq.manual_points, GREATEST(0, iq.points - aq.max_auto_points)) AS manual_points,
     aq.max_points,
@@ -104,6 +109,11 @@ SELECT DISTINCT ON (ai.id, q.qid)
     u.uin,
     q.qid,
     iq.score_perc AS old_score_perc,
+    -- If auto_points and manual_points are null, these columns were
+    -- not updated since the implementation of grade splits. This
+    -- computation, in practice, assigns manual_points if the question
+    -- is manually graded or for the extra if the points are above
+    -- max_auto_points.
     COALESCE(iq.auto_points, LEAST(iq.points, aq.max_auto_points)) AS old_auto_points,
     COALESCE(iq.manual_points, GREATEST(0, iq.points - aq.max_auto_points)) AS old_manual_points,
     aq.max_points,
@@ -141,6 +151,11 @@ WITH all_submissions AS (
         iq.number AS instance_question_number,
         iq.points,
         iq.score_perc,
+        -- If auto_points and manual_points are null, these columns were
+        -- not updated since the implementation of grade splits. This
+        -- computation, in practice, assigns manual_points if the question
+        -- is manually graded or for the extra if the points are above
+        -- max_auto_points.
         COALESCE(iq.auto_points, LEAST(iq.points, aq.max_auto_points)) AS auto_points,
         COALESCE(iq.manual_points, GREATEST(0, iq.points - aq.max_auto_points)) AS manual_points,
         aq.max_points,
