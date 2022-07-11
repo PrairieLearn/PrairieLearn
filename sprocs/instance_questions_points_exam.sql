@@ -17,6 +17,7 @@ DECLARE
     iq instance_questions%ROWTYPE;
     aq assessment_questions%ROWTYPE;
     correct boolean;
+    max_manual_points double precision;
 BEGIN
     SELECT * INTO iq FROM instance_questions WHERE id = instance_question_id;
     SELECT * INTO aq FROM assessment_questions WHERE id = iq.assessment_question_id;

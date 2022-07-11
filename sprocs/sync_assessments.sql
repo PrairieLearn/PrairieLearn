@@ -29,8 +29,6 @@ DECLARE
     new_group_role_name text;
     question_grading_method enum_grading_method;
     computed_manual_points double precision;
-    computed_init_points double precision;
-    computed_points_list jsonb;
     computed_max_auto_points double precision;
 BEGIN
     -- The sync algorithm used here is described in the preprint
@@ -361,8 +359,6 @@ BEGIN
                 FOR assessment_question IN SELECT * FROM JSONB_ARRAY_ELEMENTS(alternative_group->'questions') LOOP
                     IF (assessment_question->>'grade_split')::boolean THEN
                         computed_manual_points := (assessment_question->>'manual_points')::double precision;
-                        computed_init_points := (assessment_question->>'init_points')::double precision;
-                        computed_points_list := assessment_question->>'points_list';
                         computed_max_auto_points := (assessment_question->>'max_points')::double precision;
                     ELSE
                         SELECT grading_method INTO question_grading_method
@@ -371,23 +367,19 @@ BEGIN
 
                         IF FOUND AND question_grading_method = 'Manual' THEN
                             computed_manual_points := (assessment_question->>'max_points')::double precision;
-                            computed_init_points := 0;
-                            computed_points_list := NULL;
                             computed_max_auto_points := 0;
                         ELSE
                             computed_manual_points := 0;
-                            computed_init_points := (assessment_question->>'init_points')::double precision;
-                            computed_points_list := assessment_question->>'points_list';
                             computed_max_auto_points := (assessment_question->>'max_points')::double precision;
                         END IF;
                     END IF;
                     INSERT INTO assessment_questions AS aq (
                         number,
                         max_points,
-                        init_points,
-                        points_list,
                         manual_points,
                         max_auto_points,
+                        init_points,
+                        points_list,
                         force_max_points,
                         tries_per_variant,
                         grade_rate_minutes,
@@ -401,11 +393,10 @@ BEGIN
                     ) VALUES (
                         (assessment_question->>'number')::integer,
                         COALESCE(computed_manual_points, 0) + COALESCE(computed_max_auto_points, 0),
-                        computed_init_points,
-                        COALESCE(jsonb_array_to_double_precision_array(computed_points_list),
-                            CASE WHEN (valid_assessment.data->>'type')::enum_assessment_type = 'Exam' THEN '{0}'::double precision[] END),
                         COALESCE(computed_manual_points, 0),
                         COALESCE(computed_max_auto_points, 0),
+                        (assessment_question->>'init_points')::double precision,
+                        jsonb_array_to_double_precision_array(assessment_question->'points_list'),
                         (assessment_question->>'force_max_points')::boolean,
                         (assessment_question->>'tries_per_variant')::integer,
                         (assessment_question->>'grade_rate_minutes')::double precision,
@@ -420,10 +411,10 @@ BEGIN
                     SET
                         number = EXCLUDED.number,
                         max_points = EXCLUDED.max_points,
-                        points_list = EXCLUDED.points_list,
-                        init_points = EXCLUDED.init_points,
                         manual_points = EXCLUDED.manual_points,
                         max_auto_points = EXCLUDED.max_auto_points,
+                        points_list = EXCLUDED.points_list,
+                        init_points = EXCLUDED.init_points,
                         force_max_points = EXCLUDED.force_max_points,
                         tries_per_variant = EXCLUDED.tries_per_variant,
                         grade_rate_minutes = EXCLUDED.grade_rate_minutes,

@@ -183,9 +183,10 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
           alternative.maxAutoPoints !== null ||
           alternative.manualPoints !== null;
         const autoPoints = (gradeSplit ? alternative.autoPoints : alternative.points) ?? 0;
+        const manualPoints = (gradeSplit ? alternative.manualPoints : 0) ?? 0;
 
         if (assessment.type === 'Exam') {
-          const pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
+          let pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
           const maxPoints = Math.max(...pointsList);
 
           return {
@@ -193,10 +194,10 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             gradeSplit,
             maxPoints,
             initPoints: undefined,
-            pointsList,
+            pointsList: gradeSplit ? pointsList.map((p) => p + manualPoints) : pointsList,
           };
         } else if (assessment.type === 'Homework') {
-          const initPoints = autoPoints;
+          const initPoints = autoPoints + manualPoints;
           const maxPoints = alternative.maxAutoPoints ?? alternative.maxPoints ?? autoPoints;
 
           return {
