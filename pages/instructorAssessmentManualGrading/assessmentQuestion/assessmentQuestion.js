@@ -94,9 +94,9 @@ router.post(
         null, // score_perc
         req.body.points,
         null, // manual_score_perc
-        null, // manual_points
+        req.body.manual_points,
         null, // auto_score_perc
-        null, // auto_points
+        req.body.auto_points,
         null, // feedback
         null, // partial_scores
         res.locals.authn_user.user_id,

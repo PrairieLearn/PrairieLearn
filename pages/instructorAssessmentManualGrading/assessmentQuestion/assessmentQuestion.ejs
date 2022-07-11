@@ -24,12 +24,12 @@
               idField: 'id',
               selectItemName: 'instance_question_id',
               showButtonText: true,
-              showColumns: false,
+              showColumns: true,
               showRefresh: true,
               autoRefresh: true,
               autoRefreshStatus: false,
               autoRefreshInterval: 30,
-              buttonsOrder: ['refresh', 'autoRefresh', 'status'],
+              buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'status'],
               theadClasses: 'thead-light',
               stickyHeader: true,
               filterControl: true,
@@ -137,10 +137,31 @@
                       formatter: (value, row) => row.assigned_grader ? row.assigned_grader_name : '&mdash;',
                   },
                   {
-                      field: 'points',
-                      title: 'Awarded points',
+                      field: 'auto_points',
+                      title: 'Auto points',
                       class: 'text-center',
                       filterControl: 'input',
+                      visible: <%= assessment_question.max_auto_points > 0 %>,
+                      searchFormatter: false,
+                      sortable: true,
+                      formatter: pointsFormatter,
+                  },
+                  {
+                      field: 'manual_points',
+                      title: 'Manual points',
+                      class: 'text-center',
+                      filterControl: 'input',
+                      visible: true,
+                      searchFormatter: false,
+                      sortable: true,
+                      formatter: pointsFormatter,
+                  },
+                  {
+                      field: 'points',
+                      title: 'Total points',
+                      class: 'text-center',
+                      filterControl: 'input',
+                      visible: false,
                       searchFormatter: false,
                       sortable: true,
                       formatter: pointsFormatter,
@@ -241,16 +262,23 @@
           }
       }
 
-      function pointsFormatter(points, row) {
-          let text = `${getStringFromFloat(row.points)} <small>/<span class="text-muted"><%= assessment_question.max_points %></span></small> `, button = '';
+      function pointsFormatter(points, row, _index, field) {
+          const max =
+                field === 'manual_points' ? row.max_manual_points :
+                field === 'auto_points' ? row.max_auto_points :
+                field === 'points' ? row.max_points : 0;
+          let text = `${getStringFromFloat(points)} <small>/<span class="text-muted">${max}</span></small> `, button = '';
           if (has_course_instance_permission_edit) {
               button = `<button type="button" class="btn btn-xs btn-secondary editQuestionPointsButton"
-                            id="editQuestionPoints${row.id}" tabindex="0"
+                            id="editQuestionPoints_${field}_${row.id}" tabindex="0"
                             data-toggle="popover" data-container="body"
                             data-html="true" data-placement="auto" title="Change question points"
                             data-base-content="<%= include('../../partials/editQuestionPointsForm',
-                                                           {id: 'editQuestionPoints${row.id}',
-                                                            instance_question: {id: '${row.id}', assessment_instance_id: '${row.assessment_instance_id}', points: '${row.points}', max_points: assessment_question.max_points, modified_at: '${row.modified_at}'}}); %>">
+                                                           {id: 'editQuestionPoints_${field}_${row.id}', field: '${field}',
+                                                            instance_question: {id: '${row.id}',
+                                                            assessment_instance_id: '${row.assessment_instance_id}',
+                                                            points: '${points}', max_points: '${max}',
+                                                            modified_at: '${row.modified_at}'}}); %>">
                       <i class="fa fa-edit" aria-hidden="true"></i>
                     </button>`;
           }

@@ -17,11 +17,20 @@ SELECT
     -- PostgreSQL so it can be properly interpreted when a grade
     -- update POST is received back.
     CAST(iq.modified_at AS TEXT) AS modified_at,
+    -- If auto_points and manual_points are null, these columns were
+    -- not updated since the implementation of grade splits. This
+    -- computation, in practice, assigns manual_points if the question
+    -- is manually graded or for the extra if the points are above
+    -- max_auto_points.
+    COALESCE(iq.auto_points, LEAST(iq.points, aq.max_auto_points)) AS auto_points,
+    COALESCE(iq.manual_points, GREATEST(0, iq.points - aq.max_auto_points)) AS manual_points,
     ai.open AS assessment_open,
     u.uid,
     COALESCE(agu.name, agu.uid) AS assigned_grader_name,
     COALESCE(lgu.name, lgu.uid) AS last_grader_name,
     aq.max_points,
+    aq.max_auto_points,
+    aq.manual_points AS max_manual_points,
     COALESCE(g.name, u.name) AS user_or_group_name,
     ic.open_issue_count
 FROM
