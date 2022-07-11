@@ -5,7 +5,7 @@
 #include <sys/mount.h>
 #endif
 
-enum Command { MountCommand, UnmountCommand };
+enum Command { MountCommand, UmountCommand };
 
 struct MountContext {
   Command command;
@@ -28,7 +28,7 @@ public:
     case Command::MountCommand:
       ret = mount(this->context->source.c_str(), this->context->target.c_str(), NULL, MS_BIND, NULL);
       break;
-    case Command::UnmountCommand:
+    case Command::UmountCommand:
       ret = umount(this->context->target.c_str());
       break;
     }
@@ -75,14 +75,14 @@ void Mount(const Nan::FunctionCallbackInfo<v8::Value> &info) {
   Nan::AsyncQueueWorker(new BindMountWorker(callback, context));
 }
 
-void Unmount(const Nan::FunctionCallbackInfo<v8::Value> &info) {
+void Umount(const Nan::FunctionCallbackInfo<v8::Value> &info) {
   if (info.Length() != 2) {
     Nan::ThrowError("Requires two arguments");
     return;
   }
 
   MountContext *context = new MountContext();
-  context->command = Command::UnmountCommand;
+  context->command = Command::UmountCommand;
   context->target = *Nan::Utf8String(Nan::To<v8::String>(info[0]).ToLocalChecked());
 
   Nan::Callback *callback = new Nan::Callback(Nan::To<v8::Function>(info[1]).ToLocalChecked());
@@ -95,7 +95,7 @@ void Mount(const Nan::FunctionCallbackInfo<v8::Value> &info) {
   Nan::ThrowError("bind-mount is only supported on Linux");
 }
 
-void Unmount(const Nan::FunctionCallbackInfo<v8::Value> &info) {
+void Umount(const Nan::FunctionCallbackInfo<v8::Value> &info) {
   Nan::ThrowError("bind-mount is only supported on Linux");
 }
 
@@ -103,7 +103,7 @@ void Unmount(const Nan::FunctionCallbackInfo<v8::Value> &info) {
 
 NAN_MODULE_INIT(Initialize) {
   NAN_EXPORT(target, Mount);
-  NAN_EXPORT(target, Unmount);
+  NAN_EXPORT(target, Umount);
 }
 
 NODE_MODULE(addon, Initialize)

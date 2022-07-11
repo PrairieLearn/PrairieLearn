@@ -9,8 +9,8 @@ This package is only designed to work on Linux. It will compile on other platfor
 ## Usage
 
 ```ts
-import { mount, umount } from '@prairielearn/bind-mount';
+import { mount, uount } from '@prairielearn/bind-mount';
 
 await mount('/source', '/target');
-await unmount('/target');
+await umount('/target');
 ```
