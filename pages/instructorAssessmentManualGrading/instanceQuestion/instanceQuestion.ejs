@@ -58,6 +58,7 @@
                   <%- include('../../partials/instructorGradingPanel',
                               {score_perc: conflict_grading_job.score_perc,
                                points: conflict_grading_job.score * assessment_question.max_points,
+                               // TODO Add manual points to grading job
                                submission: conflict_grading_job}); %>
                 </div>
               </div>
@@ -82,6 +83,29 @@
                 .prop('checked', Cookies.get('manual_grading_score_use') === 'percentage')
                 .first().change();
         })
+
+        function updatePointsFields(field) {
+            let form = $(field).parents('form');
+            let auto_points = field.name === 'submission_score_auto_percent' ?
+                field.value * <%= assessment_question.max_auto_points %> / 100 :
+                form.find('[name=submission_score_auto_points]').val();
+            let manual_points = field.name === 'submission_score_manual_percent' ?
+                field.value * <%= assessment_question.manual_points %> / 100 :
+                form.find('[name=submission_score_manual_points]').val();
+            let points = parseFloat(auto_points) + parseFloat(manual_points);
+            form.find('[name=submission_score_auto_points]').not(field)
+                .val(auto_points);
+            form.find('[name=submission_score_auto_percent]').not(field)
+                .val(auto_points * 100 / <%= assessment_question.max_auto_points %>);
+            form.find('[name=submission_score_manual_points]').not(field)
+                .val(manual_points);
+            form.find('[name=submission_score_manual_percent]').not(field)
+                .val(manual_points * 100 / <%= assessment_question.manual_points %>);
+            form.find('[name=submission_score_points]').not(field)
+                .val(points);
+            form.find('[name=submission_score_percent]').not(field)
+                .val(points * 100 / <%= assessment_question.max_points %>);
+        }
       </script>
       <div class="row">
         <div class="col-lg-9 col-sm-12">

@@ -77,13 +77,12 @@ router.post(
         null, // assessment_instance_number
         null, // qid
         req.body.modified_at,
-        // TODO Update the other fields as well
-        req.body.use_score_perc ? req.body.submission_score_percent : null, // score_perc
-        req.body.use_score_perc ? null : req.body.submission_score_points, // points
-        null, // manual_score_perc
-        null, // manual_points
-        null, // auto_score_perc
-        null, // auto_points
+        null, // score_perc
+        null, // points
+        req.body.use_score_perc ? req.body.submission_score_manual_percent : null, // manual_score_perc
+        req.body.use_score_perc ? null : req.body.submission_score_manual_points, // manual_points
+        req.body.use_score_perc ? req.body.submission_score_auto_percent : null, // auto_score_perc
+        req.body.use_score_perc ? null : req.body.submission_score_auto_points, // auto_points
         { manual: req.body.submission_note }, // feedback
         null, // partial_scores
         res.locals.authn_user.user_id,
