@@ -82,24 +82,33 @@
                 })
                 .prop('checked', Cookies.get('manual_grading_score_use') === 'percentage')
                 .first().change();
-        })
+            $('.enable-auto-score-edit').click(function () {
+                const form = $(this).parents('form');
+                form.find('.auto-score-value-info').hide();
+                form.find('.auto-score-value-input').removeClass('d-none').show()
+                    .find('input:visible:first').focus();
+            });
+            $('.grading-score-input').change(function () {
+                let form = $(this).parents('form');
+                let auto_points = this.name === 'score_auto_percent' ?
+                    this.value * <%= assessment_question.max_auto_points %> / 100 :
+                    form.find('[name=score_auto_points]').val();
+                let manual_points = this.name === 'score_manual_percent' ?
+                    this.value * <%= assessment_question.manual_points %> / 100 :
+                    form.find('[name=score_manual_points]').val();
+                let points = Number(auto_points) + Number(manual_points);
 
-        function updatePointsFields(field) {
-            let form = $(field).parents('form');
-            let auto_points = field.name === 'score_auto_percent' ?
-                field.value * <%= assessment_question.max_auto_points %> / 100 :
-                form.find('[name=score_auto_points]').val();
-            let manual_points = field.name === 'score_manual_percent' ?
-                field.value * <%= assessment_question.manual_points %> / 100 :
-                form.find('[name=score_manual_points]').val();
-            let points = parseFloat(auto_points) + parseFloat(manual_points);
-            form.find('[name=score_auto_points]').not(field).val(auto_points);
-            form.find('[name=score_auto_percent]').not(field).val(auto_points * 100 / <%= assessment_question.max_auto_points %>);
-            form.find('[name=score_manual_points]').not(field).val(manual_points);
-            form.find('[name=score_manual_percent]').not(field).val(manual_points * 100 / <%= assessment_question.manual_points %>);
-            form.find('[name=score_points]').not(field).val(points);
-            form.find('[name=score_percent]').not(field).val(points * 100 / <%= assessment_question.max_points %>);
-        }
+                form.find('[name=score_auto_points]').not(this).val(auto_points);
+                form.find('[name=score_auto_percent]').not(this)
+                    .val(auto_points * 100 / <%= assessment_question.max_auto_points %>);
+                form.find('[name=score_manual_points]').not(this).val(manual_points);
+                form.find('[name=score_manual_percent]').not(this)
+                    .val(manual_points * 100 / <%= assessment_question.manual_points %>);
+                form.find('.value-total-points').text(Math.round(points * 100) / 100);
+                form.find('.value-total-percentage')
+                    .text(Math.round(points * 10000 / <%= assessment_question.max_points %>) / 100);
+            });
+        })
       </script>
       <div class="row">
         <div class="col-lg-9 col-sm-12">
