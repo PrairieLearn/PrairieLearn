@@ -19,7 +19,7 @@
     <label>Auto Points:</label>
     <div class="input-group">
       <input type="number" min="0" max="<%= assessment_question.max_auto_points %>" step="any" class="form-control"
-             name="submission_score_auto_points" value="<%= locals.auto_points ?? instance_question.auto_points %>" aria-describedby="scoreHelpBlock"
+             name="score_auto_points" value="<%= locals.auto_points ?? instance_question.auto_points %>" aria-describedby="scoreHelpBlock"
              <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %>
              oninput="updatePointsFields(this)"
              />
@@ -30,7 +30,7 @@
     <label>Auto Score:</label>
     <div class="input-group">
       <input type="number" min="0" max="100" step="any" class="form-control"
-             name="submission_score_auto_percent" value="<%= locals.auto_score_perc ?? instance_question.auto_score_perc %>" aria-describedby="scoreHelpBlock"
+             name="score_auto_percent" value="<%= locals.auto_score_perc ?? instance_question.auto_score_perc %>" aria-describedby="scoreHelpBlock"
              <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %>
              oninput="updatePointsFields(this)"
              />
@@ -42,7 +42,7 @@
     <label>Manual Points:</label>
     <div class="input-group">
       <input type="number" min="0" max="<%= assessment_question.manual_points %>" step="any" class="form-control"
-             name="submission_score_manual_points" value="<%= locals.manual_points ?? instance_question.manual_points %>" aria-describedby="scoreHelpBlock"
+             name="score_manual_points" value="<%= locals.manual_points ?? instance_question.manual_points %>" aria-describedby="scoreHelpBlock"
              <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %>
              oninput="updatePointsFields(this)"
              />
@@ -53,7 +53,7 @@
     <label>Manual Score:</label>
     <div class="input-group">
       <input type="number" min="0" max="100" step="any" class="form-control"
-             name="submission_score_manual_percent" value="<%= locals.manual_score_perc ?? (instance_question.manual_points * 100 / assessment_question.manual_points) %>" aria-describedby="scoreHelpBlock"
+             name="score_manual_percent" value="<%= locals.manual_score_perc ?? (instance_question.manual_points * 100 / assessment_question.manual_points) %>" aria-describedby="scoreHelpBlock"
              <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %>
              oninput="updatePointsFields(this)"
              />
@@ -65,7 +65,7 @@
     <label>Total Points:</label>
     <div class="input-group">
       <input type="number" min="0" max="<%= assessment_question.max_points %>" step="any" class="form-control"
-             name="submission_score_points" value="<%= locals.points ?? instance_question.points %>" aria-describedby="scoreHelpBlock" disabled
+             name="score_points" value="<%= locals.points ?? instance_question.points %>" aria-describedby="scoreHelpBlock" disabled
              />
       <span class="input-group-append input-group-text">/ <%= assessment_question.max_points %></span>
     </div>
@@ -74,7 +74,7 @@
     <label>Total Score:</label>
     <div class="input-group">
       <input type="number" min="0" max="100" step="any" class="form-control"
-             name="submission_score_percent" value="<%= locals.score_perc ?? instance_question.score_perc %>" aria-describedby="scoreHelpBlock" disabled
+             name="score_percent" value="<%= locals.score_perc ?? instance_question.score_perc %>" aria-describedby="scoreHelpBlock" disabled
              />
       <span class="input-group-append input-group-text">%</span>
     </div>

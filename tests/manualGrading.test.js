@@ -371,10 +371,10 @@ describe('Manual Grading', function () {
           assessment_question_id: form.find('input[name=assessment_question_id]').val(),
           modified_at: form.find('input[name=modified_at]').val(),
           use_score_perc: 'on',
-          submission_score_percent: score_percent.toString(),
+          score_manual_percent: score_percent.toString(),
           // Set points to invalid value to ensure score is the one being considered, points should
           // be ignored
-          submission_score_points: (score_points + 1).toString(),
+          score_manual_points: (score_points + 1).toString(),
           submission_note: feedback_note,
         }).toString(),
       });
@@ -387,8 +387,8 @@ describe('Manual Grading', function () {
         const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
         const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
         const form = $manualGradingIQPage('form[name=instance_question-manual-grade-update-form]');
-        assert.equal(form.find('input[name=submission_score_percent]').val(), score_percent);
-        assert.equal(form.find('input[name=submission_score_points]').val(), score_points);
+        assert.equal(form.find('input[name=score_manual_percent]').val(), score_percent);
+        assert.equal(form.find('input[name=score_manual_points]').val(), score_points);
         assert.equal(form.find('textarea').text(), feedback_note);
       }
     );
@@ -411,6 +411,8 @@ describe('Manual Grading', function () {
         assert.equal(instanceList[0].last_grader_name, mockStaff[2].authName);
         assert.equal(instanceList[0].score_perc, score_percent);
         assert.equal(instanceList[0].points, score_points);
+        assert.equal(instanceList[0].manual_points, score_points);
+        assert.equal(instanceList[0].auto_points, 0);
       }
     );
 
@@ -482,10 +484,10 @@ describe('Manual Grading', function () {
           assessment_question_id: form.find('input[name=assessment_question_id]').val(),
           modified_at: form.find('input[name=modified_at]').val(),
           // use_score_perc not set, so that points are used instead of percentage
-          submission_score_points: score_points.toString(),
+          score_manual_points: score_points.toString(),
           // Set percentage to invalid value to ensure points is the one being considered,
           // percentage should be ignored
-          submission_score_percent: (score_percent - 10).toString(),
+          score_manual_percent: (score_percent - 10).toString(),
           submission_note: feedback_note,
         }).toString(),
       });
@@ -498,8 +500,8 @@ describe('Manual Grading', function () {
         const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
         const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
         const form = $manualGradingIQPage('form[name=instance_question-manual-grade-update-form]');
-        assert.equal(form.find('input[name=submission_score_percent]').val(), score_percent);
-        assert.equal(form.find('input[name=submission_score_points]').val(), score_points);
+        assert.equal(form.find('input[name=score_manual_percent]').val(), score_percent);
+        assert.equal(form.find('input[name=score_manual_points]').val(), score_points);
         assert.equal(form.find('textarea').text(), feedback_note);
       }
     );
@@ -522,6 +524,8 @@ describe('Manual Grading', function () {
         assert.equal(instanceList[0].last_grader_name, mockStaff[2].authName);
         assert.equal(instanceList[0].score_perc, score_percent);
         assert.equal(instanceList[0].points, score_points);
+        assert.equal(instanceList[0].manual_points, score_points);
+        assert.equal(instanceList[0].auto_points, 0);
       }
     );
 

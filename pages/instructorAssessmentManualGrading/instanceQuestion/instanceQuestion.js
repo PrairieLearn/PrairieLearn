@@ -79,10 +79,10 @@ router.post(
         req.body.modified_at,
         null, // score_perc
         null, // points
-        req.body.use_score_perc ? req.body.submission_score_manual_percent : null, // manual_score_perc
-        req.body.use_score_perc ? null : req.body.submission_score_manual_points, // manual_points
-        req.body.use_score_perc ? req.body.submission_score_auto_percent : null, // auto_score_perc
-        req.body.use_score_perc ? null : req.body.submission_score_auto_points, // auto_points
+        req.body.use_score_perc ? req.body.score_manual_percent : null, // manual_score_perc
+        req.body.use_score_perc ? null : req.body.score_manual_points, // manual_points
+        req.body.use_score_perc ? req.body.score_auto_percent : null, // auto_score_perc
+        req.body.use_score_perc ? null : req.body.score_auto_points, // auto_points
         { manual: req.body.submission_note }, // feedback
         null, // partial_scores
         res.locals.authn_user.user_id,
