@@ -11,6 +11,9 @@ amazon-linux-extras install -y \
     postgresql11 \
     redis4.0
 
+# Notes:
+# - `libjpeg-devel` is needed by the Pillow package
+# - `gcc-c++` is needed to build the native bindings in `packages/bind-mount`
 yum -y install \
     postgresql-server \
     postgresql-contrib \
@@ -29,7 +32,8 @@ yum -y install \
     git \
     graphviz \
     graphviz-devel \
-    libjpeg-devel # Needed by the Pillow package
+    libjpeg-devel \
+    gcc-c++
 
 yum clean all
 
