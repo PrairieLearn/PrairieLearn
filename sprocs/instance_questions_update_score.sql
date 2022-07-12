@@ -199,11 +199,13 @@ BEGIN
         OR arg_partial_scores IS NOT NULL
     ) THEN
         INSERT INTO grading_jobs
-            (submission_id, auth_user_id,      graded_by, graded_at,
-            grading_method, correct,     score,     feedback, partial_scores)
+            (submission_id, auth_user_id, graded_by, graded_at, grading_method,
+             correct, score, auto_score, manual_score,
+             feedback, partial_scores)
         VALUES
-            (found_submission_id, arg_authn_user_id, arg_authn_user_id,     now(),
-            'Manual',   new_correct, new_score_perc / 100, arg_feedback, arg_partial_scores)
+            (found_submission_id, arg_authn_user_id, arg_authn_user_id, now(), 'Manual',
+             new_correct, new_score_perc / 100, new_auto_score_perc / 100, new_manual_points / max_manual_points,
+             arg_feedback, arg_partial_scores)
         RETURNING id INTO grading_job_id;
 
         IF NOT modified_at_conflict THEN
