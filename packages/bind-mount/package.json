@@ -8,6 +8,7 @@
     "nan": "^2.16.0"
   },
   "scripts": {
-    "build": "rm -rf build/ && node-gyp configure && node-gyp build"
+    "build": "node-gyp rebuild",
+    "install": "node-gyp rebuild"
   }
 }

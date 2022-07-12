@@ -13,9 +13,9 @@ try {
     });
   };
 
-  module.exports.unmount = (target) => {
+  module.exports.umount = (target) => {
     return new Promise((resolve, reject) => {
-      addon.Unmount(target, (err) => {
+      addon.Umount(target, (err) => {
         if (err) {
           reject(err);
         } else {
@@ -29,7 +29,7 @@ try {
     throw new Error('Failed to load native bindings');
   };
 
-  module.exports.mount = () => {
+  module.exports.umount = () => {
     throw new Error('Failed to load native bindings');
   };
 }
