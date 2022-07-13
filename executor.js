@@ -41,11 +41,10 @@ async function handleInput(line, caller) {
   } catch (err) {
     // We shouldn't ever get malformed JSON from the caller - but if we do,
     // handle it gracefully.
-    resolve({
+    return {
       error: err.message,
       needsFullRestart: false,
-    });
-    return;
+    };
   }
 
   if (request.fcn === 'restart') {
@@ -95,7 +94,7 @@ async function handleInput(line, caller) {
       output,
       functionMissing,
       needsFullRestart: false,
-    });
+    };
   }
 }
 
