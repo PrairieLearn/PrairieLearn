@@ -399,13 +399,9 @@ If you have a block of text that you want to re-use in many questions, possibly 
 
 ## How can I hide the correct answer when students see their grading results?
 
-### New in summer 2022:
+Questions can specify the `showCorrectAnswer: false` property in `info.json` to hide the correct answer box entirely. For more information on this all-or-nothing option, see [the documentation for question info.json files](question.md#question-infojson).
 
-Questions can now specify the `showCorrectAnswer: false` property in `info.json`. See the documentation for [question info.json](question.md#question-infojson) files.
-
-### Older strategies:
-
-Some elements in PL have their own options for specifying whether to hide the correct answer (for example, `pl-checkbox` has a `hide-answer-panel` attribute) but some other element types do not (e.g., `pl-multiple-choice`). To hide the correct answer for any kind of element, you can surround your question's graded pl-element with `pl-hide-in-panel` in the `question.html` file.
+For more granular control, some elements in PL have their own options for specifying whether to hide individual correct answers (for example, `pl-checkbox` has a `hide-answer-panel` attribute). Not all element types offer this as an attribute (e.g., `pl-multiple-choice` currently does not). However, to hide the correct answer for any kind of element, you can surround the particular graded pl-element with `pl-hide-in-panel` in the `question.html` file.
 
 For example:
 
@@ -415,4 +411,4 @@ For example:
 </pl-hide-in-panel>
 ```
 
-For more information on this strategy, see [the documentation for pl-hide-in-panel](elements.md#pl-hide-in-panel-element).
+For more information on this granular technique, see [the documentation for pl-hide-in-panel](elements.md#pl-hide-in-panel-element).
