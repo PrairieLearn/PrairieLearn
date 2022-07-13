@@ -38,7 +38,6 @@ DECLARE
     max_points double precision;
     max_manual_points double precision;
     max_auto_points double precision;
-    grading_job_id bigint;
 
     current_partial_score jsonb;
     current_auto_points double precision;
