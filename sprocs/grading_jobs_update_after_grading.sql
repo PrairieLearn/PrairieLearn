@@ -142,8 +142,7 @@ BEGIN
         grading_finished_at = COALESCE(finish_time, now()),
         gradable = new_gradable,
         score = new_score,
-        auto_score = new_auto_score,
-        -- This sproc is not called for manual grading, so manual_score is not updated
+        -- manual_points and auto_points are not updated for internal/external grading jobs
         correct = new_correct,
         feedback = new_feedback
     WHERE id = grading_job_id
@@ -162,7 +161,7 @@ BEGIN
 
         PERFORM variants_update_after_grading(variant_id, grading_job.correct);
         IF instance_question_id IS NOT NULL THEN
-           PERFORM instance_questions_grade(instance_question_id, grading_job.auto_score, grading_job.id, grading_job.auth_user_id);
+           PERFORM instance_questions_grade(instance_question_id, grading_job.score, grading_job.id, grading_job.auth_user_id);
            PERFORM assessment_instances_grade(assessment_instance_id, grading_job.auth_user_id, credit);
         END IF;
     END IF;

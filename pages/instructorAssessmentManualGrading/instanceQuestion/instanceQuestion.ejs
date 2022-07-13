@@ -33,7 +33,7 @@
             form.find('.auto-score-value-input').removeClass('d-none').show()
                 .find('input:visible:first').focus();
         });
-        $('.grading-score-input').change(function () {
+        $('.grading-score-input').on('input', function () {
             let form = $(this).parents('form');
             let auto_points = this.name === 'score_auto_percent' ?
                 this.value * <%= assessment_question.max_auto_points %> / 100 :
@@ -45,13 +45,13 @@
 
             form.find('[name=score_auto_points]').not(this).val(auto_points);
             form.find('[name=score_auto_percent]').not(this)
-                .val(auto_points * 100 / <%= assessment_question.max_auto_points %>);
+                .val(auto_points * 100 / <%= assessment_question.max_auto_points || 1 %>);
             form.find('[name=score_manual_points]').not(this).val(manual_points);
             form.find('[name=score_manual_percent]').not(this)
-                .val(manual_points * 100 / <%= assessment_question.manual_points %>);
+                .val(manual_points * 100 / <%= assessment_question.manual_points || 1 %>);
             form.find('.value-total-points').text(Math.round(points * 100) / 100);
             form.find('.value-total-percentage')
-                .text(Math.round(points * 10000 / <%= assessment_question.max_points %>) / 100);
+                .text(Math.round(points * 10000 / <%= assessment_question.max_points || 1 %>) / 100);
         });
     })
   </script>
@@ -98,9 +98,10 @@
                   <%- include('../../partials/instructorGradingPanel',
                               {score_perc: conflict_grading_job.score * 100,
                                points: conflict_grading_job.score * assessment_question.max_points,
-                               auto_score_perc: conflict_grading_job.auto_score * 100,
-                               auto_points: conflict_grading_job.auto_score * assessment_question.max_auto_points,
-                               manual_points: conflict_grading_job.manual_score * assessment_question.manual_points,
+                               auto_score_perc: conflict_grading_job.auto_points / (assessment_question.max_auto_points || 1) * 100,
+                               auto_points: conflict_grading_job.auto_points,
+                               manual_score_perc: conflict_grading_job.manual_points / (assessment_question.manual_points || 1) * 100,
+                               manual_points: conflict_grading_job.manual_points,
                                submission: conflict_grading_job}); %>
                 </div>
               </div>

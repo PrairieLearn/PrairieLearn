@@ -80,14 +80,14 @@
   <div class="form-group manual-grading-points w-100">
     Total Points:
     <span class="float-right">
-      <span class="value-total-points"><%= locals.points ?? instance_question.points %></span> /
+      <span class="value-total-points"><%= Math.round(100 * (locals.points ?? instance_question.points)) / 100 %></span> /
       <%= assessment_question.max_points %>
     </span>
   </div>
   <div class="form-group manual-grading-percentage w-100">
     Total Score:
     <span class="float-right">
-      <span class="value-total-percentage"><%= locals.score_perc ?? instance_question.score_perc %></span>%
+      <span class="value-total-percentage"><%= Math.round(100 * (locals.score_perc ?? instance_question.score_perc)) / 100 %></span>%
     </span>
   </div>
   <% } %>

@@ -185,8 +185,8 @@ BEGIN
                     jsonb_build_object(
                         'correct', gj.correct,
                         'score', gj.score,
-                        'manual_score', gj.manual_score,
-                        'auto_score', gj.auto_score,
+                        'manual_points', gj.manual_points,
+                        'auto_points', gj.auto_points,
                         'feedback', gj.feedback,
                         'submitted_answer', CASE WHEN include_files THEN s.submitted_answer ELSE (s.submitted_answer - '_files') END,
                         'submission_id', s.id
