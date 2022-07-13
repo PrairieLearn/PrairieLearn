@@ -1926,11 +1926,8 @@ if (config.startServer) {
         nodeMetrics.init();
         callback(null);
       },
-      function (callback) {
-        freeformServer.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+      async () => {
+        await freeformServer.init();
       },
     ],
     function (err, data) {
