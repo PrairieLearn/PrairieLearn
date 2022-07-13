@@ -11,6 +11,9 @@ amazon-linux-extras install -y \
     postgresql11 \
     redis4.0
 
+# Notes:
+# - `libjpeg-devel` is needed by the Pillow package
+# - `gcc-c++` is needed to build the native bindings in `packages/bind-mount`
 yum -y install \
     postgresql-server \
     postgresql-contrib \
@@ -29,7 +32,8 @@ yum -y install \
     git \
     graphviz \
     graphviz-devel \
-    libjpeg-devel # Needed by the Pillow package
+    libjpeg-devel \
+    gcc-c++
 
 yum clean all
 
@@ -39,7 +43,7 @@ cd /nvm
 git checkout `git describe --abbrev=0 --tags --match "v[0-9]*" $(git rev-list --tags --max-count=1)`
 source /nvm/nvm.sh
 export NVM_SYMLINK_CURRENT=true
-nvm install 14
+nvm install 16
 # PrairieLearn doesn't currently use `npm` itself, but we can't be sure that
 # someone else isn't using our base image and relying on `npm`, so we'll
 # continue to install it to avoid breaking things.
