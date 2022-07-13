@@ -130,12 +130,9 @@ module.exports = {
               callback(null);
             });
           },
-          function (callback) {
+          async function () {
             debug('before(): initialize freeform server');
-            freeformServer.init(function (err) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
+            await freeformServer.init();
           },
           function (callback) {
             externalGrader.init(function (err) {
@@ -173,12 +170,9 @@ module.exports = {
             callback(null);
           });
         },
-        function (callback) {
+        async () => {
           debug('after(): close freeform server');
-          freeformServer.close(function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await freeformServer.close();
         },
         function (callback) {
           debug('after(): close load estimators');
