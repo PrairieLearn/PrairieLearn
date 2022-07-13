@@ -33,64 +33,70 @@ const { FunctionMissingError } = require('./lib/code-caller-shared');
  * @param {PythonCaller} caller
  * @returns {Promise<Results>}
  */
-function handleInput(line, caller) {
-  return new Promise((resolve) => {
-    /** @type {Request} */
-    let request;
-    try {
-      request = JSON.parse(line);
-    } catch (err) {
-      // We shouldn't ever get malformed JSON from the caller - but if we do,
-      // handle it gracefully.
-      resolve({
-        error: err.message,
-        needsFullRestart: false,
-      });
-      return;
-    }
-
-    if (request.fcn === 'restart') {
-      caller.restart((restartErr, success) => {
-        resolve({
-          data: 'success',
-          needsFullRestart: !!restartErr || !success,
-        });
-      });
-      return;
-    }
-
-    // Course will always be at `/course` in the Docker executor
-    caller.prepareForCourse('/course', (err) => {
-      if (err) {
-        // We should never actually hit this case - but if we do, handle it so
-        // that all our bases are covered.
-        resolve({ needsFullRestart: true });
-      }
-
-      caller.call(
-        request.type,
-        request.directory,
-        request.file,
-        request.fcn,
-        request.args,
-        (err, data, output) => {
-          const functionMissing = err instanceof FunctionMissingError;
-          resolve({
-            // `FunctionMissingError` shouldn't be propagated as an actual error
-            // we'll report it via `functionMissing`
-            // TODO: `error.data` contains valuable information - we should try
-            // to shuttle it back up to the parent process so it can be displayed.
-            error: err && !functionMissing ? err.message : undefined,
-            errorData: err && !functionMissing ? err.data : undefined,
-            data,
-            output,
-            functionMissing,
-            needsFullRestart: false,
-          });
-        }
-      );
+async function handleInput(line, caller) {
+  /** @type {Request} */
+  let request;
+  try {
+    request = JSON.parse(line);
+  } catch (err) {
+    // We shouldn't ever get malformed JSON from the caller - but if we do,
+    // handle it gracefully.
+    resolve({
+      error: err.message,
+      needsFullRestart: false,
     });
-  });
+    return;
+  }
+
+  if (request.fcn === 'restart') {
+    let restartErr;
+    let success;
+
+    try {
+      success = await caller.restartAsync();
+    } catch (err) {
+      restartErr = err;
+    }
+
+    return {
+      data: 'success',
+      needsFullRestart: !!restartErr || !success,
+    };
+  }
+
+  // Course will always be at `/course` in the Docker executor
+  try {
+    await caller.prepareForCourse('/course');
+  } catch (err) {
+    // We should never actually hit this case - but if we do, handle it so
+    // that all our bases are covered.
+    return { needsFullRestart: true };
+  }
+
+  let result, output;
+  try {
+    ({ result, output } = await caller.callAsync(
+      request.type,
+      request.directory,
+      request.file,
+      request.fcn,
+      request.args
+    ));
+  } catch (err) {
+    const functionMissing = err instanceof FunctionMissingError;
+    return {
+      // `FunctionMissingError` shouldn't be propagated as an actual error
+      // we'll report it via `functionMissing`
+      // TODO: `error.data` contains valuable information - we should try
+      // to shuttle it back up to the parent process so it can be displayed.
+      error: err && !functionMissing ? err.message : undefined,
+      errorData: err && !functionMissing ? err.data : undefined,
+      data: result,
+      output,
+      functionMissing,
+      needsFullRestart: false,
+    });
+  }
 }
 
 // Our overall loop looks like this: read a line of input from stdin, spin

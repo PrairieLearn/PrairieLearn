@@ -86,12 +86,6 @@ module.exports = {
     );
   },
 
-  // TODO: should `freeform` really be responsible for shutting down the code
-  // callers if it isn't also responsible for starting them?
-  async close() {
-    await codeCallers.finishAsync();
-  },
-
   /**
    * Takes a directory containing element directories and returns an object
    * mapping element names to that element's controller, dependencies, etc.
@@ -269,7 +263,7 @@ module.exports = {
       return courseExtensionsCache[course.id].data;
     }
 
-    const extensions = await module.exports.loadExtensionsAsync(
+    const extensions = await module.exports.loadExtensions(
       path.join(course_dir_host, 'elementExtensions'),
       path.join(course_dir, 'elementExtensions')
     );
@@ -1094,7 +1088,7 @@ module.exports = {
 
   /**
    * @param {'question' | 'answer' | 'submission'} panel
-   * @param {import('../lib/code-callers').PythonCaller} pc
+   * @param {import('../lib/code-callers').CodeCaller} pc
    * @param {any} variant
    * @param {any} submission
    * @param {any} course
@@ -1299,7 +1293,7 @@ module.exports = {
           if (cacheHit) cacheHitCount++;
           allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
         },
-        (callback) => {
+        async () => {
           // The logPageView middleware knows to write this to the DB
           // when we log the page view - sorry for mutable object hell
           locals.panel_render_count = panelCount;
@@ -1518,7 +1512,6 @@ module.exports = {
             ...scriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
           ];
           htmls.extraHeadersHtml = headerHtmls.join('\n');
-          callback(null);
         },
       ]);
 
