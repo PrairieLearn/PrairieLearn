@@ -399,7 +399,9 @@ If you have a block of text that you want to re-use in many questions, possibly 
 
 ## How can I hide the correct answer when students see their grading results?
 
-Some elements in PL have functionality to hide the correct answer (`pl-checkbox`, etc.) but others do not (`pl-multiple-choice`). A more general way of hiding the correct answer for any element is to surround your question's graded pl-element with `pl-hide-in-panel` in the `question.html` file. This solution will work across all elements.
+Questions can specify the `showCorrectAnswer: false` property in `info.json` to hide the correct answer box entirely. For more information on this option, see [the documentation for question info.json files](question.md#question-infojson).
+
+For more granular control, some elements in PL have their own options for specifying whether to hide individual correct answers (for example, `pl-checkbox` has a `hide-answer-panel` attribute). Not all element types offer this as an attribute (e.g., `pl-multiple-choice` currently does not). However, to hide the correct answer for any kind of element, you can surround the particular graded pl-element with `pl-hide-in-panel` in the `question.html` file.
 
 For example:
 
@@ -409,4 +411,4 @@ For example:
 </pl-hide-in-panel>
 ```
 
-For more information, see [the documentation for pl-hide-in-panel](elements.md#pl-hide-in-panel-element).
+For more information on this granular technique, see [the documentation for pl-hide-in-panel](elements.md#pl-hide-in-panel-element).
