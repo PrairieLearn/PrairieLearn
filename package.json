@@ -33,7 +33,7 @@
         "bootstrap-table": "^1.20.2",
         "bowser": "^2.11.0",
         "byline": "^5.0.0",
-        "chalk": "^2.4.2",
+        "chalk": "^5.0.1",
         "chart.js": "^2.9.4",
         "cheerio": "^0.22.0",
         "chokidar": "^3.5.3",
