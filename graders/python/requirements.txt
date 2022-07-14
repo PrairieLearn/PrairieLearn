@@ -5,7 +5,7 @@ pandas==1.4.3
 scipy==1.8.1
 sympy==1.10.1
 Pillow==9.1.1
-pygraphviz==1.6
+pygraphviz==1.9
 defusedxml==0.7.1
 openpyxl==3.0.10
 scikit-learn==1.1.1
