@@ -22,21 +22,19 @@ A single PrairieLearn server may be serving potentially hundreds or thousands of
 
 PrairieLearn must execute in two main environments: locally on the computers of people developing course content, and in a production environment. The primary differences between these two environments are a) ease of setup and b) whether or not PrairieLearn is running in a Docker container.
 
-For local development, PrairieLearn must be easy to set up; it should not require complex infrastructure or commands to run. For this use case, PrairieLearn is distributed as a single Docker container that can be run without any external dependencies.
-
-In production, we currently run PrairieLearn outside of Docker directly on an EC2 host.
+For local development, PrairieLearn must be easy to set up; it should not require complex infrastructure or commands to run. For this use case, PrairieLearn is distributed as a single Docker container that can be run without any external dependencies. In production environments, we can shoulder some additional complexity in order to gained improved security and reliability.
 
 To account for the variety of contexts in which PrairieLearn is executed, there are two related but distinct ways that PrairieLearn can execute question and element code: `native` and `container`. These modes correspond to the `workersExecutionMode` config value. They are described in more detail below.
 
 ### `native` execution mode
 
-This is how PrairieLearn functioned historically. PrairieLearn would directly execute Python code with limited isolation from the rest of the system. This is largely the process described again, with a pool of zygotes.
+Under this mode, PrairieLearn directly executes Python code with limited isolation from the rest of the system. This is largely the process described above, with a pool of zygotes.
 
 This is still how PrairieLearn functions by default for local development. The `priairelearn/prairielearn` Docker image that is distributed to users includes all of the Python and R dependencies needed by question and element code, and said code is executed in the same container that PrairieLearn executes in. This is obviously bad for security, but doesn't matter for local development.
 
 ### `container` execution mode
 
-The `container` execution mode is currently used when PrairieLearn is running in production. It uses Docker to provide a degree of isolation from both PrairieLearn and other courses.
+Under this mode, PrairieLearn uses Docker to provide a degree of isolation from both PrairieLearn and other courses.
 
 Instead of using a pool of zygotes as described above, it actually maintains a pool of Docker containers, each of which runs a simple Node script (the _executor_), which in turn runs a Python zygote. The Node script listens for requests from PrairieLearn and essentially just forwards them to the Python process. You may ask, "Why not just run the zygote as the primary process in the container?" Well, starting up a Docker container is significantly more expensive than starting up a Python interpreter. Given that we ocasionally want to completely restart the Python worker, such as when it encounters an error, having an additional level of indirection allows us to gracefully restart the Python process inside the Docker container without having to restart the entire Docker container.
 
