@@ -1877,7 +1877,7 @@ module.exports = {
           cacheHit: true,
         };
       } else {
-        doCompute(cacheKey);
+        return doCompute(cacheKey);
       }
     };
 
