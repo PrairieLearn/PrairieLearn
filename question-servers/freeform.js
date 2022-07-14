@@ -382,7 +382,7 @@ module.exports = {
     const pythonFunction = phase;
     const pythonArgs = [data];
     if (phase === 'render') pythonArgs.push(html);
-    const fullFilename = path.join(context.question_dir, 'server.py');
+    const fullFilename = path.join(context.question_dir_host, 'server.py');
     const type = 'question';
     const directory = context.question.directory;
 
