@@ -77,6 +77,14 @@ An assessment is broken down in to a list of zones, like this:
                 ]
             }
         ]
+    },
+    {
+        "title": "Manually graded questions",
+        "comment": "These are questions that include manual grading components",
+        "questions": [
+            {"id": "essayQ", "points": 10},
+            {"id": "autoPlusManualQ", "autoPoints": [10, 7, 5], "manualPoints": 15},
+        ]
     }
 ],
 ```
@@ -90,6 +98,8 @@ An assessment is broken down in to a list of zones, like this:
 - If a zone has `maxPoints`, then, of the points that are awarded for answering questions in this zone, at most `maxPoints` will count toward the total points.
 
 - If a zone has `bestQuestions`, then, of the questions in this zone, only `bestQuestions` with the highest number of awarded points will count toward the total points.
+
+Each question may be assigned _auto points_ (points that are automatically assigned by an internal or external grader) and _manual points_ (points that are assigned manually by a human grader). By default, if a question sets a value to `points`, questions with a grading method set to Manual will be assigned only manual points, while other questions will be assigned only auto points. However, it is possible to set both auto points and manual points to the question, by using `autoPoints` and `manualPoints` in a question. It is acceptable to use only one of `autoPoints` or `manualPoints`, in which case the other part of the points will be assigned a value of 0. Note that, to avoid ambiguity, it is an error to use both `points` and `autoPoints`, or `points` and `manualPoints`, in the same question.
 
 ## Assessment and question instances and resetting assessments
 
