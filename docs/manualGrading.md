@@ -1,6 +1,6 @@
 # Manual Grading
 
-PrairieLearn supports manual grading of questions by downloading a CSV file with student answers and uploading a CSV file with question scores and optional per-question feedback. There is not currently an online web interface for manual grading.
+PrairieLearn supports manual grading of questions by downloading a CSV file with student answers and uploading a CSV file with question scores and optional per-question feedback. There is also an online web interface for manual grading in beta-testing mode. Please contact your system administrator to discuss your needs and potentially enable this feature for your course.
 
 ## Configuring a question for manual grading
 
@@ -19,7 +19,9 @@ Manually-graded questions allow students to "Save" answers, but they don't have 
 
 Any [elements](elements/) can be used in the [`question.html`](question.md#question-questionhtml) to write manually graded questions. All of the student input will be saved and available for manual grading, including `pl-string-input`, `pl-file-editor`, `pl-file-upload`, etc.
 
-## Downloading the students' submitted answers
+## Manual grading using file uploads
+
+### Downloading the students' submitted answers
 
 After students have completed the assessment, download the submitted answers by going to the assessment page, then the "Downloads" tab, and selecting the `<assessment>_submissions_for_manual_grading.csv` file. This looks like:
 
@@ -34,9 +36,7 @@ This CSV file has three blank columns at the end, ready for the percentage score
 
 If the students uploaded files then you should also download `<assessment>_files_for_manual_grading.zip` from the "Downloads" tab. The scores and feedback should still be entered into the CSV file.
 
-### Workspaces
-
-To include files copied out of the workspace into the `<assessment>_files_for_manual_grading.zip`, in the [`info.json` file](workspaces/index.md#infojson) specify a file list using `"gradedFiles"`
+> To include files copied out of the workspace into the `<assessment>_files_for_manual_grading.zip`, in the [`info.json` file](workspaces/index.md#infojson) specify a file list using `"gradedFiles"`:
 
 ```json
 "workspaceOptions": {
@@ -49,7 +49,7 @@ To include files copied out of the workspace into the `<assessment>_files_for_ma
 ...
 ```
 
-## Uploading the scores and feedback
+### Uploading the scores and feedback
 
 After editing the percentage score and/or feedback for each submitted answer, upload the CSV file by going to the assessment page, then the "Uploads" tab, and selecting "Upload new question scores". If you leave either `score_perc` or `feedback` (or both) blank for any student, then the corresponding entry will not be updated.
 
