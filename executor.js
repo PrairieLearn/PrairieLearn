@@ -72,7 +72,7 @@ async function handleInput(line, caller) {
     return { needsFullRestart: true };
   }
 
-  let result, output;
+  let result, output, callErr;
   try {
     ({ result, output } = await caller.callAsync(
       request.type,
@@ -82,20 +82,20 @@ async function handleInput(line, caller) {
       request.args
     ));
   } catch (err) {
-    const functionMissing = err instanceof FunctionMissingError;
-    return {
-      // `FunctionMissingError` shouldn't be propagated as an actual error
-      // we'll report it via `functionMissing`
-      // TODO: `error.data` contains valuable information - we should try
-      // to shuttle it back up to the parent process so it can be displayed.
-      error: err && !functionMissing ? err.message : undefined,
-      errorData: err && !functionMissing ? err.data : undefined,
-      data: result,
-      output,
-      functionMissing,
-      needsFullRestart: false,
-    };
+    callErr = err;
   }
+
+  const functionMissing = callErr instanceof FunctionMissingError;
+  return {
+    // `FunctionMissingError` shouldn't be propagated as an actual error
+    // we'll report it via `functionMissing`
+    error: callErr && !functionMissing ? callErr.message : undefined,
+    errorData: callErr && !functionMissing ? callErr.data : undefined,
+    data: result,
+    output,
+    functionMissing,
+    needsFullRestart: false,
+  };
 }
 
 // Our overall loop looks like this: read a line of input from stdin, spin
@@ -106,10 +106,8 @@ const rl = readline.createInterface({
   terminal: false,
 });
 
-let questionTimeoutMilliseconds;
-try {
-  questionTimeoutMilliseconds = Number.parseInt(process.env.QUESTION_TIMEOUT_MILLISECONDS);
-} catch (e) {
+let questionTimeoutMilliseconds = Number.parseInt(process.env.QUESTION_TIMEOUT_MILLISECONDS);
+if (Number.isNaN(questionTimeoutMilliseconds)) {
   questionTimeoutMilliseconds = 10000;
 }
 
