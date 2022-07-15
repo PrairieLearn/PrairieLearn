@@ -1205,8 +1205,8 @@ module.exports = {
     course_instance,
     locals
   ) {
-    return instrumented(`freeform.render`, async (span) => {
-      debug(`render()`);
+    return instrumented('freeform.render', async (span) => {
+      debug('render()');
       const htmls = {
         extraHeadersHtml: '',
         questionHtml: '',
@@ -1568,7 +1568,7 @@ module.exports = {
 
   async fileAsync(filename, variant, question, course) {
     return instrumented('freeform.file', async (span) => {
-      debug(`file()`);
+      debug('file()');
       if (variant.broken) throw new Error('attemped to get a file for a broken variant');
 
       const context = await module.exports.getContext(question, course);
@@ -1621,7 +1621,7 @@ module.exports = {
 
   async parseAsync(submission, variant, question, course) {
     return instrumented('freeform.parse', async () => {
-      debug(`parse()`);
+      debug('parse()');
       if (variant.broken) throw new Error('attemped to parse broken variant');
 
       const context = await module.exports.getContext(question, course);
@@ -1672,7 +1672,7 @@ module.exports = {
 
   async gradeAsync(submission, variant, question, course) {
     return instrumented('freeform.grade', async () => {
-      debug(`grade()`);
+      debug('grade()');
       if (variant.broken) throw new Error('attemped to grade broken variant');
       if (submission.broken) throw new Error('attemped to grade broken submission');
 
@@ -1730,7 +1730,7 @@ module.exports = {
 
   async testAsync(variant, question, course, test_type) {
     return instrumented('freeform.test', async () => {
-      debug(`test()`);
+      debug('test()');
       if (variant.broken) throw new Error('attemped to test broken variant');
 
       const context = await module.exports.getContext(question, course);
