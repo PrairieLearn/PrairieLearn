@@ -7,6 +7,7 @@ AS $$
 DECLARE
     arg_group_id bigint;
     arg_group_user_id bigint;
+    arg_default_group_role_id bigint;
     arg_role_update JSONB;
 BEGIN
     -- Find group id
@@ -26,11 +27,31 @@ BEGIN
         RAISE EXCEPTION 'Cannot find the group by provided join code: %', arg_join_code;
     END IF;
 
-    -- Update all group users to have no roles
-    UPDATE group_users
-    SET group_role_id = NULL
-    WHERE group_id = arg_group_id;
+    -- Save all group user IDs
+    CREATE TEMPORARY TABLE current_group_users (
+        group_id bigint,
+        user_id bigint
+    ) ON COMMIT DROP; 
+    INSERT INTO current_group_users
+    SELECT DISTINCT gu.user_id, gu.group_id
+    FROM group_users gu
+    WHERE gu.group_id = arg_group_id;
 
+    -- Clear the group's role assignments
+    DELETE FROM group_users WHERE group_id = arg_group_id;
+
+    -- Assign every saved group user a "default" role
+    SELECT id INTO arg_default_group_role_id
+    FROM group_roles AS gr
+    WHERE gr.assessment_id = arg_assessment_id
+    ORDER BY gr.maximum
+    LIMIT 1;
+
+    INSERT INTO group_users (group_id, user_id, group_role_id)
+    SELECT cgu.group_id, cgu.user_id, arg_default_group_role_id
+    FROM current_group_users cgu;
+
+    -- Assign each user's role
     FOREACH arg_role_update IN ARRAY role_updates LOOP
         -- Find user by uid
         SELECT u.user_id
@@ -38,11 +59,16 @@ BEGIN
         FROM users as u
         WHERE u.uid = (arg_role_update->>'uid')::text;
 
+        DELETE FROM group_users WHERE user_id = arg_group_user_id;
+
         -- Update role of user
         -- FIXME: later, we will have to update on multiple roles
-        UPDATE group_users
-        SET group_role_id = (arg_role_update->>'group_role_id')::text::bigint
-        WHERE user_id = arg_group_user_id AND group_id = arg_group_id;
+        INSERT INTO group_users (group_id, user_id, group_role_id)
+        VALUES (
+            arg_group_id, 
+            arg_group_user_id, 
+            (arg_role_update->>'group_role_id')::text::bigint
+        );
     END LOOP;
 
     -- TODO: log
