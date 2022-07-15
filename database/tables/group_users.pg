@@ -4,7 +4,7 @@ columns
     user_id: bigint not null
 
 indexes
-    group_users_pkey: PRIMARY KEY (group_id, user_id) USING btree (group_id, user_id)
+    group_users_pkey: PRIMARY KEY (group_id, user_id, group_role_id) USING btree (group_id, user_id, group_role_id)
     group_users_group_id_key: USING btree (group_id)
     group_users_user_id_key: USING btree (user_id)
 
