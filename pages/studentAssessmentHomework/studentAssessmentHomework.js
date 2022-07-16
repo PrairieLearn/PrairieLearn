@@ -213,13 +213,12 @@ router.post('/', function (req, res, next) {
     Object.entries(uidToRoleIdMap).forEach(entry => {
       const roleAssignment = {
         "uid": entry[0],
-        "group_role_id": entry[1].map((id) => parseInt(id))[0] // FIXME: change this to the whole array when single assignment works
+        "group_role_ids": entry[1].map((id) => parseInt(id)) 
       };
       roleAssignments.push(roleAssignment);
     });
   
     let params = [res.locals.assessment.id, roleAssignments];
-    console.log(params);
     sqldb.call('group_roles_update', params, function (err, _result) {
       if (err) {
         if (ERR(err, next)) return;
