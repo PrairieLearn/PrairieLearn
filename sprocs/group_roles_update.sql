@@ -9,6 +9,7 @@ DECLARE
     arg_group_user_id bigint;
     arg_default_group_role_id bigint;
     arg_role_update JSONB;
+    arg_group_role_id JSONB;
 BEGIN
     -- Find group id
     SELECT 
@@ -61,14 +62,15 @@ BEGIN
 
         DELETE FROM group_users WHERE user_id = arg_group_user_id;
 
-        -- Update role of user
-        -- FIXME: later, we will have to update on multiple roles
-        INSERT INTO group_users (group_id, user_id, group_role_id)
-        VALUES (
-            arg_group_id, 
-            arg_group_user_id, 
-            (arg_role_update->>'group_role_id')::text::bigint
-        );
+        -- Update roles of user
+        FOR arg_group_role_id IN SELECT * FROM JSONB_ARRAY_ELEMENTS(arg_role_update->'group_role_ids') LOOP
+            INSERT INTO group_users (group_id, user_id, group_role_id)
+            VALUES (
+                arg_group_id, 
+                arg_group_user_id,
+                arg_group_role_id::text::bigint
+            );
+        END LOOP;
     END LOOP;
 
     -- TODO: log
