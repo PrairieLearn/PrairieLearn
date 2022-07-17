@@ -11,6 +11,7 @@ DECLARE
     arg_group_id bigint;
     arg_cur_size bigint;
     arg_max_size bigint;
+    arg_default_group_role_id bigint;
 BEGIN
     -- find group id
     SELECT 
@@ -56,16 +57,18 @@ BEGIN
         RAISE EXCEPTION 'The group is full for join code: %', arg_join_code;
     END IF;
 
+    -- find the default group role id
+    SELECT id INTO arg_default_group_role_id
+    FROM group_roles AS gr
+    WHERE gr.assessment_id = arg_assessment_id
+    ORDER BY gr.maximum DESC
+    LIMIT 1;
+
     -- join the group
     INSERT INTO group_users
-        (user_id, group_id)
+        (user_id, group_id, group_role_id)
     VALUES
-        (arg_user_id, arg_group_id);
-
-    INSERT INTO group_logs
-        (authn_user_id, user_id, group_id, action)
-    VALUES
-        (arg_authn_user_id, arg_user_id, arg_group_id, 'join');
+        (arg_user_id, arg_group_id, arg_default_group_role_id);
 
     -- log the join
     INSERT INTO group_logs
