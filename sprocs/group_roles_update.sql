@@ -34,7 +34,7 @@ BEGIN
         user_id bigint
     ) ON COMMIT DROP; 
     INSERT INTO current_group_users
-    SELECT DISTINCT gu.user_id, gu.group_id
+    SELECT DISTINCT gu.group_id, gu.user_id
     FROM group_users gu
     WHERE gu.group_id = arg_group_id;
 
@@ -45,7 +45,7 @@ BEGIN
     SELECT id INTO arg_default_group_role_id
     FROM group_roles AS gr
     WHERE gr.assessment_id = arg_assessment_id
-    ORDER BY gr.maximum
+    ORDER BY gr.maximum DESC
     LIMIT 1;
 
     INSERT INTO group_users (group_id, user_id, group_role_id)

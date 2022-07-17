@@ -30,7 +30,9 @@
             "maximum": 1
         },
         {
-            "name": "Contributor"
+            "name": "Contributor",
+            "minimum": 0,
+            "maximum": 2
         }
     ],
     "allowAccess": [
