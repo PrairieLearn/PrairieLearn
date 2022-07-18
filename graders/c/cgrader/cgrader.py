@@ -40,26 +40,22 @@ class CGrader:
                                     stderr=subprocess.STDOUT)
         except Exception:
             return ''
-        out1 = out2 = None
+        out = None
         tostr = ''
         if input is not None and not isinstance(input, (bytes, bytearray)):
             input = str(input).encode('utf-8')
         try:
-            out1 = proc.communicate(input=input, timeout=timeout)[0]
+            proc.communicate(input=input, timeout=timeout)[0]
         except subprocess.TimeoutExpired:
             tostr = TIMEOUT_MESSAGE
         finally:
             proc.kill()
             try:
-                out2 = proc.communicate(timeout=timeout)[0]
+                out = proc.communicate(timeout=timeout)[0]
             except subprocess.TimeoutExpired:
                 tostr = TIMEOUT_MESSAGE
             finally:
-                out = ''
-                if out1:
-                    out += out1.decode('utf-8', 'backslashreplace')
-                if out2:
-                    out += out2.decode('utf-8', 'backslashreplace')
+                out = out.decode('utf-8', 'backslashreplace') if out else ''
                 return out + tostr
 
     def compile_file(self, c_file, exec_file, add_c_file=None, compiler=None,
@@ -266,7 +262,7 @@ class CGrader:
 
     def run_check_suite(self, exec_file, args=None,
                         use_suite_title=False, use_case_name=True, use_unit_test_id=True,
-                        use_iteration=False, sandboxed=True):
+                        use_iteration=False, sandboxed=True, use_malloc_debug=False):
 
         if not args:
             args = []
@@ -280,7 +276,9 @@ class CGrader:
         out = self.run_command([exec_file] + args,
                                env={'CK_XML_LOG_FILE_NAME': log_file, 'TEMP': '/tmp',
                                     'SANDBOX_UID': self.run_command('id -u'),
-                                    'SANDBOX_GID': self.run_command('id -g') },
+                                    'SANDBOX_GID': self.run_command('id -g'),
+                                    'LD_PRELOAD': '/lib/x86_64-linux-gnu/libc_malloc_debug.so'
+                                    if use_malloc_debug else ''},
                                sandboxed=sandboxed)
         print(out) # Printing so it shows in the grading job log
 
@@ -292,7 +290,7 @@ class CGrader:
         separator_2 = ' - ' if use_unit_test_id and (use_suite_title or use_case_name) else ''
         try:
             with open(log_file, 'r', errors='backslashreplace') as log:
-                tree = ET.parse(log, parser=ET.XMLParser(recover=True))
+                tree = ET.parse(log, parser=ET.XMLParser())
             for suite in tree.getroot().findall('{*}suite'):
                 suite_title = suite.findtext('{*}title') if use_suite_title else ''
                 for test in suite.findall('{*}test'):
