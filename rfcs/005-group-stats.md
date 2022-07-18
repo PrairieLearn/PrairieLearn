@@ -1,10 +1,16 @@
 # Summary
-A page at the course-instance level for group statistics. 
+A page at the course-instance level for group insights. 
 
 # Basic Example Workflow
-An instructor with appropriate access uploads a reference (i.e. desired) groups assignment for their class. PrairieLearn will display group-level statistics across assessments in a given course instance. Instructor can then decide to adjust filters and parameters to get desired statistics and be able to recompute and download. 
+An instructor with appropriate access uploads a reference (i.e. desired) groups assignment for their class. PrairieLearn will display group-level insights across assessments in a given course instance. Instructor can then decide to adjust filters and parameters to get desired insights and be able to recompute and download. 
+
+* An instructor will want to consider appropriate tags to use for tagging assignments to better help filter sets of assessments they want displayed. 
+
+* Checkboxes to toggle display will also be available.
 
 *Group Participation* 
+
+Participation is defined as a student working with > 50% of assigned teammates.
 
 Filters: [Exclude Assignment 2]
 
@@ -41,39 +47,71 @@ Filters: [Include student data from assigned group only]
 
 
 # Motivation
-As group assessments are now a familiar feature of PrairieLearn, is important that instructors are provided support to gain insight into their class's behaviors during group assessments, specifically a better understanding at the group-level. Concerns of students working with their assigned group, free-loading and domination, and adhering to class policies (e.g. group assessments with roles, students must take on each role at least once) still remain and left up to the instructor to address either relying on students to comply without guidance or enforcement or having pull data as needed and creating scripts or manually determining how students are doing, perhaps when the opportune time to intervene has since passed.  
+As group assessments are now a familiar feature of PrairieLearn, is important that instructors are provided support to gain insight into their class's behaviors during group assessments, specifically a better understanding at the group-level. Concerns of students working with their assigned group, free-loading and domination, and adhering to class policies (e.g. group assessments with roles, students must take on each role at least once) still remain and left up to the instructor to address either relying on students to comply without guidance or enforcement or having pull data as needed and creating scripts or manually determining how students are doing, perhaps when the opportune time to intervene has since passed.
+
+## Additional Motivation Context for Design Choices
+As PrairieLearn stands right now, instructors can either pre-assign groups, where a student can get credit without joining, or instructors can allow students to create and join their own groups, which give the ability to join any group or depending on configuration, create a group of one. Providing group insights can help inform instructors quickly of group performances.
 
 ## Goals: 
 * Deliver Group Statistics so instructors have a high-level idea of groups' performances; quickly identify potentially struggling groups, signs of potential free-loading or domination
 * Allow filters and parameters to serve a variety of instructor needs
 
 # Proposed Solution
-Adding a Group Statistics tab (`pages/instructorGroupStatistics`) to the Course Instance-level where PrairieLearn will provide statistics on group performances across group submissions. 
+Adding a Group Statistics tab (`pages/instructorGroupStatistics`) to the Course Instance-level where PrairieLearn will provide insights on group performances across group submissions. 
 
 **Input:** CSV of desired group assignments to compare against. 
 Also add a button to compute/recompute statistics when needed. 
 
-**Output:** Tables and other visualizations of group performances and student performances with respect to a group; downloadable stats.
+**Output:** Tables and other visualizations of group performances and student performances with respect to a group; downloadable information.
+
+## Implementation details: 
+
+### Group Participation: 
+* The following is an adapted Python snippet/pseudocode for clarity/brevity from related code calculating attendance for a PrairieLearn course and has not been optimized for efficiency. 
+
+```
+groups = [(groupId, [groupMembers])] #read from CSV
+groupAssessments = filter(isGroupAssessment, assessmentInstances)
+
+for student in roster:
+    groupMembers = second(lookup(student, groups))
+    for ga in groupAssessments: 
+        student.ga.participated = false
+        if student is in ga.entry['group_uids'] and 
+            intersection(ga.entry['group_uids'], groupMembers) > ceiling(groupMembers/2): 
+            student.ga.participated = true
+      
+```
+
+### Role Participation: 
+
+Use the group roles from the assessment table to know what role columns are needed, then for each student, keep a count for each role while looping through GAs. 
+
+### Submission Count
+
+These can be counted from submission logs. 
+
 
 
 # Drawbacks
 * Statistics may not be the desired statistics for some instructors, forcing instructors to still develop their own scripts to extract desired information out of data.
 
+
 # Alternatives
 
-## No Group Statistics Support
+## No Group Insights Support
 * Instructors provide intended group assignments and instructions for group assessments and assume students comply.
 * Instructors periodically download data from group assessments and run against their own scripts to gain an understanding of their students during groupwork.
 
-## Add Group Statistics at Assessment Level
-* Instructors aggregate statistics across assessments to get information they desire.
+## Add Group Insight Information at Assessment Level
+* Instructors aggregate information across assessments to get information they desire.
 
 # Potential Future Enhancements
 * Instructors are able to select a desired groups assignment from an existing assessment assignment.
-* Support for multiple different group assignments to have statistics displayed
+* Support for multiple different group assignments to have information displayed
 * Ability to click on a group and an assessment and be directed directly to their assessment to inspect
-* Add additional statistics as requested
+* Add additional insights/information as requested
 
 
 # Unresolved Questions and Concerns
-The existing codebase currently has all group-related code at the assessment-level, it is unclear how to upload, store,and work with group assignments at the course-instance level.
+The existing codebase currently has all group-related code at the assessment-level, it is unclear how to upload, store, and work with group assignments at the course-instance level.
