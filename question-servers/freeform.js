@@ -343,7 +343,7 @@ module.exports = {
     const directory = resolvedElementName;
 
     try {
-      return await pc.callAsync(type, directory, pythonFile, fcn, pythonArgs);
+      return await pc.call(type, directory, pythonFile, fcn, pythonArgs);
     } catch (err) {
       if (err instanceof FunctionMissingError) {
         // function wasn't present in server
@@ -396,7 +396,7 @@ module.exports = {
       `execPythonServer(): pc.call(pythonFile=${pythonFile}, pythonFunction=${pythonFunction})`
     );
     try {
-      const { result, output } = await pc.callAsync(
+      const { result, output } = await pc.call(
         type,
         directory,
         pythonFile,

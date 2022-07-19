@@ -52,7 +52,7 @@ async function handleInput(line, caller) {
     let success;
 
     try {
-      success = await caller.restartAsync();
+      success = await caller.restart();
     } catch (err) {
       restartErr = err;
     }
@@ -74,7 +74,7 @@ async function handleInput(line, caller) {
 
   let result, output, callErr;
   try {
-    ({ result, output } = await caller.callAsync(
+    ({ result, output } = await caller.call(
       request.type,
       request.directory,
       request.file,
