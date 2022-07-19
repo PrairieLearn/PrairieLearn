@@ -52,7 +52,7 @@ async function handleInput(line, codeCaller) {
     let success;
 
     try {
-      success = await pc.restart();
+      success = await codeCaller.restart();
     } catch (err) {
       restartErr = err;
     }
@@ -65,7 +65,7 @@ async function handleInput(line, codeCaller) {
 
   // Course will always be at `/course` in the Docker executor
   try {
-    await pc.prepareForCourse('/course');
+    await codeCaller.prepareForCourse('/course');
   } catch (err) {
     // We should never actually hit this case - but if we do, handle it so
     // that all our bases are covered.
@@ -74,7 +74,7 @@ async function handleInput(line, codeCaller) {
 
   let result, output, callErr;
   try {
-    ({ result, output } = await pc.call(
+    ({ result, output } = await codeCaller.call(
       request.type,
       request.directory,
       request.file,
@@ -128,7 +128,7 @@ rl.on('line', (line) => {
   }
 
   processingRequest = true;
-  handleInput(line, pc)
+  handleInput(line, codeCaller)
     .then((results) => {
       const { needsFullRestart, ...rest } = results;
       if (needsFullRestart) {
