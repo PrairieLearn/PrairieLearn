@@ -1,11 +1,11 @@
 // @ts-check
 const readline = require('readline');
 const { FunctionMissingError } = require('./lib/code-caller');
-const { PythonCaller } = require('./lib/code-caller/code-caller-python');
+const { CodeCallerNative } = require('./lib/code-caller/code-caller-native');
 
 /**
  * @typedef {Object} Request
- * @property {import('./lib/code-caller/code-caller-python').CallType} type
+ * @property {import('./lib/code-caller/code-caller-native').CallType} type
  * @property {string} directory
  * @property {string} file
  * @property {string} fcn
@@ -15,7 +15,7 @@ const { PythonCaller } = require('./lib/code-caller/code-caller-python');
 /**
  * @typedef {Object} Results
  * @property {string} [error]
- * @property {import('./lib/code-caller/code-caller-python').ErrorData} [errorData]
+ * @property {import('./lib/code-caller/code-caller-native').ErrorData} [errorData]
  * @property {any} [data]
  * @property {string} [output]
  * @property {boolean} [functionMissing]
@@ -30,10 +30,10 @@ const { PythonCaller } = require('./lib/code-caller/code-caller-python');
  * be indicated by the `error` property on the result.
  *
  * @param {string} line
- * @param {PythonCaller} pc
+ * @param {CodeCallerNative} codeCaller
  * @returns {Promise<Results>}
  */
-async function handleInput(line, pc) {
+async function handleInput(line, codeCaller) {
   /** @type {Request} */
   let request;
   try {
@@ -111,12 +111,12 @@ if (Number.isNaN(questionTimeoutMilliseconds)) {
   questionTimeoutMilliseconds = 10000;
 }
 
-let pc = new PythonCaller({
+let codeCaller = new CodeCallerNative({
   dropPrivileges: true,
   questionTimeoutMilliseconds,
   errorLogger: console.error,
 });
-pc.ensureChild();
+codeCaller.ensureChild();
 
 // Safety check: if we receive more input while handling another request,
 // discard it.
@@ -132,9 +132,9 @@ rl.on('line', (line) => {
     .then((results) => {
       const { needsFullRestart, ...rest } = results;
       if (needsFullRestart) {
-        pc.done();
-        pc = new PythonCaller();
-        pc.ensureChild();
+        codeCaller.done();
+        codeCaller = new CodeCallerNative();
+        codeCaller.ensureChild();
       }
       console.log(JSON.stringify(rest));
       processingRequest = false;
