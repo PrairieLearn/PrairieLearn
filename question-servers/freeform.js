@@ -13,8 +13,7 @@ const { instrumented } = require('@prairielearn/opentelemetry');
 const schemas = require('../schemas');
 const config = require('../lib/config');
 const logger = require('../lib/logger');
-const { FunctionMissingError } = require('../lib/code-caller-shared');
-const codeCallers = require('../lib/code-callers');
+const { withPythonCaller, FunctionMissingError } = require('../lib/code-caller');
 const jsonLoader = require('../lib/json-load');
 const cache = require('../lib/cache');
 const courseUtil = require('../lib/courseUtil');
@@ -1010,7 +1009,7 @@ module.exports = {
     };
     _.extend(data.options, module.exports.getContextOptions(context));
 
-    return await codeCallers.withPythonCaller(context.course_dir_host, async (pc) => {
+    return await withPythonCaller(context.course_dir_host, async (pc) => {
       const { courseIssues, data: resultData } = await module.exports.processQuestion(
         'generate',
         pc,
@@ -1050,7 +1049,7 @@ module.exports = {
     };
     _.extend(data.options, module.exports.getContextOptions(context));
 
-    return await codeCallers.withPythonCaller(context.course_dir_host, async (pc) => {
+    return await withPythonCaller(context.course_dir_host, async (pc) => {
       const { courseIssues, data: resultData } = await module.exports.processQuestion(
         'prepare',
         pc,
@@ -1088,7 +1087,7 @@ module.exports = {
 
   /**
    * @param {'question' | 'answer' | 'submission'} panel
-   * @param {import('../lib/code-callers').CodeCaller} pc
+   * @param {import('../lib/code-caller').CodeCaller} pc
    * @param {any} variant
    * @param {any} submission
    * @param {any} course
@@ -1213,7 +1212,7 @@ module.exports = {
       cacheHitCount = 0;
     const context = await module.exports.getContext(question, course);
 
-    return codeCallers.withPythonCaller(context.course_dir_host, async (pc) => {
+    return withPythonCaller(context.course_dir_host, async (pc) => {
       await async.series([
         // FIXME: support 'header'
         async () => {
@@ -1571,7 +1570,7 @@ module.exports = {
       context,
       async () => {
         // function to compute the file data and return the cachedData
-        return codeCallers.withPythonCaller(context.course_dir_host, async (pc) => {
+        return withPythonCaller(context.course_dir_host, async (pc) => {
           const { courseIssues, fileData } = await module.exports.processQuestion(
             'file',
             pc,
@@ -1618,7 +1617,7 @@ module.exports = {
       gradable: _.get(submission, 'gradable', true),
     };
     _.extend(data.options, module.exports.getContextOptions(context));
-    return codeCallers.withPythonCaller(context.course_dir_host, async (pc) => {
+    return withPythonCaller(context.course_dir_host, async (pc) => {
       const { courseIssues, data: resultData } = await module.exports.processQuestion(
         'parse',
         pc,
@@ -1671,7 +1670,7 @@ module.exports = {
       gradable: submission.gradable,
     };
     _.extend(data.options, module.exports.getContextOptions(context));
-    return codeCallers.withPythonCaller(context.course_dir_host, async (pc) => {
+    return withPythonCaller(context.course_dir_host, async (pc) => {
       const { courseIssues, data: resultData } = await module.exports.processQuestion(
         'grade',
         pc,
@@ -1726,7 +1725,7 @@ module.exports = {
       test_type: test_type,
     };
     _.extend(data.options, module.exports.getContextOptions(context));
-    return codeCallers.withPythonCaller(context.course_dir_host, async (pc) => {
+    return withPythonCaller(context.course_dir_host, async (pc) => {
       const { courseIssues, data: resultData } = await module.exports.processQuestion(
         'test',
         pc,

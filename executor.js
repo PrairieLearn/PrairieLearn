@@ -1,11 +1,11 @@
 // @ts-check
 const readline = require('readline');
-const { PythonCaller } = require('./lib/code-caller-python');
-const { FunctionMissingError } = require('./lib/code-caller-shared');
+const { FunctionMissingError } = require('./lib/code-caller');
+const { PythonCaller } = require('./lib/code-caller/code-caller-python');
 
 /**
  * @typedef {Object} Request
- * @property {import('./lib/code-caller-python').CallType} type
+ * @property {import('./lib/code-caller/code-caller-python').CallType} type
  * @property {string} directory
  * @property {string} file
  * @property {string} fcn
@@ -15,7 +15,7 @@ const { FunctionMissingError } = require('./lib/code-caller-shared');
 /**
  * @typedef {Object} Results
  * @property {string} [error]
- * @property {import('./lib/code-caller-python').ErrorData} [errorData]
+ * @property {import('./lib/code-caller/code-caller-python').ErrorData} [errorData]
  * @property {any} [data]
  * @property {string} [output]
  * @property {boolean} [functionMissing]
