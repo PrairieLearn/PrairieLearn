@@ -30,10 +30,10 @@ const { PythonCaller } = require('./lib/code-caller/code-caller-python');
  * be indicated by the `error` property on the result.
  *
  * @param {string} line
- * @param {PythonCaller} caller
+ * @param {PythonCaller} pc
  * @returns {Promise<Results>}
  */
-async function handleInput(line, caller) {
+async function handleInput(line, pc) {
   /** @type {Request} */
   let request;
   try {
@@ -52,7 +52,7 @@ async function handleInput(line, caller) {
     let success;
 
     try {
-      success = await caller.restart();
+      success = await pc.restart();
     } catch (err) {
       restartErr = err;
     }
@@ -65,7 +65,7 @@ async function handleInput(line, caller) {
 
   // Course will always be at `/course` in the Docker executor
   try {
-    await caller.prepareForCourse('/course');
+    await pc.prepareForCourse('/course');
   } catch (err) {
     // We should never actually hit this case - but if we do, handle it so
     // that all our bases are covered.
@@ -74,7 +74,7 @@ async function handleInput(line, caller) {
 
   let result, output, callErr;
   try {
-    ({ result, output } = await caller.call(
+    ({ result, output } = await pc.call(
       request.type,
       request.directory,
       request.file,
