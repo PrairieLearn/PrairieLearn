@@ -162,12 +162,9 @@ module.exports = {
     // start() functions above
     async.series(
       [
-        function (callback) {
+        async function () {
           debug('after(): finish workers');
-          codeCaller.finish((err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await codeCaller.finish();
         },
         function (callback) {
           debug('after(): close load estimators');
