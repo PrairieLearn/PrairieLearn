@@ -85,8 +85,6 @@ describe('Course element extensions', function () {
     locals.baseUrl = locals.siteUrl + '/pl';
     locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1/instructor';
     locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/question';
-    locals.questionPreviewTabUrl = '/preview';
-    locals.questionSettingsTabUrl = '/settings';
     locals.questionsUrl = locals.courseInstanceBaseUrl + '/questions';
     locals.isStudentPage = false;
     const testQid = 'demo/custom/extension';
@@ -105,8 +103,7 @@ describe('Course element extensions', function () {
       locals.question = results.rows[0];
     });
     step('check the question page for extension css and js files', async () => {
-      let questionUrl =
-        locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
+      let questionUrl = locals.questionBaseUrl + '/' + locals.question.id + '/preview';
       const response = await helperClient.fetchCheerio(questionUrl);
       assert.isTrue(response.ok, 'could not fetch question page');
 
@@ -115,8 +112,7 @@ describe('Course element extensions', function () {
       assert.isTrue(html.includes(incCss), 'page did not load extension css');
     });
     step('check the question page for a client-side image', async () => {
-      let questionUrl =
-        locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
+      let questionUrl = locals.questionBaseUrl + '/' + locals.question.id + '/preview';
       const response = await helperClient.fetchCheerio(questionUrl);
       assert.isTrue(response.ok, 'could not fetch question page');
 
