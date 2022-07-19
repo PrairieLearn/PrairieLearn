@@ -36,7 +36,7 @@ describe('Course element extensions', function () {
     };
 
     it('should correctly load extensions from example course', async () => {
-      const extensions = await freeform.loadExtensions(extDir);
+      const extensions = await freeform.loadExtensions(extDir, extDir);
       check_ext(extensions);
     });
 
@@ -45,7 +45,7 @@ describe('Course element extensions', function () {
 
       await promisify(fs.mkdir)(dir);
       try {
-        const extensions = await freeform.loadExtensions(extDir);
+        const extensions = await freeform.loadExtensions(extDir, extDir);
         check_ext(extensions);
       } finally {
         await promisify(fs.rmdir)(dir);
@@ -57,7 +57,7 @@ describe('Course element extensions', function () {
 
       await promisify(fs.mkdir)(dir);
       try {
-        const extensions = await freeform.loadExtensions(extDir);
+        const extensions = await freeform.loadExtensions(extDir, extDir);
         check_ext(extensions);
       } finally {
         await promisify(fs.rmdir)(dir);
@@ -66,6 +66,7 @@ describe('Course element extensions', function () {
 
     it("shouldn't fail when there are no extensions to load", async () => {
       const extensions = await freeform.loadExtensions(
+        path.join(__dirname, '..', 'testCourse', 'elementExtensions'),
         path.join(__dirname, '..', 'testCourse', 'elementExtensions')
       );
       assert(
