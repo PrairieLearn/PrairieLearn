@@ -51,7 +51,8 @@ module.exports = {
   getInstanceQuestion(locals) {
     describe('GET to instance_question URL', function () {
       it('should load successfully', function (callback) {
-        var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + '/preview';
+        var questionUrl =
+          locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
         request(questionUrl, function (error, response, body) {
           if (error) {
             return callback(error);
@@ -240,7 +241,8 @@ module.exports = {
         } else {
           throw Error('bad question.type:' + locals.question.type);
         }
-        var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + '/preview';
+        var questionUrl =
+          locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
         locals.preEndTime = Date.now();
         request.post(
           { url: questionUrl, form: form, followAllRedirects: true },
@@ -325,7 +327,8 @@ module.exports = {
         } else {
           throw Error('bad question.type:' + locals.question.type);
         }
-        var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + '/preview';
+        var questionUrl =
+          locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
         request.post(
           { url: questionUrl, form: form, followAllRedirects: true },
           function (error, response, body) {
@@ -739,10 +742,9 @@ module.exports = {
             __action: 'test_once',
             __csrf_token: locals.__csrf_token,
           };
-          const questionTestUrl =
-            locals.questionBaseUrl + '/' + locals.question.id + '/settings/test';
+          var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + '/settings/test';
           request.post(
-            { url: questionTestUrl, form: form, followAllRedirects: true },
+            { url: questionUrl, form: form, followAllRedirects: true },
             function (error, response, body) {
               if (error) {
                 return callback(error);
