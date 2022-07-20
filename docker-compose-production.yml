@@ -15,3 +15,4 @@ services:
     environment:
       - HOST_JOBS_DIR=${HOME}/pl_ag_jobs
       - NODE_ENV=production
+      
