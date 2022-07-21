@@ -1291,10 +1291,10 @@ module.exports = {
               );
 
               courseIssues.push(...newCourseIssues);
-              htmls.questionHtml = html;
               panelCount++;
               if (cacheHit) cacheHitCount++;
               allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
+              return html;
             });
           },
           async () => {
