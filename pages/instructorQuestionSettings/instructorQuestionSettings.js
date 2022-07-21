@@ -23,6 +23,10 @@ const { idsEqual } = require('../../lib/id');
 const csrf = require('../../lib/csrf');
 
 router.post('/test', function (req, res, next) {
+  // We use a separate `test/` POST route so that we can always use the
+  // route to distinguish between pages that need to execute course code
+  // (this `test/` handler) and pages that need access to course content
+  // editing (here the plain '/' POST hander).
   if (req.body.__action === 'test_once') {
     if (!res.locals.authz_data.has_course_permission_view) {
       return next(error.make(403, 'Access denied (must be a course Viewer)'));
