@@ -13,8 +13,7 @@ const { instrumented } = require('@prairielearn/opentelemetry');
 const schemas = require('../schemas');
 const config = require('../lib/config');
 const logger = require('../lib/logger');
-const { FunctionMissingError } = require('../lib/code-caller-shared');
-const codeCallers = require('../lib/code-callers');
+const { withCodeCaller, FunctionMissingError } = require('../lib/code-caller');
 const jsonLoader = require('../lib/json-load');
 const cache = require('../lib/cache');
 const courseUtil = require('../lib/courseUtil');
@@ -333,7 +332,7 @@ module.exports = {
     return dataCopy;
   },
 
-  async elementFunction(pc, fcn, elementName, elementHtml, data, context) {
+  async elementFunction(codeCaller, fcn, elementName, elementHtml, data, context) {
     const resolvedElement = module.exports.resolveElement(elementName, context);
     const { controller, type: resolvedElementType, name: resolvedElementName } = resolvedElement;
     const dataCopy = module.exports.getElementClientFiles(data, elementName, context);
@@ -344,7 +343,7 @@ module.exports = {
     const directory = resolvedElementName;
 
     try {
-      return await pc.callAsync(type, directory, pythonFile, fcn, pythonArgs);
+      return await codeCaller.call(type, directory, pythonFile, fcn, pythonArgs);
     } catch (err) {
       if (err instanceof FunctionMissingError) {
         // function wasn't present in server
@@ -377,7 +376,7 @@ module.exports = {
     }
   },
 
-  async execPythonServer(pc, phase, data, html, context) {
+  async execPythonServer(codeCaller, phase, data, html, context) {
     const pythonFile = 'server';
     const pythonFunction = phase;
     const pythonArgs = [data];
@@ -394,10 +393,10 @@ module.exports = {
     }
 
     debug(
-      `execPythonServer(): pc.call(pythonFile=${pythonFile}, pythonFunction=${pythonFunction})`
+      `execPythonServer(): codeCaller.call(pythonFile=${pythonFile}, pythonFunction=${pythonFunction})`
     );
     try {
-      const { result, output } = await pc.callAsync(
+      const { result, output } = await codeCaller.call(
         type,
         directory,
         pythonFile,
@@ -534,7 +533,7 @@ module.exports = {
     return null;
   },
 
-  async traverseQuestionAndExecuteFunctions(phase, pc, data, context, html) {
+  async traverseQuestionAndExecuteFunctions(phase, codeCaller, data, context, html) {
     const origData = JSON.parse(JSON.stringify(data));
     const renderedElementNames = [];
     const courseIssues = [];
@@ -564,7 +563,7 @@ module.exports = {
         let ret_val, consoleLog;
         try {
           ({ result: ret_val, output: consoleLog } = await module.exports.elementFunction(
-            pc,
+            codeCaller,
             phase,
             elementName,
             serializedNode,
@@ -660,7 +659,7 @@ module.exports = {
     };
   },
 
-  async legacyTraverseQuestionAndExecuteFunctions(phase, pc, data, context, $) {
+  async legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data, context, $) {
     const origData = JSON.parse(JSON.stringify(data));
     const renderedElementNames = [];
     const courseIssues = [];
@@ -689,7 +688,7 @@ module.exports = {
           let result, output;
           try {
             ({ result, output } = await module.exports.elementFunction(
-              pc,
+              codeCaller,
               phase,
               elementName,
               elementHtml,
@@ -783,7 +782,7 @@ module.exports = {
     };
   },
 
-  async processQuestionHtml(phase, pc, data, context) {
+  async processQuestionHtml(phase, codeCaller, data, context) {
     const origData = JSON.parse(JSON.stringify(data));
 
     const checkErr = module.exports.checkData(data, origData, phase);
@@ -819,10 +818,10 @@ module.exports = {
     let args;
     if (useNewQuestionRenderer) {
       processFunction = module.exports.traverseQuestionAndExecuteFunctions;
-      args = [phase, pc, data, context, html];
+      args = [phase, codeCaller, data, context, html];
     } else {
       processFunction = module.exports.legacyTraverseQuestionAndExecuteFunctions;
-      args = [phase, pc, data, context, $];
+      args = [phase, codeCaller, data, context, $];
     }
 
     const {
@@ -867,7 +866,7 @@ module.exports = {
     };
   },
 
-  async processQuestionServer(phase, pc, data, html, fileData, context) {
+  async processQuestionServer(phase, codeCaller, data, html, fileData, context) {
     const courseIssues = [];
     const origData = JSON.parse(JSON.stringify(data));
 
@@ -883,7 +882,13 @@ module.exports = {
 
     let result, output;
     try {
-      ({ result, output } = await module.exports.execPythonServer(pc, phase, data, html, context));
+      ({ result, output } = await module.exports.execPythonServer(
+        codeCaller,
+        phase,
+        data,
+        html,
+        context
+      ));
     } catch (err) {
       const serverFile = path.join(context.question_dir, 'server.py');
       courseIssues.push(
@@ -947,9 +952,16 @@ module.exports = {
     return { courseIssues, data, html, fileData };
   },
 
-  async processQuestion(phase, pc, data, context) {
+  async processQuestion(phase, codeCaller, data, context) {
     if (phase === 'generate') {
-      return module.exports.processQuestionServer(phase, pc, data, '', Buffer.from(''), context);
+      return module.exports.processQuestionServer(
+        phase,
+        codeCaller,
+        data,
+        '',
+        Buffer.from(''),
+        context
+      );
     } else {
       const {
         courseIssues,
@@ -957,7 +969,7 @@ module.exports = {
         html,
         fileData,
         renderedElementNames,
-      } = await module.exports.processQuestionHtml(phase, pc, data, context);
+      } = await module.exports.processQuestionHtml(phase, codeCaller, data, context);
       const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
       if (hasFatalError) {
         return {
@@ -973,7 +985,14 @@ module.exports = {
         data: serverData,
         html: serverHtml,
         fileData: serverFileData,
-      } = await module.exports.processQuestionServer(phase, pc, htmlData, html, fileData, context);
+      } = await module.exports.processQuestionServer(
+        phase,
+        codeCaller,
+        htmlData,
+        html,
+        fileData,
+        context
+      );
       courseIssues.push(...serverCourseIssues);
       return {
         courseIssues,
@@ -1010,10 +1029,10 @@ module.exports = {
     };
     _.extend(data.options, module.exports.getContextOptions(context));
 
-    return await codeCallers.withPythonCaller(context.course_dir_host, async (pc) => {
+    return await withCodeCaller(context.course_dir_host, async (codeCaller) => {
       const { courseIssues, data: resultData } = await module.exports.processQuestion(
         'generate',
-        pc,
+        codeCaller,
         data,
         context
       );
@@ -1050,10 +1069,10 @@ module.exports = {
     };
     _.extend(data.options, module.exports.getContextOptions(context));
 
-    return await codeCallers.withPythonCaller(context.course_dir_host, async (pc) => {
+    return await withCodeCaller(context.course_dir_host, async (codeCaller) => {
       const { courseIssues, data: resultData } = await module.exports.processQuestion(
         'prepare',
-        pc,
+        codeCaller,
         data,
         context
       );
@@ -1088,7 +1107,7 @@ module.exports = {
 
   /**
    * @param {'question' | 'answer' | 'submission'} panel
-   * @param {import('../lib/code-callers').CodeCaller} pc
+   * @param {import('../lib/code-caller').CodeCaller} codeCaller
    * @param {any} variant
    * @param {any} submission
    * @param {any} course
@@ -1096,7 +1115,7 @@ module.exports = {
    * @param {any} context
    * @returns {Promise<RenderPanelResult>}
    */
-  async renderPanel(panel, pc, variant, submission, course, locals, context) {
+  async renderPanel(panel, codeCaller, variant, submission, course, locals, context) {
     debug(`renderPanel(${panel})`);
     // broken variant kills all rendering
     if (variant.broken) {
@@ -1153,7 +1172,7 @@ module.exports = {
       async () => {
         const { courseIssues, html, renderedElementNames } = await module.exports.processQuestion(
           'render',
-          pc,
+          codeCaller,
           data,
           context
         );
@@ -1167,7 +1186,16 @@ module.exports = {
     };
   },
 
-  async renderPanelInstrumented(panel, pc, submission, variant, question, course, locals, context) {
+  async renderPanelInstrumented(
+    panel,
+    codeCaller,
+    submission,
+    variant,
+    question,
+    course,
+    locals,
+    context
+  ) {
     return instrumented(`freeform.renderPanel:${panel}`, async (span) => {
       span.setAttributes({
         panel,
@@ -1178,7 +1206,7 @@ module.exports = {
       /** @type {RenderPanelResult} */
       const result = await module.exports.renderPanel(
         panel,
-        pc,
+        codeCaller,
         variant,
         submission,
         course,
@@ -1214,7 +1242,7 @@ module.exports = {
         cacheHitCount = 0;
       const context = await module.exports.getContext(question, course);
 
-      return codeCallers.withPythonCaller(context.course_dir_host, async (pc) => {
+      return withCodeCaller(context.course_dir_host, async (codeCaller) => {
         await async.series([
           // FIXME: support 'header'
           async () => {
@@ -1227,7 +1255,7 @@ module.exports = {
               cacheHit,
             } = await module.exports.renderPanelInstrumented(
               'question',
-              pc,
+              codeCaller,
               submission,
               variant,
               question,
@@ -1253,7 +1281,7 @@ module.exports = {
                 cacheHit,
               } = await module.exports.renderPanelInstrumented(
                 'submission',
-                pc,
+                codeCaller,
                 submission,
                 variant,
                 question,
@@ -1279,7 +1307,7 @@ module.exports = {
               cacheHit,
             } = await module.exports.renderPanelInstrumented(
               'answer',
-              pc,
+              codeCaller,
               submission,
               variant,
               question,
@@ -1581,10 +1609,10 @@ module.exports = {
         context,
         async () => {
           // function to compute the file data and return the cachedData
-          return codeCallers.withPythonCaller(context.course_dir_host, async (pc) => {
+          return withCodeCaller(context.course_dir_host, async (codeCaller) => {
             const { courseIssues, fileData } = await module.exports.processQuestion(
               'file',
-              pc,
+              codeCaller,
               data,
               context
             );
@@ -1630,10 +1658,10 @@ module.exports = {
         gradable: _.get(submission, 'gradable', true),
       };
       _.extend(data.options, module.exports.getContextOptions(context));
-      return codeCallers.withPythonCaller(context.course_dir_host, async (pc) => {
+      return withCodeCaller(context.course_dir_host, async (codeCaller) => {
         const { courseIssues, data: resultData } = await module.exports.processQuestion(
           'parse',
-          pc,
+          codeCaller,
           data,
           context
         );
@@ -1685,10 +1713,10 @@ module.exports = {
         gradable: submission.gradable,
       };
       _.extend(data.options, module.exports.getContextOptions(context));
-      return codeCallers.withPythonCaller(context.course_dir_host, async (pc) => {
+      return withCodeCaller(context.course_dir_host, async (codeCaller) => {
         const { courseIssues, data: resultData } = await module.exports.processQuestion(
           'grade',
-          pc,
+          codeCaller,
           data,
           context
         );
@@ -1742,10 +1770,10 @@ module.exports = {
         test_type: test_type,
       };
       _.extend(data.options, module.exports.getContextOptions(context));
-      return codeCallers.withPythonCaller(context.course_dir_host, async (pc) => {
+      return withCodeCaller(context.course_dir_host, async (codeCaller) => {
         const { courseIssues, data: resultData } = await module.exports.processQuestion(
           'test',
-          pc,
+          codeCaller,
           data,
           context
         );

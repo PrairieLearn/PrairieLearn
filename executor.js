@@ -1,11 +1,11 @@
 // @ts-check
 const readline = require('readline');
-const { PythonCaller } = require('./lib/code-caller-python');
-const { FunctionMissingError } = require('./lib/code-caller-shared');
+const { FunctionMissingError } = require('./lib/code-caller');
+const { CodeCallerNative } = require('./lib/code-caller/code-caller-native');
 
 /**
  * @typedef {Object} Request
- * @property {import('./lib/code-caller-python').CallType} type
+ * @property {import('./lib/code-caller/code-caller-native').CallType} type
  * @property {string} directory
  * @property {string} file
  * @property {string} fcn
@@ -15,7 +15,7 @@ const { FunctionMissingError } = require('./lib/code-caller-shared');
 /**
  * @typedef {Object} Results
  * @property {string} [error]
- * @property {import('./lib/code-caller-python').ErrorData} [errorData]
+ * @property {import('./lib/code-caller/code-caller-native').ErrorData} [errorData]
  * @property {any} [data]
  * @property {string} [output]
  * @property {boolean} [functionMissing]
@@ -30,10 +30,10 @@ const { FunctionMissingError } = require('./lib/code-caller-shared');
  * be indicated by the `error` property on the result.
  *
  * @param {string} line
- * @param {PythonCaller} caller
+ * @param {CodeCallerNative} codeCaller
  * @returns {Promise<Results>}
  */
-async function handleInput(line, caller) {
+async function handleInput(line, codeCaller) {
   /** @type {Request} */
   let request;
   try {
@@ -52,7 +52,7 @@ async function handleInput(line, caller) {
     let success;
 
     try {
-      success = await caller.restartAsync();
+      success = await codeCaller.restart();
     } catch (err) {
       restartErr = err;
     }
@@ -65,7 +65,7 @@ async function handleInput(line, caller) {
 
   // Course will always be at `/course` in the Docker executor
   try {
-    await caller.prepareForCourse('/course');
+    await codeCaller.prepareForCourse('/course');
   } catch (err) {
     // We should never actually hit this case - but if we do, handle it so
     // that all our bases are covered.
@@ -74,7 +74,7 @@ async function handleInput(line, caller) {
 
   let result, output, callErr;
   try {
-    ({ result, output } = await caller.callAsync(
+    ({ result, output } = await codeCaller.call(
       request.type,
       request.directory,
       request.file,
@@ -111,12 +111,12 @@ if (Number.isNaN(questionTimeoutMilliseconds)) {
   questionTimeoutMilliseconds = 10000;
 }
 
-let pc = new PythonCaller({
+let codeCaller = new CodeCallerNative({
   dropPrivileges: true,
   questionTimeoutMilliseconds,
   errorLogger: console.error,
 });
-pc.ensureChild();
+codeCaller.ensureChild();
 
 // Safety check: if we receive more input while handling another request,
 // discard it.
@@ -128,13 +128,13 @@ rl.on('line', (line) => {
   }
 
   processingRequest = true;
-  handleInput(line, pc)
+  handleInput(line, codeCaller)
     .then((results) => {
       const { needsFullRestart, ...rest } = results;
       if (needsFullRestart) {
-        pc.done();
-        pc = new PythonCaller();
-        pc.ensureChild();
+        codeCaller.done();
+        codeCaller = new CodeCallerNative();
+        codeCaller.ensureChild();
       }
       console.log(JSON.stringify(rest));
       processingRequest = false;
