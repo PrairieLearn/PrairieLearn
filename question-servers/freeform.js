@@ -1294,7 +1294,7 @@ module.exports = {
             if (cacheHit) cacheHitCount++;
             allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
           },
-          () => {
+          async () => {
             // The logPageView middleware knows to write this to the DB
             // when we log the page view - sorry for mutable object hell
             locals.panel_render_count = panelCount;
