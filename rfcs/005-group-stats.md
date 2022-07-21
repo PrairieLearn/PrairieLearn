@@ -53,21 +53,26 @@ As group assessments are now a familiar feature of PrairieLearn, is important th
 As PrairieLearn stands right now, instructors can either pre-assign groups, where a student can get credit without joining, or instructors can allow students to create and join their own groups, which give the ability to join any group or depending on configuration, create a group of one. Providing group insights can help inform instructors quickly of group performances.
 
 ## Goals: 
-* Deliver Group Statistics so instructors have a high-level idea of groups' performances; quickly identify potentially struggling groups, signs of potential free-loading or domination
+* Deliver Group Insights so instructors have a high-level idea of groups' performances; quickly identify potentially struggling groups, signs of potential free-loading or domination
 * Allow filters and parameters to serve a variety of instructor needs
 
 # Proposed Solution
-Adding a Group Statistics tab (`pages/instructorGroupStatistics`) to the Course Instance-level where PrairieLearn will provide insights on group performances across group submissions. 
+Adding a Group Insights tab (`pages/instructorGroupInsights`) to the Course Instance-level where PrairieLearn will provide insights on group performances across group submissions. 
 
-**Input:** CSV of desired group assignments to compare against. 
-Also add a button to compute/recompute statistics when needed. 
+**[Optional] Input:** CSV of desired group assignments to compare against for group participation. (Instances where instructors are not using pre-defined groups as enforced through PrairieLearn)
+
+Also add a button to compute/recompute insights when needed. 
 
 **Output:** Tables and other visualizations of group performances and student performances with respect to a group; downloadable information.
 
 ## Implementation details: 
 
 ### Group Participation: 
-* The following is an adapted Python snippet/pseudocode for clarity/brevity from related code calculating attendance for a PrairieLearn course and has not been optimized for efficiency. 
+
+
+* The following is an adapted Python snippet/pseudocode for clarity/brevity from related code calculating attendance for a PrairieLearn course and has not been optimized for efficiency.
+
+* **Input:** CSV of desired group assignments to compare against. 
 
 ```
 groups = [(groupId, [groupMembers])] #read from CSV
@@ -94,7 +99,7 @@ These can be counted from submission logs.
 
 
 # Drawbacks
-* Statistics may not be the desired statistics for some instructors, forcing instructors to still develop their own scripts to extract desired information out of data.
+* Information provided may not be the desired information for some instructors, forcing instructors to still develop their own scripts to extract desired information out of data.
 
 
 # Alternatives
