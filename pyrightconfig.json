@@ -1,4 +1,4 @@
 {
     "include": ["./elements/pl-order-blocks"],
-    "extraPaths": ["./question-servers/freeformPythonLib"]
+    "extraPaths": ["./python"]
 }
