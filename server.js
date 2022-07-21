@@ -1882,7 +1882,7 @@ if (config.startServer) {
         load.initEstimator('python_callback_waiting', 1);
         callback(null);
       },
-      async function () {
+      async () => {
         await codeCaller.init();
       },
       async () => {
