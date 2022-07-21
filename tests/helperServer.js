@@ -18,7 +18,7 @@ const syncFromDisk = require('../sync/syncFromDisk');
 const freeformServer = require('../question-servers/freeform');
 const cache = require('../lib/cache');
 const localCache = require('../lib/local-cache');
-const workers = require('../lib/workers');
+const codeCallers = require('../lib/code-callers');
 const externalGrader = require('../lib/externalGrader');
 const externalGradingSocket = require('../lib/externalGradingSocket');
 
@@ -101,8 +101,8 @@ module.exports = {
             callback(null);
           },
           function (callback) {
-            debug('before(): initialize workers');
-            workers.init();
+            debug('before(): initialize code callers');
+            codeCallers.init();
             callback(null);
           },
           async () => {
@@ -165,14 +165,10 @@ module.exports = {
       [
         function (callback) {
           debug('after(): finish workers');
-          workers.finish((err) => {
+          codeCallers.finish((err) => {
             if (ERR(err, callback)) return;
             callback(null);
           });
-        },
-        async () => {
-          debug('after(): close freeform server');
-          await freeformServer.close();
         },
         function (callback) {
           debug('after(): close load estimators');

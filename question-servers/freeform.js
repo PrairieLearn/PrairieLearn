@@ -13,8 +13,8 @@ const { instrumented } = require('@prairielearn/opentelemetry');
 const schemas = require('../schemas');
 const config = require('../lib/config');
 const logger = require('../lib/logger');
-const codeCaller = require('../lib/code-caller');
-const workers = require('../lib/workers');
+const { FunctionMissingError } = require('../lib/code-caller-shared');
+const codeCallers = require('../lib/code-callers');
 const jsonLoader = require('../lib/json-load');
 const cache = require('../lib/cache');
 const courseUtil = require('../lib/courseUtil');
@@ -84,10 +84,6 @@ module.exports = {
       path.join(__dirname, '..', 'elements'),
       'core'
     );
-  },
-
-  async close() {
-    await codeCaller.waitForFinish();
   },
 
   /**
@@ -191,9 +187,11 @@ module.exports = {
    * Takes a directory containing an extension directory and returns a new
    * object mapping element names to each extension, which itself an object
    * that contains relevant extension scripts and styles.
-   * @param  {String}   sourceDir Absolute path to the directory of extensions
+   *
+   * @param {string} sourceDir Absolute path to the directory of extensions
+   * @param {string} runtimeDir The path that the worker will load extensions from
    */
-  async loadExtensions(sourceDir) {
+  async loadExtensions(sourceDir, runtimeDir) {
     // Load each root element extension folder
     let elementFolders;
     try {
@@ -207,7 +205,8 @@ module.exports = {
       throw err;
     }
 
-    // Get extensions from each element folder.  Each is stored as [ 'element name', 'extension name' ]
+    // Get extensions from each element folder.  Each is stored as
+    // `['element name', 'extension name']`
     const elementArrays = (
       await async.map(elementFolders, async (element) => {
         const extensions = await fs.readdir(path.join(sourceDir, element));
@@ -247,14 +246,15 @@ module.exports = {
 
       await jsonLoader.validateJSONAsync(info, schemas.infoElementExtension);
       info.name = extensionDir;
-      info.directory = path.join(sourceDir, element, extensionDir);
+      info.directory = path.join(runtimeDir, element, extensionDir);
       elements[element][extensionDir] = info;
     });
 
     return elements;
   },
 
-  async loadExtensionsForCourse(course) {
+  async loadExtensionsForCourse(context) {
+    const { course, course_dir, course_dir_host } = context;
     if (
       courseExtensionsCache[course.id] !== undefined &&
       courseExtensionsCache[course.id].commit_hash &&
@@ -263,9 +263,9 @@ module.exports = {
       return courseExtensionsCache[course.id].data;
     }
 
-    const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-    let extensions = await module.exports.loadExtensions(
-      path.join(coursePath, 'elementExtensions')
+    const extensions = await module.exports.loadExtensions(
+      path.join(course_dir_host, 'elementExtensions'),
+      path.join(course_dir, 'elementExtensions')
     );
     courseExtensionsCache[course.id] = {
       commit_hash: course.commit_hash,
@@ -335,25 +335,18 @@ module.exports = {
 
   async elementFunction(pc, fcn, elementName, elementHtml, data, context) {
     const resolvedElement = module.exports.resolveElement(elementName, context);
-    const cwd = resolvedElement.directory;
-    const controller = resolvedElement.controller;
+    const { controller, type: resolvedElementType, name: resolvedElementName } = resolvedElement;
     const dataCopy = module.exports.getElementClientFiles(data, elementName, context);
 
     const pythonArgs = [elementHtml, dataCopy];
     const pythonFile = controller.replace(/\.[pP][yY]$/, '');
-    const paths = [path.join(__dirname, 'freeformPythonLib')];
-    if (resolvedElement.type === 'course') {
-      paths.push(path.join(context.course_dir, 'serverFilesCourse'));
-    }
-    const opts = {
-      cwd,
-      paths,
-    };
+    const type = `${resolvedElementType}-element`;
+    const directory = resolvedElementName;
 
     try {
-      return await pc.callAsync(pythonFile, fcn, pythonArgs, opts);
+      return await pc.callAsync(type, directory, pythonFile, fcn, pythonArgs);
     } catch (err) {
-      if (err instanceof codeCaller.FunctionMissingError) {
+      if (err instanceof FunctionMissingError) {
         // function wasn't present in server
         return {
           result: module.exports.defaultElementFunctionRet(fcn, dataCopy),
@@ -389,14 +382,10 @@ module.exports = {
     const pythonFunction = phase;
     const pythonArgs = [data];
     if (phase === 'render') pythonArgs.push(html);
-    const opts = {
-      cwd: context.question_dir,
-      paths: [
-        path.join(__dirname, 'freeformPythonLib'),
-        path.join(context.course_dir, 'serverFilesCourse'),
-      ],
-    };
-    const fullFilename = path.join(context.question_dir, 'server.py');
+    const fullFilename = path.join(context.question_dir_host, 'server.py');
+    const type = 'question';
+    const directory = context.question.directory;
+
     try {
       await fs.access(fullFilename, fs.constants.R_OK);
     } catch (err) {
@@ -408,11 +397,17 @@ module.exports = {
       `execPythonServer(): pc.call(pythonFile=${pythonFile}, pythonFunction=${pythonFunction})`
     );
     try {
-      const { result, output } = await pc.callAsync(pythonFile, pythonFunction, pythonArgs, opts);
+      const { result, output } = await pc.callAsync(
+        type,
+        directory,
+        pythonFile,
+        pythonFunction,
+        pythonArgs
+      );
       debug(`execPythonServer(): completed`);
       return { result, output };
     } catch (err) {
-      if (err instanceof codeCaller.FunctionMissingError) {
+      if (err instanceof FunctionMissingError) {
         // function wasn't present in server
         debug(`execPythonServer(): function not present`);
         return {
@@ -804,7 +799,7 @@ module.exports = {
       };
     }
 
-    const htmlFilename = path.join(context.question_dir, 'question.html');
+    const htmlFilename = path.join(context.question_dir_host, 'question.html');
     let html, $;
     try {
       ({ html, $ } = await module.exports.execTemplate(htmlFilename, data));
@@ -1015,7 +1010,7 @@ module.exports = {
     };
     _.extend(data.options, module.exports.getContextOptions(context));
 
-    return await workers.withPythonCaller(async (pc) => {
+    return await codeCallers.withPythonCaller(context.course_dir_host, async (pc) => {
       const { courseIssues, data: resultData } = await module.exports.processQuestion(
         'generate',
         pc,
@@ -1055,7 +1050,7 @@ module.exports = {
     };
     _.extend(data.options, module.exports.getContextOptions(context));
 
-    return await workers.withPythonCaller(async (pc) => {
+    return await codeCallers.withPythonCaller(context.course_dir_host, async (pc) => {
       const { courseIssues, data: resultData } = await module.exports.processQuestion(
         'prepare',
         pc,
@@ -1093,7 +1088,7 @@ module.exports = {
 
   /**
    * @param {'question' | 'answer' | 'submission'} panel
-   * @param {import('../lib/code-caller').PythonCaller} pc
+   * @param {import('../lib/code-callers').CodeCaller} pc
    * @param {any} variant
    * @param {any} submission
    * @param {any} course
@@ -1218,7 +1213,7 @@ module.exports = {
       cacheHitCount = 0;
     const context = await module.exports.getContext(question, course);
 
-    return workers.withPythonCaller(async (pc) => {
+    return codeCallers.withPythonCaller(context.course_dir_host, async (pc) => {
       await async.series([
         // FIXME: support 'header'
         async () => {
@@ -1298,7 +1293,7 @@ module.exports = {
           if (cacheHit) cacheHitCount++;
           allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
         },
-        (callback) => {
+        async () => {
           // The logPageView middleware knows to write this to the DB
           // when we log the page view - sorry for mutable object hell
           locals.panel_render_count = panelCount;
@@ -1517,7 +1512,6 @@ module.exports = {
             ...scriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
           ];
           htmls.extraHeadersHtml = headerHtmls.join('\n');
-          callback(null);
         },
       ]);
 
@@ -1577,7 +1571,7 @@ module.exports = {
       context,
       async () => {
         // function to compute the file data and return the cachedData
-        return workers.withPythonCaller(async (pc) => {
+        return codeCallers.withPythonCaller(context.course_dir_host, async (pc) => {
           const { courseIssues, fileData } = await module.exports.processQuestion(
             'file',
             pc,
@@ -1624,7 +1618,7 @@ module.exports = {
       gradable: _.get(submission, 'gradable', true),
     };
     _.extend(data.options, module.exports.getContextOptions(context));
-    return workers.withPythonCaller(async (pc) => {
+    return codeCallers.withPythonCaller(context.course_dir_host, async (pc) => {
       const { courseIssues, data: resultData } = await module.exports.processQuestion(
         'parse',
         pc,
@@ -1677,7 +1671,7 @@ module.exports = {
       gradable: submission.gradable,
     };
     _.extend(data.options, module.exports.getContextOptions(context));
-    return workers.withPythonCaller(async (pc) => {
+    return codeCallers.withPythonCaller(context.course_dir_host, async (pc) => {
       const { courseIssues, data: resultData } = await module.exports.processQuestion(
         'grade',
         pc,
@@ -1732,7 +1726,7 @@ module.exports = {
       test_type: test_type,
     };
     _.extend(data.options, module.exports.getContextOptions(context));
-    return workers.withPythonCaller(async (pc) => {
+    return codeCallers.withPythonCaller(context.course_dir_host, async (pc) => {
       const { courseIssues, data: resultData } = await module.exports.processQuestion(
         'test',
         pc,
@@ -1789,17 +1783,25 @@ module.exports = {
     ];
     await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
 
+    // The `*Host` values here refer to the paths relative to PrairieLearn;
+    // the other values refer to the paths as they will be seen by the worker
+    // that actually executes the question.
+    const courseDirectory = config.workersExecutionMode === 'native' ? coursePath : '/course';
+    const courseDirectoryHost = coursePath;
+    const questionDirectory = path.join(courseDirectory, 'questions', question.directory);
+    const questionDirectoryHost = path.join(coursePath, 'questions', question.directory);
     const context = {
       question,
       course,
-      course_dir: coursePath,
-      question_dir: path.join(coursePath, 'questions', question.directory),
-      course_elements_dir: path.join(coursePath, 'elements'),
+      course_dir: courseDirectory,
+      course_dir_host: courseDirectoryHost,
+      question_dir: questionDirectory,
+      question_dir_host: questionDirectoryHost,
     };
 
     // Load elements and any extensions
     const elements = await module.exports.loadElementsForCourse(course);
-    const extensions = await module.exports.loadExtensionsForCourse(course);
+    const extensions = await module.exports.loadExtensionsForCourse(context);
 
     context.course_elements = elements;
     context.course_element_extensions = extensions;
@@ -1877,7 +1879,7 @@ module.exports = {
           cacheHit: true,
         };
       } else {
-        doCompute(cacheKey);
+        return doCompute(cacheKey);
       }
     };
 
