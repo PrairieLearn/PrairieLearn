@@ -6,7 +6,7 @@ An instructor with appropriate access uploads a reference (i.e. desired) groups 
 
 * An instructor will want to consider appropriate tags to use for tagging assignments to better help filter sets of assessments they want displayed. 
 
-* Checkboxes to toggle display will also be available.
+* Checkboxes to toggle the display of individual assessments will also be available.
 
 *Group Participation* 
 
