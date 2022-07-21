@@ -10,6 +10,8 @@ start-nodemon: start-support
 	@yarn nodemon -L server.js
 start-workspace-host: start-support kill-running-workspaces
 	@node workspace_host/interface.js
+start-executor:
+	@node executor.js
 
 kill-running-workspaces:
 	@docker/kill_running_workspaces.sh
