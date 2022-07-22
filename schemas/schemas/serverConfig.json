@@ -124,10 +124,6 @@
             "description": "The ARN of the role that should be provided to external grading containers for resource access.",
             "type": "string"
         },
-        "externalGradingWebhookUrl": {
-            "description": "The endpoint that should be hit when a grading result is updated. Should be null when running locally.",
-            "type": "string"
-        },
         "cacheImageRegistry": {
             "description": "The ECR registry name to use. Like 'aws_account_id.dkr.ecr.region.amazonaws.com'. Should be null when running locally.",
             "type": "string"

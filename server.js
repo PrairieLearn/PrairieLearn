@@ -1587,7 +1587,6 @@ module.exports.initExpress = function () {
   app.get('/pl/webhooks/ping', function (req, res, _next) {
     res.send('.');
   });
-  app.use('/pl/webhooks/grading', require('./webhooks/grading/grading'));
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
