@@ -7,7 +7,6 @@ services:
     ports:
       - 3000:3000
     volumes:
-      - ./elements:/PrairieLearn/elements
       - /var/run/docker.sock:/var/run/docker.sock
       - ${HOME}/pl_ag_jobs:/jobs
       
