@@ -44,8 +44,7 @@ const serverJobs = require('./lib/server-jobs');
 const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
 const { LocalCache } = require('./lib/local-cache');
-const codeCallers = require('./lib/code-callers');
-const codeCallerDocker = require('./lib/code-caller-docker');
+const codeCaller = require('./lib/code-caller');
 const assets = require('./lib/assets');
 const namedLocks = require('./lib/named-locks');
 const nodeMetrics = require('./lib/node-metrics');
@@ -1884,13 +1883,7 @@ if (config.startServer) {
         callback(null);
       },
       async () => {
-        if (config.workersExecutionMode === 'container') {
-          await codeCallerDocker.init();
-        }
-      },
-      function (callback) {
-        codeCallers.init();
-        callback(null);
+        await codeCaller.init();
       },
       async () => {
         logger.verbose('Starting server...');
