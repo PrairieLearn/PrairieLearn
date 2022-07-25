@@ -133,11 +133,11 @@ incorrect answers and displays them in a random order as radio buttons.
 Inside the `pl-multiple-choice` element, each choice must be specified with
 a `pl-answer` that has attributes:
 
-| Attribute             | Type    | Default | Description                                                                                                                                    |
-| --------------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `correct`             | boolean | false   | Is this a correct answer to the question?                                                                                                      |
-| `feedback`            | string  | —       | Helper text (HTML) to be displayed to the student next to the option after question is graded if this option has been selected by the student. |
-| `score`               | float   | -       | Score given to answer choice if selected by student. Defaults to 1.0 for correct answers and 0.0 for incorrect answers. |
+| Attribute  | Type    | Default | Description                                                                                                                                    |
+| ---------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `correct`  | boolean | false   | Is this a correct answer to the question?                                                                                                      |
+| `feedback` | string  | —       | Helper text (HTML) to be displayed to the student next to the option after question is graded if this option has been selected by the student. |
+| `score`    | float   | -       | Score given to answer choice if selected by student. Defaults to 1.0 for correct answers and 0.0 for incorrect answers.                        |
 
 #### Example implementations
 
