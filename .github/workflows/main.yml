@@ -10,6 +10,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      DOCKERHUB_USERNAME_SECRET: ${{ secrets.DOCKERHUB_USERNAME }}
+
     steps:
     - uses: actions/checkout@v3
       with:
@@ -75,10 +78,18 @@ jobs:
       run: yarn install --frozen-lockfile
     - name: Build executor image
       run: ./tools/executor/build.js
+
+    # The following steps won't run correctly for forks since the Dockerhub
+    # credentials secrets will be missing. We only run them if the secrets are
+    # provided. Note that we can't use `secrets.*` directly in an `if` conditional
+    # here, so we copy them to an environment variable at the start of the job
+    # and then check that here.
     - name: Login to DockerHub
       uses: docker/login-action@v1 
+      if: ${{ env.DOCKERHUB_USERNAME_SECRET != '' }}
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
     - name: Push executor image to Docker registry 
+      if: ${{ env.DOCKERHUB_USERNAME_SECRET != '' }}
       run: ./tools/executor/release.js
