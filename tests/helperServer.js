@@ -18,7 +18,7 @@ const syncFromDisk = require('../sync/syncFromDisk');
 const freeformServer = require('../question-servers/freeform');
 const cache = require('../lib/cache');
 const localCache = require('../lib/local-cache');
-const workers = require('../lib/workers');
+const codeCaller = require('../lib/code-caller');
 const externalGrader = require('../lib/externalGrader');
 const externalGradingSocket = require('../lib/externalGradingSocket');
 
@@ -100,10 +100,9 @@ module.exports = {
             load.initEstimator('python', 1);
             callback(null);
           },
-          function (callback) {
-            debug('before(): initialize workers');
-            workers.init();
-            callback(null);
+          async function () {
+            debug('before(): initialize code callers');
+            await codeCaller.init();
           },
           async () => {
             debug('before(): start server');
@@ -130,12 +129,9 @@ module.exports = {
               callback(null);
             });
           },
-          function (callback) {
+          async function () {
             debug('before(): initialize freeform server');
-            freeformServer.init(function (err) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
+            await freeformServer.init();
           },
           function (callback) {
             externalGrader.init(function (err) {
@@ -166,19 +162,9 @@ module.exports = {
     // start() functions above
     async.series(
       [
-        function (callback) {
+        async function () {
           debug('after(): finish workers');
-          workers.finish((err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
-        },
-        function (callback) {
-          debug('after(): close freeform server');
-          freeformServer.close(function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await codeCaller.finish();
         },
         function (callback) {
           debug('after(): close load estimators');

@@ -3,7 +3,6 @@
 const opentelemetry = require('@prairielearn/opentelemetry');
 
 const ERR = require('async-stacktrace');
-const util = require('util');
 const fs = require('fs');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -45,9 +44,10 @@ const serverJobs = require('./lib/server-jobs');
 const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
 const { LocalCache } = require('./lib/local-cache');
-const workers = require('./lib/workers');
+const codeCaller = require('./lib/code-caller');
 const assets = require('./lib/assets');
 const namedLocks = require('./lib/named-locks');
+const nodeMetrics = require('./lib/node-metrics');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -1882,9 +1882,8 @@ if (config.startServer) {
         load.initEstimator('python_callback_waiting', 1);
         callback(null);
       },
-      function (callback) {
-        workers.init();
-        callback(null);
+      async () => {
+        await codeCaller.init();
       },
       async () => {
         logger.verbose('Starting server...');
@@ -1909,12 +1908,7 @@ if (config.startServer) {
           callback(null);
         });
       },
-      function (callback) {
-        util.callbackify(workspace.init)((err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => workspace.init(),
       function (callback) {
         serverJobs.init(function (err) {
           if (ERR(err, callback)) return;
@@ -1922,10 +1916,11 @@ if (config.startServer) {
         });
       },
       function (callback) {
-        freeformServer.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+        nodeMetrics.init();
+        callback(null);
+      },
+      async () => {
+        await freeformServer.init();
       },
     ],
     function (err, data) {

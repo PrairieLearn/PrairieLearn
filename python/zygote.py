@@ -20,6 +20,18 @@ from inspect import signature
 
 saved_path = copy.copy(sys.path)
 
+drop_privileges = os.environ.get("DROP_PRIVILEGES", False)
+
+# If we're configured to drop privileges, matplotlib won't be able to write to
+# its default config/cache dir. To keep it fast, we'll create a cache dir for
+# it and provide it with config via the `MPLCONFIGDIR` environment variable.
+if drop_privileges:
+    config_dir_path = '/tmp/matplotlib'
+    oldmask = os.umask(000)
+    os.mkdir(config_dir_path, mode=0o777)
+    os.umask(oldmask)
+    os.environ['MPLCONFIGDIR'] = config_dir_path
+
 # pre-loading imports
 sys.path.insert(0, os.path.abspath('../question-servers/freeformPythonLib'))
 import prairielearn, lxml.html, html, numpy, random, math, chevron, matplotlib
@@ -57,11 +69,11 @@ def worker_loop():
             inp = json.loads(json_inp)
 
             # get the contents of the JSON input
-            file = inp['file']
-            fcn = inp['fcn']
-            args = inp['args']
-            cwd = inp['cwd']
-            paths = inp['paths']
+            file = inp.get('file', None)
+            fcn = inp.get('fcn', None)
+            args = inp.get('args', None)
+            cwd = inp.get('cwd', None)
+            paths = inp.get('paths', None)
 
             # "restart" is a special fake function name that causes
             # the forked worker to exit, returning control to the
@@ -71,6 +83,7 @@ def worker_loop():
                 outf.write(json_outp)
                 outf.write("\n");
                 outf.flush()
+
                 # `sys.exit()` allows the process to gracefully shut down. however, that
                 # makes things much slower than necessary, because we can't reuse this
                 # worker until control returns to the parent, and one or more things we
@@ -176,22 +189,62 @@ def terminate_worker(signum, stack):
 signal.signal(signal.SIGTERM, terminate_worker)
 signal.signal(signal.SIGINT, terminate_worker) # Ctrl-C case
 
-while True:
-    worker_pid = os.fork()
-    if worker_pid == 0:
-        worker_loop()
-        break
-    else:
-        pid,status = os.waitpid(worker_pid, 0)
-        worker_pid = 0
-        if os.WIFEXITED(status):
-            if os.WEXITSTATUS(status) == 0:
-                # everything is ok, the worker exited gracefully,
-                # just repeat
-                pass
-            else:
-                # the worker did not exit gracefully
-                raise Exception('worker process exited unexpectedly with status %d' % status)
+with open(4, 'w', encoding='utf-8') as exitf:
+    while True:
+        worker_pid = os.fork()
+        if worker_pid == 0:
+            # Ensure that no code running in the worker can interact with
+            # file descriptor 4
+            exitf.close()
+
+            # If configured to do so, drop to a deprivileged user before running
+            # any user code. This should generally only be enabled when running
+            # in Docker, as the `prairielearn/executor` image will be guaranteed
+            # to have the user that we drop to.
+            if drop_privileges:
+                import pwd
+                user = pwd.getpwnam("executor")
+                os.setgid(user.pw_gid)
+                os.setuid(user.pw_uid)
+
+            worker_loop()
+
+            break
         else:
-            # something else happened that is weird
-            raise Exception('worker process exited unexpectedly with status %d' % status)
+            pid, status = os.waitpid(worker_pid, 0)
+            worker_pid = 0
+            if os.WIFEXITED(status):
+                if os.WEXITSTATUS(status) == 0:
+                    # Everything is ok, the worker exited gracefully,
+                    # just repeat
+
+                    exited = True
+
+                    # Once this child exits, clean up after it if we
+                    # were running as the `executor` user
+                    if drop_privileges:
+                        # Kill all processes started by `executor`.
+                        os.system("pkill -u executor --signal SIGKILL")
+
+                        # Check that all processes are gone. If they're not,
+                        # that probably means that someone is trying to escape
+                        # by repeatedly forking. In that case, we'll refuse to
+                        # write an exit confirmation to FD 4. This process will
+                        # be killed, and if we're running inside a Docker container,
+                        # the entire container should be killed too.
+                        import psutil
+                        if any(p.username() == "executor" for p in psutil.process_iter()):
+                            raise Exception('found remaining processes belonging to executor user')
+
+                    # We'll need to write a confirmation message on file
+                    # descriptor 4 so that PL knows that control was actually
+                    # returned to the zygote.
+                    json.dump({ "exited": True }, exitf)
+                    exitf.write('\n')
+                    exitf.flush()
+                else:
+                    # The worker did not exit gracefully
+                    raise Exception('worker process exited unexpectedly with status %d' % status)
+            else:
+                # Something else happened that is weird
+                raise Exception('worker process exited unexpectedly with status %d' % status)
