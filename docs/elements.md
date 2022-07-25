@@ -137,8 +137,7 @@ a `pl-answer` that has attributes:
 | --------------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `correct`             | boolean | false   | Is this a correct answer to the question?                                                                                                      |
 | `feedback`            | string  | —       | Helper text (HTML) to be displayed to the student next to the option after question is graded if this option has been selected by the student. |
-| `score`               | float   | -       | Score given to answer choice if selected by student. Defaults to 1.0 for correct answers and 0.0                                               |
-| to incorrect answers. |
+| `score`               | float   | -       | Score given to answer choice if selected by student. Defaults to 1.0 for correct answers and 0.0 for incorrect answers. |
 
 #### Example implementations
 
