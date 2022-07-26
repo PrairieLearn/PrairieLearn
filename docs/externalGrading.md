@@ -77,7 +77,7 @@ Here's an example of a complete `externalGradingOptions` portion of a question's
 ```json
 "externalGradingOptions": {
     "enabled": true,
-    "image": "prairielearn/centos7-python",
+    "image": "prairielearn/grader-python",
     "serverFilesCourse": ["python_autograder/"],
     "entrypoint": "/grade/serverFilesCourse/python_autograder/run.sh",
     "timeout": 5
