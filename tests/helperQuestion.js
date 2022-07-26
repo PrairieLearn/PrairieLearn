@@ -713,11 +713,7 @@ module.exports = {
       });
       describe('GET to instructor question settings URL', function () {
         it('should load successfully', function (callback) {
-          const questionUrl =
-            locals.questionBaseUrl +
-            '/' +
-            locals.question.id +
-            (locals.questionSettingsTabUrl || '');
+          const questionUrl = locals.questionBaseUrl + '/' + locals.question.id + '/settings';
           request(questionUrl, function (error, response, body) {
             if (error) {
               return callback(error);
@@ -746,11 +742,7 @@ module.exports = {
             __action: 'test_once',
             __csrf_token: locals.__csrf_token,
           };
-          var questionUrl =
-            locals.questionBaseUrl +
-            '/' +
-            locals.question.id +
-            (locals.questionSettingsTabUrl || '');
+          var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + '/settings/test';
           request.post(
             { url: questionUrl, form: form, followAllRedirects: true },
             function (error, response, body) {
