@@ -37,7 +37,7 @@ The postgres database on the docker container only exists as long as the contain
 
 ### Linux/ Mac OS
 
-After starting the system in docker, you can copy out the necassary files to a location on your host system that you would like to use for the database.
+After starting the system in docker, you can copy out the necessary files to a location on your host system that you would like to use for the database.
 
 - Find the ID of your running PrairieLearn container by running
 
