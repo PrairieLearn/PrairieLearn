@@ -70,6 +70,23 @@ def categorize_options(element, data):
     return correct_answers, incorrect_answers
 
 
+def generate(element_html,data):
+    element = lxml.html.fragment_fromstring(element_html)
+    correct_answers, incorrect_answers = categorize_options(element, data)
+
+    len_all = len(correct_answers + incorrect_answers)
+    len_unique = len(set(correct_answers + incorrect_answers))
+
+    # Making a conscious choice *NOT* to apply .lower() to all list elements 
+    # in case instructors want to explicitly have matrix M vs. vector m as 
+    # possible options.
+
+    if len_unique < len_all:
+        raise Exception(
+            f"pl-multiple-choice element cannot have duplicate choices. For e.g., this choice-set: \
+                {sorted(correct_answers + incorrect_answers)} has {len_all-len_unique} duplicate(s)."
+        )
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
