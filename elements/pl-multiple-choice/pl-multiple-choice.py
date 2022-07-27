@@ -87,6 +87,7 @@ def generate(element_html,data):
                 {sorted(correct_answers + incorrect_answers)} has {len_all-len_unique} duplicate(s)."
         )
 
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
