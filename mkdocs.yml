@@ -56,9 +56,10 @@ nav:
   - 'Docker packaging': 'docker.md'
   - 'Contributing to PL development': 'contributing.md'
 - Running in Production:
-  - 'Running in production': 'running-in-production.md'
-  - 'Running in production dockerized': 'running-in-production-dockerized.md'
-  - 'User authentication': 'authentication.md'
+  - 'Setup': 'running-in-production/running-in-production.md'
+  - 'Using Docker Compose': 'running-in-production/running-in-production-dockerized.md'  
+  - 'User Authentication': 'running-in-production/authentication.md'
+  - 'Admin User': 'running-in-production/admin-user.md'
 - Deprecated Features:
   - 'Old v1/v2 question format': 'oldQuestion.md'
   - 'Old PrairieDraw graphics': 'PrairieDraw.md'
