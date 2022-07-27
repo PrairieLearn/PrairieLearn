@@ -99,8 +99,8 @@ compatibility, but they should not be used in new questions.
 
 A `pl-multiple-choice` element selects **one** correct answer and zero or more
 incorrect answers and displays them in a random order as radio buttons.
-Duplicate answer choices (string equivalents) are not permitted in the 
-`pl-multiple-choice` element, and an exception will be raised upon question 
+Duplicate answer choices (string equivalents) are not permitted in the
+`pl-multiple-choice` element, and an exception will be raised upon question
 generation if two (or more) choices are identical.
 
 #### Sample element
