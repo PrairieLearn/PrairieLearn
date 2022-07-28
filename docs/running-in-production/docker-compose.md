@@ -5,7 +5,7 @@
 Follow the steps to [install PrairieLearn with local source code](../installingLocal.md). Then run this command in the root folder:
 
 ```sh
-docker-compose -f docker-compose-production.yml up
+docker compose -f docker-compose-production.yml up
 ```
 
 Then access PrairieLearn from port `3000`.
@@ -34,39 +34,6 @@ The `config.json` file should contain appropriate overrides for the keys in [`li
 ## Mounting Postgres Database from Host System
 
 The postgres database on the docker container only exists as long as the container does. To make sure the database remains after a container is deleted, we must mount space from our host system onto the docker container to hold the database.
-
-### Linux/ Mac OS
-
-After starting the system in docker, you can copy out the necessary files to a location on your host system that you would like to use for the database.
-
-- Find the ID of your running PrairieLearn container by running
-
-```sh
-docker ps
-```
-
-which will output multiple columns of information about your running container(s). Look for the `prairielearn/prairielearn` image and copy its corresponding ID. For example, the ID of the PrairieLearn container in this `docker ps` output is `e0f522f41ea4`:
-
-```
-CONTAINER ID  IMAGE                      COMMAND              CREATED      STATUS      PORTS                   NAMES
-e0f522f41ea4  prairielearn/prairielearn  "/bin/sh -c /Prai…"  2 hours ago  Up 2 hours  0.0.0.0:3000->3000/tcp  upbeat_roentgen
-```
-
-- Then copy out postgres contents to where you would like the database to exist
-
-```sh
-docker cp <containerId>:/var/postgres /host/path/target
-```
-
-- Now in `docker-compose-production.yml` under `volumes` add
-
-```sh
-- /host/path/to/postgres:/var/postgres
-```
-
-### Windows
-
-For Windows you can create a docker volume to store the postgres database.
 
 - First in `docker-compose-production.yml` add a new docker volume
 
@@ -108,7 +75,7 @@ volumes:
 
 ## Reverse Proxy
 
-For implementing a reverse proxy read more [here](./running-in-production.md#reverse-proxy).
+For implementing a reverse proxy read more [here](./setup.md#reverse-proxy).
 
 ## Authentication
 
@@ -116,8 +83,27 @@ PrairieLearn currently has 4 ways to do user authentication. Read more at [authe
 
 ## Admin User
 
-You will need to be an [Admin User](./admin-user.md) to setup PrairieLearn.
+- Find the name of your running PrairieLearn container by running
+
+```sh
+docker ps
+```
+
+which will output multiple columns of information about your running container(s). Look for the `prairielearn/prairielearn` image and copy its corresponding name. For example, the name of the PrairieLearn container in this `docker ps` output is `upbeat_roentgen`:
+
+```
+CONTAINER ID  IMAGE                      COMMAND              CREATED      STATUS      PORTS                   NAMES
+e0f522f41ea4  prairielearn/prairielearn  "/bin/sh -c /Prai…"  2 hours ago  Up 2 hours  0.0.0.0:3000->3000/tcp  upbeat_roentgen
+```
+
+- Open a shell in your PrairieLearn container by running
+
+```sh
+docker exec -it CONTAINER_NAME /bin/bash
+```
+
+Then follow along at [Admin User](./admin-user.md) to setup PrairieLearn.
 
 ## Support
 
-See here for [extra information](./running-in-production.md#support).
+See here for [extra information](./setup.md#support).

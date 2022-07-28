@@ -56,8 +56,8 @@ nav:
   - 'Docker packaging': 'docker.md'
   - 'Contributing to PL development': 'contributing.md'
 - Running in Production:
-  - 'Setup': 'running-in-production/running-in-production.md'
-  - 'Using Docker Compose': 'running-in-production/running-in-production-dockerized.md'  
+  - 'Setup': 'running-in-production/setup.md'
+  - 'Using Docker Compose': 'running-in-production/docker-compose.md'  
   - 'User Authentication': 'running-in-production/authentication.md'
   - 'Admin User': 'running-in-production/admin-user.md'
 - Deprecated Features:
