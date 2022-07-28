@@ -213,7 +213,7 @@ router.post('/', function (req, res, next) {
     Object.entries(uidToRoleIdMap).forEach(entry => {
       const roleAssignment = {
         "uid": entry[0],
-        "group_role_ids": entry[1].map((id) => parseInt(id)) // FIXME: change this to the whole array when single assignment works
+        "group_role_ids": entry[1].map((id) => parseInt(id))
       };
       roleAssignments.push(roleAssignment);
     });
