@@ -31,48 +31,6 @@ PrairieLearn can be configured by a `config.json` in the root of the repository.
 
 The `config.json` file should contain appropriate overrides for the keys in [`lib/config.js`](`https://github.com/PrairieLearn/PrairieLearn/blob/master/lib/config.js`). At a minimum, you'll probably want to update the various `postgres*` options to point it at your database.
 
-## Mounting Postgres Database from Host System
-
-The postgres database on the docker container only exists as long as the container does. To make sure the database remains after a container is deleted, we must mount space from our host system onto the docker container to hold the database.
-
-- First in `docker-compose-production.yml` add a new docker volume
-
-```sh
-volumes:
-   psql:
-```
-
-- Under the `pl:` service under `volumes` add
-
-```sh
-- psql:/var/postgres
-```
-
-When finished, the `docker-compose-production.yml` should look something like:
-
-```sh
-version: '3.8'
-services:
-  pl:
-    build:
-      context: .
-    image: prairielearn/prairielearn:local
-    ports:
-      - 3000:3000
-    volumes:
-      - psql:/var/postgres
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ${HOME}/pl_ag_jobs:/jobs
-
-    container_name: pl
-    environment:
-      - HOST_JOBS_DIR=${HOME}/pl_ag_jobs
-      - NODE_ENV=production
-
-volumes:
-   psql:
-```
-
 ## Reverse Proxy
 
 For implementing a reverse proxy read more [here](./setup.md#reverse-proxy).

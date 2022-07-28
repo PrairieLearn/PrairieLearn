@@ -7,7 +7,7 @@ services:
     ports:
       - 3000:3000
     volumes:
-      - psql:/var/postgres      
+      - postgres:/var/postgres      
       - /var/run/docker.sock:/var/run/docker.sock
       - ${HOME}/pl_ag_jobs:/jobs
       
@@ -17,4 +17,4 @@ services:
       - NODE_ENV=production
       
 volumes:
-  psql:
+  postgres:
