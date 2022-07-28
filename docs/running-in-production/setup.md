@@ -4,7 +4,7 @@ As the PrairieLearn source code is publicly-available, it's possible to run Prai
 
 ## Running in Production Dockerized
 
-PrairieLearn can also be run in production mode in a docker container [using docker compose](./docker-compose.md).
+PrairieLearn can also be run in production mode in a Docker container [using Docker Compose](./docker-compose.md).
 
 ## Getting started
 
