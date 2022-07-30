@@ -48,6 +48,8 @@ SELECT
     to_jsonb(iq) || to_jsonb(iqnag) || jsonb_build_object(
         'assigned_grader_name', COALESCE(uag.name, uag.uid),
         'last_grader_name', COALESCE(ulg.name, ulg.uid),
+        'auto_points_pending', iq.status IN ('unanswered', 'saved', 'grading') OR (NOT a.allow_real_time_grading AND ai.open),
+        'manual_points_pending', iq.status IN ('unanswered', 'saved') OR iq.requires_manual_grading,
         'modified_at_formatted', format_date_short(iq.modified_at, COALESCE(ci.display_timezone, c.display_timezone))
     ) AS instance_question,
     jsonb_build_object(

@@ -1,3 +1,10 @@
 <% include('pointsFormatter'); %>
 
-<%= getStringFromFloat(points) %> <small>/<span class="text-muted"><%= max_points %></span></small>
+<span class="text-nowrap">
+  <% if (locals.points_pending || points === null) {%>
+  <span class="badge badge-info">pending</span>
+  <% } else { %>
+  <%= getStringFromFloat(points) %>
+  <% } %>
+  <small>/<span class="text-muted"><%= max_points %></span></small>
+</span>
