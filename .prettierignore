@@ -3,6 +3,9 @@ node_modules
 # Test coverage
 coverage/
 
+# Code coverage reports
+coverage/
+
 # Transpiled files
 packages/*/dist
 

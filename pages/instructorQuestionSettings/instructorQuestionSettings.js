@@ -20,8 +20,13 @@ const config = require('../../lib/config');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const { encodePath } = require('../../lib/uri-util');
 const { idsEqual } = require('../../lib/id');
+const csrf = require('../../lib/csrf');
 
-router.post('/', function (req, res, next) {
+router.post('/test', function (req, res, next) {
+  // We use a separate `test/` POST route so that we can always use the
+  // route to distinguish between pages that need to execute course code
+  // (this `test/` handler) and pages that need access to course content
+  // editing (here the plain '/' POST hander).
   if (req.body.__action === 'test_once') {
     if (!res.locals.authz_data.has_course_permission_view) {
       return next(error.make(403, 'Access denied (must be a course Viewer)'));
@@ -66,7 +71,18 @@ router.post('/', function (req, res, next) {
     } else {
       next(new Error('Not supported for externally-graded questions'));
     }
-  } else if (req.body.__action === 'change_id') {
+  } else {
+    next(
+      error.make(400, 'unknown __action: ' + req.body.__action, {
+        locals: res.locals,
+        body: req.body,
+      })
+    );
+  }
+});
+
+router.post('/', function (req, res, next) {
+  if (req.body.__action === 'change_id') {
     debug(`Change qid from ${res.locals.question.qid} to ${req.body.id}`);
     if (!req.body.id) return next(new Error(`Invalid QID (was falsey): ${req.body.id}`));
     if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
@@ -201,6 +217,25 @@ router.post('/', function (req, res, next) {
 });
 
 router.get('/', function (req, res, next) {
+  // Construct the path of the question test route. We'll do this based on
+  // `originalUrl` so that this router doesn't have to be aware of where it's
+  // mounted.
+  let questionTestPath = new URL(`${req.protocol}://${req.get('host')}${req.originalUrl}`).pathname;
+  if (!questionTestPath.endsWith('/')) {
+    questionTestPath += '/';
+  }
+  questionTestPath += 'test';
+
+  // Generate a CSRF token for the test route. We can't use `res.locals.__csrf_token`
+  // here because this form will actually post to a different route, not `req.originalUrl`.
+  const questionTestCsrfToken = csrf.generateToken(
+    { url: questionTestPath, authn_user_id: res.locals.authn_user.user_id },
+    config.secretKey
+  );
+
+  res.locals.questionTestPath = questionTestPath;
+  res.locals.questionTestCsrfToken = questionTestCsrfToken;
+
   async.series(
     [
       (callback) => {
