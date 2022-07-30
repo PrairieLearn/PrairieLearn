@@ -10,14 +10,6 @@ docker compose -f docker-compose-production.yml up
 
 Then access PrairieLearn from port `3000`.
 
-## Running with no Modifications
-
-If you would like to run a vanilla version of PrairieLearn with no modifications add this line to the `docker-compose-production.yml` under `build`:
-
-```sh
-dockerfile: Dockerfile-alternate
-```
-
 ## Configuration
 
 PrairieLearn can be configured by a `config.json` in the root of the repository.
