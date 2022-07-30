@@ -1,9 +1,7 @@
 version: '3.8'
 services:
   pl:
-    build:
-      context: .
-    image: prairielearn/prairielearn:local
+    image: prairielearn/prairielearn:latest
     ports:
       - 3000:3000
     volumes:
