@@ -1,0 +1,27 @@
+<pl-question-panel>
+<p>
+What is the resulting values of the expression
+<pl-code language="python">y == A or B</pl-code>
+And the expression
+<pl-code language="python">y == D and E</pl-code>
+given the values in the following truth tables?
+</p>
+</pl-question-panel>
+
+<pl-truth-table answers-name="answer" fixed-order="true" true-label="true" false-label="false" num-rows="3">
+    {{#params.variables}}
+    <pl-variable>{{name}}</pl-variable>
+    {{/params.variables}}
+    <pl-answer-column><pl-code language="python">A or B</pl-code></pl-answer-column>
+    <pl-answer-column expression="C and D">C and D</pl-answer-column>
+</pl-truth-table>
+<pl-truth-table answers-name="something" true-label="on" false-label="off">
+    <pl-variable>C</pl-variable>
+    <pl-variable>D</pl-variable>
+    <pl-variable>E</pl-variable>
+    <pl-answer-column expression="D and E">D and E</pl-answer-column>
+    <pl-row>1 0 1</pl-row>
+    <pl-row>1 1 1</pl-row>
+    <pl-row>0 0 0</pl-row>
+    <pl-row>0 1 0</pl-row>
+</pl-truth-table>

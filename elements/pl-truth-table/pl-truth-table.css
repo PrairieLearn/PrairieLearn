@@ -1,0 +1,23 @@
+.pl-truth-table-container {
+    margin: 1em;
+    padding: 1ex;
+}
+
+.pl-truth-table-container table {
+	border: solid 1px gray;
+}
+
+.pl-truth-table-container tr:first-child {
+	background-color: #ffc107;
+	font-weight: bold;
+	text-align: center;
+}
+
+.pl-truth-table-container tr:nth-child(even) {
+	background-color: #f2f2f2;
+}
+
+.pl-truth-table-container td {
+    padding: 1ex;
+    margin: 1em;
+}
