@@ -18,7 +18,7 @@ ENV LANG=en_US.UTF-8
 ENV LC_LANG=en_US.UTF-8
 
 ENV PYTHONIOENCODING=UTF-8
-ENV PYTHONPATH=/cgrader/
+ENV PYTHONPATH=/cgrader/:/grade/serverFilesCourse
 
 RUN groupadd sbuser
 RUN useradd -g sbuser sbuser
