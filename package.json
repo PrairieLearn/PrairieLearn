@@ -10,7 +10,7 @@
         "release": "turbo run build && changeset publish"
     },
     "dependencies": {
-        "@fortawesome/fontawesome-free": "^6.1.1",
+        "@fortawesome/fontawesome-free": "^6.1.2",
         "@grpc/grpc-js": "^1.6.7",
         "@octokit/rest": "^18.12.0",
         "@prairielearn/bind-mount": "^1.0.0",
