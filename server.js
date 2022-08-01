@@ -416,6 +416,22 @@ module.exports.initExpress = function () {
   app.use('/pl/shibcallback', require('./pages/authCallbackShib/authCallbackShib'));
   app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
   app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
+  app.use(
+    '/pl/auth/institution/:institution_id/saml/login',
+    require('./pages/authLoginSaml/authLoginSaml')
+  );
+  app.use(
+    '/pl/auth/institution/:institution_id/saml/callback',
+    require('./pages/authCallbackSaml/authCallbackSaml')
+  );
+  app.use('/pl/auth/institution/:institution_id/saml/metadata', (req, res, next) => {
+    const { strategy } = require('./lib/saml/index');
+    strategy.generateServiceProviderMetadata(req, null, null, (err, metadata) => {
+      if (ERR(err, next)) return;
+      res.type('application/xml');
+      res.send(metadata);
+    });
+  });
   app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
   app.use('/pl/login', require('./pages/authLogin/authLogin'));
   // disable SEB until we can fix the mcrypt issues
@@ -1796,6 +1812,11 @@ if (config.startServer) {
             return done(null, profile);
           })
         );
+      },
+      async () => {
+        // TODO: make this configurable, and possibly limit to Enterprise edition.
+        const { strategy } = require('./lib/saml/index');
+        passport.use(strategy);
       },
       async function () {
         const pgConfig = {

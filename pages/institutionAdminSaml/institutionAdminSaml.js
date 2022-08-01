@@ -18,6 +18,7 @@ router.post(
         institution_id: req.params.institution_id,
         sso_login_url: req.body.sso_login_url,
         issuer: req.body.issuer,
+        certificate: req.body.certificate,
       });
     } else {
       console.log('deleting provider');

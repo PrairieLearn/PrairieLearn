@@ -1,7 +1,7 @@
 const { html } = require('@prairielearn/html');
 const { renderEjs } = require('@prairielearn/html-ejs');
 
-const InstitutionAdminSaml = ({ samlProvider, resLocals }) => {
+const InstitutionAdminSaml = ({ institution, samlProvider, resLocals }) => {
   const hasSamlProvider = !!samlProvider;
 
   return html`
@@ -18,7 +18,7 @@ const InstitutionAdminSaml = ({ samlProvider, resLocals }) => {
           navSubPage: 'saml',
         })}
         <div class="container">
-          <form method="POST">
+          <form method="POST" class="mb-3">
             <div class="form-check mb-3">
               <input
                 type="checkbox"
@@ -57,9 +57,31 @@ const InstitutionAdminSaml = ({ samlProvider, resLocals }) => {
               />
             </div>
 
+            <div class="form-group">
+              <label for="certificate">Certificate</label>
+              <textarea
+
+                class="form-control js-disable-unchecked"
+                name="certificate"
+                id="certificate"
+                ${hasSamlProvider ? '' : 'disabled'}
+              >${samlProvider?.certificate ?? ''}</textarea>
+
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <button type="submit" class="btn btn-primary">Save</button>
           </form>
+
+          <a
+            href="/pl/auth/institution/${institution.id}/saml/login"
+            class="btn btn-primary"
+            target="_blank"
+          >
+            Test SAML login
+          </a>
+
+          <a href="/pl/auth/institution/${institution.id}/saml/metadata" target="_blank">
+            View SAML metadata
+          </a>
         </div>
         <script>
           (() => {
