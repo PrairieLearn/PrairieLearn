@@ -135,7 +135,7 @@
         "yargs-parser": "^21.0.1"
     },
     "devDependencies": {
-        "@changesets/cli": "^2.23.0",
+        "@changesets/cli": "^2.24.1",
         "@types/async": "^3.2.14",
         "@types/chai": "^4.3.0",
         "@types/cheerio": "^0.22.31",
