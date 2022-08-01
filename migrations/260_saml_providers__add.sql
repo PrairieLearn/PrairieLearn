@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS saml_providers (
+  id BIGSERIAL PRIMARY KEY,
+  institution_id BIGINT REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE CASCADE,
+  sso_login_url TEXT NOT NULL
+)
