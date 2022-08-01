@@ -718,6 +718,34 @@ module.exports.initExpress = function () {
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
+  // Institution pages /////////////////////////////////////////////////
+
+  // Currently, we don't have any notion of institution-level administrators, so
+  // we only allow global admins to do institution-level administration things.
+  // We should change this in the future.
+  app.use(
+    '/pl/institution/:institution_id/admin',
+    require('./middlewares/authzIsAdministrator'),
+    (req, res, next) => {
+      res.locals.navPage = 'institution_admin';
+      res.locals.navbarType = 'institution';
+      res.locals.urlPrefix = `/pl/institution/${req.params.institution_id}/admin`;
+      next();
+    }
+  );
+  // Redirect "plain" admin endpoint to the SAML page, since that's the only
+  // one that currently exists.
+  app.use(/^(\/pl\/institution\/[0-9]+\/admin)\/?$/, function (req, res) {
+    res.redirect(`${req.params[0]}/saml`);
+  });
+  app.use(
+    '/pl/institution/:institution_id/admin/saml',
+    require('./pages/institutionAdminSaml/institutionAdminSaml')
+  );
+
+  //////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////
   // Instructor pages //////////////////////////////////////////////////
 
   // single assessment
