@@ -727,8 +727,6 @@ module.exports.initExpress = function () {
     '/pl/institution/:institution_id/admin',
     require('./middlewares/authzIsAdministrator'),
     (req, res, next) => {
-      res.locals.navPage = 'institution_admin';
-      res.locals.navbarType = 'institution';
       res.locals.urlPrefix = `/pl/institution/${req.params.institution_id}/admin`;
       next();
     }
