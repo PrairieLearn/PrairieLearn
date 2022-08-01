@@ -16,7 +16,8 @@ router.post(
       console.log('inserting provider');
       await sqldb.queryAsync(sql.insert_institution_saml_provider, {
         institution_id: req.params.institution_id,
-        sso_login_url: req.body.sso_login_url ?? 'TESTING',
+        sso_login_url: req.body.sso_login_url,
+        issuer: req.body.issuer,
       });
     } else {
       console.log('deleting provider');
