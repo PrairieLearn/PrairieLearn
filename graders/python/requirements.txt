@@ -1,5 +1,5 @@
 matplotlib==3.5.2
-networkx==2.8.4
+networkx==2.8.5
 numpy==1.23.1
 pandas==1.4.3
 scipy==1.8.1
