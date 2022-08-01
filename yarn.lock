@@ -1454,10 +1454,10 @@
     "@types/qs" "*"
     "@types/serve-static" "*"
 
-"@types/folder-hash@^4.0.1":
-  version "4.0.1"
-  resolved "https://registry.yarnpkg.com/@types/folder-hash/-/folder-hash-4.0.1.tgz#00ad87412d9b18b04c15f37e18a22ddd13e8f2e6"
-  integrity sha512-HrIikWNP/7ubX+XB1awPxA+zTI8T3NXgb4g3BQnT4iAWbeZThsaAm+sg+xqO+eK6kPlpOLS6o29FaaWqb2THbA==
+"@types/folder-hash@^4.0.2":
+  version "4.0.2"
+  resolved "https://registry.yarnpkg.com/@types/folder-hash/-/folder-hash-4.0.2.tgz#f5c04577db48b2891aee9d2b87c4d88e565a04eb"
+  integrity sha512-vMVeAUKl8EmDiTLj8XJQL4gJd8UYQfxRUWiv8cZpI/iQcVkS4GHlwVdInH/4iVIzLjlc/+ejcGEhKt92bkWesQ==
 
 "@types/fs-extra@^9.0.13":
   version "9.0.13"

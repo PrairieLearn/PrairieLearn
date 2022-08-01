@@ -140,7 +140,7 @@
         "@types/chai": "^4.3.0",
         "@types/cheerio": "^0.22.31",
         "@types/dockerode": "^3.3.9",
-        "@types/folder-hash": "^4.0.1",
+        "@types/folder-hash": "^4.0.2",
         "@types/fs-extra": "^9.0.13",
         "@types/loopbench": "^1.2.1",
         "@types/mocha": "^9.1.0",
