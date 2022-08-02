@@ -60,7 +60,7 @@ BEGIN
         FROM users as u
         WHERE u.uid = (arg_role_update->>'uid')::text;
 
-        DELETE FROM group_users WHERE user_id = arg_group_user_id;
+        DELETE FROM group_users WHERE user_id = arg_group_user_id AND group_id = arg_group_id;
 
         -- Update roles of user
         FOR arg_group_role_id IN SELECT * FROM JSONB_ARRAY_ELEMENTS(arg_role_update->'group_role_ids') LOOP
