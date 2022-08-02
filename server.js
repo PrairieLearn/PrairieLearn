@@ -3,6 +3,7 @@
 const opentelemetry = require('@prairielearn/opentelemetry');
 
 const ERR = require('async-stacktrace');
+const asyncHandler = require('express-async-handler');
 const fs = require('fs');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -424,14 +425,23 @@ module.exports.initExpress = function () {
     '/pl/auth/institution/:institution_id/saml/callback',
     require('./pages/authCallbackSaml/authCallbackSaml')
   );
-  app.use('/pl/auth/institution/:institution_id/saml/metadata', (req, res, next) => {
-    const { strategy } = require('./lib/saml/index');
-    strategy.generateServiceProviderMetadata(req, null, null, (err, metadata) => {
-      if (ERR(err, next)) return;
-      res.type('application/xml');
-      res.send(metadata);
-    });
-  });
+  app.use(
+    '/pl/auth/institution/:institution_id/saml/metadata',
+    asyncHandler(async (req, res, next) => {
+      const { strategy, getSamlProviderForInstitution } = require('./lib/saml/index');
+      const samlProvider = await getSamlProviderForInstitution(req.params.institution_id);
+      strategy.generateServiceProviderMetadata(
+        req,
+        samlProvider.public_key,
+        samlProvider.public_key,
+        (err, metadata) => {
+          if (ERR(err, next)) return;
+          res.type('application/xml');
+          res.send(metadata);
+        }
+      );
+    })
+  );
   app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
   app.use('/pl/login', require('./pages/authLogin/authLogin'));
   // disable SEB until we can fix the mcrypt issues
