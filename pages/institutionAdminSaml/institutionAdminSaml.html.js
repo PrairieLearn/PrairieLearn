@@ -30,8 +30,8 @@ const InstitutionAdminSaml = ({ institution, samlProvider, host, resLocals }) =>
                   </div>
                   <div class="card-body">
                     <p>
-                      Use the following metadata URL if your Identity Provider supports obtaining
-                      Service Provider configuration from metadata:
+                      If your Identity Provider supports obtaining Service Provider configuration
+                      from a metadata URL, use the following:
                     </p>
                     <small class="text-muted">Metadata URL</small>
                     <div class="form-control mb-3">${metadataUrl}</div>
