@@ -1020,29 +1020,31 @@ module.exports = {
   },
 
   async generateAsync(question, course, variant_seed) {
-    const context = await module.exports.getContext(question, course);
-    const data = {
-      params: {},
-      correct_answers: {},
-      variant_seed: parseInt(variant_seed, 36),
-      options: _.defaults({}, course.options, question.options),
-    };
-    _.extend(data.options, module.exports.getContextOptions(context));
-
-    return await withCodeCaller(context.course_dir_host, async (codeCaller) => {
-      const { courseIssues, data: resultData } = await module.exports.processQuestion(
-        'generate',
-        codeCaller,
-        data,
-        context
-      );
-      return {
-        courseIssues,
-        data: {
-          params: resultData.params,
-          true_answer: resultData.correct_answers,
-        },
+    return instrumented('freeform.generate', async () => {
+      const context = await module.exports.getContext(question, course);
+      const data = {
+        params: {},
+        correct_answers: {},
+        variant_seed: parseInt(variant_seed, 36),
+        options: _.defaults({}, course.options, question.options),
       };
+      _.extend(data.options, module.exports.getContextOptions(context));
+
+      return await withCodeCaller(context.course_dir_host, async (codeCaller) => {
+        const { courseIssues, data: resultData } = await module.exports.processQuestion(
+          'generate',
+          codeCaller,
+          data,
+          context
+        );
+        return {
+          courseIssues,
+          data: {
+            params: resultData.params,
+            true_answer: resultData.correct_answers,
+          },
+        };
+      });
     });
   },
 
@@ -1058,31 +1060,33 @@ module.exports = {
   },
 
   async prepareAsync(question, course, variant) {
-    if (variant.broken) throw new Error('attemped to prepare broken variant');
+    return instrumented('freeform.prepare', async () => {
+      if (variant.broken) throw new Error('attemped to prepare broken variant');
 
-    const context = await module.exports.getContext(question, course);
-    const data = {
-      params: _.get(variant, 'params', {}),
-      correct_answers: _.get(variant, 'true_answer', {}),
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: _.get(variant, 'options', {}),
-    };
-    _.extend(data.options, module.exports.getContextOptions(context));
-
-    return await withCodeCaller(context.course_dir_host, async (codeCaller) => {
-      const { courseIssues, data: resultData } = await module.exports.processQuestion(
-        'prepare',
-        codeCaller,
-        data,
-        context
-      );
-      return {
-        courseIssues,
-        data: {
-          params: resultData.params,
-          true_answer: resultData.correct_answers,
-        },
+      const context = await module.exports.getContext(question, course);
+      const data = {
+        params: _.get(variant, 'params', {}),
+        correct_answers: _.get(variant, 'true_answer', {}),
+        variant_seed: parseInt(variant.variant_seed, 36),
+        options: _.get(variant, 'options', {}),
       };
+      _.extend(data.options, module.exports.getContextOptions(context));
+
+      return await withCodeCaller(context.course_dir_host, async (codeCaller) => {
+        const { courseIssues, data: resultData } = await module.exports.processQuestion(
+          'prepare',
+          codeCaller,
+          data,
+          context
+        );
+        return {
+          courseIssues,
+          data: {
+            params: resultData.params,
+            true_answer: resultData.correct_answers,
+          },
+        };
+      });
     });
   },
 
