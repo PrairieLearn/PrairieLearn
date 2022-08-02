@@ -98,7 +98,14 @@ router.get(
     console.log(samlProvider);
 
     res.locals.institution = institution;
-    res.send(InstitutionAdminSaml({ institution, samlProvider, resLocals: res.locals }));
+    res.send(
+      InstitutionAdminSaml({
+        institution,
+        samlProvider,
+        host: req.headers.host,
+        resLocals: res.locals,
+      })
+    );
   })
 );
 

@@ -16,6 +16,7 @@
         "@prairielearn/bind-mount": "^1.0.0",
         "@prairielearn/html": "^2.0.0",
         "@prairielearn/opentelemetry": "^1.0.0",
+        "@types/passport": "^1.0.9",
         "@types/pem": "^1.9.6",
         "ace-builds": "^1.7.1",
         "ajv": "^7.1.1",
