@@ -1,7 +1,7 @@
 {
     "uuid": "3f030556-e75b-11eb-ba80-0242ac130004",
-    "title": "Demo: Multi-answer MC with coverage grading scheme",
-    "topic": "Demo",
-    "tags": ["MC", "v3"],
+    "title": "Template pl-checkbox: Multi-answer MC with coverage grading scheme",
+    "topic": "Template",
+    "tags": [],
     "type": "v3"
 }

@@ -27,7 +27,7 @@ FROM
     -- Note that we specifically use a LEFT JOIN here - this is what allows the
     -- caller to differentiate between a chunk that exists and one that does not.
     -- Chunks that don't exist will have a NULL id, but they'll still contain
-    -- other information like the course instnace/assessment/question name so that
+    -- other information like the course instance/assessment/question name so that
     -- we can clean up unused chunks from disk.
     LEFT JOIN chunks ON (
         chunks.course_id = ($course_id)::bigint
@@ -52,7 +52,9 @@ WITH RECURSIVE template_questions AS (
     FROM
         questions AS q
         JOIN questions AS tq ON (tq.qid = q.template_directory AND tq.course_id = q.course_id)
-    WHERE q.id = $question_id
+    WHERE
+        q.id = $question_id
+        AND tq.deleted_at IS NULL
     -- required UNION for a recursive WITH statement
     UNION
     -- recursive term that references template_questions again
@@ -60,6 +62,7 @@ WITH RECURSIVE template_questions AS (
     FROM
         template_questions AS q
         JOIN questions AS tq ON (tq.qid = q.template_directory AND tq.course_id = q.course_id)
+    WHERE tq.deleted_at IS NULL
 )
 SELECT id FROM template_questions LIMIT 100; -- LIMIT prevents infinite recursion on circular templates
 

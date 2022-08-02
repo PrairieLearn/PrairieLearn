@@ -1,0 +1,59 @@
+<pl-question-panel>
+
+
+<p>The instantaneous rate of change of the function $f(t)$ is given by its derivative.</p>
+
+<div class="alert alert-warning" role="alert">
+
+<h4>Derivative of a function at a point</h4>
+
+<p>
+The derivative of $f(x)$ with respect to $x$ is the function $f'(x)$ defined as:
+
+$$f'(x) = \lim_{h \rightarrow 0} \frac{f(x+h) - f(x)}{h}$$
+
+provided the limit exists.
+</p>
+
+</div>
+
+
+<p> Recall that </p>
+
+  $$\frac{f(x+h) - f(x)}{h}$$
+
+<p> represents the slope of the secant line that connects points $(x,f(x))$ and $(x+h,f(x+h))$.
+  Therefore, when we are computing the derivatives, we are taking the limit of a collection of slope lines when the
+  interval $h$ is getting smaller. <strong> So what is the graphical representation of the derivative? </strong>
+</p>
+
+<p>  We will investigate the answer
+to this question using the workspace below. Click the button to open a JupyterLab notebook.</p>
+
+<p>
+  <pl-workspace></pl-workspace>
+</p>
+
+<p> The graphical interpretation for the derivative of $f$ with respect to $x$ evaluated at point $a$, i.e. $f'(a)$, is:</p>
+
+</pl-question-panel>
+
+
+<pl-multiple-choice answers-name="fprime" weight="1">
+  <pl-answer correct="false">the secant line connecting $a$ and $a+h$</pl-answer>
+  <pl-answer correct="false">the secant line at $a$ </pl-answer>
+  <pl-answer correct="false">the tangent line connecting $a$ and $a+h$</pl-answer>
+  <pl-answer correct="true">the tangent line at $a$ </pl-answer>
+</pl-multiple-choice>
+
+<p></p>
+
+
+<pl-question-panel>
+  <!-- This is not part of the question, and is included for documentation purposes-->
+  <p></p>
+  <div class="alert alert-info p-2" role="alert">
+      <small>Note: this example question includes the introduction of a concept with corresponding short quiz questions. Read more  <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/lecture/selfGuided/__docs/docs.md" target="_blank">here</a>.</small>
+        <pl-github-link></pl-github-link>
+  </div>
+</pl-question-panel>

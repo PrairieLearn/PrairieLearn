@@ -54,14 +54,15 @@ public class JUnitAutograder implements TestExecutionListener {
             autograder.gradable = false;
         } finally {
             autograder.saveResults();
+            // Force exit to ensure any pending threads don't cause the autograder to hang
+            System.exit(0);
         }
     }
 
     public void runTests() throws UngradableException {
 
-        LauncherDiscoveryRequestBuilder requestBuilder = LauncherDiscoveryRequestBuilder.request();
-
         for (String classSrcName : testClasses) {
+            LauncherDiscoveryRequestBuilder requestBuilder = LauncherDiscoveryRequestBuilder.request();
             String className = classSrcName
                 .replaceFirst("^/grade/tests/junit/", "")
                 .replaceFirst("\\.java$", "")

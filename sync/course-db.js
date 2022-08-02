@@ -1,14 +1,11 @@
 // @ts-check
-const ERR = require('async-stacktrace');
 const path = require('path');
 const _ = require('lodash');
 const fs = require('fs-extra');
-const fsPromises = require('fs').promises;
-const util = require('util');
 const async = require('async');
 const jju = require('jju');
 const Ajv = require('ajv').default;
-const betterAjvErrors = require('better-ajv-errors');
+const betterAjvErrors = require('better-ajv-errors').default;
 const { parseISO, isValid, isAfter, isFuture } = require('date-fns');
 const { default: chalkDefault } = require('chalk');
 
@@ -290,7 +287,10 @@ const FILE_UUID_REGEX =
  * @property {QuestionAlternative[]} [alternatives]
  * @property {number} numberChoose
  * @property {number} triesPerVariant
+ * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
+ * @property {string[]} canView
+ * @property {string[]} canSubmit
  */
 
 /**
@@ -300,7 +300,17 @@ const FILE_UUID_REGEX =
  * @property {number} numberChoose
  * @property {number} bestQuestions
  * @property {ZoneQuestion[]} questions
+ * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
+ */
+
+/**
+ * @typedef {Object} GroupRole
+ * @property {string} name
+ * @property {number} minimum
+ * @property {number} maximum
+ * @property {boolean} canAssignRolesAtStart
+ * @property {boolean} canAssignRolesDuringAssessment
  */
 
 /**
@@ -327,6 +337,8 @@ const FILE_UUID_REGEX =
  * @property {boolean} studentGroupCreate
  * @property {boolean} studentGroupJoin
  * @property {boolean} studentGroupLeave
+ * @property {GroupRole[]} groupRoles
+ * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
  */
 
@@ -368,6 +380,7 @@ const FILE_UUID_REGEX =
  * @property {string} template
  * @property {"Internal" | "External" | "Manual"} gradingMethod
  * @property {boolean} singleVariant
+ * @property {boolean} showCorrectAnswer
  * @property {boolean} partialCredit
  * @property {Object} options
  * @property {QuestionExternalGradingOptions} externalGradingOptions
@@ -389,70 +402,10 @@ const FILE_UUID_REGEX =
  */
 
 /**
- * TODO: Remove `logger` param when we do later refactoring.
- * @param {string} courseDir
- * @param {(err: Error | null, course?: any, newCourse?: CourseData) => void} callback
- */
-module.exports.loadFullCourse = function (courseDir, logger, callback) {
-  util.callbackify(this.loadFullCourseNew)(courseDir, (err, courseData) => {
-    if (ERR(err, callback)) return;
-
-    // First, scan through everything to check for errors, and if we find one, "throw" it
-    if (infofile.hasErrors(courseData.course)) {
-      return callback(new Error(infofile.stringifyErrors(courseData.course)));
-    }
-    for (const qid in courseData.questions) {
-      if (infofile.hasErrors(courseData.questions[qid])) {
-        return callback(new Error(infofile.stringifyErrors(courseData.questions[qid])));
-      }
-    }
-    for (const ciid in courseData.courseInstances) {
-      if (infofile.hasErrors(courseData.courseInstances[ciid].courseInstance)) {
-        return callback(
-          new Error(infofile.stringifyErrors(courseData.courseInstances[ciid].courseInstance))
-        );
-      }
-    }
-    for (const ciid in courseData.courseInstances) {
-      const courseInstance = courseData.courseInstances[ciid];
-      for (const tid in courseInstance.assessments) {
-        if (infofile.hasErrors(courseInstance.assessments[tid])) {
-          return callback(new Error(infofile.stringifyErrors(courseInstance.assessments[tid])));
-        }
-      }
-    }
-
-    const questions = {};
-    Object.entries(courseData.questions).forEach(
-      ([qid, question]) => (questions[qid] = question.data)
-    );
-
-    const courseInstances = {};
-    Object.entries(courseData.courseInstances).forEach(([ciid, courseInstance]) => {
-      const assessments = {};
-      Object.entries(courseInstance.assessments).forEach(([tid, assessment]) => {
-        assessments[tid] = assessment.data;
-      });
-      courseInstances[ciid] = {
-        ...courseInstance.courseInstance.data,
-        assessmentDB: assessments,
-      };
-    });
-
-    const course = {
-      courseInfo: courseData.course.data,
-      questionDB: questions,
-      courseInstanceDB: courseInstances,
-    };
-    callback(null, course, courseData);
-  });
-};
-
-/**
  * @param {string} courseDir
  * @returns {Promise<CourseData>}
  */
-module.exports.loadFullCourseNew = async function (courseDir) {
+module.exports.loadFullCourse = async function (courseDir) {
   const courseInfo = await module.exports.loadCourseInfo(courseDir);
   perf.start('loadQuestions');
   const questions = await module.exports.loadQuestions(courseDir);
@@ -584,7 +537,7 @@ module.exports.courseDataHasErrorsOrWarnings = function (courseData) {
  * Loads a JSON file at the path `path.join(coursePath, filePath). The
  * path is passed as two separate paths so that we can avoid leaking the
  * absolute path on disk to users.
- * @template T
+ * @template {{ uuid: string }} T
  * @param {Object} options - Options for loading and validating the file
  * @param {string} options.coursePath
  * @param {string} options.filePath
@@ -607,7 +560,7 @@ module.exports.loadInfoFile = async function ({
     // we could potentially hit an EMFILE error, but we haven't seen that in
     // practice in years, so that's a risk we're willing to take. We explicitly
     // use the native Node fs API here to opt out of this queueing behavior.
-    contents = await fsPromises.readFile(absolutePath, 'utf8');
+    contents = await fs.readFile(absolutePath, 'utf8');
     // perf.end(`readfile:${absolutePath}`);
   } catch (err) {
     // perf.end(`readfile:${absolutePath}`);
@@ -656,11 +609,12 @@ module.exports.loadInfoFile = async function ({
     }
 
     // Validate file against schema
+    /** @type {import('ajv').ValidateFunction<T>} */
     const validate = ajv.compile(schema);
     try {
       const valid = validate(json);
       if (!valid) {
-        const result = { uuid: json.uuid };
+        const result = { uuid: /** @type {any} */ (json).uuid };
         const errorText = betterAjvErrors(schema, json, validate.errors, {
           indent: 2,
         });
@@ -829,7 +783,7 @@ module.exports.loadCourseInfo = async function (coursePath) {
 };
 
 /**
- * @template T
+ * @template {{ uuid: string }} T
  * @param {Object} options - Options for loading and validating the file
  * @param {string} options.coursePath
  * @param {string} options.filePath
@@ -848,12 +802,14 @@ async function loadAndValidateJson({
   tolerateMissing,
 }) {
   // perf.start(`loadandvalidate:${filePath}`);
-  const loadedJson = await module.exports.loadInfoFile({
-    coursePath,
-    filePath,
-    schema,
-    tolerateMissing,
-  });
+  const loadedJson = /** @type {InfoFile<T>} */ (
+    await module.exports.loadInfoFile({
+      coursePath,
+      filePath,
+      schema,
+      tolerateMissing,
+    })
+  );
   // perf.end(`loadandvalidate:${filePath}`);
   if (loadedJson === null) {
     // This should only occur if we looked for a file in a non-directory,
@@ -878,7 +834,7 @@ async function loadAndValidateJson({
 
 /**
  * Loads and schema-validates all info files in a directory.
- * @template T
+ * @template {{ uuid: string }} T
  * @param {Object} options - Options for loading and validating files
  * @param {string} options.coursePath The path of the course being synced
  * @param {string} options.directory The path of the directory relative to `coursePath`
@@ -911,16 +867,18 @@ async function loadInfoForDirectory({
     // hooray, we're done.
     await async.each(files, async (/** @type {string} */ dir) => {
       const infoFilePath = path.join(directory, relativeDir, dir, infoFilename);
-      const info = await loadAndValidateJson({
-        coursePath,
-        filePath: infoFilePath,
-        defaults: defaultInfo,
-        schema,
-        validate,
-        // If we aren't operating in recursive mode, we want to ensure
-        // that missing files are correctly reflected as errors.
-        tolerateMissing: recursive,
-      });
+      const info = /** @type {InfoFile<T>} */ (
+        await loadAndValidateJson({
+          coursePath,
+          filePath: infoFilePath,
+          defaults: defaultInfo,
+          schema,
+          validate,
+          // If we aren't operating in recursive mode, we want to ensure
+          // that missing files are correctly reflected as errors.
+          tolerateMissing: recursive,
+        })
+      );
       if (info) {
         infoFiles[path.join(relativeDir, dir)] = info;
       } else if (recursive) {
@@ -1082,11 +1040,18 @@ async function validateAssessment(assessment, questions) {
   const warnings = [];
   const errors = [];
 
-  // Because of how Homework-type assessments work, we don't allow
-  // real-time grading to be disabled for them.
   const allowRealTimeGrading = _.get(assessment, 'allowRealTimeGrading', true);
-  if (!allowRealTimeGrading && assessment.type === 'Homework') {
-    errors.push(`Real-time grading cannot be disabled for Homework-type assessments`);
+  if (assessment.type === 'Homework') {
+    // Because of how Homework-type assessments work, we don't allow
+    // real-time grading to be disabled for them.
+    if (!allowRealTimeGrading) {
+      errors.push(`Real-time grading cannot be disabled for Homework-type assessments`);
+    }
+
+    // Homework-type assessments with multiple instances are not supported
+    if (assessment.multipleInstance) {
+      errors.push(`"multipleInstance" cannot be used for Homework-type assessments`);
+    }
   }
 
   // Check assessment access rules
@@ -1206,6 +1171,30 @@ async function validateAssessment(assessment, questions) {
       `The following questions do not exist in this course: ${[...missingQids].join(', ')}`
     );
   }
+
+  const validRoleNames = new Set();
+  assessment.groupRoles?.forEach((role) => {
+    validRoleNames.add(role.name);
+  });
+
+  (assessment.zones || []).forEach((zone) => {
+    (zone.questions || []).forEach((zoneQuestion) => {
+      (zoneQuestion.canView || []).forEach((roleName) => {
+        if (!validRoleNames.has(roleName)) {
+          errors.push(
+            `A zone question's "canView" permission contains the non-existent group role name "${roleName}".`
+          );
+        }
+      });
+      (zoneQuestion.canSubmit || []).forEach((roleName) => {
+        if (!validRoleNames.has(roleName)) {
+          errors.push(
+            `A zone question's "canSubmit" permission contains the non-existent group role name "${roleName}".`
+          );
+        }
+      });
+    });
+  });
 
   return { warnings, errors };
 }

@@ -5,9 +5,13 @@
 !.editorconfig
 !.eslintignore
 !.eslintrc.js
+!.htmlhintrc
+!.mocharc.js
 !.prettierignore
 !.prettierrc.json
 !tsconfig.json
+!turbo.json
+!pyrightconfig.json
 !admin_queries/
 !api/
 !cron/
@@ -17,6 +21,7 @@
 !ee/
 !elements/
 !exampleCourse/
+!executor.js
 !grader_host/
 !lib/
 !Makefile
@@ -27,8 +32,10 @@
 !package.json
 !yarn.lock
 !pages/
+!packages/
 !prairielib/
 !public/
+!python/
 !question-servers/
 !requirements.txt
 !server.js

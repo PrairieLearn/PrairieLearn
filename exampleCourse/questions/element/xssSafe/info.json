@@ -3,6 +3,6 @@
     "title": "Element pl-xss-safe: present potentially malicious student code",
     "topic": "Element",
     "gradingMethod": "Manual",
-    "tags": ["jonatan", "v3", "manual"],
+    "tags": ["jonatan", "manual"],
     "type": "v3"
 }

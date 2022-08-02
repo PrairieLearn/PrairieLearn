@@ -112,7 +112,7 @@ const cloudwatch_definitions = {
 async function sendStatsToCloudwatch(stats) {
   const cloudwatch = new AWS.CloudWatch(config.awsServiceGlobalOptions);
   const dimensions = [{ Name: 'By Server', Value: config.workspaceCloudWatchName }];
-  const cloudwatch_metricdata_limit = 20; /* AWS limits to 20 items within each list */
+  const cloudwatch_metricdata_limit = 20; // AWS limits to 20 items within each list
   const entries = Object.entries(stats).filter(([key, _value]) => {
     return key !== 'timestamp_formatted';
   });
@@ -156,14 +156,14 @@ async function handleWorkspaceAutoscaling(stats) {
   const launching_hosts = stats.workspace_hosts_launching_count;
   if (desired_hosts > ready_hosts + launching_hosts) {
     let needed = desired_hosts - (ready_hosts + launching_hosts);
-    /* First thing we can try is to "re-capture" draining hosts to be ready.  This is very cheap to do because we don't
-           need to call out to AWS */
+    // First thing we can try is to "re-capture" draining hosts to be ready.
+    // This is very cheap to do because we don't need to call out to AWS.
     const recaptured_hosts =
       (await sqldb.callAsync('workspace_hosts_recapture_draining', [needed])).rows[0]
         .recaptured_hosts || 0;
     needed -= recaptured_hosts;
     if (needed > 0) {
-      /* We couldn't get enough hosts, so lets spin up some more and insert them into the db */
+      // We couldn't get enough hosts, so lets spin up some more and insert them into the DB.
       const ec2 = new AWS.EC2();
       const data = await ec2
         .runInstances({

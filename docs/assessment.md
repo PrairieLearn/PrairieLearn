@@ -46,7 +46,7 @@ Each assessment has a `type`, as listed below. A randomized assessment is one wh
 
 To make `Homework` assessments randomize the question order for each student, set the `"shuffleQuestions": true` option in the `infoAssessment.json` file. This will use a unique-per-course number for each question, so that all students will still get the same question numbers (like #427), but they will not be in order. This makes it easy for students to discuss questions with course staff; they can say “I don't know how to do #427” and everyone will be seeing the same question #427. The main advantage of randomizing question order on Homeworks is to enable data collection on question difficulty and student behavior that is independent of the order in which questions are listed on the assessment.
 
-There is currently no way to disable question order randomization for `Exam` assessments. However, the order of `zones` is fixed (see below), which can be used to control question order.
+On `Exam` assessments, questions are randomized by default, but this can be disabled by setting `"shuffleQuestions": false` in the `infoAssessment.json` file.
 
 ## Question specification
 
@@ -187,6 +187,45 @@ When calculating a student's grade for a group assessment, PrairieLearn will alw
 
 Students are able to see their groupmates' UIDs, which can become a point of contact to communicate with eachother outside of PrairieLearn. They are also able to leave their group to join a different one.
 
+## Forcing students to complete questions in-order
+
+**WARNING:** We **strongly** discourage the use of this option during exams, as it can be very detrimental to student success. See below for more details.
+
+Certain assessments might be designed to be done linearly, where each question assumes that the student has completed and understood the previous question (e.g., lab worksheets). By default, PrairieLearn allows students to complete questions in any order that they like, but assessments can be configured to not allow students to view future unsolved questions.
+
+To enable these features, set `advanceScorePerc` to any number between 0 and 100 at the `assessment`, `zone`, `alternative group`, or `question` level. An example of what this looks like is below, with boilerplate attributes omitted:
+
+```json
+{
+  "advanceScorePerc": 100,
+  "zones": [
+    {
+      "advanceScorePerc": 80,
+      "questions": [
+        {
+          "id": "page1",
+          "advanceScorePerc": 50
+        },
+        {
+          "id": "page2"
+        },
+        {
+          "id": "page3"
+        }
+      ]
+    }
+  ]
+}
+```
+
+In the above example, a student will need to score at least 50% on `page1` in order to unlock `page2`. Since `page2` has no `advanceScorePerc` set at the question-level, it looks for the next-closest level in the tree where it is defined, which turns out to be the zone level. Thus, `page2` requires a score of at least 80% in order to unlock `page3`. Because `advanceScorePerc` is defined at the zone-level for all questions, the value 100 at the assessment level is never used to determine the minimum advancement score for any question.
+
+If a student uses all of their attempts on a question and cannot submit any more attempts, the next question will automatically unlock, no matter what score they earned on the previous question. This is to prevent students from getting permanently stuck on an assessment, unable to receive further credit.
+
+### Note about exam-type assessments and in-order questions
+
+The `advanceScorePerc` attribute is intended to be used in [group work](#enabling-group-work-for-collaborative-assessments) and assessment types which are indirectly supported, such as worksheets (see [multiple instance assessments](#multiple-instance-versus-single-instance-assessments)). In the interest of allowing students to best demonstrate their knowledge of course material, we **strongly** discourage the use of this feature in actual exams.
+
 ## Auto-closing Exam assessments
 
 By default Exam assessments will auto-close after six hours of inactivity by the student. This generally means that you don't need to explicity close exams that students accidentally did not close when they were done. If you want to prevent auto-closing then you can set `"autoClose": false` as a top-level option in the `infoAssessment.json` file.
@@ -201,7 +240,7 @@ When issue reporting is allowed, students see a button labeled "Report an error 
 
 Course staff see any reported issues show up on the "Issues" tab.
 
-![Issue report](assessment-report4.png)
+![Issue report](assessment-report3.png)
 
 ## Access control
 
@@ -211,7 +250,15 @@ By default, an assessment is only accessible to course staff. To allow students 
 
 ## Adding text and links to assessments
 
-See the [`clientFiles` and `serverFiles`](clientServerFiles.md) page for details, and [`exam1` in the example course](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/Sp15/assessments/exam1/) for an example.
+You can add a `text` property to your `infoAssessment.json`, which can be used to provide additional instructions, formula sheets, etc. You can use EJS syntax to access `clientFilesCourse`, `clientFilesCourseInstance`, and `clientFilesAssessment`.
+
+```json
+{
+  "text": "<a href=\"<%= clientFilesAssessment %>/formulas.pdf\">Formula sheet</a>"
+}
+```
+
+See the [`clientFiles` and `serverFiles`](clientServerFiles.md) page for details about making files available to users.
 
 ## Student-attached files
 
