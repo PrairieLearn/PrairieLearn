@@ -10,6 +10,8 @@ const AuthPrairieTest = ({ jwt, prairieTestCallback }) => {
           <input type="hidden" name="jwt" value="${jwt}" />
         </form>
         <script>
+          // TODO: handle case of disabled JavaScript. That'll probably just
+          // look like a "Continue" <button> that submits the form.
           (() => {
             setTimeout(() => {
               function submitForm() {
