@@ -69,7 +69,7 @@ WHERE
 -- BLOCK get_group_info_with_roles
 SELECT
     DISTINCT gu.group_id, g.name, g.join_code, u.uid, gc.minimum, gc.maximum,gc.student_authz_join, gc.student_authz_create, gc.student_authz_leave,
-    STRING_AGG(DISTINCT gr.role_name, ',' ORDER BY gr.role_name) AS role_names
+    STRING_AGG(DISTINCT gr.role_name, ', ' ORDER BY gr.role_name) AS role_names
 FROM
     assessments AS a
     JOIN group_configs AS gc ON gc.assessment_id = a.id
