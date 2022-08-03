@@ -12,7 +12,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     console.log(res.locals);
-    const key = crypto.createSecretKey('SECRET_GOEST_HERE', 'utf-8');
+    const key = crypto.createSecretKey('SECRET_GOES_HERE', 'utf-8');
 
     // Generate a signed JWT containing just the user ID. PrairieTest shares a
     // database with PrairieLearn, so it can use the same user ID to look up any
