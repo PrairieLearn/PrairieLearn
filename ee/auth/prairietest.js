@@ -4,7 +4,7 @@ const { Router } = require('express');
 const jose = require('jose');
 const crypto = require('crypto');
 
-const { AuthPrairieTest } = require('./authPrairieTest.html');
+const { AuthPrairieTest } = require('./prairietest.html');
 
 const router = Router({ mergeParams: true });
 

@@ -48,6 +48,7 @@ const codeCaller = require('./lib/code-caller');
 const assets = require('./lib/assets');
 const namedLocks = require('./lib/named-locks');
 const nodeMetrics = require('./lib/node-metrics');
+const { isEnterprise } = require('./lib/enterprise');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -422,7 +423,11 @@ module.exports.initExpress = function () {
   // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
   app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
   app.use('/pl/api', require('./middlewares/authnToken')); // authn for the API, set res.locals.authn_user
-  app.use('/pl/prairietest/auth', require('./pages/authPrairieTest/authPrairieTest'));
+
+  if (isEnterprise()) {
+    app.use('/pl/prairietest/auth', require('./ee/auth/prairietest'));
+  }
+
   app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
   app.use(require('./middlewares/logRequest'));
 
