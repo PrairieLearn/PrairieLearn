@@ -197,37 +197,21 @@ router.post('/', function (req, res, next) {
       }
     );
   } else if (req.body.__action === 'update_group_roles') {
-    // Convert form data to valid input format for a SQL function
-    const roleKeys = Object.keys(req.body).filter((key) => !key.startsWith('__'));
-    const uidToRoleIdMap = {};
-    for (const roleKey of roleKeys) {
-      const [roleId, uid] = roleKey.split('-');
-      if (uidToRoleIdMap[uid] === undefined) {
-        uidToRoleIdMap[uid] = [roleId];
-      } else {
-        uidToRoleIdMap[uid].push(roleId);  
-      }
-    }
-
-    const roleAssignments = [];
-    Object.entries(uidToRoleIdMap).forEach(entry => {
-      const roleAssignment = {
-        "uid": entry[0],
-        "group_role_ids": entry[1].map((id) => parseInt(id))
-      };
-      roleAssignments.push(roleAssignment);
-    });
-  
-    let params = [res.locals.assessment.id, roleAssignments];
-    sqldb.call('group_roles_update', params, function (err, _result) {
-      if (err) {
+    groupAssessmentHelper.updateGroupRoles(
+      req.body,
+      res.locals.assessment.id,
+      res.locals.user.user_id,
+      res.locals.authn_user.user_id,
+      function (err, succeeded) {
         if (ERR(err, next)) return;
-        res.redirect(req.originalUrl);
-        // TODO: attach some error to response
+        if (succeeded) {
+          res.redirect(req.originalUrl);
+        } else {
+          // TODO: add some errors to res.locals and render
+          res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        }
       }
-    });
-
-    res.redirect(req.originalUrl);
+    );
   } else if (req.body.__action === 'leave_group') {
     groupAssessmentHelper.leaveGroup(
       res.locals.assessment.id,
