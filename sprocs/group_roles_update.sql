@@ -1,7 +1,9 @@
 CREATE FUNCTION
     group_roles_update (
         arg_assessment_id bigint,
-        role_updates JSONB[]
+        role_updates JSONB[],
+        arg_user_id bigint,
+        arg_authn_user_id bigint
     ) RETURNS void
 AS $$
 DECLARE
@@ -73,6 +75,10 @@ BEGIN
         END LOOP;
     END LOOP;
 
-    -- TODO: log
+    -- Log the update 
+    INSERT INTO group_logs
+    (authn_user_id, user_id, group_id, action)
+    VALUES
+        (arg_authn_user_id, arg_user_id, arg_group_id, 'update roles');
 END;
 $$ LANGUAGE plpgsql VOLATILE;
