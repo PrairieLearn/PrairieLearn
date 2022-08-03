@@ -176,6 +176,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string} [template]
  * @property {"Internal" | "External" | "Manual"} [gradingMethod]
  * @property {boolean} [singleVariant]
+ * @property {boolean} [showCorrectAnswer]
  * @property {boolean} [partialCredit]
  * @property {Object} [options]
  * @property {QuestionExternalGradingOptions} [externalGradingOptions]

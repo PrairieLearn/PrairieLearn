@@ -90,7 +90,7 @@ debug('func()', 'param:', param);
 
 - As of 2017-08-08 we don't have very good coverage with debug output in code, but we are trying to add more as needed, especially in code in `lib/`.
 
-- `UnhandledPromiseRejectionWarning` errors are frequently due to improper async/await handling. Make sure you are calling async functions with `await`, and that async functions are not being called from callback-style code without a `callbackify()`. To get more information, NodeJS v14 can be run with the `--trace-warnings` flag. For example, `node_modules/.bin/mocha --trace-warnings tests/index.js`.
+- `UnhandledPromiseRejectionWarning` errors are frequently due to improper async/await handling. Make sure you are calling async functions with `await`, and that async functions are not being called from callback-style code without a `callbackify()`. To get more information, Node >= 14 can be run with the `--trace-warnings` flag. For example, `node_modules/.bin/mocha --trace-warnings tests/index.js`.
 
 ## Debugging client-side JavaScript
 
@@ -911,21 +911,6 @@ To automatically fix lint and formatting errors, run `make format`.
 | `assessment_instance.open` | ✓                              | ✓                    | ✓                       |
 | `instance_question.open`   |                                | ✓                    | ✓                       |
 | `variant.open`             |                                |                      | ✓                       |
-
-## v3 question code calling
-
-- v3 questions run course code in subprocesses. follows. A separate child process is started for every page request (actually, for every call to a top-level `freeform.js` function) which adds robustness but causes some slowdown. As of 2017-08-16 the calling sequence is as follows.
-
-1. We get a page request that’s handled in `pages/studentInstanceQuestionHomework` or similar.
-2. This calls a function in `lib/question.js` (possibly via `lib/assessment.js`) which starts a DB transaction and creates a DB `client` object.
-3. This calls a function in `question-servers/freeform.js`. Functions in `freeform` do not interact with the DB.
-4. The `freeform` function creates a `PythonCaller` object from `lib/code-caller.js`.
-5. The `PythonCaller` object starts a new python process and runs `lib/python-caller-trampoline.py`.
-6. `python-caller-trampoline` listens for function calls specified by a JSON write on STDIN, loads the specified python module and calls the specified function inside it, returning the output as JSON on file descriptor 3.
-7. The `PythonCaller` object unpacks the return value, captures STDIN+STDOUT, and returns all this back up the chain.
-8. Once the `freeform` functions have finished making all the python calls they want, they call `PythonCaller.done()` that terminates the python process.
-9. The `question.js` function that we are inside finishes, and ends the DB transaction, committing the changes.
-10. Page render completes and the response is sent, finishing this request cycle.
 
 ## Errors in question handling
 
