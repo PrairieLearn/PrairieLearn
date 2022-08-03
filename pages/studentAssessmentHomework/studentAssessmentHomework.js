@@ -76,7 +76,18 @@ router.get('/', function (req, res, next) {
             res.locals.join_code = join_code;
             res.locals.start = start;
             res.locals.used_join_code = used_join_code;
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+
+            if (usingGroupRoles) {
+              groupAssessmentHelper.getGroupRoles(
+                res.locals.assessment.id,
+                function(group_roles) {
+                  res.locals.group_roles = group_roles;
+                  res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                }
+              )
+            } else {
+              res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            }
           }
         );
       } else {
@@ -181,6 +192,22 @@ router.post('/', function (req, res, next) {
           }
           res.locals.permissions = permissions;
           res.locals.groupsize = 0;
+          res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        }
+      }
+    );
+  } else if (req.body.__action === 'update_group_roles') {
+    groupAssessmentHelper.updateGroupRoles(
+      req.body,
+      res.locals.assessment.id,
+      res.locals.user.user_id,
+      res.locals.authn_user.user_id,
+      function (err, succeeded) {
+        if (ERR(err, next)) return;
+        if (succeeded) {
+          res.redirect(req.originalUrl);
+        } else {
+          // TODO: add some errors to res.locals and render
           res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         }
       }
