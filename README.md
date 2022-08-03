@@ -4,5 +4,5 @@ PrairieLearn is an online problem-driven learning system for creating homeworks 
 
 [![GitHub Actions build status](https://github.com/PrairieLearn/PrairieLearn/actions/workflows/main.yml/badge.svg)](https://github.com/PrairieLearn/PrairieLearn/actions/workflows/main.yml) [![License](https://img.shields.io/github/license/PrairieLearn/PrairieLearn.svg)](https://github.com/PrairieLearn/PrairieLearn/blob/master/LICENSE)
 
-Documentation website: [https://prairielearn.readthedocs.io/](https://prairielearn.readthedocs.io/)
+Documentation website: [https://prairielearn.readthedocs.io/](https://prairielearn.readthedocs.io/)\
 Paid hosting and support: [https://www.prairielearn.com/](https://www.prairielearn.com/)
