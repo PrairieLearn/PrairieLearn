@@ -17,6 +17,7 @@ li.pl-order-blocks-code {
 }
 
 .pl-order-blocks-code > .pl-code:only-child div {
+  /* override margins on code block to ensure code is centered properly */
   margin-bottom: 0px !important;
 }
 
