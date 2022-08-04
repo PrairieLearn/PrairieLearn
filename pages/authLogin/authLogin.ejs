@@ -16,7 +16,7 @@
     padding: 20px;
     height: 100%;
   }
-  .login-methods > a:not(:last-child) {
+  .login-methods > :not(:last-child) {
     margin-bottom: 0.5rem;
   }
   @media (min-width: 576px) {
@@ -62,6 +62,27 @@
     border-color: <%- config.shibLinkColors.active.border %>;
     color: <%- config.shibLinkColors.active.text %>;
   }
+  .institution-header {
+    overflow: hidden;
+    text-align: center;
+  }
+  .institution-header:before, .institution-header:after {
+    background-color: #000;
+    content: "";
+    display: inline-block;
+    height: 1px;
+    position: relative;
+    vertical-align: middle;
+    width: 50%;
+  }
+  .institution-header:before {
+    right: 0.5em;
+    margin-left: -50%;
+  }
+  .institution-header:after {
+    left: 0.5em;
+    margin-right: -50%;
+  }
   </style>
 </head>
 <body class="d-flex bg-dark">
@@ -100,6 +121,18 @@
             </a>
           <% } %>
         </div>
+        <% if (samlProviders) { %>
+          <div class="institution-header text-muted my-3">
+            Institution sign-on
+          </div>
+          <div class="login-methods">
+          <% samlProviders.forEach((provider) => { %>
+            <a href="/pl/auth/institution/<%= provider.id %>/saml/login" class="btn btn-outline-dark btn-block">
+              <%= provider.long_name %>
+            </a>
+          <% }) %>
+          </div>
+        <% } %>
       </div>
     </div>
   </div>

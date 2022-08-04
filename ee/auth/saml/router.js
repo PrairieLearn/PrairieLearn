@@ -52,7 +52,6 @@ router.post('/callback', (req, res, next) => {
 
 router.get(
   '/metadata',
-
   asyncHandler(async (req, res, next) => {
     const samlProvider = await getSamlProviderForInstitution(req.params.institution_id);
     strategy.generateServiceProviderMetadata(

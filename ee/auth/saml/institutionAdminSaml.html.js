@@ -12,10 +12,10 @@ const InstitutionAdminSaml = ({ institution, samlProvider, host, resLocals }) =>
     <!DOCTYPE html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head')%>", resLocals)}
+        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", resLocals)}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar') %>", {
+        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
           navbarType: 'institution',
           navPage: 'institution_admin',
