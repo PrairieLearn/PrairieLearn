@@ -1,9 +1,7 @@
-import random
 import io
 
 
 def generate(data):
-
     name_list = ["Carla", "Manoel", "Sam", "Laura", "Amanda"]
     age_list =  [24, 18, 30, 45, 32]
     name_greek_list = ["$\\gamma$", "$\\mu$", "$\\sigma$", "$\\lambda$", "$\\alpha$"]

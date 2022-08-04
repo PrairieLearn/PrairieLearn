@@ -1,7 +1,7 @@
 #! /usr/bin/python3
 
 import os, json, subprocess, shlex, threading, re, sys, tempfile
-import xml.etree.ElementTree as ET
+import lxml.etree as ET
 
 CODEBASE = '/grade/student'
 DATAFILE = '/grade/data/data.json'
@@ -281,11 +281,15 @@ class CGrader:
                                env={'CK_XML_LOG_FILE_NAME': log_file, 'TEMP': '/tmp'})
         print(out) # Printing so it shows in the grading job log
 
+        # Copy log file to results directory so it becomes available to the instructor after execution
+        out = self.run_command(['cp', log_file, '/grade/results/check_log.xml', '--backup=numbered'], sandboxed=False)
+        print(out)
+
         separator_1 = ': ' if use_suite_title and use_case_name else ''
         separator_2 = ' - ' if use_unit_test_id and (use_suite_title or use_case_name) else ''
         try:
             with open(log_file, 'r', errors='backslashreplace') as log:
-                tree = ET.parse(log)
+                tree = ET.parse(log, parser=ET.XMLParser(recover=True))
             for suite in tree.getroot().findall('{*}suite'):
                 suite_title = suite.findtext('{*}title') if use_suite_title else ''
                 for test in suite.findall('{*}test'):

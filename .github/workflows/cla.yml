@@ -12,7 +12,7 @@ jobs:
       - name: "CLA Assistant"
         if: (github.event.comment.body == 'recheck' || github.event.comment.body == 'I have reviewed and hereby sign the CLA') || github.event_name == 'pull_request_target'
         # Pin to a specific version - this third-party action uses a personal access token
-        uses: cla-assistant/github-action@948230deb0d44dd38957592f08c6bd934d96d0cf
+        uses: cla-assistant/github-action@b3bbab0a75fa27270069933cec6f369c0b373b4e
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PERSONAL_ACCESS_TOKEN : ${{ secrets.CLA_PERSONAL_ACCESS_TOKEN }}
