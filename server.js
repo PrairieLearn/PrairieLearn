@@ -48,7 +48,7 @@ const codeCaller = require('./lib/code-caller');
 const assets = require('./lib/assets');
 const namedLocks = require('./lib/named-locks');
 const nodeMetrics = require('./lib/node-metrics');
-const { isEnterprise } = require('./lib/enterprise');
+const { isEnterprise } = require('./lib/license');
 
 process.on('warning', (e) => console.warn(e));
 

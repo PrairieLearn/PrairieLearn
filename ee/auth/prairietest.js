@@ -32,6 +32,7 @@ router.get(
         jwt,
         // Source URL: http:/nathan-prairielearn.ngrok.io/pl/prairietest/auth
         prairieTestCallback: 'https://nathan-prairietest.ngrok.io/pt/auth/prairielearn/callback',
+        resLocals: res.locals,
       })
     );
   })

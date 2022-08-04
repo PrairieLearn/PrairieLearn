@@ -1,32 +1,61 @@
 const { html } = require('@prairielearn/html');
+const { renderEjs } = require('@prairielearn/html-ejs');
 
-const AuthPrairieTest = ({ jwt, prairieTestCallback }) => {
+const AuthPrairieTest = ({ jwt, prairieTestCallback, resLocals }) => {
   return html`
     <!DOCTYPE html>
     <html lang="en">
-      <head> </head>
+      <head>
+        ${renderEjs(__filename, "<%- include('../../pages/partials/head') %>", resLocals)}
+        <style>
+          .continue-card-container {
+            width: 100%;
+            max-width: 400px;
+          }
+        </style>
+      </head>
       <body>
         <form id="form" action="${prairieTestCallback}" method="POST">
           <input type="hidden" name="jwt" value="${jwt}" />
+
+          <div class="continue-card-container mx-auto">
+            <div class="card continue-card m-3">
+              <div class="card-body d-flex flex-column align-items-center">
+                <div class="spinner-border mb-3" role="status">
+                  <span class="sr-only">Signing in...</span>
+                </div>
+                <h1 class="h4">PrairieTest authentication</h1>
+                <p>Signing in to PrairieTest...</p>
+                <button class="btn btn-success btn-block" type="submit" id="continue">
+                  Continue
+                </button>
+              </div>
+            </div>
+          </div>
         </form>
         <script>
-          // TODO: handle case of disabled JavaScript. That'll probably just
-          // look like a "Continue" <button> that submits the form.
+          // If JavaScript is enabled, immediately disable the button. But if
+          // it's disabled, the user can click the button to continue.
+          const continueButton = document.getElementById('continue');
+          continueButton.disabled = true;
+
           (() => {
-            setTimeout(() => {
-              function submitForm() {
+            function submitForm() {
+              // Artificially slow down the submission so that the user can see
+              // a little more of what's happening.
+              setTimeout(() => {
                 const form = document.getElementById('form');
                 form.submit();
-              }
+              }, 1500);
+            }
 
-              if (document.readyState === 'interactive' || document.readyState === 'complete') {
+            if (document.readyState === 'interactive' || document.readyState === 'complete') {
+              submitForm();
+            } else {
+              document.addEventListener('DOMContentLoaded', () => {
                 submitForm();
-              } else {
-                document.addEventListener('DOMContentLoaded', () => {
-                  submitForm();
-                });
-              }
-            }, 0);
+              });
+            }
           })();
         </script>
       </body>
