@@ -16,6 +16,10 @@ li.pl-order-blocks-code {
   list-style-type: none;
 }
 
+.pl-order-blocks-code > .pl-code:only-child div {
+  margin-bottom: 0px !important;
+}
+
 ul.pl-order-blocks-connected-sortable li:hover{
   cursor: move; /* For UX: The answer tiles shows a 'grab' cursor on mouse over */
   outline: 2px solid blue;
@@ -83,8 +87,4 @@ div.column {
   border-radius: 4px;
   background-color: #eeeeee;
   border: 1px solid #9e9e9e;
-}
-
-.pl-order-blocks-code .pl-code div {
-  margin-bottom: 0px !important;
 }
