@@ -1209,13 +1209,17 @@ async function validateAssessment(assessment, questions) {
       if (role.canAssignRolesDuringAssessment && role.minimum >= 1) {
         foundCanAssignRolesDuringAssessment = true;
       }
-    })
+    });
 
     if (!foundCanAssignRolesAtStart) {
-      errors.push("Could not find a role with minumum >= 1 and \"can_assign_roles_at_start\" set to \"true\".")
+      errors.push(
+        'Could not find a role with minimum >= 1 and "can_assign_roles_at_start" set to "true".'
+      );
     }
     if (!foundCanAssignRolesDuringAssessment) {
-      errors.push("Could not find a role with minumum >= 1 and \"can_assign_roles_during_assessment\" set to \"true\".")
+      errors.push(
+        'Could not find a role with minimum >= 1 and "can_assign_roles_during_assessment" set to "true".'
+      );
     }
   }
 

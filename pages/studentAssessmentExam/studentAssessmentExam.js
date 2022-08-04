@@ -55,13 +55,10 @@ router.get('/', function (req, res, next) {
           res.locals.start = start;
           res.locals.used_join_code = used_join_code;
           if (usingGroupRoles) {
-            groupAssessmentHelper.getGroupRoles(
-              res.locals.assessment.id,
-              function(group_roles) {
-                res.locals.group_roles = group_roles;
-                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-              }
-            )
+            groupAssessmentHelper.getGroupRoles(res.locals.assessment.id, function (group_roles) {
+              res.locals.group_roles = group_roles;
+              res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            });
           } else {
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
           }
@@ -111,11 +108,11 @@ router.get('/', function (req, res, next) {
               if (usingGroupRoles) {
                 groupAssessmentHelper.getGroupRoles(
                   res.locals.assessment.id,
-                  function(group_roles) {
+                  function (group_roles) {
                     res.locals.group_roles = group_roles;
                     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                   }
-                )
+                );
               } else {
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
               }
