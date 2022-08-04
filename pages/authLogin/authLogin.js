@@ -12,6 +12,8 @@ const router = Router();
 router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
+    res.locals.samlProviders = null;
+
     if (isEnterprise()) {
       const samlProvidersRes = await sqldb.queryAsync(sql.select_institution_saml_providers, {});
       res.locals.samlProviders = samlProvidersRes.rows;
