@@ -88,3 +88,11 @@ div.column {
 .pl-order-blocks-code .pl-code div {
   margin-bottom: 0px !important;
 }
+
+.pl-order-blocks-right .pl-code:last-child div {
+  margin-bottom: 0px !important;
+}
+
+.pl-order-blocks-bottom .pl-code:last-child div {
+  margin-bottom: 0px !important;
+}
