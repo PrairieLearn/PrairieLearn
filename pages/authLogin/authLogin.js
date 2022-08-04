@@ -15,7 +15,6 @@ router.get(
     if (isEnterprise()) {
       const samlProvidersRes = await sqldb.queryAsync(sql.select_institution_saml_providers, {});
       res.locals.samlProviders = samlProvidersRes.rows;
-      console.log(res.locals.samlProviders);
     }
 
     // We could set res.locals.config.hasOauth = false (or
