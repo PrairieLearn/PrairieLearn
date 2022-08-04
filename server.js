@@ -418,31 +418,11 @@ module.exports.initExpress = function () {
   app.use('/pl/shibcallback', require('./pages/authCallbackShib/authCallbackShib'));
   app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
   app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
-  app.use(
-    '/pl/auth/institution/:institution_id/saml/login',
-    require('./pages/authLoginSaml/authLoginSaml')
-  );
-  app.use(
-    '/pl/auth/institution/:institution_id/saml/callback',
-    require('./pages/authCallbackSaml/authCallbackSaml')
-  );
-  app.use(
-    '/pl/auth/institution/:institution_id/saml/metadata',
-    asyncHandler(async (req, res, next) => {
-      const { strategy, getSamlProviderForInstitution } = require('./ee/auth/saml/index');
-      const samlProvider = await getSamlProviderForInstitution(req.params.institution_id);
-      strategy.generateServiceProviderMetadata(
-        req,
-        samlProvider.public_key,
-        samlProvider.public_key,
-        (err, metadata) => {
-          if (ERR(err, next)) return;
-          res.type('application/xml');
-          res.send(metadata);
-        }
-      );
-    })
-  );
+
+  if (isEnterprise()) {
+    app.use('/pl/auth/institution/:institution_id/saml', require('./ee/auth/saml/router'));
+  }
+
   app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
   app.use('/pl/login', require('./pages/authLogin/authLogin'));
   // disable SEB until we can fix the mcrypt issues
@@ -1827,9 +1807,10 @@ if (config.startServer) {
         );
       },
       async () => {
-        // TODO: make this configurable, and possibly limit to Enterprise edition.
-        const { strategy } = require('./ee/auth/saml/index');
-        passport.use(strategy);
+        if (isEnterprise()) {
+          const { strategy } = require('./ee/auth/saml/index');
+          passport.use(strategy);
+        }
       },
       async function () {
         const pgConfig = {
