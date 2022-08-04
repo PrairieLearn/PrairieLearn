@@ -30,8 +30,7 @@ router.get(
     res.send(
       AuthPrairieTest({
         jwt,
-        // Source URL: http:/nathan-prairielearn.ngrok.io/pl/prairietest/auth
-        prairieTestCallback: 'https://nathan-prairietest.ngrok.io/pt/auth/prairielearn/callback',
+        prairieTestCallback: `${config.ptHost}/pt/auth/prairielearn/callback`,
         resLocals: res.locals,
       })
     );
