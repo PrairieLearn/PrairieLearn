@@ -86,6 +86,34 @@ This question illustrates different use cases for the
 
 <pl-question-panel>
 <p>
+  <strong>Example 3b:</strong> Ugly example of pl-code in mixed contexts (to be deleted) </p>
+<p>
+ This example is only meant for discussion in the PR.
+</p>
+</pl-question-panel>
+
+<pl-order-blocks
+  answers-name="python-ordered-ugly"
+  grading-method="ranking"
+  indentation="true"
+>
+  <pl-answer correct="true" ranking="1" indent="0">def my_sum(first, second):</pl-answer>
+  <pl-answer correct="true" ranking="2" indent="1">sum = 0</pl-answer>
+  <pl-answer correct="true" ranking="3" indent="1">sum += first</pl-answer>
+  <pl-answer correct="true" ranking="3" indent="1"><pl-code>sum += second</pl-code></pl-answer>
+  <pl-answer correct="true" ranking="4" indent="1"><pl-code>return sum</pl-code></pl-answer>
+  <pl-answer correct="false">sum + first</pl-answer>
+  <pl-answer correct="false">sum + second</pl-answer>
+  <pl-answer correct="false">sum + second<pl-code>more code</pl-code></pl-answer>
+  <pl-answer correct="false">sum + second<pl-code>more code</pl-code><pl-code>more code</pl-code></pl-answer>
+  <pl-answer correct="false"><pl-code>more code</pl-code>sum + second<pl-code>more code</pl-code></pl-answer>
+  <pl-answer correct="false"><pl-code>more code</pl-code><pl-code>more code</pl-code>sum + second</pl-answer>
+</pl-order-blocks>
+
+<hr>
+
+<pl-question-panel>
+<p>
   <strong>Example 4:</strong> Prove that $A \land B \land C \rightarrow A \land C$
 </p>
 
