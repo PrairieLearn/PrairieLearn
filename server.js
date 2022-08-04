@@ -49,6 +49,7 @@ const codeCaller = require('./lib/code-caller');
 const assets = require('./lib/assets');
 const namedLocks = require('./lib/named-locks');
 const nodeMetrics = require('./lib/node-metrics');
+const { isEnterprise } = require('./lib/license');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -428,7 +429,7 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/auth/institution/:institution_id/saml/metadata',
     asyncHandler(async (req, res, next) => {
-      const { strategy, getSamlProviderForInstitution } = require('./lib/saml/index');
+      const { strategy, getSamlProviderForInstitution } = require('./ee/auth/saml/index');
       const samlProvider = await getSamlProviderForInstitution(req.params.institution_id);
       strategy.generateServiceProviderMetadata(
         req,
@@ -741,31 +742,33 @@ module.exports.initExpress = function () {
 
   app.use('/pl/api/v1', require('./api/v1'));
 
-  //////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////
-  // Institution pages /////////////////////////////////////////////////
+  if (isEnterprise()) {
+    //////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////
+    // Institution pages /////////////////////////////////////////////////
 
-  // Currently, we don't have any notion of institution-level administrators, so
-  // we only allow global admins to do institution-level administration things.
-  // We should change this in the future.
-  app.use(
-    '/pl/institution/:institution_id/admin',
-    require('./middlewares/authzIsAdministrator'),
-    (req, res, next) => {
-      res.locals.urlPrefix = `/pl/institution/${req.params.institution_id}/admin`;
-      next();
-    }
-  );
-  // Redirect "plain" admin endpoint to the SAML page, since that's the only
-  // one that currently exists.
-  app.use(/^(\/pl\/institution\/[0-9]+\/admin)\/?$/, function (req, res) {
-    res.redirect(`${req.params[0]}/saml`);
-  });
-  app.use(
-    '/pl/institution/:institution_id/admin/saml',
-    require('./pages/institutionAdminSaml/institutionAdminSaml')
-  );
+    // Currently, we don't have any notion of institution-level administrators, so
+    // we only allow global admins to do institution-level administration things.
+    // We should change this in the future.
+    app.use(
+      '/pl/institution/:institution_id/admin',
+      require('./middlewares/authzIsAdministrator'),
+      (req, res, next) => {
+        res.locals.urlPrefix = `/pl/institution/${req.params.institution_id}/admin`;
+        next();
+      }
+    );
+    // Redirect "plain" admin endpoint to the SAML page, since that's the only
+    // one that currently exists.
+    app.use(/^(\/pl\/institution\/[0-9]+\/admin)\/?$/, function (req, res) {
+      res.redirect(`${req.params[0]}/saml`);
+    });
+    app.use(
+      '/pl/institution/:institution_id/admin/saml',
+      require('./ee/auth/saml/institutionAdminSaml')
+    );
+  }
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
@@ -1825,7 +1828,7 @@ if (config.startServer) {
       },
       async () => {
         // TODO: make this configurable, and possibly limit to Enterprise edition.
-        const { strategy } = require('./lib/saml/index');
+        const { strategy } = require('./ee/auth/saml/index');
         passport.use(strategy);
       },
       async function () {

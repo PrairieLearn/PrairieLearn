@@ -3,8 +3,8 @@ const { Router } = require('express');
 const asyncHandler = require('express-async-handler');
 const pem = require('pem');
 
-const sqldb = require('../../prairielib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('../../../prairielib/sql-db');
+const sqlLoader = require('../../../prairielib/lib/sql-loader');
 const { InstitutionAdminSaml } = require('./institutionAdminSaml.html');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
