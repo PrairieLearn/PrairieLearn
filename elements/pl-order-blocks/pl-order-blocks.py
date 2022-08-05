@@ -78,7 +78,8 @@ def prepare(element_html, data):
                         'solution-placement', 'max-incorrect',
                         'min-incorrect', 'weight',
                         'inline', 'max-indent',
-                        'feedback', 'partial-credit']
+                        'feedback', 'partial-credit',
+                        'format', 'code-language']
 
     pl.check_attribs(element, required_attribs=required_attribs, optional_attribs=optional_attribs)
 
@@ -100,6 +101,11 @@ def prepare(element_html, data):
     if (grading_method not in ['dag', 'ranking'] and feedback_type != 'none') or \
        (grading_method in ['dag', 'ranking'] and feedback_type not in ['none', 'first-wrong']):
         raise Exception('feedback type "' + feedback_type + '" is not available with the "' + grading_method + '" grading-method.')
+
+    format = pl.get_string_attrib(element, 'format', 'default')
+    code_language = pl.get_string_attrib(element, 'code-language', None)
+    if format != 'code' and code_language is not None:
+        raise Exception('code-language attribute may only be used with format="code"')
 
     correct_answers = []
     incorrect_answers = []
@@ -129,6 +135,9 @@ def prepare(element_html, data):
 
         if check_indentation is False and answer_indent is not None:
             raise Exception('<pl-answer> should not specify indentation if indentation is disabled.')
+
+        if format == 'code':
+            inner_html = '<pl-code' + (' language="' + code_language + '"' if code_language else '') + '>' + inner_html + '</pl-code>'
 
         answer_data_dict = {'inner_html': inner_html,
                             'indent': answer_indent,
@@ -208,6 +217,9 @@ def prepare(element_html, data):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
+    format = pl.get_string_attrib(element, 'format', 'default')
+
+    block_formatting = 'pl-order-blocks-code' if format == 'code' else 'list-group-item'
     grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
 
     if data['panel'] == 'question':
@@ -264,7 +276,8 @@ def render(element_html, data):
             'help_text': help_text,
             'inline': 'inline' if inline_layout is True else None,
             'max_indent': max_indent,
-            'uuid': uuid
+            'uuid': uuid,
+            'block_formatting': block_formatting
         }
 
         with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
@@ -292,7 +305,8 @@ def render(element_html, data):
             'submission': True,
             'parse-error': data['format_errors'].get(answer_name, None),
             'student_submission': student_submission,
-            'feedback': feedback
+            'feedback': feedback,
+            'block_formatting': block_formatting
         }
 
         if score is not None:
@@ -340,7 +354,8 @@ def render(element_html, data):
             'true_answer': True,
             'question_solution': question_solution,
             'ordering_message': ordering_message,
-            'indentation_message': indentation_message
+            'indentation_message': indentation_message,
+            'block_formatting': block_formatting
         }
         with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params)
