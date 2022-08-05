@@ -41,12 +41,8 @@ const AuthPrairieTest = ({ jwt, prairieTestCallback, resLocals }) => {
 
           (() => {
             function submitForm() {
-              // Artificially slow down the submission so that the user can see
-              // a little more of what's happening.
-              setTimeout(() => {
-                const form = document.getElementById('form');
-                form.submit();
-              }, 1500);
+              const form = document.getElementById('form');
+              form.submit();
             }
 
             if (document.readyState === 'interactive' || document.readyState === 'complete') {
