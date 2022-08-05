@@ -22,6 +22,7 @@ This question illustrates different use cases for the
   <pl-answer correct="true">5</pl-answer>
   <pl-answer correct="false">6</pl-answer>
   <pl-answer correct="true">7</pl-answer>
+  <pl-answer correct="false">This is an example very long tile to test CSS overflow</pl-answer>
 </pl-order-blocks>
 
 <hr>
@@ -65,8 +66,13 @@ This question illustrates different use cases for the
 </pl-question-panel>
 
 
-<pl-order-blocks answers-name="python-ordered" grading-method="ranking" indentation="true">
-
+<pl-order-blocks
+  answers-name="python-ordered"
+  grading-method="ranking"
+  indentation="true"
+  format="code"
+  code-language="python"
+>
   <pl-answer correct="true" ranking="1" indent="0">def my_sum(first, second):</pl-answer>
   <pl-answer correct="true" ranking="2" indent="1">sum = 0</pl-answer>
   <pl-answer correct="true" ranking="3" indent="1">sum += first</pl-answer>
@@ -74,8 +80,6 @@ This question illustrates different use cases for the
   <pl-answer correct="true" ranking="4" indent="1">return sum</pl-answer>
   <pl-answer correct="false">sum + first</pl-answer>
   <pl-answer correct="false">sum + second</pl-answer>
-  <pl-answer correct="false">This is an example very long tile to test CSS overflow</pl-answer>
-
 </pl-order-blocks>
 
 <hr>
