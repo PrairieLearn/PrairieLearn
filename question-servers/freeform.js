@@ -1735,7 +1735,7 @@ module.exports = {
             raw_submitted_answer: resultData.raw_submitted_answers,
             partial_scores: resultData.partial_scores,
             score: resultData.score,
-            feedback: data.feedback,
+            feedback: resultData.feedback,
             gradable: resultData.gradable,
           },
         };
