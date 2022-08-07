@@ -383,7 +383,7 @@ def parse(element_html, data):
     submitted_key = data['submitted_answers'].get(name, None)
     all_keys = [a['key'] for a in data['params'][name]]
 
-    if allow_blank == False:
+    if not allow_blank:
         # Check that at least one option was selected
         if submitted_key is None:
             data['format_errors'][name] = 'You must select at least one option.'
@@ -536,8 +536,8 @@ def _get_min_options_to_select(element, default_val):
         min_options_to_select = pl.get_integer_attrib(element, 'min-select')
     elif pl.has_attrib(element, 'min-correct') and detailed_help_text:
         min_options_to_select = pl.get_integer_attrib(element, 'min-correct')
-    elif allow_blank == True:
-        min_options_to_select = MIN_SELECT_BLANK
+    elif allow_blank:
+            min_options_to_select = MIN_SELECT_BLANK
     else:
         min_options_to_select = default_val
 
