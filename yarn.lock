@@ -6215,6 +6215,11 @@ jmespath@0.16.0:
   resolved "https://registry.yarnpkg.com/jmespath/-/jmespath-0.16.0.tgz#b15b0a85dfd4d930d43e69ed605943c802785076"
   integrity sha512-9FzQjJ7MATs1tSpnco1K6ayiYE3figslrXA72G2HQ/n76RzvYlofyi5QM+iX4YRs/pu3yzxlVQSST23+dMDknw==
 
+jose@^4.8.3:
+  version "4.8.3"
+  resolved "https://registry.yarnpkg.com/jose/-/jose-4.8.3.tgz#5a754fb4aa5f2806608d083f438e6916b11087da"
+  integrity sha512-7rySkpW78d8LBp4YU70Wb7+OTgE3OwAALNVZxhoIhp4Kscp+p/fBkdpxGAMKxvCAMV4QfXBU9m6l9nX/vGwd2g==
+
 jquery-ui-dist@^1.13.1:
   version "1.13.1"
   resolved "https://registry.yarnpkg.com/jquery-ui-dist/-/jquery-ui-dist-1.13.1.tgz#47dcc1bf9cec141221ece59b2c8eaabad846ec0e"

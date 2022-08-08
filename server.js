@@ -429,6 +429,11 @@ module.exports.initExpress = function () {
   // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
   app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
   app.use('/pl/api', require('./middlewares/authnToken')); // authn for the API, set res.locals.authn_user
+
+  if (isEnterprise()) {
+    app.use('/pl/prairietest/auth', require('./ee/auth/prairietest'));
+  }
+
   app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
   app.use(require('./middlewares/logRequest'));
 

@@ -12,6 +12,7 @@ const router = Router();
 router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
+    res.locals.service = req.query.service ?? null;
     res.locals.samlProviders = null;
 
     if (isEnterprise()) {
