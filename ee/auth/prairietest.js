@@ -12,7 +12,6 @@ const router = Router({ mergeParams: true });
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    console.log(res.locals);
     const key = crypto.createSecretKey(config.prairieTestAuthSecret, 'utf-8');
 
     // Generate a signed JWT containing just the user ID. PrairieTest shares a

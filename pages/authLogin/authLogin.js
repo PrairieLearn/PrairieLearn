@@ -2,6 +2,7 @@ var express = require('express');
 var router = express.Router();
 
 router.get('/', function (req, res, _next) {
+  res.locals.service = req.query.service ?? null;
   // We could set res.locals.config.hasOauth = false (or
   // hasAzure) to not display those options inside the CBTF, but
   // this will also need to depend on which institution we have
