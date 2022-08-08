@@ -3,7 +3,6 @@
 const opentelemetry = require('@prairielearn/opentelemetry');
 
 const ERR = require('async-stacktrace');
-const asyncHandler = require('express-async-handler');
 const fs = require('fs');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
