@@ -28,4 +28,11 @@ SET
   private_key = COALESCE($private_key, saml_providers.private_key);
 
 -- BLOCK delete_institution_saml_provider
+WITH deleted_authn_provider AS (
+  DELETE FROM institution_authn_providers
+  USING authn_providers AS ap
+  WHERE
+    ap.name = 'SAML'
+    and authn_provider_id = ap.id
+)
 DELETE FROM saml_providers WHERE institution_id = $institution_id;
