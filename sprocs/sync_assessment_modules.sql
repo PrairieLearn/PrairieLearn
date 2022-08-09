@@ -26,8 +26,8 @@ BEGIN
                 number,
                 course_id
             ) SELECT
-                au->>0,
-                au->>1,
+                am->>0,
+                am->>1,
                 number,
                 syncing_course_id
             FROM UNNEST(course_info_assessment_modules) WITH ORDINALITY AS t(au, number)
@@ -92,11 +92,11 @@ BEGIN
     -- accidentally delete something that was in a temporarily-invalid
     -- JSON file.
     IF (valid_course_info AND delete_unused) THEN
-        DELETE FROM assessment_modules AS au
+        DELETE FROM assessment_modules AS am
         WHERE
-            au.course_id = syncing_course_id
-            AND au.name NOT IN (SELECT unnest(used_assessment_module_names))
-            AND au.number != 0;
+            am.course_id = syncing_course_id
+            AND am.name NOT IN (SELECT unnest(used_assessment_module_names))
+            AND am.number != 0;
     END IF;
 
     -- Internal consistency check. All assessments should have an
