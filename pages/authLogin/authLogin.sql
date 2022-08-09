@@ -7,3 +7,4 @@ SELECT
 FROM
   institutions AS i
   JOIN authn_providers AS ap ON ap.id = i.default_authn_provider_id
+ORDER BY i.long_name ASC;
