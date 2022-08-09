@@ -9,6 +9,7 @@ const InstitutionAdminSso = ({
   resLocals,
 }) => {
   const hasSamlProvider = !!institutionSamlProvider;
+  // TODO: only show authentication providers that were enabled in `config.json`.
   return html`
     <!DOCTYPE html>
     <html lang="en">
@@ -36,9 +37,9 @@ const InstitutionAdminSso = ({
                     <input
                       class="form-check-input js-authentication-provider"
                       type="checkbox"
-                      value=""
+                      value="${provider.id}"
                       id="provider-${provider.id}-enabled"
-                      name="provider_enabled_${provider.id}"
+                      name="enabled_authn_provider_ids"
                       data-provider-id="${provider.id}"
                       ${isEnabled ? 'checked' : ''}
                       ${provider.name === 'SAML' && !hasSamlProvider ? 'disabled' : ''}
