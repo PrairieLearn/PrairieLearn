@@ -47,8 +47,6 @@ const strategy = new MultiSamlStrategy(
     },
   },
   function (req, profile, done) {
-    console.log('request', req);
-    console.log('profile', profile);
     done(null, profile);
   }
 );

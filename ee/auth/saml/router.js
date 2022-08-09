@@ -17,13 +17,15 @@ router.get('/login', function (req, res, next) {
     response: res,
     failureRedirect: '/pl',
     session: false,
-    additionalParams: {
-      // This is used be the SAML configuration page to test SAML. It includes
-      // `?RelayState=test` in the login request. When the callback page recieves
-      // that value, it displays the received attributes instead of crating a
-      // new session for the user.
-      RelayState: req.query.RelayState,
-    },
+    additionalParams: req.query.RelayState
+      ? {
+          // This is used be the SAML configuration page to test SAML. It includes
+          // `?RelayState=test` in the login request. When the callback page recieves
+          // that value, it displays the received attributes instead of crating a
+          // new session for the user.
+          RelayState: req.query.RelayState,
+        }
+      : undefined,
   })(req, res, next);
 });
 
