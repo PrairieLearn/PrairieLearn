@@ -11,12 +11,26 @@ async function getInstitution(institutionId) {
   return institutionRes.rows[0];
 }
 
-async function getSamleProviderForInstitution(institutionId) {
+async function getInstitutionSamlProvider(institutionId) {
   const samlProviderRes = await sqldb.queryZeroOrOneRowAsync(sql.select_institution_saml_provider, {
     institution_id: institutionId,
   });
   return samlProviderRes.rows[0] ?? null;
 }
 
+async function getInstitutionAuthenticationProviders(institutionId) {
+  const authProvidersRes = await sqldb.queryAsync(sql.select_institution_authn_providers, {
+    institution_id: institutionId,
+  });
+  return authProvidersRes.rows;
+}
+
+async function getAllAuthenticationProviders() {
+  const authProvidersRes = await sqldb.queryAsync(sql.select_authentication_providers, {});
+  return authProvidersRes.rows;
+}
+
 module.exports.getInstitution = getInstitution;
-module.exports.getSamleProviderForInstitution = getSamleProviderForInstitution;
+module.exports.getInstitutionSamlProvider = getInstitutionSamlProvider;
+module.exports.getInstitutionAuthenticationProviders = getInstitutionAuthenticationProviders;
+module.exports.getAllAuthenticationProviders = getAllAuthenticationProviders;

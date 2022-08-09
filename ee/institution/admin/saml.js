@@ -6,7 +6,7 @@ const pem = require('pem');
 const sqldb = require('../../../prairielib/sql-db');
 const sqlLoader = require('../../../prairielib/lib/sql-loader');
 const { InstitutionAdminSaml } = require('./saml.html');
-const { getInstitution, getSamleProviderForInstitution } = require('./utils');
+const { getInstitution, getInstitutionSamlProvider } = require('./utils');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
@@ -27,7 +27,6 @@ function createCertificate(options) {
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    console.log(req.body);
     if (req.body.saml_enabled) {
       await sqldb.runInTransactionAsync(async () => {
         // Check if there's an existing SAML provider configured. We'll use
@@ -41,9 +40,7 @@ router.post(
         );
 
         let publicKey, privateKey;
-        console.log(samlProviderRes);
         if (samlProviderRes.rowCount === 0) {
-          console.log('Creating new keypair');
           // No existing provider; create a new keypair with OpenSSL.
           const keys = await createCertificate({
             selfSigned: true,
@@ -55,7 +52,6 @@ router.post(
             // a given installation's domain name.
             commonName: req.headers.host,
           });
-          console.log(keys);
           publicKey = keys.certificate;
           privateKey = keys.serviceKey;
         }
@@ -71,7 +67,6 @@ router.post(
         });
       });
     } else {
-      console.log('deleting provider');
       await sqldb.queryAsync(sql.delete_institution_saml_provider, {
         institution_id: req.params.institution_id,
       });
@@ -84,7 +79,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const institution = await getInstitution(req.params.institution_id);
-    const samlProvider = await getSamleProviderForInstitution(req.params.institution_id);
+    const samlProvider = await getInstitutionSamlProvider(req.params.institution_id);
 
     res.send(
       InstitutionAdminSaml({
