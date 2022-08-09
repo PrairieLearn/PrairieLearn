@@ -5,11 +5,13 @@ const passport = require('passport');
 const util = require('util');
 
 const sqldb = require('../../../prairielib/lib/sql-db');
+const sqlLoader = require('../../../prairielib/lib/sql-loader');
 const config = require('../../../lib/config');
 const csrf = require('../../../lib/csrf');
 
 const { strategy, getSamlProviderForInstitution } = require('./index');
 
+const sql = sqlLoader.loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
 
 router.get('/login', function (req, res, next) {
@@ -45,18 +47,25 @@ router.post(
       return;
     }
 
-    const institutionId = req.params.institution_id;
-
     // Fetch this institution's attribute mappings.
-    // TODO: pull from database.
-    const uidAttribute = 'urn:oid:0.9.2342.19200300.100.1.1';
-    const uinAttribute = 'urn:oid:0.9.2342.19200300.100.1.3';
-    const nameAttribute = 'urn:oid:2.16.840.1.113730.3.1.241';
+    const institutionId = req.params.institution_id;
+    const institutionSamlProvider = await getSamlProviderForInstitution(institutionId);
+    const uidAttribute = institutionSamlProvider.rows[0].uid_attribute;
+    const uinAttribute = institutionSamlProvider.rows[0].uin_attribute;
+    const nameAttribute = institutionSamlProvider.rows[0].name_attribute;
 
-    // Fetch
+    if (!uidAttribute || !uinAttribute || !nameAttribute) {
+      throw new Error('Missing one or more SAML attribute mappings');
+    }
+
+    // Read the appropriate attributes.
     const authUid = req.user.attributes[uidAttribute];
     const authUin = req.user.attributes[uinAttribute];
     const authName = req.user.attributes[nameAttribute];
+
+    if (!authUid || !authUin || !authName) {
+      throw new Error('Missing one or more SAML attributes');
+    }
 
     const params = [authUid, authName, authUin, 'SAML'];
     const userRes = await sqldb.callAsync('users_select_or_insert', params);
