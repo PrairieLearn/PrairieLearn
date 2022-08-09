@@ -1,7 +1,9 @@
--- BLOCK select_institution_saml_providers
+-- BLOCK select_institution_authn_providers
 SELECT
   i.id,
-  i.long_name
+  i.long_name,
+  i.short_name,
+  ap.name AS default_authn_provider_name
 FROM
   institutions AS i
-  JOIN saml_providers AS sp ON (sp.institution_id = i.id);
+  JOIN authn_providers AS ap ON ap.id = i.default_authn_provider_id

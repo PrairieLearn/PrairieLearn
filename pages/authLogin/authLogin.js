@@ -13,11 +13,42 @@ router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
     res.locals.service = req.query.service ?? null;
-    res.locals.samlProviders = null;
+    res.locals.institutionAuthnProviders = null;
 
     if (isEnterprise()) {
-      const samlProvidersRes = await sqldb.queryAsync(sql.select_institution_saml_providers, {});
-      res.locals.samlProviders = samlProvidersRes.rows;
+      const institutionAuthnProviders = await sqldb.queryAsync(
+        sql.select_institution_authn_providers,
+        {}
+      );
+      res.locals.institutionAuthnProviders = institutionAuthnProviders.rows
+        .map((provider) => {
+          // Special case: omit the default institution.
+          if (provider.id === '1') return null;
+
+          let url = null;
+          switch (provider.default_authn_provider_name) {
+            case 'SAML':
+              url = `/pl/auth/institution/${provider.id}/saml/login`;
+              break;
+            case 'Google':
+              url = '/pl/oauth2login';
+              break;
+            case 'Azure':
+              url = '/pl/azure_login';
+              break;
+            case 'Shibboleth':
+              url = '/pl/shibcallback';
+              break;
+            default:
+              return null;
+          }
+
+          return {
+            name: `${provider.long_name} (${provider.short_name})`,
+            url,
+          };
+        })
+        .filter(Boolean);
     }
 
     // We could set res.locals.config.hasOauth = false (or
