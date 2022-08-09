@@ -14,7 +14,11 @@ const InstitutionAdminSso = ({
     <!DOCTYPE html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", resLocals)}
+        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
+          ...resLocals,
+          navPage: 'institution_admin',
+          pageTitle: 'SSO',
+        })}
       </head>
       <body>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
@@ -28,6 +32,7 @@ const InstitutionAdminSso = ({
         <div class="container">
           <form method="POST">
             <div class="form-group">
+              <div class="h5">Enabled single sign-on providers</div>
               ${allAuthenticationProviders.map((provider) => {
                 const isEnabled = institutionAuthenticationProviders.some(
                   (p) => p.id === provider.id
@@ -49,7 +54,9 @@ const InstitutionAdminSso = ({
                       ${provider.name === 'SAML' && !hasSamlProvider
                         ? html`
                             <small class=" d-block text-muted">
-                              You must <a href="">configure SAML</a> before you can enable it.
+                              You must
+                              <a href="${resLocals.urlPrefix}/saml">configure SAML</a> before you
+                              can enable it.
                             </small>
                           `
                         : ''}
@@ -59,7 +66,12 @@ const InstitutionAdminSso = ({
               })}
             </div>
             <div class="form-group">
-              <label for="defaultProvider">Default single sign-on provider</label>
+              <label class="h5 mb-0" for="defaultProvider">Default single sign-on provider</label>
+              <small class="form-text text-muted mt-0 mb-2">
+                When a default single sign-on provider is configured, users can click on your
+                institution's name on the login screen and be taken directly to the appropriate
+                provider. Note that LTI cannot be set as the default provider.
+              </small>
               <select
                 class="custom-select js-default-authentication-provider"
                 id="defaultProvider"
@@ -85,11 +97,6 @@ const InstitutionAdminSso = ({
                   `;
                 })}
               </select>
-              <small class="form-text text-muted">
-                When a default single sign-on provider is configured, users can click on your
-                institution's name on the login screen and be taken directly to the appropriate
-                provider. Note that LTI cannot be set as the default provider.
-              </small>
             </div>
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <button type="submit" class="btn btn-primary">Save</button>

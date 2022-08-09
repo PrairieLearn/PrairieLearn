@@ -3,10 +3,15 @@ const { Router } = require('express');
 const asyncHandler = require('express-async-handler');
 const pem = require('pem');
 
+const error = require('../../../prairielib/error');
 const sqldb = require('../../../prairielib/sql-db');
 const sqlLoader = require('../../../prairielib/lib/sql-loader');
 const { InstitutionAdminSaml } = require('./saml.html');
-const { getInstitution, getInstitutionSamlProvider } = require('./utils');
+const {
+  getInstitution,
+  getInstitutionSamlProvider,
+  getInstitutionAuthenticationProviders,
+} = require('./utils');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
@@ -27,7 +32,7 @@ function createCertificate(options) {
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (req.body.saml_enabled) {
+    if (req.body.__action === 'save') {
       await sqldb.runInTransactionAsync(async () => {
         // Check if there's an existing SAML provider configured. We'll use
         // that to determine if we need to create a new keypair. That is, we'll
@@ -66,12 +71,17 @@ router.post(
           private_key: privateKey,
         });
       });
-    } else {
-      // TODO: delete `institution_authn_provider` row if one exists.
+    } else if (req.body.__action === 'delete') {
       await sqldb.queryAsync(sql.delete_institution_saml_provider, {
         institution_id: req.params.institution_id,
       });
+    } else {
+      throw error.make(400, 'unknown __action', {
+        locals: res.locals,
+        body: req.body,
+      });
     }
+
     res.redirect(req.originalUrl);
   })
 );
@@ -81,11 +91,15 @@ router.get(
   asyncHandler(async (req, res) => {
     const institution = await getInstitution(req.params.institution_id);
     const samlProvider = await getInstitutionSamlProvider(req.params.institution_id);
+    const institutionAuthenticationProviders = await getInstitutionAuthenticationProviders(
+      req.params.institution_id
+    );
 
     res.send(
       InstitutionAdminSaml({
         institution,
         samlProvider,
+        institutionAuthenticationProviders,
         host: req.headers.host,
         resLocals: res.locals,
       })
