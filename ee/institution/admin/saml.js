@@ -67,6 +67,7 @@ router.post(
         });
       });
     } else {
+      // TODO: delete `institution_authn_provider` row if one exists.
       await sqldb.queryAsync(sql.delete_institution_saml_provider, {
         institution_id: req.params.institution_id,
       });
