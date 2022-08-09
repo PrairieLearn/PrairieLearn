@@ -727,31 +727,7 @@ module.exports.initExpress = function () {
   app.use('/pl/api/v1', require('./api/v1'));
 
   if (isEnterprise()) {
-    //////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////////////////////
-    // Institution pages /////////////////////////////////////////////////
-
-    // Currently, we don't have any notion of institution-level administrators, so
-    // we only allow global admins to do institution-level administration things.
-    // We should change this in the future.
-    app.use(
-      '/pl/institution/:institution_id/admin',
-      require('./middlewares/authzIsAdministrator'),
-      (req, res, next) => {
-        res.locals.urlPrefix = `/pl/institution/${req.params.institution_id}/admin`;
-        next();
-      }
-    );
-    // Redirect "plain" admin endpoint to the SAML page, since that's the only
-    // one that currently exists.
-    app.use(/^(\/pl\/institution\/[0-9]+\/admin)\/?$/, function (req, res) {
-      res.redirect(`${req.params[0]}/saml`);
-    });
-    app.use(
-      '/pl/institution/:institution_id/admin/saml',
-      require('./ee/auth/saml/institutionAdminSaml')
-    );
+    app.use('/pl/institution/:institution_id/admin', require('./ee/institution/admin'));
   }
 
   //////////////////////////////////////////////////////////////////////

@@ -17,6 +17,7 @@ const InstitutionAdminSaml = ({ institution, samlProvider, host, resLocals }) =>
       <body>
         ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
+          institution,
           navbarType: 'institution',
           navPage: 'institution_admin',
           navSubPage: 'saml',

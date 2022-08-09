@@ -5,7 +5,8 @@ const pem = require('pem');
 
 const sqldb = require('../../../prairielib/sql-db');
 const sqlLoader = require('../../../prairielib/lib/sql-loader');
-const { InstitutionAdminSaml } = require('./institutionAdminSaml.html');
+const { InstitutionAdminSaml } = require('./saml.html');
+const { getInstitution, getSamleProviderForInstitution } = require('./utils');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
@@ -28,7 +29,6 @@ router.post(
   asyncHandler(async (req, res) => {
     console.log(req.body);
     if (req.body.saml_enabled) {
-      console.log('inserting provider');
       await sqldb.runInTransactionAsync(async () => {
         // Check if there's an existing SAML provider configured. We'll use
         // that to determine if we need to create a new keypair. That is, we'll
@@ -83,21 +83,9 @@ router.post(
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const institutionRes = await sqldb.queryOneRowAsync(sql.select_institution, {
-      id: req.params.institution_id,
-    });
-    const institution = institutionRes.rows[0];
+    const institution = await getInstitution(req.params.institution_id);
+    const samlProvider = await getSamleProviderForInstitution(req.params.institution_id);
 
-    const samlProviderRes = await sqldb.queryZeroOrOneRowAsync(
-      sql.select_institution_saml_provider,
-      {
-        institution_id: req.params.institution_id,
-      }
-    );
-    const samlProvider = samlProviderRes.rows[0];
-    console.log(samlProvider);
-
-    res.locals.institution = institution;
     res.send(
       InstitutionAdminSaml({
         institution,
