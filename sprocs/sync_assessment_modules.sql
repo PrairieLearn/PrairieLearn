@@ -30,7 +30,7 @@ BEGIN
                 am->>1,
                 number,
                 syncing_course_id
-            FROM UNNEST(course_info_assessment_modules) WITH ORDINALITY AS t(au, number)
+            FROM UNNEST(course_info_assessment_modules) WITH ORDINALITY AS t(am, number)
             ON CONFLICT (name, course_id) DO UPDATE
             SET
                 heading = EXCLUDED.heading,
