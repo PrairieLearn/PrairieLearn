@@ -33,8 +33,7 @@ router.post('/callback', (req, res, next) => {
         // TODO: render an HTML page that explains what is being shown (the
         // attributes from the SAML response).
         res.contentType('application/json');
-        res.send(JSON.stringify(req.user.attributes, null, 2));
-        res.json(req.user.attributes);
+        res.send(JSON.stringify(req.user, null, 2));
         return;
       }
 
