@@ -11,7 +11,7 @@ const {
   getInstitution,
   getInstitutionSamlProvider,
   getInstitutionAuthenticationProviders,
-} = require('./utils');
+} = require('../utils');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
@@ -66,6 +66,10 @@ router.post(
           sso_login_url: req.body.sso_login_url,
           issuer: req.body.issuer,
           certificate: req.body.certificate,
+          // Normalize empty strings to `null`.
+          uin_attribute: req.body.uin_attribute || null,
+          uid_attribute: req.body.uid_attribute || null,
+          name_attribute: req.body.name_attribute || null,
           // The upsert query is configured to ignore these values if they're null.
           public_key: publicKey,
           private_key: privateKey,

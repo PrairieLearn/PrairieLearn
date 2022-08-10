@@ -12,7 +12,7 @@ const {
   getAllAuthenticationProviders,
   getInstitutionAuthenticationProviders,
   getInstitutionSamlProvider,
-} = require('./utils');
+} = require('../utils');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });

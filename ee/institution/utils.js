@@ -1,6 +1,6 @@
 // @ts-check
-const sqldb = require('../../../prairielib/sql-db');
-const sqlLoader = require('../../../prairielib/lib/sql-loader');
+const sqldb = require('../../prairielib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 

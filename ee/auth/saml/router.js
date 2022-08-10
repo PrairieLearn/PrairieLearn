@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
 const { Router } = require('express');
@@ -5,18 +6,18 @@ const passport = require('passport');
 const util = require('util');
 
 const sqldb = require('../../../prairielib/lib/sql-db');
-const sqlLoader = require('../../../prairielib/lib/sql-loader');
 const config = require('../../../lib/config');
 const csrf = require('../../../lib/csrf');
 
 const { strategy, getSamlProviderForInstitution } = require('./index');
+const { SamlTest } = require('./router.html');
+const { getInstitution } = require('../../institution/utils');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
 
 router.get('/login', function (req, res, next) {
+  // @ts-expect-error Missing `additionalParams` on the type.
   passport.authenticate('saml', {
-    response: res,
     failureRedirect: '/pl',
     session: false,
     additionalParams: req.query.RelayState
@@ -36,33 +37,49 @@ router.post(
   asyncHandler(async (req, res) => {
     // This will write the resolved user to `req.user`.
     await util.promisify(
-      passport.authenticate('saml', { response: res, failureRedirect: '/pl', session: false })
+      passport.authenticate('saml', {
+        failureRedirect: '/pl',
+        session: false,
+      })
     )(req, res);
-
-    if (req.body.RelayState === 'test') {
-      // TODO: render an HTML page that explains what is being shown (the
-      // attributes from the SAML response).
-      res.contentType('application/json');
-      res.send(JSON.stringify(req.user, null, 2));
-      return;
-    }
 
     // Fetch this institution's attribute mappings.
     const institutionId = req.params.institution_id;
     const institutionSamlProvider = await getSamlProviderForInstitution(institutionId);
-    const uidAttribute = institutionSamlProvider.rows[0].uid_attribute;
-    const uinAttribute = institutionSamlProvider.rows[0].uin_attribute;
-    const nameAttribute = institutionSamlProvider.rows[0].name_attribute;
+    const uidAttribute = institutionSamlProvider.uid_attribute;
+    const uinAttribute = institutionSamlProvider.uin_attribute;
+    const nameAttribute = institutionSamlProvider.name_attribute;
+    console.log(institutionSamlProvider);
 
+    // Read the appropriate attributes.
+    // @ts-expect-error `attributes` is not defined on the type.
+    const authUid = req.user.attributes[uidAttribute];
+    // @ts-expect-error `attributes` is not defined on the type.
+    const authUin = req.user.attributes[uinAttribute];
+    // @ts-expect-error `attributes` is not defined on the type.
+    const authName = req.user.attributes[nameAttribute];
+
+    if (req.body.RelayState === 'test') {
+      res.send(
+        SamlTest({
+          uid: authUid,
+          uin: authUin,
+          name: authName,
+          uidAttribute,
+          uinAttribute,
+          nameAttribute,
+          // @ts-expect-error `attributes` is not defined on the type.
+          attributes: req.user.attributes,
+          resLocals: res.locals,
+        })
+      );
+      return;
+    }
+
+    // Only perform validation if we aren't rendering the above test page.
     if (!uidAttribute || !uinAttribute || !nameAttribute) {
       throw new Error('Missing one or more SAML attribute mappings');
     }
-
-    // Read the appropriate attributes.
-    const authUid = req.user.attributes[uidAttribute];
-    const authUin = req.user.attributes[uinAttribute];
-    const authName = req.user.attributes[nameAttribute];
-
     if (!authUid || !authUin || !authName) {
       throw new Error('Missing one or more SAML attributes');
     }
