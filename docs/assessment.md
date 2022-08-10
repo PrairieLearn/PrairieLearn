@@ -12,6 +12,7 @@ Each assessment is a single directory in the `assessments` folder or any subfold
   "type": "Exam",
   "title": "Coordinates and Vectors",
   "set": "Quiz",
+  "module": "Linear algebra review",
   "number": "2",
   "allowAccess": [],
   "zones": [],
@@ -32,6 +33,12 @@ Assessments are organized into `sets` (e.g., `Homework`, `Quiz`, `Exam`) and wit
 - Long name = `Set Number: Title` (e.g., `Quiz 2: Coordinates and Vectors` above).
 
 You can select a set from the list of [standardized assessment sets](course.md#standardized-assessment-sets) or create your [own](course.md#adding-your-own-assessment-sets).
+
+## Assessment modules
+
+Instructors may want to group their assessments by course modules (topics, sections or chapters in a course). When using `"groupAssessmentsBy" : "Module"` in `infoCourseInstance.json`, instructors can assign an assessment to a specific module by setting the `module` property in `infoAssessment.json`, as illustrated in the example above. If the property `module` is omitted, by default the assessment will have `"module" : "Default"`.
+
+For more information about how to create your own assessment modules, see [Course configuration](course.md#assessment-modules).
 
 ## Assessment types
 
