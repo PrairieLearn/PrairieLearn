@@ -4,7 +4,6 @@ columns
     institution_id: bigint
     issuer: text not null
     name_attribute: text
-    name_atttribute: text
     private_key: text not null
     public_key: text not null
     sso_login_url: text not null
