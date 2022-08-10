@@ -11,9 +11,13 @@ const InstitutionAdminSaml = ({
   const hasSamlProvider = !!samlProvider;
   const hasEnabledSaml = institutionAuthenticationProviders.some((p) => p.name === 'SAML');
 
+  const missingAttributeMappings =
+    !samlProvider.uid_attribute || !samlProvider.uin_attribute || !samlProvider.name_attribute;
+
   const issuer = `https://${host}/saml/institution/${institution.id}`;
   const metadataUrl = `https://${host}/pl/auth/institution/${institution.id}/saml/metadata`;
   const assertionConsumerServiceUrl = `https://${host}/pl/auth/institution/${institution.id}/saml/callback`;
+  const testSamlUrl = `https://${host}/pl/auth/institution/${institution.id}/saml/login?RelayState=test`;
 
   return html`
     <!DOCTYPE html>
@@ -39,14 +43,26 @@ const InstitutionAdminSaml = ({
                 <div class="alert alert-warning">
                   <h2 class="h5">SAML single sign-on is not enabled</h2>
                   <p class="mb-0">
-                    You must visit the
+                    After <a href="${testSamlUrl}">testing your SAML configuration</a>, you must
+                    visit the
                     <a href="${resLocals.urlPrefix}/sso">single sign-on configuration</a> page and
                     enable SAML authentication.
                   </p>
                 </div>
               `
             : ''}
-          ${hasSamlProvider && hasEnabledSaml
+          ${hasSamlProvider && missingAttributeMappings
+            ? html`
+                <div class="alert alert-warning">
+                  <h2 class="h5">Missing attribute mappings</h2>
+                  <p class="mb-0">
+                    One or more attribute mappings are missing. These are necessary for
+                    authentication to work correctly.
+                  </p>
+                </div>
+              `
+            : ''}
+          ${hasSamlProvider && hasEnabledSaml && !missingAttributeMappings
             ? html`
                 <div class="alert alert-success">
                   <h2 class="h5">SAML single sign-on is configured and enabled!</h2>
@@ -203,12 +219,7 @@ ${samlProvider?.certificate ?? ''}</textarea
           ${hasSamlProvider
             ? html`
                 <p>
-                  <a
-                    href="/pl/auth/institution/${institution.id}/saml/login?RelayState=test"
-                    target="_blank"
-                  >
-                    Test SAML login
-                  </a>
+                  <a href="${testSamlUrl}" target="_blank"> Test SAML login </a>
                 </p>
 
                 <p>
