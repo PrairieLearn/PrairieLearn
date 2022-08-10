@@ -11,7 +11,6 @@ const csrf = require('../../../lib/csrf');
 
 const { strategy, getSamlProviderForInstitution } = require('./index');
 const { SamlTest } = require('./router.html');
-const { getInstitution } = require('../../institution/utils');
 
 const router = Router({ mergeParams: true });
 
@@ -88,7 +87,7 @@ router.post(
     const userRes = await sqldb.callAsync('users_select_or_insert', params);
     const tokenData = {
       user_id: userRes.rows[0].user_id,
-      authn_provider_name: 'Shibboleth',
+      authn_provider_name: 'SAML',
     };
     const pl_authn = csrf.generateToken(tokenData, config.secretKey);
     res.cookie('pl_authn', pl_authn, {
