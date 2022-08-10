@@ -124,19 +124,13 @@ self.compile_file('square.c', 'square', pkg_config_flags='check ncurses') # sing
 self.compile_file('square.c', 'square', pkg_config_flags=['check', 'ncurses']) # array
 ```
 
-It is also possible to test programs where the student only submits part of an application. To compile the C/C++ file submitted by the user with a `main` function implemented by the instructor, you can save a `main.c` (or `main.cpp`) file inside the `tests` folder and run:
+It is also possible to test programs where the student only submits part of an application. To compile the C/C++ file submitted by the user with some functions (including, for example, a `main` function) implemented by the instructor, you can save a `main.c` (or `main.cpp`) file inside the `tests` folder and run:
 
 ```python
 self.compile_file('square.c', 'square', add_c_file='/grade/tests/main.c')
 ```
 
-The instruction above will compile the student-provided C/C++ file with the instructor-provided C/C++ file into the same executable. If the student provides a `main` function, it will be ignored, and the instructor-provided main file will take precedence.
-
-In some situations you may want to include or replace other functions besides `main`. You may do that by placing these functions in a `.c` or `.cpp` file inside the `tests` folder and run:
-
-```python
-self.compile_file('square.c', 'square', add_c_file='/grade/tests/otherfunctions.c')
-```
+The instruction above will compile the student-provided C/C++ file with the instructor-provided C/C++ file into the same executable. If the student implements any function that is also implemented by the instructor's code, including `main` if provided, it will be ignored, and the instructor-provided functions will take precedence. This is achieved by compiling the code with the `-Wl,--allow-multiple-definition` flag of `gcc`.
 
 It is also possible to compile multiple student files and multiple question-provided files into a single executable, by providing lists of files:
 
@@ -148,6 +142,22 @@ self.compile_file(['student_file1.c', 'student_file2.c'], 'executable',
 ```
 
 If the compilation involves include (`.h`) files, the flags `-I/grade/tests` (for question-provided includes) and `-I/grade/student` (for student-provided includes) are recommended as well. The specific `.h` files don't need to be listed as arguments to `compile_file`.
+
+If the executable name is not provided, then the files will be compiled only into equivalent object files (with `.o` extension). To link these files into an executable, the `link_object_files` can be used. This function receives three mandatory arguments: the student object files, the additional object files (which can be set to `None` if there are none), and the executable name. This separation allows for more fined-tuned compilation flags between different C files or between compilation and linking, as well as additional operations to be performed with the generated object files. For example, the following sequence compiles the same files above, but renames the student's `main` function into `student_main` so it can be called from the instructor's `main` function.
+
+```python
+self.compile_file(['student_file1.c', 'student_file2.c'],
+                  add_c_file=['/grade/tests/question_file1.c',
+                              '/grade/tests/question_file2.c'],
+                  flags=['-I/grade/tests', '-I/grade/student'])
+self.run_command('objcopy --redefine-sym main=student_main student_file1.o student_file1_nomain.o',
+                 sandboxed=False)
+self.link_object_files(['student_file1_nomain.o', 'student_file2.o'],
+                       ['/grade/tests/question_file1.o', '/grade/tests/question_file2.o'],
+                       'executable')
+```
+
+The `link_object_files` also accepts arguments like `flags`, `pkg_config_flags`, `add_warning_result_msg=False` and `ungradable_if_failed=False`, as described above.
 
 For `self.test_compile_file()`, the results of the compilation will show up as a test named "Compilation", worth one point. To change the name and/or points, set the `name` or `points` argument as follows:
 
