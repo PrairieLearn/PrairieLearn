@@ -28,7 +28,7 @@ function formatDate(date) {
     if (!lastMigrationDate) {
       migrationDate = dates[0];
     } else {
-      migrationDate = dates.find((d) => new Date(d) >= new Date(lastMigrationDate));
+      migrationDate = dates.find((d) => new Date(d) > new Date(lastMigrationDate));
     }
 
     // If there was no appropriate commit date, just add one to the last migration date.
