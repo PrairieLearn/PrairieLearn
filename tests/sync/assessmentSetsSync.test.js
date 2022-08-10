@@ -106,6 +106,6 @@ describe('Assessment set syncing', () => {
     checkAssessmentSet(syncedAssessmentSet, newAssessmentSet2);
     const syncedCourses = await util.dumpTable('pl_courses');
     const syncedCourse = syncedCourses.find((c) => c.short_name === courseData.course.name);
-    assert.match(syncedCourse.sync_warnings, /Found duplicate assessment sets/);
+    assert.match(syncedCourse.sync_warnings, /Found duplicates in 'assessmentSets'/);
   });
 });

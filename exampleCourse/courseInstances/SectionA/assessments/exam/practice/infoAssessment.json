@@ -3,6 +3,7 @@
     "type": "Exam",
     "title": "Auto-graded randomized practice exams",
     "set": "Practice Exam",
+    "module": "FinalModule",
     "number": "1",
     "comment": "students can open several instances of this quiz for practice. Here we disable the honor code message, since in the practice environment students may be allowed to communicate with each other.",
     "multipleInstance": true,

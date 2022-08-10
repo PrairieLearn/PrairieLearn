@@ -4,6 +4,7 @@
     "title": "Homework for automatic test suite",
     "set": "Homework",
     "number": "1",
+    "module": "Module1",
     "allowAccess": [
         {
             "credit": 100
