@@ -37,12 +37,7 @@ router.post(
         // Check if there's an existing SAML provider configured. We'll use
         // that to determine if we need to create a new keypair. That is, we'll
         // only create a new keypair if there's no existing provider.
-        const samlProviderRes = await sqldb.queryZeroOrOneRowAsync(
-          sql.select_institution_saml_provider,
-          {
-            institution_id: req.params.institution_id,
-          }
-        );
+        const samlProviderRes = await getInstitutionSamlProvider(req.params.institution_id);
 
         let publicKey, privateKey;
         if (samlProviderRes.rowCount === 0) {

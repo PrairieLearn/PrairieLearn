@@ -9,8 +9,9 @@ const sqldb = require('../../../prairielib/lib/sql-db');
 const config = require('../../../lib/config');
 const csrf = require('../../../lib/csrf');
 
-const { strategy, getSamlProviderForInstitution } = require('./index');
+const { strategy } = require('./index');
 const { SamlTest } = require('./router.html');
+const { getInstitutionSamlProvider } = require('../../institution/utils');
 
 const router = Router({ mergeParams: true });
 
@@ -44,7 +45,7 @@ router.post(
 
     // Fetch this institution's attribute mappings.
     const institutionId = req.params.institution_id;
-    const institutionSamlProvider = await getSamlProviderForInstitution(institutionId);
+    const institutionSamlProvider = await getInstitutionSamlProvider(institutionId);
     const uidAttribute = institutionSamlProvider.uid_attribute;
     const uinAttribute = institutionSamlProvider.uin_attribute;
     const nameAttribute = institutionSamlProvider.name_attribute;
@@ -108,7 +109,7 @@ router.post(
 router.get(
   '/metadata',
   asyncHandler(async (req, res, next) => {
-    const samlProvider = await getSamlProviderForInstitution(req.params.institution_id);
+    const samlProvider = await getInstitutionSamlProvider(req.params.institution_id);
     strategy.generateServiceProviderMetadata(
       req,
       samlProvider.public_key,

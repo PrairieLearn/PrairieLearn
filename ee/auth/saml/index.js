@@ -1,23 +1,13 @@
 // @ts-check
 const { MultiSamlStrategy } = require('passport-saml');
 
-const sqldb = require('../../../prairielib/lib/sql-db');
-const sqlLoader = require('../../../prairielib/lib/sql-loader');
-
-const sql = sqlLoader.loadSqlEquiv(__filename);
-
-async function getSamlProviderForInstitution(institutionId) {
-  const res = await sqldb.queryZeroOrOneRowAsync(sql.select_institution_saml_provider, {
-    institution_id: institutionId,
-  });
-  return res.rows[0] ?? null;
-}
+const { getInstitutionSamlProvider } = require('../../institution/utils');
 
 const strategy = new MultiSamlStrategy(
   {
     passReqToCallback: true,
     getSamlOptions(req, done) {
-      getSamlProviderForInstitution(req.params.institution_id).then(
+      getInstitutionSamlProvider(req.params.institution_id).then(
         (samlProvider) => {
           if (!samlProvider) {
             return done(new Error('No SAML provider found for given institution'));
@@ -52,4 +42,3 @@ const strategy = new MultiSamlStrategy(
 );
 
 module.exports.strategy = strategy;
-module.exports.getSamlProviderForInstitution = getSamlProviderForInstitution;
