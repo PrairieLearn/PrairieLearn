@@ -1,8 +1,0 @@
-{
-    "controller": "pl-truth-table.py",
-    "dependencies": {
-        "elementStyles": [
-            "pl-truth-table.css"
-        ]
-    }
-}
