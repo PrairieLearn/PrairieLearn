@@ -42,7 +42,7 @@ module.exports.init = function (dir, proj, callback) {
 const MIGRATION_FILENAME_REGEX = /^(?:([0-9]{14})_)?(?:([0-9]+)_)?.+\.sql$/;
 
 /**
- * @typedef {Object} Migration
+ * @typedef {Object} MigrationFile
  * @property {string} filename
  * @property {number | null} index
  * @property {string | null} timestamp
@@ -51,7 +51,7 @@ const MIGRATION_FILENAME_REGEX = /^(?:([0-9]{14})_)?(?:([0-9]+)_)?.+\.sql$/;
 /**
  *
  * @param {string} dir
- * @return {Promise<Migration[]>}
+ * @return {Promise<MigrationFile[]>}
  */
 async function readAndValidateMigrationsFromDirectory(dir) {
   const migrationFiles = (await fs.readdir(dir)).filter((m) => m.endsWith('.sql'));
@@ -65,6 +65,10 @@ async function readAndValidateMigrationsFromDirectory(dir) {
 
     const timestamp = match[1];
     const index = match[2];
+
+    if (!timestamp && !index) {
+      throw new Error(`Migration ${mf} is missing a timestamp or index`);
+    }
 
     return {
       filename: mf,
@@ -116,6 +120,48 @@ async function readAndValidateMigrationsFromDirectory(dir) {
   }
 
   return migrations;
+}
+
+/**
+ * Determine the ordering of migrations. We will have already validates that either all migrations
+ * have a timestamp or none of them do; ditto for indexes. So we can safely order on either
+ * one or the other. Default to the timestamp if they're available, otherwise order on the index.
+
+ * @param {MigrationFile[]} migrationFiles
+ * @return {MigrationFile[]}
+ */
+function sortMigrationFiles(migrationFiles) {
+  let allMigrationsHaveTimestamp = migrationFiles.every((m) => m.timestamp);
+  return migrationFiles.sort((a, b) => {
+    if (allMigrationsHaveTimestamp) {
+      return a.timestamp.localeCompare(b.timestamp);
+    } else {
+      return a.index - b.index;
+    }
+  });
+}
+
+/**
+ *
+ * @param {MigrationFile[]} migrationFiles
+ * @param {{ index: number | null, timestamp: string | null }[]} executedMigrations
+ * @return {MigrationFile[]}
+ */
+function getMigrationsToExecute(migrationFiles, executedMigrations) {
+  // If no migrations have ever been run, run them all.
+  if (executedMigrations.length === 0) {
+    return migrationFiles;
+  }
+
+  // If our migration files have timestamps, use them to determine which
+  // have or have not executed. Otherwise, use the index.
+  if (migrationFiles.every((m) => m.timestamp)) {
+    return migrationFiles.filter(
+      (m) => !executedMigrations.some((e) => e.timestamp === m.timestamp)
+    );
+  } else {
+    return migrationFiles.filter((m) => !executedMigrations.some((e) => e.index === m.index));
+  }
 }
 
 module.exports._initWithLock = function (callback) {
@@ -170,12 +216,12 @@ module.exports._initWithLock = function (callback) {
         let allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
         console.log(allMigrations.rows);
 
-        const migrations = await readAndValidateMigrationsFromDirectory(migrationDir);
+        const migrationFiles = await readAndValidateMigrationsFromDirectory(migrationDir);
 
         // Validation: if we no longer have any indexes in the migration names,
         // ensure that the user has deployed an earlier version of the code that
         // already synced the indexes to the migrations table.
-        if (!migrations.some((m) => m.index !== null)) {
+        if (!migrationFiles.some((m) => m.index !== null)) {
           const migrationsMissingTimestamps = allMigrations.filter((m) => !m.timestamp);
           if (migrationsMissingTimestamps.length > 0) {
             const missing = migrationsMissingTimestamps.map((m) => m.filename).join(', ');
@@ -186,7 +232,7 @@ module.exports._initWithLock = function (callback) {
         // Second pass: reconcile the timestamps with the list of migrations in the database.
         // This should only matter a single time (the first time this code is deployed after
         // adding timestamps to all migrations).
-        for (const { filename, timestamp, index } of migrations) {
+        for (const { filename, timestamp, index } of migrationFiles) {
           if (!timestamp) {
             continue;
           }
@@ -210,17 +256,8 @@ module.exports._initWithLock = function (callback) {
         // Refetch the list of migrations from the database.
         allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
 
-        // Determine the ordering of migrations. We validated above that either all migrations
-        // have a timestamp or none of them do; ditto for indexes. So we can safely order on either
-        // one or the other. Default to the timestamp if they're available, otherwise order on the index.
-        let allMigrationsHaveTimestamp = migrations.every((m) => m.timestamp);
-        const orderedMigrationFiles = migrations.sort((a, b) => {
-          if (allMigrationsHaveTimestamp) {
-            return a.timestamp.localeCompare(b.timestamp);
-          } else {
-            return a.index - b.index;
-          }
-        });
+        // Sort the migration files into execution order.
+        const sortedMigrationFiles = sortMigrationFiles(migrationFiles);
 
         // First, fetch the index of the last applied migration
         const results = await sqldb.queryOneRowAsync(sql.get_last_migration, { project });
@@ -277,11 +314,11 @@ module.exports._initWithLock = function (callback) {
           }
 
           // Read the migration.
-          const sql = await fs.readFile(path.join(migrationDir, file.filename), 'utf8');
+          const migrationSql = await fs.readFile(path.join(migrationDir, file.filename), 'utf8');
 
           // Perform the migration.
           try {
-            await sqldb.query(sql, {});
+            await sqldb.query(migrationSql, {});
           } catch (err) {
             error.addData(err, { sqlFile: file.filename });
             throw err;
@@ -304,4 +341,7 @@ module.exports._initWithLock = function (callback) {
   );
 };
 
+// Exported for testing.
 module.exports.readAndValidateMigrationsFromDirectory = readAndValidateMigrationsFromDirectory;
+module.exports.sortMigrationFiles = sortMigrationFiles;
+module.exports.getMigrationsToExecute = getMigrationsToExecute;
