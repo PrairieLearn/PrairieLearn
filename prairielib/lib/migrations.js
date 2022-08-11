@@ -44,31 +44,45 @@ module.exports._initWithLock = function (callback) {
         // Create the migrations table if needed
         await sqldb.queryAsync(sql.create_migrations_table, {});
 
-        // Alter the migrations table if needed
+        // Apply necessary changes to the migrations table as needed.
         try {
           await sqldb.queryAsync('SELECT project FROM migrations;', {});
         } catch (err) {
           if (err.routine === 'errorMissingColumn') {
             logger.info('Altering migrations table');
-            await sqldb.queryAsync(sql.alter_migrations_table, {});
+            await sqldb.queryAsync(sql.add_projects_column, {});
+          } else {
+            throw err;
           }
         }
-
         try {
-          await sqldb.queryAsync('SELECT timestamp_id FROM migrations;', {});
+          await sqldb.queryAsync('SELECT timestamp FROM migrations;', {});
         } catch (err) {
           if (err.routine === 'errorMissingColumn') {
             logger.info('Altering migrations table again');
-            await sqldb.queryAsync(sql.alter_migrations_table_2, {});
+            await sqldb.queryAsync(sql.add_timestamp_column, {});
+          } else {
+            throw err;
           }
         }
 
         // In the past, we uniquely identified and ordered migrations by an integer index.
         // However, this frequently causes conflicts between branches. To avoid this, we
         // switched to identifying migrations by a timestamp (e.g. `20220810085513`).
-        // However, we left the index intact so that we could match up old migrations.
-        // This next bit of code fills in the `timestamp_id` column with the value, if it
-        // exists.
+        //
+        // However, we need to actually migrate from using an integer index to
+        // using a timestamp. We'll achieve this using a multi-step deploy.
+        //
+        // First, we'll deploy a version of the code that still has the index embedded
+        // in the filename. We'll use that to sync the new timestamps to the migrations
+        // table.
+        //
+        // Only after that will we deploy a version that removes the index from the
+        // migration filenames. As part of that, we'll add some safety checks that
+        // will ensure that if we're deploying a migrations directory that doesn't
+        // have *any* indexes in the filenames, we'll error out and prompt the user
+        // to deploy an earlier version that still has timestamps.
+
         const allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
         console.log(allMigrations.rows);
 
@@ -76,10 +90,15 @@ module.exports._initWithLock = function (callback) {
 
         // Timestamp prefixes will be of the form `YYYYMMDDHHMMSS`, which will have 14 digits.
         // If this code is still around in the year 10000... good luck.
-        const regex = /^(?:([0-9]{14})_)?([0-9]+)_.+\.sql$/;
+        const regex = /^(?:([0-9]{14})_)?([0-9]+)?_.+\.sql$/;
 
         // First pass: validate that all migrations have a unique timestamp prefix.
         // This will avoid data loss and conflicts in unexpected scenarios.
+        let hasSeenIndex = false;
+        let hasSeenTimestamp = false;
+        let allMigrationsHaveIndex = true;
+        let allMigrationsHaveTimestamp = true;
+        let seenIndexes = new Set();
         let seenTimestamps = new Set();
         for (const migrationFile of migrationFiles) {
           const match = migrationFile.match(regex);
@@ -87,8 +106,52 @@ module.exports._initWithLock = function (callback) {
             throw new Error(`Unexpected migration filename: ${migrationFile}`);
           }
           const timestamp = match[1];
-          if (seenTimestamps.has(timestamp)) {
-            throw new Error(`Duplicate migration timestamp: ${timestamp}`);
+          const index = match[2];
+
+          if (timestamp) {
+            if (seenTimestamps.has(timestamp)) {
+              throw new Error(`Duplicate migration timestamp: ${timestamp}`);
+            }
+            seenTimestamps.add(timestamp);
+            hasSeenTimestamp = true;
+          } else {
+            allMigrationsHaveTimestamp = false;
+          }
+
+          if (index) {
+            if (seenIndexes.has(index)) {
+              throw new Error(`Duplicate migration index: ${index}`);
+            }
+            seenIndexes.add(index);
+            hasSeenIndex = true;
+          } else {
+            allMigrationsHaveIndex = false;
+          }
+        }
+
+        // Validation: if one migration has a timestamp, *all* migrations must have a timestamp.
+        if (hasSeenTimestamp && !allMigrationsHaveTimestamp) {
+          throw new Error('One or more migration files are missing timestamps');
+        }
+
+        // Validation: if one migration has an index, *all* migrations must have an index.
+        if (hasSeenIndex && !allMigrationsHaveIndex) {
+          throw new Error('One or more migration files are missing indexes');
+        }
+
+        // Validation: all migrations must have either a timestamp or an index.
+        if (!allMigrationsHaveTimestamp && !allMigrationsHaveIndex) {
+          throw new Error('All migration files must have either a timestamp or an index');
+        }
+
+        // Validation: if we no longer have any indexes in the migration names,
+        // ensure that the user has deployed an earlier version of the code that
+        // already synced the indexes to the migrations table.
+        if (!hasSeenIndex) {
+          const migrationsMissingTimestamps = allMigrations.filter((m) => !m.timestamp);
+          if (migrationsMissingTimestamps.length > 0) {
+            const missing = migrationsMissingTimestamps.map((m) => m.filename).join(', ');
+            throw new Error(`The following migrations are missing timestamps: ${missing}`);
           }
         }
 
@@ -121,10 +184,26 @@ module.exports._initWithLock = function (callback) {
           });
         }
 
-        // TODO: remove this.
-        throw new Error('abort early');
-      },
-      async () => {
+        // Determine both the ordering of migrations. We validated above that either all migrations
+        // have a timestamp or none of them do; ditto for indexes. So we can safely order on either
+        // one or the other. Default to the timestamp if they're available, otherwise order on the index.
+        const orderedMigrationFiles = migrationFiles.sort((a, b) => {
+          let aMatch = a.match(regex);
+          let bMatch = b.match(regex);
+
+          let aTimestamp = aMatch[1];
+          let bTimestamp = bMatch[1];
+
+          let aIndex = aMatch[2];
+          let bIndex = bMatch[2];
+
+          if (allMigrationsHaveTimestamp) {
+            return aTimestamp.localeCompare(bTimestamp);
+          } else {
+            return Number.parseInt(aIndex, 10) - Number.parseInt(bIndex, 10);
+          }
+        });
+
         // First, fetch the index of the last applied migration
         const results = await sqldb.queryOneRowAsync(sql.get_last_migration, { project });
         let last_migration = results.rows[0].last_migration;
@@ -132,7 +211,6 @@ module.exports._initWithLock = function (callback) {
           last_migration = -1;
           noExistingMigrations = true;
         }
-        return last_migration;
       },
       (last_migration, callback) => {
         fs.readdir(migrationDir, (err, files) => {
@@ -171,56 +249,33 @@ module.exports._initWithLock = function (callback) {
           callback(null, files);
         });
       },
-      (files, callback) => {
-        async.eachSeries(
-          files,
-          (file, callback) => {
-            if (noExistingMigrations) {
-              // if we are running all the migrations then log at a lower level
-              logger.verbose('Running migration ' + file.filename);
-            } else {
-              logger.info('Running migration ' + file.filename);
-            }
-            async.waterfall(
-              [
-                (callback) => {
-                  fs.readFile(path.join(migrationDir, file.filename), 'utf8', (err, sql) => {
-                    if (ERR(err, callback)) return;
-                    callback(null, sql);
-                  });
-                },
-                (sql, callback) => {
-                  // Perform the migration
-                  sqldb.query(sql, [], (err, _result) => {
-                    if (err) error.addData(err, { sqlFile: file.filename });
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                  });
-                },
-                (callback) => {
-                  // Record the migration
-                  const params = {
-                    filename: file.filename,
-                    index: file.index,
-                    project,
-                  };
-                  sqldb.query(sql.insert_migration, params, (err, _result) => {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                  });
-                },
-              ],
-              (err) => {
-                if (ERR(err, callback)) return;
-                callback(null);
-              }
-            );
-          },
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
+      async (files) => {
+        await async.eachSeries(files, async (file) => {
+          if (noExistingMigrations) {
+            // if we are running all the migrations then log at a lower level
+            logger.verbose('Running migration ' + file.filename);
+          } else {
+            logger.info('Running migration ' + file.filename);
           }
-        );
+
+          // Read the migration.
+          const sql = await fs.readFile(path.join(migrationDir, file.filename), 'utf8');
+
+          // Perform the migration.
+          try {
+            await sqldb.query(sql, {});
+          } catch (err) {
+            error.addData(err, { sqlFile: file.filename });
+            throw err;
+          }
+
+          // Record the migration.
+          sqldb.query(sql.insert_migration, {
+            filename: file.filename,
+            index: file.index,
+            project,
+          });
+        });
       },
     ],
     (err) => {

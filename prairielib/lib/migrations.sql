@@ -8,13 +8,13 @@ CREATE TABLE IF NOT EXISTS migrations (
   UNIQUE(project, index)
 );
 
--- BLOCK alter_migrations_table
+-- BLOCK add_projects_column
 ALTER TABLE migrations ADD COLUMN IF NOT EXISTS project TEXT DEFAULT 'prairielearn';
 CREATE UNIQUE INDEX IF NOT EXISTS migrations_index_project_key ON migrations (index, project);
 ALTER TABLE migrations DROP CONSTRAINT migrations_index_key;
 DROP INDEX IF EXISTS migrations_index_key;
 
--- BLOCK alter_migrations_table_2
+-- BLOCK add_timestamp_column
 ALTER TABLE migrations ADD COLUMN IF NOT EXISTS timestamp BIGINT;
 CREATE UNIQUE INDEX IF NOT EXISTS migrations_timestamp_project_key ON migrations (timestamp, project);
 
