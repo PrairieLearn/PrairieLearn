@@ -259,78 +259,39 @@ module.exports._initWithLock = function (callback) {
         // Sort the migration files into execution order.
         const sortedMigrationFiles = sortMigrationFiles(migrationFiles);
 
-        // First, fetch the index of the last applied migration
-        const results = await sqldb.queryOneRowAsync(sql.get_last_migration, { project });
-        let last_migration = results.rows[0].last_migration;
-        if (last_migration == null) {
-          last_migration = -1;
-          noExistingMigrations = true;
-        }
-      },
-      (last_migration, callback) => {
-        fs.readdir(migrationDir, (err, files) => {
-          if (ERR(err, callback)) return;
+        // Figure out which migrations have to be applied.
+        const migrationsToExecute = getMigrationsToExecute(
+          sortedMigrationFiles,
+          allMigrations.rows
+        );
 
-          const regex = /^([0-9]+)_.+\.sql$/;
-          files = files
-            .filter((file) => regex.test(file))
-            .map((file) => {
-              const index = Number.parseInt(regex.exec(file)[1]);
-              return {
-                index: index,
-                filename: file,
-              };
-            })
-            .sort((a, b) => {
-              return a.index - b.index;
-            });
-
-          // check that we don't have repeated indexes
-          const repeatedIndexes = _(files)
-            .groupBy((file) => file.index)
-            .pickBy((fileList) => fileList.length > 1)
-            .map(
-              (fileList, index) =>
-                `Repeated index ${index}:\n` + _.map(fileList, 'filename').join('\n')
-            )
-            .value();
-          if (repeatedIndexes.length > 0) {
-            return callback(
-              new Error(`Repeated migration indexes:\n${repeatedIndexes.join('\n')}`)
-            );
-          }
-
-          files = files.filter((file) => file.index > last_migration);
-          callback(null, files);
-        });
-      },
-      async (files) => {
-        await async.eachSeries(files, async (file) => {
-          if (noExistingMigrations) {
+        for (const { filename, index, timestamp } of migrationsToExecute) {
+          if (allMigrations.length === 0) {
             // if we are running all the migrations then log at a lower level
-            logger.verbose('Running migration ' + file.filename);
+            logger.verbose(`Running migration ${filename}`);
           } else {
-            logger.info('Running migration ' + file.filename);
+            logger.info(`Running migration ${filename}`);
           }
 
           // Read the migration.
-          const migrationSql = await fs.readFile(path.join(migrationDir, file.filename), 'utf8');
+          const migrationSql = await fs.readFile(path.join(migrationDir, filename), 'utf8');
 
           // Perform the migration.
           try {
             await sqldb.query(migrationSql, {});
           } catch (err) {
-            error.addData(err, { sqlFile: file.filename });
+            error.addData(err, { sqlFile: filename });
             throw err;
           }
 
           // Record the migration.
           sqldb.query(sql.insert_migration, {
-            filename: file.filename,
-            index: file.index,
+            filename: filename,
+            index,
+            timestamp,
             project,
           });
-        });
+        }
       },
     ],
     (err) => {

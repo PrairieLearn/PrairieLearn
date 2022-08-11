@@ -178,11 +178,11 @@ describe('migrations', () => {
       ];
       const executedMigrations = [
         {
-          id: null,
+          index: null,
           timestamp: '20220101010101',
         },
         {
-          id: null,
+          index: null,
           timestamp: '20220101010102',
         },
       ];
