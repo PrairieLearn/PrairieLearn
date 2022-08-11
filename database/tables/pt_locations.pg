@@ -1,4 +1,5 @@
 columns
+    filter_networks: boolean not null default false
     id: bigint not null default nextval('pt_locations_id_seq'::regclass)
 
 indexes

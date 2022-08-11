@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS pt_locations (
-    id bigserial PRIMARY KEY
+    id bigserial PRIMARY KEY,
+    filter_networks boolean NOT NULL DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS pt_location_networks (

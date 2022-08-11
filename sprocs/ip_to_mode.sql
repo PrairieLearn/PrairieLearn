@@ -58,7 +58,7 @@ BEGIN
             pt_sessions AS s
             JOIN pt_locations AS loc ON (loc.id = s.location_id)
         WHERE
-            s.id = session_id;
+            s.id = v_session_id;
 
         IF FOUND THEN
             -- We're in a testing center location.
