@@ -63,10 +63,10 @@ async function readAndValidateMigrationsFromDirectory(dir) {
       throw new Error(`Invalid migration filename: ${mf}`);
     }
 
-    const timestamp = match[1];
-    const index = match[2];
+    const timestamp = match[1] ?? null;
+    const index = match[2] ?? null;
 
-    if (!timestamp && !index) {
+    if (timestamp === null && index === null) {
       throw new Error(`Migration ${mf} is missing a timestamp or index`);
     }
 
@@ -88,7 +88,7 @@ async function readAndValidateMigrationsFromDirectory(dir) {
   for (const migration of migrations) {
     const { filename, timestamp, index } = migration;
 
-    if (timestamp) {
+    if (timestamp !== null) {
       if (seenTimestamps.has(timestamp)) {
         throw new Error(`Duplicate migration timestamp: ${timestamp} (${filename})`);
       }
@@ -98,7 +98,7 @@ async function readAndValidateMigrationsFromDirectory(dir) {
       allMigrationsHaveTimestamp = false;
     }
 
-    if (index) {
+    if (index !== null) {
       if (seenIndexes.has(index)) {
         throw new Error(`Duplicate migration index: ${index} (${filename})`);
       }
@@ -111,12 +111,22 @@ async function readAndValidateMigrationsFromDirectory(dir) {
 
   // Validation: if one migration has a timestamp, *all* migrations must have a timestamp.
   if (hasSeenTimestamp && !allMigrationsHaveTimestamp) {
-    throw new Error('One or more migration files are missing timestamps');
+    const filesMissingTimestamp = migrations
+      .filter((m) => m.timestamp === null)
+      .map((m) => m.filename)
+      .join(', ');
+    throw new Error(
+      `The following migration files are missing timestamps: ${filesMissingTimestamp}`
+    );
   }
 
   // Validation: if one migration has an index, *all* migrations must have an index.
   if (hasSeenIndex && !allMigrationsHaveIndex) {
-    throw new Error('One or more migration files are missing indexes');
+    const filesMissingIndex = migrations
+      .filter((m) => m.index === null)
+      .map((m) => m.filename)
+      .join(', ');
+    throw new Error(`The following migration files are missing indexes: ${filesMissingIndex}`);
   }
 
   return migrations;
@@ -214,7 +224,6 @@ module.exports._initWithLock = function (callback) {
         // to deploy an earlier version that still has timestamps.
 
         let allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
-        console.log(allMigrations.rows);
 
         const migrationFiles = await readAndValidateMigrationsFromDirectory(migrationDir);
 

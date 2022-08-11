@@ -15,9 +15,8 @@ async function withMigrationFiles(files, fn) {
   await tmp.withDir(
     async function (tmpDir) {
       for (const file of files) {
-        fs.writeFile(path.join(tmpDir.path, file), '');
+        await fs.writeFile(path.join(tmpDir.path, file), '');
       }
-      console.log(tmpDir.path);
       await fn(tmpDir.path);
     },
     { unsafeCleanup: true }
@@ -50,7 +49,7 @@ describe('migrations', () => {
         ['20220101010101_001_testing.sql', '20220101010102_testing_again.sql'],
         async (tmpDir) => {
           await expect(readAndValidateMigrationsFromDirectory(tmpDir)).rejects.toThrow(
-            'One or more migration files are missing indexes'
+            'The following migration files are missing indexes: 20220101010102_testing_again.sql'
           );
         }
       );
@@ -61,7 +60,7 @@ describe('migrations', () => {
         ['20220101010101_001_testing.sql', '002_testing_again.sql'],
         async (tmpDir) => {
           await expect(readAndValidateMigrationsFromDirectory(tmpDir)).rejects.toThrow(
-            'One or more migration files are missing timestamps'
+            'The following migration files are missing timestamps: 002_testing_again.sql'
           );
         }
       );
