@@ -24,7 +24,7 @@ router.get('/login', function (req, res, next) {
       ? {
           // This is used be the SAML configuration page to test SAML. It includes
           // `?RelayState=test` in the login request. When the callback page recieves
-          // that value, it displays the received attributes instead of crating a
+          // that value, it displays the received attributes instead of creating a
           // new session for the user.
           RelayState: req.query.RelayState,
         }
@@ -49,7 +49,6 @@ router.post(
     const uidAttribute = institutionSamlProvider.uid_attribute;
     const uinAttribute = institutionSamlProvider.uin_attribute;
     const nameAttribute = institutionSamlProvider.name_attribute;
-    console.log(institutionSamlProvider);
 
     // Read the appropriate attributes.
     // @ts-expect-error `attributes` is not defined on the type.

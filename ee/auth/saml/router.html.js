@@ -19,8 +19,6 @@ const SamlTest = ({
   const hasUin = !!uin;
   const hasName = !!name;
 
-  console.log(uidAttribute, uinAttribute, nameAttribute);
-
   const hasError =
     !hasUidAttribute || !hasUinAttribute || !hasNameAttribute || !hasUid || !hasUin || !hasName;
 
