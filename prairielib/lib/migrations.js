@@ -1,5 +1,5 @@
 const ERR = require('async-stacktrace');
-const fs = require('fs');
+const fs = require('fs-extra');
 const path = require('path');
 const async = require('async');
 const _ = require('lodash');
@@ -40,42 +40,99 @@ module.exports._initWithLock = function (callback) {
 
   async.waterfall(
     [
-      (callback) => {
+      async () => {
         // Create the migrations table if needed
-        sqldb.query(sql.create_migrations_table, [], (err, _result) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
+        await sqldb.queryAsync(sql.create_migrations_table, {});
+
         // Alter the migrations table if needed
-        sqldb.query('SELECT project FROM migrations;', [], (err, _result) => {
-          if (err) {
-            if (err.routine === 'errorMissingColumn') {
-              logger.info('Altering migrations table');
-              sqldb.query(sql.alter_migrations_table, [], (err, _result) => {
-                if (ERR(err, callback)) return;
-                callback(null);
-              });
-            } else {
-              return ERR(err, callback);
-            }
-          } else {
-            callback(null);
+        try {
+          await sqldb.queryAsync('SELECT project FROM migrations;', {});
+        } catch (err) {
+          if (err.routine === 'errorMissingColumn') {
+            logger.info('Altering migrations table');
+            await sqldb.queryAsync(sql.alter_migrations_table, {});
           }
-        });
+        }
+
+        try {
+          await sqldb.queryAsync('SELECT timestamp_id FROM migrations;', {});
+        } catch (err) {
+          if (err.routine === 'errorMissingColumn') {
+            logger.info('Altering migrations table again');
+            await sqldb.queryAsync(sql.alter_migrations_table_2, {});
+          }
+        }
+
+        // In the past, we uniquely identified and ordered migrations by an integer index.
+        // However, this frequently causes conflicts between branches. To avoid this, we
+        // switched to identifying migrations by a timestamp (e.g. `20220810085513`).
+        // However, we left the index intact so that we could match up old migrations.
+        // This next bit of code fills in the `timestamp_id` column with the value, if it
+        // exists.
+        const allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
+        console.log(allMigrations.rows);
+
+        const migrationFiles = (await fs.readdir(migrationDir)).filter((m) => m.endsWith('.sql'));
+
+        // Timestamp prefixes will be of the form `YYYYMMDDHHMMSS`, which will have 14 digits.
+        // If this code is still around in the year 10000... good luck.
+        const regex = /^(?:([0-9]{14})_)?([0-9]+)_.+\.sql$/;
+
+        // First pass: validate that all migrations have a unique timestamp prefix.
+        // This will avoid data loss and conflicts in unexpected scenarios.
+        let seenTimestamps = new Set();
+        for (const migrationFile of migrationFiles) {
+          const match = migrationFile.match(regex);
+          if (!match) {
+            throw new Error(`Unexpected migration filename: ${migrationFile}`);
+          }
+          const timestamp = match[1];
+          if (seenTimestamps.has(timestamp)) {
+            throw new Error(`Duplicate migration timestamp: ${timestamp}`);
+          }
+        }
+
+        // Second pass: reconcile the timestamps with the list of migrations in the database.
+        // This should only matter a single time (the first time this code is deployed after
+        // adding timestamps to all migrations).
+        for (const migrationFile of migrationFiles) {
+          const match = migrationFile.match(regex);
+
+          const timestamp = match[1];
+          const index = match[2];
+
+          if (!timestamp) {
+            continue;
+          }
+
+          const migration = allMigrations.rows.find((m) => m.index === index);
+          if (!migration || migration.timestamp) {
+            // This migration hasn't been applied, or it's already been updated with a timestamp.
+            continue;
+          }
+
+          logger.info(
+            `Updating migration ${migration.index} with timestamp ${timestamp} and filename ${migrationFile}`
+          );
+          await sqldb.queryAsync(sql.update_migration, {
+            id: migration.id,
+            timestamp,
+            filename: migrationFile,
+          });
+        }
+
+        // TODO: remove this.
+        throw new Error('abort early');
       },
-      (callback) => {
+      async () => {
         // First, fetch the index of the last applied migration
-        sqldb.queryOneRow(sql.get_last_migration, { project }, (err, results) => {
-          if (ERR(err, callback)) return;
-          let last_migration = results.rows[0].last_migration;
-          if (last_migration == null) {
-            last_migration = -1;
-            noExistingMigrations = true;
-          }
-          callback(null, last_migration);
-        });
+        const results = await sqldb.queryOneRowAsync(sql.get_last_migration, { project });
+        let last_migration = results.rows[0].last_migration;
+        if (last_migration == null) {
+          last_migration = -1;
+          noExistingMigrations = true;
+        }
+        return last_migration;
       },
       (last_migration, callback) => {
         fs.readdir(migrationDir, (err, files) => {

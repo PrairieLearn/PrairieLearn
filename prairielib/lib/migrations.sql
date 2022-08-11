@@ -14,6 +14,20 @@ CREATE UNIQUE INDEX IF NOT EXISTS migrations_index_project_key ON migrations (in
 ALTER TABLE migrations DROP CONSTRAINT migrations_index_key;
 DROP INDEX IF EXISTS migrations_index_key;
 
+-- BLOCK alter_migrations_table_2
+ALTER TABLE migrations ADD COLUMN IF NOT EXISTS timestamp BIGINT;
+CREATE UNIQUE INDEX IF NOT EXISTS migrations_timestamp_project_key ON migrations (timestamp, project);
+
+-- BLOCK get_migrations
+SELECT id, filename, index, timestamp FROM migrations WHERE project = $project;
+
+-- BLOCK update_migration
+UPDATE migrations
+SET
+  filename = $filename,
+  timestamp = $timestamp
+WHERE id = $id;
+
 -- BLOCK get_last_migration
 SELECT MAX(index) AS last_migration FROM migrations WHERE project = $project;
 
