@@ -15,7 +15,7 @@ ALTER TABLE migrations DROP CONSTRAINT migrations_index_key;
 DROP INDEX IF EXISTS migrations_index_key;
 
 -- BLOCK add_timestamp_column
-ALTER TABLE migrations ADD COLUMN IF NOT EXISTS timestamp BIGINT;
+ALTER TABLE migrations ADD COLUMN IF NOT EXISTS timestamp TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS migrations_timestamp_project_key ON migrations (timestamp, project);
 
 -- BLOCK get_migrations
