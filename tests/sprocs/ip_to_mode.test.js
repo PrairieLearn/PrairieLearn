@@ -38,4 +38,26 @@ describe('sproc ip_to_mode tests', function () {
       assert.equal(result.rows[0].mode, 'Public');
     });
   });
+
+  describe('PT with checked-in reservation and IP-UNrestricted exam', function () {
+    beforeEach('remove IP restriction', async function () {
+      await sqldb.queryAsync('UPDATE pt_locations SET filter_networks = FALSE;', {});
+    });
+
+    it('should return "Exam" even when we have the wrong IP address', async function () {
+      const result = await sqldb.callAsync('ip_to_mode', ['192.168.0.1', new Date(), user_id]);
+      assert.equal(result.rows[0].mode, 'Exam');
+    });
+  });
+
+  describe('PT with checked-in reservation and exam without location', function () {
+    beforeEach('remove IP restriction', async function () {
+      await sqldb.queryAsync('UPDATE pt_sessions SET location_id = NULL;', {});
+    });
+
+    it('should return "Exam" even when we have the wrong IP address', async function () {
+      const result = await sqldb.callAsync('ip_to_mode', ['192.168.0.1', new Date(), user_id]);
+      assert.equal(result.rows[0].mode, 'Exam');
+    });
+  });
 });
