@@ -35,6 +35,12 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  */
 
 /**
+ * @typedef {Object} Module
+ * @property {string} name
+ * @property {string} heading
+ */
+
+/**
  * @typedef {Object} Course
  * @property {string} uuid
  * @property {string} name
@@ -45,6 +51,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {Tag[]} tags
  * @property {Topic[]} topics
  * @property {AssessmentSet[]} assessmentSets
+ * @property {Module[]} [assessmentModules]
  */
 
 /**
@@ -62,6 +69,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {number} [number]
  * @property {string} [timezone]
  * @property {CourseInstanceAllowAccess[]} [allowAccess]
+ * @property {"Set" | "Module"} [groupAssessmentsBy]
  */
 
 /**
@@ -125,24 +133,25 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {"Homework" | "Exam"} type
  * @property {string} title
  * @property {string} set
+ * @property {string} [module]
  * @property {string} number
- * @property {boolean} allowIssueReporting
- * @property {boolean} allowRealTimeGrading
- * @property {boolean} requireHonorCode
- * @property {boolean} multipleInstance
- * @property {boolean} shuffleQuestions
- * @property {AssessmentAllowAccess[]} allowAccess
- * @property {string} text
- * @property {number} maxPoints
- * @property {boolean} autoClose
- * @property {Zone[]} zones
- * @property {boolean} constantQuestionValue
- * @property {boolean} groupWork
- * @property {number} groupMaxSize
- * @property {number} groupMinSize
- * @property {boolean} studentGroupCreate
- * @property {boolean} studentGroupJoin
- * @property {boolean} studentGroupLeave
+ * @property {boolean} [allowIssueReporting]
+ * @property {boolean} [allowRealTimeGrading]
+ * @property {boolean} [requireHonorCode]
+ * @property {boolean} [multipleInstance]
+ * @property {boolean} [shuffleQuestions]
+ * @property {AssessmentAllowAccess[]} [allowAccess]
+ * @property {string} [text]
+ * @property {number} [maxPoints]
+ * @property {boolean} [autoClose]
+ * @property {Zone[]} [zones]
+ * @property {boolean} [constantQuestionValue]
+ * @property {boolean} [groupWork]
+ * @property {number} [groupMaxSize]
+ * @property {number} [groupMinSize]
+ * @property {boolean} [studentGroupCreate]
+ * @property {boolean} [studentGroupJoin]
+ * @property {boolean} [studentGroupLeave]
  */
 
 /**
@@ -200,7 +209,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  */
 module.exports.writeCourseToTempDirectory = async function (courseData) {
   const { path: coursePath } = await tmp.dir({ unsafeCleanup: true });
-  await this.writeCourseToDirectory(courseData, coursePath);
+  await module.exports.writeCourseToDirectory(courseData, coursePath);
   return coursePath;
 };
 
@@ -285,6 +294,12 @@ const course = {
       abbreviation: 'Private',
       heading: 'Used by the default assessment, do not use in your own tests',
       color: 'red2',
+    },
+  ],
+  assessmentModules: [
+    {
+      name: 'TEST',
+      heading: 'Test module',
     },
   ],
   topics: [
@@ -435,7 +450,7 @@ module.exports.getFakeLogger = function () {
  * logger interface.
  */
 module.exports.syncCourseData = function (courseDir) {
-  const logger = this.getFakeLogger();
+  const logger = module.exports.getFakeLogger();
   return new Promise((resolve, reject) => {
     syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, (err) => {
       if (err) {
@@ -448,7 +463,7 @@ module.exports.syncCourseData = function (courseDir) {
 };
 
 module.exports.createAndSyncCourseData = async function () {
-  const courseData = this.getCourseData();
+  const courseData = module.exports.getCourseData();
   const courseDir = await module.exports.writeCourseToTempDirectory(courseData);
   await module.exports.syncCourseData(courseDir);
 
@@ -466,8 +481,8 @@ module.exports.createAndSyncCourseData = async function () {
  * @returns {Promise<string>} the path to the new temp directory
  */
 module.exports.writeAndSyncCourseData = async function (courseData) {
-  const courseDir = await this.writeCourseToTempDirectory(courseData);
-  await this.syncCourseData(courseDir);
+  const courseDir = await module.exports.writeCourseToTempDirectory(courseData);
+  await module.exports.syncCourseData(courseDir);
   return courseDir;
 };
 
@@ -478,8 +493,8 @@ module.exports.writeAndSyncCourseData = async function (courseData) {
  * @param {string} courseDir - The path to write the course data to
  */
 module.exports.overwriteAndSyncCourseData = async function (courseData, courseDir) {
-  await this.writeCourseToDirectory(courseData, courseDir);
-  await this.syncCourseData(courseDir);
+  await module.exports.writeCourseToDirectory(courseData, courseDir);
+  await module.exports.syncCourseData(courseDir);
 };
 
 /**

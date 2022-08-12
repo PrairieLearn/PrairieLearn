@@ -147,6 +147,7 @@ BEGIN
             auto_close = (valid_assessment.data->>'auto_close')::boolean,
             text = valid_assessment.data->>'text',
             assessment_set_id = aggregates.assessment_set_id,
+            assessment_module_id = aggregates.assessment_module_id,
             constant_question_value = (valid_assessment.data->>'constant_question_value')::boolean,
             allow_issue_reporting = (valid_assessment.data->>'allow_issue_reporting')::boolean,
             allow_real_time_grading = (valid_assessment.data->>'allow_real_time_grading')::boolean,
@@ -159,7 +160,8 @@ BEGIN
             (
                 SELECT
                     tid,
-                    (SELECT id FROM assessment_sets WHERE name = da.data->>'set_name' AND course_id = syncing_course_id) AS assessment_set_id
+                    (SELECT id FROM assessment_sets WHERE name = da.data->>'set_name' AND course_id = syncing_course_id) AS assessment_set_id,
+                    (SELECT id FROM assessment_modules WHERE name = da.data->>'assessment_module_name' AND course_id = syncing_course_id) AS assessment_module_id
                 FROM disk_assessments AS da
             ) AS aggregates
         WHERE
@@ -534,6 +536,14 @@ BEGIN
         AND a.deleted_at IS NULL
         AND a.course_instance_id = syncing_course_instance_id
         AND (da.errors IS NOT NULL AND da.errors != '');
+    
+    -- Ensure all assessments have an assessment module, default number=0.
+    UPDATE assessments AS a
+    SET
+        assessment_module_id = COALESCE(a.assessment_module_id,
+            (SELECT id FROM assessment_modules WHERE number = 0 AND course_id = syncing_course_id))
+    WHERE a.deleted_at IS NULL
+    AND a.course_instance_id = syncing_course_instance_id;
 
     -- Finally, clean up any other leftover models
 
@@ -566,7 +576,7 @@ BEGIN
         AND a.course_instance_id = syncing_course_instance_id;
 
     -- Internal consistency check. All assessments should have an
-    -- assessment set and a number.
+    -- assessment set, assessment module, and number.
     SELECT string_agg(a.id::text, ', ')
     INTO bad_assessments
     FROM assessments AS a
@@ -576,9 +586,10 @@ BEGIN
         AND (
             a.assessment_set_id IS NULL
             OR a.number IS NULL
+            OR a.assessment_module_id IS NULL
         );
     IF (bad_assessments IS NOT NULL) THEN
-        RAISE EXCEPTION 'Assertion failure: Assessment IDs without set or number: %', bad_assessments;
+        RAISE EXCEPTION 'Assertion failure: Assessment IDs without set, number, or module: %', bad_assessments;
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

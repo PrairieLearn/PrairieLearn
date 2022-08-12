@@ -143,6 +143,10 @@
             "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
             "type": "number",
             "minimum": 0
+        },
+        "module": {
+            "description": "Module that this assessment belongs to, as defined in infoCourse.json.",
+            "type": "string"
         }
     },
     "definitions": {
