@@ -65,8 +65,12 @@ async function readAndValidateMigrationsFromDirectory(dir) {
     const timestamp = match[1] ?? null;
     const index = match[2] ?? null;
 
+    if (timestamp === null) {
+      throw new Error(`Migration filename ${mf} does not have a timestamp`);
+    }
+
     if (timestamp === null && index === null) {
-      throw new Error(`Migration ${mf} does not have either a timestamp or index`);
+      throw new Error(`Migration ${mf} has neither a timestamp nor an index`);
     }
 
     return {
