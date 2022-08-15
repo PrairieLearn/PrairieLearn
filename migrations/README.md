@@ -18,8 +18,8 @@ node -e "console.log(new Date().toISOString().replace(/\D/g,'').slice(0,14))"
 
 `{DESCRIPTION}` can take any value, but it should describe what the migration is doing. There are a few established conventions:
 
-* `{TABLE}__{COLUMN}__{OPERATION}`: suitable for migrations involving a single column of a single table
-* `{TABLE}__{OPERATION}`: suitable for migrations involving a table as a whole
+- `{TABLE}__{COLUMN}__{OPERATION}`: suitable for migrations involving a single column of a single table
+- `{TABLE}__{OPERATION}`: suitable for migrations involving a table as a whole
 
 Each migration file should contain one or more SQL statements to make the appropriate modifications to the database. It's fine to put multiple logically-related migration statements in the same file. Some potentially useful migration statements follow:
 
