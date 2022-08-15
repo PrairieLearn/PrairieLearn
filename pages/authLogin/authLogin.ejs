@@ -69,9 +69,13 @@
     <div class="login-container">
       <div>
         <h1 class="text-center">PrairieLearn</h1>
-        <h2 class="text-center subheader">An online system for problem-driven learning</h2>
-        <hr>
-        <div class="login-methods">
+        <h2 class="text-center subheader">
+          Sign in
+          <% if (service) { %>
+              to continue to <%= service %>
+          <% } %>
+        </h2>
+        <div class="login-methods mt-5">
           <% if (devMode) { %>
             <a class="btn btn-success w-100" href="/pl" role="button">
               <span class="font-weight-bold">DevMode by-pass</span>
