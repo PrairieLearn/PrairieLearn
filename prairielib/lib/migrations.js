@@ -67,7 +67,7 @@ async function readAndValidateMigrationsFromDirectory(dir) {
     const index = match[2] ?? null;
 
     if (timestamp === null && index === null) {
-      throw new Error(`Migration ${mf} is missing a timestamp or index`);
+      throw new Error(`Migration ${mf} does not have either a timestamp or index`);
     }
 
     return {
@@ -133,7 +133,7 @@ async function readAndValidateMigrationsFromDirectory(dir) {
 }
 
 /**
- * Determine the ordering of migrations. We will have already validates that either all migrations
+ * Determine the ordering of migrations. We will have already validated that either all migrations
  * have a timestamp or none of them do; ditto for indexes. So we can safely order on either
  * one or the other. Default to the timestamp if they're available, otherwise order on the index.
 
@@ -221,7 +221,7 @@ module.exports._initWithLock = function (callback) {
         // migration filenames. As part of that, we'll add some safety checks that
         // will ensure that if we're deploying a migrations directory that doesn't
         // have *any* indexes in the filenames, we'll error out and prompt the user
-        // to deploy an earlier version that still has timestamps.
+        // to deploy an earlier version that still has indexes.
 
         let allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
 
