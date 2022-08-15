@@ -288,14 +288,14 @@ module.exports._initWithLock = function (callback) {
 
           // Perform the migration.
           try {
-            await sqldb.query(migrationSql, {});
+            await sqldb.queryAsync(migrationSql, {});
           } catch (err) {
             error.addData(err, { sqlFile: filename });
             throw err;
           }
 
           // Record the migration.
-          sqldb.query(sql.insert_migration, {
+          await sqldb.queryAsync(sql.insert_migration, {
             filename: filename,
             index,
             timestamp,
