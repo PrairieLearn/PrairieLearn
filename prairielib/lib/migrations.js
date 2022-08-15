@@ -152,7 +152,6 @@ function sortMigrationFiles(migrationFiles) {
 }
 
 /**
- *
  * @param {MigrationFile[]} migrationFiles
  * @param {{ index: number | null, timestamp: string | null }[]} executedMigrations
  * @return {MigrationFile[]}
@@ -166,17 +165,16 @@ function getMigrationsToExecute(migrationFiles, executedMigrations) {
   // If our migration files have timestamps, use them to determine which
   // have or have not executed. Otherwise, use the index.
   if (migrationFiles.every((m) => m.timestamp)) {
-    return migrationFiles.filter(
-      (m) => !executedMigrations.some((e) => e.timestamp === m.timestamp)
-    );
+    const executedMigrationTimestamps = new Set(executedMigrations.map((m) => m.timestamp));
+    return migrationFiles.filter((m) => !executedMigrationTimestamps.has(m.timestamp));
   } else {
-    return migrationFiles.filter((m) => !executedMigrations.some((e) => e.index === m.index));
+    const executedMigrationIndexes = new Set(executedMigrations.map((m) => m.index));
+    return migrationFiles.filter((m) => !executedMigrationIndexes.has(m.index));
   }
 }
 
 module.exports._initWithLock = function (callback) {
   logger.verbose('Starting DB schema migration');
-  let noExistingMigrations = false;
 
   async.waterfall(
     [
