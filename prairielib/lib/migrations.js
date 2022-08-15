@@ -276,7 +276,7 @@ module.exports._initWithLock = function (callback) {
         );
 
         for (const { filename, index, timestamp } of migrationsToExecute) {
-          if (allMigrations.length === 0) {
+          if (allMigrations.rows.length === 0) {
             // if we are running all the migrations then log at a lower level
             logger.verbose(`Running migration ${filename}`);
           } else {
