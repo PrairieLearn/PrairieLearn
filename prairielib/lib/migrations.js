@@ -3,7 +3,6 @@ const ERR = require('async-stacktrace');
 const fs = require('fs-extra');
 const path = require('path');
 const async = require('async');
-const _ = require('lodash');
 
 const namedLocks = require('../../lib/named-locks');
 const logger = require('../../lib/logger');
