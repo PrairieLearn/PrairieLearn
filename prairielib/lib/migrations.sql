@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS migrations (
   applied_at TIMESTAMP WITH TIME ZONE,
   timestamp TEXT,
   UNIQUE(project, index),
-  UNIQUE(project, filename)
+  UNIQUE(project, timestamp)
 );
 
 -- BLOCK add_projects_column
