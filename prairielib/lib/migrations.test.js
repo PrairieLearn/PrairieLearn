@@ -25,12 +25,23 @@ async function withMigrationFiles(files, fn) {
 
 describe('migrations', () => {
   describe('readAndValidateMigrationsFromDirectory', () => {
-    it('handles duplicate indexes', async () => {
-      await withMigrationFiles(['001_testing.sql', '001_testing_again.sql'], async (tmpDir) => {
+    it('handles migrations without a timestamp', async () => {
+      await withMigrationFiles(['001_testing.sql'], async (tmpDir) => {
         await expect(readAndValidateMigrationsFromDirectory(tmpDir)).rejects.toThrow(
-          'Duplicate migration index'
+          'Migration 001_testing.sql does not have a timestamp'
         );
       });
+    });
+
+    it('handles duplicate indexes', async () => {
+      await withMigrationFiles(
+        ['20220101010101_001_testing.sql', '20220101020202_001_testing_again.sql'],
+        async (tmpDir) => {
+          await expect(readAndValidateMigrationsFromDirectory(tmpDir)).rejects.toThrow(
+            'Duplicate migration index'
+          );
+        }
+      );
     });
 
     it('handles duplicate timestamps', async () => {
@@ -50,17 +61,6 @@ describe('migrations', () => {
         async (tmpDir) => {
           await expect(readAndValidateMigrationsFromDirectory(tmpDir)).rejects.toThrow(
             'The following migration files are missing indexes: 20220101010102_testing_again.sql'
-          );
-        }
-      );
-    });
-
-    it('handles missing timestamps', async () => {
-      await withMigrationFiles(
-        ['20220101010101_001_testing.sql', '002_testing_again.sql'],
-        async (tmpDir) => {
-          await expect(readAndValidateMigrationsFromDirectory(tmpDir)).rejects.toThrow(
-            'The following migration files are missing timestamps: 002_testing_again.sql'
           );
         }
       );

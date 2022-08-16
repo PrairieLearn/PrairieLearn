@@ -83,9 +83,7 @@ async function readAndValidateMigrationsFromDirectory(dir) {
   // First pass: validate that all migrations have a unique timestamp prefix.
   // This will avoid data loss and conflicts in unexpected scenarios.
   let hasSeenIndex = false;
-  let hasSeenTimestamp = false;
   let allMigrationsHaveIndex = true;
-  let allMigrationsHaveTimestamp = true;
   let seenIndexes = new Set();
   let seenTimestamps = new Set();
   for (const migration of migrations) {
@@ -96,9 +94,6 @@ async function readAndValidateMigrationsFromDirectory(dir) {
         throw new Error(`Duplicate migration timestamp: ${timestamp} (${filename})`);
       }
       seenTimestamps.add(timestamp);
-      hasSeenTimestamp = true;
-    } else {
-      allMigrationsHaveTimestamp = false;
     }
 
     if (index !== null) {
@@ -112,18 +107,7 @@ async function readAndValidateMigrationsFromDirectory(dir) {
     }
   }
 
-  // Validation: if one migration has a timestamp, *all* migrations must have a timestamp.
-  if (hasSeenTimestamp && !allMigrationsHaveTimestamp) {
-    const filesMissingTimestamp = migrations
-      .filter((m) => m.timestamp === null)
-      .map((m) => m.filename)
-      .join(', ');
-    throw new Error(
-      `The following migration files are missing timestamps: ${filesMissingTimestamp}`
-    );
-  }
-
-  // Validation: if one migration has an index, *all* migrations must have an index.
+  // If one migration has an index, *all* migrations must have an index.
   if (hasSeenIndex && !allMigrationsHaveIndex) {
     const filesMissingIndex = migrations
       .filter((m) => m.index === null)
