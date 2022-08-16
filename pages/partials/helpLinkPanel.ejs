@@ -1,0 +1,10 @@
+<% if (assessment.help_link) {%>
+<div class="card mb-4" id="help-link-panel">
+  <div class="card-header bg-secondary text-white">Help Link</div>
+    <% var url = assessment.help_link %>
+    <% if (!assessment.help_link.includes("https://")){%>
+      <% url = "https://" + assessment.help_link%>
+    <% } %>
+    Click the link to get help on this question: <a href=<%=url%> target="_blank" rel="noopener norefferer"><%=assessment.help_link %></a>
+</div>
+<% } %>
