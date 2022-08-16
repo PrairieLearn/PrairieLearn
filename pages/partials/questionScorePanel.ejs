@@ -50,6 +50,12 @@
     </tbody>
   </table>
 
+  <% if (assessment.help_link) { //and course is authorized %>
+    <div class="card-footer">
+      <%- include('./helpLinkPanel') %>
+    </div>
+  <% } %>
+
   <% if (assessment.allow_issue_reporting) { %>
   <div class="card-footer">
     <% if (locals.authz_result && !authz_result.authorized_edit) { /* instructor viewing student assessment */ %>
