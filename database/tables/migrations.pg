@@ -9,4 +9,4 @@ columns
 indexes
     migrations_pkey: PRIMARY KEY (id) USING btree (id)
     migrations_project_index_key: UNIQUE (project, index) USING btree (project, index)
-    migrations_timestamp_project_key: UNIQUE USING btree ("timestamp", project)
+    migrations_project_timestamp_key: UNIQUE (project, "timestamp") USING btree (project, "timestamp")

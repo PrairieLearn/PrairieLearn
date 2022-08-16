@@ -12,13 +12,13 @@ CREATE TABLE IF NOT EXISTS migrations (
 
 -- BLOCK add_projects_column
 ALTER TABLE migrations ADD COLUMN IF NOT EXISTS project TEXT DEFAULT 'prairielearn';
-CREATE UNIQUE INDEX IF NOT EXISTS migrations_index_project_key ON migrations (index, project);
+CREATE UNIQUE INDEX IF NOT EXISTS migrations_project_index_key ON migrations (index, project);
 ALTER TABLE migrations DROP CONSTRAINT migrations_index_key;
 DROP INDEX IF EXISTS migrations_index_key;
 
 -- BLOCK add_timestamp_column
 ALTER TABLE migrations ADD COLUMN IF NOT EXISTS timestamp TEXT;
-CREATE UNIQUE INDEX IF NOT EXISTS migrations_timestamp_project_key ON migrations (timestamp, project);
+CREATE UNIQUE INDEX IF NOT EXISTS migrations_project_timestamp_key ON migrations (timestamp, project);
 
 -- BLOCK get_migrations
 SELECT id, filename, index, timestamp FROM migrations WHERE project = $project;
