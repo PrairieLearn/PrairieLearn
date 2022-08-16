@@ -5,7 +5,9 @@ CREATE TABLE IF NOT EXISTS migrations (
   index INTEGER,
   project TEXT DEFAULT 'prairielearn',
   applied_at TIMESTAMP WITH TIME ZONE,
-  UNIQUE(project, index)
+  timestamp TEXT,
+  UNIQUE(project, index),
+  UNIQUE(project, filename)
 );
 
 -- BLOCK add_projects_column
@@ -33,6 +35,6 @@ SELECT MAX(index) AS last_migration FROM migrations WHERE project = $project;
 
 -- BLOCK insert_migration
 INSERT INTO migrations
-        (filename, index, project, applied_at)
-VALUES ($filename::TEXT, $index, $project, CURRENT_TIMESTAMP)
+        (filename, index, timestamp, project, applied_at)
+VALUES ($filename::TEXT, $index, $timestamp, $project, CURRENT_TIMESTAMP)
 RETURNING id;
