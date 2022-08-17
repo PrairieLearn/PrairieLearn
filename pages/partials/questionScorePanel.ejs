@@ -50,7 +50,7 @@
     </tbody>
   </table>
 
-  <% if (assessment.help_link) { //and course is authorized %>
+  <% if (course.help_link && assessment.help_link) {%>
     <div class="card-footer">
       <%- include('./helpLinkPanel') %>
     </div>
