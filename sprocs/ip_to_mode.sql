@@ -21,7 +21,7 @@ BEGIN
         mode := 'Public';
     END IF;
 
-    -- Do we have an active online CBTF reservation, if so set mode to 'Exam'
+    -- Does the user have an active online CBTF reservation, if so set mode to 'Exam'
     PERFORM *
     FROM
         reservations AS r
@@ -38,7 +38,7 @@ BEGIN
         mode := 'Exam';
     END IF;
 
-    -- Do we have an active PT reservation?
+    -- Does the user have an active PT reservation?
     SELECT r.session_id
     INTO v_session_id
     FROM
@@ -49,8 +49,9 @@ BEGIN
         AND (date BETWEEN r.access_start AND r.access_end);
 
     IF FOUND THEN
-        -- We have a checked-in pt_reservation. Check whether we are in a
-        -- testing center location that requires network filtering.
+        -- The user has a checked-in pt_reservation. Check whether the
+        -- reservation is in a testing center location that requires network
+        -- filtering.
 
         SELECT loc.id, loc.filter_networks
         INTO v_location_id, v_filter_networks
@@ -61,10 +62,10 @@ BEGIN
             s.id = v_session_id;
 
         IF FOUND THEN
-            -- We're in a testing center location.
+            -- The reservation is in a testing center location.
             IF v_filter_networks THEN
-                -- We're in a testing center location that requires network
-                -- filtering.
+                -- The reservation is in a testing center location that requires
+                -- network filtering.
 
                 PERFORM *
                 FROM pt_location_networks AS ln
@@ -73,21 +74,23 @@ BEGIN
                     AND ip <<= ln.network;
 
                 IF FOUND THEN
-                    -- We are inside the testing center. Set mode to 'Exam'.
+                    -- The user is physically inside the testing center. Set
+                    -- mode to 'Exam'.
                     mode := 'Exam';
                 ELSE
-                    -- Although we have a checked-in reservation, we are
-                    -- actually outside the testing center. Set mode to
+                    -- Although we have a checked-in reservation, the user is
+                    -- physically outside the testing center. Set mode to
                     -- 'Public'.
                     mode := 'Public';
                 END IF;
             ELSE
-                -- We're in a testing center location that doesn't require
-                -- network filtering. Set mode to 'Exam'.
+                -- The reservation is in a testing center location that doesn't
+                -- require network filtering. Set mode to 'Exam'.
                 mode := 'Exam';
             END IF;
         ELSE
-            -- We aren't in a testing center location, so we set exam mode.
+            -- The reservation isn't for a testing center location (it's a
+            -- course-run session), so we set exam mode.
             mode := 'Exam';
         END IF;
 
