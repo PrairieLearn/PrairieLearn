@@ -363,7 +363,7 @@ def grade(element_html, data):
 
     # Check equality
     # TODO this is a dirty hack, figure out a better way to handle the case
-    # where the objects are sets or not
+    # where the objects are sets or not. Also test to make sure it works for tuples!
     try:
         correct = set(a_tru) == set(a_sub)
     except Exception:
