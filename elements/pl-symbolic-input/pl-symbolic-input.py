@@ -59,7 +59,7 @@ def render(element_html, data):
     imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, 'size', SIZE_DEFAULT)
 
-    operators = ['cos', 'sin', 'tan', 'arccos', 'arcsin', 'arctan', 'acos', 'asin', 'atan', 'arctan2', 'atan2', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**']
+    operators = ['cos', 'sin', 'tan', 'arccos', 'arcsin', 'arctan', 'acos', 'asin', 'atan', 'arctan2', 'atan2', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**', '{ }', ',']
     constants = ['pi', 'e']
 
     if data['panel'] == 'question':
@@ -230,6 +230,9 @@ def parse(element_html, data):
         data['submitted_answers'][name] = None
         return
 
+    a_sub = a_sub.replace("{", "FiniteSet(")
+    a_sub = a_sub.replace("}", ")")
+
     # Parse the submitted answer and put the result in a string
     try:
         # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
@@ -359,7 +362,12 @@ def grade(element_html, data):
         a_sub = phs.json_to_sympy(a_sub, allow_complex=allow_complex)
 
     # Check equality
-    correct = a_tru.equals(a_sub)
+    # TODO this is a dirty hack, figure out a better way to handle the case
+    # where the objects are sets or not
+    try:
+        correct = set(a_tru) == set(a_sub)
+    except Exception:
+        correct = a_tru.equals(a_sub)
 
     if correct:
         data['partial_scores'][name] = {'score': 1, 'weight': weight}
