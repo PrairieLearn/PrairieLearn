@@ -1,6 +1,7 @@
 import sympy
 import ast
 import sys
+# from sympy import *
 
 # Create a new instance of this class to access the member dictionaries. This
 # is to avoid accidentally modifying these dictionaries.
@@ -12,6 +13,7 @@ class _Constants:
         self.variables = {
             'pi': sympy.pi,
             'e': sympy.E,
+            'EmptySet': sympy.EmptySet
         }
         self.hidden_variables = {
             '_Exp1': sympy.E,
@@ -39,6 +41,7 @@ class _Constants:
             'exp': sympy.exp,
             'log': sympy.log,
             'sqrt': sympy.sqrt,
+            'FiniteSet': sympy.FiniteSet
         }
 
 # Safe evaluation of user input to convert from string to sympy expression.
@@ -210,7 +213,7 @@ def evaluate(expr, locals_for_eval={}):
     # https://nedbatchelder.com/blog/201206/eval_really_is_dangerous.html
     # http://blog.delroth.net/2013/03/escaping-a-python-sandbox-ndh-2013-quals-writeup/
     #
-    whitelist = (ast.Module, ast.Expr, ast.Load, ast.Expression, ast.Call, ast.Name, ast.Num, ast.UnaryOp, ast.UAdd, ast.USub, ast.BinOp, ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Mod, ast.Pow)
+    whitelist = (ast.Tuple, ast.Module, ast.Expr, ast.Load, ast.Expression, ast.Call, ast.Name, ast.Num, ast.UnaryOp, ast.UAdd, ast.USub, ast.BinOp, ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Mod, ast.Pow)
     CheckWhiteList(whitelist).visit(root)
 
     # Disallow float and complex, and replace int with sympy equivalent
