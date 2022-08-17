@@ -56,8 +56,12 @@
                     <tr>
                         <th scope="row">Module</th>
                         <td>
+                            <% if (assessment_module) { %>
                             <%= assessment_module.heading %> 
                             <span class="text-muted">(<%= assessment_module.name %>)</span>
+                            <% } else { %>
+                            <em>None</em>
+                            <% } %>
                         </td>
                     </tr>                    
                     <tr><th scope="row">AID</th>
