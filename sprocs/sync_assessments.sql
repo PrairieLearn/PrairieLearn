@@ -512,7 +512,6 @@ BEGIN
         AND a.deleted_at IS NULL
         AND a.course_instance_id = syncing_course_instance_id
         AND (da.errors IS NOT NULL AND da.errors != '');
-
     -- Ensure all assessments have an assessment module, default number=0.
     UPDATE assessments AS a
     SET
