@@ -13,4 +13,4 @@ def generate(data):
     data['correct_answers']['dx'] = 'x'
     x = sympy.var('x')
     data['correct_answers']['simplify'] = pl.to_json(x**2+x+1)
-    data['correct_answers']['AxB'] = pl.to_json(set((1, 3), (1, 4), (1, 5), (2, 3), (2, 4), (2, 5), ))
+    data['correct_answers']['AxB'] = pl.to_json(set((1, 3), (1, 4), (1, 5), (2, 3), (2, 4), (2, 5)))
