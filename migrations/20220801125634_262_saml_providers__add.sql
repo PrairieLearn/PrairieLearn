@@ -11,6 +11,6 @@ CREATE TABLE IF NOT EXISTS saml_providers (
   name_attribute TEXT,
   -- Only allow one SAML provider per institution.
   UNIQUE (institution_id)
-)
+);
 
 INSERT INTO authn_providers (id, name) VALUES (5, 'SAML') ON CONFLICT DO NOTHING;
