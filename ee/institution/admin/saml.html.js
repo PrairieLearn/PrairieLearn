@@ -1,3 +1,4 @@
+// @ts-check
 const { html } = require('@prairielearn/html');
 const { renderEjs } = require('@prairielearn/html-ejs');
 
@@ -12,7 +13,7 @@ const InstitutionAdminSaml = ({
   const hasEnabledSaml = institutionAuthenticationProviders.some((p) => p.name === 'SAML');
 
   const missingAttributeMappings =
-    !samlProvider.uid_attribute || !samlProvider.uin_attribute || !samlProvider.name_attribute;
+    !samlProvider?.uid_attribute || !samlProvider?.uin_attribute || !samlProvider?.name_attribute;
 
   const issuer = `https://${host}/saml/institution/${institution.id}`;
   const metadataUrl = `https://${host}/pl/auth/institution/${institution.id}/saml/metadata`;

@@ -9,7 +9,7 @@ const sqlLoader = require('../../../prairielib/lib/sql-loader');
 const { InstitutionAdminSso } = require('./sso.html');
 const {
   getInstitution,
-  getAllAuthenticationProviders,
+  getSupportedAuthenticationProviders,
   getInstitutionAuthenticationProviders,
   getInstitutionSamlProvider,
 } = require('../utils');
@@ -22,9 +22,13 @@ const enabledProvidersSchema = z.array(z.string());
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const enabledProviders = enabledProvidersSchema.parse(
-      req.body.enabled_authn_provider_ids ?? []
+    const supportedAuthenticationProviders = await getSupportedAuthenticationProviders();
+    const supportedAuthenticationProviderIds = new Set(
+      supportedAuthenticationProviders.map((p) => p.id)
     );
+    const enabledProviders = enabledProvidersSchema
+      .parse(req.body.enabled_authn_provider_ids ?? [])
+      .filter((id) => supportedAuthenticationProviderIds.has(id));
     if (enabledProviders.length === 0) {
       throw new Error('At least one authentication provider must be enabled');
     }
@@ -45,7 +49,7 @@ router.post(
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const allAuthenticationProviders = await getAllAuthenticationProviders();
+    const supportedAuthenticationProviders = await getSupportedAuthenticationProviders();
 
     const institution = await getInstitution(req.params.institution_id);
     const institutionSamlProvider = await getInstitutionSamlProvider(req.params.institution_id);
@@ -55,7 +59,7 @@ router.get(
 
     res.send(
       InstitutionAdminSso({
-        allAuthenticationProviders,
+        supportedAuthenticationProviders,
         institution,
         institutionSamlProvider,
         institutionAuthenticationProviders,

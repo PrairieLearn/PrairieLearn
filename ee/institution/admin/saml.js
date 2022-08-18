@@ -37,10 +37,10 @@ router.post(
         // Check if there's an existing SAML provider configured. We'll use
         // that to determine if we need to create a new keypair. That is, we'll
         // only create a new keypair if there's no existing provider.
-        const samlProviderRes = await getInstitutionSamlProvider(req.params.institution_id);
+        const samlProvider = await getInstitutionSamlProvider(req.params.institution_id);
 
         let publicKey, privateKey;
-        if (samlProviderRes.rowCount === 0) {
+        if (!samlProvider) {
           // No existing provider; create a new keypair with OpenSSL.
           const keys = await createCertificate({
             selfSigned: true,

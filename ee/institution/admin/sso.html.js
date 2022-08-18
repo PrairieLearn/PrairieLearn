@@ -1,9 +1,10 @@
+// @ts-check
 const { html } = require('@prairielearn/html');
 const { renderEjs } = require('@prairielearn/html-ejs');
 
 const InstitutionAdminSso = ({
   institution,
-  allAuthenticationProviders,
+  supportedAuthenticationProviders,
   institutionSamlProvider,
   institutionAuthenticationProviders,
   resLocals,
@@ -33,7 +34,7 @@ const InstitutionAdminSso = ({
           <form method="POST">
             <div class="form-group">
               <div class="h5">Enabled single sign-on providers</div>
-              ${allAuthenticationProviders.map((provider) => {
+              ${supportedAuthenticationProviders.map((provider) => {
                 const isEnabled = institutionAuthenticationProviders.some(
                   (p) => p.id === provider.id
                 );
@@ -83,7 +84,7 @@ const InstitutionAdminSso = ({
                 >
                   None
                 </option>
-                ${allAuthenticationProviders.map((provider) => {
+                ${supportedAuthenticationProviders.map((provider) => {
                   if (provider.name === 'LTI') return '';
 
                   return html`
