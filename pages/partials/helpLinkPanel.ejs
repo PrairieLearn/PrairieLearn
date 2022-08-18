@@ -3,7 +3,7 @@
   <% if (!assessment.help_link.includes("https://")){%>
     <% url = "https://" + assessment.help_link%>
   <% } %>
-  <a href=<%=url%> target="_blank" rel="noopener norefferer">
+  <a href="<%=url%>" target="_blank" rel="noopener noreferrer">
     <button class="btn btn-s btn-secondary" type="button">
       Ask course staff for help with this question
     </button>
