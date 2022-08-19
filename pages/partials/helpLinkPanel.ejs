@@ -1,11 +1,5 @@
 <div id="linkNav">
-  <% var url = assessment.help_link %>
-  <% if (!assessment.help_link.includes("https://")){%>
-    <% url = "https://" + assessment.help_link%>
-  <% } %>
-  <a href="<%=url%>" target="_blank" rel="noopener noreferrer">
-    <button class="btn btn-s btn-secondary" type="button">
-      Ask course staff for help with this question
-    </button>
+  <a class="btn btn-s btn-secondary" type="button" href="<%=assessment.help_link%>" target="_blank" rel="noopener noreferrer">
+    Ask course staff for help with this question
   </a>
 </div>
