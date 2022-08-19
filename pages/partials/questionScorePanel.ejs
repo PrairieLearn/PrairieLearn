@@ -53,7 +53,7 @@
   <% if (course.help_link_enabled && assessment.help_link) {%>
     <div class="card-footer">
       <div id="linkNav">
-        <a class="btn btn-s btn-secondary" type="button" href="<%=assessment.help_link%>" target="_blank" rel="noopener noreferrer">
+        <a class="btn btn-s btn-secondary" href="<%= assessment.help_link %>" target="_blank" rel="noopener noreferrer">
           Ask course staff for help with this question
         </a>
       </div>
