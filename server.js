@@ -417,6 +417,11 @@ module.exports.initExpress = function () {
   app.use('/pl/shibcallback', require('./pages/authCallbackShib/authCallbackShib'));
   app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
   app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
+
+  if (isEnterprise()) {
+    app.use('/pl/auth/institution/:institution_id/saml', require('./ee/auth/saml/router'));
+  }
+
   app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
   app.use('/pl/login', require('./pages/authLogin/authLogin'));
   // disable SEB until we can fix the mcrypt issues
@@ -720,6 +725,10 @@ module.exports.initExpress = function () {
   // API ///////////////////////////////////////////////////////////////
 
   app.use('/pl/api/v1', require('./api/v1'));
+
+  if (isEnterprise()) {
+    app.use('/pl/institution/:institution_id/admin', require('./ee/institution/admin'));
+  }
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
@@ -1776,6 +1785,12 @@ if (config.startServer) {
             return done(null, profile);
           })
         );
+      },
+      async () => {
+        if (isEnterprise()) {
+          const { strategy } = require('./ee/auth/saml/index');
+          passport.use(strategy);
+        }
       },
       async function () {
         const pgConfig = {
