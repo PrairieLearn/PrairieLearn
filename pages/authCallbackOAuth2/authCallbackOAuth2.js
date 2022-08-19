@@ -54,7 +54,23 @@ router.get('/', function (req, res, next) {
       'Google', // provider
     ];
     sqldb.call('users_select_or_insert', params, (err, result) => {
-      if (ERR(err, next)) return;
+      if (err) {
+        // Check if this is because the provider is not allowed.
+        if (err.message?.includes('authentication provider is not allowed for institution')) {
+          // Parse institution ID from error message.
+          const institutionIdMatch = err.message.match(/\((\d+)\)$/);
+          if (institutionIdMatch) {
+            const institutionId = institutionIdMatch[1];
+            res.redirect(`/pl/auth/institution/${institutionId}/not_allowed`);
+            return;
+          }
+        }
+
+        // Some other error; we don't have a fancy error page for this.
+        ERR(err, next);
+        return;
+      }
+
       const tokenData = {
         user_id: result.rows[0].user_id,
         authn_provider_name: 'Google',

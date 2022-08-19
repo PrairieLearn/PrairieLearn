@@ -57,7 +57,7 @@ BEGIN
             AND ap.name = authn_provider_name;
 
         IF NOT FOUND THEN
-            RAISE EXCEPTION '"%" authentication provider is not allowed for institution "%"', authn_provider_name, institution.long_name;
+            RAISE EXCEPTION '"%" authentication provider is not allowed for institution "%" (%)', authn_provider_name, institution.long_name, institution.id;
         END IF;
     END IF;
 
