@@ -60,7 +60,8 @@ function AuthNotAllowed({ institutionAuthnProviders, resLocals }) {
                 (provider) => html`
                   <div class="mb-3">
                     <a href="${getUrlForProvider(provider)}" class="btn btn-primary">
-                      Sign in with ${provider.name}
+                      Sign in with
+                      ${provider.name === 'SAML' ? 'institution single sign-on' : provider.name}
                     </a>
                   </div>
                 `
