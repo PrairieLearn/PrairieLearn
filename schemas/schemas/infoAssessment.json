@@ -136,7 +136,7 @@
             "type": "boolean",
             "default": false
         },
-        "helpLink":{
+        "helpLink": {
           "description": "Link to help source for the assessment.",
           "type": "string"
         },
