@@ -10,8 +10,8 @@ WITH deleted_authn_providers AS (
     authn_provider_id
   )
   SELECT
-    $institution_id AS institution_id,
-    unnest($enabled_authn_provider_ids::bigint[]) as authn_provider_id
+    $institution_id,
+    unnest($enabled_authn_provider_ids::bigint[])
   ON CONFLICT DO NOTHING
   RETURNING *
 ), updated_default_authn_provider AS (
@@ -29,12 +29,12 @@ WITH deleted_authn_providers AS (
     old_state
   )
   SELECT
-    $authn_user_id AS authn_user_id,
-    'institution_authn_providers' AS table_name,
-    'delete' AS action,
+    $authn_user_id,
+    'institution_authn_providers',
+    'delete',
     dap.institution_id,
-    dap.id AS row_id,
-    to_jsonb(dap.*) AS old_state
+    dap.id,
+    to_jsonb(dap.*)
   FROM
     deleted_authn_providers AS dap
 ), audit_logs_inserted_authn_providers AS (
@@ -47,12 +47,12 @@ WITH deleted_authn_providers AS (
     new_state
   )
   SELECT
-    $authn_user_id AS authn_user_id,
-    'institution_authn_providers' AS table_name,
-    'insert' AS action,
+    $authn_user_id,
+    'institution_authn_providers',
+    'insert',
     iap.institution_id,
-    iap.id AS row_id,
-    to_jsonb(iap.*) AS new_state
+    iap.id,
+    to_jsonb(iap.*)
   FROM
     inserted_authn_providers AS iap
 ), audit_logs_updated_default_authn_provider AS (
@@ -65,17 +65,17 @@ WITH deleted_authn_providers AS (
     new_state
   )
   SELECT
-    $authn_user_id AS authn_user_id,
-    'institutions' AS table_name,
-    'update' AS action,
-    udap.id AS institution_id,
-    udap.id AS row_id,
+    $authn_user_id,
+    'institutions',
+    'update',
+    udap.id,
+    udap.id ,
     jsonb_build_object(
       'default_authn_provider_id',
       udap.default_authn_provider_id,
       'default_authn_provider_name',
       ap.name
-    ) AS new_state
+    )
   FROM
     updated_default_authn_provider AS udap
     LEFT JOIN authn_providers AS ap ON (ap.id = default_authn_provider_id)
