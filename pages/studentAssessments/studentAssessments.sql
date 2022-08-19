@@ -144,7 +144,7 @@ SELECT
         LAG (CASE WHEN $assessments_group_by = 'Set' THEN assessment_set_id ELSE assessment_module_id END) 
         OVER (
             PARTITION BY (CASE WHEN $assessments_group_by = 'Set' THEN assessment_set_id ELSE assessment_module_id END) 
-            ORDER BY assessment_set_number, assessment_order_by, assessment_id, assessment_instance_number NULLS FIRST
+            ORDER BY assessment_set_number, assessment_order_by, assessment_id, assessment_instance_number
         ) IS NULL
     ) AS start_new_assessment_group,
     (CASE WHEN $assessments_group_by = 'Set' THEN assessment_set_heading ELSE assessment_module_heading END) AS assessment_group_heading
@@ -155,5 +155,4 @@ WHERE
 ORDER BY 
     CASE WHEN $assessments_group_by = 'Module' THEN assessment_module_number END, 
     CASE WHEN $assessments_group_by = 'Module' THEN assessment_module_id END,
-    assessment_set_number, assessment_order_by, assessment_id, assessment_instance_number 
-    NULLS FIRST;
+    assessment_set_number, assessment_order_by, assessment_id, assessment_instance_number;
