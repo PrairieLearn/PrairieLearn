@@ -17,8 +17,6 @@ function getUrlForProvider(provider) {
 }
 
 function AuthNotAllowed({ institutionAuthnProviders, resLocals }) {
-  console.log(institutionAuthnProviders);
-
   // LTI providers are special in that we don't currently allow an LTI session
   // to be initiated from PrairieLearn. We'll handle them specially.
   const hasLtiProvider = institutionAuthnProviders.some((p) => p.name === 'LTI');
@@ -27,6 +25,7 @@ function AuthNotAllowed({ institutionAuthnProviders, resLocals }) {
 
   // Check if there's a default authentication provider.
   const defaultAuthnProvider = nonLtiAuthnProviders.find((p) => p.is_default);
+
   return html`
     <!DOCTYPE html>
     <html lang="en">
