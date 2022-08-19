@@ -422,6 +422,15 @@ module.exports.initExpress = function () {
     app.use('/pl/auth/institution/:institution_id/saml', require('./ee/auth/saml/router'));
   }
 
+  // If the user tries to use an authentication method that is not supported by
+  // their institution, they'll be redirected here. This page will contain a
+  // link to the institution's default authentication method, or all supported
+  // methods if there is no default.
+  app.use(
+    '/pl/auth/institution/:institution_id/not_allowed',
+    require('./pages/authNotAllowed/authNotAllowed')
+  );
+
   app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
   app.use('/pl/login', require('./pages/authLogin/authLogin'));
   // disable SEB until we can fix the mcrypt issues
