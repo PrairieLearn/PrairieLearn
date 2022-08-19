@@ -68,11 +68,15 @@ router.post(
           // The upsert query is configured to ignore these values if they're null.
           public_key: publicKey,
           private_key: privateKey,
+          // For audit logs
+          authn_user_id: res.locals.authn_user.user_id,
         });
       });
     } else if (req.body.__action === 'delete') {
       await sqldb.queryAsync(sql.delete_institution_saml_provider, {
         institution_id: req.params.institution_id,
+        // For audit logs
+        authn_user_id: res.locals.authn_user.user_id,
       });
     } else {
       throw error.make(400, 'unknown __action', {
