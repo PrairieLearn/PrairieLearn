@@ -76,7 +76,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
     student_group_create: !!assessment.studentGroupCreate,
     student_group_join: !!assessment.studentGroupJoin,
     student_group_leave: !!assessment.studentGroupLeave,
-    help_link: _.get(assessment, 'helpLink', null), //assessment.helpLink || null,
+    help_link: assessment.helpLink || null,
     advance_score_perc: assessment.advanceScorePerc,
   };
 
