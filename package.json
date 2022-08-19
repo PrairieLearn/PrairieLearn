@@ -88,7 +88,7 @@
         "multer": "^1.4.4",
         "mustache": "^4.2.0",
         "ncp": "^2.0.0",
-        "nodemon": "^2.0.18",
+        "nodemon": "^2.0.19",
         "numeric": "^1.2.6",
         "oauth-signature": "^1.5.0",
         "on-finished": "^2.4.1",
