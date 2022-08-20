@@ -1,15 +1,5 @@
 -- BLOCK select_questions_manual_grading
 WITH
-selected_instance_questions AS (
-    SELECT DISTINCT ON (iq.id)
-        iq.*
-    FROM
-        assessment_questions aq
-        JOIN instance_questions iq ON (iq.assessment_question_id = aq.id)
-        JOIN variants AS v ON (v.instance_question_id = iq.id)
-        JOIN submissions AS s ON (s.variant_id = v.id)
-    WHERE aq.assessment_id = $assessment_id
-},
 instance_questions_with_submission AS (
     SELECT
         iq.assessment_question_id,
@@ -21,10 +11,12 @@ instance_questions_with_submission AS (
         JSONB_AGG(DISTINCT jsonb_build_object('user_id', lgu.user_id, 'name', lgu.name, 'uid', lgu.uid)) FILTER (WHERE iq.last_grader IS NOT NULL) AS actual_graders
     FROM
         assessment_questions aq
-        JOIN selected_instance_questions iq ON (iq.assessment_question_id = aq.id)
+        JOIN instance_questions iq ON (iq.assessment_question_id = aq.id)
         LEFT JOIN users agu ON (agu.user_id = iq.assigned_grader)
         LEFT JOIN users lgu ON (lgu.user_id = iq.last_grader)
-    WHERE aq.assessment_id = $assessment_id
+    WHERE
+        aq.assessment_id = $assessment_id
+        AND iq.status != 'unanswered'
     GROUP BY iq.assessment_question_id
 ),
 open_instances AS (
