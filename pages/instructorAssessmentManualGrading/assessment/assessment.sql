@@ -1,7 +1,7 @@
 -- BLOCK select_questions_manual_grading
 WITH
 selected_instance_questions AS (
-    SELECT distinct on (iq.id)
+    SELECT DISTINCT ON (iq.id)
         iq.*
     FROM
         assessment_questions aq
