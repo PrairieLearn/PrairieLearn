@@ -1,6 +1,5 @@
 -- BLOCK select_questions_manual_grading
-WITH
-instance_questions_with_submission AS (
+WITH instance_questions_with_submission AS (
     SELECT
         iq.assessment_question_id,
         COUNT(1) FILTER (WHERE iq.requires_manual_grading) AS num_instance_questions_to_grade,
