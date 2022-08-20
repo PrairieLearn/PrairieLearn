@@ -20,8 +20,8 @@ instance_questions_with_submission AS (
         JSONB_AGG(DISTINCT jsonb_build_object('user_id', agu.user_id, 'name', agu.name, 'uid', agu.uid)) FILTER (WHERE iq.requires_manual_grading AND iq.assigned_grader IS NOT NULL) AS assigned_graders,
         JSONB_AGG(DISTINCT jsonb_build_object('user_id', lgu.user_id, 'name', lgu.name, 'uid', lgu.uid)) FILTER (WHERE iq.last_grader IS NOT NULL) AS actual_graders
     FROM
-        selected_assessment_questions aq
-        JOIN instance_questions iq ON (iq.assessment_question_id = aq.id)
+        assessment_questions aq
+        JOIN selected_instance_questions iq ON (iq.assessment_question_id = aq.id)
         LEFT JOIN users agu ON (agu.user_id = iq.assigned_grader)
         LEFT JOIN users lgu ON (lgu.user_id = iq.last_grader)
     WHERE aq.assessment_id = $assessment_id
