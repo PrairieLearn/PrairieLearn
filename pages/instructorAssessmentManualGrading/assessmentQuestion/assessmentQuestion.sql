@@ -45,9 +45,7 @@ FROM
 WHERE
     ai.assessment_id = $assessment_id
     AND iq.assessment_question_id = $assessment_question_id
-    AND EXISTS(SELECT 1
-               FROM variants AS v JOIN submissions AS s ON (s.variant_id = v.id)
-               WHERE v.instance_question_id = iq.id)
+    AND iq.status != 'unanswered'
 ORDER BY user_or_group_name, iq.id;
 
 -- BLOCK update_instance_questions
