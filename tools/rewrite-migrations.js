@@ -14,6 +14,11 @@ function formatDate(date) {
   const migrations = rawMigrations.filter((m) => m.endsWith('.sql'));
   let lastMigrationDate = '';
   for (const migration of migrations) {
+    if (migration.match(/^\d{14}/)) {
+      // Filename already has a timestamp.
+      continue;
+    }
+
     const res = await execa('git', [
       'log',
       '--follow',

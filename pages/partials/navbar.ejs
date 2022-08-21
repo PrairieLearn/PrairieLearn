@@ -26,6 +26,8 @@
         <%- include('navbarStudent'); %>
       <% } else if (navbarType == 'instructor') { %>
         <%- include('navbarInstructor'); %>
+      <% } else if (navbarType == 'institution') { %>
+        <%- include('navbarInstitution'); %>
       <% } else { %>
         <% throw new Error('Unknown navbarType: ' + navbarType); %>
       <% } %>
@@ -495,7 +497,8 @@ const navPagesTabs = {
     instance_admin: 'navTabs/instructorInstanceAdmin',
     course_admin: 'navTabs/instructorCourseAdmin',
     assessment: 'navTabs/instructorAssessment',
-    question: 'navTabs/instructorQuestion'
+    question: 'navTabs/instructorQuestion',
+    institution_admin: 'navTabs/institutionAdmin',
 };
 // If navPage matches any of the keys in navPagesTabs, include the page given by its value
 if (typeof navPage != 'undefined' && navPagesTabs.hasOwnProperty(navPage)) { %>

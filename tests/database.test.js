@@ -28,7 +28,7 @@ describe('database', function () {
     const dbName = helperDb.getDatabaseNameForCurrentWorker();
     databaseDiff.diffDirectoryAndDatabase('database', dbName, options, (err, data) => {
       if (ERR(err, done)) return;
-      data ? done(new DatabaseError('\n'.red + data)) : done(null);
+      data ? done(new DatabaseError(data)) : done(null);
     });
   });
   it('should not contain "ON DELETE CASCADE" foreign keys from soft-delete to hard-delete tables', function (done) {
