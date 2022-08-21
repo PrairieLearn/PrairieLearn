@@ -21,5 +21,6 @@ ENV PYTHONPATH=/cgrader/:/grade/serverFilesCourse
 RUN groupadd sbuser
 RUN useradd -g sbuser sbuser
 
+COPY pl_check.h /usr/include
 COPY cgrader /cgrader
 

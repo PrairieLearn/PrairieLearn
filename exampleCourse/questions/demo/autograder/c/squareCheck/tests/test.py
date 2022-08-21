@@ -9,7 +9,7 @@ class DemoGrader(cgrader.CGrader):
         self.test_compile_file('square.c', 'main', add_c_file='/grade/tests/main.c',
                                # The following must be included if compiling a Check test
                                pkg_config_flags='check')
-        self.run_check_suite('./main', use_iteration=True)
+        self.run_check_suite('./main', use_iteration=True, sandboxed=False)
 
 g = DemoGrader()
 g.start()
