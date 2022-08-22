@@ -83,28 +83,15 @@ router.post(
       throw new Error('Missing one or more SAML attributes');
     }
 
-    let userRes;
-    try {
-      userRes = await sqldb.callAsync('users_select_or_insert', [
-        authUid,
-        authName,
-        authUin,
-        'SAML',
-      ]);
-    } catch (err) {
-      // Check if this is because the provider is not allowed.
-      if (err.message?.includes('authentication provider is not allowed for institution')) {
-        // Parse institution ID from error message.
-        const institutionIdMatch = err.message.match(/\((\d+)\)$/);
-        if (institutionIdMatch) {
-          const institutionId = institutionIdMatch[1];
-          res.redirect(`/pl/auth/institution/${institutionId}/not_allowed`);
-          return;
-        }
-      }
+    const userRes = await sqldb.callAsync('users_select_or_insert', [
+      authUid,
+      authName,
+      authUin,
+      'SAML',
+    ]);
 
-      // Some other error; we don't have a fancy error page for this.
-      throw err;
+    if (userRes.rows[0].result === 'invalid_authn_provider') {
+      res.redirect(`/pl/auth/institution/${userRes.rows[0].institution_id}/not_allowed`);
     }
 
     const tokenData = {

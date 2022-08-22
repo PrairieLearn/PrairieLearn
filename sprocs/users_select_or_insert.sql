@@ -4,7 +4,9 @@ CREATE FUNCTION
         IN name text,
         IN uin text,
         IN authn_provider_name text,
-        OUT user_id bigint
+        OUT result text,
+        OUT user_id bigint,
+        OUT institution_id bigint
     )
 AS $$
 DECLARE
@@ -46,6 +48,8 @@ BEGIN
         LIMIT 1;
     END IF;
 
+    institution_id := institution.id;
+
     -- if we've matched an institution, make sure the authn_provider is valid for it
     IF institution.id IS NOT NULL THEN
         PERFORM *
@@ -57,7 +61,8 @@ BEGIN
             AND ap.name = authn_provider_name;
 
         IF NOT FOUND THEN
-            RAISE EXCEPTION '"%" authentication provider is not allowed for institution "%" (%)', authn_provider_name, institution.long_name, institution.id;
+            status := 'invalid_authn_provider';
+            RETURN;
         END IF;
     END IF;
 
@@ -160,5 +165,8 @@ BEGIN
     if user_id < 1 OR user_id > 1000000000 THEN
         RAISE EXCEPTION 'user_id out of bounds';
     END IF;
+
+    -- If we get here, we succeeded; set the status for the caller.
+    status := 'success';
 END;
 $$ LANGUAGE plpgsql VOLATILE;

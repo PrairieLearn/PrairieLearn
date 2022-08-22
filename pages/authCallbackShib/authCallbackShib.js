@@ -23,21 +23,10 @@ router.get('/:action?/:target(*)?', function (req, res, next) {
 
   var params = [authUid, authName, authUin, 'Shibboleth'];
   sqldb.call('users_select_or_insert', params, (err, result) => {
-    if (err) {
-      // Check if this is because the provider is not allowed.
-      if (err.message?.includes('authentication provider is not allowed for institution')) {
-        // Parse institution ID from error message.
-        const institutionIdMatch = err.message.match(/\((\d+)\)$/);
-        if (institutionIdMatch) {
-          const institutionId = institutionIdMatch[1];
-          res.redirect(`/pl/auth/institution/${institutionId}/not_allowed`);
-          return;
-        }
-      }
+    if (ERR(err, next)) return;
 
-      // Some other error; we don't have a fancy error page for this.
-      ERR(err, next);
-      return;
+    if (result.rows[0].result === 'invalid_authn_provider') {
+      res.redirect(`/pl/auth/institution/${result.rows[0].institution_id}/not_allowed`);
     }
 
     var tokenData = {
