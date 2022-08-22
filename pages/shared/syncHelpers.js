@@ -132,7 +132,7 @@ module.exports.pullAndUpdate = function (locals, callback) {
         type: 'reset_from_git',
         description: 'Reset state to remote git repository',
         command: 'git',
-        arguments: ['reset', '--hard', 'origin/' + locals.course.branch],
+        arguments: ['reset', '--hard', `origin/${locals.course.branch}`],
         working_directory: locals.course.path,
         env: gitEnv,
         on_success: syncStage2,

@@ -768,7 +768,7 @@ function saveAndSync(fileEdit, locals, callback) {
         type: 'reset_from_git',
         description: 'Reset state to remote git repository',
         command: 'git',
-        arguments: ['reset', '--hard', 'origin/master'],
+        arguments: ['reset', '--hard', `origin/${locals.course.branch}`],
         working_directory: fileEdit.coursePath,
         env: gitEnv,
         on_success: _pullFromRemoteHash,

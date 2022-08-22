@@ -15,7 +15,7 @@ const { getInstitutionSamlProvider } = require('../../institution/utils');
 
 const router = Router({ mergeParams: true });
 
-router.get('/login', function (req, res, next) {
+router.get('/login', (req, res, next) => {
   // @ts-expect-error Missing `additionalParams` on the type.
   passport.authenticate('saml', {
     failureRedirect: '/pl',
