@@ -29,7 +29,9 @@ router.all('/', function (req, res, next) {
       if (ERR(err, next)) return;
 
       if (result.rows[0].result === 'invalid_authn_provider') {
-        res.redirect(`/pl/auth/institution/${result.rows[0].institution_id}/not_allowed`);
+        const institutionId = result.rows[0].institution_id;
+        res.redirect(`/pl/login?unsupported_provider=true&institution_id=${institutionId}`);
+        return;
       }
 
       var tokenData = {

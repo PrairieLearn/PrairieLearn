@@ -7,7 +7,7 @@ const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
 const { isEnterprise } = require('../../lib/license');
 
-const { AuthLogin } = require('./authLogin.html');
+const { AuthLogin, AuthLoginUnsupportedProvider } = require('./authLogin.html');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const router = Router();
@@ -16,8 +16,37 @@ router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
     const service = req.query.service ?? null;
-    let institutionAuthnProviders = null;
 
+    if (req.query.unsupported_provider === 'true') {
+      // This requires an institution ID to work. If for some reason there
+      // isn't one in the query params, redirect back to the normal login
+      // page without any query params.
+      const institutionId = req.query.institution_id ?? null;
+      if (!institutionId) {
+        res.redirect(req.baseUrl);
+        return;
+      }
+
+      // Look up the supported providers for this institution.
+      const supportedProvidersRes = await sqldb.queryAsync(
+        sql.select_supported_providers_for_institution,
+        {
+          institution_id: institutionId,
+        }
+      );
+
+      res.send(
+        AuthLoginUnsupportedProvider({
+          institutionId,
+          supportedProviders: supportedProvidersRes.rows,
+          service,
+          resLocals: res.locals,
+        })
+      );
+      return;
+    }
+
+    let institutionAuthnProviders = null;
     if (isEnterprise()) {
       const institutionAuthnProvidersRes = await sqldb.queryAsync(
         sql.select_institution_authn_providers,

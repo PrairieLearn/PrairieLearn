@@ -91,7 +91,9 @@ router.post(
     ]);
 
     if (userRes.rows[0].result === 'invalid_authn_provider') {
-      res.redirect(`/pl/auth/institution/${userRes.rows[0].institution_id}/not_allowed`);
+      const institutionId = userRes.rows[0].institution_id;
+      res.redirect(`/pl/login?unsupported_provider=true&institution_id=${institutionId}`);
+      return;
     }
 
     const tokenData = {
