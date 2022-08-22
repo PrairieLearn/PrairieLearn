@@ -1,4 +1,4 @@
-#include <pl_check.h>
+#include <check.h>
 
 extern int square(int x);
 
