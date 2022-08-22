@@ -307,6 +307,9 @@ If your application explicitly needs to keep any of the restricted environments 
 
 // Use this directive to retain environment variables
 #define PLCHECK_KEEP_ENV
+
+// Use this directive to have the unit test process remain a direct child of the test application
+#define PLCHECK_NO_EXTRA_FORK
 ```
 
 ### Running a command without creating a test
