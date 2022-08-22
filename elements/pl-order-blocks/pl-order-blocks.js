@@ -65,6 +65,19 @@ window.PLOrderBlocks = function (uuid, options) {
     connectWith: sortables,
     placeholder: 'ui-state-highlight',
     create: function () {
+
+      // TODO: add in some UI indicator for the paired disttractors
+      // copied from runestone/parsons/js/parsons.js
+    //   for (i = 0; i < pairedBins.length; i++) {
+    //     var pairedDiv = document.createElement("div");
+    //     $(pairedDiv).addClass("paired");
+    //     $(pairedDiv).html(
+    //         "<span id= 'st' style = 'vertical-align: middle; font-weight: bold'>or{</span>"
+    //     );
+    //     pairedDivs.push(pairedDiv);
+    //     this.sourceArea.appendChild(pairedDiv);
+    // }
+
       setAnswer();
     },
     sort: function (event, ui) {
