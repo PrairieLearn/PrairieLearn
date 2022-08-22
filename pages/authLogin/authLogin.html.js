@@ -73,28 +73,28 @@ function LoginPageContainer({ children, service, resLocals }) {
           }
           ${isEnterprise()
             ? unsafeHtml(`
-    .institution-header {
-      overflow: hidden;
-      text-align: center;
-    }
-    .institution-header:before, .institution-header:after {
-      background-color: #000;
-      content: "";
-      display: inline-block;
-      height: 1px;
-      position: relative;
-      vertical-align: middle;
-      width: 50%;
-    }
-    .institution-header:before {
-      right: 0.5em;
-      margin-left: -50%;
-    }
-    .institution-header:after {
-      left: 0.5em;
-      margin-right: -50%;
-    }
-    `)
+          .institution-header {
+            overflow: hidden;
+            text-align: center;
+          }
+          .institution-header:before, .institution-header:after {
+            background-color: #000;
+            content: "";
+            display: inline-block;
+            height: 1px;
+            position: relative;
+            vertical-align: middle;
+            width: 50%;
+          }
+          .institution-header:before {
+            right: 0.5em;
+            margin-left: -50%;
+          }
+          .institution-header:after {
+            left: 0.5em;
+            margin-right: -50%;
+          }
+          `)
             : ''}
         </style>
       </head>
