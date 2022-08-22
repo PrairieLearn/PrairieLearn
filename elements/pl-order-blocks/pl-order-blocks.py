@@ -115,14 +115,15 @@ def prepare(element_html, data):
             raise Exception('Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>. \
                 Any html tags nested inside <pl-block-group> must be <pl-answer>')
 
+        answer_attribs = ['correct', 'tag', 'distractor-for']
         if grading_method == 'external':
-            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct'])
+            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=answer_attribs)
         elif grading_method in ['unordered', 'ordered']:
-            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'indent'])
+            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=answer_attribs + ['indenct'])
         elif grading_method == 'ranking':
-            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
+            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=answer_attribs + ['ranking', 'indent'])
         elif grading_method == 'dag':
-            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'tag', 'depends', 'comment', 'indent'])
+            pl.check_attribs(html_tags, required_attribs=[], optional_attribs=answer_attribs + ['depends', 'comment', 'indent'])
 
         is_correct = pl.get_boolean_attrib(html_tags, 'correct', PL_ANSWER_CORRECT_DEFAULT)
         answer_indent = pl.get_integer_attrib(html_tags, 'indent', None)
