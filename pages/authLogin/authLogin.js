@@ -76,7 +76,10 @@ router.get(
           }
 
           return {
-            name: `${provider.long_name} (${provider.short_name})`,
+            name:
+              provider.long_name !== provider.short_name
+                ? `${provider.long_name} (${provider.short_name})`
+                : provider.long_name,
             url,
           };
         })

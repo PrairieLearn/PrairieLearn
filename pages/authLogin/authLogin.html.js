@@ -176,7 +176,7 @@ function AuthLogin({ institutionAuthnProviders, service, resLocals }) {
               ${institutionAuthnProviders.map(
                 (provider) => html`
                   <a href="${provider.url}" class="btn btn-outline-dark btn-block">
-                    ${provider.name}
+                    <span class="font-weight-bold">${provider.name}</span>
                   </a>
                 `
               )}

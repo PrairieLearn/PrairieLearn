@@ -10,6 +10,7 @@ const InstitutionAdminSso = ({
   resLocals,
 }) => {
   const hasSamlProvider = !!institutionSamlProvider;
+
   // TODO: only show authentication providers that were enabled in `config.json`.
   return html`
     <!DOCTYPE html>
@@ -85,13 +86,17 @@ const InstitutionAdminSso = ({
                   None
                 </option>
                 ${supportedAuthenticationProviders.map((provider) => {
-                  if (provider.name === 'LTI') return '';
+                  if (provider.name === 'LTI') return null;
+
+                  const isEnabled = institutionAuthenticationProviders.some(
+                    (p) => p.id === provider.id
+                  );
 
                   return html`
                     <option
                       value="${provider.id}"
                       ${provider.id === institution.default_authn_provider_id ? 'selected' : ''}
-                      ${provider.name === 'SAML' && !hasSamlProvider ? 'disabled' : ''}
+                      ${!isEnabled ? 'disabled' : ''}
                     >
                       ${provider.name}
                     </option>
@@ -121,6 +126,7 @@ const InstitutionAdminSso = ({
 
               // Sync disabled state of default provider option.
               var defaultProviderOption = $('#defaultProvider option[value="' + providerId + '"]');
+              console.log(defaultProviderOption);
               defaultProviderOption.prop('disabled', !e.target.checked);
             });
           });
