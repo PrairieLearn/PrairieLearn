@@ -104,7 +104,7 @@
               <span class="font-weight-bold">DevMode by-pass</span>
             </a>
           <% } %>
-          <% if (config.hasShib) { %>
+          <% if (config.hasShib && !config.hideShibLogin) { %>
             <a class="btn btn-shib w-100 position-relative" href="/pl/shibcallback" role="button">
               <% if (config.shibLinkLogo != null) { %>
                 <img src="<%- config.shibLinkLogo %>" class="social-icon"/>

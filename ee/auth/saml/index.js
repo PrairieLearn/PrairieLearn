@@ -7,8 +7,8 @@ const strategy = new MultiSamlStrategy(
   {
     passReqToCallback: true,
     getSamlOptions(req, done) {
-      getInstitutionSamlProvider(req.params.institution_id).then(
-        (samlProvider) => {
+      getInstitutionSamlProvider(req.params.institution_id)
+        .then((samlProvider) => {
           if (!samlProvider) {
             return done(new Error('No SAML provider found for given institution'));
           }
@@ -31,9 +31,8 @@ const strategy = new MultiSamlStrategy(
             privateKey: samlProvider.private_key,
             decryptionPvk: samlProvider.private_key,
           });
-        },
-        (err) => done(err)
-      );
+        })
+        .catch((err) => done(err));
     },
   },
   function (req, profile, done) {
