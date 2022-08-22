@@ -61,7 +61,7 @@ BEGIN
             AND ap.name = authn_provider_name;
 
         IF NOT FOUND THEN
-            status := 'invalid_authn_provider';
+            result := 'invalid_authn_provider';
             RETURN;
         END IF;
     END IF;
@@ -166,7 +166,7 @@ BEGIN
         RAISE EXCEPTION 'user_id out of bounds';
     END IF;
 
-    -- If we get here, we succeeded; set the status for the caller.
-    status := 'success';
+    -- If we get here, we succeeded; make sure the caller knows.
+    result := 'success';
 END;
 $$ LANGUAGE plpgsql VOLATILE;
