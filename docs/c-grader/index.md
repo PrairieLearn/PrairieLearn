@@ -253,11 +253,30 @@ self.test_run('diff -q output.txt expected.txt', reject_output=['differ'],
 
 ### Running a Check framework test suite
 
-For tests that involve more complex scenarios, particularly related to individual function calls and unit tests, the C autograder allows integration with the [Check framework](https://libcheck.github.io/check/). This framework provides functionality to run multiple test suites and test cases with individual unit tests. It is also able to capture signals (e.g., segmentation fault) by running unit tests in an isolated process.
+For tests that involve more complex scenarios, particularly related to individual function calls and unit tests, the C autograder allows integration with a modified version of the [Check framework](https://libcheck.github.io/check/). This framework provides functionality to run multiple test suites and test cases with individual unit tests. It is also able to capture signals (e.g., segmentation fault) by running unit tests in an isolated process.
 
 To run a Check suite, create a main C file containing the tests and a `main` function that runs the Check suite. A tutorial with instructions on how to create test suites, test cases and unit tests can be found in [the official Check tutorial](https://libcheck.github.io/check/doc/check_html/check_3.html#Tutorial). The example course also includes a basic test suite that can be used as an example.
 
 Note that the functionality for working with the Check framework relies on its [test logging features](https://libcheck.github.io/check/doc/check_html/check_4.html#Test-Logging). To ensure the tests are properly captured by the autograder you should not overwrite the log files.
+
+The version of Check used in the autograder has been modified slightly to include additional safeguards against malicious student code. These safeguards restrict access to test logs and other resources to the processes running unit tests. In order to ensure these safeguards work as expected, your test application should:
+
+- keep Check's default fork status enabled, i.e., do not set "No Fork Mode";
+- open any files or file-like resources in the unit test itself or in checked fixtures, i.e., do not open files in unchecked fixtures or in the main application;
+- do not rely on environment variables for any student application, or set them manually in the unit test itself or in checked fixtures.
+
+If your application explicitly needs to keep any of the restricted environments above, you may disable some of these safeguards in your code. _Note that disabling these safeguards increases the chances that a student may bypass your unit tests and autograder_, so only do this if absolutely necessary. You may do this by setting the following preprocessor directives _at the top of your test code_ (before `#include <check.h>`):
+
+```c
+// Use this directive to retain file descriptors opened by the test application or unchecked fixtures
+#define PLCHECK_KEEP_FD
+
+// Use this directive to run the unit test applications as root
+#define PLCHECK_KEEP_UID
+
+// Use this directive to retain environment variables
+#define PLCHECK_KEEP_ENV
+```
 
 A typical `test.py` file for a Check-based suite will look something like this, assuming `student_code.c` contains the student code and `/grade/tests/main.c` contains the Check tests:
 
