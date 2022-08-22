@@ -9,8 +9,8 @@
 static inline void pl_fixture_sandbox_setup(void) {
 
 #ifndef PLCHECK_KEEP_FD
-  // Close all file descriptors from the test program, such as logs and result outputs
-  closefrom(3);
+  // Close all file descriptors from the test program, such as logs and result outputs (keep FD #3, used for error message piping)
+  closefrom(4);
 #endif
   
 #ifndef PLCHECK_KEEP_UID

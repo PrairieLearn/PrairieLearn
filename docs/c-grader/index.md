@@ -259,25 +259,6 @@ To run a Check suite, create a main C file containing the tests and a `main` fun
 
 Note that the functionality for working with the Check framework relies on its [test logging features](https://libcheck.github.io/check/doc/check_html/check_4.html#Test-Logging). To ensure the tests are properly captured by the autograder you should not overwrite the log files.
 
-The version of Check used in the autograder has been modified slightly to include additional safeguards against malicious student code. These safeguards restrict access to test logs and other resources to the processes running unit tests. In order to ensure these safeguards work as expected, your test application should:
-
-- keep Check's default fork status enabled, i.e., do not set "No Fork Mode";
-- open any files or file-like resources in the unit test itself or in checked fixtures, i.e., do not open files in unchecked fixtures or in the main application;
-- do not rely on environment variables for any student application, or set them manually in the unit test itself or in checked fixtures.
-
-If your application explicitly needs to keep any of the restricted environments above, you may disable some of these safeguards in your code. _Note that disabling these safeguards increases the chances that a student may bypass your unit tests and autograder_, so only do this if absolutely necessary. You may do this by setting the following preprocessor directives _at the top of your test code_ (before `#include <check.h>`):
-
-```c
-// Use this directive to retain file descriptors opened by the test application or unchecked fixtures
-#define PLCHECK_KEEP_FD
-
-// Use this directive to run the unit test applications as root
-#define PLCHECK_KEEP_UID
-
-// Use this directive to retain environment variables
-#define PLCHECK_KEEP_ENV
-```
-
 A typical `test.py` file for a Check-based suite will look something like this, assuming `student_code.c` contains the student code and `/grade/tests/main.c` contains the Check tests:
 
 ```python
@@ -307,6 +288,25 @@ The `self.run_check_suite()` method will call the executable containing the Chec
 
 ```python
 self.run_check_suite('./main', use_suite_title=True, use_unit_test_id=False)
+```
+
+The version of Check used in the autograder has been modified slightly to include additional safeguards against malicious student code. These safeguards restrict access to test logs and other resources to the processes running unit tests. In order to ensure these safeguards work as expected, your test application should:
+
+- keep Check's default fork status enabled, i.e., do not set "No Fork Mode";
+- open any files or file-like resources in the unit test itself or in checked fixtures, i.e., do not open files in unchecked fixtures or in the main application;
+- do not rely on environment variables for any student application, or set them manually in the unit test itself or in checked fixtures.
+
+If your application explicitly needs to keep any of the restricted environments above, you may disable some of these safeguards in your code. _Note that disabling these safeguards increases the chances that a student may bypass your unit tests and autograder_, so only do this if absolutely necessary. You may do this by setting the following preprocessor directives _at the top of your test code_ (before `#include <check.h>`):
+
+```c
+// Use this directive to retain file descriptors opened by the test application or unchecked fixtures
+#define PLCHECK_KEEP_FD
+
+// Use this directive to run the unit test applications as root
+#define PLCHECK_KEEP_UID
+
+// Use this directive to retain environment variables
+#define PLCHECK_KEEP_ENV
 ```
 
 ### Running a command without creating a test
