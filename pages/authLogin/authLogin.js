@@ -2,9 +2,12 @@
 const { Router } = require('express');
 const asyncHandler = require('express-async-handler');
 
+const config = require('../../lib/config');
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
 const { isEnterprise } = require('../../lib/license');
+
+const { AuthLogin } = require('./authLogin.html');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const router = Router();
@@ -12,18 +15,18 @@ const router = Router();
 router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
-    res.locals.service = req.query.service ?? null;
-    res.locals.institutionAuthnProviders = null;
+    const service = req.query.service ?? null;
+    let institutionAuthnProviders = null;
 
     if (isEnterprise()) {
-      const institutionAuthnProviders = await sqldb.queryAsync(
+      const institutionAuthnProvidersRes = await sqldb.queryAsync(
         sql.select_institution_authn_providers,
         {}
       );
-      res.locals.institutionAuthnProviders = institutionAuthnProviders.rows
+      institutionAuthnProviders = institutionAuthnProvidersRes.rows
         .map((provider) => {
-          // Special case: omit the default institution.
-          if (provider.id === '1') return null;
+          // Special case: omit the default institution in production.
+          if (provider.id === '1' && config.devMode === false) return null;
 
           let url = null;
           switch (provider.default_authn_provider_name) {
@@ -51,7 +54,7 @@ router.get(
         .filter(Boolean);
     }
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(AuthLogin({ service, institutionAuthnProviders, resLocals: res.locals }));
   })
 );
 
