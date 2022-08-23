@@ -1,6 +1,5 @@
-var _ = require('lodash');
-var fs = require('fs');
-var path = require('path');
+const fs = require('fs');
+const path = require('path');
 const url = require('url');
 
 module.exports.load = function (filename) {
@@ -13,7 +12,7 @@ module.exports.load = function (filename) {
     var result = blockRE.exec(line);
     if (result) {
       blockName = result[1];
-      if (_.has(sql, blockName)) throw new Error(`${filename}: duplicate BLOCK name: ${blockName}`);
+      if (sql[blockName]) throw new Error(`${filename}: duplicate BLOCK name: ${blockName}`);
       sql[blockName] = line;
     } else if (blockName) {
       sql[blockName] += '\n' + line;
