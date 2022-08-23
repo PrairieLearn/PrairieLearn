@@ -768,7 +768,7 @@ function saveAndSync(fileEdit, locals, callback) {
         type: 'reset_from_git',
         description: 'Reset state to remote git repository',
         command: 'git',
-        arguments: ['reset', '--hard', 'origin/master'],
+        arguments: ['reset', '--hard', `origin/${locals.course.branch}`],
         working_directory: fileEdit.coursePath,
         env: gitEnv,
         on_success: _pullFromRemoteHash,
@@ -1010,8 +1010,8 @@ function saveAndSync(fileEdit, locals, callback) {
         ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
         endGitHash = hash;
         if (fileEdit.needToSync || config.chunksGenerator) {
-          /* If we're using chunks, then always sync on edit.  We need the sync data
-                       to force-generate new chunks. */
+          // If we're using chunks, then always sync on edit. We need the sync
+          // data to force-generate new chunks.
           _syncFromDisk();
         } else {
           _reloadQuestionServers();

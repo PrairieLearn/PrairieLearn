@@ -30,6 +30,7 @@ function getParamsForQuestion(q) {
     topic: q.topic,
     grading_method: q.gradingMethod || 'Internal',
     single_variant: !!q.singleVariant,
+    show_correct_answer: q.showCorrectAnswer === undefined ? true : q.showCorrectAnswer,
     external_grading_enabled: q.externalGradingOptions && q.externalGradingOptions.enabled,
     external_grading_image: q.externalGradingOptions && q.externalGradingOptions.image,
     external_grading_files: q.externalGradingOptions && q.externalGradingOptions.serverFilesCourse,

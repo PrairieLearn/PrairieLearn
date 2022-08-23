@@ -1,9 +1,8 @@
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
-const tracing = require('./lib/tracing');
+const opentelemetry = require('@prairielearn/opentelemetry');
 
 const ERR = require('async-stacktrace');
-const util = require('util');
 const fs = require('fs');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -45,10 +44,13 @@ const serverJobs = require('./lib/server-jobs');
 const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
 const { LocalCache } = require('./lib/local-cache');
-const workers = require('./lib/workers');
+const codeCaller = require('./lib/code-caller');
 const assets = require('./lib/assets');
+const namedLocks = require('./lib/named-locks');
+const nodeMetrics = require('./lib/node-metrics');
+const { isEnterprise } = require('./lib/license');
 
-process.on('warning', (e) => console.warn(e)); // eslint-disable-line no-console
+process.on('warning', (e) => console.warn(e));
 
 // If there is only one argument, legacy it into the config option
 if (argv['_'].length === 1) {
@@ -65,7 +67,7 @@ if ('h' in argv || 'help' in argv) {
     --exit                              Run all the initialization and exit
 `;
 
-  console.log(msg); // eslint-disable-line no-console
+  console.log(msg);
   process.exit(0);
 }
 
@@ -193,6 +195,29 @@ module.exports.initExpress = function () {
     upload.single('file')
   );
 
+  /**
+   * Function to strip "sensitive" cookies from requests that will be proxied
+   * to workspace hosts.
+   */
+  function stripSensitiveCookies(proxyReq) {
+    const cookies = proxyReq.getHeader('cookie');
+    if (!cookies) return;
+
+    const items = cookies.split(';');
+    const filteredItems = items.filter((item) => {
+      const name = item.split('=')[0].trim();
+      return (
+        name !== 'pl_authn' &&
+        name !== 'pl_assessmentpw' &&
+        // The workspace authz cookies use a prefix plus the workspace ID, so
+        // we need to check for that prefix instead of an exact name match.
+        !name.startsWith('pl_authz_workspace_')
+      );
+    });
+
+    proxyReq.setHeader('cookie', filteredItems.join(';'));
+  }
+
   // proxy workspaces to remote machines
   let workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
   const workspaceProxyOptions = {
@@ -248,13 +273,19 @@ module.exports.initExpress = function () {
         return 'not-matched';
       }
     },
+    onProxyReq: (proxyReq) => {
+      stripSensitiveCookies(proxyReq);
+    },
+    onProxyReqWs: (proxyReq) => {
+      stripSensitiveCookies(proxyReq);
+    },
     onError: (err, req, res) => {
       logger.error(`Error proxying workspace request: ${err}`, {
         err,
         url: req.url,
       });
-      /* Check to make sure we weren't already in the middle of sending a response
-               before replying with an error 500 */
+      // Check to make sure we weren't already in the middle of sending a
+      // response before replying with an error 500
       if (res && !res.headersSent) {
         if (res.status && res.send) {
           res.status(500).send('Error proxying workspace request');
@@ -386,12 +417,22 @@ module.exports.initExpress = function () {
   app.use('/pl/shibcallback', require('./pages/authCallbackShib/authCallbackShib'));
   app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
   app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
+
+  if (isEnterprise()) {
+    app.use('/pl/auth/institution/:institution_id/saml', require('./ee/auth/saml/router'));
+  }
+
   app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
   app.use('/pl/login', require('./pages/authLogin/authLogin'));
   // disable SEB until we can fix the mcrypt issues
   // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
   app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
   app.use('/pl/api', require('./middlewares/authnToken')); // authn for the API, set res.locals.authn_user
+
+  if (isEnterprise()) {
+    app.use('/pl/prairietest/auth', require('./ee/auth/prairietest'));
+  }
+
   app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
   app.use(require('./middlewares/logRequest'));
 
@@ -685,6 +726,10 @@ module.exports.initExpress = function () {
 
   app.use('/pl/api/v1', require('./api/v1'));
 
+  if (isEnterprise()) {
+    app.use('/pl/institution/:institution_id/admin', require('./ee/institution/admin'));
+  }
+
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
@@ -790,16 +835,6 @@ module.exports.initExpress = function () {
     ]
   );
   app.use(
-    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading',
-    [
-      function (req, res, next) {
-        res.locals.navSubPage = 'manual_grading';
-        next();
-      },
-      require('./pages/instructorAssessmentManualGrading/instructorAssessmentManualGrading'),
-    ]
-  );
-  app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances',
     [
       function (req, res, next) {
@@ -832,6 +867,54 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/file_download',
     require('./pages/instructorFileDownload/instructorFileDownload')
+  );
+
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id',
+    [
+      function (req, res, next) {
+        res.locals.navSubPage = 'manual_grading';
+        next();
+      },
+      require('./middlewares/selectAndAuthzAssessmentQuestion'),
+      require('./pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion'),
+    ]
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/instance_question/:instance_question_id',
+    [
+      function (req, res, next) {
+        res.locals.navSubPage = 'manual_grading';
+        next();
+      },
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion'),
+    ]
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/clientFilesQuestion',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./pages/clientFilesQuestion/clientFilesQuestion'),
+    ]
+  );
+
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/generatedFilesQuestion',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
+    ]
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading',
+    [
+      function (req, res, next) {
+        res.locals.navSubPage = 'manual_grading';
+        next();
+      },
+      require('./pages/instructorAssessmentManualGrading/assessment/assessment'),
+    ]
   );
 
   app.use(
@@ -1114,7 +1197,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id/generatedFilesQuestion',
     [
       require('./middlewares/selectAndAuthzInstructorQuestion'),
-      require('./pages/instructorGeneratedFilesQuestion/instructorGeneratedFilesQuestion'),
+      require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
     ]
   );
 
@@ -1193,42 +1276,7 @@ module.exports.initExpress = function () {
     require('./pages/studentAssessmentInstanceHomework/studentAssessmentInstanceHomework'),
     require('./pages/studentAssessmentInstanceExam/studentAssessmentInstanceExam'),
   ]);
-  app.use(
-    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_question/:assessment_question_id/next_ungraded',
-    [
-      function (req, res, next) {
-        res.locals.assessment_question_id = req.params.assessment_question_id;
-        res.locals.prior_instance_question_id = req.query.instance_question;
-        next();
-      },
-      require('./pages/instructorQuestionManualGrading/instructorQuestionManualGradingNextInstanceQuestion'),
-    ]
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/assessment_question/:assessment_question_id/manual_grading',
-    [
-      function (req, res, next) {
-        res.locals.navSubPage = 'manual_grading';
-        next();
-      },
-      function (req, res, next) {
-        res.locals.assessment_question_id = req.params.assessment_question_id;
-        next();
-      },
-      require('./pages/instructorAssessmentQuestionManualGrading/instructorAssessmentQuestionManualGrading'),
-    ]
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/manual_grading',
-    [
-      function (req, res, next) {
-        res.locals.navSubPage = 'manual_grading';
-        next();
-      },
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./pages/instructorQuestionManualGrading/instructorQuestionManualGrading'),
-    ]
-  );
+
   app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
     // don't use logPageView here, we load it inside the page so it can get the variant_id
@@ -1286,7 +1334,7 @@ module.exports.initExpress = function () {
     [
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./middlewares/studentAssessmentAccess'),
-      require('./pages/studentGeneratedFilesQuestion/studentGeneratedFilesQuestion'),
+      require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
     ]
   );
 
@@ -1501,7 +1549,7 @@ module.exports.initExpress = function () {
   // generatedFiles
   app.use('/pl/course/:course_id/question/:question_id/generatedFilesQuestion', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
-    require('./pages/instructorGeneratedFilesQuestion/instructorGeneratedFilesQuestion'),
+    require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
   ]);
 
   // legacy client file paths
@@ -1554,7 +1602,6 @@ module.exports.initExpress = function () {
   app.get('/pl/webhooks/ping', function (req, res, _next) {
     res.send('.');
   });
-  app.use('/pl/webhooks/grading', require('./webhooks/grading/grading'));
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
@@ -1575,6 +1622,7 @@ module.exports.initExpress = function () {
 //////////////////////////////////////////////////////////////////////
 // Server startup ////////////////////////////////////////////////////
 
+/** @type {import('http').Server | import('https').Server} */
 var server;
 
 module.exports.startServer = async () => {
@@ -1597,6 +1645,25 @@ module.exports.startServer = async () => {
   } else {
     throw new Error('unknown serverType: ' + config.serverType);
   }
+
+  // Wait for the server to either start successfully or error out.
+  await new Promise((resolve, reject) => {
+    let done = false;
+
+    server.on('error', (err) => {
+      if (!done) {
+        done = true;
+        reject(err);
+      }
+    });
+
+    server.on('listening', () => {
+      if (!done) {
+        done = true;
+        resolve();
+      }
+    });
+  });
 
   return server;
 };
@@ -1643,10 +1710,6 @@ if (config.startServer) {
           configFilename = argv['config'];
         }
 
-        // Before we start executing any real code, ensure that tracing has
-        // been configured correctly.
-        await tracing.waitForStart();
-
         // Load config values from AWS as early as possible so we can use them
         // to set values for e.g. the database connection
         await config.loadConfigAsync(configFilename);
@@ -1655,7 +1718,10 @@ if (config.startServer) {
 
         // This should be done as soon as we load our config so that we can
         // start exporting spans.
-        await tracing.init(config);
+        await opentelemetry.init({
+          ...config,
+          serviceName: 'prairielearn',
+        });
 
         if (config.logFilename) {
           logger.addFileLogging(config.logFilename);
@@ -1668,7 +1734,7 @@ if (config.startServer) {
             (time, stack) => {
               const msg = `BLOCKED-AT: Blocked for ${time}ms`;
               logger.verbose(msg, { time, stack });
-              console.log(msg + '\n' + stack.join('\n')); // eslint-disable-line no-console
+              console.log(msg + '\n' + stack.join('\n'));
             },
             { threshold: config.blockedWarnThresholdMS }
           ); // threshold in milliseconds
@@ -1677,7 +1743,7 @@ if (config.startServer) {
             (time) => {
               const msg = `BLOCKED: Blocked for ${time}ms (set config.blockedAtWarnEnable for stack trace)`;
               logger.verbose(msg, { time });
-              console.log(msg); // eslint-disable-line no-console
+              console.log(msg);
             },
             { threshold: config.blockedWarnThresholdMS }
           ); // threshold in milliseconds
@@ -1720,8 +1786,14 @@ if (config.startServer) {
           })
         );
       },
-      function (callback) {
-        var pgConfig = {
+      async () => {
+        if (isEnterprise()) {
+          const { strategy } = require('./ee/auth/saml/index');
+          passport.use(strategy);
+        }
+      },
+      async function () {
+        const pgConfig = {
           user: config.postgresqlUser,
           database: config.postgresqlDatabase,
           host: config.postgresqlHost,
@@ -1729,29 +1801,34 @@ if (config.startServer) {
           max: config.postgresqlPoolSize,
           idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
         };
-        logger.verbose(
-          'Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database
-        );
-        var idleErrorHandler = function (err) {
+        function idleErrorHandler(err) {
           logger.error('idle client error', err);
           // https://github.com/PrairieLearn/PrairieLearn/issues/2396
           process.exit(1);
-        };
-        sqldb.init(pgConfig, idleErrorHandler, function (err) {
-          if (ERR(err, callback)) return;
-          logger.verbose('Successfully connected to database');
-          callback(null);
-        });
+        }
+
+        logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
+
+        await sqldb.initAsync(pgConfig, idleErrorHandler);
+
+        // Our named locks code maintains a separate pool of database connections.
+        // This ensures that we avoid deadlocks.
+        await namedLocks.init(pgConfig, idleErrorHandler);
+
+        logger.verbose('Successfully connected to database');
       },
       function (callback) {
-        if (!config.runMigrations) return callback(null);
+        // Using the `--migrate-and-exit` flag will override the value of
+        // `config.runMigrations`. This allows us to use the same config when
+        // running migrations as we do when we start the server.
+        if (!config.runMigrations && !argv['migrate-and-exit']) return callback(null);
         migrations.init(path.join(__dirname, 'migrations'), 'prairielearn', function (err) {
           if (ERR(err, callback)) return;
           callback(null);
         });
       },
       function (callback) {
-        if ('migrate-and-exit' in argv && argv['migrate-and-exit']) {
+        if (argv['migrate-and-exit']) {
           logger.info('option --migrate-and-exit passed, running DB setup and exiting');
           process.exit(0);
         } else {
@@ -1777,6 +1854,7 @@ if (config.startServer) {
         });
       },
       function (callback) {
+        if (!config.initNewsItems) return callback(null);
         const notify_with_new_server = false;
         news_items.init(notify_with_new_server, function (err) {
           if (ERR(err, callback)) return;
@@ -1824,9 +1902,8 @@ if (config.startServer) {
         load.initEstimator('python_callback_waiting', 1);
         callback(null);
       },
-      function (callback) {
-        workers.init();
-        callback(null);
+      async () => {
+        await codeCaller.init();
       },
       async () => {
         logger.verbose('Starting server...');
@@ -1851,12 +1928,7 @@ if (config.startServer) {
           callback(null);
         });
       },
-      function (callback) {
-        util.callbackify(workspace.init)((err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => workspace.init(),
       function (callback) {
         serverJobs.init(function (err) {
           if (ERR(err, callback)) return;
@@ -1864,10 +1936,11 @@ if (config.startServer) {
         });
       },
       function (callback) {
-        freeformServer.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+        nodeMetrics.init();
+        callback(null);
+      },
+      async () => {
+        await freeformServer.init();
       },
     ],
     function (err, data) {
@@ -1884,6 +1957,15 @@ if (config.startServer) {
           logger.info('exit option passed, quitting...');
           process.exit(0);
         }
+
+        process.on('SIGTERM', () => {
+          opentelemetry
+            .shutdown()
+            .catch((err) => logger.error('Error shutting down OpenTelemetry', err))
+            .finally(() => {
+              process.exit(0);
+            });
+        });
       }
     }
   );

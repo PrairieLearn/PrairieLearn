@@ -6,6 +6,8 @@ import random
 import math
 import chevron
 
+SCORE_INCORRECT_DEFAULT = 0.0
+SCORE_CORRECT_DEFAULT = 1.0
 WEIGHT_DEFAULT = 1
 FIXED_ORDER_DEFAULT = False
 INLINE_DEFAULT = False
@@ -25,11 +27,21 @@ def categorize_options(element, data):
     index = 0
     for child in element:
         if child.tag in ['pl-answer', 'pl_answer']:
-            pl.check_attribs(child, required_attribs=[], optional_attribs=['correct', 'feedback'])
+            pl.check_attribs(child, required_attribs=[], optional_attribs=['score', 'correct', 'feedback'])
             correct = pl.get_boolean_attrib(child, 'correct', False)
             child_html = pl.inner_html(child)
             child_feedback = pl.get_string_attrib(child, 'feedback', FEEDBACK_DEFAULT)
-            answer_tuple = (index, correct, child_html, child_feedback)
+
+            default_score = SCORE_CORRECT_DEFAULT if correct else SCORE_INCORRECT_DEFAULT
+            score = pl.get_float_attrib(child, 'score', default_score)
+
+            if not (SCORE_INCORRECT_DEFAULT <= score <= SCORE_CORRECT_DEFAULT):
+                raise Exception(f'Score {score} is invalid, must be in the range [0.0, 1.0].')
+
+            if correct and score != SCORE_CORRECT_DEFAULT:
+                raise Exception('Correct answers must give full credit.')
+
+            answer_tuple = (index, correct, child_html, child_feedback, score)
             if correct:
                 correct_answers.append(answer_tuple)
             else:
@@ -48,10 +60,10 @@ def categorize_options(element, data):
             with open(json_file, mode='r', encoding='utf-8') as f:
                 obj = json.load(f)
                 for text in obj.get(correct_attrib, []):
-                    correct_answers.append((index, True, text, None))
+                    correct_answers.append((index, True, text, None, SCORE_CORRECT_DEFAULT))
                     index += 1
                 for text in obj.get(incorrect_attrib, []):
-                    incorrect_answers.append((index, False, text, None))
+                    incorrect_answers.append((index, False, text, None, SCORE_INCORRECT_DEFAULT))
                     index += 1
         except FileNotFoundError:
             raise Exception(f'JSON answer file: "{json_file}" could not be found')
@@ -172,7 +184,8 @@ def prepare(element_html, data):
             aota_text = 'All of the above'
         # Add 'All of the above' option after shuffling
         aota_feedback = pl.get_string_attrib(element, 'all-of-the-above-feedback', FEEDBACK_DEFAULT)
-        sampled_answers.append((len_total, aota_correct, aota_text, aota_feedback))
+        aota_default_score = SCORE_CORRECT_DEFAULT if aota_correct else SCORE_INCORRECT_DEFAULT
+        sampled_answers.append((len_total, aota_correct, aota_text, aota_feedback, aota_default_score))
 
     if enable_nota:
         if inline:
@@ -181,7 +194,8 @@ def prepare(element_html, data):
             nota_text = 'None of the above'
         # Add 'None of the above' option after shuffling
         nota_feedback = pl.get_string_attrib(element, 'none-of-the-above-feedback', FEEDBACK_DEFAULT)
-        sampled_answers.append((len_total + 1, nota_correct, nota_text, nota_feedback))
+        nota_default_score = SCORE_CORRECT_DEFAULT if nota_correct else SCORE_INCORRECT_DEFAULT
+        sampled_answers.append((len_total + 1, nota_correct, nota_text, nota_feedback, nota_default_score))
 
     # 4. Write to data
     # Because 'All of the above' is below all the correct choice(s) when it's
@@ -189,8 +203,8 @@ def prepare(element_html, data):
     # overwriting previous choice(s)
     display_answers = []
     correct_answer = None
-    for (i, (index, correct, html, feedback)) in enumerate(sampled_answers):
-        keyed_answer = {'key': pl.index2key(i), 'html': html, 'feedback': feedback}
+    for (i, (index, correct, html, feedback, score)) in enumerate(sampled_answers):
+        keyed_answer = {'key': pl.index2key(i), 'html': html, 'feedback': feedback, 'score': score}
         display_answers.append(keyed_answer)
         if correct:
             correct_answer = keyed_answer
@@ -211,7 +225,6 @@ def render(element_html, data):
     inline = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
 
     submitted_key = data['submitted_answers'].get(name, None)
-    correct_key = data['correct_answers'].get(name, {'key': None}).get('key', None)
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -232,8 +245,12 @@ def render(element_html, data):
                 'feedback': feedback
             }
             if answer_html['display_score_badge']:
-                answer_html['correct'] = (correct_key == answer['key'])
-                answer_html['incorrect'] = (correct_key != answer['key'])
+                if score >= 1:
+                    answer_html['correct'] = True
+                elif score > 0:
+                    answer_html['partial'] = True
+                else:
+                    answer_html['incorrect'] = True
             answerset.append(answer_html)
 
         html_params = {
@@ -340,15 +357,14 @@ def grade(element_html, data):
 
     submitted_key = data['submitted_answers'].get(name, None)
     correct_key = data['correct_answers'].get(name, {'key': None}).get('key', None)
-
-    score = 0
-    if (submitted_key is not None and submitted_key == correct_key):
-        score = 1
+    default_score = SCORE_CORRECT_DEFAULT if submitted_key == correct_key else SCORE_INCORRECT_DEFAULT
 
     feedback = None
+    score = 0
     for option in data['params'][name]:
         if option['key'] == submitted_key:
             feedback = option.get('feedback', None)
+            score = option.get('score', default_score)
 
     data['partial_scores'][name] = {'score': score, 'weight': weight, 'feedback': feedback}
 
@@ -369,7 +385,7 @@ def test(element_html, data):
     if result == 'correct':
         data['raw_submitted_answers'][name] = data['correct_answers'][name]['key']
         feedback = data['correct_answers'][name].get('feedback', None)
-        data['partial_scores'][name] = {'score': 1, 'weight': weight, 'feedback': feedback}
+        data['partial_scores'][name] = {'score': 1.0, 'weight': weight, 'feedback': feedback}
     elif result == 'incorrect':
         if len(incorrect_keys) > 0:
             random_key = random.choice(incorrect_keys)
@@ -377,7 +393,8 @@ def test(element_html, data):
             for option in data['params'][name]:
                 if option['key'] == random_key:
                     feedback = option.get('feedback', None)
-            data['partial_scores'][name] = {'score': 0, 'weight': weight, 'feedback': feedback}
+                    score = option.get('score', 0.0)
+            data['partial_scores'][name] = {'score': score, 'weight': weight, 'feedback': feedback}
         else:
             # actually an invalid submission
             data['raw_submitted_answers'][name] = '0'

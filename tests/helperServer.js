@@ -6,6 +6,7 @@ const path = require('path');
 const delay = require('delay');
 const assert = require('chai').assert;
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const opentelemetry = require('@prairielearn/opentelemetry');
 
 const config = require('../lib/config');
 const load = require('../lib/load');
@@ -17,8 +18,7 @@ const syncFromDisk = require('../sync/syncFromDisk');
 const freeformServer = require('../question-servers/freeform');
 const cache = require('../lib/cache');
 const localCache = require('../lib/local-cache');
-const workers = require('../lib/workers');
-const tracing = require('../lib/tracing');
+const codeCaller = require('../lib/code-caller');
 const externalGrader = require('../lib/externalGrader');
 const externalGradingSocket = require('../lib/externalGradingSocket');
 
@@ -27,7 +27,8 @@ const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 config.startServer = false;
-config.serverPort = 3007;
+// Pick a unique port based on the Mocha worker ID.
+config.serverPort = 3007 + Number.parseInt(process.env.MOCHA_WORKER_ID ?? '0', 10);
 const server = require('../server');
 
 const logger = require('./dummyLogger');
@@ -48,7 +49,7 @@ module.exports = {
         [
           async () => {
             // We (currently) don't ever want tracing to run during tests.
-            await tracing.init({ openTelemetryEnabled: false });
+            await opentelemetry.init({ openTelemetryEnabled: false });
           },
           async () => {
             await aws.init();
@@ -99,10 +100,9 @@ module.exports = {
             load.initEstimator('python', 1);
             callback(null);
           },
-          function (callback) {
-            debug('before(): initialize workers');
-            workers.init();
-            callback(null);
+          async function () {
+            debug('before(): initialize code callers');
+            await codeCaller.init();
           },
           async () => {
             debug('before(): start server');
@@ -129,12 +129,9 @@ module.exports = {
               callback(null);
             });
           },
-          function (callback) {
+          async function () {
             debug('before(): initialize freeform server');
-            freeformServer.init(function (err) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
+            await freeformServer.init();
           },
           function (callback) {
             externalGrader.init(function (err) {
@@ -165,19 +162,9 @@ module.exports = {
     // start() functions above
     async.series(
       [
-        function (callback) {
+        async function () {
           debug('after(): finish workers');
-          workers.finish((err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
-        },
-        function (callback) {
-          debug('after(): close freeform server');
-          freeformServer.close(function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await codeCaller.finish();
         },
         function (callback) {
           debug('after(): close load estimators');

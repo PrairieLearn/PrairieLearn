@@ -3,7 +3,7 @@ SELECT
     (aset.name || ' ' || a.number) AS assessment_label,
     u.user_id, u.uid, u.name,
     users_get_displayed_role(u.user_id, ci.id) AS role,
-    gi.id AS group_id, gi.name AS group_name, gi.uid_list,
+    gi.id AS group_id, gi.name AS group_name, gi.uid_list, gi.user_name_list, gi.user_roles_list as group_roles,
     substring(u.uid from '^[^@]+') AS username,
     ai.score_perc, ai.points, ai.max_points,
     ai.number,ai.id AS assessment_instance_id,ai.open,
@@ -15,6 +15,7 @@ SELECT
         WHEN ai.open AND ai.date_limit IS NOT NULL
             THEN greatest(0, floor(DATE_PART('epoch', (ai.date_limit - current_timestamp)) / 60))::text || ' min'
         WHEN ai.open THEN 'Open (no time limit)'
+        WHEN ai.open = FALSE AND ai.grading_needed THEN 'Closed (pending grading)'
         ELSE 'Closed'
     END AS time_remaining,
     CASE

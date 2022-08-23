@@ -31,6 +31,8 @@ router.get('/:action?/:target(*)?', function (req, res, next) {
     var pl_authn = csrf.generateToken(tokenData, config.secretKey);
     res.cookie('pl_authn', pl_authn, {
       maxAge: config.authnCookieMaxAgeMilliseconds,
+      httpOnly: true,
+      secure: true,
     });
     if (req.params.action === 'redirect') return res.redirect('/' + req.params.target);
     var redirUrl = res.locals.homeUrl;

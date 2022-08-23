@@ -55,9 +55,9 @@
             </thead>
             <tbody>
               <% rows.forEach(function(row, i) { %>
-              <% if (row.start_new_set) { %>
+              <% if (row.start_new_assessment_group) { %>
               <tr>
-                <th colspan="7"><%= row.heading %></th>
+                <th colspan="7"><%= row.assessment_group_heading %></th>
               </tr>
               <% } %>
               <tr>
@@ -77,12 +77,13 @@
                     <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
                   </button>
                   <% } %>
-                  <a href="<%= urlPrefix %>/assessment/<%= row.id %>/"><%= row.title %> 
+                  <a href="<%= urlPrefix %>/assessment/<%= row.id %>/"><%= row.title %>
                   <% if (row.group_work) { %>
                     <i class="fas fa-users"></i>
                   <% } %></a>
                   <%- include('../partials/issueBadge', {count: row.open_issue_count}); %>
                 </td>
+                
                 <td class="align-middle"><%= row.tid %></td>
 
                 <td class="text-center align-middle"><%= row.number %></td>

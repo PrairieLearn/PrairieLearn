@@ -146,7 +146,14 @@ module.exports = function (req, res, next) {
       res.cookie('preAuthUrl', req.originalUrl);
       // clear the pl_authn cookie in case it was bad
       res.clearCookie('pl_authn');
-      res.redirect('/pl/login');
+
+      // If we're in the middle of a PrairieTest login flow, propagate that to
+      // the login page so we can show a message to the user.
+      let query = '';
+      if (req.path === '/pl/prairietest/auth') {
+        query = '?service=PrairieTest';
+      }
+      res.redirect(`/pl/login${query}`);
       return;
     }
   }
@@ -175,6 +182,8 @@ module.exports = function (req, res, next) {
     var pl_authn = csrf.generateToken(tokenData, config.secretKey);
     res.cookie('pl_authn', pl_authn, {
       maxAge: config.authnCookieMaxAgeMilliseconds,
+      httpOnly: true,
+      secure: true,
     });
 
     next();

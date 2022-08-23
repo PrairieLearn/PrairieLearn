@@ -1,18 +1,25 @@
 div.pl-order-blocks-right {
   /* This style applies to the DIV that holds each dropzone column */
-  /* This particular style renders the dropzones in a single row horizontally */ 
-  width: 46%;
-  margin-right: 20px;
+  /* This particular style renders the dropzones in a single row horizontally */
+  width: calc(50% - 16px);
+  margin: 8px
 }
 
 div.pl-order-blocks-bottom {
   /* This style applies to the DIV that holds each dropzone column */
-  /* This particular style renders the dropzones in a single column vertically */ 
+  /* This particular style renders the dropzones in a single column vertically */
   width: 100%;
-  margin-right: 20px;
-  margin-bottom: 20px;
+  margin: 8px;
 }
 
+li.pl-order-blocks-code {
+  list-style-type: none;
+}
+
+.pl-order-blocks-code > .pl-code:only-child div {
+  /* override margins on code block to ensure code is centered properly */
+  margin-bottom: 0px !important;
+}
 
 ul.pl-order-blocks-connected-sortable li:hover{
   cursor: move; /* For UX: The answer tiles shows a 'grab' cursor on mouse over */
@@ -20,9 +27,8 @@ ul.pl-order-blocks-connected-sortable li:hover{
   outline-offset: -2px;
 }
 
-li.ui-state-highlight { 
+li.ui-state-highlight {
   /*This styling applies to the placeholder answer tile that appears when the user is dragging */
-  height: 3em !important; 
   border: none !important;
   list-style-type: none;
   background-color: #90a4ae !important;
@@ -80,7 +86,6 @@ div.column {
   display: block;
   box-shadow: 2px #888888;
   border-radius: 4px;
-  background-color: #eeeeee; 
+  background-color: #eeeeee;
   border: 1px solid #9e9e9e;
 }
-
