@@ -43,7 +43,6 @@ router.get('/', function (req, res, next) {
   sqldb.query(sql.course_assessments, params, function (err, result) {
     if (ERR(err, next)) return;
     res.locals.course_assessments = result.rows;
-    res.status();
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   });
 });
