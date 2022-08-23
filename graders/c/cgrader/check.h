@@ -17,29 +17,6 @@ static long *plcheck_final_check = NULL;
 
 static inline void pl_fixture_sandbox_setup(void) {
 
-#ifndef PLCHECK_KEEP_FD
-  // Close all file descriptors from the test program, such as logs and result outputs (keep FD #3, used for error message piping)
-  closefrom(4);
-#endif
-  
-#ifndef PLCHECK_KEEP_UID
-  // Set the user/group based on sandbox user and group set up by the test script
-  char *uid = getenv("SANDBOX_UID"), *gid = getenv("SANDBOX_GID");
-  if (gid) {
-    int setgid_rv = setgid(atoi(gid));
-    ck_assert_msg(!setgid_rv, "Error attempting to set up sandboxed group ID for test. Contact your instructor.\n%s", strerror(errno));
-  }
-  if (uid) {
-    int setuid_rv = setuid(atoi(uid));
-    ck_assert_msg(!setuid_rv, "Error attempting to set up sandboxed user ID for test. Contact your instructor.\n%s", strerror(errno));
-  }
-#endif
-
-#ifndef PLCHECK_KEEP_ENV
-  // Clear all environment variables, including those used to configure libcheck
-  clearenv();
-#endif
-
 #ifndef PLCHECK_NO_EXTRA_FORK
   plcheck_final_check = mmap(NULL, sizeof(*plcheck_final_check), PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
   *plcheck_final_check = 1;
@@ -72,6 +49,29 @@ static inline void pl_fixture_sandbox_setup(void) {
     }
     _exit(255);
   }
+#endif
+
+#ifndef PLCHECK_KEEP_FD
+  // Close all file descriptors from the test program, such as logs and result outputs (keep FD #3, used for error message piping)
+  closefrom(4);
+#endif
+  
+#ifndef PLCHECK_KEEP_UID
+  // Set the user/group based on sandbox user and group set up by the test script
+  char *uid = getenv("SANDBOX_UID"), *gid = getenv("SANDBOX_GID");
+  if (gid) {
+    int setgid_rv = setgid(atoi(gid));
+    ck_assert_msg(!setgid_rv, "Error attempting to set up sandboxed group ID for test. Contact your instructor.\n%s", strerror(errno));
+  }
+  if (uid) {
+    int setuid_rv = setuid(atoi(uid));
+    ck_assert_msg(!setuid_rv, "Error attempting to set up sandboxed user ID for test. Contact your instructor.\n%s", strerror(errno));
+  }
+#endif
+
+#ifndef PLCHECK_KEEP_ENV
+  // Clear all environment variables, including those used to configure libcheck
+  clearenv();
 #endif
 }
 
