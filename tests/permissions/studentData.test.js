@@ -659,7 +659,7 @@ describe('student data access', function () {
     // This page should contain a warning that the user doesn't have access to
     // student data, and a prompt to obtain access.
     assert.lengthOf(response.$('table#gradebook-data'), 0);
-    assert.lengthOf(response.$('h2:contains("Missing student data access")'), 1);
+    assert.lengthOf(response.$('h2:contains("Insufficient permissions")'), 1);
   });
 
   step('instructor (no role) cannot view gradebook raw data', async () => {
