@@ -24,5 +24,5 @@ export function renderEjs(filePathOrUrl: string, template: string, data: any = {
     resolvedPath = fileURLToPath(filePathOrUrl);
   }
 
-  return unsafeHtml(ejs.render(template, data, { views: [path.dirname(filePathOrUrl)] }));
+  return unsafeHtml(ejs.render(template, data, { views: [path.dirname(resolvedPath)] }));
 }
