@@ -25,7 +25,7 @@ module.exports.load = function (filename) {
 /**
  * Replace the extension of the given filename with ".sql" and load it.
  *
- * @param filename A filename or file URL of a non-SQL file (e.g., `__filename` or `import.meta.url`).
+ * @param filename A path or file URL of a non-SQL file (e.g., `__filename` or `import.meta.url`).
  * @returns The SQL data structure.
  */
 module.exports.loadSqlEquiv = function (filePathOrUrl) {
