@@ -173,7 +173,7 @@
                 You can grant yourself access to student data on the course's
                 <a href="<%= urlPrefix %>/course_admin/staff">Staff tab</a>.
               </p>
-            <% } else { %>
+            <% } else if (course_owners.length > 0) { %>
               <p>Contact one of the below course owners to request access.</p>
               <ul>
               <% course_owners.forEach(function(owner) { %>

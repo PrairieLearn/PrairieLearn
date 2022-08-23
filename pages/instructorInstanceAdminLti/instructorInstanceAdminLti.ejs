@@ -26,14 +26,16 @@
           <div class="card-body">
             <h2>Insufficient permissions</h2>
             <p>You must have at least &quot;Editor&quot; permissions for this course.</p>
-            <p>Contact one of the below course owners to request access.</p>
-            <ul>
-            <% course_owners.forEach(function(owner) { %>
-              <li>
-                <%= owner.uid %> <% if (owner.name) { %> (<%= owner.name %>) <% } %>
-              </li>
-            <% }); %>
-            </ul>
+            <% if (course_owners.length > 0) { %>
+              <p>Contact one of the below course owners to request access.</p>
+              <ul>
+              <% course_owners.forEach(function(owner) { %>
+                <li>
+                  <%= owner.uid %> <% if (owner.name) { %> (<%= owner.name %>) <% } %>
+                </li>
+              <% }); %>
+              </ul>
+            <% } %>
           </div>
         </div>
       <% } else { %>
