@@ -13,76 +13,67 @@ const { assert } = chai;
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 async function getUserParams(user_id) {
-  const query = `select user_id, uid, name, uin, institution_id FROM users WHERE user_id = $1;`;
+  const query = `select uid, name, uin, institution_id FROM users WHERE user_id = $1;`;
   const result = await sqldb.queryOneRowAsync(query, [user_id]);
 
-  const u = result.rows[0];
-  return [u.uid, u.name, u.uin, u.institution_id];
+  const { uid, name, uin, institution_id } = result.rows[0];
+  return { uid, name, uin, institution_id };
 }
 
-const baseParams = [
-  // uid
-  'user@host.com',
-  // name
-  'Joe User',
-  // uin
-  null,
-  // authn_provider_name
-  'Shibboleth',
-  // institution_id
-  null,
-];
+async function usersSelectOrInsert(user, authn_provider_name = null) {
+  return sqldb.callAsync('users_select_or_insert', [
+    user.uid,
+    user.name,
+    user.uin,
+    authn_provider_name,
+    user.institution_id,
+  ]);
+}
 
-const baseUser = [
-  // uid
-  'user@host.com',
-  // name
-  'Joe User',
-  // uin
-  null,
-  // institution_id
-  '1',
-];
+const baseParams = {
+  uid: 'user@host.com',
+  name: 'Joe User',
+  uin: null,
+  authn_provider_name: 'Shibboleth',
+  institution_id: null,
+};
+
+const baseUser = {
+  uid: 'user@host.com',
+  name: 'Joe User',
+  uin: null,
+  institution_id: '1',
+};
 
 describe('sproc users_select_or_insert tests', () => {
   before('set up testing server', helperDb.before);
   after('tear down testing database', helperDb.after);
 
   it('create new user', async () => {
-    const params = _.clone(baseParams);
-    const user = _.clone(baseUser);
-
-    const result = await sqldb.callAsync('users_select_or_insert', params);
-
+    const result = await usersSelectOrInsert(baseUser);
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
 
     const fromdb = await getUserParams(user_id);
-    assert.deepEqual(user, fromdb);
+    assert.deepEqual(baseUser, fromdb);
   });
 
   it('create new user again, confirm info is the same', async () => {
-    const params = _.clone(baseParams);
-    const user = _.clone(baseUser);
-
-    const result = await sqldb.callAsync('users_select_or_insert', params);
-
+    const result = await usersSelectOrInsert(baseUser);
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
 
     const fromdb = await getUserParams(user_id);
-    assert.deepEqual(user, fromdb);
+    assert.deepEqual(baseUser, fromdb);
   });
 
   it('user 1 updates name', async () => {
-    const params = _.clone(baseParams);
-    const user = _.clone(baseUser);
+    const user = {
+      ...baseUser,
+      name: 'J.R. User',
+    };
 
-    params[1] = 'J.R. User';
-    user[1] = params[1];
-
-    const result = await sqldb.callAsync('users_select_or_insert', params);
-
+    const result = await usersSelectOrInsert(user, 'Shibboleth');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
 
@@ -95,13 +86,12 @@ describe('sproc users_select_or_insert tests', () => {
   });
 
   it('user 1 updates institution_id', async () => {
-    const params = _.clone(baseParams);
-    const user = _.clone(baseUser);
+    const user = {
+      ...baseUser,
+      institution_id: '100',
+    };
 
-    user[3] = '100';
-
-    const result = await sqldb.callAsync('users_select_or_insert', params);
-
+    const result = await usersSelectOrInsert(user, 'Shibboleth');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
 
@@ -110,15 +100,13 @@ describe('sproc users_select_or_insert tests', () => {
   });
 
   it('user 1 updates uin when uin was null', async () => {
-    const params = _.clone(baseParams);
-    const user = _.clone(baseUser);
+    const user = {
+      ...baseUser,
+      uin: '111122223',
+      institution_id: '100',
+    };
 
-    params[2] = '111122223';
-    user[2] = params[2];
-    user[3] = '100';
-
-    const result = await sqldb.callAsync('users_select_or_insert', params);
-
+    const result = await usersSelectOrInsert(user, 'Shibboleth');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
 
@@ -127,15 +115,13 @@ describe('sproc users_select_or_insert tests', () => {
   });
 
   it('user 1 updates uin when uin was value', async () => {
-    const params = _.clone(baseParams);
-    const user = _.clone(baseUser);
+    const user = {
+      ...baseUser,
+      uin: '111122224',
+      institution_id: '100',
+    };
 
-    params[2] = '111122224';
-    user[2] = params[2];
-    user[3] = '100';
-
-    const result = await sqldb.callAsync('users_select_or_insert', params);
-
+    const result = await usersSelectOrInsert(user, 'Shibboleth');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
 
@@ -144,17 +130,14 @@ describe('sproc users_select_or_insert tests', () => {
   });
 
   it('user 1 updates uid with already present uin', async () => {
-    const params = _.clone(baseParams);
-    const user = _.clone(baseUser);
+    const user = {
+      ...baseUser,
+      uid: 'newuid@host.com',
+      uin: '111122224',
+      institution_id: '100',
+    };
 
-    params[0] = 'newuid@host.com';
-    params[2] = '111122224';
-    user[0] = params[0];
-    user[2] = params[2];
-    user[3] = '100';
-
-    const result = await sqldb.callAsync('users_select_or_insert', params);
-
+    const result = await usersSelectOrInsert(user, 'Shibboleth');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
 
@@ -163,13 +146,14 @@ describe('sproc users_select_or_insert tests', () => {
   });
 
   it('user 2 create under Shibboleth', async () => {
-    const params = ['joe@illinois.edu', 'Joe Bob', '444444444', 'Shibboleth', null];
-    const user = _.clone(params);
+    const user = {
+      uid: 'joe@illinois.edu',
+      name: 'Joe Bob',
+      uin: '444444444',
+      institution_id: '1',
+    };
 
-    user[3] = '1';
-
-    const result = await sqldb.callAsync('users_select_or_insert', params);
-
+    const result = await usersSelectOrInsert(user, 'Shibboleth');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 2);
 
@@ -182,35 +166,51 @@ describe('sproc users_select_or_insert tests', () => {
   });
 
   it('user 2 logs in via Google', async () => {
-    const params = ['joe@illinois.edu', 'joe@illinois.edu', null, 'Google', null];
-    const user = _.clone(params);
+    const user = {
+      uid: 'joe@illinois.edu',
+      name: 'joe@illinois.edu',
+      uin: null,
+      institution_id: '200',
+    };
 
-    user[2] = '444444444';
-    user[3] = '200';
-
-    const result = await sqldb.callAsync('users_select_or_insert', params);
-
+    const result = await usersSelectOrInsert(user, 'Google');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 2);
 
     const fromdb = await getUserParams(user_id);
-    assert.deepEqual(user, fromdb);
+    assert.deepEqual(
+      {
+        ...user,
+        // It should have matched up with the existing user with this UIN.
+        uin: '444444444',
+      },
+      fromdb
+    );
   });
 
   it('user 2 fails to log in via Azure', async () => {
-    const params = ['joe@illinois.edu', 'joe@illinois.edu', null, 'Azure'];
+    const user = {
+      uid: 'joe@illinois.edu',
+      name: 'joe@illinois.edu',
+      uin: null,
+      institution_id: '200',
+    };
 
-    await assert.isRejected(sqldb.callAsync('users_select_or_insert', params));
+    await assert.isRejected(
+      usersSelectOrInsert(user, 'Azure'),
+      /authentication provider is not allowed for institution/
+    );
   });
 
   it('user 3 create under Google', async () => {
-    const params = ['sally@illinois.edu', 'sally@illinois.edu', null, 'Google'];
-    const user = _.clone(params);
+    const user = {
+      uid: 'sally@illinois.edu',
+      name: 'sally@illinois.edu',
+      uin: null,
+      institution_id: '200',
+    };
 
-    user[3] = '200';
-
-    const result = await sqldb.callAsync('users_select_or_insert', params);
-
+    const result = await usersSelectOrInsert(user, 'Google');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 3);
 
@@ -224,7 +224,7 @@ describe('sproc users_select_or_insert tests', () => {
 
     user[3] = '200';
 
-    const result = await sqldb.callAsync('users_select_or_insert', params);
+    const result = await usersSelectOrInsert(params);
 
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 3);
@@ -240,7 +240,7 @@ describe('sproc users_select_or_insert tests', () => {
     user[2] = '555566665';
     user[3] = '200';
 
-    const result = await sqldb.callAsync('users_select_or_insert', params);
+    const result = await usersSelectOrInsert(params);
 
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 3);
@@ -255,7 +255,7 @@ describe('sproc users_select_or_insert tests', () => {
 
     user[3] = '200';
 
-    const result = await sqldb.callAsync('users_select_or_insert', params);
+    const result = await usersSelectOrInsert(params);
 
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 4);
@@ -269,7 +269,7 @@ describe('sproc users_select_or_insert tests', () => {
 
     user[3] = '1';
 
-    const result = await sqldb.callAsync('users_select_or_insert', params);
+    const result = await usersSelectOrInsert(params);
 
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 4);
