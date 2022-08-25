@@ -13,7 +13,25 @@ DECLARE
     arg_user_id bigint;
     arg_group_id bigint;
     group_user text[];
+    default_role_id bigint;
 BEGIN
+    IF NOT EXISTS (
+            SELECT *
+            FROM group_roles
+            WHERE role_name = 'No group roles'
+        ) THEN
+        INSERT INTO group_roles 
+            (role_name, maximum)
+        VALUES
+            ('No group roles', 99);
+    END IF;
+
+    SELECT id
+    INTO default_role_id
+    FROM group_roles
+    WHERE role_name = 'No group roles';
+
+
     -- ##################################################################
     -- get group_config_id and course_instance_id from assessment_id
     SELECT id, course_instance_id
@@ -67,8 +85,8 @@ BEGIN
         FROM groups
         WHERE name = group_user[1] AND group_config_id = arg_group_config_id AND deleted_at IS NULL;
         -- insert group_user
-        INSERT INTO group_users (group_id, user_id)
-        VALUES (arg_group_id, arg_user_id);
+        INSERT INTO group_users (group_id, group_role_id, user_id)
+        VALUES (arg_group_id, default_role_id, arg_user_id);
 
         INSERT INTO group_logs 
             (authn_user_id, user_id, group_id, action)
