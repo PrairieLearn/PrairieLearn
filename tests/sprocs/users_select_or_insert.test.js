@@ -13,20 +13,20 @@ const { assert } = chai;
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 async function getUserParams(user_id) {
-  const query = `select uid, name, uin, institution_id FROM users WHERE user_id = $1;`;
+  const query = 'SELECT uid, name, uin, institution_id FROM users WHERE user_id = $1;';
   const result = await sqldb.queryOneRowAsync(query, [user_id]);
 
   const { uid, name, uin, institution_id } = result.rows[0];
   return { uid, name, uin, institution_id };
 }
 
-async function usersSelectOrInsert(user, authn_provider_name = null) {
+async function usersSelectOrInsert(user, authn_provider_name = null, institution_id = null) {
   return sqldb.callAsync('users_select_or_insert', [
     user.uid,
     user.name,
     user.uin,
     authn_provider_name,
-    user.institution_id,
+    institution_id,
   ]);
 }
 
@@ -279,5 +279,17 @@ describe('sproc users_select_or_insert tests', () => {
 
     const fromdb = await getUserParams(user_id);
     assert.deepEqual(user, fromdb);
+  });
+
+  // This test ensures that a malicious IDP cannot create a user with a UID
+  // that doesn't match the institution's UID regexp.
+  step('user 5 logs in with mismatched UID and institution', async () => {
+    const user = {
+      uid: 'jasmine@not-illinois.edu',
+      name: 'Jasmine H. Acker',
+      uin: '666666666',
+    };
+
+    await assert.isRejected(usersSelectOrInsert(user, 'Shibboleth', '200'), /Institution mismatch/);
   });
 });

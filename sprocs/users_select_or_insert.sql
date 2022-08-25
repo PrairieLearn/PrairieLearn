@@ -51,7 +51,7 @@ BEGIN
     -- check that they match each other. This is mostly useful for SAML authn
     -- providers, as we want to ensure that any identity they return is scoped
     -- to the appropriate institution.
-    IF institution.id IS NOT NULL AND institution.id != institution_id THEN
+    IF institution_id IS NOT NULL AND (institution.id IS NULL OR institution.id != institution_id) THEN
         RAISE EXCEPTION 'Institution mismatch: % != %', institution.id, institution_id;
     END IF;
 
