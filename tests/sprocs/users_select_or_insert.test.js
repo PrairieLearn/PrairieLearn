@@ -1,7 +1,6 @@
 // @ts-check
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
-const _ = require('lodash');
 
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
@@ -29,14 +28,6 @@ async function usersSelectOrInsert(user, authn_provider_name = null) {
     user.institution_id,
   ]);
 }
-
-const baseParams = {
-  uid: 'user@host.com',
-  name: 'Joe User',
-  uin: null,
-  authn_provider_name: 'Shibboleth',
-  institution_id: null,
-};
 
 const baseUser = {
   uid: 'user@host.com',
@@ -181,7 +172,7 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(
       {
         ...user,
-        // It should have matched up with the existing user with this UIN.
+        // The user should still have the same UIN.
         uin: '444444444',
       },
       fromdb
@@ -219,13 +210,14 @@ describe('sproc users_select_or_insert tests', () => {
   });
 
   it('user 3 logs in via Shibboleth', async () => {
-    const params = ['sally@illinois.edu', 'Sally Ann', '555566665', 'Shibboleth'];
-    const user = _.clone(params);
+    const user = {
+      uid: 'sally@illinois.edu',
+      name: 'Sally Ann',
+      uin: '555566665',
+      institution_id: '200',
+    };
 
-    user[3] = '200';
-
-    const result = await usersSelectOrInsert(params);
-
+    const result = await usersSelectOrInsert(user, 'Shibboleth');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 3);
 
@@ -234,43 +226,53 @@ describe('sproc users_select_or_insert tests', () => {
   });
 
   it('user 3 logs back in via Google', async () => {
-    const params = ['sally@illinois.edu', 'sally@illinois.edu', null, 'Google', null];
-    const user = _.clone(params);
+    const user = {
+      uid: 'sally@illinois.edu',
+      name: 'sally@illinois.edu',
+      uin: null,
+      institution_id: '200',
+    };
 
-    user[2] = '555566665';
-    user[3] = '200';
-
-    const result = await usersSelectOrInsert(params);
-
+    const result = await usersSelectOrInsert(user, 'Google');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 3);
 
     const fromdb = await getUserParams(user_id);
-    assert.deepEqual(user, fromdb);
+    assert.deepEqual(
+      {
+        ...user,
+        // The user should still have the same UIN.
+        uin: '555566665',
+      },
+      fromdb
+    );
   });
 
   it('user 4 created with wrong netid and correct UIN', async () => {
-    const params = ['uin-888899990@illinois.edu', 'UIN 888899990', '888899990', 'Shibboleth', null];
-    const user = _.clone(params);
+    const user = {
+      uid: 'uin-888899990@illinois.edu',
+      name: 'UIN 888899990',
+      uin: '888899990',
+      institution_id: '200',
+    };
 
-    user[3] = '200';
-
-    const result = await usersSelectOrInsert(params);
-
+    const result = await usersSelectOrInsert(user, 'Shibboleth');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 4);
+
     const fromdb = await getUserParams(user_id);
     assert.deepEqual(user, fromdb);
   });
 
   it('user 4 logs in with full correct credentials, no institution, account updated', async () => {
-    const params = ['newstudent', 'Johnny New Student', '888899990', 'Shibboleth', null];
-    const user = _.clone(params);
+    const user = {
+      uid: 'newstudent',
+      name: 'Johnny New Student',
+      uin: '888899990',
+      institution_id: '1',
+    };
 
-    user[3] = '1';
-
-    const result = await usersSelectOrInsert(params);
-
+    const result = await usersSelectOrInsert(user, 'Shibboleth');
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 4);
 
