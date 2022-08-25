@@ -14,7 +14,9 @@
         <td><%- include('../partials/questionAwardedPoints', {awarded_points: instance_question.variants_points_list, init_points: assessment_question.init_points});  %></td>
       </tr>
       <% } %>
-      <% if (assessment_question.max_auto_points > 0 && assessment_question.manual_points > 0) { %>
+      <% let list_grading_method = true; %>
+      <% if (assessment_question.max_auto_points > 0 && (assessment_question.manual_points > 0 || instance_question.manual_points || instance_question.requires_manual_grading)) { %>
+      <% list_grading_method = false; %>
       <tr>
         <td>Auto-grading:</td>
         <td>
@@ -43,7 +45,7 @@
                        max_points: assessment_question.max_points}); %>
         </td>
       </tr>
-      <% if (assessment_question.max_auto_points == 0 || assessment_question.manual_points == 0) { %>
+      <% if (list_grading_method) { %>
       <tr>
         <td colspan="2" class="text-right">
           <small>

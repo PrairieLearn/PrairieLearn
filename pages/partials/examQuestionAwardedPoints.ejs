@@ -6,5 +6,7 @@
   <% } else { %>
   <%= getStringFromFloat(points) %>
   <% } %>
+  <% if (max_points) { %>
   <small>/<span class="text-muted"><%= max_points %></span></small>
+  <% } %>
 </span>

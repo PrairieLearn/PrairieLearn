@@ -45,10 +45,10 @@
 
             form.find('[name=score_auto_points]').not(this).val(auto_points);
             form.find('[name=score_auto_percent]').not(this)
-                .val(auto_points * 100 / <%= assessment_question.max_auto_points || 1 %>);
+                .val(auto_points * 100 / <%= assessment_question.max_auto_points || assessment_question.max_points || 1 %>);
             form.find('[name=score_manual_points]').not(this).val(manual_points);
             form.find('[name=score_manual_percent]').not(this)
-                .val(manual_points * 100 / <%= assessment_question.manual_points || 1 %>);
+                .val(manual_points * 100 / <%= assessment_question.manual_points || assessment_question.max_points || 1 %>);
             form.find('.value-total-points').text(Math.round(points * 100) / 100);
             form.find('.value-total-percentage')
                 .text(Math.round(points * 10000 / <%= assessment_question.max_points || 1 %>) / 100);
