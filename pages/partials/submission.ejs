@@ -24,7 +24,7 @@
 
 <div class="card mb-4" data-testid="submission-block">
   <div class="card-header bg-light text-dark d-flex align-items-center submission-header <% if (submission.submission_number != submissionCount) { %> collapsed <% } %>" data-toggle="collapse" data-target="#submission-<%= submission.id %>-body">
-    <div class="mr-auto">
+    <div class="mr-2">
       <div>
         <span class="mr-2">
           Submitted answer
@@ -32,10 +32,10 @@
           <%= submission.submission_number %>
           <% } %>
         </span>
-        <span data-testid="submission-status"><%- include('submissionStatus', {submission: submission}); %></span>
       </div>
       <small>Submitted at <%- submission.formatted_date %></small>
     </div>
+    <div class="mr-auto" data-testid="submission-status"><%- include('submissionStatus', {submission: submission}); %></div>
     <button type="button" class="btn btn-outline-secondary btn-sm mr-2" data-submission-id="<%= submission.id %>">
       <i class="fa fa-info-circle fa-fw"></i>
     </button>
