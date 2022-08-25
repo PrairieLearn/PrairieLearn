@@ -153,13 +153,12 @@ module.exports._initWithLock = function (callback) {
         // Validation: if we not all previously-executed migrations have timestamps,
         // prompt the user to deploy an earlier version that includes both indexes
         // and timestamps.
-        const migrationsMissingTimestamps = allMigrations.filter((m) => !m.timestamp);
+        const migrationsMissingTimestamps = allMigrations.rows.filter((m) => !m.timestamp);
         if (migrationsMissingTimestamps.length > 0) {
-          const missing = migrationsMissingTimestamps.map((m) => m.filename).join(', ');
           throw new Error(
             [
               'The following migrations are missing timestamps:',
-              missing.map((m) => `  ${m}`),
+              migrationsMissingTimestamps.map((m) => `  ${m.filename}`),
               // This revision was the most recent commit to `master` before the
               // code handling indexes was removed.
               'You must deploy revision 1aa43c7348fa24cf636413d720d06a2fa9e38ef2 first.',
