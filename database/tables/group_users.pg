@@ -1,6 +1,6 @@
 columns
     group_id: bigint not null
-    group_role_id: bigint
+    group_role_id: bigint not null
     user_id: bigint not null
 
 indexes
