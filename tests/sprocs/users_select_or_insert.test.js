@@ -1,6 +1,7 @@
 // @ts-check
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
+const { step } = require('mocha-steps');
 
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
@@ -40,7 +41,7 @@ describe('sproc users_select_or_insert tests', () => {
   before('set up testing server', helperDb.before);
   after('tear down testing database', helperDb.after);
 
-  it('create new user', async () => {
+  step('create new user', async () => {
     const result = await usersSelectOrInsert(baseUser);
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
@@ -49,7 +50,7 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(baseUser, fromdb);
   });
 
-  it('create new user again, confirm info is the same', async () => {
+  step('create new user again, confirm info is the same', async () => {
     const result = await usersSelectOrInsert(baseUser);
     const user_id = result.rows[0].user_id;
     assert.equal(user_id, 1);
@@ -58,7 +59,7 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(baseUser, fromdb);
   });
 
-  it('user 1 updates name', async () => {
+  step('user 1 updates name', async () => {
     const user = {
       ...baseUser,
       name: 'J.R. User',
@@ -72,11 +73,11 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(user, fromdb);
   });
 
-  it('add an institution for host.com', async () => {
+  step('add an institution for host.com', async () => {
     await sqldb.queryAsync(sql.insert_host_com, []);
   });
 
-  it('user 1 updates institution_id', async () => {
+  step('user 1 updates institution_id', async () => {
     const user = {
       ...baseUser,
       institution_id: '100',
@@ -90,7 +91,7 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(user, fromdb);
   });
 
-  it('user 1 updates uin when uin was null', async () => {
+  step('user 1 updates uin when uin was null', async () => {
     const user = {
       ...baseUser,
       uin: '111122223',
@@ -105,7 +106,7 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(user, fromdb);
   });
 
-  it('user 1 updates uin when uin was value', async () => {
+  step('user 1 updates uin when uin was value', async () => {
     const user = {
       ...baseUser,
       uin: '111122224',
@@ -120,7 +121,7 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(user, fromdb);
   });
 
-  it('user 1 updates uid with already present uin', async () => {
+  step('user 1 updates uid with already present uin', async () => {
     const user = {
       ...baseUser,
       uid: 'newuid@host.com',
@@ -136,7 +137,7 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(user, fromdb);
   });
 
-  it('user 2 create under Shibboleth', async () => {
+  step('user 2 create under Shibboleth', async () => {
     const user = {
       uid: 'joe@illinois.edu',
       name: 'Joe Bob',
@@ -152,11 +153,11 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(user, fromdb);
   });
 
-  it('add an institution for illinois.edu', async () => {
+  step('add an institution for illinois.edu', async () => {
     await sqldb.queryAsync(sql.insert_illinois_edu, []);
   });
 
-  it('user 2 logs in via Google', async () => {
+  step('user 2 logs in via Google', async () => {
     const user = {
       uid: 'joe@illinois.edu',
       name: 'joe@illinois.edu',
@@ -179,7 +180,7 @@ describe('sproc users_select_or_insert tests', () => {
     );
   });
 
-  it('user 2 fails to log in via Azure', async () => {
+  step('user 2 fails to log in via Azure', async () => {
     const user = {
       uid: 'joe@illinois.edu',
       name: 'joe@illinois.edu',
@@ -193,7 +194,7 @@ describe('sproc users_select_or_insert tests', () => {
     );
   });
 
-  it('user 3 create under Google', async () => {
+  step('user 3 create under Google', async () => {
     const user = {
       uid: 'sally@illinois.edu',
       name: 'sally@illinois.edu',
@@ -209,7 +210,7 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(user, fromdb);
   });
 
-  it('user 3 logs in via Shibboleth', async () => {
+  step('user 3 logs in via Shibboleth', async () => {
     const user = {
       uid: 'sally@illinois.edu',
       name: 'Sally Ann',
@@ -225,7 +226,7 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(user, fromdb);
   });
 
-  it('user 3 logs back in via Google', async () => {
+  step('user 3 logs back in via Google', async () => {
     const user = {
       uid: 'sally@illinois.edu',
       name: 'sally@illinois.edu',
@@ -248,7 +249,7 @@ describe('sproc users_select_or_insert tests', () => {
     );
   });
 
-  it('user 4 created with wrong netid and correct UIN', async () => {
+  step('user 4 created with wrong netid and correct UIN', async () => {
     const user = {
       uid: 'uin-888899990@illinois.edu',
       name: 'UIN 888899990',
@@ -264,7 +265,7 @@ describe('sproc users_select_or_insert tests', () => {
     assert.deepEqual(user, fromdb);
   });
 
-  it('user 4 logs in with full correct credentials, no institution, account updated', async () => {
+  step('user 4 logs in with full correct credentials', async () => {
     const user = {
       uid: 'newstudent',
       name: 'Johnny New Student',
