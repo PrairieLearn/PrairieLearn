@@ -146,7 +146,10 @@ describe('Manual Grading', function () {
       const $questionsPage = cheerio.load(questionsPage);
 
       assert.equal(gradeRes.status, 200);
-      assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
+      assert.equal(
+        getLatestSubmissionStatus($questionsPage),
+        'manual grading: waiting for grading'
+      );
     });
 
     step('should tag question as requiring grading', async () => {
@@ -447,17 +450,15 @@ describe('Manual Grading', function () {
       const questionsPage = await (await fetch(iqUrl)).text();
       const $questionsPage = cheerio.load(questionsPage);
 
-      // TODO Review this test when the submission panel includes both manual and auto points
-      // assert.equal(
-      //   getLatestSubmissionStatus($questionsPage),
-      //   `partially correct: ${score_percent}%`
-      // );
+      assert.equal(getLatestSubmissionStatus($questionsPage), `manual grading: ${score_percent}%`);
       assert.equal(
-        $questionsPage('#question-score-panel tr:contains("Awarded points") .badge')
+        $questionsPage(
+          '#question-score-panel tr:contains("Total points") [data-testid="awarded-points"]'
+        )
           .first()
           .text()
           .trim(),
-        `${score_points}/6`
+        `${score_points}`
       );
       assert.equal(
         $questionsPage('[data-testid="feedback-body"]').first().text().trim(),
@@ -560,17 +561,15 @@ describe('Manual Grading', function () {
       const questionsPage = await (await fetch(iqUrl)).text();
       const $questionsPage = cheerio.load(questionsPage);
 
-      // TODO Review this test when the submission panel includes both manual and auto points
-      // assert.equal(
-      //   getLatestSubmissionStatus($questionsPage),
-      //   `partially correct: ${score_percent}%`
-      // );
+      assert.equal(getLatestSubmissionStatus($questionsPage), `manual grading: ${score_percent}%`);
       assert.equal(
-        $questionsPage('#question-score-panel tr:contains("Awarded points") .badge')
+        $questionsPage(
+          '#question-score-panel tr:contains("Total points") [data-testid="awarded-points"]'
+        )
           .first()
           .text()
           .trim(),
-        `${score_points}/6`
+        `${score_points}`
       );
       assert.equal(
         $questionsPage('[data-testid="feedback-body"]').first().text().trim(),

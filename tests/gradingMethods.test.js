@@ -156,7 +156,7 @@ describe('Grading method(s)', function () {
           assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
         it('should display submission status', async () => {
-          assert.equal(getLatestSubmissionStatus($questionsPage), 'correct: 100%');
+          assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
         it('should result in 1 "grading-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.grading-block'), 1);
@@ -226,7 +226,10 @@ describe('Grading method(s)', function () {
           assert.lengthOf(grading_jobs, 0);
         });
         it('should display submission status', async () => {
-          assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
+          assert.equal(
+            getLatestSubmissionStatus($questionsPage),
+            'manual grading: waiting for grading'
+          );
         });
         it('should NOT result in "grading-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.grading-block'), 0);
@@ -257,7 +260,10 @@ describe('Grading method(s)', function () {
           assert.lengthOf(grading_jobs, 0);
         });
         it('should display submission status', async () => {
-          assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
+          assert.equal(
+            getLatestSubmissionStatus($questionsPage),
+            'manual grading: waiting for grading'
+          );
         });
         it('should NOT result in "grading-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.grading-block'), 0);
@@ -302,7 +308,7 @@ describe('Grading method(s)', function () {
           assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
         it('should display submission status', async () => {
-          assert.equal(getLatestSubmissionStatus($questionsPage), 'correct: 100%');
+          assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
         it('should result in 1 "grading-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.grading-block'), 0);
@@ -379,7 +385,7 @@ describe('Grading method(s)', function () {
           assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
         });
         it('should display submission status', async () => {
-          assert.equal(getLatestSubmissionStatus($questionsPage), 'correct: 100%');
+          assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
         });
         it('should result in 1 "grading-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.grading-block'), 1);
@@ -455,7 +461,10 @@ describe('Grading method(s)', function () {
           assert.lengthOf(grading_jobs, 0);
         });
         it('should display submission status', async () => {
-          assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
+          assert.equal(
+            getLatestSubmissionStatus($questionsPage),
+            'manual grading: waiting for grading'
+          );
         });
         it('should NOT result in "grading-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.grading-block'), 0);
@@ -490,7 +499,10 @@ describe('Grading method(s)', function () {
           assert.lengthOf(grading_jobs, 0);
         });
         it('should display submission status', async () => {
-          assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
+          assert.equal(
+            getLatestSubmissionStatus($questionsPage),
+            'manual grading: waiting for grading'
+          );
         });
         it('should NOT result in "grading-block" component being rendered', () => {
           assert.lengthOf($questionsPage('.grading-block'), 0);

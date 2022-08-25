@@ -4,7 +4,7 @@
   <% if (locals.points_pending || points === null) {%>
   <span class="badge badge-info">pending</span>
   <% } else { %>
-  <%= getStringFromFloat(points) %>
+  <span data-testid="awarded-points"><%= getStringFromFloat(points) %></span>
   <% } %>
   <% if (max_points) { %>
   <small>/<span class="text-muted"><%= max_points %></span></small>
