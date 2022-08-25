@@ -156,7 +156,15 @@ module.exports._initWithLock = function (callback) {
         const migrationsMissingTimestamps = allMigrations.filter((m) => !m.timestamp);
         if (migrationsMissingTimestamps.length > 0) {
           const missing = migrationsMissingTimestamps.map((m) => m.filename).join(', ');
-          throw new Error(`The following migrations are missing timestamps: ${missing}`);
+          throw new Error(
+            [
+              'The following migrations are missing timestamps:',
+              missing.map((m) => `  ${m}`),
+              // This revision was the most recent commit to `master` before the
+              // code handling indexes was removed.
+              'You must deploy revision 1aa43c7348fa24cf636413d720d06a2fa9e38ef2 first.',
+            ].join('\n')
+          );
         }
 
         // Refetch the list of migrations from the database.
