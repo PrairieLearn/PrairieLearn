@@ -13,11 +13,14 @@ DECLARE
     institution institutions%rowtype;
     new_u users%rowtype;
 BEGIN
-    -- try and get an existing user with "uin" as the key
+    -- Try and get an existing user with "uin" as the key. If an `institution_id`
+    -- was provided, limit search to users in that institution.
     SELECT *
     INTO u
     FROM users
-    WHERE users.uin = users_select_or_insert.uin;
+    WHERE
+        users.uin = users_select_or_insert.uin
+        AND (users_select_or_insert.institution_id IS NULL OR u.institution_id = users_select_or_insert.institution_id);
 
     -- if we couldn't match "uin", try "uid"
     IF u.user_id IS NULL THEN
