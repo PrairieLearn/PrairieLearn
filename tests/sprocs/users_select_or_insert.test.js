@@ -292,4 +292,35 @@ describe('sproc users_select_or_insert tests', () => {
 
     await assert.isRejected(usersSelectOrInsert(user, 'Shibboleth', '200'), /Institution mismatch/);
   });
+
+  // This test ensures that users in separate institutions can have the same UIN.
+  step('users 6 and 7 log in with the same UIN', async () => {
+    const firstUser = {
+      uid: 'raj@host.com',
+      name: 'Raj Patel',
+      uin: '787878787',
+      institution_id: '100',
+    };
+
+    const secondUser = {
+      uid: 'alex@illinois.edu',
+      name: 'Alex Wong',
+      uin: '787878787',
+      institution_id: '200',
+    };
+
+    const firstResult = await usersSelectOrInsert(firstUser, 'Shibboleth', '100');
+    const firstUserId = firstResult.rows[0].user_id;
+    const secondResult = await usersSelectOrInsert(secondUser, 'Shibboleth', '200');
+    const secondUserId = secondResult.rows[0].user_id;
+
+    // Ensure two distinct users were created.
+    assert.notEqual(firstUserId, secondUserId);
+
+    const firstFromDb = await getUserParams(firstUserId);
+    const secondFromDb = await getUserParams(secondUserId);
+
+    assert.deepEqual(firstUser, firstFromDb);
+    assert.deepEqual(secondUser, secondFromDb);
+  });
 });
