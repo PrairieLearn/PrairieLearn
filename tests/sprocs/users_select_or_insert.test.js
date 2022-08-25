@@ -1,160 +1,151 @@
-var ERR = require('async-stacktrace');
-var assert = require('chai').assert;
-var debug = require('debug')('prairielearn:testSproc-users_select_or_insert');
-var _ = require('lodash');
+// @ts-check
+const chai = require('chai');
+const chaiAsPromised = require('chai-as-promised');
+const _ = require('lodash');
 
-var sqldb = require('../../prairielib/lib/sql-db');
-var sqlLoader = require('../../prairielib/lib/sql-loader');
-var sql = sqlLoader.loadSqlEquiv(__filename);
-var helperDb = require('../helperDb');
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
+const helperDb = require('../helperDb');
 
-var get_user_params = (user_id, callback) => {
-  var search = `select user_id, uid, name, uin, institution_id FROM users WHERE user_id = $1;`;
-  sqldb.queryOneRow(search, [user_id], (err, result) => {
-    if (ERR(err, callback)) return;
+chai.use(chaiAsPromised);
+const { assert } = chai;
 
-    var u = result.rows[0];
-    debug(u);
-    callback(null, [u.uid, u.name, u.uin, u.institution_id]);
-  });
-};
-// uid,             name,      uin,  authn_provider_name
-var base_params = ['user@host.com', 'Joe User', null, 'Shibboleth'];
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
-// uid,             name,      uin,  institution_id
-var base_user = ['user@host.com', 'Joe User', null, '1'];
+async function getUserParams(user_id) {
+  const query = `select user_id, uid, name, uin, institution_id FROM users WHERE user_id = $1;`;
+  const result = await sqldb.queryOneRowAsync(query, [user_id]);
+
+  const u = result.rows[0];
+  return [u.uid, u.name, u.uin, u.institution_id];
+}
+
+const baseParams = [
+  // uid
+  'user@host.com',
+  // name
+  'Joe User',
+  // uin
+  null,
+  // authn_provider_name
+  'Shibboleth',
+  // institution_id
+  null,
+];
+
+const baseUser = [
+  // uid
+  'user@host.com',
+  // name
+  'Joe User',
+  // uin
+  null,
+  // institution_id
+  '1',
+];
 
 describe('sproc users_select_or_insert tests', () => {
   before('set up testing server', helperDb.before);
   after('tear down testing database', helperDb.after);
 
-  it('create new user', (callback) => {
-    var params = _.clone(base_params);
-    var user = _.clone(base_user);
+  it('create new user', async () => {
+    const params = _.clone(baseParams);
+    const user = _.clone(baseUser);
 
-    sqldb.call('users_select_or_insert', params, (err, result) => {
-      if (ERR(err, callback)) return;
+    const result = await sqldb.callAsync('users_select_or_insert', params);
 
-      var user_id = result.rows[0].user_id;
-      assert.equal(user_id, 1);
+    const user_id = result.rows[0].user_id;
+    assert.equal(user_id, 1);
 
-      get_user_params(user_id, (err, fromdb) => {
-        if (ERR(err, callback)) return;
-        assert.deepEqual(user, fromdb);
-        callback(null);
-      });
-    });
+    const fromdb = await getUserParams(user_id);
+    assert.deepEqual(user, fromdb);
   });
 
-  it('create new user again, confirm info is the same', (callback) => {
-    var params = _.clone(base_params);
-    var user = _.clone(base_user);
+  it('create new user again, confirm info is the same', async () => {
+    const params = _.clone(baseParams);
+    const user = _.clone(baseUser);
 
-    sqldb.call('users_select_or_insert', params, (err, result) => {
-      if (ERR(err, callback)) return;
+    const result = await sqldb.callAsync('users_select_or_insert', params);
 
-      var user_id = result.rows[0].user_id;
-      assert.equal(user_id, 1);
+    const user_id = result.rows[0].user_id;
+    assert.equal(user_id, 1);
 
-      get_user_params(user_id, (err, fromdb) => {
-        if (ERR(err, callback)) return;
-        assert.deepEqual(user, fromdb);
-        callback(null);
-      });
-    });
+    const fromdb = await getUserParams(user_id);
+    assert.deepEqual(user, fromdb);
   });
 
-  it('user 1 updates name', (callback) => {
-    var params = _.clone(base_params);
-    var user = _.clone(base_user);
+  it('user 1 updates name', async () => {
+    const params = _.clone(baseParams);
+    const user = _.clone(baseUser);
 
     params[1] = 'J.R. User';
     user[1] = params[1];
 
-    sqldb.call('users_select_or_insert', params, (err, result) => {
-      if (ERR(err, callback)) return;
+    const result = await sqldb.callAsync('users_select_or_insert', params);
 
-      var user_id = result.rows[0].user_id;
-      assert.equal(user_id, 1);
-      get_user_params(user_id, (err, fromdb) => {
-        if (ERR(err, callback)) return;
-        assert.deepEqual(user, fromdb);
-        callback(null);
-      });
-    });
+    const user_id = result.rows[0].user_id;
+    assert.equal(user_id, 1);
+
+    const fromdb = await getUserParams(user_id);
+    assert.deepEqual(user, fromdb);
   });
 
-  it('add an institution for host.com', (callback) => {
-    sqldb.query(sql.insert_host_com, [], (err, _result) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
+  it('add an institution for host.com', async () => {
+    await sqldb.queryAsync(sql.insert_host_com, []);
   });
 
-  it('user 1 updates institution_id', (callback) => {
-    var params = _.clone(base_params);
-    var user = _.clone(base_user);
+  it('user 1 updates institution_id', async () => {
+    const params = _.clone(baseParams);
+    const user = _.clone(baseUser);
 
     user[3] = '100';
 
-    sqldb.call('users_select_or_insert', params, (err, result) => {
-      if (ERR(err, callback)) return;
+    const result = await sqldb.callAsync('users_select_or_insert', params);
 
-      var user_id = result.rows[0].user_id;
-      assert.equal(user_id, 1);
-      get_user_params(user_id, (err, fromdb) => {
-        if (ERR(err, callback)) return;
-        assert.deepEqual(user, fromdb);
-        callback(null);
-      });
-    });
+    const user_id = result.rows[0].user_id;
+    assert.equal(user_id, 1);
+
+    const fromdb = await getUserParams(user_id);
+    assert.deepEqual(user, fromdb);
   });
 
-  it('user 1 updates uin when uin was null', (callback) => {
-    var params = _.clone(base_params);
-    var user = _.clone(base_user);
+  it('user 1 updates uin when uin was null', async () => {
+    const params = _.clone(baseParams);
+    const user = _.clone(baseUser);
 
     params[2] = '111122223';
     user[2] = params[2];
     user[3] = '100';
 
-    sqldb.call('users_select_or_insert', params, (err, result) => {
-      if (ERR(err, callback)) return;
+    const result = await sqldb.callAsync('users_select_or_insert', params);
 
-      var user_id = result.rows[0].user_id;
-      assert.equal(user_id, 1);
-      get_user_params(user_id, (err, fromdb) => {
-        if (ERR(err, callback)) return;
-        assert.deepEqual(user, fromdb);
-        callback(null);
-      });
-    });
+    const user_id = result.rows[0].user_id;
+    assert.equal(user_id, 1);
+
+    const fromdb = await getUserParams(user_id);
+    assert.deepEqual(user, fromdb);
   });
 
-  it('user 1 updates uin when uin was value', (callback) => {
-    var params = _.clone(base_params);
-    var user = _.clone(base_user);
+  it('user 1 updates uin when uin was value', async () => {
+    const params = _.clone(baseParams);
+    const user = _.clone(baseUser);
 
     params[2] = '111122224';
     user[2] = params[2];
     user[3] = '100';
 
-    sqldb.call('users_select_or_insert', params, (err, result) => {
-      if (ERR(err, callback)) return;
+    const result = await sqldb.callAsync('users_select_or_insert', params);
 
-      var user_id = result.rows[0].user_id;
-      assert.equal(user_id, 1);
-      get_user_params(user_id, (err, fromdb) => {
-        if (ERR(err, callback)) return;
-        assert.deepEqual(user, fromdb);
-        callback(null);
-      });
-    });
+    const user_id = result.rows[0].user_id;
+    assert.equal(user_id, 1);
+
+    const fromdb = await getUserParams(user_id);
+    assert.deepEqual(user, fromdb);
   });
 
-  it('user 1 updates uid with already present uin', (callback) => {
-    var params = _.clone(base_params);
-    var user = _.clone(base_user);
+  it('user 1 updates uid with already present uin', async () => {
+    const params = _.clone(baseParams);
+    const user = _.clone(baseUser);
 
     params[0] = 'newuid@host.com';
     params[2] = '111122224';
@@ -162,169 +153,128 @@ describe('sproc users_select_or_insert tests', () => {
     user[2] = params[2];
     user[3] = '100';
 
-    sqldb.call('users_select_or_insert', params, (err, result) => {
-      if (ERR(err, callback)) return;
+    const result = await sqldb.callAsync('users_select_or_insert', params);
 
-      var user_id = result.rows[0].user_id;
-      assert.equal(user_id, 1);
-      get_user_params(user_id, (err, fromdb) => {
-        if (ERR(err, callback)) return;
-        assert.deepEqual(user, fromdb);
-        callback(null);
-      });
-    });
+    const user_id = result.rows[0].user_id;
+    assert.equal(user_id, 1);
+
+    const fromdb = await getUserParams(user_id);
+    assert.deepEqual(user, fromdb);
   });
 
-  it('user 2 create under Shibboleth', (callback) => {
-    var params = ['joe@illinois.edu', 'Joe Bob', '444444444', 'Shibboleth'];
-    var user = _.clone(params);
+  it('user 2 create under Shibboleth', async () => {
+    const params = ['joe@illinois.edu', 'Joe Bob', '444444444', 'Shibboleth', null];
+    const user = _.clone(params);
 
     user[3] = '1';
 
-    sqldb.call('users_select_or_insert', params, (err, result) => {
-      if (ERR(err, callback)) return;
+    const result = await sqldb.callAsync('users_select_or_insert', params);
 
-      var user_id = result.rows[0].user_id;
-      assert.equal(user_id, 2);
-      get_user_params(user_id, (err, fromdb) => {
-        if (ERR(err, callback)) return;
-        assert.deepEqual(user, fromdb);
-        callback(null);
-      });
-    });
+    const user_id = result.rows[0].user_id;
+    assert.equal(user_id, 2);
+
+    const fromdb = await getUserParams(user_id);
+    assert.deepEqual(user, fromdb);
   });
 
-  it('add an institution for illinois.edu', (callback) => {
-    sqldb.query(sql.insert_illinois_edu, [], (err, _result) => {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
+  it('add an institution for illinois.edu', async () => {
+    await sqldb.queryAsync(sql.insert_illinois_edu, []);
   });
 
-  it('user 2 logs in via Google', (callback) => {
-    var params = ['joe@illinois.edu', 'joe@illinois.edu', null, 'Google'];
-    var user = _.clone(params);
+  it('user 2 logs in via Google', async () => {
+    const params = ['joe@illinois.edu', 'joe@illinois.edu', null, 'Google', null];
+    const user = _.clone(params);
 
     user[2] = '444444444';
     user[3] = '200';
 
-    sqldb.call('users_select_or_insert', params, (err, result) => {
-      if (ERR(err, callback)) return;
+    const result = await sqldb.callAsync('users_select_or_insert', params);
 
-      var user_id = result.rows[0].user_id;
-      assert.equal(user_id, 2);
-      get_user_params(user_id, (err, fromdb) => {
-        if (ERR(err, callback)) return;
-        assert.deepEqual(user, fromdb);
-        callback(null);
-      });
-    });
+    const user_id = result.rows[0].user_id;
+    assert.equal(user_id, 2);
+
+    const fromdb = await getUserParams(user_id);
+    assert.deepEqual(user, fromdb);
   });
 
-  it('user 2 fails to log in via Azure', (callback) => {
-    var params = ['joe@illinois.edu', 'joe@illinois.edu', null, 'Azure'];
+  it('user 2 fails to log in via Azure', async () => {
+    const params = ['joe@illinois.edu', 'joe@illinois.edu', null, 'Azure'];
 
-    sqldb.call('users_select_or_insert', params, (err, _result) => {
-      if (err == null) {
-        return callback(new Error('users_select_or_insert succeeded'));
-      }
-      callback(null);
-    });
+    await assert.isRejected(sqldb.callAsync('users_select_or_insert', params));
   });
 
-  it('user 3 create under Google', (callback) => {
-    var params = ['sally@illinois.edu', 'sally@illinois.edu', null, 'Google'];
-    var user = _.clone(params);
+  it('user 3 create under Google', async () => {
+    const params = ['sally@illinois.edu', 'sally@illinois.edu', null, 'Google'];
+    const user = _.clone(params);
 
     user[3] = '200';
 
-    sqldb.call('users_select_or_insert', params, (err, result) => {
-      if (ERR(err, callback)) return;
+    const result = await sqldb.callAsync('users_select_or_insert', params);
 
-      var user_id = result.rows[0].user_id;
-      assert.equal(user_id, 3);
-      get_user_params(user_id, (err, fromdb) => {
-        if (ERR(err, callback)) return;
-        assert.deepEqual(user, fromdb);
-        callback(null);
-      });
-    });
+    const user_id = result.rows[0].user_id;
+    assert.equal(user_id, 3);
+
+    const fromdb = await getUserParams(user_id);
+    assert.deepEqual(user, fromdb);
   });
 
-  it('user 3 logs in via Shibboleth', (callback) => {
-    var params = ['sally@illinois.edu', 'Sally Ann', '555566665', 'Shibboleth'];
-    var user = _.clone(params);
+  it('user 3 logs in via Shibboleth', async () => {
+    const params = ['sally@illinois.edu', 'Sally Ann', '555566665', 'Shibboleth'];
+    const user = _.clone(params);
 
     user[3] = '200';
 
-    sqldb.call('users_select_or_insert', params, (err, result) => {
-      if (ERR(err, callback)) return;
+    const result = await sqldb.callAsync('users_select_or_insert', params);
 
-      var user_id = result.rows[0].user_id;
-      assert.equal(user_id, 3);
-      get_user_params(user_id, (err, fromdb) => {
-        if (ERR(err, callback)) return;
-        assert.deepEqual(user, fromdb);
-        callback(null);
-      });
-    });
+    const user_id = result.rows[0].user_id;
+    assert.equal(user_id, 3);
+
+    const fromdb = await getUserParams(user_id);
+    assert.deepEqual(user, fromdb);
   });
 
-  it('user 3 logs back in via Google', (callback) => {
-    var params = ['sally@illinois.edu', 'sally@illinois.edu', null, 'Google'];
-    var user = _.clone(params);
+  it('user 3 logs back in via Google', async () => {
+    const params = ['sally@illinois.edu', 'sally@illinois.edu', null, 'Google', null];
+    const user = _.clone(params);
 
     user[2] = '555566665';
     user[3] = '200';
 
-    sqldb.call('users_select_or_insert', params, (err, result) => {
-      if (ERR(err, callback)) return;
+    const result = await sqldb.callAsync('users_select_or_insert', params);
 
-      var user_id = result.rows[0].user_id;
-      assert.equal(user_id, 3);
-      get_user_params(user_id, (err, fromdb) => {
-        if (ERR(err, callback)) return;
-        assert.deepEqual(user, fromdb);
-        callback(null);
-      });
-    });
+    const user_id = result.rows[0].user_id;
+    assert.equal(user_id, 3);
+
+    const fromdb = await getUserParams(user_id);
+    assert.deepEqual(user, fromdb);
   });
 
-  it('user 4 created with wrong netid and correct UIN', (callback) => {
-    var params = ['uin-888899990@illinois.edu', 'UIN 888899990', '888899990', 'Shibboleth'];
-    var user = _.clone(params);
+  it('user 4 created with wrong netid and correct UIN', async () => {
+    const params = ['uin-888899990@illinois.edu', 'UIN 888899990', '888899990', 'Shibboleth', null];
+    const user = _.clone(params);
 
     user[3] = '200';
 
-    sqldb.call('users_select_or_insert', params, (err, result) => {
-      if (ERR(err, callback)) return;
+    const result = await sqldb.callAsync('users_select_or_insert', params);
 
-      var user_id = result.rows[0].user_id;
-      assert.equal(user_id, 4);
-      get_user_params(user_id, (err, fromdb) => {
-        if (ERR(err, callback)) return;
-        assert.deepEqual(user, fromdb);
-        callback(null);
-      });
-    });
+    const user_id = result.rows[0].user_id;
+    assert.equal(user_id, 4);
+    const fromdb = await getUserParams(user_id);
+    assert.deepEqual(user, fromdb);
   });
 
-  it('user 4 logs in with full correct credentials, no institution, account updated', (callback) => {
-    var params = ['newstudent', 'Johnny New Student', '888899990', 'Shibboleth'];
-    var user = _.clone(params);
+  it('user 4 logs in with full correct credentials, no institution, account updated', async () => {
+    const params = ['newstudent', 'Johnny New Student', '888899990', 'Shibboleth', null];
+    const user = _.clone(params);
 
     user[3] = '1';
 
-    sqldb.call('users_select_or_insert', params, (err, result) => {
-      if (ERR(err, callback)) return;
+    const result = await sqldb.callAsync('users_select_or_insert', params);
 
-      var user_id = result.rows[0].user_id;
-      assert.equal(user_id, 4);
-      get_user_params(user_id, (err, fromdb) => {
-        if (ERR(err, callback)) return;
-        assert.deepEqual(user, fromdb);
-        callback(null);
-      });
-    });
+    const user_id = result.rows[0].user_id;
+    assert.equal(user_id, 4);
+
+    const fromdb = await getUserParams(user_id);
+    assert.deepEqual(user, fromdb);
   });
 });

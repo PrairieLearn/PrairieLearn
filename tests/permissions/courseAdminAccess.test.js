@@ -91,6 +91,7 @@ function runTest(context) {
         user.name,
         user.uin,
         'Shibboleth',
+        null,
       ]);
     }
     await sqldb.callOneRowAsync('course_permissions_insert_by_user_uid', [

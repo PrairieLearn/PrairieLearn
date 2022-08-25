@@ -34,12 +34,14 @@ describe('student data access', function () {
       'Instructor User',
       '100000000',
       'dev',
+      null,
     ]);
     await sqldb.callAsync('users_select_or_insert', [
       'student@illinois.edu',
       'Student User',
       '000000001',
       'dev',
+      null,
     ]);
     await sqldb.callOneRowAsync('course_permissions_insert_by_user_uid', [
       1,

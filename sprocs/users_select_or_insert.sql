@@ -4,6 +4,7 @@ CREATE FUNCTION
         IN name text,
         IN uin text,
         IN authn_provider_name text,
+        In institution_id bigint,
         OUT user_id bigint
     )
 AS $$
@@ -44,6 +45,14 @@ BEGIN
         WHERE users_select_or_insert.uid ~ i.uid_regexp
         ORDER BY i.id ASC
         LIMIT 1;
+    END IF;
+
+    -- If we've matched an institution and an `institution_id` was provided,
+    -- check that they match each other. This is mostly useful for SAML authn
+    -- providers, as we want to ensure that any identity they return is scoped
+    -- to the appropriate institution.
+    IF institution.id IS NOT NULL AND institution.id != institution_id THEN
+        RAISE EXCEPTION 'Institution mismatch: % != %', institution.id, institution_id;
     END IF;
 
     -- if we've matched an institution, make sure the authn_provider is valid for it

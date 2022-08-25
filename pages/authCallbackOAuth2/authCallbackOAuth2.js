@@ -52,6 +52,7 @@ router.get('/', function (req, res, next) {
       identity.name || identity.email, // name (use email if name is not present)
       identity.sub, // uin
       'Google', // provider
+      null, // institution_id
     ];
     sqldb.call('users_select_or_insert', params, (err, result) => {
       if (ERR(err, next)) return;
