@@ -15,35 +15,20 @@
       </tr>
       <% } %>
       <% let list_grading_method = true; %>
-      <% if (assessment_question.max_auto_points > 0 && (assessment_question.manual_points > 0 || instance_question.manual_points || instance_question.requires_manual_grading)) { %>
+      <% if (assessment_question.max_auto_points && (assessment_question.manual_points || instance_question.manual_points || instance_question.requires_manual_grading)) { %>
       <% list_grading_method = false; %>
       <tr>
         <td>Auto-grading:</td>
-        <td>
-          <%- include('../partials/examQuestionAwardedPoints',
-                      {points: instance_question.auto_points,
-                       points_pending: !locals.submission || submission.graded_at == null,
-                       max_points: assessment_question.max_auto_points}); %>
-        </td>
+        <td><%- include('../partials/instanceQuestionPoints', {component: 'auto'}); %></td>
       </tr>
       <tr>
         <td>Manual grading:</td>
-        <td>
-          <%- include('../partials/examQuestionAwardedPoints',
-                      {points: instance_question.manual_points,
-                       points_pending: !locals.submission || instance_question.requires_manual_grading,
-                       max_points: assessment_question.manual_points}); %>
-        </td>
+        <td><%- include('../partials/instanceQuestionPoints', {component: 'manual'}); %></td>
       </tr>
       <% } %>
       <tr>
         <td>Total points:</td>
-        <td>
-          <%- include('../partials/examQuestionAwardedPoints',
-                      {points: instance_question.points,
-                       points_pending: !locals.submission || submission.graded_at == null || instance_question.requires_manual_grading,
-                       max_points: assessment_question.max_points}); %>
-        </td>
+        <td><%- include('../partials/instanceQuestionPoints', {component: 'total'}); %></td>
       </tr>
       <% if (list_grading_method) { %>
       <tr>
