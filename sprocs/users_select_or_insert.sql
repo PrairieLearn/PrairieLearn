@@ -4,7 +4,7 @@ CREATE FUNCTION
         IN name text,
         IN uin text,
         IN authn_provider_name text,
-        In institution_id bigint,
+        IN institution_id bigint DEFAULT NULL,
         OUT user_id bigint
     )
 AS $$
