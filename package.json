@@ -141,7 +141,7 @@
     "devDependencies": {
         "@changesets/cli": "^2.23.0",
         "@types/async": "^3.2.14",
-        "@types/chai": "^4.3.0",
+        "@types/chai": "^4.3.3",
         "@types/chai-as-promised": "^7.1.5",
         "@types/cheerio": "^0.22.31",
         "@types/dockerode": "^3.3.9",
