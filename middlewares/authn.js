@@ -43,7 +43,7 @@ module.exports = function (req, res, next) {
     async.series(
       [
         (callback) => {
-          const params = ['loadtest@prairielearn.org', 'Load Test', '999999999', 'dev', null];
+          const params = ['loadtest@prairielearn.org', 'Load Test', '999999999', 'dev'];
           sqldb.call('users_select_or_insert', params, (err, result) => {
             if (ERR(err, callback)) return;
             res.locals.authn_user = result.rows[0].user;
@@ -101,7 +101,7 @@ module.exports = function (req, res, next) {
       authUin = '100000000';
     }
 
-    let params = [authUid, authName, authUin, 'dev', null];
+    let params = [authUid, authName, authUin, 'dev'];
     sqldb.call('users_select_or_insert', params, (err, result) => {
       if (ERR(err, next)) return;
 

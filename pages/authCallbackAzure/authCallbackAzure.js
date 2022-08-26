@@ -24,7 +24,6 @@ router.all('/', function (req, res, next) {
       user.displayName, // name
       null, // uin
       'Azure', // provider
-      null, // institution_id
     ];
     sqldb.call('users_select_or_insert', params, (err, result) => {
       if (ERR(err, next)) return;

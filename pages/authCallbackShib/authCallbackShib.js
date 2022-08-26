@@ -21,7 +21,7 @@ router.get('/:action?/:target(*)?', function (req, res, next) {
     'Your account is not registered for this service. Please contact your course instructor or IT support.';
   if (authUid === '(null)') return next(new Error(authError));
 
-  var params = [authUid, authName, authUin, 'Shibboleth', null];
+  var params = [authUid, authName, authUin, 'Shibboleth'];
   sqldb.call('users_select_or_insert', params, (err, result) => {
     if (ERR(err, next)) return;
     var tokenData = {
