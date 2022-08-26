@@ -121,26 +121,21 @@
               <% if (has_auto_grading_question) { %>
               <td class="text-center"><%- include('../partials/questionValue', {value: question.current_value});  %></td>
               <td class="text-center"><%- include('../partials/questionAwardedPoints', {awarded_points: question.variants_points_list, init_points: question.init_points});  %></td>
+              <% } %>
+              <% if (has_auto_grading_question && has_manual_grading_question) { %>
               <td class="text-center">
                 <%- include('../partials/instanceQuestionPoints',
-                            {instance_question: question, component: 'auto',
-                             max_points: question.max_auto_points}); %>
+                            {instance_question: question, component: 'auto'}); %>
               </td>
-              <% } %>
-              <% if (has_manual_grading_question) { %>
               <td class="text-center">
                 <%- include('../partials/instanceQuestionPoints',
-                            {instance_question: question, component: 'manual',
-                             max_points: question.max_manual_points}); %>
+                            {instance_question: question, component: 'manual'}); %>
               </td>
-                <% if (has_auto_grading_question) { %>
-                <td class="text-center">
-                <%- include('../partials/instanceQuestionPoints',
-                            {instance_question: question, component: 'total',
-                             max_points: question.max_points}); %>
-                </td>
-                <% } %>
               <% } %>
+              <td class="text-center">
+                <%- include('../partials/instanceQuestionPoints',
+                            {instance_question: question, component: 'total'}); %>
+              </td>
             </tr>
             <% }); %>
           </tbody>
