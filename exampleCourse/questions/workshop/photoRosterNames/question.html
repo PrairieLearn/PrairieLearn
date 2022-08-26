@@ -1,0 +1,95 @@
+<pl-question-panel>
+    <p><button class="btn btn-xs btn-success" type="button" data-toggle="collapse" data-target="#moreInfo" aria-expanded="false" aria-controls="moreInfo">
+        More info about these rosters
+    </button> {{{params.gamehint}}}
+    </p>
+    <div class="collapse" id="moreInfo">
+        <div class="card card-body">
+            <markdown>
+This question works with a `roster.json` file separately downloaded from Canvas. If you do
+not have a custom roster.json installed, you will see the default with board game pieces.
+
+### Downloading your roster file
+We use a helper script and the Canvas API to download the roster. This requires two things:
+
+* An authentication token to use the Canvas REST API
+
+    You can set a [Manual Access Token](https://canvas.instructure.com/doc/api/file.oauth.html#manual-token-generation)
+    under your Canvas Profile / Settings / Approved Integrations
+
+    When creating a token, save the text of the token somewhere safe because you won't be able to
+    view it again later. Tokens are the equivalents of passwords, so be careful with them and don't
+    share tokens with others.
+
+* The `course_id` of the Canvas course to download the roster. This can be obtained from the helper script.
+You must have Teacher access to that course to access the roster API.
+
+### The canvasRoster.py helper script
+
+In the question directory there is a helper script named `canvasRoster.py`. It's intended that you
+run the script from the command line with Python installed - so not inside PrairieLearn (although
+if you use the Docker PrairieLearn you could run it from inside that shell - do I need to document that?)
+
+The helper script can use the `python-dotenv` library (which lets you store your
+token in a `.env` file instead of keeping it in your environment). If the script fails,
+you can likely install it with:
+
+```pip3 install python-dotenv```
+
+canvasRoster.py requires a `CANVAS_TOKEN` environment variable set and will error if it's not found.
+You can either set that in the environment (for bash, `export CANVAS_TOKEN=xxxxxxxxxxxxxx`) or create a .env
+file in the same directory and place `CANVAS_TOKEN=xxxxxxxxxxxxxxxx` in it.
+
+```python3 canvasRoster.py```
+
+Without any arguments, the `canvasRoster.py` script will query for active courses where you have
+the Teacher role. It prints out those course names and their corresponding `course_id`
+
+```python3 canvasRoster.py 1282560000003003```
+
+If you run the helper script with the course_id as an argument, it will display the roster in JSON
+format to the screen. You can take that output and direct it into a file, or copy/paste it to include it in the question.
+
+### serverFilesCourse/roster.json
+
+The flash card question expects that the course roster JSON file downloaded from Canvas is stored
+in the course main `serverFilesCourse` folder named `roster.json`.
+
+When the roster is saved into `serverFilesCourse/roster.json`, reload the question (new variant) to
+use the updated roster.
+
+The format from Canvas is a JSON array with objects. The attributes this question cares about are
+`name` and `avatar_url`. If you can generate a roster array like that (perhaps from a differant LMS),
+you can use it with this question.
+
+            </markdown>
+        </div>
+    </div>
+    <p>
+    {{{params.question_prompt}}}
+    </p>
+</pl-question-panel>
+{{#params.multiplechoice}}
+<p>
+<pl-multiple-choice answers-name="ans">
+    <pl-answer correct="true">{{{params.correct}}}</pl-answer>
+    <pl-answer correct="false">{{{params.wrong1}}}</pl-answer>
+    <pl-answer correct="false">{{{params.wrong2}}}</pl-answer>
+    <pl-answer correct="false">{{{params.wrong3}}}</pl-answer>
+</pl-multiple-choice>
+</p>
+
+{{/params.multiplechoice}}
+{{#params.matching}}
+Match the names with their photos:
+<pl-matching answers-name="ans">
+    <pl-statement match="{{params.name1}}">{{{params.photo1}}}</pl-statement>
+    <pl-statement match="{{params.name2}}">{{{params.photo2}}}</pl-statement>
+    <pl-statement match="{{params.name3}}">{{{params.photo3}}}</pl-statement>
+    <pl-statement match="{{params.name4}}">{{{params.photo4}}}</pl-statement>
+</pl-matching>
+
+{{/params.matching}}
+
+<pl-answer-panel><p><em>Roster last modified: {{params.rosterModified}}
+with {{params.rosterLength}} students</em></p></pl-answer-panel>
