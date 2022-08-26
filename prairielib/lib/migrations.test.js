@@ -28,20 +28,9 @@ describe('migrations', () => {
     it('handles migrations without a timestamp', async () => {
       await withMigrationFiles(['001_testing.sql'], async (tmpDir) => {
         await expect(readAndValidateMigrationsFromDirectory(tmpDir)).rejects.toThrow(
-          'Migration 001_testing.sql does not have a timestamp'
+          'Invalid migration filename: 001_testing.sql'
         );
       });
-    });
-
-    it('handles duplicate indexes', async () => {
-      await withMigrationFiles(
-        ['20220101010101_001_testing.sql', '20220101020202_001_testing_again.sql'],
-        async (tmpDir) => {
-          await expect(readAndValidateMigrationsFromDirectory(tmpDir)).rejects.toThrow(
-            'Duplicate migration index'
-          );
-        }
-      );
     });
 
     it('handles duplicate timestamps', async () => {
@@ -54,92 +43,37 @@ describe('migrations', () => {
         }
       );
     });
-
-    it('handles missing indexes', async () => {
-      await withMigrationFiles(
-        ['20220101010101_001_testing.sql', '20220101010102_testing_again.sql'],
-        async (tmpDir) => {
-          await expect(readAndValidateMigrationsFromDirectory(tmpDir)).rejects.toThrow(
-            'The following migration files are missing indexes: 20220101010102_testing_again.sql'
-          );
-        }
-      );
-    });
   });
 
   describe('sortMigrationFiles', () => {
-    it('sorts by timestamp when it is available', () => {
+    it('sorts by timestamp', () => {
       expect(
         sortMigrationFiles([
           {
             filename: '20220101010103_testing_3.sql',
             timestamp: '20220101010103',
-            index: null,
           },
           {
             filename: '20220101010101_testing_1.sql',
             timestamp: '20220101010101',
-            index: null,
           },
           {
             filename: '20220101010102_testing_2.sql',
             timestamp: '20220101010102',
-            index: null,
           },
         ])
       ).toEqual([
         {
           filename: '20220101010101_testing_1.sql',
           timestamp: '20220101010101',
-          index: null,
         },
         {
           filename: '20220101010102_testing_2.sql',
           timestamp: '20220101010102',
-          index: null,
         },
         {
           filename: '20220101010103_testing_3.sql',
           timestamp: '20220101010103',
-          index: null,
-        },
-      ]);
-    });
-
-    it('sorts by index when timestamp is unavailable', () => {
-      expect(
-        sortMigrationFiles([
-          {
-            filename: '003_testing_3.sql',
-            timestamp: null,
-            index: 3,
-          },
-          {
-            filename: '001_testing_1.sql',
-            timestamp: null,
-            index: 1,
-          },
-          {
-            filename: '002_testing_2.sql',
-            timestamp: null,
-            index: 2,
-          },
-        ])
-      ).toEqual([
-        {
-          filename: '001_testing_1.sql',
-          timestamp: null,
-          index: 1,
-        },
-        {
-          filename: '002_testing_2.sql',
-          timestamp: null,
-          index: 2,
-        },
-        {
-          filename: '003_testing_3.sql',
-          timestamp: null,
-          index: 3,
         },
       ]);
     });
@@ -150,76 +84,37 @@ describe('migrations', () => {
       const migrationFiles = [
         {
           filename: '001_testing.sql',
-          index: 1,
-          timestamp: null,
+          timestamp: '20220101010101',
         },
       ];
       expect(getMigrationsToExecute(migrationFiles, [])).toEqual(migrationFiles);
     });
 
-    it('handles the case of migrations keyed by timestamp', () => {
+    it('handles case where subset of migrations have been executed', () => {
       const migrationFiles = [
         {
           filename: '20220101010101_testing_1.sql',
-          index: null,
           timestamp: '20220101010101',
         },
         {
           filename: '20220101010102_testing_2.sql',
-          index: null,
           timestamp: '20220101010102',
         },
         {
           filename: '20220101010103_testing_3.sql',
-          index: null,
           timestamp: '20220101010103',
         },
       ];
       const executedMigrations = [
         {
-          index: null,
           timestamp: '20220101010101',
         },
         {
-          index: null,
           timestamp: '20220101010102',
         },
       ];
       expect(getMigrationsToExecute(migrationFiles, executedMigrations)).toEqual([
-        { timestamp: '20220101010103', filename: '20220101010103_testing_3.sql', index: null },
-      ]);
-    });
-
-    it('handles the case of migrations keyed by index', () => {
-      const migrationFiles = [
-        {
-          filename: '001_testing_1.sql',
-          index: 1,
-          timestamp: null,
-        },
-        {
-          filename: '002_testing_2.sql',
-          index: 2,
-          timestamp: null,
-        },
-        {
-          filename: '003_testing_3.sql',
-          index: 3,
-          timestamp: null,
-        },
-      ];
-      const executedMigrations = [
-        {
-          index: 1,
-          timestamp: null,
-        },
-        {
-          index: 2,
-          timestamp: null,
-        },
-      ];
-      expect(getMigrationsToExecute(migrationFiles, executedMigrations)).toEqual([
-        { timestamp: null, filename: '003_testing_3.sql', index: 3 },
+        { timestamp: '20220101010103', filename: '20220101010103_testing_3.sql' },
       ]);
     });
   });
