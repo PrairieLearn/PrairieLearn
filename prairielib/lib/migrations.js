@@ -38,12 +38,11 @@ module.exports.init = function (dir, proj, callback) {
  * Timestamp prefixes will be of the form `YYYYMMDDHHMMSS`, which will have 14 digits.
  * If this code is still around in the year 10000... good luck.
  */
-const MIGRATION_FILENAME_REGEX = /^(?:([0-9]{14})_)?(?:([0-9]+)_)?.+\.sql$/;
+const MIGRATION_FILENAME_REGEX = /^([0-9]{14})_.+\.sql$/;
 
 /**
  * @typedef {Object} MigrationFile
  * @property {string} filename
- * @property {number | null} index
  * @property {string | null} timestamp
  */
 
@@ -63,31 +62,22 @@ async function readAndValidateMigrationsFromDirectory(dir) {
     }
 
     const timestamp = match[1] ?? null;
-    const index = match[2] ?? null;
 
     if (timestamp === null) {
       throw new Error(`Migration ${mf} does not have a timestamp`);
     }
 
-    if (timestamp === null && index === null) {
-      throw new Error(`Migration ${mf} has neither a timestamp nor an index`);
-    }
-
     return {
       filename: mf,
-      index: index ? Number.parseInt(index, 10) : null,
       timestamp,
     };
   });
 
   // First pass: validate that all migrations have a unique timestamp prefix.
   // This will avoid data loss and conflicts in unexpected scenarios.
-  let hasSeenIndex = false;
-  let allMigrationsHaveIndex = true;
-  let seenIndexes = new Set();
   let seenTimestamps = new Set();
   for (const migration of migrations) {
-    const { filename, timestamp, index } = migration;
+    const { filename, timestamp } = migration;
 
     if (timestamp !== null) {
       if (seenTimestamps.has(timestamp)) {
@@ -95,52 +85,24 @@ async function readAndValidateMigrationsFromDirectory(dir) {
       }
       seenTimestamps.add(timestamp);
     }
-
-    if (index !== null) {
-      if (seenIndexes.has(index)) {
-        throw new Error(`Duplicate migration index: ${index} (${filename})`);
-      }
-      seenIndexes.add(index);
-      hasSeenIndex = true;
-    } else {
-      allMigrationsHaveIndex = false;
-    }
-  }
-
-  // If one migration has an index, *all* migrations must have an index.
-  if (hasSeenIndex && !allMigrationsHaveIndex) {
-    const filesMissingIndex = migrations
-      .filter((m) => m.index === null)
-      .map((m) => m.filename)
-      .join(', ');
-    throw new Error(`The following migration files are missing indexes: ${filesMissingIndex}`);
   }
 
   return migrations;
 }
 
 /**
- * Determine the ordering of migrations. We will have already validated that either all migrations
- * have a timestamp or none of them do; ditto for indexes. So we can safely order on either
- * one or the other. Default to the timestamp if they're available, otherwise order on the index.
-
  * @param {MigrationFile[]} migrationFiles
  * @return {MigrationFile[]}
  */
 function sortMigrationFiles(migrationFiles) {
-  let allMigrationsHaveTimestamp = migrationFiles.every((m) => m.timestamp);
   return migrationFiles.sort((a, b) => {
-    if (allMigrationsHaveTimestamp) {
-      return a.timestamp.localeCompare(b.timestamp);
-    } else {
-      return a.index - b.index;
-    }
+    return a.timestamp.localeCompare(b.timestamp);
   });
 }
 
 /**
  * @param {MigrationFile[]} migrationFiles
- * @param {{ index: number | null, timestamp: string | null }[]} executedMigrations
+ * @param {{ timestamp: string | null }[]} executedMigrations
  * @return {MigrationFile[]}
  */
 function getMigrationsToExecute(migrationFiles, executedMigrations) {
@@ -149,15 +111,8 @@ function getMigrationsToExecute(migrationFiles, executedMigrations) {
     return migrationFiles;
   }
 
-  // If our migration files have timestamps, use them to determine which
-  // have or have not executed. Otherwise, use the index.
-  if (migrationFiles.every((m) => m.timestamp)) {
-    const executedMigrationTimestamps = new Set(executedMigrations.map((m) => m.timestamp));
-    return migrationFiles.filter((m) => !executedMigrationTimestamps.has(m.timestamp));
-  } else {
-    const executedMigrationIndexes = new Set(executedMigrations.map((m) => m.index));
-    return migrationFiles.filter((m) => !executedMigrationIndexes.has(m.index));
-  }
+  const executedMigrationTimestamps = new Set(executedMigrations.map((m) => m.timestamp));
+  return migrationFiles.filter((m) => !executedMigrationTimestamps.has(m.timestamp));
 }
 
 module.exports._initWithLock = function (callback) {
@@ -191,60 +146,24 @@ module.exports._initWithLock = function (callback) {
           }
         }
 
-        // In the past, we uniquely identified and ordered migrations by an integer index.
-        // However, this frequently causes conflicts between branches. To avoid this, we
-        // switched to identifying migrations by a timestamp (e.g. `20220810085513`).
-        //
-        // However, we need to actually migrate from using an integer index to
-        // using a timestamp. We'll achieve this using a multi-step deploy.
-        //
-        // First, we'll deploy a version of the code that still has the index embedded
-        // in the filename. We'll use that to sync the new timestamps to the migrations
-        // table.
-        //
-        // Only after that will we deploy a version that removes the index from the
-        // migration filenames. As part of that, we'll add some safety checks that
-        // will ensure that if we're deploying a migrations directory that doesn't
-        // have *any* indexes in the filenames, we'll error out and prompt the user
-        // to deploy an earlier version that still has indexes.
-
         let allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
 
         const migrationFiles = await readAndValidateMigrationsFromDirectory(migrationDir);
 
-        // Validation: if we no longer have any indexes in the migration names,
-        // ensure that the user has deployed an earlier version of the code that
-        // already synced the indexes to the migrations table.
-        if (!migrationFiles.some((m) => m.index !== null)) {
-          const migrationsMissingTimestamps = allMigrations.filter((m) => !m.timestamp);
-          if (migrationsMissingTimestamps.length > 0) {
-            const missing = migrationsMissingTimestamps.map((m) => m.filename).join(', ');
-            throw new Error(`The following migrations are missing timestamps: ${missing}`);
-          }
-        }
-
-        // Second pass: reconcile the timestamps with the list of migrations in the database.
-        // This should only matter a single time (the first time this code is deployed after
-        // adding timestamps to all migrations).
-        for (const { filename, timestamp, index } of migrationFiles) {
-          if (!timestamp) {
-            continue;
-          }
-
-          const migration = allMigrations.rows.find((m) => m.index === index);
-          if (!migration || migration.timestamp) {
-            // This migration hasn't been applied, or it's already been updated with a timestamp.
-            continue;
-          }
-
-          logger.info(
-            `Updating migration ${migration.index} with timestamp ${timestamp} and filename ${filename}`
+        // Validation: if we not all previously-executed migrations have timestamps,
+        // prompt the user to deploy an earlier version that includes both indexes
+        // and timestamps.
+        const migrationsMissingTimestamps = allMigrations.rows.filter((m) => !m.timestamp);
+        if (migrationsMissingTimestamps.length > 0) {
+          throw new Error(
+            [
+              'The following migrations are missing timestamps:',
+              migrationsMissingTimestamps.map((m) => `  ${m.filename}`),
+              // This revision was the most recent commit to `master` before the
+              // code handling indexes was removed.
+              'You must deploy revision 1aa43c7348fa24cf636413d720d06a2fa9e38ef2 first.',
+            ].join('\n')
           );
-          await sqldb.queryAsync(sql.update_migration, {
-            id: migration.id,
-            timestamp,
-            filename,
-          });
         }
 
         // Refetch the list of migrations from the database.
@@ -259,7 +178,7 @@ module.exports._initWithLock = function (callback) {
           allMigrations.rows
         );
 
-        for (const { filename, index, timestamp } of migrationsToExecute) {
+        for (const { filename, timestamp } of migrationsToExecute) {
           if (allMigrations.rows.length === 0) {
             // if we are running all the migrations then log at a lower level
             logger.verbose(`Running migration ${filename}`);
@@ -281,7 +200,6 @@ module.exports._initWithLock = function (callback) {
           // Record the migration.
           await sqldb.queryAsync(sql.insert_migration, {
             filename: filename,
-            index,
             timestamp,
             project,
           });
