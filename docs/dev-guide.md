@@ -31,8 +31,7 @@ PrairieLearn
 +-- lib                # miscellaneous helper code
 +-- middlewares        # Express.js middleware, one per file
 +-- migrations         # DB migrations
-|   +-- index.js       # entry point for migrations
-|   `-- ...            # one PGSQL file per migration, executed in order by index.js
+|   +-- ...            # one PGSQL file per migration, executed in order of their timestamp
 +-- package.json       # JavaScript package manifest
 +-- pages              # one sub-dir per web page
 |   +-- partials       # EJS helper sub-templates
