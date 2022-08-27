@@ -19,11 +19,6 @@
     });
   </script>
   <body>
-    <script>
-      $(function () {
-          $('[data-toggle="popover"]').popover({sanitize: false})
-      });
-    </script>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
       <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
@@ -172,11 +167,13 @@
                     <button type="button" class="btn btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                       Action <span class="caret"></span>
                     </button>
-                    <div id="row<%= iRow %>PopoverBreak"
+                    <!-- Something is wrong with the way the popover displays. Figure out what's up. -->
+                    <div id="row<%- iRow %>PopoverBreak"
                          tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
                          data-html="true" data-placement="auto" title="Confirm mark as broken"
                          data-content="<%= include('popoverBreakVariants', {iRow: iRow, question: question}) %>">
                     </div>
+
                     <%# Capture all clicks to dropdown items to prevent scrolling to the top of the page %>
                     <div class="dropdown-menu" onclick="window.event.preventDefault();">
                       <% if (authz_data.has_instructor_edit) { %>
@@ -185,6 +182,7 @@
                       </a>
                       <% } %>
                     </div>
+
                   </div>
                 </td>
               </tr>
