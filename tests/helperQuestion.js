@@ -147,7 +147,7 @@ module.exports = {
         ) {
           return;
         }
-        assert.equal(locals.variant.broken, false);
+        assert.isNull(locals.variant.broken_at);
       });
       it('should have a CSRF token if has grade or save button', function () {
         if (

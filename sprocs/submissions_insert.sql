@@ -37,7 +37,7 @@ BEGIN
     SELECT v.* INTO variant FROM variants AS v WHERE v.id = variant_id;
 
     IF NOT FOUND THEN RAISE EXCEPTION 'invalid variant_id = %', variant_id; END IF;
-    
+
     -- we must have a variant, but we might not have an assessment_instance
     SELECT
         iq.id,
@@ -57,7 +57,7 @@ BEGIN
     -- ######################################################################
     -- make sure everything is ok
 
-    IF variant.broken THEN
+    IF variant.broken_at IS NOT NULL THEN
         RAISE EXCEPTION 'variant is broken: %', variant_id;
     END IF;
 
@@ -77,7 +77,7 @@ BEGIN
     SELECT la.last_access
     INTO last_access
     FROM last_accesses AS la
-    WHERE (CASE WHEN variant.user_id IS NOT NULL THEN la.user_id = variant.user_id 
+    WHERE (CASE WHEN variant.user_id IS NOT NULL THEN la.user_id = variant.user_id
                 ELSE la.group_id = variant.group_id
             END);
 
@@ -88,7 +88,7 @@ BEGIN
 
     UPDATE last_accesses AS la
     SET last_access = now()
-    WHERE (CASE WHEN variant.user_id IS NOT NULL THEN la.user_id = variant.user_id 
+    WHERE (CASE WHEN variant.user_id IS NOT NULL THEN la.user_id = variant.user_id
                 ELSE la.group_id = variant.group_id
             END);
 
