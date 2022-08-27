@@ -18,7 +18,11 @@ BEGIN
     WHERE
         v.instance_question_id = instance_questions_select_variant.instance_question_id
         AND (NOT require_open OR v.open)
+<<<<<<< HEAD
         AND v.broken_at IS NULL
+=======
+        AND NOT v.broken_at IS NULL
+>>>>>>> Moved over files
     ORDER BY v.date DESC
     LIMIT 1;
 END;
