@@ -138,7 +138,7 @@
               <td class="text-center">
                 <%- include('../partials/instanceQuestionPoints', {instance_question, component: 'auto'}); %>
                 <% if (authz_data.has_course_instance_permission_edit) { %>
-                <button type="button" class="btn btn-xs btn-secondary editQuestionPointsButton"
+                <button type="button" class="btn btn-xs btn-secondary editQuestionAutoPointsButton"
                    id="editQuestionPointsAuto<%= i_instance_question %>" tabindex="0"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> points"
@@ -154,7 +154,7 @@
               <td class="text-center">
                 <%- include('../partials/instanceQuestionPoints', {instance_question, component: 'manual'}); %>
                 <% if (authz_data.has_course_instance_permission_edit) { %>
-                <button type="button" class="btn btn-xs btn-secondary editQuestionPointsButton"
+                <button type="button" class="btn btn-xs btn-secondary editQuestionManualPointsButton"
                    id="editQuestionPointsManual<%= i_instance_question %>" tabindex="0"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> points"
