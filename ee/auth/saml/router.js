@@ -83,7 +83,7 @@ router.post(
       throw new Error('Missing one or more SAML attributes');
     }
 
-    const params = [authUid, authName, authUin, 'SAML'];
+    const params = [authUid, authName, authUin, 'SAML', institutionId];
     const userRes = await sqldb.callAsync('users_select_or_insert', params);
     const tokenData = {
       user_id: userRes.rows[0].user_id,
