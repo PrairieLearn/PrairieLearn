@@ -1747,7 +1747,7 @@ if (config.startServer) {
 
         // Same with Sentry configuration.
         if (config.sentryDsn) {
-          // Use the current Git has to identify the version of the code.
+          // Use the current Git hash to identify the release.
           let release = null;
           try {
             release = (await execa('git', ['rev-parse', 'HEAD'])).stdout.trim();
