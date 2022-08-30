@@ -120,7 +120,8 @@ router.post(
         course_instance_id: res.locals.course_instance.id,
         assessment_id: res.locals.assessment.id,
         instance_question_id: res.locals.instance_question.id,
-        assigned_grader: assigned_grader === 'nobody' ? null : assigned_grader,
+        assigned_grader: ['nobody', 'graded'].includes(assigned_grader) ? null : assigned_grader,
+        requires_manual_grading: assigned_grader !== 'graded',
       };
       await sqlDb.queryAsync(sql.update_assigned_grader, params);
 

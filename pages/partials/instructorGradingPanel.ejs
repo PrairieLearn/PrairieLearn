@@ -114,7 +114,8 @@
         <% (locals.graders || []).forEach(grader => { %>
         <button type="submit" class="dropdown-item" name="__action" value="reassign_<%= grader.user_id %>">Assign to: <%= grader.name %> (<%= grader.uid %>)</button>
         <% }); %>
-        <button type="submit" class="dropdown-item" name="__action" value="reassign_nobody">Remove grader assignment</button>
+        <button type="submit" class="dropdown-item" name="__action" value="reassign_nobody">Tag for grading without assigned grader</button>
+        <button type="submit" class="dropdown-item" name="__action" value="reassign_graded">Tag as graded (keep current grade)</button>
       </div>
       <% } %>
     </div>
