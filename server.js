@@ -48,6 +48,7 @@ const codeCaller = require('./lib/code-caller');
 const assets = require('./lib/assets');
 const namedLocks = require('./lib/named-locks');
 const nodeMetrics = require('./lib/node-metrics');
+const { isEnterprise } = require('./lib/license');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -416,12 +417,22 @@ module.exports.initExpress = function () {
   app.use('/pl/shibcallback', require('./pages/authCallbackShib/authCallbackShib'));
   app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
   app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
+
+  if (isEnterprise()) {
+    app.use('/pl/auth/institution/:institution_id/saml', require('./ee/auth/saml/router'));
+  }
+
   app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
   app.use('/pl/login', require('./pages/authLogin/authLogin'));
   // disable SEB until we can fix the mcrypt issues
   // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
   app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
   app.use('/pl/api', require('./middlewares/authnToken')); // authn for the API, set res.locals.authn_user
+
+  if (isEnterprise()) {
+    app.use('/pl/prairietest/auth', require('./ee/auth/prairietest'));
+  }
+
   app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
   app.use(require('./middlewares/logRequest'));
 
@@ -714,6 +725,10 @@ module.exports.initExpress = function () {
   // API ///////////////////////////////////////////////////////////////
 
   app.use('/pl/api/v1', require('./api/v1'));
+
+  if (isEnterprise()) {
+    app.use('/pl/institution/:institution_id/admin', require('./ee/institution/admin'));
+  }
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
@@ -1770,6 +1785,12 @@ if (config.startServer) {
             return done(null, profile);
           })
         );
+      },
+      async () => {
+        if (isEnterprise()) {
+          const { strategy } = require('./ee/auth/saml/index');
+          passport.use(strategy);
+        }
       },
       async function () {
         const pgConfig = {
