@@ -258,24 +258,19 @@ module.exports.initExpress = function () {
     logLevel: 'silent',
     logProvider: (_provider) => logger,
     router: async (req) => {
-      try {
-        const match = req.url.match(/^\/pl\/workspace\/([0-9]+)\/container\//);
-        if (!match) throw new Error(`Could not match URL: ${req.url}`);
-        const workspace_id = match[1];
-        const result = await sqldb.queryZeroOrOneRowAsync(
-          `SELECT hostname FROM workspaces WHERE id = $workspace_id AND state = 'running';`,
-          { workspace_id }
-        );
+      const match = req.url.match(/^\/pl\/workspace\/([0-9]+)\/container\//);
+      if (!match) throw new Error(`Could not match URL: ${req.url}`);
+      const workspace_id = match[1];
+      const result = await sqldb.queryZeroOrOneRowAsync(
+        `SELECT hostname FROM workspaces WHERE id = $workspace_id AND state = 'running';`,
+        { workspace_id }
+      );
 
-        if (result.rows.length === 0) {
-          throw new Error(`Workspace ${workspace_id} is not running`);
-        }
-
-        return `http://${result.rows[0].hostname}/`;
-      } catch (err) {
-        logger.error(`Error in router for url=${req.url}: ${err}`);
-        return 'not-matched';
+      if (result.rows.length === 0) {
+        throw new Error(`Workspace ${workspace_id} is not running`);
       }
+
+      return `http://${result.rows[0].hostname}/`;
     },
     onProxyReq: (proxyReq) => {
       stripSensitiveCookies(proxyReq);
