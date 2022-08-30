@@ -40,7 +40,8 @@ WITH terminated_workspace_hosts AS (
     SET
         state = 'terminated',
         terminated_at = NOW()
-    WHERE wh.instance_id IN (SELECT UNNEST($instances)) AND wh.state != 'launching';
+    WHERE wh.instance_id IN (SELECT UNNEST($instances)) AND wh.state != 'launching'
+    RETURNING wh.id
 )
 UPDATE workspaces AS w
 SET
