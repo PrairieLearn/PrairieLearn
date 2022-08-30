@@ -24,6 +24,8 @@ const multer = require('multer');
 const filesize = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
+const Sentry = require('@sentry/node');
+const execa = require('execa');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -81,6 +83,11 @@ module.exports.initExpress = function () {
   app.set('view engine', 'ejs');
   app.set('trust proxy', config.trustProxy);
   config.devMode = app.get('env') === 'development';
+
+  // If we're set up with Sentry, use its middleware to record errors.
+  if (config.sentryDsn) {
+    app.use(Sentry.Handlers.requestHandler());
+  }
 
   // Set res.locals variables first, so they will be available on
   // all pages including the error page (which we could jump to at
@@ -1612,6 +1619,9 @@ module.exports.initExpress = function () {
   app.use(require('./middlewares/notFound'));
 
   app.use(require('./middlewares/redirectEffectiveAccessDenied'));
+
+  // The Sentry error handler must come first.
+  app.use(Sentry.Handlers.errorHandler());
   app.use(require('./pages/error/error'));
 
   return app;
@@ -1722,6 +1732,23 @@ if (config.startServer) {
           ...config,
           serviceName: 'prairielearn',
         });
+
+        // Same with Sentry configuration.
+        if (config.sentryDsn) {
+          // Use the current Git has to identify the version of the code.
+          let release = null;
+          try {
+            release = (await execa('git', ['rev-parse', 'HEAD'])).stdout.trim();
+          } catch (err) {
+            // There's probably not an initialized Git repository wherever we're
+            // deployed; default to not setting a release.
+          }
+          Sentry.init({
+            dsn: config.sentryDsn,
+            environment: config.sentryEnvironment,
+            release,
+          });
+        }
 
         if (config.logFilename) {
           logger.addFileLogging(config.logFilename);
@@ -1946,8 +1973,7 @@ if (config.startServer) {
     function (err, data) {
       if (err) {
         logger.error('Error initializing PrairieLearn server:', err, data);
-        logger.error('Exiting...');
-        process.exit(1);
+        throw err;
       } else {
         logger.info('PrairieLearn server ready, press Control-C to quit');
         if (config.devMode) {
