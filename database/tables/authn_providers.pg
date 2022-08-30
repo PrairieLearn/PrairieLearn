@@ -7,3 +7,4 @@ indexes
 
 referenced by
     institution_authn_providers: FOREIGN KEY (authn_provider_id) REFERENCES authn_providers(id) ON UPDATE CASCADE ON DELETE CASCADE
+    institutions: FOREIGN KEY (default_authn_provider_id) REFERENCES authn_providers(id) ON UPDATE CASCADE ON DELETE SET NULL
