@@ -258,19 +258,12 @@ module.exports.initExpress = function () {
     logLevel: 'silent',
     logProvider: (_provider) => logger,
     router: async (req) => {
-      const match = req.url.match(/^\/pl\/workspace\/([0-9]+)\/container\//);
-      if (!match) throw new Error(`Could not match URL: ${req.url}`);
-      const workspace_id = match[1];
-      const result = await sqldb.queryZeroOrOneRowAsync(
-        `SELECT hostname FROM workspaces WHERE id = $workspace_id AND state = 'running';`,
-        { workspace_id }
-      );
-
-      if (result.rows.length === 0) {
-        throw new Error(`Workspace ${workspace_id} is not running`);
+      if (!req.workspace_hostname) {
+        throw new Error('Workspace host not found');
       }
 
-      return `http://${result.rows[0].hostname}/`;
+      // This value is set in the `selectAndValidateWorkspace` middleware.
+      return `http://${req.workspace_hostname}/`;
     },
     onProxyReq: (proxyReq) => {
       stripSensitiveCookies(proxyReq);
@@ -316,10 +309,12 @@ module.exports.initExpress = function () {
   app.use('/pl/workspace/:workspace_id/container', [
     cookieParser(),
     (req, res, next) => {
+      // Needed for workspaceAuthRouter and `selectAndValidateWorkspace` middleware.
       res.locals.workspace_id = req.params.workspace_id;
       next();
-    }, // needed for workspaceAuthRouter
+    },
     workspaceAuthRouter,
+    require('./middlewares/selectAndValidateWorkspace'),
     workspaceProxy,
   ]);
 
