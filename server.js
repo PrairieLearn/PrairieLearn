@@ -436,6 +436,18 @@ module.exports.initExpress = function () {
   app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
   app.use('/pl/api', require('./middlewares/authnToken')); // authn for the API, set res.locals.authn_user
 
+  if (config.sentryDsn) {
+    // Attach user ID to Sentry events.
+    app.use((req, res, next) => {
+      if (res.locals.authn_user) {
+        Sentry.configureScope((scope) => {
+          scope.setUser({ id: res.locals.authn_user.user_id.toString() });
+        });
+      }
+      next();
+    });
+  }
+
   if (isEnterprise()) {
     app.use('/pl/prairietest/auth', require('./ee/auth/prairietest'));
   }
