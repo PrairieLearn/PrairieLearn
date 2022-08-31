@@ -9,7 +9,7 @@ on:
 concurrency:
   # Ensure that we only run one concurrent job for Pull Requests. This ensures
   # that someone can't kill our throughput by pushing a bunch of commits to a
-  # since branch in rapid succession.
+  # single branch in rapid succession.
   #
   # However, for master builds, we allow maximum concurrency. This is achieved
   # because `github.head_ref` isn't defined there, and `github.run_id` is
