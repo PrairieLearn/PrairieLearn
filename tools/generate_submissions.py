@@ -69,7 +69,7 @@ def main():
                     assert response.status_code == 200
                     root = html.document_fromstring(response.text)
                     data = {i.get('name'): i.get('value') for i in root.cssselect(f'input') if i.get('name')}
-                    data['__action'] = 'save'
+                    data['__action'] = 'grade'
                     with requests.post(url, cookies=cookies, data=data) as response:
                         pass
 
