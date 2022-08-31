@@ -258,20 +258,12 @@ module.exports.initExpress = function () {
     logLevel: 'silent',
     logProvider: (_provider) => logger,
     router: async (req) => {
-      try {
-        const match = req.url.match(/^\/pl\/workspace\/([0-9]+)\/container\//);
-        if (!match) throw new Error(`Could not match URL: ${req.url}`);
-        const workspace_id = match[1];
-        const result = await sqldb.queryOneRowAsync(
-          `SELECT hostname FROM workspaces WHERE id = $workspace_id;`,
-          { workspace_id }
-        );
-        const url = `http://${result.rows[0].hostname}/`;
-        return url;
-      } catch (err) {
-        logger.error(`Error in router for url=${req.url}: ${err}`);
-        return 'not-matched';
+      if (!req.workspace_hostname) {
+        throw new Error('Workspace host not found');
       }
+
+      // This value is set in the `selectAndValidateWorkspace` middleware.
+      return `http://${req.workspace_hostname}/`;
     },
     onProxyReq: (proxyReq) => {
       stripSensitiveCookies(proxyReq);
@@ -283,6 +275,7 @@ module.exports.initExpress = function () {
       logger.error(`Error proxying workspace request: ${err}`, {
         err,
         url: req.url,
+        originalUrl: req.url,
       });
       // Check to make sure we weren't already in the middle of sending a
       // response before replying with an error 500
@@ -316,10 +309,12 @@ module.exports.initExpress = function () {
   app.use('/pl/workspace/:workspace_id/container', [
     cookieParser(),
     (req, res, next) => {
+      // Needed for workspaceAuthRouter and `selectAndValidateWorkspace` middleware.
       res.locals.workspace_id = req.params.workspace_id;
       next();
-    }, // needed for workspaceAuthRouter
+    },
     workspaceAuthRouter,
+    require('./middlewares/selectAndValidateWorkspace'),
     workspaceProxy,
   ]);
 
