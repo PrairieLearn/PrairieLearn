@@ -16,6 +16,19 @@ li.pl-order-blocks-code {
   list-style-type: none;
 }
 
+
+/* li::before {
+  content: " ";
+  color: #b8b8f2;
+  left: -6px;
+  padding: 11px;
+  padding-right: 11px solid #b8b8f2;
+  background-image: linear-gradient(#FFF, #FFF),
+        linear-gradient(#b8b8f2, #b8b8f2);
+  background-clip: content-box, padding-box;
+} */
+
+
 .pl-order-blocks-code > .pl-code:only-child div {
   /* override margins on code block to ensure code is centered properly */
   margin-bottom: 0px !important;
@@ -90,11 +103,9 @@ div.column {
   border: 1px solid #9e9e9e;
 }
 
-/* copied from runestone/parsons/css/parsons.css*/
+/* inspired by runestone/parsons/css/parsons.css*/
 .pl-order-blocks-paired {
   position: absolute;
-  -moz-border-radius: 10px;
-  -webkit-border-radius: 10px;
   border-radius: 10px;
   background-color: transparent;
   border-left: 11px solid #b8b8f2;

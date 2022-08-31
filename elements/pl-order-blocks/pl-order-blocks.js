@@ -14,8 +14,8 @@ window.PLOrderBlocks = function (uuid, options) {
     var studentAnswers = [];
     for (var i = 0; i < answerObjs.length; i++) {
       if (!$(answerObjs[i]).hasClass('info-fixed')) {
-        var answerText = answerObjs[i].getAttribute('string');
-        var answerUuid = answerObjs[i].getAttribute('uuid');
+        var answerText = answerObjs[i].getAttribute('data-string');
+        var answerUuid = answerObjs[i].getAttribute('data-uuid');
         var answerIndent = null;
         if (enableIndentation) {
           answerIndent = parseInt($(answerObjs[i]).css('marginLeft').replace('px', ''));
@@ -67,7 +67,7 @@ window.PLOrderBlocks = function (uuid, options) {
     create: function () {
 
       // TODO: add in some UI indicator for the paired disttractors
-      // copied from runestone/parsons/js/parsons.js
+      // runestone/parsons/js/parsons.js does something like
     //   for (i = 0; i < pairedBins.length; i++) {
     //     var pairedDiv = document.createElement("div");
     //     $(pairedDiv).addClass("paired");

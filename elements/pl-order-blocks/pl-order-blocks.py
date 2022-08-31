@@ -128,12 +128,12 @@ def prepare(element_html, data):
         is_correct = pl.get_boolean_attrib(html_tags, 'correct', PL_ANSWER_CORRECT_DEFAULT)
         answer_indent = pl.get_integer_attrib(html_tags, 'indent', None)
         inner_html = pl.inner_html(html_tags)
-        distractor_for = pl.get_string_attrib(html_tags, 'distractor_for', None)
+        distractor_for = pl.get_string_attrib(html_tags, 'distractor-for', None)
         ranking = pl.get_integer_attrib(html_tags, 'ranking', -1)
 
         tag, depends = get_graph_info(html_tags)
-        if grading_method == 'ranking':
-            tag = str(index)
+        # if grading_method == 'ranking':
+        #     tag = str(index)
 
         if check_indentation is False and answer_indent is not None:
             raise Exception('<pl-answer> should not specify indentation if indentation is disabled.')
@@ -145,9 +145,7 @@ def prepare(element_html, data):
                             'indent': answer_indent,
                             'ranking': ranking,
                             'index': index,
-                            'tag': tag,          # set by HTML with DAG grader, set internally for ranking grader
-                            # TODO if we allow explicitly setting the tag while using ranking grader, to enable using distractor-info, then
-                            # we need to resolve manually set tags with auto-assigned ones.
+                            'tag': tag,
                             'depends': depends,  # only used with DAG grader
                             'group_info': group_info,  # only used with DAG grader
                             'distractor_for': distractor_for
@@ -228,9 +226,6 @@ def render(element_html, data):
     grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
 
     if data['panel'] == 'question':
-        student_submission_dict_list = []
-
-        answer_name = pl.get_string_attrib(element, 'answers-name')
         source_header = pl.get_string_attrib(element, 'source-header', SOURCE_HEADER_DEFAULT)
         solution_header = pl.get_string_attrib(element, 'solution-header', SOLUTION_HEADER_DEFAULT)
 
@@ -238,14 +233,23 @@ def render(element_html, data):
         mcq_options = data['params'][answer_name]
         mcq_options = [opt for opt in mcq_options if opt['uuid'] not in {block['uuid'] for block in student_previous_submission}]
 
-        for index, option in enumerate(student_previous_submission):
+        for block in student_previous_submission + mcq_options:
+            if block.get('distractor_for') is None:
+                continue
+            print(block['distractor_for'])
+            print([block2['tag'] for block2 in student_previous_submission + mcq_options])
+            pair = next((block2 for block2 in student_previous_submission + mcq_options if block2['tag'] == block['distractor_for']), None)
+            if pair is None:
+                raise Exception('Cannot locate any block with tag "' + block['distractor_for'] + '" referenced in distractor-for.')
+            distractor_group = pl.get_uuid()
+            block['distractor_group'] = distractor_group
+            pair['distractor_group'] = distractor_group
+
+        for option in student_previous_submission:
             submission_indent = option.get('indent', None)
             if submission_indent is not None:
                 submission_indent = (int(submission_indent) * TAB_SIZE_PX) + INDENT_OFFSET
-            # temp = deepcopy(option)
             option['indent'] = submission_indent
-
-            # student_submission_dict_list.append(dict(temp))
 
         dropzone_layout = pl.get_string_attrib(element, 'solution-placement', SOLUTION_PLACEMENT_DEFAULT)
         check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
@@ -292,7 +296,6 @@ def render(element_html, data):
         student_submission = [{
             'inner_html': attempt['inner_html'],
             'indent': ((attempt['indent'] or 0) * TAB_SIZE_PX) + INDENT_OFFSET,
-            # 'distractor_group': attempt['distractor_group']
         } for attempt in data['submitted_answers'].get(answer_name, [])]
 
         score = data['partial_scores'][answer_name]['score']
