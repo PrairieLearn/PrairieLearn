@@ -1634,7 +1634,9 @@ module.exports.initExpress = function () {
   app.use(require('./middlewares/redirectEffectiveAccessDenied'));
 
   // The Sentry error handler must come first.
-  app.use(Sentry.Handlers.errorHandler());
+  if (config.sentryDsn) {
+    app.use(Sentry.Handlers.errorHandler());
+  }
   app.use(require('./pages/error/error'));
 
   return app;
