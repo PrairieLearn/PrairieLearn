@@ -83,7 +83,7 @@ module.exports.initExpress = function () {
   app.set('trust proxy', config.trustProxy);
   config.devMode = app.get('env') === 'development';
 
-  // If we're set up with Sentry, use its middleware to record errors.
+  // If we're set up with Sentry, use its middleware to record requests.
   if (config.sentryDsn) {
     app.use(Sentry.Handlers.requestHandler());
   }
