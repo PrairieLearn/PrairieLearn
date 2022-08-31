@@ -56,16 +56,7 @@ window.PLOrderBlocks = function (uuid, options) {
     return leftDiff;
   }
 
-  let sortables = optionsElementId + ', ' + dropzoneElementId;
-  $(sortables).sortable({
-    items: 'li:not(.info-fixed)',
-    // We add `a` to the default list of tags to account for help
-    // popover triggers.
-    cancel: 'input,textarea,button,select,option,a',
-    connectWith: sortables,
-    placeholder: 'ui-state-highlight',
-    create: function () {
-
+  function placePairingIndicators() {
       // TODO: add in some UI indicator for the paired disttractors
       // runestone/parsons/js/parsons.js does something like
     //   for (i = 0; i < pairedBins.length; i++) {
@@ -77,7 +68,39 @@ window.PLOrderBlocks = function (uuid, options) {
     //     pairedDivs.push(pairedDiv);
     //     this.sourceArea.appendChild(pairedDiv);
     // }
+    let answerObjs = $(optionsElementId).children().toArray();
+    // let groupsHandled = set();
 
+    // for (let block of answerObjs) {
+    //   let distractorGroup = block[0].getAttribute('data-distractor-group');
+    //   let otherBlock = answerObjs.find((block) => block[0].getAttribute('data-distractor-group') == distractorGroup);
+
+    //   let pairedIndicator = document.createElement("div");
+    // }
+    let getDistractorGroup = block => block.getAttribute('data-distractor-group');
+    let distractorGroups = answerObjs.filter(block => getDistractorGroup(block)).sort((a,b) => getDistractorGroup(a) >= getDistractorGroup(b));
+    for (let i = 0; i < distractorGroups.length; ++i) {
+      if (i == distractorGroups.length - 1 ||
+        (getDistractorGroup(distractorGroups[i]) != getDistractorGroup(distractorGroups[i + 1]))) { // handl
+        // only one of the two is in this dropzone, just have a little thing behind it, no text
+      } else {
+        // move one to by by the other, put the big thing behind them both
+        distractorGroups[i].insertAdjacentElement('afterend', distractorGroups[i + 1])
+        ++i;
+      }
+    }
+  }
+
+  let sortables = optionsElementId + ', ' + dropzoneElementId;
+  $(sortables).sortable({
+    items: ':not(.pl-order-blocks-pairing-indicator)',
+    // We add `a` to the default list of tags to account for help
+    // popover triggers.
+    cancel: 'input,textarea,button,select,option,a',
+    connectWith: sortables,
+    placeholder: 'ui-state-highlight',
+    create: function () {
+      placePairingIndicators();
       setAnswer();
     },
     sort: function (event, ui) {

@@ -104,7 +104,7 @@ div.column {
 }
 
 /* inspired by runestone/parsons/css/parsons.css*/
-.pl-order-blocks-paired {
+.pl-order-blocks-pairing-indicator {
   position: absolute;
   border-radius: 10px;
   background-color: transparent;
