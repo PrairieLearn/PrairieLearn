@@ -18,7 +18,7 @@ HIDE_LETTER_KEYS_DEFAULT = False
 EXTERNAL_JSON_CORRECT_KEY_DEFAULT = 'correct'
 EXTERNAL_JSON_INCORRECT_KEY_DEFAULT = 'incorrect'
 FEEDBACK_DEFAULT = None
-
+ALLOW_BLANK_DEFAULT = False
 
 def categorize_options(element, data):
     """Get provided correct and incorrect answers"""
@@ -75,7 +75,7 @@ def prepare(element_html, data):
     required_attribs = ['answers-name']
     optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline', 'hide-letter-keys',
                         'none-of-the-above', 'none-of-the-above-feedback', 'all-of-the-above', 'all-of-the-above-feedback',
-                        'external-json', 'external-json-correct-key', 'external-json-incorrect-key']
+                        'external-json', 'external-json-correct-key', 'external-json-incorrect-key', 'allow_blank']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -337,17 +337,19 @@ def render(element_html, data):
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
+    allow_blank = pl.get_boolean_attrib(element, 'allow_blank', ALLOW_BLANK_DEFAULT)
 
     submitted_key = data['submitted_answers'].get(name, None)
     all_keys = [a['key'] for a in data['params'][name]]
 
-    if submitted_key is None:
-        data['format_errors'][name] = 'No answer was submitted.'
-        return
+    if not allow_blank:
+        if submitted_key is None:
+            data['format_errors'][name] = 'No answer was submitted.'
+            return
 
-    if submitted_key not in all_keys:
-        data['format_errors'][name] = f'Invalid choice: {pl.escape_invalid_string(submitted_key)}'
-        return
+        if submitted_key not in all_keys:
+            data['format_errors'][name] = f'Invalid choice: {pl.escape_invalid_string(submitted_key)}'
+            return
 
 
 def grade(element_html, data):
