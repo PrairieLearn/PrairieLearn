@@ -431,11 +431,18 @@ module.exports.initExpress = function () {
   app.use('/pl/api', require('./middlewares/authnToken')); // authn for the API, set res.locals.authn_user
 
   if (config.sentryDsn) {
-    // Attach user ID to Sentry events.
+    // Attach user ID and IP address to Sentry events.
+    //
+    // To comply with GDPR and other data protection laws, you can configure
+    // Sentry to not store IP addresses. Sentry will then only use the IP address
+    // to compute a country code and immediately discard it.
     app.use((req, res, next) => {
       if (res.locals.authn_user) {
         Sentry.configureScope((scope) => {
-          scope.setUser({ id: res.locals.authn_user.user_id.toString() });
+          scope.setUser({
+            id: res.locals.authn_user.user_id.toString(),
+            ip_address: req.ip,
+          });
         });
       }
       next();
