@@ -8,5 +8,5 @@ import { init } from '@prairielearn/sentry';
 await init({
   dsn: 'DSN HERE',
   environment: 'ENVIRONMENT HERE',
-})
+});
 ```
