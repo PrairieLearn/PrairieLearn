@@ -128,6 +128,7 @@ def prepare(element_html, data):
         is_correct = pl.get_boolean_attrib(html_tags, 'correct', PL_ANSWER_CORRECT_DEFAULT)
         answer_indent = pl.get_integer_attrib(html_tags, 'indent', None)
         inner_html = pl.inner_html(html_tags)
+        distractor_for = pl.get_string_attrib(html_tags, 'distractor_for', None)
         ranking = pl.get_integer_attrib(html_tags, 'ranking', -1)
 
         tag, depends = get_graph_info(html_tags)
@@ -145,8 +146,11 @@ def prepare(element_html, data):
                             'ranking': ranking,
                             'index': index,
                             'tag': tag,          # set by HTML with DAG grader, set internally for ranking grader
+                            # TODO if we allow explicitly setting the tag while using ranking grader, to enable using distractor-info, then
+                            # we need to resolve manually set tags with auto-assigned ones.
                             'depends': depends,  # only used with DAG grader
-                            'group_info': group_info  # only used with DAG grader
+                            'group_info': group_info,  # only used with DAG grader
+                            'distractor_for': distractor_for
                             }
         if is_correct:
             correct_answers.append(answer_data_dict)
@@ -224,28 +228,24 @@ def render(element_html, data):
     grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
 
     if data['panel'] == 'question':
-        mcq_options = []
-        student_previous_submission = []
-        submission_indent = []
         student_submission_dict_list = []
 
         answer_name = pl.get_string_attrib(element, 'answers-name')
         source_header = pl.get_string_attrib(element, 'source-header', SOURCE_HEADER_DEFAULT)
         solution_header = pl.get_string_attrib(element, 'solution-header', SOLUTION_HEADER_DEFAULT)
 
+        student_previous_submission = data['submitted_answers'].get(answer_name, [])
         mcq_options = data['params'][answer_name]
-        mcq_options = filter_multiple_from_array(mcq_options, ['inner_html', 'uuid'])
-
-        if answer_name in data['submitted_answers']:
-            student_previous_submission = filter_multiple_from_array(data['submitted_answers'][answer_name], ['inner_html', 'uuid', 'indent'])
-            mcq_options = [opt for opt in mcq_options if opt not in filter_multiple_from_array(student_previous_submission, ['inner_html', 'uuid'])]
+        mcq_options = [opt for opt in mcq_options if opt['uuid'] not in {block['uuid'] for block in student_previous_submission}]
 
         for index, option in enumerate(student_previous_submission):
             submission_indent = option.get('indent', None)
             if submission_indent is not None:
                 submission_indent = (int(submission_indent) * TAB_SIZE_PX) + INDENT_OFFSET
-            temp = {'inner_html': option['inner_html'], 'indent': submission_indent, 'uuid': option['uuid']}
-            student_submission_dict_list.append(dict(temp))
+            # temp = deepcopy(option)
+            option['indent'] = submission_indent
+
+            # student_submission_dict_list.append(dict(temp))
 
         dropzone_layout = pl.get_string_attrib(element, 'solution-placement', SOLUTION_PLACEMENT_DEFAULT)
         check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
@@ -271,7 +271,7 @@ def render(element_html, data):
             'options': mcq_options,
             'source-header': source_header,
             'solution-header': solution_header,
-            'submission_dict': student_submission_dict_list,
+            'submission_dict': student_previous_submission,
             'dropzone_layout': 'pl-order-blocks-bottom' if dropzone_layout == 'bottom' else 'pl-order-blocks-right',
             'check_indentation': 'true' if check_indentation else 'false',
             'help_text': help_text,
@@ -289,18 +289,14 @@ def render(element_html, data):
         if grading_method == 'external':
             return ''  # external grader is responsible for displaying results screen
 
-        student_submission = ''
-        score = None
-        feedback = None
-        if answer_name in data['submitted_answers']:
-            student_submission = [{
-                'inner_html': attempt['inner_html'],
-                'indent': ((attempt['indent'] or 0) * TAB_SIZE_PX) + INDENT_OFFSET
-            } for attempt in data['submitted_answers'][answer_name]]
+        student_submission = [{
+            'inner_html': attempt['inner_html'],
+            'indent': ((attempt['indent'] or 0) * TAB_SIZE_PX) + INDENT_OFFSET,
+            # 'distractor_group': attempt['distractor_group']
+        } for attempt in data['submitted_answers'].get(answer_name, [])]
 
-        if answer_name in data['partial_scores']:
-            score = data['partial_scores'][answer_name]['score']
-            feedback = data['partial_scores'][answer_name]['feedback']
+        score = data['partial_scores'][answer_name]['score']
+        feedback = data['partial_scores'][answer_name]['feedback']
 
         html_params = {
             'submission': True,
