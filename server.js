@@ -24,8 +24,7 @@ const multer = require('multer');
 const filesize = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const Sentry = require('@sentry/node');
-const execa = require('execa');
+const Sentry = require('@prairielearn/sentry');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -1742,18 +1741,9 @@ if (config.startServer) {
 
         // Same with Sentry configuration.
         if (config.sentryDsn) {
-          // Use the current Git hash to identify the release.
-          let release = null;
-          try {
-            release = (await execa('git', ['rev-parse', 'HEAD'])).stdout.trim();
-          } catch (err) {
-            // There's probably not an initialized Git repository wherever we're
-            // deployed; default to not setting a release.
-          }
-          Sentry.init({
+          await Sentry.init({
             dsn: config.sentryDsn,
             environment: config.sentryEnvironment,
-            release,
           });
         }
 
