@@ -4,7 +4,7 @@
     if (locals.component == 'auto') {
         points = instance_question.auto_points;
         max_points = locals.max_points ?? locals.assessment_question?.max_auto_points ?? instance_question.max_auto_points;
-        points_pending = ['grading'].includes(instance_question.status);
+        points_pending = ['saved', 'grading'].includes(instance_question.status) && max_points;
     } else if (locals.component == 'manual') {
         points = instance_question.manual_points;
         max_points = locals.max_points ?? locals.assessment_question?.manual_points ?? instance_question.max_manual_points;
@@ -17,7 +17,7 @@
 %>
 
 <span class="text-nowrap">
-  <% if (!points && !max_points) {%>
+  <% if (!points && !max_points && !points_pending) {%>
   &mdash;
   <% } else if (instance_question.status == 'unanswered') { %>
   &mdash;
