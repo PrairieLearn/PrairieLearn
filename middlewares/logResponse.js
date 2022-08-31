@@ -10,7 +10,6 @@ module.exports = function (req, res, next) {
       // debug errors. No PII is added.
       if (config.sentryDsn) {
         Sentry.configureScope((scope) => {
-          console.log(scope);
           if (res.locals?.course?.id) {
             scope.setContext('course', {
               id: res.locals.course?.id,
