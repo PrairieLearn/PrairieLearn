@@ -1,7 +1,6 @@
-const Sentry = require('@prairielearn/sentry');
-
 const config = require('../lib/config');
 const logger = require('../lib/logger');
+const { enrichSentryScope } = require('../lib/sentry');
 
 module.exports = function (req, res, next) {
   if (req.method !== 'OPTIONS') {
@@ -9,47 +8,7 @@ module.exports = function (req, res, next) {
       // Attach information to the Sentry scope so that we can more easily
       // debug errors. No PII is added.
       if (config.sentryDsn) {
-        Sentry.configureScope((scope) => {
-          if (res.locals?.course?.id) {
-            scope.setContext('course', {
-              id: res.locals.course?.id,
-              name: res.locals.course?.name,
-            });
-          }
-
-          if (res.locals?.course_instance?.id) {
-            scope.setContext('course_instance', {
-              id: res.locals.course_instance?.id,
-              name: res.locals.course_instance?.name,
-            });
-          }
-
-          if (res.locals?.assessment?.id) {
-            scope.setContext('assessment', {
-              id: res.locals.assessment?.id,
-              directory: res.locals.assessment?.directory,
-            });
-          }
-
-          if (res.locals?.assessment_instance?.id) {
-            scope.setContext('assessment_instance', {
-              id: res.locals.assessment_instance?.id,
-            });
-          }
-
-          if (res.locals?.question?.id) {
-            scope.setContext('question', {
-              id: res.locals.question?.id,
-              directory: res.locals.question?.directory,
-            });
-          }
-
-          if (res.locals?.instance_question?.id) {
-            scope.setContext('instance_question', {
-              id: res.locals.instance_question?.id,
-            });
-          }
-        });
+        enrichSentryScope(req, res);
       }
 
       var access = {

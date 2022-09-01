@@ -50,6 +50,7 @@ const assets = require('./lib/assets');
 const namedLocks = require('./lib/named-locks');
 const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
+const { enrichSentryScope } = require('./lib/sentry');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -429,25 +430,6 @@ module.exports.initExpress = function () {
   // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
   app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
   app.use('/pl/api', require('./middlewares/authnToken')); // authn for the API, set res.locals.authn_user
-
-  if (config.sentryDsn) {
-    // Attach user ID and IP address to Sentry events.
-    //
-    // To comply with GDPR and other data protection laws, you can configure
-    // Sentry to not store IP addresses. Sentry will then only use the IP address
-    // to compute a country code and immediately discard it.
-    app.use((req, res, next) => {
-      if (res.locals.authn_user) {
-        Sentry.configureScope((scope) => {
-          scope.setUser({
-            id: res.locals.authn_user.user_id.toString(),
-            ip_address: req.ip,
-          });
-        });
-      }
-      next();
-    });
-  }
 
   if (isEnterprise()) {
     app.use('/pl/prairietest/auth', require('./ee/auth/prairietest'));
@@ -1635,6 +1617,15 @@ module.exports.initExpress = function () {
 
   // The Sentry error handler must come first.
   if (config.sentryDsn) {
+    // We need to add our own handler here to ensure that we add the appropriate
+    // information to the current Sentry scope.
+    //
+    // Note that this is typically done by our `logResponse` middleware, but
+    // that doesn't run soon enough for the Sentry error handler to pick up.
+    app.use((err, req, res, next) => {
+      enrichSentryScope(req, res);
+      next(err);
+    });
     app.use(Sentry.Handlers.errorHandler());
   }
   app.use(require('./pages/error/error'));
