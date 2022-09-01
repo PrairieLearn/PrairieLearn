@@ -21,5 +21,5 @@ PuLP==2.6.0
 ipython==8.4.0
 nbformat==5.4.0
 nbconvert==6.5.1
-automata-lib==5.0.0
+automata-lib==6.0.2
 typing-extensions==4.3.0
