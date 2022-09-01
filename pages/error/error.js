@@ -5,10 +5,7 @@ var jsonStringifySafe = require('json-stringify-safe');
 var logger = require('../../lib/logger');
 
 module.exports = function (err, req, res, _next) {
-  var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-  var errorId = _.times(12, function () {
-    return _.sample(chars);
-  }).join('');
+  const errorId = res.locals.error_id;
 
   err.status = err.status || 500;
   res.status(err.status);
