@@ -21,7 +21,7 @@ $(function() {
             </ul>
             <ul id="order-blocks-options-{{uuid}}" name="{{answer_name}}" class="pl-order-blocks-connected-sortable {{inline}}">
                 {{#options}}
-                    <li class="{{block_formatting}} shadow"
+                    <li class="{{block_formatting}} shadow pl-order-block"
                         data-uuid="{{uuid}}"
                         data-string="{{inner_html}}"
                         {{#distractor_group}}data-distractor-group="{{distractor_group}}"{{/distractor_group}}
@@ -41,7 +41,7 @@ $(function() {
             </ul>
             <ul id="order-blocks-dropzone-{{uuid}}" name="{{answer_name}}" class="list-group pl-order-blocks-connected-sortable dropzone">
                 {{#submission_dict}}
-                    <li class="{{block_formatting}} shadow"
+                    <li class="{{block_formatting}} shadow pl-order-block"
                         style='margin-left: {{indent}}px;'
                         data-uuid="{{uuid}}"
                         data-string="{{inner_html}}"

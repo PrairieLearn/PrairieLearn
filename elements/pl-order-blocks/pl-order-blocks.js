@@ -56,6 +56,16 @@ window.PLOrderBlocks = function (uuid, options) {
     return leftDiff;
   }
 
+  function getDistractorBinIndicator(uuid) {
+    let indicator = document.getElementById(uuid + '-indicator');
+    if (!indicator) {
+      indicator = document.createElement('li');
+      indicator.classList.add('pl-order-blocks-pairing-indicator');
+      indicator.innerHTML = '<ul class="inner-list" style="padding:0px;"></ul>';
+    }
+    return indicator;
+  }
+
   function placePairingIndicators() {
       // TODO: add in some UI indicator for the paired disttractors
       // runestone/parsons/js/parsons.js does something like
@@ -69,23 +79,31 @@ window.PLOrderBlocks = function (uuid, options) {
     //     this.sourceArea.appendChild(pairedDiv);
     // }
 
-    let answerObjs = $(optionsElementId).children().toArray();
+    let answerObjs = $(optionsElementId).children().toArray(); // TODO need to get all descendents that are blocks, not just children
     let getDistractorGroup = block => block.getAttribute('data-distractor-group');
     let distractorBins = new Set(answerObjs.map(getDistractorGroup).filter(x => x != null));
     for (let binUuid of distractorBins) {
       let blocks = answerObjs.filter(block => getDistractorGroup(block) == binUuid);
-      if (blocks.length == 1) {
+      let indicator = getDistractorBinIndicator(binUuid);
+      blocks[0].insertAdjacentElement('beforebegin', indicator);
+      let innerList = indicator.getElementsByClassName('inner-list')[0];
 
-      } else {
-        // move one to by by the other, put the big thing behind them both
-        blocks[0].insertAdjacentElement('afterend', blocks[1]);
+      for (block of blocks) {
+        innerList.insertAdjacentElement('beforeend', block);
       }
+
+      // if (blocks.length == 1) {
+
+      // } else {
+      //   // move one to by by the other, put the big thing behind them both
+      //   blocks[0].insertAdjacentElement('afterend', blocks[1]);
+      // }
     }
   }
 
   let sortables = optionsElementId + ', ' + dropzoneElementId;
   $(sortables).sortable({
-    items: ':not(.pl-order-blocks-pairing-indicator)',
+    items: '.pl-order-block',
     // We add `a` to the default list of tags to account for help
     // popover triggers.
     cancel: 'input,textarea,button,select,option,a',

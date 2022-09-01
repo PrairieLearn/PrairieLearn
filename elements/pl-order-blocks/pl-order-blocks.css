@@ -65,7 +65,7 @@ ul.ui-sortable {
   margin-bottom: 0px;
 }
 
-ul.ui-sortable li, ul.answer_table li, ul.submission_table li {
+.pl-order-block, ul.answer_table li, ul.submission_table li {
   margin-bottom: 5px;
   border: 1px solid grey !important;
   border-radius: 5px !important;
@@ -105,13 +105,18 @@ div.column {
 
 /* inspired by runestone/parsons/css/parsons.css*/
 .pl-order-blocks-pairing-indicator {
-  position: absolute;
   border-radius: 10px;
+  list-style: none;
+  /* user-select: none; */
   background-color: transparent;
   border-left: 11px solid #b8b8f2;
   border-right: 11px solid #b8b8f2;
   border-top: 1px solid #b8b8f2;
   border-bottom: 1px solid #b8b8f2;
   margin-top: 5px;
+  margin-bottom: 5px;
   overflow: hidden;
+}
+.pl-order-blocks-pairing-indicator:last-child {
+  margin-bottom: 0px !important;
 }
