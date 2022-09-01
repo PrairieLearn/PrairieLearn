@@ -1615,7 +1615,17 @@ module.exports.initExpress = function () {
 
   app.use(require('./middlewares/redirectEffectiveAccessDenied'));
 
-  // The Sentry error handler must come first.
+  // This should come first so that both Sentry and our own error page can
+  // read the error ID.
+  app.use((err, req, res, next) => {
+    const _ = require('lodash');
+    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+    res.locals.error_id = _.times(12, () => _.sample(chars)).join('');
+
+    next(err);
+  });
+
   if (config.sentryDsn) {
     // We need to add our own handler here to ensure that we add the appropriate
     // information to the current Sentry scope.
@@ -1628,6 +1638,8 @@ module.exports.initExpress = function () {
     });
     app.use(Sentry.Handlers.errorHandler());
   }
+
+  // Note that the Sentry error handler should come before our error page.
   app.use(require('./pages/error/error'));
 
   return app;
