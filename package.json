@@ -139,7 +139,7 @@
         "zod": "^3.17.10"
     },
     "devDependencies": {
-        "@changesets/cli": "^2.23.0",
+        "@changesets/cli": "^2.24.4",
         "@types/async": "^3.2.14",
         "@types/chai": "^4.3.0",
         "@types/chai-as-promised": "^7.1.5",
