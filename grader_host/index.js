@@ -8,6 +8,8 @@ const AWS = require('aws-sdk');
 const { exec } = require('child_process');
 const path = require('path');
 const byline = require('byline');
+const Sentry = require('@prairielearn/sentry');
+
 const sqldb = require('../prairielib/lib/sql-db');
 const sanitizeObject = require('../prairielib/lib/util').sanitizeObject;
 
@@ -45,6 +47,12 @@ async.series(
       });
     },
     async () => {
+      if (config.sentryDsn) {
+        await Sentry.init({
+          dsn: config.sentryDsn,
+          environment: config.sentryEnvironment,
+        });
+      }
       await lifecycle.init();
     },
     (callback) => {

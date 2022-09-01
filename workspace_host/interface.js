@@ -20,6 +20,7 @@ const net = require('net');
 const unzipper = require('unzipper');
 const stream = require('stream');
 const asyncHandler = require('express-async-handler');
+const Sentry = require('@prairielearn/sentry');
 
 const dockerUtil = require('../lib/dockerUtil');
 const awsHelper = require('../lib/aws');
@@ -150,6 +151,14 @@ async.series(
         workspace_server_settings.hostname = config.workspaceDevHostHostname;
         workspace_server_settings.server_to_container_hostname =
           config.workspaceDevContainerHostname;
+      }
+    },
+    async () => {
+      if (config.sentryDsn) {
+        await Sentry.init({
+          dsn: config.sentryDsn,
+          environment: config.sentryEnvironment,
+        });
       }
     },
     (callback) => {
