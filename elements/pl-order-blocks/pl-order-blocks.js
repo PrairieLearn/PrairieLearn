@@ -68,25 +68,17 @@ window.PLOrderBlocks = function (uuid, options) {
     //     pairedDivs.push(pairedDiv);
     //     this.sourceArea.appendChild(pairedDiv);
     // }
+
     let answerObjs = $(optionsElementId).children().toArray();
-    // let groupsHandled = set();
-
-    // for (let block of answerObjs) {
-    //   let distractorGroup = block[0].getAttribute('data-distractor-group');
-    //   let otherBlock = answerObjs.find((block) => block[0].getAttribute('data-distractor-group') == distractorGroup);
-
-    //   let pairedIndicator = document.createElement("div");
-    // }
     let getDistractorGroup = block => block.getAttribute('data-distractor-group');
-    let distractorGroups = answerObjs.filter(block => getDistractorGroup(block)).sort((a,b) => getDistractorGroup(a) >= getDistractorGroup(b));
-    for (let i = 0; i < distractorGroups.length; ++i) {
-      if (i == distractorGroups.length - 1 ||
-        (getDistractorGroup(distractorGroups[i]) != getDistractorGroup(distractorGroups[i + 1]))) { // handl
-        // only one of the two is in this dropzone, just have a little thing behind it, no text
+    let distractorBins = new Set(answerObjs.map(getDistractorGroup).filter(x => x != null));
+    for (let binUuid of distractorBins) {
+      let blocks = answerObjs.filter(block => getDistractorGroup(block) == binUuid);
+      if (blocks.length == 1) {
+
       } else {
         // move one to by by the other, put the big thing behind them both
-        distractorGroups[i].insertAdjacentElement('afterend', distractorGroups[i + 1])
-        ++i;
+        blocks[0].insertAdjacentElement('afterend', blocks[1]);
       }
     }
   }
