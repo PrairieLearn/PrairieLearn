@@ -16,7 +16,7 @@ nltk==3.7
 beautifulsoup4==4.11.1
 bokeh==2.4.3
 folium==0.12.1.post1
-Pygments==2.12.0
+Pygments==2.13.0
 PuLP==2.6.0
 ipython==8.4.0
 nbformat==5.4.0
