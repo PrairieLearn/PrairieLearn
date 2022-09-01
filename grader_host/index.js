@@ -128,6 +128,9 @@ async.series(
     },
   ],
   (err) => {
+    Sentry.captureException(err, {
+      level: 'fatal',
+    });
     globalLogger.error('Error in main loop:', err);
     util.callbackify(lifecycle.abandonLaunch)((err) => {
       if (err) globalLogger.error('Error in lifecycle.abandon():', err);
