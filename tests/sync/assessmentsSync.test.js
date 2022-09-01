@@ -402,7 +402,16 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groupWork = true;
-    groupAssessment.groupRoles = [{ name: 'Recorder' }, { name: 'Contributor' }];
+    groupAssessment.groupRoles = [
+      {
+        name: 'Recorder',
+        minimum: 1,
+        maximum: 4,
+        canAssignRolesAtStart: true,
+        canAssignRolesDuringAssessment: true,
+      },
+      { name: 'Contributor' },
+    ];
     groupAssessment.zones.push({
       title: 'test zone',
       questions: [
@@ -491,7 +500,16 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groupWork = true;
-    groupAssessment.groupRoles = [{ name: 'Recorder' }, { name: 'Contributor' }];
+    groupAssessment.groupRoles = [
+      {
+        name: 'Recorder',
+        minimum: 1,
+        maximum: 4,
+        canAssignRolesAtStart: true,
+        canAssignRolesDuringAssessment: true,
+      },
+      { name: 'Contributor' },
+    ];
     groupAssessment.zones.push({
       title: 'test zone',
       questions: [
@@ -536,7 +554,15 @@ describe('Assessment syncing', () => {
     );
 
     // Remove the "Contributor" group role and re-sync
-    groupAssessment.groupRoles = [{ name: 'Recorder' }];
+    groupAssessment.groupRoles = [
+      {
+        name: 'Recorder',
+        minimum: 1,
+        maximum: 4,
+        canAssignRolesAtStart: true,
+        canAssignRolesDuringAssessment: true,
+      },
+    ];
     groupAssessment.zones[groupAssessment.zones.length - 1].questions = [
       {
         id: util.QUESTION_ID,
@@ -613,16 +639,16 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groupWork = true;
-    groupAssessment.groupRoles = [{ name: 'Recorder' }, { name: 'Contributor' }];
-    groupAssessment.zones.push({
-      title: 'test zone',
-      questions: [
-        {
-          id: util.QUESTION_ID,
-          points: 5,
-          canView: ['Recorder', 'Contributor'],
-          canSubmit: ['Recorder'],
-        },
+    groupAssessment.groupRoles = [
+      {
+        name: 'Recorder',
+        minimum: 1,
+        maximum: 4,
+        canAssignRolesAtStart: true,
+        canAssignRolesDuringAssessment: true,
+      },
+      { name: 'Contributor' },
+    ]; groupAssessment.zones.push({ title: 'test zone', questions: [ { id: util.QUESTION_ID, points: 5, canView: ['Recorder', 'Contributor'], canSubmit: ['Recorder'], },
         {
           id: util.ALTERNATIVE_QUESTION_ID,
           points: 5,
