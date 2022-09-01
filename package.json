@@ -11,7 +11,7 @@
     },
     "dependencies": {
         "@fortawesome/fontawesome-free": "^6.1.1",
-        "@grpc/grpc-js": "^1.6.7",
+        "@grpc/grpc-js": "^1.6.12",
         "@octokit/rest": "^18.12.0",
         "@prairielearn/bind-mount": "^1.0.0",
         "@prairielearn/html": "^2.0.0",
