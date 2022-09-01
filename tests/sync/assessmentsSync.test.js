@@ -648,7 +648,16 @@ describe('Assessment syncing', () => {
         canAssignRolesDuringAssessment: true,
       },
       { name: 'Contributor' },
-    ]; groupAssessment.zones.push({ title: 'test zone', questions: [ { id: util.QUESTION_ID, points: 5, canView: ['Recorder', 'Contributor'], canSubmit: ['Recorder'], },
+    ];
+    groupAssessment.zones.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 5,
+          canView: ['Recorder', 'Contributor'],
+          canSubmit: ['Recorder'],
+        },
         {
           id: util.ALTERNATIVE_QUESTION_ID,
           points: 5,
