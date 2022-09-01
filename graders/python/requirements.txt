@@ -2,7 +2,7 @@ matplotlib==3.5.2
 networkx==2.8.4
 numpy==1.23.1
 pandas==1.4.3
-scipy==1.8.1
+scipy==1.9.1
 sympy==1.10.1
 Pillow==9.1.1
 pygraphviz==1.6
