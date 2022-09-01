@@ -997,10 +997,10 @@
     "@opentelemetry/sdk-metrics-base" "0.26.0"
     "@opentelemetry/sdk-trace-base" "1.0.0"
 
-"@opentelemetry/instrumentation-aws-sdk@^0.8.0":
-  version "0.8.0"
-  resolved "https://registry.yarnpkg.com/@opentelemetry/instrumentation-aws-sdk/-/instrumentation-aws-sdk-0.8.0.tgz#503fbde4b33e5703b38cff20c1d229ec851179c2"
-  integrity sha512-F29TmSsq8LWeZZXHV72b3B+QItZPVPsPx1DuQYPcKeCwAJUAg0huukXbf2U2XskA1fmw49+t9AM8fFPdytftyA==
+"@opentelemetry/instrumentation-aws-sdk@^0.8.1":
+  version "0.8.1"
+  resolved "https://registry.yarnpkg.com/@opentelemetry/instrumentation-aws-sdk/-/instrumentation-aws-sdk-0.8.1.tgz#c0ffaeffb79a189ace52792c14a8e6857a36b187"
+  integrity sha512-2xZTDopynPHPp5isa+Pdl/uiAQB5/cKNOUhYdNu7rxMwrs58/JZ6WQk7T+n/d0fwuzpgCzpIDH0NkI05nuxYoQ==
   dependencies:
     "@opentelemetry/core" "^1.0.0"
     "@opentelemetry/instrumentation" "^0.29.2"
