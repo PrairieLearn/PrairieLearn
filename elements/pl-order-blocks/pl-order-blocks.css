@@ -34,7 +34,7 @@ li.pl-order-blocks-code {
   margin-bottom: 0px !important;
 }
 
-ul.pl-order-blocks-connected-sortable li:hover{
+ul.pl-order-blocks-connected-sortable .pl-order-block:hover {
   cursor: move; /* For UX: The answer tiles shows a 'grab' cursor on mouse over */
   outline: 2px solid blue;
   outline-offset: -2px;
@@ -108,15 +108,26 @@ div.column {
   border-radius: 10px;
   list-style: none;
   /* user-select: none; */
-  background-color: transparent;
-  border-left: 11px solid #b8b8f2;
-  border-right: 11px solid #b8b8f2;
-  border-top: 1px solid #b8b8f2;
-  border-bottom: 1px solid #b8b8f2;
+  background-color: #b8b8f2;
+  margin-left: -10px;
+  margin-right: -10px;
+  /* border-top: 1px solid #b8b8f2;
+  border-bottom: 1px solid #b8b8f2; */
+  padding: 4px 10px 4px 10px;
   margin-top: 5px;
   margin-bottom: 5px;
   overflow: hidden;
 }
-.pl-order-blocks-pairing-indicator:last-child {
+
+.pl-order-blocks-pairing-indicator li:last-child {
   margin-bottom: 0px !important;
 }
+/*
+.pl-order-blocks-pairing-label {
+  vertical-align: middle;
+  text-indent: -30px;
+  position: relative;
+  right: 0px;
+  top: 100px;
+  font-weight: bold;
+} */

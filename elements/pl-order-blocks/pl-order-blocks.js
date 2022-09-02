@@ -61,7 +61,9 @@ window.PLOrderBlocks = function (uuid, options) {
     if (!indicator) {
       indicator = document.createElement('li');
       indicator.classList.add('pl-order-blocks-pairing-indicator');
-      indicator.innerHTML = '<ul class="inner-list" style="padding:0px;"></ul>';
+      // indicator.innerHTML += '<span class="pl-order-blocks-pairing-label">pick one {</span>';
+      indicator.innerHTML += '<span style="font-size:13px;">Pick one:</span>';
+      indicator.innerHTML += '<ul class="inner-list" style="padding:0px;"></ul>';
     }
     return indicator;
   }
