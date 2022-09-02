@@ -181,15 +181,6 @@ router.post('/', (req, res, next) => {
         res.redirect(req.originalUrl);
       }
     );
-  } else if (req.body.__action === 'course_permissions_insert_by_user_uid') {
-    let uid = req.body.uid.trim();
-    if (!uid) return next(error.make(400, `Empty UID`));
-
-    const params = [res.locals.course.id, uid, 'None', res.locals.authz_data.authn_user.user_id];
-    sqldb.call('course_permissions_insert_by_user_uid', params, (err, _result) => {
-      if (ERR(err, next)) return;
-      res.redirect(req.originalUrl);
-    });
   } else if (req.body.__action === 'course_permissions_update_role') {
     if (
       idsEqual(req.body.user_id, res.locals.user.user_id) &&
