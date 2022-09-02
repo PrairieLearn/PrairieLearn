@@ -123,10 +123,9 @@
                       field: 'requires_manual_grading',
                       title: 'Grading status',
                       filterControl: 'select',
-                      // filterDefault: 'true',
-                      searchFormatter: false,
                       sortable: true,
                       class: 'text-center',
+                      //searchFormatter: false,
                       formatter: (value, row) => row.requires_manual_grading ? 'Requires grading' : 'Graded',
                   },
                   {
@@ -134,7 +133,7 @@
                       title: 'Assigned grader',
                       filterControl: 'select',
                       searchFormatter: false,
-                      formatter: (value, row) => row.assigned_grader ? row.assigned_grader_name : '&mdash;',
+                      formatter: (value, row) => row.assigned_grader_name || '—',
                   },
                   {
                       field: 'auto_points',
