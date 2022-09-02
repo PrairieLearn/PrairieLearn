@@ -1,8 +1,16 @@
+const config = require('../lib/config');
 const logger = require('../lib/logger');
+const { enrichSentryScope } = require('../lib/sentry');
 
 module.exports = function (req, res, next) {
   if (req.method !== 'OPTIONS') {
-    res.on('finish', function () {
+    res.once('finish', function () {
+      // Attach information to the Sentry scope so that we can more easily
+      // debug errors. No PII is added.
+      if (config.sentryDsn) {
+        enrichSentryScope(req, res);
+      }
+
       var access = {
         response_id: res.locals.response_id,
         timestamp: new Date().toISOString(),
