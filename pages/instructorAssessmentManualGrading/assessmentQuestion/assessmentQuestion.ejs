@@ -48,17 +48,6 @@
               onCheck: updateGradingTagButton,
               onCheckAll: updateGradingTagButton,
               onCheckSome: updateGradingTagButton,
-              onRefresh: () => {
-                  // a bug in bootstrap-table causes the filters to lose value on refresh
-                  // (https://github.com/wenzhixin/bootstrap-table/issues/6030).
-                  // This code saves the value of all filters to be reloaded once filter controls are re-created.
-                  savedFilterValues = {};
-                  $('#grading-table .filter-control').find('input, select').each(function() {
-                      const field_name = $(this).parents('[data-field]:first').data('field');
-                      savedFilterValues[field_name] = $(this).val();
-                      $(this).tooltip('dispose');
-                  });
-              },
               onCreatedControls: () => {
                   $('#grading-table th[data-field="points"] .filter-control input').tooltip({
                       title: 'hint: use <code>&lt;<%= Math.ceil(assessment_question.max_points / 2) %></code>, or <code>&gt;0</code>',
@@ -68,17 +57,6 @@
                       title: 'hint: use <code>&lt;50</code>, or <code>&gt;0</code>',
                       html: true,
                   });
-              },
-              onSearch: () => {
-                  // This update is done with the search method because onCreatedControls
-                  // is called before the filter control selects are populated
-                  // (https://github.com/wenzhixin/bootstrap-table/issues/6072).
-                  if (savedFilterValues) {
-                      for (const [field, value] of Object.entries(savedFilterValues)) {
-                          $(`#grading-table th[data-field=${field}]`).find('input, select').val(value);
-                      }
-                      savedFilterValues = false;
-                  }
               },
               onPreBody: () => {
                   $('#grading-table [data-toggle="popover"]').popover('dispose');
@@ -132,7 +110,7 @@
                       field: 'assigned_grader',
                       title: 'Assigned grader',
                       filterControl: 'select',
-                      searchFormatter: false,
+                      //searchFormatter: false,
                       formatter: (value, row) => row.assigned_grader_name || '—',
                   },
                   {
@@ -178,7 +156,7 @@
                       field: 'last_grader',
                       title: 'Graded by',
                       filterControl: 'select',
-                      searchFormatter: false,
+                      //searchFormatter: false,
                       formatter: (value, row) => row.last_grader ? row.last_grader_name : '&mdash;',
                   },
               ]],

@@ -33,10 +33,6 @@ router.get(
     };
 
     const result = await sqlDb.queryAsync(sql.select_instance_questions_manual_grading, params);
-    result.rows.forEach((row) => {
-      // bootstrap-table does not like nulls as filter targets, set to 0 instead
-      Object.assign(row, { assigned_grader: row.assigned_grader || '0' });
-    });
     res.send({ instance_questions: result.rows });
   })
 );
