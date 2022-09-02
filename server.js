@@ -36,6 +36,7 @@ const externalGradingSocket = require('./lib/externalGradingSocket');
 const workspace = require('./lib/workspace');
 const sqldb = require('./prairielib/lib/sql-db');
 const migrations = require('./prairielib/lib/migrations');
+const error = require('./prairielib/error');
 const sprocs = require('./sprocs');
 const news_items = require('./news_items');
 const cron = require('./cron');
@@ -265,12 +266,20 @@ module.exports.initExpress = function () {
     logLevel: 'silent',
     logProvider: (_provider) => logger,
     router: async (req) => {
-      if (!req.workspace_hostname) {
-        throw new Error('Workspace host not found');
+      const match = req.url.match(/^\/pl\/workspace\/([0-9]+)\/container\//);
+      if (!match) throw new Error(`Could not match URL: ${req.url}`);
+
+      const workspace_id = match[1];
+      const result = await sqldb.queryZeroOrOneRowAsync(
+        "SELECT hostname FROM workspaces WHERE id = $workspace_id AND state = 'running';",
+        { workspace_id }
+      );
+
+      if (result.rows.length === 0) {
+        throw error.make(404, 'Workspace is not running');
       }
 
-      // This value is set in the `selectAndValidateWorkspace` middleware.
-      return `http://${req.workspace_hostname}/`;
+      return `http://${result.rows[0].hostname}/`;
     },
     onProxyReq: (proxyReq) => {
       stripSensitiveCookies(proxyReq);
@@ -288,7 +297,7 @@ module.exports.initExpress = function () {
       // response before replying with an error 500
       if (res && !res.headersSent) {
         if (res.status && res.send) {
-          res.status(500).send('Error proxying workspace request');
+          res.status(err.status ?? 500).send('Error proxying workspace request');
         }
       }
     },
@@ -321,7 +330,6 @@ module.exports.initExpress = function () {
       next();
     },
     workspaceAuthRouter,
-    require('./middlewares/selectAndValidateWorkspace'),
     workspaceProxy,
   ]);
 
