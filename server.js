@@ -276,7 +276,7 @@ module.exports.initExpress = function () {
       );
 
       if (result.rows.length === 0) {
-        throw error.make(404);
+        throw error.make(404, 'Workspace is not running');
       }
 
       return `http://${result.rows[0].hostname}/`;
