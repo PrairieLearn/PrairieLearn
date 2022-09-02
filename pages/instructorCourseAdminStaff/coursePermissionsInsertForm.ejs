@@ -1,5 +1,5 @@
-<form name="add-multi-user-form" method="POST">
-  <input type="hidden" name="__action" value="course_permissions_insert_by_multi_user_uid">
+<form name="add-users-form" method="POST">
+  <input type="hidden" name="__action" value="course_permissions_insert_by_user_uids">
   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
 
   <div class="form-group mb-4">
@@ -9,13 +9,13 @@
   </div>
 
   <div class="form-group">
-    <label for="addUserInputUid">List of UIDs separated by commas, whitespaces, or semicolons:</label>
-    <textarea class="form-control" id="addMultiUserInputUid" name="uid" placeholder="user1@domain.org, user2@domain.org" required></textarea>
+    <label for="addUsersInputUid">List of UIDs separated by commas, whitespaces, or semicolons:</label>
+    <textarea class="form-control" id="addUsersInputUid" name="uid" placeholder="user1@domain.org, user2@domain.org" required></textarea>
   </div>
 
   <div class="form-group">
-    <label for="addMultiUserInputCourseRole">Course content access for all new users:</label>
-    <select class="form-control form-control-sm" id="addMultiUserInputCourseRole" name="course_role" required>
+    <label for="addUsersInputCourseRole">Course content access for all new users:</label>
+    <select class="form-control form-control-sm" id="addUsersInputCourseRole" name="course_role" required>
       <option value="None" selected>None</option>
       <option value="Previewer">Previewer</option>
       <option value="Viewer">Viewer</option>
@@ -25,15 +25,15 @@
 
   <% if (authz_data.course_instances && authz_data.course_instances.length > 0) { %>
     <div class="form-group">
-      <label for="addMultiUserInputCourseInstance">Student data access for all new users:</label>
+      <label for="addUsersInputCourseInstance">Student data access for all new users:</label>
       <div class="input-group">
-        <select class="form-control form-control-sm" id="addMultiUserInputCourseInstance" name="course_instance_id">
+        <select class="form-control form-control-sm" id="addUsersInputCourseInstance" name="course_instance_id">
           <option selected value>None</option>
           <% authz_data.course_instances.forEach(function(ci) { %>
           <option value="<%= ci.id %>"><%= ci.short_name %></option>
           <% }); %>
         </select>
-        <select class="form-control form-control-sm" id="addMultiUserInputCourseInstanceRole" name="course_instance_role">
+        <select class="form-control form-control-sm" id="addUsersInputCourseInstanceRole" name="course_instance_role">
           <option value="Student Data Viewer" selected>Viewer</option>
           <option value="Student Data Editor">Editor</option>
         </select>

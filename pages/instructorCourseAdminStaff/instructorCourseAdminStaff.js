@@ -31,7 +31,7 @@ router.post('/', (req, res, next) => {
     return next(error.make(403, 'Access denied (must be course owner)'));
   }
 
-  if (req.body.__action === 'course_permissions_insert_by_multi_user_uid') {
+  if (req.body.__action === 'course_permissions_insert_by_user_uids') {
     // Get set of unique, non-empty UIDs with no leading or trailing whitespaces
     let uids = new Set(
       req.body.uid
