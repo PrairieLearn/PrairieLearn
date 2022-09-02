@@ -30,11 +30,8 @@ SET
   timestamp = $timestamp
 WHERE id = $id;
 
--- BLOCK get_last_migration
-SELECT MAX(index) AS last_migration FROM migrations WHERE project = $project;
-
 -- BLOCK insert_migration
 INSERT INTO migrations
-        (filename, index, timestamp, project, applied_at)
-VALUES ($filename::TEXT, $index, $timestamp, $project, CURRENT_TIMESTAMP)
+        (filename, timestamp, project, applied_at)
+VALUES ($filename::TEXT, $timestamp, $project, CURRENT_TIMESTAMP)
 RETURNING id;
