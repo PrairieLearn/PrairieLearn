@@ -156,7 +156,7 @@ router.post('/', (req, res, next) => {
     ];
     sqlDb.call('instance_questions_update_score', params, (err, result) => {
       if (ERR(err, next)) return;
-      if (result.rows[0].modified_at_conflict && res.locals.course.manual_grading_visible) {
+      if (result.rows[0].modified_at_conflict) {
         return res.redirect(
           `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${result.rows[0].grading_job_id}`
         );
@@ -188,7 +188,7 @@ router.post('/', (req, res, next) => {
     ];
     sqlDb.call('instance_questions_update_score', params, (err, result) => {
       if (ERR(err, next)) return;
-      if (result.rows[0].modified_at_conflict && res.locals.course.manual_grading_visible) {
+      if (result.rows[0].modified_at_conflict) {
         return res.redirect(
           `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${result.rows[0].grading_job_id}`
         );

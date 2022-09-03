@@ -188,7 +188,7 @@ router.get('/:filename', function (req, res, next) {
 
     sqldb.query(sql.select_instance_questions, params, function (err, result) {
       if (ERR(err, next)) return;
-      var columns = identityColumn.concat([
+      const columns = identityColumn.concat([
         ['Assessment', 'assessment_label'],
         ['Assessment instance', 'assessment_instance_number'],
         ['Question', 'qid'],
@@ -196,16 +196,10 @@ router.get('/:filename', function (req, res, next) {
         ['Question points', 'points'],
         ['Max points', 'max_points'],
         ['Question % score', 'score_perc'],
-      ]);
-      if (res.locals.course.manual_grading_visible) {
-        columns = columns.concat([
-          ['Auto points', 'auto_points'],
-          ['Max auto points', 'max_auto_points'],
-          ['Manual points', 'manual_points'],
-          ['Max manual points', 'max_manual_points'],
-        ]);
-      }
-      columns = columns.concat([
+        ['Auto points', 'auto_points'],
+        ['Max auto points', 'max_auto_points'],
+        ['Manual points', 'manual_points'],
+        ['Max manual points', 'max_manual_points'],
         ['Date', 'date_formatted'],
         ['Highest submission score', 'highest_submission_score'],
         ['Last submission score', 'last_submission_score'],
@@ -229,18 +223,12 @@ router.get('/:filename', function (req, res, next) {
       identityColumn = (res.locals.assessment.group_work ? groupNameColumn : studentColumn).map(
         (pair) => [pair[1], pair[1]]
       );
-      let columns = identityColumn.concat([
+      const columns = identityColumn.concat([
         ['qid', 'qid'],
         ['old_score_perc', 'old_score_perc'],
         ['old_feedback', 'old_feedback'],
-      ]);
-      if (res.locals.course.manual_grading_visible) {
-        columns = columns.concat([
-          ['old_auto_points', 'old_auto_points'],
-          ['old_manual_points', 'old_manual_points'],
-        ]);
-      }
-      columns = columns.concat([
+        ['old_auto_points', 'old_auto_points'],
+        ['old_manual_points', 'old_manual_points'],
         ['submission_id', 'submission_id'],
         ['params', 'params'],
         ['true_answer', 'true_answer'],
@@ -277,7 +265,7 @@ router.get('/:filename', function (req, res, next) {
     }
     sqldb.query(sql.assessment_instance_submissions, params, function (err, result) {
       if (ERR(err, next)) return;
-      var columns = submissionColumn.concat([
+      const columns = submissionColumn.concat([
         ['Assessment', 'assessment_label'],
         ['Assessment instance', 'assessment_instance_number'],
         ['Question', 'qid'],
@@ -302,15 +290,11 @@ router.get('/:filename', function (req, res, next) {
         ['Question points', 'points'],
         ['Max points', 'max_points'],
         ['Question % score', 'score_perc'],
+        ['Auto points', 'auto_points'],
+        ['Max auto points', 'max_auto_points'],
+        ['Manual points', 'manual_points'],
+        ['Max manual points', 'max_manual_points'],
       ]);
-      if (res.locals.course.manual_grading_visible) {
-        columns = columns.concat([
-          ['Auto points', 'auto_points'],
-          ['Max auto points', 'max_auto_points'],
-          ['Manual points', 'manual_points'],
-          ['Max manual points', 'max_manual_points'],
-        ]);
-      }
       csvMaker.rowsToCsv(result.rows, columns, function (err, csv) {
         if (ERR(err, next)) return;
         res.attachment(req.params.filename);
