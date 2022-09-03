@@ -1,10 +1,13 @@
 # Manual Grading
 
-PrairieLearn supports manual grading of questions by downloading a CSV file with student answers and uploading a CSV file with question scores and optional per-question feedback. There is also an online web interface for manual grading in beta-testing mode. Please contact your system administrator to discuss your needs and potentially enable this feature for your course.
+Some questions may require manual grading, either fully (e.g., freeform essay-type questions) or partially (e.g., coding style, or "show your work" components). PrairieLearn currently supports two methods of manual grading:
+
+- Course staff may download a CSV file with student answers, perform any grading tasks offline, and upload a CSV file with question scores and optional per-question feedback.
+- An online web interface is available for individual grading directly into the assessment question.
 
 ## Configuring a question for manual grading
 
-The [`info.json` file](question.md#question-infojson) in the question should set `"gradingMethod": "Manual"`, like this:
+For questions that require full manual grading, without any auto-grading functionality, the [`info.json` file](question.md#question-infojson) in the question may be set `"gradingMethod": "Manual"`, like this:
 
 ```json
 {
@@ -15,9 +18,13 @@ The [`info.json` file](question.md#question-infojson) in the question should set
 }
 ```
 
-Manually-graded questions allow students to "Save" answers, but they don't have a "Save & Grade" button. Instead, the student just saves answers as many times as they want, and all of their submitted answers are stored. It is recommended to also mark manually-graded questions as `"singleVariant": true` so that students are only given a single random variant, even on Homework assessments.
+Alternatively, the question can be set up for manual grading by using `manualPoints` in the [assessment configuration](assessment.md#question-specification). If `manualPoints` are set in the assessment without `autoPoints`, then the grading method set in the question will be ignored.
 
-Any [elements](elements/) can be used in the [`question.html`](question.md#question-questionhtml) to write manually graded questions. All of the student input will be saved and available for manual grading, including `pl-string-input`, `pl-file-editor`, `pl-file-upload`, etc.
+If a question contains both auto-grading and manual grading components, the grading method should be set to the method to be used for auto-grading. In that case, the assessment configuration should be set to use both `manualPoints` and `autoPoints`.
+
+Questions set to use only manual grading (i.e., without auto points) allow students to "Save" answers, but they don't have a "Save & Grade" button. Instead, the student just saves answers as many times as they want, and all of their submitted answers are stored. It is recommended to also mark manually-graded questions as `"singleVariant": true` so that students are only given a single random variant, even on Homework assessments. By default, manual grading is performed only for the last submission of the last variant.
+
+Any [elements](elements/) can be used in the [`question.html`](question.md#question-questionhtml) to write manually graded questions. All of the student input will be saved and available for manual grading, including `pl-string-input`, `pl-file-editor`, `pl-file-upload`, `pl-rich-text-editor`, etc.
 
 ## Manual grading using file uploads
 
@@ -26,17 +33,17 @@ Any [elements](elements/) can be used in the [`question.html`](question.md#quest
 After students have completed the assessment, download the submitted answers by going to the assessment page, then the "Downloads" tab, and selecting the `<assessment>_submissions_for_manual_grading.csv` file. This looks like:
 
 ```csv
-uid,uin,username,name,role,qid,old_score_perc,old_feedback,submission_id,params,true_answer,submitted_answer,old_partial_scores,partial_scores,score_perc,feedback
-mwest@illinois.edu,1,,,,explainMax,0,,42983,{},{},{"ans": "returns the maximum value in the array"},,,,
-zilles@illinois.edu,2,,,,explainMax,0,,42984,{},{},{"ans": "gives the set of largest values in the object"},,,,
-zilles@illinois.edu,2,,,,describeFibonacci,100,,42987,{},{},{"ans": "calculates the n-th Fibonacci number"},,,,
+uid,uin,qid,old_score_perc,old_feedback,old_auto_points,old_manual_points,submission_id,params,true_answer,submitted_answer,old_partial_scores,partial_scores,score_perc,feedback
+mwest@illinois.edu,1,explainMax,0,,0,0,42983,{},{},{"ans": "returns the maximum value in the array"},,,,
+zilles@illinois.edu,2,explainMax,0,,0,0,42984,{},{},{"ans": "gives the set of largest values in the object"},,,,
+zilles@illinois.edu,2,describeFibonacci,100,,10,0,42987,{},{},{"ans": "calculates the n-th Fibonacci number"},,,,
 ```
 
-This CSV file has three blank columns at the end, ready for the percentage score (0 to 100) and optional feedback and partial scores. The `submission_id` is an internal identifier that PrairieLearn uses to determine exactly which submitted answer is being graded. The `params` and `true_answer` columns show the question data. The `old_score_perc` column shows the score that the student currently has, which is convenient for re-grading or doing optional manual grading after an autograder has already done a first pass. If feedback was already provided in a previous upload, the `old_feedback` column will contain the feedback the student currently has.
+This CSV file has three blank columns at the end, ready for the percentage score (0 to 100) and optional feedback and partial scores. The `submission_id` is an internal identifier that PrairieLearn uses to determine exactly which submitted answer is being graded. The `params` and `true_answer` columns show the question data. The `old_score_perc` column shows the score that the student currently has, while `old_auto_points` and `old_manual_points` show the auto-graded and manually graded points already submitted. If feedback was already provided in a previous upload, the `old_feedback` column will contain the feedback the student currently has.
 
-If the students uploaded files then you should also download `<assessment>_files_for_manual_grading.zip` from the "Downloads" tab. The scores and feedback should still be entered into the CSV file.
+If the students uploaded files then you may also download `<assessment>_files_for_manual_grading.zip` from the "Downloads" tab. The scores and feedback should still be entered into the CSV file.
 
-> To include files copied out of the workspace into the `<assessment>_files_for_manual_grading.zip`, in the [`info.json` file](workspaces/index.md#infojson) specify a file list using `"gradedFiles"`:
+The `<assessment>_files_for_manual_grading.zip` file contains all files uploaded by the student for grading. For workspace questions, to include files copied out of the workspace into the file, in the [`info.json` file](workspaces/index.md#infojson) specify a file list using `"gradedFiles"`:
 
 ```json
 "workspaceOptions": {
@@ -55,9 +62,9 @@ After editing the percentage score and/or feedback for each submitted answer, up
 
 Each question will have its score and/or feedback updated and the total assessment score will be recalculated. All updates are done with `credit` of 100%, so students get exactly the scores as uploaded.
 
-If you prefer to use points rather than a percentage score, rename the `score_perc` column in the CSV file to `points`.
+If you prefer to use points rather than a percentage score, rename the `score_perc` column in the CSV file to `points`. Note that either of these options updates the question's points so that the full score of the question reflects the value of the column. For questions with separate auto and manual points, you may replace this column with columns named `manual_score_perc`, `auto_score_perc`, `manual_points`, and/or `auto_points`.
 
-If a `feedback` column is provided, it will be shown by default to the student above the submission panel, as seen in the image below. The feedback can utilize Markdown formatting.
+If a `feedback` column is provided, it will be shown by default to the student above the submission panel, as seen in the image below. The feedback can use Markdown formatting.
 
 ![Feedback shown above student panel](manualGradingFeedback.png)
 
@@ -70,6 +77,6 @@ You also have the option to set partial scores. These can be based on individual
 }
 ```
 
-If the `partial_scores` column contains a valid value, and there is no value in `score_perc` or `points`, the score will be computed based on the weighted average of the partial scores. For example, the score above will be computed as 80% (the weighted average between 70% with weight 2, and 100% with weight 1).
+If the `partial_scores` column contains a valid value, and there is no value in `auto_score_perc` or `auto_points`, the auto-grading points will be computed based on the weighted average of the partial scores. For example, the score above will be computed as 80% (the weighted average between 70% with weight 2, and 100% with weight 1).
 
-_WARNING_: note that some elements such as drawings or matrix elements may rely on elaborate partial score values with specific structures and objects. When updating partial scores, make sure you follow the same structure as the original partial scores to avoid any problems. Changing these values could lead to errors on rendering the question pages for these elements.
+_WARNING_: note that some elements such as drawings or matrix elements may rely on elaborate partial score values with specific structures and objects. When updating partial scores, make sure you follow the same structure as the original partial scores to avoid any problems. Changing these values could lead to errors on rendering the question pages for these elements. You may find the original partial score structure in the `old_partial_scores` column.
