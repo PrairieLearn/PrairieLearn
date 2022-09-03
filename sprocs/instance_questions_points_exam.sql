@@ -40,34 +40,28 @@ BEGIN
         auto_points := max_auto_points;
     END IF;
 
-    -- Update score_perc
     auto_score_perc := auto_points / (CASE WHEN max_auto_points > 0 THEN max_auto_points ELSE 1 END) * 100;
-
-    -- Update highest_submission_score
     highest_submission_score := GREATEST(submission_score, coalesce(iq.highest_submission_score, 0));
-
-    -- Decide if done or not and update points_list
     correct := (submission_score >= 1.0);
-    IF correct THEN
+
+    -- Decide if done or not and update points_list. If the answer is
+    -- correct, additional submissions are allowed only if there are
+    -- manual points, since students may wish to submit a new version
+    -- that has better potential for manual grading, but only if the
+    -- points list has attempts left.
+    IF (correct AND max_manual_points = 0) OR cardinality(iq.points_list) <= 1 THEN
         open := FALSE;
         status := 'complete';
         current_value := NULL;
         points_list := array[]::double precision[];
     ELSE
-        IF cardinality(iq.points_list) > 1 THEN
-            open := TRUE;
-            status := 'incorrect';
-            current_value := iq.points_list[1];
-            points_list := array[]::double precision[];
-            FOR i in 1..(cardinality(iq.points_list_original)-(iq.number_attempts+1)) LOOP
-                points_list[i] := (iq.points_list_original[iq.number_attempts+i+1] - max_manual_points) * (1 - highest_submission_score) + max_manual_points;
-            END LOOP;
-        ELSE
-            open := FALSE;
-            status := 'complete';
-            current_value := NULL;
-            points_list := array[]::double precision[];
-        END IF;
+        open := TRUE;
+        status := CASE WHEN correct THEN 'correct' ELSE 'incorrect' END;
+        current_value := iq.points_list[1];
+        points_list := array[]::double precision[];
+        FOR i in 1..(cardinality(iq.points_list_original)-(iq.number_attempts+1)) LOOP
+            points_list[i] := (iq.points_list_original[iq.number_attempts+i+1] - max_manual_points) * (1 - highest_submission_score) + max_manual_points;
+        END LOOP;
     END IF;
 END;
 $$ LANGUAGE plpgsql STABLE;
