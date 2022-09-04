@@ -236,6 +236,7 @@ function timeRemainingLimitFormatter(value, row) {
     var link = $('<a>')
         .addClass('btn btn-secondary btn-xs ml-1 time-limit-edit-button')
         .attr('role', 'button')
+        .attr('id', `row${row.assessment_instance_id}PopoverTimeLimit`)
         .attr('tabindex', 0)
         .attr('data-row', JSON.stringify(row))
         .append($('<i class="bi-pencil-square" aria-hidden="true">'))
@@ -341,6 +342,16 @@ function actionButtonFormatter(_value, row, index) {
         .append($('<i>').addClass('fas fa-ban mr-2')
                 .attr('aria-hidden', 'true'))
         .append('Grade &amp; Close')
+        .appendTo(menu);
+
+    $('<a>')
+        .addClass('dropdown-item' + (!row.open ? '' : ' disabled'))
+        .attr('role', 'button')
+        .attr('tabindex', '0')
+        .attr('onclick', `$("#row${ai_id}PopoverTimeLimit").popover("show")`)
+        .append($('<i>').addClass('fas fa-lock-open mr-2')
+                .attr('aria-hidden', 'true'))
+        .append('Re-open')
         .appendTo(menu);
 
     $('<a>')
