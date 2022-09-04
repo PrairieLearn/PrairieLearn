@@ -41,7 +41,6 @@ DECLARE
 
     current_partial_score jsonb;
     current_auto_points double precision;
-    current_auto_score_perc double precision;
     current_manual_points double precision;
 
     new_score_perc double precision;
@@ -65,7 +64,6 @@ BEGIN
         q.qid,
         s.partial_scores,
         COALESCE(iq.auto_points, LEAST(iq.points, aq.max_auto_points)),
-        COALESCE(iq.auto_score_perc, CASE WHEN aq.max_auto_points > 0 THEN LEAST(iq.points * 100 / aq.max_auto_points, 100) ELSE 0 END),
         COALESCE(iq.manual_points, GREATEST(0, iq.points - aq.max_auto_points)),
         iq.modified_at
     INTO
@@ -79,7 +77,6 @@ BEGIN
         found_qid,
         current_partial_score,
         current_auto_points,
-        current_auto_score_perc,
         current_manual_points,
         current_modified_at
     FROM
@@ -238,7 +235,6 @@ BEGIN
             points = new_points,
             score_perc = new_score_perc,
             auto_points = COALESCE(new_auto_points, auto_points),
-            auto_score_perc = COALESCE(new_auto_score_perc, auto_score_perc),
             manual_points = COALESCE(new_manual_points, manual_points),
             status = 'complete',
             modified_at = now(),
@@ -250,11 +246,11 @@ BEGIN
         INSERT INTO question_score_logs
             (instance_question_id, auth_user_id,
             max_points, max_manual_points, max_auto_points,
-            points, score_perc, auto_points, auto_score_perc, manual_points)
+            points, score_perc, auto_points, manual_points)
         VALUES
             (instance_question_id, arg_authn_user_id,
             max_points, max_manual_points, max_auto_points,
-            new_points, new_score_perc, new_auto_points, new_auto_score_perc, new_manual_points);
+            new_points, new_score_perc, new_auto_points, new_manual_points);
 
         PERFORM assessment_instances_grade(assessment_instance_id, arg_authn_user_id, credit => 100, allow_decrease => true);
     END IF;

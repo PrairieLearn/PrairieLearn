@@ -32,7 +32,7 @@
       <input type="number" step="any"
              class="form-control grading-score-input"
              name="score_manual_percent"
-             value="<%= locals.manual_score_perc ?? (instance_question.manual_points * 100 / (assessment_question.manual_points || assessment_question.max_points)) %>"
+             value="<%= (locals.manual_points ?? instance_question.manual_points) * 100 / (assessment_question.manual_points || assessment_question.max_points) %>"
              <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %> />
       <span class="input-group-append input-group-text">%</span>
     </div>
@@ -62,7 +62,7 @@
     <label class="w-100">
       Auto Score:
       <span class="float-right auto-score-value-info">
-        <%= locals.auto_score_perc ?? instance_question.auto_score_perc %>%
+        <%= (locals.auto_points ?? instance_question.auto_points) * 100 / (assessment_question.max_auto_points || assessment_question.max_points) %>%
         <% if (authz_data.has_course_instance_permission_edit) { %>
         <span class="enable-auto-score-edit"><i class="fas fa-pencil"></i></span>
         <% } %>
@@ -72,7 +72,7 @@
       <input type="number" step="any"
              class="form-control grading-score-input"
              name="score_auto_percent"
-             value="<%= locals.auto_score_perc ?? instance_question.auto_score_perc %>"
+             value="<%= (locals.auto_points ?? instance_question.auto_points) * 100 / (assessment_question.max_auto_points || assessment_question.max_points) %>"
              <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %> />
       <span class="input-group-append input-group-text">%</span>
     </div>

@@ -40,7 +40,6 @@ BEGIN
         status = new_values.status,
         auto_points = new_values.auto_points,
         points = new_values.points,
-        auto_score_perc = new_values.auto_score_perc,
         score_perc = new_values.score_perc,
         highest_submission_score = new_values.highest_submission_score,
         current_value = new_values.current_value,
@@ -52,12 +51,10 @@ BEGIN
 
     INSERT INTO question_score_logs
         (instance_question_id, auth_user_id, max_points, max_auto_points,
-         points, auto_points, score_perc, auto_score_perc,
-         grading_job_id)
+         points, auto_points, score_perc, grading_job_id)
     VALUES
         (instance_question_id, authn_user_id, new_values.max_points, new_values.max_auto_points,
-         new_values.points, new_values.auto_points, new_values.score_perc, new_values.auto_score_perc,
-         grading_job_id);
+         new_values.points, new_values.auto_points, new_values.score_perc, grading_job_id);
 
     PERFORM instance_questions_calculate_stats(instance_question_id);
 END;

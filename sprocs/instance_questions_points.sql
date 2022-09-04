@@ -5,7 +5,6 @@ CREATE FUNCTION
         OUT open BOOLEAN,
         OUT status enum_instance_question_status,
         OUT auto_points DOUBLE PRECISION,
-        OUT auto_score_perc DOUBLE PRECISION,
         OUT points DOUBLE PRECISION,
         OUT score_perc DOUBLE PRECISION,
         OUT highest_submission_score DOUBLE PRECISION,
@@ -37,11 +36,11 @@ BEGIN
 
     CASE type
         WHEN 'Exam' THEN
-            SELECT * INTO open, status, auto_points, auto_score_perc, highest_submission_score,
+            SELECT * INTO open, status, auto_points, highest_submission_score,
                 current_value, points_list, variants_points_list, max_auto_points
             FROM instance_questions_points_exam(instance_question_id, submission_score);
         WHEN 'Homework' THEN
-            SELECT * INTO open, status, auto_points, auto_score_perc, highest_submission_score,
+            SELECT * INTO open, status, auto_points, highest_submission_score,
                 current_value, points_list, variants_points_list, max_auto_points
             FROM instance_questions_points_homework(instance_question_id, submission_score);
         ELSE

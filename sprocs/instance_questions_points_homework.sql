@@ -5,7 +5,6 @@ CREATE FUNCTION
         OUT open BOOLEAN,
         OUT status enum_instance_question_status,
         OUT auto_points DOUBLE PRECISION,
-        OUT auto_score_perc DOUBLE PRECISION,
         OUT highest_submission_score DOUBLE PRECISION,
         OUT current_value DOUBLE PRECISION,
         OUT points_list DOUBLE PRECISION[],
@@ -73,9 +72,6 @@ BEGIN
         auto_points := auto_points + variants_points_list[i];
     END LOOP;
     auto_points := least(auto_points, aq.max_auto_points);
-
-    -- score_perc
-    auto_score_perc := auto_points / (CASE WHEN aq.max_auto_points > 0 THEN aq.max_auto_points ELSE 1 END) * 100;
 
     -- status
     IF correct THEN

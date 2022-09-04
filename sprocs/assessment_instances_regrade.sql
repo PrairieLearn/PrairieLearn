@@ -54,7 +54,6 @@ BEGIN
             auto_points = aq.max_auto_points,
             manual_points = aq.manual_points,
             score_perc = 100,
-            auto_score_perc = 100,
             modified_at = now()
         FROM
             assessment_questions AS aq
@@ -72,12 +71,12 @@ BEGIN
         INSERT INTO question_score_logs
             (instance_question_id, auth_user_id,
                 points, auto_points, manual_points, max_points, max_auto_points,
-                score_perc, auto_score_perc)
+                score_perc)
         (
             SELECT
                 id, assessment_instances_regrade.authn_user_id,
                 points, auto_points, manual_points, max_points, max_auto_points,
-                score_perc, auto_score_perc
+                score_perc
             FROM updated_instance_questions
         )
     )

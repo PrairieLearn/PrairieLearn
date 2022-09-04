@@ -4,7 +4,6 @@ columns
     assigned_grader: bigint
     authn_user_id: bigint
     auto_points: double precision
-    auto_score_perc: double precision
     average_submission_score: double precision
     created_at: timestamp with time zone default CURRENT_TIMESTAMP
     current_value: double precision

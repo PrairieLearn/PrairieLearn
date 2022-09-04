@@ -98,9 +98,7 @@
                   <%- include('../../partials/instructorGradingPanel',
                               {score_perc: conflict_grading_job.score * 100,
                                points: conflict_grading_job.score * assessment_question.max_points,
-                               auto_score_perc: conflict_grading_job.auto_points / (assessment_question.max_auto_points || 1) * 100,
                                auto_points: conflict_grading_job.auto_points,
-                               manual_score_perc: conflict_grading_job.manual_points / (assessment_question.manual_points || 1) * 100,
                                manual_points: conflict_grading_job.manual_points,
                                submission: conflict_grading_job}); %>
                 </div>
