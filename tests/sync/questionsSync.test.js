@@ -86,10 +86,7 @@ describe('Question syncing', () => {
     let syncedTags = await util.dumpTable('tags');
     let syncedTag = syncedTags.find((tag) => tag.name === missingTagName);
     assert.isOk(syncedTag);
-    assert(
-      syncedTag.description && syncedTag.description.length > 0,
-      'tag should not have empty description'
-    );
+    assert.isNotEmpty(syncedTag.description, 'tag should not have empty description');
 
     // Subsequent syncs with the same data should succeed as well
     await util.overwriteAndSyncCourseData(courseData, courseDir);
@@ -116,10 +113,7 @@ describe('Question syncing', () => {
     let syncedTopics = await util.dumpTable('topics');
     let syncedTopic = syncedTopics.find((topic) => topic.name === missingTopicName);
     assert.isOk(syncedTopic);
-    assert(
-      syncedTopic.description && syncedTopic.description.length > 0,
-      'tag should not have empty description'
-    );
+    assert.isNotEmpty(syncedTopic.description, 'tag should not have empty description');
 
     // Subsequent syncs with the same data should succeed as well
     await util.overwriteAndSyncCourseData(courseData, courseDir);

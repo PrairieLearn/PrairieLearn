@@ -24,6 +24,7 @@ const multer = require('multer');
 const filesize = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
+const Sentry = require('@prairielearn/sentry');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -35,6 +36,7 @@ const externalGradingSocket = require('./lib/externalGradingSocket');
 const workspace = require('./lib/workspace');
 const sqldb = require('./prairielib/lib/sql-db');
 const migrations = require('./prairielib/lib/migrations');
+const error = require('./prairielib/error');
 const sprocs = require('./sprocs');
 const news_items = require('./news_items');
 const cron = require('./cron');
@@ -49,6 +51,7 @@ const assets = require('./lib/assets');
 const namedLocks = require('./lib/named-locks');
 const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
+const { enrichSentryScope } = require('./lib/sentry');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -81,6 +84,11 @@ module.exports.initExpress = function () {
   app.set('view engine', 'ejs');
   app.set('trust proxy', config.trustProxy);
   config.devMode = app.get('env') === 'development';
+
+  // If we're set up with Sentry, use its middleware to record requests.
+  if (config.sentryDsn) {
+    app.use(Sentry.Handlers.requestHandler());
+  }
 
   // Set res.locals variables first, so they will be available on
   // all pages including the error page (which we could jump to at
@@ -258,20 +266,20 @@ module.exports.initExpress = function () {
     logLevel: 'silent',
     logProvider: (_provider) => logger,
     router: async (req) => {
-      try {
-        const match = req.url.match(/^\/pl\/workspace\/([0-9]+)\/container\//);
-        if (!match) throw new Error(`Could not match URL: ${req.url}`);
-        const workspace_id = match[1];
-        const result = await sqldb.queryOneRowAsync(
-          `SELECT hostname FROM workspaces WHERE id = $workspace_id;`,
-          { workspace_id }
-        );
-        const url = `http://${result.rows[0].hostname}/`;
-        return url;
-      } catch (err) {
-        logger.error(`Error in router for url=${req.url}: ${err}`);
-        return 'not-matched';
+      const match = req.url.match(/^\/pl\/workspace\/([0-9]+)\/container\//);
+      if (!match) throw new Error(`Could not match URL: ${req.url}`);
+
+      const workspace_id = match[1];
+      const result = await sqldb.queryZeroOrOneRowAsync(
+        "SELECT hostname FROM workspaces WHERE id = $workspace_id AND state = 'running';",
+        { workspace_id }
+      );
+
+      if (result.rows.length === 0) {
+        throw error.make(404, 'Workspace is not running');
       }
+
+      return `http://${result.rows[0].hostname}/`;
     },
     onProxyReq: (proxyReq) => {
       stripSensitiveCookies(proxyReq);
@@ -283,12 +291,13 @@ module.exports.initExpress = function () {
       logger.error(`Error proxying workspace request: ${err}`, {
         err,
         url: req.url,
+        originalUrl: req.url,
       });
       // Check to make sure we weren't already in the middle of sending a
       // response before replying with an error 500
       if (res && !res.headersSent) {
         if (res.status && res.send) {
-          res.status(500).send('Error proxying workspace request');
+          res.status(err.status ?? 500).send('Error proxying workspace request');
         }
       }
     },
@@ -316,9 +325,10 @@ module.exports.initExpress = function () {
   app.use('/pl/workspace/:workspace_id/container', [
     cookieParser(),
     (req, res, next) => {
+      // Needed for workspaceAuthRouter and `selectAndValidateWorkspace` middleware.
       res.locals.workspace_id = req.params.workspace_id;
       next();
-    }, // needed for workspaceAuthRouter
+    },
     workspaceAuthRouter,
     workspaceProxy,
   ]);
@@ -1612,6 +1622,32 @@ module.exports.initExpress = function () {
   app.use(require('./middlewares/notFound'));
 
   app.use(require('./middlewares/redirectEffectiveAccessDenied'));
+
+  // This should come first so that both Sentry and our own error page can
+  // read the error ID.
+  app.use((err, req, res, next) => {
+    const _ = require('lodash');
+    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+    res.locals.error_id = _.times(12, () => _.sample(chars)).join('');
+
+    next(err);
+  });
+
+  if (config.sentryDsn) {
+    // We need to add our own handler here to ensure that we add the appropriate
+    // information to the current Sentry scope.
+    //
+    // Note that this is typically done by our `logResponse` middleware, but
+    // that doesn't run soon enough for the Sentry error handler to pick up.
+    app.use((err, req, res, next) => {
+      enrichSentryScope(req, res);
+      next(err);
+    });
+    app.use(Sentry.Handlers.errorHandler());
+  }
+
+  // Note that the Sentry error handler should come before our error page.
   app.use(require('./pages/error/error'));
 
   return app;
@@ -1722,6 +1758,14 @@ if (config.startServer) {
           ...config,
           serviceName: 'prairielearn',
         });
+
+        // Same with Sentry configuration.
+        if (config.sentryDsn) {
+          await Sentry.init({
+            dsn: config.sentryDsn,
+            environment: config.sentryEnvironment,
+          });
+        }
 
         if (config.logFilename) {
           logger.addFileLogging(config.logFilename);
@@ -1946,8 +1990,7 @@ if (config.startServer) {
     function (err, data) {
       if (err) {
         logger.error('Error initializing PrairieLearn server:', err, data);
-        logger.error('Exiting...');
-        process.exit(1);
+        throw err;
       } else {
         logger.info('PrairieLearn server ready, press Control-C to quit');
         if (config.devMode) {
