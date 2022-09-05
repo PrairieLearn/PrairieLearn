@@ -23,26 +23,6 @@ function contains(parentPath, childPath) {
   return !(relPath.split(path.sep)[0] === '..' || path.isAbsolute(relPath));
 }
 
-function canEditFile(file) {
-  // If you add to this list, make sure the corresponding list in instructorFileEditor.js is consistent.
-  const extCanEdit = [
-    '.py',
-    '.html',
-    '.json',
-    '.txt',
-    '.md',
-    '.mustache',
-    '.css',
-    '.csv',
-    '.js',
-    '.m',
-    '.c',
-    '.cpp',
-    '.h',
-  ];
-  return extCanEdit.includes(path.extname(file));
-}
-
 function isHidden(item) {
   return item[0] === '.';
 }
@@ -213,7 +193,6 @@ function browseDirectory(file_browser, callback) {
             fs.lstat(filepath, (err, stats) => {
               if (ERR(err, callback)) return;
               if (stats.isFile()) {
-                const editable = canEditFile(filepath);
                 const movable = !file_browser.paths.cannotMove.includes(filepath);
                 file_browser.files.push({
                   id: index,
@@ -222,10 +201,7 @@ function browseDirectory(file_browser, callback) {
                   path: path.relative(file_browser.paths.coursePath, filepath),
                   encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
                   dir: file_browser.paths.workingPath,
-                  canEdit:
-                    editable &&
-                    file_browser.has_course_permission_edit &&
-                    !file_browser.example_course,
+                  canEdit: file_browser.has_course_permission_edit && !file_browser.example_course,
                   canUpload:
                     file_browser.has_course_permission_edit && !file_browser.example_course,
                   canDownload: true, // we already know the user is a course Viewer (checked on GET)
@@ -339,7 +315,6 @@ function browseFile(file_browser, callback) {
     (err) => {
       if (ERR(err, callback)) return;
       const filepath = file_browser.paths.workingPath;
-      const editable = !file_browser.isBinary;
       const movable = !file_browser.paths.cannotMove.includes(filepath);
       file_browser.file = {
         id: 0,
@@ -348,8 +323,7 @@ function browseFile(file_browser, callback) {
         path: path.relative(file_browser.paths.coursePath, filepath),
         encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
         dir: path.dirname(file_browser.paths.workingPath),
-        canEdit:
-          editable && file_browser.has_course_permission_edit && !file_browser.example_course,
+        canEdit: file_browser.has_course_permission_edit && !file_browser.example_course,
         canUpload: file_browser.has_course_permission_edit && !file_browser.example_course,
         canDownload: true, // we already know the user is a course Viewer (checked on GET)
         canRename:

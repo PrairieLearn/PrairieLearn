@@ -69,30 +69,6 @@ router.get('/*', (req, res, next) => {
     fileNameForDisplay: path.normalize(workingPath),
   };
 
-  const ext = path.extname(workingPath);
-  // If you add to this list, make sure the corresponding list in instructorFileBrowser.js is consistent.
-  const extensionModeMap = {
-    '.json': 'json',
-    '.html': 'html',
-    '.py': 'python',
-    '.txt': 'text',
-    '.md': 'markdown',
-    '.mustache': 'text',
-    '.css': 'css',
-    '.csv': 'text',
-    '.js': 'javascript',
-    '.m': 'matlab',
-    '.c': 'c_cpp',
-    '.cpp': 'c_cpp',
-    '.h': 'c_cpp',
-  };
-  const fileEditMode = extensionModeMap[ext];
-  if (fileEditMode) {
-    fileEdit.aceMode = fileEditMode;
-  } else {
-    debug(`Could not find an ace mode to match extension: ${ext}`);
-  }
-
   // Do not allow users to edit the exampleCourse
   if (res.locals.course.example_course) {
     return next(

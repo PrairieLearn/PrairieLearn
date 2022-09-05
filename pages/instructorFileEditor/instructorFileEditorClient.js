@@ -7,6 +7,9 @@ window.InstructorFileEditor = function (options) {
     throw new Error(`Instructor file editor element ${options.elementId} was not found!`);
   }
 
+  const modelist = ace.require('ace/ext/modelist');
+  const aceMode = modelist.getModeForPath(options.fileName).mode;
+
   this.origHash = options.origHash;
   this.diskHash = options.diskHash;
   this.saveElement = $(`#${options.saveElementId}`);
@@ -19,7 +22,7 @@ window.InstructorFileEditor = function (options) {
     autoScrollEditorIntoView: true,
     wrap: true,
     showPrintMargin: false,
-    mode: options.aceMode,
+    mode: aceMode,
     readOnly: options.readOnly,
   });
 
