@@ -69,19 +69,7 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function placePairingIndicators() {
-      // TODO: add in some UI indicator for the paired disttractors
-      // runestone/parsons/js/parsons.js does something like
-    //   for (i = 0; i < pairedBins.length; i++) {
-    //     var pairedDiv = document.createElement("div");
-    //     $(pairedDiv).addClass("paired");
-    //     $(pairedDiv).html(
-    //         "<span id= 'st' style = 'vertical-align: middle; font-weight: bold'>or{</span>"
-    //     );
-    //     pairedDivs.push(pairedDiv);
-    //     this.sourceArea.appendChild(pairedDiv);
-    // }
-
-    let answerObjs = $(optionsElementId).children().toArray(); // TODO need to get all descendents that are blocks, not just children
+    let answerObjs = $(optionsElementId).children().toArray();
     let getDistractorGroup = block => block.getAttribute('data-distractor-group');
     let distractorBins = new Set(answerObjs.map(getDistractorGroup).filter(x => x != null));
     for (let binUuid of distractorBins) {
@@ -93,13 +81,6 @@ window.PLOrderBlocks = function (uuid, options) {
       for (block of blocks) {
         innerList.insertAdjacentElement('beforeend', block);
       }
-
-      // if (blocks.length == 1) {
-
-      // } else {
-      //   // move one to by by the other, put the big thing behind them both
-      //   blocks[0].insertAdjacentElement('afterend', blocks[1]);
-      // }
     }
   }
 
