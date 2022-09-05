@@ -132,8 +132,6 @@ def prepare(element_html, data):
         ranking = pl.get_integer_attrib(html_tags, 'ranking', -1)
 
         tag, depends = get_graph_info(html_tags)
-        # if grading_method == 'ranking':
-        #     tag = str(index)
 
         if check_indentation is False and answer_indent is not None:
             raise Exception('<pl-answer> should not specify indentation if indentation is disabled.')
