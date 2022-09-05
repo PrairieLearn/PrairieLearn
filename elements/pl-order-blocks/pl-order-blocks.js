@@ -56,25 +56,18 @@ window.PLOrderBlocks = function (uuid, options) {
     return leftDiff;
   }
 
-  function getDistractorBinIndicator(uuid) {
-    let indicator = document.getElementById(uuid + '-indicator');
-    if (!indicator) {
-      indicator = document.createElement('li');
-      indicator.classList.add('pl-order-blocks-pairing-indicator');
-      // indicator.innerHTML += '<span class="pl-order-blocks-pairing-label">pick one {</span>';
-      indicator.innerHTML += '<span style="font-size:13px;">Pick one:</span>';
-      indicator.innerHTML += '<ul class="inner-list" style="padding:0px;"></ul>';
-    }
-    return indicator;
-  }
-
   function placePairingIndicators() {
     let answerObjs = $(optionsElementId).children().toArray();
     let getDistractorGroup = block => block.getAttribute('data-distractor-group');
     let distractorBins = new Set(answerObjs.map(getDistractorGroup).filter(x => x != null));
+
     for (let binUuid of distractorBins) {
       let blocks = answerObjs.filter(block => getDistractorGroup(block) == binUuid);
-      let indicator = getDistractorBinIndicator(binUuid);
+      let indicator = document.createElement('li');
+      indicator.classList.add('pl-order-blocks-pairing-indicator');
+      indicator.innerHTML += '<span style="font-size:13px;">Pick one:</span>';
+      indicator.innerHTML += '<ul class="inner-list" style="padding:0px;"></ul>';
+
       blocks[0].insertAdjacentElement('beforebegin', indicator);
       let innerList = indicator.getElementsByClassName('inner-list')[0];
 
