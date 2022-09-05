@@ -65,6 +65,8 @@ window.PLOrderBlocks = function (uuid, options) {
       let blocks = answerObjs.filter(block => getDistractorBin(block) == binUuid);
       let indicator = document.createElement('li');
       indicator.classList.add('pl-order-blocks-pairing-indicator');
+      indicator.setAttribute('data-distractor-bin', binUuid);
+      indicator.id = 'indicator-' + binUuid;
       indicator.innerHTML += '<span style="font-size:13px;">Pick one:</span>';
       indicator.innerHTML += '<ul class="inner-list" style="padding:0px;"></ul>';
 
@@ -78,11 +80,21 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function correctPairing(ui) {
+    if (ui.item.parent()[0].classList.contains('dropzone')) {
+      // there aren't pairing indicators in the dropzone
+      return;
+    }
+
     let binUuid = ui[0].getAttribute('data-distractor-bin');
+    let containingIndicator = ui[0].closest('.pl-order-blocks-pairing-indicator');
+    let containingIndicatorUuid = containingIndicator ? null : containingIndicator.getAttribute('data-distractor-bin');
 
-    // its in a 'pairing' think but shouldn't be
-
-    // its not in the 'pairing thing that it should be in
+    if (!binUuid && containingIndicatorUuid) {
+      containingIndicator.insertAdjacentElement('afterend', ui[0]);
+    } else if (binUuid !== containingIndicatorUuid) {
+      let properIndicatorList = document.getElementById('indicator-' + binUuid).getElementsByClassName('inner-list')[0];
+      properIndicatorList.insertAdjacentElement('beforeend', ui[0]);
+    }
   }
 
   let sortables = optionsElementId + ', ' + dropzoneElementId;
