@@ -236,8 +236,6 @@ def render(element_html, data):
         for block in student_previous_submission + mcq_options:
             if block.get('distractor_for') is None:
                 continue
-            # print(block['distractor_for'])
-            # print([block2['tag'] for block2 in student_previous_submission + mcq_options])
             pair = next((block2 for block2 in student_previous_submission + mcq_options if block2['tag'] == block['distractor_for']), None)
             if pair is None:
                 raise Exception('Cannot locate any block with tag "' + block['distractor_for'] + '" referenced in distractor-for.')

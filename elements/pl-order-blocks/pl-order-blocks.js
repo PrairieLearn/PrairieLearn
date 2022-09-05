@@ -80,7 +80,6 @@ window.PLOrderBlocks = function (uuid, options) {
   function correctPairing(ui) {
     let binUuid = ui[0].getAttribute('data-distractor-bin');
 
-
     // its in a 'pairing' think but shouldn't be
 
     // its not in the 'pairing thing that it should be in

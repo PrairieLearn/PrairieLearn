@@ -16,19 +16,6 @@ li.pl-order-blocks-code {
   list-style-type: none;
 }
 
-
-/* li::before {
-  content: " ";
-  color: #b8b8f2;
-  left: -6px;
-  padding: 11px;
-  padding-right: 11px solid #b8b8f2;
-  background-image: linear-gradient(#FFF, #FFF),
-        linear-gradient(#b8b8f2, #b8b8f2);
-  background-clip: content-box, padding-box;
-} */
-
-
 .pl-order-blocks-code > .pl-code:only-child div {
   /* override margins on code block to ensure code is centered properly */
   margin-bottom: 0px !important;
@@ -103,16 +90,12 @@ div.column {
   border: 1px solid #9e9e9e;
 }
 
-/* inspired by runestone/parsons/css/parsons.css*/
 .pl-order-blocks-pairing-indicator {
   border-radius: 10px;
   list-style: none;
-  /* user-select: none; */
   background-color: #b8b8f2;
   margin-left: -10px;
   margin-right: -10px;
-  /* border-top: 1px solid #b8b8f2;
-  border-bottom: 1px solid #b8b8f2; */
   padding: 4px 10px 4px 10px;
   margin-top: 5px;
   margin-bottom: 5px;
@@ -122,12 +105,3 @@ div.column {
 .pl-order-blocks-pairing-indicator li:last-child {
   margin-bottom: 0px !important;
 }
-/*
-.pl-order-blocks-pairing-label {
-  vertical-align: middle;
-  text-indent: -30px;
-  position: relative;
-  right: 0px;
-  top: 100px;
-  font-weight: bold;
-} */
