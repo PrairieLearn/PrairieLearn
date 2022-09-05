@@ -22,7 +22,6 @@
           $('.edit-file-button').filter((i, el) => {
               const filename = $(el).data('file-name');
               const mode = modelist.getModeForPath(filename);
-              console.log(filename, mode);
               return !mode.extRe.test(filename);
           }).addClass('disabled');
       });
