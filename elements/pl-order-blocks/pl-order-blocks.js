@@ -58,11 +58,11 @@ window.PLOrderBlocks = function (uuid, options) {
 
   function placePairingIndicators() {
     let answerObjs = $(optionsElementId).children().toArray();
-    let getDistractorGroup = block => block.getAttribute('data-distractor-group');
-    let distractorBins = new Set(answerObjs.map(getDistractorGroup).filter(x => x != null));
+    let getDistractorBin = block => block.getAttribute('data-distractor-bin');
+    let distractorBins = new Set(answerObjs.map(getDistractorBin).filter(x => x != null));
 
     for (let binUuid of distractorBins) {
-      let blocks = answerObjs.filter(block => getDistractorGroup(block) == binUuid);
+      let blocks = answerObjs.filter(block => getDistractorBin(block) == binUuid);
       let indicator = document.createElement('li');
       indicator.classList.add('pl-order-blocks-pairing-indicator');
       indicator.innerHTML += '<span style="font-size:13px;">Pick one:</span>';
@@ -71,10 +71,19 @@ window.PLOrderBlocks = function (uuid, options) {
       blocks[0].insertAdjacentElement('beforebegin', indicator);
       let innerList = indicator.getElementsByClassName('inner-list')[0];
 
-      for (block of blocks) {
+      for (let block of blocks) {
         innerList.insertAdjacentElement('beforeend', block);
       }
     }
+  }
+
+  function correctPairing(ui) {
+    let binUuid = ui[0].getAttribute('data-distractor-bin');
+
+
+    // its in a 'pairing' think but shouldn't be
+
+    // its not in the 'pairing thing that it should be in
   }
 
   let sortables = optionsElementId + ', ' + dropzoneElementId;
@@ -101,6 +110,8 @@ window.PLOrderBlocks = function (uuid, options) {
       let leftDiff = calculateIndent(ui, ui.item.parent());
       ui.item[0].style.marginLeft = leftDiff + 'px';
       setAnswer();
+
+      correctPairing(ui);
     },
   });
 

@@ -241,9 +241,9 @@ def render(element_html, data):
             pair = next((block2 for block2 in student_previous_submission + mcq_options if block2['tag'] == block['distractor_for']), None)
             if pair is None:
                 raise Exception('Cannot locate any block with tag "' + block['distractor_for'] + '" referenced in distractor-for.')
-            distractor_group = pl.get_uuid()
-            block['distractor_group'] = distractor_group
-            pair['distractor_group'] = distractor_group
+            distractor_bin = pl.get_uuid()
+            block['distractor_bin'] = distractor_bin
+            pair['distractor_bin'] = distractor_bin
 
         for option in student_previous_submission:
             submission_indent = option.get('indent', None)
