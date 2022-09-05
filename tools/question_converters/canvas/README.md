@@ -5,7 +5,8 @@ PrairieLearn. The current version includes a conversion of Canvas classic quizze
 other converters is pending, and [contributions are
 welcome](https://github.com/PrairieLearn/PrairieLearn).
 
-This script was originally published at [https://github.com/ubc-cpsc/canvasgrading].
+An earlier version of this script was originally published at
+[https://github.com/ubc-cpsc/canvasgrading].
 
 Before running the script, you must create a `config.json` file as follows:
 
