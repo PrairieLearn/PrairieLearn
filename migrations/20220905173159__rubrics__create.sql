@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS rubric_items (
     deleted_at TIMESTAMP WITH TIME ZONE
 );
 
+CREATE INDEX IF NOT EXISTS rubric_items_rubric_id ON rubric_items(rubric_id);
+
 CREATE TABLE IF NOT EXISTS instance_question_rubric_items (
     id BIGSERIAL PRIMARY KEY,
     instance_question_id BIGINT NOT NULL REFERENCES instance_questions(id) ON DELETE CASCADE ON UPDATE CASCADE,

@@ -11,6 +11,7 @@ columns
 
 indexes
     rubric_items_pkey: PRIMARY KEY (id) USING btree (id)
+    rubric_items_rubric_id: USING btree (rubric_id)
 
 foreign-key constraints
     rubric_items_rubric_id_fkey: FOREIGN KEY (rubric_id) REFERENCES rubrics(id) ON UPDATE CASCADE ON DELETE CASCADE
