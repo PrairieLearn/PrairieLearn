@@ -1,0 +1,15 @@
+columns
+    created_at: timestamp with time zone not null
+    deleted_at: timestamp with time zone
+    id: bigint not null default nextval('rubrics_id_seq'::regclass)
+    max_points: double precision not null
+    min_points: double precision not null
+    starting_points: double precision not null
+
+indexes
+    rubrics_pkey: PRIMARY KEY (id) USING btree (id)
+
+referenced by
+    assessment_questions: FOREIGN KEY (auto_rubric_id) REFERENCES rubrics(id) ON UPDATE CASCADE ON DELETE SET NULL
+    assessment_questions: FOREIGN KEY (manual_rubric_id) REFERENCES rubrics(id) ON UPDATE CASCADE ON DELETE SET NULL
+    rubric_items: FOREIGN KEY (rubric_id) REFERENCES rubrics(id) ON UPDATE CASCADE ON DELETE CASCADE

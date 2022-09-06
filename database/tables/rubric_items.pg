@@ -1,0 +1,19 @@
+columns
+    deleted_at: timestamp with time zone
+    description: text
+    id: bigint not null default nextval('rubric_items_id_seq'::regclass)
+    key_binding: text
+    number: bigint not null
+    points: double precision not null
+    rubric_id: bigint not null
+    short_text: text
+    staff_instructions: text
+
+indexes
+    rubric_items_pkey: PRIMARY KEY (id) USING btree (id)
+
+foreign-key constraints
+    rubric_items_rubric_id_fkey: FOREIGN KEY (rubric_id) REFERENCES rubrics(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    instance_question_rubric_items: FOREIGN KEY (rubric_item_id) REFERENCES rubric_items(id) ON UPDATE CASCADE ON DELETE CASCADE

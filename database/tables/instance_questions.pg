@@ -15,6 +15,7 @@ columns
     incremental_submission_score_array: double precision[]
     last_grader: bigint
     last_submission_score: double precision
+    manual_adjust_points: double precision
     max_submission_score: double precision
     modified_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     number: integer
@@ -51,6 +52,7 @@ foreign-key constraints
 
 referenced by
     files: FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE SET NULL
+    instance_question_rubric_items: FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     issues: FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE SET NULL
     question_score_logs: FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants: FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
