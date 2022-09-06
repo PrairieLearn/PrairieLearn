@@ -315,10 +315,8 @@ function actionButtonFormatter(_value, row, index) {
         .attr('onclick', 'window.event.preventDefault()')
         .appendTo(dropdown);
     //<% if (authz_data.has_course_instance_permission_edit) { %>
-    $('<a>')
+    $('<button>')
         .addClass('dropdown-item')
-        .attr('role', 'button')
-        .attr('tabindex', '0')
         .attr('data-toggle', 'modal')
         .attr('data-target', '#deleteAssessmentInstanceModal')
         .attr('data-uid', row.uid)
@@ -334,30 +332,24 @@ function actionButtonFormatter(_value, row, index) {
         .append('Delete')
         .appendTo(menu);
 
-    $('<a>')
+    $('<button>')
         .addClass('dropdown-item' + (row.open ? '' : ' disabled'))
-        .attr('role', 'button')
-        .attr('tabindex', '0')
         .attr('onclick', `$("#row${ai_id}PopoverClose").popover("show")`)
         .append($('<i>').addClass('fas fa-ban mr-2')
                 .attr('aria-hidden', 'true'))
         .append('Grade &amp; Close')
         .appendTo(menu);
 
-    $('<a>')
+    $('<button>')
         .addClass('dropdown-item' + (!row.open ? '' : ' disabled'))
-        .attr('role', 'button')
-        .attr('tabindex', '0')
         .attr('onclick', `$("#row${ai_id}PopoverTimeLimit").popover("show")`)
         .append($('<i>').addClass('fas fa-lock-open mr-2')
                 .attr('aria-hidden', 'true'))
         .append('Re-open')
         .appendTo(menu);
 
-    $('<a>')
+    $('<button>')
         .addClass('dropdown-item')
-        .attr('role', 'button')
-        .attr('tabindex', '0')
         .attr('onclick', `$("#row${ai_id}PopoverRegrade").popover("show")`)
         .append($('<i>').addClass('fas fa-sync mr-2')
                 .attr('aria-hidden', 'true'))
@@ -365,10 +357,8 @@ function actionButtonFormatter(_value, row, index) {
         .appendTo(menu);
 
     //<% } else { %>
-    $('<a>')
+    $('<button>')
         .addClass('dropdown-item disabled')
-        .attr('role', 'button')
-        .attr('tabindex', '0')
         .append('Must have editor permission')
         .appendTo(menu);
 
