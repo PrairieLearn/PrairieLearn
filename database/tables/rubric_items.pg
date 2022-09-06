@@ -17,4 +17,4 @@ foreign-key constraints
     rubric_items_rubric_id_fkey: FOREIGN KEY (rubric_id) REFERENCES rubrics(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
-    instance_question_rubric_items: FOREIGN KEY (rubric_item_id) REFERENCES rubric_items(id) ON UPDATE CASCADE ON DELETE CASCADE
+    rubric_grading_items: FOREIGN KEY (rubric_item_id) REFERENCES rubric_items(id) ON UPDATE CASCADE ON DELETE CASCADE
