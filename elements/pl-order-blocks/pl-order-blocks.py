@@ -289,13 +289,18 @@ def render(element_html, data):
         if grading_method == 'external':
             return ''  # external grader is responsible for displaying results screen
 
-        student_submission = [{
-            'inner_html': attempt['inner_html'],
-            'indent': ((attempt['indent'] or 0) * TAB_SIZE_PX) + INDENT_OFFSET,
-        } for attempt in data['submitted_answers'].get(answer_name, [])]
+        student_submission = ''
+        score = None
+        feedback = None
+        if answer_name in data['submitted_answers']:
+            student_submission = [{
+                'inner_html': attempt['inner_html'],
+                'indent': ((attempt['indent'] or 0) * TAB_SIZE_PX) + INDENT_OFFSET
+            } for attempt in data['submitted_answers'][answer_name]]
 
-        score = data['partial_scores'][answer_name]['score']
-        feedback = data['partial_scores'][answer_name]['feedback']
+        if answer_name in data['partial_scores']:
+            score = data['partial_scores'][answer_name]['score']
+            feedback = data['partial_scores'][answer_name]['feedback']
 
         html_params = {
             'submission': True,
