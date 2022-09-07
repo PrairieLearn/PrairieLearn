@@ -359,7 +359,7 @@ BEGIN
 
                 -- Insert an assessment question for each question in this alternative group
                 FOR assessment_question IN SELECT * FROM JSONB_ARRAY_ELEMENTS(alternative_group->'questions') LOOP
-                    IF (assessment_question->>'grade_split')::boolean THEN
+                    IF (assessment_question->>'has_split_points')::boolean THEN
                         computed_manual_points := (assessment_question->>'manual_points')::double precision;
                         computed_max_auto_points := (assessment_question->>'max_points')::double precision;
                     ELSE

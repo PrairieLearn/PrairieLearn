@@ -179,12 +179,12 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
       }
 
       const normalizedAlternatives = alternatives.map((alternative) => {
-        const gradeSplit =
+        const hasSplitPoints =
           alternative.autoPoints !== null ||
           alternative.maxAutoPoints !== null ||
           alternative.manualPoints !== null;
-        const autoPoints = (gradeSplit ? alternative.autoPoints : alternative.points) ?? 0;
-        const manualPoints = (gradeSplit ? alternative.manualPoints : 0) ?? 0;
+        const autoPoints = (hasSplitPoints ? alternative.autoPoints : alternative.points) ?? 0;
+        const manualPoints = (hasSplitPoints ? alternative.manualPoints : 0) ?? 0;
 
         if (assessment.type === 'Exam') {
           let pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
@@ -192,10 +192,10 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
 
           return {
             ...alternative,
-            gradeSplit,
+            hasSplitPoints,
             maxPoints,
             initPoints: undefined,
-            pointsList: gradeSplit ? pointsList.map((p) => p + manualPoints) : pointsList,
+            pointsList: hasSplitPoints ? pointsList.map((p) => p + manualPoints) : pointsList,
           };
         } else if (assessment.type === 'Homework') {
           const initPoints =
@@ -204,7 +204,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
 
           return {
             ...alternative,
-            gradeSplit,
+            hasSplitPoints,
             maxPoints,
             initPoints,
             pointsList: undefined,
@@ -225,7 +225,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
           const questionId = questionIds[alternative.qid];
           return {
             number: assessmentQuestionNumber,
-            grade_split: alternative.gradeSplit,
+            has_split_points: alternative.hasSplitPoints,
             points_list: alternative.pointsList,
             init_points: alternative.initPoints,
             max_points: alternative.maxPoints,
