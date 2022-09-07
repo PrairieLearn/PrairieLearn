@@ -103,14 +103,12 @@
                       filterControl: 'select',
                       sortable: true,
                       class: 'text-center',
-                      //searchFormatter: false,
                       formatter: (value, row) => row.requires_manual_grading ? 'Requires grading' : 'Graded',
                   },
                   {
                       field: 'assigned_grader',
                       title: 'Assigned grader',
                       filterControl: 'select',
-                      //searchFormatter: false,
                       formatter: (value, row) => row.assigned_grader_name || '—',
                   },
                   {
@@ -156,7 +154,6 @@
                       field: 'last_grader',
                       title: 'Graded by',
                       filterControl: 'select',
-                      //searchFormatter: false,
                       formatter: (value, row) => row.last_grader ? row.last_grader_name : '&mdash;',
                   },
               ]],
