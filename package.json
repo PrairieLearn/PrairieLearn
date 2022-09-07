@@ -72,7 +72,7 @@
         "isbinaryfile": "^4.0.8",
         "jju": "^1.3.0",
         "jose": "^4.8.3",
-        "jquery": "^3.6.0",
+        "jquery": "^3.6.1",
         "jquery-ui-dist": "^1.13.1",
         "jquery-ui-touch-punch": "^0.2.3",
         "js-cookie": "^2.2.1",
@@ -119,7 +119,7 @@
         "serve-favicon": "^2.5.0",
         "showdown": "^1.9.1",
         "socket.io": "^4.5.1",
-        "socket.io-client": "^4.5.1",
+        "socket.io-client": "^4.5.2",
         "socket.io-redis": "^6.1.1",
         "streamifier": "^0.1.1",
         "tablesorter": "^2.31.3",
@@ -179,7 +179,7 @@
         "s3rver": "^3.7.1",
         "sinon": "^14.0.0",
         "tmp": "0.2.1",
-        "turbo": "^1.3.1",
+        "turbo": "^1.4.4",
         "typescript": "^4.7.4"
     },
     "nyc": {
