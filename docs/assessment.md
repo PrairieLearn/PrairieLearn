@@ -65,21 +65,21 @@ An assessment is broken down in to a list of zones, like this:
         "title": "Easy questions",
         "comment": "These are new questions created for this exam",
         "questions": [
-            {"id": "anEasyQ", "points": [10, 5, 3, 1, 0.5, 0.25]},
-            {"id": "aSlightlyHarderQ", "points": [10, 9, 7, 5]}
+            {"id": "anEasyQ", "autoPoints": [10, 5, 3, 1, 0.5, 0.25]},
+            {"id": "aSlightlyHarderQ", "autoPoints": [10, 9, 7, 5]}
         ]
     },
     {
         "title": "Hard questions",
         "comment": "These are new questions created for this exam",
         "questions": [
-            {"id": "hardQV1", "points": 10},
-            {"id": "reallyHardQ", "points": [10, 10, 10]},
+            {"id": "hardQV1", "autoPoints": 10},
+            {"id": "reallyHardQ", "autoPoints": [10, 10, 10]},
             {
                 "numberChoose": 1,
-                "points": 5,
+                "autoPoints": 5,
                 "alternatives": [
-                    {"id": "FirstAltQ", "points": 10},
+                    {"id": "FirstAltQ", "autoPoints": 10},
                     {"id": "SecondAltQ"}
                 ]
             }
@@ -89,7 +89,7 @@ An assessment is broken down in to a list of zones, like this:
         "title": "Manually graded questions",
         "comment": "These are questions that include manual grading components",
         "questions": [
-            {"id": "essayQ", "points": 10},
+            {"id": "essayQ", "manualPoints": 10},
             {"id": "autoPlusManualQ", "autoPoints": [10, 7, 5], "manualPoints": 15},
         ]
     }
@@ -114,7 +114,7 @@ Auto-grading points are set using the `autoPoints` value. For Exam-type assessme
 
 For Homework-type assessments, it is also possible to set a value to `maxAutoPoints`. If this value is used, then once a student gets a correct answer with the full value of `autoPoints`, the student is able to get additional points for a new attempt, typically with a new question variant. Every new correct answer adds up `autoPoints` points, up to a maximum of `maxAutoPoints`. Answers with partial credit do not accumulate, and their partial points are added only to previous correct answers. For example, if `autoPoints` is 3 and `maxAutoPoints` is 12, then each correct answer adds 3 points to the question, up to a maximum total of 12 points.
 
-A question may also set a value to `points` instead of `autoPoints` and `manualPoints`. If this option is used, questions with a grading method set to Manual will be assigned only manual points, while questions with other grading methods will be assigned only auto points. To avoid ambiguity, it is an error to use both `points` and `autoPoints`, or `points` and `manualPoints`, in the same question. If `points` is used, then `maxPoints` should be used instead of `maxAutoPoints`.
+A question may also set a value to `points` instead of `autoPoints` and `manualPoints`. If this option is used, questions with a `gradingMethod` set to `Manual` will be assigned only manual points, while questions with other grading methods will be assigned only auto points. To avoid ambiguity, it is an error to use both `points` and `autoPoints`, or `points` and `manualPoints`, in the same question. If `points` is used, then `maxPoints` should be used instead of `maxAutoPoints`.
 
 ## Assessment and question instances and resetting assessments
 

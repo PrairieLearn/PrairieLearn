@@ -7,22 +7,29 @@ Some questions may require manual grading, either fully (e.g., freeform essay-ty
 
 ## Configuring a question for manual grading
 
-For questions that require full manual grading, without any auto-grading functionality, the [`info.json` file](question.md#question-infojson) in the question may be set `"gradingMethod": "Manual"`, like this:
+For questions that require manual grading, the question can be set up for manual grading by using `manualPoints` in the [assessment configuration](assessment.md#question-specification), like this:
 
 ```json
 {
-    "uuid": "cbf5cbf2-6458-4f13-a418-aa4d2b1093ff",
-    "gradingMethod": "Manual",
-    "singleVariant": true,
+    "questions": [
+        {"id": "manualGradingOnly", "manualPoints": 2},
+        {"id": "combinedManualAndAutoGrading", "autoPoints": 2, "manualPoints": 6}
+    ]
     ...
 }
 ```
 
-Alternatively, the question can be set up for manual grading by using `manualPoints` in the [assessment configuration](assessment.md#question-specification). If `manualPoints` are set in the assessment without `autoPoints`, then the grading method set in the question will be ignored.
+Questions set to use only manual grading (i.e., without auto points) allow students to "Save" answers, but they don't have a "Save & Grade" button. Instead, the student just saves answers as many times as they want, and all of their submitted answers are stored.
 
-If a question contains both auto-grading and manual grading components, the grading method should be set to the method to be used for auto-grading. In that case, the assessment configuration should be set to use both `manualPoints` and `autoPoints`.
+It is recommended to also mark manually-graded questions as `"singleVariant": true` so that students are only given a single random variant, even on Homework assessments. By default, manual grading is performed only for the last submission of the last variant, so having a single variant simplifies both the grading process and the student feedback. The `singleVariant` setting can be updated in the [`info.json` file](question.md#question-infojson) in the question, like this:
 
-Questions set to use only manual grading (i.e., without auto points) allow students to "Save" answers, but they don't have a "Save & Grade" button. Instead, the student just saves answers as many times as they want, and all of their submitted answers are stored. It is recommended to also mark manually-graded questions as `"singleVariant": true` so that students are only given a single random variant, even on Homework assessments. By default, manual grading is performed only for the last submission of the last variant.
+```json
+{
+    "uuid": "cbf5cbf2-6458-4f13-a418-aa4d2b1093ff",
+    "singleVariant": true,
+    ...
+}
+```
 
 Any [elements](elements/) can be used in the [`question.html`](question.md#question-questionhtml) to write manually graded questions. All of the student input will be saved and available for manual grading, including `pl-string-input`, `pl-file-editor`, `pl-file-upload`, `pl-rich-text-editor`, etc.
 
