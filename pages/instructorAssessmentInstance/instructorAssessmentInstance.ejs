@@ -48,7 +48,7 @@
                 <small>/<span id="total-max-points" class="text-muted"><%= getStringFromFloat(assessment_instance.max_points) %></span></small>
                 <% if (authz_data.has_course_instance_permission_edit) { %>
                 <button type="button" class="btn btn-xs btn-secondary"
-                   id="editTotalPointsButton" tabindex="0"
+                   id="editTotalPointsButton"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change total points"
                    data-content="<%= include('editTotalPointsForm',
@@ -67,7 +67,7 @@
               <td class="align-middle" style="width: 100%;">
                 <% if (authz_data.has_course_instance_permission_edit) { %>
                 <button type="button" class="btn btn-xs btn-secondary"
-                   id="editTotalScorePercButton" tabindex="0"
+                   id="editTotalScorePercButton"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change total percentage score"
                    data-content="<%= include('editTotalScorePercForm',
@@ -139,7 +139,7 @@
                 <%- include('../partials/instanceQuestionPoints', {instance_question, component: 'auto'}); %>
                 <% if (authz_data.has_course_instance_permission_edit) { %>
                 <button type="button" class="btn btn-xs btn-secondary editQuestionAutoPointsButton"
-                   id="editQuestionPointsAuto<%= i_instance_question %>" tabindex="0"
+                   id="editQuestionPointsAuto<%= i_instance_question %>"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> points"
                    data-content="<%= include('../partials/editQuestionPointsForm',
@@ -155,7 +155,7 @@
                 <%- include('../partials/instanceQuestionPoints', {instance_question, component: 'manual'}); %>
                 <% if (authz_data.has_course_instance_permission_edit) { %>
                 <button type="button" class="btn btn-xs btn-secondary editQuestionManualPointsButton"
-                   id="editQuestionPointsManual<%= i_instance_question %>" tabindex="0"
+                   id="editQuestionPointsManual<%= i_instance_question %>"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> points"
                    data-content="<%= include('../partials/editQuestionPointsForm',
@@ -171,7 +171,7 @@
                 <%- include('../partials/instanceQuestionPoints', {instance_question, component: 'total'}); %>
                 <% if (authz_data.has_course_instance_permission_edit) { %>
                 <button type="button" class="btn btn-xs btn-secondary editQuestionPointsButton"
-                   id="editQuestionPoints<%= i_instance_question %>" tabindex="0"
+                   id="editQuestionPoints<%= i_instance_question %>"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> points"
                    data-content="<%= include('../partials/editQuestionPointsForm',
@@ -188,7 +188,7 @@
               <td class="align-middle" style="width: 1em;">
                 <% if (authz_data.has_course_instance_permission_edit) { %>
                 <button type="button" class="btn btn-xs btn-secondary editQuestionScorePercButton"
-                   id="editQuestionScorePerc<%= i_instance_question %>" tabindex="0"
+                   id="editQuestionScorePerc<%= i_instance_question %>"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> percentage score"
                    data-content="<%= include('../partials/editQuestionScorePercForm',

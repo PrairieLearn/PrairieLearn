@@ -244,7 +244,7 @@
           let text = `${getStringFromFloat(points)} <small>/<span class="text-muted">${max}</span></small> `, button = '';
           if (has_course_instance_permission_edit) {
               button = `<button type="button" class="btn btn-xs btn-secondary editQuestionPointsButton"
-                            id="editQuestionPoints_${field}_${row.id}" tabindex="0"
+                            id="editQuestionPoints_${field}_${row.id}"
                             data-toggle="popover" data-container="body"
                             data-html="true" data-placement="auto" title="Change question points"
                             data-base-content="<%= include('../../partials/editQuestionPointsForm',
@@ -276,7 +276,7 @@
           }
           if (has_course_instance_permission_edit) {
               button = `<button type="button" class="btn btn-xs btn-secondary editQuestionScorePercButton"
-                            id="editQuestionScorePerc${row.id}" tabindex="0"
+                            id="editQuestionScorePerc${row.id}"
                             data-toggle="popover" data-container="body"
                             data-html="true" data-placement="auto" title="Change question percentage score"
                             data-base-content="<%= include('../../partials/editQuestionScorePercForm',
