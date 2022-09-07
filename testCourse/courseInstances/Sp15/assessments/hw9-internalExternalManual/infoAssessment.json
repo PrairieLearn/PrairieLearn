@@ -19,7 +19,7 @@
       ]
     },
     {
-      "comments": "Behaviour based on points split",
+      "comments": "Behavior based on separate points for manual and auto",
       "questions": [
         {"id": "internalGrade/addingNumbers2", "manualPoints": 2},
         {"id": "manualGrade/addingNumbers2", "autoPoints": 2, "maxAutoPoints": 6}
