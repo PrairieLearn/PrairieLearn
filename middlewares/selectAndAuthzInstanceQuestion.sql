@@ -49,11 +49,11 @@ SELECT
         'assigned_grader_name', COALESCE(uag.name, uag.uid),
         'last_grader_name', COALESCE(ulg.name, ulg.uid),
         'modified_at_formatted', format_date_short(iq.modified_at, COALESCE(ci.display_timezone, c.display_timezone)),
-        -- If auto_points and manual_points are null, these columns were
-        -- not updated since the implementation of grade splits. This
-        -- computation, in practice, assigns manual_points if the question
-        -- is manually graded or for the extra if the points are above
-        -- max_auto_points.
+        -- If auto_points and manual_points are null, these columns
+        -- were not updated since the implementation of separate
+        -- manual and auto points. This computation, in practice,
+        -- assigns manual_points if the question is manually graded or
+        -- if the points are above max_auto_points.
         'auto_points', COALESCE(iq.auto_points, LEAST(iq.points, aq.max_auto_points)),
         'manual_points', COALESCE(iq.manual_points, GREATEST(0, iq.points - aq.max_auto_points))
     ) AS instance_question,

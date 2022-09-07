@@ -58,10 +58,10 @@ SELECT
     -- update POST is received back.
     CAST(iq.modified_at AS TEXT) AS modified_at,
     -- If auto_points and manual_points are null, these columns were
-    -- not updated since the implementation of grade splits. This
-    -- computation, in practice, assigns manual_points if the question
-    -- is manually graded or for the extra if the points are above
-    -- max_auto_points.
+    -- not updated since the implementation of separate manual and
+    -- auto points. This computation, in practice, assigns
+    -- manual_points if the question is manually graded or if the
+    -- points are above max_auto_points.
     COALESCE(iq.auto_points, LEAST(iq.points, aq.max_auto_points)) AS auto_points,
     COALESCE(iq.manual_points, GREATEST(0, iq.points - aq.max_auto_points)) AS manual_points,
     ((lag(z.id) OVER w) IS DISTINCT FROM z.id) AS start_new_zone,
