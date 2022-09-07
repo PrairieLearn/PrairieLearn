@@ -3,7 +3,7 @@
 Some questions may require manual grading, either fully (e.g., freeform essay-type questions) or partially (e.g., coding style, or "show your work" components). PrairieLearn currently supports two methods of manual grading:
 
 - Course staff may download a CSV file with student answers, perform any grading tasks offline, and upload a CSV file with question scores and optional per-question feedback.
-- An online web interface is available for individual grading directly into the assessment question.
+- An online web interface is available for grading individual instance questions.
 
 ## Configuring a question for manual grading
 
