@@ -13,6 +13,7 @@ const hljs = require('highlight.js');
 const FileType = require('file-type');
 const util = require('util');
 const isBinaryFile = require('isbinaryfile').isBinaryFile;
+const modelist = require('ace-code/src/ext/modelist');
 const { encodePath, decodePath } = require('../../lib/uri-util');
 const editorUtil = require('../../lib/editorUtil');
 const { default: AnsiUp } = require('ansi_up');
@@ -193,6 +194,7 @@ function browseDirectory(file_browser, callback) {
             fs.lstat(filepath, (err, stats) => {
               if (ERR(err, callback)) return;
               if (stats.isFile()) {
+                const editable = modelist.getModeForPath(filename)?.extRe?.test(filename);
                 const movable = !file_browser.paths.cannotMove.includes(filepath);
                 file_browser.files.push({
                   id: index,
@@ -201,7 +203,10 @@ function browseDirectory(file_browser, callback) {
                   path: path.relative(file_browser.paths.coursePath, filepath),
                   encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
                   dir: file_browser.paths.workingPath,
-                  canEdit: file_browser.has_course_permission_edit && !file_browser.example_course,
+                  canEdit:
+                    editable &&
+                    file_browser.has_course_permission_edit &&
+                    !file_browser.example_course,
                   canUpload:
                     file_browser.has_course_permission_edit && !file_browser.example_course,
                   canDownload: true, // we already know the user is a course Viewer (checked on GET)
@@ -315,6 +320,7 @@ function browseFile(file_browser, callback) {
     (err) => {
       if (ERR(err, callback)) return;
       const filepath = file_browser.paths.workingPath;
+      const editable = modelist.getModeForPath(filepath)?.extRe?.test(filepath);
       const movable = !file_browser.paths.cannotMove.includes(filepath);
       file_browser.file = {
         id: 0,
@@ -323,7 +329,8 @@ function browseFile(file_browser, callback) {
         path: path.relative(file_browser.paths.coursePath, filepath),
         encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
         dir: path.dirname(file_browser.paths.workingPath),
-        canEdit: file_browser.has_course_permission_edit && !file_browser.example_course,
+        canEdit:
+          editable && file_browser.has_course_permission_edit && !file_browser.example_course,
         canUpload: file_browser.has_course_permission_edit && !file_browser.example_course,
         canDownload: true, // we already know the user is a course Viewer (checked on GET)
         canRename:

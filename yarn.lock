@@ -1840,6 +1840,11 @@ ace-builds@^1.7.1:
   resolved "https://registry.yarnpkg.com/ace-builds/-/ace-builds-1.7.1.tgz#be796fbd98610dda5e138aed98d309cac2ab0872"
   integrity sha512-1mcbP5kXvr729sJ9dA/8tul0pjuvKbma0LF/ZMRwPEwjoNWNpe/x0OXpaPJo36aRpZCjRZMl5zsME3hAKTiaNw==
 
+ace-code@^1.10.1:
+  version "1.10.1"
+  resolved "https://registry.yarnpkg.com/ace-code/-/ace-code-1.10.1.tgz#b49d7aff364e9bc7df1cdb024346e1d29410870b"
+  integrity sha512-Bts4dUq4U00Ws9WQ40PLOeokPn/p1lL3SDyBe0O4+nGXLkP+ajeHlfDFR0kLx2SgZPCBgc1nduGhbCxCnX154g==
+
 acorn-globals@^4.3.2:
   version "4.3.4"
   resolved "https://registry.yarnpkg.com/acorn-globals/-/acorn-globals-4.3.4.tgz#9fa1926addc11c97308c4e66d7add0d40c3272e7"

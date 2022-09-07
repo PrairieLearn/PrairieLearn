@@ -18,6 +18,7 @@
         "@prairielearn/opentelemetry": "^1.0.0",
         "@prairielearn/sentry": "^1.0.0",
         "ace-builds": "^1.7.1",
+        "ace-code": "^1.10.1",
         "ajv": "^7.1.1",
         "ansi_up": "^5.1.0",
         "archiver": "^5.3.1",

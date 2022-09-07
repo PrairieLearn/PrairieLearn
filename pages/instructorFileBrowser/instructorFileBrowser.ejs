@@ -2,8 +2,6 @@
 <html lang="en">
   <head>
     <%- include('../partials/head', {pageTitle: 'Files'}); %>
-    <script src="<%= node_modules_asset_path('ace-builds/src-min-noconflict/ace.js') %>"></script>
-    <script src="<%= node_modules_asset_path('ace-builds/src-min-noconflict/ext-modelist.js') %>"></script>
     <link href="<%= node_modules_asset_path('highlight.js/styles/default.css') %>" rel="stylesheet">
     <style>
       .popover{
@@ -14,16 +12,9 @@
   <body>
     <script>
       $(function() {
-          $('[data-toggle="popover"]').popover({
-              sanitize: false
-          })
-
-          const modelist = ace.require('ace/ext/modelist');
-          $('.edit-file-button').filter((i, el) => {
-              const filename = $(el).data('file-name');
-              const mode = modelist.getModeForPath(filename);
-              return !mode.extRe.test(filename);
-          }).addClass('disabled');
+        $('[data-toggle="popover"]').popover({
+            sanitize: false
+        })
       });
     </script>
     <%- include('../partials/navbar'); %>
@@ -79,7 +70,7 @@
                 <% if (file_browser.isFile) { %>
 
                 <%# File head %>
-                <a tabindex="0" class="btn btn-sm btn-light <% if (!file_browser.file.canEdit) { %>disabled<% } else { %>edit-file-button<% } %>" data-file-name="<%= file_browser.file.name %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_edit/<%= file_browser.file.encodedPath %>">
+                <a tabindex="0" class="btn btn-sm btn-light <% if (!file_browser.file.canEdit) { %>disabled<% } %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_edit/<%= file_browser.file.encodedPath %>">
                   <i class="fa fa-edit"></i>
                   <span>Edit</span>
                 </a>
@@ -172,7 +163,7 @@
                   <% } %>
                 </td>
                 <td>
-                  <a tabindex="0" class="btn btn-xs btn-secondary <% if (!f.canEdit) { %>disabled<% } else { %>edit-file-button<% } %>" data-file-name="<%= f.name %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_edit/<%= f.encodedPath %>">
+                  <a tabindex="0" class="btn btn-xs btn-secondary <% if (!f.canEdit) { %>disabled<% } %>" role="button" href="<%= file_browser.paths.urlPrefix %>/file_edit/<%= f.encodedPath %>">
                     <i class="fa fa-edit"></i>
                     <span>Edit</span>
                   </a>
