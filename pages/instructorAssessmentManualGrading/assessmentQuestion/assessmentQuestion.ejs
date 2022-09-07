@@ -243,7 +243,7 @@
                 field === 'points' ? row.max_points : 0;
           let text = `${getStringFromFloat(points)} <small>/<span class="text-muted">${max}</span></small> `, button = '';
           if (has_course_instance_permission_edit) {
-              button = `<button type="button" class="btn btn-xs btn-secondary editQuestionPointsButton"
+              button = `<button type="button" class="btn btn-xs btn-secondary"
                             id="editQuestionPoints_${field}_${row.id}"
                             data-toggle="popover" data-container="body"
                             data-html="true" data-placement="auto" title="Change question points"
@@ -275,7 +275,7 @@
               bar += '</div>';
           }
           if (has_course_instance_permission_edit) {
-              button = `<button type="button" class="btn btn-xs btn-secondary editQuestionScorePercButton"
+              button = `<button type="button" class="btn btn-xs btn-secondary"
                             id="editQuestionScorePerc${row.id}"
                             data-toggle="popover" data-container="body"
                             data-html="true" data-placement="auto" title="Change question percentage score"
