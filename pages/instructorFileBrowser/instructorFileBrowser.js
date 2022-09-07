@@ -320,7 +320,6 @@ function browseFile(file_browser, callback) {
     (err) => {
       if (ERR(err, callback)) return;
       const filepath = file_browser.paths.workingPath;
-      const editable = modelist.getModeForPath(filepath)?.extRe?.test(filepath);
       const movable = !file_browser.paths.cannotMove.includes(filepath);
       file_browser.file = {
         id: 0,
@@ -330,7 +329,9 @@ function browseFile(file_browser, callback) {
         encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
         dir: path.dirname(file_browser.paths.workingPath),
         canEdit:
-          editable && file_browser.has_course_permission_edit && !file_browser.example_course,
+          file_browser.isText &&
+          file_browser.has_course_permission_edit &&
+          !file_browser.example_course,
         canUpload: file_browser.has_course_permission_edit && !file_browser.example_course,
         canDownload: true, // we already know the user is a course Viewer (checked on GET)
         canRename:
