@@ -8092,10 +8092,10 @@ parseurl@^1.3.2, parseurl@~1.3.2, parseurl@~1.3.3:
   resolved "https://registry.yarnpkg.com/parseurl/-/parseurl-1.3.3.tgz#9da19e7bee8d12dff0513ed5b76957793bc2e8d4"
   integrity sha512-CiyeOxFT/JZyN5m0z9PfXw4SCBJ6Sygz1Dpl0wqjlhDEGGBP1GnsUVEL0p63hoG1fcj3fHynXi9NYO4nWOL+qQ==
 
-passport-azure-ad@^4.3.3:
-  version "4.3.3"
-  resolved "https://registry.yarnpkg.com/passport-azure-ad/-/passport-azure-ad-4.3.3.tgz#4b293a6a474b776b4c530698f650194b441904ce"
-  integrity sha512-tx1zOXw+ve23Bp4/2LoopcXfh+DoI53hRe7v/ly8Jw82jqul5E9/gLLG1VYQl/A1a6oqul9hyJIpodeLkBMVcA==
+passport-azure-ad@^4.3.4:
+  version "4.3.4"
+  resolved "https://registry.yarnpkg.com/passport-azure-ad/-/passport-azure-ad-4.3.4.tgz#2f1c3f64003df974b60390ece70d106336336f46"
+  integrity sha512-veG3IT/ovfFaMK3IREcVGLYa8nx/91s10eeMcfJmvofHG7Uv6FVElrnDA2E1CgQdE6hdWzG28UV8ITw6Qhocxg==
   dependencies:
     async "^3.2.3"
     base64url "^3.0.0"
@@ -8106,7 +8106,7 @@ passport-azure-ad@^4.3.3:
     lodash "^4.11.2"
     node-jose "^2.0.0"
     oauth "0.9.15"
-    passport "^0.4.1"
+    passport "^0.6.0"
     valid-url "^1.0.6"
 
 passport-saml@^3.2.1:
@@ -8126,14 +8126,6 @@ passport-strategy@1.x.x, passport-strategy@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/passport-strategy/-/passport-strategy-1.0.0.tgz#b5539aa8fc225a3d1ad179476ddf236b440f52e4"
   integrity sha1-tVOaqPwiWj0a0XlHbd8ja0QPUuQ=
-
-passport@^0.4.1:
-  version "0.4.1"
-  resolved "https://registry.yarnpkg.com/passport/-/passport-0.4.1.tgz#941446a21cb92fc688d97a0861c38ce9f738f270"
-  integrity sha512-IxXgZZs8d7uFSt3eqNjM9NQ3g3uQCW5avD8mRNoXV99Yig50vjuaez6dQK2qC0kVWPRTujxY0dWgGfT09adjYg==
-  dependencies:
-    passport-strategy "1.x.x"
-    pause "0.0.1"
 
 passport@^0.6.0:
   version "0.6.0"
