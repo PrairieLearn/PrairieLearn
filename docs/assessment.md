@@ -110,9 +110,21 @@ An assessment is broken down in to a list of zones, like this:
 
 Each question is assigned a set number of _auto points_ (points that are automatically assigned by an internal or external grader) and _manual points_ (points that are [assigned manually by a human grader](manualGrading.md)).
 
-Auto-grading points are set using the `autoPoints` value. For Exam-type assessments, this option can be set to a single value (in which case a single attempt is allowed), or using an array of values, where each value corresponds to an attempt. For Homework-type assessments, the number of `autoPoints` corresponds to the initial value of a correct attempt. Students can attempt the same question again until they get a correct answer and full auto points. Manual grading points are set using the `manualPoints`. It is acceptable to use only one of `autoPoints` or `manualPoints`, in which case the other part of the points will be assigned a value of 0.
+Auto-grading points are set using the `autoPoints` value. For Exam-type assessments, this option can be set to a single value (in which case a single attempt is allowed), or using an array of values, where each value corresponds to an attempt. For Homework-type assessments, the number of `autoPoints` must be a single value, and it corresponds to the initial value of a correct attempt. Students can attempt the same question again until they get a correct answer and full auto points. Manual grading points are set using the `manualPoints`. It is acceptable to use only one of `autoPoints` or `manualPoints`, in which case the other part of the points will be assigned a value of 0.
 
 For Homework-type assessments, it is also possible to set a value to `maxAutoPoints`. If this value is used, then once a student gets a correct answer with the full value of `autoPoints`, the student is able to get additional points for a new attempt, typically with a new question variant. Every new correct answer adds up `autoPoints` points, up to a maximum of `maxAutoPoints`. Answers with partial credit do not accumulate, and their partial points are added only to previous correct answers. For example, if `autoPoints` is 3 and `maxAutoPoints` is 12, then each correct answer adds 3 points to the question, up to a maximum total of 12 points.
+
+By default, PrairieLearn provides an incentive for students to answer a specific question correctly multiple times in a row. This is done by increasing the value of each submission for every consecutive correct answer, while setting it back to the original value if the answer is incorrect or partially correct. So, for example, if `autoPoints` is 3 and `maxAutoPoints` is 30, then the first correct answer is worth 3 points. If the next submission is also fully correct, it will be worth 6 points; a following answer is worth 9 points if correct; and so on. If any answer is incorrect or partially correct, the value is reset to 3 points. To disable this behavior, use `"constantQuestionValue": true` in the assessment settings, like this:
+
+```json
+"constantQuestionValue": true,
+"zones": [
+    {
+        "questions": [ ... ]
+    },
+    ...
+],
+```
 
 A question may also set a value to `points` instead of `autoPoints` and `manualPoints`. If this option is used, questions with a `gradingMethod` set to `Manual` will be assigned only manual points, while questions with other grading methods will be assigned only auto points. To avoid ambiguity, it is an error to use both `points` and `autoPoints`, or `points` and `manualPoints`, in the same question. If `points` is used, then `maxPoints` should be used instead of `maxAutoPoints`.
 

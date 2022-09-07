@@ -62,7 +62,7 @@ BEGIN
 
     -- if the submission was correct, increment current_value
     IF correct AND NOT constant_question_value THEN
-        current_value := least(iq.current_value + aq.init_points, aq.max_auto_points);
+        current_value := least(iq.current_value + aq.init_points, aq.max_points);
     END IF;
 
     -- points is the sum of all elements in variants_points_list (which now must be non-empty)
