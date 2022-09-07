@@ -23,6 +23,7 @@ const sha256 = require('crypto-js/sha256');
 const b64Util = require('../../lib/base64-util');
 const fileStore = require('../../lib/file-store');
 const isBinaryFile = require('isbinaryfile').isBinaryFile;
+const modelist = require('ace-code/src/ext/modelist');
 const { decodePath } = require('../../lib/uri-util');
 const chunks = require('../../lib/chunks');
 const { idsEqual } = require('../../lib/id');
@@ -67,6 +68,7 @@ router.get('/*', (req, res, next) => {
     dirName: path.dirname(workingPath),
     fileName: path.basename(workingPath),
     fileNameForDisplay: path.normalize(workingPath),
+    aceMode: modelist.getModeForPath(workingPath).mode,
   };
 
   // Do not allow users to edit the exampleCourse

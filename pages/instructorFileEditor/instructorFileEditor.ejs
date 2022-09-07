@@ -4,7 +4,6 @@
 <head>
     <%- include('../partials/head', {pageTitle: 'Edit ' + fileEdit.fileName}); %>
     <script src="<%= node_modules_asset_path('ace-builds/src-min-noconflict/ace.js') %>"></script>
-    <script src="<%= node_modules_asset_path('ace-builds/src-min-noconflict/ext-modelist.js') %>"></script>
     <script src="<%= node_modules_asset_path('crypto-js/crypto-js.js') %>"></script>
     <script src="./file_edit?serve=client"></script>
     <script src="<%= node_modules_asset_path('socket.io-client/dist/socket.io.min.js') %>"></script>
@@ -12,6 +11,7 @@
 
 <body>
     <%- include('../partials/navbar'); %>
+
     <div id="content" class="container-fluid">
 
         <% if (fileEdit.sync_errors) { %>
@@ -41,7 +41,9 @@
             $(function() {
                 new window.InstructorFileEditor({
                     contents: "<%- fileEdit.editContents %>",
-                    fileName: <%- JSON.stringify(fileEdit.fileNameForDisplay) %>,
+                    <% if (fileEdit.aceMode) { %>
+                    aceMode: "ace/mode/<%= fileEdit.aceMode %>",
+                    <% } %>
                     origHash: "<%- fileEdit.origHash %>",
                     diskHash: "<%- fileEdit.diskHash %>",
                     elementId: "file-editor-<%= fileEdit.uuid %>-draft",
@@ -59,7 +61,9 @@
                 <% if ((fileEdit.alertChoice) && (!fileEdit.failedPush)) { %>
                 new window.InstructorFileEditor({
                     contents: "<%- fileEdit.diskContents %>",
-                    fileName: <%- JSON.stringify(fileEdit.fileNameForDisplay) %>,
+                    <% if (fileEdit.aceMode) { %>
+                    aceMode: "ace/mode/<%= fileEdit.aceMode %>",
+                    <% } %>
                     elementId: "file-editor-<%= fileEdit.uuid %>-disk",
                     readOnly: true,
                 });
