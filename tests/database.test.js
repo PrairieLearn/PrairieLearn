@@ -60,7 +60,7 @@ describe('database', function () {
       );
 
       for (const table of softDeleteTables) {
-        for (const constraint of data.tables[table].foreignKeyConstraints) {
+        for (const constraint of data.tables[table].foreignKeyConstraints || []) {
           const match = constraint.def.match(
             /^FOREIGN KEY \((.*)\) REFERENCES (.*)\(.*\) ON UPDATE .* ON DELETE (.*)$/
           );
