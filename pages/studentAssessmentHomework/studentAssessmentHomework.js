@@ -199,12 +199,12 @@ router.post('/', function (req, res, next) {
       res.locals.assessment.id,
       res.locals.user.user_id,
       res.locals.authn_user.user_id,
-      function (err, succeeded) {
+      function (err, errors) {
         if (ERR(err, next)) return;
-        if (succeeded) {
+        if (errors.length === 0) {
           res.redirect(req.originalUrl);
         } else {
-          // TODO: add some errors to res.locals and render
+          res.locals.errors = errors;
           res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         }
       }
