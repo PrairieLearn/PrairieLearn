@@ -8,13 +8,11 @@
     urlSuffix:      '/course_admin/instances',
     iconClasses:    'fas fa-chalkboard-teacher',
     tabLabel:       'Course Instances'}) %>
-<% if (authz_data.has_course_permission_view) { %>
 <%- include('navTab', {
     activeSubPage:  'file_view',
     urlSuffix:      '/course_admin/file_view',
     iconClasses:    'fa fa-edit',
     tabLabel:       'Files'}) %>
-<% } %>
 <%- include('navTab', {
     activeSubPage:  'issues',
     urlSuffix:      '/course_admin/issues',
@@ -30,20 +28,16 @@
     urlSuffix:      '/course_admin/settings',
     iconClasses:    'fas fa-cog',
     tabLabel:       'Settings'}) %>
-<% if (authz_data.has_course_permission_own) { %>
-    <%- include('navTab', {
-        activeSubPage:  'staff',
-        urlSuffix:      '/course_admin/staff',
-        iconClasses:    'fas fa-users',
-        tabLabel:       'Staff'}) %>
-<% } %>
-<% if (!devMode && authz_data.has_course_permission_edit) { %>
+<%- include('navTab', {
+    activeSubPage:  'staff',
+    urlSuffix:      '/course_admin/staff',
+    iconClasses:    'fas fa-users',
+    tabLabel:       'Staff'}) %>
 <%- include('navTab', {
     activeSubPage:  'syncs',
     urlSuffix:      '/course_admin/syncs',
     iconClasses:    'fas fa-sync-alt',
     tabLabel:       'Sync'}) %>
-<% } %>
 <%- include('navTab', {
     activeSubPage:  'tags',
     urlSuffix:      '/course_admin/tags',

@@ -20,6 +20,7 @@ const net = require('net');
 const unzipper = require('unzipper');
 const stream = require('stream');
 const asyncHandler = require('express-async-handler');
+const Sentry = require('@prairielearn/sentry');
 
 const dockerUtil = require('../lib/dockerUtil');
 const awsHelper = require('../lib/aws');
@@ -150,6 +151,14 @@ async.series(
         workspace_server_settings.hostname = config.workspaceDevHostHostname;
         workspace_server_settings.server_to_container_hostname =
           config.workspaceDevContainerHostname;
+      }
+    },
+    async () => {
+      if (config.sentryDsn) {
+        await Sentry.init({
+          dsn: config.sentryDsn,
+          environment: config.sentryEnvironment,
+        });
       }
     },
     (callback) => {
@@ -362,6 +371,7 @@ async.series(
   ],
   function (err, data) {
     if (err) {
+      Sentry.captureException(err);
       logger.error('Error initializing workspace host:', err, data);
       markSelfUnhealthyAsync(err);
     } else {
@@ -801,10 +811,15 @@ async function _autoUpdateJobManager() {
         logger.info(`Uploading file to S3: ${s3_path}, ${path}`);
         awsHelper.uploadToS3(config.workspaceS3Bucket, s3_path, path, isDirectory, (err) => {
           if (err) {
+            Sentry.captureException(err, {
+              tags: {
+                'workspace.id': workspace_id,
+                's3.bucket': config.workspaceS3Bucket,
+                's3.path': s3_path,
+                path,
+              },
+            });
             logger.error(`Error uploading file to S3: ${s3_path}, ${path}, ${err}`);
-            logger.error(
-              `PREVIOUSLY FATAL ERROR: Error uploading file to S3: ${s3_path}, ${path}, ${err}`
-            );
           } else {
             logger.info(`Successfully uploaded file to S3: ${s3_path}, ${path}`);
           }
@@ -817,10 +832,15 @@ async function _autoUpdateJobManager() {
         logger.info(`Removing file from S3: ${s3_path}`);
         awsHelper.deleteFromS3(config.workspaceS3Bucket, s3_path, isDirectory, (err) => {
           if (err) {
+            Sentry.captureException(err, {
+              tags: {
+                'workspace.id': workspace_id,
+                's3.bucket': config.workspaceS3Bucket,
+                's3.path': s3_path,
+                path,
+              },
+            });
             logger.error(`Error removing file from S3: ${s3_path}, ${err}`);
-            logger.error(
-              `PREVIOUSLY FATAL ERROR: Error removing file from S3: ${s3_path}, ${path}, ${err}`
-            );
           } else {
             logger.info(`Successfully removed file from S3: ${s3_path}`);
           }
@@ -1428,6 +1448,11 @@ function gradeSequence(workspace_id, res) {
     ],
     (err, locals) => {
       if (err) {
+        Sentry.captureException(err, {
+          tags: {
+            'workspace.id': workspace_id,
+          },
+        });
         logger.error(`Error in gradeSequence: ${err}`);
         res.status(500).send(err);
         try {
