@@ -1,5 +1,11 @@
 # @prairielearn/opentelemetry
 
+## 1.4.1
+
+### Patch Changes
+
+- dba390399: Upgrade dependencies to latest versions
+
 ## 1.4.0
 
 ### Minor Changes
