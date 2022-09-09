@@ -1,4 +1,5 @@
 // @ts-check
+const http = require('http');
 const readline = require('readline');
 const { FunctionMissingError } = require('./lib/code-caller');
 const { CodeCallerNative } = require('./lib/code-caller/code-caller-native');
@@ -98,60 +99,81 @@ async function handleInput(line, codeCaller) {
   };
 }
 
-// Our overall loop looks like this: read a line of input from stdin, spin
-// off a python worker to handle it, and write the results back to stdout.
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false,
-});
+(async () => {
+  // Set up a simple HTTP server to handle health checks. We'll consider the
+  // executor to be healthy once we've successfully done a restart of the child
+  // process.
+  let isHealthy = false;
+  const server = http.createServer((req, res) => {
+    res.writeHead(isHealthy ? 200 : 500);
+    res.end();
+  });
+  server.listen(3000);
 
-let questionTimeoutMilliseconds = Number.parseInt(process.env.QUESTION_TIMEOUT_MILLISECONDS);
-if (Number.isNaN(questionTimeoutMilliseconds)) {
-  questionTimeoutMilliseconds = 10000;
-}
+  // Our overall loop looks like this: read a line of input from stdin, spin
+  // off a python worker to handle it, and write the results back to stdout.
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: false,
+  });
 
-let codeCaller = new CodeCallerNative({
-  dropPrivileges: true,
-  questionTimeoutMilliseconds,
-  errorLogger: console.error,
-});
-codeCaller.ensureChild();
-
-// Safety check: if we receive more input while handling another request,
-// discard it.
-let processingRequest = false;
-rl.on('line', (line) => {
-  if (processingRequest) {
-    // Someone else messed up - fail fast.
-    process.exit(1);
+  let questionTimeoutMilliseconds = Number.parseInt(process.env.QUESTION_TIMEOUT_MILLISECONDS);
+  if (Number.isNaN(questionTimeoutMilliseconds)) {
+    questionTimeoutMilliseconds = 10000;
   }
 
-  processingRequest = true;
-  handleInput(line, codeCaller)
-    .then(async (results) => {
-      const { needsFullRestart, ...rest } = results;
-      if (needsFullRestart) {
-        codeCaller.done();
-        codeCaller = new CodeCallerNative({
-          dropPrivileges: true,
-          questionTimeoutMilliseconds,
-          errorLogger: console.error,
-        });
-        await codeCaller.ensureChild();
-      }
-      console.log(JSON.stringify(rest));
-    })
-    .catch((err) => {
-      console.error(err);
-    })
-    .finally(() => {
-      processingRequest = false;
-    });
-});
+  let codeCaller = new CodeCallerNative({
+    dropPrivileges: true,
+    questionTimeoutMilliseconds,
+    errorLogger: console.error,
+  });
+  await codeCaller.ensureChild();
 
-rl.on('close', () => {
-  // We can't get any more input; die immediately to allow our container
-  // to be removed.
-  process.exit(0);
-});
+  // Once we have a child process, try to restart and give it two minutes to
+  // complete. If it does not, we'll kill this executor and allow another one
+  // to replace it.
+  await codeCaller.restart({ timeout: 1000 * 60 * 2 });
+
+  // If we got here, we're healthy! Update this flag so the health check can
+  // report ourselves as healthy.
+  isHealthy = true;
+
+  // Safety check: if we receive more input while handling another request,
+  // discard it.
+  let processingRequest = false;
+  rl.on('line', (line) => {
+    if (processingRequest) {
+      // Someone else messed up - fail fast.
+      process.exit(1);
+    }
+
+    processingRequest = true;
+    handleInput(line, codeCaller)
+      .then(async (results) => {
+        const { needsFullRestart, ...rest } = results;
+        if (needsFullRestart) {
+          codeCaller.done();
+          codeCaller = new CodeCallerNative({
+            dropPrivileges: true,
+            questionTimeoutMilliseconds,
+            errorLogger: console.error,
+          });
+          await codeCaller.ensureChild();
+        }
+        console.log(JSON.stringify(rest));
+      })
+      .catch((err) => {
+        console.error(err);
+      })
+      .finally(() => {
+        processingRequest = false;
+      });
+  });
+
+  rl.on('close', () => {
+    // We can't get any more input; die immediately to allow our container
+    // to be removed.
+    process.exit(0);
+  });
+})();

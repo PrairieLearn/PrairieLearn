@@ -15,6 +15,6 @@ RUN groupadd executor \
 
 # The `prairielearn/prairielearn` base image specifies a healthcheck that won't
 # do anything for this image, so we'll just disable it here.
-HEALTHCHECK NONE
+HEALTHCHECK --interval=1s --retries= --start-period=120s CMD curl --fail http://localhost:3000 || exit 1
 
 CMD node executor.js
