@@ -129,18 +129,23 @@ rl.on('line', (line) => {
 
   processingRequest = true;
   handleInput(line, codeCaller)
-    .then((results) => {
+    .then(async (results) => {
       const { needsFullRestart, ...rest } = results;
       if (needsFullRestart) {
         codeCaller.done();
-        codeCaller = new CodeCallerNative();
-        codeCaller.ensureChild();
+        codeCaller = new CodeCallerNative({
+          dropPrivileges: true,
+          questionTimeoutMilliseconds,
+          errorLogger: console.error,
+        });
+        await codeCaller.ensureChild();
       }
       console.log(JSON.stringify(rest));
-      processingRequest = false;
     })
     .catch((err) => {
       console.error(err);
+    })
+    .finally(() => {
       processingRequest = false;
     });
 });
