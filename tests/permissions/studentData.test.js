@@ -643,7 +643,7 @@ describe('student data access', function () {
     assert.isTrue(response.ok);
   });
 
-  step('instructor (no role) cannot view gradebook', async () => {
+  step('instructor (no role) can view gradebook', async () => {
     const headers = {
       cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=None',
     };
@@ -651,7 +651,15 @@ describe('student data access', function () {
       `${context.courseInstanceBaseUrl}/instructor/instance_admin/gradebook`,
       { headers }
     );
-    assert.equal(response.status, 403);
+    // This page itself is visible even if the user doesn't have permissions to
+    // view student data, but it won't actually show student data, which is
+    // loaded asynchronously via the `raw_data.json` endpoint, which is tested
+    // below.
+    //
+    // This page should contain a warning that the user doesn't have access to
+    // student data, and a prompt to obtain access.
+    assert.lengthOf(response.$('table#gradebook-data'), 0);
+    assert.lengthOf(response.$('h2:contains("Insufficient permissions")'), 1);
   });
 
   step('instructor (no role) cannot view gradebook raw data', async () => {
