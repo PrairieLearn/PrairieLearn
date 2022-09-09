@@ -2,6 +2,7 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const config = require('../../lib/config');
+const QR = require('qrcode-svg');
 
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
@@ -39,6 +40,11 @@ router.get('/', function (req, res, next) {
       let host = config.serverCanonicalHost || 'https://' + req.headers.host;
       res.locals.studentLink =
         host + res.locals.plainUrlPrefix + '/course_instance/' + res.locals.course_instance.id;
+      res.locals.studentLinkQRCode = new QR({
+        content: res.locals.studentLink,
+        width: 512,
+        height: 512,
+      }).svg();
       res.locals.infoCourseInstancePath = encodePath(
         path.join(
           'courseInstances',
