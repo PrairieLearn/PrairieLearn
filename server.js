@@ -275,10 +275,6 @@ module.exports.initExpress = function () {
         { workspace_id }
       );
 
-      if (req.upgrade === true) {
-        throw error.make(404, 'Workspace is not running');
-      }
-
       if (result.rows.length === 0) {
         // If updating this message, also update the message our Sentry
         // `beforeSend` handler.
