@@ -37,7 +37,7 @@ FROM
         AND ((chunks_arr->>'questionId' IS NULL) OR (chunks.question_id = (chunks_arr->>'questionId')::bigint))
     )
     LEFT JOIN assessments AS a ON (a.id = (chunks_arr->>'assessmentId')::bigint)
-    LEFT JOIN course_instances AS ci ON (ci.id = (chunks_arr->>'coursInstanceId')::bigint OR ci.id = a.course_instance_id)
+    LEFT JOIN course_instances AS ci ON (ci.id = (chunks_arr->>'courseInstanceId')::bigint OR ci.id = a.course_instance_id)
     LEFT JOIN questions AS q ON (q.id = (chunks_arr->>'questionId')::bigint);
 
 -- BLOCK select_course_dir
