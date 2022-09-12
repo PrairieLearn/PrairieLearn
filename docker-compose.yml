@@ -1,17 +1,21 @@
 version: '3.8'
 services:
   pl:
-    build:
-      context: .
-    image: prairielearn/prairielearn:local
+    image: prairielearn/prairielearn:latest
     ports:
       - 3000:3000
     volumes:
-      - ./testCourse:/course
+      - postgres:/var/postgres      
       - /var/run/docker.sock:/var/run/docker.sock
       - ${HOME}/pl_ag_jobs:/jobs
+      # Uncomment the following line if you want to use your own copy of the
+      # PrairieLearn source code.
       - .:/PrairieLearn
     container_name: pl
     environment:
       - HOST_JOBS_DIR=${HOME}/pl_ag_jobs
-      - NODEMON=true
+      # Uncomment the following line to restart the server whenever a file changes.
+      # - NODEMON=true
+
+volumes:
+  postgres:

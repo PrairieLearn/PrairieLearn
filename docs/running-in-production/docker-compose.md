@@ -5,7 +5,7 @@
 Follow the steps to [install PrairieLearn with local source code](../installingLocal.md). Then run this command in the root folder:
 
 ```sh
-docker compose -f docker-compose-production.yml up
+docker compose up
 ```
 
 Then access PrairieLearn from port `3000`.
@@ -15,7 +15,7 @@ Then access PrairieLearn from port `3000`.
 PrairieLearn can be configured by a `config.json` in the root of the repository.
 
 - First make the file `config.json` in your root repository.
-- Add the following line to `docker-compose-production.yml` under `volumes`:
+- Add the following line to `docker-compose.yml` under `volumes`:
 
 ```sh
 - ./config.json:/PrairieLearn/config.json
@@ -64,7 +64,7 @@ Run the command on the host system
 ssh-keygen
 ```
 
-Which will generate a new key. Save this somewhere you will remember. Next you must bind mount these keys into the Docker container. In `docker-compose-production.yml` under `volumes` add
+Which will generate a new key. Save this somewhere you will remember. Next you must bind mount these keys into the Docker container. In `docker-compose.yml` under `volumes` add
 
 ```sh
 - /host/path/to/.ssh:/root/.ssh
@@ -83,7 +83,7 @@ Next to add the SSH key on GitHub go to [SSH keys](https://github.com/settings/s
 Adding courses is done through a GitHub repository. It is recommended to setup an organization under one user to which you can add all courses.
 
 To make sure the courses remain if the Docker container goes down
-we must bind mount the folder in which courses are stored to the host machine, in `docker-compose-production.yml` under `volumes` add
+we must bind mount the folder in which courses are stored to the host machine, in `docker-compose.yml` under `volumes` add
 
 ```sh
 - host/place/to/store/courses/:/container_courses_dir/
