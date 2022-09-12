@@ -62,7 +62,7 @@
         "filesize": "^9.0.11",
         "folder-hash": "^4.0.2",
         "fs-extra": "^10.1.0",
-        "generic-pool": "^3.8.2",
+        "generic-pool": "^3.9.0",
         "googleapis": "^107.0.0",
         "he": "^1.2.0",
         "highlight.js": "^11.6.0",
