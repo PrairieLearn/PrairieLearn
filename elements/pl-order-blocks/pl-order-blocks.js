@@ -65,6 +65,7 @@ window.PLOrderBlocks = function (uuid, options) {
     connectWith: sortables,
     placeholder: 'ui-state-highlight',
     create: function () {
+      initializeKeyboardHandling(optionsElementId, dropzoneElementId);
       setAnswer();
     },
     sort: function (event, ui) {
@@ -87,3 +88,36 @@ window.PLOrderBlocks = function (uuid, options) {
   }
   $('[data-toggle="popover"]').popover();
 };
+
+function initializeKeyboardHandling(optionsElementId, dropzoneElementId) {
+  function inDropzone(block) {
+    let parentArea = block.closest('.pl-order-blocks-connected-sortable');
+    return parentArea.classList.contains('dropzone')
+  }
+  var blocks = Array.from($(optionsElementId)[0].children);
+  for (let block of blocks) {
+    block.addEventListener('keydown', $.debounce((ev) => {
+      console.log(ev.key);
+      if (ev.key == 'ArrowDown') {
+        if (block.nextElementSibling) {
+          block.nextElementSibling.insertAdjacentElement('afterend', block);
+        }
+      } else if (ev.key == 'ArrowUp') {
+        if (block.previousElementSibling) {
+          block.previousElementSibling.insertAdjacentElement('beforebegin', block);
+        }
+      } else if (ev.key == 'ArrowLeft') {
+        // TODO also handle indenting/de-indenting
+        if (inDropzone(block)) {
+          $(optionsElementId)[0].insertAdjacentElement('afterbegin', block);
+        }
+      } else if (ev.key == 'ArrowRight') {
+        // TODO also handle indenting/de-indenting
+        if (!inDropzone(block)) {
+          $(dropzoneElementId)[0].insertAdjacentElement('afterbegin', block);
+        }
+      }
+      block.focus();
+    }));
+  }
+}
