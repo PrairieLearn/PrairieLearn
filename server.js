@@ -276,6 +276,8 @@ module.exports.initExpress = function () {
       );
 
       if (result.rows.length === 0) {
+        // If updating this message, also update the message our Sentry
+        // `beforeSend` handler.
         throw error.make(404, 'Workspace is not running');
       }
 
@@ -1764,6 +1766,22 @@ if (config.startServer) {
           await Sentry.init({
             dsn: config.sentryDsn,
             environment: config.sentryEnvironment,
+            beforeSend: (event) => {
+              // This will be necessary until we can consume the following change:
+              // https://github.com/chimurai/http-proxy-middleware/pull/823
+              //
+              // The following error message should match the error that's thrown
+              // from the `router` function in our `http-proxy-middleware` config.
+              if (
+                event.exception?.values?.some(
+                  (value) => value.type === 'Error' && value.value === 'Workspace is not running'
+                )
+              ) {
+                return null;
+              }
+
+              return event;
+            },
           });
         }
 
