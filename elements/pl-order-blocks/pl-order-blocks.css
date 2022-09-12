@@ -35,12 +35,6 @@ li.ui-state-highlight {
   min-width: 3em !important;
 }
 
-ul.header {
-  color: black;
-  list-style-type: none;
-  margin-bottom: 0px;
-}
-
 ul.inline li {
   display: inline-block;
   margin-right: 5px;
@@ -52,29 +46,20 @@ ul.ui-sortable {
   margin-bottom: 0px;
 }
 
-ul.ui-sortable li, ul.answer_table li, ul.submission_table li {
+ul.ui-sortable li, .pl-order-blocks-answer-container li {
   margin-bottom: 5px;
   border: 1px solid grey !important;
   border-radius: 5px !important;
   line-height: 1.2em;
 }
 
-ul.answer_table li, ul.submission_table li {
-  background-color: #F5F5F5;
-}
-
-ul.submission_header li {
-  border: 1px solid grey;
-  border-bottom: none;
-}
-
-ul.answer_table, ul.submission_table {
+.pl-order-blocks-answer-container > ul {
   padding: 5px 5px 5px 5px;
   border: 1px solid grey;
   border-radius: 1px;
 }
 
-div.true_answer_container, div.submission_container {
+div.pl-order-blocks-answer-container {
   display: inline-block;
 }
 
