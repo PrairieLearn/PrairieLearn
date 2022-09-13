@@ -28,19 +28,15 @@ ul.pl-order-blocks-connected-sortable li:hover{
 }
 
 li.ui-state-highlight {
-  /*This styling applies to the placeholder answer tile that appears when the user is dragging */
+  /* This styling applies to the placeholder answer tile created by jquery-ui when the user is dragging */
   border: none !important;
   list-style-type: none;
   background-color: #90a4ae !important;
   min-width: 3em !important;
 }
 
-ul.inline li {
-  display: inline-block;
-  margin-right: 5px;
-}
-
 ul.ui-sortable {
+  /* Styling for list made draggable by jquery-ui */
   padding: 17px 17px 17px 17px;
   height: 100%;
   margin-bottom: 0px;
@@ -63,11 +59,7 @@ div.pl-order-blocks-answer-container {
   display: inline-block;
 }
 
-div.row {
-  margin: inherit;
-}
-
-div.column {
+div.pl-order-blocks-container {
   display: block;
   box-shadow: 2px #888888;
   border-radius: 4px;

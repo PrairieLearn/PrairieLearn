@@ -10,8 +10,8 @@ $(function() {
 });
 </script>
 
-    <div class="row">
-        <div class="column {{dropzone_layout}}">
+    <div >
+        <div class="pl-order-blocks-container {{dropzone_layout}}">
             <div class="card-header list-group-item-primary" style="height:3rem;">{{source-header}}</div>
             <ul id="order-blocks-options-{{uuid}}" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable {{inline}}">
                 {{#options}}
@@ -19,7 +19,7 @@ $(function() {
                 {{/options}}
             </ul>
         </div>
-        <div class="column {{dropzone_layout}}">
+        <div class="pl-order-blocks-container {{dropzone_layout}}">
             <div class="card-header list-group-item-primary" style="height:3rem;">
                 {{solution-header}}
                 <a role="button" class="btn btn-light btn-sm" data-toggle="popover" data-html="true" title="Order Blocks" data-content="{{help_text}}" data-trigger="focus" tabindex="0">
