@@ -79,3 +79,5 @@ else
     echo "installing Python packages..."
     python3 -m pip install --no-cache-dir -r /py_req_no_r.txt
 fi
+
+conda clean --all
