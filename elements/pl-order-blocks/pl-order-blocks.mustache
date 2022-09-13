@@ -12,7 +12,7 @@ $(function() {
 
     <div style="display:flex;flex-wrap:wrap;">
         <div class="pl-order-blocks-container {{dropzone_layout}}">
-            <div class="card-header list-group-item-primary" style="height:3rem;display:flex;align-items:center;">{{source-header}}</div>
+            <div class="card-header pl-order-blocks-header list-group-item-primary">{{source-header}}</div>
             <ul id="order-blocks-options-{{uuid}}" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable {{inline}}">
                 {{#options}}
                     <li class="{{block_formatting}} shadow" uuid="{{uuid}}" string="{{inner_html}}">{{{inner_html}}}</li>
@@ -20,7 +20,7 @@ $(function() {
             </ul>
         </div>
         <div class="pl-order-blocks-container {{dropzone_layout}}">
-            <div class="card-header list-group-item-primary" style="height:3rem;display:flex;align-items:center;">
+            <div class="card-header pl-order-blocks-header list-group-item-primary">
                 <span style="margin-right:4px;">{{solution-header}}</span>
                 <a role="button" style="vertical-align:middle;" class="btn btn-light btn-sm" data-toggle="popover" data-html="true" title="Order Blocks" data-content="{{help_text}}" data-trigger="focus" tabindex="0">
                     <i class="fa fa-question-circle" aria-hidden="true"></i>
@@ -57,8 +57,8 @@ $(function() {
             	<li class="{{block_formatting}}" style="margin-left: {{indent}}px">{{{inner_html}}}</li>
             {{/student_submission}}
         </ul>
-        {{{feedback}}}
     </div>
+    <p>{{{feedback}}}</p>
     {{/parse-error}}
 
     {{#parse-error}}
