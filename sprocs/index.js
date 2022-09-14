@@ -166,6 +166,7 @@ module.exports.init = function (callback) {
       'workspace_hosts_find_terminable.sql',
       'group_users_insert.sql',
       'sync_assessment_modules.sql',
+      'rubric_gradings_insert.sql',
     ],
     function (filename, callback) {
       logger.verbose('Loading ' + filename);
