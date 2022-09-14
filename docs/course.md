@@ -216,7 +216,7 @@ The assessment set order in `infoCourse.json` is the order in which the assessme
 }
 ```
 
-## Assessment modules
+## Assessment modules<a id="modules"></a>
 
 Each assessment in the course belongs to a _module_ defined in `infoCourse.json`. Modules can represent course topics, chapters or sections, or in PrairieLearn terms, a collection of assessments related to one another, but not necessarily of the same type. This means you can have a module with two homeworks, one lab, and one exam, for example.
 
