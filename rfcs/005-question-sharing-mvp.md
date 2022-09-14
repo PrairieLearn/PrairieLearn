@@ -17,7 +17,7 @@ With this in our future, we will probably need to have multiple question importi
 ## Why not allow shared questions to be source available?
 We want to do this, and we will do this, but there are some complicated issues to work out first, such as ownership and code licensing. For example, what if an instructor wants their question to be open source, but licensed under GPL? Then should we enforce that any copy of the question must also be source available under the GPL? If a person copies a GPL question by copy-paste, and then doesn't share it, what are our responsibilities in preventing that? Even if a question is licensed under a more permissive license such as the MIT license, there are still things to consider. For example, can we and should we enforce that the original question authors UID stays in an `authors` field in the `info.json` so that they can continue to receive credit for their work? A quick-fix for these would just be to ask an instructor to waive all rights if sharing a question's source, but that's not an ideal solution.
 
-## Can instructors' copy and modify shared questions?
+## Can instructors copy and modify shared questions?
 Not for the MVP, but once we get source licensing issues figured out, yes.
 
 ## What if the question author edits a question, breaking the consumer's exam?
