@@ -66,40 +66,7 @@ bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
 # is specifically disabled, we'll avoid installing anything R-related.
 if [[ "${arch}" != "aarch64"  ]] && [[ "${SKIP_R_PACKAGES}" != "yes" ]]; then
     echo "installing R..."
-    conda install --channel r \
-        r-essentials \
-        r-tidyverse \
-        r-tidyverse \
-        r-rcpparmadillo \
-        r-rmarkdown \
-        r-rsqlite \
-        r-nycflights13 \
-        r-fueleconomy \
-        r-babynames \
-        r-microbenchmark \
-        r-maps \
-        r-maptools \
-        r-mapproj \
-        r-mapdata \
-        r-ggmap \
-        r-fivethirtyeight \
-        r-caret \
-        r-e1071 \
-        r-factoextra \
-        r-gbm \
-        r-glmnet \
-        r-islr \
-        r-kernlab \
-        r-klar \
-        r-mlbench \
-        r-nnet \
-        r-proc \
-        r-randomforest \
-        r-rpart \
-        r-rpart.plot \
-        r-rsample \
-        r-kableextra \
-        r-quantreg
+    conda install --channel r-essentials
 
     echo "installing Python packages..."
     python3 -m pip install --no-cache-dir -r /python-requirements.txt
