@@ -71,7 +71,6 @@ def get_and_save_json(endpoint, filename, args, logfile):
     headers = {'Private-Token': args.token}
     log(logfile, f'downloading {url} ...')
     start_time = time.time()
-    r = requests.get(url, headers=headers)
     retry_502_max = 30
     retry_502_i = 0
     while True:

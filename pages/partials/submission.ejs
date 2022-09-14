@@ -5,7 +5,7 @@
 <div class="card mb-4 grading-block border-info">
   <div class="card-header bg-info text-white d-flex submission-header <% if (submission.submission_number != submissionCount) { %> collapsed<% } %>" data-toggle="collapse" data-target="#submission-feedback-<%= submission.id %>-body">
     <div class="mr-auto">
-      Grader feedback
+      Feedback from the Course Staff
       <% if (submissionCount > 1) { %>
       (for submitted answer <%= submission.submission_number %>)
       <% } %>
