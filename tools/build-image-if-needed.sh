@@ -27,3 +27,5 @@ else
   echo "${BUILD_DIRECTORY} files modified; ${TAG_NAME} requires a rebuild"
   docker buildx build --load ${BUILD_DIRECTORY} -t ${TAG_NAME}
 fi
+
+docker image history ${TAG_NAME}

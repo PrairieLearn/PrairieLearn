@@ -1,7 +1,5 @@
 #!/bin/bash
-set -e
-
-yum install -y tmux
+set -ex
 
 yum update -y
 
@@ -17,6 +15,7 @@ amazon-linux-extras install -y \
 # `texlive-base` and `texlive-dvipng` are needed for matplotlib LaTeX labels
 # `fontconfig-devel` appears to be needed for the R `kableExtra` package
 yum -y install \
+    tmux \
     postgresql-server \
     postgresql-contrib \
     man \
@@ -67,7 +66,40 @@ bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
 # is specifically disabled, we'll avoid installing anything R-related.
 if [[ "${arch}" != "aarch64"  ]] && [[ "${SKIP_R_PACKAGES}" != "yes" ]]; then
     echo "installing R..."
-    conda install r-essentials
+    conda install --channel r \
+        r-essentials \
+        r-tidyverse \
+        r-tidyverse \
+        r-rcpparmadillo \
+        r-rmarkdown \
+        r-rsqlite \
+        r-nycflights13 \
+        r-fueleconomy \
+        r-babynames \
+        r-microbenchmark \
+        r-maps \
+        r-maptools \
+        r-mapproj \
+        r-mapdata \
+        r-ggmap \
+        r-fivethirtyeight \
+        r-caret \
+        r-e1071 \
+        r-factoextra \
+        r-gbm \
+        r-glmnet \
+        r-islr \
+        r-kernlab \
+        r-klar \
+        r-mlbench \
+        r-nnet \
+        r-proc \
+        r-randomforest \
+        r-rpart \
+        r-rpart.plot \
+        r-rsample \
+        r-kableextra \
+        r-quantreg
 
     echo "installing Python packages..."
     python3 -m pip install --no-cache-dir -r /python-requirements.txt
@@ -83,3 +115,4 @@ else
 fi
 
 conda clean --all
+rm Miniforge3-Linux-${arch}.sh
