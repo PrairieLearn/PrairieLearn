@@ -80,6 +80,7 @@ function PLThreeJS(options) {
   this.spaceGroup.add(this.spaceFrame);
   this.bodyGroup.add(this.bodyFrame);
 
+  // Source: https://github.com/mrdoob/three.js/blob/68daccedef9c9c325cc5f4c929fcaf05229aa1b3/examples/jsm/geometries/TextGeometry.js
   class TextGeometry extends THREE.ExtrudeGeometry {
     constructor(text, parameters = {}) {
       const font = parameters.font;
@@ -106,6 +107,7 @@ function PLThreeJS(options) {
     }
   }
 
+  // Source: https://github.com/mrdoob/three.js/blob/68daccedef9c9c325cc5f4c929fcaf05229aa1b3/examples/jsm/loaders/FontLoader.js
   class FontLoader extends THREE.Loader {
     constructor(manager) {
       super(manager);
@@ -135,8 +137,7 @@ function PLThreeJS(options) {
     }
   }
 
-  //
-
+  // Source: https://github.com/mrdoob/three.js/blob/68daccedef9c9c325cc5f4c929fcaf05229aa1b3/examples/jsm/loaders/FontLoader.js
   class Font {
     constructor(data) {
       this.isFont = true;
@@ -158,6 +159,7 @@ function PLThreeJS(options) {
     }
   }
 
+  // Source: https://github.com/mrdoob/three.js/blob/68daccedef9c9c325cc5f4c929fcaf05229aa1b3/examples/jsm/loaders/FontLoader.js
   function createPaths(text, size, data) {
     const chars = Array.from(text);
     const scale = size / data.resolution;
@@ -185,6 +187,7 @@ function PLThreeJS(options) {
     return paths;
   }
 
+  // Source: https://github.com/mrdoob/three.js/blob/68daccedef9c9c325cc5f4c929fcaf05229aa1b3/examples/jsm/loaders/FontLoader.js
   function createPath(char, scale, offsetX, offsetY, data) {
     const glyph = data.glyphs[char] || data.glyphs['?'];
 
