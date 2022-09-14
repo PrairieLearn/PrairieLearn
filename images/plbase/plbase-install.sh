@@ -13,7 +13,6 @@ amazon-linux-extras install -y \
 # - `libjpeg-devel` is needed by the Pillow package
 # - `gcc-c++` is needed to build the native bindings in `packages/bind-mount`
 # `texlive` and `texlive-dvipng` are needed for matplotlib LaTeX labels
-# `fontconfig-devel` appears to be needed for the R `kableExtra` package
 yum -y install \
     tmux \
     postgresql-server \
@@ -27,7 +26,6 @@ yum -y install \
     dos2unix \
     tar \
     ImageMagick \
-    fontconfig-devel \
     texlive \
     texlive-dvipng \
     git \
