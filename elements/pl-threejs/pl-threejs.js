@@ -260,7 +260,7 @@ function PLThreeJS(options) {
 
   async.series(
     [
-      // // Load font
+      // Load font
       function (callback) {
         var loader = new FontLoader();
         loader.load(
