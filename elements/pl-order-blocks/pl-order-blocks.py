@@ -21,7 +21,6 @@ SOURCE_HEADER_DEFAULT = 'Drag from here:'
 SOLUTION_HEADER_DEFAULT = 'Construct your solution here:'
 FILE_NAME_DEFAULT = 'user_code.py'
 SOLUTION_PLACEMENT_DEFAULT = 'right'
-INLINE_DEFAULT = False
 WEIGHT_DEFAULT = 1
 INDENT_OFFSET = 0
 TAB_SIZE_PX = 50
@@ -249,7 +248,6 @@ def render(element_html, data):
         dropzone_layout = pl.get_string_attrib(element, 'solution-placement', SOLUTION_PLACEMENT_DEFAULT)
         check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
         max_indent = pl.get_integer_attrib(element, 'max-indent', MAX_INDENTION_DEFAULT)
-        inline_layout = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
 
         help_text = 'Drag answer tiles into the answer area to the ' + dropzone_layout + '. '
 
@@ -274,7 +272,6 @@ def render(element_html, data):
             'dropzone_layout': 'pl-order-blocks-bottom' if dropzone_layout == 'bottom' else 'pl-order-blocks-right',
             'check_indentation': 'true' if check_indentation else 'false',
             'help_text': help_text,
-            'inline': 'inline' if inline_layout is True else None,
             'max_indent': max_indent,
             'uuid': uuid,
             'block_formatting': block_formatting
