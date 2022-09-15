@@ -65,15 +65,21 @@ window.PLOrderBlocks = function (uuid, options) {
       indicator.id = 'indicator-' + uuid;
       indicator.innerHTML += '<span style="font-size:13px;">Pick one:</span>';
       indicator.innerHTML += '<ul class="inner-list" style="padding:0px;"></ul>';
-      createAt.insertAdjacentElement('beforebegin', indicator);
+      if (createAt) {
+        createAt.insertAdjacentElement('beforebegin', indicator);
+      } else {
+        $(optionsElementId)[0].insertAdjacentElement('beforeend', indicator);
+      }
     }
     return indicator;
   }
 
   function placePairingIndicators() {
     let answerObjs = Array.from($(optionsElementId)[0].getElementsByClassName('pl-order-block'));
+    let allAns = answerObjs.concat(Array.from($(dropzoneElementId)[0].getElementsByClassName('pl-order-block')));
+
     let getDistractorBin = block => block.getAttribute('data-distractor-bin');
-    let distractorBins = new Set(answerObjs.map(getDistractorBin).filter(x => x != null));
+    let distractorBins = new Set(allAns.map(getDistractorBin).filter(x => x != null));
 
     for (let binUuid of distractorBins) {
       let blocks = answerObjs.filter(block => getDistractorBin(block) == binUuid);
