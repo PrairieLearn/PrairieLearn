@@ -1923,12 +1923,7 @@ if (config.startServer) {
           callback(null);
         });
       },
-      function (callback) {
-        cron.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => await codeCaller.init(),
       (callback) => {
         redis.init((err) => {
           if (ERR(err, callback)) return;
@@ -1937,6 +1932,12 @@ if (config.startServer) {
       },
       (callback) => {
         cache.init((err) => {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
+      },
+      function (callback) {
+        cron.init(function (err) {
           if (ERR(err, callback)) return;
           callback(null);
         });
@@ -1950,9 +1951,6 @@ if (config.startServer) {
         load.initEstimator('python_worker_idle', 1, false);
         load.initEstimator('python_callback_waiting', 1);
         callback(null);
-      },
-      async () => {
-        await codeCaller.init();
       },
       async () => {
         logger.verbose('Starting server...');
