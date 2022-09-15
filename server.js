@@ -1987,6 +1987,8 @@ if (config.startServer) {
         callback(null);
       },
       async () => await freeformServer.init(),
+      // These should be the last things to start before we actually start taking
+      // requests, as they may actually end up executing course code.
       (callback) => {
         if (!config.externalGradingEnableResults) return callback(null);
         externalGraderResults.init((err) => {
