@@ -380,6 +380,7 @@ def parse(element_html, data):
 
     grading_mode = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
     correct_answers = data['correct_answers'][answer_name]
+    mcq_options = data['params'][answer_name]
 
     if grading_mode == 'ranking':
         for answer in student_answer:
@@ -389,7 +390,14 @@ def parse(element_html, data):
     elif grading_mode == 'dag':
         for answer in student_answer:
             search = next((item for item in correct_answers if item['inner_html'] == answer['inner_html']), None)
-            answer['tag'] = search['tag'] if search is not None else None
+            if search is not None:
+                answer['tag'] = search['tag']
+            else:
+                search = next((item for item in mcq_options if item['inner_html'] == answer['inner_html']), None)
+                answer['tag'] = search.get('tag')
+                if 'distractor_for' in search:
+                    answer['distractor_for'] = search['distractor_for']
+
 
     if pl.get_string_attrib(element, 'grading-method', 'ordered') == 'external':
         for html_tags in element:
