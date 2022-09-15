@@ -1923,12 +1923,8 @@ if (config.startServer) {
           callback(null);
         });
       },
-      function (callback) {
-        cron.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => await codeCaller.init(),
+      async () => await assets.init(),
       (callback) => {
         redis.init((err) => {
           if (ERR(err, callback)) return;
@@ -1941,20 +1937,6 @@ if (config.startServer) {
           callback(null);
         });
       },
-      (callback) => {
-        externalGrader.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        if (!config.externalGradingEnableResults) return callback(null);
-        externalGraderResults.init((err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      async () => await assets.init(),
       function (callback) {
         load.initEstimator('request', 1);
         load.initEstimator('authed_request', 1);
@@ -1963,9 +1945,6 @@ if (config.startServer) {
         load.initEstimator('python_worker_idle', 1, false);
         load.initEstimator('python_callback_waiting', 1);
         callback(null);
-      },
-      async () => {
-        await codeCaller.init();
       },
       async () => {
         logger.verbose('Starting server...');
@@ -1990,6 +1969,12 @@ if (config.startServer) {
           callback(null);
         });
       },
+      (callback) => {
+        externalGrader.init(function (err) {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
+      },
       async () => workspace.init(),
       function (callback) {
         serverJobs.init(function (err) {
@@ -2001,8 +1986,21 @@ if (config.startServer) {
         nodeMetrics.init();
         callback(null);
       },
-      async () => {
-        await freeformServer.init();
+      async () => await freeformServer.init(),
+      // These should be the last things to start before we actually start taking
+      // requests, as they may actually end up executing course code.
+      (callback) => {
+        if (!config.externalGradingEnableResults) return callback(null);
+        externalGraderResults.init((err) => {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
+      },
+      function (callback) {
+        cron.init(function (err) {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
       },
     ],
     function (err, data) {
