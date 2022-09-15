@@ -62,7 +62,7 @@ typecheck: typecheck-js typecheck-python
 typecheck-js:
 	@yarn tsc
 typecheck-python:
-	@yarn pyright
+	@yarn pyright elements/pl-hidden-hints/pl-hidden-hints.py
 
 changeset:
 	@yarn changeset
