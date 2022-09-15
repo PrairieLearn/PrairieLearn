@@ -3,7 +3,7 @@ import lxml.html
 import prairielearn as pl
 from typing import TypedDict, Tuple, List
 
-class HintsDict(TypedDict, total=False):
+class HintsDict(TypedDict):
     "A class with type signatures for the partial scores dict"
     html_hints: List[Tuple[int, str]]
     submission_count: int
@@ -30,8 +30,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         else:
             raise Exception(f"Child tag type '{child.tag}' not supported by hidden-hints.")
 
-    if html_hints:
-        hints_dict['html_hints'] = html_hints
+    hints_dict['html_hints'] = html_hints
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -40,7 +39,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if data['panel'] == 'question':
         hints_dict: HintsDict = data['params']['hidden-hints']
 
-        html_hints = hints_dict.get('html_hints', [])
+        html_hints = hints_dict['html_hints']
 
         # A little bit of a hack to make it so that all of the backend hints are closed.
         param_hints = [(-1, hint) for hint in data['params'].get("hints", [])]
@@ -90,8 +89,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     # Only reveal next hint if the previous answer was valid
     # (i.e. didn't contain any format errors) but incorrect.
-    if ('submission_count' in hints_dict and
-        len(data['format_errors']) == 0 and
+    if (len(data['format_errors']) == 0 and
         not all_questions_correct(data)):
         hints_dict['submission_count'] += 1
 
