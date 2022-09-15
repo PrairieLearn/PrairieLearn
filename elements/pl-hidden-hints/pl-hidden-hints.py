@@ -3,10 +3,12 @@ import lxml.html
 import prairielearn as pl
 from typing import TypedDict, Tuple, List
 
+
 class HintsDict(TypedDict):
-    "A class with type signatures for the partial scores dict"
+    """A class with type signatures for the partial scores dict"""
     html_hints: List[Tuple[int, str]]
     submission_count: int
+
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     # Set submit count
@@ -42,10 +44,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_hints = hints_dict['html_hints']
 
         # A little bit of a hack to make it so that all of the backend hints are closed.
-        param_hints = [(-1, hint) for hint in data['params'].get("hints", [])]
+        param_hints = [(-1, hint) for hint in data['params'].get('hints', [])]
 
         if param_hints and html_hints:
-            raise ValueError("Hints given as both HTML and parameters. Only one can be used.")
+            raise ValueError('Hints given as both HTML and parameters. Only one can be used.')
 
         # Sort based on priority
         hint_list = sorted(html_hints) if html_hints else param_hints
@@ -61,28 +63,30 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 # Close hints once all questions are correct
                 show_open = not all_correct and priority == submission_count
                 hints_to_display.append({
-                    "hint": hint,
-                    "index": idx + 1,
-                    "isOpen": show_open
+                    'hint': hint,
+                    'index': idx + 1,
+                    'isOpen': show_open
                 })
 
         with open('pl-hidden-hints.mustache', 'r') as f:
             return chevron.render(f, {
-                "hints": hints_to_display,
-                "isPlural": len(hints_to_display) > 1
+                'hints': hints_to_display,
+                'isPlural': len(hints_to_display) > 1
             }).strip()
 
     else:
         return ''
 
+
 def all_questions_correct(data: pl.QuestionData) -> bool:
-    "Return True if all questions are correct in partial scores and it's nonempty."
-    partial_scores = data["partial_scores"]
+    """Return True if all questions are correct in partial scores and it's nonempty."""
+    partial_scores = data['partial_scores']
 
     if len(partial_scores) == 0:
         return False
 
-    return all(part["score"] == 1.0 for part in partial_scores.values())
+    return all(part['score'] == 1.0 for part in partial_scores.values())
+
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
     hints_dict: HintsDict = data['params']['hidden-hints']
