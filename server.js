@@ -1941,19 +1941,6 @@ if (config.startServer) {
           callback(null);
         });
       },
-      (callback) => {
-        externalGrader.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        if (!config.externalGradingEnableResults) return callback(null);
-        externalGraderResults.init((err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
       async () => await assets.init(),
       function (callback) {
         load.initEstimator('request', 1);
@@ -1986,6 +1973,19 @@ if (config.startServer) {
       },
       function (callback) {
         externalGradingSocket.init(function (err) {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
+      },
+      (callback) => {
+        externalGrader.init(function (err) {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
+      },
+      (callback) => {
+        if (!config.externalGradingEnableResults) return callback(null);
+        externalGraderResults.init((err) => {
           if (ERR(err, callback)) return;
           callback(null);
         });
