@@ -51,7 +51,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         hint_list = sorted(html_hints) if html_hints else param_hints
         hints_to_display = []
 
-        submission_count = hints_dict.get('submission_count', 0)
+        submission_count = hints_dict['submission_count']
 
         all_correct = all_questions_correct(data)
 
@@ -63,7 +63,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 hints_to_display.append({
                     "hint": hint,
                     "index": idx + 1,
-                    "isOpen": 'open' if show_open else ''
+                    "isOpen": show_open
                 })
 
         with open('pl-hidden-hints.mustache', 'r') as f:
@@ -89,8 +89,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     # Only reveal next hint if the previous answer was valid
     # (i.e. didn't contain any format errors) but incorrect.
-    if (len(data['format_errors']) == 0 and
-        not all_questions_correct(data)):
+    if (len(data['format_errors']) == 0 and not all_questions_correct(data)):
         hints_dict['submission_count'] += 1
 
 

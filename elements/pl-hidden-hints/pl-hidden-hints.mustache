@@ -1,6 +1,8 @@
+<div>
 {{#hints}}
-    <details class="hidden-hint rounded" {{isOpen}}>
+    <details class="hidden-hint rounded" {{#isOpen}} open {{/isOpen}}>
         <summary>Hint {{#isPlural}} #{{index}} {{/isPlural}} </summary>
         {{{hint}}}
     </details>
 {{/hints}}
+</div>
