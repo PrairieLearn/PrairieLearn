@@ -11,7 +11,12 @@ module.exports = function (options) {
     bucket,
     folder: rootKey,
     name_format: 'output.log', // No need to rotate, all logs go to same file
-    upload_every: 1000, // Most jobs are short-lived, so push every 1s
+    upload_every: 1000, // Most jobs are short-lived, so push every second
+    buffer_size: 100 * 1000, // 100kB - this is increased from the default 10kB
+  });
+
+  s3LoggerStream.on('error', (err) => {
+    globalLogger.error(`Error writing to S3`, err);
   });
 
   const transports = [
