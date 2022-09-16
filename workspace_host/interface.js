@@ -2,7 +2,6 @@ const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const util = require('util');
 const express = require('express');
-const app = express();
 const http = require('http');
 const request = require('request');
 const path = require('path');
@@ -67,6 +66,8 @@ setInterval(() => {
 const bodyParser = require('body-parser');
 const docker = new Docker();
 
+const app = express();
+app.use(Sentry.Handlers.requestHandler());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
@@ -97,7 +98,7 @@ app.get(
     } else {
       res.status(200);
     }
-    res.jsonp({
+    res.json({
       docker: containers,
       postgres: db_status,
     });
@@ -120,12 +121,14 @@ app.post(
     } else if (action === 'reset') {
       resetSequence(workspace_id, res);
     } else if (action === 'getGradedFiles') {
-      gradeSequence(workspace_id, res);
+      await gradeSequence(workspace_id, res);
     } else {
       res.status(500).send(`Action '${action}' undefined`);
     }
   })
 );
+
+app.use(Sentry.Handlers.errorHandler());
 
 let server;
 let workspace_server_settings = {};
@@ -705,7 +708,7 @@ const _checkServerAsync = util.promisify(_checkServer);
 
 /**
  * Looks up all the question-specific workspace launch settings associated with a workspace id.
- * @param {integer} workspace_id Workspace ID to search by.
+ * @param {number} workspace_id Workspace ID to search by.
  * @return {object} Workspace launch settings.
  */
 async function _getWorkspaceSettingsAsync(workspace_id) {
@@ -1387,89 +1390,39 @@ function resetSequence(workspace_id, res) {
   );
 }
 
-function gradeSequence(workspace_id, res) {
-  // Define this outside so we can still use it in case of errors
-  let zipPath;
-  async.waterfall(
-    [
-      async () => {
-        const workspace = await _getWorkspaceAsync(workspace_id);
-        const workspaceSettings = await _getWorkspaceSettingsAsync(workspace_id);
-        const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
-        const zipName = `${workspace.remote_name}-${timestamp}.zip`;
-        zipPath = path.join(config.workspaceHostZipsDirectory, zipName);
+/**
+ * @param {string | number} workspace_id
+ * @param {import('express').Response} res
+ */
+async function gradeSequence(workspace_id, res) {
+  const workspace = await _getWorkspaceAsync(workspace_id);
+  const workspaceSettings = await _getWorkspaceSettingsAsync(workspace_id);
+  const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
+  const zipName = `${workspace.remote_name}-${timestamp}.zip`;
 
-        let homeDir;
-        if (workspace.homedir_location === 'S3') {
-          homeDir = path.join(config.workspaceJobsDirectory, workspace.local_name);
-        } else {
-          homeDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
-        }
+  let workspaceDir;
+  if (workspace.homedir_location === 'S3') {
+    workspaceDir = path.join(config.workspaceJobsDirectory, workspace.local_name);
+  } else {
+    workspaceDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
+  }
 
-        return {
-          workspace,
-          workspaceSettings,
-          workspaceDir: homeDir,
-          zipPath,
-        };
-      },
-      async (locals) => {
-        const archive = archiver('zip');
-        locals.archive = archive;
-        for (const file of locals.workspaceSettings.workspace_graded_files) {
-          try {
-            const file_path = path.join(locals.workspaceDir, file);
-            await fsPromises.lstat(file_path);
-            archive.file(file_path, { name: file });
-            debug(`Sending ${file}`);
-          } catch (err) {
-            logger.warn(`Graded file ${file} does not exist.`);
-            continue;
-          }
-        }
-        return locals;
-      },
-      (locals, callback) => {
-        // Write the zip archive to disk
-        const archive = locals.archive;
-        let output = fs.createWriteStream(locals.zipPath);
-        output.on('close', () => {
-          callback(null, locals);
-        });
-        archive.on('warning', (warn) => {
-          logger.warn(warn);
-        });
-        archive.on('error', (err) => {
-          ERR(err, callback);
-        });
-        archive.pipe(output);
-        archive.finalize();
-      },
-    ],
-    (err, locals) => {
-      if (err) {
-        Sentry.captureException(err, {
-          tags: {
-            'workspace.id': workspace_id,
-          },
-        });
-        logger.error(`Error in gradeSequence: ${err}`);
-        res.status(500).send(err);
-        try {
-          fsPromises.unlink(zipPath);
-        } catch (err) {
-          logger.error(`Error deleting ${zipPath}`);
-        }
-      } else {
-        res.attachment(locals.zipPath);
-        res.status(200).sendFile(locals.zipPath, { root: '/' }, (_err) => {
-          try {
-            fsPromises.unlink(locals.zipPath);
-          } catch (err) {
-            logger.error(`Error deleting ${locals.zipPath}`);
-          }
-        });
-      }
+  // Stream the archive back to the client as it's generated.
+  res.attachment(zipName).status(200);
+  const archive = archiver('zip');
+  archive.pipe(res);
+
+  for (const file of workspaceSettings.workspace_graded_files) {
+    try {
+      const filePath = path.join(workspaceDir, file);
+      await fsPromises.lstat(filePath);
+      archive.file(filePath, { name: file });
+      debug(`Sending ${file}`);
+    } catch (err) {
+      logger.warn(`Graded file ${file} does not exist.`);
+      continue;
     }
-  );
+  }
+
+  await archive.finalize();
 }
