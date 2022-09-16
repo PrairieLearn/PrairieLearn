@@ -19,6 +19,7 @@ const net = require('net');
 const unzipper = require('unzipper');
 const stream = require('stream');
 const asyncHandler = require('express-async-handler');
+const bodyParser = require('body-parser');
 const Sentry = require('@prairielearn/sentry');
 
 const dockerUtil = require('../lib/dockerUtil');
@@ -29,6 +30,7 @@ const logger = require('../lib/logger');
 const sprocs = require('../sprocs');
 const LocalLock = require('../lib/local-lock');
 
+const config = require('../lib/config');
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
@@ -36,7 +38,6 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 let lastAutoUpdateTime = Date.now();
 let lastPushAllTime = Date.now();
 
-const config = require('../lib/config');
 let configFilename = 'config.json';
 if ('config' in argv) {
   configFilename = argv['config'];
@@ -63,7 +64,6 @@ setInterval(() => {
   }
 }, 1000);
 
-const bodyParser = require('body-parser');
 const docker = new Docker();
 
 const app = express();
@@ -121,7 +121,7 @@ app.post(
     } else if (action === 'reset') {
       resetSequence(workspace_id, res);
     } else if (action === 'getGradedFiles') {
-      await gradeSequence(workspace_id, res);
+      await sendGradedFilesArchive(workspace_id, res);
     } else {
       res.status(500).send(`Action '${action}' undefined`);
     }
@@ -395,7 +395,7 @@ async function pushContainerContentsToS3(workspace) {
 
   const workspacePath = path.join(workspacePrefix, `workspace-${workspace.launch_uuid}`);
   const s3Path = `workspace-${workspace.id}-${workspace.version}/current`;
-  const settings = _getWorkspaceSettingsAsync(workspace.id);
+  const settings = await _getWorkspaceSettingsAsync(workspace.id);
   try {
     await awsHelper.uploadDirectoryToS3Async(
       config.workspaceS3Bucket,
@@ -512,8 +512,7 @@ async function _getDockerContainerByLaunchUuid(launch_uuid) {
 /**
  * Attempts to kill and remove a container.  Will fail silently if the container is already stopped
  * or does not exist.  Also removes the container's home directory.
- * @param {string | Dockerode container} input.  Either the ID of the docker container, or an actual Dockerode
- * container object.
+ * @param {string | import('dockerode').Container} input Either the ID of the docker container, or an actual Dockerode container object.
  */
 async function dockerAttemptKillAndRemove(input) {
   // Use these awful try-catch blocks because we actually do want to try each
@@ -561,6 +560,8 @@ async function dockerAttemptKillAndRemove(input) {
 /**
  * Marks the host as "unhealthy", we typically want to do this when we hit some unrecoverable error.
  * This will also set the "unhealthy__at" field if applicable.
+ *
+ * @param {Error | string} reason The reason that this host is unhealthy
  */
 async function markSelfUnhealthyAsync(reason) {
   try {
@@ -583,8 +584,8 @@ const markSelfUnhealthy = util.callbackify(markSelfUnhealthyAsync);
  * This object contains all columns in the 'workspaces' table as well as:
  * - local_name (container name)
  * - remote_name (subdirectory name on s3)
- * @param {integer} workspace_id Workspace ID to search by.
- * @return {object} Workspace object, as described above.
+ * @param {string | number} workspace_id Workspace ID to search by.
+ * @return {Promise<Object>} Workspace object, as described above.
  */
 async function _getWorkspaceAsync(workspace_id) {
   const result = await sqldb.queryOneRowAsync(sql.get_workspace, {
@@ -601,7 +602,7 @@ async function _getWorkspaceAsync(workspace_id) {
 /**
  * Allocates and returns an unused port for a workspace.  This will insert the new port into the workspace table.
  * @param {object} workspace Workspace object, should at least contain an id.
- * @return {integer} Port that was allocated to the workspace.
+ * @return {number | string} Port that was allocated to the workspace.
  */
 const _allocateContainerPortLock = new LocalLock();
 async function _allocateContainerPort(workspace) {
@@ -708,8 +709,8 @@ const _checkServerAsync = util.promisify(_checkServer);
 
 /**
  * Looks up all the question-specific workspace launch settings associated with a workspace id.
- * @param {number} workspace_id Workspace ID to search by.
- * @return {object} Workspace launch settings.
+ * @param {string | number} workspace_id Workspace ID to search by.
+ * @return {Promise<Object>} Workspace launch settings.
  */
 async function _getWorkspaceSettingsAsync(workspace_id) {
   const result = await sqldb.queryOneRowAsync(sql.select_workspace_settings, {
@@ -925,7 +926,7 @@ async function _getInitialZipAsync(workspace) {
       })
     )
     .pipe(
-      stream.Transform({
+      new stream.Transform({
         objectMode: true,
         transform: (entry, encoding, callback) => {
           const entryPath = path.join(localPath, entry.path);
@@ -1394,7 +1395,7 @@ function resetSequence(workspace_id, res) {
  * @param {string | number} workspace_id
  * @param {import('express').Response} res
  */
-async function gradeSequence(workspace_id, res) {
+async function sendGradedFilesArchive(workspace_id, res) {
   const workspace = await _getWorkspaceAsync(workspace_id);
   const workspaceSettings = await _getWorkspaceSettingsAsync(workspace_id);
   const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
