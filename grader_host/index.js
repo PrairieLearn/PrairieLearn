@@ -480,16 +480,14 @@ function runJob(info, callback) {
           callback(null, container);
         });
       },
-      /**
-       * @param {import('dockerode').Container} container
-       */
-      async (container, callback) => {
+      async (container) => {
         const timeoutId = setTimeout(() => {
           results.timedOut = true;
           container.kill().catch((err) => {
             globalLogger.error('Error killing container', err);
           });
         }, jobTimeout * 1000);
+
         logger.info('Waiting for container to complete');
         try {
           await container.wait();
