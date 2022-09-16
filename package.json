@@ -16,7 +16,6 @@
         "@prairielearn/html": "^2.0.0",
         "@prairielearn/opentelemetry": "^1.0.0",
         "@prairielearn/sentry": "^1.0.0",
-        "@types/body-parser": "^1.19.2",
         "ace-builds": "^1.10.1",
         "ajv": "^7.1.1",
         "ansi_up": "^5.1.0",
@@ -142,6 +141,7 @@
     "devDependencies": {
         "@changesets/cli": "^2.24.4",
         "@types/async": "^3.2.15",
+        "@types/body-parser": "^1.19.2",
         "@types/chai": "^4.3.0",
         "@types/chai-as-promised": "^7.1.5",
         "@types/cheerio": "^0.22.31",
