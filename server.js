@@ -1923,6 +1923,17 @@ if (config.startServer) {
           callback(null);
         });
       },
+      // We need to initialize these first, as the code callers require these
+      // to be set up.
+      function (callback) {
+        load.initEstimator('request', 1);
+        load.initEstimator('authed_request', 1);
+        load.initEstimator('python', 1, false);
+        load.initEstimator('python_worker_active', 1);
+        load.initEstimator('python_worker_idle', 1, false);
+        load.initEstimator('python_callback_waiting', 1);
+        callback(null);
+      },
       async () => await codeCaller.init(),
       async () => await assets.init(),
       (callback) => {
@@ -1936,15 +1947,6 @@ if (config.startServer) {
           if (ERR(err, callback)) return;
           callback(null);
         });
-      },
-      function (callback) {
-        load.initEstimator('request', 1);
-        load.initEstimator('authed_request', 1);
-        load.initEstimator('python', 1, false);
-        load.initEstimator('python_worker_active', 1);
-        load.initEstimator('python_worker_idle', 1, false);
-        load.initEstimator('python_callback_waiting', 1);
-        callback(null);
       },
       async () => {
         logger.verbose('Starting server...');
