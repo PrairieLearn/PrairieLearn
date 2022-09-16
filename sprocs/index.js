@@ -167,6 +167,7 @@ module.exports.init = function (callback) {
       'group_users_insert.sql',
       'sync_assessment_modules.sql',
       'group_roles_update.sql',
+      'group_roles_validate.sql'
     ],
     function (filename, callback) {
       logger.verbose('Loading ' + filename);
