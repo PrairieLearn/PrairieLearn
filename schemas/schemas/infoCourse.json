@@ -171,6 +171,14 @@
                     }
                 }
             }
+        },
+        "imports": {
+            "description": "Courses to import questions from.",
+            "type": "array",
+            "items": {
+                "description": "A course to import questions from.",
+                "type": "string"
+            }
         }
     },
     "definitions": {

@@ -53,5 +53,8 @@
         {"name": "astec", "color": "orange2", "description": "Question originally written by andrewstec"},
         {"name": "pearl", "color": "yellow3", "description": "Question originally written by pearl"},
         {"name": "rstats", "color": "blue2", "description": "Question requires the use of R"}
+    ],
+    "imports": [
+        "testCourse"
     ]
 }

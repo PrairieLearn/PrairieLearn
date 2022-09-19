@@ -230,6 +230,7 @@ const FILE_UUID_REGEX =
  * @property {Topic[]} topics
  * @property {AssessmentSet[]} assessmentSets
  * @property {AssessmentModule[]} assessmentModules
+ * @property {string[]} imports
  */
 
 /** @typedef {"Student" | "TA" | "Instructor" | "Superuser"} UserRole */
@@ -421,8 +422,7 @@ module.exports.loadFullCourse = async function (courseDir) {
   const courseInfo = await module.exports.loadCourseInfo(courseDir);
   perf.start('loadQuestions');
 
-  let testCourse = '/PrairieLearn/testCourse';
-  const coursesToLoad = courseDir == testCourse ? [courseDir] : [courseDir, testCourse]; // TODO: get list of courses to import in the infoCourse.json
+  const coursesToLoad = courseInfo.data?.imports ? [courseDir, ...courseInfo.data.imports] : [courseDir];
   const questions = await Promise.all(coursesToLoad.map(module.exports.loadQuestions)).then(coursesQuestions => {
     let questions = coursesQuestions[0];
     for (let i = 1; i < coursesQuestions.length; ++i) {
@@ -758,6 +758,7 @@ module.exports.loadCourseInfo = async function (coursePath) {
   const tags = getFieldWithoutDuplicates('tags', 'name', DEFAULT_TAGS);
   const topics = getFieldWithoutDuplicates('topics', 'name', null);
   const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name', null);
+  const imports = getFieldWithoutDuplicates('imports', 'name', null);
 
   const exampleCourse =
     info.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5' &&
@@ -775,6 +776,7 @@ module.exports.loadCourseInfo = async function (coursePath) {
     tags,
     topics,
     exampleCourse,
+    imports,
     options: {
       useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
     },
