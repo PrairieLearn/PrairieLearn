@@ -1,3 +1,4 @@
+// ts-check
 /* eslint-env jquery, browser */
 
 window.PLOrderBlocks = function (uuid, options) {

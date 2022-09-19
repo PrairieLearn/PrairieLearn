@@ -12,6 +12,7 @@ const { default: chalkDefault } = require('chalk');
 const schemas = require('../schemas');
 const infofile = require('./infofile');
 const jsonLoad = require('../lib/json-load');
+const question = require('../lib/question');
 const perf = require('./performance')('course-db');
 
 const chalk = new chalkDefault.constructor({ enabled: true, level: 3 });
@@ -419,7 +420,26 @@ const FILE_UUID_REGEX =
 module.exports.loadFullCourse = async function (courseDir) {
   const courseInfo = await module.exports.loadCourseInfo(courseDir);
   perf.start('loadQuestions');
-  const questions = await module.exports.loadQuestions(courseDir);
+
+  let testCourse = '/PrairieLearn/testCourse';
+  const coursesToLoad = courseDir == testCourse ? [courseDir] : [courseDir, testCourse]; // TODO: get list of courses to import in the infoCourse.json
+  const questions = await Promise.all(coursesToLoad.map(module.exports.loadQuestions)).then(coursesQuestions => {
+    let questions = coursesQuestions[0];
+    for (let i = 1; i < coursesQuestions.length; ++i) {
+      let courseName = path.basename(coursesToLoad[i]);
+      let courseQuestions = coursesQuestions[i];
+      for (let qid in courseQuestions) {
+        if (qid != 'addNumbers') {
+          continue;
+        }
+        // TODO: before adding, look at the question information to decide if it is *supposed* to be shared with the current course
+        // TODO: make sure that you can add questions with the same UUID as a question already in the course!!!
+        questions['@' + courseName + '/' + qid] = courseQuestions[qid];
+      }
+    }
+    return questions;
+  });
+
   perf.end('loadQuestions');
   const courseInstanceInfos = await module.exports.loadCourseInstances(courseDir);
   const courseInstances = /** @type {{ [ciid: string]: CourseInstanceData }} */ ({});
