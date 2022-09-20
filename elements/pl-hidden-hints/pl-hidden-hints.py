@@ -71,7 +71,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         with open('pl-hidden-hints.mustache', 'r') as f:
             return chevron.render(f, {
                 'hints': hints_to_display,
-                'isPlural': len(hints_to_display) > 1
+                'is_plural': len(hints_to_display) > 1
             }).strip()
 
     else:

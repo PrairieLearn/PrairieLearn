@@ -1,7 +1,7 @@
 <div>
 {{#hints}}
     <details class="pl-hidden-hint rounded" {{#is_open}} open {{/is_open}}>
-        <summary>Hint {{#isPlural}} #{{index}} {{/isPlural}} </summary>
+        <summary>Hint {{#is_plural}} #{{index}} {{/is_plural}} </summary>
         {{{hint}}}
     </details>
 {{/hints}}
