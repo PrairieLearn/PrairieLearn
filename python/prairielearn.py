@@ -24,6 +24,13 @@ class PartialScore(TypedDict):
     weight: NotRequired[int]
     feedback: NotRequired[str]
 
+# TODO: This type definition should not yet be seen as authoritative, it may
+# need to be modified as we expand type checking to cover more of the element code.
+# The fields below containing 'Any' in the types are ones which are used
+# in different ways by different question elements. Ideally we would have
+# QuestionData be a generic type so that question elements could declare types
+# for their answer data, feedback data, etc., but TypedDicts with Generics are
+# not yet supported: https://bugs.python.org/issue44863
 class QuestionData(TypedDict):
     "A class with type signatures for the data dictionary"
 

@@ -12,10 +12,10 @@ class HintsDict(TypedDict):
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     # Set submit count
-    if ('hidden-hints' in data['params']):
-        raise ValueError("Duplicate params key: 'hidden-hints'.")
+    if ('hidden_hints' in data['params']):
+        raise ValueError("Duplicate params key: 'hidden_hints'.")
 
-    hints_dict = data['params'].setdefault('hidden-hints', dict())
+    hints_dict = data['params'].setdefault('hidden_hints', dict())
     hints_dict['submission_count'] = 0
 
     # Parse hints from frontend
@@ -39,7 +39,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # No need to display hints on answer / submission panels
 
     if data['panel'] == 'question':
-        hints_dict: HintsDict = data['params']['hidden-hints']
+        hints_dict: HintsDict = data['params']['hidden_hints']
 
         html_hints = hints_dict['html_hints']
 
@@ -65,7 +65,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 hints_to_display.append({
                     'hint': hint,
                     'index': idx + 1,
-                    'isOpen': show_open
+                    'is_open': show_open
                 })
 
         with open('pl-hidden-hints.mustache', 'r') as f:
@@ -89,7 +89,7 @@ def all_questions_correct(data: pl.QuestionData) -> bool:
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
-    hints_dict: HintsDict = data['params']['hidden-hints']
+    hints_dict: HintsDict = data['params']['hidden_hints']
 
     # Only reveal next hint if the previous answer was valid
     # (i.e. didn't contain any format errors) but incorrect.
