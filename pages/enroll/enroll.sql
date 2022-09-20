@@ -3,7 +3,8 @@ SELECT
     c.short_name || ': ' || c.title || ', ' || ci.long_name AS label,
     c.short_name || ', ' || ci.short_name AS short_label,
     ci.id AS course_instance_id,
-    (e.id IS NOT NULL) AS enrolled
+    (e.id IS NOT NULL) AS enrolled,
+    users_is_instructor_in_course(u.user_id, c.id) AS instructor_access
 FROM
     users AS u
     CROSS JOIN (
@@ -17,9 +18,8 @@ WHERE
     AND ci.deleted_at IS NULL
     AND c.deleted_at IS NULL
     AND c.example_course IS FALSE
-    AND users_is_instructor_in_course(u.user_id, c.id) IS FALSE
     AND check_course_instance_access(ci.id, u.uid, u.institution_id, $req_date)
-    AND NOT ci.hide_in_enroll_page
+    AND (NOT ci.hide_in_enroll_page OR e.id IS NOT NULL)
 ORDER BY
     c.short_name, c.title, c.id, d.start_date DESC NULLS LAST, d.end_date DESC NULLS LAST, ci.id DESC;
 
