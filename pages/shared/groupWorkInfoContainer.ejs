@@ -53,7 +53,7 @@
       <% } %>
       <span id='group-member'><b>Group members: </b></span>
       <% group_info.forEach(function(row) {%>
-      <li><%= row.uid %></li>
+      <li><%= row.user_name %> (<%= row.uid %>)</li>
       <% }); %>
     </div>
   </div>
