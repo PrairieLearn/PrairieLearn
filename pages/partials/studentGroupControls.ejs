@@ -5,10 +5,10 @@
    </p>
   <% } else { %>
 <p class="text-center">
-  <% if (minsize > 1) { %>
-  This is a group assessment. A group must have between <%= minsize %> and <%= maxsize %> students.
+  <% if (permissions.minimum > 1) { %>
+  This is a group assessment. A group must have between <%= permissions.minimum %> and <%= permissions.maximum %> students.
   <% } else { %>
-  This assessment can be done individually or in groups. A group must have no more than <%= maxsize %> students.
+  This assessment can be done individually or in groups. A group must have no more than <%= permissions.maximum %> students.
   <br/>To work individually, you must also create a group, but you don't need to share your join code.
   <% } %>
 </p>
