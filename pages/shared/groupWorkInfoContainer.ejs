@@ -9,10 +9,10 @@
       <p>
         <% if (permissions.minimum > 1) { %>
         This is a group assessment. Use your join code to invite others to join the group.
-        A group must have between <%= permissions.minimum %> and <%= permissions.maximum %> students.
+        A group must have <% if (permissions.maximum) { %>between <%= permissions.minimum %> and <%= permissions.maximum %><% } else { %>at least <%= permissions.minimum %><% } %> students.
         <% } else { %>
         This assessment can be done individually or in groups. Use your join code if you wish to invite others to join the group.
-        A group must have no more than <%= permissions.maximum %> students.
+        <% if (permissions.maximum) { %>A group must have no more than <%= permissions.maximum %> students.<% } %>
         <% } %>
       </p>
     <% } %>
