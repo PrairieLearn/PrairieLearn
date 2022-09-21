@@ -423,6 +423,8 @@ module.exports.loadFullCourse = async function (courseDir) {
   perf.start('loadQuestions');
 
   const coursesToLoad = courseInfo.data?.imports ? [courseDir, ...courseInfo.data.imports] : [courseDir];
+  // TODO: do we actually want to load all the questions here? or should we just reference already-loaded questions
+  // for the courses that have already been loaded? or is that an optimisation to worry about later?
   const questions = await Promise.all(coursesToLoad.map(module.exports.loadQuestions)).then(coursesQuestions => {
     let questions = coursesQuestions[0];
     for (let i = 1; i < coursesQuestions.length; ++i) {
