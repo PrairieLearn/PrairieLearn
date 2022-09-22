@@ -1,5 +1,4 @@
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
 const assert = require('chai').assert;
 const fs = require('fs-extra');
 const path = require('path');
