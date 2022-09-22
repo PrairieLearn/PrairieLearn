@@ -107,6 +107,8 @@ module.exports.initExpress = function () {
     next();
   });
 
+  app.use(require('./middlewares/addRevisionHeader'));
+
   // browser detection - data format is https://lancedikson.github.io/bowser/docs/global.html#ParsedResult
   app.use(function (req, res, next) {
     if (req.headers['user-agent']) {
