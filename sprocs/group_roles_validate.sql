@@ -79,6 +79,6 @@ BEGIN
         END IF;
     END LOOP;
 
-    SELECT * FROM group_validation_errors;
+    RETURN QUERY (SELECT * FROM group_validation_errors);
 END;
 $$ LANGUAGE plpgsql VOLATILE;
