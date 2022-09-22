@@ -160,6 +160,10 @@ const testEditData = [
       'courseInstances/Fa18/assessments/newAssessment/nested/infoAssessment.json',
     ]),
   },
+  // This second rename specifically tests the case where an existing assessment
+  // is renamed such that it leaves behind an empty directory. We want to make
+  // sure that that empty directory is cleaned up and not treated as an actual
+  // assessment during sync.
   {
     button: 'changeAidButton',
     form: 'change-id-form',
@@ -178,19 +182,6 @@ const testEditData = [
       'questions/test/question/server.py',
       'courseInstances/Fa18/assessments/newAssessmentNotNested/infoAssessment.json',
     ]),
-    validate: async () => {
-      console.log('testing');
-      const assessments = await fs.readdir(
-        path.join(courseLiveDir, 'courseInstances/Fa18/assessments')
-      );
-      console.log(assessments);
-      for (const assessment of assessments) {
-        console.log(assessment);
-        console.log(
-          await fs.readdir(path.join(courseLiveDir, 'courseInstances/Fa18/assessments', assessment))
-        );
-      }
-    },
   },
   {
     form: 'delete-assessment-form',
@@ -449,11 +440,7 @@ function testEdit(params) {
       assert.isEmpty(results.rows);
     });
 
-    if (params.validate) {
-      it('passes custom validation', params.validate);
-    }
-
-    it('should pull', function (callback) {
+    it('should pull into dev directory', function (callback) {
       const execOptions = {
         cwd: courseDevDir,
         env: process.env,
@@ -464,7 +451,7 @@ function testEdit(params) {
       });
     });
 
-    it('should match contents', async () => {
+    it('should have correct contents', async () => {
       const files = await getFiles({ baseDir: courseDevDir });
       assert.sameMembers([...files], [...params.files]);
     });
