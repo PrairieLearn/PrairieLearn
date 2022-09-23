@@ -87,7 +87,7 @@ Full example:
 </pl-question-panel>
 
 <pl-submission-panel>
-  <pl-external-grader-results />
+  <pl-external-grader-results></pl-external-grader-results>
 </pl-submission-panel>
 ```
 
