@@ -346,7 +346,7 @@ BEGIN
                 SELECT
                     7.5 AS event_order,
                     'Time limit expiry'::TEXT AS event_name,
-                    'gray3'::TEXT AS event_color,
+                    'red2'::TEXT AS event_color,
                     asl.date_limit AS date,
                     u.user_id AS auth_user_id,
                     u.uid AS auth_user_uid,
@@ -370,8 +370,14 @@ BEGIN
                     AND asl.date_limit IS NOT NULL
                     -- Only list as expired if it already happened
                     AND asl.date_limit < CURRENT_TIMESTAMP
-                    -- Only list the expiry date if the assessment was not closed or extended after this time limit was set but before it expired
-                    AND NOT EXISTS (SELECT 1 FROM assessment_state_logs aslc WHERE aslc.date > asl.date AND aslc.date <= asl.date_limit)
+                    -- Only list the expiry date if the assessment was
+                    -- not closed or extended after this time limit
+                    -- was set but before it expired
+                    AND NOT EXISTS (SELECT 1
+                                    FROM assessment_state_logs aslc
+                                    WHERE aslc.assessment_instance_id = ai_id
+                                          AND aslc.date > asl.date
+                                          AND aslc.date <= asl.date_limit)
             )
             UNION
             (
