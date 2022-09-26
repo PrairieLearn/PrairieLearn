@@ -28,7 +28,7 @@ drop_privileges = os.environ.get("DROP_PRIVILEGES", False)
 if drop_privileges:
     config_dir_path = '/tmp/matplotlib'
     oldmask = os.umask(000)
-    os.mkdir(config_dir_path, mode=0o777)
+    os.makedirs(config_dir_path, mode=0o777, exist_ok=True)
     os.umask(oldmask)
     os.environ['MPLCONFIGDIR'] = config_dir_path
 

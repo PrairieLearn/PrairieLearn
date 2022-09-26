@@ -276,6 +276,8 @@ module.exports.initExpress = function () {
       );
 
       if (result.rows.length === 0) {
+        // If updating this message, also update the message our Sentry
+        // `beforeSend` handler.
         throw error.make(404, 'Workspace is not running');
       }
 
@@ -424,7 +426,7 @@ module.exports.initExpress = function () {
   app.use(require('./middlewares/effectiveRequestChanged'));
   app.use('/pl/oauth2login', require('./pages/authLoginOAuth2/authLoginOAuth2'));
   app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOAuth2'));
-  app.use('/pl/shibcallback', require('./pages/authCallbackShib/authCallbackShib'));
+  app.use(/\/pl\/shibcallback/, require('./pages/authCallbackShib/authCallbackShib'));
   app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
   app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
 
@@ -1764,6 +1766,22 @@ if (config.startServer) {
           await Sentry.init({
             dsn: config.sentryDsn,
             environment: config.sentryEnvironment,
+            beforeSend: (event) => {
+              // This will be necessary until we can consume the following change:
+              // https://github.com/chimurai/http-proxy-middleware/pull/823
+              //
+              // The following error message should match the error that's thrown
+              // from the `router` function in our `http-proxy-middleware` config.
+              if (
+                event.exception?.values?.some(
+                  (value) => value.type === 'Error' && value.value === 'Workspace is not running'
+                )
+              ) {
+                return null;
+              }
+
+              return event;
+            },
           });
         }
 
@@ -1905,12 +1923,19 @@ if (config.startServer) {
           callback(null);
         });
       },
+      // We need to initialize these first, as the code callers require these
+      // to be set up.
       function (callback) {
-        cron.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+        load.initEstimator('request', 1);
+        load.initEstimator('authed_request', 1);
+        load.initEstimator('python', 1, false);
+        load.initEstimator('python_worker_active', 1);
+        load.initEstimator('python_worker_idle', 1, false);
+        load.initEstimator('python_callback_waiting', 1);
+        callback(null);
       },
+      async () => await codeCaller.init(),
+      async () => await assets.init(),
       (callback) => {
         redis.init((err) => {
           if (ERR(err, callback)) return;
@@ -1922,32 +1947,6 @@ if (config.startServer) {
           if (ERR(err, callback)) return;
           callback(null);
         });
-      },
-      (callback) => {
-        externalGrader.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        if (!config.externalGradingEnableResults) return callback(null);
-        externalGraderResults.init((err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      async () => await assets.init(),
-      function (callback) {
-        load.initEstimator('request', 1);
-        load.initEstimator('authed_request', 1);
-        load.initEstimator('python', 1, false);
-        load.initEstimator('python_worker_active', 1);
-        load.initEstimator('python_worker_idle', 1, false);
-        load.initEstimator('python_callback_waiting', 1);
-        callback(null);
-      },
-      async () => {
-        await codeCaller.init();
       },
       async () => {
         logger.verbose('Starting server...');
@@ -1972,6 +1971,12 @@ if (config.startServer) {
           callback(null);
         });
       },
+      (callback) => {
+        externalGrader.init(function (err) {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
+      },
       async () => workspace.init(),
       function (callback) {
         serverJobs.init(function (err) {
@@ -1983,8 +1988,21 @@ if (config.startServer) {
         nodeMetrics.init();
         callback(null);
       },
-      async () => {
-        await freeformServer.init();
+      async () => await freeformServer.init(),
+      // These should be the last things to start before we actually start taking
+      // requests, as they may actually end up executing course code.
+      (callback) => {
+        if (!config.externalGradingEnableResults) return callback(null);
+        externalGraderResults.init((err) => {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
+      },
+      function (callback) {
+        cron.init(function (err) {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
       },
     ],
     function (err, data) {
