@@ -12,7 +12,6 @@ const { default: chalkDefault } = require('chalk');
 const schemas = require('../schemas');
 const infofile = require('./infofile');
 const jsonLoad = require('../lib/json-load');
-const question = require('../lib/question');
 const perf = require('./performance')('course-db');
 
 const chalk = new chalkDefault.constructor({ enabled: true, level: 3 });
