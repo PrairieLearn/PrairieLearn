@@ -37,7 +37,6 @@ docker-compose.override.yml
 
 ## Config
 /config.json
-/aws-config.json
 
 ## Dependencies
 node_modules
