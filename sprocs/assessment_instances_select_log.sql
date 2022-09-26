@@ -344,6 +344,68 @@ BEGIN
             UNION
             (
                 SELECT
+                    7.5 AS event_order,
+                    'Time limit expiry'::TEXT AS event_name,
+                    'gray3'::TEXT AS event_color,
+                    asl.date_limit AS date,
+                    u.user_id AS auth_user_id,
+                    u.uid AS auth_user_uid,
+                    NULL::TEXT AS qid,
+                    NULL::INTEGER AS question_id,
+                    NULL::INTEGER AS instance_question_id,
+                    NULL::INTEGER AS variant_id,
+                    NULL::INTEGER AS variant_number,
+                    NULL::INTEGER AS submission_id,
+                    asl.id AS log_id,
+                    jsonb_build_object(
+                         'time_limit', format_interval(asl.date_limit - ai.date)
+                    ) AS data
+                FROM
+                    assessment_state_logs AS asl
+                    JOIN assessment_instances AS ai ON (ai.id = ai_id)
+                    LEFT JOIN users AS u ON (u.user_id = asl.auth_user_id)
+                WHERE
+                    asl.assessment_instance_id = ai_id
+                    AND asl.open
+                    AND asl.date_limit IS NOT NULL
+                    -- Only list as expired if it already happened
+                    AND asl.date_limit < CURRENT_TIMESTAMP
+                    -- Only list the expiry date if the assessment was not closed or extended after this time limit was set but before it expired
+                    AND NOT EXISTS (SELECT 1 FROM assessment_state_logs aslc WHERE aslc.date > asl.date AND aslc.date <= asl.date_limit)
+            )
+            UNION
+            (
+                SELECT
+                    7.5 AS event_order,
+                    'Time limit expiry'::TEXT AS event_name,
+                    'gray3'::TEXT AS event_color,
+                    ai.date_limit AS date,
+                    u.user_id AS auth_user_id,
+                    u.uid AS auth_user_uid,
+                    NULL::TEXT AS qid,
+                    NULL::INTEGER AS question_id,
+                    NULL::INTEGER AS instance_question_id,
+                    NULL::INTEGER AS variant_id,
+                    NULL::INTEGER AS variant_number,
+                    NULL::INTEGER AS submission_id,
+                    ai.id AS log_id,
+                    jsonb_build_object(
+                         'time_limit', format_interval(ai.date_limit - ai.date)
+                    ) AS data
+                FROM
+                    assessment_instances AS ai
+                    LEFT JOIN users AS u ON (u.user_id = ai.auth_user_id)
+                WHERE
+                    ai.id = ai_id
+                    AND ai.date_limit IS NOT NULL
+                    -- Only list as expired if it already happened
+                    AND ai.date_limit < CURRENT_TIMESTAMP
+                    -- Only list the expiry date if the assessment was not closed or extended before it expired
+                    AND NOT EXISTS (SELECT 1 FROM assessment_state_logs asl WHERE asl.date <= ai.date_limit)
+            )
+            UNION
+            (
+                SELECT
                     8 AS event_order,
                     'View variant'::TEXT AS event_name,
                     'green3'::TEXT AS event_color,
