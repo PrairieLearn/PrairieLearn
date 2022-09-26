@@ -12,7 +12,7 @@ const async = require('async');
 const hljs = require('highlight.js');
 const FileType = require('file-type');
 const util = require('util');
-const isBinaryFile = require('isbinaryfile').isBinaryFile;
+const { isBinaryFile } = require('isbinaryfile');
 const { encodePath, decodePath } = require('../../lib/uri-util');
 const editorUtil = require('../../lib/editorUtil');
 const { default: AnsiUp } = require('ansi_up');
@@ -298,35 +298,29 @@ function browseFile(file_browser, callback) {
   async.waterfall(
     [
       async () => {
-        // If the file is larger that 10MB, don't attempt to read it; treat
-        // it like an opaque binary file.
-        const { size } = await fs.stat(file_browser.paths.workingPath);
-        if (size > 10 * 1024 * 1024) {
-          file_browser.isBinary = true;
-          return;
-        }
-
-        const contents = await fs.readFile(file_browser.paths.workingPath);
-
-        const result = await isBinaryFile(contents);
-        debug(`isBinaryFile: ${result}`);
-        file_browser.isBinary = result;
-        if (result) {
-          const type = await FileType.fromBuffer(contents);
+        const isBinary = await isBinaryFile(file_browser.paths.workingPath);
+        file_browser.isBinary = isBinary;
+        if (isBinary) {
+          const type = await FileType.fromFile(file_browser.paths.workingPath);
           if (type) {
-            debug(`file type:\n ext = ${type.ext}\n mime = ${type.mime}`);
-            if (type.mime.startsWith('image')) {
+            if (type?.mime.startsWith('image')) {
               file_browser.isImage = true;
-            } else if (type.mime === 'application/pdf') {
+            } else if (type?.mime === 'application/pdf') {
               file_browser.isPDF = true;
             }
-          } else {
-            debug(`could not get file type`);
           }
         } else {
-          debug(`found a text file`);
+          // This is probably a text file. If it's is larger that 10MB, don't
+          // attempt to read it; treat it like an opaque binary file.
+          const { size } = await fs.stat(file_browser.paths.workingPath);
+          if (size > 10 * 1024 * 1024) {
+            file_browser.isBinary = true;
+            return;
+          }
+
           file_browser.isText = true;
 
+          const contents = await fs.readFile(file_browser.paths.workingPath);
           const stringifiedContents = contents.toString('utf8');
 
           // Try to guess the language from the file extension. This takes
