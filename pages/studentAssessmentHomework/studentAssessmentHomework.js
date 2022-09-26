@@ -203,43 +203,12 @@ router.post('/', function (req, res, next) {
         if (ERR(err, next)) return;
         if (validationErrors !== undefined) {
           res.locals.validationErrors = validationErrors;
-          groupAssessmentHelper.getGroupInfo(
-            res.locals.assessment.id,
-            res.locals.user.user_id,
-            function (
-              err,
-              groupMember,
-              permissions,
-              minsize,
-              maxsize,
-              groupsize,
-              needsize,
-              usingGroupRoles,
-              group_info,
-              join_code,
-              start,
-              used_join_code
-            ) {
-              if (ERR(err, next)) return;
-              res.locals.permissions = permissions;
-              res.locals.minsize = minsize;
-              res.locals.maxsize = maxsize;
-              res.locals.groupsize = groupsize;
-              res.locals.needsize = needsize;
-              res.locals.usingGroupRoles = usingGroupRoles;
-              res.locals.group_info = group_info;
-              res.locals.join_code = join_code;
-              res.locals.start = start;
-              res.locals.used_join_code = used_join_code;
-
-              groupAssessmentHelper.getGroupRoles(res.locals.assessment.id, function (group_roles) {
-                res.locals.group_roles = group_roles;
-                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-              });
-            }
-          );
+          // FIXME: Needs res.locals.groupsize and permissions to load
+          // We could get these from getGroupInfo(), like in the GET request above
+          // but that would duplicate a lot of code, and this is a POST...
+          res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         } else {
-          res.redirect(req.originalUrl);
+          res.redirect(req.originalUrl); // refresh the page with a GET request
         }
       }
     );
