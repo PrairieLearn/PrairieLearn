@@ -112,4 +112,12 @@ SELECT
 FROM
     group_roles as gr
 WHERE
-    gr.assessment_id = $assessment_id
+    gr.assessment_id = $assessment_id;
+
+-- BLOCK get_assessment_level_permissions
+SELECT 
+    gr.can_assign_roles_at_start, gr.can_assign_roles_during_assessment
+FROM
+    group_roles as gr JOIN group_users as gu ON gr.id = gu.group_role_id
+WHERE
+    gr.assessment_id = $assessment_id AND gu.user_id = $user_id;
