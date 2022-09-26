@@ -78,13 +78,16 @@ router.get('/', function (req, res, next) {
             res.locals.used_join_code = used_join_code;
 
             if (usingGroupRoles) {
+              // TODO: For the individual user, grab whether they can see the role select table
+
+              // group_info contains the list of role names associated with each user
+              // group_roles contains a list of all group roles in the assessment
               groupAssessmentHelper.getGroupRoles(res.locals.assessment.id, function (group_roles) {
                 res.locals.group_roles = group_roles;
-                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
               });
-            } else {
-              res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             }
+
+            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
           }
         );
       } else {
@@ -195,18 +198,13 @@ router.post('/', function (req, res, next) {
     );
   } else if (req.body.__action === 'update_group_roles') {
     groupAssessmentHelper.updateGroupRoles(
-      req.body,
+      req.body, // contains the new role configuration
       res.locals.assessment.id,
       res.locals.user.user_id,
       res.locals.authn_user.user_id,
-      function (err, errors) {
+      function (err) {
         if (ERR(err, next)) return;
-        if (errors.length === 0) {
-          res.redirect(req.originalUrl);
-        } else {
-          res.locals.errors = errors;
-          res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-        }
+        res.redirect(req.originalUrl);
       }
     );
   } else if (req.body.__action === 'leave_group') {

@@ -32,7 +32,7 @@
 <% } %>
 <% } else {%>
   <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: permissions, group_info: group_info}); %>
-  <% if (usingGroupRoles) { %>
+  <% if (usingGroupRoles) {  // TODO: && (user has can_assign_groups_at_start permission) %>
     <%- include('../shared/groupRoleSelectTable.ejs', {group_info: group_info, group_roles: group_roles}); %>
   <% } %>
   <% if (locals.assessment.type === 'Exam' && locals.assessment.require_honor_code) { %>
