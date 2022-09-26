@@ -1810,10 +1810,7 @@ module.exports = {
   },
 
   async getContext(question, course) {
-    console.log(course);
-    // TODO: there is a lot of data in the `course` object here. Which of it
-    // do we want to use of the sharing course and which of the curent course
-    const coursePath = chunks.getRuntimeDirectoryForCourse(course, question);
+    const coursePath = chunks.getRuntimeDirectoryForCourse(course);
     /** @type {chunks.Chunk[]} */
     const chunksToLoad = [
       {
@@ -1840,20 +1837,8 @@ module.exports = {
     // that actually executes the question.
     const courseDirectory = config.workersExecutionMode === 'native' ? coursePath : '/course';
     const courseDirectoryHost = coursePath;
-
-    let qd;
-    if (question?.directory && question.directory[0] == '@') {
-      const firstSlash = question.directory.indexOf('/');
-      qd = question.directory.substring(firstSlash + 1, question.directory.length);
-    } else {
-      qd = question.directory
-    }
-
-    const questionDirectory = (() =>{ console.trace(); return path.join(courseDirectory, 'questions', qd) })();
-    const questionDirectoryHost = (() =>{ console.trace(); return path.join(coursePath, 'questions', qd) })();
-
-
-    console.log(coursePath, 'questions');
+    const questionDirectory = path.join(courseDirectory, 'questions', question.directory);
+    const questionDirectoryHost = path.join(coursePath, 'questions', question.directory);
     const context = {
       question,
       course,

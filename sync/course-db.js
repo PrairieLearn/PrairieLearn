@@ -420,27 +420,7 @@ const FILE_UUID_REGEX =
 module.exports.loadFullCourse = async function (courseDir) {
   const courseInfo = await module.exports.loadCourseInfo(courseDir);
   perf.start('loadQuestions');
-
-  const coursesToLoad = courseInfo.data?.imports ? [courseDir, ...courseInfo.data.imports] : [courseDir];
-  // TODO: do we actually want to load all the questions here? or should we just reference already-loaded questions
-  // for the courses that have already been loaded? or is that an optimisation to worry about later?
-  const questions = await Promise.all(coursesToLoad.map(module.exports.loadQuestions)).then(coursesQuestions => {
-    let questions = coursesQuestions[0];
-    for (let i = 1; i < coursesQuestions.length; ++i) {
-      let courseName = path.basename(coursesToLoad[i]);
-      let courseQuestions = coursesQuestions[i];
-      for (let qid in courseQuestions) {
-        if (qid != 'addNumbers') {
-          continue;
-        }
-        // TODO: before adding, look at the question information to decide if it is *supposed* to be shared with the current course
-        // TODO: make sure that you can add questions with the same UUID as a question already in the course!!!
-        questions['@' + courseName + '/' + qid] = courseQuestions[qid];
-      }
-    }
-    return questions;
-  });
-
+  const questions = await module.exports.loadQuestions(courseDir);
   perf.end('loadQuestions');
   const courseInstanceInfos = await module.exports.loadCourseInstances(courseDir);
   const courseInstances = /** @type {{ [ciid: string]: CourseInstanceData }} */ ({});
