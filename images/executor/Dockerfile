@@ -2,7 +2,7 @@ FROM prairielearn/prairielearn
 WORKDIR /PrairieLearn/
 
 # We need pkill in this image
-RUN yum -y install procps-ng
+RUN yum -y install procps-ng && yum clean all
 
 RUN pip3 install psutil
 

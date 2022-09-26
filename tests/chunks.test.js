@@ -5,6 +5,7 @@ const tmp = require('tmp-promise');
 const fs = require('fs-extra');
 const path = require('path');
 
+const courseDB = require('../sync/course-db');
 const chunksLib = require('../lib/chunks');
 const config = require('../lib/config');
 const sqldb = require('../prairielib/lib/sql-db');
@@ -245,6 +246,9 @@ describe('chunks', () => {
     let tempChunksDir;
     let originalChunksConsumerDirectory = config.chunksConsumerDirectory;
     let courseId;
+    let courseInstanceId;
+    let assessmentId;
+    let questionId;
 
     before('set up testing server', async () => {
       // We need to modify the test course - create a copy that we can
@@ -271,6 +275,24 @@ describe('chunks', () => {
         course_path: tempTestCourseDir.path,
       });
       courseId = results.rows[0].id;
+
+      // Find the ID of the course instance
+      const courseInstanceResults = await sqldb.queryOneRowAsync(sql.select_course_instance, {
+        long_name: 'Spring 2015',
+      });
+      courseInstanceId = courseInstanceResults.rows[0].id;
+
+      // Find the ID of an assessment that has clientFilesAssessment
+      const assessmentResults = await sqldb.queryOneRowAsync(sql.select_assessment, {
+        tid: 'exam1-automaticTestSuite',
+      });
+      assessmentId = assessmentResults.rows[0].id;
+
+      // Find the ID of a question.
+      const questionResults = await sqldb.queryOneRowAsync(sql.select_question, {
+        qid: 'addNumbers',
+      });
+      questionId = questionResults.rows[0].id;
     });
 
     after('shut down testing server', async () => {
@@ -287,8 +309,8 @@ describe('chunks', () => {
     });
 
     it('deletes chunks that are no longer needed', async () => {
-      const course_ids = [courseId];
-      const authn_user_id = 1;
+      const courseDir = tempTestCourseDir.path;
+      const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({ id: courseId, path: null });
 
       /** @type {import('../lib/chunks').Chunk[]} */
       const chunksToLoad = [
@@ -304,55 +326,128 @@ describe('chunks', () => {
         {
           type: 'clientFilesCourse',
         },
+        {
+          type: 'clientFilesCourseInstance',
+          courseInstanceId,
+        },
+        {
+          type: 'clientFilesAssessment',
+          courseInstanceId,
+          assessmentId,
+        },
+        {
+          type: 'question',
+          questionId,
+        },
       ];
 
       // Generate chunks for the example course
-      let jobId = await chunksLib.generateAllChunksForCourseList(course_ids, authn_user_id);
-      await helperServer.waitForJobSequenceSuccessAsync(jobId);
+      await chunksLib.updateChunksForCourse({
+        coursePath: tempTestCourseDir.path,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseDir),
+      });
 
       // Load and unpack chunks
       await chunksLib.ensureChunksForCourseAsync(courseId, chunksToLoad);
 
       // Assert that the unpacked chunks exist on disk
-      const courseDir = chunksLib.getRuntimeDirectoryForCourse({ id: courseId, path: null });
-      assert.isOk(await fs.pathExists(path.join(courseDir, 'elements')));
-      assert.isOk(await fs.pathExists(path.join(courseDir, 'elementExtensions')));
-      assert.isOk(await fs.pathExists(path.join(courseDir, 'serverFilesCourse')));
-      assert.isOk(await fs.pathExists(path.join(courseDir, 'clientFilesCourse')));
+      assert.isOk(await fs.pathExists(path.join(courseRuntimeDir, 'elements')));
+      assert.isOk(await fs.pathExists(path.join(courseRuntimeDir, 'elementExtensions')));
+      assert.isOk(await fs.pathExists(path.join(courseRuntimeDir, 'serverFilesCourse')));
+      assert.isOk(await fs.pathExists(path.join(courseRuntimeDir, 'clientFilesCourse')));
+      assert.isOk(
+        await fs.pathExists(
+          path.join(courseRuntimeDir, 'courseInstances', 'Sp15', 'clientFilesCourseInstance')
+        )
+      );
+      assert.isOk(
+        await fs.pathExists(
+          path.join(
+            courseRuntimeDir,
+            'courseInstances',
+            'Sp15',
+            'assessments',
+            'exam1-automaticTestSuite',
+            'clientFilesAssessment'
+          )
+        )
+      );
+      assert.isOk(
+        await fs.pathExists(path.join(courseRuntimeDir, 'questions', 'addNumbers', 'question.html'))
+      );
 
       // Remove subset of directories from the course
-      await fs.remove(path.join(tempTestCourseDir.path, 'elements'));
-      await fs.remove(path.join(tempTestCourseDir.path, 'elementExtensions'));
+      await fs.remove(path.join(courseDir, 'elements'));
+      await fs.remove(path.join(courseDir, 'elementExtensions'));
 
       // Regenerate chunks
-      jobId = await chunksLib.generateAllChunksForCourseList(course_ids, authn_user_id);
-      await helperServer.waitForJobSequenceSuccessAsync(jobId);
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseDir),
+      });
 
       // Reload the chunks
       await chunksLib.ensureChunksForCourseAsync(courseId, chunksToLoad);
 
       // Assert that the chunks have been removed from disk
-      assert.isNotOk(await fs.pathExists(path.join(courseDir, 'elements')));
-      assert.isNotOk(await fs.pathExists(path.join(courseDir, 'elementExtensions')));
+      assert.isNotOk(await fs.pathExists(path.join(courseRuntimeDir, 'elements')));
+      assert.isNotOk(await fs.pathExists(path.join(courseRuntimeDir, 'elementExtensions')));
 
       // Also assert that the chunks for directories that do exist are still there
-      assert.isOk(await fs.pathExists(path.join(courseDir, 'serverFilesCourse')));
-      assert.isOk(await fs.pathExists(path.join(courseDir, 'clientFilesCourse')));
+      assert.isOk(await fs.pathExists(path.join(courseRuntimeDir, 'serverFilesCourse')));
+      assert.isOk(await fs.pathExists(path.join(courseRuntimeDir, 'clientFilesCourse')));
 
       // Remove remaining directories from the course
-      await fs.remove(path.join(tempTestCourseDir.path, 'serverFilesCourse'));
-      await fs.remove(path.join(tempTestCourseDir.path, 'clientFilesCourse'));
+      await fs.remove(path.join(courseDir, 'serverFilesCourse'));
+      await fs.remove(path.join(courseDir, 'clientFilesCourse'));
+      await fs.remove(path.join(courseDir, 'courseInstances', 'Sp15', 'clientFilesCourseInstance'));
+      await fs.remove(
+        path.join(
+          courseDir,
+          'courseInstances',
+          'Sp15',
+          'assessments',
+          'exam1-automaticTestSuite',
+          'clientFilesAssessment'
+        )
+      );
+      await fs.remove(path.join(courseDir, 'questions', 'addNumbers'));
 
       // Regenerate chunks
-      jobId = await chunksLib.generateAllChunksForCourseList(course_ids, authn_user_id);
-      await helperServer.waitForJobSequenceSuccessAsync(jobId);
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseDir),
+      });
 
       // Reload the chunks
       await chunksLib.ensureChunksForCourseAsync(courseId, chunksToLoad);
 
       // Assert that the remaining chunks have been removed from disk
-      assert.isNotOk(await fs.pathExists(path.join(courseDir, 'serverFilesCourse')));
-      assert.isNotOk(await fs.pathExists(path.join(courseDir, 'clientFilesCourse')));
+      assert.isNotOk(await fs.pathExists(path.join(courseRuntimeDir, 'serverFilesCourse')));
+      assert.isNotOk(await fs.pathExists(path.join(courseRuntimeDir, 'clientFilesCourse')));
+      assert.isNotOk(
+        await fs.pathExists(
+          path.join(courseRuntimeDir, 'courseInstances', 'Sp15', 'clientFilesCourseInstance')
+        )
+      );
+      assert.isNotOk(
+        await fs.pathExists(
+          path.join(
+            courseRuntimeDir,
+            'courseInstances',
+            'Sp15',
+            'assessments',
+            'exam1-automaticTestSuite',
+            'clientFilesAssessment'
+          )
+        )
+      );
+      assert.isNotOk(
+        await fs.pathExists(path.join(courseRuntimeDir, 'questions', 'addNumbers', 'question.html'))
+      );
     });
   });
 });
