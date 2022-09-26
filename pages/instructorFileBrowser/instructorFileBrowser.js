@@ -297,47 +297,65 @@ function browseDirectory(file_browser, callback) {
 function browseFile(file_browser, callback) {
   async.waterfall(
     [
-      (callback) => {
-        fs.readFile(file_browser.paths.workingPath, (err, contents) => {
-          if (ERR(err, callback)) return;
-          callback(null, contents);
-        });
-      },
-      (contents, callback) => {
-        isBinaryFile(contents).then(
-          (result) => {
-            debug(`isBinaryFile: ${result}`);
-            file_browser.isBinary = result;
-            if (result) {
-              util.callbackify(async () => {
-                const type = await FileType.fromBuffer(contents);
-                if (type) {
-                  debug(`file type:\n ext = ${type.ext}\n mime = ${type.mime}`);
-                  if (type.mime.startsWith('image')) {
-                    file_browser.isImage = true;
-                  } else if (type.mime === 'application/pdf') {
-                    file_browser.isPDF = true;
-                  }
-                } else {
-                  debug(`could not get file type`);
-                }
-              })(callback);
-            } else {
-              debug(`found a text file`);
-              file_browser.isText = true;
-              file_browser.contents = hljs.highlightAuto(contents.toString('utf8')).value;
-              callback(null);
+      async () => {
+        // If the file is larger that 10MB, don't attempt to read it; treat
+        // it like an opaque binary file.
+        const { size } = await fs.stat(file_browser.paths.workingPath);
+        if (size > 10 * 1024 * 1024) {
+          file_browser.isBinary = true;
+          return;
+        }
+
+        const contents = await fs.readFile(file_browser.paths.workingPath);
+
+        const result = await isBinaryFile(contents);
+        debug(`isBinaryFile: ${result}`);
+        file_browser.isBinary = result;
+        if (result) {
+          const type = await FileType.fromBuffer(contents);
+          if (type) {
+            debug(`file type:\n ext = ${type.ext}\n mime = ${type.mime}`);
+            if (type.mime.startsWith('image')) {
+              file_browser.isImage = true;
+            } else if (type.mime === 'application/pdf') {
+              file_browser.isPDF = true;
             }
-          },
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null); // should never get here
+          } else {
+            debug(`could not get file type`);
           }
-        );
+        } else {
+          debug(`found a text file`);
+          file_browser.isText = true;
+
+          const stringifiedContents = contents.toString('utf8');
+
+          // Try to guess the language from the file extension. This takes
+          // advantage of the fact that Highlight.js includes common file extensions
+          // as aliases for each supported language, and `getLanguage()` allows
+          // us to look up a language by its alias.
+          //
+          // If we don't get a match, we'll try to guess the language by running
+          // `highlightAuto()` on the first few thousand characters of the file.
+          //
+          // Note that we deliberately exclude `ml` and `ls` from the extensions
+          // that we try to guess from, as they're ambiguous (OCaml/Standard ML
+          // and LiveScript/Lasso, respectively). For more details, see
+          // https://highlightjs.readthedocs.io/en/latest/supported-languages.html
+          let language = null;
+          const extension = path.extname(file_browser.paths.workingPath).substring(1);
+          if (!['ml', 'ls'].includes(extension) && hljs.getLanguage(extension)) {
+            language = extension;
+          } else {
+            const result = hljs.highlightAuto(stringifiedContents.slice(0, 2000));
+            language = result.language;
+          }
+          file_browser.contents = hljs.highlight(stringifiedContents, { language }).value;
+        }
       },
     ],
     (err) => {
       if (ERR(err, callback)) return;
+
       const filepath = file_browser.paths.workingPath;
       const editable = !file_browser.isBinary;
       const movable = !file_browser.paths.cannotMove.includes(filepath);
