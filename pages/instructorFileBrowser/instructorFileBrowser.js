@@ -310,10 +310,10 @@ function browseFile(file_browser, callback) {
             }
           }
         } else {
-          // This is probably a text file. If it's is larger that 10MB, don't
+          // This is probably a text file. If it's is larger that 1MB, don't
           // attempt to read it; treat it like an opaque binary file.
           const { size } = await fs.stat(file_browser.paths.workingPath);
-          if (size > 10 * 1024 * 1024) {
+          if (size > 1 * 1024 * 1024) {
             file_browser.isBinary = true;
             return;
           }
