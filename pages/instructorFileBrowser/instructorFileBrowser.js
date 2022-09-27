@@ -182,21 +182,20 @@ function browseDirectory(file_browser, callback) {
           callback(null, filenames);
         });
       },
-      (filenames, callback) => {
-        file_browser.files = [];
-        file_browser.dirs = [];
-        async.eachOfSeries(
-          filenames.sort(),
+      async (filenames) => {
+        const all_files = await async.mapLimit(
+          filenames.filter((f) => !isHidden(f)),
+          3,
           async (filename, index) => {
-            if (isHidden(filename)) return;
             const filepath = path.join(file_browser.paths.workingPath, filename);
             const stats = await fs.lstat(filepath);
             if (stats.isFile()) {
               const editable = !(await isBinaryFile(filepath));
               const movable = !file_browser.paths.cannotMove.includes(filepath);
-              file_browser.files.push({
+              return {
                 id: index,
                 name: filename,
+                isFile: true,
                 encodedName: encodePath(filename),
                 path: path.relative(file_browser.paths.coursePath, filepath),
                 encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
@@ -218,49 +217,37 @@ function browseDirectory(file_browser, callback) {
                 canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
                   contains(invalidRootPath, filepath)
                 ),
-              });
+              };
             } else if (stats.isDirectory()) {
-              file_browser.dirs.push({
+              return {
                 id: index,
                 name: filename,
+                isDirectory: true,
                 encodedName: encodePath(filename),
                 path: path.relative(file_browser.paths.coursePath, filepath),
                 encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
                 canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
                   contains(invalidRootPath, filepath)
                 ),
-              });
-            }
-          },
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
+              };
+            } else return null;
           }
         );
+        file_browser.files = all_files.filter((f) => f?.isFile).sort((f) => f.name);
+        file_browser.dirs = all_files.filter((f) => f?.isDirectory).sort((f) => f.name);
       },
-      (callback) => {
-        async.eachOfSeries(
-          file_browser.files,
-          (file, index, callback) => {
-            util.callbackify(editorUtil.getErrorsAndWarningsForFilePath)(
-              file_browser.paths.courseId,
-              file.path,
-              (err, data) => {
-                if (ERR(err, callback)) return;
-                const ansiUp = new AnsiUp();
-                file.sync_errors = data.errors;
-                file.sync_errors_ansified = ansiUp.ansi_to_html(file.sync_errors);
-                file.sync_warnings = data.warnings;
-                file.sync_warnings_ansified = ansiUp.ansi_to_html(file.sync_warnings);
-                callback(null);
-              }
-            );
-          },
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          }
-        );
+      async () => {
+        await async.eachLimit(file_browser.files, 3, async (file, index) => {
+          const data = await editorUtil.getErrorsAndWarningsForFilePath(
+            file_browser.paths.courseId,
+            file.path
+          );
+          const ansiUp = new AnsiUp();
+          file.sync_errors = data.errors;
+          file.sync_errors_ansified = ansiUp.ansi_to_html(file.sync_errors);
+          file.sync_warnings = data.warnings;
+          file.sync_warnings_ansified = ansiUp.ansi_to_html(file.sync_warnings);
+        });
       },
     ],
     (err) => {
