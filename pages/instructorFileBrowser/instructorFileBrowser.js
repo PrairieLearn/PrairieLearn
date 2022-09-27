@@ -319,7 +319,9 @@ function browseFile(file_browser, callback) {
             const result = hljs.highlightAuto(stringifiedContents.slice(0, 2000));
             language = result.language;
           }
-          file_browser.contents = hljs.highlight(stringifiedContents, { language }).value;
+          file_browser.contents = hljs.highlight(stringifiedContents, {
+            language: language ?? 'plaintext',
+          }).value;
         }
       },
     ],
