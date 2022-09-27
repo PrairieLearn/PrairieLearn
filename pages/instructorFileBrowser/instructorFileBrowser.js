@@ -436,11 +436,7 @@ router.get('/*', function (req, res, next) {
     (err) => {
       if (err) {
         if (err.code === 'ENOENT' && file_browser.paths.branch.length > 1) {
-          res.redirect(
-            `${res.locals.urlPrefix}/${res.locals.navPage}/file_view/${encodePath(
-              file_browser.paths.branch.slice(-2)[0].path
-            )}`
-          );
+          res.redirect(`${req.baseUrl}/${encodePath(file_browser.paths.branch.slice(-2)[0].path)}`);
           return;
         } else {
           return ERR(err, next);
