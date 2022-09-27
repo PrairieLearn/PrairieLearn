@@ -11,7 +11,6 @@ const fs = require('fs-extra');
 const async = require('async');
 const hljs = require('highlight.js');
 const FileType = require('file-type');
-const util = require('util');
 const { isBinaryFile } = require('isbinaryfile');
 const { encodePath, decodePath } = require('../../lib/uri-util');
 const editorUtil = require('../../lib/editorUtil');
@@ -230,14 +229,16 @@ function browseDirectory(file_browser, callback) {
                   contains(invalidRootPath, filepath)
                 ),
               };
-            } else return null;
+            } else {
+              return null;
+            }
           }
         );
         file_browser.files = all_files.filter((f) => f?.isFile).sort((f) => f.name);
         file_browser.dirs = all_files.filter((f) => f?.isDirectory).sort((f) => f.name);
       },
       async () => {
-        await async.eachLimit(file_browser.files, 3, async (file, index) => {
+        await async.eachLimit(file_browser.files, 3, async (file) => {
           const data = await editorUtil.getErrorsAndWarningsForFilePath(
             file_browser.paths.courseId,
             file.path
