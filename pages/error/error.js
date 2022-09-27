@@ -1,14 +1,38 @@
+// @ts-check
 var _ = require('lodash');
 var path = require('path');
 var jsonStringifySafe = require('json-stringify-safe');
 
 var logger = require('../../lib/logger');
 
+/**
+ * Attempts to extract a numeric status code from a Postgres error object.
+ * The convention we use is to use a `ERRCODE` value of `ST###`, where ###
+ * is the three-digit HTTP status code.
+ *
+ * For example, the following exception would set a 404 status code:
+ *
+ * RAISE EXCEPTION 'Entity not found' USING ERRCODE = 'ST404';
+ *
+ * @param {any} err
+ * @returns {number | null}
+ */
+function maybeGetStatusCodeFromSqlError(err) {
+  const rawCode = err?.data?.sqlError?.code;
+  if (!rawCode || !rawCode.startsWith('ST')) return null;
+  const code = rawCode.substring(2);
+  const parsedCode = Number(code);
+  if (Number.isNaN(parsedCode)) return null;
+  return parsedCode;
+}
+
+/** @type {import('express').ErrorRequestHandler} */
 module.exports = function (err, req, res, _next) {
   const errorId = res.locals.error_id;
 
-  err.status = err.status || 500;
+  err.status = err.status ?? maybeGetStatusCodeFromSqlError(err) ?? 500;
   res.status(err.status);
+
   var referrer = req.get('Referrer') || null;
   logger.log(err.status >= 500 ? 'error' : 'verbose', 'Error page', {
     msg: err.message,
