@@ -182,6 +182,7 @@ function browseDirectory(file_browser, callback) {
         });
       },
       async (filenames) => {
+        const ansiUp = new AnsiUp();
         const all_files = await async.mapLimit(
           filenames.filter((f) => !isHidden(f)),
           3,
@@ -191,12 +192,17 @@ function browseDirectory(file_browser, callback) {
             if (stats.isFile()) {
               const editable = !(await isBinaryFile(filepath));
               const movable = !file_browser.paths.cannotMove.includes(filepath);
+              const relative_path = path.relative(file_browser.paths.coursePath, filepath);
+              const sync_data = await editorUtil.getErrorsAndWarningsForFilePath(
+                file_browser.paths.courseId,
+                relative_path
+              );
               return {
                 id: index,
                 name: filename,
                 isFile: true,
                 encodedName: encodePath(filename),
-                path: path.relative(file_browser.paths.coursePath, filepath),
+                path: relative_path,
                 encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
                 dir: file_browser.paths.workingPath,
                 canEdit:
@@ -216,6 +222,10 @@ function browseDirectory(file_browser, callback) {
                 canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
                   contains(invalidRootPath, filepath)
                 ),
+                sync_errors: sync_data.errors,
+                sync_errors_ansified: ansiUp.ansi_to_html(sync_data.errors),
+                sync_warnings: sync_data.warnings,
+                sync_warnings_ansified: ansiUp.ansi_to_html(sync_data.warnings),
               };
             } else if (stats.isDirectory()) {
               return {
@@ -234,21 +244,12 @@ function browseDirectory(file_browser, callback) {
             }
           }
         );
-        file_browser.files = all_files.filter((f) => f?.isFile).sort((a, b) => a.name.localeCompare(b.name));
-        file_browser.dirs = all_files.filter((f) => f?.isDirectory).sort((a, b) => a.name.localeCompare(b.name));
-      },
-      async () => {
-        await async.eachLimit(file_browser.files, 3, async (file) => {
-          const data = await editorUtil.getErrorsAndWarningsForFilePath(
-            file_browser.paths.courseId,
-            file.path
-          );
-          const ansiUp = new AnsiUp();
-          file.sync_errors = data.errors;
-          file.sync_errors_ansified = ansiUp.ansi_to_html(file.sync_errors);
-          file.sync_warnings = data.warnings;
-          file.sync_warnings_ansified = ansiUp.ansi_to_html(file.sync_warnings);
-        });
+        file_browser.files = all_files
+          .filter((f) => f?.isFile)
+          .sort((a, b) => a.name.localeCompare(b.name));
+        file_browser.dirs = all_files
+          .filter((f) => f?.isDirectory)
+          .sort((a, b) => a.name.localeCompare(b.name));
       },
     ],
     (err) => {
