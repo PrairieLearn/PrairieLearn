@@ -15,14 +15,15 @@ var logger = require('../../lib/logger');
  * RAISE EXCEPTION 'Entity not found' USING ERRCODE = 'ST404';
  *
  * @param {any} err
- * @returns {number | null}
+ * @returns {number | null} The extracted HTTP status code
  */
 function maybeGetStatusCodeFromSqlError(err) {
   const rawCode = err?.data?.sqlError?.code;
-  if (!rawCode || !rawCode.startsWith('ST')) return null;
-  const code = rawCode.substring(2);
-  const parsedCode = Number(code);
+  if (!rawCode?.startsWith('ST')) return null;
+
+  const parsedCode = Number(rawCode.toString().substring(2));
   if (Number.isNaN(parsedCode)) return null;
+
   return parsedCode;
 }
 
