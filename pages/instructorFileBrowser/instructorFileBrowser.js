@@ -234,8 +234,8 @@ function browseDirectory(file_browser, callback) {
             }
           }
         );
-        file_browser.files = all_files.filter((f) => f?.isFile).sort((f) => f.name);
-        file_browser.dirs = all_files.filter((f) => f?.isDirectory).sort((f) => f.name);
+        file_browser.files = all_files.filter((f) => f?.isFile).sort((a, b) => a.name.localeCompare(b.name));
+        file_browser.dirs = all_files.filter((f) => f?.isDirectory).sort((a, b) => a.name.localeCompare(b.name));
       },
       async () => {
         await async.eachLimit(file_browser.files, 3, async (file) => {
