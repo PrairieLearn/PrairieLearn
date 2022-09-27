@@ -188,54 +188,50 @@ function browseDirectory(file_browser, callback) {
         file_browser.dirs = [];
         async.eachOfSeries(
           filenames.sort(),
-          (filename, index, callback) => {
-            if (isHidden(filename)) return callback(null);
+          async (filename, index) => {
+            if (isHidden(filename)) return;
             const filepath = path.join(file_browser.paths.workingPath, filename);
-            fs.lstat(filepath, (err, stats) => {
-              if (ERR(err, callback)) return;
-              if (stats.isFile()) {
-                const editable = modelist.getModeForPath(filename)?.extRe?.test(filename);
-                const movable = !file_browser.paths.cannotMove.includes(filepath);
-                file_browser.files.push({
-                  id: index,
-                  name: filename,
-                  encodedName: encodePath(filename),
-                  path: path.relative(file_browser.paths.coursePath, filepath),
-                  encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
-                  dir: file_browser.paths.workingPath,
-                  canEdit:
-                    editable &&
-                    file_browser.has_course_permission_edit &&
-                    !file_browser.example_course,
-                  canUpload:
-                    file_browser.has_course_permission_edit && !file_browser.example_course,
-                  canDownload: true, // we already know the user is a course Viewer (checked on GET)
-                  canRename:
-                    movable &&
-                    file_browser.has_course_permission_edit &&
-                    !file_browser.example_course,
-                  canDelete:
-                    movable &&
-                    file_browser.has_course_permission_edit &&
-                    !file_browser.example_course,
-                  canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
-                    contains(invalidRootPath, filepath)
-                  ),
-                });
-              } else if (stats.isDirectory()) {
-                file_browser.dirs.push({
-                  id: index,
-                  name: filename,
-                  encodedName: encodePath(filename),
-                  path: path.relative(file_browser.paths.coursePath, filepath),
-                  encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
-                  canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
-                    contains(invalidRootPath, filepath)
-                  ),
-                });
-              }
-              callback(null);
-            });
+            const stats = await fs.lstat(filepath);
+            if (stats.isFile()) {
+              const editable = !(await isBinaryFile(filepath));
+              const movable = !file_browser.paths.cannotMove.includes(filepath);
+              file_browser.files.push({
+                id: index,
+                name: filename,
+                encodedName: encodePath(filename),
+                path: path.relative(file_browser.paths.coursePath, filepath),
+                encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
+                dir: file_browser.paths.workingPath,
+                canEdit:
+                  editable &&
+                  file_browser.has_course_permission_edit &&
+                  !file_browser.example_course,
+                canUpload: file_browser.has_course_permission_edit && !file_browser.example_course,
+                canDownload: true, // we already know the user is a course Viewer (checked on GET)
+                canRename:
+                  movable &&
+                  file_browser.has_course_permission_edit &&
+                  !file_browser.example_course,
+                canDelete:
+                  movable &&
+                  file_browser.has_course_permission_edit &&
+                  !file_browser.example_course,
+                canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
+                  contains(invalidRootPath, filepath)
+                ),
+              });
+            } else if (stats.isDirectory()) {
+              file_browser.dirs.push({
+                id: index,
+                name: filename,
+                encodedName: encodePath(filename),
+                path: path.relative(file_browser.paths.coursePath, filepath),
+                encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
+                canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
+                  contains(invalidRootPath, filepath)
+                ),
+              });
+            }
           },
           (err) => {
             if (ERR(err, callback)) return;
