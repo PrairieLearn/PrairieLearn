@@ -30,7 +30,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             priority = pl.get_integer_attrib(child, 'show-after')
             html_hints.append((priority, pl.inner_html(child)))
         else:
-            raise Exception(f"Child tag type '{child.tag}' not supported by hidden-hints.")
+            raise Exception(f"Child tag type '{child.tag}' not supported by pl-hidden-hints.")
 
     hints_dict['html_hints'] = html_hints
 
