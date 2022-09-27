@@ -12,7 +12,6 @@ const async = require('async');
 const hljs = require('highlight.js');
 const FileType = require('file-type');
 const util = require('util');
-const modelist = require('ace-code/src/ext/modelist');
 const { isBinaryFile } = require('isbinaryfile');
 const { encodePath, decodePath } = require('../../lib/uri-util');
 const editorUtil = require('../../lib/editorUtil');
