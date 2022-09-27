@@ -37,7 +37,6 @@ config.loadConfig = function (callback) {
             const data = JSON.parse(document);
             logger.info('instance-identity', data);
             AWS.config.update({ region: data.region });
-            exportedConfig.instanceIdentity = data;
             exportedConfig.runningInEc2 = true;
             exportedConfig.instanceId = data.instanceId;
           } catch (err) {
