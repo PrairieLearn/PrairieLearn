@@ -2018,7 +2018,7 @@ new questions.
   param-names="r1,r2,isHorizontal"
   width="900"
   height="600"
-/>
+></pl-prairiedraw-figure>
 ```
 
 #### Customizations
