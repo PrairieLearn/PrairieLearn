@@ -1,9 +1,7 @@
 const ERR = require('async-stacktrace');
 const async = require('async');
-const fs = require('fs-extra');
 const path = require('path');
 const AWS = require('aws-sdk');
-const os = require('os');
 const _ = require('lodash');
 const configLib = require('../../prairielib/lib/config');
 
