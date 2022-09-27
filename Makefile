@@ -7,7 +7,7 @@ dev:
 start: start-support
 	@node server.js
 start-nodemon: start-support
-	@yarn nodemon -L server.js
+	@yarn nodemon server.js
 start-workspace-host: start-support kill-running-workspaces
 	@node workspace_host/interface.js
 start-executor:
@@ -41,7 +41,7 @@ test-python:
 # pytest uses to discover tests, but it isn't actually a test file itself. We
 # explicitly exclude it here.
 	@python3 -m pytest --ignore graders/python/python_autograder/pl_unit_test.py
-	
+
 lint: lint-js lint-python lint-html lint-links
 lint-js:
 	@yarn eslint --ext js --report-unused-disable-directives "**/*.js"
