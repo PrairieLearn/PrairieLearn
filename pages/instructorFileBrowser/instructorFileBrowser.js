@@ -11,7 +11,6 @@ const fs = require('fs-extra');
 const async = require('async');
 const hljs = require('highlight.js');
 const FileType = require('file-type');
-const util = require('util');
 const { isBinaryFile } = require('isbinaryfile');
 const { encodePath, decodePath } = require('../../lib/uri-util');
 const editorUtil = require('../../lib/editorUtil');
@@ -21,26 +20,6 @@ const { getCourseOwners } = require('../../lib/course');
 function contains(parentPath, childPath) {
   const relPath = path.relative(parentPath, childPath);
   return !(relPath.split(path.sep)[0] === '..' || path.isAbsolute(relPath));
-}
-
-function canEditFile(file) {
-  // If you add to this list, make sure the corresponding list in instructorFileEditor.js is consistent.
-  const extCanEdit = [
-    '.py',
-    '.html',
-    '.json',
-    '.txt',
-    '.md',
-    '.mustache',
-    '.css',
-    '.csv',
-    '.js',
-    '.m',
-    '.c',
-    '.cpp',
-    '.h',
-  ];
-  return extCanEdit.includes(path.extname(file));
 }
 
 function isHidden(item) {
@@ -202,89 +181,74 @@ function browseDirectory(file_browser, callback) {
           callback(null, filenames);
         });
       },
-      (filenames, callback) => {
-        file_browser.files = [];
-        file_browser.dirs = [];
-        async.eachOfSeries(
-          filenames.sort(),
-          (filename, index, callback) => {
-            if (isHidden(filename)) return callback(null);
-            const filepath = path.join(file_browser.paths.workingPath, filename);
-            fs.lstat(filepath, (err, stats) => {
-              if (ERR(err, callback)) return;
-              if (stats.isFile()) {
-                const editable = canEditFile(filepath);
-                const movable = !file_browser.paths.cannotMove.includes(filepath);
-                file_browser.files.push({
-                  id: index,
-                  name: filename,
-                  encodedName: encodePath(filename),
-                  path: path.relative(file_browser.paths.coursePath, filepath),
-                  encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
-                  dir: file_browser.paths.workingPath,
-                  canEdit:
-                    editable &&
-                    file_browser.has_course_permission_edit &&
-                    !file_browser.example_course,
-                  canUpload:
-                    file_browser.has_course_permission_edit && !file_browser.example_course,
-                  canDownload: true, // we already know the user is a course Viewer (checked on GET)
-                  canRename:
-                    movable &&
-                    file_browser.has_course_permission_edit &&
-                    !file_browser.example_course,
-                  canDelete:
-                    movable &&
-                    file_browser.has_course_permission_edit &&
-                    !file_browser.example_course,
-                  canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
-                    contains(invalidRootPath, filepath)
-                  ),
-                });
-              } else if (stats.isDirectory()) {
-                file_browser.dirs.push({
-                  id: index,
-                  name: filename,
-                  encodedName: encodePath(filename),
-                  path: path.relative(file_browser.paths.coursePath, filepath),
-                  encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
-                  canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
-                    contains(invalidRootPath, filepath)
-                  ),
-                });
-              }
-              callback(null);
-            });
-          },
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
+      async (filenames) => {
+        const ansiUp = new AnsiUp();
+        const all_files = await async.mapLimit(
+          filenames
+            .sort()
+            .map((name, index) => ({ name, index }))
+            .filter((f) => !isHidden(f.name)),
+          3,
+          async (file) => {
+            const filepath = path.join(file_browser.paths.workingPath, file.name);
+            const stats = await fs.lstat(filepath);
+            if (stats.isFile()) {
+              const editable = !(await isBinaryFile(filepath));
+              const movable = !file_browser.paths.cannotMove.includes(filepath);
+              const relative_path = path.relative(file_browser.paths.coursePath, filepath);
+              const sync_data = await editorUtil.getErrorsAndWarningsForFilePath(
+                file_browser.paths.courseId,
+                relative_path
+              );
+              return {
+                id: file.index,
+                name: file.name,
+                isFile: true,
+                encodedName: encodePath(file.name),
+                path: relative_path,
+                encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
+                dir: file_browser.paths.workingPath,
+                canEdit:
+                  editable &&
+                  file_browser.has_course_permission_edit &&
+                  !file_browser.example_course,
+                canUpload: file_browser.has_course_permission_edit && !file_browser.example_course,
+                canDownload: true, // we already know the user is a course Viewer (checked on GET)
+                canRename:
+                  movable &&
+                  file_browser.has_course_permission_edit &&
+                  !file_browser.example_course,
+                canDelete:
+                  movable &&
+                  file_browser.has_course_permission_edit &&
+                  !file_browser.example_course,
+                canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
+                  contains(invalidRootPath, filepath)
+                ),
+                sync_errors: sync_data.errors,
+                sync_errors_ansified: ansiUp.ansi_to_html(sync_data.errors),
+                sync_warnings: sync_data.warnings,
+                sync_warnings_ansified: ansiUp.ansi_to_html(sync_data.warnings),
+              };
+            } else if (stats.isDirectory()) {
+              return {
+                id: file.index,
+                name: file.name,
+                isDirectory: true,
+                encodedName: encodePath(file.name),
+                path: path.relative(file_browser.paths.coursePath, filepath),
+                encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
+                canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
+                  contains(invalidRootPath, filepath)
+                ),
+              };
+            } else {
+              return null;
+            }
           }
         );
-      },
-      (callback) => {
-        async.eachOfSeries(
-          file_browser.files,
-          (file, index, callback) => {
-            util.callbackify(editorUtil.getErrorsAndWarningsForFilePath)(
-              file_browser.paths.courseId,
-              file.path,
-              (err, data) => {
-                if (ERR(err, callback)) return;
-                const ansiUp = new AnsiUp();
-                file.sync_errors = data.errors;
-                file.sync_errors_ansified = ansiUp.ansi_to_html(file.sync_errors);
-                file.sync_warnings = data.warnings;
-                file.sync_warnings_ansified = ansiUp.ansi_to_html(file.sync_warnings);
-                callback(null);
-              }
-            );
-          },
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          }
-        );
+        file_browser.files = all_files.filter((f) => f?.isFile);
+        file_browser.dirs = all_files.filter((f) => f?.isDirectory);
       },
     ],
     (err) => {
@@ -343,7 +307,9 @@ function browseFile(file_browser, callback) {
             const result = hljs.highlightAuto(stringifiedContents.slice(0, 2000));
             language = result.language;
           }
-          file_browser.contents = hljs.highlight(stringifiedContents, { language }).value;
+          file_browser.contents = hljs.highlight(stringifiedContents, {
+            language: language ?? 'plaintext',
+          }).value;
         }
       },
     ],
@@ -351,7 +317,6 @@ function browseFile(file_browser, callback) {
       if (ERR(err, callback)) return;
 
       const filepath = file_browser.paths.workingPath;
-      const editable = !file_browser.isBinary;
       const movable = !file_browser.paths.cannotMove.includes(filepath);
       file_browser.file = {
         id: 0,
@@ -361,7 +326,9 @@ function browseFile(file_browser, callback) {
         encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
         dir: path.dirname(file_browser.paths.workingPath),
         canEdit:
-          editable && file_browser.has_course_permission_edit && !file_browser.example_course,
+          file_browser.isText &&
+          file_browser.has_course_permission_edit &&
+          !file_browser.example_course,
         canUpload: file_browser.has_course_permission_edit && !file_browser.example_course,
         canDownload: true, // we already know the user is a course Viewer (checked on GET)
         canRename:
