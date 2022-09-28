@@ -116,8 +116,13 @@ The `question.html` is a template used to render the question to the student. A 
 </pl-question-panel>
 
 <p>
-  $F = $
-  <pl-number-input answers_name="F" comparison="sigfig" digits="2" /> $\rm m/s^2$
+  <pl-number-input
+    answers_name="F"
+    comparison="sigfig"
+    digits="2"
+    label="$F =$"
+    suffix="$\rm m/s^2$"
+  ></pl-number-input>
 </p>
 ```
 
