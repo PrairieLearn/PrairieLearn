@@ -5,6 +5,21 @@
     var urlPrefix = '<%= urlPrefix %>';
     var questionContext = '<%= question_context %>';
     var csrfToken = '<%= __csrf_token %>';
+    var socket = null;
+
+    window.startSocketIfNeeded = () => {
+      if (socket) return socket;
+      socket = io('/external-grading');
+
+      socket.emit('init', {variant_id: variantId, variant_token: variantToken}, function(msg) {
+        handleStatusChange(msg);
+      });
+
+      socket.on('change:status', function(msg) {
+        handleStatusChange(msg);
+      });
+      return socket;
+    }
 
     // Render initial grading states into the DOM
     var gradingPending = false, renderingPending = false;
@@ -32,15 +47,7 @@
     }
 
     // By this point, it's safe to open a socket
-    var socket = io('/external-grading');
-
-    socket.emit('init', {variant_id: variantId, variant_token: variantToken}, function(msg) {
-      handleStatusChange(msg);
-    });
-
-    socket.on('change:status', function(msg) {
-      handleStatusChange(msg);
-    });
+    if (gradingPending) startSocketIfNeeded();
 
     function handleStatusChange(msg) {
       msg.submissions.forEach(function(submission) {
@@ -67,7 +74,7 @@
     window.fetchResults = (submissionId) => {
       var wasModalOpen = ($('#submissionInfoModal-' + submissionId).data('bs.modal') || {})._isShown;
       $('#submissionInfoModal-' + submissionId).modal('hide');
-      socket.emit('getResults', {
+      startSocketIfNeeded().emit('getResults', {
         variant_id: variantId,
         variant_token: variantToken,
         submission_id: submissionId,
