@@ -47,6 +47,9 @@
   <div class="collapse <% if (submission.submission_number == submissionCount || locals.expanded) { %>show<% } %>" id="submission-<%= submission.id %>-body">
     <div class="card-body submission-body" >
       <%- submissionHtml %>
+      <% if (submissionHtml === undefined) { %>
+      <div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>
+      <% } %>
     </div>
   </div>
 
