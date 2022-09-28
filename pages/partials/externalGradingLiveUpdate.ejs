@@ -1,4 +1,3 @@
-<% if (question.grading_method == 'External') { %>
 <script>
   $(function() {
     var variantId = '<%= variant.id %>';
@@ -8,7 +7,7 @@
     var csrfToken = '<%= __csrf_token %>';
 
     // Render initial grading states into the DOM
-    var gradingPending = false;
+    var gradingPending = false, renderingPending = false;
     $('[id^=submission-]').each(function(index, elem) {
       // Ensure that this is a valid submission element
       if (!/^submission-\d+$/.test($(elem).attr('id'))) {
@@ -21,10 +20,14 @@
       if (status !== 'graded' && status !== 'canceled') {
         gradingPending = true;
       }
+
+      if (!$(elem).data('rendered')) {
+        renderingPending = true;
+      }
     });
 
-    // If everything has been graded or was canceled, don't even open a socket
-    if (!gradingPending) {
+    // If everything has been graded or was canceled, and everything is rendered, don't even open a socket
+    if (!gradingPending && !renderingPending) {
       return;
     }
 
@@ -61,7 +64,7 @@
       });
     }
 
-    function fetchResults(submissionId) {
+    window.fetchResults = (submissionId) => {
       var wasModalOpen = ($('#submissionInfoModal-' + submissionId).data('bs.modal') || {})._isShown;
       $('#submissionInfoModal-' + submissionId).modal('hide');
       socket.emit('getResults', {
@@ -78,7 +81,7 @@
         authorized_edit: <%= !locals.authz_result || locals.authz_result.authorized_edit %>
       }, function(msg) {
         // We're done with the socket for this incarnation of the page
-        socket.close();
+        if (!renderingPending) socket.close();
         if (msg.submissionPanel) {
           $('#submission-' + submissionId).replaceWith(function() {
             return $(msg.submissionPanel).fadeIn('slow');
@@ -137,4 +140,3 @@
     }
   });
 </script>
-<% } %>

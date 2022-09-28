@@ -1,5 +1,5 @@
 <!-- Keeping "graded" state in the DOM is bad, yet here we are. -->
-<div data-grading-job-status="<%= submission.grading_job_status %>" data-grading-job-id="<%= submission.grading_job_id %>" id="submission-<%= submission.id %>">
+<div data-grading-job-status="<%= submission.grading_job_status %>" data-grading-job-id="<%= submission.grading_job_id %>" id="submission-<%= submission.id %>" data-rendered="<%= submissionHtml !== undefined %>">
 
 <% if (course.manual_grading_visible && submission.feedback?.manual) { %>
 <div class="card mb-4 grading-block border-info">
@@ -23,7 +23,7 @@
 <% } %>
 
 <div class="card mb-4" data-testid="submission-block">
-  <div class="card-header bg-light text-dark d-flex align-items-center submission-header <% if (submission.submission_number != submissionCount) { %> collapsed <% } %>" data-toggle="collapse" data-target="#submission-<%= submission.id %>-body">
+  <div class="card-header bg-light text-dark d-flex align-items-center submission-header <% if (submission.submission_number != submissionCount && !locals.expanded) { %> collapsed <% } %>" data-toggle="collapse" data-target="#submission-<%= submission.id %>-body" <% if (submissionHtml === undefined) { %>oncclick="fetchResults(<%= submission.id %>)"<% } %> >
     <div class="mr-auto">
       <div>
         <span class="mr-2">
@@ -44,7 +44,7 @@
     </button>
   </div>
 
-  <div class="collapse <% if (submission.submission_number == submissionCount) { %>show<% } %>" id="submission-<%= submission.id %>-body">
+  <div class="collapse <% if (submission.submission_number == submissionCount || locals.expanded) { %>show<% } %>" id="submission-<%= submission.id %>-body">
     <div class="card-body submission-body" >
       <%- submissionHtml %>
     </div>
