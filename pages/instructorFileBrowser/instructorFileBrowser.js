@@ -184,10 +184,13 @@ function browseDirectory(file_browser, callback) {
       async (filenames) => {
         const ansiUp = new AnsiUp();
         const all_files = await async.mapLimit(
-          filenames.filter((f) => !isHidden(f)),
+          filenames
+            .sort()
+            .map((name, index) => ({ name, index }))
+            .filter((f) => !isHidden(f.name)),
           3,
-          async (filename, index) => {
-            const filepath = path.join(file_browser.paths.workingPath, filename);
+          async (file) => {
+            const filepath = path.join(file_browser.paths.workingPath, file.name);
             const stats = await fs.lstat(filepath);
             if (stats.isFile()) {
               const editable = !(await isBinaryFile(filepath));
@@ -198,10 +201,10 @@ function browseDirectory(file_browser, callback) {
                 relative_path
               );
               return {
-                id: index,
-                name: filename,
+                id: file.index,
+                name: file.name,
                 isFile: true,
-                encodedName: encodePath(filename),
+                encodedName: encodePath(file.name),
                 path: relative_path,
                 encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
                 dir: file_browser.paths.workingPath,
@@ -229,10 +232,10 @@ function browseDirectory(file_browser, callback) {
               };
             } else if (stats.isDirectory()) {
               return {
-                id: index,
-                name: filename,
+                id: file.index,
+                name: file.name,
                 isDirectory: true,
-                encodedName: encodePath(filename),
+                encodedName: encodePath(file.name),
                 path: path.relative(file_browser.paths.coursePath, filepath),
                 encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
                 canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
@@ -244,12 +247,8 @@ function browseDirectory(file_browser, callback) {
             }
           }
         );
-        file_browser.files = all_files
-          .filter((f) => f?.isFile)
-          .sort((a, b) => a.name.localeCompare(b.name));
-        file_browser.dirs = all_files
-          .filter((f) => f?.isDirectory)
-          .sort((a, b) => a.name.localeCompare(b.name));
+        file_browser.files = all_files.filter((f) => f?.isFile);
+        file_browser.dirs = all_files.filter((f) => f?.isDirectory);
       },
     ],
     (err) => {
