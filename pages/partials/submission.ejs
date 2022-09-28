@@ -23,7 +23,7 @@
 <% } %>
 
 <div class="card mb-4" data-testid="submission-block">
-  <div class="card-header bg-light text-dark d-flex align-items-center submission-header <% if (submission.submission_number != submissionCount && !locals.expanded) { %> collapsed <% } %>" data-toggle="collapse" data-target="#submission-<%= submission.id %>-body" <% if (submissionHtml === undefined) { %>onclick="fetchResults(<%= submission.id %>)"<% } %> >
+  <div class="card-header bg-light text-dark d-flex align-items-center submission-header <% if (submission.submission_number != submissionCount && !locals.expanded) { %> collapsed <% } %>" data-toggle="collapse" data-target="#submission-<%= submission.id %>-body">
     <div class="mr-auto">
       <div>
         <span class="mr-2">
@@ -61,5 +61,10 @@ $(function() {
     $('#submissionInfoModal-<%= submission.id %>').modal('show');
     e.stopPropagation();
   });
+  // <% if (submissionHtml === undefined) { %>
+  $('#submission-<%= submission.id %>-body').on('show.bs.collapse', function(e) {
+    fetchResults('<%= submission.id %>');
+  });
+  // <% } %>
 });
 </script>
