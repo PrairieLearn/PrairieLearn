@@ -426,7 +426,6 @@ module.exports.loadFullCourse = async function (courseDir) {
   // TODO: load shared questions in parallel with questions from the course?
   // TODO: only load questions that are *supposed* to be shared
   const sharedQuestionRows = await sqlDb.queryAsync('select * from questions where course_id = 2::bigint;', []);
-  // console.log(sharedQuestions);
   const sharedQuestions = {};
   for (let row of sharedQuestionRows.rows) {
     sharedQuestions['@testCourse/' + row['directory']] = row; // TODO what to put here? more info on the question?
@@ -1037,7 +1036,6 @@ async function validateQuestion(question) {
 async function validateAssessment(assessment, questions, sharedQuestions={}) {
   const warnings = [];
   const errors = [];
-  // console.log(questions);
 
   const allowRealTimeGrading = _.get(assessment, 'allowRealTimeGrading', true);
   if (assessment.type === 'Homework') {
