@@ -11,7 +11,7 @@ module.exports = function (req, res, next) {
   if (res.locals.course_instance) {
     const params = {
       question_id: req.params.question_id,
-      course_instance_id: res.locals.course_instance.id,
+      // course_instance_id: res.locals.course_instance.id,
     };
     sqldb.queryZeroOrOneRow(
       sql.select_and_auth_with_course_instance,

@@ -13,8 +13,6 @@ const sqlDb = require('../prairielib/lib/sql-db');
 const schemas = require('../schemas');
 const infofile = require('./infofile');
 const jsonLoad = require('../lib/json-load');
-const { sql } = require('googleapis/build/src/apis/sql');
-const { DiagConsoleLogger } = require('@opentelemetry/api');
 const perf = require('./performance')('course-db');
 
 const chalk = new chalkDefault.constructor({ enabled: true, level: 3 });

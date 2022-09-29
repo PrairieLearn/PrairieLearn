@@ -9,6 +9,7 @@ const hash = require('crypto').createHash;
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const { instrumented } = require('@prairielearn/opentelemetry');
+const sqlDb = require('../prairielib/lib/sql-db');
 
 const schemas = require('../schemas');
 const config = require('../lib/config');
@@ -1810,6 +1811,11 @@ module.exports = {
   },
 
   async getContext(question, course) {
+    if (question.course_id != course.id) {
+      const courseResult = await sqlDb.queryOneRowAsync('select * from pl_courses where id = $question_course_id;', {question_course_id: question.course_id});
+      course = courseResult.rows[0];
+    }
+
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
     /** @type {chunks.Chunk[]} */
     const chunksToLoad = [

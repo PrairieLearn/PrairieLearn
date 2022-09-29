@@ -43,6 +43,5 @@ FROM
     issue_count
 WHERE
     q.id = $question_id
-    AND ci.id = $course_instance_id
     AND q.course_id = ci.course_id
     AND q.deleted_at IS NULL;
