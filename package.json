@@ -10,6 +10,7 @@
         "release": "turbo run build && changeset publish"
     },
     "dependencies": {
+        "@aws-sdk/client-auto-scaling": "^3.181.0",
         "@fortawesome/fontawesome-free": "^6.2.0",
         "@octokit/rest": "^18.12.0",
         "@prairielearn/bind-mount": "^1.0.0",
