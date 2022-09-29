@@ -58,6 +58,12 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
   const questionIds = await perf.timedAsync('syncQuestions', () =>
     syncQuestions.sync(courseId, courseData)
   );
+
+  const sharedQuestionRows = await sqldb.queryAsync('select * from questions where course_id = 2::bigint;', []);
+  for (let row of sharedQuestionRows.rows) {
+    questionIds['@testCourse/' + row['directory']] = row.id; // TODO what to put here? more info on the question?
+  }
+
   await perf.timedAsync('syncTags', () => syncTags.sync(courseId, courseData, questionIds));
   await perf.timedAsync('syncAssessmentSets', () => syncAssessmentSets.sync(courseId, courseData));
   await perf.timedAsync('syncAssessmentModules', () =>
@@ -67,6 +73,7 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
   await Promise.all(
     Object.entries(courseData.courseInstances).map(async ([ciid, courseInstanceData]) => {
       const courseInstanceId = courseInstanceIds[ciid];
+      // console.log(questionIds);
       await perf.timedAsync(`syncAssessments${ciid}`, () =>
         syncAssessments.sync(
           courseId,

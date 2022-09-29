@@ -8,10 +8,13 @@ const Ajv = require('ajv').default;
 const betterAjvErrors = require('better-ajv-errors').default;
 const { parseISO, isValid, isAfter, isFuture } = require('date-fns');
 const { default: chalkDefault } = require('chalk');
+const sqlDb = require('../prairielib/lib/sql-db');
 
 const schemas = require('../schemas');
 const infofile = require('./infofile');
 const jsonLoad = require('../lib/json-load');
+const { sql } = require('googleapis/build/src/apis/sql');
+const { DiagConsoleLogger } = require('@opentelemetry/api');
 const perf = require('./performance')('course-db');
 
 const chalk = new chalkDefault.constructor({ enabled: true, level: 3 });
@@ -420,6 +423,17 @@ const FILE_UUID_REGEX =
 module.exports.loadFullCourse = async function (courseDir) {
   const courseInfo = await module.exports.loadCourseInfo(courseDir);
   perf.start('loadQuestions');
+
+  // TODO: use course slug to look up the numeric ID instead of hard-coding it
+  // TODO: load shared questions in parallel with questions from the course?
+  // TODO: only load questions that are *supposed* to be shared
+  const sharedQuestionRows = await sqlDb.queryAsync('select * from questions where course_id = 2::bigint;', []);
+  // console.log(sharedQuestions);
+  const sharedQuestions = {};
+  for (let row of sharedQuestionRows.rows) {
+    sharedQuestions['@testCourse/' + row['directory']] = row; // TODO what to put here? more info on the question?
+  }
+
   const questions = await module.exports.loadQuestions(courseDir);
   perf.end('loadQuestions');
   const courseInstanceInfos = await module.exports.loadCourseInstances(courseDir);
@@ -430,7 +444,8 @@ module.exports.loadFullCourse = async function (courseDir) {
     const assessments = await module.exports.loadAssessments(
       courseDir,
       courseInstanceId,
-      questions
+      questions,
+      sharedQuestions
     );
     const courseInstance = {
       courseInstance: courseInstanceInfos[courseInstanceId],
@@ -1021,9 +1036,10 @@ async function validateQuestion(question) {
  * @param {{ [qid: string]: any }} questions
  * @returns {Promise<{ warnings: string[], errors: string[] }>}
  */
-async function validateAssessment(assessment, questions) {
+async function validateAssessment(assessment, questions, sharedQuestions={}) {
   const warnings = [];
   const errors = [];
+  // console.log(questions);
 
   const allowRealTimeGrading = _.get(assessment, 'allowRealTimeGrading', true);
   if (assessment.type === 'Homework') {
@@ -1067,7 +1083,7 @@ async function validateAssessment(assessment, questions) {
   const missingQids = new Set();
   /** @type {(qid: string) => void} */
   const checkAndRecordQid = (qid) => {
-    if (!(qid in questions)) {
+    if (!(qid in questions || qid in sharedQuestions)) {
       missingQids.add(qid);
     }
     if (!foundQids.has(qid)) {
@@ -1282,10 +1298,10 @@ module.exports.loadCourseInstances = async function (coursePath) {
  * @param {string} courseInstance
  * @param {{ [qid: string]: any }} questions
  */
-module.exports.loadAssessments = async function (coursePath, courseInstance, questions) {
+module.exports.loadAssessments = async function (coursePath, courseInstance, questions, sharedQuestions={}) {
   const assessmentsPath = path.join('courseInstances', courseInstance, 'assessments');
   /** @type {(assessment: Assessment) => Promise<{ warnings?: string[], errors?: string[] }>} */
-  const validateAssessmentWithQuestions = (assessment) => validateAssessment(assessment, questions);
+  const validateAssessmentWithQuestions = (assessment) => validateAssessment(assessment, questions, sharedQuestions);
   /** @type {{ [tid: string]: InfoFile<Assessment> }} */
   const assessments = await loadInfoForDirectory({
     coursePath,
