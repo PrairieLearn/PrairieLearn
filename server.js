@@ -52,6 +52,8 @@ const namedLocks = require('./lib/named-locks');
 const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
 const { enrichSentryScope } = require('./lib/sentry');
+const { handleAndCompleteInstanceTermination } = require('./lib/lifecycle-hooks');
+const { promisify } = require('util');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -2018,6 +2020,10 @@ if (config.startServer) {
           logger.info('exit option passed, quitting...');
           process.exit(0);
         }
+
+        handleAndCompleteInstanceTermination(async () => {
+          await promisify(cron.stop)();
+        });
 
         process.on('SIGTERM', () => {
           opentelemetry
