@@ -83,7 +83,6 @@ module.exports.initExpress = function () {
   app.set('views', path.join(__dirname, 'pages'));
   app.set('view engine', 'ejs');
   app.set('trust proxy', config.trustProxy);
-  config.devMode = app.get('env') === 'development';
 
   // If we're set up with Sentry, use its middleware to record requests.
   if (config.sentryDsn) {
