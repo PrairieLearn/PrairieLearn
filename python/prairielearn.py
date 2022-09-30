@@ -47,6 +47,7 @@ class QuestionData(TypedDict):
     editable: bool
     panel: Literal['question', 'submission', 'answer']
     extensions: Dict[str, Any]
+    num_valid_submissions: int
 
 class ElementTestData(QuestionData):
     test_type: Literal['correct', 'incorrect', 'invalid']

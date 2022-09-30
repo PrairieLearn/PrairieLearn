@@ -7,7 +7,6 @@ from typing import TypedDict, Tuple, List
 class HintsDict(TypedDict):
     """A class with type signatures for the partial scores dict"""
     html_hints: List[Tuple[int, str]]
-    submission_count: int
 
 
 def get_param_key(name_prefix: str) -> str:
@@ -26,7 +25,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         raise ValueError(f"Duplicate params key: '{param_key}'.")
 
     hints_dict = data['params'].setdefault(param_key, dict())
-    hints_dict['submission_count'] = 0
 
     # Parse hints from frontend
     html_hints = []
