@@ -1948,25 +1948,9 @@ if (config.startServer) {
           callback(null);
         });
       },
-      async () => {
-        logger.verbose('Starting server...');
-        await module.exports.startServer();
-      },
       function (callback) {
         if (!config.devMode) return callback(null);
         module.exports.insertDevUser(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      function (callback) {
-        socketServer.init(server, function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      function (callback) {
-        externalGradingSocket.init(function (err) {
           if (ERR(err, callback)) return;
           callback(null);
         });
@@ -2000,6 +1984,22 @@ if (config.startServer) {
       },
       function (callback) {
         cron.init(function (err) {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
+      },
+      async () => {
+        logger.verbose('Starting server...');
+        await module.exports.startServer();
+      },
+      function (callback) {
+        socketServer.init(server, function (err) {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
+      },
+      function (callback) {
+        externalGradingSocket.init(function (err) {
           if (ERR(err, callback)) return;
           callback(null);
         });
