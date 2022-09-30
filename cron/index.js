@@ -29,11 +29,11 @@ const jobTimeouts = {};
 // the jobs will still only run at the required frequency.
 
 module.exports = {
-  init(callback) {
+  init() {
     debug(`init()`);
     if (!config.cronActive) {
       logger.verbose('cronActive is false, skipping cron initialization');
-      return callback(null);
+      return;
     }
 
     module.exports.jobs = [
@@ -130,10 +130,9 @@ module.exports = {
         this.queueJobs(jobsList, intervalSec);
       } // zero or negative intervalSec jobs are not run
     });
-    callback(null);
   },
 
-  stop(callback) {
+  async stop() {
     debug(`stop()`);
     _.forEach(jobTimeouts, (timeout, interval) => {
       if (!_.isInteger(timeout)) {
@@ -148,16 +147,17 @@ module.exports = {
       }
     });
 
-    function check() {
-      if (_.isEmpty(jobTimeouts)) {
-        debug(`stop(): all jobs stopped`);
-        callback(null);
-      } else {
-        debug(`stop(): waiting for ${_.size(jobTimeouts)} jobs to stop`);
-        setTimeout(check, 100);
-      }
-    }
-    check();
+    return new Promise((resolve) => {
+      const intervalId = setInterval(() => {
+        if (_.isEmpty(jobTimeouts)) {
+          debug(`stop(): all jobs stopped`);
+          clearInterval(intervalId);
+          resolve(null);
+        } else {
+          debug(`stop(): waiting for ${_.size(jobTimeouts)} jobs to stop`);
+        }
+      }, 100);
+    });
   },
 
   queueJobs(jobsList, intervalSec) {

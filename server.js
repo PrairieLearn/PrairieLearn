@@ -1980,17 +1980,9 @@ if (config.startServer) {
         });
       },
       async () => workspace.init(),
-      function (callback) {
-        serverJobs.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      function (callback) {
-        nodeMetrics.init();
-        callback(null);
-      },
-      async () => await freeformServer.init(),
+      async () => serverJobs.init(),
+      async () => nodeMetrics.init(),
+      async () => freeformServer.init(),
       // These should be the last things to start before we actually start taking
       // requests, as they may actually end up executing course code.
       (callback) => {
@@ -2000,12 +1992,7 @@ if (config.startServer) {
           callback(null);
         });
       },
-      function (callback) {
-        cron.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => cron.init(),
     ],
     function (err, data) {
       if (err) {
@@ -2022,7 +2009,11 @@ if (config.startServer) {
         }
 
         handleAndCompleteInstanceTermination(async () => {
-          await promisify(cron.stop)();
+          // Wait for all currently-executing cron jobs to finish.
+          await cron.stop();
+
+          // Wait for all currently-executing server jobs to finish.
+          await serverJobs.stop();
         });
 
         process.on('SIGTERM', () => {
