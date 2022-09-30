@@ -1,4 +1,4 @@
-<% if (authz_data.has_course_permission_view) { %>
+<% if (authz_data.has_course_permission_view && question.course_id == course.id) { %>
 <%- include('navTab', {
     activeSubPage:  'file_view',
     urlSuffix:      '/question/'+question.id+'/file_view',
