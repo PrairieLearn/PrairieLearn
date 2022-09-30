@@ -10,24 +10,34 @@ class HintsDict(TypedDict):
     submission_count: int
 
 
-def prepare(element_html: str, data: pl.QuestionData) -> None:
-    # Set submit count
-    if ('hidden_hints' in data['params']):
-        raise ValueError("Duplicate params key: 'hidden_hints'.")
+def get_param_key(name_prefix: str) -> str:
+    return f'{name_prefix}_hidden_hints'
 
-    hints_dict = data['params'].setdefault('hidden_hints', dict())
+
+def prepare(element_html: str, data: pl.QuestionData) -> None:
+    element = lxml.html.fragment_fromstring(element_html)
+    pl.check_attribs(element, [], ['name'])
+
+    name_prefix = pl.get_string_attrib(element, 'name', '')
+    param_key = get_param_key(name_prefix)
+
+    # Set param dict using prefix. The use of a prefix allows for multiple hint panels.
+    if (param_key in data['params']):
+        raise ValueError(f"Duplicate params key: '{param_key}'.")
+
+    hints_dict = data['params'].setdefault(param_key, dict())
     hints_dict['submission_count'] = 0
 
     # Parse hints from frontend
-    element = lxml.html.fragment_fromstring(element_html)
-
     html_hints = []
 
     # Read hints defined as child tags and load them into html_hints
     for i, child in enumerate(element):
         if child.tag == 'pl-hint':
-            pl.check_attribs(child, ['show-after'], [])
-            priority = pl.get_integer_attrib(child, 'show-after')
+            pl.check_attribs(child, [], ['show-after'])
+
+            # Default show-after to -1 to automatically show hint (closed) at start
+            priority = pl.get_integer_attrib(child, 'show-after', -1)
             html_hints.append((priority, pl.inner_html(child)))
         else:
             raise Exception(f"Child tag type '{child.tag}' not supported by pl-hidden-hints.")
@@ -36,46 +46,36 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
-    # No need to display hints on answer / submission panels
+    element = lxml.html.fragment_fromstring(element_html)
+    name_prefix = pl.get_string_attrib(element, 'name', '')
+    param_key = get_param_key(name_prefix)
 
-    if data['panel'] == 'question':
-        hints_dict: HintsDict = data['params']['hidden_hints']
+    hints_dict: HintsDict = data['params'][param_key]
 
-        html_hints = hints_dict['html_hints']
+    # Sort based on priority
+    hint_list = sorted(hints_dict['html_hints'])
+    hints_to_display = []
 
-        # A little bit of a hack to make it so that all of the backend hints are closed.
-        param_hints = [(-1, hint) for hint in data['params'].get('hints', [])]
+    submission_count = hints_dict['submission_count']
 
-        if param_hints and html_hints:
-            raise ValueError('Hints given as both HTML and parameters. Only one can be used.')
+    all_correct = all_questions_correct(data)
 
-        # Sort based on priority
-        hint_list = sorted(html_hints) if html_hints else param_hints
-        hints_to_display = []
+    # Parse through hint list to display hints.
+    for (idx, (priority, hint)) in enumerate(hint_list):
+        if priority <= submission_count:
+            # Close hints once all questions are correct
+            show_open = not all_correct and priority == submission_count
+            hints_to_display.append({
+                'hint': hint,
+                'index': idx + 1,
+                'is_open': show_open
+            })
 
-        submission_count = hints_dict['submission_count']
-
-        all_correct = all_questions_correct(data)
-
-        # Parse through hint list to display hints.
-        for (idx, (priority, hint)) in enumerate(hint_list):
-            if priority <= submission_count:
-                # Close hints once all questions are correct
-                show_open = not all_correct and priority == submission_count
-                hints_to_display.append({
-                    'hint': hint,
-                    'index': idx + 1,
-                    'is_open': show_open
-                })
-
-        with open('pl-hidden-hints.mustache', 'r') as f:
-            return chevron.render(f, {
-                'hints': hints_to_display,
-                'is_plural': len(hints_to_display) > 1
-            }).strip()
-
-    else:
-        return ''
+    with open('pl-hidden-hints.mustache', 'r') as f:
+        return chevron.render(f, {
+            'hints': hints_to_display,
+            'is_plural': len(hints_to_display) > 1
+        }).strip()
 
 
 def all_questions_correct(data: pl.QuestionData) -> bool:
@@ -89,7 +89,11 @@ def all_questions_correct(data: pl.QuestionData) -> bool:
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
-    hints_dict: HintsDict = data['params']['hidden_hints']
+    element = lxml.html.fragment_fromstring(element_html)
+    name_prefix = pl.get_string_attrib(element, 'name', '')
+    param_key = get_param_key(name_prefix)
+
+    hints_dict: HintsDict = data['params'][param_key]
 
     # Only reveal next hint if the previous answer was valid
     # (i.e. didn't contain any format errors) but incorrect.
