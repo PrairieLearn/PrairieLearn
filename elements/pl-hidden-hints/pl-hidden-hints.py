@@ -56,9 +56,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     hint_list = sorted(hints_dict['html_hints'])
     hints_to_display = []
 
-    submission_count = hints_dict['submission_count']
-
-    all_correct = all_questions_correct(data)
+    submission_count = data['num_valid_submissions']
+    all_correct = data['score'] == 1.0
 
     # Parse through hint list to display hints.
     for (idx, (priority, hint)) in enumerate(hint_list):
@@ -76,29 +75,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             'hints': hints_to_display,
             'is_plural': len(hints_to_display) > 1
         }).strip()
-
-
-def all_questions_correct(data: pl.QuestionData) -> bool:
-    """Return True if all questions are correct in partial scores and it's nonempty."""
-    partial_scores = data['partial_scores']
-
-    if len(partial_scores) == 0:
-        return False
-
-    return all(part['score'] == 1.0 for part in partial_scores.values())
-
-
-def grade(element_html: str, data: pl.QuestionData) -> None:
-    element = lxml.html.fragment_fromstring(element_html)
-    name_prefix = pl.get_string_attrib(element, 'name', '')
-    param_key = get_param_key(name_prefix)
-
-    hints_dict: HintsDict = data['params'][param_key]
-
-    # Only reveal next hint if the previous answer was valid
-    # (i.e. didn't contain any format errors) but incorrect.
-    if (len(data['format_errors']) == 0 and not all_questions_correct(data)):
-        hints_dict['submission_count'] += 1
 
 
 def test(element_html: str, data: pl.ElementTestData) -> None:

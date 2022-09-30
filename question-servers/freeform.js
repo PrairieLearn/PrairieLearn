@@ -518,6 +518,9 @@ module.exports = {
     err = checkProp('panel',                 'string',  ['render'],                           []);
     if (err) return err;
     // prettier-ignore
+    err = checkProp('num_valid_submissions','integer',  ['render'],                           []);
+    if (err) return err;
+    // prettier-ignore
     err = checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           []);
     if (err) return err;
     // prettier-ignore
@@ -526,6 +529,7 @@ module.exports = {
     // prettier-ignore
     err = checkProp('test_type',             'string',  ['test'],                             []);
     if (err) return err;
+
 
     const extraProps = _.difference(_.keys(data), checked);
     if (extraProps.length > 0) return '"data" has invalid extra keys: ' + extraProps.join(', ');
@@ -1157,6 +1161,7 @@ module.exports = {
       editable: !!(locals.allowAnswerEditing && !locals.manualGradingInterface),
       manual_grading: !!locals.manualGradingInterface,
       panel: panel,
+      num_valid_submissions: _.get(variant, 'num_tries', null),
     };
 
     // Put base URLs in data.options for access by question code
