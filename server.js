@@ -1948,9 +1948,26 @@ if (config.startServer) {
           callback(null);
         });
       },
+      async () => await freeformServer.init(),
       function (callback) {
         if (!config.devMode) return callback(null);
         module.exports.insertDevUser(function (err) {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
+      },
+      async () => {
+        logger.verbose('Starting server...');
+        await module.exports.startServer();
+      },
+      function (callback) {
+        socketServer.init(server, function (err) {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
+      },
+      function (callback) {
+        externalGradingSocket.init(function (err) {
           if (ERR(err, callback)) return;
           callback(null);
         });
@@ -1972,7 +1989,6 @@ if (config.startServer) {
         nodeMetrics.init();
         callback(null);
       },
-      async () => await freeformServer.init(),
       // These should be the last things to start before we actually start taking
       // requests, as they may actually end up executing course code.
       (callback) => {
@@ -1984,22 +2000,6 @@ if (config.startServer) {
       },
       function (callback) {
         cron.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      async () => {
-        logger.verbose('Starting server...');
-        await module.exports.startServer();
-      },
-      function (callback) {
-        socketServer.init(server, function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      function (callback) {
-        externalGradingSocket.init(function (err) {
           if (ERR(err, callback)) return;
           callback(null);
         });
