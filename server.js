@@ -2008,22 +2008,58 @@ if (config.startServer) {
           process.exit(0);
         }
 
-        handleAndCompleteInstanceTermination(async () => {
-          // Wait for all currently-executing cron jobs to finish.
-          await cron.stop();
+        const prepareForTermination = async () => {
+          // We want to proceed with termination even if something goes wrong,
+          // so don't allow this func
+          try {
+            // Shut down all websocket connections.
+            await promisify(socketServer.close.bind(socketServer))();
 
-          // Wait for all currently-executing server jobs to finish.
-          await serverJobs.stop();
-        });
+            // Stop accepting requests; wait for all existing connections to close.
+            await promisify(server.close.bind(server))();
 
-        process.on('SIGTERM', () => {
-          opentelemetry
-            .shutdown()
-            .catch((err) => logger.error('Error shutting down OpenTelemetry', err))
-            .finally(() => {
-              process.exit(0);
-            });
-        });
+            // Wait for all currently-executing cron jobs to finish.
+            await cron.stop();
+
+            // Wait for all currently-executing server jobs to finish.
+            await serverJobs.stop();
+          } catch (err) {
+            logger.error('Error while shutting down server', err);
+            Sentry.captureException(err);
+          }
+        };
+
+        const terminate = async () => {
+          // Shut down OpenTelemetry exporting.
+          try {
+            opentelemetry.shutdown();
+          } catch (err) {
+            logger.error('Error shutting down OpenTelementry', err);
+            Sentry.captureException(err);
+          }
+
+          // Flush all events to Sentry.
+          try {
+            await Sentry.flush();
+          } finally {
+            process.exit(0);
+          }
+        };
+
+        // If we're running in EC2 auto scaling, this will wait for our instance
+        // to enter the `Terminating:Wait` state.
+        //
+        // If we're not running in EC2, this will be a no-op.
+        handleAndCompleteInstanceTermination(prepareForTermination)
+          .catch((err) => {
+            logger.error('Error handling instance termination', err);
+            Sentry.captureException(err);
+          })
+          .finally(terminate);
+
+        // Also listen for and handle SIGTERM, which can be sent to gracefully
+        // shutdown a process.
+        process.on('SIGTERM', () => prepareForTermination().finally(terminate));
       }
     }
   );
