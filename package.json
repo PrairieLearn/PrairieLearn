@@ -33,7 +33,7 @@
         "body-parser": "^1.20.0",
         "bootstrap": "^4.6.2",
         "bootstrap-icons": "^1.9.1",
-        "bootstrap-table": "^1.21.0",
+        "bootstrap-table": "^1.21.1",
         "bowser": "^2.11.0",
         "byline": "^5.0.0",
         "chalk": "^2.4.2",
