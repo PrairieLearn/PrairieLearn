@@ -23,7 +23,7 @@
     "@opentelemetry/resources": "^1.6.0",
     "@opentelemetry/sdk-node": "^0.32.0",
     "@opentelemetry/sdk-trace-base": "^1.6.0",
-    "@opentelemetry/sdk-trace-node": "^1.6.0",
+    "@opentelemetry/sdk-trace-node": "^1.7.0",
     "@opentelemetry/semantic-conventions": "^1.6.0"
   },
   "devDependencies": {
