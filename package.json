@@ -154,7 +154,7 @@
         "@types/mocha": "^10.0.0",
         "@types/node": "^18.7.16",
         "@types/node-fetch": "^2.6.2",
-        "@types/passport": "^1.0.10",
+        "@types/passport": "^1.0.11",
         "@types/pem": "^1.9.6",
         "@types/pg": "^8.6.5",
         "@types/tmp": "^0.2.3",
