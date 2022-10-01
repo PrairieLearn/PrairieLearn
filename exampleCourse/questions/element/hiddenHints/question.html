@@ -1,0 +1,36 @@
+<pl-question-panel>
+  <p>
+    Questions below were designed to showcase the different features of
+    <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-hidden-hints-element"><code>pl-hidden-hints</code></a>.
+    The goal of <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-hidden-hints-element"><code>pl-hidden-hints</code></a>
+    is to progressively show hints as students submit incorrect (but not invalid) answers. Submit incorrect answers to see more hints.
+    Newly revealed hints are first shown as open.
+  </p>
+
+</pl-question-panel>
+
+<pl-integer-input answers-name="c_2" label="$1 + 1 = $" correct-answer=2></pl-integer-input>
+
+<pl-question-panel>
+  <pl-hidden-hints name="question_panel_hints">
+    <pl-hint>
+      This is a hint that will be shown immediately.
+    </pl-hint>
+
+    <pl-hint show-after=3>
+      This is a hint that will be shown after three incorrect submissions for the current question.
+    </pl-hint>
+
+    <pl-hint show-after=5>
+      This is a hint that will be shown after five incorrect submissions for the current question.
+    </pl-hint>
+  </pl-hidden-hints>
+</pl-question-panel>
+
+<pl-submission-panel>
+  <pl-hidden-hints name="submission_panel_hints">
+    <pl-hint>
+      This is a hint that will be shown only on the submission panel.
+    </pl-hint>
+  </pl-hidden-hints>
+</pl-submission-panel>
