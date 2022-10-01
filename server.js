@@ -1961,12 +1961,7 @@ if (config.startServer) {
           callback(null);
         });
       },
-      function (callback) {
-        socketServer.init(server, function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => socketServer.init(server),
       function (callback) {
         externalGradingSocket.init(function (err) {
           if (ERR(err, callback)) return;
@@ -2012,11 +2007,9 @@ if (config.startServer) {
           // We want to proceed with termination even if something goes wrong,
           // so don't allow this func
           try {
-            // Shut down all websocket connections.
-            await promisify(socketServer.close.bind(socketServer))();
-
-            // Stop accepting requests; wait for all existing connections to close.
-            await promisify(server.close.bind(server))();
+            // Note that this will also shut down the underlying server; see
+            // https://socket.io/docs/v4/server-api/#serverclosecallback
+            await socketServer.close();
 
             // Wait for all currently-executing cron jobs to finish.
             await cron.stop();

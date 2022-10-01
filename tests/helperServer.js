@@ -101,12 +101,9 @@ module.exports = {
             debug('before(): start server');
             httpServer = await server.startServer();
           },
-          function (callback) {
+          async () => {
             debug('before(): initialize socket server');
-            socketServer.init(httpServer, function (err) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
+            socketServer.init(httpServer);
           },
           function (callback) {
             debug('before(): initialize cache');
@@ -172,12 +169,9 @@ module.exports = {
           debug('after(): stop cron');
           await cron.stop();
         },
-        function (callback) {
+        async () => {
           debug('after(): close socket server');
-          socketServer.close(function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await socketServer.close();
         },
         function (callback) {
           debug('after(): close cache');
