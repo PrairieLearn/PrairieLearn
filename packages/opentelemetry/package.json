@@ -8,7 +8,7 @@
     "test": "mocha --no-config --require ts-node/register src/index.test.ts"
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.6.12",
+    "@grpc/grpc-js": "^1.7.1",
     "@opentelemetry/api": "^1.2.0",
     "@opentelemetry/core": "^1.6.0",
     "@opentelemetry/exporter-otlp-grpc": "^0.26.0",
