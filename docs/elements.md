@@ -1937,7 +1937,7 @@ element contents only in a specific panel.
 
 #### Example implementations
 
-- [element/hints]
+- [element/hiddenHints]
 
 #### See also
 
