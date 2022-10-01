@@ -1928,12 +1928,8 @@ For the inner `pl-hint` element:
 
 #### Details
 
-Hide the element contents in those panels for which the corresponding
-attribute is `true`. This is the reverse of
-[`pl-question-panel`](#pl-question-panel-element),
-[`pl-submission-panel`](#pl-submission-panel-element), or
-[`pl-answer-panel`](#pl-answer-panel-element), all of which explicitly show the
-element contents only in a specific panel.
+Add hints to a question that are revealed with more submissions using the `show-after` attribute. By default, hints without
+`show-after` set are shown at the beginning.
 
 #### Example implementations
 
