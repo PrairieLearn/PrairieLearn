@@ -10,7 +10,7 @@ pycryptodome==3.15.0
 pyquaternion==0.9.9
 regex==2022.9.13
 scipy==1.8.1
-sympy==1.10.1
+sympy==1.11.1
 rpy2==3.5.4
 pygraphviz==1.6
 ansi2html==1.7.0
