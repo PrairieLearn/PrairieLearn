@@ -1890,6 +1890,7 @@ element contents only in a specific panel.
 - [`pl-external-grader-results` for showing the results from an externally graded code question.](#pl-external-grader-results-element)
 
 ---
+
 ### `pl-hidden-hints` element
 
 Display progressive hints that reveal themselves as the number of student submissions increases for the current variant.
@@ -1899,15 +1900,13 @@ Hints must be opened by the user until they are revealed.
 
 ```html
 <pl-hidden-hints>
-  <pl-hint>
-    This is a hint that will be shown immediately.
-  </pl-hint>
+  <pl-hint> This is a hint that will be shown immediately. </pl-hint>
 
-  <pl-hint show-after=3>
+  <pl-hint show-after="3">
     This is a hint that will be shown after three incorrect submissions for the current question.
   </pl-hint>
 
-  <pl-hint show-after=5>
+  <pl-hint show-after="5">
     This is a hint that will be shown after five incorrect submissions for the current question.
   </pl-hint>
 </pl-hidden-hints>
@@ -1917,15 +1916,15 @@ Hints must be opened by the user until they are revealed.
 
 For the outer `pl-hidden-hints` element.
 
-| Attribute    | Type    | Default | Description                                                   |
-| ------------ | ------- | ------- | ------------------------------------------------------------- |
-| `name`   | string | `''` | Name prefix for the key in the `params` dict. Only needed if there are separate `pl-hidden-hints` elements on the same question. |
+| Attribute | Type   | Default | Description                                                                                                                      |
+| --------- | ------ | ------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `name`    | string | `''`    | Name prefix for the key in the `params` dict. Only needed if there are separate `pl-hidden-hints` elements on the same question. |
 
 For the inner `pl-hint` element:
 
-| Attribute    | Type    | Default | Description                                                   |
-| ------------ | ------- | ------- | ------------------------------------------------------------- |
-| `show-after`   | int | -  | Number of submissions needed before the current hint is shown. If not set, hint is shown from the start. |
+| Attribute    | Type | Default | Description                                                                                              |
+| ------------ | ---- | ------- | -------------------------------------------------------------------------------------------------------- |
+| `show-after` | int  | -       | Number of submissions needed before the current hint is shown. If not set, hint is shown from the start. |
 
 #### Details
 
