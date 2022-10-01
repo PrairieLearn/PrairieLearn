@@ -1130,10 +1130,10 @@
     "@opentelemetry/semantic-conventions" "1.6.0"
     semver "^7.3.5"
 
-"@opentelemetry/instrumentation-pg@^0.31.0":
-  version "0.31.0"
-  resolved "https://registry.yarnpkg.com/@opentelemetry/instrumentation-pg/-/instrumentation-pg-0.31.0.tgz#c7488ddd52f3d200ef3bd77d6c3dac1f149886f6"
-  integrity sha512-wvvaaHJBjZ98WgQ/nj10InvUdNE0DPuuWTXsxTTkcTUD2lnOC4JgXsVQ7Gn+2NAcmjxOdiM32WZ+VpiMwQ2I7g==
+"@opentelemetry/instrumentation-pg@^0.31.1":
+  version "0.31.1"
+  resolved "https://registry.yarnpkg.com/@opentelemetry/instrumentation-pg/-/instrumentation-pg-0.31.1.tgz#38573f453ec309e76115efa60e579b8bfb50c546"
+  integrity sha512-MpPaTkAIi7EE/2BMNjbk0ChS1eGS3FF/+UFriAbqONkLBZ6wE1+TDrcZDjnmylKRULbVR5rqEn6/OeGopD/THA==
   dependencies:
     "@opentelemetry/instrumentation" "^0.32.0"
     "@opentelemetry/semantic-conventions" "^1.0.0"
