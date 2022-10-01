@@ -1890,6 +1890,64 @@ element contents only in a specific panel.
 - [`pl-external-grader-results` for showing the results from an externally graded code question.](#pl-external-grader-results-element)
 
 ---
+### `pl-hidden-hints` element
+
+Display progressive hints that reveal themselves as the number of student submissions increases for the current variant.
+Hints must be opened by the user until they are revealed.
+
+#### Sample element
+
+```html
+<pl-hidden-hints>
+  <pl-hint>
+    This is a hint that will be shown immediately.
+  </pl-hint>
+
+  <pl-hint show-after=3>
+    This is a hint that will be shown after three incorrect submissions for the current question.
+  </pl-hint>
+
+  <pl-hint show-after=5>
+    This is a hint that will be shown after five incorrect submissions for the current question.
+  </pl-hint>
+</pl-hidden-hints>
+```
+
+#### Customizations
+
+For the outer `pl-hidden-hints` element.
+
+| Attribute    | Type    | Default | Description                                                   |
+| ------------ | ------- | ------- | ------------------------------------------------------------- |
+| `name`   | string | `''` | Name prefix for the key in the `params` dict. Only needed if there are separate `pl-hidden-hints` elements on the same question. |
+
+For the inner `pl-hint` element:
+
+| Attribute    | Type    | Default | Description                                                   |
+| ------------ | ------- | ------- | ------------------------------------------------------------- |
+| `show-after`   | int | -  | Number of submissions needed before the current hint is shown. If not set, hint is shown from the start. |
+
+#### Details
+
+Hide the element contents in those panels for which the corresponding
+attribute is `true`. This is the reverse of
+[`pl-question-panel`](#pl-question-panel-element),
+[`pl-submission-panel`](#pl-submission-panel-element), or
+[`pl-answer-panel`](#pl-answer-panel-element), all of which explicitly show the
+element contents only in a specific panel.
+
+#### Example implementations
+
+- [element/hints]
+
+#### See also
+
+- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
+- [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
+- [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
+- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
+
+---
 
 ### `pl-hide-in-manual-grading` element
 
