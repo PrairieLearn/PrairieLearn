@@ -1864,8 +1864,8 @@ if (config.startServer) {
         };
         function idleErrorHandler(err) {
           logger.error('idle client error', err);
-          // https://github.com/PrairieLearn/PrairieLearn/issues/2396
-          process.exit(1);
+          Sentry.captureException(err, { level: 'fatal' });
+          Sentry.close().finally(() => process.exit(1));
         }
 
         logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
