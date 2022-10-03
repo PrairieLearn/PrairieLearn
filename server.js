@@ -85,7 +85,6 @@ module.exports.initExpress = function () {
   app.set('views', path.join(__dirname, 'pages'));
   app.set('view engine', 'ejs');
   app.set('trust proxy', config.trustProxy);
-  config.devMode = app.get('env') === 'development';
 
   // If we're set up with Sentry, use its middleware to record requests.
   if (config.sentryDsn) {
@@ -1950,16 +1949,17 @@ if (config.startServer) {
           callback(null);
         });
       },
-      async () => {
-        logger.verbose('Starting server...');
-        await module.exports.startServer();
-      },
+      async () => await freeformServer.init(),
       function (callback) {
         if (!config.devMode) return callback(null);
         module.exports.insertDevUser(function (err) {
           if (ERR(err, callback)) return;
           callback(null);
         });
+      },
+      async () => {
+        logger.verbose('Starting server...');
+        await module.exports.startServer();
       },
       async () => socketServer.init(server),
       function (callback) {
@@ -1977,7 +1977,6 @@ if (config.startServer) {
       async () => workspace.init(),
       async () => serverJobs.init(),
       async () => nodeMetrics.init(),
-      async () => freeformServer.init(),
       // These should be the last things to start before we actually start taking
       // requests, as they may actually end up executing course code.
       (callback) => {
