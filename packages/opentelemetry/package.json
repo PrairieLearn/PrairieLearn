@@ -8,20 +8,20 @@
     "test": "mocha --no-config --require ts-node/register src/index.test.ts"
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.6.12",
+    "@grpc/grpc-js": "^1.7.1",
     "@opentelemetry/api": "^1.2.0",
     "@opentelemetry/core": "^1.6.0",
     "@opentelemetry/exporter-otlp-grpc": "^0.26.0",
-    "@opentelemetry/instrumentation-aws-sdk": "^0.9.0",
+    "@opentelemetry/instrumentation-aws-sdk": "^0.9.2",
     "@opentelemetry/instrumentation-connect": "^0.30.0",
     "@opentelemetry/instrumentation-dns": "^0.30.0",
-    "@opentelemetry/instrumentation-express": "^0.31.0",
+    "@opentelemetry/instrumentation-express": "^0.31.2",
     "@opentelemetry/instrumentation-http": "^0.32.0",
-    "@opentelemetry/instrumentation-pg": "^0.31.0",
+    "@opentelemetry/instrumentation-pg": "^0.31.1",
     "@opentelemetry/instrumentation-redis": "^0.33.0",
     "@opentelemetry/resource-detector-aws": "^1.1.2",
     "@opentelemetry/resources": "^1.6.0",
-    "@opentelemetry/sdk-node": "^0.32.0",
+    "@opentelemetry/sdk-node": "^0.33.0",
     "@opentelemetry/sdk-trace-base": "^1.6.0",
     "@opentelemetry/sdk-trace-node": "^1.6.0",
     "@opentelemetry/semantic-conventions": "^1.6.0"
@@ -30,6 +30,6 @@
     "@prairielearn/tsconfig": "*",
     "mocha": "^10.0.0",
     "ts-node": "^10.9.1",
-    "typescript": "^4.8.2"
+    "typescript": "^4.8.4"
   }
 }
