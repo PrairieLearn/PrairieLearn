@@ -1860,7 +1860,7 @@ if (config.startServer) {
           host: config.postgresqlHost,
           password: config.postgresqlPassword,
           max: config.postgresqlPoolSize,
-          idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
+          idleTimeoutMillis: 10000 ?? config.postgresqlIdleTimeoutMillis,
         };
         function idleErrorHandler(err) {
           logger.error('idle client error', err);
@@ -1875,6 +1875,15 @@ if (config.startServer) {
         // Our named locks code maintains a separate pool of database connections.
         // This ensures that we avoid deadlocks.
         await namedLocks.init(pgConfig, idleErrorHandler);
+
+        namedLocks
+          .tryLockAsync('foobar')
+          .then((lock) => {
+            console.log('got lock', lock);
+          })
+          .catch((err) => {
+            console.error(err);
+          });
 
         logger.verbose('Successfully connected to database');
       },
