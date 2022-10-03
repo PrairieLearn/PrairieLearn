@@ -1894,7 +1894,8 @@ element contents only in a specific panel.
 ### `pl-hidden-hints` element
 
 Display progressive hints that reveal themselves as the number of student submissions increases for the current variant.
-Hints must be opened by the user until they are revealed.
+Hints are only open on page load when they are first revealed (when first reaching the desired submission count).
+Otherwise hints starting closed and must be opened by the user.
 
 #### Sample element
 
@@ -1922,14 +1923,14 @@ For the outer `pl-hidden-hints` element.
 
 For the inner `pl-hint` element:
 
-| Attribute    | Type | Default | Description                                                                                              |
-| ------------ | ---- | ------- | -------------------------------------------------------------------------------------------------------- |
-| `show-after` | int  | -       | Number of submissions needed before the current hint is shown. If not set, hint is shown from the start. |
+| Attribute    | Type | Default | Description                                                                                      |
+| ------------ | ---- | ------- | ------------------------------------------------------------------------------------------------ |
+| `show-after` | int  | -       | Number of submissions needed before the current hint is shown. If not set, hint is always shown. |
 
 #### Details
 
 Add hints to a question that are revealed with more submissions using the `show-after` attribute. By default, hints without
-`show-after` set are shown at the beginning.
+`show-after` set are always shown.
 
 #### Example implementations
 
@@ -1939,7 +1940,6 @@ Add hints to a question that are revealed with more submissions using the `show-
 
 - [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
 - [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
-- [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
 - [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
 
 ---
