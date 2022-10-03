@@ -1,5 +1,5 @@
 import chevron
-import lxml.html
+import lxml
 import prairielearn as pl
 from typing import TypedDict, Tuple, List
 
@@ -30,15 +30,17 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     html_hints = []
 
     # Read hints defined as child tags and load them into html_hints
-    for i, child in enumerate(element):
+    for child in element:
         if child.tag == 'pl-hint':
             pl.check_attribs(child, [], ['show-after'])
 
             # Default show-after to -1 to automatically show hint (closed) at start
             priority = pl.get_integer_attrib(child, 'show-after', -1)
             html_hints.append((priority, pl.inner_html(child)))
+        elif child.tag is lxml.etree.Comment:
+            continue
         else:
-            raise Exception(f"Child tag type '{child.tag}' not supported by pl-hidden-hints.")
+            raise Exception(f"Tags inside of pl-hidden-hints must be pl-hint, not '{child.tag}'.")
 
     hints_dict['html_hints'] = html_hints
 
