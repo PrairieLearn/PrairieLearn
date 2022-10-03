@@ -34,8 +34,8 @@ var MathJax = {
             MathJax.startup.defaultReady();
             MathJax.Hub = {
                 Queue: function(){
-                    MathJax.typeset();
                     console.warn("MathJax.Hub.Queue() has been deprecated in 3.0, please use MathJax.typeset() or MathJax.typesetPromise()");
+                    MathJax.typesetPromise();
                 }
             };
         },
