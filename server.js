@@ -1864,8 +1864,8 @@ if (config.startServer) {
         };
         function idleErrorHandler(err) {
           logger.error('idle client error', err);
-          // https://github.com/PrairieLearn/PrairieLearn/issues/2396
-          process.exit(1);
+          Sentry.captureException(err, { level: 'fatal' });
+          Sentry.close().finally(() => process.exit(1));
         }
 
         logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
@@ -1915,7 +1915,23 @@ if (config.startServer) {
         // of its sprocs, allowing us to update servers while old
         // servers are still running. See docs/dev-guide.md for
         // more info.
-        await sqldb.setRandomSearchSchemaAsync(config.instanceId);
+        //
+        // We use the combination of instance ID and port number to uniquely
+        // identify each server; in some cases, we're running multiple instances
+        // on the same physical host.
+        //
+        // The schema prefix should not exceed 28 characters; this is due to
+        // the underlying Postgres limit of 63 characters for schema names.
+        // Currently, EC2 instance IDs are 19 characters long, and we use
+        // 4-digit port numbers, so this will be safe (19+1+4=24). If either
+        // of those ever get longer, we have a little wiggle room. Nonetheless,
+        // we'll check to make sure we don't exceed the limit and fail fast if
+        // we do.
+        const schemaPrefix = `${config.instanceId}:${config.serverPort}`;
+        if (schemaPrefix.length > 28) {
+          throw new Error(`Schema prefix is too long: ${schemaPrefix}`);
+        }
+        await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
       },
       function (callback) {
         sprocs.init(function (err) {

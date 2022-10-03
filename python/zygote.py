@@ -15,7 +15,7 @@
 # Errors are signaled by exiting with non-zero exit code
 # Exceptions are not caught and so will trigger a process exit with non-zero exit code (signaling an error)
 
-import sys, os, json, importlib, copy, base64, io, matplotlib, signal, sklearn, nltk
+import sys, os, json, copy, base64, io, signal
 from inspect import signature
 
 saved_path = copy.copy(sys.path)
@@ -32,9 +32,16 @@ if drop_privileges:
     os.umask(oldmask)
     os.environ['MPLCONFIGDIR'] = config_dir_path
 
-# pre-loading imports
+# Silence matplotlib's FontManager logs; these can cause trouble with our
+# expectation that code execution doesn't log anything to stdout/stderr.
+import logging
+logging.getLogger('matplotlib.font_manager').disabled = True
+
+# Pre-load commonly used modules
 sys.path.insert(0, os.path.abspath('../question-servers/freeformPythonLib'))
-import prairielearn, lxml.html, html, numpy, random, math, chevron, matplotlib
+import prairielearn, lxml.html, html, numpy, random, math, chevron, matplotlib, matplotlib.font_manager, sklearn, nltk
+
+matplotlib.use('PDF')
 
 # This function tries to convert a python object to valid JSON. If an exception
 # is raised, this function prints the object and re-raises the exception. This is
@@ -47,9 +54,6 @@ def try_dumps(obj, sort_keys=False, allow_nan=False):
     except:
         print('Error converting this object to json:\n{:s}\n'.format(str(obj)))
         raise
-
-
-matplotlib.use('PDF')
 
 def worker_loop():
     # whether the PRNGs have already been seeded in this worker_loop() call
@@ -114,9 +118,6 @@ def worker_loop():
             # change to the desired working directory
             os.chdir(cwd)
 
-            # we used to load the "file" as a module:
-            #   mod = importlib.import_module('.' + file, os.path.basename(os.getcwd()));
-            # now, instead, we read the "file" as a string, then compile and exec it:
             mod = {}
             file_path = os.path.join(cwd, file + '.py')
             with open(file_path, encoding='utf-8') as inf:
@@ -127,9 +128,9 @@ def worker_loop():
                 exec(code, mod)
 
             # check whether we have the desired fcn in the module
-            if fcn in mod: #hasattr(mod, fcn):
+            if fcn in mod:
                 # get the desired function in the loaded module
-                method = mod[fcn] #getattr(mod, fcn)
+                method = mod[fcn]
 
                 # check if the desired function is a legacy element function - if
                 # so, we add an argument for element_index
@@ -140,7 +141,7 @@ def worker_loop():
                 # call the desired function in the loaded module
                 val = method(*args)
 
-                if fcn=="file":
+                if fcn == "file":
                     # if val is None, replace it with empty string
                     if val is None:
                         val = ''
