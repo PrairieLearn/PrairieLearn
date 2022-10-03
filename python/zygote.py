@@ -32,9 +32,16 @@ if drop_privileges:
     os.umask(oldmask)
     os.environ['MPLCONFIGDIR'] = config_dir_path
 
+# Silence matplotlib's FontManager logs; these can cause trouble with our
+# expectation that code execution doesn't log anything to stdout/stderr.
+import logging
+logging.getLogger('matplotlib.font_manager').disabled = True
+
 # pre-loading imports
 sys.path.insert(0, os.path.abspath('../question-servers/freeformPythonLib'))
-import prairielearn, lxml.html, html, numpy, random, math, chevron, matplotlib
+import prairielearn, lxml.html, html, numpy, random, math, chevron, matplotlib, matplotlib.font_manager
+
+matplotlib.use('PDF')
 
 # This function tries to convert a python object to valid JSON. If an exception
 # is raised, this function prints the object and re-raises the exception. This is
@@ -49,7 +56,6 @@ def try_dumps(obj, sort_keys=False, allow_nan=False):
         raise
 
 
-matplotlib.use('PDF')
 
 def worker_loop():
     # whether the PRNGs have already been seeded in this worker_loop() call
