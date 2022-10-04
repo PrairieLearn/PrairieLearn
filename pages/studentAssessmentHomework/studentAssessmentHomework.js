@@ -84,10 +84,14 @@ router.get('/', function (req, res, next) {
 
                 // If the user is currently tied to a group, get whether they can view the role-select table or not.
                 if (groupMember) {
-                  groupAssessmentHelper.getAssessmentLevelPermissions(res.locals.assessment.id, res.locals.user.user_id, function (permissions) {
-                    res.locals.can_view_role_table = permissions.can_assign_roles_at_start;
-                    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                  });
+                  groupAssessmentHelper.getAssessmentLevelPermissions(
+                    res.locals.assessment.id,
+                    res.locals.user.user_id,
+                    function (permissions) {
+                      res.locals.can_view_role_table = permissions.can_assign_roles_at_start;
+                      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                    }
+                  );
                 } else {
                   res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                 }
