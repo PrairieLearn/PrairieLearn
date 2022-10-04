@@ -1860,13 +1860,15 @@ if (config.startServer) {
           host: config.postgresqlHost,
           password: config.postgresqlPassword,
           max: config.postgresqlPoolSize,
-          idleTimeoutMillis: 10000 ?? config.postgresqlIdleTimeoutMillis,
+          idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
         };
         function idleErrorHandler(err) {
           logger.error('idle client error', err);
           Sentry.captureException(err, {
             level: 'fatal',
             tags: {
+              // This may have been set by `sql-db.js`. We include this in the
+              // Sentry tags to more easily debug idle client errors.
               last_query: err?.data?.lastQuery ?? undefined,
             },
           });
@@ -1880,15 +1882,6 @@ if (config.startServer) {
         // Our named locks code maintains a separate pool of database connections.
         // This ensures that we avoid deadlocks.
         await namedLocks.init(pgConfig, idleErrorHandler);
-
-        namedLocks
-          .tryLockAsync('foobar')
-          .then((lock) => {
-            console.log('got lock', lock);
-          })
-          .catch((err) => {
-            console.error(err);
-          });
 
         logger.verbose('Successfully connected to database');
       },

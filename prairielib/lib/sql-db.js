@@ -154,7 +154,6 @@ class PostgresPool {
     });
     this.pool.on('connect', (client) => {
       client.on('error', (err) => {
-        console.log('last query', lastQueryMap.get(client));
         const lastQuery = lastQueryMap.get(client);
         idleErrorHandler(error.addData(err, { lastQuery }), client);
       });
