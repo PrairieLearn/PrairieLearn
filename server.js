@@ -1864,7 +1864,14 @@ if (config.startServer) {
         };
         function idleErrorHandler(err) {
           logger.error('idle client error', err);
-          Sentry.captureException(err, { level: 'fatal' });
+          Sentry.captureException(err, {
+            level: 'fatal',
+            tags: {
+              // This may have been set by `sql-db.js`. We include this in the
+              // Sentry tags to more easily debug idle client errors.
+              last_query: err?.data?.lastQuery ?? undefined,
+            },
+          });
           Sentry.close().finally(() => process.exit(1));
         }
 
