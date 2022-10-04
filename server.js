@@ -85,9 +85,7 @@ module.exports.initExpress = function () {
   app.set('trust proxy', config.trustProxy);
 
   // If we're set up with Sentry, use its middleware to record requests.
-  if (config.sentryDsn) {
-    app.use(Sentry.Handlers.requestHandler());
-  }
+  app.use(Sentry.Handlers.requestHandler());
 
   // Set res.locals variables first, so they will be available on
   // all pages including the error page (which we could jump to at
@@ -1624,29 +1622,51 @@ module.exports.initExpress = function () {
 
   app.use(require('./middlewares/redirectEffectiveAccessDenied'));
 
+  /**
+   * Attempts to extract a numeric status code from a Postgres error object.
+   * The convention we use is to use a `ERRCODE` value of `ST###`, where ###
+   * is the three-digit HTTP status code.
+   *
+   * For example, the following exception would set a 404 status code:
+   *
+   * RAISE EXCEPTION 'Entity not found' USING ERRCODE = 'ST404';
+   *
+   * @param {any} err
+   * @returns {number | null} The extracted HTTP status code
+   */
+  function maybeGetStatusCodeFromSqlError(err) {
+    const rawCode = err?.data?.sqlError?.code;
+    if (!rawCode?.startsWith('ST')) return null;
+
+    const parsedCode = Number(rawCode.toString().substring(2));
+    if (Number.isNaN(parsedCode)) return null;
+
+    return parsedCode;
+  }
+
   // This should come first so that both Sentry and our own error page can
-  // read the error ID.
+  // read the error ID and any status code.
   app.use((err, req, res, next) => {
     const _ = require('lodash');
     const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
     res.locals.error_id = _.times(12, () => _.sample(chars)).join('');
 
+    err.status = err.status ?? maybeGetStatusCodeFromSqlError(err) ?? 500;
+
     next(err);
   });
 
-  if (config.sentryDsn) {
-    // We need to add our own handler here to ensure that we add the appropriate
-    // information to the current Sentry scope.
-    //
-    // Note that this is typically done by our `logResponse` middleware, but
-    // that doesn't run soon enough for the Sentry error handler to pick up.
-    app.use((err, req, res, next) => {
-      enrichSentryScope(req, res);
-      next(err);
-    });
-    app.use(Sentry.Handlers.errorHandler());
-  }
+  // We need to add our own handler here to ensure that we add the appropriate
+  // information to the current Sentry scope.
+  //
+  // Note that this is typically done by our `logResponse` middleware, but
+  // that doesn't run soon enough for the Sentry error handler to pick up.
+  app.use((err, req, res, next) => {
+    enrichSentryScope(req, res);
+    next(err);
+  });
+  app.use(Sentry.Handlers.errorHandler());
 
   // Note that the Sentry error handler should come before our error page.
   app.use(require('./pages/error/error'));
