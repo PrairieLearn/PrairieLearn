@@ -84,7 +84,7 @@ module.exports.initExpress = function () {
   app.set('view engine', 'ejs');
   app.set('trust proxy', config.trustProxy);
 
-  // If we're set up with Sentry, use its middleware to record requests.
+  // This should come first so that we get instrumentation on all our requests.
   app.use(Sentry.Handlers.requestHandler());
 
   // Set res.locals variables first, so they will be available on
