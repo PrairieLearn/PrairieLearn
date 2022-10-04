@@ -1864,7 +1864,12 @@ if (config.startServer) {
         };
         function idleErrorHandler(err) {
           logger.error('idle client error', err);
-          Sentry.captureException(err, { level: 'fatal' });
+          Sentry.captureException(err, {
+            level: 'fatal',
+            tags: {
+              last_query: err?.data?.lastQuery ?? undefined,
+            },
+          });
           Sentry.close().finally(() => process.exit(1));
         }
 
