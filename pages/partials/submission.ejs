@@ -66,7 +66,21 @@ $(function() {
   });
   // <% if (submissionHtml === undefined) { %>
   $('#submission-<%= submission.id %>-body').on('show.bs.collapse', function(e) {
-    fetchResults('<%= submission.id %>');
+    let wasModalOpen = ($('#submissionInfoModal-<%= submission.id %>').data('bs.modal') || {})._isShown;
+    $('#submissionInfoModal-<%= submission.id %>').modal('hide');
+    $.get('<%= urlPrefix %>/question/<%= question.id %>/preview/submission/<%= submission.id %>')
+      .done((data) => {
+        $('#submission-<%= submission.id %>').replaceWith($(data).fadeIn('slow'));
+      })
+      .fail(() => {
+        $('#submission-<%= submission.id %>-body').html('<div class="card-body submission-body">Error retrieving submission</div>');
+      })
+      .always(() => {
+        // Restore modal state if need be
+        if (wasModalOpen) {
+          $('#submissionInfoModal-<%= submission.id %>').modal('show');
+        }
+      });
   });
   // <% } %>
 });
