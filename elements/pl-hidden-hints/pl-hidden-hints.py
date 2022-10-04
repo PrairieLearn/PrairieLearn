@@ -75,8 +75,3 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             'hints': hints_to_display,
             'is_plural': len(hints_to_display) > 1
         }).strip()
-
-
-def test(element_html: str, data: pl.ElementTestData) -> None:
-    # TODO write this!!!
-    pass
