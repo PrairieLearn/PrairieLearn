@@ -40,22 +40,22 @@ def walk_directory(dirname, old_string, new_prefix, new_string=None):
 walk_directory('.', "require('@prairielearn/prairielib').error", "require('@prairielearn/prairielib/error')")
 walk_directory('.', "require('@prairielearn/prairielib').util", "require('@prairielearn/prairielib/util')")
 walk_directory('.', "require('@prairielearn/prairielib').sqlLoader", "require('@prairielearn/prairielib/sql-loader')")
-walk_directory('.', "require('@prairielearn/prairielib').sqlDb", "require('@prairielearn/prairielib/sql-db')")
+walk_directory('.', "require('@prairielearn/prairielib').sqldb", "require('@prairielearn/prairielib/sql-db')")
 walk_directory('.', "require('@prairielearn/prairielib').sqldb", "require('@prairielearn/prairielib/sql-db')")
 walk_directory('.', "const { config: configLib } = require('@prairielearn/prairielib');", "const configLib = require('@prairielearn/prairielib/config');")
 walk_directory('.', "const { sqldb } = require('@prairielearn/prairielib');", "const sqldb = require('@prairielearn/prairielib/sql-db');")
-walk_directory('.', "const { error, sqlDb } = require('@prairielearn/prairielib');",
+walk_directory('.', "const { error, sqldb } = require('@prairielearn/prairielib');",
                """const error = require('@prairielearn/prairielib/error');
-const sqlDb = require('@prairielearn/prairielib/sql-db');""")
-walk_directory('.', "const { error, sqlDb, sqlLoader} = require('@prairielearn/prairielib');",
+const sqldb = require('@prairielearn/prairielib/sql-db');""")
+walk_directory('.', "const { error, sqldb, sqlLoader} = require('@prairielearn/prairielib');",
                """const error = require('@prairielearn/prairielib/error');
-const sqlDb = require('@prairielearn/prairielib/sql-db');
+const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');""")
-walk_directory('.', "const { sqlDb, sqlLoader } = require('@prairielearn/prairielib');",
-               """const sqlDb = require('@prairielearn/prairielib/sql-db');
+walk_directory('.', "const { sqldb, sqlLoader } = require('@prairielearn/prairielib');",
+               """const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');""")
-walk_directory('.', "const { sqlDb, sqlLoader} = require('@prairielearn/prairielib');",
-               """const sqlDb = require('@prairielearn/prairielib/sql-db');
+walk_directory('.', "const { sqldb, sqlLoader} = require('@prairielearn/prairielib');",
+               """const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');""")
 walk_directory('.', "const { sqldb, migrations } = require('@prairielearn/prairielib');",
                """const sqldb = require('@prairielearn/prairielib/sql-db');
@@ -67,8 +67,8 @@ walk_directory('.', "const { sqldb, sqlLoader, error } = require('@prairielearn/
                """const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const error = require('@prairielearn/prairielib/error');""")
-walk_directory('.', "const {sqlDb, sqlLoader} = require('@prairielearn/prairielib');",
-               """const sqlDb = require('@prairielearn/prairielib/sql-db');
+walk_directory('.', "const {sqldb, sqlLoader} = require('@prairielearn/prairielib');",
+               """const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');""")
 
 # do the actual change
