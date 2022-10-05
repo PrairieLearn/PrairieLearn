@@ -1,5 +1,4 @@
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
 const assert = require('chai').assert;
 const fs = require('fs-extra');
 const path = require('path');
@@ -145,10 +144,10 @@ const testEditData = [
     button: 'changeAidButton',
     form: 'change-id-form',
     data: {
-      id: 'newAssessment',
+      id: 'newAssessment/nested',
     },
     action: 'change_id',
-    info: 'courseInstances/Fa18/assessments/newAssessment/infoAssessment.json',
+    info: 'courseInstances/Fa18/assessments/newAssessment/nested/infoAssessment.json',
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -157,7 +156,30 @@ const testEditData = [
       'questions/test/question/info.json',
       'questions/test/question/question.html',
       'questions/test/question/server.py',
-      'courseInstances/Fa18/assessments/newAssessment/infoAssessment.json',
+      'courseInstances/Fa18/assessments/newAssessment/nested/infoAssessment.json',
+    ]),
+  },
+  // This second rename specifically tests the case where an existing assessment
+  // is renamed such that it leaves behind an empty directory. We want to make
+  // sure that that empty directory is cleaned up and not treated as an actual
+  // assessment during sync.
+  {
+    button: 'changeAidButton',
+    form: 'change-id-form',
+    data: {
+      id: 'newAssessmentNotNested',
+    },
+    action: 'change_id',
+    info: 'courseInstances/Fa18/assessments/newAssessmentNotNested/infoAssessment.json',
+    files: new Set([
+      'README.md',
+      'infoCourse.json',
+      'courseInstances/Fa18/infoCourseInstance.json',
+      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
+      'questions/test/question/info.json',
+      'questions/test/question/question.html',
+      'questions/test/question/server.py',
+      'courseInstances/Fa18/assessments/newAssessmentNotNested/infoAssessment.json',
     ]),
   },
   {
@@ -320,7 +342,7 @@ describe('test course editor', function () {
   });
 });
 
-function getFiles(options, callback) {
+async function getFiles(options) {
   let files = new Set([]);
 
   const ignoreHidden = (item) => {
@@ -348,12 +370,14 @@ function getFiles(options, callback) {
     }
   });
 
-  walker.on('error', (err) => {
-    if (ERR(err, callback)) return;
-  });
+  return new Promise((resolve, reject) => {
+    walker.on('error', (err) => {
+      reject(err);
+    });
 
-  walker.on('end', () => {
-    callback(null, files);
+    walker.on('end', () => {
+      resolve(files);
+    });
   });
 }
 
@@ -407,8 +431,15 @@ function testEdit(params) {
 
   waitForJobSequence(locals, 'Success');
 
-  describe(`pull in dev and verify contents`, function () {
-    it('should pull', function (callback) {
+  describe('validate', () => {
+    it('should not have any sync warnings or errors', async () => {
+      const results = await sqldb.queryAsync(sql.select_sync_warnings_and_errors, {
+        course_path: courseLiveDir,
+      });
+      assert.isEmpty(results.rows);
+    });
+
+    it('should pull into dev directory', function (callback) {
       const execOptions = {
         cwd: courseDevDir,
         env: process.env,
@@ -418,13 +449,12 @@ function testEdit(params) {
         callback(null);
       });
     });
-    it('should match contents', function (callback) {
-      getFiles({ baseDir: courseDevDir }, (err, files) => {
-        if (ERR(err, callback)) return;
-        if (_.isEqual(files, params.files)) callback(null);
-        else callback(new Error(`files do not match`));
-      });
+
+    it('should have correct contents', async () => {
+      const files = await getFiles({ baseDir: courseDevDir });
+      assert.sameMembers([...files], [...params.files]);
     });
+
     if (params.info) {
       it('should have a uuid', function () {
         const infoJson = JSON.parse(fs.readFileSync(path.join(courseDevDir, params.info), 'utf-8'));

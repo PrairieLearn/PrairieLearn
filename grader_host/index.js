@@ -494,6 +494,8 @@ function runJob(info, callback) {
         } finally {
           clearTimeout(timeoutId);
         }
+
+        return container;
       },
       (container, callback) => {
         timeReporter.reportEndTime(jobId, (err, time) => {
