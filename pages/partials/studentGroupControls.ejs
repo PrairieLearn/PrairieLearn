@@ -28,18 +28,17 @@
     Failed to create the group. It is already taken. Please try another one.
   </div>
 <% } %>
-<% if (typeof validationErrors !== 'undefined') { %>
-  <% validationErrors.forEach(function(error) { %>
-    <div class="alert alert-danger" role="alert">
-      The attempted group assignments were invalid. Please try again.
-    </div>
-  <% }) %>
-<% } %>
+
 <%- include('../shared/groupWorkInitial.ejs', {permissions: permissions}); %>
 <% } %>
 <% } else {%>
   <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: permissions, group_info: group_info}); %>
   <% if (usingGroupRoles) { %>
+    <% if (validationErrors.length > 0) { %>
+        <div class="alert alert-danger my-4" role="alert">
+          The attempted group assignments were invalid. Please try again.
+        </div>
+    <% } %>
     <%- include('../shared/groupRoleSelectTable.ejs', {group_info: group_info, group_roles: group_roles}); %>
   <% } %>
   <% if (locals.assessment.type === 'Exam' && locals.assessment.require_honor_code) { %>
