@@ -1896,7 +1896,7 @@ element contents only in a specific panel.
 Display progressive hints that become accessible as the number of student submissions increases for the current variant.
 Hints are only open on page load when they are first revealed (when first reaching the desired submission count).
 Otherwise hints start closed and must be opened by the user. The submission counter is reset when new variants are
-generated. In particular, \***\*this element does not reveal new hints across variants.\*\***
+generated. In particular, **this element does not reveal new hints across variants.**
 
 #### Sample element
 
@@ -1925,9 +1925,9 @@ For the outer `pl-hidden-hints` element.
 
 For the inner `pl-hint` element:
 
-| Attribute    | Type | Default | Description                                                                                                                                                                                                     |
-| ------------ | ---- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `show-after` | int  | -       | Number of submissions on the current variant needed before the hint is accessible. If not set, hint is always accessible. ****Should only be set for questions that allow multiple submissions per variant.**** |
+| Attribute    | Type | Default | Description                                                                                                                                                                                                 |
+| ------------ | ---- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `show-after` | int  | -       | Number of submissions on the current variant needed before the hint is accessible. If not set, hint is always accessible. **Should only be set for questions that allow multiple submissions per variant.** |
 
 #### Details
 
