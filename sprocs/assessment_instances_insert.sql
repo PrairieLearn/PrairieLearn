@@ -102,7 +102,6 @@ BEGIN
     INSERT INTO assessment_state_logs (open, assessment_instance_id, date_limit, auth_user_id)
     VALUES (true, assessment_instance_id, date_limit, authn_user_id);
 
-
     -- ######################################################################
     -- start a record of the last access time
     -- After code review I will delete those two lines of comment
