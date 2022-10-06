@@ -145,12 +145,13 @@ router.post('/', function (req, res, next) {
   }
 });
 
-router.get('/submission/:submission_id', function (req, res, next) {
+router.get('/variant/:variant_id/submission/:submission_id', function (req, res, next) {
   // TODO Check if the submission ID matches the question (or instance question)
   question.renderPanelsForSubmission(
     req.params.submission_id,
     res.locals.question.id,
     null, // instance_question_id,
+    req.params.variant_id,
     res.locals.urlPrefix,
     null, // questionContext
     null, // csrfToken
@@ -158,7 +159,7 @@ router.get('/submission/:submission_id', function (req, res, next) {
     false, // renderScorePanels
     (err, results) => {
       if (ERR(err, next)) return;
-      res.send(results.submissionPanel);
+      res.send({ submissionPanel: results.submissionPanel });
     }
   );
 });

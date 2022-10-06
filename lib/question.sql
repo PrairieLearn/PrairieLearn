@@ -134,7 +134,8 @@ FROM
 WHERE
     s.id = $submission_id
     AND q.id = $question_id
-    AND (CASE WHEN $instance_question_id::BIGINT IS NULL THEN iq.id IS NULL ELSE iq.id = $instance_question_id::BIGINT END);
+    AND (CASE WHEN $instance_question_id::BIGINT IS NULL THEN iq.id IS NULL ELSE iq.id = $instance_question_id::BIGINT END)
+    AND v.id = $variant_id;
 
 -- BLOCK select_assessment_for_submission
 SELECT

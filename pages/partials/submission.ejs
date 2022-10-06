@@ -68,9 +68,9 @@ $(function() {
   $('#submission-<%= submission.id %>-body').on('show.bs.collapse', function(e) {
     let wasModalOpen = ($('#submissionInfoModal-<%= submission.id %>').data('bs.modal') || {})._isShown;
     $('#submissionInfoModal-<%= submission.id %>').modal('hide');
-    $.get('<%= urlPrefix %>/question/<%= question.id %>/preview/submission/<%= submission.id %>')
+    $.get('<%= urlPrefix %>/question/<%= question.id %>/preview/variant/<%= variant.id %>/submission/<%= submission.id %>')
       .done((data) => {
-        $('#submission-<%= submission.id %>').replaceWith($(data).fadeIn('slow'));
+        $('#submission-<%= submission.id %>').replaceWith($(data.submissionPanel).fadeIn('slow'));
       })
       .fail(() => {
         $('#submission-<%= submission.id %>-body').html('<div class="card-body submission-body">Error retrieving submission</div>');

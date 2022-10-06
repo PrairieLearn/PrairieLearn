@@ -1,28 +1,16 @@
+<% if (question.grading_method == 'External') { %>
 <script>
   $(function() {
     var variantId = '<%= variant.id %>';
+    var questionId = '<%= question.id %>';
+    var instanceQuestionId = <%= JSON.stringify(locals.instance_question?.id ?? null) %>;
     var variantToken = '<%= variantToken %>';
     var urlPrefix = '<%= urlPrefix %>';
     var questionContext = '<%= question_context %>';
     var csrfToken = '<%= __csrf_token %>';
-    var socket = null;
-
-    window.startSocketIfNeeded = () => {
-      if (socket) return socket;
-      socket = io('/external-grading');
-
-      socket.emit('init', {variant_id: variantId, variant_token: variantToken}, function(msg) {
-        handleStatusChange(msg);
-      });
-
-      socket.on('change:status', function(msg) {
-        handleStatusChange(msg);
-      });
-      return socket;
-    }
 
     // Render initial grading states into the DOM
-    var gradingPending = false, renderingPending = false;
+    var gradingPending = false;
     $('[id^=submission-]').each(function(index, elem) {
       // Ensure that this is a valid submission element
       if (!/^submission-\d+$/.test($(elem).attr('id'))) {
@@ -35,19 +23,23 @@
       if (status !== 'graded' && status !== 'canceled') {
         gradingPending = true;
       }
-
-      if (!$(elem).data('rendered')) {
-        renderingPending = true;
-      }
     });
 
-    // If everything has been graded or was canceled, and everything is rendered, don't even open a socket
-    if (!gradingPending && !renderingPending) {
+    // If everything has been graded or was canceled, don't even open a socket
+    if (!gradingPending) {
       return;
     }
 
     // By this point, it's safe to open a socket
-    if (gradingPending) startSocketIfNeeded();
+    var socket = io('/external-grading');
+
+    socket.emit('init', {variant_id: variantId, variant_token: variantToken}, function(msg) {
+      handleStatusChange(msg);
+    });
+
+    socket.on('change:status', function(msg) {
+      handleStatusChange(msg);
+    });
 
     function handleStatusChange(msg) {
       msg.submissions.forEach(function(submission) {
@@ -71,10 +63,12 @@
       });
     }
 
-    window.fetchResults = (submissionId) => {
+    function fetchResults(submissionId) {
       var wasModalOpen = ($('#submissionInfoModal-' + submissionId).data('bs.modal') || {})._isShown;
       $('#submissionInfoModal-' + submissionId).modal('hide');
-      startSocketIfNeeded().emit('getResults', {
+      socket.emit('getResults', {
+        question_id: questionId,
+        instance_question_id: instanceQuestionId,
         variant_id: variantId,
         variant_token: variantToken,
         submission_id: submissionId,
@@ -88,7 +82,7 @@
         authorized_edit: <%= !locals.authz_result || locals.authz_result.authorized_edit %>
       }, function(msg) {
         // We're done with the socket for this incarnation of the page
-        if (!renderingPending) socket.close();
+        socket.close();
         if (msg.submissionPanel) {
           $('#submission-' + submissionId).replaceWith(function() {
             return $(msg.submissionPanel).fadeIn('slow');
@@ -147,3 +141,4 @@
     }
   });
 </script>
+<% } %>
