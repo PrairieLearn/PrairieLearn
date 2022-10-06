@@ -336,7 +336,7 @@ def render(element_html, data):
         if grading_method == 'unordered':
             ordering_message = 'in any order'
         elif grading_method == 'dag' or grading_method == 'ranking':
-            ordering_message = 'there might be other correct orders'
+            ordering_message = 'there may be other correct orders'
         else:
             ordering_message = 'in the specified order'
         check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
