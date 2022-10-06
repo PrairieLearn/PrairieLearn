@@ -1,5 +1,5 @@
 <!-- Keeping "graded" state in the DOM is bad, yet here we are. -->
-<div data-grading-job-status="<%= submission.grading_job_status %>" data-grading-job-id="<%= submission.grading_job_id %>" id="submission-<%= submission.id %>" data-rendered="<%= submissionHtml !== undefined %>">
+<div data-grading-job-status="<%= submission.grading_job_status %>" data-grading-job-id="<%= submission.grading_job_id %>" id="submission-<%= submission.id %>">
 
 <% if (course.manual_grading_visible && submission.feedback?.manual) { %>
 <div class="card mb-4 grading-block border-info">
@@ -44,7 +44,7 @@
     </button>
   </div>
 
-  <div class="collapse <% if (submission.submission_number == submissionCount || locals.expanded) { %>show<% } %>" id="submission-<%= submission.id %>-body">
+  <div class="collapse <% if (submission.submission_number == submissionCount || locals.expanded) { %>show<% } %> <% if (submissionHtml === undefined) { %>render-pending<% } %>" id="submission-<%= submission.id %>-body">
     <div class="card-body submission-body" >
       <%- submissionHtml %>
       <% if (submissionHtml === undefined) { %>
@@ -64,8 +64,7 @@ $(function() {
     $('#submissionInfoModal-<%= submission.id %>').modal('show');
     e.stopPropagation();
   });
-  // <% if (submissionHtml === undefined) { %>
-  $('#submission-<%= submission.id %>-body').on('show.bs.collapse', function(e) {
+  $('#submission-<%= submission.id %>-body.render-pending').on('show.bs.collapse', function(e) {
     let wasModalOpen = ($('#submissionInfoModal-<%= submission.id %>').data('bs.modal') || {})._isShown;
     $('#submissionInfoModal-<%= submission.id %>').modal('hide');
     $.get('<%= urlPrefix %>/question/<%= question.id %>/preview/variant/<%= variant.id %>/submission/<%= submission.id %>')
@@ -82,6 +81,5 @@ $(function() {
         }
       });
   });
-  // <% } %>
 });
 </script>
