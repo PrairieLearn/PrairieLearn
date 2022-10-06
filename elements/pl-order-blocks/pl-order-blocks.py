@@ -336,11 +336,11 @@ def render(element_html, data):
         if grading_method == 'unordered':
             ordering_message = 'in any order'
         elif grading_method == 'dag' or grading_method == 'ranking':
-            ordering_message = 'one possible correct order'
+            ordering_message = 'there might be other correct orders'
         else:
             ordering_message = 'in the specified order'
         check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
-        indentation_message = ', with correct indentation' if check_indentation is True else None
+        indentation_message = ', correct indentation needed' if check_indentation is True else None
 
         question_solution = [{
             'inner_html': solution['inner_html'],
