@@ -61,6 +61,24 @@ router.get(
   })
 );
 
+router.get(
+  '/variant/:variant_id/submission/:submission_id',
+  asyncHandler(async (req, res, next) => {
+    const results = await util.promisify(question.renderPanelsForSubmission)(
+      req.params.submission_id,
+      res.locals.question.id,
+      res.locals.instance_question.id,
+      req.params.variant_id,
+      res.locals.urlPrefix,
+      null, // questionContext
+      null, // csrfToken
+      null, // authorizedEdit
+      false // renderScorePanels
+    );
+    res.send({ submissionPanel: results.submissionPanel });
+  })
+);
+
 router.post(
   '/',
   asyncHandler(async (req, res, next) => {

@@ -205,6 +205,8 @@
             const submissionId = $(this).data('submission-id');
             // <% if (question_context === 'instructor') { %>
             const submissionContentUrl = `<%= urlPrefix %>/question/<%= question.id %>/preview/variant/<%= variant.id %>/submission/${submissionId}`;
+            // <% } else if (question_context === 'manual_grading') { %>
+            const submissionContentUrl = `<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/instance_question/<%= instance_question.id %>/variant/<%= variant.id %>/submission/${submissionId}`;
             // <% } else { %>
             const submissionContentUrl = `<%= urlPrefix %>/instance_question/<%= instance_question.id %>/variant/<%= variant.id %>/submission/${submissionId}`;
             // <% } %>
