@@ -1346,6 +1346,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       });
       workspace.container = await _createContainerAsync(workspace);
     } catch (err) {
+      logger.error(`Error creating container for workspace ${workspace_id}`, err);
       workspaceHelper.updateState(
         workspace_id,
         'stopped',
@@ -1360,6 +1361,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       debug(`init: container initialized for workspace_id=${workspace_id}`);
       workspaceHelper.updateState(workspace_id, 'running', null);
     } catch (err) {
+      logger.error(`Error starting container for workspace ${workspace_id}`, err);
       workspaceHelper.updateState(
         workspace_id,
         'stopped',
