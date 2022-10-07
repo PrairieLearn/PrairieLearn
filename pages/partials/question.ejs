@@ -201,7 +201,7 @@
 
       <script>
         $(function() {
-          $('.js-submission-body').on('show.bs.collapse', function(e) {
+          $('.js-submission-body.render-pending').on('show.bs.collapse', function(e) {
             const submissionId = $(this).data('submission-id');
             // <% if (question_context === 'instructor') { %>
             const submissionContentUrl = `<%= urlPrefix %>/question/<%= question.id %>/preview/variant/<%= variant.id %>/submission/${submissionId}`;
