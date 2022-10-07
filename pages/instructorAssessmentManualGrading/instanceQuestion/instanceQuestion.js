@@ -63,7 +63,7 @@ router.get(
 
 router.get(
   '/variant/:variant_id/submission/:submission_id',
-  asyncHandler(async (req, res, next) => {
+  asyncHandler(async (req, res, _next) => {
     const results = await util.promisify(question.renderPanelsForSubmission)(
       req.params.submission_id,
       res.locals.question.id,
