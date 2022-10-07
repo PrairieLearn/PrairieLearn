@@ -3,7 +3,7 @@
   $(function() {
     var variantId = '<%= variant.id %>';
     var questionId = '<%= question.id %>';
-    var instanceQuestionId = <%= JSON.stringify(locals.instance_question?.id ?? null) %>;
+    var instanceQuestionId = <%- JSON.stringify(locals.instance_question?.id ?? null) %>;
     var variantToken = '<%= variantToken %>';
     var urlPrefix = '<%= urlPrefix %>';
     var questionContext = '<%= question_context %>';

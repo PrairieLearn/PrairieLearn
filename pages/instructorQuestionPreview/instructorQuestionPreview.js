@@ -146,7 +146,6 @@ router.post('/', function (req, res, next) {
 });
 
 router.get('/variant/:variant_id/submission/:submission_id', function (req, res, next) {
-  // TODO Check if the submission ID matches the question (or instance question)
   question.renderPanelsForSubmission(
     req.params.submission_id,
     res.locals.question.id,

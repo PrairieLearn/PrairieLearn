@@ -1,4 +1,3 @@
-<!-- Keeping "graded" state in the DOM is bad, yet here we are. -->
 <div data-grading-job-status="<%= submission.grading_job_status %>" data-grading-job-id="<%= submission.grading_job_id %>" id="submission-<%= submission.id %>">
 
 <% if (course.manual_grading_visible && submission.feedback?.manual) { %>
@@ -44,7 +43,7 @@
     </button>
   </div>
 
-  <div class="collapse <% if (submission.submission_number == submissionCount || locals.expanded) { %>show<% } %> <% if (submissionHtml === undefined) { %>render-pending<% } %>" id="submission-<%= submission.id %>-body">
+  <div class="collapse js-submission-body <% if (submission.submission_number == submissionCount || locals.expanded) { %>show<% } %>" data-submission-id="<%= submission.id %>" id="submission-<%= submission.id %>-body">
     <div class="card-body submission-body" >
       <%- submissionHtml %>
       <% if (submissionHtml === undefined) { %>
@@ -55,7 +54,6 @@
 
   <%- include('submissionInfoModal', {submission: submission}); %>
 </div>
-</div>
 
 <script>
 $(function() {
@@ -64,22 +62,6 @@ $(function() {
     $('#submissionInfoModal-<%= submission.id %>').modal('show');
     e.stopPropagation();
   });
-  $('#submission-<%= submission.id %>-body.render-pending').on('show.bs.collapse', function(e) {
-    let wasModalOpen = ($('#submissionInfoModal-<%= submission.id %>').data('bs.modal') || {})._isShown;
-    $('#submissionInfoModal-<%= submission.id %>').modal('hide');
-    $.get('<%= urlPrefix %>/question/<%= question.id %>/preview/variant/<%= variant.id %>/submission/<%= submission.id %>')
-      .done((data) => {
-        $('#submission-<%= submission.id %>').replaceWith($(data.submissionPanel).fadeIn('slow'));
-      })
-      .fail(() => {
-        $('#submission-<%= submission.id %>-body').html('<div class="card-body submission-body">Error retrieving submission</div>');
-      })
-      .always(() => {
-        // Restore modal state if need be
-        if (wasModalOpen) {
-          $('#submissionInfoModal-<%= submission.id %>').modal('show');
-        }
-      });
-  });
 });
 </script>
+</div>
