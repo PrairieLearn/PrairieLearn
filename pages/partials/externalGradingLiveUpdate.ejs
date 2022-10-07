@@ -87,6 +87,7 @@
           $('#submission-' + submissionId).replaceWith(function() {
             return $(msg.submissionPanel).fadeIn('slow');
           });
+          MathJax.typesetPromise();
           // Restore modal state if need be
           if (wasModalOpen) {
             $('#submissionInfoModal-' + submissionId).modal('show');
