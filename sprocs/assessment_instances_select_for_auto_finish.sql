@@ -30,7 +30,7 @@ BEGIN
             -- Note that this relies on the frequency of the `autoFinishExams`
             -- cron job being sufficiently less than `age_mins`. This is true
             -- by default.
-            AND ai.modified_at > (CURRENT_TIMESTAMP - make_interval(mins => $age_mins * 2))
+            AND ai.modified_at > (CURRENT_TIMESTAMP - make_interval(mins => age_mins * 2))
             AND (
                 (ai.open AND ai.auto_close)
                 OR
