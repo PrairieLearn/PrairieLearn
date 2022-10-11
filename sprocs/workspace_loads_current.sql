@@ -78,7 +78,7 @@ BEGIN
         + workspace_hosts_launching_count
         + workspace_hosts_ready_count
         + workspace_hosts_draining_count
-        + workspace_hosts_unhealthy_count;
+        + workspace_hosts_unhealthy_count
         + workspace_hosts_terminating_count;
 
     -- Longest running workspace host in various states
