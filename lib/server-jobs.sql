@@ -138,7 +138,8 @@ WHERE
 
 -- BLOCK select_running_jobs
 SELECT
-    j.*
+    j.id,
+    j.job_sequence_id
 FROM
     jobs AS j
 WHERE
