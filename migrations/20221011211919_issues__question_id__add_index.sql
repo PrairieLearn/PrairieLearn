@@ -4,4 +4,4 @@
 
 DROP INDEX IF EXISTS issues_question_id_open_idx;
 
-CREATE INDEX issues_question_id_open_idx ON issues (question_id, open);
+CREATE INDEX issues_question_id_open_idx ON issues (question_id, course_caused, open);
