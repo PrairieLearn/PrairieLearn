@@ -1699,8 +1699,8 @@ module.exports.startServer = async () => {
     throw new Error('unknown serverType: ' + config.serverType);
   }
 
-  server.keepAliveTimeout = config.serverKeepAliveTimeout;
   server.timeout = config.serverTimeout;
+  server.keepAliveTimeout = config.serverKeepAliveTimeout;
   server.listen(config.serverPort);
 
   // Wait for the server to either start successfully or error out.
