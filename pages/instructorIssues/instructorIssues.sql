@@ -42,6 +42,7 @@ SELECT
     COUNT(*) OVER() AS issue_count
 FROM
     issues_select_with_filter (
+        $course_id,
         $filter_is_open,
         $filter_is_closed,
         $filter_manually_reported,
@@ -61,10 +62,9 @@ FROM
     LEFT JOIN instance_questions AS iq ON (iq.id = i.instance_question_id)
     LEFT JOIN variants AS v ON (v.id = i.variant_id)
 WHERE
-    i.course_id = $course_id
-    AND i.course_caused
+    i.course_caused
 ORDER BY
-    i.date DESC, i.id
+    i.date DESC, i.id DESC
 LIMIT
     $limit
 OFFSET
