@@ -11,7 +11,6 @@ CREATE FUNCTION
         OUT workspace_hosts_draining_count integer,
         OUT workspace_hosts_unhealthy_count integer,
         OUT workspace_hosts_terminating_count integer,
-        OUT workspace_hosts_terminated_count integer,
         OUT workspace_hosts_active_count integer,
         -- max time in each host state
         OUT workspace_hosts_longest_launching_sec double precision,
@@ -21,7 +20,6 @@ CREATE FUNCTION
         OUT workspace_hosts_longest_terminating_sec double precision,
         -- workspaces in each state
         OUT workspace_uninitialized_count integer,
-        OUT workspace_stopped_count integer,
         OUT workspace_launching_count integer,
         OUT workspace_relaunching_count integer,
         OUT workspace_running_count integer,
@@ -37,13 +35,11 @@ BEGIN
     -- Current number of running workspaces
     SELECT
         count(*) FILTER (WHERE w.state = 'uninitialized'),
-        count(*) FILTER (WHERE w.state = 'stopped'),
         count(*) FILTER (WHERE w.state = 'launching'),
         count(*) FILTER (WHERE w.state = 'launching' AND num_nonnulls(w.rebooted_at, w.reset_at) > 0),
         count(*) FILTER (WHERE w.state = 'running')
     INTO
         workspace_uninitialized_count,
-        workspace_stopped_count,
         workspace_launching_count,
         workspace_relaunching_count,
         workspace_running_count
@@ -68,15 +64,13 @@ BEGIN
         count(*) FILTER (WHERE wh.state = 'ready'),
         count(*) FILTER (WHERE wh.state = 'draining'),
         count(*) FILTER (WHERE wh.state = 'unhealthy'),
-        count(*) FILTER (WHERE wh.state = 'terminating'),
-        count(*) FILTER (WHERE wh.state = 'terminated')
+        count(*) FILTER (WHERE wh.state = 'terminating')
     INTO
         workspace_hosts_launching_count,
         workspace_hosts_ready_count,
         workspace_hosts_draining_count,
         workspace_hosts_unhealthy_count,
-        workspace_hosts_terminating_count,
-        workspace_hosts_terminated_count
+        workspace_hosts_terminating_count
     FROM
         workspace_hosts AS wh;
 
@@ -84,7 +78,7 @@ BEGIN
         + workspace_hosts_launching_count
         + workspace_hosts_ready_count
         + workspace_hosts_draining_count
-        + workspace_hosts_unhealthy_count
+        + workspace_hosts_unhealthy_count;
         + workspace_hosts_terminating_count;
 
     -- Longest running workspace host in various states
@@ -120,7 +114,6 @@ BEGIN
         ('workspace_hosts_draining_count', workspace_hosts_draining_count),
         ('workspace_hosts_unhealthy_count', workspace_hosts_unhealthy_count),
         ('workspace_hosts_terminating_count', workspace_hosts_terminating_count),
-        ('workspace_hosts_terminated_count', workspace_hosts_terminated_count),
         ('workspace_hosts_active_count', workspace_hosts_active_count),
         ('workspace_hosts_longest_launching_sec', workspace_hosts_longest_launching_sec),
         ('workspace_hosts_longest_ready_sec', workspace_hosts_longest_ready_sec),
@@ -128,7 +121,6 @@ BEGIN
         ('workspace_hosts_longest_unhealthy_sec', workspace_hosts_longest_unhealthy_sec),
         ('workspace_hosts_longest_terminating_sec', workspace_hosts_longest_terminating_sec),
         ('workspace_uninitialized_count', workspace_uninitialized_count),
-        ('workspace_stopped_count', workspace_stopped_count),
         ('workspace_launching_count', workspace_launching_count),
         ('workspace_relaunching_count', workspace_relaunching_count),
         ('workspace_running_count', workspace_running_count),
