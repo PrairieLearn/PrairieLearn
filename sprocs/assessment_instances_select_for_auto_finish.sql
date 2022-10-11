@@ -19,6 +19,18 @@ BEGIN
             JOIN assessments AS a ON (a.id = ai.assessment_id)
         WHERE
             a.type = 'Exam'
+            -- Only consider assessment instances that were modified "recently";
+            -- otherwise we'd end up scanning the entire table.
+            --
+            -- "Recently" is defined as twice the `age_mins` value. This should
+            -- ensure that any given assessment instance recieves ample attempts
+            -- at being finished, even in the unlikely scenario that PrairieLearn
+            -- crashes multiple times while tring to finish it.
+            --
+            -- Note that this relies on the frequency of the `autoFinishExams`
+            -- cron job being sufficiently less than `age_mins`. This is true
+            -- by default.
+            AND ai.modified_at > (CURRENT_TIMESTAMP - make_interval(mins => $age_mins * 2))
             AND (
                 (ai.open AND ai.auto_close)
                 OR
@@ -50,7 +62,7 @@ BEGIN
             s.id, s.date DESC
         LIMIT 1;
 
-        -- if we didn't get anything from submissions then use exam start date
+        -- if we didn't get anything from submissions then use assessment instance start date
         last_active_date := coalesce(last_active_date, assessment_instance.date);
 
         -- only keep assessment_instances with no recent activity
