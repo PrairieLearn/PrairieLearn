@@ -150,7 +150,7 @@ SELECT id, job_sequence_id
 FROM jobs AS j
 WHERE
     j.status = 'Running'
-    AND j.heartbeat_at < (CURRENT_TIMESTAMP - interval '30 seconds');
+    AND j.heartbeat_at < (CURRENT_TIMESTAMP - make_interval(secs => $timeout_secs));
 
 -- BLOCK error_abandoned_job_sequences
 UPDATE job_sequences AS js
