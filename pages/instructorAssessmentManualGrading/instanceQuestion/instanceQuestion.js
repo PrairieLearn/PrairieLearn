@@ -4,7 +4,7 @@ const asyncHandler = require('express-async-handler');
 const util = require('util');
 const question = require('../../../lib/question');
 const error = require('../../../prairielib/lib/error');
-const sqlDb = require('../../../prairielib/lib/sql-db');
+const sqldb = require('../../../prairielib/lib/sql-db');
 const sqlLoader = require('../../../prairielib/lib/sql-loader');
 const ltiOutcomes = require('../../../lib/ltiOutcomes');
 const manualGrading = require('../../../lib/manualGrading');
@@ -25,7 +25,7 @@ router.get(
         instance_question_id: res.locals.instance_question.id, // for authz
       };
       res.locals.conflict_grading_job = (
-        await sqlDb.queryZeroOrOneRowAsync(sql.select_grading_job_data, params)
+        await sqldb.queryZeroOrOneRowAsync(sql.select_grading_job_data, params)
       ).rows[0];
     }
 
@@ -35,7 +35,7 @@ router.get(
     // submission and pass it along to getAndRenderVariant explicitly.
     const params = { instance_question_id: res.locals.instance_question.id };
     const variant_with_submission = (
-      await sqlDb.queryZeroOrOneRowAsync(sql.select_variant_with_last_submission, params)
+      await sqldb.queryZeroOrOneRowAsync(sql.select_variant_with_last_submission, params)
     ).rows[0];
 
     if (variant_with_submission) {
@@ -52,7 +52,7 @@ router.get(
       return next(error.make(404, 'Instance question does not have a gradable submission.'));
     }
 
-    const graders_result = await sqlDb.queryZeroOrOneRowAsync(sql.select_graders, {
+    const graders_result = await sqldb.queryZeroOrOneRowAsync(sql.select_graders, {
       course_instance_id: res.locals.course_instance.id,
     });
     res.locals.graders = graders_result.rows[0]?.graders;
@@ -111,7 +111,7 @@ router.post(
        * where they can edit score. Fundamentally, we need to rethink how to treat questions that are
        * manually graded within PrairieLearn and how to handle those score calculations.
        */
-      const update_result = (await sqlDb.callAsync('instance_questions_update_score', params))
+      const update_result = (await sqldb.callAsync('instance_questions_update_score', params))
         .rows[0];
       if (update_result.modified_at_conflict) {
         return res.redirect(
@@ -136,7 +136,7 @@ router.post(
         instance_question_id: res.locals.instance_question.id,
         assigned_grader: assigned_grader === 'nobody' ? null : assigned_grader,
       };
-      await sqlDb.queryAsync(sql.update_assigned_grader, params);
+      await sqldb.queryAsync(sql.update_assigned_grader, params);
 
       res.redirect(
         await manualGrading.nextUngradedInstanceQuestionUrl(
