@@ -11,6 +11,9 @@ window.PLFileEditor = function (uuid, options) {
 
   this.inputElement = this.element.find('input');
   this.editorElement = this.element.find('.editor');
+  this.settingsButton = this.element.find('.settings-button');
+  this.modal = this.element.find('.modal');
+  this.saveSettingsButton = this.element.find('.save-settings-button');
   this.restoreOriginalButton = this.element.find('.restore-original');
   this.restoreOriginalConfirmContainer = this.element.find('.restore-original-confirm-container');
   this.restoreOriginalConfirm = this.element.find('.restore-original-confirm');
@@ -26,7 +29,9 @@ window.PLFileEditor = function (uuid, options) {
     this.editor.getSession().setMode(options.aceMode);
   }
 
-  if (options.aceTheme) {
+  if (localStorage.getItem('pl-file-editor-theme')) {
+    this.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
+  } else if (options.aceTheme) {
     this.editor.setTheme(options.aceTheme);
   } else {
     this.editor.setTheme('ace/theme/chrome');
@@ -77,6 +82,8 @@ window.PLFileEditor = function (uuid, options) {
   }
   this.setEditorContents(currentContents);
 
+  this.initSettingsButton();
+
   this.initRestoreOriginalButton();
 };
 
@@ -98,6 +105,25 @@ window.PLFileEditor.prototype.updatePreview = function (html_contents) {
       MathJax.typesetPromise();
     }
   }
+};
+
+window.PLFileEditor.prototype.initSettingsButton = function () {
+  var that = this;
+  this.settingsButton.click(() => {
+    that.modal
+      .find('#theme option[value="' + that.editor.getTheme() + '"]')
+      .attr('selected', 'selected');
+    that.modal.modal('show');
+  });
+
+  this.saveSettingsButton.click(() => {
+    var theme = that.modal.find('#theme').val();
+    that.editor.setTheme(theme);
+    localStorage.setItem('pl-file-editor-theme', theme);
+    that.modal.find('#theme option').removeAttr('selected');
+    that.modal.find('#theme option[value="' + theme + '"]').attr('selected', 'selected');
+    that.modal.modal('hide');
+  });
 };
 
 window.PLFileEditor.prototype.initRestoreOriginalButton = function () {
