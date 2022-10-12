@@ -9,7 +9,7 @@ const config = require('../lib/config');
 const fetch = require('node-fetch').default;
 const helperServer = require('./helperServer');
 const sqlLoader = require('../prairielib/lib/sql-loader');
-const sqlDb = require('../prairielib/lib/sql-db');
+const sqldb = require('../prairielib/lib/sql-db');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const { setUser, parseInstanceQuestionId, saveOrGrade } = require('./helperClient');
 
@@ -95,11 +95,11 @@ describe('Manual Grading', function () {
   after('shut down testing server', helperServer.after);
 
   before('ensure course has manual grading enabled', async () => {
-    await sqlDb.queryAsync(sql.enable_manual_grading, {});
+    await sqldb.queryAsync(sql.enable_manual_grading, {});
   });
 
   before('build assessment manual grading page URL', async () => {
-    const assessments = (await sqlDb.queryAsync(sql.get_assessment, {})).rows;
+    const assessments = (await sqldb.queryAsync(sql.get_assessment, {})).rows;
     assert.lengthOf(assessments, 1);
     manualGradingAssessmentUrl = `${baseUrl}/course_instance/1/instructor/assessment/${assessments[0].id}/manual_grading`;
     instancesAssessmentUrl = `${baseUrl}/course_instance/1/instructor/assessment/${assessments[0].id}/instances`;
@@ -109,14 +109,14 @@ describe('Manual Grading', function () {
     await Promise.all(
       mockStaff.map(async (staff) => {
         const courseStaffParams = [1, staff.authUid, 'None', 1];
-        const courseStaffResult = await sqlDb.callAsync(
+        const courseStaffResult = await sqldb.callAsync(
           'course_permissions_insert_by_user_uid',
           courseStaffParams
         );
         assert.equal(courseStaffResult.rowCount, 1);
         staff.user_id = courseStaffResult.rows[0].user_id;
         const ciStaffParams = [1, staff.user_id, 1, 'Student Data Editor', 1];
-        const ciStaffResult = await sqlDb.callAsync(
+        const ciStaffResult = await sqldb.callAsync(
           'course_instance_permissions_insert',
           ciStaffParams
         );
@@ -133,7 +133,7 @@ describe('Manual Grading', function () {
       iqId = parseInstanceQuestionId(iqUrl);
       manualGradingIQUrl = `${manualGradingAssessmentUrl}/instance_question/${iqId}`;
 
-      const instance_questions = (await sqlDb.queryAsync(sql.get_instance_question, { iqId })).rows;
+      const instance_questions = (await sqldb.queryAsync(sql.get_instance_question, { iqId })).rows;
       assert.lengthOf(instance_questions, 1);
       assert.equal(instance_questions[0].requires_manual_grading, false);
     });
@@ -150,7 +150,7 @@ describe('Manual Grading', function () {
     });
 
     step('should tag question as requiring grading', async () => {
-      const instanceQuestions = (await sqlDb.queryAsync(sql.get_instance_question, { iqId })).rows;
+      const instanceQuestions = (await sqldb.queryAsync(sql.get_instance_question, { iqId })).rows;
       assert.lengthOf(instanceQuestions, 1);
       assert.equal(instanceQuestions[0].requires_manual_grading, true);
     });
