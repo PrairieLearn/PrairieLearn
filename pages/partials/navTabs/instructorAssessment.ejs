@@ -34,7 +34,7 @@
     urlSuffix:      '/assessment/'+assessment.id+'/question_statistics',
     iconClasses:    'fas fa-table',
     tabLabel:       'Question stats'}) %>
-<% if (authz_data.has_course_instance_permission_view && course.manual_grading_visible) { %>
+<% if (authz_data.has_course_instance_permission_view) { %>
 <%- include('navTab', {
     activeSubPage:  'manual_grading',
     urlSuffix:      '/assessment/'+assessment.id+'/manual_grading',
