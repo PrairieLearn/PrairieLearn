@@ -63,8 +63,8 @@ BEGIN
         COALESCE(g.name, u.uid),
         q.qid,
         s.partial_scores,
-        COALESCE(iq.auto_points, LEAST(iq.points, aq.max_auto_points)),
-        COALESCE(iq.manual_points, GREATEST(0, iq.points - aq.max_auto_points)),
+        iq.auto_points,
+        iq.manual_points,
         iq.modified_at
     INTO
         found_submission_id,

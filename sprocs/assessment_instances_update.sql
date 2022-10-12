@@ -70,7 +70,7 @@ BEGIN
              coalesce(aq.init_points, aq.points_list[1], 0),
              aq.points_list,
              aq.points_list,
-             0, 0 -- These points are updated manually to distinguish them from instance questions created before these fields existed
+             0, 0 -- These points are updated manually because their default value is set to NULL for migration purposes
         FROM
             select_assessment_questions(assessment_id, assessment_instance_id) AS aq
         ON CONFLICT
