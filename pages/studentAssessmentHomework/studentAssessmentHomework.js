@@ -80,6 +80,7 @@ router.get('/', function (req, res, next) {
             if (usingGroupRoles) {
               groupAssessmentHelper.getGroupRoles(res.locals.assessment.id, function (group_roles) {
                 res.locals.group_roles = group_roles;
+                res.locals.validationErrors = undefined;
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
               });
             } else {
@@ -200,11 +201,7 @@ router.post('/', function (req, res, next) {
       res.locals.user.user_id,
       res.locals.authn_user.user_id,
       function (err, validationErrors) {
-        console.log(validationErrors);
         if (ERR(err, next)) return;
-        // FIXME: Needs res.locals.groupsize and permissions to load
-        // We could get these from getGroupInfo(), like in the GET request above
-        // but that would duplicate a lot of code, and this is a POST...
         if (validationErrors !== undefined) {
           groupAssessmentHelper.getGroupInfo(
             res.locals.assessment.id,
@@ -243,7 +240,6 @@ router.post('/', function (req, res, next) {
             }
           );
         } else {
-          console.log(res.locals);
           res.redirect(req.originalUrl); // refresh the page with a GET request
         }
       }

@@ -34,7 +34,7 @@
 <% } else {%>
   <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: permissions, group_info: group_info}); %>
   <% if (usingGroupRoles) { %>
-    <% if (validationErrors.length > 0) { %>
+    <% if (typeof validationErrors !== 'undefined' && validationErrors.length > 0) { %>
         <div class="alert alert-danger my-4" role="alert">
           The attempted group assignments were invalid. Please try again.
         </div>
