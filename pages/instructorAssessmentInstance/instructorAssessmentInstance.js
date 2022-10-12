@@ -4,7 +4,7 @@ const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
 const router = express.Router();
 const error = require('../../prairielib/lib/error');
-const sqlDb = require('../../prairielib/lib/sql-db');
+const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const sanitizeName = require('../../lib/sanitize-name');
@@ -33,11 +33,11 @@ const logCsvFilename = (locals) => {
 router.get('/', (req, res, next) => {
   res.locals.logCsvFilename = logCsvFilename(res.locals);
   const params = { assessment_instance_id: res.locals.assessment_instance.id };
-  sqlDb.query(sql.assessment_instance_stats, params, (err, result) => {
+  sqldb.query(sql.assessment_instance_stats, params, (err, result) => {
     if (ERR(err, next)) return;
     res.locals.assessment_instance_stats = result.rows;
 
-    sqlDb.queryOneRow(sql.select_date_formatted_duration, params, (err, result) => {
+    sqldb.queryOneRow(sql.select_date_formatted_duration, params, (err, result) => {
       if (ERR(err, next)) return;
       res.locals.assessment_instance_date_formatted =
         result.rows[0].assessment_instance_date_formatted;
@@ -46,12 +46,12 @@ router.get('/', (req, res, next) => {
       const params = {
         assessment_instance_id: res.locals.assessment_instance.id,
       };
-      sqlDb.query(sql.select_instance_questions, params, (err, result) => {
+      sqldb.query(sql.select_instance_questions, params, (err, result) => {
         if (ERR(err, next)) return;
         res.locals.instance_questions = result.rows;
 
         const params = [res.locals.assessment_instance.id, false];
-        sqlDb.call('assessment_instances_select_log', params, (err, result) => {
+        sqldb.call('assessment_instances_select_log', params, (err, result) => {
           if (ERR(err, next)) return;
           res.locals.log = result.rows;
           res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
@@ -64,7 +64,7 @@ router.get('/', (req, res, next) => {
 router.get('/:filename', (req, res, next) => {
   if (req.params.filename === logCsvFilename(res.locals)) {
     const params = [res.locals.assessment_instance.id, false];
-    sqlDb.call('assessment_instances_select_log', params, (err, result) => {
+    sqldb.call('assessment_instances_select_log', params, (err, result) => {
       if (ERR(err, next)) return;
       const log = result.rows;
       const csvHeaders = [
@@ -114,7 +114,7 @@ router.post('/', (req, res, next) => {
       req.body.points,
       res.locals.authn_user.user_id,
     ];
-    sqlDb.call('assessment_instances_update_points', params, (err, _result) => {
+    sqldb.call('assessment_instances_update_points', params, (err, _result) => {
       if (ERR(err, next)) return;
       ltiOutcomes.updateScore(res.locals.assessment_instance.id, (err) => {
         if (ERR(err, next)) return;
@@ -127,7 +127,7 @@ router.post('/', (req, res, next) => {
       req.body.score_perc,
       res.locals.authn_user.user_id,
     ];
-    sqlDb.call('assessment_instances_update_score_perc', params, (err, _result) => {
+    sqldb.call('assessment_instances_update_score_perc', params, (err, _result) => {
       if (ERR(err, next)) return;
       ltiOutcomes.updateScore(res.locals.assessment_instance.id, (err) => {
         if (ERR(err, next)) return;
@@ -154,7 +154,7 @@ router.post('/', (req, res, next) => {
       null, // partial_scores
       res.locals.authn_user.user_id,
     ];
-    sqlDb.call('instance_questions_update_score', params, (err, result) => {
+    sqldb.call('instance_questions_update_score', params, (err, result) => {
       if (ERR(err, next)) return;
       if (result.rows[0].modified_at_conflict) {
         return res.redirect(
@@ -186,7 +186,7 @@ router.post('/', (req, res, next) => {
       null, // partial_scores
       res.locals.authn_user.user_id,
     ];
-    sqlDb.call('instance_questions_update_score', params, (err, result) => {
+    sqldb.call('instance_questions_update_score', params, (err, result) => {
       if (ERR(err, next)) return;
       if (result.rows[0].modified_at_conflict) {
         return res.redirect(
