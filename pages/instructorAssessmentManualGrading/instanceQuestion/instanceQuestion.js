@@ -77,8 +77,12 @@ router.post(
         null, // assessment_instance_number
         null, // qid
         req.body.modified_at,
-        req.body.use_score_perc ? req.body.submission_score_percent : null, // score_perc
-        req.body.use_score_perc ? null : req.body.submission_score_points, // points
+        null, // score_perc
+        null, // points
+        req.body.use_score_perc ? req.body.score_manual_percent : null, // manual_score_perc
+        req.body.use_score_perc ? null : req.body.score_manual_points, // manual_points
+        req.body.use_score_perc ? req.body.score_auto_percent || null : null, // auto_score_perc
+        req.body.use_score_perc ? null : req.body.score_auto_points || null, // auto_points
         { manual: req.body.submission_note }, // feedback
         null, // partial_scores
         res.locals.authn_user.user_id,
@@ -116,7 +120,8 @@ router.post(
         course_instance_id: res.locals.course_instance.id,
         assessment_id: res.locals.assessment.id,
         instance_question_id: res.locals.instance_question.id,
-        assigned_grader: assigned_grader === 'nobody' ? null : assigned_grader,
+        assigned_grader: ['nobody', 'graded'].includes(assigned_grader) ? null : assigned_grader,
+        requires_manual_grading: assigned_grader !== 'graded',
       };
       await sqldb.queryAsync(sql.update_assigned_grader, params);
 
