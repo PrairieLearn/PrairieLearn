@@ -7,7 +7,7 @@
         points_pending = ['saved', 'grading'].includes(instance_question.status) && max_points;
     } else if (locals.component == 'manual') {
         points = instance_question.manual_points;
-        max_points = locals.max_points ?? locals.assessment_question?.manual_points ?? instance_question.max_manual_points;
+        max_points = locals.max_points ?? locals.assessment_question?.max_manual_points ?? instance_question.max_manual_points;
         points_pending = instance_question.requires_manual_grading;
     } else {
         points = instance_question.points;

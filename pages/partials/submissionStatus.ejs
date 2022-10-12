@@ -1,5 +1,5 @@
 <% let auto_submission_status_prefix = ''; %>
-<% if (locals.assessment_question ? (assessment_question.manual_points || instance_question.manual_points || instance_question.requires_manual_grading) : question.grading_method == 'Manual') { %>
+<% if (locals.assessment_question ? (assessment_question.max_manual_points || instance_question.manual_points || instance_question.requires_manual_grading) : question.grading_method == 'Manual') { %>
     <% auto_submission_status_prefix = 'auto-grading: '; %>
     <%# The manual grading status only applies to the latest submission %>
     <% if (submission.submission_number == submissionCount) { %>
@@ -10,11 +10,11 @@
                 <span class="badge badge-secondary">manual grading: waiting for grading</span><br/>
             <% } %>
         <% } else if (instance_question.manual_points <= 0) { %>
-            <span class="badge badge-danger">manual grading: <%= Math.floor(instance_question.manual_points * 100 / (assessment_question.manual_points || assessment_question.max_points)) %>%</span><br/>
-        <% } else if (instance_question.manual_points >= assessment_question.manual_points) { %>
-            <span class="badge badge-success">manual grading: <%= Math.floor(instance_question.manual_points * 100 /(assessment_question.manual_points || assessment_question.max_points)) %>%</span><br/>
+            <span class="badge badge-danger">manual grading: <%= Math.floor(instance_question.manual_points * 100 / (assessment_question.max_manual_points || assessment_question.max_points)) %>%</span><br/>
+        <% } else if (instance_question.manual_points >= assessment_question.max_manual_points) { %>
+            <span class="badge badge-success">manual grading: <%= Math.floor(instance_question.manual_points * 100 /(assessment_question.max_manual_points || assessment_question.max_points)) %>%</span><br/>
         <% } else { %>
-            <span class="badge badge-warning">manual grading: <%= Math.floor(instance_question.manual_points * 100 /(assessment_question.manual_points || assessment_question.max_points)) %>%</span><br/>
+            <span class="badge badge-warning">manual grading: <%= Math.floor(instance_question.manual_points * 100 /(assessment_question.max_manual_points || assessment_question.max_points)) %>%</span><br/>
         <% } %>
     <% } %>
 <% } %>

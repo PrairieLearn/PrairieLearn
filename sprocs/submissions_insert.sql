@@ -42,7 +42,7 @@ BEGIN
     SELECT
         iq.id,
         ai.id,
-        COALESCE(aq.manual_points, 0)
+        COALESCE(aq.max_manual_points, 0)
     INTO
         instance_question_id,
         assessment_instance_id,

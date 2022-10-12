@@ -52,7 +52,7 @@ BEGIN
         SET
             points = aq.max_points,
             auto_points = aq.max_auto_points,
-            manual_points = aq.manual_points,
+            manual_points = aq.max_manual_points,
             score_perc = 100,
             modified_at = now()
         FROM
@@ -65,17 +65,18 @@ BEGIN
         RETURNING
             iq.*,
             aq.max_points,
-            aq.max_auto_points
+            aq.max_auto_points,
+            aq.max_manual_points
     ),
     log_result AS (
         INSERT INTO question_score_logs
             (instance_question_id, auth_user_id,
-                points, auto_points, manual_points, max_points, max_auto_points,
+                points, auto_points, manual_points, max_points, max_auto_points, max_manual_points,
                 score_perc)
         (
             SELECT
                 id, assessment_instances_regrade.authn_user_id,
-                points, auto_points, manual_points, max_points, max_auto_points,
+                points, auto_points, manual_points, max_points, max_auto_points, max_manual_points,
                 score_perc
             FROM updated_instance_questions
         )

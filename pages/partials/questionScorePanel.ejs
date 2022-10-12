@@ -2,7 +2,7 @@
   <div class="card-header bg-secondary text-white">Question <%= instance_question.question_number %></div>
   <table class="table table-sm two-column-description-no-header">
     <tbody>
-      <% if (!assessment.allow_real_time_grading || assessment_question.manual_points > 0) { %>
+      <% if (!assessment.allow_real_time_grading || assessment_question.max_manual_points > 0) { %>
       <tr>
         <td>Submission status:</td>
         <td><%- include('../partials/examQuestionScore', {instance_question}); %></td>
@@ -15,7 +15,7 @@
       </tr>
       <% } %>
       <% let list_grading_method = true; %>
-      <% if (assessment_question.max_auto_points && (assessment_question.manual_points || instance_question.manual_points || instance_question.requires_manual_grading)) { %>
+      <% if (assessment_question.max_auto_points && (assessment_question.max_manual_points || instance_question.manual_points || instance_question.requires_manual_grading)) { %>
       <% list_grading_method = false; %>
       <tr>
         <td>Auto-grading:</td>

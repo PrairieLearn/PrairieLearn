@@ -378,7 +378,7 @@ BEGIN
                     INSERT INTO assessment_questions AS aq (
                         number,
                         max_points,
-                        manual_points,
+                        max_manual_points,
                         max_auto_points,
                         init_points,
                         points_list,
@@ -413,7 +413,7 @@ BEGIN
                     SET
                         number = EXCLUDED.number,
                         max_points = EXCLUDED.max_points,
-                        manual_points = EXCLUDED.manual_points,
+                        max_manual_points = EXCLUDED.max_manual_points,
                         max_auto_points = EXCLUDED.max_auto_points,
                         points_list = EXCLUDED.points_list,
                         init_points = EXCLUDED.init_points,

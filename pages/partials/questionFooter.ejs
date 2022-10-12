@@ -54,9 +54,9 @@
               <% } else { %>
               <%= instance_question.points_list[0] %> points available for this attempt
               <% } %>
-              <% if (assessment_question?.manual_points > 0) { %>
-                <% if (instance_question.points_list[0] > assessment_question?.manual_points) { %>
-                  &mdash; <%= instance_question.points_list[0] - assessment_question?.manual_points %> auto-graded, <%= assessment_question?.manual_points %> manually graded
+              <% if (assessment_question?.max_manual_points > 0) { %>
+                <% if (instance_question.points_list[0] > assessment_question?.max_manual_points) { %>
+                  &mdash; <%= instance_question.points_list[0] - assessment_question?.max_manual_points %> auto-graded, <%= assessment_question?.max_manual_points %> manually graded
                 <% } else { %>
                   &mdash; manually graded
                 <% } %>

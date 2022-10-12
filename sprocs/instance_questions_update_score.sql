@@ -59,7 +59,7 @@ BEGIN
         ai.id,
         aq.max_points,
         aq.max_auto_points,
-        aq.manual_points,
+        aq.max_manual_points,
         COALESCE(g.name, u.uid),
         q.qid,
         s.partial_scores,

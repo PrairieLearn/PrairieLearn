@@ -193,7 +193,7 @@ describe('Assessment syncing', () => {
     assert.equal(firstAssessmentQuestion.max_points, 10);
     assert.equal(firstAssessmentQuestion.max_auto_points, 10);
     assert.deepEqual(firstAssessmentQuestion.points_list, [10]);
-    assert.equal(firstAssessmentQuestion.manual_points, 0);
+    assert.equal(firstAssessmentQuestion.max_manual_points, 0);
 
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID
@@ -201,7 +201,7 @@ describe('Assessment syncing', () => {
     assert.equal(secondAssessmentQuestion.max_points, 5);
     assert.equal(secondAssessmentQuestion.max_auto_points, 5);
     assert.deepEqual(secondAssessmentQuestion.points_list, [5]);
-    assert.equal(secondAssessmentQuestion.manual_points, 0);
+    assert.equal(secondAssessmentQuestion.max_manual_points, 0);
 
     const thirdAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID
@@ -209,7 +209,7 @@ describe('Assessment syncing', () => {
     assert.equal(thirdAssessmentQuestion.max_points, 7);
     assert.equal(thirdAssessmentQuestion.max_auto_points, 0);
     assert.deepEqual(thirdAssessmentQuestion.points_list, [7]);
-    assert.equal(thirdAssessmentQuestion.manual_points, 7);
+    assert.equal(thirdAssessmentQuestion.max_manual_points, 7);
   });
 
   it('syncs alternatives in a Homework zone', async () => {
@@ -252,7 +252,7 @@ describe('Assessment syncing', () => {
     assert.equal(firstAssessmentQuestion.init_points, 10);
     assert.equal(firstAssessmentQuestion.max_points, 20);
     assert.equal(firstAssessmentQuestion.max_auto_points, 20);
-    assert.equal(firstAssessmentQuestion.manual_points, 0);
+    assert.equal(firstAssessmentQuestion.max_manual_points, 0);
 
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID
@@ -260,7 +260,7 @@ describe('Assessment syncing', () => {
     assert.equal(secondAssessmentQuestion.init_points, 5);
     assert.equal(secondAssessmentQuestion.max_points, 15);
     assert.equal(secondAssessmentQuestion.max_auto_points, 15);
-    assert.equal(secondAssessmentQuestion.manual_points, 0);
+    assert.equal(secondAssessmentQuestion.max_manual_points, 0);
 
     const thirdAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID
@@ -268,7 +268,7 @@ describe('Assessment syncing', () => {
     assert.equal(thirdAssessmentQuestion.init_points, 7);
     assert.equal(thirdAssessmentQuestion.max_points, 7);
     assert.equal(thirdAssessmentQuestion.max_auto_points, 0);
-    assert.equal(thirdAssessmentQuestion.manual_points, 7);
+    assert.equal(thirdAssessmentQuestion.max_manual_points, 7);
   });
 
   it('syncs auto and manual points in an Exam zone', async () => {
@@ -311,7 +311,7 @@ describe('Assessment syncing', () => {
     assert.equal(firstAssessmentQuestion.max_points, 13);
     assert.equal(firstAssessmentQuestion.max_auto_points, 10);
     assert.deepEqual(firstAssessmentQuestion.points_list, [13]);
-    assert.equal(firstAssessmentQuestion.manual_points, 3);
+    assert.equal(firstAssessmentQuestion.max_manual_points, 3);
 
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID
@@ -319,7 +319,7 @@ describe('Assessment syncing', () => {
     assert.equal(secondAssessmentQuestion.max_points, 8);
     assert.equal(secondAssessmentQuestion.max_auto_points, 5);
     assert.deepEqual(secondAssessmentQuestion.points_list, [8]);
-    assert.equal(secondAssessmentQuestion.manual_points, 3);
+    assert.equal(secondAssessmentQuestion.max_manual_points, 3);
 
     const thirdAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID
@@ -327,7 +327,7 @@ describe('Assessment syncing', () => {
     assert.equal(thirdAssessmentQuestion.max_points, 8);
     assert.equal(thirdAssessmentQuestion.max_auto_points, 1);
     assert.deepEqual(thirdAssessmentQuestion.points_list, [8]);
-    assert.equal(thirdAssessmentQuestion.manual_points, 7);
+    assert.equal(thirdAssessmentQuestion.max_manual_points, 7);
   });
 
   it('syncs auto and manual points in a Homework zone', async () => {
@@ -372,7 +372,7 @@ describe('Assessment syncing', () => {
     assert.equal(firstAssessmentQuestion.init_points, 13);
     assert.equal(firstAssessmentQuestion.max_points, 23);
     assert.equal(firstAssessmentQuestion.max_auto_points, 20);
-    assert.equal(firstAssessmentQuestion.manual_points, 3);
+    assert.equal(firstAssessmentQuestion.max_manual_points, 3);
 
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID
@@ -380,7 +380,7 @@ describe('Assessment syncing', () => {
     assert.equal(secondAssessmentQuestion.init_points, 8);
     assert.equal(secondAssessmentQuestion.max_points, 18);
     assert.equal(secondAssessmentQuestion.max_auto_points, 15);
-    assert.equal(secondAssessmentQuestion.manual_points, 3);
+    assert.equal(secondAssessmentQuestion.max_manual_points, 3);
 
     const thirdAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID
@@ -388,7 +388,7 @@ describe('Assessment syncing', () => {
     assert.equal(thirdAssessmentQuestion.init_points, 8);
     assert.equal(thirdAssessmentQuestion.max_points, 8);
     assert.equal(thirdAssessmentQuestion.max_auto_points, 1);
-    assert.equal(thirdAssessmentQuestion.manual_points, 7);
+    assert.equal(thirdAssessmentQuestion.max_manual_points, 7);
   });
 
   it('syncs point arrays in an Exam zone', async () => {
@@ -429,7 +429,7 @@ describe('Assessment syncing', () => {
     assert.equal(firstAssessmentQuestion.max_points, 10);
     assert.equal(firstAssessmentQuestion.max_auto_points, 10);
     assert.deepEqual(firstAssessmentQuestion.points_list, [10, 7, 5, 2, 1]);
-    assert.equal(firstAssessmentQuestion.manual_points, 0);
+    assert.equal(firstAssessmentQuestion.max_manual_points, 0);
 
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID
@@ -437,7 +437,7 @@ describe('Assessment syncing', () => {
     assert.equal(secondAssessmentQuestion.max_points, 5);
     assert.equal(secondAssessmentQuestion.max_auto_points, 5);
     assert.deepEqual(secondAssessmentQuestion.points_list, [5, 3]);
-    assert.equal(secondAssessmentQuestion.manual_points, 0);
+    assert.equal(secondAssessmentQuestion.max_manual_points, 0);
 
     const thirdAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID
@@ -445,7 +445,7 @@ describe('Assessment syncing', () => {
     assert.equal(thirdAssessmentQuestion.max_points, 7);
     assert.equal(thirdAssessmentQuestion.max_auto_points, 0);
     assert.deepEqual(thirdAssessmentQuestion.points_list, [7, 6, 5]);
-    assert.equal(thirdAssessmentQuestion.manual_points, 7);
+    assert.equal(thirdAssessmentQuestion.max_manual_points, 7);
   });
 
   it('syncs autoPoint arrays in an Exam zone', async () => {
@@ -488,7 +488,7 @@ describe('Assessment syncing', () => {
     assert.equal(firstAssessmentQuestion.max_points, 18);
     assert.equal(firstAssessmentQuestion.max_auto_points, 10);
     assert.deepEqual(firstAssessmentQuestion.points_list, [18, 15, 13, 10, 9]);
-    assert.equal(firstAssessmentQuestion.manual_points, 8);
+    assert.equal(firstAssessmentQuestion.max_manual_points, 8);
 
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID
@@ -496,7 +496,7 @@ describe('Assessment syncing', () => {
     assert.equal(secondAssessmentQuestion.max_points, 13);
     assert.equal(secondAssessmentQuestion.max_auto_points, 5);
     assert.deepEqual(secondAssessmentQuestion.points_list, [13, 11]);
-    assert.equal(secondAssessmentQuestion.manual_points, 8);
+    assert.equal(secondAssessmentQuestion.max_manual_points, 8);
 
     const thirdAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID
@@ -504,7 +504,7 @@ describe('Assessment syncing', () => {
     assert.equal(thirdAssessmentQuestion.max_points, 10);
     assert.equal(thirdAssessmentQuestion.max_auto_points, 7);
     assert.deepEqual(thirdAssessmentQuestion.points_list, [10, 9, 8]);
-    assert.equal(thirdAssessmentQuestion.manual_points, 3);
+    assert.equal(thirdAssessmentQuestion.max_manual_points, 3);
   });
 
   it('reuses assessment questions when questions are removed and added again', async () => {

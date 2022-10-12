@@ -30,7 +30,7 @@ SELECT
     COALESCE(lgu.name, lgu.uid) AS last_grader_name,
     aq.max_points,
     aq.max_auto_points,
-    aq.manual_points AS max_manual_points,
+    aq.max_manual_points,
     COALESCE(g.name, u.name) AS user_or_group_name,
     ic.open_issue_count
 FROM
