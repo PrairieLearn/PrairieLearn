@@ -14,6 +14,7 @@ window.PLFileEditor = function (uuid, options) {
   this.settingsButton = this.element.find('.settings-button');
   this.modal = this.element.find('.modal');
   this.saveSettingsButton = this.element.find('.save-settings-button');
+  this.closeSettingsButton = this.element.find('.close-settings-button');
   this.restoreOriginalButton = this.element.find('.restore-original');
   this.restoreOriginalConfirmContainer = this.element.find('.restore-original-confirm-container');
   this.restoreOriginalConfirm = this.element.find('.restore-original-confirm');
@@ -110,34 +111,39 @@ window.PLFileEditor.prototype.updatePreview = function (html_contents) {
 window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
   var that = this;
 
-  ace.require(['ace/ext/themelist'], function (themeList) {
-    var themeSelect = that.modal.find('#' + uuid + '-themes');
-    themeSelect.empty();
-    for (const entries in themeList.themesByName) {
-      var caption = themeList.themesByName[entries].caption;
-      var theme = themeList.themesByName[entries].theme;
-
-      if (localStorage.getItem('pl-file-editor-theme') === theme) {
-        themeSelect.append(
-          $('<option>', {
-            value: theme,
-            text: caption,
-            selected: true,
-          })
-        );
-      } else {
-        themeSelect.append(
-          $('<option>', {
-            value: theme,
-            text: caption,
-          })
-        );
-      }
-    }
-  });
-
   this.settingsButton.click(function () {
+    ace.require(['ace/ext/themelist'], function (themeList) {
+      var themeSelect = that.modal.find('#' + uuid + '-themes');
+      themeSelect.empty();
+      for (const entries in themeList.themesByName) {
+        var caption = themeList.themesByName[entries].caption;
+        var theme = themeList.themesByName[entries].theme;
+
+        if (localStorage.getItem('pl-file-editor-theme') === theme) {
+          themeSelect.append(
+            $('<option>', {
+              value: theme,
+              text: caption,
+              selected: true,
+            })
+          );
+        } else {
+          themeSelect.append(
+            $('<option>', {
+              value: theme,
+              text: caption,
+            })
+          );
+        }
+      }
+    });
     that.modal.modal('show');
+    // listen for changes to the theme select
+    that.modal.find('#' + uuid + '-themes').change(function () {
+      var theme = $(this).val();
+      that.editor.setTheme(theme);
+      console.log('theme', theme);
+    });
   });
 
   this.saveSettingsButton.click(function () {
@@ -145,6 +151,10 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     that.editor.setTheme(theme);
     localStorage.setItem('pl-file-editor-theme', theme);
     that.modal.modal('hide');
+  });
+
+  this.closeSettingsButton.click(function () {
+    that.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
   });
 };
 
