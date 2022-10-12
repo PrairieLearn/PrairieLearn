@@ -1691,17 +1691,17 @@ module.exports.startServer = async () => {
     const ca = [await fs.promises.readFile(config.sslCAFile)];
     var options = { key, cert, ca };
     server = https.createServer(options, app);
-    server.listen(config.serverPort);
-    server.timeout = 600000; // 10 minutes
     logger.verbose('server listening to HTTPS on port ' + config.serverPort);
   } else if (config.serverType === 'http') {
     server = http.createServer(app);
-    server.listen(config.serverPort);
-    server.timeout = 600000; // 10 minutes
     logger.verbose('server listening to HTTP on port ' + config.serverPort);
   } else {
     throw new Error('unknown serverType: ' + config.serverType);
   }
+
+  server.timeout = config.serverTimeout;
+  server.keepAliveTimeout = config.serverKeepAliveTimeout;
+  server.listen(config.serverPort);
 
   // Wait for the server to either start successfully or error out.
   await new Promise((resolve, reject) => {
