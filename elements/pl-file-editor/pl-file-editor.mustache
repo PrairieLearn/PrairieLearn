@@ -24,12 +24,12 @@ $(function() {
         <div class="card-header d-flex justify-content-between align-items-center">
              {{file_name}}
              <button type="button" class="btn btn-sm btn-secondary settings-button">
-                 <div class="fa fa-cog"></div>
+                 <i class="fa fa-cog"></i>
              </button>
          </div>
         <div class="editor"></div>
-        <div class="modal fade" id="staticBackdrop" tabindex="-1" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal fade" data-backdrop="static" data-keyboard="false" tabindex="-1" aria-hidden="true" aria-labelledby="modal-{{uuid}}">
+            <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title"  id="modal-{{uuid}}">Editor Settings</h5>
