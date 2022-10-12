@@ -97,7 +97,6 @@ module.exports.init = function (callback) {
       'submissions_insert.sql',
       'submissions_update_parsing.sql',
       'assessment_instances_update.sql',
-      'instance_questions_update_in_grading.sql',
       'assessment_instances_close.sql',
       'grading_job_status.sql',
       'grading_jobs_lock.sql',

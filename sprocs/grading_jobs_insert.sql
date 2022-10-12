@@ -31,6 +31,10 @@ BEGIN
 
     IF NOT FOUND THEN RAISE EXCEPTION 'no such submission_id: %', submission_id; END IF;
 
+    -- This method is only called for manual grading questions if
+    -- auto_points > 0, in that case it is treated as internal.
+    IF grading_method = 'Manual' THEN grading_method := 'Internal'; END IF;
+
     -- ######################################################################
     -- cancel any outstanding grading jobs
 
@@ -92,7 +96,6 @@ BEGIN
     -- update all parent objects
 
     IF assessment_instance_id IS NOT NULL THEN
-        PERFORM instance_questions_update_in_grading(instance_question_id, authn_user_id);
         PERFORM assessment_instances_grade(assessment_instance_id, authn_user_id, credit);
     END IF;
 END;

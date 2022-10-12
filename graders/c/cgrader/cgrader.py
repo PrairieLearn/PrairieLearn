@@ -267,6 +267,7 @@ class CGrader:
                                     field=field)
 
     def add_manual_grading(self, points=1, name=None, description=None):
+        '''Old deprecated function, retained for compatibility reasons.'''
         if not name:
             name = 'Manual Grading - to be reviewed by a human grader'
         if not description:

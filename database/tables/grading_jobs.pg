@@ -1,5 +1,6 @@
 columns
     auth_user_id: bigint
+    auto_points: double precision
     auto_rubric_grading_id: bigint
     correct: boolean
     date: timestamp with time zone default CURRENT_TIMESTAMP
@@ -16,6 +17,7 @@ columns
     grading_started_at: timestamp with time zone
     grading_submitted_at: timestamp with time zone
     id: bigint not null default nextval('grading_jobs_id_seq'::regclass)
+    manual_points: double precision
     manual_rubric_grading_id: bigint
     output: text
     partial_scores: jsonb

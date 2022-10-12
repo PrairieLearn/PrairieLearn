@@ -480,17 +480,22 @@ function runJob(info, callback) {
           callback(null, container);
         });
       },
-      (container, callback) => {
+      async (container) => {
         const timeoutId = setTimeout(() => {
           results.timedOut = true;
-          container.kill();
+          container.kill().catch((err) => {
+            globalLogger.error('Error killing container', err);
+          });
         }, jobTimeout * 1000);
+
         logger.info('Waiting for container to complete');
-        container.wait((err) => {
+        try {
+          await container.wait();
+        } finally {
           clearTimeout(timeoutId);
-          if (ERR(err, callback)) return;
-          callback(null, container);
-        });
+        }
+
+        return container;
       },
       (container, callback) => {
         timeReporter.reportEndTime(jobId, (err, time) => {

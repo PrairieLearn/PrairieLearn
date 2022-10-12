@@ -3,6 +3,7 @@ columns
     assessment_question_id: bigint not null
     assigned_grader: bigint
     authn_user_id: bigint
+    auto_points: double precision
     auto_rubric_grading_id: bigint
     average_submission_score: double precision
     created_at: timestamp with time zone default CURRENT_TIMESTAMP
@@ -16,6 +17,7 @@ columns
     incremental_submission_score_array: double precision[]
     last_grader: bigint
     last_submission_score: double precision
+    manual_points: double precision
     manual_rubric_grading_id: bigint
     max_submission_score: double precision
     modified_at: timestamp with time zone not null default CURRENT_TIMESTAMP
