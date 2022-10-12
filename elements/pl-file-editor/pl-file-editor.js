@@ -119,22 +119,13 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
         var caption = themeList.themesByName[entries].caption;
         var theme = themeList.themesByName[entries].theme;
 
-        if (localStorage.getItem('pl-file-editor-theme') === theme) {
-          themeSelect.append(
-            $('<option>', {
-              value: theme,
-              text: caption,
-              selected: true,
-            })
-          );
-        } else {
-          themeSelect.append(
-            $('<option>', {
-              value: theme,
-              text: caption,
-            })
-          );
-        }
+        themeSelect.append(
+          $('<option>', {
+            value: theme,
+            text: caption,
+            selected: localStorage.getItem('pl-file-editor-theme') === theme,
+          })
+        );
       }
     });
     that.modal.modal('show');
