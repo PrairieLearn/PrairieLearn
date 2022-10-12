@@ -28,19 +28,19 @@ $(function() {
              </button>
          </div>
         <div class="editor"></div>
-        <div class="modal fade" tabindex="-1" aria-hidden="true" id="{{uuid}}">
+        <div class="modal fade" id="staticBackdrop" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Editor Settings</h5>
+                        <h5 class="modal-title"  id="modal-{{uuid}}">Editor Settings</h5>
                         <button type="button" class="close close-settings-button" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
                     <div class="modal-body">
                         <div class="form-group">
-                            <label for="{{uuid}}-themes">Editor Theme</label>
-                            <select class="form-control" id="{{uuid}}-themes">
+                            <label for="modal-{{uuid}}-themes">Editor Theme</label>
+                            <select class="form-control" id="modal-{{uuid}}-themes">
                             </select>
                         </div>
                     </div>

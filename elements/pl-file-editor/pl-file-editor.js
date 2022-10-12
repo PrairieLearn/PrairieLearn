@@ -113,7 +113,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
 
   this.settingsButton.click(function () {
     ace.require(['ace/ext/themelist'], function (themeList) {
-      var themeSelect = that.modal.find('#' + uuid + '-themes');
+      var themeSelect = that.modal.find('#modal-' + uuid + '-themes');
       themeSelect.empty();
       for (const entries in themeList.themesByName) {
         var caption = themeList.themesByName[entries].caption;
@@ -139,15 +139,14 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     });
     that.modal.modal('show');
     // listen for changes to the theme select
-    that.modal.find('#' + uuid + '-themes').change(function () {
+    that.modal.find('#modal-' + uuid + '-themes').change(function () {
       var theme = $(this).val();
       that.editor.setTheme(theme);
-      console.log('theme', theme);
     });
   });
 
   this.saveSettingsButton.click(function () {
-    var theme = that.modal.find('#' + uuid + '-themes').val();
+    var theme = that.modal.find('#modal-' + uuid + '-themes').val();
     that.editor.setTheme(theme);
     localStorage.setItem('pl-file-editor-theme', theme);
     that.modal.modal('hide');
