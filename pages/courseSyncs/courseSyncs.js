@@ -111,10 +111,12 @@ router.post('/', function (req, res, next) {
   }
 
   if (req.body.__action === 'pull') {
-    syncHelpers.pullAndUpdate(res.locals, function (err, job_sequence_id) {
-      if (ERR(err, next)) return;
-      res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-    });
+    syncHelpers
+      .pullAndUpdate(res.locals)
+      .then((job_sequence_id) => {
+        res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+      })
+      .catch((err) => ERR(err, next));
   } else if (req.body.__action === 'status') {
     syncHelpers.gitStatus(res.locals, function (err, job_sequence_id) {
       if (ERR(err, next)) return;

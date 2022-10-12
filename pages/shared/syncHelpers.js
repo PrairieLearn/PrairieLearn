@@ -4,6 +4,7 @@ const async = require('async');
 const logger = require('../../lib/logger');
 const config = require('../../lib/config');
 const serverJobs = require('../../lib/server-jobs');
+const serverJobs2 = require('../../lib/server-jobs-2');
 const syncFromDisk = require('../../sync/syncFromDisk');
 const requireFrontend = require('../../lib/require-frontend');
 const courseUtil = require('../../lib/courseUtil');
@@ -14,14 +15,19 @@ const debug = require('debug')('prairielearn:syncHelpers');
 
 const error = require('../../prairielib/lib/error');
 
-module.exports.pullAndUpdate = function (locals, callback) {
-  const options = {
+module.exports.pullAndUpdate = async function (locals, callback) {
+  const jobSequence = await serverJobs2.createJobSequence({
     course_id: locals.course.id,
     user_id: locals.user.user_id,
     authn_user_id: locals.authz_data.authn_user.user_id,
     type: 'sync',
     description: 'Pull from remote git repository',
-  };
+  });
+
+  jobSequence.execute(async ({ runJob }) => {});
+
+  return jobSequence.id;
+
   serverJobs.createJobSequence(options, function (err, job_sequence_id) {
     if (ERR(err, callback)) return;
     callback(null, job_sequence_id);
