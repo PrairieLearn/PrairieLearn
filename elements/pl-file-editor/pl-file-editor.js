@@ -82,7 +82,7 @@ window.PLFileEditor = function (uuid, options) {
   }
   this.setEditorContents(currentContents);
 
-  this.initSettingsButton();
+  this.initSettingsButton(uuid);
 
   this.initRestoreOriginalButton();
 };
@@ -107,21 +107,43 @@ window.PLFileEditor.prototype.updatePreview = function (html_contents) {
   }
 };
 
-window.PLFileEditor.prototype.initSettingsButton = function () {
+window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
   var that = this;
-  this.settingsButton.click(() => {
-    that.modal
-      .find('#theme option[value="' + that.editor.getTheme() + '"]')
-      .attr('selected', 'selected');
+
+  ace.require(['ace/ext/themelist'], function (themeList) {
+    var themeSelect = that.modal.find('#' + uuid + '-themes');
+    themeSelect.empty();
+    for (const entries in themeList.themesByName) {
+      var caption = themeList.themesByName[entries].caption;
+      var theme = themeList.themesByName[entries].theme;
+
+      if (localStorage.getItem('pl-file-editor-theme') === theme) {
+        themeSelect.append(
+          $('<option>', {
+            value: theme,
+            text: caption,
+            selected: true,
+          })
+        );
+      } else {
+        themeSelect.append(
+          $('<option>', {
+            value: theme,
+            text: caption,
+          })
+        );
+      }
+    }
+  });
+
+  this.settingsButton.click(function () {
     that.modal.modal('show');
   });
 
-  this.saveSettingsButton.click(() => {
-    var theme = that.modal.find('#theme').val();
+  this.saveSettingsButton.click(function () {
+    var theme = that.modal.find('#' + uuid + '-themes').val();
     that.editor.setTheme(theme);
     localStorage.setItem('pl-file-editor-theme', theme);
-    that.modal.find('#theme option').removeAttr('selected');
-    that.modal.find('#theme option[value="' + theme + '"]').attr('selected', 'selected');
     that.modal.modal('hide');
   });
 };
