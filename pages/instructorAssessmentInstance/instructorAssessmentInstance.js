@@ -146,13 +146,17 @@ router.post('/', (req, res, next) => {
       req.body.modified_at,
       null, // score_perc
       req.body.points,
+      null, // manual_score_perc
+      req.body.manual_points,
+      null, // auto_score_perc
+      req.body.auto_points,
       null, // feedback
       null, // partial_scores
       res.locals.authn_user.user_id,
     ];
     sqldb.call('instance_questions_update_score', params, (err, result) => {
       if (ERR(err, next)) return;
-      if (result.rows[0].modified_at_conflict && res.locals.course.manual_grading_visible) {
+      if (result.rows[0].modified_at_conflict) {
         return res.redirect(
           `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${result.rows[0].grading_job_id}`
         );
@@ -174,13 +178,17 @@ router.post('/', (req, res, next) => {
       req.body.modified_at,
       req.body.score_perc,
       null, // points
+      null, // manual_score_perc
+      null, // manual_points
+      null, // auto_score_perc
+      null, // auto_points
       null, // feedback
       null, // partial_scores
       res.locals.authn_user.user_id,
     ];
     sqldb.call('instance_questions_update_score', params, (err, result) => {
       if (ERR(err, next)) return;
-      if (result.rows[0].modified_at_conflict && res.locals.course.manual_grading_visible) {
+      if (result.rows[0].modified_at_conflict) {
         return res.redirect(
           `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${result.rows[0].grading_job_id}`
         );
