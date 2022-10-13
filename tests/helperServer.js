@@ -173,6 +173,10 @@ module.exports = {
           debug('after(): close socket server');
           await socketServer.close();
         },
+        async function () {
+          debug('after(): close server jobs');
+          serverJobs.close();
+        },
         function (callback) {
           debug('after(): close cache');
           cache.close(function (err) {

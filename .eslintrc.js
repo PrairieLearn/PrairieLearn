@@ -11,6 +11,19 @@ module.exports = {
     curly: ['error', 'multi-line', 'consistent'],
     eqeqeq: ['error', 'smart'],
     'handle-callback-err': 'error',
+    'no-restricted-syntax': [
+      'error',
+      {
+        selector:
+          'CallExpression[callee.type="MemberExpression"][callee.object.name="MathJax"][callee.property.name=/^(typeset|tex2chtml|tex2svg)$/]',
+        message:
+          "Don't use the synchronous MathJax API; use a function like typesetPromise() instead.",
+      },
+      {
+        selector: 'MemberExpression[object.name="MathJax"][property.name="Hub"]',
+        message: 'Use MathJax.typesetPromise() instead of MathJax.Hub',
+      },
+    ],
     'no-unused-vars': [
       'error',
       {
