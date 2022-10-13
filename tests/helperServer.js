@@ -122,12 +122,9 @@ module.exports = {
               callback(null);
             });
           },
-          function (callback) {
+          async function () {
             debug('before(): initialize server jobs');
-            serverJobs.init(function (err) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
+            serverJobs.init();
           },
           async function () {
             debug('before(): initialize freeform server');
@@ -191,6 +188,10 @@ module.exports = {
             if (ERR(err, callback)) return;
             callback(null);
           });
+        },
+        async function () {
+          debug('after(): close server jobs');
+          serverJobs.close();
         },
         function (callback) {
           debug('after(): close cache');

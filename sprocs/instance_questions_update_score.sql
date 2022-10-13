@@ -15,6 +15,10 @@ CREATE FUNCTION
         -- specify what should be updated
         IN arg_score_perc double precision,
         IN arg_points double precision,
+        IN arg_manual_score_perc double precision,
+        IN arg_manual_points double precision,
+        IN arg_auto_score_perc double precision,
+        IN arg_auto_points double precision,
         IN arg_feedback jsonb,
         IN arg_partial_scores jsonb,
         IN arg_authn_user_id bigint,
@@ -25,18 +29,26 @@ CREATE FUNCTION
     )
 AS $$
 DECLARE
-    submission_id bigint;
+    found_submission_id bigint;
     instance_question_id bigint;
     assessment_instance_id bigint;
     found_uid_or_group text;
     found_qid text;
     current_modified_at timestamptz;
     max_points double precision;
-    new_score_perc double precision;
-    new_points double precision;
-    new_score double precision;
-    new_correct boolean;
+    max_manual_points double precision;
+    max_auto_points double precision;
+
     current_partial_score jsonb;
+    current_auto_points double precision;
+    current_manual_points double precision;
+
+    new_score_perc double precision;
+    new_auto_score_perc double precision;
+    new_points double precision;
+    new_manual_points double precision;
+    new_auto_points double precision;
+    new_correct boolean;
 BEGIN
     -- ##################################################################
     -- get the assessment_instance, max_points, and (possibly) submission_id
@@ -46,18 +58,26 @@ BEGIN
         iq.id,
         ai.id,
         aq.max_points,
+        aq.max_auto_points,
+        aq.max_manual_points,
         COALESCE(g.name, u.uid),
         q.qid,
         s.partial_scores,
+        iq.auto_points,
+        iq.manual_points,
         iq.modified_at
     INTO
-        submission_id,
+        found_submission_id,
         instance_question_id,
         assessment_instance_id,
         max_points,
+        max_auto_points,
+        max_manual_points,
         found_uid_or_group,
         found_qid,
         current_partial_score,
+        current_auto_points,
+        current_manual_points,
         current_modified_at
     FROM
         instance_questions AS iq
@@ -101,6 +121,12 @@ BEGIN
     -- ##################################################################
     -- check if partial_scores is an object
 
+    new_points := NULL;
+    new_score_perc := NULL;
+    new_auto_score_perc := NULL;
+    new_auto_points := NULL;
+    new_manual_points := NULL;
+
     IF arg_partial_scores IS NOT NULL THEN
         IF jsonb_typeof(arg_partial_scores) != 'object' THEN
             RAISE EXCEPTION 'partial_scores is not an object';
@@ -108,52 +134,74 @@ BEGIN
         IF current_partial_score IS NOT NULL THEN
             arg_partial_scores = current_partial_score || arg_partial_scores;
         END IF;
+        SELECT SUM(COALESCE((val->'score')::DOUBLE PRECISION, 0) *
+                   COALESCE((val->'weight')::DOUBLE PRECISION, 1)) * 100 /
+               SUM(COALESCE((val->'weight')::DOUBLE PRECISION, 1))
+          INTO new_auto_score_perc
+          FROM jsonb_each(arg_partial_scores) AS p(k, val);
+        new_auto_points := new_auto_score_perc / 100 * max_auto_points;
     END IF;
 
     -- ##################################################################
     -- compute the new score_perc/points
 
-    max_points := COALESCE(max_points, 0);
+    IF arg_auto_score_perc IS NOT NULL THEN
+        IF arg_auto_points IS NOT NULL THEN RAISE EXCEPTION 'Cannot set both auto_score_perc and auto_points'; END IF;
+        IF arg_score_perc IS NOT NULL THEN RAISE EXCEPTION 'Cannot set both auto_score_perc and score_perc'; END IF;
+        new_auto_score_perc := arg_auto_score_perc;
+        new_auto_points := new_auto_score_perc / 100 * max_auto_points;
+    ELSIF arg_auto_points IS NOT NULL THEN
+        IF arg_points IS NOT NULL THEN RAISE EXCEPTION 'Cannot set both auto_points and points'; END IF;
+        new_auto_points := arg_auto_points;
+        new_auto_score_perc := (CASE WHEN max_auto_points > 0 THEN new_auto_points / max_auto_points ELSE 0 END) * 100;
+    END IF;
 
-    IF arg_score_perc IS NOT NULL THEN
+    IF new_auto_score_perc IS NOT NULL THEN new_correct := new_auto_score_perc > 50; END IF;
+
+    IF arg_manual_score_perc IS NOT NULL THEN
+        IF arg_manual_points IS NOT NULL THEN RAISE EXCEPTION 'Cannot set both manual_score_perc and manual_points'; END IF;
+        IF arg_score_perc IS NOT NULL THEN RAISE EXCEPTION 'Cannot set both manual_score_perc and score_perc'; END IF;
+        new_manual_points := arg_manual_score_perc / 100 * max_manual_points;
+        new_points := new_manual_points + COALESCE(new_auto_points, current_auto_points, 0);
+        new_score_perc := (CASE WHEN max_points > 0 THEN new_points / max_points ELSE 0 END) * 100;
+    ELSIF arg_manual_points IS NOT NULL THEN
+        IF arg_points IS NOT NULL THEN RAISE EXCEPTION 'Cannot set both manual_points and points'; END IF;
+        new_manual_points := arg_manual_points;
+        new_points := new_manual_points + COALESCE(new_auto_points, current_auto_points, 0);
+        new_score_perc := (CASE WHEN max_points > 0 THEN new_points / max_points ELSE 0 END) * 100;
+    ELSIF arg_score_perc IS NOT NULL THEN
         IF arg_points IS NOT NULL THEN RAISE EXCEPTION 'Cannot set both score_perc and points'; END IF;
         new_score_perc := arg_score_perc;
         new_points := new_score_perc / 100 * max_points;
+        new_manual_points := new_points - COALESCE(new_auto_points, current_auto_points, 0);
     ELSIF arg_points IS NOT NULL THEN
         new_points := arg_points;
         new_score_perc := (CASE WHEN max_points > 0 THEN new_points / max_points ELSE 0 END) * 100;
-    ELSEIF arg_partial_scores IS NOT NULL THEN
-        SELECT SUM(COALESCE((val->'score')::DOUBLE PRECISION, 0) *
-                   COALESCE((val->'weight')::DOUBLE PRECISION, 1)) * 100 /
-               SUM(COALESCE((val->'weight')::DOUBLE PRECISION, 1))
-          INTO new_score_perc
-          FROM jsonb_each(arg_partial_scores) AS p(k, val);
-        new_points := new_score_perc / 100 * max_points;
-    ELSE
-        new_points := NULL;
-        new_score_perc := NULL;
+        new_manual_points := new_points - COALESCE(new_auto_points, current_auto_points, 0);
+    ELSEIF new_auto_points IS NOT NULL THEN
+        new_points := COALESCE(current_manual_points, 0) + new_auto_points;
+        new_score_perc := (CASE WHEN max_points > 0 THEN new_points / max_points ELSE 0 END) * 100;
     END IF;
-
-    new_score := new_score_perc / 100;
-    new_correct := (new_score > 0.5);
 
     -- ##################################################################
     -- if we were originally provided a submission_id or we have feedback
     -- or partial scores, create a grading job and update the submission
 
-    IF submission_id IS NOT NULL
+    IF found_submission_id IS NOT NULL
     AND (
-        submission_id = arg_submission_id
-        OR new_score IS NOT NULL
+        found_submission_id = arg_submission_id
+        OR new_score_perc IS NOT NULL
         OR arg_feedback IS NOT NULL
         OR arg_partial_scores IS NOT NULL
     ) THEN
         INSERT INTO grading_jobs
-            (submission_id, auth_user_id,      graded_by, graded_at,
-            grading_method, correct,     score,     feedback, partial_scores)
+            (submission_id, auth_user_id, graded_by, graded_at, grading_method,
+             correct, score, auto_points, manual_points,
+             feedback, partial_scores)
         VALUES
-            (submission_id, arg_authn_user_id, arg_authn_user_id,     now(),
-            'Manual',   new_correct, new_score, arg_feedback, arg_partial_scores)
+            (found_submission_id, arg_authn_user_id, arg_authn_user_id, now(), 'Manual',
+             new_correct, new_score_perc / 100, new_auto_points, new_manual_points,
+             arg_feedback, arg_partial_scores)
         RETURNING id INTO grading_job_id;
 
         IF NOT modified_at_conflict THEN
@@ -170,38 +218,39 @@ BEGIN
                     ELSE arg_partial_scores
                 END,
                 graded_at = now(),
-                grading_method = 'External',
-                override_score = new_score,
-                score = COALESCE(new_score, score),
+                override_score = COALESCE(new_auto_score_perc / 100, override_score),
+                score = COALESCE(new_auto_score_perc / 100, score),
                 correct = COALESCE(new_correct, correct),
-                gradable = CASE WHEN new_score IS NULL THEN gradable ELSE TRUE END
-            WHERE s.id = submission_id;
+                gradable = CASE WHEN new_auto_score_perc IS NULL THEN gradable ELSE TRUE END
+            WHERE s.id = found_submission_id;
         END IF;
     END IF;
 
     -- ##################################################################
     -- do the score update of the instance_question, log it, and update the assessment_instance, if we have a new_score
 
-    IF new_score IS NOT NULL AND NOT modified_at_conflict THEN
+    IF new_score_perc IS NOT NULL AND NOT modified_at_conflict THEN
         UPDATE instance_questions AS iq
         SET
             points = new_points,
-            points_in_grading = 0,
             score_perc = new_score_perc,
-            score_perc_in_grading = 0,
+            auto_points = COALESCE(new_auto_points, auto_points),
+            manual_points = COALESCE(new_manual_points, manual_points),
             status = 'complete',
             modified_at = now(),
-            highest_submission_score = new_score,
+            highest_submission_score = COALESCE(new_auto_score_perc / 100, highest_submission_score),
             requires_manual_grading = FALSE,
             last_grader = arg_authn_user_id
         WHERE iq.id = instance_question_id;
 
         INSERT INTO question_score_logs
             (instance_question_id, auth_user_id,
-            max_points,     points,     score_perc)
+            max_points, max_manual_points, max_auto_points,
+            points, score_perc, auto_points, manual_points)
         VALUES
             (instance_question_id, arg_authn_user_id,
-            max_points, new_points, new_score_perc);
+            max_points, max_manual_points, max_auto_points,
+            new_points, new_score_perc, new_auto_points, new_manual_points);
 
         PERFORM assessment_instances_grade(assessment_instance_id, arg_authn_user_id, credit => 100, allow_decrease => true);
     END IF;
