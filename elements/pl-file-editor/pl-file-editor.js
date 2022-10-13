@@ -83,9 +83,23 @@ window.PLFileEditor = function (uuid, options) {
   }
   this.setEditorContents(currentContents);
 
+  this.syncSettings();
+
   this.initSettingsButton(uuid);
 
   this.initRestoreOriginalButton();
+};
+
+window.PLFileEditor.prototype.syncSettings = function () {
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'pl-file-editor-theme') {
+      this.editor.setTheme(event.newValue);
+    }
+  });
+
+  window.addEventListener('storageSync', () => {
+    this.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
+  });
 };
 
 window.PLFileEditor.prototype.updatePreview = function (html_contents) {
@@ -141,6 +155,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     that.editor.setTheme(theme);
     localStorage.setItem('pl-file-editor-theme', theme);
     sessionStorage.removeItem('pl-file-editor-theme-current');
+    window.dispatchEvent(new Event('storageSync'));
     that.modal.modal('hide');
   });
 
