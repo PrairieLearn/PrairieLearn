@@ -52,7 +52,7 @@ const namedLocks = require('./lib/named-locks');
 const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
 const { enrichSentryScope } = require('./lib/sentry');
-const { handleAndCompleteInstanceTermination } = require('./lib/lifecycle-hooks');
+const lifecycleHooks = require('./lib/lifecycle-hooks');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -2029,6 +2029,7 @@ if (config.startServer) {
         });
       },
       async () => cron.init(),
+      async () => lifecycleHooks.completeInstanceLaunch(),
     ],
     function (err, data) {
       if (err) {
@@ -2046,7 +2047,7 @@ if (config.startServer) {
 
         const prepareForTermination = async () => {
           // We want to proceed with termination even if something goes wrong,
-          // so don't allow this func
+          // so don't allow this function to throw.
           try {
             // Note that this will also shut down the underlying server; see
             // https://socket.io/docs/v4/server-api/#serverclosecallback
@@ -2068,7 +2069,7 @@ if (config.startServer) {
           try {
             opentelemetry.shutdown();
           } catch (err) {
-            logger.error('Error shutting down OpenTelementry', err);
+            logger.error('Error shutting down OpenTelemetry', err);
             Sentry.captureException(err);
           }
 
@@ -2084,7 +2085,8 @@ if (config.startServer) {
         // to enter the `Terminating:Wait` state.
         //
         // If we're not running in EC2, this will be a no-op.
-        handleAndCompleteInstanceTermination(prepareForTermination)
+        lifecycleHooks
+          .handleAndCompleteInstanceTermination(prepareForTermination)
           .catch((err) => {
             logger.error('Error handling instance termination', err);
             Sentry.captureException(err);

@@ -87,7 +87,7 @@ const instrumentations = [
   new DnsInstrumentation(),
   new ExpressInstrumentation({
     // We use a lot of middleware; it makes the traces way too noisy. If we
-    // want telementry on a particular middleware, we should instrument it
+    // want telemetry on a particular middleware, we should instrument it
     // manually.
     ignoreLayersType: [ExpressLayerType.MIDDLEWARE],
     ignoreLayers: [
