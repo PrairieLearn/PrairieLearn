@@ -173,9 +173,9 @@ module.exports = {
           debug('after(): close socket server');
           await socketServer.close();
         },
-        async function () {
+        async () => {
           debug('after(): close server jobs');
-          serverJobs.stop();
+          await serverJobs.stop();
         },
         function (callback) {
           debug('after(): close cache');
