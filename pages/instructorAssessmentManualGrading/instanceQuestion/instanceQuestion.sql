@@ -32,8 +32,8 @@ SELECT to_jsonb(course_instances_select_graders($course_instance_id)) AS graders
 -- BLOCK update_assigned_grader
 UPDATE instance_questions AS iq
 SET
-    requires_manual_grading = CASE WHEN $assigned_grader::BIGINT IS NOT NULL THEN TRUE ELSE requires_manual_grading END,
-    assigned_grader = $assigned_grader
+    requires_manual_grading = $requires_manual_grading::BOOLEAN,
+    assigned_grader = CASE WHEN $requires_manual_grading::BOOLEAN THEN $assigned_grader::BIGINT ELSE assigned_grader END
 WHERE
     iq.id = $instance_question_id
     AND ($assigned_grader::BIGINT IS NULL

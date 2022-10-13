@@ -19,7 +19,7 @@
             "title": "Hard questions",
             "questions": [
                 {"id": "addNumbers",              "points": [5, 3, 1]},
-                {"id": "addVectors",              "points": [11, 9]},
+                {"id": "addVectors",              "autoPoints": [11, 9], "manualPoints": 10},
                 {"id": "fossilFuelsRadio",        "points": [17, 13, 7, 2]},
                 {"id": "partialCredit1",          "points": [19]},
                 {"id": "partialCredit2",          "points": [9, 7, 5, 3]},
