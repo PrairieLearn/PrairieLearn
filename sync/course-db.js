@@ -1273,6 +1273,8 @@ module.exports.loadQuestions = async function (coursePath) {
     validate: validateQuestion,
     recursive: true,
   });
+  // Don't allow questions to start with '@', because it will be used to
+  // reference questions outside the course once question sharing is implemented.
   for (let qid in questions) {
     if (qid[0] === '@') {
       infofile.addError(questions[qid], `Question IDs are not allowed to begin with '@'`);
