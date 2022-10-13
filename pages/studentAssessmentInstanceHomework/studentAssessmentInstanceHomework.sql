@@ -14,6 +14,8 @@ SELECT
     z.title AS zone_title,
     q.title AS question_title,
     aq.max_points,
+    aq.max_manual_points,
+    aq.max_auto_points,
     qo.row_order,
     qo.question_number,
     aq.init_points,
