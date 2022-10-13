@@ -175,9 +175,7 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
     problematic_subgraph = nx.DiGraph()
     distractors = 0
     for node1 in submission:
-        # in the parse function of pl-order-blocks, lines that aren't in any
-        # correct answer are denoted by None in the answer list
-        if node1 is None:
+        if node1 not in depends_graph:
             distractors += 1
             continue
 

@@ -387,6 +387,7 @@ def parse(element_html, data):
             search = next((item for item in correct_answers if item['inner_html'] == answer['inner_html']), None)
             answer['ranking'] = search['ranking'] if search is not None else None
             answer['tag'] = search['tag'] if search is not None else None
+            # TODO special code below in DAG condition should be in other conditions too, so they can also use paired distractors
     elif grading_mode == 'dag':
         for answer in student_answer:
             search = next((item for item in correct_answers if item['inner_html'] == answer['inner_html']), None)
