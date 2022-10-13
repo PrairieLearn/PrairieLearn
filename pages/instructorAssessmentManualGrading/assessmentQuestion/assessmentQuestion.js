@@ -33,10 +33,6 @@ router.get(
     };
 
     const result = await sqldb.queryAsync(sql.select_instance_questions_manual_grading, params);
-    result.rows.forEach((row) => {
-      // bootstrap-table does not like nulls as filter targets, set to 0 instead
-      Object.assign(row, { assigned_grader: row.assigned_grader || 0 });
-    });
     res.send({ instance_questions: result.rows });
   })
 );
@@ -93,6 +89,10 @@ router.post(
         req.body.modified_at,
         null, // score_perc
         req.body.points,
+        null, // manual_score_perc
+        req.body.manual_points,
+        null, // auto_score_perc
+        req.body.auto_points,
         null, // feedback
         null, // partial_scores
         res.locals.authn_user.user_id,
@@ -118,6 +118,10 @@ router.post(
         req.body.modified_at,
         req.body.score_perc,
         null, // points
+        null, // manual_score_perc
+        null, // manual_points
+        null, // auto_score_perc
+        null, // auto_points
         null, // feedback
         null, // partial_scores
         res.locals.authn_user.user_id,

@@ -485,6 +485,8 @@ describe('Homework assessment', function () {
           submission_correct: true,
           instance_question_points: 2,
           instance_question_score_perc: (2 / 11) * 100,
+          instance_question_auto_points: 2,
+          instance_question_manual_points: 0,
           assessment_instance_points: 2,
           assessment_instance_score_perc: (2 / assessmentMaxPoints) * 100,
         };
@@ -513,6 +515,8 @@ describe('Homework assessment', function () {
           submission_correct: true,
           instance_question_points: 3,
           instance_question_score_perc: (3 / 14) * 100,
+          instance_question_auto_points: 3,
+          instance_question_manual_points: 0,
           assessment_instance_points: 5,
           assessment_instance_score_perc: (5 / assessmentMaxPoints) * 100,
         };
@@ -540,6 +544,8 @@ describe('Homework assessment', function () {
           submission_correct: false,
           instance_question_points: 2,
           instance_question_score_perc: (2 / 11) * 100,
+          instance_question_auto_points: 2,
+          instance_question_manual_points: 0,
           assessment_instance_points: 5,
           assessment_instance_score_perc: (5 / assessmentMaxPoints) * 100,
         };
@@ -568,6 +574,8 @@ describe('Homework assessment', function () {
           submission_correct: true,
           instance_question_points: 4,
           instance_question_score_perc: (4 / 11) * 100,
+          instance_question_auto_points: 4,
+          instance_question_manual_points: 0,
           assessment_instance_points: 7,
           assessment_instance_score_perc: (7 / assessmentMaxPoints) * 100,
         };
@@ -596,6 +604,8 @@ describe('Homework assessment', function () {
           submission_correct: null,
           instance_question_points: 4,
           instance_question_score_perc: (4 / 11) * 100,
+          instance_question_auto_points: 4,
+          instance_question_manual_points: 0,
           assessment_instance_points: 7,
           assessment_instance_score_perc: (7 / assessmentMaxPoints) * 100,
         };
@@ -624,6 +634,8 @@ describe('Homework assessment', function () {
           submission_correct: true,
           instance_question_points: 8,
           instance_question_score_perc: (8 / 11) * 100,
+          instance_question_auto_points: 8,
+          instance_question_manual_points: 0,
           assessment_instance_points: 11,
           assessment_instance_score_perc: (11 / assessmentMaxPoints) * 100,
         };
@@ -652,6 +664,8 @@ describe('Homework assessment', function () {
           submission_correct: true,
           instance_question_points: 11,
           instance_question_score_perc: (11 / 11) * 100,
+          instance_question_auto_points: 11,
+          instance_question_manual_points: 0,
           assessment_instance_points: 14,
           assessment_instance_score_perc: (14 / assessmentMaxPoints) * 100,
         };
@@ -680,6 +694,8 @@ describe('Homework assessment', function () {
           submission_correct: true,
           instance_question_points: 11,
           instance_question_score_perc: (11 / 11) * 100,
+          instance_question_auto_points: 11,
+          instance_question_manual_points: 0,
           assessment_instance_points: 14,
           assessment_instance_score_perc: (14 / assessmentMaxPoints) * 100,
         };
@@ -725,6 +741,8 @@ describe('Homework assessment', function () {
           submission_correct: false,
           instance_question_points: 0,
           instance_question_score_perc: (0 / 5) * 100,
+          instance_question_auto_points: 0,
+          instance_question_manual_points: 0,
           assessment_instance_points: 14,
           assessment_instance_score_perc: (14 / assessmentMaxPoints) * 100,
         };
@@ -774,6 +792,8 @@ describe('Homework assessment', function () {
           submission_correct: true,
           instance_question_points: 1,
           instance_question_score_perc: (1 / 5) * 100,
+          instance_question_auto_points: 1,
+          instance_question_manual_points: 0,
           assessment_instance_points: 15,
           assessment_instance_score_perc: (15 / assessmentMaxPoints) * 100,
         };
@@ -801,6 +821,8 @@ describe('Homework assessment', function () {
           submission_correct: null,
           instance_question_points: 1,
           instance_question_score_perc: (1 / 5) * 100,
+          instance_question_auto_points: 1,
+          instance_question_manual_points: 0,
           assessment_instance_points: 15,
           assessment_instance_score_perc: (15 / assessmentMaxPoints) * 100,
         };
@@ -844,6 +866,8 @@ describe('Homework assessment', function () {
           submission_correct: true,
           instance_question_points: 3,
           instance_question_score_perc: (3 / 5) * 100,
+          instance_question_auto_points: 3,
+          instance_question_manual_points: 0,
           assessment_instance_points: 17,
           assessment_instance_score_perc: (17 / assessmentMaxPoints) * 100,
         };
@@ -871,6 +895,8 @@ describe('Homework assessment', function () {
           submission_correct: null,
           instance_question_points: 3,
           instance_question_score_perc: (3 / 5) * 100,
+          instance_question_auto_points: 3,
+          instance_question_manual_points: 0,
           assessment_instance_points: 17,
           assessment_instance_score_perc: (17 / assessmentMaxPoints) * 100,
         };
@@ -898,6 +924,8 @@ describe('Homework assessment', function () {
           submission_correct: true,
           instance_question_points: 9,
           instance_question_score_perc: (9 / 14) * 100,
+          instance_question_auto_points: 9,
+          instance_question_manual_points: 0,
           assessment_instance_points: 23,
           assessment_instance_score_perc: (23 / assessmentMaxPoints) * 100,
         };
@@ -925,6 +953,8 @@ describe('Homework assessment', function () {
           submission_correct: false,
           instance_question_points: 9,
           instance_question_score_perc: (9 / 14) * 100,
+          instance_question_auto_points: 9,
+          instance_question_manual_points: 0,
           assessment_instance_points: 23,
           assessment_instance_score_perc: (23 / assessmentMaxPoints) * 100,
         };
@@ -952,6 +982,8 @@ describe('Homework assessment', function () {
           submission_correct: true,
           instance_question_points: 12,
           instance_question_score_perc: (12 / 14) * 100,
+          instance_question_auto_points: 12,
+          instance_question_manual_points: 0,
           assessment_instance_points: 26,
           assessment_instance_score_perc: (26 / assessmentMaxPoints) * 100,
         };
@@ -979,6 +1011,8 @@ describe('Homework assessment', function () {
           submission_correct: false,
           instance_question_points: 12,
           instance_question_score_perc: (12 / 14) * 100,
+          instance_question_auto_points: 12,
+          instance_question_manual_points: 0,
           assessment_instance_points: 26,
           assessment_instance_score_perc: (26 / assessmentMaxPoints) * 100,
         };
@@ -1006,6 +1040,8 @@ describe('Homework assessment', function () {
           submission_correct: false,
           instance_question_points: 0,
           instance_question_score_perc: (0 / 8) * 100,
+          instance_question_auto_points: 0,
+          instance_question_manual_points: 0,
           assessment_instance_points: 26,
           assessment_instance_score_perc: (26 / assessmentMaxPoints) * 100,
         };
@@ -1034,6 +1070,8 @@ describe('Homework assessment', function () {
           submission_correct: false,
           instance_question_points: 0,
           instance_question_score_perc: (0 / 8) * 100,
+          instance_question_auto_points: 0,
+          instance_question_manual_points: 0,
           assessment_instance_points: 26,
           assessment_instance_score_perc: (26 / assessmentMaxPoints) * 100,
         };
@@ -1062,6 +1100,8 @@ describe('Homework assessment', function () {
           submission_correct: false,
           instance_question_points: 0,
           instance_question_score_perc: (0 / 8) * 100,
+          instance_question_auto_points: 0,
+          instance_question_manual_points: 0,
           assessment_instance_points: 26,
           assessment_instance_score_perc: (26 / assessmentMaxPoints) * 100,
         };
@@ -1090,6 +1130,8 @@ describe('Homework assessment', function () {
           submission_correct: true,
           instance_question_points: 3,
           instance_question_score_perc: (3 / 8) * 100,
+          instance_question_auto_points: 3,
+          instance_question_manual_points: 0,
           assessment_instance_points: 29,
           assessment_instance_score_perc: (29 / assessmentMaxPoints) * 100,
         };
@@ -1245,6 +1287,8 @@ describe('Homework assessment', function () {
             submission_correct: null,
             instance_question_points: 3,
             instance_question_score_perc: (3 / 5) * 100,
+            instance_question_auto_points: 3,
+            instance_question_manual_points: 0,
           };
         });
       });
@@ -1257,6 +1301,8 @@ describe('Homework assessment', function () {
             submission_correct: true,
             instance_question_points: 11,
             instance_question_score_perc: (11 / 11) * 100,
+            instance_question_auto_points: 11,
+            instance_question_manual_points: 0,
           };
         });
       });
@@ -1269,6 +1315,8 @@ describe('Homework assessment', function () {
             submission_correct: false,
             instance_question_points: 12,
             instance_question_score_perc: (12 / 14) * 100,
+            instance_question_auto_points: 12,
+            instance_question_manual_points: 0,
           };
         });
       });
@@ -1358,6 +1406,8 @@ describe('Homework assessment', function () {
                 instance_question_points: locals.question.points,
                 instance_question_score_perc:
                   (locals.question.points / locals.question.maxPoints) * 100,
+                instance_question_auto_points: locals.question.points,
+                instance_question_manual_points: 0,
                 assessment_instance_points: locals.totalPoints,
                 assessment_instance_score_perc: (locals.totalPoints / assessmentMaxPoints) * 100,
               };
