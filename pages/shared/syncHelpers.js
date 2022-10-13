@@ -1,5 +1,5 @@
 const ERR = require('async-stacktrace');
-const fs = require('fs');
+const fs = require('fs-extra');
 const async = require('async');
 const logger = require('../../lib/logger');
 const config = require('../../lib/config');
@@ -15,7 +15,7 @@ const debug = require('debug')('prairielearn:syncHelpers');
 
 const error = require('../../prairielib/lib/error');
 
-module.exports.pullAndUpdate = async function (locals, callback) {
+module.exports.pullAndUpdate = async function (locals) {
   const jobSequence = await serverJobs2.createJobSequence({
     course_id: locals.course.id,
     user_id: locals.user.user_id,
@@ -24,36 +24,20 @@ module.exports.pullAndUpdate = async function (locals, callback) {
     description: 'Pull from remote git repository',
   });
 
-  jobSequence.execute(async ({ runJob }) => {});
+  const gitEnv = process.env;
+  if (config.gitSshCommand != null) {
+    gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
+  }
 
-  return jobSequence.id;
-
-  serverJobs.createJobSequence(options, function (err, job_sequence_id) {
-    if (ERR(err, callback)) return;
-    callback(null, job_sequence_id);
-
-    const gitEnv = process.env;
-    if (config.gitSshCommand != null) {
-      gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
-    }
-
+  jobSequence.execute(async ({ runJob, spawnJob }) => {
     let startGitHash = null;
-    let endGitHash = null;
-
-    // We've now triggered the callback to our caller, but we
-    // continue executing below to launch the jobs themselves.
-
-    // First define the jobs.
-    //
-    // We will start with either 1A or 1B below to either clone or
-    // update the content.
-
-    const syncStage1A = function () {
-      const jobOptions = {
+    const coursePathExists = await fs.pathExists(locals.course.path);
+    if (coursePathExists) {
+      // path does not exist, start with 'git clone'
+      await spawnJob({
         course_id: locals.course.id,
         user_id: locals.user.user_id,
         authn_user_id: locals.authz_data.authn_user.user_id,
-        job_sequence_id: job_sequence_id,
         type: 'clone_from_git',
         description: 'Clone from remote git repository',
         command: 'git',
@@ -65,158 +49,99 @@ module.exports.pullAndUpdate = async function (locals, callback) {
           locals.course.path,
         ],
         env: gitEnv,
-        on_success: syncStage2,
-      };
-      serverJobs.spawnJob(jobOptions);
-    };
-
-    const syncStage1B = () => {
-      courseUtil.getOrUpdateCourseCommitHash(locals.course, (err, hash) => {
-        ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
-        startGitHash = hash;
-        syncStage1B2();
       });
-    };
+    } else {
+      // path exists, update remote origin address, then 'git fetch' and reset to latest with 'git reset'
 
-    const syncStage1B2 = function () {
-      const jobOptions = {
+      startGitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(locals.course);
+
+      await spawnJob({
         course_id: locals.course.id,
         user_id: locals.user.user_id,
         authn_user_id: locals.authz_data.authn_user.user_id,
-        job_sequence_id: job_sequence_id,
         type: 'add_git_remote_origin',
         description: 'Updating to latest remote origin address',
         command: 'git',
         arguments: ['remote', 'set-url', 'origin', locals.course.repository],
         working_directory: locals.course.path,
         env: gitEnv,
-        on_success: syncStage1B3,
-      };
-      serverJobs.spawnJob(jobOptions);
-    };
+      });
 
-    const syncStage1B3 = function () {
-      const jobOptions = {
+      await spawnJob({
         course_id: locals.course.id,
         user_id: locals.user.user_id,
         authn_user_id: locals.authz_data.authn_user.user_id,
-        job_sequence_id: job_sequence_id,
         type: 'fetch_from_git',
         description: 'Fetch from remote git repository',
         command: 'git',
         arguments: ['fetch'],
         working_directory: locals.course.path,
         env: gitEnv,
-        on_success: syncStage1B4,
-      };
-      serverJobs.spawnJob(jobOptions);
-    };
+      });
 
-    const syncStage1B4 = function () {
-      const jobOptions = {
+      await spawnJob({
         course_id: locals.course.id,
         user_id: locals.user.user_id,
         authn_user_id: locals.authz_data.authn_user.user_id,
-        job_sequence_id: job_sequence_id,
         type: 'clean_git_repo',
         description: 'Clean local files not in remote git repository',
         command: 'git',
         arguments: ['clean', '-fdx'],
         working_directory: locals.course.path,
         env: gitEnv,
-        on_success: syncStage1B5,
-      };
-      serverJobs.spawnJob(jobOptions);
-    };
+      });
 
-    const syncStage1B5 = function () {
-      const jobOptions = {
+      await spawnJob({
         course_id: locals.course.id,
         user_id: locals.user.user_id,
         authn_user_id: locals.authz_data.authn_user.user_id,
-        job_sequence_id: job_sequence_id,
         type: 'reset_from_git',
         description: 'Reset state to remote git repository',
         command: 'git',
         arguments: ['reset', '--hard', `origin/${locals.course.branch}`],
         working_directory: locals.course.path,
         env: gitEnv,
-        on_success: syncStage2,
-      };
-      serverJobs.spawnJob(jobOptions);
-    };
+      });
+    }
 
     // After either cloning or fetching and resetting from Git, we'll need
     // to load and store the current commit hash in the database
-    const syncStage2 = () => {
-      courseUtil.updateCourseCommitHash(locals.course, (err, hash) => {
-        ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
-        endGitHash = hash;
-        syncStage3();
-      });
-    };
+    const endGitHash = await courseUtil.updateCourseCommitHash(locals.course);
 
-    const syncStage3 = function () {
-      const jobOptions = {
+    let syncResult = null;
+    await runJob(
+      {
         course_id: locals.course.id,
         user_id: locals.user.user_id,
         authn_user_id: locals.authz_data.authn_user.user_id,
         type: 'sync_from_disk',
         description: 'Sync git repository to database',
-        job_sequence_id: job_sequence_id,
-        on_success: syncStage4,
-      };
-      serverJobs.createJob(jobOptions, function (err, job) {
-        if (err) {
-          logger.error('Error in createJob()', err);
-          serverJobs.failJobSequence(job_sequence_id);
-          return;
-        }
-        syncFromDisk.syncDiskToSql(
+      },
+      async (job) => {
+        syncResult = await syncFromDisk.syncDiskToSqlAsync(
           locals.course.path,
           locals.course.id,
-          job,
-          function (err, result) {
-            if (err) {
-              job.fail(err);
-              return;
-            }
-
-            const checkJsonErrors = () => {
-              if (result.hadJsonErrors) {
-                job.fail('One or more JSON files contained errors and were unable to be synced');
-              } else {
-                job.succeed();
-              }
-            };
-
-            if (config.chunksGenerator) {
-              util.callbackify(chunks.updateChunksForCourse)(
-                {
-                  coursePath: locals.course.path,
-                  courseId: locals.course.id,
-                  courseData: result.courseData,
-                  oldHash: startGitHash,
-                  newHash: endGitHash,
-                },
-                (err) => {
-                  if (err) {
-                    job.fail(err);
-                  } else {
-                    checkJsonErrors();
-                  }
-                }
-              );
-            } else {
-              checkJsonErrors();
-            }
-          }
+          job
         );
-      });
-    };
 
-    const syncStage4 = function () {
-      const jobOptions = {
+        const checkJsonErrors = () => {};
+
+        if (config.chunksGenerator) {
+          await chunks.updateChunksForCourse({
+            coursePath: locals.course.path,
+            courseId: locals.course.id,
+            courseData: syncResult.courseData,
+            oldHash: startGitHash,
+            newHash: endGitHash,
+          });
+        }
+        checkJsonErrors();
+      }
+    );
+
+    // Before erroring the job from sync errors, reload server.js files.
+    await runJob(
+      {
         course_id: locals.course.id,
         user_id: locals.user.user_id,
         authn_user_id: locals.authz_data.authn_user.user_id,
@@ -224,35 +149,19 @@ module.exports.pullAndUpdate = async function (locals, callback) {
         description: 'Reload question server.js code',
         job_sequence_id: job_sequence_id,
         last_in_sequence: true,
-      };
-      serverJobs.createJob(jobOptions, function (err, job) {
-        if (err) {
-          logger.error('Error in createJob()', err);
-          serverJobs.failJobSequence(job_sequence_id);
-          return;
-        }
+      },
+      async (job) => {
         const coursePath = locals.course.path;
-        requireFrontend.undefQuestionServers(coursePath, job, function (err) {
-          if (err) {
-            job.fail(err);
-          } else {
-            job.succeed();
-          }
-        });
-      });
-    };
-
-    // Start the first job.
-    fs.access(locals.course.path, function (err) {
-      if (err) {
-        // path does not exist, start with 'git clone'
-        syncStage1A();
-      } else {
-        // path exists, update remote origin address, then 'git fetch' and reset to latest with 'git reset'
-        syncStage1B();
+        await util.promisify(requireFrontend.undefQuestionServers)(coursePath, job);
       }
-    });
+    );
+
+    if (syncResult.hadJsonErrors) {
+      throw new Error('One or more JSON files contained errors and were unable to be synced');
+    }
   });
+
+  return jobSequence.id;
 };
 
 module.exports.gitStatus = function (locals, callback) {
