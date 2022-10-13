@@ -18,10 +18,14 @@ DECLARE
     arg_role_count integer;
     arg_role_update JSONB;
     arg_group_role_id bigint;
+    has_assigner_role_before_assessment boolean;
+    has_assigner_role_during_assessment boolean;
     minimum integer;
     maximum integer;
     role_name text;
     id bigint;
+    can_assign_roles_at_start boolean;
+    can_assign_roles_during_assessment boolean;
 BEGIN
     -- Find group id
     SELECT g.id
@@ -61,16 +65,32 @@ BEGIN
         num_assigned integer
     ) ON COMMIT DROP;
 
+    has_assigner_role_before_assessment := FALSE;
+    has_assigner_role_during_assessment := FALSE;
+
     -- Check if any roles exceed the max or fall below the min
-    FOR maximum, minimum, id, role_name IN
-        SELECT gr.maximum, gr.minimum, gr.id, gr.role_name
+    FOR maximum, minimum, id, role_name, can_assign_roles_at_start, can_assign_roles_during_assessment IN
+        SELECT gr.maximum, gr.minimum, gr.id, gr.role_name, gr.can_assign_roles_at_start, gr.can_assign_roles_during_assessment
         FROM group_roles gr
         WHERE gr.assessment_id = arg_assessment_id
     LOOP
+        -- Check if role can assign roles before and during assessments
+        IF can_assign_roles_at_start = TRUE THEN
+            has_assigner_role_before_assessment := TRUE;
+        END IF;
+        IF can_assign_roles_during_assessment = TRUE THEN
+            has_assigner_role_during_assessment := TRUE;
+        END IF;
+
         -- Get role count for role
         SELECT rc.role_count INTO arg_role_count
         FROM role_counts rc
         WHERE rc.role_id = id;
+        
+        -- If role is missing from counts, there are no assignments
+        IF arg_role_count IS NULL THEN
+            arg_role_count := 0;
+        END IF;
 
         -- Check if role count is in bounds
         IF arg_role_count > maximum OR arg_role_count < minimum THEN
@@ -78,6 +98,17 @@ BEGIN
             VALUES (role_name, minimum, maximum, arg_role_count);
         END IF;
     END LOOP;
+
+    -- If no role exists that can assign roles, add errors
+    -- FIXME: provide better errors or redesign how errors are returned
+    IF has_assigner_role_before_assessment = FALSE THEN
+        INSERT INTO group_validation_errors (role_name, minimum, maximum, num_assigned)
+        VALUES ("needs assigner before assessment", 0, 0, 0);
+    END IF;
+    IF has_assigner_role_during_assessment = FALSE THEN
+        INSERT INTO group_validation_errors (role_name, minimum, maximum, num_assigned)
+        VALUES ("needs assigner during assessment", 0, 0, 0);
+    END IF;
 
     RETURN QUERY (SELECT * FROM group_validation_errors);
 END;
