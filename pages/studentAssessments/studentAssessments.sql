@@ -158,6 +158,10 @@ WHERE
 ORDER BY 
     CASE WHEN $assessments_group_by = 'Module' THEN assessment_module_number END, 
     CASE WHEN $assessments_group_by = 'Module' THEN assessment_module_id END,
+    assessment_set_number,
+    assessment_order_by,
+    assessment_id,
+    assessment_instance_number
     -- As with the `PARTITION` above, we deliberately set `NULLS FIRST` to
     -- ensure the correct ordering of rows from `multiple_instance_assessments`.
-    assessment_set_number, assessment_order_by, assessment_id, assessment_instance_number NULLS FIRST;
+    NULLS FIRST;
