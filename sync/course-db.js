@@ -1070,10 +1070,6 @@ async function validateAssessment(assessment, questions) {
   const missingQids = new Set();
   /** @type {(qid: string) => void} */
   const checkAndRecordQid = (qid) => {
-    if (qid[0] === '@') {
-      errors.push(`Question IDs are not allowed to begin with '@'`);
-    }
-
     if (!(qid in questions)) {
       missingQids.add(qid);
     }
@@ -1277,6 +1273,11 @@ module.exports.loadQuestions = async function (coursePath) {
     validate: validateQuestion,
     recursive: true,
   });
+  for (let qid in questions) {
+    if (qid[0] === '@') {
+      infofile.addError(questions[qid], `Question IDs are not allowed to begin with '@'`);
+    }
+  }
   checkDuplicateUUIDs(
     questions,
     (uuid, ids) => `UUID "${uuid}" is used in other questions: ${ids.join(', ')}`
