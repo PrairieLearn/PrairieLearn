@@ -97,7 +97,7 @@ window.PLFileEditor.prototype.syncSettings = function () {
     }
   });
 
-  window.addEventListener('storageSync', () => {
+  window.addEventListener('pl-file-editor-settings-changed', () => {
     this.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
   });
 };
@@ -155,7 +155,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     that.editor.setTheme(theme);
     localStorage.setItem('pl-file-editor-theme', theme);
     sessionStorage.removeItem('pl-file-editor-theme-current');
-    window.dispatchEvent(new Event('storageSync'));
+    window.dispatchEvent(new Event('pl-file-editor-settings-changed'));
     that.modal.modal('hide');
   });
 
