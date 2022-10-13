@@ -17,9 +17,9 @@ const error = require('../../prairielib/lib/error');
 
 module.exports.pullAndUpdate = async function (locals) {
   const jobSequence = await serverJobs2.createJobSequence({
-    course_id: locals.course.id,
-    user_id: locals.user.user_id,
-    authn_user_id: locals.authz_data.authn_user.user_id,
+    courseId: locals.course.id,
+    userId: locals.user.user_id,
+    authnUserId: locals.authz_data.authn_user.user_id,
     type: 'sync',
     description: 'Pull from remote git repository',
   });
@@ -147,7 +147,6 @@ module.exports.pullAndUpdate = async function (locals) {
         authn_user_id: locals.authz_data.authn_user.user_id,
         type: 'reload_question_servers',
         description: 'Reload question server.js code',
-        job_sequence_id: job_sequence_id,
         last_in_sequence: true,
       },
       async (job) => {
@@ -164,58 +163,41 @@ module.exports.pullAndUpdate = async function (locals) {
   return jobSequence.id;
 };
 
-module.exports.gitStatus = function (locals, callback) {
-  const options = {
-    course_id: locals.course.id,
-    user_id: locals.user.user_id,
-    authn_user_id: locals.authz_data.authn_user.user_id,
+module.exports.gitStatus = async function (locals) {
+  const jobSequence = await serverJobs2.createJobSequence({
+    courseId: locals.course.id,
+    userId: locals.user.user_id,
+    authnUserId: locals.authz_data.authn_user.user_id,
     type: 'git_status',
     description: 'Show server git status',
-  };
-  serverJobs.createJobSequence(options, function (err, job_sequence_id) {
-    if (ERR(err, callback)) return;
-    callback(null, job_sequence_id);
-
-    // We've now triggered the callback to our caller, but we
-    // continue executing below to launch the jobs themselves.
-
-    // First define the jobs.
-
-    const statusStage1 = function () {
-      const jobOptions = {
-        course_id: locals.course.id,
-        user_id: locals.user.user_id,
-        authn_user_id: locals.authz_data.authn_user.user_id,
-        job_sequence_id: job_sequence_id,
-        type: 'describe_git',
-        description: 'Describe current git HEAD',
-        command: 'git',
-        arguments: ['show', '--format=fuller', '--quiet', 'HEAD'],
-        working_directory: locals.course.path,
-        on_success: statusStage2,
-      };
-      serverJobs.spawnJob(jobOptions);
-    };
-
-    const statusStage2 = function () {
-      const jobOptions = {
-        course_id: locals.course.id,
-        user_id: locals.user.user_id,
-        authn_user_id: locals.authz_data.authn_user.user_id,
-        type: 'git_history',
-        description: 'List git history',
-        job_sequence_id: job_sequence_id,
-        command: 'git',
-        arguments: ['log', '--all', '--graph', '--date=short', '--format=format:%h %cd%d %cn %s'],
-        working_directory: locals.course.path,
-        last_in_sequence: true,
-      };
-      serverJobs.spawnJob(jobOptions);
-    };
-
-    // Start the first job.
-    statusStage1();
   });
+
+  jobSequence.execute(async ({ spawnJob }) => {
+    await spawnJob({
+      course_id: locals.course.id,
+      user_id: locals.user.user_id,
+      authn_user_id: locals.authz_data.authn_user.user_id,
+      type: 'describe_git',
+      description: 'Describe current git HEAD',
+      command: 'git',
+      arguments: ['show', '--format=fuller', '--quiet', 'HEAD'],
+      working_directory: locals.course.path,
+    });
+
+    await spawnJob({
+      course_id: locals.course.id,
+      user_id: locals.user.user_id,
+      authn_user_id: locals.authz_data.authn_user.user_id,
+      type: 'git_history',
+      description: 'List git history',
+      command: 'git',
+      arguments: ['log', '--all', '--graph', '--date=short', '--format=format:%h %cd%d %cn %s'],
+      working_directory: locals.course.path,
+      last_in_sequence: true,
+    });
+  });
+
+  return jobSequence.id;
 };
 
 module.exports.ecrUpdate = function (locals, callback) {
