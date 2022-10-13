@@ -2056,7 +2056,7 @@ if (config.startServer) {
             await cron.stop();
 
             // Wait for all currently-executing server jobs to finish.
-            await serverJobs.close();
+            await serverJobs.stop();
           } catch (err) {
             logger.error('Error while shutting down server', err);
             Sentry.captureException(err);

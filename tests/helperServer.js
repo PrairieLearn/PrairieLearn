@@ -175,7 +175,7 @@ module.exports = {
         },
         async function () {
           debug('after(): close server jobs');
-          serverJobs.close();
+          serverJobs.stop();
         },
         function (callback) {
           debug('after(): close cache');
