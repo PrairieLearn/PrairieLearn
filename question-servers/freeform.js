@@ -1878,7 +1878,7 @@ module.exports = {
       // treated as errors - that is, the above function won't throw
       // an error, even if there are course issues. However, we
       // still want to avoid caching anything that produced a course
-      // issue, as that might be a transitive error that would go away
+      // issue, as that might be a transient error that would go away
       // if the user refreshed, even if they didn't create a new variant.
       // Also, the `Error` objects that we use for course issues can't be
       // easily round-tripped through a cache, which means that pulling
