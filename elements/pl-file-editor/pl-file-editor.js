@@ -129,7 +129,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
       }
     });
     that.modal.modal('show');
-    // listen for changes to the theme select
+    sessionStorage.setItem('pl-file-editor-theme-current', that.editor.getTheme());
     that.modal.find('#modal-' + uuid + '-themes').change(function () {
       var theme = $(this).val();
       that.editor.setTheme(theme);
@@ -140,11 +140,13 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     var theme = that.modal.find('#modal-' + uuid + '-themes').val();
     that.editor.setTheme(theme);
     localStorage.setItem('pl-file-editor-theme', theme);
+    sessionStorage.removeItem('pl-file-editor-theme-current');
     that.modal.modal('hide');
   });
 
   this.closeSettingsButton.click(function () {
-    that.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
+    that.editor.setTheme(sessionStorage.getItem('pl-file-editor-theme-current'));
+    sessionStorage.removeItem('pl-file-editor-theme-current');
   });
 };
 
