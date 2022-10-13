@@ -58,19 +58,19 @@ The `info.json` file for each question defines properties of the question. For e
 }
 ```
 
-| Property                 | Type    | Description                                                                                                                   |
-| ------------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `uuid`                   | string  | [Unique identifier](uuid.md). (Required; no default)                                                                          |
-| `type`                   | enum    | Type of the test. Must be `"v3"` for new-style questions. (Required; no default)                                              |
-| `title`                  | string  | The title of the question (e.g., `"Addition of vectors in Cartesian coordinates"`). (Required; no default)                    |
-| `topic`                  | string  | The category of question (e.g., `"Vectors"`, `"Energy"`). Like the chapter in a textbook. (Required; no default)              |
-| `tags`                   | array   | Optional extra tags associated with the question (e.g., `["secret", "concept"]`). (Optional; default: no tags)                |
-| `gradingMethod`          | enum    | The grading method used for this question. Valid values: `Internal`, `External`, or `Manual`. (Optional; default: `Internal`) |
-| `singleVariant`          | boolean | Whether the question is not randomized and only generates a single variant. (Optional; default: `false`)                      |
-| `showCorrectAnswer`      | boolean | Whether the question should display the answer panel. (Optional; default: `true`)                                             |
-| `partialCredit`          | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)                              |
-| `externalGradingOptions` | object  | Options for externally graded questions. See the [external grading docs](externalGrading.md). (Optional; default: none)       |
-| `dependencies`           | object  | External JavaScript or CSS dependencies to load. See below. (Optional; default: `{}`)                                         |
+| Property                 | Type    | Description                                                                                                                                                            |
+| ------------------------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `uuid`                   | string  | [Unique identifier](uuid.md). (Required; no default)                                                                                                                   |
+| `type`                   | enum    | Type of the test. Must be `"v3"` for new-style questions. (Required; no default)                                                                                       |
+| `title`                  | string  | The title of the question (e.g., `"Addition of vectors in Cartesian coordinates"`). (Required; no default)                                                             |
+| `topic`                  | string  | The category of question (e.g., `"Vectors"`, `"Energy"`). Like the chapter in a textbook. (Required; no default)                                                       |
+| `tags`                   | array   | Optional extra tags associated with the question (e.g., `["secret", "concept"]`). (Optional; default: no tags)                                                         |
+| `gradingMethod`          | enum    | The grading method used for auto-grading this question. Valid values: `Internal`, `External`, or `Manual` (for manual-only questions). (Optional; default: `Internal`) |
+| `singleVariant`          | boolean | Whether the question is not randomized and only generates a single variant. (Optional; default: `false`)                                                               |
+| `showCorrectAnswer`      | boolean | Whether the question should display the answer panel. (Optional; default: `true`)                                                                                      |
+| `partialCredit`          | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)                                                                       |
+| `externalGradingOptions` | object  | Options for externally graded questions. See the [external grading docs](externalGrading.md). (Optional; default: none)                                                |
+| `dependencies`           | object  | External JavaScript or CSS dependencies to load. See below. (Optional; default: `{}`)                                                                                  |
 
 For details see the [format specification for question `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoQuestion.json)
 
@@ -277,12 +277,6 @@ To disable partial credit for a question, set `"partialCredit": false` in the `i
 
 In general, it is strongly recommended to leave partial credit enabled for all questions.
 
-## Preventing questions from locking when full credit is achieved
-
-Currently, PrairieLearn will lock a question and prevent students from submitting revised answers as soon as they score 100% on the problem. This may have negative side effects for questions where students would like to continue to refine their answer (for example, by adding additional comments to their code for staff reviewers to see). A workaround for this is to enable partial credit and only award at most 99% in your grader configuration for the question. You can explain to students that the last 1% of the grade will come from staff reviews for integrity.
-
-In the future, PrairieLearn may add an option to prevent this lock from occurring even with a 100% grade. Refer to this issue: https://github.com/PrairieLearn/PrairieLearn/issues/3191
-
 ## Using Markdown in questions
 
 HTML and custom elements are great for flexibility and expressiveness. However, they're not great for working with large amounts of text, formatting text, and so on. [Markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) is a lightweight plaintext markup syntax that's ideal for authoring simple but rich text. To enable this, PrairieLearn adds a special `<markdown>` tag to questions. When a `<markdown>` block is encountered, its contents are converted to HTML. Here's an example `question.html` that utilizes this element:
@@ -442,7 +436,7 @@ Example of valid HTML:
 
 ## Options for grading student answers
 
-For most [elements] there are four different ways of grading the student answer. This applies to elements like [`pl-number-input`](elements/#pl-number-input-element) and [`pl-string-input`](elements/#pl-string-input-element) that allow students to input an answer of their choosing, but not [`pl-multiple-choice`](elements/#pl-multiple-choice-element) or [`pl-checkbox`](elements/#pl-checkbox-element) that are much more constrained. The three ways are:
+For most [elements] there are four different ways of auto-grading the student answer. This applies to elements like [`pl-number-input`](elements/#pl-number-input-element) and [`pl-string-input`](elements/#pl-string-input-element) that allow students to input an answer of their choosing, but not [`pl-multiple-choice`](elements/#pl-multiple-choice-element) or [`pl-checkbox`](elements/#pl-checkbox-element) that are much more constrained. The four ways are:
 
 1. Set the correct answer using the correct-answer attribute in `question.html`. This is for hard-coded, fixed answers. We normally want some degree of randomization of the question, so this is the least-used method.
 

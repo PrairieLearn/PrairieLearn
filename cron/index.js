@@ -85,11 +85,6 @@ module.exports = {
           config.cronIntervalCalculateAssessmentQuestionStatsSec,
       },
       {
-        name: 'calculateAssessmentMode',
-        module: require('./calculateAssessmentMode'),
-        intervalSec: 'daily',
-      },
-      {
         name: 'workspaceTimeoutStop',
         module: require('./workspaceTimeoutStop'),
         intervalSec:
