@@ -1006,10 +1006,6 @@ async function validateQuestion(question) {
   const warnings = [];
   const errors = [];
 
-  if (question.id[0] == '@') {
-    errors.push(`Question IDs are not allowed to begin with '@'`);
-  }
-
   if (question.type && question.options) {
     try {
       const schema = schemas[`questionOptions${question.type}`];
@@ -1074,6 +1070,10 @@ async function validateAssessment(assessment, questions) {
   const missingQids = new Set();
   /** @type {(qid: string) => void} */
   const checkAndRecordQid = (qid) => {
+    if (qid[0] == '@') {
+      errors.push(`Question IDs are not allowed to begin with '@'`);
+    }
+
     if (!(qid in questions)) {
       missingQids.add(qid);
     }
