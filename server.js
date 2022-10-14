@@ -24,6 +24,7 @@ const multer = require('multer');
 const filesize = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
+const util = require('util');
 const Sentry = require('@prairielearn/sentry');
 
 const logger = require('./lib/logger');
@@ -1728,6 +1729,7 @@ module.exports.startServer = async () => {
 
 module.exports.stopServer = function (callback) {
   if (!server) return callback(new Error('cannot stop an undefined server'));
+  if (!server.listening) return callback(null);
   server.close(function (err) {
     if (ERR(err, callback)) return;
     callback(null);
@@ -2049,8 +2051,8 @@ if (config.startServer) {
           // We want to proceed with termination even if something goes wrong,
           // so don't allow this function to throw.
           try {
-            // Note that this will also shut down the underlying server; see
-            // https://socket.io/docs/v4/server-api/#serverclosecallback
+            await util.promisify(server.close).call(server);
+
             await socketServer.close();
 
             // Wait for all currently-executing cron jobs to finish.
