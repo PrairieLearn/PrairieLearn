@@ -64,7 +64,7 @@ bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
 # If R package installation is specifically disabled, we'll avoid installing anything R-related.
 if [[ "${SKIP_R_PACKAGES}" != "yes" ]]; then
     echo "installing R..."
-    conda install --channel r r-essentials
+    conda install --channel r r-base r-essentials
 
     echo "installing Python packages..."
     python3 -m pip install --no-cache-dir -r /python-requirements.txt
