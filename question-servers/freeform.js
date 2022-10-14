@@ -1811,7 +1811,7 @@ module.exports = {
   },
 
   async getContext(question, course) {
-    if (question.course_id != course.id) {
+    if (question.course_id !== course.id) {
       const courseResult = await sqlDb.queryOneRowAsync('select * from pl_courses where id = $question_course_id;', {question_course_id: question.course_id});
       course = courseResult.rows[0];
     }

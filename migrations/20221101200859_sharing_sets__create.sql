@@ -11,3 +11,8 @@ CREATE TABLE IF NOT EXISTS question_sharing_sets (
     question_id BIGINT not null,
     sharing_set_id BIGINT not null
 );
+
+ALTER TABLE pl_courses ADD COLUMN IF NOT EXISTS sharing_name text;
+
+UPDATE pl_courses SET sharing_name = 'test-course' WHERE title = 'Test Course';
+
