@@ -114,6 +114,20 @@ router.post(
           res.locals.instance_question.id
         )
       );
+    } else if (req.body.__action === 'modify_rubric_settings') {
+      const params = [
+        res.locals.instance_question.assessment_question_id,
+        req.body.rubric_type,
+        !!req.body.use_rubrics,
+        req.body.starting_points == 'CUSTOM'
+          ? req.body.starting_points_custom
+          : req.body.starting_points,
+        req.body.min_points,
+        req.body.max_points,
+      ];
+      const _update_result = (await sqldb.callAsync('assessment_questions_update_rubric', params))
+        .rows[0];
+      res.redirect(req.originalUrl);
     } else if (typeof req.body.__action === 'string' && req.body.__action.startsWith('reassign_')) {
       const assigned_grader = req.body.__action.substring(9);
       const params = {

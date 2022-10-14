@@ -30,6 +30,38 @@ file_list AS (
     WHERE
         f.instance_question_id = $instance_question_id
         AND f.deleted_at IS NULL
+),
+assessment_question_rubric_data AS (
+    SELECT
+        r.id AS rubric_id,
+        TO_JSONB(r) AS rubric_data,
+        (SELECT JSONB_AGG(ri)
+         FROM rubric_items AS ri
+         WHERE ri.rubric_id = r.id AND ri.deleted_at IS NULL) AS available_rubric_items
+    FROM
+        instance_questions AS iq
+        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+        LEFT JOIN rubrics AS r ON (r.id IN (aq.manual_rubric_id, aq.auto_rubric_id))
+    WHERE
+        iq.id = $instance_question_id
+),
+instance_question_rubric_data AS (
+    SELECT
+        rg.id AS rubric_grading_id,
+        TO_JSONB(r) AS rubric_data,
+        TO_JSONB(rg) AS rubric_grading_data,
+        (SELECT JSONB_AGG(JSONB_BUILD_OBJECT('rubric_item', TO_JSONB(ri), 'rubric_grading_item', TO_JSONB(rgi)))
+         FROM
+             rubric_grading_items AS rgi
+             JOIN rubric_items AS ri ON (ri.id = rgi.rubric_item_id)
+         WHERE rgi.rubric_grading_id = rg.id
+               AND rgi.deleted_at IS NULL) AS selected_rubric_items
+    FROM
+        instance_questions AS iq
+        LEFT JOIN rubric_gradings AS rg ON (rg.id IN (iq.manual_rubric_grading_id, iq.auto_rubric_grading_id))
+        LEFT JOIN rubrics AS r ON (r.id = rg.rubric_id)
+    WHERE
+        iq.id = $instance_question_id
 )
 SELECT
     jsonb_set(to_jsonb(ai), '{formatted_date}',
@@ -63,6 +95,10 @@ SELECT
     to_jsonb(a) AS assessment,
     to_jsonb(aset) AS assessment_set,
     to_jsonb(aai) AS authz_result,
+    to_jsonb(aqrd_manual) AS assessment_question_rubric_manual,
+    to_jsonb(aqrd_auto) AS assessment_question_rubric_auto,
+    to_jsonb(iqrd_manual) AS instance_question_rubric_manual,
+    to_jsonb(iqrd_auto) AS instance_question_rubric_auto,
     assessment_instance_label(ai, a, aset) AS assessment_instance_label,
     fl.list AS file_list
 FROM
@@ -79,6 +115,10 @@ FROM
     LEFT JOIN users AS u ON (u.user_id = ai.user_id)
     LEFT JOIN users AS uag ON (uag.user_id = iq.assigned_grader)
     LEFT JOIN users AS ulg ON (ulg.user_id = iq.last_grader)
+    LEFT JOIN assessment_question_rubric_data AS aqrd_manual ON (aqrd_manual.rubric_id = aq.manual_rubric_id)
+    LEFT JOIN assessment_question_rubric_data AS aqrd_auto ON (aqrd_auto.rubric_id = aq.auto_rubric_id)
+    LEFT JOIN instance_question_rubric_data AS iqrd_manual ON (iqrd_manual.rubric_grading_id = iq.manual_rubric_grading_id)
+    LEFT JOIN instance_question_rubric_data AS iqrd_auto ON (iqrd_auto.rubric_grading_id = iq.auto_rubric_grading_id)
     JOIN LATERAL authz_assessment_instance(ai.id, $authz_data, $req_date, ci.display_timezone, a.group_work) AS aai ON TRUE
     JOIN LATERAL instance_questions_next_allowed_grade(iq.id) AS iqnag ON TRUE
     CROSS JOIN file_list AS fl

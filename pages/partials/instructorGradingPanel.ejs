@@ -23,7 +23,15 @@
              name="score_manual_points"
              value="<%= locals.manual_points ?? instance_question.manual_points %>"
              <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %> />
-      <span class="input-group-append input-group-text">/ <%= assessment_question.max_manual_points %></span>
+      <span class="input-group-append">
+        <span class="input-group-text">/ <%= assessment_question.max_manual_points %></span>
+        <% if (!locals.disable && authz_data.has_course_instance_permission_edit && course.manual_grading_visible) { %>
+        <button type="button" class="btn btn-outline-secondary"
+                onclick="$('#rubric-settings-modal-manual').modal('show');">
+          <i class="fas fa-list-check"></i>
+        </button>
+        <% } %>
+      </span>
     </div>
   </div>
   <div class="form-group js-manual-grading-percentage">
@@ -34,7 +42,15 @@
              name="score_manual_percent"
              value="<%= (locals.manual_points ?? instance_question.manual_points) * 100 / (assessment_question.max_manual_points || assessment_question.max_points) %>"
              <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %> />
-      <span class="input-group-append input-group-text">%</span>
+      <span class="input-group-append">
+        <span class="input-group-text">%</span>
+        <% if (!locals.disable && authz_data.has_course_instance_permission_edit && course.manual_grading_visible) { %>
+        <button type="button" class="btn btn-outline-secondary"
+                onclick="$('#rubric-settings-modal-manual').modal('show');">
+          <i class="fas fa-list-check"></i>
+        </button>
+        <% } %>
+      </span>
     </div>
   </div>
   <% if (assessment_question.max_auto_points > 0 || (locals.auto_points ?? instance_question.auto_points) > 0) { %>
@@ -55,7 +71,15 @@
              name="score_auto_points"
              value="<%= locals.auto_points ?? instance_question.auto_points %>"
              <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %> />
-      <span class="input-group-append input-group-text">/ <%= assessment_question.max_auto_points %></span>
+      <span class="input-group-append">
+        <span class="input-group-text">/ <%= assessment_question.max_auto_points %></span>
+        <% if (!locals.disable && authz_data.has_course_instance_permission_edit && course.manual_grading_visible) { %>
+        <button type="button" class="btn btn-outline-secondary"
+                onclick="$('#rubric-settings-modal-auto').modal('show');">
+          <i class="fas fa-list-check"></i>
+        </button>
+        <% } %>
+      </span>
     </div>
   </div>
   <div class="form-group js-manual-grading-percentage">
@@ -74,7 +98,15 @@
              name="score_auto_percent"
              value="<%= (locals.auto_points ?? instance_question.auto_points) * 100 / (assessment_question.max_auto_points || assessment_question.max_points) %>"
              <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %> />
-      <span class="input-group-append input-group-text">%</span>
+      <span class="input-group-append">
+        <span class="input-group-text">%</span>
+        <% if (!locals.disable && authz_data.has_course_instance_permission_edit && course.manual_grading_visible) { %>
+        <button type="button" class="btn btn-outline-secondary"
+                onclick="$('#rubric-settings-modal-auto').modal('show');">
+          <i class="fas fa-list-check"></i>
+        </button>
+        <% } %>
+      </span>
     </div>
   </div>
   <div class="form-group js-manual-grading-points w-100">

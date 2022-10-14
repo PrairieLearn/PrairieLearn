@@ -39,7 +39,7 @@
                 this.value * <%= assessment_question.max_auto_points %> / 100 :
                 form.find('[name=score_auto_points]').val();
             let manual_points = this.name === 'score_manual_percent' ?
-                this.value * <%= assessment_question.manual_points %> / 100 :
+                this.value * <%= assessment_question.max_manual_points %> / 100 :
                 form.find('[name=score_manual_points]').val();
             let points = Number(auto_points) + Number(manual_points);
 
@@ -48,7 +48,7 @@
                 .val(auto_points * 100 / <%= assessment_question.max_auto_points || assessment_question.max_points || 1 %>);
             form.find('[name=score_manual_points]').not(this).val(manual_points);
             form.find('[name=score_manual_percent]').not(this)
-                .val(manual_points * 100 / <%= assessment_question.manual_points || assessment_question.max_points || 1 %>);
+                .val(manual_points * 100 / <%= assessment_question.max_manual_points || assessment_question.max_points || 1 %>);
             form.find('.js-value-total-points').text(Math.round(points * 100) / 100);
             form.find('.js-value-total-percentage')
                 .text(Math.round(points * 10000 / <%= assessment_question.max_points || 1 %>) / 100);
@@ -60,6 +60,16 @@
     <div class="container-fluid">
       <%- include('../../partials/questionSyncErrorsAndWarnings'); %>
     </div>
+    <%- include('../../partials/rubricSettingsModal',
+                {type: 'manual',
+                 type_verbose: 'manual grading',
+                 rubric: assessment_question_rubric_manual,
+                 max_points: assessment_question.max_manual_points}); %>
+    <%- include('../../partials/rubricSettingsModal',
+                {type: 'auto',
+                 type_verbose: 'auto grading',
+                 rubric: assessment_question_rubric_auto,
+                 max_points: assessment_question.max_auto_points}); %>
     <div id="content" class="container">
       <% if (assessment_instance.open) { %>
       <div class="alert alert-danger" role="alert">

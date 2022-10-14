@@ -1,0 +1,108 @@
+<div class="modal" tabindex="-1" role="dialog" id="rubric-settings-modal-<%= type %>">
+  <div class="modal-dialog modal-lg border-info" role="document">
+    <form name="rubric-settings-<%= type %>" method="POST">
+      <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+      <input type="hidden" name="__action" value="modify_rubric_settings">
+      <input type="hidden" name="rubric_type" value="<%= type %>">
+      <input type="hidden" name="modified_at" value="<%= rubric?.rubric_data?.modified_at %>">
+      
+      <div class="modal-content">
+        <div class="modal-header bg-info text-light">
+          <h5 class="modal-title">Rubric settings: <%= type_verbose %></h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-check">
+            <label class="form-check-label">
+              <input class="form-check-input" name="use_rubrics" type="checkbox" value="true" <% if (rubric) { %>checked<% } %>>
+              Use rubrics
+            </label>
+          </div>
+          <div class="js-rubric-settings-<%= type %>">
+            <hr/>
+            <div class="form-check">
+              <label class="form-check-label">
+                <input class="form-check-input" name="starting_points" type="radio" value="0"
+                       <% if ((rubric?.rubric_data?.starting_points ?? 0) == 0) { %>checked<% } %>>
+                Positive grading: start at zero and add points
+              </label>
+            </div>
+            <div class="form-check">
+              <label class="form-check-label">
+                <input class="form-check-input" name="starting_points" type="radio" value="<%= max_points %>"
+                       <% if (rubric?.rubric_data?.starting_points == max_points) { %>checked<% } %>>
+                Negative grading: start at 100% (<%= max_points %> points) and subtract penalties
+              </label>
+            </div>
+            <div class="form-check">
+              <label class="form-check-label">
+                <input class="form-check-input" name="starting_points" type="radio" value="CUSTOM"
+                       <% if (![0, max_points].includes(rubric?.rubric_data?.starting_points ?? 0)) { %>checked<% } %>>
+                Custom starting points
+              </label>
+            </div>
+            <div class="form-group js-starting-points-custom-<%= type %>">
+              <label>
+                <input class="form-control" name="starting_points_custom" type="number" value="<%= rubric?.rubric_data?.starting_points ?? max_points %>">
+              </label>
+            </div>
+            <hr/>
+            <div class="form-row">
+              <div class="form-group col-6">
+                <label>
+                  Minimum points
+                  <input class="form-control" name="min_points" type="number" value="<%= rubric?.rubric_data?.min_points ?? 0 %>">
+                </label>
+                <small class="form-text">
+                  Minimum number of points to be assigned to a student
+                  from the rubric (out of <%= max_points %>). Rubric
+                  items with negative points will not cause the grade to
+                  become lower than this value.
+                </small>
+              </div>
+              <div class="form-group col-6">
+                <label>
+                  Maximum points
+                  <input class="form-control" name="max_points" type="number" value="<%= rubric?.rubric_data?.max_points ?? max_points %>">
+                </label>
+                <small class="form-text">
+                  Minimum number of points to be assigned to a student
+                  from the rubric (out of <%= max_points %>). Rubric
+                  items with positive points will not cause the grade to
+                  become higher than this value.
+                </small>
+              </div>
+            </div>
+            <!--
+            <hr/>
+            <div class="form-check">
+              <label class="form-check-label">
+                <input class="form-check-input" type="checkbox" value="true">
+                Tag all previously graded submissions to be graded again
+              </label>
+            </div>
+            -->
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Confirm</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+  $(() => {
+    $('#rubric-settings-modal-<%= type %> input[name="use_rubrics"]').change(() => {
+      $('.js-rubric-settings-<%= type %>')
+        .toggle($('#rubric-settings-modal-<%= type %> input[name="use_rubrics"]').is(':checked'));
+    }).change();
+    $('#rubric-settings-modal-<%= type %> input[name="starting_points"]').change(() => {
+      $('.js-starting-points-custom-<%= type %>')
+        .toggle($('#rubric-settings-modal-<%= type %> input[name="starting_points"]:checked').val() == 'CUSTOM');
+    }).change();
+  });
+</script>
