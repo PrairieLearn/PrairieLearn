@@ -4,6 +4,7 @@ columns
     id: bigint not null default nextval('rubrics_id_seq'::regclass)
     max_points: double precision not null
     min_points: double precision not null
+    modified_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     starting_points: double precision not null
 
 indexes
