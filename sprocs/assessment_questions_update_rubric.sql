@@ -10,11 +10,15 @@ CREATE FUNCTION
     )
 AS $$
 DECLARE
-    rubric rubrics;
+    aq_max_points DOUBLE PRECISION;
 BEGIN
 
-    SELECT CASE WHEN rubric_type = 'auto' THEN auto_rubric_id ELSE manual_rubric_id END
-    INTO rubric_id
+    SELECT
+        CASE WHEN rubric_type = 'auto' THEN auto_rubric_id ELSE manual_rubric_id END,
+        CASE WHEN rubric_type = 'auto' THEN max_auto_points ELSE max_manual_points END
+    INTO
+        rubric_id,
+        aq_max_points
     FROM assessment_questions
     WHERE id = assessment_question_id
     FOR UPDATE;
@@ -38,6 +42,14 @@ BEGIN
             (starting_points, min_points, max_points)
         VALUES
             (starting_points, min_points, max_points)
+        RETURNING id INTO rubric_id;
+
+        -- Add an initial base rubric item for correct
+        INSERT INTO rubric_items
+            (rubric_id, number, points, short_text, key_binding)
+        VALUES
+            (rubric_id, 0, aq_max_points - starting_points, 'Correct',
+             CASE WHEN rubric_type = 'auto' THEN NULL ELSE '1' END)
         RETURNING id INTO rubric_id;
 
         UPDATE assessment_questions

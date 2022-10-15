@@ -15,100 +15,19 @@
       </div>
     </label>
   </div>
-  <div class="form-group js-manual-grading-points">
-    <label>Manual Points:</label>
-    <div class="input-group">
-      <input type="number" step="any"
-             class="form-control js-grading-score-input"
-             name="score_manual_points"
-             value="<%= locals.manual_points ?? instance_question.manual_points %>"
-             <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %> />
-      <span class="input-group-append">
-        <span class="input-group-text">/ <%= assessment_question.max_manual_points %></span>
-        <% if (!locals.disable && authz_data.has_course_instance_permission_edit && course.manual_grading_visible) { %>
-        <button type="button" class="btn btn-outline-secondary"
-                onclick="$('#rubric-settings-modal-manual').modal('show');">
-          <i class="fas fa-list-check"></i>
-        </button>
-        <% } %>
-      </span>
-    </div>
-  </div>
-  <div class="form-group js-manual-grading-percentage">
-    <label>Manual Score:</label>
-    <div class="input-group">
-      <input type="number" step="any"
-             class="form-control js-grading-score-input"
-             name="score_manual_percent"
-             value="<%= (locals.manual_points ?? instance_question.manual_points) * 100 / (assessment_question.max_manual_points || assessment_question.max_points) %>"
-             <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %> />
-      <span class="input-group-append">
-        <span class="input-group-text">%</span>
-        <% if (!locals.disable && authz_data.has_course_instance_permission_edit && course.manual_grading_visible) { %>
-        <button type="button" class="btn btn-outline-secondary"
-                onclick="$('#rubric-settings-modal-manual').modal('show');">
-          <i class="fas fa-list-check"></i>
-        </button>
-        <% } %>
-      </span>
-    </div>
-  </div>
+  <%- include('rubricGradingPanel',
+      { type: 'manual', type_label: 'Manual',
+        points: locals.manual_points ?? instance_question.manual_points,
+        max_points: assessment_question.max_manual_points,
+        rubric: rubric_data_manual,
+      }); %>
   <% if (assessment_question.max_auto_points > 0 || (locals.auto_points ?? instance_question.auto_points) > 0) { %>
-  <div class="form-group js-manual-grading-points">
-    <label class="w-100">
-      Auto Points:
-      <span class="float-right js-auto-score-value-info">
-        <%= locals.auto_points ?? instance_question.auto_points %> /
-        <%= assessment_question.max_auto_points %>
-        <% if (authz_data.has_course_instance_permission_edit) { %>
-        <span class="js-enable-auto-score-edit"><i class="fas fa-pencil"></i></span>
-        <% } %>
-      </span>
-    </label>
-    <div class="input-group js-auto-score-value-input d-none">
-      <input type="number" step="any"
-             class="form-control js-grading-score-input"
-             name="score_auto_points"
-             value="<%= locals.auto_points ?? instance_question.auto_points %>"
-             <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %> />
-      <span class="input-group-append">
-        <span class="input-group-text">/ <%= assessment_question.max_auto_points %></span>
-        <% if (!locals.disable && authz_data.has_course_instance_permission_edit && course.manual_grading_visible) { %>
-        <button type="button" class="btn btn-outline-secondary"
-                onclick="$('#rubric-settings-modal-auto').modal('show');">
-          <i class="fas fa-list-check"></i>
-        </button>
-        <% } %>
-      </span>
-    </div>
-  </div>
-  <div class="form-group js-manual-grading-percentage">
-    <label class="w-100">
-      Auto Score:
-      <span class="float-right js-auto-score-value-info">
-        <%= (locals.auto_points ?? instance_question.auto_points) * 100 / (assessment_question.max_auto_points || assessment_question.max_points) %>%
-        <% if (authz_data.has_course_instance_permission_edit) { %>
-        <span class="js-enable-auto-score-edit"><i class="fas fa-pencil"></i></span>
-        <% } %>
-      </span>
-    </label>
-    <div class="input-group js-auto-score-value-input d-none">
-      <input type="number" step="any"
-             class="form-control js-grading-score-input"
-             name="score_auto_percent"
-             value="<%= (locals.auto_points ?? instance_question.auto_points) * 100 / (assessment_question.max_auto_points || assessment_question.max_points) %>"
-             <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %> />
-      <span class="input-group-append">
-        <span class="input-group-text">%</span>
-        <% if (!locals.disable && authz_data.has_course_instance_permission_edit && course.manual_grading_visible) { %>
-        <button type="button" class="btn btn-outline-secondary"
-                onclick="$('#rubric-settings-modal-auto').modal('show');">
-          <i class="fas fa-list-check"></i>
-        </button>
-        <% } %>
-      </span>
-    </div>
-  </div>
+  <%- include('rubricGradingPanel',
+      { type: 'auto', type_label: 'Auto',
+        points: locals.auto_points ?? instance_question.auto_points,
+        max_points: assessment_question.max_auto_points,
+        rubric: rubric_data_auto,
+      }); %>
   <div class="form-group js-manual-grading-points w-100">
     Total Points:
     <span class="float-right">
