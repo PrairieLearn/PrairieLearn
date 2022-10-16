@@ -7,7 +7,7 @@
     "number": "1",
     "comment": "this is a group activity, with minimum size of 1 and maximum size of 5, where students can self-assign to groups.",
     "groupWork": true,
-    "groupMinSize": 1,
+    "groupMinSize": 2,
     "groupMaxSize": 5,
     "studentGroupCreate": true,
     "studentGroupJoin": true,
