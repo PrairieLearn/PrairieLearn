@@ -7,20 +7,23 @@
       </tr>
     </thead>
     <tbody>
-      <% group_info.forEach(function (row) { %>
+      <% group_info.forEach(function (user) { %>
       <tr>
-        <td><%= row.uid %></td>
+        <td><%= user.uid %></td>
         <td>
           <% group_roles.forEach(function (role) { %>
             <input
               class="ml-2"
               type="checkbox"
-              id="<%= role.id %>-<%= row.uid %>"
-              name="<%= role.id %>-<%= row.uid %>"
+              id="<%= role.id %>-<%= user.uid %>"
+              name="<%= role.id %>-<%= user.uid %>"
               value="checked"
+              <% if (user.role_names.includes(role.role_name)) { %>
+                checked
+              <% }%>
               form="role-select-form"
             >
-            <label for="<%= role.id %>-<%= row.uid %>">
+            <label for="<%= role.id %>-<%= user.uid %>">
               <%= role.role_name %>
             </label>
           <% }) %>

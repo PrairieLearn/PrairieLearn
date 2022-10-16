@@ -78,10 +78,24 @@ router.get('/', function (req, res, next) {
             res.locals.used_join_code = used_join_code;
 
             if (usingGroupRoles) {
+              // Get a list of all the group roles in the assessment
               groupAssessmentHelper.getGroupRoles(res.locals.assessment.id, function (group_roles) {
                 res.locals.group_roles = group_roles;
                 res.locals.validationErrors = undefined;
-                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+
+                // If the user is currently tied to a group, get whether they can view the role-select table or not.
+                if (groupMember) {
+                  groupAssessmentHelper.getAssessmentLevelPermissions(
+                    res.locals.assessment.id,
+                    res.locals.user.user_id,
+                    function (permissions) {
+                      res.locals.can_view_role_table = permissions.can_assign_roles_at_start;
+                      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                    }
+                  );
+                } else {
+                  res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                }
               });
             } else {
               res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
@@ -196,7 +210,7 @@ router.post('/', function (req, res, next) {
     );
   } else if (req.body.__action === 'update_group_roles') {
     groupAssessmentHelper.updateGroupRoles(
-      req.body,
+      req.body, // contains the new role configuration
       res.locals.assessment.id,
       res.locals.user.user_id,
       res.locals.authn_user.user_id,
