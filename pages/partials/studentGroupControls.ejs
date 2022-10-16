@@ -33,7 +33,7 @@
 <% } %>
 <% } else {%>
   <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: permissions, group_info: group_info}); %>
-  <% if (usingGroupRoles) { %>
+  <% if (usingGroupRoles && can_view_role_table) { %>
     <% if (typeof validationErrors !== 'undefined' && validationErrors.length > 0) { %>
       <% validationErrors.forEach(function ({ role_name, minimum, maximum, num_assigned }) { %>
         <div class="alert alert-danger my-2" role="alert">
