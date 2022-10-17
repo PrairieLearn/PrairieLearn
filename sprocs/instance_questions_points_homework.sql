@@ -71,7 +71,7 @@ BEGIN
     FOR i in 1..length LOOP
         auto_points := auto_points + variants_points_list[i];
     END LOOP;
-    auto_points := least(auto_points, aq.max_auto_points);
+    auto_points := least(auto_points, max_auto_points);
 
     -- status
     IF correct THEN
