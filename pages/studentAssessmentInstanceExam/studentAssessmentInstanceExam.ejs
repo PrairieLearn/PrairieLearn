@@ -229,7 +229,7 @@
               </td>
               <td class="text-center"><%- include('../partials/examQuestionScore', {instance_question}); %></td>
               <% if (has_auto_grading_question && assessment.allow_real_time_grading) { %>
-                <td class="text-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, currentWeight: instance_question.points_list_original[instance_question.number_attempts], points_list: instance_question.points_list, highest_submission_score: instance_question.highest_submission_score}); %></td>
+                <td class="text-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, currentWeight: instance_question.points_list_original[instance_question.number_attempts] - instance_question.max_manual_points, points_list: instance_question.points_list.map((p) => (p - instance_question.max_manual_points)), highest_submission_score: instance_question.highest_submission_score}); %></td>
               <% } %>
               <% if (assessment.allow_real_time_grading || !assessment_instance.open) { %>
                 <% if (has_auto_grading_question && has_manual_grading_question) { %>
