@@ -118,7 +118,7 @@ router.get('/', function (req, res, next) {
     );
     res.locals.has_auto_grading_question = _.some(
       res.locals.instance_questions,
-      (q) => q.max_auto_points || q.auto_points
+      (q) => q.max_auto_points || q.auto_points || !q.max_points
     );
 
     assessment.renderText(

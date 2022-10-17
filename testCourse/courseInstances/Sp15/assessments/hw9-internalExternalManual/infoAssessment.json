@@ -22,7 +22,8 @@
       "comments": "Behavior based on separate points for manual and auto",
       "questions": [
         {"id": "internalGrade/addingNumbers2", "manualPoints": 2},
-        {"id": "manualGrade/addingNumbers2", "autoPoints": 2, "maxAutoPoints": 6}
+        {"id": "manualGrade/addingNumbers2", "autoPoints": 2, "maxAutoPoints": 6},
+        {"id": "addNumbers", "autoPoints": 0, "maxAutoPoints": 0, "manualPoints": 0}
       ]
     }
   ]

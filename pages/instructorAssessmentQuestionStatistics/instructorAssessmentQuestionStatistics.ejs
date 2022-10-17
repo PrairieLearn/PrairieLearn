@@ -132,7 +132,7 @@
                 <td class="text-center align-middle"><%- include('../partials/scorebar', {score: Math.round(row.mean_question_score)}); %></td>
                 <td class="text-center align-middle"><%- include('../partials/scorebar', {score: Math.round(row.discrimination)}); %></td>
                 <td class="text-center">
-                  <% if (row.max_auto_points > 0 || row.average_number_submissions > 0) { %>
+                  <% if (row.max_auto_points > 0 || row.max_manual_points == 0 || row.average_number_submissions > 0) { %>
                   <%= formatFloat(row.average_number_submissions, 2); %>
                   <% } else { %>
                   &mdash;
@@ -227,7 +227,7 @@
               <td class="text-center">
                 <%= formatFloat(row.discrimination, 1) %>
               </td>
-              <% if (row.max_auto_points > 0) { %>
+              <% if (row.max_auto_points > 0 || row.max_manual_points == 0) { %>
               <td class="text-center">
                 <%= formatFloat(row.some_submission_perc, 1) %>
               </td>
