@@ -8,11 +8,12 @@ DECLARE
     instance_question_id BIGINT;
     grading_method enum_grading_method;
     max_auto_points DOUBLE PRECISION;
+    max_manual_points DOUBLE PRECISION;
 BEGIN
     PERFORM variants_lock(variant_id);
 
-    SELECT v.instance_question_id, q.grading_method, aq.max_auto_points
-    INTO instance_question_id, grading_method, max_auto_points
+    SELECT v.instance_question_id, q.grading_method, aq.max_auto_points, aq.max_manual_points
+    INTO instance_question_id, grading_method, max_auto_points, max_manual_points
     FROM
         variants AS v
         JOIN questions AS q ON (q.id = v.question_id)
@@ -31,7 +32,7 @@ BEGIN
     IF instance_question_id IS NULL THEN
         IF grading_method = 'Manual' THEN RETURN; END IF;
     ELSE
-        IF COALESCE(max_auto_points, 0) = 0 THEN RETURN; END IF;
+        IF max_auto_points = 0 AND max_manual_points != 0 THEN RETURN; END IF;
     END IF;
 
     -- start with the most recent submission
