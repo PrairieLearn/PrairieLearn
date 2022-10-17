@@ -24,7 +24,7 @@ BEGIN
     -- exams don't use this, so just copy whatever was there before
     variants_points_list := iq.variants_points_list;
 
-    max_auto_points := COALESCE(aq.max_auto_points, 0);
+    max_auto_points := COALESCE(aq.max_auto_points, aq.max_points);
     max_manual_points := COALESCE(aq.max_manual_points, 0);
 
     -- Update points (instance_question will be closed when number_attempts exceeds bound,

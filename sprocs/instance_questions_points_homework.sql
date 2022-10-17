@@ -27,7 +27,7 @@ BEGIN
     SELECT * INTO iq FROM instance_questions WHERE id = instance_question_id;
     SELECT * INTO aq FROM assessment_questions WHERE id = iq.assessment_question_id;
 
-    max_auto_points := aq.max_auto_points;
+    max_auto_points := COALESCE(aq.max_auto_points, aq.max_points);
     highest_submission_score := greatest(submission_score, coalesce(iq.highest_submission_score, 0));
 
     open := TRUE;
@@ -41,8 +41,8 @@ BEGIN
         current_value := iq.current_value;
     END IF;
 
-    current_auto_value := current_value - aq.max_manual_points;
-    init_auto_points := aq.init_points - aq.max_manual_points;
+    current_auto_value := current_value - COALESCE(aq.max_manual_points, 0);
+    init_auto_points := aq.init_points - COALESCE(aq.max_manual_points, 0);
 
     -- modify variants_points_list
     variants_points_list := iq.variants_points_list;
