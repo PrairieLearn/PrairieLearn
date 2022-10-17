@@ -28,7 +28,7 @@ module.exports.run = function (callback) {
       examList,
       function (examItem, callback) {
         logger.verbose('autoFinishExams: finishing ' + examItem.assessment_instance_id, examItem);
-        // Grading was performed by the syste.
+        // Grading was performed by the system.
         const authn_user_id = null;
         // Don't require the assessment to be open. This is important to
         // ensure we correctly handle the case where the PrairieLearn process
