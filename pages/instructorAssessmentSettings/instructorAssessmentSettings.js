@@ -5,6 +5,7 @@ const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const config = require('../../lib/config');
+const QR = require('qrcode-svg');
 
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
@@ -48,6 +49,11 @@ router.get('/', function (req, res, next) {
         res.locals.course_instance.id +
         '/assessment/' +
         res.locals.assessment.id;
+      res.locals.studentLinkQRCode = new QR({
+        content: res.locals.studentLink,
+        width: 512,
+        height: 512,
+      }).svg();
       res.locals.infoAssessmentPath = encodePath(
         path.join(
           'courseInstances',

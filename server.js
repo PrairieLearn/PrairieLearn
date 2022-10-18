@@ -24,6 +24,7 @@ const multer = require('multer');
 const filesize = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
+const Sentry = require('@prairielearn/sentry');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -35,6 +36,7 @@ const externalGradingSocket = require('./lib/externalGradingSocket');
 const workspace = require('./lib/workspace');
 const sqldb = require('./prairielib/lib/sql-db');
 const migrations = require('./prairielib/lib/migrations');
+const error = require('./prairielib/error');
 const sprocs = require('./sprocs');
 const news_items = require('./news_items');
 const cron = require('./cron');
@@ -49,6 +51,7 @@ const assets = require('./lib/assets');
 const namedLocks = require('./lib/named-locks');
 const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
+const { enrichSentryScope } = require('./lib/sentry');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -80,7 +83,11 @@ module.exports.initExpress = function () {
   app.set('views', path.join(__dirname, 'pages'));
   app.set('view engine', 'ejs');
   app.set('trust proxy', config.trustProxy);
-  config.devMode = app.get('env') === 'development';
+
+  // If we're set up with Sentry, use its middleware to record requests.
+  if (config.sentryDsn) {
+    app.use(Sentry.Handlers.requestHandler());
+  }
 
   // Set res.locals variables first, so they will be available on
   // all pages including the error page (which we could jump to at
@@ -258,20 +265,22 @@ module.exports.initExpress = function () {
     logLevel: 'silent',
     logProvider: (_provider) => logger,
     router: async (req) => {
-      try {
-        const match = req.url.match(/^\/pl\/workspace\/([0-9]+)\/container\//);
-        if (!match) throw new Error(`Could not match URL: ${req.url}`);
-        const workspace_id = match[1];
-        const result = await sqldb.queryOneRowAsync(
-          `SELECT hostname FROM workspaces WHERE id = $workspace_id;`,
-          { workspace_id }
-        );
-        const url = `http://${result.rows[0].hostname}/`;
-        return url;
-      } catch (err) {
-        logger.error(`Error in router for url=${req.url}: ${err}`);
-        return 'not-matched';
+      const match = req.url.match(/^\/pl\/workspace\/([0-9]+)\/container\//);
+      if (!match) throw new Error(`Could not match URL: ${req.url}`);
+
+      const workspace_id = match[1];
+      const result = await sqldb.queryZeroOrOneRowAsync(
+        "SELECT hostname FROM workspaces WHERE id = $workspace_id AND state = 'running';",
+        { workspace_id }
+      );
+
+      if (result.rows.length === 0) {
+        // If updating this message, also update the message our Sentry
+        // `beforeSend` handler.
+        throw error.make(404, 'Workspace is not running');
       }
+
+      return `http://${result.rows[0].hostname}/`;
     },
     onProxyReq: (proxyReq) => {
       stripSensitiveCookies(proxyReq);
@@ -283,12 +292,13 @@ module.exports.initExpress = function () {
       logger.error(`Error proxying workspace request: ${err}`, {
         err,
         url: req.url,
+        originalUrl: req.url,
       });
       // Check to make sure we weren't already in the middle of sending a
       // response before replying with an error 500
       if (res && !res.headersSent) {
         if (res.status && res.send) {
-          res.status(500).send('Error proxying workspace request');
+          res.status(err.status ?? 500).send('Error proxying workspace request');
         }
       }
     },
@@ -316,9 +326,10 @@ module.exports.initExpress = function () {
   app.use('/pl/workspace/:workspace_id/container', [
     cookieParser(),
     (req, res, next) => {
+      // Needed for workspaceAuthRouter and `selectAndValidateWorkspace` middleware.
       res.locals.workspace_id = req.params.workspace_id;
       next();
-    }, // needed for workspaceAuthRouter
+    },
     workspaceAuthRouter,
     workspaceProxy,
   ]);
@@ -414,7 +425,7 @@ module.exports.initExpress = function () {
   app.use(require('./middlewares/effectiveRequestChanged'));
   app.use('/pl/oauth2login', require('./pages/authLoginOAuth2/authLoginOAuth2'));
   app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOAuth2'));
-  app.use('/pl/shibcallback', require('./pages/authCallbackShib/authCallbackShib'));
+  app.use(/\/pl\/shibcallback/, require('./pages/authCallbackShib/authCallbackShib'));
   app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
   app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
 
@@ -1612,6 +1623,32 @@ module.exports.initExpress = function () {
   app.use(require('./middlewares/notFound'));
 
   app.use(require('./middlewares/redirectEffectiveAccessDenied'));
+
+  // This should come first so that both Sentry and our own error page can
+  // read the error ID.
+  app.use((err, req, res, next) => {
+    const _ = require('lodash');
+    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+    res.locals.error_id = _.times(12, () => _.sample(chars)).join('');
+
+    next(err);
+  });
+
+  if (config.sentryDsn) {
+    // We need to add our own handler here to ensure that we add the appropriate
+    // information to the current Sentry scope.
+    //
+    // Note that this is typically done by our `logResponse` middleware, but
+    // that doesn't run soon enough for the Sentry error handler to pick up.
+    app.use((err, req, res, next) => {
+      enrichSentryScope(req, res);
+      next(err);
+    });
+    app.use(Sentry.Handlers.errorHandler());
+  }
+
+  // Note that the Sentry error handler should come before our error page.
   app.use(require('./pages/error/error'));
 
   return app;
@@ -1722,6 +1759,30 @@ if (config.startServer) {
           ...config,
           serviceName: 'prairielearn',
         });
+
+        // Same with Sentry configuration.
+        if (config.sentryDsn) {
+          await Sentry.init({
+            dsn: config.sentryDsn,
+            environment: config.sentryEnvironment,
+            beforeSend: (event) => {
+              // This will be necessary until we can consume the following change:
+              // https://github.com/chimurai/http-proxy-middleware/pull/823
+              //
+              // The following error message should match the error that's thrown
+              // from the `router` function in our `http-proxy-middleware` config.
+              if (
+                event.exception?.values?.some(
+                  (value) => value.type === 'Error' && value.value === 'Workspace is not running'
+                )
+              ) {
+                return null;
+              }
+
+              return event;
+            },
+          });
+        }
 
         if (config.logFilename) {
           logger.addFileLogging(config.logFilename);
@@ -1861,12 +1922,19 @@ if (config.startServer) {
           callback(null);
         });
       },
+      // We need to initialize these first, as the code callers require these
+      // to be set up.
       function (callback) {
-        cron.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+        load.initEstimator('request', 1);
+        load.initEstimator('authed_request', 1);
+        load.initEstimator('python', 1, false);
+        load.initEstimator('python_worker_active', 1);
+        load.initEstimator('python_worker_idle', 1, false);
+        load.initEstimator('python_callback_waiting', 1);
+        callback(null);
       },
+      async () => await codeCaller.init(),
+      async () => await assets.init(),
       (callback) => {
         redis.init((err) => {
           if (ERR(err, callback)) return;
@@ -1879,42 +1947,17 @@ if (config.startServer) {
           callback(null);
         });
       },
-      (callback) => {
-        externalGrader.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        if (!config.externalGradingEnableResults) return callback(null);
-        externalGraderResults.init((err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      async () => await assets.init(),
-      function (callback) {
-        load.initEstimator('request', 1);
-        load.initEstimator('authed_request', 1);
-        load.initEstimator('python', 1, false);
-        load.initEstimator('python_worker_active', 1);
-        load.initEstimator('python_worker_idle', 1, false);
-        load.initEstimator('python_callback_waiting', 1);
-        callback(null);
-      },
-      async () => {
-        await codeCaller.init();
-      },
-      async () => {
-        logger.verbose('Starting server...');
-        await module.exports.startServer();
-      },
+      async () => await freeformServer.init(),
       function (callback) {
         if (!config.devMode) return callback(null);
         module.exports.insertDevUser(function (err) {
           if (ERR(err, callback)) return;
           callback(null);
         });
+      },
+      async () => {
+        logger.verbose('Starting server...');
+        await module.exports.startServer();
       },
       function (callback) {
         socketServer.init(server, function (err) {
@@ -1924,6 +1967,12 @@ if (config.startServer) {
       },
       function (callback) {
         externalGradingSocket.init(function (err) {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
+      },
+      (callback) => {
+        externalGrader.init(function (err) {
           if (ERR(err, callback)) return;
           callback(null);
         });
@@ -1939,15 +1988,26 @@ if (config.startServer) {
         nodeMetrics.init();
         callback(null);
       },
-      async () => {
-        await freeformServer.init();
+      // These should be the last things to start before we actually start taking
+      // requests, as they may actually end up executing course code.
+      (callback) => {
+        if (!config.externalGradingEnableResults) return callback(null);
+        externalGraderResults.init((err) => {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
+      },
+      function (callback) {
+        cron.init(function (err) {
+          if (ERR(err, callback)) return;
+          callback(null);
+        });
       },
     ],
     function (err, data) {
       if (err) {
         logger.error('Error initializing PrairieLearn server:', err, data);
-        logger.error('Exiting...');
-        process.exit(1);
+        throw err;
       } else {
         logger.info('PrairieLearn server ready, press Control-C to quit');
         if (config.devMode) {
