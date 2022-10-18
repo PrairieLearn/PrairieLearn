@@ -41,15 +41,3 @@ INSERT INTO course_sharing_sets
     select
         id, 1
     from pl_courses where title = 'Example Course';
-
-
-
--- TODO rewrite this to be more efficient?
-select q.qid from
-questions as q
-join question_sharing_sets as qss on q.id = qss.question_id
-join sharing_sets as ss on qss.sharing_set_id = ss.id
-join course_sharing_sets as css on ss.id = css.sharing_set_id
-where css.course_id = 3 -- TODO: update this to use the course id of the current course!
-and q.course_id = (select id from pl_courses where sharing_name = 'test-course');
-
