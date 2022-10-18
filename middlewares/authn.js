@@ -74,6 +74,8 @@ module.exports = function (req, res, next) {
         return next();
       }
     );
+
+    return;
   }
 
   // bypass auth for local /pl/ serving
