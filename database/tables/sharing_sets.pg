@@ -3,7 +3,6 @@ columns
     course_id: bigint not null
     description: text
     name: text
-    number: integer
 
 indexes
     sharing_sets_pkey: PRIMARY KEY (id) USING btree (id)
