@@ -277,14 +277,10 @@ async.series(
         var key = [filename, true];
         update_queue[key] = { action: 'delete' };
       });
-      watcher.on('error', (err) => {
+      watcher.on('error', async (err) => {
         // Handle errors
-        markSelfUnhealthy(err, (err2) => {
-          if (err2) {
-            logger.error(`Error while handling watcher error: ${err2}`);
-          }
-          logger.error(`Watcher error: ${err}`);
-        });
+        logger.error('Error watching files', err);
+        await markSelfUnhealthy(err);
       });
       async function autoUpdateJobManagerTimeout() {
         const timeout_id = setTimeout(() => {
@@ -295,8 +291,7 @@ async.series(
         try {
           await _autoUpdateJobManager();
         } catch (err) {
-          logger.error(`Error from _autoUpdateJobManager(): ${err}`);
-          logger.error(`PREVIOUSLY FATAL ERROR: Error from _autoUpdateJobManager(): ${err}`);
+          logger.error('Error in _autoUpdateJobManager()', err);
         }
         clearTimeout(timeout_id);
         setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
@@ -376,7 +371,7 @@ async.series(
     if (err) {
       Sentry.captureException(err);
       logger.error('Error initializing workspace host:', err, data);
-      markSelfUnhealthyAsync(err);
+      markSelfUnhealthy(err);
     } else {
       logger.info('Workspace host ready');
     }
@@ -405,7 +400,7 @@ async function pushContainerContentsToS3(workspace) {
     );
   } catch (err) {
     // Ignore any errors that may occur when the directory doesn't exist
-    logger.error(`Error uploading directory: ${err}`);
+    logger.error(`Error uploading directory for workspace ${workspace.id}`, err);
   }
 }
 
@@ -532,19 +527,19 @@ async function dockerAttemptKillAndRemove(input) {
   try {
     name = (await container.inspect()).Name.substring(1);
   } catch (err) {
-    debug(`Couldn't obtain container name: ${err}`);
+    logger.error('Error obtaining container name', err);
   }
 
   try {
     await container.kill();
   } catch (err) {
-    debug(`Couldn't kill container: ${err}`);
+    logger.error('Error killing container', err);
   }
 
   try {
     await container.remove();
   } catch (err) {
-    debug(`Couldn't remove stopped container: ${err}`);
+    logger.error('Error removing stopped container', err);
   }
 
   if (name) {
@@ -552,7 +547,7 @@ async function dockerAttemptKillAndRemove(input) {
     try {
       await fsPromises.rmdir(workspaceJobPath, { recursive: true });
     } catch (err) {
-      debug(`Couldn't remove directory "${workspaceJobPath}": ${err}`);
+      logger.error(`Error removing directory ${workspaceJobPath}`, err);
     }
   }
 }
@@ -563,21 +558,21 @@ async function dockerAttemptKillAndRemove(input) {
  *
  * @param {Error | string} reason The reason that this host is unhealthy
  */
-async function markSelfUnhealthyAsync(reason) {
+async function markSelfUnhealthy(reason) {
   try {
+    Sentry.captureException(reason);
     const params = {
       instance_id: workspace_server_settings.instance_id,
       unhealthy_reason: reason,
     };
     await sqldb.queryAsync(sql.mark_host_unhealthy, params);
-    logger.warn(`Marked self as unhealthy: ${reason}`);
+    logger.warn('Marked self as unhealthy', reason);
   } catch (err) {
     // This could error if we don't even have a DB connection. In that case, we
     // should let the main server mark us as unhealthy.
-    logger.error(`Could not mark self as unhealthy: ${err}`);
+    logger.error('Could not mark self as unhealthy', err);
   }
 }
-const markSelfUnhealthy = util.callbackify(markSelfUnhealthyAsync);
 
 /**
  * Looks up a workspace object by the workspace id.
@@ -857,12 +852,8 @@ async function _autoUpdateJobManager() {
   try {
     await async.parallel(jobs);
   } catch (err) {
-    markSelfUnhealthy(err, (err2) => {
-      if (err2) {
-        logger.error(`Error while handling error: ${err2}`);
-      }
-      logger.error(`Error uploading files to S3:\n${err}`);
-    });
+    logger.error(`Error uploading files to S3`, err);
+    await markSelfUnhealthy(err);
   }
 }
 
@@ -1164,7 +1155,7 @@ function _createContainer(workspace, callback) {
           try {
             await fsPromises.access(workspaceJobPath);
           } catch (err) {
-            throw Error('Could not access workspace files.');
+            throw Error('Could not access workspace files.', { cause: err });
           }
         }
       },
@@ -1303,6 +1294,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
           await _getInitialFilesAsync(workspace);
         }
       } catch (err) {
+        logger.error(`Error fetching files from S3 for workspace ${workspace_id}`, err);
         // Don't set host to unhealthy, we've probably bungled something up with S3.
         workspaceHelper.updateState(
           workspace_id,
@@ -1318,6 +1310,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       workspace.launch_port = await _allocateContainerPort(workspace);
       workspace.settings = await _getWorkspaceSettingsAsync(workspace.id);
     } catch (err) {
+      logger.error(`Error configuring workspace ${workspace_id}`, err);
       workspaceHelper.updateState(
         workspace_id,
         'stopped',
@@ -1329,6 +1322,8 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
     try {
       await _pullImageAsync(workspace);
     } catch (err) {
+      const image = workspace.settings.workspace_image;
+      logger.error(`Error pulling image ${image} for workspace ${workspace_id}`, err);
       workspaceHelper.updateState(
         workspace_id,
         'stopped',
@@ -1346,6 +1341,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       });
       workspace.container = await _createContainerAsync(workspace);
     } catch (err) {
+      logger.error(`Error creating container for workspace ${workspace.id}`, err);
       workspaceHelper.updateState(
         workspace_id,
         'stopped',
@@ -1360,6 +1356,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       debug(`init: container initialized for workspace_id=${workspace_id}`);
       workspaceHelper.updateState(workspace_id, 'running', null);
     } catch (err) {
+      logger.error(`Error starting container for workspace ${workspace.id}`, err);
       workspaceHelper.updateState(
         workspace_id,
         'stopped',
@@ -1368,7 +1365,8 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       return; // don't set host to unhealthy
     }
   } catch (err) {
-    markSelfUnhealthyAsync(err);
+    logger.error(`Error initializing workspace ${workspace_id}; marking self as unhealthy`);
+    await markSelfUnhealthy(err);
   }
 }
 
