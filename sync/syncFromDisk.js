@@ -62,7 +62,7 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
   console.log(questionIds);
   const sharedQuestionRows = await sqldb.queryAsync('select directory, id from questions where course_id = 2::bigint;', []);
   for (let row of sharedQuestionRows.rows) {
-    questionIds['@testCourse/' + row['directory']] = row.id; // TODO what to put here? more info on the question?
+    questionIds['@test-course/' + row['directory']] = row.id; // TODO what to put here? more info on the question?
   }
 
   await perf.timedAsync('syncTags', () => syncTags.sync(courseId, courseData, questionIds));
