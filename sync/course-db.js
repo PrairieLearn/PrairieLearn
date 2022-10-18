@@ -8,11 +8,12 @@ const Ajv = require('ajv').default;
 const betterAjvErrors = require('better-ajv-errors').default;
 const { parseISO, isValid, isAfter, isFuture } = require('date-fns');
 const { default: chalkDefault } = require('chalk');
-const sqlDb = require('../prairielib/lib/sql-db');
+const sqldb = require('../prairielib/lib/sql-db');
 
 const schemas = require('../schemas');
 const infofile = require('./infofile');
 const jsonLoad = require('../lib/json-load');
+const question = require('../lib/question');
 const perf = require('./performance')('course-db');
 
 const chalk = new chalkDefault.constructor({ enabled: true, level: 3 });
@@ -422,21 +423,12 @@ const FILE_UUID_REGEX =
 
 /**
  * @param {string} courseDir
+ * @param {number} courseId
  * @returns {Promise<CourseData>}
  */
-module.exports.loadFullCourse = async function (courseDir) {
+module.exports.loadFullCourse = async function (courseDir, courseId) {
   const courseInfo = await module.exports.loadCourseInfo(courseDir);
   perf.start('loadQuestions');
-
-  // TODO: use course slug to look up the numeric ID instead of hard-coding it
-  // TODO: load shared questions in parallel with questions from the course?
-  // TODO: only load questions that are *supposed* to be shared
-  const sharedQuestionRows = await sqlDb.queryAsync('select * from questions where course_id = 2::bigint;', []);
-  const sharedQuestions = {};
-  for (let row of sharedQuestionRows.rows) {
-    sharedQuestions['@testCourse/' + row['directory']] = row; // TODO what to put here? more info on the question?
-  }
-
   const questions = await module.exports.loadQuestions(courseDir);
   perf.end('loadQuestions');
   const courseInstanceInfos = await module.exports.loadCourseInstances(courseDir);
@@ -448,7 +440,7 @@ module.exports.loadFullCourse = async function (courseDir) {
       courseDir,
       courseInstanceId,
       questions,
-      sharedQuestions
+      courseId
     );
     const courseInstance = {
       courseInstance: courseInstanceInfos[courseInstanceId],
@@ -1039,7 +1031,7 @@ async function validateQuestion(question) {
  * @param {{ [qid: string]: any }} questions
  * @returns {Promise<{ warnings: string[], errors: string[] }>}
  */
-async function validateAssessment(assessment, questions, sharedQuestions={}) {
+async function validateAssessment(assessment, questions, courseId) {
   const warnings = [];
   const errors = [];
 
@@ -1080,22 +1072,55 @@ async function validateAssessment(assessment, questions, sharedQuestions={}) {
     });
   }
 
+  const importedQuestions = {}
   const foundQids = new Set();
   const duplicateQids = new Set();
   const missingQids = new Set();
-  /** @type {(qid: string) => void} */
-  const checkAndRecordQid = (qid) => {
-    if (!(qid in questions || qid in sharedQuestions)) {
+  /** @type {(sourceCourse: string, qid: string) => Promise<boolean>} */
+  const checkImportedQid = async (sourceCourse, qid) => {
+    let query = `select q.qid from
+      questions as q
+      join question_sharing_sets as qss on q.id = qss.question_id
+      join sharing_sets as ss on qss.sharing_set_id = ss.id
+      join course_sharing_sets as css on ss.id = css.sharing_set_id
+      where css.course_id = $courseId
+      and q.course_id = (select id from pl_courses where sharing_name = $sourceCourse);`
+
+    if (!(sourceCourse in importedQuestions)) {
+      let result = await sqldb.queryAsync(query, {courseId: courseId, sourceCourse: sourceCourse})
+      let questions = new Set();
+      for (let row of result.rows) {
+        questions.add(row['qid'])
+      }
+      importedQuestions[sourceCourse] = questions;
+    }
+    return importedQuestions[sourceCourse].has(qid);
+  }
+  /** @type {(qid: string) => Promise<void>} */
+  const checkAndRecordQid = async (qid) => {
+    if (qid[0] == '@') {
+      const firstSlash = qid.indexOf('/');
+      const sourceCourse = qid.substring(1, firstSlash);
+      const questionDirectory = qid.substring(firstSlash + 1, qid.length);
+      const inImportedCourse = await checkImportedQid(sourceCourse, questionDirectory);
+
+      // TODO: give a more verbose error message if the reason the question isn't found
+      // is because the course slug is invalid/doesn't exist? or just give the same message?
+      if (!inImportedCourse) {
+        missingQids.add(qid);
+      }
+    } else if (!(qid in questions)) {
       missingQids.add(qid);
     }
+
     if (!foundQids.has(qid)) {
       foundQids.add(qid);
     } else {
       duplicateQids.add(qid);
     }
   };
-  (assessment.zones || []).forEach((zone) => {
-    (zone.questions || []).map((zoneQuestion) => {
+  await Promise.all((assessment.zones || []).map(async (zone) => {
+    await Promise.all((zone.questions || []).map(async (zoneQuestion) => {
       /** @type {number | number[]} */
       const autoPoints = zoneQuestion.autoPoints ?? zoneQuestion.points;
       if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
@@ -1110,7 +1135,7 @@ async function validateAssessment(assessment, questions, sharedQuestions={}) {
       if ('alternatives' in zoneQuestion && 'id' in zoneQuestion) {
         errors.push('Cannot specify both "alternatives" and "id" in one question');
       } else if ('alternatives' in zoneQuestion) {
-        zoneQuestion.alternatives.forEach((alternative) => checkAndRecordQid(alternative.id));
+        await Promise.all(zoneQuestion.alternatives.map(async (alternative) =>  await checkAndRecordQid(alternative.id)));
         alternatives = zoneQuestion.alternatives.map((alternative) => {
           /** @type {number | number[]} */
           const autoPoints = alternative.autoPoints ?? alternative.points;
@@ -1128,7 +1153,7 @@ async function validateAssessment(assessment, questions, sharedQuestions={}) {
           };
         });
       } else if ('id' in zoneQuestion) {
-        checkAndRecordQid(zoneQuestion.id);
+        await checkAndRecordQid(zoneQuestion.id);
         alternatives = [
           {
             points: zoneQuestion.points,
@@ -1185,8 +1210,8 @@ async function validateAssessment(assessment, questions, sharedQuestions={}) {
           }
         }
       });
-    });
-  });
+    }));
+  }));
 
   if (duplicateQids.size > 0) {
     errors.push(
@@ -1331,11 +1356,12 @@ module.exports.loadCourseInstances = async function (coursePath) {
  * @param {string} coursePath
  * @param {string} courseInstance
  * @param {{ [qid: string]: any }} questions
+ * @param {number} courseId
  */
-module.exports.loadAssessments = async function (coursePath, courseInstance, questions, sharedQuestions={}) {
+module.exports.loadAssessments = async function (coursePath, courseInstance, questions, courseId) {
   const assessmentsPath = path.join('courseInstances', courseInstance, 'assessments');
   /** @type {(assessment: Assessment) => Promise<{ warnings?: string[], errors?: string[] }>} */
-  const validateAssessmentWithQuestions = (assessment) => validateAssessment(assessment, questions, sharedQuestions);
+  const validateAssessmentWithQuestions = (assessment) => validateAssessment(assessment, questions, courseId);
   /** @type {{ [tid: string]: InfoFile<Assessment> }} */
   const assessments = await loadInfoForDirectory({
     coursePath,

@@ -43,7 +43,7 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
   perf.start('sync');
 
   const courseData = await perf.timedAsync('loadCourseData', () =>
-    courseDB.loadFullCourse(courseDir)
+    courseDB.loadFullCourse(courseDir, courseId)
   );
   // Write any errors and warnings to sync log
   courseDB.writeErrorsAndWarningsForCourseData(courseId, courseData, (line) =>
@@ -59,6 +59,7 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
     syncQuestions.sync(courseId, courseData)
   );
 
+  console.log(questionIds);
   const sharedQuestionRows = await sqldb.queryAsync('select directory, id from questions where course_id = 2::bigint;', []);
   for (let row of sharedQuestionRows.rows) {
     questionIds['@testCourse/' + row['directory']] = row.id; // TODO what to put here? more info on the question?
