@@ -19,10 +19,14 @@ BEGIN
         v.instance_question_id = instance_questions_select_variant.instance_question_id
         AND (NOT require_open OR v.open)
 <<<<<<< HEAD
+<<<<<<< HEAD
         AND v.broken_at IS NULL
 =======
         AND NOT v.broken_at IS NULL
 >>>>>>> Moved over files
+=======
+        AND v.broken_at IS NULL
+>>>>>>> Fix get broken variant error
     ORDER BY v.date DESC
     LIMIT 1;
 END;
