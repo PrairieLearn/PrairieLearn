@@ -2021,12 +2021,7 @@ if (config.startServer) {
         });
       },
       async () => workspace.init(),
-      function (callback) {
-        serverJobs.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => serverJobs.init(),
       function (callback) {
         nodeMetrics.init();
         callback(null);

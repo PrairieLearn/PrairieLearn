@@ -224,7 +224,7 @@ module.exports.writeCourseToTempDirectory = async function (courseData) {
 module.exports.writeCourseToDirectory = async function (courseData, coursePath) {
   await fs.emptyDir(coursePath);
 
-  // courseInfo.json
+  // infoCourse.json
   const courseInfoPath = path.join(coursePath, 'infoCourse.json');
   await fs.writeJSON(courseInfoPath, courseData.course);
 

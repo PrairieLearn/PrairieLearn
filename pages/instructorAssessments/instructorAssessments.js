@@ -65,6 +65,7 @@ router.get('/:filename', function (req, res, next) {
       course_instance_id: res.locals.course_instance.id,
       authz_data: res.locals.authz_data,
       req_date: res.locals.req_date,
+      assessments_group_by: res.locals.course_instance.assessments_group_by,
     };
     sqldb.query(sql.select_assessments, params, function (err, result) {
       if (ERR(err, next)) return;
@@ -158,7 +159,7 @@ router.get('/:filename', function (req, res, next) {
       }
     );
   } else {
-    next(new Error('Unknown filename: ' + req.params.filename));
+    next(error.make(404, 'Unknown filename: ' + req.params.filename));
   }
 });
 

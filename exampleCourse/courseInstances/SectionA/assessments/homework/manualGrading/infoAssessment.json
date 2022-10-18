@@ -1,0 +1,62 @@
+{
+    "uuid": "4975d809-5a1d-460d-9e9a-313a6c657f92",
+    "type": "Homework",
+    "title": "Homework with autograded and manually graded questions",
+    "set": "Homework",
+    "module": "IntroModule",
+    "number": "3",
+    "allowAccess": [
+        {
+            "comment": "Set end date for 100% credit",
+            "mode": "Public",
+            "credit": 100,
+            "startDate": "2021-01-01T00:00:01",
+            "endDate": "2023-11-15T23:59:59"
+        },
+        {
+            "comment": "Set later end date for reduced credit",
+            "mode": "Public",
+            "credit": 50,
+            "startDate": "2021-01-01T00:00:01",
+            "endDate": "2023-11-30T23:59:59"
+        },
+        {
+            "comment": "Set another end date, potentially end of the term, for zero credit (can practice, but no longer earn points for the assessement)",
+            "mode": "Public",
+            "credit": 0,
+            "startDate": "2021-01-01T00:00:01",
+            "endDate": "2023-12-31T23:59:59"
+        }
+    ],
+    "zones": [
+        {
+            "title": "Zone 1: Unlimited question variants with one single attempt",
+            "questions": [
+                {"id": "demo/annotated/mathNumbersConcept-all", "points": 1,"maxPoints": 6},
+                {"id": "demo/annotated/engBinary", "points": 1, "maxPoints": 3},
+                {"id": "demo/annotated/mathFunctionDerivative", "points": 1,"maxPoints": 6}
+            ]
+        },
+        {
+            "title": "Zone 2: Unlimited question variants with prescribed number of attempts",
+            "questions": [
+                {"id": "demo/annotated/engVectorDrawing", "points": 2, "maxPoints": 6, "triesPerVariant": 2},
+                {"id": "demo/annotated/engBeamStress", "points": 2, "maxPoints": 6, "triesPerVariant": 3}
+            ]
+        },
+        {
+            "title": "Zone 3: Single question variant with unlimited number of attempts",
+            "questions": [
+                {"id": "demo/annotated/engMarkovBrewing", "points": 8}
+            ]
+        },
+        {
+            "title": "Zone 4: Manually graded questions",
+            "questions": [
+                {"id": "demo/autograder/codeUpload",           "autoPoints": 10, "manualPoints": 5},
+                {"id": "demo/fileDownloadUpload",              "points": 10},
+                {"id": "demo/markdownEditorLivePreview",       "points": 5}
+            ]
+        }
+    ]
+}
