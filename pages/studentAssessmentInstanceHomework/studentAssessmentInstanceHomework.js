@@ -60,7 +60,7 @@ router.get('/', function (req, res, next) {
       );
       res.locals.has_auto_grading_question = _.some(
         res.locals.questions,
-        (q) => q.max_auto_points || q.auto_points
+        (q) => q.max_auto_points || q.auto_points || !q.max_points
       );
 
       debug('rendering assessment text');

@@ -42,7 +42,7 @@ export {
   Thread,
   User,
   AddRequestDataToEventOptions,
-  CrossPlatformRequest,
+  PolymorphicRequest,
   NodeOptions,
 } from '@sentry/node';
 
