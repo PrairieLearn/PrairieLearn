@@ -1076,8 +1076,12 @@ async function validateAssessment(assessment, questions, courseId) {
   const foundQids = new Set();
   const duplicateQids = new Set();
   const missingQids = new Set();
+
+  // TODO: should we hold off on this check until sync time in order to avoid
+  // calling out to the database here?
   /** @type {(sourceCourse: string, qid: string) => Promise<boolean>} */
   const checkImportedQid = async (sourceCourse, qid) => {
+    // TODO: move query to seperate file
     let query = `select q.qid from
       questions as q
       join question_sharing_sets as qss on q.id = qss.question_id
