@@ -67,6 +67,11 @@ module.exports = function (req, res, next) {
           res.locals.authn_provider_name = 'LoadTest';
           res.locals.authn_is_administrator = userResult.rows[0].is_administrator;
           checkAdministratorAccess(req, res);
+
+          // Enroll the load test user in the example course.
+          await sqldb.queryAsync(sql.enroll_user_in_example_course, {
+            user_id: result.rows[0].user_id,
+          });
         },
       ],
       (err) => {
