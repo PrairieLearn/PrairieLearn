@@ -324,8 +324,6 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
     questionIds['@' + row.sharing_name + '/' + row.qid] = row.id;
   }
 
-  console.log(questionIds);
-
   const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
     return JSON.stringify([
       tid,
