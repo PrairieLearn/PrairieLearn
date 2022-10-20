@@ -39,8 +39,8 @@ FROM
     LEFT JOIN LATERAL (
         SELECT *
         FROM grading_jobs
-        WHERE submission_id = s.id
-        ORDER BY id DESC
+        WHERE submission_id = s.id AND grading_method != 'Manual'
+        ORDER BY date DESC, id DESC
         LIMIT 1
     ) AS gj ON TRUE
 WHERE
@@ -82,8 +82,8 @@ WITH next_iq AS (
 last_grading_job AS (
     SELECT *
     FROM grading_jobs AS gj
-    WHERE gj.submission_id = $submission_id
-    ORDER BY gj.id DESC
+    WHERE gj.submission_id = $submission_id AND grading_method != 'Manual'
+    ORDER BY gj.date DESC, gj.id DESC
     LIMIT 1
 )
 SELECT
