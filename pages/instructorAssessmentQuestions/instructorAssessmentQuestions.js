@@ -31,7 +31,7 @@ router.get('/', function (req, res, next) {
 });
 
 router.post('/', function(req,res,next) {
-  if (req.body.__action == 'break') {
+  if (req.body.__action === 'break') {
       var params = {
         'assessment_question_id': req.body.__assessment_question_id,
         'authn_user_id': res.locals.authn_user.user_id,
