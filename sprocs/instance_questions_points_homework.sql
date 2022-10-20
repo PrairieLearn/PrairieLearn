@@ -77,9 +77,9 @@ BEGIN
     IF correct THEN
         status := 'correct';
     ELSE
-        -- use current status unless it's 'unanswered'
+        -- use current status unless it's 'unanswered' or 'saved'
         status := iq.status;
-        IF iq.status = 'unanswered' THEN
+        IF iq.status IN ('unanswered', 'saved') THEN
             status := 'incorrect';
         END IF;
     END IF;
