@@ -26,5 +26,4 @@ INSERT INTO enrollments
         u.user_id = $user_id
         AND c.example_course IS TRUE
 )
-ON CONFLICT DO NOTHING
-RETURNING *;
+ON CONFLICT DO NOTHING;
