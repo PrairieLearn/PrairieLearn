@@ -63,7 +63,8 @@ router.get('/', function (req, res, next) {
             group_info,
             join_code,
             start,
-            used_join_code
+            used_join_code,
+            validationErrors
           ) {
             if (ERR(err, next)) return;
             res.locals.permissions = permissions;
@@ -76,12 +77,13 @@ router.get('/', function (req, res, next) {
             res.locals.join_code = join_code;
             res.locals.start = start;
             res.locals.used_join_code = used_join_code;
+            res.locals.validationErrors = validationErrors;
 
             if (usingGroupRoles) {
               // Get a list of all the group roles in the assessment
+              // TODO: Maybe rewrite async/await
               groupAssessmentHelper.getGroupRoles(res.locals.assessment.id, function (group_roles) {
                 res.locals.group_roles = group_roles;
-                res.locals.validationErrors = undefined;
 
                 // If the user is currently tied to a group, get whether they can view the role-select table or not.
                 if (groupMember) {
@@ -210,52 +212,13 @@ router.post('/', function (req, res, next) {
     );
   } else if (req.body.__action === 'update_group_roles') {
     groupAssessmentHelper.updateGroupRoles(
-      req.body, // contains the new role configuration
+      req.body,
       res.locals.assessment.id,
       res.locals.user.user_id,
       res.locals.authn_user.user_id,
-      function (err, validationErrors) {
+      function (err) {
         if (ERR(err, next)) return;
-        if (validationErrors !== undefined) {
-          groupAssessmentHelper.getGroupInfo(
-            res.locals.assessment.id,
-            res.locals.user.user_id,
-            function (
-              err,
-              groupMember,
-              permissions,
-              minsize,
-              maxsize,
-              groupsize,
-              needsize,
-              usingGroupRoles,
-              group_info,
-              join_code,
-              start,
-              used_join_code
-            ) {
-              if (ERR(err, next)) return;
-              res.locals.permissions = permissions;
-              res.locals.minsize = minsize;
-              res.locals.maxsize = maxsize;
-              res.locals.groupsize = groupsize;
-              res.locals.needsize = needsize;
-              res.locals.usingGroupRoles = usingGroupRoles;
-              res.locals.group_info = group_info;
-              res.locals.join_code = join_code;
-              res.locals.start = start;
-              res.locals.used_join_code = used_join_code;
-              res.locals.validationErrors = validationErrors;
-
-              groupAssessmentHelper.getGroupRoles(res.locals.assessment.id, function (group_roles) {
-                res.locals.group_roles = group_roles;
-                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-              });
-            }
-          );
-        } else {
-          res.redirect(req.originalUrl); // refresh the page with a GET request
-        }
+        res.redirect(req.originalUrl);
       }
     );
   } else if (req.body.__action === 'leave_group') {
