@@ -147,8 +147,6 @@ export async function init(config: OpenTelemetryConfig) {
     return;
   }
 
-  console.log(config);
-
   let exporter: SpanExporter;
   if (typeof config.openTelemetryExporter === 'object') {
     exporter = config.openTelemetryExporter;
@@ -175,9 +173,15 @@ export async function init(config: OpenTelemetryConfig) {
         break;
       }
       case 'jaeger': {
-        // This will be used primarily during local development, so we don't
-        // currently make this configurable.
-        exporter = new JaegerExporter();
+        exporter = new JaegerExporter({
+          // By default, the UDP sender will be used, but that causes issues
+          // with packet sizes when Jaeger is running in Docker. We'll instead
+          // configure it to use the HTTP sender, which shouldn't face those
+          // same issues. We'll still allow the endpoint to be overridden via
+          // environment variable if needed.
+          endpoint:
+            process.env.OTEL_EXPORTER_JAEGER_ENDPOINT ?? 'http://localhost:14268/api/traces',
+        });
         break;
       }
       default:
