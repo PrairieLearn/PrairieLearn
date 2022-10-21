@@ -20,6 +20,7 @@ BEGIN
         AND (NOT require_open OR v.open)
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         AND v.broken_at IS NULL
 =======
         AND NOT v.broken_at IS NULL
@@ -27,6 +28,9 @@ BEGIN
 =======
         AND v.broken_at IS NULL
 >>>>>>> Fix get broken variant error
+=======
+        AND v.broken_at IS NULL
+>>>>>>> 59cde0ed53b5588e34dee5b1fbf5af435d0758ea
     ORDER BY v.date DESC
     LIMIT 1;
 END;
