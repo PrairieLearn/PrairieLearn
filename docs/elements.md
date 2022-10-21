@@ -1917,13 +1917,6 @@ generated. Note that **this element does not reveal new hints across variants.**
 ```
 
 #### Customizations
-
-For the outer `pl-hidden-hints` element:
-
-| Attribute | Type   | Default | Description                                                                                                                     |
-| --------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| `name`    | string | `''`    | Name prefix for the key in the `params` dict. Only needed if there are separate `pl-hidden-hints` elements on the same variant. |
-
 For the inner `pl-hint` element:
 
 | Attribute    | Type | Default | Description                                                                                                                                                                                                 |
