@@ -1905,12 +1905,12 @@ generated. Note that **this element does not reveal new hints across variants.**
 <pl-hidden-hints>
   <pl-hint> This is a hint that will be accessible immediately. </pl-hint>
 
-  <pl-hint show-after="3">
+  <pl-hint show-after-submission="3">
     This is a hint that will be accessible after three incorrect submissions for the current
     variant.
   </pl-hint>
 
-  <pl-hint show-after="5">
+  <pl-hint show-after-submission="5">
     This is a hint that will be accessible after five incorrect submissions for the current variant.
   </pl-hint>
 </pl-hidden-hints>
@@ -1928,12 +1928,12 @@ For the inner `pl-hint` element:
 
 | Attribute    | Type | Default | Description                                                                                                                                                                                                 |
 | ------------ | ---- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `show-after` | int  | -       | Number of submissions on the current variant needed before the hint is accessible. If not set, hint is always accessible. **Should only be set for questions that allow multiple submissions per variant.** |
+| `show-after-submission` | int  | -       | Number of submissions on the current variant needed before the hint is accessible. If not set, hint is always accessible. **Should only be set for questions that allow multiple submissions per variant.** |
 
 #### Details
 
-Add hints to a variant that are revealed with more submissions using the `show-after` attribute. By default, hints without
-`show-after` set are always shown.
+Add hints to a variant that are revealed with more submissions using the `show-after-submission` attribute. By default, hints without
+`show-after-submission` set are always shown.
 
 #### Example implementations
 

@@ -32,10 +32,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     # Read hints defined as child tags and load them into html_hints
     for child in element:
         if child.tag == 'pl-hint':
-            pl.check_attribs(child, [], ['show-after'])
+            pl.check_attribs(child, [], ['show-after-submission'])
 
-            # Default show-after to -1 to automatically show hint (closed) at start
-            priority = pl.get_integer_attrib(child, 'show-after', -1)
+            # Default show-after-submission to -1 to automatically show hint (closed) at start
+            priority = pl.get_integer_attrib(child, 'show-after-submission', -1)
             html_hints.append((priority, pl.inner_html(child)))
         elif child.tag is lxml.etree.Comment:
             continue
