@@ -208,7 +208,7 @@ router.post('/', (req, res, next) => {
     };
     debug(res.locals);
     debug('break_variant', {params});
-    sqlDb.query(sql.mark_variant_broken, params, (err, _result) => {
+    sqldb.query(sql.mark_variant_broken, params, (err, _result) => {
         if (ERR(err, next)) return;
         res.redirect(req.originalUrl);
     });
