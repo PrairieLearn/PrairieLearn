@@ -1917,10 +1917,11 @@ generated. Note that **this element does not reveal new hints across variants.**
 ```
 
 #### Customizations
+
 For the inner `pl-hint` element:
 
-| Attribute    | Type | Default | Description                                                                                                                                                                                                 |
-| ------------ | ---- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Attribute               | Type | Default | Description                                                                                                                                                                                                 |
+| ----------------------- | ---- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `show-after-submission` | int  | -       | Number of submissions on the current variant needed before the hint is accessible. If not set, hint is always accessible. **Should only be set for questions that allow multiple submissions per variant.** |
 
 #### Details
