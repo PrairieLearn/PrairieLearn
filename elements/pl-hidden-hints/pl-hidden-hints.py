@@ -2,6 +2,7 @@ import chevron
 import lxml
 import prairielearn as pl
 
+
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(element, [], [])
@@ -35,7 +36,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             show_open = not all_correct and priority == submission_count
             hints_to_display.append({
                 'hint': hint,
-                'index': idx+1,
+                'index': idx + 1,
                 'is_open': show_open
             })
 
