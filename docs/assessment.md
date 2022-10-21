@@ -248,7 +248,7 @@ See the [Access control page](accessControl.md) for details.
 
 By default, an assessment is only accessible to course staff. To allow students to access the assessment, the `allowAccess` option can be used in the assessment's `infoAssessment.json` file.
 
-Access control options can also be used to control the open/close dates of assessments and apply penalties for late submissions. Once again, see  [Access control page](https://prairielearn.readthedocs.io/en/latest/accessControl/) for details and examples.
+Access control options can also be used to control the open/close dates of assessments and apply penalties for late submissions. Once again, see  [Access control page](accessControl.md) for details and examples.
 
 ## Adding text and links to assessments
 
