@@ -126,7 +126,7 @@ BEGIN
                       'submitted_answer', CASE WHEN include_files THEN s.submitted_answer ELSE (s.submitted_answer - '_files') END,
                       'raw_submitted_answer', CASE WHEN include_files THEN s.raw_submitted_answer
                       -- Elements that produce files (upload, editor, etc.) will use keys like '_file_upload_XXX' or equivalent
-                      ELSE (SELECT JSONB_OBJECT_AGG(key, value) FROM JSONB_EACH(s.raw_submitted_answer) WHERE STARTS_WITH(key, '_')) END,
+                      ELSE (SELECT JSONB_OBJECT_AGG(key, value) FROM JSONB_EACH(s.raw_submitted_answer) WHERE NOT STARTS_WITH(key, '_')) END,
                       'correct', s.correct
                     ) AS data
                 FROM
