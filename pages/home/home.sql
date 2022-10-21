@@ -120,7 +120,7 @@ WITH
             JOIN pl_courses AS c ON (
                 c.id = ci.course_id
                 AND c.deleted_at IS NULL
-                AND c.example_course IS FALSE
+                AND (c.example_course IS FALSE or $include_example_course_enrollments)
                 AND users_is_instructor_in_course($user_id, c.id) IS FALSE
             ),
             LATERAL (
