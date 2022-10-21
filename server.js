@@ -84,10 +84,8 @@ module.exports.initExpress = function () {
   app.set('view engine', 'ejs');
   app.set('trust proxy', config.trustProxy);
 
-  // If we're set up with Sentry, use its middleware to record requests.
-  if (config.sentryDsn) {
-    app.use(Sentry.Handlers.requestHandler());
-  }
+  // This should come first so that we get instrumentation on all our requests.
+  app.use(Sentry.Handlers.requestHandler());
 
   // Set res.locals variables first, so they will be available on
   // all pages including the error page (which we could jump to at
@@ -1624,29 +1622,51 @@ module.exports.initExpress = function () {
 
   app.use(require('./middlewares/redirectEffectiveAccessDenied'));
 
+  /**
+   * Attempts to extract a numeric status code from a Postgres error object.
+   * The convention we use is to use a `ERRCODE` value of `ST###`, where ###
+   * is the three-digit HTTP status code.
+   *
+   * For example, the following exception would set a 404 status code:
+   *
+   * RAISE EXCEPTION 'Entity not found' USING ERRCODE = 'ST404';
+   *
+   * @param {any} err
+   * @returns {number | null} The extracted HTTP status code
+   */
+  function maybeGetStatusCodeFromSqlError(err) {
+    const rawCode = err?.data?.sqlError?.code;
+    if (!rawCode?.startsWith('ST')) return null;
+
+    const parsedCode = Number(rawCode.toString().substring(2));
+    if (Number.isNaN(parsedCode)) return null;
+
+    return parsedCode;
+  }
+
   // This should come first so that both Sentry and our own error page can
-  // read the error ID.
+  // read the error ID and any status code.
   app.use((err, req, res, next) => {
     const _ = require('lodash');
     const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
     res.locals.error_id = _.times(12, () => _.sample(chars)).join('');
 
+    err.status = err.status ?? maybeGetStatusCodeFromSqlError(err) ?? 500;
+
     next(err);
   });
 
-  if (config.sentryDsn) {
-    // We need to add our own handler here to ensure that we add the appropriate
-    // information to the current Sentry scope.
-    //
-    // Note that this is typically done by our `logResponse` middleware, but
-    // that doesn't run soon enough for the Sentry error handler to pick up.
-    app.use((err, req, res, next) => {
-      enrichSentryScope(req, res);
-      next(err);
-    });
-    app.use(Sentry.Handlers.errorHandler());
-  }
+  // We need to add our own handler here to ensure that we add the appropriate
+  // information to the current Sentry scope.
+  //
+  // Note that this is typically done by our `logResponse` middleware, but
+  // that doesn't run soon enough for the Sentry error handler to pick up.
+  app.use((err, req, res, next) => {
+    enrichSentryScope(req, res);
+    next(err);
+  });
+  app.use(Sentry.Handlers.errorHandler());
 
   // Note that the Sentry error handler should come before our error page.
   app.use(require('./pages/error/error'));
@@ -1671,17 +1691,17 @@ module.exports.startServer = async () => {
     const ca = [await fs.promises.readFile(config.sslCAFile)];
     var options = { key, cert, ca };
     server = https.createServer(options, app);
-    server.listen(config.serverPort);
-    server.timeout = 600000; // 10 minutes
     logger.verbose('server listening to HTTPS on port ' + config.serverPort);
   } else if (config.serverType === 'http') {
     server = http.createServer(app);
-    server.listen(config.serverPort);
-    server.timeout = 600000; // 10 minutes
     logger.verbose('server listening to HTTP on port ' + config.serverPort);
   } else {
     throw new Error('unknown serverType: ' + config.serverType);
   }
+
+  server.timeout = config.serverTimeout;
+  server.keepAliveTimeout = config.serverKeepAliveTimeout;
+  server.listen(config.serverPort);
 
   // Wait for the server to either start successfully or error out.
   await new Promise((resolve, reject) => {
@@ -1864,8 +1884,15 @@ if (config.startServer) {
         };
         function idleErrorHandler(err) {
           logger.error('idle client error', err);
-          // https://github.com/PrairieLearn/PrairieLearn/issues/2396
-          process.exit(1);
+          Sentry.captureException(err, {
+            level: 'fatal',
+            tags: {
+              // This may have been set by `sql-db.js`. We include this in the
+              // Sentry tags to more easily debug idle client errors.
+              last_query: err?.data?.lastQuery ?? undefined,
+            },
+          });
+          Sentry.close().finally(() => process.exit(1));
         }
 
         logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
@@ -1906,7 +1933,23 @@ if (config.startServer) {
         // of its sprocs, allowing us to update servers while old
         // servers are still running. See docs/dev-guide.md for
         // more info.
-        await sqldb.setRandomSearchSchemaAsync(config.instanceId);
+        //
+        // We use the combination of instance ID and port number to uniquely
+        // identify each server; in some cases, we're running multiple instances
+        // on the same physical host.
+        //
+        // The schema prefix should not exceed 28 characters; this is due to
+        // the underlying Postgres limit of 63 characters for schema names.
+        // Currently, EC2 instance IDs are 19 characters long, and we use
+        // 4-digit port numbers, so this will be safe (19+1+4=24). If either
+        // of those ever get longer, we have a little wiggle room. Nonetheless,
+        // we'll check to make sure we don't exceed the limit and fail fast if
+        // we do.
+        const schemaPrefix = `${config.instanceId}:${config.serverPort}`;
+        if (schemaPrefix.length > 28) {
+          throw new Error(`Schema prefix is too long: ${schemaPrefix}`);
+        }
+        await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
       },
       function (callback) {
         sprocs.init(function (err) {
@@ -1978,12 +2021,7 @@ if (config.startServer) {
         });
       },
       async () => workspace.init(),
-      function (callback) {
-        serverJobs.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => serverJobs.init(),
       function (callback) {
         nodeMetrics.init();
         callback(null);

@@ -3,7 +3,7 @@ const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const util = require('util');
 const error = require('../../../prairielib/lib/error');
-const sqlDb = require('../../../prairielib/lib/sql-db');
+const sqldb = require('../../../prairielib/lib/sql-db');
 const sqlLoader = require('../../../prairielib/lib/sql-loader');
 
 const ltiOutcomes = require('../../../lib/ltiOutcomes');
@@ -32,11 +32,7 @@ router.get(
       assessment_question_id: res.locals.assessment_question.id,
     };
 
-    const result = await sqlDb.queryAsync(sql.select_instance_questions_manual_grading, params);
-    result.rows.forEach((row) => {
-      // bootstrap-table does not like nulls as filter targets, set to 0 instead
-      Object.assign(row, { assigned_grader: row.assigned_grader || 0 });
-    });
+    const result = await sqldb.queryAsync(sql.select_instance_questions_manual_grading, params);
     res.send({ instance_questions: result.rows });
   })
 );
@@ -79,7 +75,7 @@ router.post(
         update_assigned_grader: 'assigned_grader' in action_data,
         assigned_grader: action_data?.assigned_grader,
       };
-      await sqlDb.queryAsync(sql.update_instance_questions, params);
+      await sqldb.queryAsync(sql.update_instance_questions, params);
       res.send({});
     } else if (req.body.__action === 'edit_question_points') {
       const params = [
@@ -93,11 +89,15 @@ router.post(
         req.body.modified_at,
         null, // score_perc
         req.body.points,
+        null, // manual_score_perc
+        req.body.manual_points,
+        null, // auto_score_perc
+        req.body.auto_points,
         null, // feedback
         null, // partial_scores
         res.locals.authn_user.user_id,
       ];
-      const result = (await sqlDb.callAsync('instance_questions_update_score', params)).rows[0];
+      const result = (await sqldb.callAsync('instance_questions_update_score', params)).rows[0];
       if (result.modified_at_conflict) {
         return res.send({
           conflict_grading_job_id: result.grading_job_id,
@@ -118,11 +118,15 @@ router.post(
         req.body.modified_at,
         req.body.score_perc,
         null, // points
+        null, // manual_score_perc
+        null, // manual_points
+        null, // auto_score_perc
+        null, // auto_points
         null, // feedback
         null, // partial_scores
         res.locals.authn_user.user_id,
       ];
-      const result = (await sqlDb.callAsync('instance_questions_update_score', params)).rows[0];
+      const result = (await sqldb.callAsync('instance_questions_update_score', params)).rows[0];
       if (result.modified_at_conflict) {
         return res.send({
           conflict_grading_job_id: result.grading_job_id,

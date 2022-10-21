@@ -17,7 +17,7 @@
         "@prairielearn/opentelemetry": "^1.0.0",
         "@prairielearn/sentry": "^1.0.0",
         "ace-builds": "^1.11.2",
-        "ace-code": "^1.10.1",
+        "ace-code": "^1.11.2",
         "ajv": "^7.1.1",
         "ansi_up": "^5.1.0",
         "archiver": "^5.3.1",
@@ -96,7 +96,7 @@
         "parse5": "^6.0.1",
         "passport": "^0.6.0",
         "passport-azure-ad": "^4.3.4",
-        "passport-saml": "^3.2.1",
+        "passport-saml": "^3.2.2",
         "pem": "^1.14.6",
         "pg": "^8.8.0",
         "plist": "^3.0.6",
@@ -140,7 +140,7 @@
         "zod": "^3.19.1"
     },
     "devDependencies": {
-        "@changesets/cli": "^2.24.4",
+        "@changesets/cli": "^2.25.0",
         "@types/async": "^3.2.15",
         "@types/body-parser": "^1.19.2",
         "@types/chai": "^4.3.0",
@@ -152,7 +152,7 @@
         "@types/jest": "^29.1.1",
         "@types/loopbench": "^1.2.1",
         "@types/mocha": "^10.0.0",
-        "@types/node": "^18.7.16",
+        "@types/node": "^18.7.23",
         "@types/node-fetch": "^2.6.2",
         "@types/passport": "^1.0.11",
         "@types/pem": "^1.9.6",
@@ -182,7 +182,7 @@
         "sinon": "^14.0.0",
         "tmp": "0.2.1",
         "turbo": "^1.5.5",
-        "typescript": "^4.8.2"
+        "typescript": "^4.8.4"
     },
     "nyc": {
         "exclude": [

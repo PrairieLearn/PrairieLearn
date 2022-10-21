@@ -180,7 +180,11 @@ WITH object_data AS (
         iq.id AS instance_question_id,
         iq.number AS instance_question_number,
         aq.max_points AS assessment_question_max_points,
+        aq.max_auto_points AS assessment_question_max_auto_points,
+        aq.max_manual_points AS assessment_question_max_manual_points,
         iq.points AS instance_question_points,
+        iq.auto_points AS instance_question_auto_points,
+        iq.manual_points AS instance_question_manual_points,
         iq.score_perc AS instance_question_score_perc,
         iq.highest_submission_score,
         iq.last_submission_score,
@@ -213,6 +217,9 @@ WITH object_data AS (
         u.uid AS user_uid,
         u.name AS user_name,
         users_get_displayed_role(u.user_id, ci.id) AS user_role,
+        gi.id AS group_id,
+        gi.name AS group_name,
+        gi.uid_list AS group_uids,
         a.id AS assessment_id,
         a.tid AS assessment_name,
         (aset.abbreviation || a.number) AS assessment_label,
@@ -223,7 +230,11 @@ WITH object_data AS (
         iq.id AS instance_question_id,
         iq.number AS instance_question_number,
         aq.max_points AS assessment_question_max_points,
+        aq.max_auto_points AS assessment_question_max_auto_points,
+        aq.max_manual_points AS assessment_question_max_manual_points,
         iq.points AS instance_question_points,
+        iq.auto_points AS instance_question_auto_points,
+        iq.manual_points AS instance_question_manual_points,
         iq.score_perc AS instance_question_score_perc,
         v.id AS variant_id,
         v.number AS variant_number,
@@ -249,7 +260,8 @@ WITH object_data AS (
         JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
         JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-        JOIN users AS u ON (u.user_id = ai.user_id)
+        LEFT JOIN group_info(a.id) AS gi ON (gi.id = ai.group_id)
+        LEFT JOIN users AS u ON (u.user_id = ai.user_id)
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)

@@ -138,11 +138,19 @@ WHERE
 
 -- BLOCK select_running_jobs
 SELECT
-    j.*
+    j.id,
+    j.job_sequence_id
 FROM
     jobs AS j
 WHERE
     j.status = 'Running';
+
+-- BLOCK select_abandoned_jobs
+SELECT id, job_sequence_id
+FROM jobs AS j
+WHERE
+    j.status = 'Running'
+    AND j.heartbeat_at < (CURRENT_TIMESTAMP - make_interval(secs => $timeout_secs));
 
 -- BLOCK error_abandoned_job_sequences
 UPDATE job_sequences AS js
@@ -160,7 +168,7 @@ WHERE
         ) -- no running jobs and no recently finished jobs
     )
 RETURNING
-    js.*;
+    js.id;
 
 -- BLOCK fail_job_sequence
 UPDATE job_sequences AS js
@@ -212,3 +220,8 @@ FROM
 WHERE
     js.id = $job_sequence_id
     AND js.course_id IS NOT DISTINCT FROM $course_id;
+
+-- BLOCK update_heartbeats
+UPDATE jobs AS j
+SET heartbeat_at = CURRENT_TIMESTAMP
+WHERE j.id IN (SELECT UNNEST($job_ids::bigint[]));
