@@ -1896,7 +1896,7 @@ element contents only in a specific panel.
 Display progressive hints that become accessible as the number of student submissions increases for the current variant.
 Hints are only open on page load when they are first revealed (when first reaching the desired submission count).
 Otherwise hints start closed and must be opened by the user. The submission counter is reset when new variants are
-generated. In particular, **this element does not reveal new hints across variants.**
+generated. Note that **this element does not reveal new hints across variants.**
 
 #### Sample element
 
