@@ -1917,7 +1917,7 @@ generated. Note that **this element does not reveal new hints across variants.**
 
 #### Customizations
 
-For the outer `pl-hidden-hints` element.
+For the outer `pl-hidden-hints` element:
 
 | Attribute | Type   | Default | Description                                                                                                                     |
 | --------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------- |
