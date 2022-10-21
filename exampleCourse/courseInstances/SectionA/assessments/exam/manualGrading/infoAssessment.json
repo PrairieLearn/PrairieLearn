@@ -65,7 +65,7 @@
       {
           "title": "Manually graded questions",
           "questions": [
-              {"id": "demo/manualGrade/codeUpload",          "points": [10]},
+              {"id": "demo/manualGrade/codeUpload",          "autoPoints": [10, 7, 4], "manualPoints": 5},
               {"id": "demo/fileDownloadUpload",              "points": [10]},
               {"id": "demo/markdownEditorLivePreview",       "points": [5]}
           ]

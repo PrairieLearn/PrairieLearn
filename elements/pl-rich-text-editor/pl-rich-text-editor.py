@@ -98,9 +98,10 @@ def render(element_html, data):
 
         html_params['original_file_contents'] = base64.b64encode(text_display.encode('UTF-8').strip()).decode()
 
-        submitted_file_contents = data['submitted_answers'].get(answer_name, None)
+        submitted_files = data['submitted_answers'].get('_files', [])
+        submitted_file_contents = [f.get('contents', None) for f in submitted_files if f.get('name', None) == file_name]
         if submitted_file_contents:
-            html_params['current_file_contents'] = submitted_file_contents
+            html_params['current_file_contents'] = submitted_file_contents[0]
         else:
             html_params['current_file_contents'] = html_params['original_file_contents']
 
@@ -126,6 +127,11 @@ def parse(element_html, data):
     if not file_contents:
         add_format_error(data, 'No submitted answer for {0}'.format(file_name))
         return
+
+    # We will store the files in the submitted_answer["_files"] key,
+    # so delete the original submitted answer format to avoid
+    # duplication
+    del data['submitted_answers'][answer_name]
 
     if data['submitted_answers'].get('_files', None) is None:
         data['submitted_answers']['_files'] = []

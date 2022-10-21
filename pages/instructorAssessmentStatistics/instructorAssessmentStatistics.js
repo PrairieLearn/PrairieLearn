@@ -7,6 +7,7 @@ const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
+const error = require('../../prairielib/lib/error');
 const sanitizeName = require('../../lib/sanitize-name');
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
@@ -221,7 +222,7 @@ router.get('/:filename', function (req, res, next) {
       });
     });
   } else {
-    next(new Error('Unknown filename: ' + req.params.filename));
+    next(error.make(404, 'Unknown filename: ' + req.params.filename));
   }
 });
 

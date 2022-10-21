@@ -6,6 +6,17 @@ on:
       - master
   pull_request:
 
+concurrency:
+  # Ensure that we only run one concurrent job for Pull Requests. This ensures
+  # that someone can't kill our throughput by pushing a bunch of commits to a
+  # single branch in rapid succession.
+  #
+  # However, for master builds, we allow maximum concurrency. This is achieved
+  # because `github.head_ref` isn't defined there, and `github.run_id` is
+  # globally unique in this repo.
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -85,7 +96,7 @@ jobs:
     # here, so we copy them to an environment variable at the start of the job
     # and then check that here.
     - name: Login to DockerHub
-      uses: docker/login-action@v1 
+      uses: docker/login-action@v2 
       if: ${{ env.DOCKERHUB_USERNAME_SECRET != '' }}
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
