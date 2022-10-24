@@ -33,10 +33,20 @@ const LocalLock = require('../lib/local-lock');
 const config = require('../lib/config');
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
+const { ContainerS3LogForwarder } = require('./s3-logger');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 let lastAutoUpdateTime = Date.now();
 let lastPushAllTime = Date.now();
+
+/**
+ * Maps a key (`${workspace_id}-${version}`) to a log forwarder for the
+ * corresponding workspace container. Ideally, this wouldn't be in the
+ * global state, but the code isn't architected for that yet.
+ *
+ * @type {Map<string, import('./s3-logger').ContainerS3LogForwarder>}
+ */
+const s3LogForwarders = new Map();
 
 let configFilename = 'config.json';
 if ('config' in argv) {
@@ -1228,6 +1238,13 @@ function _createContainer(workspace, callback) {
           }
         );
       },
+      async () => {
+        const logForwarder = new ContainerS3LogForwarder(container, {
+          bucket: 'TODO',
+          prefix: `${workspace.id}/${workspace.version}`,
+        });
+        s3LogForwarders.set(localName, logForwarder);
+      },
     ],
     (err) => {
       if (ERR(err, callback)) return;
@@ -1269,6 +1286,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
   ).rows[0];
   const workspace = {
     id: workspace_id,
+    version: workspace_version,
     launch_uuid: uuid,
     local_name: `workspace-${uuid}`,
     remote_name: `workspace-${workspace_id}-${workspace_version}`,
