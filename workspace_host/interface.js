@@ -33,7 +33,7 @@ const LocalLock = require('../lib/local-lock');
 const config = require('../lib/config');
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
-const { ContainerS3LogForwarder } = require('./s3-logger');
+const { ContainerS3LogForwarder } = require('./s3-log-forwarder');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 let lastAutoUpdateTime = Date.now();
@@ -44,7 +44,7 @@ let lastPushAllTime = Date.now();
  * corresponding workspace container. Ideally, this wouldn't be in the
  * global state, but the code isn't architected for that yet.
  *
- * @type {Map<string, import('./s3-logger').ContainerS3LogForwarder>}
+ * @type {Map<string, import('./s3-log-forwarder').ContainerS3LogForwarder>}
  */
 const s3LogForwarders = new Map();
 
@@ -544,6 +544,18 @@ async function dockerAttemptKillAndRemove(input) {
     await container.kill();
   } catch (err) {
     logger.error('Error killing container', err);
+  }
+
+  // If there's an associated log forwarder for this container, shut it down
+  // so that it can flush any remaining logs to S3. We must do this before the
+  // container is removed, otherwise any remaining logs will be lost.
+  try {
+    if (name) {
+      await s3LogForwarders.get(name)?.shutdown();
+      s3LogForwarders.delete(name);
+    }
+  } catch (err) {
+    logger.error('Error shutting down log forwarder', err);
   }
 
   try {

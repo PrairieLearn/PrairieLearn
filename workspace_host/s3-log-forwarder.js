@@ -66,6 +66,12 @@ class ContainerS3LogForwarder {
       // @ts-expect-error https://github.com/DefinitelyTyped/DefinitelyTyped/pull/62861
       const logs = await getStream(logStream, { maxBuffer: 100 * 1024 * 1024 });
 
+      if (logs.length === 0) {
+        // No logs to upload; don't create an empty object in S3.
+        this.lastFlushAt = currentFlushAt;
+        return;
+      }
+
       // Strip trailing slash if it's present.
       let prefix = this.options.prefix;
       if (prefix.endsWith('/')) {
@@ -85,6 +91,9 @@ class ContainerS3LogForwarder {
         })
         .promise();
 
+      // We don't set this until after we've successfully uploaded the logs to
+      // S3; this gives us a tad more resilience in the case of failure, as
+      // we'll include logs from the current interval in the next upload.
       this.lastFlushAt = currentFlushAt;
     });
   }
