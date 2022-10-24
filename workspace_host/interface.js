@@ -1251,11 +1251,13 @@ function _createContainer(workspace, callback) {
         );
       },
       async () => {
-        const logForwarder = new ContainerS3LogForwarder(container, {
-          bucket: 'TODO',
-          prefix: `${workspace.id}/${workspace.version}`,
-        });
-        s3LogForwarders.set(localName, logForwarder);
+        if (config.workspaceLogsS3Bucket) {
+          const logForwarder = new ContainerS3LogForwarder(container, {
+            bucket: config.workspaceLogsS3Bucket,
+            prefix: `${workspace.id}/${workspace.version}`,
+          });
+          s3LogForwarders.set(localName, logForwarder);
+        }
       },
     ],
     (err) => {
