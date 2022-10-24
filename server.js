@@ -1468,6 +1468,13 @@ module.exports.initExpress = function () {
     },
     require('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings'),
   ]);
+  app.use('/pl/course/:course_id/course_admin/sharing', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'sharing';
+      next();
+    },
+    require('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing'),
+  ]);
   app.use('/pl/course/:course_id/course_admin/staff', [
     function (req, res, next) {
       res.locals.navSubPage = 'staff';

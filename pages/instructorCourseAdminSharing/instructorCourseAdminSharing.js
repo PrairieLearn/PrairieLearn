@@ -10,9 +10,37 @@ const { CourseInfoEditor } = require('../../lib/editors');
 const logger = require('../../lib/logger');
 const error = require('../../prairielib/lib/error');
 
+const { html } = require('@prairielearn/html');
+const { renderEjs } = require('@prairielearn/html-ejs');
+
 router.get('/', function (req, res, next) {
+  console.log('SETH\'S GET REQUEST');
   debug('GET /');
 
+  res.render(html`
+    <!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <%- include('../partials/head'); %>
+        <style>
+          .popover{
+              max-width: 50%;
+          }
+        </style>
+      </head>
+      <body>
+        <script>
+          $(function() {
+              $('[data-toggle="popover"]').popover({
+                  sanitize: false
+              })
+          });
+        </script>
+        <%- include('../partials/navbar'); %>
+        <div id="content" class="container-fluid">
+      </body>
+    </html>
+  `.toString());
 //   async.series(
 //     [
 //       (callback) => {
@@ -43,7 +71,7 @@ router.get('/', function (req, res, next) {
 //     ],
 //     (err) => {
 //       if (ERR(err, next)) return;
-//       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      // res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 //     }
 //   );
 });
