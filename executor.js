@@ -10,6 +10,7 @@ const { CodeCallerNative } = require('./lib/code-caller/code-caller-native');
  * @property {string} file
  * @property {string} fcn
  * @property {any[]} args
+ * @property {string | null} id
  */
 
 /**
@@ -20,6 +21,7 @@ const { CodeCallerNative } = require('./lib/code-caller/code-caller-native');
  * @property {string} [output]
  * @property {boolean} [functionMissing]
  * @property {boolean} needsFullRestart
+ * @property {string} id
  */
 
 /**
@@ -44,6 +46,7 @@ async function handleInput(line, codeCaller) {
     return {
       error: err.message,
       needsFullRestart: false,
+      id: null,
     };
   }
 
@@ -60,6 +63,7 @@ async function handleInput(line, codeCaller) {
     return {
       data: 'success',
       needsFullRestart: !!restartErr || !success,
+      id: request.id,
     };
   }
 
@@ -69,7 +73,7 @@ async function handleInput(line, codeCaller) {
   } catch (err) {
     // We should never actually hit this case - but if we do, handle it so
     // that all our bases are covered.
-    return { needsFullRestart: true };
+    return { needsFullRestart: true, id: request.id };
   }
 
   let result, output, callErr;
@@ -95,6 +99,7 @@ async function handleInput(line, codeCaller) {
     output,
     functionMissing,
     needsFullRestart: false,
+    id: request.id,
   };
 }
 
