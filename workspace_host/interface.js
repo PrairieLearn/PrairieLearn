@@ -119,7 +119,7 @@ app.post(
     } else if (action === 'init') {
       await initSequenceAsync(workspace_id, useInitialZip, res);
     } else if (action === 'reset') {
-      resetSequence(workspace_id, res);
+      await resetSequence(workspace_id, res);
     } else if (action === 'getGradedFiles') {
       await sendGradedFilesArchive(workspace_id, res);
     } else {
@@ -1371,22 +1371,14 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
 }
 
 // Called by the main server when the user want to reset the file to default
-function resetSequence(workspace_id, res) {
-  async.waterfall(
-    [
-      async () => {
-        return await _getWorkspaceAsync(workspace_id);
-      },
-      _getInitialFiles,
-    ],
-    function (err) {
-      if (err) {
-        res.status(500).send(err);
-      } else {
-        res.status(200).send(`Code of workspace ${workspace_id} reset.`);
-      }
-    }
-  );
+async function resetSequence(workspace_id, res) {
+  try {
+    const workspace = await _getWorkspaceAsync(workspace_id);
+    await _getInitialFilesAsync(workspace);
+    res.status(200).send(`Code of workspace ${workspace_id} reset.`);
+  } catch (err) {
+    res.status(500).send(err);
+  }
 }
 
 /**
