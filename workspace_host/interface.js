@@ -1247,9 +1247,7 @@ function _createContainer(workspace, callback) {
           const logForwarder = new ContainerS3LogForwarder(container, {
             bucket: config.workspaceLogsS3Bucket,
             prefix: `${workspace.id}/${workspace.version}`,
-            // Artificially low for testing.
-            // TODO: make this configurable.
-            interval: 10 * 1000,
+            interval: config.workspaceLogsFlushIntervalSec * 1000,
           });
           s3LogForwarders.set(localName, logForwarder);
         }
