@@ -203,14 +203,14 @@ router.post('/', (req, res, next) => {
     });
   } else if (req.body.__action === 'break_variant') {
     var params = {
-        'instance_question_id': req.body.__instance_question_id,
-        'authn_user_id': res.locals.authn_user.user_id,
+      instance_question_id: req.body.__instance_question_id,
+      authn_user_id: res.locals.authn_user.user_id,
     };
     debug(res.locals);
-    debug('break_variant', {params});
+    debug('break_variant', { params });
     sqlDb.query(sql.mark_variant_broken, params, (err, _result) => {
-        if (ERR(err, next)) return;
-        res.redirect(req.originalUrl);
+      if (ERR(err, next)) return;
+      res.redirect(req.originalUrl);
     });
   } else {
     return next(
