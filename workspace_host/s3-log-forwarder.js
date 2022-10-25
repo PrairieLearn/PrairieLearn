@@ -1,7 +1,6 @@
 // @ts-check
 const { Mutex } = require('async-mutex');
 const AWS = require('aws-sdk');
-const getStream = require('get-stream');
 const Sentry = require('@prairielearn/sentry');
 const logger = require('../lib/logger');
 
@@ -40,7 +39,7 @@ class ContainerS3LogForwarder {
       const now = new Date(Math.floor(Date.now() / 1000) * 1000);
       const currentFlushAt = now.getTime();
       // @ts-expect-error https://github.com/DefinitelyTyped/DefinitelyTyped/pull/62861
-      const logStream = await this.container.logs({
+      const rawLogs = await this.container.logs({
         // The initial call will use a `null` value, meaning it will fetch all
         // logs since the container booted up.
         since: this.lastFlushAt ?? undefined,
@@ -54,17 +53,14 @@ class ContainerS3LogForwarder {
         until: currentFlushAt + 1,
         stdout: true,
         stderr: true,
+        // Always include timestamps to make debugging easier.
+        timestamps: true,
       });
 
-      // We'll read logs into memory instead of piping them straight to S3 so
-      // that a) we can retry the upload if it fails and b) we can tell if
-      // there aren't any logs and avoid creating an S3 object if that's the case.
-      //
-      // Since we're building a string in memory, we'll limit ourselves to
-      // 100 MB to avoid a denial-of-service attack.
-      //
-      // @ts-expect-error https://github.com/DefinitelyTyped/DefinitelyTyped/pull/62861
-      const logs = await getStream(logStream, { maxBuffer: 100 * 1024 * 1024 });
+      // TODO: Document this better.
+      // https://github.com/apocas/dockerode/issues/456
+      // https://github.com/moby/moby/issues/32794
+      const logs = demuxOutput(rawLogs);
 
       if (logs.length === 0) {
         // No logs to upload; don't create an empty object in S3.
@@ -103,6 +99,31 @@ class ContainerS3LogForwarder {
     clearTimeout(this.timeoutId);
     await this.flushLogs();
   }
+}
+
+// TODO: write tests for this. Make sure it doesn't infinite loop and can
+// otherwise handle bad input, including when there are missing bytes at the
+// end of the stream.
+function demuxOutput(buffer) {
+  var nextDataLength = null;
+  let output = Buffer.from([]);
+
+  while (buffer.length > 0) {
+    console.log(buffer.length, buffer.toString('utf8'));
+    var header = bufferSlice(8);
+    nextDataLength = header.readUInt32BE(4);
+
+    var content = bufferSlice(nextDataLength);
+    output = Buffer.concat([output, content]);
+  }
+
+  function bufferSlice(end) {
+    var out = buffer.slice(0, end);
+    buffer = Buffer.from(buffer.slice(end, buffer.length));
+    return out;
+  }
+
+  return output;
 }
 
 module.exports = {

@@ -704,6 +704,7 @@ function _checkServer(workspace, callback) {
                 stdout: true,
                 stderr: true,
               },
+              // TODO: use demuxing function here.
               (err, logs) => {
                 if (ERR(err, callback)) return;
                 callback(
@@ -1255,6 +1256,9 @@ function _createContainer(workspace, callback) {
           const logForwarder = new ContainerS3LogForwarder(container, {
             bucket: config.workspaceLogsS3Bucket,
             prefix: `${workspace.id}/${workspace.version}`,
+            // Artificially low for testing.
+            // TODO: make this configurable.
+            interval: 10 * 1000,
           });
           s3LogForwarders.set(localName, logForwarder);
         }
