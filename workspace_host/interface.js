@@ -699,20 +699,11 @@ function _checkServer(workspace, callback) {
         } else {
           const endTime = new Date().getTime();
           if (endTime - startTime > maxMilliseconds) {
-            workspace.container.logs(
-              {
-                stdout: true,
-                stderr: true,
-              },
-              // TODO: use demuxing function here.
-              (err, logs) => {
-                if (ERR(err, callback)) return;
-                callback(
-                  new Error(
-                    `Max startup time exceeded for workspace_id=${workspace.id} (launch uuid ${workspace.launch_uuid})\n${logs}`
-                  )
-                );
-              }
+            const { id, version, launch_uuid } = workspace;
+            callback(
+              new Error(
+                `Max startup time exceeded for workspace ${id} (version ${version}, launch uuid ${launch_uuid})`
+              )
             );
           } else {
             setTimeout(checkWorkspace, checkMilliseconds);

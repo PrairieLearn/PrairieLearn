@@ -2,7 +2,10 @@
 const { Mutex } = require('async-mutex');
 const AWS = require('aws-sdk');
 const Sentry = require('@prairielearn/sentry');
+
 const logger = require('../lib/logger');
+
+const { parseDockerLogs } = require('./lib/docker');
 
 const SINCE_NANOS = '000000000';
 const UNTIL_NANOS = '999999999';
@@ -58,10 +61,8 @@ class ContainerS3LogForwarder {
         timestamps: true,
       });
 
-      // TODO: Document this better.
-      // https://github.com/apocas/dockerode/issues/456
-      // https://github.com/moby/moby/issues/32794
-      const logs = demuxOutput(rawLogs);
+      // @ts-expect-error https://github.com/DefinitelyTyped/DefinitelyTyped/pull/62861
+      const logs = parseDockerLogs(rawLogs);
 
       if (logs.length === 0) {
         // No logs to upload; don't create an empty object in S3.
@@ -103,32 +104,6 @@ class ContainerS3LogForwarder {
   }
 }
 
-// TODO: write tests for this. Make sure it doesn't infinite loop and can
-// otherwise handle bad input, including when there are missing bytes at the
-// end of the stream.
-function demuxOutput(buffer) {
-  var nextDataLength = null;
-  let output = Buffer.from([]);
-
-  while (buffer.length > 0) {
-    console.log(buffer.length, buffer.toString('utf8'));
-    var header = bufferSlice(8);
-    nextDataLength = header.readUInt32BE(4);
-
-    var content = bufferSlice(nextDataLength);
-    output = Buffer.concat([output, content]);
-  }
-
-  function bufferSlice(end) {
-    var out = buffer.slice(0, end);
-    buffer = Buffer.from(buffer.slice(end, buffer.length));
-    return out;
-  }
-
-  return output;
-}
-
 module.exports = {
-  demuxOutput,
   ContainerS3LogForwarder,
 };
