@@ -129,5 +129,6 @@ function demuxOutput(buffer) {
 }
 
 module.exports = {
+  demuxOutput,
   ContainerS3LogForwarder,
 };
