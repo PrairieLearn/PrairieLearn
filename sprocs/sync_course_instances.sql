@@ -119,6 +119,7 @@ BEGIN
         long_name = src.data->>'long_name',
         assessments_group_by = (src.data->>'assessments_group_by')::enum_assessment_grouping,
         display_timezone = src.data->>'display_timezone',
+        question_params = (src.data->>'question_params')::JSONB,
         hide_in_enroll_page = (src.data->>'hide_in_enroll_page')::boolean,
         sync_errors = NULL,
         sync_warnings = src.warnings

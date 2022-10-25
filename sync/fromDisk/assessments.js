@@ -112,6 +112,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
       number_choose: zone.numberChoose,
       max_points: zone.maxPoints,
       best_questions: zone.bestQuestions,
+      question_params: zone.questionParams || {},
       advance_score_perc: zone.advanceScorePerc,
     };
   });
@@ -123,7 +124,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
       ? zone.gradeRateMinutes
       : assessment.gradeRateMinutes || 0;
     return zone.questions.map((question) => {
-      /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], maxAutoPoints: number | number[], autoPoints: number | number[], manualPoints: number, forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number, canView: string[], canSubmit: string[], advanceScorePerc: number }[]} */
+      /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], maxAutoPoints: number | number[], autoPoints: number | number[], manualPoints: number, forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number, canView: string[], canSubmit: string[], advanceScorePerc: number, questionParams: Object }[]} */
       let alternatives;
       let questionGradeRateMinutes = _.has(question, 'gradeRateMinutes')
         ? question.gradeRateMinutes
@@ -157,6 +158,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
               : _.has(question, 'canSubmit')
               ? question.canSubmit
               : null,
+            question_params: alternative.questionParams || {},
           };
         });
       } else if (_(question).has('id')) {
@@ -174,6 +176,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             gradeRateMinutes: questionGradeRateMinutes,
             canView: question.canView,
             canSubmit: question.canSubmit,
+            questionParams: question.questionParams || {},
           },
         ];
       }
@@ -216,6 +219,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
       const alternativeGroupParams = {
         number: alternativeGroupNumber,
         number_choose: question.numberChoose,
+        question_params: question.questionParams || {},
         advance_score_perc: question.advanceScorePerc,
       };
 
@@ -237,6 +241,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             number_in_alternative_group: alternativeIndex + 1,
             can_view: alternative.canView,
             can_submit: alternative.canSubmit,
+            question_params: alternative.questionParams || {},
             advance_score_perc: alternative.advanceScorePerc,
             effective_advance_score_perc:
               alternative.advanceScorePerc ??

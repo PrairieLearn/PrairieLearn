@@ -51,6 +51,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {Tag[]} tags
  * @property {Topic[]} topics
  * @property {AssessmentSet[]} assessmentSets
+ * @property {Object} questionParams
  * @property {Module[]} [assessmentModules]
  */
 
@@ -69,6 +70,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {number} [number]
  * @property {string} [timezone]
  * @property {CourseInstanceAllowAccess[]} [allowAccess]
+ * @property {Object} [questionParams]
  * @property {"Set" | "Module"} [groupAssessmentsBy]
  */
 
@@ -102,6 +104,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string} id
  * @property {boolean} forceMaxPoints
  * @property {number} triesPerVariant
+ * @property {Object} questionParams
  */
 
 /**
@@ -116,6 +119,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {QuestionAlternative[]} alternatives
  * @property {number} numberChoose
  * @property {number} triesPerVariant
+ * @property {Object} questionParams
  */
 
 /**
@@ -125,6 +129,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {number} maxChoose
  * @property {number} bestQuestions
  * @property {ZoneQuestion[]} questions
+ * @property {Object} questionParams
  */
 
 /**
@@ -152,6 +157,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {boolean} [studentGroupCreate]
  * @property {boolean} [studentGroupJoin]
  * @property {boolean} [studentGroupLeave]
+ * @property {Object} [questionParams]
  */
 
 /**

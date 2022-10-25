@@ -228,6 +228,7 @@ const FILE_UUID_REGEX =
  * @property {Tag[]} tags
  * @property {Topic[]} topics
  * @property {AssessmentSet[]} assessmentSets
+ * @property {Object} questionParams
  * @property {AssessmentModule[]} assessmentModules
  */
 
@@ -253,6 +254,7 @@ const FILE_UUID_REGEX =
  * @property {{ [uid: string]: "Student" | "TA" | "Instructor"}} userRoles
  * @property {CourseInstanceAllowAccess[]} allowAccess
  * @property {boolean} allowIssueReporting
+ * @property {Object} questionParams
  * @property {"Set" | "Module"} groupAssessmentsBy
  */
 
@@ -289,6 +291,7 @@ const FILE_UUID_REGEX =
  * @property {boolean} forceMaxPoints
  * @property {number} triesPerVariant
  * @property {number} gradeRateMinutes
+ * @property {Object} questionParams
  */
 
 /**
@@ -305,6 +308,7 @@ const FILE_UUID_REGEX =
  * @property {number} triesPerVariant
  * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
+ * @property {Object} questionParams
  * @property {string[]} canView
  * @property {string[]} canSubmit
  */
@@ -318,6 +322,7 @@ const FILE_UUID_REGEX =
  * @property {ZoneQuestion[]} questions
  * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
+ * @property {Object} questionParams
  */
 
 /**
@@ -357,6 +362,7 @@ const FILE_UUID_REGEX =
  * @property {GroupRole[]} groupRoles
  * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
+ * @property {Object} questionParams
  */
 
 /**
@@ -764,6 +770,7 @@ module.exports.loadCourseInfo = async function (coursePath) {
     options: {
       useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
     },
+    questionParams: info.questionParams,
   };
 
   loadedData.data = course;

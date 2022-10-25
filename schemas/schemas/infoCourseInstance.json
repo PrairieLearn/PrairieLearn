@@ -21,6 +21,11 @@
             "description": "The long name of this course instance (e.g., 'Spring 2015').",
             "type": "string"
         },
+        "questionParams": {
+            "description": "Parameters to pass down to questions in this course instance.",
+            "type": "object",
+            "default": {}
+        },
         "timezone": {
             "description": "The timezone for all date input and display (e.g., \"America/Chicago\", from the TZ column at https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).",
             "type": "string",
