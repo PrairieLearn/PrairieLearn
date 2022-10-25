@@ -4,19 +4,20 @@ CREATE FUNCTION
         IN submission_score DOUBLE PRECISION,
         OUT open BOOLEAN,
         OUT status enum_instance_question_status,
-        OUT points DOUBLE PRECISION,
-        OUT score_perc DOUBLE PRECISION,
+        OUT auto_points DOUBLE PRECISION,
         OUT highest_submission_score DOUBLE PRECISION,
         OUT current_value DOUBLE PRECISION,
         OUT points_list DOUBLE PRECISION[],
         OUT variants_points_list DOUBLE PRECISION[],
-        OUT max_points DOUBLE PRECISION
+        OUT max_auto_points DOUBLE PRECISION
     )
 AS $$
 DECLARE
     iq instance_questions%ROWTYPE;
     aq assessment_questions%ROWTYPE;
     correct boolean;
+    current_auto_value double precision;
+    init_auto_points double precision;
     constant_question_value boolean;
     length integer;
     var_points_old double precision;
@@ -26,7 +27,7 @@ BEGIN
     SELECT * INTO iq FROM instance_questions WHERE id = instance_question_id;
     SELECT * INTO aq FROM assessment_questions WHERE id = iq.assessment_question_id;
 
-    max_points := aq.max_points;
+    max_auto_points := aq.max_auto_points;
     highest_submission_score := greatest(submission_score, coalesce(iq.highest_submission_score, 0));
 
     open := TRUE;
@@ -40,12 +41,15 @@ BEGIN
         current_value := iq.current_value;
     END IF;
 
+    current_auto_value := current_value - aq.max_manual_points;
+    init_auto_points := aq.init_points - aq.max_manual_points;
+
     -- modify variants_points_list
     variants_points_list := iq.variants_points_list;
     length := cardinality(variants_points_list);
     var_points_old := coalesce(variants_points_list[length], 0);
-    var_points_new := submission_score*current_value;
-    IF (length > 0) AND (var_points_old < aq.init_points) THEN
+    var_points_new := submission_score*current_auto_value;
+    IF (length > 0) AND (var_points_old < init_auto_points) THEN
         IF (var_points_old < var_points_new) THEN
             variants_points_list[length] = var_points_new;
         END IF;
@@ -63,22 +67,19 @@ BEGIN
 
     -- points is the sum of all elements in variants_points_list (which now must be non-empty)
     length := cardinality(variants_points_list);
-    points := 0;
+    auto_points := 0;
     FOR i in 1..length LOOP
-        points := points + variants_points_list[i];
+        auto_points := auto_points + variants_points_list[i];
     END LOOP;
-    points := least(points, aq.max_points);
-
-    -- score_perc
-    score_perc := points / (CASE WHEN aq.max_points > 0 THEN aq.max_points ELSE 1 END) * 100;
+    auto_points := least(auto_points, aq.max_auto_points);
 
     -- status
     IF correct THEN
         status := 'correct';
     ELSE
-        -- use current status unless it's 'unanswered'
+        -- use current status unless it's 'unanswered' or 'saved'
         status := iq.status;
-        IF iq.status = 'unanswered' THEN
+        IF iq.status IN ('unanswered', 'saved') THEN
             status := 'incorrect';
         END IF;
     END IF;

@@ -27,6 +27,9 @@ DECLARE
     bad_assessments text;
     new_group_role_names text[];
     new_group_role_name text;
+    question_grading_method enum_grading_method;
+    computed_manual_points double precision;
+    computed_max_auto_points double precision;
 BEGIN
     -- The sync algorithm used here is described in the preprint
     -- "Preserving identity during opportunistic unidirectional
@@ -144,6 +147,7 @@ BEGIN
             auto_close = (valid_assessment.data->>'auto_close')::boolean,
             text = valid_assessment.data->>'text',
             assessment_set_id = aggregates.assessment_set_id,
+            assessment_module_id = aggregates.assessment_module_id,
             constant_question_value = (valid_assessment.data->>'constant_question_value')::boolean,
             allow_issue_reporting = (valid_assessment.data->>'allow_issue_reporting')::boolean,
             allow_real_time_grading = (valid_assessment.data->>'allow_real_time_grading')::boolean,
@@ -157,7 +161,8 @@ BEGIN
             (
                 SELECT
                     tid,
-                    (SELECT id FROM assessment_sets WHERE name = da.data->>'set_name' AND course_id = syncing_course_id) AS assessment_set_id
+                    (SELECT id FROM assessment_sets WHERE name = da.data->>'set_name' AND course_id = syncing_course_id) AS assessment_set_id,
+                    (SELECT id FROM assessment_modules WHERE name = da.data->>'assessment_module_name' AND course_id = syncing_course_id) AS assessment_module_id
                 FROM disk_assessments AS da
             ) AS aggregates
         WHERE
@@ -361,9 +366,27 @@ BEGIN
 
                 -- Insert an assessment question for each question in this alternative group
                 FOR assessment_question IN SELECT * FROM JSONB_ARRAY_ELEMENTS(alternative_group->'questions') LOOP
+                    IF (assessment_question->>'has_split_points')::boolean THEN
+                        computed_manual_points := (assessment_question->>'manual_points')::double precision;
+                        computed_max_auto_points := (assessment_question->>'max_points')::double precision;
+                    ELSE
+                        SELECT grading_method INTO question_grading_method
+                        FROM questions q
+                        WHERE q.id = (assessment_question->>'question_id')::bigint;
+
+                        IF FOUND AND question_grading_method = 'Manual' THEN
+                            computed_manual_points := (assessment_question->>'max_points')::double precision;
+                            computed_max_auto_points := 0;
+                        ELSE
+                            computed_manual_points := 0;
+                            computed_max_auto_points := (assessment_question->>'max_points')::double precision;
+                        END IF;
+                    END IF;
                     INSERT INTO assessment_questions AS aq (
                         number,
                         max_points,
+                        max_manual_points,
+                        max_auto_points,
                         init_points,
                         points_list,
                         force_max_points,
@@ -379,7 +402,9 @@ BEGIN
                         effective_advance_score_perc
                     ) VALUES (
                         (assessment_question->>'number')::integer,
-                        (assessment_question->>'max_points')::double precision,
+                        COALESCE(computed_manual_points, 0) + COALESCE(computed_max_auto_points, 0),
+                        COALESCE(computed_manual_points, 0),
+                        COALESCE(computed_max_auto_points, 0),
                         (assessment_question->>'init_points')::double precision,
                         jsonb_array_to_double_precision_array(assessment_question->'points_list'),
                         (assessment_question->>'force_max_points')::boolean,
@@ -397,6 +422,8 @@ BEGIN
                     SET
                         number = EXCLUDED.number,
                         max_points = EXCLUDED.max_points,
+                        max_manual_points = EXCLUDED.max_manual_points,
+                        max_auto_points = EXCLUDED.max_auto_points,
                         points_list = EXCLUDED.points_list,
                         init_points = EXCLUDED.init_points,
                         force_max_points = EXCLUDED.force_max_points,
@@ -519,6 +546,14 @@ BEGIN
         AND a.deleted_at IS NULL
         AND a.course_instance_id = syncing_course_instance_id
         AND (da.errors IS NOT NULL AND da.errors != '');
+    
+    -- Ensure all assessments have an assessment module, default number=0.
+    UPDATE assessments AS a
+    SET
+        assessment_module_id = COALESCE(a.assessment_module_id,
+            (SELECT id FROM assessment_modules WHERE number = 0 AND course_id = syncing_course_id))
+    WHERE a.deleted_at IS NULL
+    AND a.course_instance_id = syncing_course_instance_id;
 
     -- Finally, clean up any other leftover models
 
@@ -551,7 +586,7 @@ BEGIN
         AND a.course_instance_id = syncing_course_instance_id;
 
     -- Internal consistency check. All assessments should have an
-    -- assessment set and a number.
+    -- assessment set, assessment module, and number.
     SELECT string_agg(a.id::text, ', ')
     INTO bad_assessments
     FROM assessments AS a
@@ -561,9 +596,10 @@ BEGIN
         AND (
             a.assessment_set_id IS NULL
             OR a.number IS NULL
+            OR a.assessment_module_id IS NULL
         );
     IF (bad_assessments IS NOT NULL) THEN
-        RAISE EXCEPTION 'Assertion failure: Assessment IDs without set or number: %', bad_assessments;
+        RAISE EXCEPTION 'Assertion failure: Assessment IDs without set, number, or module: %', bad_assessments;
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

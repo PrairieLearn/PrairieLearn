@@ -2,7 +2,6 @@ const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const util = require('util');
 const express = require('express');
-const app = express();
 const http = require('http');
 const request = require('request');
 const path = require('path');
@@ -20,6 +19,8 @@ const net = require('net');
 const unzipper = require('unzipper');
 const stream = require('stream');
 const asyncHandler = require('express-async-handler');
+const bodyParser = require('body-parser');
+const Sentry = require('@prairielearn/sentry');
 
 const dockerUtil = require('../lib/dockerUtil');
 const awsHelper = require('../lib/aws');
@@ -29,6 +30,7 @@ const logger = require('../lib/logger');
 const sprocs = require('../sprocs');
 const LocalLock = require('../lib/local-lock');
 
+const config = require('../lib/config');
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
@@ -36,7 +38,6 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 let lastAutoUpdateTime = Date.now();
 let lastPushAllTime = Date.now();
 
-const config = require('../lib/config');
 let configFilename = 'config.json';
 if ('config' in argv) {
   configFilename = argv['config'];
@@ -63,9 +64,10 @@ setInterval(() => {
   }
 }, 1000);
 
-const bodyParser = require('body-parser');
 const docker = new Docker();
 
+const app = express();
+app.use(Sentry.Handlers.requestHandler());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
@@ -96,7 +98,7 @@ app.get(
     } else {
       res.status(200);
     }
-    res.jsonp({
+    res.json({
       docker: containers,
       postgres: db_status,
     });
@@ -119,12 +121,14 @@ app.post(
     } else if (action === 'reset') {
       resetSequence(workspace_id, res);
     } else if (action === 'getGradedFiles') {
-      gradeSequence(workspace_id, res);
+      await sendGradedFilesArchive(workspace_id, res);
     } else {
       res.status(500).send(`Action '${action}' undefined`);
     }
   })
 );
+
+app.use(Sentry.Handlers.errorHandler());
 
 let server;
 let workspace_server_settings = {};
@@ -150,6 +154,14 @@ async.series(
         workspace_server_settings.hostname = config.workspaceDevHostHostname;
         workspace_server_settings.server_to_container_hostname =
           config.workspaceDevContainerHostname;
+      }
+    },
+    async () => {
+      if (config.sentryDsn) {
+        await Sentry.init({
+          dsn: config.sentryDsn,
+          environment: config.sentryEnvironment,
+        });
       }
     },
     (callback) => {
@@ -265,14 +277,10 @@ async.series(
         var key = [filename, true];
         update_queue[key] = { action: 'delete' };
       });
-      watcher.on('error', (err) => {
+      watcher.on('error', async (err) => {
         // Handle errors
-        markSelfUnhealthy(err, (err2) => {
-          if (err2) {
-            logger.error(`Error while handling watcher error: ${err2}`);
-          }
-          logger.error(`Watcher error: ${err}`);
-        });
+        logger.error('Error watching files', err);
+        await markSelfUnhealthy(err);
       });
       async function autoUpdateJobManagerTimeout() {
         const timeout_id = setTimeout(() => {
@@ -283,8 +291,7 @@ async.series(
         try {
           await _autoUpdateJobManager();
         } catch (err) {
-          logger.error(`Error from _autoUpdateJobManager(): ${err}`);
-          logger.error(`PREVIOUSLY FATAL ERROR: Error from _autoUpdateJobManager(): ${err}`);
+          logger.error('Error in _autoUpdateJobManager()', err);
         }
         clearTimeout(timeout_id);
         setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
@@ -362,8 +369,9 @@ async.series(
   ],
   function (err, data) {
     if (err) {
+      Sentry.captureException(err);
       logger.error('Error initializing workspace host:', err, data);
-      markSelfUnhealthyAsync(err);
+      markSelfUnhealthy(err);
     } else {
       logger.info('Workspace host ready');
     }
@@ -382,7 +390,7 @@ async function pushContainerContentsToS3(workspace) {
 
   const workspacePath = path.join(workspacePrefix, `workspace-${workspace.launch_uuid}`);
   const s3Path = `workspace-${workspace.id}-${workspace.version}/current`;
-  const settings = _getWorkspaceSettingsAsync(workspace.id);
+  const settings = await _getWorkspaceSettingsAsync(workspace.id);
   try {
     await awsHelper.uploadDirectoryToS3Async(
       config.workspaceS3Bucket,
@@ -392,7 +400,7 @@ async function pushContainerContentsToS3(workspace) {
     );
   } catch (err) {
     // Ignore any errors that may occur when the directory doesn't exist
-    logger.error(`Error uploading directory: ${err}`);
+    logger.error(`Error uploading directory for workspace ${workspace.id}`, err);
   }
 }
 
@@ -499,8 +507,7 @@ async function _getDockerContainerByLaunchUuid(launch_uuid) {
 /**
  * Attempts to kill and remove a container.  Will fail silently if the container is already stopped
  * or does not exist.  Also removes the container's home directory.
- * @param {string | Dockerode container} input.  Either the ID of the docker container, or an actual Dockerode
- * container object.
+ * @param {string | import('dockerode').Container} input Either the ID of the docker container, or an actual Dockerode container object.
  */
 async function dockerAttemptKillAndRemove(input) {
   // Use these awful try-catch blocks because we actually do want to try each
@@ -520,19 +527,19 @@ async function dockerAttemptKillAndRemove(input) {
   try {
     name = (await container.inspect()).Name.substring(1);
   } catch (err) {
-    debug(`Couldn't obtain container name: ${err}`);
+    logger.error('Error obtaining container name', err);
   }
 
   try {
     await container.kill();
   } catch (err) {
-    debug(`Couldn't kill container: ${err}`);
+    logger.error('Error killing container', err);
   }
 
   try {
     await container.remove();
   } catch (err) {
-    debug(`Couldn't remove stopped container: ${err}`);
+    logger.error('Error removing stopped container', err);
   }
 
   if (name) {
@@ -540,7 +547,7 @@ async function dockerAttemptKillAndRemove(input) {
     try {
       await fsPromises.rmdir(workspaceJobPath, { recursive: true });
     } catch (err) {
-      debug(`Couldn't remove directory "${workspaceJobPath}": ${err}`);
+      logger.error(`Error removing directory ${workspaceJobPath}`, err);
     }
   }
 }
@@ -548,30 +555,32 @@ async function dockerAttemptKillAndRemove(input) {
 /**
  * Marks the host as "unhealthy", we typically want to do this when we hit some unrecoverable error.
  * This will also set the "unhealthy__at" field if applicable.
+ *
+ * @param {Error | string} reason The reason that this host is unhealthy
  */
-async function markSelfUnhealthyAsync(reason) {
+async function markSelfUnhealthy(reason) {
   try {
+    Sentry.captureException(reason);
     const params = {
       instance_id: workspace_server_settings.instance_id,
       unhealthy_reason: reason,
     };
     await sqldb.queryAsync(sql.mark_host_unhealthy, params);
-    logger.warn(`Marked self as unhealthy: ${reason}`);
+    logger.warn('Marked self as unhealthy', reason);
   } catch (err) {
     // This could error if we don't even have a DB connection. In that case, we
     // should let the main server mark us as unhealthy.
-    logger.error(`Could not mark self as unhealthy: ${err}`);
+    logger.error('Could not mark self as unhealthy', err);
   }
 }
-const markSelfUnhealthy = util.callbackify(markSelfUnhealthyAsync);
 
 /**
  * Looks up a workspace object by the workspace id.
  * This object contains all columns in the 'workspaces' table as well as:
  * - local_name (container name)
  * - remote_name (subdirectory name on s3)
- * @param {integer} workspace_id Workspace ID to search by.
- * @return {object} Workspace object, as described above.
+ * @param {string | number} workspace_id Workspace ID to search by.
+ * @return {Promise<Object>} Workspace object, as described above.
  */
 async function _getWorkspaceAsync(workspace_id) {
   const result = await sqldb.queryOneRowAsync(sql.get_workspace, {
@@ -588,7 +597,7 @@ async function _getWorkspaceAsync(workspace_id) {
 /**
  * Allocates and returns an unused port for a workspace.  This will insert the new port into the workspace table.
  * @param {object} workspace Workspace object, should at least contain an id.
- * @return {integer} Port that was allocated to the workspace.
+ * @return {number | string} Port that was allocated to the workspace.
  */
 const _allocateContainerPortLock = new LocalLock();
 async function _allocateContainerPort(workspace) {
@@ -695,8 +704,8 @@ const _checkServerAsync = util.promisify(_checkServer);
 
 /**
  * Looks up all the question-specific workspace launch settings associated with a workspace id.
- * @param {integer} workspace_id Workspace ID to search by.
- * @return {object} Workspace launch settings.
+ * @param {string | number} workspace_id Workspace ID to search by.
+ * @return {Promise<Object>} Workspace launch settings.
  */
 async function _getWorkspaceSettingsAsync(workspace_id) {
   const result = await sqldb.queryOneRowAsync(sql.select_workspace_settings, {
@@ -801,10 +810,15 @@ async function _autoUpdateJobManager() {
         logger.info(`Uploading file to S3: ${s3_path}, ${path}`);
         awsHelper.uploadToS3(config.workspaceS3Bucket, s3_path, path, isDirectory, (err) => {
           if (err) {
+            Sentry.captureException(err, {
+              tags: {
+                'workspace.id': workspace_id,
+                's3.bucket': config.workspaceS3Bucket,
+                's3.path': s3_path,
+                path,
+              },
+            });
             logger.error(`Error uploading file to S3: ${s3_path}, ${path}, ${err}`);
-            logger.error(
-              `PREVIOUSLY FATAL ERROR: Error uploading file to S3: ${s3_path}, ${path}, ${err}`
-            );
           } else {
             logger.info(`Successfully uploaded file to S3: ${s3_path}, ${path}`);
           }
@@ -817,10 +831,15 @@ async function _autoUpdateJobManager() {
         logger.info(`Removing file from S3: ${s3_path}`);
         awsHelper.deleteFromS3(config.workspaceS3Bucket, s3_path, isDirectory, (err) => {
           if (err) {
+            Sentry.captureException(err, {
+              tags: {
+                'workspace.id': workspace_id,
+                's3.bucket': config.workspaceS3Bucket,
+                's3.path': s3_path,
+                path,
+              },
+            });
             logger.error(`Error removing file from S3: ${s3_path}, ${err}`);
-            logger.error(
-              `PREVIOUSLY FATAL ERROR: Error removing file from S3: ${s3_path}, ${path}, ${err}`
-            );
           } else {
             logger.info(`Successfully removed file from S3: ${s3_path}`);
           }
@@ -833,12 +852,8 @@ async function _autoUpdateJobManager() {
   try {
     await async.parallel(jobs);
   } catch (err) {
-    markSelfUnhealthy(err, (err2) => {
-      if (err2) {
-        logger.error(`Error while handling error: ${err2}`);
-      }
-      logger.error(`Error uploading files to S3:\n${err}`);
-    });
+    logger.error(`Error uploading files to S3`, err);
+    await markSelfUnhealthy(err);
   }
 }
 
@@ -902,7 +917,7 @@ async function _getInitialZipAsync(workspace) {
       })
     )
     .pipe(
-      stream.Transform({
+      new stream.Transform({
         objectMode: true,
         transform: (entry, encoding, callback) => {
           const entryPath = path.join(localPath, entry.path);
@@ -1140,7 +1155,7 @@ function _createContainer(workspace, callback) {
           try {
             await fsPromises.access(workspaceJobPath);
           } catch (err) {
-            throw Error('Could not access workspace files.');
+            throw Error('Could not access workspace files.', { cause: err });
           }
         }
       },
@@ -1279,6 +1294,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
           await _getInitialFilesAsync(workspace);
         }
       } catch (err) {
+        logger.error(`Error fetching files from S3 for workspace ${workspace_id}`, err);
         // Don't set host to unhealthy, we've probably bungled something up with S3.
         workspaceHelper.updateState(
           workspace_id,
@@ -1294,6 +1310,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       workspace.launch_port = await _allocateContainerPort(workspace);
       workspace.settings = await _getWorkspaceSettingsAsync(workspace.id);
     } catch (err) {
+      logger.error(`Error configuring workspace ${workspace_id}`, err);
       workspaceHelper.updateState(
         workspace_id,
         'stopped',
@@ -1305,6 +1322,8 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
     try {
       await _pullImageAsync(workspace);
     } catch (err) {
+      const image = workspace.settings.workspace_image;
+      logger.error(`Error pulling image ${image} for workspace ${workspace_id}`, err);
       workspaceHelper.updateState(
         workspace_id,
         'stopped',
@@ -1322,6 +1341,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       });
       workspace.container = await _createContainerAsync(workspace);
     } catch (err) {
+      logger.error(`Error creating container for workspace ${workspace.id}`, err);
       workspaceHelper.updateState(
         workspace_id,
         'stopped',
@@ -1336,6 +1356,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       debug(`init: container initialized for workspace_id=${workspace_id}`);
       workspaceHelper.updateState(workspace_id, 'running', null);
     } catch (err) {
+      logger.error(`Error starting container for workspace ${workspace.id}`, err);
       workspaceHelper.updateState(
         workspace_id,
         'stopped',
@@ -1344,7 +1365,8 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       return; // don't set host to unhealthy
     }
   } catch (err) {
-    markSelfUnhealthyAsync(err);
+    logger.error(`Error initializing workspace ${workspace_id}; marking self as unhealthy`);
+    await markSelfUnhealthy(err);
   }
 }
 
@@ -1367,84 +1389,39 @@ function resetSequence(workspace_id, res) {
   );
 }
 
-function gradeSequence(workspace_id, res) {
-  // Define this outside so we can still use it in case of errors
-  let zipPath;
-  async.waterfall(
-    [
-      async () => {
-        const workspace = await _getWorkspaceAsync(workspace_id);
-        const workspaceSettings = await _getWorkspaceSettingsAsync(workspace_id);
-        const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
-        const zipName = `${workspace.remote_name}-${timestamp}.zip`;
-        zipPath = path.join(config.workspaceHostZipsDirectory, zipName);
+/**
+ * @param {string | number} workspace_id
+ * @param {import('express').Response} res
+ */
+async function sendGradedFilesArchive(workspace_id, res) {
+  const workspace = await _getWorkspaceAsync(workspace_id);
+  const workspaceSettings = await _getWorkspaceSettingsAsync(workspace_id);
+  const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
+  const zipName = `${workspace.remote_name}-${timestamp}.zip`;
 
-        let homeDir;
-        if (workspace.homedir_location === 'S3') {
-          homeDir = path.join(config.workspaceJobsDirectory, workspace.local_name);
-        } else {
-          homeDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
-        }
+  let workspaceDir;
+  if (workspace.homedir_location === 'S3') {
+    workspaceDir = path.join(config.workspaceJobsDirectory, workspace.local_name);
+  } else {
+    workspaceDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
+  }
 
-        return {
-          workspace,
-          workspaceSettings,
-          workspaceDir: homeDir,
-          zipPath,
-        };
-      },
-      async (locals) => {
-        const archive = archiver('zip');
-        locals.archive = archive;
-        for (const file of locals.workspaceSettings.workspace_graded_files) {
-          try {
-            const file_path = path.join(locals.workspaceDir, file);
-            await fsPromises.lstat(file_path);
-            archive.file(file_path, { name: file });
-            debug(`Sending ${file}`);
-          } catch (err) {
-            logger.warn(`Graded file ${file} does not exist.`);
-            continue;
-          }
-        }
-        return locals;
-      },
-      (locals, callback) => {
-        // Write the zip archive to disk
-        const archive = locals.archive;
-        let output = fs.createWriteStream(locals.zipPath);
-        output.on('close', () => {
-          callback(null, locals);
-        });
-        archive.on('warning', (warn) => {
-          logger.warn(warn);
-        });
-        archive.on('error', (err) => {
-          ERR(err, callback);
-        });
-        archive.pipe(output);
-        archive.finalize();
-      },
-    ],
-    (err, locals) => {
-      if (err) {
-        logger.error(`Error in gradeSequence: ${err}`);
-        res.status(500).send(err);
-        try {
-          fsPromises.unlink(zipPath);
-        } catch (err) {
-          logger.error(`Error deleting ${zipPath}`);
-        }
-      } else {
-        res.attachment(locals.zipPath);
-        res.status(200).sendFile(locals.zipPath, { root: '/' }, (_err) => {
-          try {
-            fsPromises.unlink(locals.zipPath);
-          } catch (err) {
-            logger.error(`Error deleting ${locals.zipPath}`);
-          }
-        });
-      }
+  // Stream the archive back to the client as it's generated.
+  res.attachment(zipName).status(200);
+  const archive = archiver('zip');
+  archive.pipe(res);
+
+  for (const file of workspaceSettings.workspace_graded_files) {
+    try {
+      const filePath = path.join(workspaceDir, file);
+      await fsPromises.lstat(filePath);
+      archive.file(filePath, { name: file });
+      debug(`Sending ${file}`);
+    } catch (err) {
+      logger.warn(`Graded file ${file} does not exist.`);
+      continue;
     }
-  );
+  }
+
+  await archive.finalize();
 }

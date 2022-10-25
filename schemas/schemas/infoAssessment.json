@@ -51,7 +51,7 @@
             "default": false
         },
         "shuffleQuestions": {
-            "description": "Whether the questions will be shuffled in the student view of an assessment (Homework only)",
+            "description": "Whether the questions will be shuffled in the student view of an assessment",
             "type": "boolean",
             "default": false
         },
@@ -148,6 +148,10 @@
             "description": "Minimum amount of time (in minutes) between graded submissions to the same question.",
             "type": "number",
             "minimum": 0
+        },
+        "module": {
+            "description": "Module that this assessment belongs to, as defined in infoCourse.json.",
+            "type": "string"
         }
     },
     "definitions": {
@@ -349,7 +353,16 @@
                 "points": {
                     "$ref": "#/definitions/points"
                 },
+                "autoPoints": {
+                    "$ref": "#/definitions/points"
+                },
                 "maxPoints": {
+                    "$ref": "#/definitions/pointsSingle"
+                },
+                "maxAutoPoints": {
+                    "$ref": "#/definitions/pointsSingle"
+                },
+                "manualPoints": {
                     "$ref": "#/definitions/pointsSingle"
                 },
                 "id": {
@@ -420,7 +433,16 @@
                 "points": {
                     "$ref": "#/definitions/points"
                 },
+                "autoPoints": {
+                    "$ref": "#/definitions/points"
+                },
                 "maxPoints": {
+                    "$ref": "#/definitions/pointsSingle"
+                },
+                "maxAutoPoints": {
+                    "$ref": "#/definitions/pointsSingle"
+                },
+                "manualPoints": {
                     "$ref": "#/definitions/pointsSingle"
                 },
                 "id": {
@@ -463,7 +485,7 @@
             "description": "A single point value.",
             "type": "number",
             "minimum": 0,
-            "default": 1
+            "default": 0
         },
         "pointsList": {
             "description": "An array of point values.",

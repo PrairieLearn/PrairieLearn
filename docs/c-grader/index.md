@@ -32,7 +32,7 @@ Note that the `entrypoint` setting includes a call to `python3` before the test 
 
 ### `question.html`
 
-Most questions using this autograder will contain a `pl-file-editor` or `pl-file-upload` element, though questions using other elements (e.g., `pl-string-input` for short expressions) are also possible. The question should also include, in the `pl-submission-panel`, a `pl-external-grading-results` to show the status of grading jobs. It is also recommended to place a `pl-file-preview` element in the submission panel so that students may see their previous code submissions. An example question markup is given below:
+Most questions using this autograder will contain a `pl-file-editor` or `pl-file-upload` element, though questions using other elements (e.g., `pl-string-input` for short expressions) are also possible. The question should also include, in the `pl-submission-panel`, a `pl-external-grader-results` to show the status of grading jobs. It is also recommended to place a `pl-file-preview` element in the submission panel so that students may see their previous code submissions. An example question markup is given below:
 
 ```html
 <pl-question-panel>
@@ -40,7 +40,7 @@ Most questions using this autograder will contain a `pl-file-editor` or `pl-file
 </pl-question-panel>
 
 <pl-submission-panel>
-  <pl-external-grading-results></pl-external-grading-results>
+  <pl-external-grader-results></pl-external-grader-results>
   <pl-file-preview></pl-file-preview>
 </pl-submission-panel>
 ```
@@ -124,19 +124,13 @@ self.compile_file('square.c', 'square', pkg_config_flags='check ncurses') # sing
 self.compile_file('square.c', 'square', pkg_config_flags=['check', 'ncurses']) # array
 ```
 
-It is also possible to test programs where the student only submits part of an application. To compile the C/C++ file submitted by the user with a `main` function implemented by the instructor, you can save a `main.c` (or `main.cpp`) file inside the `tests` folder and run:
+It is also possible to test programs where the student only submits part of an application. To compile the C/C++ file submitted by the user with some functions (including, for example, a `main` function) implemented by the instructor, you can save a `main.c` (or `main.cpp`) file inside the `tests` folder and run:
 
 ```python
 self.compile_file('square.c', 'square', add_c_file='/grade/tests/main.c')
 ```
 
-The instruction above will compile the student-provided C/C++ file with the instructor-provided C/C++ file into the same executable. If the student provides a `main` function, it will be ignored, and the instructor-provided main file will take precedence.
-
-In some situations you may want to include or replace other functions besides `main`. You may do that by placing these functions in a `.c` or `.cpp` file inside the `tests` folder and run:
-
-```python
-self.compile_file('square.c', 'square', add_c_file='/grade/tests/otherfunctions.c')
-```
+The instruction above will compile the student-provided C/C++ file with the instructor-provided C/C++ file into the same executable. If the student implements any function that is also implemented by the instructor's code, including `main` if provided, it will be ignored, and the instructor-provided functions will take precedence. This is achieved by compiling the code with the `-Wl,--allow-multiple-definition` flag of `gcc`.
 
 It is also possible to compile multiple student files and multiple question-provided files into a single executable, by providing lists of files:
 
@@ -148,6 +142,22 @@ self.compile_file(['student_file1.c', 'student_file2.c'], 'executable',
 ```
 
 If the compilation involves include (`.h`) files, the flags `-I/grade/tests` (for question-provided includes) and `-I/grade/student` (for student-provided includes) are recommended as well. The specific `.h` files don't need to be listed as arguments to `compile_file`.
+
+If the executable name is not provided, then the files will be compiled only into equivalent object files (with `.o` extension). To link these files into an executable, the `link_object_files` can be used. This function receives three mandatory arguments: the student object files, the additional object files (which can be set to `None` if there are none), and the executable name. This separation allows for more fined-tuned compilation flags between different C files or between compilation and linking, as well as additional operations to be performed with the generated object files. For example, the following sequence compiles the same files above, but renames the student's `main` function into `student_main` so it can be called from the instructor's `main` function.
+
+```python
+self.compile_file(['student_file1.c', 'student_file2.c'],
+                  add_c_file=['/grade/tests/question_file1.c',
+                              '/grade/tests/question_file2.c'],
+                  flags=['-I/grade/tests', '-I/grade/student'])
+self.run_command('objcopy --redefine-sym main=student_main student_file1.o student_file1_nomain.o',
+                 sandboxed=False)
+self.link_object_files(['student_file1_nomain.o', 'student_file2.o'],
+                       ['/grade/tests/question_file1.o', '/grade/tests/question_file2.o'],
+                       'executable')
+```
+
+The `link_object_files` also accepts arguments like `flags`, `pkg_config_flags`, `add_warning_result_msg=False` and `ungradable_if_failed=False`, as described above.
 
 For `self.test_compile_file()`, the results of the compilation will show up as a test named "Compilation", worth one point. To change the name and/or points, set the `name` or `points` argument as follows:
 
@@ -243,7 +253,7 @@ self.test_run('diff -q output.txt expected.txt', reject_output=['differ'],
 
 ### Running a Check framework test suite
 
-For tests that involve more complex scenarios, particularly related to individual function calls and unit tests, the C autograder allows integration with the [Check framework](https://libcheck.github.io/check/). This framework provides functionality to run multiple test suites and test cases with individual unit tests. It is also able to capture signals (e.g., segmentation fault) by running unit tests in an isolated process.
+For tests that involve more complex scenarios, particularly related to individual function calls and unit tests, the C autograder allows integration with a modified version of the [Check framework](https://libcheck.github.io/check/). This framework provides functionality to run multiple test suites and test cases with individual unit tests. It is also able to capture signals (e.g., segmentation fault) by running unit tests in an isolated process.
 
 To run a Check suite, create a main C file containing the tests and a `main` function that runs the Check suite. A tutorial with instructions on how to create test suites, test cases and unit tests can be found in [the official Check tutorial](https://libcheck.github.io/check/doc/check_html/check_3.html#Tutorial). The example course also includes a basic test suite that can be used as an example.
 
@@ -278,6 +288,28 @@ The `self.run_check_suite()` method will call the executable containing the Chec
 
 ```python
 self.run_check_suite('./main', use_suite_title=True, use_unit_test_id=False)
+```
+
+The version of Check used in the autograder has been modified slightly to include additional safeguards against malicious student code. These safeguards restrict access to test logs and other resources to the processes running unit tests. In order to ensure these safeguards work as expected, your test application should:
+
+- keep Check's default fork status enabled, i.e., do not set "No Fork Mode";
+- open any files or file-like resources in the unit test itself or in checked fixtures, i.e., do not open files in unchecked fixtures or in the main application;
+- do not rely on environment variables for any student application, or set them manually in the unit test itself or in checked fixtures.
+
+If your application explicitly needs to keep any of the restricted environments above, you may disable some of these safeguards in your code. _Note that disabling these safeguards increases the chances that a student may bypass your unit tests and autograder_, so only do this if absolutely necessary. You may do this by setting the following preprocessor directives _at the top of your test code_ (before `#include <check.h>`):
+
+```c
+// Use this directive to retain file descriptors opened by the test application or unchecked fixtures
+#define PLCHECK_KEEP_FD
+
+// Use this directive to run the unit test applications as root
+#define PLCHECK_KEEP_UID
+
+// Use this directive to retain environment variables
+#define PLCHECK_KEEP_ENV
+
+// Use this directive to have the unit test process remain a direct child of the test application
+#define PLCHECK_NO_EXTRA_FORK
 ```
 
 ### Running a command without creating a test
@@ -348,13 +380,7 @@ self.add_test_result('Generated image', points=matched_pixels,
 
 ### Code subject to manual review
 
-In some situations, instructors may perform a manual review of the student's code, to check for issues like code style, comments, use of algorithms and other criteria that can't easily be programmed into code. Students may start any testing with code that is not intended to be their final version. It is therefore possible that some students may complete all tests successfully, but still may want to submit further versions of the code more suitable for manual review. Since students are unable to submit a new answer on PrairieLearn after getting 100% of the tests passing, it is advisable, if manual review is to take place, that the autograding never reaches 100%.
-
-One way to ensure that students can always submit a new code even after passing all tests is to include a test that always fails. This can be done with the `add_test_result()` method above, by setting `points` to 0 or `False`. The method `add_manual_grading()` does exactly that, with a standard name and description for the failing test.
-
-```python
-self.add_manual_grading(points=10)
-```
+In some situations, instructors may perform a manual review of the student's code, to check for issues like code style, comments, use of algorithms and other criteria that can't easily be programmed into code. This can be done by setting both [auto points and manual points](assessment.md#assessment-points) to the assessment question. The grade generated by the external grader only affects the auto points, leaving the manual points free to be used by the course staff as they see fit.
 
 ## Sandbox execution
 

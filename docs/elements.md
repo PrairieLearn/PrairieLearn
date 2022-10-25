@@ -79,6 +79,7 @@ The following **Conditional** elements are available:
 - [`pl-manual-grading-only`](#pl-manual-grading-only-element): Shows content only in manual grading.
 - [`pl-external-grader-results`](#pl-external-grader-results-element):
   Displays results from questions that are externally graded.
+- [`pl-hidden-hints`](#pl-hidden-hints): Displays hints as a student submits more on the current variant.
 
 Note: PrairieLearn Elements listed next have been
 **deprecated**. These elements are still supported for backwards
@@ -137,6 +138,7 @@ a `pl-answer` that has attributes:
 | ---------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `correct`  | boolean | false   | Is this a correct answer to the question?                                                                                                      |
 | `feedback` | string  | —       | Helper text (HTML) to be displayed to the student next to the option after question is graded if this option has been selected by the student. |
+| `score`    | float   | -       | Score given to answer choice if selected by student. Defaults to 1.0 for correct answers and 0.0 for incorrect answers.                        |
 
 #### Example implementations
 
@@ -431,6 +433,8 @@ Element to arrange given blocks of code or text that are displayed initially in 
 | `solution-placement`  | "right" or "bottom"     | "right"                        | `right` shows the source and solution areas aligned side-by-side. `bottom` shows the solution area below the source area.                                                                                                                                                                                                                                                                                |
 | `partial-credit`      | "none" or "lcs"         | Depends on `grading-method`    | For the `dag` and `ranking` grading methods, you may specify `none` for no partial credit or `lcs` (default) for partial credit based on the LCS edit-distance from the student solution to some correct solution. For the other grading methods, using this property is not yet supported. Grading method `unordered` will always assign partial credit, and grading method `ordered` will never do so. |
 | `feedback`            | "none" or "first-wrong" | "none"                         | The level of feedback the student will recieve upon giving an incorrect answer. Available with the `dag` or `ranking` grading mode. `first-wrong` will tell the student which block in their answer was the first to be incorrect, `none` will give no feedback.                                                                                                                                         |
+| `format`              | "code" or "default"     | "default"                      | If this property is set to "code", then the contents of each of the blocks will be wrapped with a `pl-code` element.                                                                                                                                                                                                                                                                                     |
+| `code-language`       | string                  | -                              | The programming language syntax highlighting to use. Only available when using `format="code"`.                                                                                                                                                                                                                                                                                                          |
 
 Within the `pl-order-blocks` element, each element must either be a `pl-answer` or a `pl-block-group` (see details below for more info on `pl-block-group`). Each element within a `pl-block-group` must be a `pl-answer`. The `pl-answer` elements specify the content for each of the blocks, and may have the following attributes:
 
@@ -1764,12 +1768,12 @@ Displays the contents of question directions.
 <pl-question-panel> This is question-panel text. </pl-question-panel>
 ```
 
-### Details
+#### Details
 
 Contents are only shown during question input portion. When a student
 either makes a submission or receives the correct answer, the information
 between these tags is hidden. If content exists outside of a question panel,
-then it will be displayed alongside or answer.
+then it will be displayed alongside the answer.
 
 #### Example implementations
 
@@ -1885,6 +1889,58 @@ element contents only in a specific panel.
 - [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
 - [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
 - [`pl-external-grader-results` for showing the results from an externally graded code question.](#pl-external-grader-results-element)
+
+---
+
+### `pl-hidden-hints` element
+
+Display progressive hints that become accessible as the number of student submissions increases for the current variant.
+Hints are only open on page load when they are first revealed (when first reaching the desired submission count).
+Otherwise hints start closed and must be opened by the user. The submission counter is reset when new variants are
+generated. Note that **this element does not reveal new hints across variants.**
+
+Best used in situations where there is a penalty for more submissions to a given variant. This prevents students from
+spamming incorrect submissions to reveal all hints right away.
+
+#### Sample element
+
+```html
+<pl-hidden-hints>
+  <pl-hint> This is a hint that will be accessible immediately. </pl-hint>
+
+  <pl-hint show-after-submission="3">
+    This is a hint that will be accessible after three incorrect submissions for the current
+    variant.
+  </pl-hint>
+
+  <pl-hint show-after-submission="5">
+    This is a hint that will be accessible after five incorrect submissions for the current variant.
+  </pl-hint>
+</pl-hidden-hints>
+```
+
+#### Customizations
+
+For the inner `pl-hint` element:
+
+| Attribute               | Type | Default | Description                                                                                                                                                                                                 |
+| ----------------------- | ---- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `show-after-submission` | int  | -       | Number of submissions on the current variant needed before the hint is accessible. If not set, hint is always accessible. **Should only be set for questions that allow multiple submissions per variant.** |
+
+#### Details
+
+Add hints to a variant that are revealed with more submissions using the `show-after-submission` attribute. By default, hints without
+`show-after-submission` set are always shown.
+
+#### Example implementations
+
+- [element/hiddenHints]
+
+#### See also
+
+- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
+- [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
+- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
 
 ---
 
@@ -2015,7 +2071,7 @@ new questions.
   param-names="r1,r2,isHorizontal"
   width="900"
   height="600"
-/>
+></pl-prairiedraw-figure>
 ```
 
 #### Customizations

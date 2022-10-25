@@ -179,10 +179,8 @@
     <% const MAX_TOP_RECENTS = 3; %>
 
     <%# Show the top submissions %>
-    <% submissions.forEach(function(submission, idx) { %>
-      <% if (submissions.length - idx > submissions.length - MAX_TOP_RECENTS) { %>
-      <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionIdx: submissions.length - idx, submissionHtml: submissionHtmls[idx]}); %>
-      <% } %>
+    <% submissions.slice(0, MAX_TOP_RECENTS).forEach(function(submission, idx) { %>
+      <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionHtml: submissionHtmls[idx]}); %>
     <% }); %>
 
     <%# Optionally show the older submissions %>
@@ -196,15 +194,41 @@
       </div>
 
       <div id="more-submissions-collapser" class="collapse">
-
-        <% submissions.forEach(function(submission, idx) { %>
-          <% if (submissions.length - idx <= submissions.length - MAX_TOP_RECENTS) { %>
-          <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionIdx: submissions.length - idx, submissionHtml: submissionHtmls[idx]}); %>
-          <% } %>
+        <% submissions.slice(MAX_TOP_RECENTS).forEach(function(submission, idx) { %>
+          <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionHtml: submissionHtmls[idx + MAX_TOP_RECENTS]}); %>
         <% }); %>
-
       </div>
 
+      <script>
+        $(function() {
+          $('.js-submission-body.render-pending').on('show.bs.collapse', function(e) {
+            const submissionId = $(this).data('submission-id');
+            // <% if (question_context === 'instructor') { %>
+            const submissionContentUrl = `<%= urlPrefix %>/question/<%= question.id %>/preview/variant/<%= variant.id %>/submission/${submissionId}`;
+            // <% } else if (question_context === 'manual_grading') { %>
+            const submissionContentUrl = `<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/instance_question/<%= instance_question.id %>/variant/<%= variant.id %>/submission/${submissionId}`;
+            // <% } else { %>
+            const submissionContentUrl = `<%= urlPrefix %>/instance_question/<%= instance_question.id %>/variant/<%= variant.id %>/submission/${submissionId}`;
+            // <% } %>
+            const wasModalOpen = ($(`#submissionInfoModal-${submissionId}`).data('bs.modal') || {})._isShown;
+            $(`#submissionInfoModal-${submissionId}`).modal('hide');
+            $.get(submissionContentUrl, 'json')
+              .done((data) => {
+                $(`#submission-${submissionId}`).replaceWith($(data.submissionPanel).fadeIn('slow'));
+                MathJax.typesetPromise();
+              })
+              .fail(() => {
+                $(`#submission-${submissionId}-body`).html('<div class="card-body submission-body">Error retrieving submission</div>');
+              })
+              .always(() => {
+                // Restore modal state if need be
+                if (wasModalOpen) {
+                  $(`#submissionInfoModal-${submissionId}`).modal('show');
+                }
+              });
+          });
+        });
+        </script>
     <% } %>
 
   <% } %> <%# endif showSubmissions %>

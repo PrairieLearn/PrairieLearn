@@ -78,7 +78,7 @@ BEGIN
         ) SELECT
             name,
             name,
-            concat(name, ' (Auto-generated from use in an assessment; add this assessment set to your courseInfo.json file to customize)'),
+            concat(name, ' (Auto-generated from use in an assessment; add this assessment set to your infoCourse.json file to customize)'),
             'gray1',
             (array_length(used_assessment_set_names, 1) + (row_number() OVER ())),
             syncing_course_id
