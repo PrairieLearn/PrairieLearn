@@ -40,8 +40,8 @@ let lastAutoUpdateTime = Date.now();
 let lastPushAllTime = Date.now();
 
 /**
- * Maps a key (`${workspace_id}-${version}`) to a log forwarder for the
- * corresponding workspace container. Ideally, this wouldn't be in the
+ * Maps a container name (`${workspace_id}-${launch_uuid}`) to a log forwarder
+ * for the corresponding workspace container. Ideally, this wouldn't be in the
  * global state, but the code isn't architected for that yet.
  *
  * @type {Map<string, import('./s3-log-forwarder').ContainerS3LogForwarder>}
