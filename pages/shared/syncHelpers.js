@@ -326,8 +326,6 @@ module.exports.ecrUpdate = function (locals, callback) {
       async.eachOfSeries(
         locals.images || [],
         (image, index, callback) => {
-          if (ERR(err, callback)) return;
-
           var jobOptions = {
             course_id: locals.course ? locals.course.id : null,
             type: 'image_sync',
