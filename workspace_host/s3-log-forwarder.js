@@ -14,6 +14,7 @@ const UNTIL_NANOS = '999999999';
  * @typedef {Object} ContainerS3LogForwarderOptions
  * @property {string} bucket The name of the S3 bucket to upload logs to.
  * @property {string} prefix The prefix of the S3 object key to upload logs to.
+ * @property {Record<string, string>} [tags] Tags to apply to all S3 objects.
  * @property {number} [interval] The number of milliseconds between each log upload.
  */
 
@@ -29,6 +30,10 @@ class ContainerS3LogForwarder {
     // Start at zero seconds to ensure that we get all logs.
     this.readUntilTime = 0;
     this.s3 = new AWS.S3({ maxRetries: 3 });
+
+    // Encode the tags as a URL query string; this is what S3 requires.
+    const tags = this.options.tags ?? {};
+    this.tagging = Object.keys(tags).length > 0 ? new URLSearchParams(tags).toString() : undefined;
 
     // Gather logs periodically at a regular interval.
     this.timeoutId = setInterval(async () => {
@@ -87,6 +92,7 @@ class ContainerS3LogForwarder {
           Bucket: this.options.bucket,
           Key: key,
           Body: logs,
+          Tagging: this.tagging,
         })
         .promise();
 

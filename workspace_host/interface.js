@@ -1248,6 +1248,10 @@ function _createContainer(workspace, callback) {
             bucket: config.workspaceLogsS3Bucket,
             prefix: `${workspace.id}/${workspace.version}`,
             interval: config.workspaceLogsFlushIntervalSec * 1000,
+            tags: {
+              // TODO: tag by course and institution too?
+              WorkspaceId: workspace.id,
+            },
           });
           s3LogForwarders.set(localName, logForwarder);
         }
