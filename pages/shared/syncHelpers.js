@@ -342,7 +342,6 @@ module.exports.ecrUpdate = function (locals, callback) {
           serverJobs.createJob(jobOptions, (err, job) => {
             if (err) {
               logger.error('Error in createJob()', err);
-              serverJobs.failJobSequence(job_sequence_id);
               return callback(err);
             }
             debug('successfully created job ', { job_sequence_id });
