@@ -39,8 +39,8 @@ FROM
     LEFT JOIN LATERAL (
         SELECT *
         FROM grading_jobs
-        WHERE submission_id = s.id
-        ORDER BY id DESC
+        WHERE submission_id = s.id AND grading_method != 'Manual'
+        ORDER BY date DESC, id DESC
         LIMIT 1
     ) AS gj ON TRUE
 WHERE
@@ -78,9 +78,16 @@ WITH next_iq AS (
         )
     WINDOW
         w AS (ORDER BY qo.row_order)
+),
+last_grading_job AS (
+    SELECT *
+    FROM grading_jobs AS gj
+    WHERE gj.submission_id = $submission_id AND grading_method != 'Manual'
+    ORDER BY gj.date DESC, gj.id DESC
+    LIMIT 1
 )
 SELECT
-    to_jsonb(gj) AS grading_job,
+    to_jsonb(lgj) AS grading_job,
     to_jsonb(s) AS submission,
     to_jsonb(v) AS variant,
     to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
@@ -96,8 +103,8 @@ SELECT
     to_jsonb(ci) AS course_instance,
     to_jsonb(c) AS course,
     to_jsonb(ci) AS course_instance,
-    gj.id AS grading_job_id,
-    grading_job_status(gj.id) AS grading_job_status,
+    lgj.id AS grading_job_id,
+    grading_job_status(lgj.id) AS grading_job_status,
     format_date_full_compact(s.date, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_date,
     (
         SELECT count(*)
@@ -111,9 +118,9 @@ SELECT
         WHERE s2.variant_id = s.variant_id
     ) AS submission_count
 FROM
-    grading_jobs AS gj
-    JOIN submissions AS s ON (s.id = gj.submission_id)
+    submissions AS s
     JOIN variants AS v ON (v.id = s.variant_id)
+    LEFT JOIN last_grading_job AS lgj ON (TRUE)
     LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
     JOIN questions AS q ON (q.id = v.question_id)
     LEFT JOIN assessment_questions AS aq ON (iq.assessment_question_id = aq.id)
@@ -126,12 +133,9 @@ FROM
     LEFT JOIN next_iq ON (next_iq.current_id = iq.id)
 WHERE
     s.id = $submission_id
-    AND gj.id = (
-        SELECT MAX(gj2.id)
-        FROM submissions AS s
-        LEFT JOIN grading_jobs AS gj2 ON (gj2.submission_id = s.id)
-        WHERE s.id = $submission_id
-    );
+    AND q.id = $question_id
+    AND (CASE WHEN $instance_question_id::BIGINT IS NULL THEN iq.id IS NULL ELSE iq.id = $instance_question_id::BIGINT END)
+    AND v.id = $variant_id;
 
 -- BLOCK select_assessment_for_submission
 SELECT
