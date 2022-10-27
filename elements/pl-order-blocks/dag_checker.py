@@ -173,7 +173,7 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
     # node1 in the submission, add them both and an edge between them to the problematic subgraph
     seen = set()
     problematic_subgraph = nx.DiGraph()
-    submission_no_distractors = [node for node in submission if node is not None]
+    submission_no_distractors = [node for node in submission if node in depends_graph]
     for node1 in submission_no_distractors:
         for node2 in seen:
             if trans_clos.has_edge(node1, node2):
