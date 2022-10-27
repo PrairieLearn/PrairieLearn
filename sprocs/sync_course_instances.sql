@@ -64,7 +64,7 @@ BEGIN
                 )
             )
         )
-        ORDER BY src_short_name, (src.short_name = dest.short_name) DESC NULLS LAST
+        ORDER BY src_short_name, (src.uuid = dest.uuid) DESC NULLS LAST
     ),
     deactivate_unmatched_dest_rows AS (
         UPDATE course_instances AS dest

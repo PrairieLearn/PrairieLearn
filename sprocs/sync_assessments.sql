@@ -81,7 +81,7 @@ BEGIN
                 )
             )
         )
-        ORDER BY src_tid, (src.tid = dest.tid) DESC NULLS LAST
+        ORDER BY src_tid, (src.uuid = dest.uuid) DESC NULLS LAST
     ),
     deactivate_unmatched_dest_rows AS (
         UPDATE assessments AS dest

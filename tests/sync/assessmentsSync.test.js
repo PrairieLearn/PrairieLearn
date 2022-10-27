@@ -1672,10 +1672,10 @@ describe('Assessment syncing', () => {
     assert.isUndefined(originalAssessmentRow);
 
     // New assessments should exist and have the correct UUIDs.
-    const newAssessmentRow1 = assessments.find((q) => q.qid === 'b' && q.deleted_at === null);
+    const newAssessmentRow1 = assessments.find((a) => a.tid === 'b' && a.deleted_at === null);
     assert.isNull(newAssessmentRow1.deleted_at);
     assert.equal(newAssessmentRow1.uuid, '0e8097aa-b554-4908-9eac-d46a78d6c249');
-    const newAssessmentRow2 = assessments.find((q) => q.qid === 'c' && q.deleted_at === null);
+    const newAssessmentRow2 = assessments.find((a) => a.tid === 'c' && a.deleted_at === null);
     assert.isNull(newAssessmentRow2.deleted_at);
     assert.equal(newAssessmentRow2.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
   });

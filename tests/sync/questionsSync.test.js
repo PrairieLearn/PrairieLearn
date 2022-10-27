@@ -369,18 +369,18 @@ describe('Question syncing', () => {
     // Write and sync a single question.
     const originalQuestion = makeQuestion(courseData);
     originalQuestion.uuid = '0e8097aa-b554-4908-9eac-d46a78d6c249';
-    courseData.questions['templates/simple_randomized_mcq'] = originalQuestion;
+    courseData.questions['a'] = originalQuestion;
     const courseDir = await util.writeAndSyncCourseData(courseData);
 
     // Now "move" the above question to a new directory AND add another with the
     // same UUID.
-    delete courseData.questions['templates/simple_randomized_mcq'];
-    courseData.questions['firas_templates/simple_randomized_mcq'] = originalQuestion;
-    courseData.questions['firas_test/modulo_variable'] = originalQuestion;
+    delete courseData.questions['a'];
+    courseData.questions['b'] = originalQuestion;
+    courseData.questions['c'] = originalQuestion;
     await util.overwriteAndSyncCourseData(courseData, courseDir);
 
     // Now "fix" the duplicate UUID.
-    courseData.questions['firas_test/modulo_variable'] = {
+    courseData.questions['c'] = {
       ...originalQuestion,
       uuid: '0e3097ba-b554-4908-9eac-d46a78d6c249',
     };
@@ -389,18 +389,14 @@ describe('Question syncing', () => {
     const questions = await util.dumpTable('questions');
 
     // Original question should not exist.
-    const originalQuestionRow = questions.find((q) => q.qid === 'templates/simple_randomized_mcq');
+    const originalQuestionRow = questions.find((q) => q.qid === 'a');
     assert.isUndefined(originalQuestionRow);
 
     // New questions should exist and have the correct UUIDs.
-    const newQuestionRow1 = questions.find(
-      (q) => q.qid === 'firas_templates/simple_randomized_mcq' && q.deleted_at === null
-    );
+    const newQuestionRow1 = questions.find((q) => q.qid === 'b' && q.deleted_at === null);
     assert.isNull(newQuestionRow1.deleted_at);
     assert.equal(newQuestionRow1.uuid, '0e8097aa-b554-4908-9eac-d46a78d6c249');
-    const newQuestionRow2 = questions.find(
-      (q) => q.qid === 'firas_test/modulo_variable' && q.deleted_at === null
-    );
+    const newQuestionRow2 = questions.find((q) => q.qid === 'c' && q.deleted_at === null);
     assert.isNull(newQuestionRow2.deleted_at);
     assert.equal(newQuestionRow2.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
   });

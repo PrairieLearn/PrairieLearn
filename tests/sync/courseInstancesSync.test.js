@@ -355,7 +355,7 @@ describe('Course instance syncing', () => {
     assert.isNull(newCourseInstanceRow1.deleted_at);
     assert.equal(newCourseInstanceRow1.uuid, '0e8097aa-b554-4908-9eac-d46a78d6c249');
     const newCourseInstanceRow2 = courseInstances.find(
-      (q) => q.qid === 'c' && q.deleted_at === null
+      (q) => q.short_name === 'c' && q.deleted_at === null
     );
     assert.isNull(newCourseInstanceRow2.deleted_at);
     assert.equal(newCourseInstanceRow2.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
