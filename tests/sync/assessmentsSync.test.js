@@ -748,7 +748,7 @@ describe('Assessment syncing', () => {
       foundContributor,
       secondAssessmentQuestion
     );
-    assert.isFalse(secondQuestionContributorPermission);
+    assert.isOk(secondQuestionContributorPermission);
     assert.isTrue(
       !secondQuestionContributorPermission.can_view &&
         !secondQuestionContributorPermission.can_submit,
