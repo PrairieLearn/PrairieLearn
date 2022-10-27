@@ -12,6 +12,7 @@ DECLARE
     arg_default_group_role_id bigint;
     arg_role_update JSONB;
     arg_group_role_id JSONB;
+    arg_assigner_role_id bigint;
 BEGIN
     -- Find group id
     SELECT 
@@ -74,6 +75,30 @@ BEGIN
             );
         END LOOP;
     END LOOP;
+
+    -- See if anyone has the assigner role
+    -- If not, give it to somebody
+
+    IF (
+        SELECT COUNT(*)
+        FROM group_users as gu LEFT JOIN group_roles as gr ON gr.id = gu.group_role_id
+        WHERE gr.can_assign_roles_at_start AND gr.can_assign_roles_during_assessment
+    ) = 0
+    THEN
+        -- Get the role_id of the assigner role
+        SELECT id
+        INTO arg_assigner_role_id
+        FROM group_roles
+        WHERE assessment_id = arg_assessment_id AND (can_assign_roles_at_start AND can_assign_roles_during_assessment);
+
+        -- Insert into group_users a new row that assigns any arbitrary user with that role_id
+        INSERT INTO group_users (group_id, user_id, group_role_id)
+        VALUES (
+            arg_group_id,
+            arg_user_id,
+            arg_assigner_role_id
+        );
+    END IF;
 
     -- Log the update 
     INSERT INTO group_logs
