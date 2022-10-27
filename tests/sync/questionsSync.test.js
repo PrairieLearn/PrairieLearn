@@ -358,4 +358,26 @@ describe('Question syncing', () => {
     assert.equal(deletedQuestion.uuid, originalQuestion.uuid);
     assert.equal(deletedQuestion.sync_errors, null);
   });
+
+  it.only('reproduces problem Firas reported', async () => {
+    const courseData = util.getCourseData();
+    const originalQuestion = makeQuestion(courseData);
+    originalQuestion.uuid = '0e8097aa-b554-4908-9eac-d46a78d6c249';
+    courseData.questions['templates/simple_randomized_mcq'] = originalQuestion;
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+
+    // Now move the above question to a new directory AND add another with the
+    // same UUID.
+    delete courseData.questions['templates/simple_randomized_mcq'];
+    courseData.questions['firas_templates/simple_randomized_mcq'] = originalQuestion;
+    courseData.questions['firas_test/modulo_variable'] = { ...originalQuestion };
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+    // Now "fix" the duplicate UUID.
+    courseData.questions['firas_test/modulo_variable'] = {
+      ...originalQuestion,
+      uuid: '0e3097ba-b554-4908-9eac-d46a78d6c249',
+    };
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+  });
 });

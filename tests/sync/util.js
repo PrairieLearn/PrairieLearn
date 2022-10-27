@@ -269,6 +269,7 @@ module.exports.writeCourseToDirectory = async function (courseData, coursePath) 
 module.exports.QUESTION_ID = 'test';
 module.exports.ALTERNATIVE_QUESTION_ID = 'test2';
 module.exports.MANUAL_GRADING_QUESTION_ID = 'test_manual';
+module.exports.WORKSPACE_QUESTION_ID = 'workspace';
 module.exports.COURSE_INSTANCE_ID = 'Fa19';
 
 /** @type {Course} */
