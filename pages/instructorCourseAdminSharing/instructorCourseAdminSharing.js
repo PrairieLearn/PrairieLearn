@@ -9,38 +9,14 @@ const ERR = require('async-stacktrace');
 const { CourseInfoEditor } = require('../../lib/editors');
 const logger = require('../../lib/logger');
 const error = require('../../prairielib/lib/error');
-
-const { html } = require('@prairielearn/html');
-const { renderEjs } = require('@prairielearn/html-ejs');
+const { InstructorSharing } = require('./instructorCourseAdminSharing.html')
 
 router.get('/', function (req, res, next) {
-  console.log('SETH\'S GET REQUEST');
   debug('GET /');
 
-  res.render(html`
-    <!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <%- include('../partials/head'); %>
-        <style>
-          .popover{
-              max-width: 50%;
-          }
-        </style>
-      </head>
-      <body>
-        <script>
-          $(function() {
-              $('[data-toggle="popover"]').popover({
-                  sanitize: false
-              })
-          });
-        </script>
-        <%- include('../partials/navbar'); %>
-        <div id="content" class="container-fluid">
-      </body>
-    </html>
-  `.toString());
+  // res.render()
+  res.send(InstructorSharing({resLocals: res.locals}));
+
 //   async.series(
 //     [
 //       (callback) => {
