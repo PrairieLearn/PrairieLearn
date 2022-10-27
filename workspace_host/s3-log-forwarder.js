@@ -57,7 +57,6 @@ class ContainerS3LogForwarder {
       const until = `${nowSecs}.${UNTIL_NANOS}`;
 
       const rawLogs = await this.container.logs({
-        // @ts-expect-error https://github.com/DefinitelyTyped/DefinitelyTyped/pull/62861
         since,
         until,
         stdout: true,
@@ -66,7 +65,6 @@ class ContainerS3LogForwarder {
         timestamps: true,
       });
 
-      // @ts-expect-error https://github.com/DefinitelyTyped/DefinitelyTyped/pull/62861
       const logs = parseDockerLogs(rawLogs);
 
       if (logs.length === 0) {
