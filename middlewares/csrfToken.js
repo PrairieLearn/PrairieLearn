@@ -14,7 +14,7 @@ module.exports = function (req, res, next) {
   }
   res.locals.__csrf_token = csrf.generateToken(tokenData, config.secretKey);
 
-  if (req.method == 'POST') {
+  if (req.method === 'POST') {
     // NOTE: If you are trying to debug a "CSRF Fail" in a form with file
     // upload, you may have forgotten to special-case the file upload path.
     // Search for "upload.single('file')" in server.js, for example.

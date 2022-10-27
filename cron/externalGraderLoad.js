@@ -354,7 +354,7 @@ function setAutoScalingGroupCapacity(stats, callback) {
   if (!config.externalGradingAutoScalingGroupName) return callback(null);
   if (!_.isInteger(stats.desired_instances)) return callback(null);
   if (stats.desired_instances < 1 || stats.desired_instances > 1e6) return callback(null);
-  if (stats.desired_instances == stats.instance_count) return callback(null);
+  if (stats.desired_instances === stats.instance_count) return callback(null);
 
   const autoscaling = new AWS.AutoScaling(config.awsServiceGlobalOptions);
   const params = {

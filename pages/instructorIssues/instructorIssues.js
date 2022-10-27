@@ -9,6 +9,7 @@ const error = require('../../prairielib/lib/error');
 const paginate = require('../../lib/paginate');
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
+const { idsEqual } = require('../../lib/id');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -105,7 +106,7 @@ router.get('/', function (req, res, next) {
 
   sqldb.query(sql.issues_count, params, function (err, result) {
     if (ERR(err, next)) return;
-    if (result.rowCount != 2) {
+    if (result.rowCount !== 2) {
       return next(new Error('unable to obtain issue count, rowCount = ' + result.rowCount));
     }
     res.locals.closedCount = result.rows[0].count;
@@ -167,7 +168,7 @@ router.get('/', function (req, res, next) {
           // we are accessing the issue through a different course instance page route).
           if (
             !res.locals.course_instance ||
-            res.locals.course_instance.id != row.course_instance_id
+            !idsEqual(res.locals.course_instance.id, row.course_instance_id)
           ) {
             row.assessment.urlPrefix = `${res.locals.plainUrlPrefix}/course_instance/${row.course_instance_id}/instructor`;
           }
@@ -184,12 +185,26 @@ router.get('/', function (req, res, next) {
         //     associated with the same course instance, and the user has student
         //     data view access.
         //
+        //  3) We are not accessing this page through the course instance
+        //     associated to the issue (i.e., we are accessing it through the
+        //     course or through a different course instance), and the user has
+        //     student data view access in the course instance associated to the
+        //     issue. This is distinguished from situation 2 above to ensure
+        //     effective user roles are taken into account.
+        //
         // Otherwise, all issues must be anonymized.
         row.show_user =
           !row.course_instance_id ||
           (res.locals.course_instance &&
-            res.locals.course_instance.id == row.course_instance_id &&
-            res.locals.authz_data.has_course_instance_permission_view);
+            idsEqual(res.locals.course_instance.id, row.course_instance_id) &&
+            res.locals.authz_data.has_course_instance_permission_view) ||
+          ((!res.locals.course_instance ||
+            !idsEqual(res.locals.course_instance.id, row.course_instance_id)) &&
+            _.some(
+              res.locals.authz_data.course_instances,
+              (ci) =>
+                idsEqual(ci.id, row.course_instance_id) && ci.has_course_instance_permission_view
+            ));
       });
 
       res.locals.rows = result.rows;
@@ -210,7 +225,8 @@ router.post('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_permission_edit) {
     return next(error.make(403, 'Access denied (must be a course editor)'));
   }
-  if (req.body.__action == 'open') {
+
+  if (req.body.__action === 'open') {
     let params = [
       req.body.issue_id,
       true, // open status
@@ -221,7 +237,7 @@ router.post('/', function (req, res, next) {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'close') {
+  } else if (req.body.__action === 'close') {
     let params = [
       req.body.issue_id,
       false, // open status
@@ -232,7 +248,7 @@ router.post('/', function (req, res, next) {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'close_all') {
+  } else if (req.body.__action === 'close_all') {
     let params = [
       false, // open status
       res.locals.course.id,

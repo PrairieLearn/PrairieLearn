@@ -1,14 +1,14 @@
 const ERR = require('async-stacktrace');
 
 const logger = require('../lib/logger');
-const sqlDb = require('../prairielib/lib/sql-db');
+const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = function (pageType) {
   return function (req, res, next) {
-    if (req.method != 'GET' || !res.locals.user || !res.locals.authn_user) {
+    if (req.method !== 'GET' || !res.locals.user || !res.locals.authn_user) {
       next();
       return;
     }
@@ -41,7 +41,7 @@ module.exports = function (pageType) {
       panel_render_cache_hit_count,
     };
 
-    sqlDb.queryOneRow(sql.log_page_view, params, function (err, result) {
+    sqldb.queryOneRow(sql.log_page_view, params, function (err, result) {
       if (ERR(err, (e) => logger.error('error logging page view', e))) return next();
       res.locals.page_view_id = result.rows[0].id;
       next();

@@ -19,7 +19,7 @@ async function loadNewsItems() {
     try {
       info = await jsonLoad.readInfoJSONAsync(infoFilename, schemas.infoNewsItem);
     } catch (err) {
-      if (err.code == 'ENOTDIR' || err.code == 'ENOENT') return; // skip dir entries without an info.json
+      if (err.code === 'ENOTDIR' || err.code === 'ENOENT') return; // skip dir entries without an info.json
       throw err;
     }
     info.directory = dir;

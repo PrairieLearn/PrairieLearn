@@ -22,7 +22,7 @@ module.exports.run = (callback) => {
     }
 
     const { res, body } = await opsbot.sendMessageAsync(msg);
-    if (res.statusCode != 200) {
+    if (res.statusCode !== 200) {
       logger.error(`Error posting unfinished cron jobs to slack [status code ${res.statusCode}]`, {
         res,
         body,

@@ -2,6 +2,7 @@ const _ = require('lodash');
 const sqldb = require('../../prairielib/lib/sql-db');
 
 const fileStore = require('../../lib/file-store');
+const { idsEqual } = require('../../lib/id');
 
 /*
  * Get a validated variant_id from a request, or throw an exception.
@@ -68,11 +69,11 @@ module.exports.processDeleteFile = async (req, res) => {
   }
 
   // Check the requested file belongs to the current instance question
-  const validFiles = _.filter(res.locals.file_list, (file) => file.id == req.body.file_id);
-  if (validFiles.length == 0) throw new Error(`No such file_id: ${req.body.file_id}`);
+  const validFiles = _.filter(res.locals.file_list, (file) => idsEqual(file.id, req.body.file_id));
+  if (validFiles.length === 0) throw new Error(`No such file_id: ${req.body.file_id}`);
   const file = validFiles[0];
 
-  if (file.type != 'student_upload') {
+  if (file.type !== 'student_upload') {
     throw new Error(`Cannot delete file type ${file.type} for file_id=${file.id}`);
   }
 
@@ -87,7 +88,7 @@ module.exports.processIssue = async (req, res) => {
     throw new Error('Issue reporting not permitted for this assessment');
   }
   const description = req.body.description;
-  if (!_.isString(description) || description.length == 0) {
+  if (!_.isString(description) || description.length === 0) {
     throw new Error('A description of the issue must be provided');
   }
 

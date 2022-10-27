@@ -2,6 +2,7 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const config = require('../../lib/config');
+const QR = require('qrcode-svg');
 
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
@@ -39,6 +40,11 @@ router.get('/', function (req, res, next) {
       let host = config.serverCanonicalHost || 'https://' + req.headers.host;
       res.locals.studentLink =
         host + res.locals.plainUrlPrefix + '/course_instance/' + res.locals.course_instance.id;
+      res.locals.studentLinkQRCode = new QR({
+        content: res.locals.studentLink,
+        width: 512,
+        height: 512,
+      }).svg();
       res.locals.infoCourseInstancePath = encodePath(
         path.join(
           'courseInstances',
@@ -53,7 +59,7 @@ router.get('/', function (req, res, next) {
 
 router.post('/', function (req, res, next) {
   debug('POST /');
-  if (req.body.__action == 'copy_course_instance') {
+  if (req.body.__action === 'copy_course_instance') {
     debug('Copy course instance');
     const editor = new CourseInstanceCopyEditor({
       locals: res.locals,
@@ -83,7 +89,7 @@ router.post('/', function (req, res, next) {
         }
       });
     });
-  } else if (req.body.__action == 'delete_course_instance') {
+  } else if (req.body.__action === 'delete_course_instance') {
     debug('Delete course instance');
     const editor = new CourseInstanceDeleteEditor({
       locals: res.locals,
@@ -98,7 +104,7 @@ router.post('/', function (req, res, next) {
         }
       });
     });
-  } else if (req.body.__action == 'change_id') {
+  } else if (req.body.__action === 'change_id') {
     debug(`Change short_name from ${res.locals.course_instance.short_name} to ${req.body.id}`);
     if (!req.body.id) return next(new Error(`Invalid CIID (was falsey): ${req.body.id}`));
     if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
@@ -114,7 +120,7 @@ router.post('/', function (req, res, next) {
     } catch (err) {
       return next(new Error(`Invalid CIID (could not be normalized): ${req.body.id}`));
     }
-    if (res.locals.course_instance.short_name == ciid_new) {
+    if (res.locals.course_instance.short_name === ciid_new) {
       debug('The new ciid is the same as the old ciid - do nothing');
       res.redirect(req.originalUrl);
     } else {

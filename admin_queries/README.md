@@ -16,4 +16,4 @@ To change the sort order for column with name `COL`, return another column with 
 Dates and intervals should be rendered with:
 
 - `format_date_full_compact(my_date, config_select('display_timezone')) AS my_date` - This will automatically sort correctly.
-- `format_interval(my_interval) AS my_interval` - This should be accompanied by `EXTRACT(EPOCH FROM my_interval) AS _sortval_my_interval` for sorting.
+- `format_interval(my_interval) AS my_interval` - This should be accompanied by `DATE_PART('epoch', my_interval) AS _sortval_my_interval` for sorting.

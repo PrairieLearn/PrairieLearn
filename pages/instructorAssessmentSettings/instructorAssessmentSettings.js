@@ -5,6 +5,7 @@ const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const config = require('../../lib/config');
+const QR = require('qrcode-svg');
 
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
@@ -48,6 +49,11 @@ router.get('/', function (req, res, next) {
         res.locals.course_instance.id +
         '/assessment/' +
         res.locals.assessment.id;
+      res.locals.studentLinkQRCode = new QR({
+        content: res.locals.studentLink,
+        width: 512,
+        height: 512,
+      }).svg();
       res.locals.infoAssessmentPath = encodePath(
         path.join(
           'courseInstances',
@@ -64,7 +70,7 @@ router.get('/', function (req, res, next) {
 
 router.post('/', function (req, res, next) {
   debug('POST /');
-  if (req.body.__action == 'copy_assessment') {
+  if (req.body.__action === 'copy_assessment') {
     debug('Copy assessment');
     const editor = new AssessmentCopyEditor({
       locals: res.locals,
@@ -94,7 +100,7 @@ router.post('/', function (req, res, next) {
         }
       });
     });
-  } else if (req.body.__action == 'delete_assessment') {
+  } else if (req.body.__action === 'delete_assessment') {
     debug('Delete assessment');
     const editor = new AssessmentDeleteEditor({
       locals: res.locals,
@@ -109,7 +115,7 @@ router.post('/', function (req, res, next) {
         }
       });
     });
-  } else if (req.body.__action == 'change_id') {
+  } else if (req.body.__action === 'change_id') {
     debug(`Change tid from ${res.locals.assessment.tid} to ${req.body.id}`);
     if (!req.body.id) return next(new Error(`Invalid TID (was falsey): ${req.body.id}`));
     if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
@@ -125,7 +131,7 @@ router.post('/', function (req, res, next) {
     } catch (err) {
       return next(new Error(`Invalid TID (could not be normalized): ${req.body.id}`));
     }
-    if (res.locals.assessment.tid == tid_new) {
+    if (res.locals.assessment.tid === tid_new) {
       debug('The new tid is the same as the old tid - do nothing');
       res.redirect(req.originalUrl);
     } else {

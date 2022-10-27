@@ -5,6 +5,7 @@ const _ = require('lodash');
 var logger = require('../lib/logger');
 var csrf = require('../lib/csrf');
 var config = require('../lib/config');
+const { idsEqual } = require('../lib/id');
 
 var timeout = 24; // hours
 
@@ -38,39 +39,25 @@ router.all('/', function (req, res, next) {
   }
 
   // SafeExamBrowser protect the assesment
-  if ('authz_result' in res.locals && res.locals.authz_result.mode == 'SEB') {
+  if ('authz_result' in res.locals && res.locals.authz_result.mode === 'SEB') {
     // If the assessment is complete, use this middleware to show the logout page
-    if ('assessment_instance' in res.locals && res.locals.assessment_instance.open == false) {
+    if ('assessment_instance' in res.locals && res.locals.assessment_instance.open === false) {
       return badSEB(req, res);
     }
 
     // If any of our auth checks didn't pass, fail (send to download)
-    if (res.locals.authz_data.mode != 'SEB') {
+    if (res.locals.authz_data.mode !== 'SEB') {
       return badSEB(req, res);
     }
   }
 
-  // Password protect the assessment
-  if (
-    'authz_result' in res.locals &&
-    'password' in res.locals.authz_result &&
-    res.locals.authz_result.password &&
-    !('assessment_instance' in res.locals && res.locals.assessment_instance.open == false)
-  ) {
-    // No password yet case
-    if (req.cookies.pl_assessmentpw == null) {
-      return badPassword(res, req);
-    }
-
-    // Invalid or expired password case
-    var pwData = csrf.getCheckedData(req.cookies.pl_assessmentpw, config.secretKey, {
-      maxAge: timeout * 60 * 60 * 1000,
-    });
-    if (pwData == null || pwData.password !== res.locals.authz_result.password) {
-      return badPassword(res, req);
-    }
-
-    // Successful password case: falls though
+  // Password protect the assessment. Note that this only handles the general
+  // case of an existing assessment instance. This middleware can't handle
+  // the intricacies of creating a new assessment instance. We handle those
+  // cases on the `studentAssessmentExam` and `studentAssessmentHomework`
+  // pages.
+  if (res.locals?.assessment_instance?.open && !module.exports.checkPasswordOrRedirect(req, res)) {
+    return;
   }
 
   // Pass-through for everything else
@@ -78,6 +65,40 @@ router.all('/', function (req, res, next) {
 });
 
 module.exports = router;
+
+/**
+ * Checks if the given request has the correct password. If not, redirects to
+ * a password input page.
+ *
+ * Returns `true` if the password is correct, `false` otherwise. If this
+ * function returns `false`, the caller should not continue with the request.
+ *
+ * @returns {boolean}
+ */
+module.exports.checkPasswordOrRedirect = function (req, res) {
+  if (!res.locals.authz_result?.password) {
+    // No password is required.
+    return true;
+  }
+
+  if (req.cookies.pl_assessmentpw == null) {
+    // The user has not entered a password yet.
+    badPassword(res, req);
+    return false;
+  }
+
+  var pwData = csrf.getCheckedData(req.cookies.pl_assessmentpw, config.secretKey, {
+    maxAge: timeout * 60 * 60 * 1000,
+  });
+  if (pwData == null || pwData.password !== res.locals.authz_result.password) {
+    // The password is incorrect or the cookie is expired.
+    badPassword(res, req);
+    return false;
+  }
+
+  // The password is correct and not expired!
+  return true;
+};
 
 function badPassword(res, req) {
   logger.verbose(`invalid password attempt for ${res.locals.user.uid}`);
@@ -116,8 +137,8 @@ function checkUserAgent(res, userAgent) {
 
   if ('assessment' in res.locals) {
     if (
-      fromSEB.assessment_id == res.locals.assessment.id &&
-      fromSEB.user_id == res.locals.authz_data.user.user_id
+      idsEqual(fromSEB.assessment_id, res.locals.assessment.id) &&
+      idsEqual(fromSEB.user_id, res.locals.authz_data.user.user_id)
     ) {
       res.locals.authz_data.mode = 'SEB';
     }

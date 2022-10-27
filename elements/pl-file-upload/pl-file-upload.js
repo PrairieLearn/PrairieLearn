@@ -63,7 +63,7 @@ window.PLFileUpload.prototype.initializeTemplate = function () {
         var dataUrl = e.target.result;
 
         var commaSplitIdx = dataUrl.indexOf(',');
-        if (commaSplitIdx == -1) {
+        if (commaSplitIdx === -1) {
           that.addWarningMessage(
             '<strong>' + acceptedName + '</strong>' + ' is empty, ignoring file.'
           );
@@ -254,7 +254,7 @@ window.PLFileUpload.prototype.addWarningMessage = function (message) {
 window.PLFileUpload.prototype.isBinary = function (decodedFileContents) {
   var nulIdx = decodedFileContents.indexOf('\0');
   var fileLength = decodedFileContents.length;
-  return nulIdx != -1 && nulIdx <= (fileLength <= 8000 ? fileLength : 8000);
+  return nulIdx !== -1 && nulIdx <= (fileLength <= 8000 ? fileLength : 8000);
 };
 
 /**

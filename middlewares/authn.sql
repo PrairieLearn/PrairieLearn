@@ -12,7 +12,7 @@ FROM
 WHERE
     u.user_id = $user_id;
 
--- BLOCK enroll_user
+-- BLOCK enroll_user_in_example_course
 INSERT INTO enrollments
     (user_id, course_instance_id)
 (
@@ -23,22 +23,7 @@ INSERT INTO enrollments
         course_instances AS ci
         JOIN pl_courses AS c ON (c.id = ci.course_id)
     WHERE
-        u.uid = $uid
-        AND c.short_name = $course_short_name
+        u.user_id = $user_id
+        AND c.example_course IS TRUE
 )
 ON CONFLICT DO NOTHING;
-
--- BLOCK insert_course_permissions_for_user
-INSERT INTO course_permissions
-    (user_id, course_id, course_role)
-(
-    SELECT
-        u.user_id, c.id, 'Previewer'::enum_course_role
-    FROM
-        users AS u,
-        pl_courses AS c
-    WHERE
-        u.uid = $uid
-        AND c.short_name = $course_short_name
-)
-ON CONFLICT DO UPDATE SET course_role = 'Previewer'::enum_course_role;

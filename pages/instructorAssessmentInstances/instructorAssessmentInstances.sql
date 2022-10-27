@@ -3,43 +3,44 @@ SELECT
     (aset.name || ' ' || a.number) AS assessment_label,
     u.user_id, u.uid, u.name,
     users_get_displayed_role(u.user_id, ci.id) AS role,
-    gi.id AS group_id, gi.name AS group_name, gi.uid_list,
+    gi.id AS group_id, gi.name AS group_name, gi.uid_list, gi.user_name_list, gi.user_roles_list as group_roles,
     substring(u.uid from '^[^@]+') AS username,
     ai.score_perc, ai.points, ai.max_points,
     ai.number,ai.id AS assessment_instance_id,ai.open,
     CASE
         WHEN ai.open AND ai.date_limit IS NOT NULL AND ai.date_limit <= current_timestamp
             THEN 'Expired'
-        WHEN ai.open AND ai.date_limit IS NOT NULL AND floor(extract(epoch from (ai.date_limit - current_timestamp))) < 60
+        WHEN ai.open AND ai.date_limit IS NOT NULL AND floor(DATE_PART('epoch', (ai.date_limit - current_timestamp))) < 60
             THEN '< 1 min'
         WHEN ai.open AND ai.date_limit IS NOT NULL
-            THEN greatest(0, floor(extract(epoch from (ai.date_limit - current_timestamp)) / 60))::text || ' min'
+            THEN greatest(0, floor(DATE_PART('epoch', (ai.date_limit - current_timestamp)) / 60))::text || ' min'
         WHEN ai.open THEN 'Open (no time limit)'
+        WHEN ai.open = FALSE AND ai.grading_needed THEN 'Closed (pending grading)'
         ELSE 'Closed'
     END AS time_remaining,
     CASE
         WHEN ai.open AND ai.date_limit IS NOT NULL
-            THEN greatest(0, extract(epoch from (ai.date_limit - current_timestamp)))
+            THEN greatest(0, DATE_PART('epoch', (ai.date_limit - current_timestamp)))
         ELSE NULL
     END AS time_remaining_sec,
     CASE
-        WHEN ai.open AND ai.date_limit IS NOT NULL AND floor(extract(epoch from (ai.date_limit - ai.date))) < 60
+        WHEN ai.open AND ai.date_limit IS NOT NULL AND floor(DATE_PART('epoch', (ai.date_limit - ai.date))) < 60
             THEN '< 1 min'
         WHEN ai.open AND ai.date_limit IS NOT NULL
-            THEN greatest(0, floor(extract(epoch from (ai.date_limit - ai.date)) / 60))::text || ' min'
+            THEN greatest(0, floor(DATE_PART('epoch', (ai.date_limit - ai.date)) / 60))::text || ' min'
         WHEN ai.open THEN 'Open (no time limit)'
         ELSE 'Closed'
     END AS total_time,
     CASE
         WHEN ai.open AND ai.date_limit IS NOT NULL
-            THEN greatest(0, extract(epoch from (ai.date_limit - ai.date)))
+            THEN greatest(0, DATE_PART('epoch', (ai.date_limit - ai.date)))
         ELSE NULL
     END AS total_time_sec,
     ai.date,
     format_date_full_compact(ai.date, ci.display_timezone) AS date_formatted,
     format_interval(ai.duration) AS duration,
-    EXTRACT(EPOCH FROM ai.duration) AS duration_secs,
-    EXTRACT(EPOCH FROM ai.duration) / 60 AS duration_mins,
+    DATE_PART('epoch', ai.duration) AS duration_secs,
+    DATE_PART('epoch', ai.duration) / 60 AS duration_mins,
     (row_number() OVER (PARTITION BY u.user_id ORDER BY score_perc DESC, ai.number DESC, ai.id DESC)) = 1 AS highest_score
 FROM
     assessments AS a

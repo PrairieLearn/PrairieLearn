@@ -4,6 +4,7 @@ var csvStringify = require('../../lib/nonblocking-csv-stringify');
 var express = require('express');
 var router = express.Router();
 
+const { getCourseOwners } = require('../../lib/course');
 var error = require('../../prairielib/lib/error');
 const sanitizeName = require('../../lib/sanitize-name');
 var sqldb = require('../../prairielib/lib/sql-db');
@@ -21,10 +22,23 @@ var csvFilename = function (locals) {
 };
 
 router.get('/', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_instance_permission_view) {
-    return next(error.make(403, 'Access denied (must be a student data viewer)'));
-  }
   res.locals.csvFilename = csvFilename(res.locals);
+
+  if (!res.locals.authz_data.has_course_instance_permission_view) {
+    // We don't actually forbid access to this page if the user is not a student
+    // data viewer, because we want to allow users to click the gradebook tab and
+    // see instructions for how to get student data viewer permissions. Otherwise,
+    // users just wouldn't see the tab at all, and this caused a lot of questions
+    // about why staff couldn't see the gradebook tab.
+    getCourseOwners(res.locals.course.id)
+      .then((owners) => {
+        res.locals.course_owners = owners;
+        res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      })
+      .catch((err) => next(err));
+    return;
+  }
+
   var params = { course_instance_id: res.locals.course_instance.id };
   sqldb.query(sql.course_assessments, params, function (err, result) {
     if (ERR(err, next)) return;
@@ -67,7 +81,8 @@ router.get('/:filename', function (req, res, next) {
   if (!res.locals.authz_data.has_course_instance_permission_view) {
     return next(error.make(403, 'Access denied (must be a student data viewer)'));
   }
-  if (req.params.filename == csvFilename(res.locals)) {
+
+  if (req.params.filename === csvFilename(res.locals)) {
     var params = {
       course_id: res.locals.course.id,
       course_instance_id: res.locals.course_instance.id,
@@ -93,7 +108,7 @@ router.get('/:filename', function (req, res, next) {
       });
     });
   } else {
-    next(new Error('Unknown filename: ' + req.params.filename));
+    next(error.make(404, 'Unknown filename: ' + req.params.filename));
   }
 });
 
@@ -101,7 +116,8 @@ router.post('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_instance_permission_edit) {
     return next(error.make(403, 'Access denied (must be a student data editor)'));
   }
-  if (req.body.__action == 'edit_total_score_perc') {
+
+  if (req.body.__action === 'edit_total_score_perc') {
     const course_instance_id = res.locals.course_instance.id;
     const assessment_instance_id = req.body.assessment_instance_id;
     course.checkBelongs(assessment_instance_id, course_instance_id, (err) => {

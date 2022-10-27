@@ -1,5 +1,6 @@
 const csrf = require('../lib/csrf');
 const config = require('../lib/config');
+const { idsEqual } = require('../lib/id');
 
 module.exports = (req, res, next) => {
   // This middleware looks for a workspace_id-specific cookie and,
@@ -17,7 +18,7 @@ module.exports = (req, res, next) => {
     // if we have a valid cookie with matching workspace_id then
     // short-circuit the current router to skip the rest of
     // authn/authz
-    if (cookieData?.workspace_id == workspace_id) return next('router');
+    if (idsEqual(cookieData?.workspace_id, workspace_id)) return next('router');
   }
 
   // otherwise we fall through and proceed to the full authn/authz stack

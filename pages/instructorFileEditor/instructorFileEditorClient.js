@@ -142,5 +142,5 @@ window.InstructorFileEditor.prototype.getHash = function (contents) {
 
 window.InstructorFileEditor.prototype.checkDiff = function () {
   let curHash = this.getHash(this.editor.getValue());
-  this.saveElement.prop('disabled', curHash == this.origHash);
+  this.saveElement.prop('disabled', curHash === this.origHash);
 };

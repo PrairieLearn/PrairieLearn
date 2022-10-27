@@ -13,7 +13,7 @@ router.get('/', function (req, res, _next) {
 });
 
 router.post('/', function (req, res, next) {
-  if (req.body.__action == 'report_cheating') {
+  if (req.body.__action === 'report_cheating') {
     logger.verbose('cheating report', { locals: res.locals, body: req.body });
     res.locals.message = `Report of cheating: ${req.body.report}\nReporter email: ${req.body.email}`;
     opsbot.sendProctorMessage(res.locals.message, (err) => {

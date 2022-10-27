@@ -1,6 +1,7 @@
 #! /usr/bin/python3
 
-import os, json, subprocess, shlex, threading, re, sys
+import os, json, subprocess, shlex, threading, re, sys, tempfile
+import lxml.etree as ET
 
 CODEBASE = '/grade/student'
 DATAFILE = '/grade/data/data.json'
@@ -24,7 +25,7 @@ class CGrader:
             self.data = json.load(file)
         self.compiler = compiler
 
-    def run_command(self, command, input=None, sandboxed=True, timeout=None):
+    def run_command(self, command, input=None, sandboxed=True, timeout=None, env=None):
         if isinstance(command, str):
             command = shlex.split(command)
         if sandboxed:
@@ -33,38 +34,87 @@ class CGrader:
 
         try:
             proc = subprocess.Popen(command,
+                                    env=env,
                                     stdin=subprocess.PIPE,
                                     stdout=subprocess.PIPE,
                                     stderr=subprocess.STDOUT)
-        except:
+        except Exception:
             return ''
-        out1 = out2 = None
+        out = None
         tostr = ''
         if input is not None and not isinstance(input, (bytes, bytearray)):
             input = str(input).encode('utf-8')
         try:
-            out1 = proc.communicate(input=input, timeout=timeout)[0]
+            proc.communicate(input=input, timeout=timeout)[0]
         except subprocess.TimeoutExpired:
             tostr = TIMEOUT_MESSAGE
         finally:
             proc.kill()
             try:
-                out2 = proc.communicate(timeout=timeout)[0]
+                out = proc.communicate(timeout=timeout)[0]
             except subprocess.TimeoutExpired:
                 tostr = TIMEOUT_MESSAGE
             finally:
-                out = ''
-                if out1:
-                    out += out1.decode('utf-8', 'backslashreplace')
-                if out2:
-                    out += out2.decode('utf-8', 'backslashreplace')
+                out = out.decode('utf-8', 'backslashreplace') if out else ''
                 return out + tostr
 
-    def test_compile_file(self, c_file, exec_file, main_file=None,
-                          add_c_file=None, compiler=None,
-                          points=1, field=None, flags=None,
-                          name='Compilation',
-                          add_warning_result_msg=True,
+    def compile_file(self, c_file, exec_file=None, add_c_file=None, compiler=None,
+                     flags=None, pkg_config_flags=None, add_warning_result_msg=True,
+                     ungradable_if_failed=True, return_objects=False):
+
+        cflags = flags
+        if cflags and not isinstance(cflags, list):
+            cflags = shlex.split(cflags)
+        elif not cflags:
+            cflags = []
+
+        if not add_c_file:
+            add_c_file = []
+        elif not isinstance(add_c_file, list):
+            add_c_file = [add_c_file]
+
+        if not compiler:
+            compiler = self.compiler
+
+        if pkg_config_flags:
+            if isinstance(pkg_config_flags, str):
+                pkg_config_flags = shlex.split(pkg_config_flags)
+            out_flags = self.run_command(['pkg-config', '--cflags'] + pkg_config_flags)
+            print('out_flags in compiler is: ', out_flags)
+            if out_flags:
+                cflags.extend(shlex.split(out_flags))
+
+        out = ''
+        std_obj_files = []
+        objs = []
+        for std_c_file in (c_file if isinstance(c_file, list) else [c_file]):
+            obj_file = re.sub('\.[^.]*$', '', std_c_file) + '.o'
+            out += self.run_command([compiler, '-c', std_c_file, '-o', obj_file] + cflags,
+                                    sandboxed=False)
+            std_obj_files.append(obj_file)
+
+        if all(os.path.isfile(obj) for obj in std_obj_files):
+            # Add new C files that maybe overwrite some existing functions.
+            for added_c_file in add_c_file:
+                obj_file = re.sub('\.[^.]*$', '', added_c_file) + '.o'
+                out += self.run_command([compiler, '-c', added_c_file, 
+                                         '-o', obj_file] + cflags, sandboxed=False)
+                objs.append(obj_file)
+
+        if ungradable_if_failed and not all(os.path.isfile(f) for f in objs + std_obj_files):
+            self.result['message'] += f'Compilation errors, please fix and try again.\n\n{out}\n'
+            raise UngradableException()
+        if out and add_warning_result_msg:
+            self.result['message'] += f'Compilation warnings:\n\n{out}\n'
+        if exec_file:
+            out += self.link_object_files(std_obj_files, objs, exec_file, compiler=compiler,
+                                          flags=flags, pkg_config_flags=pkg_config_flags,
+                                          add_warning_result_msg=add_warning_result_msg,
+                                          ungradable_if_failed=ungradable_if_failed)
+        return (out, std_obj_files + objs) if return_objects else out
+
+    def link_object_files(self, student_obj_files, add_obj_files, exec_file, compiler=None,
+                          flags=None, pkg_config_flags=None, add_warning_result_msg=True,
                           ungradable_if_failed=True):
 
         if flags and not isinstance(flags, list):
@@ -72,56 +122,71 @@ class CGrader:
         elif not flags:
             flags = []
 
+        if not student_obj_files:
+            student_obj_files = []
+        elif not isinstance(student_obj_files, list):
+            student_obj_files = [student_obj_files]
+
+        if not add_obj_files:
+            add_obj_files = []
+        elif not isinstance(add_obj_files, list):
+            add_obj_files = [add_obj_files]
+        if add_obj_files:
+            flags.append('-Wl,--allow-multiple-definition')
+
+        if not compiler:
+            compiler = self.compiler
+
+        if pkg_config_flags:
+            if isinstance(pkg_config_flags, str):
+                pkg_config_flags = shlex.split(pkg_config_flags)
+            out_flags = self.run_command(['pkg-config', '--libs'] + pkg_config_flags)
+            print('out_flags in linker is: ', out_flags)
+            if out_flags:
+                flags.extend(shlex.split(out_flags))
+
+        # The student C files must be the last so its functions can be overwritten
+        out = self.run_command([compiler] + add_obj_files + student_obj_files +
+                               ['-o', exec_file, '-lm'] + flags, sandboxed=False)
+
+        if os.path.isfile(exec_file):
+            self.change_mode(exec_file, '755')
+        elif ungradable_if_failed:
+            self.result['message'] += f'Linker errors, please fix and try again.\n\n{out}\n'
+            raise UngradableException()
+        if out and add_warning_result_msg:
+            self.result['message'] += f'Linker warnings:\n\n{out}\n'
+        return out
+
+    def test_compile_file(self, c_file, exec_file=None, main_file=None,
+                          add_c_file=None, compiler=None,
+                          points=1, field=None, flags=None,
+                          pkg_config_flags=False,
+                          name='Compilation',
+                          add_warning_result_msg=True,
+                          ungradable_if_failed=True):
+
         if not add_c_file:
             add_c_file = []
         elif not isinstance(add_c_file, list):
             add_c_file = [add_c_file]
         if main_file: # Kept for compatibility reasons, but could be set as an added file
             add_c_file.append(main_file)
-        if add_c_file:
-            flags.append('-Wl,--allow-multiple-definition')
 
-        if not compiler:
-            compiler = self.compiler
-
-        out = ''
-        std_obj_files = []
-        for std_c_file in (c_file if isinstance(c_file, list) else [c_file]):
-            obj_file = re.sub('\.[^.]*$', '', std_c_file) + '.o'
-            out += self.run_command([compiler, '-c', std_c_file, '-o', obj_file] + flags,
-                                    sandboxed=False)
-            std_obj_files.append(obj_file)
-
-        if all(os.path.isfile(obj) for obj in std_obj_files):
-            objs = []
-            
-            # Add new C files that maybe overwrite some existing functions.
-            for added_c_file in add_c_file:
-                obj_file = re.sub('\.[^.]*$', '', added_c_file) + '.o'
-                out += self.run_command([compiler, '-c', added_c_file, 
-                                         '-o', obj_file] + flags, sandboxed=False)
-                objs.append(obj_file)
-
-            # The student C files must be the last so its functions can be overwritten
-            out += self.run_command([compiler] + objs + std_obj_files +
-                                    ['-o', exec_file, '-lm'] + flags, sandboxed=False)
-        
-        if os.path.isfile(exec_file):
-            self.change_mode(exec_file, '755')
-        elif ungradable_if_failed:
-            self.result['message'] += f'Compilation errors, please fix and try again.\n\n{out}\n'
-            raise UngradableException()
-        if out and add_warning_result_msg:
-            self.result['message'] += f'Compilation warnings:\n\n{out}\n'
+        out, objects = self.compile_file(c_file, exec_file, add_c_file=add_c_file, compiler=compiler,
+                                         flags=flags, pkg_config_flags=pkg_config_flags,
+                                         add_warning_result_msg=add_warning_result_msg,
+                                         ungradable_if_failed=ungradable_if_failed, return_objects=True)
+        success = os.path.isfile(exec_file) if exec_file else all(os.path.isfile(f) for f in objects)
         return self.add_test_result(name, output=out,
-                                    points=points if os.path.isfile(exec_file) else 0,
+                                    points=points if success else 0,
                                     max_points=points, field=field)
 
-    def change_mode(self, file, mode='744'):
+    def change_mode(self, file, mode='744', change_parent=True):
         file = os.path.abspath(file)
         self.run_command(['chmod', mode, file], sandboxed=False)
         parent = os.path.dirname(file)
-        if parent and not os.path.samefile(file, parent):
+        if change_parent and parent and not os.path.samefile(file, parent):
             self.change_mode(parent, '711')
     
     def test_send_in_check_out(self, *args, **kwargs):
@@ -202,6 +267,7 @@ class CGrader:
                                     field=field)
 
     def add_manual_grading(self, points=1, name=None, description=None):
+        '''Old deprecated function, retained for compatibility reasons.'''
         if not name:
             name = 'Manual Grading - to be reviewed by a human grader'
         if not description:
@@ -238,7 +304,54 @@ class CGrader:
                 self.result['partial_scores'][field]['points'] += points
                 self.result['partial_scores'][field]['max_points'] += max_points
         return test
-                
+
+    def run_check_suite(self, exec_file, args=None,
+                        use_suite_title=False, use_case_name=True, use_unit_test_id=True,
+                        use_iteration=False, sandboxed=False, use_malloc_debug=False):
+
+        if not args:
+            args = []
+        if not isinstance(args, list):
+            args = [args]
+
+        log_file_dir = tempfile.mkdtemp()
+        log_file = os.path.join(log_file_dir, 'tests.xml')
+        if sandboxed: self.change_mode(log_file_dir, '777', change_parent=False)
+    
+        out = self.run_command([exec_file] + args,
+                               env={'CK_XML_LOG_FILE_NAME': log_file, 'TEMP': '/tmp',
+                                    'SANDBOX_UID': self.run_command('id -u') if not sandboxed else '',
+                                    'SANDBOX_GID': self.run_command('id -g') if not sandboxed else '',
+                                    'LD_PRELOAD': '/lib/x86_64-linux-gnu/libc_malloc_debug.so'
+                                    if use_malloc_debug else ''},
+                               sandboxed=sandboxed)
+        print(out) # Printing so it shows in the grading job log
+
+        # Copy log file to results directory so it becomes available to the instructor after execution
+        out = self.run_command(['cp', log_file, '/grade/results/check_log.xml', '--backup=numbered'], sandboxed=False)
+        print(out)
+
+        separator_1 = ': ' if use_suite_title and use_case_name else ''
+        separator_2 = ' - ' if use_unit_test_id and (use_suite_title or use_case_name) else ''
+        try:
+            with open(log_file, 'r', errors='backslashreplace') as log:
+                tree = ET.parse(log, parser=ET.XMLParser())
+            for suite in tree.getroot().findall('{*}suite'):
+                suite_title = suite.findtext('{*}title') if use_suite_title else ''
+                for test in suite.findall('{*}test'):
+                    result = test.get('result')
+                    test_id = test.findtext('{*}id') if use_unit_test_id else ''
+                    iteration = f" (run {test.findtext('{*}iteration')})" if use_iteration else ''
+                    case_name = test.findtext('{*}description') if use_case_name else ''
+                    self.add_test_result(f'{suite_title}{separator_1}{case_name}{separator_2}{test_id}{iteration}',
+                                         points=result == 'success',
+                                         output=test.findtext('{*}message'))
+        except FileNotFoundError as e:
+            self.result['message'] += f'Test suite log file not found. Consult the instructor.\n'
+            raise UngradableException()
+        except ET.ParseError as e:
+            self.result['message'] += f'Error parsing test suite log.\n\n{e}\n'
+            raise UngradableException()
 
     def save_results(self):
         if self.result['max_points'] > 0:

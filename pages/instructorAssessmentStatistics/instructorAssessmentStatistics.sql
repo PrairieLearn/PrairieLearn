@@ -7,10 +7,10 @@ SELECT
     format_interval(ads.min) AS min,
     format_interval(ads.max) AS max,
     format_interval(ads.mean) AS mean,
-    EXTRACT(EPOCH FROM ads.median) / 60 AS median_mins,
-    EXTRACT(EPOCH FROM ads.min) / 60  AS min_mins,
-    EXTRACT(EPOCH FROM ads.max) / 60  AS max_mins,
-    EXTRACT(EPOCH FROM ads.mean) / 60  AS mean_mins,
+    DATE_PART('epoch', ads.median) / 60 AS median_mins,
+    DATE_PART('epoch', ads.min) / 60  AS min_mins,
+    DATE_PART('epoch', ads.max) / 60  AS max_mins,
+    DATE_PART('epoch', ads.mean) / 60  AS mean_mins,
     threshold_seconds,
     threshold_labels,
     hist
@@ -26,8 +26,7 @@ WITH assessment_instances_by_user_and_date AS (
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
         JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-        LEFT JOIN group_info($assessment_id) AS gi ON (gi.id = ai.group_id)
-        LEFT JOIN group_users AS gu ON (gu.group_id = gi.id)
+        LEFT JOIN group_users AS gu ON (gu.group_id = ai.group_id)
         JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
         JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
     WHERE
@@ -52,7 +51,7 @@ ORDER BY
 -- BLOCK user_scores
 SELECT
     ai.score_perc,
-    EXTRACT(EPOCH FROM ai.duration) AS duration_secs
+    DATE_PART('epoch', ai.duration) AS duration_secs
 FROM
     assessment_instances AS ai
     JOIN assessments AS a ON (a.id = ai.assessment_id)

@@ -3,6 +3,7 @@ var _ = require('lodash');
 var express = require('express');
 var router = express.Router();
 
+const { getCourseOwners } = require('../../lib/course');
 var error = require('../../prairielib/lib/error');
 var sqldb = require('../../prairielib/lib/sql-db');
 var sqlLoader = require('../../prairielib/lib/sql-loader');
@@ -11,7 +12,13 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_permission_edit) {
-    return next(error.make(403, 'Access denied (must be a course Editor)'));
+    getCourseOwners(res.locals.course.id)
+      .then((owners) => {
+        res.locals.course_owners = owners;
+        res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      })
+      .catch((err) => next(err));
+    return;
   }
   var params = {
     course_instance_id: res.locals.course_instance.id,
@@ -30,7 +37,7 @@ router.post('/', function (req, res, next) {
     return next(error.make(403, 'Access denied (must be a course Editor)'));
   }
   var params;
-  if (req.body.__action == 'lti_new_cred') {
+  if (req.body.__action === 'lti_new_cred') {
     params = {
       key: 'K' + randomString(),
       secret: 'S' + randomString(),
@@ -40,7 +47,7 @@ router.post('/', function (req, res, next) {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'lti_del_cred') {
+  } else if (req.body.__action === 'lti_del_cred') {
     params = {
       id: req.body.lti_link_id,
       ci_id: res.locals.course_instance.id,
@@ -49,9 +56,9 @@ router.post('/', function (req, res, next) {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'lti_link_target') {
+  } else if (req.body.__action === 'lti_link_target') {
     var newAssessment = null;
-    if (req.body.newAssessment != '') {
+    if (req.body.newAssessment !== '') {
       newAssessment = req.body.newAssessment;
     }
 

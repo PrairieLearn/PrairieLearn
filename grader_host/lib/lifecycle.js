@@ -60,7 +60,7 @@ module.exports.abandonLaunch = async () => {
     return;
   }
 
-  if (lifecycleState == 'Launching') {
+  if (lifecycleState === 'Launching') {
     lifecycleState = 'AbandoningLaunch';
     logger.info(`lifecycle.abandonLaunch(): changing to state ${lifecycleState}`);
 
@@ -84,7 +84,7 @@ module.exports.abandonLaunch = async () => {
 };
 
 function heartbeat() {
-  if (lifecycleState == 'Launching') {
+  if (lifecycleState === 'Launching') {
     logger.info('lifecycle.heartbeat(): sending heartbeat...');
     const autoscaling = new AWS.AutoScaling();
     const params = {

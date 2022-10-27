@@ -22,7 +22,7 @@ function processSubmission(req, res, callback) {
     return callback(error.make(400, 'This assessment is not accepting submissions at this time.'));
   }
   let variant_id, submitted_answer;
-  if (res.locals.question.type == 'Freeform') {
+  if (res.locals.question.type === 'Freeform') {
     variant_id = req.body.__variant_id;
     submitted_answer = _.omit(req.body, ['__action', '__csrf_token', '__variant_id']);
   } else {
@@ -56,7 +56,7 @@ function processSubmission(req, res, callback) {
     (err, result) => {
       if (ERR(err, callback)) return;
       const variant = result.rows[0];
-      if (req.body.__action == 'grade') {
+      if (req.body.__action === 'grade') {
         const overrideRateLimits = false;
         question.saveAndGradeSubmission(
           submission,
@@ -69,7 +69,7 @@ function processSubmission(req, res, callback) {
             callback(null, submission.variant_id);
           }
         );
-      } else if (req.body.__action == 'save') {
+      } else if (req.body.__action === 'save') {
         question.saveSubmission(
           submission,
           variant,
@@ -94,14 +94,18 @@ function processSubmission(req, res, callback) {
 
 router.post('/', function (req, res, next) {
   if (res.locals.assessment.type !== 'Exam') return next();
+
   if (!res.locals.authz_result.authorized_edit) {
     return next(error.make(403, 'Not authorized', res.locals));
   }
-  if (req.body.__action == 'grade' || req.body.__action == 'save') {
+
+  if (req.body.__action === 'grade' || req.body.__action === 'save') {
     if (res.locals.authz_result.time_limit_expired) {
-      return next(new Error('time limit is expired, please go back and finish your assessment'));
+      return next(
+        error.make(403, 'time limit is expired, please go back and finish your assessment')
+      );
     }
-    if (req.body.__action == 'grade' && !res.locals.assessment.allow_real_time_grading) {
+    if (req.body.__action === 'grade' && !res.locals.assessment.allow_real_time_grading) {
       next(error.make(403, 'Real-time grading is not allowed for this assessment'));
       return;
     }
@@ -109,16 +113,19 @@ router.post('/', function (req, res, next) {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action == 'timeLimitFinish') {
-    const closeExam = true;
-    const overrideGradeRate = false;
+  } else if (req.body.__action === 'timeLimitFinish') {
     // Only close if the timer expired due to time limit, not for access end
     if (!res.locals.assessment_instance_time_limit_expired) {
       return res.redirect(req.originalUrl);
     }
+
+    const requireOpen = true;
+    const closeExam = true;
+    const overrideGradeRate = false;
     assessment.gradeAssessmentInstance(
       res.locals.assessment_instance.id,
       res.locals.authn_user.user_id,
+      requireOpen,
       closeExam,
       overrideGradeRate,
       function (err) {
@@ -131,7 +138,7 @@ router.post('/', function (req, res, next) {
         );
       }
     );
-  } else if (req.body.__action == 'attach_file') {
+  } else if (req.body.__action === 'attach_file') {
     util.callbackify(studentInstanceQuestion.processFileUpload)(
       req,
       res,
@@ -146,7 +153,7 @@ router.post('/', function (req, res, next) {
         );
       }
     );
-  } else if (req.body.__action == 'attach_text') {
+  } else if (req.body.__action === 'attach_text') {
     util.callbackify(studentInstanceQuestion.processTextUpload)(
       req,
       res,
@@ -161,7 +168,7 @@ router.post('/', function (req, res, next) {
         );
       }
     );
-  } else if (req.body.__action == 'delete_file') {
+  } else if (req.body.__action === 'delete_file') {
     util.callbackify(studentInstanceQuestion.processDeleteFile)(
       req,
       res,
@@ -176,7 +183,7 @@ router.post('/', function (req, res, next) {
         );
       }
     );
-  } else if (req.body.__action == 'report_issue') {
+  } else if (req.body.__action === 'report_issue') {
     util.callbackify(studentInstanceQuestion.processIssue)(req, res, function (err, variant_id) {
       if (ERR(err, next)) return;
       res.redirect(
@@ -195,6 +202,24 @@ router.post('/', function (req, res, next) {
       })
     );
   }
+});
+
+router.get('/variant/:variant_id/submission/:submission_id', function (req, res, next) {
+  question.renderPanelsForSubmission(
+    req.params.submission_id,
+    res.locals.question.id,
+    res.locals.instance_question.id,
+    req.params.variant_id,
+    res.locals.urlPrefix,
+    null, // questionContext
+    null, // csrfToken
+    null, // authorizedEdit
+    false, // renderScorePanels
+    (err, results) => {
+      if (ERR(err, next)) return;
+      res.send({ submissionPanel: results.submissionPanel });
+    }
+  );
 });
 
 router.get('/', function (req, res, next) {

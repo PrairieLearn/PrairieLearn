@@ -19,7 +19,7 @@ router.get('/:action?/:target(*)?', function (req, res, next) {
   // catch bad Shibboleth data
   const authError =
     'Your account is not registered for this service. Please contact your course instructor or IT support.';
-  if (authUid == '(null)') return next(new Error(authError));
+  if (authUid === '(null)') return next(new Error(authError));
 
   var params = [authUid, authName, authUin, 'Shibboleth'];
   sqldb.call('users_select_or_insert', params, (err, result) => {
@@ -31,8 +31,10 @@ router.get('/:action?/:target(*)?', function (req, res, next) {
     var pl_authn = csrf.generateToken(tokenData, config.secretKey);
     res.cookie('pl_authn', pl_authn, {
       maxAge: config.authnCookieMaxAgeMilliseconds,
+      httpOnly: true,
+      secure: true,
     });
-    if (req.params.action == 'redirect') return res.redirect('/' + req.params.target);
+    if (req.params.action === 'redirect') return res.redirect('/' + req.params.target);
     var redirUrl = res.locals.homeUrl;
     if ('preAuthUrl' in req.cookies) {
       redirUrl = req.cookies.preAuthUrl;

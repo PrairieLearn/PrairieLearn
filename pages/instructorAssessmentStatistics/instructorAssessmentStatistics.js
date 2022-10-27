@@ -7,6 +7,7 @@ const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
+const error = require('../../prairielib/lib/error');
 const sanitizeName = require('../../lib/sanitize-name');
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
@@ -78,7 +79,7 @@ router.get('/', function (req, res, next) {
 
 router.get('/:filename', function (req, res, next) {
   setFilenames(res.locals);
-  if (req.params.filename == res.locals.scoreStatsCsvFilename) {
+  if (req.params.filename === res.locals.scoreStatsCsvFilename) {
     let params = { assessment_id: res.locals.assessment.id };
     sqldb.queryOneRow(sql.assessment_stats, params, function (err, result) {
       if (ERR(err, next)) return;
@@ -132,7 +133,7 @@ router.get('/:filename', function (req, res, next) {
         res.send(csv);
       });
     });
-  } else if (req.params.filename == res.locals.durationStatsCsvFilename) {
+  } else if (req.params.filename === res.locals.durationStatsCsvFilename) {
     let params = { assessment_id: res.locals.assessment.id };
     sqldb.queryOneRow(sql.assessment_duration_stats, params, function (err, result) {
       if (ERR(err, next)) return;
@@ -178,7 +179,7 @@ router.get('/:filename', function (req, res, next) {
         res.send(csv);
       });
     });
-  } else if (req.params.filename == res.locals.statsByDateCsvFilename) {
+  } else if (req.params.filename === res.locals.statsByDateCsvFilename) {
     let params = { assessment_id: res.locals.assessment.id };
     sqldb.query(sql.assessment_score_histogram_by_date, params, function (err, result) {
       if (ERR(err, next)) return;
@@ -221,7 +222,7 @@ router.get('/:filename', function (req, res, next) {
       });
     });
   } else {
-    next(new Error('Unknown filename: ' + req.params.filename));
+    next(error.make(404, 'Unknown filename: ' + req.params.filename));
   }
 });
 

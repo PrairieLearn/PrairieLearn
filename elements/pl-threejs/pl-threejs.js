@@ -80,11 +80,189 @@ function PLThreeJS(options) {
   this.spaceGroup.add(this.spaceFrame);
   this.bodyGroup.add(this.bodyFrame);
 
+  // Source: https://github.com/mrdoob/three.js/blob/68daccedef9c9c325cc5f4c929fcaf05229aa1b3/examples/jsm/geometries/TextGeometry.js
+  class TextGeometry extends THREE.ExtrudeGeometry {
+    constructor(text, parameters = {}) {
+      const font = parameters.font;
+
+      if (font === undefined) {
+        super(); // generate default extrude geometry
+      } else {
+        const shapes = font.generateShapes(text, parameters.size);
+
+        // translate parameters to ExtrudeGeometry API
+
+        parameters.depth = parameters.height !== undefined ? parameters.height : 50;
+
+        // defaults
+
+        if (parameters.bevelThickness === undefined) parameters.bevelThickness = 10;
+        if (parameters.bevelSize === undefined) parameters.bevelSize = 8;
+        if (parameters.bevelEnabled === undefined) parameters.bevelEnabled = false;
+
+        super(shapes, parameters);
+      }
+
+      this.type = 'TextGeometry';
+    }
+  }
+
+  // Source: https://github.com/mrdoob/three.js/blob/68daccedef9c9c325cc5f4c929fcaf05229aa1b3/examples/jsm/loaders/FontLoader.js
+  class FontLoader extends THREE.Loader {
+    constructor(manager) {
+      super(manager);
+    }
+
+    load(url, onLoad, onProgress, onError) {
+      const scope = this;
+
+      const loader = new THREE.FileLoader(this.manager);
+      loader.setPath(this.path);
+      loader.setRequestHeader(this.requestHeader);
+      loader.setWithCredentials(this.withCredentials);
+      loader.load(
+        url,
+        function (text) {
+          const font = scope.parse(JSON.parse(text));
+
+          if (onLoad) onLoad(font);
+        },
+        onProgress,
+        onError
+      );
+    }
+
+    parse(json) {
+      return new Font(json);
+    }
+  }
+
+  // Source: https://github.com/mrdoob/three.js/blob/68daccedef9c9c325cc5f4c929fcaf05229aa1b3/examples/jsm/loaders/FontLoader.js
+  class Font {
+    constructor(data) {
+      this.isFont = true;
+
+      this.type = 'Font';
+
+      this.data = data;
+    }
+
+    generateShapes(text, size = 100) {
+      const shapes = [];
+      const paths = createPaths(text, size, this.data);
+
+      for (let p = 0, pl = paths.length; p < pl; p++) {
+        shapes.push(...paths[p].toShapes());
+      }
+
+      return shapes;
+    }
+  }
+
+  // Source: https://github.com/mrdoob/three.js/blob/68daccedef9c9c325cc5f4c929fcaf05229aa1b3/examples/jsm/loaders/FontLoader.js
+  function createPaths(text, size, data) {
+    const chars = Array.from(text);
+    const scale = size / data.resolution;
+    const line_height =
+      (data.boundingBox.yMax - data.boundingBox.yMin + data.underlineThickness) * scale;
+
+    const paths = [];
+
+    let offsetX = 0,
+      offsetY = 0;
+
+    for (let i = 0; i < chars.length; i++) {
+      const char = chars[i];
+
+      if (char === '\n') {
+        offsetX = 0;
+        offsetY -= line_height;
+      } else {
+        const ret = createPath(char, scale, offsetX, offsetY, data);
+        offsetX += ret.offsetX;
+        paths.push(ret.path);
+      }
+    }
+
+    return paths;
+  }
+
+  // Source: https://github.com/mrdoob/three.js/blob/68daccedef9c9c325cc5f4c929fcaf05229aa1b3/examples/jsm/loaders/FontLoader.js
+  function createPath(char, scale, offsetX, offsetY, data) {
+    const glyph = data.glyphs[char] || data.glyphs['?'];
+
+    if (!glyph) {
+      console.error(
+        'THREE.Font: character "' +
+          char +
+          '" does not exists in font family ' +
+          data.familyName +
+          '.'
+      );
+
+      return;
+    }
+
+    const path = new THREE.ShapePath();
+
+    let x, y, cpx, cpy, cpx1, cpy1, cpx2, cpy2;
+
+    if (glyph.o) {
+      const outline = glyph._cachedOutline || (glyph._cachedOutline = glyph.o.split(' '));
+
+      for (let i = 0, l = outline.length; i < l; ) {
+        const action = outline[i++];
+
+        switch (action) {
+          case 'm': // moveTo
+            x = outline[i++] * scale + offsetX;
+            y = outline[i++] * scale + offsetY;
+
+            path.moveTo(x, y);
+
+            break;
+
+          case 'l': // lineTo
+            x = outline[i++] * scale + offsetX;
+            y = outline[i++] * scale + offsetY;
+
+            path.lineTo(x, y);
+
+            break;
+
+          case 'q': // quadraticCurveTo
+            cpx = outline[i++] * scale + offsetX;
+            cpy = outline[i++] * scale + offsetY;
+            cpx1 = outline[i++] * scale + offsetX;
+            cpy1 = outline[i++] * scale + offsetY;
+
+            path.quadraticCurveTo(cpx1, cpy1, cpx, cpy);
+
+            break;
+
+          case 'b': // bezierCurveTo
+            cpx = outline[i++] * scale + offsetX;
+            cpy = outline[i++] * scale + offsetY;
+            cpx1 = outline[i++] * scale + offsetX;
+            cpy1 = outline[i++] * scale + offsetY;
+            cpx2 = outline[i++] * scale + offsetX;
+            cpy2 = outline[i++] * scale + offsetY;
+
+            path.bezierCurveTo(cpx1, cpy1, cpx2, cpy2, cpx, cpy);
+
+            break;
+        }
+      }
+    }
+
+    return { offsetX: glyph.ha * scale, path: path };
+  }
+
   async.series(
     [
       // Load font
       function (callback) {
-        var loader = new THREE.FontLoader();
+        var loader = new FontLoader();
         loader.load(
           '/node_modules/three/examples/fonts/helvetiker_regular.typeface.json',
           function (font) {
@@ -98,7 +276,7 @@ function PLThreeJS(options) {
         async.eachSeries(
           this.objects,
           function (obj, callback) {
-            if (obj.type == 'stl') {
+            if (obj.type === 'stl') {
               var loader = new THREE.STLLoader();
               loader.load(
                 obj.file_url,
@@ -116,17 +294,17 @@ function PLThreeJS(options) {
                   mesh.receiveShadow = true;
                   mesh.position.fromArray(obj.position);
                   mesh.quaternion.fromArray(obj.quaternion);
-                  if (obj.frame == 'space') {
+                  if (obj.frame === 'space') {
                     this.spaceObjectGroup.add(mesh);
-                  } else if (obj.frame == 'body') {
+                  } else if (obj.frame === 'body') {
                     this.bodyObjectGroup.add(mesh);
                   }
                   // objects_to_drag.push(mesh);
                   callback(null);
                 }.bind(this)
               );
-            } else if (obj.type == 'txt') {
-              var geometry = new THREE.TextGeometry(obj.text, {
+            } else if (obj.type === 'txt') {
+              var geometry = new TextGeometry(obj.text, {
                 font: this.font,
                 size: 0.25,
                 height: 0.05,
@@ -149,9 +327,9 @@ function PLThreeJS(options) {
               mesh.receiveShadow = true;
               mesh.position.fromArray(obj.position);
               mesh.quaternion.fromArray(obj.quaternion);
-              if (obj.frame == 'space') {
+              if (obj.frame === 'space') {
                 this.spaceObjectGroup.add(mesh);
-              } else if (obj.frame == 'body') {
+              } else if (obj.frame === 'body') {
                 this.bodyObjectGroup.add(mesh);
               }
               callback(null);
@@ -444,15 +622,15 @@ PLThreeJS.prototype.makeFrame = function () {
       transparent: true,
       opacity: 0.9,
     });
-    if (whichAxis == 'x' || whichAxis == 'X') {
+    if (whichAxis === 'x' || whichAxis === 'X') {
       geometry.rotateZ(Math.PI / 2);
       geometry.translate(0.5, 0, 0);
       material.color = new THREE.Color(0xff0000);
-    } else if (whichAxis == 'y' || whichAxis == 'Y') {
+    } else if (whichAxis === 'y' || whichAxis === 'Y') {
       geometry.rotateX(Math.PI);
       geometry.translate(0, 0.5, 0);
       material.color = new THREE.Color(0x00ff00);
-    } else if (whichAxis == 'z' || whichAxis == 'Z') {
+    } else if (whichAxis === 'z' || whichAxis === 'Z') {
       geometry.rotateX(-Math.PI / 2);
       geometry.translate(0, 0, 0.5);
       material.color = new THREE.Color(0x0000ff);
@@ -708,21 +886,21 @@ PLThreeJS.prototype.updateDisplayOfPose = function () {
 
   var matlabText = '';
   var pythonText = 'import numpy as np\n\n';
-  if (this.textPoseFormat == 'matrix') {
+  if (this.textPoseFormat === 'matrix') {
     // position
     matlabText += posToMatlab(this.bodyGroup.position) + '\n\n';
     pythonText += posToPython(this.bodyGroup.position) + '\n\n';
     // orientation
     matlabText += rotToMatlab(this.bodyGroup.matrix.elements);
     pythonText += rotToPython(this.bodyGroup.matrix.elements);
-  } else if (this.textPoseFormat == 'quaternion') {
+  } else if (this.textPoseFormat === 'quaternion') {
     // position
     matlabText += posToMatlab(this.bodyGroup.position) + '\n\n';
     pythonText += posToPython(this.bodyGroup.position) + '\n\n';
     // orientation
     matlabText += quatToMatlab(this.bodyGroup.quaternion.toArray());
     pythonText += quatToPython(this.bodyGroup.quaternion.toArray());
-  } else if (this.textPoseFormat == 'homogeneous') {
+  } else if (this.textPoseFormat === 'homogeneous') {
     // both position and orientation
     matlabText += homToMatlab(this.bodyGroup.matrix.elements);
     pythonText += homToPython(this.bodyGroup.matrix.elements);

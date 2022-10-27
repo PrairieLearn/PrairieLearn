@@ -2,7 +2,6 @@ import prairielearn as pl
 import lxml.html
 import chevron
 import os
-import json
 import base64
 
 SOURCE_FILE_NAME_DEFAULT = None
@@ -58,14 +57,10 @@ def render(element_html, data):
     # Chop off ending newlines and spaces
     contents = contents.rstrip()
 
-    # JSON dumps adds the quotes and escapes needed to have the string
-    # be assigned to a JS expression.
-    quoted_code = json.dumps(contents)
-
     html_params = {
         'contents': contents,
-        'quoted_code': quoted_code,
-        'language': pl.get_string_attrib(element, 'language', LANGUAGE_DEFAULT)
+        'language': pl.get_string_attrib(element, 'language', LANGUAGE_DEFAULT),
+        'uuid': pl.get_uuid()
     }
 
     with open('pl-xss-safe.mustache', 'r', encoding='utf-8') as f:

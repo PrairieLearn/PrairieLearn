@@ -48,7 +48,7 @@ module.exports.run = (callback) => {
       (callback) => {
         opsbot.sendMessage(msg, (err, res, body) => {
           if (ERR(err, callback)) return;
-          if (res.statusCode != 200) {
+          if (res.statusCode !== 200) {
             logger.error(
               'Error posting external grading dead letters to slack [status code ${res.statusCode}]',
               body
