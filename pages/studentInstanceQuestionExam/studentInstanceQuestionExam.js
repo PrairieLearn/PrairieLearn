@@ -216,7 +216,10 @@ router.get('/variant/:variant_id/submission/:submission_id', function (req, res,
     null, // authorizedEdit
     false, // renderScorePanels
     (err, results) => {
-      if (ERR(err, next)) return;
+      if (ERR(err, next)) {
+        console.log("1");
+        return;
+      }
       res.send({ submissionPanel: results.submissionPanel });
     }
   );
