@@ -1,3 +1,4 @@
+// @ts-check
 const chaiAsPromised = require('chai-as-promised');
 const chai = require('chai');
 chai.use(chaiAsPromised);
@@ -659,7 +660,7 @@ describe('Assessment syncing', () => {
     assert.isTrue(foundManager.can_assign_roles_during_assessment);
 
     const foundContributor = syncedRoles.find((role) => role.role_name === 'Contributor');
-    assert.notEqual(foundContributor !== undefined);
+    assert.isOk(foundContributor);
     assert.equal(foundContributor.minimum, 0);
     assert.equal(foundContributor.maximum, null);
     assert.isFalse(foundContributor.can_assign_roles_at_start);
@@ -703,7 +704,7 @@ describe('Assessment syncing', () => {
 
     // Check group roles
     const syncedRoles = await util.dumpTable('group_roles');
-    assert(syncedRoles.length === 2);
+    assert.isTrue(syncedRoles.length === 2);
 
     const foundRecorder = syncedRoles.find((role) => role.role_name === 'Recorder');
     const foundContributor = syncedRoles.find((role) => role.role_name === 'Contributor');
@@ -721,7 +722,7 @@ describe('Assessment syncing', () => {
       );
     const firstQuestionRecorderPermission = getPermission(foundRecorder, firstAssessmentQuestion);
     assert.notEqual(firstQuestionRecorderPermission, undefined);
-    assert(
+    assert.isTrue(
       firstQuestionRecorderPermission.can_view && firstQuestionRecorderPermission.can_submit,
       'recorder should have permission to view and submit first question'
     );
@@ -731,14 +732,14 @@ describe('Assessment syncing', () => {
       firstAssessmentQuestion
     );
     assert.notEqual(firstQuestionContributorPermission, undefined);
-    assert(
+    assert.isTrue(
       firstQuestionContributorPermission.can_view && !firstQuestionContributorPermission.can_submit,
       'contributor should only have permission to view first question'
     );
 
     const secondQuestionRecorderPermission = getPermission(foundRecorder, secondAssessmentQuestion);
     assert.notEqual(secondQuestionRecorderPermission, undefined);
-    assert(
+    assert.isTrue(
       secondQuestionRecorderPermission.can_view && secondQuestionRecorderPermission.can_submit,
       'recorder should have permission to view and submit second question'
     );
@@ -747,8 +748,8 @@ describe('Assessment syncing', () => {
       foundContributor,
       secondAssessmentQuestion
     );
-    assert.notEqual(secondQuestionContributorPermission);
-    assert(
+    assert.isFalse(secondQuestionContributorPermission);
+    assert.isTrue(
       !secondQuestionContributorPermission.can_view &&
         !secondQuestionContributorPermission.can_submit,
       'contributor should not be able to view or submit second question'
@@ -974,7 +975,7 @@ describe('Assessment syncing', () => {
       (aset) => aset.name === missingAssessmentSetName
     );
     assert.isOk(syncedAssessmentSet);
-    assert(
+    assert.isTrue(
       syncedAssessmentSet.heading && syncedAssessmentSet.heading.length > 0,
       'assessment set should not have empty heading'
     );
@@ -1452,6 +1453,7 @@ describe('Assessment syncing', () => {
 
   it('creates entry in the database in the case of invalid JSON', async () => {
     const courseData = util.getCourseData();
+    // @ts-expect-error
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = 'lol not valid json';
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessmentSets = await util.dumpTable('assessment_sets');
@@ -1633,5 +1635,48 @@ describe('Assessment syncing', () => {
       syncedAssessment.sync_errors,
       `"multipleInstance" cannot be used for Homework-type assessments`
     );
+  });
+
+  // https://github.com/PrairieLearn/PrairieLearn/issues/6539
+  it('handles unique sequence of renames and duplicate UUIDs', async () => {
+    const courseData = util.getCourseData();
+
+    // Start with a clean slate.
+    const courseInstanceData = courseData.courseInstances[util.COURSE_INSTANCE_ID];
+    courseInstanceData.assessments = {};
+
+    // Write and sync a single assessment.
+    const originalAssessment = makeAssessment(courseData);
+    originalAssessment.uuid = '0e8097aa-b554-4908-9eac-d46a78d6c249';
+    courseInstanceData.assessments['a'] = originalAssessment;
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+
+    // Now "move" the above assessment to a new directory AND add another with the
+    // same UUID.
+    delete courseInstanceData.assessments['a'];
+    courseInstanceData.assessments['b'] = originalAssessment;
+    courseInstanceData.assessments['c'] = originalAssessment;
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+    // Now "fix" the duplicate UUID.
+    courseInstanceData.assessments['c'] = {
+      ...originalAssessment,
+      uuid: '0e3097ba-b554-4908-9eac-d46a78d6c249',
+    };
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+    const assessments = await util.dumpTable('assessments');
+
+    // Original assessment should not exist.
+    const originalAssessmentRow = assessments.find((a) => a.tid === 'a');
+    assert.isUndefined(originalAssessmentRow);
+
+    // New assessments should exist and have the correct UUIDs.
+    const newAssessmentRow1 = assessments.find((q) => q.qid === 'b' && q.deleted_at === null);
+    assert.isNull(newAssessmentRow1.deleted_at);
+    assert.equal(newAssessmentRow1.uuid, '0e8097aa-b554-4908-9eac-d46a78d6c249');
+    const newAssessmentRow2 = assessments.find((q) => q.qid === 'c' && q.deleted_at === null);
+    assert.isNull(newAssessmentRow2.deleted_at);
+    assert.equal(newAssessmentRow2.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
   });
 });

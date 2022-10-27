@@ -7,7 +7,6 @@ const path = require('path');
 
 const util = require('./util');
 const helperDb = require('../helperDb');
-const sqldb = require('../../prairielib/lib/sql-db');
 const { idsEqual } = require('../../lib/id');
 
 const { assert } = chai;
@@ -361,11 +360,10 @@ describe('Question syncing', () => {
   });
 
   // https://github.com/PrairieLearn/PrairieLearn/issues/6539
-  it.only('reproduces problem Firas reported', async () => {
+  it('handles unique sequence of renames and duplicate UUIDs', async () => {
     const courseData = util.getCourseData();
 
     // Start with a clean slate.
-    courseData.courseInstances = {};
     courseData.questions = {};
 
     // Write and sync a single question.
@@ -374,7 +372,7 @@ describe('Question syncing', () => {
     courseData.questions['templates/simple_randomized_mcq'] = originalQuestion;
     const courseDir = await util.writeAndSyncCourseData(courseData);
 
-    // Now move the above question to a new directory AND add another with the
+    // Now "move" the above question to a new directory AND add another with the
     // same UUID.
     delete courseData.questions['templates/simple_randomized_mcq'];
     courseData.questions['firas_templates/simple_randomized_mcq'] = originalQuestion;
@@ -386,84 +384,9 @@ describe('Question syncing', () => {
       ...originalQuestion,
       uuid: '0e3097ba-b554-4908-9eac-d46a78d6c249',
     };
-    console.log('courseData', courseData);
-    console.log('questions', await util.dumpTable('questions'));
-    await sqldb.runInTransactionAsync(async () => {
-      await sqldb.queryAsync(
-        `
-          CREATE TEMPORARY TABLE disk_questions (
-          qid TEXT NOT NULL,
-          uuid uuid,
-          errors TEXT,
-          warnings TEXT,
-          data JSONB
-      ) ON COMMIT DROP;`,
-        {}
-      );
-      await sqldb.queryAsync(
-        `
-      INSERT INTO disk_questions (
-          qid,
-          uuid,
-          errors,
-          warnings,
-          data
-      ) SELECT
-          entries->>0,
-          (entries->>1)::uuid,
-          entries->>2,
-          entries->>3,
-          (entries->4)::JSONB
-      FROM UNNEST($disk_questions_data::JSONB[]) AS entries;
-    `,
-
-        {
-          disk_questions_data: [
-            '["firas_templates/simple_randomized_mcq","0e8097aa-b554-4908-9eac-d46a78d6c249","","",{"type":"Freeform","title":"Test question","partial_credit":true,"client_files":["client.js","question.html","answer.html"],"topic":"Test","grading_method":"Internal","single_variant":false,"show_correct_answer":true,"external_grading_environment":{},"dependencies":{},"workspace_environment":{}}]',
-            '["firas_test/modulo_variable","0e3097ba-b554-4908-9eac-d46a78d6c249","","",{"type":"Freeform","title":"Test question","partial_credit":true,"client_files":["client.js","question.html","answer.html"],"topic":"Test","grading_method":"Internal","single_variant":false,"show_correct_answer":true,"external_grading_environment":{},"dependencies":{},"workspace_environment":{}}]',
-          ],
-        }
-      );
-      console.log(
-        'disk_questions',
-        (await sqldb.queryAsync('SELECT * FROM disk_questions;', {})).rows
-      );
-      const res = await sqldb.queryAsync(
-        `
-      SELECT src.qid AS src_qid, src.uuid AS src_uuid, dest.id AS dest_id, dest.uuid AS dest_uuid, dest.qid AS dest_qid -- matched_rows cols have underscores
-        FROM disk_questions AS src LEFT JOIN questions AS dest ON (
-            dest.course_id = $course_id
-            AND (src.uuid = dest.uuid
-                 OR ((src.uuid IS NULL OR dest.uuid IS NULL)
-                     AND src.qid = dest.qid AND dest.deleted_at IS NULL)))`,
-        { course_id: 1 }
-      );
-      console.log(res.rows);
-
-      const res2 = await sqldb.queryAsync(
-        `
-        SELECT DISTINCT ON (src_qid) src.qid AS src_qid, src.uuid AS src_uuid, dest.id AS dest_id, dest.uuid AS dest_uuid, dest.qid AS dest_qid -- matched_rows cols have underscores
-        FROM disk_questions AS src LEFT JOIN questions AS dest ON (
-            dest.course_id = $course_id
-            AND (src.uuid = dest.uuid
-                 OR ((src.uuid IS NULL OR dest.uuid IS NULL)
-                     AND src.qid = dest.qid AND dest.deleted_at IS NULL)))
-        ORDER BY src_qid, (src.uuid = dest.uuid) DESC NULLS LAST
-                     `,
-        { course_id: 1 }
-      );
-      console.log(res2.rows);
-    });
-    try {
-      await util.overwriteAndSyncCourseData(courseData, courseDir);
-    } catch (err) {
-      console.log(err);
-      throw err;
-    }
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
 
     const questions = await util.dumpTable('questions');
-
-    console.log(questions);
 
     // Original question should not exist.
     const originalQuestionRow = questions.find((q) => q.qid === 'templates/simple_randomized_mcq');
