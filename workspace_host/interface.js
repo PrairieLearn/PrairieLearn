@@ -1249,8 +1249,9 @@ function _createContainer(workspace, callback) {
             prefix: `${workspace.id}/${workspace.version}`,
             interval: config.workspaceLogsFlushIntervalSec * 1000,
             tags: {
-              // TODO: tag by course and institution too?
               WorkspaceId: workspace.id,
+              CourseId: workspace.course_id,
+              InstitutionId: workspace.institution_id,
             },
           });
           s3LogForwarders.set(localName, logForwarder);
@@ -1287,26 +1288,22 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
   };
   await sqldb.queryAsync(sql.set_workspace_launch_uuid, params);
 
-  const { workspace_version } = (
-    await sqldb.queryOneRowAsync(sql.select_workspace_version, { workspace_id })
+  const { version, homedir_location, course_id, institution_id } = (
+    await sqldb.queryOneRowAsync(sql.select_workspace, { workspace_id })
   ).rows[0];
-  const { homedir_location } = (
-    await sqldb.queryOneRowAsync(sql.select_workspace_homedir_location, {
-      workspace_id,
-    })
-  ).rows[0];
+
   const workspace = {
     id: workspace_id,
-    version: workspace_version,
+    course_id,
+    institution_id,
+    version,
     launch_uuid: uuid,
     local_name: `workspace-${uuid}`,
-    remote_name: `workspace-${workspace_id}-${workspace_version}`,
+    remote_name: `workspace-${workspace_id}-${version}`,
     homedir_location: homedir_location,
   };
 
-  logger.info(
-    `Launching workspace-${workspace_id}-${workspace_version} (useInitialZip=${useInitialZip})`
-  );
+  logger.info(`Launching workspace-${workspace_id}-${version} (useInitialZip=${useInitialZip})`);
   try {
     // Only errors at this level will set host to unhealthy.
 
