@@ -32,6 +32,7 @@ problem_2_submissions = [
     ['1', '2', '3', '7'],
     ['1', '5', '6', '2', '3'],
     ['1', '6', '5', '2', '3'],
+    ['2', None, '3']
 ]
 problem_2_expected = [
     7,
@@ -40,7 +41,8 @@ problem_2_expected = [
     2,
     3,
     1,
-    1
+    1,
+    0
 ]
 problem_2_expected_ed_groups = [
     0,
@@ -50,6 +52,7 @@ problem_2_expected_ed_groups = [
     3,
     4,
     6,
+    6
 ]
 problem_2_dag_no_groups = {'1': [], '2': ['1'], '3': ['2'], '4': [], '5': ['4'], '6': ['5'], '7': ['3', '6']}
 problem_2_expected_ed_no_groups = [
@@ -60,6 +63,7 @@ problem_2_expected_ed_no_groups = [
     3,
     2,
     4,
+    6
 ]
 
 

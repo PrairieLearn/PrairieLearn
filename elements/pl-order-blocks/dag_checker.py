@@ -173,29 +173,22 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
     # node1 in the submission, add them both and an edge between them to the problematic subgraph
     seen = set()
     problematic_subgraph = nx.DiGraph()
-    distractors = 0
-    for node1 in submission:
-        # in the parse function of pl-order-blocks, lines that aren't in any
-        # correct answer are denoted by None in the answer list
-        if node1 is None:
-            distractors += 1
-            continue
-
+    submission_no_distractors = [node for node in submission if node in depends_graph]
+    for node1 in submission_no_distractors:
         for node2 in seen:
             if trans_clos.has_edge(node1, node2):
                 problematic_subgraph.add_edge(node1, node2)
-
         seen.add(node1)
 
     # if two nodes are in the same `pl-block-group`, but don't occur next to one another in the
     # submission, add them and all nodes in between to the problematic subgraph
-    for i in range(len(submission)):
-        for j in range(i + 2, len(submission)):
-            node1, node2 = submission[i], submission[j]
+    for i in range(len(submission_no_distractors)):
+        for j in range(i + 2, len(submission_no_distractors)):
+            node1, node2 = submission_no_distractors[i], submission_no_distractors[j]
             if group_belonging.get(node1) is None or group_belonging.get(node1) != group_belonging.get(node2):
                 continue
-            if not all([group_belonging[x] == group_belonging[node1] for x in submission[i:j + 1]]):
-                problematic_subgraph.add_nodes_from(submission[i:j + 1])
+            if not all([group_belonging[x] == group_belonging[node1] for x in submission_no_distractors[i:j + 1]]):
+                problematic_subgraph.add_nodes_from(submission_no_distractors[i:j + 1])
 
     if problematic_subgraph.number_of_nodes() == 0:
         mvc_size = 0
@@ -208,7 +201,7 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
                     continue
 
                 # make sure deleting subset will resolve a separated pl-block-group
-                edited_submission = [x for x in submission if x not in subset]
+                edited_submission = [x for x in submission_no_distractors if x not in subset]
                 edited_group_belonging = {key: group_belonging.get(key) for key in edited_submission}
                 if len(edited_submission) == check_grouping(edited_submission, edited_group_belonging):
                     mvc_size = len(subset)
@@ -217,6 +210,7 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
             if mvc_size < problematic_subgraph.number_of_nodes() - 1:
                 break
 
-    deletions_needed = distractors + mvc_size
+    num_distractors = len(submission) - len(submission_no_distractors)
+    deletions_needed = num_distractors + mvc_size
     insertions_needed = graph.number_of_nodes() - (len(submission) - deletions_needed)
     return deletions_needed + insertions_needed

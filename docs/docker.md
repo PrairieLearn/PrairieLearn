@@ -93,12 +93,14 @@ The equivalent `docker run` command to perform all these actions would be:
 ```sh
 docker build -t prairielearn/prairielearn:local .
 docker run -it --rm \
-      -p 3000:3000 \
-      - ./testCourse:/course \
-      -v ${HOME}/pl_ag_jobs:/jobs -e HOST_JOBS_DIR=${HOME}/pl_ag_jobs \
-      -v .:/PrairieLearn -e NODEMON=true \
-      -v /var/run/docker.sock:/var/run/docker.sock
-      prairielearn/prairielearn
+  -p 3000:3000 \
+  -v $PWD/testCourse:/course \
+  -v $HOME/pl_ag_jobs:/jobs \
+  -v $PWD:/PrairieLearn \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -e HOST_JOBS_DIR=$HOME/pl_ag_jobs \
+  -e NODEMON=true \
+  prairielearn/prairielearn
 ```
 
 ### Useful Commands
