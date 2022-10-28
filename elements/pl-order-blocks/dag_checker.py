@@ -169,7 +169,7 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
     graph = dag_to_nx(depends_graph, group_belonging)
     trans_clos = nx.algorithms.dag.transitive_closure(graph)
     submission_no_distractors = [node for node in submission if node in depends_graph]
-    
+
     # if node1 must occur before node2 in any correct solution, but node2 occurs before
     # node1 in the submission, add them both and an edge between them to the problematic subgraph
     seen = set()
