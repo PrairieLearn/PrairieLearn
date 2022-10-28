@@ -33,10 +33,20 @@ const LocalLock = require('../lib/local-lock');
 const config = require('../lib/config');
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
+const { ContainerS3LogForwarder } = require('./s3-log-forwarder');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 let lastAutoUpdateTime = Date.now();
 let lastPushAllTime = Date.now();
+
+/**
+ * Maps a container name (`${workspace_id}-${launch_uuid}`) to a log forwarder
+ * for the corresponding workspace container. Ideally, this wouldn't be in the
+ * global state, but the code isn't architected for that yet.
+ *
+ * @type {Map<string, import('./s3-log-forwarder').ContainerS3LogForwarder>}
+ */
+const s3LogForwarders = new Map();
 
 let configFilename = 'config.json';
 if ('config' in argv) {
@@ -119,7 +129,7 @@ app.post(
     } else if (action === 'init') {
       await initSequenceAsync(workspace_id, useInitialZip, res);
     } else if (action === 'reset') {
-      resetSequence(workspace_id, res);
+      await resetSequence(workspace_id, res);
     } else if (action === 'getGradedFiles') {
       await sendGradedFilesArchive(workspace_id, res);
     } else {
@@ -536,6 +546,18 @@ async function dockerAttemptKillAndRemove(input) {
     logger.error('Error killing container', err);
   }
 
+  // If there's an associated log forwarder for this container, shut it down
+  // so that it can flush any remaining logs to S3. We must do this before the
+  // container is removed, otherwise any remaining logs will be lost.
+  try {
+    if (name) {
+      await s3LogForwarders.get(name)?.shutdown();
+      s3LogForwarders.delete(name);
+    }
+  } catch (err) {
+    logger.error('Error shutting down log forwarder', err);
+  }
+
   try {
     await container.remove();
   } catch (err) {
@@ -677,19 +699,11 @@ function _checkServer(workspace, callback) {
         } else {
           const endTime = new Date().getTime();
           if (endTime - startTime > maxMilliseconds) {
-            workspace.container.logs(
-              {
-                stdout: true,
-                stderr: true,
-              },
-              (err, logs) => {
-                if (ERR(err, callback)) return;
-                callback(
-                  new Error(
-                    `Max startup time exceeded for workspace_id=${workspace.id} (launch uuid ${workspace.launch_uuid})\n${logs}`
-                  )
-                );
-              }
+            const { id, version, launch_uuid } = workspace;
+            callback(
+              new Error(
+                `Max startup time exceeded for workspace ${id} (version ${version}, launch uuid ${launch_uuid})`
+              )
             );
           } else {
             setTimeout(checkWorkspace, checkMilliseconds);
@@ -1228,6 +1242,21 @@ function _createContainer(workspace, callback) {
           }
         );
       },
+      async () => {
+        if (config.workspaceLogsS3Bucket) {
+          const logForwarder = new ContainerS3LogForwarder(container, {
+            bucket: config.workspaceLogsS3Bucket,
+            prefix: `${workspace.id}/${workspace.version}`,
+            interval: config.workspaceLogsFlushIntervalSec * 1000,
+            tags: {
+              WorkspaceId: workspace.id,
+              CourseId: workspace.course_id,
+              InstitutionId: workspace.institution_id,
+            },
+          });
+          s3LogForwarders.set(localName, logForwarder);
+        }
+      },
     ],
     (err) => {
       if (ERR(err, callback)) return;
@@ -1259,25 +1288,22 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
   };
   await sqldb.queryAsync(sql.set_workspace_launch_uuid, params);
 
-  const { workspace_version } = (
-    await sqldb.queryOneRowAsync(sql.select_workspace_version, { workspace_id })
+  const { version, homedir_location, course_id, institution_id } = (
+    await sqldb.queryOneRowAsync(sql.select_workspace, { workspace_id })
   ).rows[0];
-  const { homedir_location } = (
-    await sqldb.queryOneRowAsync(sql.select_workspace_homedir_location, {
-      workspace_id,
-    })
-  ).rows[0];
+
   const workspace = {
     id: workspace_id,
+    course_id,
+    institution_id,
+    version,
     launch_uuid: uuid,
     local_name: `workspace-${uuid}`,
-    remote_name: `workspace-${workspace_id}-${workspace_version}`,
+    remote_name: `workspace-${workspace_id}-${version}`,
     homedir_location: homedir_location,
   };
 
-  logger.info(
-    `Launching workspace-${workspace_id}-${workspace_version} (useInitialZip=${useInitialZip})`
-  );
+  logger.info(`Launching workspace-${workspace_id}-${version} (useInitialZip=${useInitialZip})`);
   try {
     // Only errors at this level will set host to unhealthy.
 
@@ -1371,22 +1397,14 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
 }
 
 // Called by the main server when the user want to reset the file to default
-function resetSequence(workspace_id, res) {
-  async.waterfall(
-    [
-      async () => {
-        return await _getWorkspaceAsync(workspace_id);
-      },
-      _getInitialFiles,
-    ],
-    function (err) {
-      if (err) {
-        res.status(500).send(err);
-      } else {
-        res.status(200).send(`Code of workspace ${workspace_id} reset.`);
-      }
-    }
-  );
+async function resetSequence(workspace_id, res) {
+  try {
+    const workspace = await _getWorkspaceAsync(workspace_id);
+    await _getInitialFilesAsync(workspace);
+    res.status(200).send(`Code of workspace ${workspace_id} reset.`);
+  } catch (err) {
+    res.status(500).send(err);
+  }
 }
 
 /**

@@ -2028,12 +2028,9 @@ if (config.startServer) {
       },
       // These should be the last things to start before we actually start taking
       // requests, as they may actually end up executing course code.
-      (callback) => {
-        if (!config.externalGradingEnableResults) return callback(null);
-        externalGraderResults.init((err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+      async () => {
+        if (!config.externalGradingEnableResults) return;
+        await externalGraderResults.init();
       },
       function (callback) {
         cron.init(function (err) {

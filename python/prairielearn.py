@@ -15,7 +15,42 @@ import importlib
 import importlib.util
 import os
 import collections
+from typing import Dict, Any, TypedDict, Literal, Optional
+from typing_extensions import NotRequired
 
+class PartialScore(TypedDict):
+    "A class with type signatures for the partial scores dict"
+    score: Optional[float]
+    weight: NotRequired[int]
+    feedback: NotRequired[str]
+
+# TODO: This type definition should not yet be seen as authoritative, it may
+# need to be modified as we expand type checking to cover more of the element code.
+# The fields below containing 'Any' in the types are ones which are used
+# in different ways by different question elements. Ideally we would have
+# QuestionData be a generic type so that question elements could declare types
+# for their answer data, feedback data, etc., but TypedDicts with Generics are
+# not yet supported: https://bugs.python.org/issue44863
+class QuestionData(TypedDict):
+    "A class with type signatures for the data dictionary"
+
+    params: Dict[str, Any]
+    correct_answers: Dict[str, Any]
+    submitted_answers: Dict[str, Any]
+    format_errors: Dict[str, Any]
+    partial_scores: Dict[str, PartialScore]
+    score: float
+    feedback: Dict[str, Any]
+    variant_seed: int
+    options: Dict[str, Any]
+    raw_submitted_answers: Dict[str, Any]
+    editable: bool
+    panel: Literal['question', 'submission', 'answer']
+    extensions: Dict[str, Any]
+    num_valid_submissions: int
+
+class ElementTestData(QuestionData):
+    test_type: Literal['correct', 'incorrect', 'invalid']
 
 def to_json(v):
     """to_json(v)
