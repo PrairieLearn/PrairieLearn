@@ -50,12 +50,12 @@ const InstructorSharing =  ({
               </div>
               <div class="col-auto">
                 <button type="button" class="btn btn-light btn-sm ml-auto" id="courseSharingSetAddButton" tabindex="0"
-                  data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Add users"
+                  data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Create Sharing Set"
                   data-content="<%= include('coursePermissionsInsertForm', {id: 'coursePermissionsInsertButton'}) %>"
                   data-trigger="manual" onclick="$(this).popover('show')"
                 >
                   <i class="fas fa-plus" aria-hidden="true"></i>
-                  <span class="d-none d-sm-inline">Add users</span>
+                  <span class="d-none d-sm-inline">Create Sharing Set</span>
                 </button>
               </div>
             </div>

@@ -17,6 +17,7 @@ columns
     sync_warnings: text
     title: text
     sharing_name: text
+    sharing_id: text
 
 indexes
     pl_courses_pkey: PRIMARY KEY (id) USING btree (id)
