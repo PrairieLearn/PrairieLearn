@@ -202,6 +202,7 @@ router.post('/', (req, res, next) => {
       });
     });
   } else if (req.body.__action === 'break_variant') {
+    console.log("hi")
     var params = {
       instance_question_id: req.body.__instance_question_id,
       authn_user_id: res.locals.authn_user.user_id,
