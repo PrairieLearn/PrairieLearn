@@ -8,10 +8,11 @@ const { trace, context, suppressTracing, SpanStatusCode } = require('@prairielea
 const config = require('../lib/config');
 const { isEnterprise } = require('../lib/license');
 const logger = require('../lib/logger');
-
+const { sleep } = require('../lib/sleep');
 const namedLocks = require('../lib/named-locks');
-var sqldb = require('../prairielib/lib/sql-db');
-var sqlLoader = require('../prairielib/lib/sql-loader');
+
+const sqldb = require('../prairielib/lib/sql-db');
+const sqlLoader = require('../prairielib/lib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -19,6 +20,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 //     Timeout object = timeout is running and can be canceled
 //     0 = job is currently running
 //     -1 = stop requested
+/** @type {Record<number | string, number | NodeJS.Timeout>} */
 const jobTimeouts = {};
 
 // Cron jobs are protected by two layers:
@@ -129,7 +131,8 @@ module.exports = {
 
   async stop() {
     debug(`stop()`);
-    _.forEach(jobTimeouts, (timeout, interval) => {
+
+    Object.entries(jobTimeouts).forEach(([interval, timeout]) => {
       if (!_.isInteger(timeout)) {
         // current pending timeout, which can be canceled
         debug(`stop(): clearing timeout for ${interval}`);
@@ -142,17 +145,17 @@ module.exports = {
       }
     });
 
-    return new Promise((resolve) => {
-      const intervalId = setInterval(() => {
-        if (_.isEmpty(jobTimeouts)) {
-          debug(`stop(): all jobs stopped`);
-          clearInterval(intervalId);
-          resolve(null);
-        } else {
-          debug(`stop(): waiting for ${_.size(jobTimeouts)} jobs to stop`);
-        }
-      }, 100);
-    });
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      if (_.isEmpty(jobTimeouts)) {
+        debug(`stop(): all jobs stopped`);
+        break;
+      } else {
+        debug(`stop(): waiting for ${_.size(jobTimeouts)} jobs to stop`);
+      }
+
+      await sleep(100);
+    }
   },
 
   queueJobs(jobsList, intervalSec) {
