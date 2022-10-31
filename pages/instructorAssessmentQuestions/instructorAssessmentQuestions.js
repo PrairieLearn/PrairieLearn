@@ -31,7 +31,6 @@ router.get('/', function (req, res, next) {
 });
 
 router.post('/', function (req, res, next) {
-  console.log("new")
   if (req.body.__action === 'break') {
     var params = {
       assessment_question_id: req.body.__assessment_question_id,
