@@ -2045,6 +2045,7 @@ if (config.startServer) {
         }
 
         const prepareForTermination = async () => {
+          logger.info('Shutting down server');
           // We want to proceed with termination even if something goes wrong,
           // so don't allow this function to throw.
           try {

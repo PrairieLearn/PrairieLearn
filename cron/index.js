@@ -130,8 +130,6 @@ module.exports = {
   },
 
   async stop() {
-    debug(`stop()`);
-
     Object.entries(jobTimeouts).forEach(([interval, timeout]) => {
       if (typeof timeout !== 'number') {
         // This is a pending timeout, which can be canceled.
