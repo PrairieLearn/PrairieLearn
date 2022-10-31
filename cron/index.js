@@ -133,27 +133,18 @@ module.exports = {
     debug(`stop()`);
 
     Object.entries(jobTimeouts).forEach(([interval, timeout]) => {
-      if (!_.isInteger(timeout)) {
-        // current pending timeout, which can be canceled
-        debug(`stop(): clearing timeout for ${interval}`);
+      if (typeof timeout !== 'number') {
+        // This is a pending timeout, which can be canceled.
         clearTimeout(timeout);
         delete jobTimeouts[interval];
       } else if (timeout === 0) {
-        // job is currently running, request that it stop
-        debug(`stop(): requesting stop for ${interval}`);
+        // Job is currently running; request that it stop.
         jobTimeouts[interval] = -1;
       }
     });
 
-    // eslint-disable-next-line no-constant-condition
-    while (true) {
-      if (_.isEmpty(jobTimeouts)) {
-        debug(`stop(): all jobs stopped`);
-        break;
-      } else {
-        debug(`stop(): waiting for ${_.size(jobTimeouts)} jobs to stop`);
-      }
-
+    // Wait until all jobs have finished.
+    while (Object.keys(jobTimeouts).length > 0) {
       await sleep(100);
     }
   },
