@@ -152,7 +152,7 @@
         "@types/jest": "^29.2.1",
         "@types/loopbench": "^1.2.1",
         "@types/mocha": "^10.0.0",
-        "@types/node": "^18.7.23",
+        "@types/node": "^18.11.9",
         "@types/node-fetch": "^2.6.2",
         "@types/passport": "^1.0.11",
         "@types/pem": "^1.9.6",
