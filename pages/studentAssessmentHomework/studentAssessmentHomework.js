@@ -80,12 +80,11 @@ router.get('/', function (req, res, next) {
             res.locals.validationErrors = validationErrors;
 
             if (usingGroupRoles) {
-              // Get a list of all the group roles in the assessment
               // TODO: Maybe rewrite async/await
               groupAssessmentHelper.getGroupRoles(res.locals.assessment.id, function (group_roles) {
                 res.locals.group_roles = group_roles;
 
-                // If the user is currently tied to a group, get whether they can view the role-select table or not.
+                // If the user is currently tied to a group, get whether they can view the role-select table or not
                 if (groupMember) {
                   groupAssessmentHelper.getAssessmentLevelPermissions(
                     res.locals.assessment.id,
