@@ -1854,10 +1854,10 @@
   dependencies:
     "@types/yargs-parser" "*"
 
-"@xmldom/xmldom@^0.7.0", "@xmldom/xmldom@^0.7.5":
-  version "0.7.5"
-  resolved "https://registry.yarnpkg.com/@xmldom/xmldom/-/xmldom-0.7.5.tgz#09fa51e356d07d0be200642b0e4f91d8e6dd408d"
-  integrity sha512-V3BIhmY36fXZ1OtVcI9W+FxQqxVLsPKcNjWigIaa81dLC9IolJl5Mt4Cvhmr0flUnjSpTdrbMTSbXqYqV5dT6A==
+"@xmldom/xmldom@^0.7.0", "@xmldom/xmldom@^0.7.6":
+  version "0.7.8"
+  resolved "https://registry.yarnpkg.com/@xmldom/xmldom/-/xmldom-0.7.8.tgz#a8d0a0067c9554c187b0d04e86ad1845053c0e06"
+  integrity sha512-PrJx38EfpitFhwmILRl37jAdBlsww6AZ6rRVK4QS7T7RHLhX7mSs647sTmgr9GIxe3qjXdesmomEgbgaokrVFg==
 
 abab@^2.0.0:
   version "2.0.5"
@@ -7810,12 +7810,12 @@ passport-azure-ad@^4.3.4:
     passport "^0.6.0"
     valid-url "^1.0.6"
 
-passport-saml@^3.2.2:
-  version "3.2.2"
-  resolved "https://registry.yarnpkg.com/passport-saml/-/passport-saml-3.2.2.tgz#0ebd5aa26898f79d0c821e5e098ee0464ea43f7b"
-  integrity sha512-69lhv2HVuXlMcywSeZ91o91L5BW1tSK3xX3TJh8QfRUv8M65B5Jm0cgm2PV63IM3qn4Cq4jDkq934vcBEBcRNw==
+passport-saml@^3.2.4:
+  version "3.2.4"
+  resolved "https://registry.yarnpkg.com/passport-saml/-/passport-saml-3.2.4.tgz#e8e9523f954988a3a47d12e425d7fa0f20a74dc9"
+  integrity sha512-JSgkFXeaexLNQh1RrOvJAgjLnZzH/S3HbX/mWAk+i7aulnjqUe7WKnPl1NPnJWqP7Dqsv0I2Xm6KIFHkftk0HA==
   dependencies:
-    "@xmldom/xmldom" "^0.7.5"
+    "@xmldom/xmldom" "^0.7.6"
     debug "^4.3.2"
     passport-strategy "^1.0.0"
     xml-crypto "^2.1.3"
