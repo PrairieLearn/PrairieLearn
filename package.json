@@ -56,7 +56,7 @@
         "dropzone": "^5.9.3",
         "ejs": "^3.1.8",
         "execa": "^5.1.1",
-        "express": "^4.18.1",
+        "express": "^4.18.2",
         "express-async-handler": "^1.2.0",
         "fabric": "^4.6.0",
         "file-type": "^16.5.3",
