@@ -86,26 +86,6 @@ WHERE
 GROUP BY
     gu.group_id, g.name, g.join_code, u.uid, gc.minimum, gc.maximum, gc.student_authz_join, gc.student_authz_create, gc.student_authz_leave;
 
--- BLOCK leave_group
-WITH log AS (
-    DELETE FROM
-        group_users
-    WHERE
-        user_id = $user_id
-        AND group_id IN (SELECT g.id
-                        FROM assessments AS a
-                        JOIN group_configs AS gc ON gc.assessment_id = a.id
-                        JOIN groups AS g ON g.group_config_id = gc.id
-                        WHERE a.id = $assessment_id
-                        AND g.deleted_at IS NULL
-                        AND gc.deleted_at IS NULL)
-    RETURNING group_id
-)
-INSERT INTO group_logs
-    (authn_user_id, user_id, group_id, action)
-SELECT $authn_user_id, $user_id, group_id, 'leave'
-FROM log;
-
 -- BLOCK get_group_roles
 SELECT
     gr.*
@@ -116,7 +96,8 @@ WHERE
 
 -- BLOCK get_assessment_level_permissions
 SELECT 
-    gr.can_assign_roles_at_start, gr.can_assign_roles_during_assessment
+    bool_or(gr.can_assign_roles_at_start) AS can_assign_roles_at_start, 
+    bool_or(gr.can_assign_roles_during_assessment) AS can_assign_roles_during_assessment
 FROM
     group_roles as gr JOIN group_users as gu ON gr.id = gu.group_role_id
 WHERE

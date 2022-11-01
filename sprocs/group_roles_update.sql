@@ -15,21 +15,15 @@ DECLARE
     arg_assigner_role_id bigint;
 BEGIN
     -- Find group id
-    SELECT 
-        g.id
-    INTO 
-        arg_group_id
-    FROM 
-        groups AS g
-        JOIN group_configs AS gc ON g.group_config_id = gc.id
-    WHERE 
-        gc.assessment_id = arg_assessment_id
-        AND g.deleted_at IS NULL
-        AND gc.deleted_at IS NULL;
-    
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'Cannot find the group by provided join code: %', arg_join_code;
-    END IF;
+    SELECT DISTINCT group_id
+    INTO arg_group_id
+    FROM group_users as gu 
+    JOIN groups as g ON gu.group_id = g.id
+    JOIN group_configs as gc ON g.group_config_id = gc.id
+    WHERE user_id = arg_user_id
+    AND gc.assessment_id = arg_assessment_id
+    AND g.deleted_at IS NULL
+    AND gc.deleted_at IS NULL;
 
     -- Save all group user IDs
     CREATE TEMPORARY TABLE current_group_users (
