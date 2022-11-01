@@ -53,7 +53,7 @@ class ContainerS3LogForwarder {
       // those options such that `since` ends in `000000000` and `until` ends in
       // `999999999`.
       const nowSecs = Math.floor(Date.now() / 1000);
-      const since = `${this.readUntilTime}${SINCE_NANOS}`;
+      const since = `${this.readUntilTime}.${SINCE_NANOS}`;
       const until = `${nowSecs}.${UNTIL_NANOS}`;
 
       const rawLogs = await this.container.logs({
