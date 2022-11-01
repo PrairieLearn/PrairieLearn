@@ -8208,10 +8208,10 @@ punycode@^2.1.0, punycode@^2.1.1:
   resolved "https://registry.yarnpkg.com/punycode/-/punycode-2.1.1.tgz#b58b010ac40c22c5657616c8d2c2c02c7bf479ec"
   integrity sha512-XRsRjdf+j5ml+y/6GKHPZbrF/8p2Yga0JPtdqTIY2Xe5ohJPD9saDJJLPvp9+NSBprVvevdXZybnj2cv8OEd0A==
 
-pyright@^1.1.273:
-  version "1.1.273"
-  resolved "https://registry.yarnpkg.com/pyright/-/pyright-1.1.273.tgz#289ab61406defdd1b516d16d26f87fc728f7e4a5"
-  integrity sha512-uhBqKtRnC1Rvgz7uKp13VEwIR/UuqUvlscOu/y6hQhDzpFrZi0Gft7TrSLIMdy7fRAf85dS1nduQmAIWXgl4AA==
+pyright@^1.1.277:
+  version "1.1.277"
+  resolved "https://registry.yarnpkg.com/pyright/-/pyright-1.1.277.tgz#859ec25422f2edb3260a0ff722c9da4f013b7013"
+  integrity sha512-a/hl2eLgoIFvFKBJOwKH63RgTMJvH5iwvgQOGVesj1QPKgYtRyde5lh+jLH/2aObxWkVgGPqkxtC1MZee3wfNA==
 
 qrcode-svg@^1.1.0:
   version "1.1.0"
