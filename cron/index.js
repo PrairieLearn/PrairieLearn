@@ -8,10 +8,11 @@ const { trace, context, suppressTracing, SpanStatusCode } = require('@prairielea
 const config = require('../lib/config');
 const { isEnterprise } = require('../lib/license');
 const logger = require('../lib/logger');
-
+const { sleep } = require('../lib/sleep');
 const namedLocks = require('../lib/named-locks');
-var sqldb = require('../prairielib/lib/sql-db');
-var sqlLoader = require('../prairielib/lib/sql-loader');
+
+const sqldb = require('../prairielib/lib/sql-db');
+const sqlLoader = require('../prairielib/lib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -19,6 +20,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 //     Timeout object = timeout is running and can be canceled
 //     0 = job is currently running
 //     -1 = stop requested
+/** @type {Record<number | string, number | NodeJS.Timeout>} */
 const jobTimeouts = {};
 
 // Cron jobs are protected by two layers:
@@ -29,11 +31,11 @@ const jobTimeouts = {};
 // the jobs will still only run at the required frequency.
 
 module.exports = {
-  init(callback) {
+  init() {
     debug(`init()`);
     if (!config.cronActive) {
       logger.verbose('cronActive is false, skipping cron initialization');
-      return callback(null);
+      return;
     }
 
     module.exports.jobs = [
@@ -125,34 +127,24 @@ module.exports = {
         this.queueJobs(jobsList, intervalSec);
       } // zero or negative intervalSec jobs are not run
     });
-    callback(null);
   },
 
-  stop(callback) {
-    debug(`stop()`);
-    _.forEach(jobTimeouts, (timeout, interval) => {
-      if (!_.isInteger(timeout)) {
-        // current pending timeout, which can be canceled
-        debug(`stop(): clearing timeout for ${interval}`);
+  async stop() {
+    Object.entries(jobTimeouts).forEach(([interval, timeout]) => {
+      if (typeof timeout !== 'number') {
+        // This is a pending timeout, which can be canceled.
         clearTimeout(timeout);
         delete jobTimeouts[interval];
       } else if (timeout === 0) {
-        // job is currently running, request that it stop
-        debug(`stop(): requesting stop for ${interval}`);
+        // Job is currently running; request that it stop.
         jobTimeouts[interval] = -1;
       }
     });
 
-    function check() {
-      if (_.isEmpty(jobTimeouts)) {
-        debug(`stop(): all jobs stopped`);
-        callback(null);
-      } else {
-        debug(`stop(): waiting for ${_.size(jobTimeouts)} jobs to stop`);
-        setTimeout(check, 100);
-      }
+    // Wait until all jobs have finished.
+    while (Object.keys(jobTimeouts).length > 0) {
+      await sleep(100);
     }
-    check();
   },
 
   queueJobs(jobsList, intervalSec) {
