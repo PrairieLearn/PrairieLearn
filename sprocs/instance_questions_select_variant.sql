@@ -15,12 +15,10 @@ BEGIN
     FROM variants AS v
     JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
     JOIN pl_courses AS c ON (c.id = ci.course_id)
-    JOIN questions AS q ON (q.id = v.question_id)
     WHERE
         v.instance_question_id = instance_questions_select_variant.instance_question_id
         AND (NOT require_open OR v.open)
-        AND ((v.broken_at IS NULL AND NOT q.single_variant)
-        OR (v.broken_at IS NOT NULL AND q.single_variant))
+        AND v.broken_at IS NULL
     ORDER BY v.date DESC
     LIMIT 1;
 END;
