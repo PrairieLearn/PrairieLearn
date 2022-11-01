@@ -1889,10 +1889,10 @@ ace-builds@^1.12.5:
   resolved "https://registry.yarnpkg.com/ace-builds/-/ace-builds-1.12.5.tgz#e037069148507b4b32c21f56b52a830e9a0759d3"
   integrity sha512-2OTOZZdXVqWHfsV63n/bWLJ4uGnGNm9uwEQSECbEzMpKF2RKxD04lWu7s+eRBTZoEbqPXziyI1qamJH2OAwdwA==
 
-ace-code@^1.11.2:
-  version "1.11.2"
-  resolved "https://registry.yarnpkg.com/ace-code/-/ace-code-1.11.2.tgz#2fdf225d3fd0a03e9d86ea80990c2076fb1f0e47"
-  integrity sha512-QzJDiC1U86ONvkA65D6cnrSTWVjY49q3+u8WV0qjg9IVeYIxSybdDzY9C/yxXHHslVvkOUXETVM0t6pJmgVKJQ==
+ace-code@^1.12.5:
+  version "1.12.5"
+  resolved "https://registry.yarnpkg.com/ace-code/-/ace-code-1.12.5.tgz#2801a74b7868f4a05fe524524d6fff0cef771a53"
+  integrity sha512-Kl4JBin41NcKREcaozx1CsBDE26ZONbHIoLrvwhwH5v4e2sHVtaDUlJZ/QY4Ulr3Q88QE4GdH1Do3GHTK+OzDw==
 
 acorn-globals@^4.3.2:
   version "4.3.4"
