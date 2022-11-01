@@ -11,6 +11,10 @@ window.PLFileEditor = function (uuid, options) {
 
   this.inputElement = this.element.find('input');
   this.editorElement = this.element.find('.editor');
+  this.settingsButton = this.element.find('.settings-button');
+  this.modal = this.element.find('.modal');
+  this.saveSettingsButton = this.element.find('.save-settings-button');
+  this.closeSettingsButton = this.element.find('.close-settings-button');
   this.restoreOriginalButton = this.element.find('.restore-original');
   this.restoreOriginalConfirmContainer = this.element.find('.restore-original-confirm-container');
   this.restoreOriginalConfirm = this.element.find('.restore-original-confirm');
@@ -26,7 +30,9 @@ window.PLFileEditor = function (uuid, options) {
     this.editor.getSession().setMode(options.aceMode);
   }
 
-  if (options.aceTheme) {
+  if (localStorage.getItem('pl-file-editor-theme')) {
+    this.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
+  } else if (options.aceTheme) {
     this.editor.setTheme(options.aceTheme);
   } else {
     this.editor.setTheme('ace/theme/chrome');
@@ -77,7 +83,23 @@ window.PLFileEditor = function (uuid, options) {
   }
   this.setEditorContents(currentContents);
 
+  this.syncSettings();
+
+  this.initSettingsButton(uuid);
+
   this.initRestoreOriginalButton();
+};
+
+window.PLFileEditor.prototype.syncSettings = function () {
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'pl-file-editor-theme') {
+      this.editor.setTheme(event.newValue);
+    }
+  });
+
+  window.addEventListener('pl-file-editor-settings-changed', () => {
+    this.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
+  });
 };
 
 window.PLFileEditor.prototype.updatePreview = function (html_contents) {
@@ -98,6 +120,49 @@ window.PLFileEditor.prototype.updatePreview = function (html_contents) {
       MathJax.typesetPromise();
     }
   }
+};
+
+window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
+  var that = this;
+
+  this.settingsButton.click(function () {
+    ace.require(['ace/ext/themelist'], function (themeList) {
+      var themeSelect = that.modal.find('#modal-' + uuid + '-themes');
+      themeSelect.empty();
+      for (const entries in themeList.themesByName) {
+        var caption = themeList.themesByName[entries].caption;
+        var theme = themeList.themesByName[entries].theme;
+
+        themeSelect.append(
+          $('<option>', {
+            value: theme,
+            text: caption,
+            selected: localStorage.getItem('pl-file-editor-theme') === theme,
+          })
+        );
+      }
+    });
+    that.modal.modal('show');
+    sessionStorage.setItem('pl-file-editor-theme-current', that.editor.getTheme());
+    that.modal.find('#modal-' + uuid + '-themes').change(function () {
+      var theme = $(this).val();
+      that.editor.setTheme(theme);
+    });
+  });
+
+  this.saveSettingsButton.click(function () {
+    var theme = that.modal.find('#modal-' + uuid + '-themes').val();
+    that.editor.setTheme(theme);
+    localStorage.setItem('pl-file-editor-theme', theme);
+    sessionStorage.removeItem('pl-file-editor-theme-current');
+    window.dispatchEvent(new Event('pl-file-editor-settings-changed'));
+    that.modal.modal('hide');
+  });
+
+  this.closeSettingsButton.click(function () {
+    that.editor.setTheme(sessionStorage.getItem('pl-file-editor-theme-current'));
+    sessionStorage.removeItem('pl-file-editor-theme-current');
+  });
 };
 
 window.PLFileEditor.prototype.initRestoreOriginalButton = function () {

@@ -69,7 +69,7 @@ BEGIN
             course_id
         ) SELECT
             name,
-            concat(name, ' (Auto-generated from use in an assessment; add this assessment module to your courseInfo.json file to customize)'),
+            concat(name, ' (Auto-generated from use in an assessment; add this assessment module to your infoCourse.json file to customize)'),
             (array_length(used_assessment_module_names, 1) + (row_number() OVER ())),
             syncing_course_id
         FROM

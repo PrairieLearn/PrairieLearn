@@ -22,6 +22,8 @@ SELECT
     COALESCE(agu.name, agu.uid) AS assigned_grader_name,
     COALESCE(lgu.name, lgu.uid) AS last_grader_name,
     aq.max_points,
+    aq.max_auto_points,
+    aq.max_manual_points,
     COALESCE(g.name, u.name) AS user_or_group_name,
     ic.open_issue_count
 FROM
@@ -36,9 +38,7 @@ FROM
 WHERE
     ai.assessment_id = $assessment_id
     AND iq.assessment_question_id = $assessment_question_id
-    AND EXISTS(SELECT 1
-               FROM variants AS v JOIN submissions AS s ON (s.variant_id = v.id)
-               WHERE v.instance_question_id = iq.id)
+    AND iq.status != 'unanswered'
 ORDER BY user_or_group_name, iq.id;
 
 -- BLOCK update_instance_questions
