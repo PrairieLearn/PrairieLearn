@@ -33,10 +33,20 @@ const LocalLock = require('../lib/local-lock');
 const config = require('../lib/config');
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
+const { ContainerS3LogForwarder } = require('./s3-log-forwarder');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 let lastAutoUpdateTime = Date.now();
 let lastPushAllTime = Date.now();
+
+/**
+ * Maps a container name (`${workspace_id}-${launch_uuid}`) to a log forwarder
+ * for the corresponding workspace container. Ideally, this wouldn't be in the
+ * global state, but the code isn't architected for that yet.
+ *
+ * @type {Map<string, import('./s3-log-forwarder').ContainerS3LogForwarder>}
+ */
+const s3LogForwarders = new Map();
 
 let configFilename = 'config.json';
 if ('config' in argv) {
@@ -119,7 +129,7 @@ app.post(
     } else if (action === 'init') {
       await initSequenceAsync(workspace_id, useInitialZip, res);
     } else if (action === 'reset') {
-      resetSequence(workspace_id, res);
+      await resetSequence(workspace_id, res);
     } else if (action === 'getGradedFiles') {
       await sendGradedFilesArchive(workspace_id, res);
     } else {
@@ -277,14 +287,10 @@ async.series(
         var key = [filename, true];
         update_queue[key] = { action: 'delete' };
       });
-      watcher.on('error', (err) => {
+      watcher.on('error', async (err) => {
         // Handle errors
-        markSelfUnhealthy(err, (err2) => {
-          if (err2) {
-            logger.error(`Error while handling watcher error: ${err2}`);
-          }
-          logger.error(`Watcher error: ${err}`);
-        });
+        logger.error('Error watching files', err);
+        await markSelfUnhealthy(err);
       });
       async function autoUpdateJobManagerTimeout() {
         const timeout_id = setTimeout(() => {
@@ -295,8 +301,7 @@ async.series(
         try {
           await _autoUpdateJobManager();
         } catch (err) {
-          logger.error(`Error from _autoUpdateJobManager(): ${err}`);
-          logger.error(`PREVIOUSLY FATAL ERROR: Error from _autoUpdateJobManager(): ${err}`);
+          logger.error('Error in _autoUpdateJobManager()', err);
         }
         clearTimeout(timeout_id);
         setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
@@ -376,7 +381,7 @@ async.series(
     if (err) {
       Sentry.captureException(err);
       logger.error('Error initializing workspace host:', err, data);
-      markSelfUnhealthyAsync(err);
+      markSelfUnhealthy(err);
     } else {
       logger.info('Workspace host ready');
     }
@@ -405,7 +410,7 @@ async function pushContainerContentsToS3(workspace) {
     );
   } catch (err) {
     // Ignore any errors that may occur when the directory doesn't exist
-    logger.error(`Error uploading directory: ${err}`);
+    logger.error(`Error uploading directory for workspace ${workspace.id}`, err);
   }
 }
 
@@ -532,19 +537,31 @@ async function dockerAttemptKillAndRemove(input) {
   try {
     name = (await container.inspect()).Name.substring(1);
   } catch (err) {
-    debug(`Couldn't obtain container name: ${err}`);
+    logger.error('Error obtaining container name', err);
   }
 
   try {
     await container.kill();
   } catch (err) {
-    debug(`Couldn't kill container: ${err}`);
+    logger.error('Error killing container', err);
+  }
+
+  // If there's an associated log forwarder for this container, shut it down
+  // so that it can flush any remaining logs to S3. We must do this before the
+  // container is removed, otherwise any remaining logs will be lost.
+  try {
+    if (name) {
+      await s3LogForwarders.get(name)?.shutdown();
+      s3LogForwarders.delete(name);
+    }
+  } catch (err) {
+    logger.error('Error shutting down log forwarder', err);
   }
 
   try {
     await container.remove();
   } catch (err) {
-    debug(`Couldn't remove stopped container: ${err}`);
+    logger.error('Error removing stopped container', err);
   }
 
   if (name) {
@@ -552,7 +569,7 @@ async function dockerAttemptKillAndRemove(input) {
     try {
       await fsPromises.rmdir(workspaceJobPath, { recursive: true });
     } catch (err) {
-      debug(`Couldn't remove directory "${workspaceJobPath}": ${err}`);
+      logger.error(`Error removing directory ${workspaceJobPath}`, err);
     }
   }
 }
@@ -563,21 +580,21 @@ async function dockerAttemptKillAndRemove(input) {
  *
  * @param {Error | string} reason The reason that this host is unhealthy
  */
-async function markSelfUnhealthyAsync(reason) {
+async function markSelfUnhealthy(reason) {
   try {
+    Sentry.captureException(reason);
     const params = {
       instance_id: workspace_server_settings.instance_id,
       unhealthy_reason: reason,
     };
     await sqldb.queryAsync(sql.mark_host_unhealthy, params);
-    logger.warn(`Marked self as unhealthy: ${reason}`);
+    logger.warn('Marked self as unhealthy', reason);
   } catch (err) {
     // This could error if we don't even have a DB connection. In that case, we
     // should let the main server mark us as unhealthy.
-    logger.error(`Could not mark self as unhealthy: ${err}`);
+    logger.error('Could not mark self as unhealthy', err);
   }
 }
-const markSelfUnhealthy = util.callbackify(markSelfUnhealthyAsync);
 
 /**
  * Looks up a workspace object by the workspace id.
@@ -682,19 +699,11 @@ function _checkServer(workspace, callback) {
         } else {
           const endTime = new Date().getTime();
           if (endTime - startTime > maxMilliseconds) {
-            workspace.container.logs(
-              {
-                stdout: true,
-                stderr: true,
-              },
-              (err, logs) => {
-                if (ERR(err, callback)) return;
-                callback(
-                  new Error(
-                    `Max startup time exceeded for workspace_id=${workspace.id} (launch uuid ${workspace.launch_uuid})\n${logs}`
-                  )
-                );
-              }
+            const { id, version, launch_uuid } = workspace;
+            callback(
+              new Error(
+                `Max startup time exceeded for workspace ${id} (version ${version}, launch uuid ${launch_uuid})`
+              )
             );
           } else {
             setTimeout(checkWorkspace, checkMilliseconds);
@@ -857,12 +866,8 @@ async function _autoUpdateJobManager() {
   try {
     await async.parallel(jobs);
   } catch (err) {
-    markSelfUnhealthy(err, (err2) => {
-      if (err2) {
-        logger.error(`Error while handling error: ${err2}`);
-      }
-      logger.error(`Error uploading files to S3:\n${err}`);
-    });
+    logger.error(`Error uploading files to S3`, err);
+    await markSelfUnhealthy(err);
   }
 }
 
@@ -1164,7 +1169,7 @@ function _createContainer(workspace, callback) {
           try {
             await fsPromises.access(workspaceJobPath);
           } catch (err) {
-            throw Error('Could not access workspace files.');
+            throw Error('Could not access workspace files.', { cause: err });
           }
         }
       },
@@ -1237,6 +1242,21 @@ function _createContainer(workspace, callback) {
           }
         );
       },
+      async () => {
+        if (config.workspaceLogsS3Bucket) {
+          const logForwarder = new ContainerS3LogForwarder(container, {
+            bucket: config.workspaceLogsS3Bucket,
+            prefix: `${workspace.id}/${workspace.version}`,
+            interval: config.workspaceLogsFlushIntervalSec * 1000,
+            tags: {
+              WorkspaceId: workspace.id,
+              CourseId: workspace.course_id,
+              InstitutionId: workspace.institution_id,
+            },
+          });
+          s3LogForwarders.set(localName, logForwarder);
+        }
+      },
     ],
     (err) => {
       if (ERR(err, callback)) return;
@@ -1268,25 +1288,22 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
   };
   await sqldb.queryAsync(sql.set_workspace_launch_uuid, params);
 
-  const { workspace_version } = (
-    await sqldb.queryOneRowAsync(sql.select_workspace_version, { workspace_id })
+  const { version, homedir_location, course_id, institution_id } = (
+    await sqldb.queryOneRowAsync(sql.select_workspace, { workspace_id })
   ).rows[0];
-  const { homedir_location } = (
-    await sqldb.queryOneRowAsync(sql.select_workspace_homedir_location, {
-      workspace_id,
-    })
-  ).rows[0];
+
   const workspace = {
     id: workspace_id,
+    course_id,
+    institution_id,
+    version,
     launch_uuid: uuid,
     local_name: `workspace-${uuid}`,
-    remote_name: `workspace-${workspace_id}-${workspace_version}`,
+    remote_name: `workspace-${workspace_id}-${version}`,
     homedir_location: homedir_location,
   };
 
-  logger.info(
-    `Launching workspace-${workspace_id}-${workspace_version} (useInitialZip=${useInitialZip})`
-  );
+  logger.info(`Launching workspace-${workspace_id}-${version} (useInitialZip=${useInitialZip})`);
   try {
     // Only errors at this level will set host to unhealthy.
 
@@ -1303,6 +1320,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
           await _getInitialFilesAsync(workspace);
         }
       } catch (err) {
+        logger.error(`Error fetching files from S3 for workspace ${workspace_id}`, err);
         // Don't set host to unhealthy, we've probably bungled something up with S3.
         workspaceHelper.updateState(
           workspace_id,
@@ -1318,6 +1336,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       workspace.launch_port = await _allocateContainerPort(workspace);
       workspace.settings = await _getWorkspaceSettingsAsync(workspace.id);
     } catch (err) {
+      logger.error(`Error configuring workspace ${workspace_id}`, err);
       workspaceHelper.updateState(
         workspace_id,
         'stopped',
@@ -1329,6 +1348,8 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
     try {
       await _pullImageAsync(workspace);
     } catch (err) {
+      const image = workspace.settings.workspace_image;
+      logger.error(`Error pulling image ${image} for workspace ${workspace_id}`, err);
       workspaceHelper.updateState(
         workspace_id,
         'stopped',
@@ -1346,6 +1367,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       });
       workspace.container = await _createContainerAsync(workspace);
     } catch (err) {
+      logger.error(`Error creating container for workspace ${workspace.id}`, err);
       workspaceHelper.updateState(
         workspace_id,
         'stopped',
@@ -1360,6 +1382,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       debug(`init: container initialized for workspace_id=${workspace_id}`);
       workspaceHelper.updateState(workspace_id, 'running', null);
     } catch (err) {
+      logger.error(`Error starting container for workspace ${workspace.id}`, err);
       workspaceHelper.updateState(
         workspace_id,
         'stopped',
@@ -1368,27 +1391,20 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       return; // don't set host to unhealthy
     }
   } catch (err) {
-    markSelfUnhealthyAsync(err);
+    logger.error(`Error initializing workspace ${workspace_id}; marking self as unhealthy`);
+    await markSelfUnhealthy(err);
   }
 }
 
 // Called by the main server when the user want to reset the file to default
-function resetSequence(workspace_id, res) {
-  async.waterfall(
-    [
-      async () => {
-        return await _getWorkspaceAsync(workspace_id);
-      },
-      _getInitialFiles,
-    ],
-    function (err) {
-      if (err) {
-        res.status(500).send(err);
-      } else {
-        res.status(200).send(`Code of workspace ${workspace_id} reset.`);
-      }
-    }
-  );
+async function resetSequence(workspace_id, res) {
+  try {
+    const workspace = await _getWorkspaceAsync(workspace_id);
+    await _getInitialFilesAsync(workspace);
+    res.status(200).send(`Code of workspace ${workspace_id} reset.`);
+  } catch (err) {
+    res.status(500).send(err);
+  }
 }
 
 /**

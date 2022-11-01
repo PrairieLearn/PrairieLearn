@@ -25,7 +25,7 @@ start-s3rver:
 	@docker/start_s3rver.sh
 
 test: test-js test-python
-test-js: test-prairielearn test-prairielib test-grader-host test-packages
+test-js: test-prairielearn test-prairielib test-grader-host test-workspace-host test-packages
 test-prairielearn: start-support
 	@yarn mocha --parallel "tests/**/*.test.{js,mjs}"
 test-prairielearn-serial: start-support
@@ -34,6 +34,8 @@ test-prairielib:
 	@yarn jest prairielib/
 test-grader-host:
 	@yarn jest grader_host/
+test-workspace-host:
+	@yarn mocha "workspace_host/**/*.test.{js,mjs}"
 test-packages:
 	@yarn turbo run test
 test-python:
