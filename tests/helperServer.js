@@ -230,6 +230,14 @@ module.exports.waitForJobSequence = util.callbackify(module.exports.waitForJobSe
 
 module.exports.waitForJobSequenceSuccessAsync = async (job_sequence_id) => {
   const job_sequence = await module.exports.waitForJobSequenceAsync(job_sequence_id);
+
+  // In the case of a failure, print more information to aid debugging.
+  if (job_sequence.status !== 'Success') {
+    console.log(job_sequence);
+    const result = await sqldb.queryAsync(sql.select_jobs, { job_sequence_id });
+    console.log(result.rows);
+  }
+
   assert.equal(job_sequence.status, 'Success');
 };
 module.exports.waitForJobSequenceSuccess = util.callbackify(
