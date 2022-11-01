@@ -1906,10 +1906,10 @@ accepts@^1.3.5, accepts@~1.3.4, accepts@~1.3.8:
     mime-types "~2.1.34"
     negotiator "0.6.3"
 
-ace-builds@^1.11.2:
-  version "1.11.2"
-  resolved "https://registry.yarnpkg.com/ace-builds/-/ace-builds-1.11.2.tgz#93fd7b7770909f3a48a23d71bd212d1b77baaaf5"
-  integrity sha512-1VNeUF56b6gkaeeWJXMBBuz5n0ceDchjUwwVmTKpNM/N3YRrUEpykGEEsg7Y1PKP7IRyqtXfAu6VJDg7OZaLfA==
+ace-builds@^1.12.5:
+  version "1.12.5"
+  resolved "https://registry.yarnpkg.com/ace-builds/-/ace-builds-1.12.5.tgz#e037069148507b4b32c21f56b52a830e9a0759d3"
+  integrity sha512-2OTOZZdXVqWHfsV63n/bWLJ4uGnGNm9uwEQSECbEzMpKF2RKxD04lWu7s+eRBTZoEbqPXziyI1qamJH2OAwdwA==
 
 ace-code@^1.11.2:
   version "1.11.2"
