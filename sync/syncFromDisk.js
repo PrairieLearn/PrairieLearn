@@ -45,10 +45,6 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
   const courseData = await perf.timedAsync('loadCourseData', () =>
     courseDB.loadFullCourse(courseDir)
   );
-  // Write any errors and warnings to sync log
-  courseDB.writeErrorsAndWarningsForCourseData(courseId, courseData, (line) =>
-    logger.info(line || '')
-  );
   logger.info('Syncing info to database');
   await perf.timedAsync('syncCourseInfo', () => syncCourseInfo.sync(courseData, courseId));
   const courseInstanceIds = await perf.timedAsync('syncCourseInstances', () =>
@@ -93,6 +89,10 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
   } else {
     logger.info(chalk.green('✓ Course sync successful'));
   }
+  courseDB.writeErrorsAndWarningsForCourseData(courseId, courseData, (line) =>
+    logger.info(line || '')
+  );
+
   perf.end('sync');
   return {
     hadJsonErrors: courseDataHasErrors,
