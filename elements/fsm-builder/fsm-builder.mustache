@@ -1,0 +1,146 @@
+{{#question}}
+<div>
+    <details class="instructions rounded">
+
+        <summary> {{{fsm_type_name}}} Builder Instructions </summary>
+        <ul>
+            <li> <b>Double Click</b> to create a state. </li>
+            <li> <b>Shift + Drag</b> to create a transition. </li>
+            <ul>
+                <li> Start from no state to create a start transition. </li>
+                <li> Upon snapping onto a node, release <b>Shift</b> (but not <b>Left Click</b>) to change the anchor point. </li>
+            </ul>
+            <li> <b>Click</b> on a state or transition to select and <b>Drag</b> to move it. </li>
+            <li> Press the <b>Delete</b> key (<b>Fn + Delete</b> on Mac) or <b>Right Click</b> to delete a selected state or transition. </li>
+            <li> <b>Double Click</b> a state to toggle whether it is <b>Accepting</b>. </li>
+        </ul>
+        <p>
+          Your {{{fsm_type_name}}} is subject to standard correctness constraints:
+        </p>
+        {{#mode_dfa}}
+        <ul>
+            <li> Every state must be uniquely named. </li>
+            <li> Every transition for the alphabet must exist for a state exactly once.</li>
+            <ul>
+                <li> Missing transitions can be sent to a hidden dump state by checking the box below. </li>
+            </ul>
+            <li>
+              Every transition is on an element of $\{ {{{alphabet_chars}}} \}$.
+              A single transition can correspond to multiple characters,
+              separated by commas.
+            </li>
+            <li> There is exactly one start state.</li>
+            <li> A dump state will count towards your total state count. </li>
+        </ul>
+        {{/mode_dfa}}
+
+        {{#mode_nfa}}
+        <ul>
+            <li> Every state must be uniquely named. </li>
+            <li> Missing transitions can be sent to a hidden dump state by checking the box below. </li>
+            <li> Use ${{{epsilon_symbol}}}$ to denote $\varepsilon$ transitions. </li>
+            <li>
+              Every transition is on an element of $\{ {{{alphabet_chars}}} \}$.
+              A single transition can correspond to multiple characters,
+              separated by commas.
+            </li>
+            <li> There is exactly one start state.</li>
+        </ul>
+        {{/mode_nfa}}
+        <br>
+        <em>
+          The {{{fsm_type_name}}} Builder is based off of the <a href="https://madebyevan.com/fsm/" target="_blank">FSM Designer</a> by Evan Wallace.
+          We strongly suggest using this tool for your homework submissions.
+          The backend grader code is powered by the <a href="https://github.com/caleb531/automata" target="_blank">Automata package</a> by Caleb Evans.
+        </em>
+    </details>
+    </div>
+
+<div>
+    <canvas id="{{{answers_name}}}-fsm-canvas" width="781" height="588">
+        <span class="error">Your browser does not support<br>the HTML5 &lt;canvas&gt; element</span>
+    </canvas>
+
+    {{^mode_nfa}}
+    <div class="btn-toolbar justify-content-between" role="toolbar">
+
+      <div class="form-check d-flex align-items-center py-1">
+        <input id="{{{answers_name}}}-include-dump-state"
+               name="{{{answers_name}}}-include-dump-state"
+               class="form-check-input mt-0"
+               type="checkbox"
+               {{#checked}}checked{{/checked}}
+               {{^editable}}disabled{{/editable}}>
+        <label class="form-check-label d-flex align-items-center" for="{{{answers_name}}}-include-dump-state">
+          <div class="ml-1 mr-1">Missing transitions to dump state?</div>
+        </label>
+      </div>
+    {{/mode_nfa}}
+    {{#mode_nfa}}
+    <div class="btn-toolbar justify-content-end" role="toolbar">
+    {{/mode_nfa}}
+      <div class="btn-group">
+        <button id="{{{answers_name}}}-toggle-state-size" type="button" class="btn btn-secondary btn-sm" {{^editable}}disabled{{/editable}}>Toggle State Size</button>
+        <button id="{{{answers_name}}}-clear-fsm" type="button" class="btn btn-danger btn-sm" {{^editable}}disabled{{/editable}}>Clear {{{fsm_type_name}}}</button>
+      </div>
+    </div>
+
+    <input id="{{{answers_name}}}-raw-json" name="{{{answers_name}}}-raw" type="hidden" {{^editable}}disabled{{/editable}}>
+    <script>
+    fsm_builder_init("{{{answers_name}}}",
+                     '{{{display_json}}}',
+                     '{{{format_errors_json}}}',
+                     {{{alphabet_list}}},
+                     '{{{fsm_type_name}}}',
+                     {{^editable}}false{{/editable}}{{#editable}}true{{/editable}} {{#max_states}},
+                     {{{max_states}}}{{/max_states}}
+                     );
+    </script>
+</div>
+{{/question}}
+
+{{#submission}}
+{{#parse_errors}}
+  <p><b>Error: </b>{{message}}</p>
+  <ul>
+  {{#displayStates}}
+    {{#stateNames}}
+      {{#name}}
+      <li><b>{{name}}</b></li>
+      {{/name}}
+    {{/stateNames}}
+  {{/displayStates}}
+
+  {{#displayTransitions}}
+    {{#transitions}}
+      {{#startState}}
+        {{#endState}}
+        <li>
+          <b>{{startState}}</b> to <b>{{endState}}</b> {{#char}} on ${{char}}$ {{/char}}
+        </li>
+        {{/endState}}
+        {{^endState}}
+          {{#char}}
+            <li>
+              ${{char}}$ out of <b>{{startState}}</b>
+            </li>
+          {{/char}}
+        {{/endState}}
+      {{/startState}}
+      {{^startState}}
+        {{#endState}}
+          {{^char}}
+            <li>
+              <b>{{endState}}</b>
+            </li>
+          {{/char}}
+        {{/endState}}
+      {{/startState}}
+    {{/transitions}}
+  {{/displayTransitions}}
+  </ul>
+{{/parse_errors}}
+{{#feedback}}
+  {{{feedback}}}
+{{/feedback}}
+{{/submission}}
