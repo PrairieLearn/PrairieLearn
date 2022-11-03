@@ -46,15 +46,9 @@ BEGIN
             WHERE gu.group_id = arg_group_id AND gu.user_id = arg_user_id
         LOOP
             -- Check if assignee already has the role in question
-            IF (
-                SELECT count(DISTINCT user_id) = 0
-                FROM group_users
-                WHERE user_id = arg_assignee_id AND group_role_id = arg_group_role_id
-            )
-            THEN
-                INSERT INTO group_users (group_id, user_id, group_role_id)
-                VALUES (arg_group_id, arg_assignee_id, arg_group_role_id);
-            END IF;
+            INSERT INTO group_users (group_id, user_id, group_role_id)
+            VALUES (arg_group_id, arg_assignee_id, arg_group_role_id)
+            ON CONFLICT (group_id, user_id, group_role_id) DO NOTHING;
         END LOOP;
     END IF;
 
