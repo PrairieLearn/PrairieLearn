@@ -172,17 +172,17 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
                 problematic_tuples.append({node1, node2})
         seen.add(node1)
 
-    # if two nodes in the same block group have a node not in their blocks group in between them,
-    # add the three of them to the list of problematic tuples
-    for i in range(len(submission_no_distractors)):
-        if group_belonging[submission_no_distractors[i]] is None:
+    # if two nodes are in the same `pl-block-group`, but don't occur next to one another in the
+    # submission, add them and all nodes in between to the problematic subgraph
+    for i, node1 in enumerate(submission_no_distractors):
+        if group_belonging[node1] is None:
             continue
-        for j in range(i + 1, len(submission_no_distractors)):
-            if group_belonging[submission_no_distractors[i]] == group_belonging[submission_no_distractors[j]]:
+        for j, node2 in enumerate(submission_no_distractors[i:]):
+            if group_belonging[node1] == group_belonging[node2]:
                 continue
-            for k in range(j + 1, len(submission_no_distractors)):
-                if group_belonging[submission_no_distractors[i]] == group_belonging[submission_no_distractors[k]]:
-                  problematic_tuples.append({submission_no_distractors[i], submission_no_distractors[j], submission_no_distractors[k]})
+            for node3 in submission_no_distractors[i+j:]:
+                if group_belonging[node1] == group_belonging[node3]:
+                    problematic_tuples.append({node1, node2, node3})
 
 
     problematic_nodes = set().union(*problematic_tuples)
