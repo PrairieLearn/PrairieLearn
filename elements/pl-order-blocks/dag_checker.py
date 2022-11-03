@@ -1,6 +1,6 @@
 from collections import Counter
 import networkx as nx
-import itertools
+from itertools import chain, combinations
 from copy import deepcopy
 
 
@@ -138,14 +138,6 @@ def grade_dag(submission, depends_graph, group_belonging):
     return min(top_sort_correctness, grouping_correctness), graph.number_of_nodes()
 
 
-def is_vertex_cover(G, vertex_cover):
-    """ this function from
-    https://docs.ocean.dwavesys.com/projects/dwave-networkx/en/latest/_modules/dwave_networkx/algorithms/cover.html#is_vertex_cover
-    """
-    cover = set(vertex_cover)
-    return all(u in cover or v in cover for u, v in G.edges)
-
-
 def lcs_partial_credit(submission, depends_graph, group_belonging):
     """Computes the number of edits required to change the student solution into a correct solution using
     largest common subsequence edit distance (allows only additions and deletions, not replacing).
@@ -168,49 +160,40 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
     """
     graph = dag_to_nx(depends_graph, group_belonging)
     trans_clos = nx.algorithms.dag.transitive_closure(graph)
-    submission_no_distractors = [node for node in submission if node in depends_graph]
 
     # if node1 must occur before node2 in any correct solution, but node2 occurs before
     # node1 in the submission, add them both and an edge between them to the problematic subgraph
     seen = set()
-    problematic_subgraph = nx.DiGraph()
+    problematic_tuples = []
+    submission_no_distractors = [node for node in submission if node in depends_graph]
     for node1 in submission_no_distractors:
         for node2 in seen:
             if trans_clos.has_edge(node1, node2):
-                problematic_subgraph.add_edge(node1, node2)
+                problematic_tuples.append({node1, node2})
         seen.add(node1)
 
-    # if two nodes are in the same `pl-block-group`, but don't occur next to one another in the
-    # submission, add them and all nodes in between to the problematic subgraph
+    # if two nodes in the same block group have a node not in their blocks group in between them,
+    # add the three of them to the list of problematic tuples
     for i in range(len(submission_no_distractors)):
-        for j in range(i + 2, len(submission_no_distractors)):
-            node1, node2 = submission_no_distractors[i], submission_no_distractors[j]
-            if group_belonging.get(node1) is None or group_belonging.get(node1) != group_belonging.get(node2):
+        if group_belonging[submission_no_distractors[i]] is None:
+            continue
+        for j in range(i + 1, len(submission_no_distractors)):
+            if group_belonging[submission_no_distractors[i]] == group_belonging[submission_no_distractors[j]]:
                 continue
-            if not all([group_belonging[x] == group_belonging[node1] for x in submission_no_distractors[i:j + 1]]):
-                problematic_subgraph.add_nodes_from(submission_no_distractors[i:j + 1])
+            for k in range(j + 1, len(submission_no_distractors)):
+                if group_belonging[submission_no_distractors[i]] == group_belonging[submission_no_distractors[k]]:
+                  problematic_tuples.append({submission_no_distractors[i], submission_no_distractors[j], submission_no_distractors[k]})
 
-    if problematic_subgraph.number_of_nodes() == 0:
-        mvc_size = 0
-    else:
-        mvc_size = problematic_subgraph.number_of_nodes() - 1
-        for i in range(1, problematic_subgraph.number_of_nodes() - 1):
-            for subset in itertools.combinations(problematic_subgraph, i):
-                # make sure deleting subset will resolve blocks out of order
-                if not is_vertex_cover(problematic_subgraph, subset):
-                    continue
 
-                # make sure deleting subset will resolve a separated pl-block-group
-                edited_submission = [x for x in submission_no_distractors if x not in subset]
-                edited_group_belonging = {key: group_belonging.get(key) for key in edited_submission}
-                if len(edited_submission) == check_grouping(edited_submission, edited_group_belonging):
-                    mvc_size = len(subset)
-                    break
-
-            if mvc_size < problematic_subgraph.number_of_nodes() - 1:
-                break
+    problematic_nodes = set().union(*problematic_tuples)
+    mvc_size = 0
+    all_subsets = [combinations(problematic_nodes, i) for i in range(len(problematic_nodes))]
+    for subset in chain(*all_subsets):
+        if all([len(set(subset).intersection(tup)) > 0 for tup in problematic_tuples]):
+            mvc_size = len(subset)
+            break
 
     num_distractors = len(submission) - len(submission_no_distractors)
     deletions_needed = num_distractors + mvc_size
     insertions_needed = graph.number_of_nodes() - (len(submission) - deletions_needed)
-    return deletions_needed + insertions_needed
+    return deletions_needed + insertions_needed, mvc_size, len(problematic_nodes)
