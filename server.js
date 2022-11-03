@@ -444,6 +444,9 @@ module.exports.initExpress = function () {
     app.use('/pl/prairietest/auth', require('./ee/auth/prairietest'));
   }
 
+  // Must come before CSRF middleware; we do our own signature verification here.
+  app.use('/pl/webhooks/terminate', require('./webhooks/terminate'));
+
   app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
   app.use(require('./middlewares/logRequest'));
 
@@ -2101,7 +2104,7 @@ if (config.startServer) {
 
         // Also listen for and handle SIGTERM, which can be sent to gracefully
         // shutdown a process.
-        process.on('SIGTERM', () => prepareForTermination().finally(terminate));
+        process.once('SIGTERM', () => prepareForTermination().finally(terminate));
       }
     }
   );
