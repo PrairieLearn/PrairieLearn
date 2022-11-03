@@ -65,11 +65,19 @@ BEGIN
 
     -- find the default group role id
     IF arg_using_group_roles THEN
-        SELECT id INTO arg_default_group_role_id
-        FROM group_roles AS gr
-        WHERE gr.assessment_id = arg_assessment_id
-        ORDER BY gr.maximum DESC
-        LIMIT 1;
+        -- if no users are present in group, allow first user to assign roles
+        IF arg_cur_size = 0 THEN
+            SELECT id INTO arg_default_group_role_id
+            FROM group_roles AS gr
+            WHERE gr.assessment_id = arg_assessment_id AND gr.can_assign_roles_at_start
+            LIMIT 1;
+        ELSE
+            SELECT id INTO arg_default_group_role_id
+            FROM group_roles AS gr
+            WHERE gr.assessment_id = arg_assessment_id
+            ORDER BY gr.maximum DESC
+            LIMIT 1;
+        END IF;
     ELSE
         SELECT id INTO arg_default_group_role_id
         FROM group_roles AS gr
