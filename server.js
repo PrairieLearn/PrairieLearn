@@ -2056,11 +2056,14 @@ if (config.startServer) {
             // load balancer, so the following should be no-ops. However, we
             // still do to ensure that we don't get any more traffic as we're
             // shutting everything down.
+            logger.info('Shutting down server');
             await util.promisify(server.close).call(server);
+            logger.info('Shutting down socket server');
             await socketServer.close();
 
             // We use `allSettled()` here to ensure that all tasks can gracefully
             // shut down, even if some of them fail.
+            logger.info('Shutting down async processing');
             await Promise.allSettled([
               externalGraderResults.stop(),
               cron.stop(),
@@ -2090,21 +2093,29 @@ if (config.startServer) {
           }
         };
 
-        // If we're running in EC2 auto scaling, this will wait for our instance
-        // to enter the `Terminating:Wait` state.
-        //
-        // If we're not running in EC2, this will be a no-op.
-        lifecycleHooks
-          .handleAndCompleteInstanceTermination(prepareForTermination)
-          .catch((err) => {
-            logger.error('Error handling instance termination', err);
-            Sentry.captureException(err);
-          })
-          .finally(terminate);
+        // SIGTERM can be used to gracefully shut down the process. This signal
+        // may come from another process, but we also send it to ourselves if
+        // we want to gracefully shut down. This is used below in the ASG
+        // lifecycle handler, and also within the "terminate" webhook.
+        process.once('SIGTERM', async () => {
+          await prepareForTermination();
 
-        // Also listen for and handle SIGTERM, which can be sent to gracefully
-        // shutdown a process.
-        process.once('SIGTERM', () => prepareForTermination().finally(terminate));
+          try {
+            await lifecycleHooks.completeInstanceTermination();
+          } catch (err) {
+            logger.error('Error completing instance termination', err);
+            Sentry.captureException(err);
+          }
+
+          await terminate();
+        });
+
+        // If we're running in EC2 auto scaling, this will wait for our instance
+        // to enter the `Terminating:Wait` state. If we're not running in EC2,
+        // this will be a no-op.
+        lifecycleHooks
+          .waitForInstanceTermination()
+          .then(() => process.kill(process.pid, 'SIGTERM'));
       }
     }
   );
