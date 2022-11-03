@@ -1,11 +1,9 @@
 // @ts-check
 const router = require('express').Router();
-const asyncHandler = require('express-async-handler');
 const jose = require('jose');
 const crypto = require('crypto');
 
 const config = require('../lib/config');
-const error = require('../prairielib/lib/error');
 const logger = require('../lib/logger');
 
 /**
@@ -19,15 +17,16 @@ const logger = require('../lib/logger');
  * recommended that this endpoint be blocked at your load balancer or firewall
  * for extra security.
  */
-router.post(
-  '/',
-  asyncHandler(async (req, res) => {
+router.post('/', async (req, res) => {
+  try {
     const jwt = req.headers['prairielearn-signature'];
     if (!jwt) {
-      throw error.make(403, 'Missing PrairieLearn-Signature header');
+      res.status(403).send('Missing PrairieLearn-Signature header');
+      return;
     }
     if (Array.isArray(jwt)) {
-      throw error.make(400, 'Multiple PrairieLearn-Signature headers');
+      res.status(403).send('Multiple PrairieLearn-Signature headers');
+      return;
     }
 
     try {
@@ -35,7 +34,8 @@ router.post(
       await jose.jwtVerify(jwt, key, { maxTokenAge: 60 });
     } catch (err) {
       logger.error('Error decoding PrairieLearn-Signature header', err);
-      throw error.make(403, `Invalid PrairieLearn-Signature header: ${err.message}`);
+      res.status(403).send(`Invalid PrairieLearn-Signature header: ${err.message}`);
+      return;
     }
 
     // If a client uses a keepalive connection, we'd be temporarily deadlocked
@@ -54,8 +54,11 @@ router.post(
       });
     });
 
-    res.sendStatus(200);
-  })
-);
+    res.status(200).send('Terminating');
+  } catch (err) {
+    logger.error('Error in terminate webhook', err);
+    res.status(500).send(err.message);
+  }
+});
 
 module.exports = router;
