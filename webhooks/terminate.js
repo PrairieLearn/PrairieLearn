@@ -50,6 +50,7 @@ router.post('/', async (req, res) => {
     res.on('close', () => {
       socket.end(() => {
         socket.destroy();
+        logger.info('Terminating server due to webhook request');
         process.kill(process.pid, 'SIGTERM');
       });
     });
