@@ -196,4 +196,4 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
     num_distractors = len(submission) - len(submission_no_distractors)
     deletions_needed = num_distractors + mvc_size
     insertions_needed = graph.number_of_nodes() - (len(submission) - deletions_needed)
-    return deletions_needed + insertions_needed, mvc_size, len(problematic_nodes)
+    return deletions_needed + insertions_needed
