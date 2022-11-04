@@ -21,7 +21,7 @@ module.exports = {
           callback(null);
         });
       });
-      it('should complete', function (callback) {
+      it('should be successful', function (callback) {
         var checkComplete = function () {
           var params = { job_sequence_id: locals.job_sequence_id };
           sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
