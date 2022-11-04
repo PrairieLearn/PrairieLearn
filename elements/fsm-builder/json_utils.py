@@ -217,7 +217,7 @@ def check_transitions_redundant_for_json(transitions: FSMRawTransitionT) -> None
 
 
 def check_for_unreachable_states(fa: Union[DFA, NFA], dump_state_name: Optional[str]) -> None:
-    unreachable_states = fa.states - fa.get_reachable_states()
+    unreachable_states = fa.states - fa._compute_reachable_states()
 
     if dump_state_name:
         unreachable_states.discard(dump_state_name)
@@ -281,7 +281,7 @@ def dfa_convert_json(dfa_dict: FSMRawJsonDict, dump_state: bool) -> DFAJsonDict:
         'final_states': final_states
     }
 
-    check_for_unreachable_states(DFA.from_json(dfa_json_dict), dump_state_name)
+    check_for_unreachable_states(DFA_from_json(dfa_json_dict), dump_state_name)
 
     return dfa_json_dict
 
@@ -324,7 +324,7 @@ def nfa_convert_json(nfa_dict: FSMRawJsonDict) -> NFAJsonDict:
         'final_states': final_states
     }
 
-    check_for_unreachable_states(NFA.from_json(nfa_json_dict), None)
+    check_for_unreachable_states(NFA_from_json(nfa_json_dict), None)
 
     return nfa_json_dict
 
