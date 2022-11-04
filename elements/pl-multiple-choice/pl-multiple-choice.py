@@ -114,14 +114,18 @@ def prepare(element_html, data):
             raise Exception('pl-multiple-choice element must have at least 1 correct answer or set none-of-the-above to "correct" or "random"')
         # If no correct option is provided, 'None of the above' will always
         # be correct, and 'All of the above' always incorrect
-        if nota == 'random': nota = 'correct'
-        if aota == 'random': aota = 'incorrect'
+        if nota == 'random':
+            nota = 'correct'
+        if aota == 'random':
+            aota = 'incorrect'
 
     if len_incorrect == 0:
         # 'All of the above' will always be correct when no incorrect option is
         # provided, while still never both True
-        if aota == 'random': aota = 'correct'
-        if iota == 'random': iota = 'incorrect'
+        if aota == 'random':
+            aota = 'correct'
+        if nota == 'random':
+            nota = 'incorrect'
 
     # 1. Pick the choice(s) to display
     number_answers = pl.get_integer_attrib(element, 'number-answers', None)
@@ -159,8 +163,10 @@ def prepare(element_html, data):
         # with probability 1/(number_correct + nota + aota).
         prob_space = len_correct + (1 if nota == 'random' else 0) + (1 if aota == 'random' else 0)
         rand_int = random.randint(1, prob_space)
-        if nota == 'random': nota = 'correct' if rand_int == 1 else 'incorrect'
-        if aota == 'random': aota = 'correct' if rand_int == 2 else 'incorrect'
+        if nota == 'random':
+            nota = 'correct' if rand_int == 1 else 'incorrect'
+        if aota == 'random':
+            aota = 'correct' if rand_int == 2 else 'incorrect'
 
     if aota == 'correct':
         # when 'All of the above' is correct, we choose all from correct
