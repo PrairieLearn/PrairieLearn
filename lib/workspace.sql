@@ -10,6 +10,12 @@ SELECT *
 FROM workspaces
 WHERE id = $workspace_id;
 
+-- BLOCK select_and_lock_workspace
+SELECT *
+FROM workspaces
+WHERE id = $workspace_id
+FOR UPDATE;
+
 -- BLOCK select_workspace_data
 SELECT
     to_jsonb(w.*) AS workspace,

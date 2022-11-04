@@ -59,7 +59,8 @@ def render(element_html, data):
 
     html_params = {
         'contents': contents,
-        'language': pl.get_string_attrib(element, 'language', LANGUAGE_DEFAULT)
+        'language': pl.get_string_attrib(element, 'language', LANGUAGE_DEFAULT),
+        'uuid': pl.get_uuid()
     }
 
     with open('pl-xss-safe.mustache', 'r', encoding='utf-8') as f:

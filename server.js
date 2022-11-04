@@ -24,6 +24,7 @@ const multer = require('multer');
 const filesize = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
+const util = require('util');
 const Sentry = require('@prairielearn/sentry');
 
 const logger = require('./lib/logger');
@@ -52,6 +53,7 @@ const namedLocks = require('./lib/named-locks');
 const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
 const { enrichSentryScope } = require('./lib/sentry');
+const lifecycleHooks = require('./lib/lifecycle-hooks');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -1727,6 +1729,7 @@ module.exports.startServer = async () => {
 
 module.exports.stopServer = function (callback) {
   if (!server) return callback(new Error('cannot stop an undefined server'));
+  if (!server.listening) return callback(null);
   server.close(function (err) {
     if (ERR(err, callback)) return;
     callback(null);
@@ -2002,12 +2005,7 @@ if (config.startServer) {
         logger.verbose('Starting server...');
         await module.exports.startServer();
       },
-      function (callback) {
-        socketServer.init(server, function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => socketServer.init(server),
       function (callback) {
         externalGradingSocket.init(function (err) {
           if (ERR(err, callback)) return;
@@ -2021,31 +2019,16 @@ if (config.startServer) {
         });
       },
       async () => workspace.init(),
-      function (callback) {
-        serverJobs.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      function (callback) {
-        nodeMetrics.init();
-        callback(null);
-      },
+      async () => serverJobs.init(),
+      async () => nodeMetrics.init(),
       // These should be the last things to start before we actually start taking
       // requests, as they may actually end up executing course code.
-      (callback) => {
-        if (!config.externalGradingEnableResults) return callback(null);
-        externalGraderResults.init((err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+      async () => {
+        if (!config.externalGradingEnableResults) return;
+        await externalGraderResults.init();
       },
-      function (callback) {
-        cron.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => cron.init(),
+      async () => lifecycleHooks.completeInstanceLaunch(),
     ],
     function (err, data) {
       if (err) {
@@ -2061,14 +2044,64 @@ if (config.startServer) {
           process.exit(0);
         }
 
-        process.on('SIGTERM', () => {
-          opentelemetry
-            .shutdown()
-            .catch((err) => logger.error('Error shutting down OpenTelemetry', err))
-            .finally(() => {
-              process.exit(0);
-            });
-        });
+        const prepareForTermination = async () => {
+          logger.info('Preparing for termination...');
+          // We want to proceed with termination even if something goes wrong,
+          // so don't allow this function to throw.
+          try {
+            // By this point, we should have already been detached from the
+            // load balancer, so the following should be no-ops. However, we
+            // still do to ensure that we don't get any more traffic as we're
+            // shutting everything down.
+            await util.promisify(server.close).call(server);
+            await socketServer.close();
+
+            // We use `allSettled()` here to ensure that all tasks can gracefully
+            // shut down, even if some of them fail.
+            await Promise.allSettled([
+              externalGraderResults.stop(),
+              cron.stop(),
+              serverJobs.stop(),
+            ]);
+          } catch (err) {
+            logger.error('Error while shutting down server', err);
+            Sentry.captureException(err);
+          }
+        };
+
+        const terminate = async () => {
+          logger.info('Terminating...');
+          // Shut down OpenTelemetry exporting.
+          try {
+            opentelemetry.shutdown();
+          } catch (err) {
+            logger.error('Error shutting down OpenTelemetry', err);
+            Sentry.captureException(err);
+          }
+
+          // Flush all events to Sentry.
+          try {
+            await Sentry.flush();
+          } finally {
+            process.exit(0);
+          }
+        };
+
+        // If we're running in EC2 auto scaling, this will wait for our instance
+        // to enter the `Terminating:Wait` state.
+        //
+        // If we're not running in EC2, this will be a no-op.
+        lifecycleHooks
+          .handleAndCompleteInstanceTermination(prepareForTermination)
+          .catch((err) => {
+            logger.error('Error handling instance termination', err);
+            Sentry.captureException(err);
+          })
+          .finally(terminate);
+
+        // Also listen for and handle SIGTERM, which can be sent to gracefully
+        // shutdown a process.
+        process.on('SIGTERM', () => prepareForTermination().finally(terminate));
       }
     }
   );

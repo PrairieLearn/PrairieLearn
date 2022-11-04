@@ -73,6 +73,16 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  */
 
 /**
+ * @typedef {Object} GroupRole
+ * @property {string} name
+ * @property {number} [minimum]
+ * @property {number} [maximum]
+ * @property {boolean} [canAssignRolesAtStart]
+ * @property {boolean} [canAssignRolesDuringAssessment]
+ * @property {boolean} [canSubmitAssessment]
+ */
+
+/**
  * @typedef {Object} SEBConfig
  * @property {string} password
  * @property {string} quitPassword
@@ -81,50 +91,53 @@ const syncFromDisk = require('../../sync/syncFromDisk');
 
 /**
  * @typedef {Object} AssessmentAllowAccess
- * @property {"Public" | "Exam" | "SEB"} mode
- * @property {string} examUuid
- * @property {string[]} uids
- * @property {number} credit
- * @property {string} startDate
- * @property {string} endDate
- * @property {number} timeLimitMin
- * @property {string} password
- * @property {SEBConfig} SEBConfig
+ * @property {"Public" | "Exam" | "SEB"} [mode]
+ * @property {string} [examUuid]
+ * @property {string[]} [uids]
+ * @property {number} [credit]
+ * @property {string} [startDate]
+ * @property {string} [endDate]
+ * @property {number} [timeLimitMin]
+ * @property {string} [password]
+ * @property {SEBConfig} [SEBConfig]
+ * @property {boolean} [active]
  */
 
 /**
  * @typedef {Object} QuestionAlternative
- * @property {number | number[]} points
- * @property {number | number[]} autoPoints
- * @property {number} maxPoints
- * @property {number} maxAutoPoints
- * @property {number} manualPoints
- * @property {string} id
- * @property {boolean} forceMaxPoints
- * @property {number} triesPerVariant
+ * @property {number | number[]} [points]
+ * @property {number | number[]} [autoPoints]
+ * @property {number} [maxPoints]
+ * @property {number} [maxAutoPoints]
+ * @property {number} [manualPoints]
+ * @property {string} [id]
+ * @property {boolean} [forceMaxPoints]
+ * @property {number} [triesPerVariant]
  */
 
 /**
  * @typedef {Object} ZoneQuestion
- * @property {number | number[]} points
- * @property {number | number[]} autoPoints
- * @property {number} maxPoints
- * @property {number} maxAutoPoints
- * @property {number} manualPoints
- * @property {string} id
- * @property {boolean} forceMaxPoints
- * @property {QuestionAlternative[]} alternatives
- * @property {number} numberChoose
- * @property {number} triesPerVariant
+ * @property {number | number[]} [points]
+ * @property {number | number[]} [autoPoints]
+ * @property {number} [maxPoints]
+ * @property {number} [maxAutoPoints]
+ * @property {number} [manualPoints]
+ * @property {string} [id]
+ * @property {boolean} [forceMaxPoints]
+ * @property {QuestionAlternative[]} [alternatives]
+ * @property {number} [numberChoose]
+ * @property {number} [triesPerVariant]
+ * @property {string[]} [canSubmit]
+ * @property {string[]} [canView]
  */
 
 /**
  * @typedef {Object} Zone
- * @property {string} title
- * @property {number} maxPoints
- * @property {number} maxChoose
- * @property {number} bestQuestions
- * @property {ZoneQuestion[]} questions
+ * @property {string} [title]
+ * @property {number} [maxPoints]
+ * @property {number} [maxChoose]
+ * @property {number} [bestQuestions]
+ * @property {ZoneQuestion[]} [questions]
  */
 
 /**
@@ -135,6 +148,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string} set
  * @property {string} [module]
  * @property {string} number
+ * @property {GroupRole[]} [groupRoles]
  * @property {boolean} [allowIssueReporting]
  * @property {boolean} [allowRealTimeGrading]
  * @property {boolean} [requireHonorCode]
@@ -224,7 +238,7 @@ module.exports.writeCourseToTempDirectory = async function (courseData) {
 module.exports.writeCourseToDirectory = async function (courseData, coursePath) {
   await fs.emptyDir(coursePath);
 
-  // courseInfo.json
+  // infoCourse.json
   const courseInfoPath = path.join(coursePath, 'infoCourse.json');
   await fs.writeJSON(courseInfoPath, courseData.course);
 
@@ -269,6 +283,7 @@ module.exports.writeCourseToDirectory = async function (courseData, coursePath) 
 module.exports.QUESTION_ID = 'test';
 module.exports.ALTERNATIVE_QUESTION_ID = 'test2';
 module.exports.MANUAL_GRADING_QUESTION_ID = 'test_manual';
+module.exports.WORKSPACE_QUESTION_ID = 'workspace';
 module.exports.COURSE_INSTANCE_ID = 'Fa19';
 
 /** @type {Course} */
