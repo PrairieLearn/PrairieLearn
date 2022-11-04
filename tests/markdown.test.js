@@ -3,20 +3,20 @@ const assert = require('chai').assert;
 
 const testMarkdownQuestion = (question, expected) => {
   const actual = markdown.processQuestion(question);
-  assert.equal(actual, expected);
+  assert.equal(actual?.trim(), expected);
 };
 
 const testMarkdown = async (original, expected, testQuestion) => {
   const actual = await markdown.processContent(original);
-  assert.equal(actual, expected);
+  assert.equal(actual?.trim(), expected);
   if (testQuestion) {
-    testMarkdownQuestion(`<markdown>${original}</markdown>`, expected);
+    testMarkdownQuestion(`<markdown>\n${original}\n</markdown>`, expected);
   }
 };
 
 describe('Markdown processing', () => {
   it('renders basic markdown correctly', async () => {
-    const question = '\n# Hello, world!\nThis **works**.\n';
+    const question = '# Hello, world!\nThis **works**.';
     const expected = '<h1>Hello, world!</h1>\n<p>This <strong>works</strong>.</p>';
     await testMarkdown(question, expected, true);
   });
@@ -82,7 +82,7 @@ describe('Markdown processing', () => {
   });
 
   it('handles block latex', async () => {
-    const question = '\n$$\na^2 + b^2 = c^2\n$$';
+    const question = '$$\na^2 + b^2 = c^2\n$$';
     const expected = '$$\na^2 + b^2 = c^2\n$$';
     await testMarkdown(question, expected, true);
   });
@@ -102,6 +102,13 @@ describe('Markdown processing', () => {
   it('handles block latex with asterisks and surrouding text', async () => {
     const question = 'testing\n$$\na **b** c\n$$\ntesting';
     const expected = '<p>testing</p>\n$$\na **b** c\n$$\n<p>testing</p>';
+    await testMarkdown(question, expected, true);
+  });
+
+  it('handles GFM extension for tables', async () => {
+    const question = '| foo | bar |\n| --- | --- |\n| baz | bim |';
+    const expected =
+      '<table><thead><tr><th>foo</th><th>bar</th></tr></thead><tbody><tr><td>baz</td><td>bim</td></tr></tbody></table>';
     await testMarkdown(question, expected, true);
   });
 
