@@ -1,0 +1,48 @@
+<pl-question-panel>
+<markdown>
+Create a DFA in the area below for the following language:
+
+***<center>All binary strings containing at least three $0$s.</center>***
+
+</markdown>
+<hr>
+</pl-question-panel>
+
+<fsm-builder answers-name="q" fsm-type="dfa">
+  <correct-answer>
+  {
+      "states":[
+          "0",
+          "3",
+          "2",
+          "1"
+      ],
+      "input_symbols":[
+          "0",
+          "1"
+      ],
+      "transitions":{
+          "0":{
+              "0":"1",
+              "1":"0"
+          },
+          "1":{
+              "0":"2",
+              "1":"1"
+          },
+          "2":{
+              "0":"3",
+              "1":"2"
+          },
+          "3":{
+              "0":"3",
+              "1":"3"
+          }
+      },
+      "initial_state":"0",
+      "final_states":[
+          "3"
+      ]
+  }
+  </correct-answer>
+</fsm-builder>

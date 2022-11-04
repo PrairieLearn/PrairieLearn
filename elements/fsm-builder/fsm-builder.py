@@ -2,13 +2,12 @@ import chevron
 import json
 import lxml.html
 import prairielearn as pl
-import shared_utils as su
 
 from automata.fa.dfa import DFA
 from automata.fa.nfa import NFA
-from automata.utils import generate_dfa_feedback_html
-import automata.json_utils as ju
-from typing import Dict, List, Tuple
+from grading_utils import generate_dfa_feedback_html
+import json_utils as ju
+from typing import Dict, List, Tuple, Callable, Any, Union, Optional
 from typing_extensions import assert_never
 
 ALPHABET_DEFAULT = '01'
@@ -16,7 +15,7 @@ EPSILON_SYMBOL = 'e'
 MAX_LENGTH_TO_CHECK = 10
 WEIGHT_DEFAULT = 1
 
-def prepare(element_html: str, data: su.QuestionData) -> None:
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name', 'fsm-type']
     optional_attribs = ['weight', 'alphabet']
@@ -34,7 +33,7 @@ def prepare(element_html: str, data: su.QuestionData) -> None:
         raise ValueError("Alphabet string contains whitespace.")
 
     # Parse alphabet string into set
-    alphabet = su.list_as_set(alphabet_list)
+    alphabet = ju.list_as_set(alphabet_list)
 
     # Initialize dictionary
     data['params'][name] = dict()
@@ -53,10 +52,10 @@ def prepare(element_html: str, data: su.QuestionData) -> None:
 
             # Serialize so we check for validity, will raise exception if invalid
             if fsm_type is ju.FSMType.DFA:
-                ref_dfa = DFA.from_json(reference_fsm_dict)
+                ref_dfa = ju.DFA_from_json(reference_fsm_dict)
                 assert ref_dfa.input_symbols == alphabet
             elif fsm_type is ju.FSMType.NFA:
-                ref_nfa = NFA.from_json(reference_fsm_dict)
+                ref_nfa = ju.NFA_from_json(reference_fsm_dict)
                 assert ref_nfa.input_symbols == alphabet
             else:
                 assert_never(fsm_type)
@@ -77,7 +76,7 @@ def prepare(element_html: str, data: su.QuestionData) -> None:
     data['params'][name]['alphabet_list'] = alphabet_list
 
 
-def render(element_html: str, data: su.QuestionData) -> str:
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     fsm_type = ju.FSMType[data['params'][name]['fsm_type_name']]
@@ -128,7 +127,7 @@ def render(element_html: str, data: su.QuestionData) -> str:
     assert_never(data['panel'])
 
 
-def parse(element_html: str, data: su.QuestionData) -> None:
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     fsm_json = json.loads(data['raw_submitted_answers'][name + '-raw'])
@@ -176,7 +175,7 @@ def parse(element_html: str, data: su.QuestionData) -> None:
     })
 
 
-def grade(element_html: str, data: su.QuestionData) -> None:
+def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
 
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
@@ -231,10 +230,10 @@ def grade(element_html: str, data: su.QuestionData) -> None:
             fsm_json_dict = json.loads(fsm_json_string)
 
             if fsm_type is ju.FSMType.DFA:
-                dfa = DFA.from_json(fsm_json_dict)
+                dfa = ju.DFA_from_json(fsm_json_dict)
                 return dfa, len(dfa.states)
             elif fsm_type is ju.FSMType.NFA:
-                nfa = NFA.from_json(fsm_json_dict)
+                nfa = ju.NFA_from_json(fsm_json_dict)
                 return DFA.from_nfa(nfa), len(nfa.states)
             else:
                 assert_never(fsm_type)
@@ -270,7 +269,7 @@ def grade(element_html: str, data: su.QuestionData) -> None:
             feedback_str = f"Your {fsm_type.name} does not match the desired language.<br>"
             return (0.0, feedback_str + feedback_html)
 
-        su.grade_question_parameterized(data, name, grade_fsm, weight=weight)
+        grade_question_parameterized(data, name, grade_fsm, weight=weight)
 
 
 def get_checkbox_name(name: str) -> str:
@@ -284,3 +283,73 @@ def print_dump_state(fsm_type: ju.FSMType, num_states: int, dump_state: bool) ->
     if fsm_type is ju.FSMType.NFA and dump_state:
         return f' ({num_states-1} {get_states_plural(num_states-1)}, plus one dump state)'
     return ''
+
+def grade_question_parameterized(data: pl.QuestionData,
+                                 question_name: str,
+                                 grade_function: Callable[[Any], Tuple[Union[bool, float], Optional[str]]],
+                                 weight: int = 1,
+                                 feedback_field_name: Optional[str] = None) -> None:
+    '''
+    Grade question question_name, marked correct if grade_function(student_answer) returns True in
+    its first argument. grade_function should take in a single parameter (which will be the submitted
+    answer) and return a 2-tuple.
+        - The first element of the 2-tuple should either be:
+            - a boolean indicating whether the question should be marked correct
+            - a partial score between 0 and 1, inclusive
+        - The second element of the 2-tuple should either be:
+            - a string containing feedback
+            - None, if there is no feedback (usually this should only occur if the answer is correct)
+
+    Note: if the feedback_field_name is the same as the question name,
+    then the feedback_field_name does not need to be specified.
+    '''
+
+    # Create the data dictionary at first
+    data['partial_scores'][question_name] = {
+            'score': 0.0,
+            'weight': weight
+    }
+
+    try:
+        submitted_answer = data['submitted_answers'][question_name]
+    except KeyError:
+        # Catch error if no answer submitted
+        data["format_errors"][question_name] = 'No answer was submitted'
+        return
+
+    # Try to grade, exiting if there's an exception
+    try:
+        result, feedback_content = grade_function(submitted_answer)
+
+        # Check _must_ be done in this order. Int check is to deal with subclass issues
+        if isinstance(result, bool):
+            partial_score = 1.0 if result else 0.0
+        elif isinstance(result, (float, int)):
+            assert 0.0 <= result <= 1.0
+            partial_score = result
+        else:
+            assert_never(result)
+
+    except ValueError as err:
+        # Exit if there's a format error
+        data["format_errors"][question_name] = html.escape(str(err))
+        return
+
+
+    # Set question score if grading succeeded
+    data['partial_scores'][question_name]['score'] = partial_score
+
+    # Put all feedback here
+    if feedback_content:
+        # Check for unescaped bad stuff in feedback string
+        if isinstance(submitted_answer, str):
+            contains_bad_chars = all(x in submitted_answer for x in {'<', '>'})
+            if contains_bad_chars and submitted_answer in feedback_content:
+                raise ValueError(f'Unescaped student input should not be present in the feedback for {question_name}.')
+
+        data['partial_scores'][question_name]['feedback'] = feedback_content
+
+        if not feedback_field_name:
+            feedback_field_name = question_name
+
+        data['feedback'][feedback_field_name] = feedback_content

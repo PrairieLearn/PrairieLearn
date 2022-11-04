@@ -3,12 +3,11 @@
 
 from enum import Enum
 from dataclasses import dataclass
-from automata.fa.dfa import DFA, DFAJsonDict
-from automata.fa.nfa import NFA, NFAJsonDict
-from typing import Dict, List, Tuple, Optional, Set, Union, TypedDict
+from automata.fa.dfa import DFA#, DFAJsonDict
+from automata.fa.nfa import NFA#, NFAJsonDict
+from typing import Dict, List, Tuple, Optional, Set, Union, TypedDict, Any, TypeVar, Callable
 
 import copy
-import shared_utils as su
 
 FSMRawJsonStateT = str
 FSMRawTransitionT = Dict[FSMRawJsonStateT, Dict[str, List[FSMRawJsonStateT]]]
@@ -29,6 +28,30 @@ class FSMRawJsonDict(TypedDict):
     initial_state: List[FSMRawJsonStateT]
     final_states: List[FSMRawJsonStateT]
     epsilon_symbol: str
+
+DFAStateT = Any
+DFAPathT = Dict[str, DFAStateT]
+DFATransitionsT = Dict[DFAStateT, DFAPathT]
+
+class DFAJsonDict(TypedDict):
+    "A class with type signatures for the dfa json dict"
+    states: List[DFAStateT]
+    input_symbols: List[str]
+    transitions: DFATransitionsT
+    initial_state: DFAStateT
+    final_states: List[DFAStateT]
+
+NFAStateT = Any
+NFAPathT = Dict[str, Set[NFAStateT]]
+NFATransitionsT = Dict[NFAStateT, NFAPathT]
+
+class NFAJsonDict(TypedDict):
+    "A class with type signatures for the nfa json dict"
+    states: List[NFAStateT]
+    input_symbols: List[str]
+    transitions: Dict[NFAStateT, Dict[str, List[NFAStateT]]]
+    initial_state: NFAStateT
+    final_states: List[NFAStateT]
 
 
 class FSMType(Enum):
@@ -209,7 +232,7 @@ def dfa_convert_json(dfa_dict: FSMRawJsonDict, dump_state: bool) -> DFAJsonDict:
     the input JSON defines an invalid DFA.
     """
     # Load inital alphabet
-    input_symbols_set = su.list_as_set(dfa_dict['input_symbols'])
+    input_symbols_set = list_as_set(dfa_dict['input_symbols'])
 
     states = convert_states_for_json(dfa_dict['states'])
 
@@ -269,7 +292,7 @@ def nfa_convert_json(nfa_dict: FSMRawJsonDict) -> NFAJsonDict:
     the input JSON defines an invalid NFA.
     """
     # Load inital alphabet
-    input_symbols_set = su.list_as_set(nfa_dict['input_symbols'])
+    input_symbols_set = list_as_set(nfa_dict['input_symbols'])
 
     states = convert_states_for_json(nfa_dict['states'])
 
@@ -304,3 +327,85 @@ def nfa_convert_json(nfa_dict: FSMRawJsonDict) -> NFAJsonDict:
     check_for_unreachable_states(NFA.from_json(nfa_json_dict), None)
 
     return nfa_json_dict
+
+
+T = TypeVar('T')
+
+def list_as_set(elem_list: List[T]) -> Set[T]:
+    """
+    Transforms a list to a set, raising an exception if the input has duplicates.
+    """
+    elem_set = set(elem_list)
+
+    if len(elem_set) != len(elem_list):
+        raise ValueError(f"Input list {str(elem_list)} has duplicates.")
+
+    return elem_set
+
+
+def NFA_from_json(json_nfa: NFAJsonDict) -> NFA:
+    states = list_as_set(json_nfa['states'])
+    input_symbols = list_as_set(json_nfa['input_symbols'])
+
+    # Check for no duplicate states
+    json_transitions = json_nfa['transitions']
+    transitions: NFATransitionsT = dict()
+
+    for start_state, transition in json_transitions.items():
+        transitions[start_state] = {
+            char: list_as_set(end_states)
+            for char, end_states in transition.items()
+        }
+
+    initial_state = json_nfa['initial_state']
+    final_states = list_as_set(json_nfa['final_states'])
+    return NFA(states=states, input_symbols=input_symbols, transitions=transitions,
+                initial_state=initial_state, final_states=final_states)
+
+
+def NFA_to_json(self) -> NFAJsonDict:
+    json_states = sorted(self.states, key=str)
+    json_input_symbols = sorted(self.input_symbols)
+
+    json_transitions = {
+        start_state: {
+            char: sorted(end_states, key=str)
+            for char, end_states in transition.items()
+        }
+        for start_state, transition in self.transitions.items()
+    }
+
+    json_initial_state = self.initial_state
+    json_final_states = sorted(self.final_states, key=str)
+    return {
+        'states': json_states,
+        'input_symbols': json_input_symbols,
+        'transitions': json_transitions,
+        'initial_state': json_initial_state,
+        'final_states': json_final_states
+    }
+
+def DFA_from_json(jsonDFA: DFAJsonDict) -> DFA:
+    states = list_as_set(jsonDFA['states'])
+    input_symbols = list_as_set(jsonDFA['input_symbols'])
+    transitions = jsonDFA['transitions']
+    initial_state = jsonDFA['initial_state']
+    final_states = list_as_set(jsonDFA['final_states'])
+    return DFA(states=states, input_symbols=input_symbols, transitions=transitions,
+                initial_state=initial_state, final_states=final_states)
+
+
+def DFA_to_json(self) -> DFAJsonDict:
+    json_states = sorted(self.states, key=str)
+    json_input_symbols = sorted(self.input_symbols)
+    json_transitions = self.transitions
+    json_initial_state = self.initial_state
+    json_final_states = sorted(self.final_states, key=str)
+
+    return {
+        'states': json_states,
+        'input_symbols': json_input_symbols,
+        'transitions': json_transitions,
+        'initial_state': json_initial_state,
+        'final_states': json_final_states
+    }

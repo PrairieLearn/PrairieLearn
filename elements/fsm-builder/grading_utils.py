@@ -1,13 +1,16 @@
-from shared_utils import strings_of_length_at_most_n
 from automata.fa.dfa import DFA
 from automata.fa.nfa import NFA
 from automata.fa.fa import FA
 from random import sample
-from typing import Tuple, List, Any, Union
+from itertools import chain, product
+from typing import Tuple, List, Any, Union, Set, Generator
 from typing_extensions import assert_never
-from shared_utils import replace_empty
 
 LATEX_EPSILON = r"\varepsilon"
+
+def strings_of_length_at_most_n(lower_bound: int, n: int, *, alphabet: Set[str] = {'0', '1'}) -> Generator[str, None, None]:
+    return ("".join(char_list) for char_list in chain.from_iterable(
+        product(alphabet, repeat=k) for k in range(lower_bound, n + 1)))
 
 def check_dfa(submitted_dfa: DFA,
               reference_dfa: DFA,
@@ -52,23 +55,6 @@ def check_dfa(submitted_dfa: DFA,
     else:
         false_negatives.append(counter)
     return false_positives, false_negatives
-
-
-
-def states_to_string(obj: Any) -> str:
-    if isinstance(obj, set):
-        if not obj:
-            return "∅"
-
-        # Weird highlighting, but code inside braces is indeed run
-        return f"{{{', '.join(states_to_string(item) for item in sorted(obj, key=str))}}}"
-
-    elif isinstance(obj, tuple):
-        if not obj:
-            raise ValueError("Tuple shouldn't be empty")
-        return f"({', '.join(states_to_string(item) for item in obj)})"
-
-    return replace_empty(str(obj))
 
 
 def sample_input_strings(max_input_string_len: int, num_rand_choices: int, fa: FA) -> Tuple[List[str], List[str]]:
@@ -120,43 +106,6 @@ def get_equiv_dfa(fsm: Union[DFA, NFA]) -> DFA:
         return fsm
 
     assert_never(fsm)
-
-
-def generate_dfa_feedback_string(student_equiv_dfa: DFA,
-                             reference_equiv_dfa: DFA,
-                             max_length_to_check: int,
-                             student_input_name: str) -> str:
-    """
-    Generate a feedback string for use by externally graded questions. The
-    'language' here is defined by reference_equiv_dfa.
-    """
-
-    res = []
-
-    false_positives, false_negatives = \
-        check_dfa(student_equiv_dfa, reference_equiv_dfa, max_length_to_check)
-
-    assert false_positives or false_negatives
-
-    if false_positives:
-        res.append(f"Here are some strings matched by your {student_input_name}"
-                " which are not in the language:")
-
-        for x in false_positives[:max_length_to_check]:
-            res.append(replace_empty(x))
-
-        # Add blank line between false positives and false negatives, if both exist
-        if false_negatives:
-            res.append('')
-
-    if false_negatives:
-        res.append("Here are some strings in the language which"
-                f" aren't matched by your {student_input_name}:")
-
-        for x in false_negatives[:max_length_to_check]:
-            res.append(replace_empty(x))
-
-    return '\n'.join(res)
 
 def generate_dfa_feedback_html(student_equiv_dfa: DFA,
                              reference_equiv_dfa: DFA,
