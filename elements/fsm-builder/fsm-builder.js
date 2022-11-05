@@ -1,5 +1,5 @@
 
-var canvas;
+//var canvas;
 
 var caretTimer;
 var caretVisible = true;
@@ -37,7 +37,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
     answersName = name;
     fsmTypeName = fsmType;
     alphabetList = alphabet;
-    canvas = document.getElementById(answersName + '-fsm-canvas');
+    this.canvas = document.getElementById(answersName + '-fsm-canvas');
 
     state_limit = max_states;
     checkbox = document.getElementById(answersName+'-include-dump-state')
@@ -52,7 +52,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
     }
 
 
-    canvas.onmousedown = (e) => {
+    this.canvas.onmousedown = (e) => {
         var mouse = this.crossBrowserRelativeMousePos(e);
         selectedObject = this.selectObject(mouse.x, mouse.y);
         movingObject = false;
@@ -85,7 +85,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
         }
     };
 
-    canvas.ondblclick = (e) => {
+    this.canvas.ondblclick = (e) => {
         var mouse = this.crossBrowserRelativeMousePos(e);
         selectedObject = this.selectObject(mouse.x, mouse.y);
 
@@ -100,7 +100,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
         }
     };
 
-    canvas.onmousemove = (e) => {
+    this.canvas.onmousemove = (e) => {
         var mouse = this.crossBrowserRelativeMousePos(e);
 
         if (currentLink != null) {
@@ -141,7 +141,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
         }
     };
 
-    canvas.onmouseup = (e) => {
+    this.canvas.onmouseup = (e) => {
         movingObject = false;
 
         if (currentLink != null) {
@@ -156,7 +156,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
 
     };
 
-    canvas.oncontextmenu = (e) => {
+    this.canvas.oncontextmenu = (e) => {
         deleteSelectedObject()
         return false;
     }
@@ -248,20 +248,20 @@ document.onkeypress = (e) => {
 // Drawing Code
 
 draw() {
-  this.drawUsing(canvas.getContext('2d'));
+  this.drawUsing(this.canvas.getContext('2d'));
   this.saveBackup();
 }
 
 drawUsing(c) {
     var dump_state = (checkbox ? checkbox.checked : false);
-    c.clearRect(0, 0, canvas.width, canvas.height);
+    c.clearRect(0, 0, this.canvas.width, this.canvas.height);
     c.save();
     c.translate(0.5, 0.5);
 
     if (state_limit && (nodes.length+(dump_state ? 1 : 0)) > state_limit){
         c.fillStyle = c.strokeStyle = 'darkorchid'
         c.font = '20px "Roboto", sans-serif';
-        c.fillText('Warning: Too many states', 10, canvas.height-10)
+        c.fillText('Warning: Too many states', 10, this.canvas.height-10)
         c.fillStyle = c.strokeStyle = 'black'
     }
 
