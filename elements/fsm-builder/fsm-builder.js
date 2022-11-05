@@ -25,7 +25,7 @@ var nodeRadius = largeStateSize; // Default to large state size
 //var alphabetList = null;
 //var this.fsmTypeName = '';
 
-var state_limit = 0;
+//var state_limit = 0;
 var checkbox = null;
 
 //var shift = false;
@@ -52,7 +52,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
     this.canvas = document.getElementById(this.answersName + '-fsm-canvas');
     //this.caretTimer;
 
-    state_limit = max_states;
+    this.state_limit = max_states;
     checkbox = document.getElementById(this.answersName + '-include-dump-state')
 
     this.restoreBackup(backupJson);
@@ -272,7 +272,7 @@ drawUsing(c) {
     c.save();
     c.translate(0.5, 0.5);
 
-    if (state_limit && (this.nodes.length+(dump_state ? 1 : 0)) > state_limit){
+    if (this.state_limit > 0 && (this.nodes.length+(dump_state ? 1 : 0)) > this.state_limit){
         c.fillStyle = c.strokeStyle = 'darkorchid'
         c.font = '20px "Roboto", sans-serif';
         c.fillText('Warning: Too many states', 10, this.canvas.height-10)
