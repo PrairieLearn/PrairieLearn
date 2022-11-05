@@ -15,7 +15,7 @@ const hitTargetPadding = 6; // pixels
 const smallStateSize = 25; // pixels
 const largeStateSize = 40; // pixels
 
-var nodeRadius = largeStateSize; // Default to large state size
+//var nodeRadius = largeStateSize; // Default to large state size
 //var cursorVisible = true;
 //var selectedObject = null; // either a Link or a Node
 //var currentLink = null; // a Link
@@ -48,6 +48,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
     this.selectedObject = null;
     this.movingObject = false;
     this.shift = false;
+    this.nodeRadius = largeStateSize;
 
     this.canvas = document.getElementById(this.answersName + '-fsm-canvas');
     //this.caretTimer;
@@ -137,7 +138,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
                     } else if (targetNode != null) {
                         this.currentLink = new Link(this.selectedObject, targetNode);
                     } else {
-                        this.currentLink = new TemporaryLink(this.selectedObject.closestPointOnCircle(mouse.x, mouse.y, nodeRadius), mouse);
+                        this.currentLink = new TemporaryLink(this.selectedObject.closestPointOnCircle(mouse.x, mouse.y, this.nodeRadius), mouse);
                     }
                 }
             }
@@ -184,11 +185,11 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
     });
 
     $('#' + this.answersName + '-toggle-state-size').on('click', () => {
-        if (nodeRadius == smallStateSize) {
-            nodeRadius = largeStateSize;
+        if (this.nodeRadius == smallStateSize) {
+            this.nodeRadius = largeStateSize;
         }
         else {
-            nodeRadius = smallStateSize;
+            this.nodeRadius = smallStateSize;
         }
         this.draw();
     });
@@ -301,7 +302,7 @@ drawUsing(c) {
 
         c.fillStyle = c.strokeStyle = color
 
-        this.nodes[i].draw(c, isSelected, nodeRadius);
+        this.nodes[i].draw(c, isSelected, this.nodeRadius);
     }
     for (var i = 0; i < this.links.length; i++) {
         c.lineWidth = 1;
@@ -348,12 +349,12 @@ drawUsing(c) {
         }
 
         c.fillStyle = c.strokeStyle = color;
-        this.links[i].draw(c, isSelected, nodeRadius);
+        this.links[i].draw(c, isSelected, this.nodeRadius);
     }
     if (this.currentLink != null) {
         c.lineWidth = 1;
         c.fillStyle = c.strokeStyle = 'black';
-        this.currentLink.draw(c, isSelected, nodeRadius);
+        this.currentLink.draw(c, isSelected, this.nodeRadius);
     }
 
     c.restore();
@@ -361,12 +362,12 @@ drawUsing(c) {
 
 selectObject(x, y) {
     for (var i = 0; i < this.nodes.length; i++) {
-        if (this.nodes[i].containsPoint(x, y, nodeRadius)) {
+        if (this.nodes[i].containsPoint(x, y, this.nodeRadius)) {
             return this.nodes[i];
         }
     }
     for (var i = 0; i < this.links.length; i++) {
-        if (this.links[i].containsPoint(x, y, nodeRadius)) {
+        if (this.links[i].containsPoint(x, y, this.nodeRadius)) {
             return this.links[i];
         }
     }
@@ -439,7 +440,7 @@ restoreBackup(backupJson) {
     try {
         var backup = JSON.parse(backupJson);
 
-        nodeRadius = backup.nodeRadius;
+        this.nodeRadius = backup.nodeRadius;
 
         for (var i = 0; i < backup.nodes.length; i++) {
             var backupNode = backup.nodes[i];
@@ -484,7 +485,7 @@ saveBackup() {
     var backup = {
         'nodes': [],
         'links': [],
-        'nodeRadius': nodeRadius
+        'nodeRadius': this.nodeRadius
     };
     for (var i = 0; i < this.nodes.length; i++) {
         var node = this.nodes[i];
