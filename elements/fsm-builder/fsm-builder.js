@@ -17,7 +17,7 @@ const largeStateSize = 40; // pixels
 
 var nodeRadius = largeStateSize; // Default to large state size
 //var cursorVisible = true;
-var selectedObject = null; // either a Link or a Node
+//var selectedObject = null; // either a Link or a Node
 //var currentLink = null; // a Link
 //var movingObject = false;
 //var originalClick;
@@ -45,6 +45,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
     this.transitionsToHighlight = null;
 
     this.currentLink = null;
+    this.selectedObject = null;
     this.movingObject = false;
     this.shift = false;
 
@@ -66,18 +67,18 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
 
     this.canvas.onmousedown = (e) => {
         var mouse = this.crossBrowserRelativeMousePos(e);
-        selectedObject = this.selectObject(mouse.x, mouse.y);
+        this.selectedObject = this.selectObject(mouse.x, mouse.y);
         this.movingObject = false;
         this.originalClick = mouse;
 
-        if (selectedObject != null) {
-            if (this.shift && selectedObject instanceof Node) {
-                this.currentLink = new SelfLink(selectedObject, mouse);
+        if (this.selectedObject != null) {
+            if (this.shift && this.selectedObject instanceof Node) {
+                this.currentLink = new SelfLink(this.selectedObject, mouse);
             } else {
                 this.movingObject = true;
 
-                if (selectedObject.setMouseStart) {
-                    selectedObject.setMouseStart(mouse.x, mouse.y);
+                if (this.selectedObject.setMouseStart) {
+                    this.selectedObject.setMouseStart(mouse.x, mouse.y);
                 }
             }
             this.resetCaret();
@@ -99,15 +100,15 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
 
     this.canvas.ondblclick = (e) => {
         var mouse = this.crossBrowserRelativeMousePos(e);
-        selectedObject = this.selectObject(mouse.x, mouse.y);
+        this.selectedObject = this.selectObject(mouse.x, mouse.y);
 
-        if (selectedObject == null) {
-            selectedObject = new Node(mouse.x, mouse.y);
-            this.nodes.push(selectedObject);
+        if (this.selectedObject == null) {
+            this.selectedObject = new Node(mouse.x, mouse.y);
+            this.nodes.push(this.selectedObject);
             this.resetCaret();
             this.draw();
-        } else if (selectedObject instanceof Node) {
-            selectedObject.isAcceptState = !selectedObject.isAcceptState;
+        } else if (this.selectedObject instanceof Node) {
+            this.selectedObject.isAcceptState = !this.selectedObject.isAcceptState;
             this.draw();
         }
     };
@@ -124,19 +125,19 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
                     targetNode = null;
                 }
 
-                if (selectedObject == null) {
+                if (this.selectedObject == null) {
                     if (targetNode != null) {
                         this.currentLink = new StartLink(targetNode, this.originalClick);
                     } else {
                         this.currentLink = new TemporaryLink(this.originalClick, mouse);
                     }
                 } else {
-                    if (targetNode == selectedObject) {
-                        this.currentLink = new SelfLink(selectedObject, mouse);
+                    if (targetNode == this.selectedObject) {
+                        this.currentLink = new SelfLink(this.selectedObject, mouse);
                     } else if (targetNode != null) {
-                        this.currentLink = new Link(selectedObject, targetNode);
+                        this.currentLink = new Link(this.selectedObject, targetNode);
                     } else {
-                        this.currentLink = new TemporaryLink(selectedObject.closestPointOnCircle(mouse.x, mouse.y), mouse);
+                        this.currentLink = new TemporaryLink(this.selectedObject.closestPointOnCircle(mouse.x, mouse.y), mouse);
                     }
                 }
             }
@@ -146,9 +147,9 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
 
         //TODO I think this should have a null check
         if (this.movingObject) {
-            selectedObject.setAnchorPoint(mouse.x, mouse.y);
-            if (selectedObject instanceof Node) {
-                this.snapNode(selectedObject);
+            this.selectedObject.setAnchorPoint(mouse.x, mouse.y);
+            if (this.selectedObject instanceof Node) {
+                this.snapNode(this.selectedObject);
             }
             this.draw();
         }
@@ -159,7 +160,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
 
         if (this.currentLink != null) {
             if (!(this.currentLink instanceof TemporaryLink)) {
-                selectedObject = this.currentLink;
+                this.selectedObject = this.currentLink;
                 this.links.push(this.currentLink);
                 this.resetCaret();
             }
@@ -202,11 +203,11 @@ document.onkeydown = (e) => {
         // don't read keystrokes when other things have focus
         return true;
     } else if (key == 8) { // backspace key
-        if (selectedObject != null && 'text' in selectedObject) {
+        if (this.selectedObject != null && 'text' in this.selectedObject) {
             // Reset highlighting when user backspaces
             this.stateNamesToHighlight = this.transitionsToHighlight = null;
 
-            selectedObject.text = selectedObject.text.substr(0, selectedObject.text.length - 1);
+            this.selectedObject.text = this.selectedObject.text.substr(0, this.selectedObject.text.length - 1);
             this.resetCaret();
             this.draw();
         }
@@ -231,7 +232,7 @@ document.onkeypress = (e) => {
     var key = crossBrowserKey(e);
     var keyBounds = false;
 
-    if (selectedObject instanceof Node) {
+    if (this.selectedObject instanceof Node) {
         keyBounds = (key >= 0x20 && key <= 0x7E)
     } else {
         // For transitions. Set keyBounds to true if any
@@ -242,11 +243,11 @@ document.onkeypress = (e) => {
         // don't read keystrokes when other things have focus
         return true;
 
-    } else if (keyBounds && !e.metaKey && !e.altKey && !e.ctrlKey && selectedObject != null && 'text' in selectedObject) {
+    } else if (keyBounds && !e.metaKey && !e.altKey && !e.ctrlKey && this.selectedObject != null && 'text' in this.selectedObject) {
         // Reset highlighting when user types
         this.stateNamesToHighlight = this.transitionsToHighlight = null;
 
-        selectedObject.text += String.fromCharCode(key);
+        this.selectedObject.text += String.fromCharCode(key);
         this.resetCaret();
         this.draw();
 
@@ -293,7 +294,7 @@ drawUsing(c) {
         }
 
 
-        if (this.nodes[i] == selectedObject) {
+        if (this.nodes[i] == this.selectedObject) {
           color = 'blue';
           isSelected = true;
         }
@@ -341,7 +342,7 @@ drawUsing(c) {
           }
         }
 
-        if (this.links[i] == selectedObject) {
+        if (this.links[i] == this.selectedObject) {
           color = 'blue';
           isSelected = true;
         }
@@ -552,17 +553,17 @@ setFormatErrors(formatErrorsJson) {
 }
 
 deleteSelectedObject() {
-    if (selectedObject != null) {
+    if (this.selectedObject != null) {
         for (var i = 0; i < this.nodes.length; i++) {
-            if (this.nodes[i] == selectedObject) {
+            if (this.nodes[i] == this.selectedObject) {
                 this.nodes.splice(i--, 1);
             }
         }
         for (var i = 0; i < this.links.length; i++) {
-            if (this.links[i] == selectedObject
-                || this.links[i].node == selectedObject
-                || this.links[i].nodeA == selectedObject
-                || this.links[i].nodeB == selectedObject)
+            if (this.links[i] == this.selectedObject
+                || this.links[i].node == this.selectedObject
+                || this.links[i].nodeA == this.selectedObject
+                || this.links[i].nodeB == this.selectedObject)
             {
                 this.links.splice(i--, 1);
             }
@@ -571,7 +572,7 @@ deleteSelectedObject() {
         // Reset highlighting when user deletes something
         this.stateNamesToHighlight = this.transitionsToHighlight = null;
 
-        selectedObject = null;
+        this.selectedObject = null;
         this.draw();
     }
 }
