@@ -4,8 +4,8 @@
 //var caretTimer;
 var caretVisible = true;
 
-var nodes = [];
-var links = [];
+//var nodes = [];
+//var links = [];
 
 var stateNamesToHighlight = null
 var transitionsToHighlight = null
@@ -37,6 +37,10 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
     answersName = name;
     fsmTypeName = fsmType;
     alphabetList = alphabet;
+
+    this.nodes = [];
+    this.links = [];
+
     this.canvas = document.getElementById(answersName + '-fsm-canvas');
     //this.caretTimer;
 
@@ -92,7 +96,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
 
         if (selectedObject == null) {
             selectedObject = new Node(mouse.x, mouse.y);
-            nodes.push(selectedObject);
+            this.nodes.push(selectedObject);
             this.resetCaret();
             this.draw();
         } else if (selectedObject instanceof Node) {
@@ -133,6 +137,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
             this.draw();
         }
 
+        //TODO I think this should have a null check
         if (movingObject) {
             selectedObject.setAnchorPoint(mouse.x, mouse.y);
             if (selectedObject instanceof Node) {
@@ -148,7 +153,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
         if (currentLink != null) {
             if (!(currentLink instanceof TemporaryLink)) {
                 selectedObject = currentLink;
-                links.push(currentLink);
+                this.links.push(currentLink);
                 this.resetCaret();
             }
             currentLink = null;
@@ -158,14 +163,14 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
     };
 
     this.canvas.oncontextmenu = (e) => {
-        deleteSelectedObject()
+        this.deleteSelectedObject()
         return false;
     }
 
     $('#' + answersName + '-clear-fsm').on('click', () => {
         if (window.confirm('Are you sure you want to clear your ' + fsmTypeName + '?')) {
-            nodes = [];
-            links = [];
+            this.nodes = [];
+            this.links = [];
             this.draw();
         }
     });
@@ -259,36 +264,36 @@ drawUsing(c) {
     c.save();
     c.translate(0.5, 0.5);
 
-    if (state_limit && (nodes.length+(dump_state ? 1 : 0)) > state_limit){
+    if (state_limit && (this.nodes.length+(dump_state ? 1 : 0)) > state_limit){
         c.fillStyle = c.strokeStyle = 'darkorchid'
         c.font = '20px "Roboto", sans-serif';
         c.fillText('Warning: Too many states', 10, this.canvas.height-10)
         c.fillStyle = c.strokeStyle = 'black'
     }
 
-    for (var i = 0; i < nodes.length; i++) {
+    for (var i = 0; i < this.nodes.length; i++) {
         c.lineWidth = 1;
 
         var color = 'black';
 
         if (stateNamesToHighlight != null) {
           for (var j = 0; j < stateNamesToHighlight.length; j++) {
-            if (stateNamesToHighlight[j].name == nodes[i].text){
+            if (stateNamesToHighlight[j].name == this.nodes[i].text){
               color = 'red';
             }
           }
         }
 
 
-        if (nodes[i] == selectedObject) {
+        if (this.nodes[i] == selectedObject) {
           color = 'blue'
         }
 
         c.fillStyle = c.strokeStyle = color
 
-        nodes[i].draw(c);
+        this.nodes[i].draw(c);
     }
-    for (var i = 0; i < links.length; i++) {
+    for (var i = 0; i < this.links.length; i++) {
         c.lineWidth = 1;
 
         var color = 'black';
@@ -296,29 +301,29 @@ drawUsing(c) {
         if (transitionsToHighlight != null) {
           for (var j = 0; j < transitionsToHighlight.length; j++) {
             // Check if should highlight self-transitions
-            if (links[i] instanceof SelfLink) {
-              if (links[i].node.text == transitionsToHighlight[j].startState
-                  && links[i].text.includes(transitionsToHighlight[j].char)
-                  && links[i].node.text == transitionsToHighlight[j].endState) {
+            if (this.links[i] instanceof SelfLink) {
+              if (this.links[i].node.text == transitionsToHighlight[j].startState
+                  && this.links[i].text.includes(transitionsToHighlight[j].char)
+                  && this.links[i].node.text == transitionsToHighlight[j].endState) {
 
                 color = 'red';
               }
             }
 
             // Otherwise, check if should highlight normal transitions
-            else if (links[i] instanceof Link) {
-              if (links[i].nodeA.text == transitionsToHighlight[j].startState
-                  && links[i].text.includes(transitionsToHighlight[j].char)
-                  && links[i].nodeB.text == transitionsToHighlight[j].endState) {
+            else if (this.links[i] instanceof Link) {
+              if (this.links[i].nodeA.text == transitionsToHighlight[j].startState
+                  && this.links[i].text.includes(transitionsToHighlight[j].char)
+                  && this.links[i].nodeB.text == transitionsToHighlight[j].endState) {
 
                 color = 'red';
               }
             }
 
-            else if (links[i] instanceof StartLink) {
+            else if (this.links[i] instanceof StartLink) {
               if (null == transitionsToHighlight[j].startState
                   && null == transitionsToHighlight[j].char
-                  && links[i].node.text == transitionsToHighlight[j].endState) {
+                  && this.links[i].node.text == transitionsToHighlight[j].endState) {
 
                 color = 'red';
               }
@@ -326,12 +331,12 @@ drawUsing(c) {
           }
         }
 
-        if (links[i] == selectedObject) {
+        if (this.links[i] == selectedObject) {
           color = 'blue';
         }
 
         c.fillStyle = c.strokeStyle = color;
-        links[i].draw(c);
+        this.links[i].draw(c);
     }
     if (currentLink != null) {
         c.lineWidth = 1;
@@ -343,29 +348,29 @@ drawUsing(c) {
 }
 
 selectObject(x, y) {
-    for (var i = 0; i < nodes.length; i++) {
-        if (nodes[i].containsPoint(x, y)) {
-            return nodes[i];
+    for (var i = 0; i < this.nodes.length; i++) {
+        if (this.nodes[i].containsPoint(x, y)) {
+            return this.nodes[i];
         }
     }
-    for (var i = 0; i < links.length; i++) {
-        if (links[i].containsPoint(x, y)) {
-            return links[i];
+    for (var i = 0; i < this.links.length; i++) {
+        if (this.links[i].containsPoint(x, y)) {
+            return this.links[i];
         }
     }
     return null;
 }
 
 snapNode(node) {
-    for (var i = 0; i < nodes.length; i++) {
-        if (nodes[i] == node) continue;
+    for (var i = 0; i < this.nodes.length; i++) {
+        if (this.nodes[i] == node) continue;
 
-        if (Math.abs(node.x - nodes[i].x) < snapToPadding) {
-            node.x = nodes[i].x;
+        if (Math.abs(node.x - this.nodes[i].x) < snapToPadding) {
+            node.x = this.nodes[i].x;
         }
 
-        if (Math.abs(node.y - nodes[i].y) < snapToPadding) {
-            node.y = nodes[i].y;
+        if (Math.abs(node.y - this.nodes[i].y) < snapToPadding) {
+            node.y = this.nodes[i].y;
         }
     }
 }
@@ -429,29 +434,29 @@ restoreBackup(backupJson) {
             var node = new Node(backupNode.x, backupNode.y);
             node.isAcceptState = backupNode.isAcceptState;
             node.text = backupNode.text;
-            nodes.push(node);
+            this.nodes.push(node);
         }
         for (var i = 0; i < backup.links.length; i++) {
             var backupLink = backup.links[i];
             var link = null;
             if (backupLink.type == 'SelfLink') {
-                link = new SelfLink(nodes[backupLink.node]);
+                link = new SelfLink(this.nodes[backupLink.node]);
                 link.anchorAngle = backupLink.anchorAngle;
                 link.text = backupLink.text;
             } else if (backupLink.type == 'StartLink') {
-                link = new StartLink(nodes[backupLink.node]);
+                link = new StartLink(this.nodes[backupLink.node]);
                 link.deltaX = backupLink.deltaX;
                 link.deltaY = backupLink.deltaY;
                 link.text = backupLink.text;
             } else if (backupLink.type == 'Link') {
-                link = new Link(nodes[backupLink.nodeA], nodes[backupLink.nodeB]);
+                link = new Link(this.nodes[backupLink.nodeA], this.nodes[backupLink.nodeB]);
                 link.parallelPart = backupLink.parallelPart;
                 link.perpendicularPart = backupLink.perpendicularPart;
                 link.text = backupLink.text;
                 link.lineAngleAdjust = backupLink.lineAngleAdjust;
             }
             if (link != null) {
-                links.push(link);
+                this.links.push(link);
             }
         }
     } catch (e) {
@@ -469,8 +474,8 @@ saveBackup() {
         'links': [],
         'nodeRadius': nodeRadius
     };
-    for (var i = 0; i < nodes.length; i++) {
-        var node = nodes[i];
+    for (var i = 0; i < this.nodes.length; i++) {
+        var node = this.nodes[i];
         var backupNode = {
             'x': node.x,
             'y': node.y,
@@ -479,20 +484,20 @@ saveBackup() {
         };
         backup.nodes.push(backupNode);
     }
-    for (var i = 0; i < links.length; i++) {
-        var link = links[i];
+    for (var i = 0; i < this.links.length; i++) {
+        var link = this.links[i];
         var backupLink = null;
         if (link instanceof SelfLink) {
             backupLink = {
                 'type': 'SelfLink',
-                'node': nodes.indexOf(link.node),
+                'node': this.nodes.indexOf(link.node),
                 'text': link.text,
                 'anchorAngle': link.anchorAngle,
             };
         } else if (link instanceof StartLink) {
             backupLink = {
                 'type': 'StartLink',
-                'node': nodes.indexOf(link.node),
+                'node': this.nodes.indexOf(link.node),
                 'text': link.text,
                 'deltaX': link.deltaX,
                 'deltaY': link.deltaY,
@@ -500,8 +505,8 @@ saveBackup() {
         } else if (link instanceof Link) {
             backupLink = {
                 'type': 'Link',
-                'nodeA': nodes.indexOf(link.nodeA),
-                'nodeB': nodes.indexOf(link.nodeB),
+                'nodeA': this.nodes.indexOf(link.nodeA),
+                'nodeB': this.nodes.indexOf(link.nodeB),
                 'text': link.text,
                 'lineAngleAdjust': link.lineAngleAdjust,
                 'parallelPart': link.parallelPart,
@@ -537,14 +542,18 @@ setFormatErrors(formatErrorsJson) {
 
 deleteSelectedObject() {
     if (selectedObject != null) {
-        for (var i = 0; i < nodes.length; i++) {
-            if (nodes[i] == selectedObject) {
-                nodes.splice(i--, 1);
+        for (var i = 0; i < this.nodes.length; i++) {
+            if (this.nodes[i] == selectedObject) {
+                this.nodes.splice(i--, 1);
             }
         }
-        for (var i = 0; i < links.length; i++) {
-            if (links[i] == selectedObject || links[i].node == selectedObject || links[i].nodeA == selectedObject || links[i].nodeB == selectedObject) {
-                links.splice(i--, 1);
+        for (var i = 0; i < this.links.length; i++) {
+            if (this.links[i] == selectedObject
+                || this.links[i].node == selectedObject
+                || this.links[i].nodeA == selectedObject
+                || this.links[i].nodeB == selectedObject)
+            {
+                this.links.splice(i--, 1);
             }
         }
 
