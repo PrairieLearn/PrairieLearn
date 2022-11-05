@@ -87,14 +87,14 @@
 
     <input id="{{{answers_name}}}-raw-json" name="{{{answers_name}}}-raw" type="hidden" {{^editable}}disabled{{/editable}}>
     <script>
-    fsm_builder_init("{{{answers_name}}}",
+    new FSMBuilder("{{{answers_name}}}",
                      '{{{display_json}}}',
                      '{{{format_errors_json}}}',
                      {{{alphabet_list}}},
                      '{{{fsm_type_name}}}',
                      {{^editable}}false{{/editable}}{{#editable}}true{{/editable}} {{#max_states}},
                      {{{max_states}}}{{/max_states}}
-                     );
+      );
     </script>
 </div>
 {{/question}}

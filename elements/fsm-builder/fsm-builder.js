@@ -1,3 +1,4 @@
+
 var canvas;
 
 var caretTimer;
@@ -29,7 +30,10 @@ var checkbox = null;
 
 var shift = false;
 
-function fsm_builder_init(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max_states=0) {
+
+class FSMBuilder {
+
+constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max_states=0) {
     answersName = name;
     fsmTypeName = fsmType;
     alphabetList = alphabet;
@@ -38,9 +42,9 @@ function fsm_builder_init(name, backupJson, formatErrorsJson, alphabet, fsmType,
     state_limit = max_states;
     checkbox = document.getElementById(answersName+'-include-dump-state')
 
-    restoreBackup(backupJson);
-    setFormatErrors(formatErrorsJson);
-    draw();
+    this.restoreBackup(backupJson);
+    this.setFormatErrors(formatErrorsJson);
+    this.draw();
 
     // If not editable, we don't allow the user to modify anything, so just exit
     if (!editable) {
@@ -48,9 +52,9 @@ function fsm_builder_init(name, backupJson, formatErrorsJson, alphabet, fsmType,
     }
 
 
-    canvas.onmousedown = function (e) {
-        var mouse = crossBrowserRelativeMousePos(e);
-        selectedObject = selectObject(mouse.x, mouse.y);
+    canvas.onmousedown = (e) => {
+        var mouse = this.crossBrowserRelativeMousePos(e);
+        selectedObject = this.selectObject(mouse.x, mouse.y);
         movingObject = false;
         originalClick = mouse;
 
@@ -59,51 +63,51 @@ function fsm_builder_init(name, backupJson, formatErrorsJson, alphabet, fsmType,
                 currentLink = new SelfLink(selectedObject, mouse);
             } else {
                 movingObject = true;
-                deltaMouseX = deltaMouseY = 0;
+                //deltaMouseX = deltaMouseY = 0;
                 if (selectedObject.setMouseStart) {
                     selectedObject.setMouseStart(mouse.x, mouse.y);
                 }
             }
-            resetCaret();
+            this.resetCaret();
         } else if (shift) {
             currentLink = new TemporaryLink(mouse, mouse);
         }
 
-        draw();
+        this.draw();
 
         if (canvasHasFocus()) {
             // disable drag-and-drop only if the canvas is already focused
             return false;
         } else {
             // otherwise, let the browser switch the focus away from wherever it was
-            resetCaret();
+            this.resetCaret();
             return true;
         }
     };
 
-    canvas.ondblclick = function (e) {
-        var mouse = crossBrowserRelativeMousePos(e);
-        selectedObject = selectObject(mouse.x, mouse.y);
+    canvas.ondblclick = (e) => {
+        var mouse = this.crossBrowserRelativeMousePos(e);
+        selectedObject = this.selectObject(mouse.x, mouse.y);
 
         if (selectedObject == null) {
             selectedObject = new Node(mouse.x, mouse.y);
             nodes.push(selectedObject);
-            resetCaret();
-            draw();
+            this.resetCaret();
+            this.draw();
         } else if (selectedObject instanceof Node) {
             selectedObject.isAcceptState = !selectedObject.isAcceptState;
-            draw();
+            this.draw();
         }
     };
 
-    canvas.onmousemove = function (e) {
-        var mouse = crossBrowserRelativeMousePos(e);
+    canvas.onmousemove = (e) => {
+        var mouse = this.crossBrowserRelativeMousePos(e);
 
         if (currentLink != null) {
             if (currentLink instanceof Link && shift == false) {
                 currentLink.setAnchorPoint(mouse.x, mouse.y)
             } else {
-                var targetNode = selectObject(mouse.x, mouse.y);
+                var targetNode = this.selectObject(mouse.x, mouse.y);
                 if (!(targetNode instanceof Node)) {
                     targetNode = null;
                 }
@@ -125,34 +129,34 @@ function fsm_builder_init(name, backupJson, formatErrorsJson, alphabet, fsmType,
                 }
             }
 
-            draw();
+            this.draw();
         }
 
         if (movingObject) {
             selectedObject.setAnchorPoint(mouse.x, mouse.y);
             if (selectedObject instanceof Node) {
-                snapNode(selectedObject);
+                this.snapNode(selectedObject);
             }
-            draw();
+            this.draw();
         }
     };
 
-    canvas.onmouseup = function (e) {
+    canvas.onmouseup = (e) => {
         movingObject = false;
 
         if (currentLink != null) {
             if (!(currentLink instanceof TemporaryLink)) {
                 selectedObject = currentLink;
                 links.push(currentLink);
-                resetCaret();
+                this.resetCaret();
             }
             currentLink = null;
-            draw();
+            this.draw();
         }
 
     };
 
-    canvas.oncontextmenu = function (e) {
+    canvas.oncontextmenu = (e) => {
         deleteSelectedObject()
         return false;
     }
@@ -161,7 +165,7 @@ function fsm_builder_init(name, backupJson, formatErrorsJson, alphabet, fsmType,
         if (window.confirm('Are you sure you want to clear your ' + fsmTypeName + '?')) {
             nodes = [];
             links = [];
-            draw();
+            this.draw();
         }
     });
 
@@ -172,11 +176,11 @@ function fsm_builder_init(name, backupJson, formatErrorsJson, alphabet, fsmType,
         else {
             nodeRadius = smallStateSize;
         }
-        draw();
+        this.draw();
     });
-}
 
-document.onkeydown = function (e) {
+
+document.onkeydown = (e) => {
     var key = crossBrowserKey(e);
 
     if (key == 16) {
@@ -190,14 +194,14 @@ document.onkeydown = function (e) {
             stateNamesToHighlight = transitionsToHighlight = null;
 
             selectedObject.text = selectedObject.text.substr(0, selectedObject.text.length - 1);
-            resetCaret();
-            draw();
+            this.resetCaret();
+            this.draw();
         }
 
         // backspace is a shortcut for the back button, but do NOT want to change pages
         return false;
     } else if (key == 46) { // delete key
-        deleteSelectedObject()
+        this.deleteSelectedObject()
     }
 };
 
@@ -209,10 +213,10 @@ document.onkeyup = function (e) {
     }
 };
 
-document.onkeypress = function (e) {
+document.onkeypress = (e) => {
     // don't read keystrokes when other things have focus
     var key = crossBrowserKey(e);
-    keyBounds = false
+    var keyBounds = false;
 
     if (selectedObject instanceof Node) {
         keyBounds = (key >= 0x20 && key <= 0x7E)
@@ -230,8 +234,8 @@ document.onkeypress = function (e) {
         stateNamesToHighlight = transitionsToHighlight = null;
 
         selectedObject.text += String.fromCharCode(key);
-        resetCaret();
-        draw();
+        this.resetCaret();
+        this.draw();
 
         // don't let keys do their actions (like space scrolls down the page)
         return false;
@@ -240,15 +244,15 @@ document.onkeypress = function (e) {
         return false;
     }
 };
-
+}
 // Drawing Code
 
-function draw() {
-    drawUsing(canvas.getContext('2d'));
-    saveBackup();
+draw() {
+  this.drawUsing(canvas.getContext('2d'));
+  this.saveBackup();
 }
 
-function drawUsing(c) {
+drawUsing(c) {
     var dump_state = (checkbox ? checkbox.checked : false);
     c.clearRect(0, 0, canvas.width, canvas.height);
     c.save();
@@ -337,62 +341,7 @@ function drawUsing(c) {
     c.restore();
 }
 
-function drawText(c, originalText, x, y, angleOrNull, isSelected) {
-    text = originalText
-    //text = convertLatexShortcuts(originalText);
-    c.font = '20px "Times New Roman", serif';
-    var width = c.measureText(text).width;
-
-    // Attempt to keep text within the bounds of the node
-    if (width > nodeRadius + 16) {
-        var newpx = 20 - parseInt((width - nodeRadius) / 8);
-        if (newpx < 10) newpx = 10;
-        c.font = newpx + 'px "Times New Roman", serif';
-        width = c.measureText(text).width;
-    }
-
-    // center the text
-    x -= width / 2;
-
-    // position the text intelligently if given an angle
-    if (angleOrNull != null) {
-        var cos = Math.cos(angleOrNull);
-        var sin = Math.sin(angleOrNull);
-        var cornerPointX = (width / 2 + 5) * (cos > 0 ? 1 : -1);
-        var cornerPointY = (10 + 5) * (sin > 0 ? 1 : -1);
-        var slide = sin * Math.pow(Math.abs(sin), 40) * cornerPointX - cos * Math.pow(Math.abs(cos), 10) * cornerPointY;
-        x += cornerPointX - sin * slide;
-        y += cornerPointY + cos * slide;
-    }
-
-    // draw text and caret (round the coordinates so the caret falls on a pixel)
-    if ('advancedFillText' in c) {
-        c.advancedFillText(text, originalText, x + width / 2, y, angleOrNull);
-    } else {
-        x = Math.round(x);
-        y = Math.round(y);
-        c.fillText(text, x, y + 6);
-        if (isSelected && caretVisible && canvasHasFocus() && document.hasFocus()) {
-            x += width;
-            c.beginPath();
-            c.moveTo(x, y - 10);
-            c.lineTo(x, y + 10);
-            c.stroke();
-        }
-    }
-}
-
-function drawArrow(c, x, y, angle) {
-    var dx = Math.cos(angle);
-    var dy = Math.sin(angle);
-    c.beginPath();
-    c.moveTo(x, y);
-    c.lineTo(x - 8 * dx + 5 * dy, y - 8 * dy - 5 * dx);
-    c.lineTo(x - 8 * dx - 5 * dy, y - 8 * dy + 5 * dx);
-    c.fill();
-}
-
-function selectObject(x, y) {
+selectObject(x, y) {
     for (var i = 0; i < nodes.length; i++) {
         if (nodes[i].containsPoint(x, y)) {
             return nodes[i];
@@ -406,7 +355,7 @@ function selectObject(x, y) {
     return null;
 }
 
-function snapNode(node) {
+snapNode(node) {
     for (var i = 0; i < nodes.length; i++) {
         if (nodes[i] == node) continue;
 
@@ -420,34 +369,30 @@ function snapNode(node) {
     }
 }
 
-function canvasHasFocus() {
-    return (document.activeElement || document.body) == document.body;
-}
 
-function resetCaret() {
+
+resetCaret() {
     clearInterval(caretTimer);
-    caretTimer = setInterval('caretVisible = !caretVisible; draw()', 500);
+    caretTimer = setInterval(() => {
+      caretVisible = !caretVisible;
+      this.draw();
+    }, 500);
     caretVisible = true;
 }
 
 
 // M&KB Input
 
-function crossBrowserKey(e) {
-    e = e || window.event;
-    return e.which || e.keyCode;
-}
-
-function crossBrowserRelativeMousePos(e) {
-    var element = crossBrowserElementPos(e);
-    var mouse = crossBrowserMousePos(e);
+crossBrowserRelativeMousePos(e) {
+    var element = this.crossBrowserElementPos(e);
+    var mouse = this.crossBrowserMousePos(e);
     return {
         'x': mouse.x - element.x,
         'y': mouse.y - element.y
     };
 }
 
-function crossBrowserMousePos(e) {
+crossBrowserMousePos(e) {
     e = e || window.event;
     return {
         'x': e.pageX || e.clientX + document.body.scrollLeft + document.documentElement.scrollLeft,
@@ -455,7 +400,7 @@ function crossBrowserMousePos(e) {
     };
 }
 
-function crossBrowserElementPos(e) {
+crossBrowserElementPos(e) {
     e = e || window.event;
     var obj = e.target || e.srcElement;
     var x = 0, y = 0;
@@ -468,7 +413,7 @@ function crossBrowserElementPos(e) {
 }
 
 
-function restoreBackup(backupJson) {
+restoreBackup(backupJson) {
     if (!backupJson || !JSON) {
         return;
     }
@@ -513,7 +458,7 @@ function restoreBackup(backupJson) {
     }
 }
 
-function saveBackup() {
+saveBackup() {
     if (!JSON) {
         return;
     }
@@ -569,7 +514,7 @@ function saveBackup() {
     $('input#' + answersName + '-raw-json').val(JSON.stringify(backup));
 }
 
-function setFormatErrors(formatErrorsJson) {
+setFormatErrors(formatErrorsJson) {
     if (!formatErrorsJson || !JSON) {
         return;
     }
@@ -589,7 +534,7 @@ function setFormatErrors(formatErrorsJson) {
     }
 }
 
-function deleteSelectedObject() {
+deleteSelectedObject() {
     if (selectedObject != null) {
         for (var i = 0; i < nodes.length; i++) {
             if (nodes[i] == selectedObject) {
@@ -606,6 +551,72 @@ function deleteSelectedObject() {
         stateNamesToHighlight = transitionsToHighlight = null;
 
         selectedObject = null;
-        draw();
+        this.draw();
     }
+}
+}
+
+function drawText(c, originalText, x, y, angleOrNull, isSelected) {
+  text = originalText
+  //text = convertLatexShortcuts(originalText);
+  c.font = '20px "Times New Roman", serif';
+  var width = c.measureText(text).width;
+
+  // Attempt to keep text within the bounds of the node
+  if (width > nodeRadius + 16) {
+      var newpx = 20 - parseInt((width - nodeRadius) / 8);
+      if (newpx < 10) newpx = 10;
+      c.font = newpx + 'px "Times New Roman", serif';
+      width = c.measureText(text).width;
+  }
+
+  // center the text
+  x -= width / 2;
+
+  // position the text intelligently if given an angle
+  if (angleOrNull != null) {
+      var cos = Math.cos(angleOrNull);
+      var sin = Math.sin(angleOrNull);
+      var cornerPointX = (width / 2 + 5) * (cos > 0 ? 1 : -1);
+      var cornerPointY = (10 + 5) * (sin > 0 ? 1 : -1);
+      var slide = sin * Math.pow(Math.abs(sin), 40) * cornerPointX - cos * Math.pow(Math.abs(cos), 10) * cornerPointY;
+      x += cornerPointX - sin * slide;
+      y += cornerPointY + cos * slide;
+  }
+
+  // draw text and caret (round the coordinates so the caret falls on a pixel)
+  if ('advancedFillText' in c) {
+      c.advancedFillText(text, originalText, x + width / 2, y, angleOrNull);
+  } else {
+      x = Math.round(x);
+      y = Math.round(y);
+      c.fillText(text, x, y + 6);
+      if (isSelected && caretVisible && canvasHasFocus() && document.hasFocus()) {
+          x += width;
+          c.beginPath();
+          c.moveTo(x, y - 10);
+          c.lineTo(x, y + 10);
+          c.stroke();
+      }
+  }
+}
+
+function canvasHasFocus() {
+  return (document.activeElement || document.body) == document.body;
+}
+
+
+function drawArrow(c, x, y, angle) {
+  var dx = Math.cos(angle);
+  var dy = Math.sin(angle);
+  c.beginPath();
+  c.moveTo(x, y);
+  c.lineTo(x - 8 * dx + 5 * dy, y - 8 * dy - 5 * dx);
+  c.lineTo(x - 8 * dx - 5 * dy, y - 8 * dy + 5 * dx);
+  c.fill();
+}
+
+function crossBrowserKey(e) {
+  e = e || window.event;
+  return e.which || e.keyCode;
 }
