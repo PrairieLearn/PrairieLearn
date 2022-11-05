@@ -217,9 +217,8 @@ async.series(
         callback(null);
       });
     },
-    (callback) => {
+    async () => {
       socketServer.init(server);
-      callback(null);
     },
     (callback) => {
       util.callbackify(workspaceHelper.init)((err) => {
