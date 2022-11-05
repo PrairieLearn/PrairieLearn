@@ -7,8 +7,8 @@ var caretVisible = true;
 //var nodes = [];
 //var links = [];
 
-var stateNamesToHighlight = null
-var transitionsToHighlight = null
+//var stateNamesToHighlight = null
+//var transitionsToHighlight = null
 
 const snapToPadding = 6; // pixels
 const hitTargetPadding = 6; // pixels
@@ -40,6 +40,9 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
 
     this.nodes = [];
     this.links = [];
+
+    this.stateNamesToHighlight = null
+    this.transitionsToHighlight = null
 
     this.canvas = document.getElementById(answersName + '-fsm-canvas');
     //this.caretTimer;
@@ -197,7 +200,7 @@ document.onkeydown = (e) => {
     } else if (key == 8) { // backspace key
         if (selectedObject != null && 'text' in selectedObject) {
             // Reset highlighting when user backspaces
-            stateNamesToHighlight = transitionsToHighlight = null;
+            this.stateNamesToHighlight = this.transitionsToHighlight = null;
 
             selectedObject.text = selectedObject.text.substr(0, selectedObject.text.length - 1);
             this.resetCaret();
@@ -237,7 +240,7 @@ document.onkeypress = (e) => {
 
     } else if (keyBounds && !e.metaKey && !e.altKey && !e.ctrlKey && selectedObject != null && 'text' in selectedObject) {
         // Reset highlighting when user types
-        stateNamesToHighlight = transitionsToHighlight = null;
+        this.stateNamesToHighlight = this.transitionsToHighlight = null;
 
         selectedObject.text += String.fromCharCode(key);
         this.resetCaret();
@@ -276,9 +279,9 @@ drawUsing(c) {
 
         var color = 'black';
 
-        if (stateNamesToHighlight != null) {
-          for (var j = 0; j < stateNamesToHighlight.length; j++) {
-            if (stateNamesToHighlight[j].name == this.nodes[i].text){
+        if (this.stateNamesToHighlight != null) {
+          for (var j = 0; j < this.stateNamesToHighlight.length; j++) {
+            if (this.stateNamesToHighlight[j].name == this.nodes[i].text){
               color = 'red';
             }
           }
@@ -298,13 +301,13 @@ drawUsing(c) {
 
         var color = 'black';
 
-        if (transitionsToHighlight != null) {
-          for (var j = 0; j < transitionsToHighlight.length; j++) {
+        if (this.transitionsToHighlight != null) {
+          for (var j = 0; j < this.transitionsToHighlight.length; j++) {
             // Check if should highlight self-transitions
             if (this.links[i] instanceof SelfLink) {
-              if (this.links[i].node.text == transitionsToHighlight[j].startState
-                  && this.links[i].text.includes(transitionsToHighlight[j].char)
-                  && this.links[i].node.text == transitionsToHighlight[j].endState) {
+              if (this.links[i].node.text == this.transitionsToHighlight[j].startState
+                  && this.links[i].text.includes(this.transitionsToHighlight[j].char)
+                  && this.links[i].node.text == this.transitionsToHighlight[j].endState) {
 
                 color = 'red';
               }
@@ -312,18 +315,18 @@ drawUsing(c) {
 
             // Otherwise, check if should highlight normal transitions
             else if (this.links[i] instanceof Link) {
-              if (this.links[i].nodeA.text == transitionsToHighlight[j].startState
-                  && this.links[i].text.includes(transitionsToHighlight[j].char)
-                  && this.links[i].nodeB.text == transitionsToHighlight[j].endState) {
+              if (this.links[i].nodeA.text == this.transitionsToHighlight[j].startState
+                  && this.links[i].text.includes(this.transitionsToHighlight[j].char)
+                  && this.links[i].nodeB.text == this.transitionsToHighlight[j].endState) {
 
                 color = 'red';
               }
             }
 
             else if (this.links[i] instanceof StartLink) {
-              if (null == transitionsToHighlight[j].startState
-                  && null == transitionsToHighlight[j].char
-                  && this.links[i].node.text == transitionsToHighlight[j].endState) {
+              if (null == this.transitionsToHighlight[j].startState
+                  && null == this.transitionsToHighlight[j].char
+                  && this.links[i].node.text == this.transitionsToHighlight[j].endState) {
 
                 color = 'red';
               }
@@ -529,11 +532,11 @@ setFormatErrors(formatErrorsJson) {
         formatErrors = JSON.parse(formatErrorsJson);
 
         if (formatErrors.stateNames != null) {
-          stateNamesToHighlight = formatErrors.stateNames;
+          this.stateNamesToHighlight = formatErrors.stateNames;
         }
 
         if (formatErrors.transitions != null) {
-          transitionsToHighlight = formatErrors.transitions;
+          this.transitionsToHighlight = formatErrors.transitions;
         }
     } catch (e) {
 
@@ -558,7 +561,7 @@ deleteSelectedObject() {
         }
 
         // Reset highlighting when user deletes something
-        stateNamesToHighlight = transitionsToHighlight = null;
+        this.stateNamesToHighlight = this.transitionsToHighlight = null;
 
         selectedObject = null;
         this.draw();
