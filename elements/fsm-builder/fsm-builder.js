@@ -137,7 +137,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
                     } else if (targetNode != null) {
                         this.currentLink = new Link(this.selectedObject, targetNode);
                     } else {
-                        this.currentLink = new TemporaryLink(this.selectedObject.closestPointOnCircle(mouse.x, mouse.y), mouse);
+                        this.currentLink = new TemporaryLink(this.selectedObject.closestPointOnCircle(mouse.x, mouse.y, nodeRadius), mouse);
                     }
                 }
             }
@@ -301,7 +301,7 @@ drawUsing(c) {
 
         c.fillStyle = c.strokeStyle = color
 
-        this.nodes[i].draw(c, isSelected);
+        this.nodes[i].draw(c, isSelected, nodeRadius);
     }
     for (var i = 0; i < this.links.length; i++) {
         c.lineWidth = 1;
@@ -348,12 +348,12 @@ drawUsing(c) {
         }
 
         c.fillStyle = c.strokeStyle = color;
-        this.links[i].draw(c, isSelected);
+        this.links[i].draw(c, isSelected, nodeRadius);
     }
     if (this.currentLink != null) {
         c.lineWidth = 1;
         c.fillStyle = c.strokeStyle = 'black';
-        this.currentLink.draw(c, isSelected);
+        this.currentLink.draw(c, isSelected, nodeRadius);
     }
 
     c.restore();
@@ -361,12 +361,12 @@ drawUsing(c) {
 
 selectObject(x, y) {
     for (var i = 0; i < this.nodes.length; i++) {
-        if (this.nodes[i].containsPoint(x, y)) {
+        if (this.nodes[i].containsPoint(x, y, nodeRadius)) {
             return this.nodes[i];
         }
     }
     for (var i = 0; i < this.links.length; i++) {
-        if (this.links[i].containsPoint(x, y)) {
+        if (this.links[i].containsPoint(x, y, nodeRadius)) {
             return this.links[i];
         }
     }

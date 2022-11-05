@@ -55,8 +55,8 @@ Link.prototype.getEndPointsAndCircle = function () {
 	if (this.perpendicularPart == 0) {
 		var midX = (this.nodeA.x + this.nodeB.x) / 2;
 		var midY = (this.nodeA.y + this.nodeB.y) / 2;
-		var start = this.nodeA.closestPointOnCircle(midX, midY);
-		var end = this.nodeB.closestPointOnCircle(midX, midY);
+		var start = this.nodeA.closestPointOnCircle(midX, midY, nodeRadius);
+		var end = this.nodeB.closestPointOnCircle(midX, midY, nodeRadius);
 		return {
 			'hasCircle': false,
 			'startX': start.x,
@@ -91,7 +91,7 @@ Link.prototype.getEndPointsAndCircle = function () {
 	};
 };
 
-Link.prototype.draw = function (c, isSelected) {
+Link.prototype.draw = function (c, isSelected, nodeRadius) {
 	var stuff = this.getEndPointsAndCircle();
 	// draw arc
 	c.beginPath();
@@ -127,7 +127,7 @@ Link.prototype.draw = function (c, isSelected) {
 	}
 };
 
-Link.prototype.containsPoint = function (x, y) {
+Link.prototype.containsPoint = function (x, y, nodeRadius) {
 	var stuff = this.getEndPointsAndCircle();
 	if (stuff.hasCircle) {
 		var dx = x - stuff.circleX;
@@ -214,7 +214,7 @@ SelfLink.prototype.getEndPointsAndCircle = function () {
 	};
 };
 
-SelfLink.prototype.draw = function (c, isSelected) {
+SelfLink.prototype.draw = function (c, isSelected, nodeRadius) {
 	var stuff = this.getEndPointsAndCircle();
 	// draw arc
 	c.beginPath();
@@ -228,7 +228,7 @@ SelfLink.prototype.draw = function (c, isSelected) {
 	drawArrow(c, stuff.endX, stuff.endY, stuff.endAngle + Math.PI * 0.4);
 };
 
-SelfLink.prototype.containsPoint = function (x, y) {
+SelfLink.prototype.containsPoint = function (x, y, nodeRadius) {
 	var stuff = this.getEndPointsAndCircle();
 	var dx = x - stuff.circleX;
 	var dy = y - stuff.circleY;
@@ -276,7 +276,7 @@ function StartLink(node, start) {
 StartLink.prototype.getEndPoints = function () {
 	var startX = this.node.x + this.deltaX;
 	var startY = this.node.y + this.deltaY;
-	var end = this.node.closestPointOnCircle(startX, startY);
+	var end = this.node.closestPointOnCircle(startX, startY, nodeRadius);
 	return {
 		'startX': startX,
 		'startY': startY,
@@ -285,7 +285,7 @@ StartLink.prototype.getEndPoints = function () {
 	};
 };
 
-StartLink.prototype.draw = function (c) {
+StartLink.prototype.draw = function (c, isSelected, nodeRadius) {
 	var stuff = this.getEndPoints();
 
 	// draw the line
@@ -298,7 +298,7 @@ StartLink.prototype.draw = function (c) {
 	drawArrow(c, stuff.endX, stuff.endY, Math.atan2(-this.deltaY, -this.deltaX));
 };
 
-StartLink.prototype.containsPoint = function (x, y) {
+StartLink.prototype.containsPoint = function (x, y, nodeRadius) {
 	var stuff = this.getEndPoints();
 	var dx = stuff.endX - stuff.startX;
 	var dy = stuff.endY - stuff.startY;
@@ -315,7 +315,7 @@ function TemporaryLink(from, to) {
 	this.to = to;
 }
 
-TemporaryLink.prototype.draw = function (c) {
+TemporaryLink.prototype.draw = function (c, isSelected, nodeRadius) {
 	// draw the line
 	c.beginPath();
 	c.moveTo(this.to.x, this.to.y);

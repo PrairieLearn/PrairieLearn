@@ -17,7 +17,7 @@ Node.prototype.setAnchorPoint = function (x, y) {
     this.y = y + this.mouseOffsetY;
 };
 
-Node.prototype.draw = function (c, isSelected) {
+Node.prototype.draw = function (c, isSelected, nodeRadius) {
     // draw the circle
     c.beginPath();
     c.arc(this.x, this.y, nodeRadius, 0, 2 * Math.PI, false);
@@ -34,7 +34,7 @@ Node.prototype.draw = function (c, isSelected) {
     }
 };
 
-Node.prototype.closestPointOnCircle = function (x, y) {
+Node.prototype.closestPointOnCircle = function (x, y, nodeRadius) {
     var dx = x - this.x;
     var dy = y - this.y;
     var scale = Math.sqrt(dx * dx + dy * dy);
@@ -44,6 +44,6 @@ Node.prototype.closestPointOnCircle = function (x, y) {
     };
 };
 
-Node.prototype.containsPoint = function (x, y) {
+Node.prototype.containsPoint = function (x, y, nodeRadius) {
     return (x - this.x) * (x - this.x) + (y - this.y) * (y - this.y) < nodeRadius * nodeRadius;
 };
