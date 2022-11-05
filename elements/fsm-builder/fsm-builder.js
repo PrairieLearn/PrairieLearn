@@ -23,12 +23,12 @@ var selectedObject = null; // either a Link or a Node
 //var originalClick;
 //var answersName = null;
 //var alphabetList = null;
-//var fsmTypeName = '';
+//var this.fsmTypeName = '';
 
 var state_limit = 0;
 var checkbox = null;
 
-var shift = false;
+//var shift = false;
 
 
 class FSMBuilder {
@@ -46,6 +46,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
 
     this.currentLink = null;
     this.movingObject = false;
+    this.shift = false;
 
     this.canvas = document.getElementById(this.answersName + '-fsm-canvas');
     //this.caretTimer;
@@ -70,7 +71,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
         this.originalClick = mouse;
 
         if (selectedObject != null) {
-            if (shift && selectedObject instanceof Node) {
+            if (this.shift && selectedObject instanceof Node) {
                 this.currentLink = new SelfLink(selectedObject, mouse);
             } else {
                 this.movingObject = true;
@@ -80,7 +81,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
                 }
             }
             this.resetCaret();
-        } else if (shift) {
+        } else if (this.shift) {
             this.currentLink = new TemporaryLink(mouse, mouse);
         }
 
@@ -115,7 +116,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
         var mouse = this.crossBrowserRelativeMousePos(e);
 
         if (this.currentLink != null) {
-            if (this.currentLink instanceof Link && shift == false) {
+            if (this.currentLink instanceof Link && this.shift == false) {
                 this.currentLink.setAnchorPoint(mouse.x, mouse.y)
             } else {
                 var targetNode = this.selectObject(mouse.x, mouse.y);
@@ -196,7 +197,7 @@ document.onkeydown = (e) => {
     var key = crossBrowserKey(e);
 
     if (key == 16) {
-        shift = true;
+        this.shift = true;
     } else if (!canvasHasFocus()) {
         // don't read keystrokes when other things have focus
         return true;
@@ -217,11 +218,11 @@ document.onkeydown = (e) => {
     }
 };
 
-document.onkeyup = function (e) {
+document.onkeyup = (e) => {
     var key = crossBrowserKey(e);
 
     if (key == 16) {
-        shift = false;
+        this.shift = false;
     }
 };
 
@@ -532,7 +533,7 @@ setFormatErrors(formatErrorsJson) {
     }
 
     try {
-        formatErrors = JSON.parse(formatErrorsJson);
+        var formatErrors = JSON.parse(formatErrorsJson);
 
         if (formatErrors.stateNames != null) {
           this.stateNamesToHighlight = formatErrors.stateNames;
