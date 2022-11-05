@@ -282,6 +282,7 @@ drawUsing(c) {
         c.lineWidth = 1;
 
         var color = 'black';
+        var isSelected = false;
 
         if (this.stateNamesToHighlight != null) {
           for (var j = 0; j < this.stateNamesToHighlight.length; j++) {
@@ -293,17 +294,19 @@ drawUsing(c) {
 
 
         if (this.nodes[i] == selectedObject) {
-          color = 'blue'
+          color = 'blue';
+          isSelected = true;
         }
 
         c.fillStyle = c.strokeStyle = color
 
-        this.nodes[i].draw(c);
+        this.nodes[i].draw(c, isSelected);
     }
     for (var i = 0; i < this.links.length; i++) {
         c.lineWidth = 1;
 
         var color = 'black';
+        var isSelected = false;
 
         if (this.transitionsToHighlight != null) {
           for (var j = 0; j < this.transitionsToHighlight.length; j++) {
@@ -340,15 +343,16 @@ drawUsing(c) {
 
         if (this.links[i] == selectedObject) {
           color = 'blue';
+          isSelected = true;
         }
 
         c.fillStyle = c.strokeStyle = color;
-        this.links[i].draw(c);
+        this.links[i].draw(c, isSelected);
     }
     if (this.currentLink != null) {
         c.lineWidth = 1;
         c.fillStyle = c.strokeStyle = 'black';
-        this.currentLink.draw(c);
+        this.currentLink.draw(c, isSelected);
     }
 
     c.restore();

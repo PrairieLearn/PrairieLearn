@@ -91,7 +91,7 @@ Link.prototype.getEndPointsAndCircle = function () {
 	};
 };
 
-Link.prototype.draw = function (c) {
+Link.prototype.draw = function (c, isSelected) {
 	var stuff = this.getEndPointsAndCircle();
 	// draw arc
 	c.beginPath();
@@ -118,12 +118,12 @@ Link.prototype.draw = function (c) {
 		var textAngle = (startAngle + endAngle) / 2 + stuff.isReversed * Math.PI;
 		var textX = stuff.circleX + stuff.circleRadius * Math.cos(textAngle);
 		var textY = stuff.circleY + stuff.circleRadius * Math.sin(textAngle);
-		drawText(c, this.text, textX, textY, textAngle, selectedObject == this);
+		drawText(c, this.text, textX, textY, textAngle, isSelected);
 	} else {
 		var textX = (stuff.startX + stuff.endX) / 2;
 		var textY = (stuff.startY + stuff.endY) / 2;
 		var textAngle = Math.atan2(stuff.endX - stuff.startX, stuff.startY - stuff.endY);
-		drawText(c, this.text, textX, textY, textAngle + this.lineAngleAdjust, selectedObject == this);
+		drawText(c, this.text, textX, textY, textAngle + this.lineAngleAdjust, isSelected);
 	}
 };
 
@@ -214,7 +214,7 @@ SelfLink.prototype.getEndPointsAndCircle = function () {
 	};
 };
 
-SelfLink.prototype.draw = function (c) {
+SelfLink.prototype.draw = function (c, isSelected) {
 	var stuff = this.getEndPointsAndCircle();
 	// draw arc
 	c.beginPath();
@@ -223,7 +223,7 @@ SelfLink.prototype.draw = function (c) {
 	// draw the text on the loop farthest from the node
 	var textX = stuff.circleX + stuff.circleRadius * Math.cos(this.anchorAngle);
 	var textY = stuff.circleY + stuff.circleRadius * Math.sin(this.anchorAngle);
-	drawText(c, this.text, textX, textY, this.anchorAngle, selectedObject == this);
+	drawText(c, this.text, textX, textY, this.anchorAngle, isSelected);
 	// draw the head of the arrow
 	drawArrow(c, stuff.endX, stuff.endY, stuff.endAngle + Math.PI * 0.4);
 };
