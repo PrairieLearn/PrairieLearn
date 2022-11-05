@@ -51,7 +51,7 @@ Link.prototype.setAnchorPoint = function (x, y) {
 	}
 };
 
-Link.prototype.getEndPointsAndCircle = function () {
+Link.prototype.getEndPointsAndCircle = function (nodeRadius) {
 	if (this.perpendicularPart == 0) {
 		var midX = (this.nodeA.x + this.nodeB.x) / 2;
 		var midY = (this.nodeA.y + this.nodeB.y) / 2;
@@ -92,7 +92,7 @@ Link.prototype.getEndPointsAndCircle = function () {
 };
 
 Link.prototype.draw = function (c, isSelected, nodeRadius) {
-	var stuff = this.getEndPointsAndCircle();
+	var stuff = this.getEndPointsAndCircle(nodeRadius);
 	// draw arc
 	c.beginPath();
 	if (stuff.hasCircle) {
@@ -118,17 +118,17 @@ Link.prototype.draw = function (c, isSelected, nodeRadius) {
 		var textAngle = (startAngle + endAngle) / 2 + stuff.isReversed * Math.PI;
 		var textX = stuff.circleX + stuff.circleRadius * Math.cos(textAngle);
 		var textY = stuff.circleY + stuff.circleRadius * Math.sin(textAngle);
-		drawText(c, this.text, textX, textY, textAngle, isSelected);
+		drawText(c, this.text, textX, textY, textAngle, isSelected, nodeRadius);
 	} else {
 		var textX = (stuff.startX + stuff.endX) / 2;
 		var textY = (stuff.startY + stuff.endY) / 2;
 		var textAngle = Math.atan2(stuff.endX - stuff.startX, stuff.startY - stuff.endY);
-		drawText(c, this.text, textX, textY, textAngle + this.lineAngleAdjust, isSelected);
+		drawText(c, this.text, textX, textY, textAngle + this.lineAngleAdjust, isSelected, nodeRadius);
 	}
 };
 
 Link.prototype.containsPoint = function (x, y, nodeRadius) {
-	var stuff = this.getEndPointsAndCircle();
+	var stuff = this.getEndPointsAndCircle(nodeRadius);
 	if (stuff.hasCircle) {
 		var dx = x - stuff.circleX;
 		var dy = y - stuff.circleY;
@@ -190,7 +190,7 @@ SelfLink.prototype.setAnchorPoint = function (x, y) {
 	if (this.anchorAngle > Math.PI) this.anchorAngle -= 2 * Math.PI;
 };
 
-SelfLink.prototype.getEndPointsAndCircle = function () {
+SelfLink.prototype.getEndPointsAndCircle = function (nodeRadius) {
 	var circleX = this.node.x + 1.5 * nodeRadius * Math.cos(this.anchorAngle);
 	var circleY = this.node.y + 1.5 * nodeRadius * Math.sin(this.anchorAngle);
 	var circleRadius = 0.75 * nodeRadius;
@@ -215,7 +215,7 @@ SelfLink.prototype.getEndPointsAndCircle = function () {
 };
 
 SelfLink.prototype.draw = function (c, isSelected, nodeRadius) {
-	var stuff = this.getEndPointsAndCircle();
+	var stuff = this.getEndPointsAndCircle(nodeRadius);
 	// draw arc
 	c.beginPath();
 	c.arc(stuff.circleX, stuff.circleY, stuff.circleRadius, stuff.startAngle, stuff.endAngle, false);
@@ -223,13 +223,13 @@ SelfLink.prototype.draw = function (c, isSelected, nodeRadius) {
 	// draw the text on the loop farthest from the node
 	var textX = stuff.circleX + stuff.circleRadius * Math.cos(this.anchorAngle);
 	var textY = stuff.circleY + stuff.circleRadius * Math.sin(this.anchorAngle);
-	drawText(c, this.text, textX, textY, this.anchorAngle, isSelected);
+	drawText(c, this.text, textX, textY, this.anchorAngle, isSelected, nodeRadius);
 	// draw the head of the arrow
 	drawArrow(c, stuff.endX, stuff.endY, stuff.endAngle + Math.PI * 0.4);
 };
 
 SelfLink.prototype.containsPoint = function (x, y, nodeRadius) {
-	var stuff = this.getEndPointsAndCircle();
+	var stuff = this.getEndPointsAndCircle(nodeRadius);
 	var dx = x - stuff.circleX;
 	var dy = y - stuff.circleY;
 	var distance = Math.sqrt(dx * dx + dy * dy) - stuff.circleRadius;
@@ -273,7 +273,7 @@ function StartLink(node, start) {
 
 
 
-StartLink.prototype.getEndPoints = function () {
+StartLink.prototype.getEndPoints = function (nodeRadius) {
 	var startX = this.node.x + this.deltaX;
 	var startY = this.node.y + this.deltaY;
 	var end = this.node.closestPointOnCircle(startX, startY, nodeRadius);
@@ -286,7 +286,7 @@ StartLink.prototype.getEndPoints = function () {
 };
 
 StartLink.prototype.draw = function (c, isSelected, nodeRadius) {
-	var stuff = this.getEndPoints();
+	var stuff = this.getEndPoints(nodeRadius);
 
 	// draw the line
 	c.beginPath();
@@ -299,7 +299,7 @@ StartLink.prototype.draw = function (c, isSelected, nodeRadius) {
 };
 
 StartLink.prototype.containsPoint = function (x, y, nodeRadius) {
-	var stuff = this.getEndPoints();
+	var stuff = this.getEndPoints(nodeRadius);
 	var dx = stuff.endX - stuff.startX;
 	var dy = stuff.endY - stuff.startY;
 	var length = Math.sqrt(dx * dx + dy * dy);

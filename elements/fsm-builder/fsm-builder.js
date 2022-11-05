@@ -578,7 +578,7 @@ deleteSelectedObject() {
 }
 }
 
-function drawText(c, originalText, x, y, angleOrNull, isSelected) {
+function drawText(c, originalText, x, y, angleOrNull, isSelected, nodeRadius) {
   text = originalText
   //text = convertLatexShortcuts(originalText);
   c.font = '20px "Times New Roman", serif';
