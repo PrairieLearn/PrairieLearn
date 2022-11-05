@@ -17,14 +17,14 @@ Node.prototype.setAnchorPoint = function (x, y) {
     this.y = y + this.mouseOffsetY;
 };
 
-Node.prototype.draw = function (c, isSelected, nodeRadius) {
+Node.prototype.draw = function (c, isSelected, nodeRadius, caretVisible) {
     // draw the circle
     c.beginPath();
     c.arc(this.x, this.y, nodeRadius, 0, 2 * Math.PI, false);
     c.stroke();
 
     // draw the text
-    drawText(c, this.text, this.x, this.y, null, isSelected, nodeRadius);
+    drawText(c, this.text, this.x, this.y, null, isSelected, nodeRadius, caretVisible);
 
     // draw a double circle for an accept state
     if (this.isAcceptState) {

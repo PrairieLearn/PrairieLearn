@@ -91,7 +91,7 @@ Link.prototype.getEndPointsAndCircle = function (nodeRadius) {
 	};
 };
 
-Link.prototype.draw = function (c, isSelected, nodeRadius) {
+Link.prototype.draw = function (c, isSelected, nodeRadius, caretVisible) {
 	var stuff = this.getEndPointsAndCircle(nodeRadius);
 	// draw arc
 	c.beginPath();
@@ -118,12 +118,12 @@ Link.prototype.draw = function (c, isSelected, nodeRadius) {
 		var textAngle = (startAngle + endAngle) / 2 + stuff.isReversed * Math.PI;
 		var textX = stuff.circleX + stuff.circleRadius * Math.cos(textAngle);
 		var textY = stuff.circleY + stuff.circleRadius * Math.sin(textAngle);
-		drawText(c, this.text, textX, textY, textAngle, isSelected, nodeRadius);
+		drawText(c, this.text, textX, textY, textAngle, isSelected, nodeRadius, caretVisible);
 	} else {
 		var textX = (stuff.startX + stuff.endX) / 2;
 		var textY = (stuff.startY + stuff.endY) / 2;
 		var textAngle = Math.atan2(stuff.endX - stuff.startX, stuff.startY - stuff.endY);
-		drawText(c, this.text, textX, textY, textAngle + this.lineAngleAdjust, isSelected, nodeRadius);
+		drawText(c, this.text, textX, textY, textAngle + this.lineAngleAdjust, isSelected, nodeRadius, caretVisible);
 	}
 };
 
@@ -214,7 +214,7 @@ SelfLink.prototype.getEndPointsAndCircle = function (nodeRadius) {
 	};
 };
 
-SelfLink.prototype.draw = function (c, isSelected, nodeRadius) {
+SelfLink.prototype.draw = function (c, isSelected, nodeRadius, caretVisible) {
 	var stuff = this.getEndPointsAndCircle(nodeRadius);
 	// draw arc
 	c.beginPath();
@@ -223,7 +223,7 @@ SelfLink.prototype.draw = function (c, isSelected, nodeRadius) {
 	// draw the text on the loop farthest from the node
 	var textX = stuff.circleX + stuff.circleRadius * Math.cos(this.anchorAngle);
 	var textY = stuff.circleY + stuff.circleRadius * Math.sin(this.anchorAngle);
-	drawText(c, this.text, textX, textY, this.anchorAngle, isSelected, nodeRadius);
+	drawText(c, this.text, textX, textY, this.anchorAngle, isSelected, nodeRadius, caretVisible);
 	// draw the head of the arrow
 	drawArrow(c, stuff.endX, stuff.endY, stuff.endAngle + Math.PI * 0.4);
 };
@@ -285,7 +285,7 @@ StartLink.prototype.getEndPoints = function (nodeRadius) {
 	};
 };
 
-StartLink.prototype.draw = function (c, isSelected, nodeRadius) {
+StartLink.prototype.draw = function (c, isSelected, nodeRadius, caretVisible) {
 	var stuff = this.getEndPoints(nodeRadius);
 
 	// draw the line
@@ -315,7 +315,7 @@ function TemporaryLink(from, to) {
 	this.to = to;
 }
 
-TemporaryLink.prototype.draw = function (c, isSelected, nodeRadius) {
+TemporaryLink.prototype.draw = function (c, isSelected, nodeRadius, caretVisible) {
 	// draw the line
 	c.beginPath();
 	c.moveTo(this.to.x, this.to.y);

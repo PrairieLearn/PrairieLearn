@@ -2,7 +2,7 @@
 //var canvas;
 
 //var caretTimer;
-var caretVisible = true;
+//var caretVisible = true;
 
 //var nodes = [];
 //var links = [];
@@ -48,6 +48,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
     this.selectedObject = null;
     this.movingObject = false;
     this.shift = false;
+    this.caretVisible = true;
     this.nodeRadius = largeStateSize;
 
     this.canvas = document.getElementById(this.answersName + '-fsm-canvas');
@@ -302,7 +303,7 @@ drawUsing(c) {
 
         c.fillStyle = c.strokeStyle = color
 
-        this.nodes[i].draw(c, isSelected, this.nodeRadius);
+        this.nodes[i].draw(c, isSelected, this.nodeRadius, this.caretVisible);
     }
     for (var i = 0; i < this.links.length; i++) {
         c.lineWidth = 1;
@@ -349,12 +350,12 @@ drawUsing(c) {
         }
 
         c.fillStyle = c.strokeStyle = color;
-        this.links[i].draw(c, isSelected, this.nodeRadius);
+        this.links[i].draw(c, isSelected, this.nodeRadius, this.caretVisible);
     }
     if (this.currentLink != null) {
         c.lineWidth = 1;
         c.fillStyle = c.strokeStyle = 'black';
-        this.currentLink.draw(c, isSelected, this.nodeRadius);
+        this.currentLink.draw(c, isSelected, this.nodeRadius, this.caretVisible);
     }
 
     c.restore();
@@ -393,10 +394,10 @@ snapNode(node) {
 resetCaret() {
     clearInterval(this.caretTimer);
     this.caretTimer = setInterval(() => {
-      caretVisible = !caretVisible;
+      this.caretVisible = !this.caretVisible;
       this.draw();
     }, 500);
-    caretVisible = true;
+    this.caretVisible = true;
 }
 
 
@@ -579,7 +580,7 @@ deleteSelectedObject() {
 }
 }
 
-function drawText(c, originalText, x, y, angleOrNull, isSelected, nodeRadius) {
+function drawText(c, originalText, x, y, angleOrNull, isSelected, nodeRadius, caretVisible) {
   text = originalText
   //text = convertLatexShortcuts(originalText);
   c.font = '20px "Times New Roman", serif';
