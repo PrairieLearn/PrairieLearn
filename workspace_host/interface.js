@@ -218,10 +218,8 @@ async.series(
       });
     },
     (callback) => {
-      socketServer.init(server, function (err) {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+      socketServer.init(server);
+      callback(null);
     },
     (callback) => {
       util.callbackify(workspaceHelper.init)((err) => {
