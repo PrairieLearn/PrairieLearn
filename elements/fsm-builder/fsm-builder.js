@@ -33,10 +33,10 @@ const largeStateSize = 40; // pixels
 
 class FSMBuilder {
 
-constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max_states=0) {
+constructor(name, options) {//backupJson, formatErrorsJson, alphabet, fsmType, editable, max_states=0) {
     this.answersName = name;
-    this.fsmTypeName = fsmType;
-    this.alphabetList = alphabet;
+    this.fsmTypeName = options.fsmType;
+    this.alphabetList = options.alphabet;
 
     this.nodes = [];
     this.links = [];
@@ -54,15 +54,15 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
     this.canvas = document.getElementById(this.answersName + '-fsm-canvas');
     //this.caretTimer;
 
-    this.state_limit = max_states;
+    this.state_limit = options.max_states;
     this.checkbox = document.getElementById(this.answersName + '-include-dump-state')
 
-    this.restoreBackup(backupJson);
-    this.setFormatErrors(formatErrorsJson);
+    this.restoreBackup(options.backupJson);
+    this.setFormatErrors(options.formatErrorsJson);
     this.draw();
 
     // If not editable, we don't allow the user to modify anything, so just exit
-    if (!editable) {
+    if (!options.editable) {
       return;
     }
 

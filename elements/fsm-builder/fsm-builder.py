@@ -100,7 +100,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             'fsm_type_name': fsm_type.name,
             'editable': editable,
             'checked': data['submitted_answers'].get(get_checkbox_name(name), None),
-            'max_states': data['params'][name].get('max_states', None)
+            'max_states': data['params'][name].get('max_states', 0)
         }
 
         with open('fsm-builder.mustache', 'r') as f:

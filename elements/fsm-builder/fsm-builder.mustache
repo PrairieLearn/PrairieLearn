@@ -87,14 +87,14 @@
 
     <input id="{{{answers_name}}}-raw-json" name="{{{answers_name}}}-raw" type="hidden" {{^editable}}disabled{{/editable}}>
     <script>
-    new FSMBuilder("{{{answers_name}}}",
-                     '{{{display_json}}}',
-                     '{{{format_errors_json}}}',
-                     {{{alphabet_list}}},
-                     '{{{fsm_type_name}}}',
-                     {{^editable}}false{{/editable}}{{#editable}}true{{/editable}} {{#max_states}},
-                     {{{max_states}}}{{/max_states}}
-      );
+    new FSMBuilder("{{{answers_name}}}", {
+                        backupJson: '{{{display_json}}}',
+                        formatErrorsJson: '{{{format_errors_json}}}',
+                        alphabet: {{{alphabet_list}}},
+                        fsmType: '{{{fsm_type_name}}}',
+                        editable: {{^editable}}false{{/editable}}{{#editable}}true{{/editable}},
+                        max_states: {{{max_states}}}
+                      });
     </script>
 </div>
 {{/question}}
