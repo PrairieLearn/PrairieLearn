@@ -16,14 +16,14 @@ const smallStateSize = 25; // pixels
 const largeStateSize = 40; // pixels
 
 var nodeRadius = largeStateSize; // Default to large state size
-var cursorVisible = true;
+//var cursorVisible = true;
 var selectedObject = null; // either a Link or a Node
-var currentLink = null; // a Link
-var movingObject = false;
+//var currentLink = null; // a Link
+//var movingObject = false;
 //var originalClick;
-var answersName = null;
-var alphabetList = null;
-var fsmTypeName = '';
+//var answersName = null;
+//var alphabetList = null;
+//var fsmTypeName = '';
 
 var state_limit = 0;
 var checkbox = null;
@@ -34,21 +34,24 @@ var shift = false;
 class FSMBuilder {
 
 constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max_states=0) {
-    answersName = name;
-    fsmTypeName = fsmType;
-    alphabetList = alphabet;
+    this.answersName = name;
+    this.fsmTypeName = fsmType;
+    this.alphabetList = alphabet;
 
     this.nodes = [];
     this.links = [];
 
-    this.stateNamesToHighlight = null
-    this.transitionsToHighlight = null
+    this.stateNamesToHighlight = null;
+    this.transitionsToHighlight = null;
 
-    this.canvas = document.getElementById(answersName + '-fsm-canvas');
+    this.currentLink = null;
+    this.movingObject = false;
+
+    this.canvas = document.getElementById(this.answersName + '-fsm-canvas');
     //this.caretTimer;
 
     state_limit = max_states;
-    checkbox = document.getElementById(answersName+'-include-dump-state')
+    checkbox = document.getElementById(this.answersName+'-include-dump-state')
 
     this.restoreBackup(backupJson);
     this.setFormatErrors(formatErrorsJson);
@@ -63,14 +66,14 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
     this.canvas.onmousedown = (e) => {
         var mouse = this.crossBrowserRelativeMousePos(e);
         selectedObject = this.selectObject(mouse.x, mouse.y);
-        movingObject = false;
+        this.movingObject = false;
         this.originalClick = mouse;
 
         if (selectedObject != null) {
             if (shift && selectedObject instanceof Node) {
-                currentLink = new SelfLink(selectedObject, mouse);
+                this.currentLink = new SelfLink(selectedObject, mouse);
             } else {
-                movingObject = true;
+                this.movingObject = true;
                 //deltaMouseX = deltaMouseY = 0;
                 if (selectedObject.setMouseStart) {
                     selectedObject.setMouseStart(mouse.x, mouse.y);
@@ -78,7 +81,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
             }
             this.resetCaret();
         } else if (shift) {
-            currentLink = new TemporaryLink(mouse, mouse);
+            this.currentLink = new TemporaryLink(mouse, mouse);
         }
 
         this.draw();
@@ -111,9 +114,9 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
     this.canvas.onmousemove = (e) => {
         var mouse = this.crossBrowserRelativeMousePos(e);
 
-        if (currentLink != null) {
-            if (currentLink instanceof Link && shift == false) {
-                currentLink.setAnchorPoint(mouse.x, mouse.y)
+        if (this.currentLink != null) {
+            if (this.currentLink instanceof Link && shift == false) {
+                this.currentLink.setAnchorPoint(mouse.x, mouse.y)
             } else {
                 var targetNode = this.selectObject(mouse.x, mouse.y);
                 if (!(targetNode instanceof Node)) {
@@ -122,17 +125,17 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
 
                 if (selectedObject == null) {
                     if (targetNode != null) {
-                        currentLink = new StartLink(targetNode, this.originalClick);
+                        this.currentLink = new StartLink(targetNode, this.originalClick);
                     } else {
-                        currentLink = new TemporaryLink(this.originalClick, mouse);
+                        this.currentLink = new TemporaryLink(this.originalClick, mouse);
                     }
                 } else {
                     if (targetNode == selectedObject) {
-                        currentLink = new SelfLink(selectedObject, mouse);
+                        this.currentLink = new SelfLink(selectedObject, mouse);
                     } else if (targetNode != null) {
-                        currentLink = new Link(selectedObject, targetNode);
+                        this.currentLink = new Link(selectedObject, targetNode);
                     } else {
-                        currentLink = new TemporaryLink(selectedObject.closestPointOnCircle(mouse.x, mouse.y), mouse);
+                        this.currentLink = new TemporaryLink(selectedObject.closestPointOnCircle(mouse.x, mouse.y), mouse);
                     }
                 }
             }
@@ -141,7 +144,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
         }
 
         //TODO I think this should have a null check
-        if (movingObject) {
+        if (this.movingObject) {
             selectedObject.setAnchorPoint(mouse.x, mouse.y);
             if (selectedObject instanceof Node) {
                 this.snapNode(selectedObject);
@@ -151,15 +154,15 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
     };
 
     this.canvas.onmouseup = (e) => {
-        movingObject = false;
+        this.movingObject = false;
 
-        if (currentLink != null) {
-            if (!(currentLink instanceof TemporaryLink)) {
-                selectedObject = currentLink;
-                this.links.push(currentLink);
+        if (this.currentLink != null) {
+            if (!(this.currentLink instanceof TemporaryLink)) {
+                selectedObject = this.currentLink;
+                this.links.push(this.currentLink);
                 this.resetCaret();
             }
-            currentLink = null;
+            this.currentLink = null;
             this.draw();
         }
 
@@ -170,15 +173,15 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
         return false;
     }
 
-    $('#' + answersName + '-clear-fsm').on('click', () => {
-        if (window.confirm('Are you sure you want to clear your ' + fsmTypeName + '?')) {
+    $('#' + this.answersName + '-clear-fsm').on('click', () => {
+        if (window.confirm('Are you sure you want to clear your ' + this.fsmTypeName + '?')) {
             this.nodes = [];
             this.links = [];
             this.draw();
         }
     });
 
-    $('#' + answersName + '-toggle-state-size').on('click', () => {
+    $('#' + this.answersName + '-toggle-state-size').on('click', () => {
         if (nodeRadius == smallStateSize) {
             nodeRadius = largeStateSize;
         }
@@ -232,7 +235,7 @@ document.onkeypress = (e) => {
     } else {
         // For transitions. Set keyBounds to true if any
         // key in the alphabet is pressed or if key is a comma (0x2C)
-        keyBounds = alphabetList.includes(String.fromCharCode(key)) || key == 0x2C
+        keyBounds = this.alphabetList.includes(String.fromCharCode(key)) || key == 0x2C
     }
     if (!canvasHasFocus()) {
         // don't read keystrokes when other things have focus
@@ -341,10 +344,10 @@ drawUsing(c) {
         c.fillStyle = c.strokeStyle = color;
         this.links[i].draw(c);
     }
-    if (currentLink != null) {
+    if (this.currentLink != null) {
         c.lineWidth = 1;
         c.fillStyle = c.strokeStyle = 'black';
-        currentLink.draw(c);
+        this.currentLink.draw(c);
     }
 
     c.restore();
@@ -520,7 +523,7 @@ saveBackup() {
             backup.links.push(backupLink);
         }
     }
-    $('input#' + answersName + '-raw-json').val(JSON.stringify(backup));
+    $('input#' + this.answersName + '-raw-json').val(JSON.stringify(backup));
 }
 
 setFormatErrors(formatErrorsJson) {
