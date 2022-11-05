@@ -26,7 +26,7 @@ var nodeRadius = largeStateSize; // Default to large state size
 //var this.fsmTypeName = '';
 
 //var state_limit = 0;
-var checkbox = null;
+//var checkbox = null;
 
 //var shift = false;
 
@@ -53,7 +53,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
     //this.caretTimer;
 
     this.state_limit = max_states;
-    checkbox = document.getElementById(this.answersName + '-include-dump-state')
+    this.checkbox = document.getElementById(this.answersName + '-include-dump-state')
 
     this.restoreBackup(backupJson);
     this.setFormatErrors(formatErrorsJson);
@@ -267,7 +267,7 @@ draw() {
 }
 
 drawUsing(c) {
-    var dump_state = (checkbox ? checkbox.checked : false);
+    var dump_state = (this.checkbox ? this.checkbox.checked : false);
     c.clearRect(0, 0, this.canvas.width, this.canvas.height);
     c.save();
     c.translate(0.5, 0.5);
