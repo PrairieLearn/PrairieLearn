@@ -52,7 +52,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
     //this.caretTimer;
 
     state_limit = max_states;
-    checkbox = document.getElementById(this.answersName+'-include-dump-state')
+    checkbox = document.getElementById(this.answersName + '-include-dump-state')
 
     this.restoreBackup(backupJson);
     this.setFormatErrors(formatErrorsJson);
@@ -75,7 +75,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
                 this.currentLink = new SelfLink(selectedObject, mouse);
             } else {
                 this.movingObject = true;
-                //deltaMouseX = deltaMouseY = 0;
+
                 if (selectedObject.setMouseStart) {
                     selectedObject.setMouseStart(mouse.x, mouse.y);
                 }
