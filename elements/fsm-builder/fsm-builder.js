@@ -1,7 +1,7 @@
 
 //var canvas;
 
-var caretTimer;
+//var caretTimer;
 var caretVisible = true;
 
 var nodes = [];
@@ -20,7 +20,7 @@ var cursorVisible = true;
 var selectedObject = null; // either a Link or a Node
 var currentLink = null; // a Link
 var movingObject = false;
-var originalClick;
+//var originalClick;
 var answersName = null;
 var alphabetList = null;
 var fsmTypeName = '';
@@ -38,6 +38,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
     fsmTypeName = fsmType;
     alphabetList = alphabet;
     this.canvas = document.getElementById(answersName + '-fsm-canvas');
+    //this.caretTimer;
 
     state_limit = max_states;
     checkbox = document.getElementById(answersName+'-include-dump-state')
@@ -56,7 +57,7 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
         var mouse = this.crossBrowserRelativeMousePos(e);
         selectedObject = this.selectObject(mouse.x, mouse.y);
         movingObject = false;
-        originalClick = mouse;
+        this.originalClick = mouse;
 
         if (selectedObject != null) {
             if (shift && selectedObject instanceof Node) {
@@ -114,9 +115,9 @@ constructor(name, backupJson, formatErrorsJson, alphabet, fsmType, editable, max
 
                 if (selectedObject == null) {
                     if (targetNode != null) {
-                        currentLink = new StartLink(targetNode, originalClick);
+                        currentLink = new StartLink(targetNode, this.originalClick);
                     } else {
-                        currentLink = new TemporaryLink(originalClick, mouse);
+                        currentLink = new TemporaryLink(this.originalClick, mouse);
                     }
                 } else {
                     if (targetNode == selectedObject) {
@@ -372,8 +373,8 @@ snapNode(node) {
 
 
 resetCaret() {
-    clearInterval(caretTimer);
-    caretTimer = setInterval(() => {
+    clearInterval(this.caretTimer);
+    this.caretTimer = setInterval(() => {
       caretVisible = !caretVisible;
       this.draw();
     }, 500);
