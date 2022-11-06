@@ -2,7 +2,9 @@ import chevron
 import lxml
 import prairielearn as pl
 
+
 # Based on the original hidden-hint element by Jason Xia
+
 
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
