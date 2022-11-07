@@ -24,7 +24,6 @@ const multer = require('multer');
 const filesize = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const util = require('util');
 const Sentry = require('@prairielearn/sentry');
 
 const logger = require('./lib/logger');
