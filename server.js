@@ -2058,8 +2058,8 @@ if (config.startServer) {
             // shut down, even if some of them fail.
             await Promise.allSettled([
               externalGraderResults.stop(),
-              serverJobs.stop(),
               cron.stop(),
+              serverJobs.stop(),
             ]);
           } catch (err) {
             logger.error('Error while terminating', err);
