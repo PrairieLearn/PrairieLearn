@@ -2047,6 +2047,10 @@ if (config.startServer) {
         const prepareForTermination = async () => {
           logger.info('Preparing for termination...');
 
+          // By this point, we should no longer be attached to the load balancer,
+          // so there's no point shutting down the HTTP server or the socket.io
+          // server.
+          //
           // We want to proceed with termination even if something goes wrong,
           // so don't allow this function to throw.
           try {
