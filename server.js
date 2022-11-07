@@ -2046,25 +2046,19 @@ if (config.startServer) {
 
         const prepareForTermination = async () => {
           logger.info('Preparing for termination...');
+
           // We want to proceed with termination even if something goes wrong,
           // so don't allow this function to throw.
           try {
-            // By this point, we should have already been detached from the
-            // load balancer, so the following should be no-ops. However, we
-            // still do to ensure that we don't get any more traffic as we're
-            // shutting everything down.
-            await util.promisify(server.close).call(server);
-            await socketServer.close();
-
             // We use `allSettled()` here to ensure that all tasks can gracefully
             // shut down, even if some of them fail.
             await Promise.allSettled([
               externalGraderResults.stop(),
-              cron.stop(),
               serverJobs.stop(),
+              cron.stop(),
             ]);
           } catch (err) {
-            logger.error('Error while shutting down server', err);
+            logger.error('Error while terminating', err);
             Sentry.captureException(err);
           }
         };
