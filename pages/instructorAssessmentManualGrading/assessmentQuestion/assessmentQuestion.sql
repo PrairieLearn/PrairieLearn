@@ -18,7 +18,7 @@ SELECT
     -- update POST is received back.
     CAST(iq.modified_at AS TEXT) AS modified_at,
     ai.open AS assessment_open,
-    u.uid,
+    COALESCE(u.uid, array_to_string(gul.uid_list, ', ')) AS uid,
     COALESCE(agu.name, agu.uid) AS assigned_grader_name,
     COALESCE(lgu.name, lgu.uid) AS last_grader_name,
     aq.max_points,
@@ -32,6 +32,7 @@ FROM
     JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
     LEFT JOIN users AS u ON (u.user_id = ai.user_id)
     LEFT JOIN groups AS g ON (g.id = ai.group_id)
+    LEFT JOIN groups_uid_list(g.id) AS gul ON TRUE
     LEFT JOIN users AS agu ON (agu.user_id = iq.assigned_grader)
     LEFT JOIN users AS lgu ON (lgu.user_id = iq.last_grader)
     LEFT JOIN issue_count AS ic ON (ic.instance_question_id = iq.id)
