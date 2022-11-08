@@ -31,7 +31,11 @@ router.post('/', async (req, res) => {
 
     try {
       const key = crypto.createSecretKey(config.secretKey, 'utf-8');
-      await jose.jwtVerify(jwt, key, { maxTokenAge: 60 });
+      await jose.jwtVerify(jwt, key, {
+        maxTokenAge: 60,
+        issuer: 'PrairieLearn',
+        subject: 'terminate',
+      });
     } catch (err) {
       logger.error('Error decoding PrairieLearn-Signature header', err);
       res.status(403).send(`Invalid PrairieLearn-Signature header: ${err.message}`);
