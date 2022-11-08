@@ -443,6 +443,9 @@ module.exports.initExpress = function () {
     app.use('/pl/prairietest/auth', require('./ee/auth/prairietest'));
   }
 
+  // Must come before CSRF middleware; we do our own signature verification here.
+  app.use('/pl/webhooks/terminate', require('./webhooks/terminate'));
+
   app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
   app.use(require('./middlewares/logRequest'));
 
@@ -2043,30 +2046,37 @@ if (config.startServer) {
           process.exit(0);
         }
 
-        const prepareForTermination = async () => {
-          logger.info('Preparing for termination...');
-
+        // SIGTERM can be used to gracefully shut down the process. This signal
+        // may come from another process, but we also send it to ourselves if
+        // we want to gracefully shut down. This is used below in the ASG
+        // lifecycle handler, and also within the "terminate" webhook.
+        process.once('SIGTERM', async () => {
           // By this point, we should no longer be attached to the load balancer,
           // so there's no point shutting down the HTTP server or the socket.io
           // server.
           //
-          // We want to proceed with termination even if something goes wrong,
-          // so don't allow this function to throw.
+          // We use `allSettled()` here to ensure that all tasks can gracefully
+          // shut down, even if some of them fail.
+          logger.info('Shutting down async processing');
+          const results = await Promise.allSettled([
+            externalGraderResults.stop(),
+            cron.stop(),
+            serverJobs.stop(),
+          ]);
+          results.forEach((r) => {
+            if (r.status === 'rejected') {
+              logger.error('Error shutting down async processing', r.reason);
+              Sentry.captureException(r.reason);
+            }
+          });
+
           try {
-            // We use `allSettled()` here to ensure that all tasks can gracefully
-            // shut down, even if some of them fail.
-            await Promise.allSettled([
-              externalGraderResults.stop(),
-              cron.stop(),
-              serverJobs.stop(),
-            ]);
+            await lifecycleHooks.completeInstanceTermination();
           } catch (err) {
-            logger.error('Error while terminating', err);
+            logger.error('Error completing instance termination', err);
             Sentry.captureException(err);
           }
-        };
 
-        const terminate = async () => {
           logger.info('Terminating...');
           // Shut down OpenTelemetry exporting.
           try {
@@ -2082,23 +2092,15 @@ if (config.startServer) {
           } finally {
             process.exit(0);
           }
-        };
+        });
 
         // If we're running in EC2 auto scaling, this will wait for our instance
-        // to enter the `Terminating:Wait` state.
-        //
-        // If we're not running in EC2, this will be a no-op.
-        lifecycleHooks
-          .handleAndCompleteInstanceTermination(prepareForTermination)
-          .catch((err) => {
-            logger.error('Error handling instance termination', err);
-            Sentry.captureException(err);
-          })
-          .finally(terminate);
-
-        // Also listen for and handle SIGTERM, which can be sent to gracefully
-        // shutdown a process.
-        process.on('SIGTERM', () => prepareForTermination().finally(terminate));
+        // to enter the `Terminating:Wait` state. If we're not running in EC2,
+        // this will be a no-op.
+        lifecycleHooks.waitForInstanceTermination().then(() => {
+          logger.info('Terminating server due to lifecycle state change');
+          process.kill(process.pid, 'SIGTERM');
+        });
       }
     }
   );
