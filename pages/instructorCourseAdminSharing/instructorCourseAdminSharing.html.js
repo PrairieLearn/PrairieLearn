@@ -67,7 +67,7 @@ const InstructorSharing =  ({
             </thead>
             <tbody>
               ${sharing_sets.map((sharing_set) => html`
-                <tr><td>${sharing_set.name}</td><td>${sharing_set.shared_to.join(', ')}</td></tr>
+                <tr><td>${sharing_set.name}</td><td>${sharing_set.shared_with.map(x => x.short_name).join(', ')}</td></tr>
               `)}
             </tbody>
         </div>
