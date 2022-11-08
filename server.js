@@ -24,7 +24,6 @@ const multer = require('multer');
 const filesize = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const util = require('util');
 const Sentry = require('@prairielearn/sentry');
 
 const logger = require('./lib/logger');
@@ -2046,16 +2045,14 @@ if (config.startServer) {
 
         const prepareForTermination = async () => {
           logger.info('Preparing for termination...');
+
+          // By this point, we should no longer be attached to the load balancer,
+          // so there's no point shutting down the HTTP server or the socket.io
+          // server.
+          //
           // We want to proceed with termination even if something goes wrong,
           // so don't allow this function to throw.
           try {
-            // By this point, we should have already been detached from the
-            // load balancer, so the following should be no-ops. However, we
-            // still do to ensure that we don't get any more traffic as we're
-            // shutting everything down.
-            await util.promisify(server.close).call(server);
-            await socketServer.close();
-
             // We use `allSettled()` here to ensure that all tasks can gracefully
             // shut down, even if some of them fail.
             await Promise.allSettled([
@@ -2064,7 +2061,7 @@ if (config.startServer) {
               serverJobs.stop(),
             ]);
           } catch (err) {
-            logger.error('Error while shutting down server', err);
+            logger.error('Error while terminating', err);
             Sentry.captureException(err);
           }
         };
