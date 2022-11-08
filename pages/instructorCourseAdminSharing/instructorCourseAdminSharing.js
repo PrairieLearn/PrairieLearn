@@ -17,40 +17,22 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 router.get('/', function (req, res, next) {
   debug('GET /');
 
-  // console.log(res.locals);
-
-  // TODO get stuff from query
-  sharing_sets = [
-    {
-      name: 'derivatives',
-      shared_with: [
-        'calculus 1',
-        'calculus 2'
-      ]
-    },
-    {
-      name: 'proofs',
-      shared_with: [
-      ]
-    }
-  ]
-
-  sqldb.query(sql.select_sharing_sets, { course_id: res.locals.course.id }, (err, result) => {
+  sqldb.queryOneRow(sql.get_course_sharing_info, { course_id: res.locals.course.id }, (err, result) => {
     if (ERR(err, next)) return;
+    let sharing_name = result.rows[0].sharing_name;
+    let sharing_id = result.rows[0].sharing_id;
 
-    for (let row of result.rows) {
-      console.log(row.shared_with)
-    }
-    // console.log(result);
+    sqldb.query(sql.select_sharing_sets, { course_id: res.locals.course.id }, (err, result) => {
+      if (ERR(err, next)) return;
 
-    res.send(InstructorSharing({
-      sharing_name: 'test-course',
-      sharing_id:  "qp4oumpo4wmrpq",
-      sharing_sets: result.rows,
-      resLocals: res.locals
-    }));
+      res.send(InstructorSharing({
+        sharing_name: sharing_name,
+        sharing_id: sharing_id,
+        sharing_sets: result.rows,
+        resLocals: res.locals
+      }));
+    });
   });
-
 });
 
 router.post('/', (req, res, next) => {
