@@ -2051,23 +2051,24 @@ if (config.startServer) {
         // we want to gracefully shut down. This is used below in the ASG
         // lifecycle handler, and also within the "terminate" webhook.
         process.once('SIGTERM', async () => {
-          try {
-            // By this point, we should no longer be attached to the load balancer,
-            // so there's no point shutting down the HTTP server or the socket.io
-            // server.
-            //
-            // We use `allSettled()` here to ensure that all tasks can gracefully
-            // shut down, even if some of them fail.
-            logger.info('Shutting down async processing');
-            await Promise.allSettled([
-              externalGraderResults.stop(),
-              cron.stop(),
-              serverJobs.stop(),
-            ]);
-          } catch (err) {
-            logger.error('Error while terminating', err);
-            Sentry.captureException(err);
-          }
+          // By this point, we should no longer be attached to the load balancer,
+          // so there's no point shutting down the HTTP server or the socket.io
+          // server.
+          //
+          // We use `allSettled()` here to ensure that all tasks can gracefully
+          // shut down, even if some of them fail.
+          logger.info('Shutting down async processing');
+          const results = await Promise.allSettled([
+            externalGraderResults.stop(),
+            cron.stop(),
+            serverJobs.stop(),
+          ]);
+          results.forEach((r) => {
+            if (r.status === 'rejected') {
+              logger.error('Error shutting down async processing', r.reason);
+              Sentry.captureException(r.reason);
+            }
+          });
 
           try {
             await lifecycleHooks.completeInstanceTermination();
