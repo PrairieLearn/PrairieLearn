@@ -1930,7 +1930,8 @@ For the inner `pl-hint` element:
 #### Details
 
 Add hints to a variant that are revealed with more submissions using the `show-after-submission` attribute. By default, hints without
-`show-after-submission` set are always shown.
+`show-after-submission` set are always shown. Hints with the same `show-after-submission` appear in the order they're written in the
+question HTML.
 
 #### Example implementations
 

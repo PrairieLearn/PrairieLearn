@@ -218,22 +218,19 @@ async.series(
       });
     },
     (callback) => {
-      socketServer.init(server, function (err) {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
+      server = http.createServer(app);
+      server.listen(workspace_server_settings.port);
+      logger.info(`Workspace server listening on port ${workspace_server_settings.port}`);
+      callback(null);
+    },
+    async () => {
+      socketServer.init(server);
     },
     (callback) => {
       util.callbackify(workspaceHelper.init)((err) => {
         if (ERR(err, callback)) return;
         callback(null);
       });
-    },
-    (callback) => {
-      server = http.createServer(app);
-      server.listen(workspace_server_settings.port);
-      logger.verbose(`Workspace server listening on port ${workspace_server_settings.port}`);
-      callback(null);
     },
     async () => {
       // Set up file watching with chokidar

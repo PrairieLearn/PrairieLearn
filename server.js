@@ -24,7 +24,6 @@ const multer = require('multer');
 const filesize = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const util = require('util');
 const Sentry = require('@prairielearn/sentry');
 
 const logger = require('./lib/logger');
@@ -2047,20 +2046,16 @@ if (config.startServer) {
           process.exit(0);
         }
 
-        const prepareForTermination = async () => {
-          logger.info('Preparing for termination...');
-          // We want to proceed with termination even if something goes wrong,
-          // so don't allow this function to throw.
+        // SIGTERM can be used to gracefully shut down the process. This signal
+        // may come from another process, but we also send it to ourselves if
+        // we want to gracefully shut down. This is used below in the ASG
+        // lifecycle handler, and also within the "terminate" webhook.
+        process.once('SIGTERM', async () => {
           try {
-            // By this point, we should have already been detached from the
-            // load balancer, so the following should be no-ops. However, we
-            // still do to ensure that we don't get any more traffic as we're
-            // shutting everything down.
-            logger.info('Shutting down server');
-            await util.promisify(server.close).call(server);
-            logger.info('Shutting down socket server');
-            await socketServer.close();
-
+            // By this point, we should no longer be attached to the load balancer,
+            // so there's no point shutting down the HTTP server or the socket.io
+            // server.
+            //
             // We use `allSettled()` here to ensure that all tasks can gracefully
             // shut down, even if some of them fail.
             logger.info('Shutting down async processing');
@@ -2070,12 +2065,17 @@ if (config.startServer) {
               serverJobs.stop(),
             ]);
           } catch (err) {
-            logger.error('Error while shutting down server', err);
+            logger.error('Error while terminating', err);
             Sentry.captureException(err);
           }
-        };
 
-        const terminate = async () => {
+          try {
+            await lifecycleHooks.completeInstanceTermination();
+          } catch (err) {
+            logger.error('Error completing instance termination', err);
+            Sentry.captureException(err);
+          }
+
           logger.info('Terminating...');
           // Shut down OpenTelemetry exporting.
           try {
@@ -2091,23 +2091,6 @@ if (config.startServer) {
           } finally {
             process.exit(0);
           }
-        };
-
-        // SIGTERM can be used to gracefully shut down the process. This signal
-        // may come from another process, but we also send it to ourselves if
-        // we want to gracefully shut down. This is used below in the ASG
-        // lifecycle handler, and also within the "terminate" webhook.
-        process.once('SIGTERM', async () => {
-          await prepareForTermination();
-
-          try {
-            await lifecycleHooks.completeInstanceTermination();
-          } catch (err) {
-            logger.error('Error completing instance termination', err);
-            Sentry.captureException(err);
-          }
-
-          await terminate();
         });
 
         // If we're running in EC2 auto scaling, this will wait for our instance
