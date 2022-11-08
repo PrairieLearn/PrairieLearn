@@ -66,12 +66,22 @@ BEGIN
 
     WITH
     matched_rows AS (
-        SELECT src.tid AS src_tid, src.uuid AS src_uuid, dest.id AS dest_id -- matched_rows cols have underscores
+        -- See `sync_questions.sql` for an explanation of the use of DISTINCT ON.
+        SELECT DISTINCT ON (src_tid)
+            src.tid AS src_tid,
+            src.uuid AS src_uuid,
+            dest.id AS dest_id
         FROM disk_assessments AS src LEFT JOIN assessments AS dest ON (
             dest.course_instance_id = syncing_course_instance_id
-            AND (src.uuid = dest.uuid
-                 OR ((src.uuid IS NULL OR dest.uuid IS NULL)
-                     AND src.tid = dest.tid AND dest.deleted_at IS NULL)))
+            AND (
+                src.uuid = dest.uuid
+                OR (
+                    (src.uuid IS NULL OR dest.uuid IS NULL)
+                    AND src.tid = dest.tid AND dest.deleted_at IS NULL
+                )
+            )
+        )
+        ORDER BY src_tid, (src.uuid = dest.uuid) DESC NULLS LAST
     ),
     deactivate_unmatched_dest_rows AS (
         UPDATE assessments AS dest
