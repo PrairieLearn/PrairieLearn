@@ -189,8 +189,7 @@
         "exclude": [
             "node_modules",
             "public",
-            "tests",
-            "ChangeLog.md"
+            "tests"
         ]
     },
     "nodemonConfig": {
