@@ -61,10 +61,18 @@ const InstructorSharing =  ({
                 <tr><th>Sharing ID</th>
                   <td>
                   ${sharing_id}
-                  <a role="button" class="btn btn-xs btn-secondary mx-2" onclick="navigator.clipboard.writeText('${sharing_id}');">
+                  <button class="btn btn-xs btn-secondary mx-2" onclick="navigator.clipboard.writeText('${sharing_id}');">
                     <i class="fa fa-copy"></i>
                     <span>Copy</span>
-                  </a>
+                  </button>
+                  <form name="sharing-id-regenerate" method="POST" class="d-inline">
+                    <input type="hidden" name="__action" value="sharing_id_regenerate">
+                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
+                    <button role="button" type="submit" class="btn btn-xs btn-secondary mx-2">
+                      <i class="fa fa-rotate"></i>
+                      <span>Regenerate</span>
+                    </button>
+                  </form>
                   </td>
                 </tr>
               </tbody>

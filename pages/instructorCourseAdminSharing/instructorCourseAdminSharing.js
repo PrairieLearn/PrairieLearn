@@ -36,8 +36,25 @@ router.get('/', function (req, res, next) {
 });
 
 router.post('/', (req, res, next) => {
+  console.log('COURSE ADMIN SHARING: POST')
   if (!res.locals.authz_data.has_course_permission_own) {
     return next(error.make(403, 'Access denied (must be course owner)'));
+  }
+
+
+
+  if (req.body.__action === 'sharing_id_regenerate') {
+    console.log('regenerate!!!');
+
+  } else if (req.body.__action === '') {
+
+  } else {
+    return next(
+      error.make(400, 'unknown __action', {
+        locals: res.locals,
+        body: req.body,
+      })
+    );
   }
 });
 
