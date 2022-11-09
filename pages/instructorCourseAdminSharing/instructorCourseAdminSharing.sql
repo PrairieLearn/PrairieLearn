@@ -22,3 +22,9 @@ GROUP BY
     ss.id
 ORDER BY
     ss.name;
+
+
+-- BLOCK update_sharing_id
+UPDATE pl_courses
+SET sharing_id = $sharing_id
+WHERE id = $course_id;

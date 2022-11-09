@@ -3,6 +3,7 @@ const router = express.Router();
 
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const { v4: uuidv4 } = require('uuid');
 const fs = require('fs-extra');
 const async = require('async');
 const ERR = require('async-stacktrace');
@@ -36,16 +37,17 @@ router.get('/', function (req, res, next) {
 });
 
 router.post('/', (req, res, next) => {
-  console.log('COURSE ADMIN SHARING: POST')
   if (!res.locals.authz_data.has_course_permission_own) {
     return next(error.make(403, 'Access denied (must be course owner)'));
   }
 
-
-
   if (req.body.__action === 'sharing_id_regenerate') {
-    console.log('regenerate!!!');
+    let newSharingId = uuidv4();
+    sqldb.queryZeroOrOneRow(sql.update_sharing_id, { sharing_id: newSharingId, course_id: res.locals.course.id }, (err, result) => {
+      if (ERR(err, next)) return;
 
+      res.redirect(req.originalUrl);
+    });
   } else if (req.body.__action === '') {
 
   } else {
