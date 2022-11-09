@@ -24,7 +24,7 @@ const InstructorSharing =  ({
         <script>
             $(function() {
                 $('[data-toggle="popover"]').popover({
-                    sanitize: false
+                  sanitize: false
                 })
             });
         </script>
@@ -36,8 +36,8 @@ const InstructorSharing =  ({
             </div>
             <table class="table table-sm table-hover two-column-description">
               <tbody>
-                  <tr><th>Sharing Name</th><td>@${sharing_name}</td></tr>
-                  <tr><th>Sharing ID</th><td><${sharing_id}></td></tr>
+                <tr><th>Sharing Name</th><td>@${sharing_name}</td></tr>
+                <tr><th>Sharing ID</th><td><${sharing_id}></td></tr>
               </tbody>
             </table>
           </div>
