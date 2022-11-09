@@ -7,7 +7,9 @@ WHERE id = $course_id
 -- BLOCK select_sharing_sets
 SELECT
     ss.name,
+    ss.id,
     jsonb_agg(jsonb_build_object(
+        'course_id', c.id,
         'short_name', c.short_name --maybe should use c.sharing_name here instead?
     ) ORDER BY c.short_name) AS shared_with
 FROM
