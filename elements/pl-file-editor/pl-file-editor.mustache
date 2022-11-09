@@ -42,19 +42,11 @@ $(function() {
                             <label for="modal-{{uuid}}-themes">Editor Theme</label>
                             <select class="custom-select" id="modal-{{uuid}}-themes">
                             </select>
-
-                            <div id="modal-split" style="padding-top: 1rem"></div>
-                            <label for="modal-{{uuid}}-font-adjust">Font Size</label>
-                            <br>
-                            <button type="button" class="btn btn-sm btn-secondary textsize-dec" aria-label="fontsize decrease">
-                                <i class="fa fa-font"></i>
-                                -
-                            </button>
-                            <span class="textsize-current" id="modal-{{uuid}}-textsize" style="padding: 3px;"></span>
-                            <button type="button" class="btn btn-sm btn-secondary textsize-inc" aria-label="fontsize increase">
-                                <i class="fa fa-font"></i>
-                                +
-                            </button>
+                        </div>
+                        <div class="form-group">
+                            <label for="modal-{{uuid}}-fontsize">Font Size</label>
+                            <select class="custom-select" id="modal-{{uuid}}-fontsize">
+                            </select>
                         </div>
                     </div>
                     <div class="modal-footer">
