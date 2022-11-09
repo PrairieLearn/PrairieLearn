@@ -67,20 +67,41 @@ const InstructorSharing =  ({
             </thead>
             <tbody>
               ${sharing_sets.map(sharing_set => html`
-                <tr><td>${sharing_set.name}</td><td>
-                ${sharing_set.shared_with.map(course_shared_with => html`
-                <div class="btn-group btn-group-sm" role="group" aria-label="Button group with nested dropdown">
-                  <!-- TODO we don't actually want the main part to be a button! -->
-                  <div class="btn-group btn-group-sm" role="group">
-                    <div class="btn btn-sm btn-outline-primary">
-                      ${course_shared_with.short_name}
+                <tr><td>${sharing_set.name}</td>
+                <td class="middle-align">${sharing_set.shared_with.map(course_shared_with => html`
+                  <form name="student-data-access-change-<%= course_user.user_id %>-<%= cir.id %>" method="POST" class="d-inline">
+                    <input type="hidden" name="__action" value="course_instance_permissions_update_role_or_delete">
+                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                    <input type="hidden" name="user_id" value="<%= course_user.user_id %>">
+                    <input type="hidden" name="course_instance_id" value="<%= cir.id %>">
+                    <div class="btn-group btn-group-sm" role="group" aria-label="Button group with nested dropdown">
+                      <!-- TODO we don't actually want the main part to be a button! -->
+                      <div class="btn-group btn-group-sm" role="group">
+                        <div class="btn btn-sm btn-outline-primary">
+                          ${course_shared_with.short_name}
+                        </div>
+                      </div>
+                      <button type="submit" class="btn btn-sm btn-outline-primary">
+                        <i class="fa fa-times"></i>
+                      </button>
                     </div>
-                  <button type="submit" class="btn btn-sm btn-outline-primary">
-                    <i class="fa fa-times"></i>
-                  </button>
-                </div>
+                  </form>
                 `)}
-              `)}</td></tr>
+                  <form name="student-data-access-add-<%= course_user.user_id %>" method="POST" class="d-inline">
+                    <input type="hidden" name="__action" value="course_instance_permissions_insert">
+                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                    <input type="hidden" name="user_id" value="<%= course_user.user_id %>">
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button id="addCIPDrop-<%= course_user.user_id %>" type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                          Add...
+                        </button>
+                        <div class="" aria-labelledby="addCIPDrop-<%= course_user.user_id %>">
+
+                        </div>
+                    </div>
+                  </form>
+                </td></tr>
+              `)}
             </tbody>
         </div>
       </body>
