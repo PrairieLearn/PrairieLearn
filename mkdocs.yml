@@ -42,9 +42,10 @@ nav:
   - 'Java autograder': 'java-grader/index.md'
   - 'Workspaces': 'workspaces/index.md'
   - 'Manual grading': 'manualGrading.md'
+  - 'Question Sharing': 'questionSharing.md'
   - 'What to tell students': 'whatToTellStudents.md'
   - 'FAQ': 'faq.md'
-  - 'API': 'api.md'  
+  - 'API': 'api.md'
 - Developer Guide:
   - 'Developer guide': 'dev-guide.md'
   - 'Installing with local source': 'installingLocal.md'
@@ -57,7 +58,7 @@ nav:
   - 'Contributing to PL development': 'contributing.md'
 - Running in Production:
   - 'Setup': 'running-in-production/setup.md'
-  - 'Using Docker Compose': 'running-in-production/docker-compose.md'  
+  - 'Using Docker Compose': 'running-in-production/docker-compose.md'
   - 'User Authentication': 'running-in-production/authentication.md'
   - 'Admin User': 'running-in-production/admin-user.md'
 - Deprecated Features:
