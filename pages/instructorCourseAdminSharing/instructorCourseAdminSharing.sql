@@ -20,6 +20,3 @@ GROUP BY
     ss.id
 ORDER BY
     ss.name;
-
-
-

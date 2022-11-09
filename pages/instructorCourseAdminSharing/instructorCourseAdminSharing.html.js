@@ -66,9 +66,21 @@ const InstructorSharing =  ({
               <th>Shared With</th>
             </thead>
             <tbody>
-              ${sharing_sets.map((sharing_set) => html`
-                <tr><td>${sharing_set.name}</td><td>${sharing_set.shared_with.map(x => x.short_name).join(', ')}</td></tr>
-              `)}
+              ${sharing_sets.map(sharing_set => html`
+                <tr><td>${sharing_set.name}</td><td>
+                ${sharing_set.shared_with.map(course_shared_with => html`
+                <div class="btn-group btn-group-sm" role="group" aria-label="Button group with nested dropdown">
+                  <!-- TODO we don't actually want the main part to be a button! -->
+                  <div class="btn-group btn-group-sm" role="group">
+                    <div class="btn btn-sm btn-outline-primary">
+                      ${course_shared_with.short_name}
+                    </div>
+                  <button type="submit" class="btn btn-sm btn-outline-primary">
+                    <i class="fa fa-times"></i>
+                  </button>
+                </div>
+                `)}
+              `)}</td></tr>
             </tbody>
         </div>
       </body>
