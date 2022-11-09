@@ -14,8 +14,8 @@ SELECT
     ) ORDER BY c.short_name) AS shared_with
 FROM
     sharing_sets AS ss
-    JOIN course_sharing_sets AS css on css.sharing_set_id = ss.id
-    JOIN pl_courses AS c on c.id = css.course_id
+    LEFT JOIN course_sharing_sets AS css on css.sharing_set_id = ss.id
+    LEFT JOIN pl_courses AS c on c.id = css.course_id
 WHERE
     ss.course_id = $course_id
 GROUP BY
@@ -28,3 +28,10 @@ ORDER BY
 UPDATE pl_courses
 SET sharing_id = $sharing_id
 WHERE id = $course_id;
+
+-- BLOCK create_sharing_set
+INSERT INTO sharing_sets
+(course_id, name, description)
+VALUES
+($course_id, $sharing_set_name, 'Sharing set description');
+

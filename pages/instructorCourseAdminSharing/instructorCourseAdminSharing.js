@@ -48,8 +48,13 @@ router.post('/', (req, res, next) => {
 
       res.redirect(req.originalUrl);
     });
-  } else if (req.body.__action === '') {
+  } else if (req.body.__action === 'sharing_set_create') {
+    // TODO: disallow duplicates!
+    sqldb.queryZeroOrOneRow(sql.create_sharing_set, { sharing_set_name: req.body.sharing_set_name, course_id: res.locals.course.id }, (err, result) => {
+      if (ERR(err, next)) return;
 
+      res.redirect(req.originalUrl);
+    });
   } else {
     return next(
       error.make(400, 'unknown __action', {

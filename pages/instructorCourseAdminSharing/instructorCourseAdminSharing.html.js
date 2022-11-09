@@ -109,7 +109,7 @@ const InstructorSharing =  ({
             <tbody>
               ${sharing_sets.map(sharing_set => html`
                 <tr><td>${sharing_set.name}</td>
-                <td class="middle-align">${sharing_set.shared_with.map(course_shared_with => html`
+                <td class="middle-align">${sharing_set.shared_with.map(course_shared_with => course_shared_with.course_id === null ? '' : html`
                   <form name="sharing-set-access-change-${sharing_set.id}-${course_shared_with.course_id}" method="POST" class="d-inline">
                     <input type="hidden" name="__action" value="course_instance_permissions_update_role_or_delete">
                     <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
