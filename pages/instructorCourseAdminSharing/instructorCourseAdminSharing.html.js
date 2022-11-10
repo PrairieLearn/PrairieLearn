@@ -149,47 +149,50 @@ const InstructorSharing =  ({
             </thead>
             <tbody>
               ${sharing_sets.map(sharing_set => html`
-                <tr><td>${sharing_set.name}</td>
-                <td class="middle-align">${sharing_set.shared_with.map(course_shared_with => course_shared_with.course_id === null ? '' : html`
-                  <form name="sharing-set-access-change-${sharing_set.id}-${course_shared_with.course_id}" method="POST" class="d-inline">
-                    <input type="hidden" name="__action" value="course_sharing_set_delete">
-                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
-                    <input type="hidden" name="course_id" value="${course_shared_with.course_id}">
-                    <div class="btn-group btn-group-sm" role="group" aria-label="Button group with nested dropdown">
-                      <!-- TODO we don't actually want the main part to be a button! -->
+                <tr>
+                  <td class="align-middle">${sharing_set.name}</td>
+                  <td class="align-middle">
+                    ${sharing_set.shared_with.map(course_shared_with => course_shared_with.course_id === null ? '' : html`
+                      <form name="sharing-set-access-change-${sharing_set.id}-${course_shared_with.course_id}" method="POST" class="d-inline">
+                        <input type="hidden" name="__action" value="course_sharing_set_delete">
+                        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
+                        <input type="hidden" name="course_id" value="${course_shared_with.course_id}">
+                        <div class="btn-group btn-group-sm" role="group" aria-label="Button group with nested dropdown">
+                          <!-- TODO we don't actually want the main part to be a button! -->
+                          <div class="btn-group btn-group-sm" role="group">
+                            <div class="btn btn-sm btn-outline-primary">
+                              ${course_shared_with.short_name}
+                            </div>
+                          </div>
+                          <button type="submit" class="btn btn-sm btn-outline-primary">
+                            <i class="fa fa-times"></i>
+                          </button>
+                        </div>
+                      </form>
+                    `)}
+                    <form name="sharing-set-access-add-${sharing_set.id}" method="POST" class="d-inline">
+                      <input type="hidden" name="__action" value="course_sharing_set_add">
+                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
+                      <input type="hidden" name="sharing_set_id" value="${sharing_set.id}">
                       <div class="btn-group btn-group-sm" role="group">
-                        <div class="btn btn-sm btn-outline-primary">
-                          ${course_shared_with.short_name}
+                        <button id="addSSPDrop-${sharing_set.id}" type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                          Add...
+                        </button>
+                        <div class="dropdown-menu" aria-labelledby="addSSPDrop-${sharing_set.id}">
+                          <div class="dropdown-header text-wrap">
+                            <p>
+                              To allow another course to access questions in the sharing set "${sharing_set.name}", enter their course sharing id below.
+                            </p>
+                          </div>
+                          <div class="" style="padding:1em;">
+                            <input class="form-control form-control-sm" type="text" name="course_sharing_id" required/>
+                            <button class="btn-sm btn-primary" type="Submit">Add Course</Button>
+                          </div>
                         </div>
                       </div>
-                      <button type="submit" class="btn btn-sm btn-outline-primary">
-                        <i class="fa fa-times"></i>
-                      </button>
-                    </div>
-                  </form>
-                `)}
-                  <form name="sharing-set-access-add-${sharing_set.id}" method="POST" class="d-inline">
-                    <input type="hidden" name="__action" value="course_sharing_set_add">
-                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
-                    <input type="hidden" name="sharing_set_id" value="${sharing_set.id}">
-                    <div class="btn-group btn-group-sm" role="group">
-                      <button id="addSSPDrop-${sharing_set.id}" type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                        Add...
-                      </button>
-                      <div class="dropdown-menu" aria-labelledby="addSSPDrop-${sharing_set.id}">
-                        <div class="dropdown-header text-wrap">
-                          <p>
-                            To allow another course to access questions in the sharing set "${sharing_set.name}", enter their course sharing id below.
-                          </p>
-                        </div>
-                        <div class="" style="padding:1em;">
-                          <input class="form-control form-control-sm" type="text" name="course_sharing_id" required/>
-                          <button class="btn-sm btn-primary" type="Submit">Add Course</Button>
-                        </div>
-                      </div>
-                    </div>
-                  </form>
-                </td></tr>
+                    </form>
+                  </td>
+                </tr>
               `)}
             </tbody>
         </div>
