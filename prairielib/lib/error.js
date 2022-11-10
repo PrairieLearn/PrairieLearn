@@ -1,6 +1,13 @@
 const _ = require('lodash');
 
 module.exports = {
+  /**
+   *
+   * @param {number} status
+   * @param {string} message
+   * @param {any} [data]
+   * @returns
+   */
   make: function (status, message, data) {
     var err = new Error(message);
     err.status = status;

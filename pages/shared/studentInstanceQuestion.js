@@ -1,5 +1,6 @@
 const _ = require('lodash');
 const sqldb = require('../../prairielib/lib/sql-db');
+const error = require('../../prairielib/lib/error');
 
 const fileStore = require('../../lib/file-store');
 const { idsEqual } = require('../../lib/id');
@@ -30,6 +31,9 @@ module.exports.processFileUpload = async (req, res) => {
   if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);
   if (!res.locals.authz_result.active) {
     throw new Error(`This assessment is not accepting submissions at this time.`);
+  }
+  if (!req.file) {
+    throw error.make(400, 'No file uploaded');
   }
   await fileStore.upload(
     req.file.originalname,
