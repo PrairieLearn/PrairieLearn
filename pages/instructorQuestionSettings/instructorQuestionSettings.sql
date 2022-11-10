@@ -55,3 +55,12 @@ SELECT
     $user_id, $from_course_id, $from_filename, $to_course_id, $storage_filename, $transfer_type
 RETURNING
     file_transfers.id;
+
+-- BLOCK select_sharing_sets
+SELECT
+    ss.name
+FROM
+    question_sharing_sets AS qss
+    JOIN sharing_sets AS ss ON qss.sharing_set_id = ss.id
+WHERE
+    qss.question_id = $question_id;

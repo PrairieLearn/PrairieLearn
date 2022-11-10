@@ -33,6 +33,7 @@ To discuss with Matt/Nathan:
 - [] should sharing set names allow spaces?
 - [] do we want to have any bulk operations ready to go from the get-go?
 - [] rules for sharing names? no spaces? no @ at the begining? (@@ would look weird). Maybe just say it must start with an alphabetic or alphanumeric character? upper and/or lower case? I don't know anything.
+- [] do we want to keep track of audit logs like with course permissions? or we don't care?
 
 
 Deployment considerations

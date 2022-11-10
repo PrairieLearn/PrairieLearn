@@ -274,6 +274,16 @@ router.get('/', function (req, res, next) {
           }
         );
       },
+      (callback) => {
+        sqldb.query(
+          sql.select_sharing_sets,
+          { question_id: res.locals.question.id },
+          (err, result) => {
+            if (ERR(err, callback)) return;
+            res.locals.sharing_sets = result.rows;
+            callback(null);
+          }
+        );      }
     ],
     (err) => {
       if (ERR(err, next)) return;

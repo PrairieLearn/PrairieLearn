@@ -84,6 +84,14 @@
               <th>Assessments</th>
               <td><% if (locals.assessments) { %><%- include('../partials/assessments', {assessments: assessments}); %><% } %></td>
             </tr>
+            <tr>
+              <th>Sharing Sets</th>
+              <td>
+                <% sharing_sets.forEach(function(sharing_set) { %>
+                <%= sharing_set.name %>,
+                <% }); %>
+              </td>
+            </tr>
             <% if (question.type == 'Freeform' && question.grading_method != 'External' && authz_data.has_course_permission_view) { %>
             <tr>
               <th class="align-middle">Tests</th>
