@@ -108,10 +108,11 @@ def prepare(element_html, data):
         # To prevent confusion on the client side
         raise Exception('pl-multiple-choice element must have at least 2 correct answers when all-of-the-above is set to "correct" or "random"')
 
+    if nota in ['incorrect', 'false'] and len_correct < 1:
+        # There must be a correct answer
+        raise Exception('pl-multiple-choice element must have at least 1 correct answer, or add none-of-the-above set to "correct" or "random"')
+
     if len_correct == 0:
-        if nota == 'false':
-            # This means the code needs to handle the special case when len_correct == 0
-            raise Exception('pl-multiple-choice element must have at least 1 correct answer or set none-of-the-above to "correct" or "random"')
         # If no correct option is provided, 'None of the above' will always
         # be correct, and 'All of the above' always incorrect
         if nota == 'random':
@@ -130,13 +131,14 @@ def prepare(element_html, data):
     # 1. Pick the choice(s) to display
     number_answers = pl.get_integer_attrib(element, 'number-answers', None)
     # determine if user provides number-answers
-    set_num_answers = True
     if number_answers is None:
         set_num_answers = False
-        number_answers = len_total + (nota != 'false') + (aota != 'false')
-    # figure out how many choice(s) to choose from the *provided* choices,
-    # excluding 'none-of-the-above' and 'all-of-the-above'
-    number_answers -= (nota != 'false') + (aota != 'false')
+        number_answers = len_total
+    else:
+        set_num_answers = True
+        # figure out how many choice(s) to choose from the *provided* choices,
+        # excluding 'none-of-the-above' and 'all-of-the-above'
+        number_answers -= (1 if nota != 'false' else 0) + (1 if aota != 'false' else 0)
 
     expected_num_answers = number_answers
 
