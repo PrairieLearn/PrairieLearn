@@ -23,6 +23,7 @@ const addSharingSetPopover = (resLocals) => {
   `.toString();
 }
 
+
 // const generateSharingSetRow = () => {
 
 // }
@@ -33,6 +34,7 @@ const InstructorSharing =  ({
   sharing_sets,
   resLocals,
 }) => {
+  console.log("sharing name: ", sharing_name);
   return html`
     <!DOCTYPE html>
     <html lang="en">
@@ -111,7 +113,7 @@ const InstructorSharing =  ({
                 <tr><td>${sharing_set.name}</td>
                 <td class="middle-align">${sharing_set.shared_with.map(course_shared_with => course_shared_with.course_id === null ? '' : html`
                   <form name="sharing-set-access-change-${sharing_set.id}-${course_shared_with.course_id}" method="POST" class="d-inline">
-                    <input type="hidden" name="__action" value="course_instance_permissions_update_role_or_delete">
+                    <input type="hidden" name="__action" value="course_sharing_set_delete">
                     <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
                     <input type="hidden" name="course_id" value="${course_shared_with.course_id}">
                     <div class="btn-group btn-group-sm" role="group" aria-label="Button group with nested dropdown">
@@ -128,8 +130,9 @@ const InstructorSharing =  ({
                   </form>
                 `)}
                   <form name="sharing-set-access-add-${sharing_set.id}" method="POST" class="d-inline">
-                    <input type="hidden" name="__action" value="course_instance_permissions_insert">
+                    <input type="hidden" name="__action" value="course_sharing_set_add">
                     <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
+                    <input type="hidden" name="sharing_set_id" value="${sharing_set.id}">
                     <div class="btn-group btn-group-sm" role="group">
                       <button id="addSSPDrop-${sharing_set.id}" type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         Add...

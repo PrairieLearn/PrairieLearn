@@ -55,6 +55,16 @@ router.post('/', (req, res, next) => {
 
       res.redirect(req.originalUrl);
     });
+  } else if (req.body.__action === 'course_sharing_set_add') {
+    sqldb.queryZeroOrOneRow(sql.course_sharing_set_add, { sharing_set_id: req.body.sharing_set_id, course_sharing_id: req.body.course_sharing_id }, (err, result) => {
+      if (ERR(err, next)) return;
+
+      res.redirect(req.originalUrl);
+    });
+  } else if (req.body.__action === 'course_sharing_set_delete') {
+
+  } else if (req.body.__action === 'choose_sharing_name') {
+
   } else {
     return next(
       error.make(400, 'unknown __action', {

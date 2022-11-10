@@ -29,9 +29,23 @@ UPDATE pl_courses
 SET sharing_id = $sharing_id
 WHERE id = $course_id;
 
+
 -- BLOCK create_sharing_set
 INSERT INTO sharing_sets
-(course_id, name, description)
+    (course_id, name, description)
 VALUES
-($course_id, $sharing_set_name, 'Sharing set description');
+    ($course_id, $sharing_set_name, 'Sharing set description');
 
+
+-- BLOCK course_sharing_set_add
+INSERT INTO course_sharing_sets
+    (course_id, sharing_set_id)
+SELECT
+    id, $sharing_set_id
+FROM
+    pl_courses
+WHERE
+    sharing_id = $course_sharing_id;
+
+
+-- BLOCK choose_sharing_name
