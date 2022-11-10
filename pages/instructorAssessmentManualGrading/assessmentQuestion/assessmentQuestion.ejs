@@ -29,12 +29,28 @@
               autoRefresh: true,
               autoRefreshStatus: false,
               autoRefreshInterval: 30,
-              buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'status'],
+              buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'status'],
               theadClasses: 'thead-light',
               stickyHeader: true,
               filterControl: true,
               rowStyle: row => (row.requires_manual_grading ? {} : { classes: 'text-muted bg-light' }),
               buttons: {
+                  showStudentInfo: {
+                    text: 'Show student info',
+                    icon: 'fa-eye',
+                    event: () => {
+                      const button = $('#js-show-student-info-button');
+                      $('#grading-table').bootstrapTable(
+                        button.hasClass('active') ? 'hideColumn' : 'showColumn',
+                        ['user_or_group_name', 'uid']
+                      );
+                      button.toggleClass('active');
+                    },
+                    attributes: {
+                      id: 'js-show-student-info-button',
+                      title: 'Show/hide student identification information',
+                    },
+                  },
                   status: {
                       text: 'Tag for grading',
                       icon: 'fa-tags',
@@ -79,23 +95,30 @@
                       checkbox: true,
                   },
                   {
-                      field: 'user_or_group_name',
-                      title: '<%= assessment.group_work ? 'Group Name' : 'Name' %>',
-                      searchable: true,
-                      filterControl: 'input',
-                      searchFormatter: false,
+                      field: 'index',
+                      title: 'Instance',
+                      searchable: false,
                       sortable: true,
-                      formatter: (value, row) => `<a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/instance_question/${row.id}">${value}` +
+                      switchable: false,
+                      formatter: (value, row) => `<a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/instance_question/${row.id}">Instance ${row.index}` +
                           (row.open_issue_count ? ` <span class="badge badge-pill badge-danger">${row.open_issue_count}</span>` : '') + '</a>' +
                           (row.assessment_open ? ` <span title="Assessment instance is still open" data-toggle="tooltip"><i class="fas fa-exclamation-triangle text-warning"></i></span>` : ''),
                   },
                   {
-                      field: 'uid',
-                      title: 'UID',
+                      field: 'user_or_group_name',
+                      title: '<%= assessment.group_work ? 'Group Name' : 'Name' %>',
                       searchable: true,
                       filterControl: 'input',
                       sortable: true,
-                      visible: <%= !assessment.group_work %>,
+                      visible: false,
+                  },
+                  {
+                      field: 'uid',
+                      title: '<%= assessment.group_work ? 'UIDs' : 'UID' %>',
+                      searchable: true,
+                      filterControl: 'input',
+                      sortable: true,
+                      visible: false,
                   },
                   {
                       field: 'requires_manual_grading',
