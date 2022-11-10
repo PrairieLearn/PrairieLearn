@@ -16,6 +16,8 @@ from IPython.core.interactiveshell import InteractiveShell
 class DoNotRun(Exception):
     pass
 
+class GradingSkipped(Exception):
+    pass
 
 def extract_ipynb_contents(f, ipynb_key):
     """

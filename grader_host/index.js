@@ -622,7 +622,7 @@ function uploadResults(info, callback) {
         const params = {
           Bucket: s3Bucket,
           Key: `${s3RootKey}/results.json`,
-          Body: Buffer.from(JSON.stringify(results, null, '  '), 'binary'),
+          Body: Buffer.from(JSON.stringify(results, null, 2)),
         };
         s3.putObject(params, (err) => {
           if (ERR(err, callback)) return;

@@ -1,0 +1,7 @@
+{
+  "recommendations": [
+    "Tobermory.es6-string-html",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint"
+  ]
+}
