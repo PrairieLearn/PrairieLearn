@@ -1,25 +1,18 @@
 // Update the VARIANT arg in docker-compose.yml to pick a Node.js version
 {
 	"name": "Node.js & PostgreSQL",
-	"dockerComposeFile": "docker-compose.yml",
-	"service": "app",
-	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
-	"features": {
-		"ghcr.io/devcontainers/features/github-cli:1": {},
-		"ghcr.io/devcontainers/features/python:1": {},
-		"ghcr.io/rocker-org/devcontainer-features/r-apt:0": {}
-	},
-
-	// Features to add to the dev container. More info: https://containers.dev/implementors/features.
-	// "features": {},
+  "image": "prairielearn/prairielearn",
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// This can be used to network with other containers or with the host.
 	// "forwardPorts": [3000, 5432],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	// TODO: Install graphviz
-	"postCreateCommand": ["yarn install", "make build", "pip3 install -r images/plbase/python-requirements.txt"]
+	"postCreateCommand": "yarn install && make build"
+	// "postCreateCommand": {
+  //   "yarn-deps": "yarn install",
+  //   "build": "make build"
+  // },
 
 	// Configure tool-specific properties.
 	// "customizations": {},
