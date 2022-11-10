@@ -18,12 +18,14 @@
               id="<%= role.id %>-<%= user.uid %>"
               name="<%= role.id %>-<%= user.uid %>"
               value="checked"
-              <% if (user.role_names.includes(role.role_name)) { %>
+              <% if (disabledRoles.includes(role.role_name)) {%>
+                disabled
+              <% } else if (user.role_names.includes(role.role_name)) { %>
                 checked
               <% }%>
               form="role-select-form"
             >
-            <label for="<%= role.id %>-<%= user.uid %>">
+            <label for="<%= role.id %>-<%= user.uid %>" class=<%= disabledRoles.includes(role.role_name) && "text-muted"%>>
               <%= role.role_name %>
             </label>
           <% }) %>

@@ -64,7 +64,8 @@ router.get('/', function (req, res, next) {
             join_code,
             start,
             used_join_code,
-            validationErrors
+            validationErrors,
+            disabledRoles
           ) {
             if (ERR(err, next)) return;
             res.locals.permissions = permissions;
@@ -78,6 +79,7 @@ router.get('/', function (req, res, next) {
             res.locals.start = start;
             res.locals.used_join_code = used_join_code;
             res.locals.validationErrors = validationErrors;
+            res.locals.disabledRoles = disabledRoles;
 
             if (usingGroupRoles) {
               // TODO: Maybe rewrite async/await
