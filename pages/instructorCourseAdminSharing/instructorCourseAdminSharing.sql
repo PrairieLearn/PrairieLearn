@@ -49,3 +49,6 @@ WHERE
 
 
 -- BLOCK choose_sharing_name
+UPDATE pl_courses
+SET sharing_name = $sharing_name
+WHERE id = $course_id;

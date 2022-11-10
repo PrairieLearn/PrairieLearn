@@ -23,6 +23,46 @@ const addSharingSetPopover = (resLocals) => {
   `.toString();
 }
 
+const chooseSharingNamePopover = (resLocals) => {
+  return html`
+    <form name="sharing-set-create" method="POST">
+      <input type="hidden" name="__action" value="choose_sharing_name">
+      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
+
+      <div class="form-group mb-4">
+        <p class=form-text>
+          Enter the sharing name you would like for your course.
+        </p>
+        <p><strong>Once you choose your course's sharing name, you will not be able to change it</strong>,
+          because doing so would break the assessments of other courses that have imported your questions.
+          It is reccomended that you choose something short but descriptive. For example, if you teaching
+          a calculus course at a university that goes by the abbreviation 'XYZ', then you could choose the sharing
+          name 'xyz-calculus'. Then other courses will import questions from your course with the syntax '@xyz-calculus/qid'.
+        </p>
+      </div>
+      <div class=form-group>
+        <input class="form-control form-control-sm" type="text" name="course_sharing_name" required/>
+      <div>
+      <div class="text-right mt-4">
+        <button type="button" class="btn btn-secondary" onclick="$('#chooseSharingName').popover('hide')">Cancel</button>
+        <button type="submit" class="btn btn-primary">Choose Sharing Name</button>
+      </div>
+    </form>
+  `.toString();
+}
+
+const chooseSharingNameButton = (resLocals) => {
+  return html`
+    <button type="button" class="btn btn-xs btn-secondary mx-2" id="chooseSharingName" tabindex="0"
+      data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Create Sharing Set"
+      data-content="${chooseSharingNamePopover(resLocals)}"
+      data-trigger="manual" onclick="$(this).popover('show')"
+    >
+      <i class="fas fa-share-nodes" aria-hidden="true"></i>
+      <span class="d-none d-sm-inline">Choose Sharing Name</span>
+    </button>
+  `;
+}
 
 // const generateSharingSetRow = () => {
 
@@ -34,7 +74,6 @@ const InstructorSharing =  ({
   sharing_sets,
   resLocals,
 }) => {
-  console.log("sharing name: ", sharing_name);
   return html`
     <!DOCTYPE html>
     <html lang="en">
@@ -63,7 +102,7 @@ const InstructorSharing =  ({
             </div>
             <table class="table table-sm table-hover two-column-description">
               <tbody>
-                <tr><th>Sharing Name</th><td>@${sharing_name}</td></tr>
+                <tr><th>Sharing Name</th><td>${sharing_name === null ? chooseSharingNameButton(resLocals) : sharing_name}</td></tr>
                 <tr><th>Sharing ID</th>
                   <td>
                   ${sharing_id}

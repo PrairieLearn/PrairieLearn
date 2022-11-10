@@ -63,8 +63,16 @@ router.post('/', (req, res, next) => {
     });
   } else if (req.body.__action === 'course_sharing_set_delete') {
 
-  } else if (req.body.__action === 'choose_sharing_name') {
+    // TODO: do we actually want to allow deleting the sharing with a course?
+    // In the future we want to do some fancy versioning stuff. How do we transition from allowing deletion
+    // to versioning questions?
 
+  } else if (req.body.__action === 'choose_sharing_name') {
+    sqldb.queryZeroOrOneRow(sql.choose_sharing_name, { sharing_name: req.body.course_sharing_name, course_id: res.locals.course.id }, (err, result) => {
+      if (ERR(err, next)) return;
+
+      res.redirect(req.originalUrl);
+    });
   } else {
     return next(
       error.make(400, 'unknown __action', {
