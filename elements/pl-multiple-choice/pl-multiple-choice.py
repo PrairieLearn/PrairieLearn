@@ -205,22 +205,17 @@ def prepare(element_html, data):
         sampled_answers.sort(key=lambda a: a[0])  # sort by stored original index
 
     inline = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
+
+    # Add 'All of the above' option after shuffling
     if aota != 'false':
-        if inline:
-            aota_text = 'All of these'
-        else:
-            aota_text = 'All of the above'
-        # Add 'All of the above' option after shuffling
+        aota_text = 'All of these' if inline else 'All of the above'
         aota_feedback = pl.get_string_attrib(element, 'all-of-the-above-feedback', FEEDBACK_DEFAULT)
         aota_default_score = SCORE_CORRECT_DEFAULT if aota == 'correct' else SCORE_INCORRECT_DEFAULT
         sampled_answers.append((len_total, aota == 'correct', aota_text, aota_feedback, aota_default_score))
 
+    # Add 'None of the above' option after shuffling
     if nota != 'false':
-        if inline:
-            nota_text = 'None of these'
-        else:
-            nota_text = 'None of the above'
-        # Add 'None of the above' option after shuffling
+        nota_text = 'None of these' if inline else 'None of the above'
         nota_feedback = pl.get_string_attrib(element, 'none-of-the-above-feedback', FEEDBACK_DEFAULT)
         nota_default_score = SCORE_CORRECT_DEFAULT if nota == 'correct' else SCORE_INCORRECT_DEFAULT
         sampled_answers.append((len_total + 1, nota == 'correct', nota_text, nota_feedback, nota_default_score))
