@@ -65,7 +65,8 @@ router.get('/', function (req, res, next) {
             start,
             used_join_code,
             validationErrors,
-            disabledRoles
+            disabledRoles,
+            groupRoles
           ) {
             if (ERR(err, next)) return;
             res.locals.permissions = permissions;
@@ -80,26 +81,23 @@ router.get('/', function (req, res, next) {
             res.locals.used_join_code = used_join_code;
             res.locals.validationErrors = validationErrors;
             res.locals.disabledRoles = disabledRoles;
+            res.locals.group_roles = groupRoles
 
             if (usingGroupRoles) {
               // TODO: Maybe rewrite async/await
-              groupAssessmentHelper.getGroupRoles(res.locals.assessment.id, function (group_roles) {
-                res.locals.group_roles = group_roles;
-
-                // If the user is currently tied to a group, get whether they can view the role-select table or not
-                if (groupMember) {
-                  groupAssessmentHelper.getAssessmentLevelPermissions(
-                    res.locals.assessment.id,
-                    res.locals.user.user_id,
-                    function (permissions) {
-                      res.locals.can_view_role_table = permissions.can_assign_roles_at_start;
-                      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                    }
-                  );
-                } else {
-                  res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                }
-              });
+              // If the user is currently tied to a group, get whether they can view the role-select table or not
+              if (groupMember) {
+                groupAssessmentHelper.getAssessmentLevelPermissions(
+                  res.locals.assessment.id,
+                  res.locals.user.user_id,
+                  function (permissions) {
+                    res.locals.can_view_role_table = permissions.can_assign_roles_at_start;
+                    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                  }
+                );
+              } else {
+                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+              }
             } else {
               res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             }

@@ -13,6 +13,7 @@ DECLARE
     arg_max_size bigint;
     arg_using_group_roles boolean;
     arg_default_group_role_id bigint;
+    arg_required_roles_count bigint;
 BEGIN
     -- find group id
     SELECT 
@@ -32,6 +33,8 @@ BEGIN
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Cannot find the group by provided join code: %', arg_join_code;
     END IF;
+
+    RAISE NOTICE 'This is logging: %', arg_group_id;
 
     -- lock the group
     -- to prevent many students join a group together breaking max size of the group
@@ -65,11 +68,23 @@ BEGIN
 
     -- find the default group role id
     IF arg_using_group_roles THEN
-        -- if no users are present in group, allow first user to assign roles
+        -- if groupsize == 0, give an assigner role
+        -- else if groupsize <= (# required roles), assign the user a random role where (min > 0)
+        -- else, assign a role with the highest maximum
+
+        SELECT COUNT(*) INTO arg_required_roles_count
+        FROM group_roles AS gr
+        WHERE gr.assessment_id = arg_assessment_id AND gr.minimum > 0;
+
         IF arg_cur_size = 0 THEN
             SELECT id INTO arg_default_group_role_id
             FROM group_roles AS gr
             WHERE gr.assessment_id = arg_assessment_id AND gr.can_assign_roles_at_start
+            LIMIT 1;
+        ELSIF arg_cur_size < arg_required_roles_count THEN
+            SELECT id INTO arg_default_group_role_id
+            FROM group_roles AS gr
+            WHERE gr.assessment_id = arg_assessment_id AND gr.minimum > 0 AND NOT gr.can_assign_roles_at_start
             LIMIT 1;
         ELSE
             SELECT id INTO arg_default_group_role_id
