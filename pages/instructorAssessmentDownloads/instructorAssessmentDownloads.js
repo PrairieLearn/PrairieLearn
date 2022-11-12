@@ -205,6 +205,8 @@ router.get('/:filename', function (req, res, next) {
         ['Last submission score', 'last_submission_score'],
         ['Number attempts', 'number_attempts'],
         ['Duration seconds', 'duration_seconds'],
+        ['Assigned manual grader', 'assigned_grader_name'],
+        ['Last manual grader', 'last_grader_name'],
       ]);
       csvMaker.rowsToCsv(result.rows, columns, function (err, csv) {
         if (ERR(err, next)) return;
@@ -284,6 +286,8 @@ router.get('/:filename', function (req, res, next) {
         ['Mode', 'mode'],
         ['Grading requested date', 'grading_requested_at_formatted'],
         ['Grading date', 'graded_at_formatted'],
+        ['Assigned manual grader', 'assigned_grader_name'],
+        ['Last manual grader', 'last_grader_name'],
         ['Score', 'score'],
         ['Correct', 'correct'],
         ['Feedback', 'feedback'],
