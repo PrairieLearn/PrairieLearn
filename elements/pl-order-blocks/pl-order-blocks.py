@@ -108,6 +108,7 @@ def prepare(element_html, data):
 
     correct_answers = []
     incorrect_answers = []
+    used_tags = set()
 
     def prepare_tag(html_tags, index, group_info={'tag': None, 'depends': None}):
         if html_tags.tag != 'pl-answer':
@@ -131,6 +132,11 @@ def prepare(element_html, data):
         tag, depends = get_graph_info(html_tags)
         if grading_method == 'ranking':
             tag = str(index)
+
+        if tag in used_tags:
+            raise Exception('tag "' + tag + '" used on multiple <pl-answer>. The tag attribute for each <pl-answer> must be unique.')
+        else:
+            used_tags.add(tag)
 
         if check_indentation is False and answer_indent is not None:
             raise Exception('<pl-answer> should not specify indentation if indentation is disabled.')
