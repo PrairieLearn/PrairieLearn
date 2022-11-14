@@ -459,6 +459,9 @@ BEGIN
                     ai.id = ai_id
             )
             UNION
+            -- TODO This event does not use a valid index, and will
+            -- likely be very slow. It should probably be replaced
+            -- with a more suitable query.
             (
                 SELECT
                     11 AS event_order,
@@ -479,7 +482,9 @@ BEGIN
                     audit_logs AS al
                     JOIN users AS u ON (u.user_id = al.authn_user_id)
                 WHERE
-                    ai.id = ai_id
+                    al.row_id = ai_id
+                    AND al.table_name = 'assessment_instances'
+                    AND al.action = 'delete'
             )
             ORDER BY date, event_order, log_id, question_id
         ),
