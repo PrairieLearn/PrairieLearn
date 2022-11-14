@@ -6,7 +6,8 @@ FROM
     JOIN assessments AS a ON (a.id = ai.assessment_id)
 WHERE
     ai.id = $assessment_instance_id
-    AND a.course_instance_id = $course_instance_id;
+    AND a.course_instance_id = $course_instance_id
+    AND ai.deleted_at IS NULL;
 
 -- BLOCK select_owners
 SELECT

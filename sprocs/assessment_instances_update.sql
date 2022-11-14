@@ -48,7 +48,8 @@ BEGIN
         LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.deleted_at IS NULL)
         LEFT JOIN users AS u ON (u.user_id = ai.user_id)
     WHERE
-        ai.id = assessment_instance_id;
+        ai.id = assessment_instance_id
+        AND ai.deleted_at IS NULL;
 
     IF NOT FOUND THEN
         RAISE EXCEPTION 'assessment_instance_update could not find assessment_instance_id: %', assessment_instance_id;

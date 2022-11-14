@@ -59,7 +59,8 @@ BEGIN
             LEFT OUTER JOIN groups AS g ON (g.id = ai.group_id AND g.deleted_at IS NULL)
             LEFT OUTER JOIN users AS u ON (u.user_id = ai.user_id)
         WHERE
-            iq.id = instance_question_id;
+            iq.id = instance_question_id
+            AND ai.deleted_at IS NULL;
 
         IF NOT FOUND THEN RAISE EXCEPTION 'instance_question not found'; END IF;
 

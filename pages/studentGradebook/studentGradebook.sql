@@ -37,5 +37,6 @@ WHERE
                                                   JOIN group_users AS gu ON g.id = gu.group_id 
                                                   WHERE g.deleted_at IS NULL AND gu.user_id = $user_id))
     AND a.deleted_at IS NULL
+    AND ai.deleted_at IS NULL
 ORDER BY
     aset.number, a.order_by, a.id, ai.number;

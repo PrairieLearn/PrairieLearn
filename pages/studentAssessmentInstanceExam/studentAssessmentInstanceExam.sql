@@ -31,6 +31,7 @@ FROM
     JOIN instance_questions_next_allowed_grade(iq.id) AS iqnag ON TRUE
 WHERE
     ai.id = $assessment_instance_id
+    AND ai.deleted_at IS NULL
 WINDOW
     w AS (ORDER BY qo.row_order)
 ORDER BY qo.row_order;

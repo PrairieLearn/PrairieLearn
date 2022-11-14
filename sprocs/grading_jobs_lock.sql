@@ -23,7 +23,9 @@ BEGIN
         -- lock the assessment_instance
         PERFORM ai.id
         FROM assessment_instances AS ai
-        WHERE ai.id = assessment_instance_id
+        WHERE
+            ai.id = assessment_instance_id
+            AND ai.deleted_at IS NULL
         FOR UPDATE OF ai;
     ELSE
         -- lock the variant

@@ -32,6 +32,7 @@ BEGIN
             -- cron job being sufficiently less than `age_mins`. This is true
             -- by default.
             AND ai.modified_at > (CURRENT_TIMESTAMP - make_interval(mins => age_mins * 2))
+            AND ai.deleted_at IS NULL
             AND (
                 (ai.open AND ai.auto_close)
                 OR

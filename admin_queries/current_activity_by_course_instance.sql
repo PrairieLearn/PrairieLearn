@@ -12,6 +12,7 @@ course_instance_users_with_submission_counts AS (
         JOIN assessments AS a ON (a.id = ai.assessment_id)
         JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     WHERE s.date > now() - $interval::interval
+    -- Do not discard assessment instances
     GROUP BY ci.id, s.auth_user_id
 ),
 course_instances_with_submission_counts AS (

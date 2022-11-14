@@ -106,6 +106,7 @@ WITH all_file_submissions AS (
         ) f ON (f.id = s.id)
     WHERE
         a.course_instance_id = $course_instance_id
+        AND ai.deleted_at IS NULL
         AND (
             (v.params ? 'fileName' AND s.submitted_answer ? 'fileData')
             OR (s.submitted_answer ? '_files')

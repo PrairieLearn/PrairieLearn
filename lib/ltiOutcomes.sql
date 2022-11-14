@@ -6,5 +6,6 @@ FROM
     JOIN lti_outcomes AS lo USING(assessment_id, user_id)
     JOIN lti_credentials AS lc ON(lc.id = lo.lti_credential_id)
 WHERE
-    ai.id = $ai_id AND lo.lis_outcome_service_url IS NOT NULL
-;
+    ai.id = $ai_id
+    AND lo.lis_outcome_service_url IS NOT NULL
+    AND ai.deleted_at IS NULL;

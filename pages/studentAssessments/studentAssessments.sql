@@ -77,6 +77,7 @@ WITH
             LEFT JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
         WHERE
             ai.user_id = $user_id
+            AND ai.deleted_at IS NULL
     ),
 
     single_instance_assessments AS (
@@ -116,7 +117,7 @@ WITH
             FULL JOIN assessments AS a ON (gc.assessment_id = a.id)
             JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
             JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-            LEFT JOIN assessment_instances AS ai ON (ai.assessment_id = a.id AND (ai.user_id = $user_id OR ai.group_id = gu.group_id))
+            LEFT JOIN assessment_instances AS ai ON (ai.assessment_id = a.id AND (ai.user_id = $user_id OR ai.group_id = gu.group_id) AND ai.deleted_at IS NULL)
             LEFT JOIN LATERAL authz_assessment(a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
             LEFT JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
         WHERE

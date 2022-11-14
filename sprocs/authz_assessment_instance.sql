@@ -29,7 +29,9 @@ BEGIN
     SELECT ai.*
     INTO assessment_instance
     FROM assessment_instances AS ai
-    WHERE ai.id = assessment_instance_id;
+    WHERE
+        ai.id = assessment_instance_id
+        AND ai.deleted_at IS NULL;
 
     SELECT *
     INTO assessment_result

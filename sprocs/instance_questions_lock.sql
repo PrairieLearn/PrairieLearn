@@ -10,7 +10,9 @@ BEGIN
     FROM
         instance_questions AS iq
         JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-    WHERE iq.id = instance_question_id;
+    WHERE
+        iq.id = instance_question_id
+        AND ai.deleted_at IS NULL;
 
     IF NOT FOUND THEN RAISE EXCEPTION 'no such instance_question_id: %', instance_question_id; END IF;
 

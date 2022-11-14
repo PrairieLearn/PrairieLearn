@@ -20,7 +20,9 @@ BEGIN
         a.id = assessment_id;
 
     WITH deleted_assessment_instances AS (
-        DELETE FROM assessment_instances AS ai
+        UPDATE assessment_instances AS ai
+        SET
+            deleted_at = NOW()
         WHERE
             ai.assessment_id = assessment_instances_delete_all.assessment_id
         RETURNING

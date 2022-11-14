@@ -27,6 +27,7 @@ WITH locks_next AS (
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
     WHERE
         ai.id = arg_assessment_instance_id
+        AND ai.deleted_at IS NULL
 )
 SELECT
     iq.id AS instance_question_id,
@@ -59,6 +60,7 @@ FROM
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
 WHERE
     ai.id = arg_assessment_instance_id
+    AND ai.deleted_at IS NULL
     AND aq.deleted_at IS NULL
 WINDOW
     w AS (

@@ -458,6 +458,29 @@ BEGIN
                 WHERE
                     ai.id = ai_id
             )
+            UNION
+            (
+                SELECT
+                    11 AS event_order,
+                    'Delete' AS event_name,
+                    'gray3'::TEXT AS event_color,
+                    al.date,
+                    u.user_id AS auth_user_id,
+                    u.uid AS auth_user_uid,
+                    NULL::TEXT AS qid,
+                    NULL::INTEGER AS question_id,
+                    NULL::INTEGER AS instance_question_id,
+                    NULL::INTEGER AS variant_id,
+                    NULL::INTEGER AS variant_number,
+                    NULL::INTEGER AS submission_id,
+                    al.id AS log_id,
+                    NULL::JSONB AS data
+                FROM
+                    audit_logs AS al
+                    JOIN users AS u ON (u.user_id = al.authn_user_id)
+                WHERE
+                    ai.id = ai_id
+            )
             ORDER BY date, event_order, log_id, question_id
         ),
         question_data AS (

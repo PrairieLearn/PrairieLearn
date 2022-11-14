@@ -38,6 +38,7 @@ FROM
     LEFT JOIN issue_count AS ic ON (ic.instance_question_id = iq.id)
 WHERE
     ai.assessment_id = $assessment_id
+    AND ai.deleted_at IS NULL
     AND iq.assessment_question_id = $assessment_question_id
     AND iq.status != 'unanswered'
 ORDER BY user_or_group_name, iq.id;

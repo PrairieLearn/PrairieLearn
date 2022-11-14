@@ -48,21 +48,20 @@ BEGIN
 
     -- ######################################################################
     -- determine the "number" of the new assessment instance
-    IF assessment.multiple_instance THEN
-        SELECT coalesce(max(ai.number), 0) + 1
-        INTO number
-        FROM assessment_instances AS ai
-        WHERE
-            ai.assessment_id = assessment_instances_insert.assessment_id
-            AND (CASE
-                    WHEN group_work THEN ai.group_id = tmp_group_id
-                    ELSE ai.user_id = assessment_instances_insert.user_id
-                 END);
-    END IF;
 
-    -- if a.multiple_instance is FALSE then we use
-    -- number = 1 so we will error on INSERT if there
-    -- are existing assessment_instances
+    SELECT coalesce(max(ai.number), 0) + 1
+    INTO number
+    FROM assessment_instances AS ai
+    WHERE
+        ai.assessment_id = assessment_instances_insert.assessment_id
+        AND (CASE
+                 WHEN group_work THEN ai.group_id = tmp_group_id
+                 ELSE ai.user_id = assessment_instances_insert.user_id
+             END)
+        -- For single-instance only compute these for deleted
+        -- assessments, to trigger the conflict cases below.
+        AND assessment.multiple_instance OR ai.deleted_at IS NOT NULL;
+
 
     -- ######################################################################
     -- determine other properties

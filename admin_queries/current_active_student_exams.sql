@@ -9,6 +9,7 @@ possible_exams AS (
         ai.date > now() - interval '1 day'
         AND ai.open
         AND a.type = 'Exam'
+        AND ai.deleted_at IS NULL
 ),
 last_views AS (
     SELECT DISTINCT ON (ai.id)

@@ -21,6 +21,7 @@ WITH instance_questions_info AS (
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
     WHERE
         ai.id IN (SELECT assessment_instance_id FROM instance_questions WHERE id = $instance_question_id)
+        AND ai.deleted_at IS NULL
     WINDOW
         w AS (ORDER BY qo.row_order)
 ),
@@ -86,5 +87,6 @@ WHERE
     iq.id = $instance_question_id
     AND ci.id = $course_instance_id
     AND ($assessment_id::BIGINT IS NULL OR a.id = $assessment_id)
+    AND ai.deleted_at IS NULL
     AND aai.authorized
     AND NOT iqi.sequence_locked;

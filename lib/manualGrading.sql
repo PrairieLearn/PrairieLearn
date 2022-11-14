@@ -22,6 +22,7 @@ FROM
 WHERE
     iq.assessment_question_id = $assessment_question_id
     AND ai.assessment_id = $assessment_id -- since assessment_question_id is not authz'ed
+    AND ai.deleted_at IS NULL
     AND ($prior_instance_question_id::BIGINT IS NULL OR iq.id != $prior_instance_question_id)
     AND iq.requires_manual_grading
     AND (iq.assigned_grader = $user_id OR iq.assigned_grader IS NULL)

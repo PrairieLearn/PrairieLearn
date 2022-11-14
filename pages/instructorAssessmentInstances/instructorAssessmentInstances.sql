@@ -51,6 +51,7 @@ FROM
     LEFT JOIN users AS u ON (u.user_id = ai.user_id)
 WHERE
     a.id = $assessment_id
+    AND ai.deleted_at IS NULL
 ORDER BY
     u.uid, u.user_id, ai.number, ai.id;
 
@@ -79,6 +80,7 @@ WITH results AS (
     WHERE
         ai.id = $assessment_instance_id
         AND ai.assessment_id = $assessment_id
+        AND ai.deleted_at IS NULL
     RETURNING
         ai.open,
         ai.id AS assessment_instance_id,
@@ -119,6 +121,7 @@ WITH results AS (
         (ai.open OR $reopen_closed)
         AND ai.assessment_id = $assessment_id
         AND (ai.date_limit IS NOT NULL OR ($base_time != 'date_limit' AND $time_ref != 'percent'))
+        AND ai.deleted_at IS NULL
     RETURNING
         ai.open,
         ai.id AS assessment_instance_id,

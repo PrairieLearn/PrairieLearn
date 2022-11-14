@@ -18,6 +18,7 @@ FROM
     LEFT JOIN groups AS g ON (g.id = ai.group_id)
 WHERE
     ai.id = $assessment_instance_id
+    AND ai.deleted_at IS NULL
     AND g.deleted_at IS NULL;
 
 -- BLOCK select_regrade_assessment_info
@@ -45,5 +46,6 @@ FROM
     JOIN users AS u ON (u.user_id = ai.user_id)
 WHERE
     a.id = $assessment_id
+    AND ai.deleted_at IS NULL
 ORDER BY
     u.uid, u.user_id, ai.number;

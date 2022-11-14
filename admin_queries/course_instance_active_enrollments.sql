@@ -13,6 +13,7 @@ course_instances_initial_selection AS (
     WHERE
         ($institution_short_name = '' OR i.short_name = $institution_short_name)
         AND ai.modified_at BETWEEN $start_date AND $end_date
+        -- Do not discard deleted assessment instances
 ),
 course_instance_user_data AS (
     -- Re-select this to get all course instance data,

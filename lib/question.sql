@@ -31,7 +31,7 @@ FROM
     submissions AS s
     JOIN variants AS v ON (v.id = s.variant_id)
     LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
-    LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+    LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id AND ai.deleted_at IS NULL)
     LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
     LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     JOIN questions AS q ON (q.id = v.question_id)
@@ -144,7 +144,7 @@ FROM
     submissions AS s
     JOIN variants AS v ON (v.id = s.variant_id)
     LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
-    LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+    LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id AND ai.deleted_at IS NULL)
 WHERE
     s.id = $submission_id;
 

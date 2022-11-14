@@ -7,5 +7,7 @@ FROM
     LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
 WHERE
     ai.assessment_id = $assessment_id
-    AND ai.number = 1
-    AND ((gu.user_id = $user_id) OR (ai.user_id = $user_id));
+    AND ai.deleted_at IS NULL
+    AND ((gu.user_id = $user_id) OR (ai.user_id = $user_id))
+ORDER BY ai.number
+LIMIT 1;

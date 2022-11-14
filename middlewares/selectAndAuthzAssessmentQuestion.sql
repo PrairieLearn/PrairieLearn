@@ -8,6 +8,7 @@ WITH open_instances AS (
     WHERE
         a.id = $assessment_id
         AND ai.open
+        AND ai.deleted_at IS NULL
 )
 SELECT
     to_jsonb(aq) AS assessment_question,

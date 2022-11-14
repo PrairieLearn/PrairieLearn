@@ -21,7 +21,9 @@ BEGIN
         SELECT ai.assessment_id
         INTO assessment_id
         FROM assessment_instances AS ai
-        WHERE ai.id = assessment_instance_id;
+        WHERE
+            ai.id = assessment_instance_id
+            AND ai.deleted_at IS NULL;
 
         IF NOT FOUND THEN RAISE EXCEPTION 'invalid assessment_instance_id = %', assessment_instance_id; END IF;
     END IF;

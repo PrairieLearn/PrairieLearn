@@ -11,6 +11,7 @@ assessment_users_with_workspace_counts AS (
         JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
         JOIN assessments AS a ON (a.id = ai.assessment_id)
     WHERE w.state IN ('launching', 'running')
+    -- Do not discard deleted assessment instances
     GROUP BY a.id, v.authn_user_id
 ),
 assessments_with_workspace_counts AS (

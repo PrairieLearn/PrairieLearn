@@ -28,7 +28,10 @@ BEGIN
         -- instance_question_id is null for question preview, so allow any variant of the question
         AND (
             variants_select.instance_question_id IS NULL
-            OR v.instance_question_id = variants_select.instance_question_id
+            OR (
+                v.instance_question_id = variants_select.instance_question_id
+                AND ai.deleted_at IS NULL
+            )
         );
 
     IF NOT FOUND THEN RAISE EXCEPTION 'no such variant_id for this question: %', variant_id; END IF;

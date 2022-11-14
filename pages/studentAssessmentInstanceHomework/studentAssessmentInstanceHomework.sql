@@ -4,7 +4,8 @@ SELECT
 FROM
     assessment_instances AS ai
 WHERE
-    ai.id = $assessment_instance_id;
+    ai.id = $assessment_instance_id
+    AND ai.deleted_at IS NULL;
 
 -- BLOCK get_questions
 SELECT

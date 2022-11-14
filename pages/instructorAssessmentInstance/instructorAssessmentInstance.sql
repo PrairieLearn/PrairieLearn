@@ -27,7 +27,8 @@ FROM
     LEFT JOIN group_users AS gu ON (g.id = gu.group_id)
     JOIN enrollments AS e ON ( ((ai.user_id = e.user_id) OR (e.user_id = gu.user_id))AND ci.id = e.course_instance_id)
 WHERE
-    ai.id=$assessment_instance_id
+    ai.id = $assessment_instance_id
+    AND ai.deleted_at IS NULL
     AND aq.deleted_at IS NULL
     AND q.deleted_at IS NULL
     AND g.deleted_at IS NULL
@@ -48,7 +49,8 @@ FROM
     JOIN assessments AS a ON (a.id = ai.assessment_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
 WHERE
-    ai.id = $assessment_instance_id;
+    ai.id = $assessment_instance_id
+    AND ai.deleted_at IS NULL;
 
 -- BLOCK select_instance_questions
 SELECT
@@ -83,6 +85,7 @@ FROM
     JOIN question_order(ai.id) AS qo ON (qo.instance_question_id = iq.id)
 WHERE
     ai.id = $assessment_instance_id
+    AND ai.deleted_at IS NULL
 WINDOW
     w AS (ORDER BY qo.row_order)
 ORDER BY qo.row_order;

@@ -74,6 +74,7 @@ WITH object_data AS (
         ci.id = $course_instance_id
         AND ($unsafe_assessment_id::bigint IS NULL OR a.id = $unsafe_assessment_id)
         AND ($unsafe_assessment_instance_id::bigint IS NULL OR ai.id = $unsafe_assessment_instance_id)
+        AND ai.deleted_at IS NULL
 )
 SELECT
     coalesce(jsonb_agg(
@@ -200,6 +201,7 @@ WITH object_data AS (
     WHERE
         ai.id = $unsafe_assessment_instance_id
         AND ci.id = $course_instance_id
+        AND ai.deleted_at IS NULL
 )
 SELECT
     coalesce(jsonb_agg(
@@ -271,6 +273,7 @@ WITH object_data AS (
         ci.id = $course_instance_id
         AND ($unsafe_assessment_instance_id::bigint IS NULL OR ai.id = $unsafe_assessment_instance_id)
         AND ($unsafe_submission_id::bigint IS NULL OR s.id = $unsafe_submission_id)
+        AND ai.deleted_at IS NULL
 )
 SELECT
     coalesce(jsonb_agg(
@@ -288,4 +291,5 @@ FROM
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
 WHERE
     ai.id = $unsafe_assessment_instance_id
-    AND ci.id = $course_instance_id;
+    AND ci.id = $course_instance_id
+    AND ai.deleted_at IS NULL;

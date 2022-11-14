@@ -28,7 +28,8 @@ BEGIN
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN assessments AS a ON (a.id = ai.assessment_id)
     WHERE
-        iq.id = instance_question_id;
+        iq.id = instance_question_id
+        AND ai.deleted_at IS NULL;
 
     IF NOT FOUND THEN
         RAISE EXCEPTION 'No instance_question found with id: %', instance_question_id;

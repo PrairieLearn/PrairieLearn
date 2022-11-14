@@ -6,7 +6,8 @@ FROM
     JOIN assessments AS a ON (a.id = ai.assessment_id)
 WHERE
     ai.id = $assessment_instance_id
-    AND a.id = $assessment_id;
+    AND a.id = $assessment_id
+    AND ai.deleted_at IS NULL;
 
 
 -- BLOCK select_assessment_for_grading_job
@@ -17,7 +18,7 @@ FROM
     JOIN submissions AS s ON (s.id = gj.submission_id)
     JOIN variants AS v ON (v.id = s.variant_id)
     LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
-    LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+    LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id AND ai.deleted_at IS NULL)
 WHERE
     gj.id = $grading_job_id;
 
@@ -48,7 +49,8 @@ FROM
     LEFT JOIN users AS u ON (u.user_id = ai.user_id)
 WHERE
     a.id = $assessment_id
-    AND ai.open;
+    AND ai.open
+    AND ai.deleted_at IS NULL;
 
 -- BLOCK unset_grading_needed
 UPDATE assessment_instances AS ai

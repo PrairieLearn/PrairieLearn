@@ -40,4 +40,5 @@ FROM
 WHERE
     ai.id = $assessment_instance_id
     AND ci.id = $course_instance_id
+    AND ai.deleted_at IS NULL
     AND aai.authorized;

@@ -27,6 +27,7 @@ course_assessment_instances AS (
         LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
     WHERE
         a.course_instance_id = $course_instance_id
+        AND ai.deleted_at IS NULL
         AND g.deleted_at IS NULL
 ),
 course_scores AS (
@@ -102,3 +103,4 @@ FROM
     LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
 WHERE
     ai.id = $assessment_instance_id
+    AND ai.deleted_at IS NULL

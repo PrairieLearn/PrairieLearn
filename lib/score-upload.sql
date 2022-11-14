@@ -20,7 +20,8 @@ FROM
 WHERE
     ai.assessment_id = $assessment_id
     AND ai.number = $instance_number
-    AND u.uid = $uid;
+    AND u.uid = $uid
+    AND ai.deleted_at IS NULL;
 
 -- BLOCK select_assessment_instance_group
 SELECT
@@ -31,4 +32,5 @@ FROM
 WHERE
     ai.assessment_id = $assessment_id
     AND ai.number = $instance_number
-    AND g.name = $group_name;
+    AND g.name = $group_name
+    and ai.deleted_at IS NULL;

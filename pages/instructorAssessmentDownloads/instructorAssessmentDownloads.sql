@@ -30,6 +30,7 @@ WITH filtered_assessment_instances AS (
         JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
     WHERE
         a.id = $assessment_id
+        AND ai.deleted_at IS NULL
     ORDER BY
         CASE WHEN $group_work THEN ai.group_id ELSE u.user_id END,
         CASE WHEN $highest_score THEN NULL ELSE ai.id END,
@@ -79,6 +80,7 @@ FROM
     LEFT JOIN users AS u ON (u.user_id = ai.user_id)
 WHERE
     a.id = $assessment_id
+    AND ai.deleted_at IS NULL
 ORDER BY
     u.uid, u.uin, group_name, ai.number, q.qid, iq.number, iq.id;
 
@@ -96,7 +98,9 @@ WITH final_assessment_instances AS (
         assessment_instances AS ai
         LEFT JOIN groups AS g ON (g.id = ai.group_id)
         LEFT JOIN users AS u ON (u.user_id = ai.user_id)
-    WHERE ai.assessment_id = $assessment_id
+    WHERE
+        ai.assessment_id = $assessment_id
+        AND ai.deleted_at IS NULL
     ORDER BY g.id, u.user_id, ai.number DESC
 )
 SELECT DISTINCT ON (ai.id, q.qid)
@@ -185,6 +189,7 @@ WITH all_submissions AS (
         LEFT JOIN users AS su ON (su.user_id = s.auth_user_id)
     WHERE
         a.id = $assessment_id
+        AND ai.deleted_at IS NULL
 )
 SELECT
     *
@@ -210,7 +215,9 @@ final_assessment_instances AS (
         assessment_instances AS ai
         LEFT JOIN groups AS g ON (g.id = ai.group_id)
         LEFT JOIN users AS u ON (u.user_id = ai.user_id)
-    WHERE ai.assessment_id = $assessment_id
+    WHERE
+        ai.assessment_id = $assessment_id
+        AND ai.deleted_at IS NULL
     ORDER BY g.id, u.user_id, ai.number DESC
 ),
 submissions_with_files AS (
@@ -320,6 +327,7 @@ WITH all_submissions_with_files AS (
         JOIN submissions AS s ON (s.variant_id = v.id)
     WHERE
         a.id = $assessment_id
+        AND ai.deleted_at IS NULL
         AND (
             (v.params ? 'fileName' AND s.submitted_answer ? 'fileData')
             OR (s.submitted_answer ? '_files')

@@ -29,6 +29,7 @@ BEGIN
             JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
         WHERE
             a.id = assessments_stats.assessment_id
+            AND ai.deleted_at IS NULL
             AND NOT users_is_instructor_in_course_instance(e.user_id, e.course_instance_id)
         GROUP BY u.user_id
     )

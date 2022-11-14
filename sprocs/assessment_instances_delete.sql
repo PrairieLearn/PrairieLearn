@@ -23,7 +23,9 @@ BEGIN
     WHERE
         ai.id = assessment_instance_id;
 
-    DELETE FROM assessment_instances AS ai
+    UPDATE assessment_instances AS ai
+    SET
+        deleted_at = NOW()
     WHERE
         ai.id = assessment_instance_id
     RETURNING

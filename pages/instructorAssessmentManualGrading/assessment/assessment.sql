@@ -11,11 +11,13 @@ WITH instance_questions_with_submission AS (
     FROM
         assessment_questions aq
         JOIN instance_questions iq ON (iq.assessment_question_id = aq.id)
+        JOIN assessment_instances ai ON (ai.id = iq.assessment_instance_id)
         LEFT JOIN users agu ON (agu.user_id = iq.assigned_grader)
         LEFT JOIN users lgu ON (lgu.user_id = iq.last_grader)
     WHERE
         aq.assessment_id = $assessment_id
         AND iq.status != 'unanswered'
+        AND ai.deleted_at IS NULL
     GROUP BY iq.assessment_question_id
 ),
 open_instances AS (
@@ -24,6 +26,7 @@ open_instances AS (
     FROM assessment_instances ai
     WHERE ai.assessment_id = $assessment_id
           AND ai.open
+          AND ai.deleted_at IS NULL
 )
 SELECT
     aq.*,

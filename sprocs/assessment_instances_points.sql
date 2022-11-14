@@ -19,7 +19,8 @@ BEGIN
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
-    WHERE ai.id = assessment_instance_id;
+    WHERE ai.id = assessment_instance_id
+          AND ai.deleted_at IS NULL;
 
     IF NOT FOUND THEN
         RAISE EXCEPTION 'No assessment_instance found with id: %', assessment_instance_id;

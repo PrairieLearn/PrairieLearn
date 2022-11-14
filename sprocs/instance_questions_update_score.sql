@@ -83,7 +83,7 @@ BEGIN
         instance_questions AS iq
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q on (q.id = aq.question_id)
-        JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+        JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id AND ai.deleted_at IS NULL)
         LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.deleted_at IS NULL)
         LEFT JOIN users AS u ON (u.user_id = ai.user_id)
         JOIN assessments AS a ON (a.id = ai.assessment_id)

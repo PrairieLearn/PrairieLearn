@@ -9,7 +9,11 @@ DECLARE
     max_points double precision;
     new_score_perc double precision;
 BEGIN
-    SELECT ai.max_points INTO max_points FROM assessment_instances AS ai WHERE ai.id = assessment_instance_id;
+    SELECT ai.max_points INTO max_points
+    FROM assessment_instances AS ai
+    WHERE
+        ai.id = assessment_instance_id
+        AND ai.deleted_at IS NULL;
 
     IF NOT FOUND THEN RAISE EXCEPTION 'no such assessment_instance_id: %', assessment_instance_id; END IF;
 
