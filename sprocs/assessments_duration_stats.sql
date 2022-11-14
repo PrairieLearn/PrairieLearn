@@ -36,7 +36,7 @@ BEGIN
         JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
     WHERE
         a.id = assessments_duration_stats.assessment_id
-        ai.deleted_at IS NULL
+        AND ai.deleted_at IS NULL
         AND NOT users_is_instructor_in_course_instance(e.user_id, e.course_instance_id);
 
     min := coalesce(min, interval '0');
