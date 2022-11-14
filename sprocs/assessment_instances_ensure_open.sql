@@ -7,9 +7,9 @@ DECLARE
     current_open boolean;
     deleted_at TIMESTAMPTZ;
 BEGIN
-    SELECT open, deleted_at
+    SELECT ai.open, ai.deleted_at
     INTO current_open, deleted_at
-    FROM assessment_instances
+    FROM assessment_instances ai
     WHERE id = assessment_instance_id;
 
     IF NOT FOUND THEN RAISE EXCEPTION 'no such assessment_instance_id: %', assessment_instance_id USING ERRCODE = 'ST404'; END IF;
