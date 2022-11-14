@@ -134,7 +134,7 @@ def prepare(element_html, data):
             tag = str(index)
 
         if tag in used_tags:
-            raise Exception('tag "' + tag + '" used on multiple <pl-answer>. The tag attribute for each <pl-answer> must be unique.')
+                raise Exception(f'Tag "{tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.')
         else:
             used_tags.add(tag)
 
@@ -166,6 +166,11 @@ def prepare(element_html, data):
                 raise Exception('Block groups only supported in the "dag" grading mode.')
 
             group_tag, group_depends = get_graph_info(html_tags)
+            if group_tag in used_tags:
+                raise Exception(f'Tag "{group_tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.')
+            else:
+                used_tags.add(group_tag)
+
             for grouped_tag in html_tags:
                 if html_tags.tag is etree.Comment:
                     continue
