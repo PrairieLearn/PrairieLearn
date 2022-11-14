@@ -113,7 +113,7 @@ const InstructorSharing =  ({
                   <form name="sharing-id-regenerate" method="POST" class="d-inline">
                     <input type="hidden" name="__action" value="sharing_id_regenerate">
                     <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
-                    <button role="button" type="submit" class="btn btn-xs btn-secondary mx-2">
+                    <button role="button" type="submit" class="btn btn-xs btn-secondary">
                       <i class="fa fa-rotate"></i>
                       <span>Regenerate</span>
                     </button>

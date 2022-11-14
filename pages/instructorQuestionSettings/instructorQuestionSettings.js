@@ -206,6 +206,13 @@ router.post('/', function (req, res, next) {
         }
       });
     });
+  } else if (req.body.__action === 'sharing_set_add') {
+    debug('Add question to sharing set')
+    sqldb.callZeroOrOneRow(sql.sharing_set_add, {sharing_set_id: req.body.sharing_set_id}, (err, result) => {
+      if (ERR(err, callback)) return;
+
+      res.redirect(req.originalUrl);
+    })
   } else {
     next(
       error.make(400, 'unknown __action: ' + req.body.__action, {
