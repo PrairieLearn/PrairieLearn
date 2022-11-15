@@ -36,6 +36,7 @@ const WorkspaceLogs = ({ workspaceLogs, resLocals }) => {
         <div id="content" class="container">
           <h1 class="mb-4">Workspace logs</h1>
 
+          <h2>Versions</h2>
           <div class="table-responsive">
             <table class="table table-sm">
               <thead>
@@ -60,6 +61,7 @@ const WorkspaceLogs = ({ workspaceLogs, resLocals }) => {
             </table>
           </div>
 
+          <h2>History</h2>
           ${WorkspaceLogsTable({ workspaceLogs })}
         </div>
       </body>
@@ -90,26 +92,30 @@ const WorkspaceVersionLogs = ({
         })}
 
         <div id="content" class="container mb-4">
-          <h1 class="mb-4">Workspace logs</h1>
+          <h1 class="mb-4">Workspace version logs</h1>
 
           <h2>Container logs</h2>
           ${containerLogsEnabled && !containerLogsExpired
             ? html`
                 <div
                   id="js-container-logs"
-                  class="bg-dark p-3 mb-3 rounded"
+                  class="mb-3"
                   data-logs-endpoint="${resLocals.urlPrefix}/workspace/${resLocals.workspace_id}/logs/version/${version}/container_logs"
                 >
-                  <pre class="text-white mb-3"><code></code></pre>
-                  <button type="button" class="btn btn-primary js-load-more-logs">
-                    <span
-                      class="spinner-border spinner-border-sm js-loading-spinner"
-                      role="status"
-                      aria-hidden="true"
-                      hidden
-                    ></span>
-                    <span class="js-button-message">Load more logs</span>
-                  </button>
+                  <pre
+                    class="bg-dark rounded-top text-white p-3 mb-0"
+                  ><code class="js-output"></code></pre>
+                  <div class="bg-secondary rounded-bottom">
+                    <button type="button" class="btn btn-light m-3 js-load-more-logs">
+                      <span
+                        class="spinner-border spinner-border-sm js-loading-spinner"
+                        role="status"
+                        aria-hidden="true"
+                        hidden
+                      ></span>
+                      <span class="js-button-message">Load more logs</span>
+                    </button>
+                  </div>
                 </div>
               `
             : html`
@@ -125,8 +131,8 @@ const WorkspaceVersionLogs = ({
                 </div>
               `}
 
-          <h2>Workspace history</h2>
-          ${WorkspaceLogsTable({ workspaceLogs })}
+          <h2>History</h2>
+          ${WorkspaceLogsTable({ workspaceLogs, includeVersion: false })}
         </div>
 
         <script>
@@ -165,12 +171,10 @@ const WorkspaceVersionLogs = ({
                   console.error('Error fetching logs', await res.text());
                 } else {
                   const logs = await res.text();
-                  console.log(logs);
                   containerLogsOutput.appendChild(document.createTextNode(logs));
 
                   if (res.headers.has('x-next-start-after')) {
                     startAfter = res.headers.get('x-next-start-after');
-                    console.log('starting after', startAfter);
                   }
                 }
               } catch (err) {
@@ -201,7 +205,7 @@ const WorkspaceVersionLogs = ({
   `.toString();
 };
 
-const WorkspaceLogsTable = ({ workspaceLogs }) => {
+const WorkspaceLogsTable = ({ workspaceLogs, includeVersion = true }) => {
   return html`
     <div class="table-responsive">
       <table class="table table-sm">
@@ -210,7 +214,7 @@ const WorkspaceLogsTable = ({ workspaceLogs }) => {
             <th>Date</th>
             <th>Message</th>
             <th>State</th>
-            <th>Version</th>
+            ${includeVersion ? html`<th>Version</th>` : ''}
           </tr>
         </thead>
 
@@ -221,7 +225,7 @@ const WorkspaceLogsTable = ({ workspaceLogs }) => {
                 <td>${log.date_formatted}</td>
                 <td>${log.message}</td>
                 <td>${log.state}</td>
-                <td>${log.version}</td>
+                ${includeVersion ? html`<td>${log.version}</td>` : ''}
               </tr>
             `;
           })}

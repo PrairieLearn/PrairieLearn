@@ -26,7 +26,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
  */
 async function loadLogParts(workspaceId, version, startAfter) {
   // TODO: handle errors and missing data.
-  const s3Client = new AWS.S3();
+  const s3Client = new AWS.S3({ maxRetries: 3 });
   const logItems = await s3Client
     .listObjectsV2({
       Bucket: config.workspaceLogsS3Bucket,
@@ -35,6 +35,14 @@ async function loadLogParts(workspaceId, version, startAfter) {
       StartAfter: startAfter,
     })
     .promise();
+
+  if (logItems.Contents.length === 0) {
+    return {
+      logs: '',
+      // If we couldn't load any more logs, reuse the same startAfter key.
+      startAfter,
+    };
+  }
 
   const logParts = await Promise.all(
     logItems.Contents.map(async (item) => {
@@ -51,8 +59,7 @@ async function loadLogParts(workspaceId, version, startAfter) {
   const logs = logParts.join('');
   return {
     logs,
-    // If we couldn't load any more logs, reuse the same startAfter key.
-    startAfter: logItems.Contents?.[logItems.Contents.length - 1]?.Key ?? startAfter,
+    startAfter: logItems.Contents[logItems.Contents.length - 1].Key,
   };
 }
 
@@ -133,6 +140,8 @@ router.get(
 router.get(
   '/version/:version/container_logs',
   asyncHandler(async (req, res, _next) => {
+    const startAfter = z.string().optional().parse(req.query.start_after);
+
     // Check if the container logs have expired for this workspace version, or
     // if they're disabled.
     const workspaceLogs = await sqldb.queryAsync(sql.select_workspace_version_logs, {
@@ -146,12 +155,13 @@ router.get(
       return;
     }
 
-    const startAfter = z.string().optional().parse(req.query.start_after);
     const logs = await loadLogParts(res.locals.workspace_id, req.params.version, startAfter);
-    if (logs.startAfter) {
+    if (!logs.logs) {
+      res.sendStatus(404);
+    } else {
       res.set('X-Next-Start-After', logs.startAfter);
+      res.send(logs.logs);
     }
-    res.send(logs.logs);
   })
 );
 
