@@ -82,7 +82,7 @@ const WorkspaceVersionLogs = ({
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", {
           ...resLocals,
-          pageTitle: 'Workspace logs',
+          pageTitle: 'Workspace version logs',
         })}
       </head>
       <body>
@@ -140,7 +140,7 @@ const WorkspaceVersionLogs = ({
             const LOAD_MORE_LOGS_MESSAGE = 'Load more logs';
             const LOADING_LOGS_MESSAGE = 'Loading logs...';
 
-            // This element will only be present if the logs haven't expired.
+            // This element will only be present if logs are enabled and haven't expired.
             const containerLogs = document.querySelector('#js-container-logs');
             if (!containerLogs) return;
 

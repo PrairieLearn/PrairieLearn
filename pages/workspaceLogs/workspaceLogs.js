@@ -111,7 +111,7 @@ router.get(
   })
 );
 
-// All state transitions for a single workspace version, as wel as the container
+// All state transitions for a single workspace version, as well as the container
 // output that's been stored in S3.
 router.get(
   '/version/:version',
