@@ -84,17 +84,25 @@
           <span class="nav-item badge badge-light"><%= navTitle %></span>
         </li>
         <li class="nav-item ml-2 my-1">
-          <a id="reboot" class="nav-item btn btn-light" data-toggle="modal" data-target="#rebootModal">
+          <button id="reboot" class="nav-item btn btn-light" data-toggle="modal" data-target="#rebootModal">
             <i class="fas fa-sync text-info" aria-hidden="true"></i>
             Reboot
-          </a>
+          </button>
         </li>
         <li class="nav-item ml-2 my-1">
-          <a id="reset" class="nav-item btn btn-light" data-toggle="modal" data-target="#resetModal">
+          <button id="reset" class="nav-item btn btn-light" data-toggle="modal" data-target="#resetModal">
             <i class="fas fa-trash text-danger" aria-hidden="true"></i>
             Reset
-          </a>
+          </button>
         </li>
+        <% if (showLogs) { %>
+          <li class="nav-item ml-2 my-1">
+            <a class="nav-item btn btn-light" href="" target="_blank">
+              <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+              Logs
+            </a>
+          </li>
+        <% } %>
         <li class="nav-item ml-2 ml-md-3 my-1">
           <a tabindex="0" type="button" class="nav-item btn btn-light" data-container="body" data-toggle="popover" data-placement="bottom" data-html="true"
               data-content='<ul class="list-group list-group-flush">
