@@ -66,8 +66,8 @@ SELECT
     DATE_PART('epoch', iq.duration) AS duration_seconds,
     g.name AS group_name,
     groups_uid_list(g.id) AS uid_list,
-    COALESCE(agu.name, agu.uid) AS assigned_grader_name,
-    COALESCE(lgu.name, lgu.uid) AS last_grader_name
+    agu.uid AS assigned_grader,
+    lgu.uid AS last_grader
 FROM
     instance_questions AS iq
     JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
@@ -173,8 +173,8 @@ WITH all_submissions AS (
         g.name AS group_name,
         groups_uid_list(g.id) AS uid_list,
         su.uid AS submission_user,
-        COALESCE(agu.name, agu.uid) AS assigned_grader_name,
-        COALESCE(lgu.name, lgu.uid) AS last_grader_name
+        agu.uid AS assigned_grader,
+        lgu.uid AS last_grader
     FROM
         assessments AS a
         JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
