@@ -66,7 +66,9 @@ SELECT
     iq.number_attempts,
     DATE_PART('epoch', iq.duration) AS duration_seconds,
     g.name AS group_name,
-    groups_uid_list(g.id) AS uid_list
+    groups_uid_list(g.id) AS uid_list,
+    agu.uid AS assigned_grader,
+    lgu.uid AS last_grader
 FROM
     instance_questions AS iq
     JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
@@ -78,6 +80,8 @@ FROM
     LEFT JOIN group_configs AS gc ON (gc.assessment_id = a.id)
     LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.group_config_id = gc.id)
     LEFT JOIN users AS u ON (u.user_id = ai.user_id)
+    LEFT JOIN users AS agu ON (agu.user_id = iq.assigned_grader)
+    LEFT JOIN users AS lgu ON (lgu.user_id = iq.last_grader)
 WHERE
     a.id = $assessment_id
     AND ai.deleted_at IS NULL
@@ -172,7 +176,9 @@ WITH all_submissions AS (
         (row_number() OVER (PARTITION BY v.id ORDER BY s.score DESC NULLS LAST, s.date DESC, s.id DESC)) = 1 AS best_submission_per_variant,
         g.name AS group_name,
         groups_uid_list(g.id) AS uid_list,
-        su.uid AS submission_user
+        su.uid AS submission_user,
+        agu.uid AS assigned_grader,
+        lgu.uid AS last_grader
     FROM
         assessments AS a
         JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
@@ -187,6 +193,8 @@ WITH all_submissions AS (
         JOIN variants AS v ON (v.instance_question_id = iq.id)
         JOIN submissions AS s ON (s.variant_id = v.id)
         LEFT JOIN users AS su ON (su.user_id = s.auth_user_id)
+        LEFT JOIN users AS agu ON (agu.user_id = iq.assigned_grader)
+        LEFT JOIN users AS lgu ON (lgu.user_id = iq.last_grader)
     WHERE
         a.id = $assessment_id
         AND ai.deleted_at IS NULL
