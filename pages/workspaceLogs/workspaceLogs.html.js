@@ -16,17 +16,34 @@ const WorkspaceLogs = ({ workspaceLogs, resLocals }) => {
         ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'plain',
-          viewType: 'instructor',
         })}
 
         <div id="content" class="container">
           <h1 class="mb-4">Workspace logs</h1>
 
-          <div class="card mb-4">
-            <div class="card-body">
-              <pre><code>${JSON.stringify(workspaceLogs, null, 2)}</code></pre>
-            </div>
-          </div>
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Message</th>
+                <th>State</th>
+                <th>Version</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              ${workspaceLogs.map((log) => {
+                return html`
+                  <tr>
+                    <td>${log.date}</td>
+                    <td>${log.message}</td>
+                    <td>${log.state}</td>
+                    <td>${log.version}</td>
+                  </tr>
+                `;
+              })}
+            </tbody>
+          </table>
         </div>
       </body>
     </html>

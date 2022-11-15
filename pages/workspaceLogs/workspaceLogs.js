@@ -14,7 +14,10 @@ router.get(
   asyncHandler(async (_req, res, _next) => {
     const workspaceLogs = await sqldb.queryAsync(sql.select_workspace_logs, {
       workspace_id: res.locals.workspace_id,
+      display_timezone:
+        res.locals.course_instance.display_timezone ?? res.locals.course.display_timezone,
     });
+    res.locals.viewType = 'instructor';
     res.send(WorkspaceLogs({ workspaceLogs: workspaceLogs.rows, resLocals: res.locals }));
   })
 );
