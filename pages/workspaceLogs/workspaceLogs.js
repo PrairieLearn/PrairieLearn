@@ -56,6 +56,28 @@ async function loadLogParts(workspaceId, version, startAfter) {
   };
 }
 
+/**
+ * Given a list of workspace logs for a specific version sorted by date in
+ * ascending order, checks if the logs are considered expired.
+ *
+ * @param {any[]} workspaceLogs
+ * @returns {boolean}
+ */
+function areContainerLogsExpired(workspaceLogs) {
+  if (config.workspaceLogsExpirationDays === null) {
+    // Expiration is disabled.
+    return false;
+  }
+
+  if (workspaceLogs.length === 0) return false;
+  const firstLog = workspaceLogs[0];
+  return firstLog.date < config.workspaceLogsExpirationDays * 24 * 60 * 60 * 1000;
+}
+
+function areContainerLogsEnabled() {
+  return config.workspaceLogsS3Bucket !== null;
+}
+
 // Only instructors and admins can access these routes. We don't need to check
 // if the instructor has access to the workspace; that's already been checked
 // by the workspace authorization middleware.
@@ -97,18 +119,34 @@ router.get(
       WorkspaceVersionLogs({
         version: req.params.version,
         workspaceLogs: workspaceLogs.rows,
+        containerLogsEnabled: areContainerLogsEnabled(),
+        containerLogsExpired: areContainerLogsExpired(workspaceLogs.rows),
         resLocals: res.locals,
       })
     );
   })
 );
 
-const startAfterSchema = z.string().optional();
-
+// Fetches a chunk of logs from S3, optionally offset by a given `start_after`
+// query param. If present, `start_after` should be the S3 key of the last log
+// chunk that was fetched.
 router.get(
   '/version/:version/container_logs',
   asyncHandler(async (req, res, _next) => {
-    const startAfter = startAfterSchema.parse(req.query.start_after);
+    // Check if the container logs have expired for this workspace version, or
+    // if they're disabled.
+    const workspaceLogs = await sqldb.queryAsync(sql.select_workspace_version_logs, {
+      workspace_id: res.locals.workspace_id,
+      version: req.params.version,
+      display_timezone:
+        res.locals.course_instance.display_timezone ?? res.locals.course.display_timezone,
+    });
+    if (!areContainerLogsEnabled() || areContainerLogsExpired(workspaceLogs.rows)) {
+      res.sendStatus(404);
+      return;
+    }
+
+    const startAfter = z.string().optional().parse(req.query.start_after);
     const logs = await loadLogParts(res.locals.workspace_id, req.params.version, startAfter);
     if (logs.startAfter) {
       res.set('X-Next-Start-After', logs.startAfter);

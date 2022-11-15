@@ -11,7 +11,10 @@ const WorkspaceLogs = ({ workspaceLogs, resLocals }) => {
   workspaceLogs.forEach((log) => {
     if (!knownVersions.has(log.version)) {
       knownVersions.add(log.version);
-      uniqueVersions.push({ version: log.version, date: log.date });
+      uniqueVersions.push({
+        version: log.version,
+        date_formatted: log.date_formatted,
+      });
     }
   });
 
@@ -46,7 +49,7 @@ const WorkspaceLogs = ({ workspaceLogs, resLocals }) => {
                   return html`
                     <tr>
                       <td>${version.version}</td>
-                      <td>${version.date}</td>
+                      <td>${version.date_formatted}</td>
                       <td>
                         <a href="${logsUrl}"> View detailed logs </a>
                       </td>
@@ -64,7 +67,13 @@ const WorkspaceLogs = ({ workspaceLogs, resLocals }) => {
   `.toString();
 };
 
-const WorkspaceVersionLogs = ({ version, workspaceLogs, resLocals }) => {
+const WorkspaceVersionLogs = ({
+  version,
+  workspaceLogs,
+  containerLogsEnabled,
+  containerLogsExpired,
+  resLocals,
+}) => {
   return html`
     <!DOCTYPE html>
     <html lang="en">
@@ -83,23 +92,40 @@ const WorkspaceVersionLogs = ({ version, workspaceLogs, resLocals }) => {
         <div id="content" class="container mb-4">
           <h1 class="mb-4">Workspace logs</h1>
 
-          <div
-            id="js-container-logs"
-            class="bg-dark p-3 mb-3 rounded"
-            data-logs-endpoint="${resLocals.urlPrefix}/workspace/${resLocals.workspace_id}/logs/version/${version}/container_logs"
-          >
-            <pre class="text-white mb-3"><code></code></pre>
-            <button type="button" class="btn btn-primary js-load-more-logs">
-              <span
-                class="spinner-border spinner-border-sm js-loading-spinner"
-                role="status"
-                aria-hidden="true"
-                hidden
-              ></span>
-              <span class="js-button-message">Load more logs</span>
-            </button>
-          </div>
+          <h2>Container logs</h2>
+          ${containerLogsEnabled && !containerLogsExpired
+            ? html`
+                <div
+                  id="js-container-logs"
+                  class="bg-dark p-3 mb-3 rounded"
+                  data-logs-endpoint="${resLocals.urlPrefix}/workspace/${resLocals.workspace_id}/logs/version/${version}/container_logs"
+                >
+                  <pre class="text-white mb-3"><code></code></pre>
+                  <button type="button" class="btn btn-primary js-load-more-logs">
+                    <span
+                      class="spinner-border spinner-border-sm js-loading-spinner"
+                      role="status"
+                      aria-hidden="true"
+                      hidden
+                    ></span>
+                    <span class="js-button-message">Load more logs</span>
+                  </button>
+                </div>
+              `
+            : html`
+                <div class="bg-dark py-5 px-2 mb-3 rounded text-white text-center text-monospace">
+                  <div class="mb-2">
+                    <i class="fa fa-calendar fa-2xl" aria-hidden="true"></i>
+                  </div>
+                  <div>
+                    ${containerLogsEnabled
+                      ? 'The container logs for this workspace have expired and are no longer available.'
+                      : 'Container logs are not available for this workspace.'}
+                  </div>
+                </div>
+              `}
 
+          <h2>Workspace history</h2>
           ${WorkspaceLogsTable({ workspaceLogs })}
         </div>
 
@@ -108,7 +134,10 @@ const WorkspaceVersionLogs = ({ version, workspaceLogs, resLocals }) => {
             const LOAD_MORE_LOGS_MESSAGE = 'Load more logs';
             const LOADING_LOGS_MESSAGE = 'Loading logs...';
 
+            // This element will only be present if the logs haven't expired.
             const containerLogs = document.querySelector('#js-container-logs');
+            if (!containerLogs) return;
+
             const containerLogsOutput = containerLogs.querySelector('code');
             const loadMoreLogsButton = containerLogs.querySelector('.js-load-more-logs');
             const loadingSpinner = loadMoreLogsButton.querySelector('.js-loading-spinner');
@@ -189,7 +218,7 @@ const WorkspaceLogsTable = ({ workspaceLogs }) => {
           ${workspaceLogs.map((log) => {
             return html`
               <tr>
-                <td>${log.date}</td>
+                <td>${log.date_formatted}</td>
                 <td>${log.message}</td>
                 <td>${log.state}</td>
                 <td>${log.version}</td>
