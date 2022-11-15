@@ -25,6 +25,7 @@ router.get('/', (_req, res, _next) => {
     res.locals.navTitle = `${res.locals.instance_question_info.question_number} - ${res.locals.course.short_name}`;
   }
   res.locals.showLogs = res.locals.authn_is_administrator || res.locals.authn_is_instructor;
+  console.log(res.locals);
   res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 });
 
