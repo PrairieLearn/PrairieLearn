@@ -17,7 +17,7 @@ const WorkspaceLogs = ({ workspaceLogs, resLocals }) => {
 
   return html`
     <!DOCTYPE html>
-    <html lang="en" class="h-100">
+    <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", {
           ...resLocals,
@@ -64,10 +64,10 @@ const WorkspaceLogs = ({ workspaceLogs, resLocals }) => {
   `.toString();
 };
 
-const WorkspaceVersionLogs = ({ workspaceLogs, resLocals }) => {
+const WorkspaceVersionLogs = ({ version, workspaceLogs, resLocals }) => {
   return html`
     <!DOCTYPE html>
-    <html lang="en" class="h-100">
+    <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", {
           ...resLocals,
@@ -80,11 +80,64 @@ const WorkspaceVersionLogs = ({ workspaceLogs, resLocals }) => {
           navPage: 'plain',
         })}
 
-        <div id="content" class="container">
+        <div id="content" class="container mb-4">
           <h1 class="mb-4">Workspace logs</h1>
+
+          <div
+            id="js-container-logs"
+            class="bg-dark p-3"
+            data-logs-endpoint="${resLocals.urlPrefix}/workspace/${resLocals.workspace_id}/logs/version/${version}/container_logs"
+          >
+            <pre class="text-white rounded mb-3"><code></code></pre>
+            <button type="button" class="btn btn-primary js-load-more-logs">Load more logs</button>
+          </div>
 
           ${WorkspaceLogsTable({ workspaceLogs })}
         </div>
+
+        <script>
+          $(() => {
+            const containerLogs = document.querySelector('#js-container-logs');
+            const containerLogsOutput = containerLogs.querySelector('code');
+            const loadMoreLogsButton = containerLogs.querySelector('.js-load-more-logs');
+
+            const logsEndpoint = containerLogs.getAttribute('data-logs-endpoint');
+            let startAfter = null;
+
+            async function fetchNextLogs() {
+              let url = logsEndpoint;
+              if (startAfter) {
+                url += '?' + new URLSearchParams({ start_after: startAfter });
+              }
+              const res = await fetch(url);
+              if (!res.ok) {
+                // TODO: better error handling
+                console.error('Error fetching logs', await res.text());
+              } else {
+                const logs = await res.text();
+                console.log(logs);
+                containerLogsOutput.appendChild(document.createTextNode(logs));
+
+                if (res.headers.has('x-next-start-after')) {
+                  startAfter = res.headers.get('x-next-start-after');
+                  console.log('starting after', startAfter);
+                }
+              }
+            }
+
+            // On page load, immediately load the first chunk of logs.
+            fetchNextLogs();
+
+            // When the user clicks the "Load more logs" button, load the next chunk of logs.
+            loadMoreLogsButton.addEventListener('click', () => {
+              // Disable the button so that we can't load more than one chunk at a time.
+              loadMoreLogsButton.disabled = true;
+              fetchNextLogs().finally(() => {
+                loadMoreLogsButton.disabled = false;
+              });
+            });
+          });
+        </script>
       </body>
     </html>
   `.toString();
