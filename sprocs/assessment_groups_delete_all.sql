@@ -1,24 +1,36 @@
 CREATE FUNCTION
     assessment_groups_delete_all(
-        assessment_id bigint,
-        authn_user_id bigint
+        arg_assessment_id bigint,
+        arg_authn_user_id bigint
     ) returns void
 AS $$
 BEGIN
-    WITH log AS (
+    WITH deleted_groups AS (
         UPDATE groups g
         SET deleted_at = NOW()
         WHERE g.id IN (SELECT g.id
                         FROM group_configs AS gc
                         JOIN groups AS g ON g.group_config_id = gc.id
-                        WHERE gc.assessment_id = assessment_groups_delete_all.assessment_id 
+                        WHERE gc.assessment_id = arg_assessment_id 
                         AND g.deleted_at IS NULL
                         AND gc.deleted_at IS NULL)
         RETURNING id
-    ) 
-    INSERT INTO group_logs 
+    ),
+    related_assessment_instances AS (
+        SELECT g.id AS group_id, assessment_instances_delete(ai.id, arg_authn_user_id)
+        FROM
+            deleted_groups AS g
+            JOIN assessment_instances AS ai ON (ai.group_id = g.id)
+        WHERE
+            ai.assessment_id = arg_assessment_id
+            AND ai.deleted_at IS NULL
+    )
+    INSERT INTO group_logs
         (authn_user_id, group_id, action)
-    SELECT assessment_groups_delete_all.authn_user_id, id, 'delete'
-    FROM log;
+    SELECT
+        arg_authn_user_id, g.id, 'delete'
+    FROM
+        deleted_groups g
+        LEFT JOIN related_assessment_instances ai ON (g.id = ai.group_id);
 END;
 $$ LANGUAGE plpgsql VOLATILE;
