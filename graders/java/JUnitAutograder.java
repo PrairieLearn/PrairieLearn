@@ -1,5 +1,6 @@
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.junit.platform.engine.DiscoverySelector;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.engine.TestTag;
 import org.junit.platform.engine.support.descriptor.MethodSource;
@@ -7,6 +8,7 @@ import org.junit.platform.launcher.Launcher;
 import org.junit.platform.launcher.LauncherDiscoveryRequest;
 import org.junit.platform.launcher.TestExecutionListener;
 import org.junit.platform.launcher.TestIdentifier;
+import org.junit.platform.launcher.TestPlan;
 import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
 import org.junit.platform.launcher.core.LauncherFactory;
 
@@ -30,7 +32,7 @@ public class JUnitAutograder implements TestExecutionListener {
     private double points = 0, maxPoints = 0;
     private String output = "", message = "";
     private boolean gradable = true;
-    private List<AutograderTest> tests = new ArrayList<>();
+    private Map<TestIdentifier, AutograderTest> tests = new LinkedHashMap<>();
 
     private String resultsFile;
     private String[] testClasses;
@@ -61,8 +63,9 @@ public class JUnitAutograder implements TestExecutionListener {
 
     public void runTests() throws UngradableException {
 
+        List<DiscoverySelector> selectorList = new ArrayList<>();
+
         for (String classSrcName : testClasses) {
-            LauncherDiscoveryRequestBuilder requestBuilder = LauncherDiscoveryRequestBuilder.request();
             String className = classSrcName
                 .replaceFirst("^/grade/tests/junit/", "")
                 .replaceFirst("\\.java$", "")
@@ -70,47 +73,82 @@ public class JUnitAutograder implements TestExecutionListener {
             System.out.println("Test class: " + className + " (from " + classSrcName + ")");
             try {
                 Class<?> cls = Class.forName(className, true, Thread.currentThread().getContextClassLoader());
-                LauncherDiscoveryRequest request = requestBuilder.selectors(selectClass(cls)).build();
-                this.launcher.execute(request);
+                selectorList.add(selectClass(cls));
             } catch (ClassNotFoundException e) {
                 this.points = 0;
                 this.message = "Could not load test class " + className;
                 throw new UngradableException();
             }
         }
+
+        /* The launch of the tests is done after all classes are
+         * selected, to ensure that a single TestPlan is created, and
+         * if one of the tests causes the launcher to crash, the tests
+         * for all files are recorded. */
+        LauncherDiscoveryRequestBuilder requestBuilder = LauncherDiscoveryRequestBuilder.request();
+        LauncherDiscoveryRequest request = requestBuilder.selectors(selectorList).build();
+        this.launcher.execute(request);
+    }
+
+    @Override
+    public synchronized void testPlanExecutionStarted(TestPlan plan) {
+        /* Provisional autograder tests are created before the entire
+         * plan completes. This is done so that, if a major crash
+         * (e.g., OutOfMemoryError) causes the tests to be unable to
+         * call `executionFinished`, that the default tests still
+         * exist and are saved to the JSON file as expected. */
+        for (TestIdentifier root : plan.getRoots()) {
+            for (TestIdentifier test : plan.getDescendants(root)) {
+                if (test.isTest()) {
+                    AutograderTest autograderTest = new AutograderTest(test.getDisplayName());
+
+                    for (TestTag tag : test.getTags()) {
+                        if (tag.getName().startsWith("points=")) {
+                            try {
+                                autograderTest.maxPoints = Double.parseDouble(tag.getName().substring(7));
+                            } catch(NumberFormatException exception) {
+                                this.output = "Could not parse points tag: " + tag.getName();
+                                this.gradable = false;
+                            }
+                        }
+                    }
+
+                    // For compatibility with JUnit4 autograder
+                    test.getSource().ifPresent(source -> {
+                            if (source instanceof MethodSource) {
+                                AutograderInfo info = ((MethodSource) source).getJavaMethod().getAnnotation(AutograderInfo.class);
+                                if (info != null) {
+                                    if (info.points() > 0)
+                                        autograderTest.maxPoints = info.points();
+                                    if (!"".equals(info.name()))
+                                        autograderTest.name = info.name();
+                                    if (!"".equals(info.description()))
+                                        autograderTest.description = info.description();
+                                }
+                            }
+                        });
+
+                    tests.put(test, autograderTest);
+                    this.maxPoints += autograderTest.maxPoints;
+                }
+            }
+        }
     }
 
     @Override
     public synchronized void executionFinished(TestIdentifier test, TestExecutionResult result) {
-        if (!test.isTest()) return;
-        AutograderTest autograderTest = new AutograderTest(test.getDisplayName());
 
-        for (TestTag tag : test.getTags()) {
-            if (tag.getName().startsWith("points=")) {
-                try {
-                    autograderTest.maxPoints = autograderTest.points = Double.parseDouble(tag.getName().substring(7));
-                } catch(NumberFormatException exception) {
-                    this.output = "Could not parse points tag: " + tag.getName();
-                    this.gradable = false;
-                }
-            }
+        if (!test.isTest()) return;
+        AutograderTest autograderTest = tests.get(test);
+        if (autograderTest == null) {
+            // This shouldn't happen
+            this.points = 0;
+            this.message = "Unable to parse the results. Test execution completed for a test that was not part of the test plan. Consult your instructor.";
+            throw new UngradableException();
         }
 
-        // For compatibility with JUnit4 autograder
-        test.getSource().ifPresent(source -> {
-            if (source instanceof MethodSource) {
-                AutograderInfo info = ((MethodSource) source).getJavaMethod().getAnnotation(AutograderInfo.class);
-                if (info != null) {
-                    if (info.points() > 0)
-                        autograderTest.points = autograderTest.maxPoints = info.points();
-                    if (!"".equals(info.name()))
-                        autograderTest.name = info.name();
-                    if (!"".equals(info.description()))
-                        autograderTest.description = info.description();
-                }
-            }
-        });
-
+        autograderTest.points = autograderTest.maxPoints;
+        autograderTest.message = "";
         if (!result.getStatus().equals(TestExecutionResult.Status.SUCCESSFUL)) {
             autograderTest.points = 0;
             result.getThrowable().ifPresent(t -> autograderTest.message = t.toString());
@@ -118,15 +156,13 @@ public class JUnitAutograder implements TestExecutionListener {
                 autograderTest.message = "";
         }
 
-        this.tests.add(autograderTest);
         this.points += autograderTest.points;
-        this.maxPoints += autograderTest.maxPoints;
     }
 
     private void saveResults() {
 
         JSONArray resultsTests = new JSONArray();
-        for (AutograderTest test : this.tests)
+        for (AutograderTest test : this.tests.values())
             resultsTests.add(test.toJson());
 
         JSONObject results = new JSONObject();
@@ -149,9 +185,10 @@ public class JUnitAutograder implements TestExecutionListener {
 
         private String name;
         private String description = "";
-        private String message = "";
+        // Default message, will typically be overridden when the execution completes
+        private String message = "This test was not executed because the autograder crashed before the results could be obtained";
         private String output = "";
-        private double points = 1;
+        private double points = 0;
         private double maxPoints = 1;
 
         private AutograderTest(String name) {
@@ -174,6 +211,6 @@ public class JUnitAutograder implements TestExecutionListener {
         }
     }
 
-    private class UngradableException extends Exception {
+    private class UngradableException extends RuntimeException {
     }
 }
