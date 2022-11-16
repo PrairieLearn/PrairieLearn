@@ -33,6 +33,11 @@
 <% } %>
 <% } else {%>
   <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: permissions, group_info: group_info}); %>
+  <% if (usingGroupRoles && !rolesAreBalanced) { %>
+    <div class="alert alert-danger my-2" role="alert">
+      A user has too many roles. Every student should be assigned to exactly <strong>one</strong> role with group size <strong><%= groupsize %></strong> 
+    </div>
+  <% } %>
   <% if (usingGroupRoles && can_view_role_table) { %>
     <% if (typeof validationErrors !== 'undefined' && validationErrors.length > 0) { %>
       <% validationErrors.forEach(function ({ role_name, minimum, maximum, num_assigned }) { %>
@@ -47,8 +52,9 @@
         </div>
       <% }) %>
     <% } %>
+
     <%- include('../shared/groupRoleSelectTable.ejs', {group_info: group_info, group_roles: group_roles}); %>
-  <% } %>
+    <% } %>
   <% if (locals.assessment.type === 'Exam' && locals.assessment.require_honor_code) { %>
     <div class="card card-secondary mb-4 test-class-honor-code">
       <ul class="list-group list-group-flush">
@@ -75,8 +81,10 @@
   <form id="confirm-form" name="confirm-form" method="POST" class="mt-4 d-flex justify-content-center">
     <button id="start-assessment" type="submit" class="btn btn-primary" disabled>Start assessment</button>
   </form>
+  <% } %>
+  <% if (!minimumSizeMet) { %>
   <p class="text-center">
     * Minimum group size is <%= minsize %>. You need at least <%= needsize %> more group member(s) to start.
- </p>
- <% } %>
+  </p>
+  <% } %>
 <% } %>

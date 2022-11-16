@@ -62,11 +62,13 @@ router.get('/', function (req, res, next) {
             usingGroupRoles,
             group_info,
             join_code,
+            minimumSizeMet,
             start,
             used_join_code,
             validationErrors,
             disabledRoles,
-            groupRoles
+            groupRoles,
+            rolesAreBalanced
           ) {
             if (ERR(err, next)) return;
             res.locals.permissions = permissions;
@@ -77,11 +79,15 @@ router.get('/', function (req, res, next) {
             res.locals.usingGroupRoles = usingGroupRoles;
             res.locals.group_info = group_info;
             res.locals.join_code = join_code;
+            res.locals.minimumSizeMet = minimumSizeMet;
             res.locals.start = start;
             res.locals.used_join_code = used_join_code;
             res.locals.validationErrors = validationErrors;
             res.locals.disabledRoles = disabledRoles;
-            res.locals.group_roles = groupRoles
+            res.locals.group_roles = groupRoles;
+            res.locals.rolesAreBalanced = rolesAreBalanced;
+            console.log('start: ', start);
+            console.log('minimumSizeMet: ', minimumSizeMet);
 
             if (usingGroupRoles) {
               // TODO: Maybe rewrite async/await
