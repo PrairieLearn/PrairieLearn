@@ -86,8 +86,6 @@ router.get('/', function (req, res, next) {
             res.locals.disabledRoles = disabledRoles;
             res.locals.group_roles = groupRoles;
             res.locals.rolesAreBalanced = rolesAreBalanced;
-            console.log('start: ', start);
-            console.log('minimumSizeMet: ', minimumSizeMet);
 
             if (usingGroupRoles) {
               // TODO: Maybe rewrite async/await
