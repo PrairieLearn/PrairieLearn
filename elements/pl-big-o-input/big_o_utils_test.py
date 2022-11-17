@@ -14,7 +14,6 @@ ALL_GRADING_FUNCTIONS = [
     bou.grade_little_omega_expression,
 ]
 
-
 class TestBigOInput:
     @pytest.mark.parametrize("grading_fn", ALL_GRADING_FUNCTIONS)
     def test_correct_answer(self, grading_fn: BigoGradingFunctionT) -> None:
