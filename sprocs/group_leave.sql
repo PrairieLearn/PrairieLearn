@@ -9,6 +9,10 @@ DECLARE
     arg_group_id bigint;
     arg_assignee_id bigint;
     arg_group_role_id bigint;
+    arg_using_group_roles boolean;
+    arg_required_roles_count bigint;
+    arg_cur_size bigint;
+    arg_has_required_role boolean;
 BEGIN
     -- Find group id
     SELECT DISTINCT group_id
@@ -20,36 +24,73 @@ BEGIN
     AND gc.assessment_id = arg_assessment_id
     AND g.deleted_at IS NULL
     AND gc.deleted_at IS NULL;
-    
-    -- If the assignment uses group roles with group size > 1:
-    -- Grab a random other user from the group
-    -- Give them the leaving user's roles
-    IF (
-        SELECT using_group_roles
-        FROM group_configs
-        WHERE assessment_id = arg_assessment_id
-    ) AND (
-        SELECT count(DISTINCT user_id) > 1
-        FROM group_users
-        WHERE group_id = arg_group_id
-    )
-    THEN
-        SELECT user_id
-        INTO arg_assignee_id
-        FROM group_users
-        WHERE group_id = arg_group_id AND user_id != arg_user_id
-        LIMIT 1;
 
-        FOR arg_group_role_id IN
-            SELECT gu.group_role_id
-            FROM group_users gu
-            WHERE gu.group_id = arg_group_id AND gu.user_id = arg_user_id
-        LOOP
-            -- Check if assignee already has the role in question
-            INSERT INTO group_users (group_id, user_id, group_role_id)
-            VALUES (arg_group_id, arg_assignee_id, arg_group_role_id)
-            ON CONFLICT (group_id, user_id, group_role_id) DO NOTHING;
-        END LOOP;
+    -- Handle role reassignment if using group roles
+    SELECT gc.using_group_roles INTO arg_using_group_roles
+    FROM group_configs AS gc
+    WHERE gc.assessment_id = arg_assessment_id AND gc.deleted_at IS NULL;
+
+    IF arg_using_group_roles THEN
+        -- Get current group size
+        SELECT COUNT(DISTINCT user_id)
+        INTO arg_cur_size
+        FROM group_users
+        WHERE group_id = arg_group_id;
+
+        -- Get the number of required roles
+        SELECT COUNT(*) INTO arg_required_roles_count
+        FROM group_roles AS gr
+        WHERE gr.assessment_id = arg_assessment_id AND gr.minimum > 0;
+
+        IF arg_cur_size <= arg_required_roles_count THEN
+            -- When group_size (pre-leave) <= num_required roles:
+
+            -- 1. Grab a random other user from the group
+            SELECT user_id
+            INTO arg_assignee_id
+            FROM group_users
+            WHERE group_id = arg_group_id AND user_id != arg_user_id
+            LIMIT 1;
+
+            -- 2. Give them all of the leaving user's roles
+            FOR arg_group_role_id IN
+                SELECT gu.group_role_id
+                FROM group_users gu
+                WHERE gu.group_id = arg_group_id AND gu.user_id = arg_user_id
+            LOOP
+                INSERT INTO group_users (group_id, user_id, group_role_id)
+                VALUES (arg_group_id, arg_assignee_id, arg_group_role_id)
+                ON CONFLICT (group_id, user_id, group_role_id) DO NOTHING;
+            END LOOP;
+        ELSE
+            -- When group_size (pre-leave) > num_required roles:
+
+            -- 1. Get whether the leaving user has a required role
+            SELECT gr.minimum > 0
+            INTO arg_has_required_role
+            FROM group_users gu LEFT JOIN group_roles gr ON gu.group_role_id = gr.id
+            WHERE gu.group_id = arg_group_id AND gu.user_id = arg_user_id;
+
+            IF arg_has_required_role THEN
+                -- 2. If true, find a group member with a non-required role
+                SELECT gu.user_id
+                INTO arg_assignee_id
+                FROM group_users gu LEFT JOIN group_roles gr ON gu.group_role_id = gr.id
+                WHERE group_id = arg_group_id AND user_id != arg_user_id AND gr.minimum = 0
+                LIMIT 1;
+
+                -- 3. Replace their role with the leaving user's role
+                SELECT gu.group_role_id
+                INTO arg_group_role_id
+                FROM group_users gu
+                WHERE gu.group_id = arg_group_id AND gu.user_id = arg_user_id
+                LIMIT 1;
+
+                UPDATE group_users
+                SET group_role_id = arg_group_role_id
+                WHERE group_id = arg_group_id AND user_id = arg_assignee_id;
+            END IF;
+        END IF;
     END IF;
 
     -- Delete the user from the group
