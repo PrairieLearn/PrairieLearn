@@ -99,6 +99,8 @@ public class JUnitAutograder implements TestExecutionListener {
     }
 
     private synchronized void addProvisionalTest(TestIdentifier test) {
+        if (test.getSource().map(s -> s instanceof ClassSource).orElse(false))
+            this.classTotals.putIfAbsent(test, 0.0);
         if (test.isTest()) {
             AutograderTest autograderTest = new AutograderTest(test);
             tests.put(test, autograderTest);
