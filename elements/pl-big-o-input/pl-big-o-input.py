@@ -223,25 +223,24 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
     a_tru: str = data['correct_answers'].get(name, '')
 
-
-    def get_bigo_grade_fn(grade_fn: bou.BigoGradingFunctionT) -> Callable[[str], Tuple[float, str]]:
+    def get_grade_fn(grade_fn: bou.BigoGradingFunctionT) -> Callable[[str], Tuple[float, str]]:
         def grade(a_sub: str) -> Tuple[float, str]:
             return grade_fn(a_tru, a_sub, variables)
         return grade
 
     bigo_type_name = pl.get_string_attrib(element, 'type', BigOType.BIGO.name).upper()
-    bigo_type =  BigOType[bigo_type_name]
+    bigo_type = BigOType[bigo_type_name]
 
     if bigo_type is BigOType.BIGO:
-        pl.grade_question_parameterized(data, name, get_bigo_grade_fn(bou.grade_bigo_expression), weight=weight)
+        pl.grade_question_parameterized(data, name, get_grade_fn(bou.grade_bigo_expression), weight=weight)
     elif bigo_type is BigOType.THETA:
-        pl.grade_question_parameterized(data, name, get_bigo_grade_fn(bou.grade_theta_expression), weight=weight)
+        pl.grade_question_parameterized(data, name, get_grade_fn(bou.grade_theta_expression), weight=weight)
     elif bigo_type is BigOType.OMEGA:
-        pl.grade_question_parameterized(data, name, get_bigo_grade_fn(bou.grade_omega_expression), weight=weight)
+        pl.grade_question_parameterized(data, name, get_grade_fn(bou.grade_omega_expression), weight=weight)
     elif bigo_type is BigOType.LITTLE_O:
-        pl.grade_question_parameterized(data, name, get_bigo_grade_fn(bou.grade_little_o_expression), weight=weight)
+        pl.grade_question_parameterized(data, name, get_grade_fn(bou.grade_little_o_expression), weight=weight)
     elif bigo_type is BigOType.LITTLE_OMEGA:
-        pl.grade_question_parameterized(data, name, get_bigo_grade_fn(bou.grade_little_omega_expression), weight=weight)
+        pl.grade_question_parameterized(data, name, get_grade_fn(bou.grade_little_omega_expression), weight=weight)
     else:
         assert_never(bigo_type)
 
@@ -260,10 +259,10 @@ def determine_score_params(score: Optional[float]) -> Tuple[str, float]:
             if score_val >= 1:
                 return ('correct', 1.0)
             elif score_val > 0:
-                return ('partial', math.floor(score_val*100))
+                return ('partial', math.floor(score_val * 100))
             else:
                 return ('incorrect', 0.0)
         except Exception:
-            raise ValueError(f"invalid score {score}")
+            raise ValueError(f'invalid score {score}')
     else:
         return '', 0.0

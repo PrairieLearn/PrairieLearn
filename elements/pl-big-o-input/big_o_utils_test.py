@@ -1,6 +1,5 @@
 import pytest
 import big_o_utils as bou
-from typing import Callable, List, Tuple
 
 VARIABLES = ['n']
 
