@@ -3,6 +3,7 @@ import org.json.simple.JSONObject;
 import org.junit.platform.engine.DiscoverySelector;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.engine.TestTag;
+import org.junit.platform.engine.support.descriptor.ClassSource;
 import org.junit.platform.engine.support.descriptor.MethodSource;
 import org.junit.platform.launcher.Launcher;
 import org.junit.platform.launcher.LauncherDiscoveryRequest;
@@ -29,7 +30,7 @@ public class JUnitAutograder implements TestExecutionListener {
 
     private final Launcher launcher;
 
-    private double points = 0, maxPoints = 0;
+    private double points = 0;
     private String output = "", message = "";
     private boolean gradable = true;
     // Uses a LinkedHashMap with access-order. This ensures that the
@@ -37,6 +38,9 @@ public class JUnitAutograder implements TestExecutionListener {
     // (i.e., when the `executionFinished()` method is called), to
     // preserve test order where this is relevant.
     private Map<TestIdentifier, AutograderTest> tests = new LinkedHashMap<>(100, 0.75f, false);
+
+    private TestPlan testPlan = null;
+    private Map<TestIdentifier, Double> classTotals = new HashMap<>();
 
     private String resultsFile;
     private String[] testClasses;
@@ -94,6 +98,18 @@ public class JUnitAutograder implements TestExecutionListener {
         this.launcher.execute(request);
     }
 
+    private synchronized void addProvisionalTest(TestIdentifier test) {
+        if (test.isTest()) {
+            AutograderTest autograderTest = new AutograderTest(test);
+            tests.put(test, autograderTest);
+            TestIdentifier parent = testPlan.getParent(test).orElse(null);
+            while (parent != null && !parent.getSource().map(s -> s instanceof ClassSource).orElse(false)) {
+                parent = testPlan.getParent(parent).orElse(null);
+            }
+            this.classTotals.put(parent, this.classTotals.getOrDefault(parent, 0.0) + autograderTest.maxPoints);
+        }
+    }
+
     @Override
     public synchronized void testPlanExecutionStarted(TestPlan plan) {
         /* Provisional autograder tests are created before the entire
@@ -102,23 +118,18 @@ public class JUnitAutograder implements TestExecutionListener {
          * call `executionFinished`, that the default tests still
          * exist and are saved to the JSON file as expected. This
          * doesn't catch dynamic tests, though. */
+        this.testPlan = plan;
         for (TestIdentifier root : plan.getRoots()) {
+            addProvisionalTest(root);
             for (TestIdentifier test : plan.getDescendants(root)) {
-                if (test.isTest()) {
-                    AutograderTest autograderTest = new AutograderTest(test);
-                    tests.put(test, autograderTest);
-                    this.maxPoints += autograderTest.maxPoints;
-                }
+                addProvisionalTest(test);
             }
         }
     }
 
     @Override
     public synchronized void dynamicTestRegistered(TestIdentifier test) {
-        if (!test.isTest()) return;
-        AutograderTest autograderTest = new AutograderTest(test);
-        tests.put(test, autograderTest);
-        this.maxPoints += autograderTest.maxPoints;
+        addProvisionalTest(test);
     }
 
     @Override
@@ -148,14 +159,39 @@ public class JUnitAutograder implements TestExecutionListener {
 
     private void saveResults() {
 
+        double maxPoints = this.classTotals.entrySet().stream().mapToDouble(e -> {
+                if (e.getKey() != null) {
+                    for (TestTag tag : e.getKey().getTags()) {
+                        if (tag.getName().startsWith("maxpoints=")) {
+                            try {
+                                return Double.parseDouble(tag.getName().substring(10));
+                            } catch(NumberFormatException exception) {
+                                JUnitAutograder.this.output = "Could not parse maxpoints tag: " + tag.getName();
+                                JUnitAutograder.this.gradable = false;
+                            }
+                        }
+                    }
+                }
+                return e.getValue();
+            }).sum();
+        double testMaxPoints = this.tests.values().stream().mapToDouble(t -> t.maxPoints).sum();
+
         JSONArray resultsTests = new JSONArray();
         for (AutograderTest test : this.tests.values())
             resultsTests.add(test.toJson());
 
+        if (maxPoints - testMaxPoints > 0.01) {
+            resultsTests.add(new AutograderTest("Incomplete tests", maxPoints - testMaxPoints,
+                                                "The number of points achieved by the autograder tests was not enough to reach \n" +
+                                                "the full amount of tests required for full marks. This is typically caused by \n" +
+                                                "failing early tests, or by an early autograder crash.")
+                             .toJson());
+        }
+
         JSONObject results = new JSONObject();
-        results.put("score", this.maxPoints > 0 ? this.points / this.maxPoints : 0);
-        results.put("points", this.points);
-        results.put("max_points", this.maxPoints);
+        results.put("score", maxPoints > 0 ? Math.min(this.points / maxPoints, 1) : 0);
+        results.put("points", Math.max(this.points, maxPoints));
+        results.put("max_points", maxPoints);
         results.put("output", this.output);
         results.put("message", this.message);
         results.put("gradable", this.gradable);
@@ -173,17 +209,19 @@ public class JUnitAutograder implements TestExecutionListener {
         private String name;
         private String description = "";
         // Default message, will typically be overridden when the execution completes
-        private String message = "This test was not executed because the autograder crashed before the results could be obtained";
+        private String message = "This test was not executed because the autograder crashed before \nthe results could be obtained";
         private String output = "";
         private double points = 0;
         private double maxPoints = 1;
 
-        private AutograderTest(String name) {
+        private AutograderTest(String name, double maxPoints, String message) {
             this.name = name;
+            this.maxPoints = maxPoints;
+            this.message = message;
         }
-
+        
         private AutograderTest(TestIdentifier test) {
-            this(test.getDisplayName());
+            this.name = test.getDisplayName();
 
             for (TestTag tag : test.getTags()) {
                 if (tag.getName().startsWith("points=")) {
