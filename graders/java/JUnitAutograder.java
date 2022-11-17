@@ -32,7 +32,11 @@ public class JUnitAutograder implements TestExecutionListener {
     private double points = 0, maxPoints = 0;
     private String output = "", message = "";
     private boolean gradable = true;
-    private Map<TestIdentifier, AutograderTest> tests = new LinkedHashMap<>();
+    // Uses a LinkedHashMap with access-order. This ensures that the
+    // order of the tests retrieved at the end is based on last access
+    // (i.e., when the `executionFinished()` method is called), to
+    // preserve test order where this is relevant.
+    private Map<TestIdentifier, AutograderTest> tests = new LinkedHashMap<>(100, 0.75f, false);
 
     private String resultsFile;
     private String[] testClasses;
