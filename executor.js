@@ -103,10 +103,16 @@ if (Number.isNaN(questionTimeoutMilliseconds)) {
   questionTimeoutMilliseconds = 10000;
 }
 
+let pingTimeoutMilliseconds = Number.parseInt(process.env.PING_TIMEOUT_MILLISECONDS);
+if (Number.isNaN(pingTimeoutMilliseconds)) {
+  pingTimeoutMilliseconds = 60_000;
+}
+
 (async () => {
   let codeCaller = new CodeCallerNative({
     dropPrivileges: true,
     questionTimeoutMilliseconds,
+    pingTimeoutMilliseconds,
     errorLogger: console.error,
   });
   await codeCaller.ensureChild();
