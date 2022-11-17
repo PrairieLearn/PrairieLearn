@@ -121,7 +121,10 @@ const WorkspaceVersionLogs = ({
             : html`
                 <div class="bg-dark py-5 px-2 mb-3 rounded text-white text-center text-monospace">
                   <div class="mb-2">
-                    <i class="fa fa-calendar fa-2xl" aria-hidden="true"></i>
+                    <i
+                      class="fa ${containerLogsEnabled ? 'fa-calendar' : 'fa-ban'} fa-2xl"
+                      aria-hidden="true"
+                    ></i>
                   </div>
                   <div>
                     ${containerLogsEnabled
