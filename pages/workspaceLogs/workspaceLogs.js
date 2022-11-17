@@ -15,55 +15,6 @@ const { WorkspaceLogs, WorkspaceVersionLogs } = require('./workspaceLogs.html');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 /**
- * Loads logs for the given workspace version from S3. If logs cannot be found,
- * returns null.
- *
- * @param {string | number} workspaceId
- * @param {string | number} version
- * @param {string} [startAfter]
- *
- * @returns {Promise<{ logs: string, startAfter: string} | null>}
- */
-async function loadLogParts(workspaceId, version, startAfter) {
-  // TODO: handle errors and missing data.
-  const s3Client = new AWS.S3({ maxRetries: 3 });
-  const logItems = await s3Client
-    .listObjectsV2({
-      Bucket: config.workspaceLogsS3Bucket,
-      Prefix: `${workspaceId}/${version}/`,
-      MaxKeys: 10,
-      StartAfter: startAfter,
-    })
-    .promise();
-
-  if (logItems.Contents.length === 0) {
-    return {
-      logs: '',
-      // If we couldn't load any more logs, reuse the same startAfter key.
-      startAfter,
-    };
-  }
-
-  const logParts = await Promise.all(
-    logItems.Contents.map(async (item) => {
-      const res = await s3Client
-        .getObject({
-          Bucket: config.workspaceLogsS3Bucket,
-          Key: item.Key,
-        })
-        .promise();
-      return res.Body.toString('utf-8');
-    })
-  );
-
-  const logs = logParts.join('');
-  return {
-    logs,
-    startAfter: logItems.Contents[logItems.Contents.length - 1].Key,
-  };
-}
-
-/**
  * Given a list of workspace logs for a specific version sorted by date in
  * ascending order, checks if the logs are considered expired.
  *
@@ -83,6 +34,64 @@ function areContainerLogsExpired(workspaceLogs) {
 
 function areContainerLogsEnabled() {
   return config.workspaceLogsS3Bucket !== null;
+}
+
+/**
+ * Loads all the logs for a given workspace version.
+ *
+ * @returns {Promise<string | null>}
+ */
+async function loadLogsForWorkspaceVersion(workspaceId, version) {
+  // Get the current workspace version.
+  const workspaceRes = await sqldb.queryOneRowAsync(sql.select_workspace, {
+    workspace_id: workspaceId,
+    version,
+  });
+  const workspace = workspaceRes.rows[0];
+
+  // If the current workspace version matches the requested version, we can
+  // reach out to the workspace host directly to get the logs. Otherwise, they
+  // should have been flushed to S3 already.
+  //
+  // To avoid a race condition where a workspace shuts down by the time we reach
+  // out to the host, we'll fall back to attempting to load the logs from S3 if
+  // the host doesn't have any logs.
+  if (workspace.is_current_version) {
+    // TODO: load directly from host.
+  }
+
+  // Load the logs from S3.
+  //
+  // We used to store a separate object per minute. For backwards compatibility,
+  // we'll still read every object in the bucket (up to 1000) and concatenate them.
+  // However, going forward, we only expect to store a single object per version.
+
+  const s3Client = new AWS.S3({ maxRetries: 3 });
+  const logItems = await s3Client
+    .listObjectsV2({
+      Bucket: config.workspaceLogsS3Bucket,
+      Prefix: `${workspaceId}/${version}/`,
+      MaxKeys: 1000,
+    })
+    .promise();
+
+  if (logItems.Contents.length === 0) {
+    return null;
+  }
+
+  // Load all parts serially to avoid hitting S3 rate limits.
+  const logParts = [];
+  for (const item of logItems.Contents) {
+    const res = await s3Client
+      .getObject({
+        Bucket: config.workspaceLogsS3Bucket,
+        Key: item.Key,
+      })
+      .promise();
+    logParts.push(res.Body.toString('utf-8'));
+  }
+
+  return logParts.join('');
 }
 
 // Only instructors and admins can access these routes. We don't need to check
@@ -122,46 +131,27 @@ router.get(
       display_timezone:
         res.locals.course_instance.display_timezone ?? res.locals.course.display_timezone,
     });
+    const containerLogsEnabled = areContainerLogsEnabled();
+    const containerLogsExpired = areContainerLogsExpired(workspaceLogs.rows);
+
+    let containerLogs = null;
+    if (containerLogsEnabled && !containerLogsExpired) {
+      containerLogs = await loadLogsForWorkspaceVersion(
+        res.locals.workspace_id,
+        req.params.version
+      );
+    }
+
     res.send(
       WorkspaceVersionLogs({
         version: req.params.version,
         workspaceLogs: workspaceLogs.rows,
-        containerLogsEnabled: areContainerLogsEnabled(),
-        containerLogsExpired: areContainerLogsExpired(workspaceLogs.rows),
+        containerLogs,
+        containerLogsEnabled,
+        containerLogsExpired,
         resLocals: res.locals,
       })
     );
-  })
-);
-
-// Fetches a chunk of logs from S3, optionally offset by a given `start_after`
-// query param. If present, `start_after` should be the S3 key of the last log
-// chunk that was fetched.
-router.get(
-  '/version/:version/container_logs',
-  asyncHandler(async (req, res, _next) => {
-    const startAfter = z.string().optional().parse(req.query.start_after);
-
-    // Check if the container logs have expired for this workspace version, or
-    // if they're disabled.
-    const workspaceLogs = await sqldb.queryAsync(sql.select_workspace_version_logs, {
-      workspace_id: res.locals.workspace_id,
-      version: req.params.version,
-      display_timezone:
-        res.locals.course_instance.display_timezone ?? res.locals.course.display_timezone,
-    });
-    if (!areContainerLogsEnabled() || areContainerLogsExpired(workspaceLogs.rows)) {
-      res.sendStatus(404);
-      return;
-    }
-
-    const logs = await loadLogParts(res.locals.workspace_id, req.params.version, startAfter);
-    if (!logs.logs) {
-      res.sendStatus(404);
-    } else {
-      res.set('X-Next-Start-After', logs.startAfter);
-      res.send(logs.logs);
-    }
   })
 );
 

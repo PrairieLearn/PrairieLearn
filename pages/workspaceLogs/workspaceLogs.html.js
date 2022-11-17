@@ -72,6 +72,7 @@ const WorkspaceLogs = ({ workspaceLogs, resLocals }) => {
 const WorkspaceVersionLogs = ({
   version,
   workspaceLogs,
+  containerLogs,
   containerLogsEnabled,
   containerLogsExpired,
   resLocals,
@@ -95,34 +96,17 @@ const WorkspaceVersionLogs = ({
           <h1 class="mb-4">Workspace version logs</h1>
 
           <h2>Container logs</h2>
-          ${containerLogsEnabled && !containerLogsExpired
+          ${containerLogs !== null && containerLogsEnabled && !containerLogsExpired
             ? html`
-                <div
-                  id="js-container-logs"
-                  class="mb-3"
-                  data-logs-endpoint="${resLocals.urlPrefix}/workspace/${resLocals.workspace_id}/logs/version/${version}/container_logs"
-                >
-                  <pre
-                    class="bg-dark rounded-top text-white p-3 mb-0"
-                  ><code class="js-output"></code></pre>
-                  <div class="bg-secondary rounded-bottom">
-                    <button type="button" class="btn btn-light m-3 js-load-more-logs">
-                      <span
-                        class="spinner-border spinner-border-sm js-loading-spinner"
-                        role="status"
-                        aria-hidden="true"
-                        hidden
-                      ></span>
-                      <span class="js-button-message">Load more logs</span>
-                    </button>
-                  </div>
-                </div>
+                <pre class="bg-dark rounded text-white p-3 mb-3"><code>${containerLogs}</code></pre>
               `
             : html`
                 <div class="bg-dark py-5 px-2 mb-3 rounded text-white text-center text-monospace">
                   <div class="mb-2">
                     <i
-                      class="fa ${containerLogsEnabled ? 'fa-calendar' : 'fa-ban'} fa-2xl"
+                      class="fa ${containerLogsEnabled && containerLogsExpired
+                        ? 'fa-calendar'
+                        : 'fa-ban'} fa-2xl"
                       aria-hidden="true"
                     ></i>
                   </div>
@@ -137,72 +121,6 @@ const WorkspaceVersionLogs = ({
           <h2>History</h2>
           ${WorkspaceLogsTable({ workspaceLogs, includeVersion: false })}
         </div>
-
-        <script>
-          $(() => {
-            const LOAD_MORE_LOGS_MESSAGE = 'Load more logs';
-            const LOADING_LOGS_MESSAGE = 'Loading logs...';
-
-            // This element will only be present if logs are enabled and haven't expired.
-            const containerLogs = document.querySelector('#js-container-logs');
-            if (!containerLogs) return;
-
-            const containerLogsOutput = containerLogs.querySelector('code');
-            const loadMoreLogsButton = containerLogs.querySelector('.js-load-more-logs');
-            const loadingSpinner = loadMoreLogsButton.querySelector('.js-loading-spinner');
-            const buttonMessage = loadMoreLogsButton.querySelector('.js-button-message');
-
-            const logsEndpoint = containerLogs.getAttribute('data-logs-endpoint');
-            let startAfter = null;
-
-            async function fetchNextLogs() {
-              // Disable the button so that the user can't try to load more
-              // than once chunk at a time.
-              loadMoreLogsButton.disabled = true;
-              buttonMessage.textContent = LOADING_LOGS_MESSAGE;
-              loadingSpinner.hidden = false;
-
-              const start = Date.now();
-              try {
-                let url = logsEndpoint;
-                if (startAfter) {
-                  url += '?' + new URLSearchParams({ start_after: startAfter });
-                }
-                const res = await fetch(url);
-                if (!res.ok) {
-                  // TODO: better error handling
-                  console.error('Error fetching logs', await res.text());
-                } else {
-                  const logs = await res.text();
-                  containerLogsOutput.appendChild(document.createTextNode(logs));
-
-                  if (res.headers.has('x-next-start-after')) {
-                    startAfter = res.headers.get('x-next-start-after');
-                  }
-                }
-              } catch (err) {
-              } finally {
-                // Add artificial delay so that the spinner is visible for at
-                // least a second. This will also keep people from spamming the
-                // button as fast as possible.
-                const end = Date.now();
-                const delta = Date.now() - start;
-                const delay = Math.max(0, 1000 - delta);
-                setTimeout(() => {
-                  loadMoreLogsButton.disabled = false;
-                  buttonMessage.textContent = LOAD_MORE_LOGS_MESSAGE;
-                  loadingSpinner.hidden = true;
-                }, delay);
-              }
-            }
-
-            // On page load, immediately load the first chunk of logs.
-            fetchNextLogs();
-
-            // When the user clicks the "Load more logs" button, load the next chunk of logs.
-            loadMoreLogsButton.addEventListener('click', () => fetchNextLogs());
-          });
-        </script>
       </body>
     </html>
   `.toString();

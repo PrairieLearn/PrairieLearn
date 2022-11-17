@@ -1,3 +1,13 @@
+-- BLOCK select_workspace
+SELECT
+    w.version,
+    wh.hostname,
+    ($version = version) AS is_current_version
+FROM
+    workspaces AS w
+    LEFT JOIN workspace_hosts AS wh ON (wh.id = w.workspace_host_id)
+WHERE w.id = $workspace_id;
+
 -- BLOCK select_workspace_logs
 SELECT
     date,
