@@ -2093,14 +2093,6 @@ if (config.startServer) {
             process.exit(0);
           }
         });
-
-        // If we're running in EC2 auto scaling, this will wait for our instance
-        // to enter the `Terminating:Wait` state. If we're not running in EC2,
-        // this will be a no-op.
-        lifecycleHooks.waitForInstanceTermination().then(() => {
-          logger.info('Terminating server due to lifecycle state change');
-          process.kill(process.pid, 'SIGTERM');
-        });
       }
     }
   );
