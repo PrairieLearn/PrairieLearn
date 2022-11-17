@@ -3,7 +3,6 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const AWS = require('aws-sdk');
-const z = require('zod');
 
 const config = require('../../lib/config');
 const error = require('../../prairielib/lib/error');
@@ -11,6 +10,7 @@ const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const { WorkspaceLogs, WorkspaceVersionLogs } = require('./workspaceLogs.html');
+const fetch = require('node-fetch');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -57,7 +57,14 @@ async function loadLogsForWorkspaceVersion(workspaceId, version) {
   // out to the host, we'll fall back to attempting to load the logs from S3 if
   // the host doesn't have any logs.
   if (workspace.is_current_version) {
-    // TODO: load directly from host.
+    const res = await fetch(`http://${workspace.hostname}/`, {
+      method: 'POST',
+      body: JSON.stringify({ workspace_id: workspaceId, action: 'getLogs' }),
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (res.ok) {
+      return res.text();
+    }
   }
 
   // Load the logs from S3.

@@ -34,6 +34,7 @@ const config = require('../lib/config');
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const { ContainerS3LogForwarder } = require('./s3-log-forwarder');
+const { parseDockerLogs } = require('./lib/docker');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 let lastAutoUpdateTime = Date.now();
@@ -121,17 +122,19 @@ app.post(
   asyncHandler(async (req, res) => {
     const workspace_id = req.body.workspace_id;
     const action = req.body.action;
-    const useInitialZip = _.get(req.body.options, 'useInitialZip', false);
     if (workspace_id == null) {
       res.status(500).send('Missing workspace_id');
     } else if (action == null) {
       res.status(500).send('Missing action');
     } else if (action === 'init') {
+      const useInitialZip = _.get(req.body.options, 'useInitialZip', false);
       await initSequenceAsync(workspace_id, useInitialZip, res);
     } else if (action === 'reset') {
       await resetSequence(workspace_id, res);
     } else if (action === 'getGradedFiles') {
       await sendGradedFilesArchive(workspace_id, res);
+    } else if (action === 'getLogs') {
+      await sendLogs(workspace_id, res);
     } else {
       res.status(500).send(`Action '${action}' undefined`);
     }
@@ -498,16 +501,17 @@ async function pruneRunawayContainers() {
  * Throws an exception if the container was not found or if there
  * are multiple containers with the same UUID (this shouldn't happen?)
  * @param {string} launch_uuid UUID to search by
- * @return Dockerode container object
+ * @return {import('dockerode').Container}
  */
 async function _getDockerContainerByLaunchUuid(launch_uuid) {
   try {
     const containers = await docker.listContainers({
-      filters: `name=workspace-${launch_uuid}`,
+      filters: JSON.stringify({ name: [`workspace-${launch_uuid}`] }),
     });
     return docker.getContainer(containers[0].Id);
   } catch (err) {
-    throw new Error(`Could not find unique container by launch UUID: ${launch_uuid}`);
+    logger.error(`Error looking up container for launch_uuid ${launch_uuid}`, err);
+    throw err;
   }
 }
 
@@ -1439,4 +1443,29 @@ async function sendGradedFilesArchive(workspace_id, res) {
   }
 
   await archive.finalize();
+}
+
+/**
+ * @returns {Promise<Buffer>}
+ */
+async function getContainerLogs(workspace_id) {
+  const workspace = await _getWorkspaceAsync(workspace_id);
+  const container = await _getDockerContainerByLaunchUuid(workspace.launch_uuid);
+  const logs = await container.logs({ stdout: true, stderr: true, timestamps: true });
+  return parseDockerLogs(logs);
+}
+
+/**
+ * @param {string | number} workspace_id
+ * @param {import('express').Response} res
+ */
+async function sendLogs(workspace_id, res) {
+  try {
+    const containerLogs = await getContainerLogs(workspace_id);
+    res.status(200).send(containerLogs);
+  } catch (err) {
+    logger.error('Error getting container logs', err);
+    Sentry.captureException(err);
+    res.status(500).send();
+  }
 }
