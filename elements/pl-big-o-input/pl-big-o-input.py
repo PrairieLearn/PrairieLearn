@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 from typing_extensions import assert_never
 import prairielearn as pl
 import lxml.html
@@ -16,6 +16,7 @@ PLACEHOLDER_TEXT_THRESHOLD = 20
 SHOW_HELP_TEXT_DEFAULT = True
 WEIGHT_DEFAULT = 1
 
+
 class BigOType(Enum):
     BIGO = r'O'
     THETA = r'\Theta'
@@ -23,9 +24,11 @@ class BigOType(Enum):
     LITTLE_O = r'o'
     LITTLE_OMEGA = r'\omega'
 
+
 class DisplayType(Enum):
     INLINE = 'inline'
     BLOCK = 'block'
+
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
@@ -36,7 +39,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     if pl.has_attrib(element, 'correct-answer'):
         if name in data['correct_answers']:
-            raise ValueError(f"duplicate correct_answers variable name: {name}")
+            raise ValueError(f'duplicate correct_answers variable name: {name}')
         data['correct_answers'][name] = pl.get_string_attrib(element, 'correct-answer')
 
 
@@ -45,7 +48,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     name = pl.get_string_attrib(element, 'answers-name')
     variables = get_variables_list(pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT))
     if len(variables) > 1:
-        raise ValueError("Only one variable is supported")
+        raise ValueError('Only one variable is supported')
     display = DisplayType(pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT))
     size = pl.get_integer_attrib(element, 'size', SIZE_DEFAULT)
 
@@ -116,7 +119,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             with open('pl-big-o-input.mustache', 'r', encoding='utf-8') as f:
                 info = chevron.render(f, info_params).strip()
 
-
             # Render invalid popup
             raw_submitted_answer = data['raw_submitted_answers'].get(name)
             if isinstance(parse_error, str):
@@ -158,6 +160,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         return ''
 
     assert_never(data['panel'])
+
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
@@ -212,6 +215,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             data['format_errors'][name] = s
             data['submitted_answers'][name] = None
 
+
 def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
@@ -219,30 +223,25 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
     a_tru: str = data['correct_answers'].get(name, '')
 
-    def grade_bigo(a_sub: str) -> Tuple[float, str]:
-        return bou.grade_bigo_expression(a_tru, a_sub, variables)
-    def grade_theta(a_sub: str) -> Tuple[float, str]:
-        return bou.grade_theta_expression(a_tru, a_sub, variables)
-    def grade_omega(a_sub: str) -> Tuple[float, str]:
-        return bou.grade_omega_expression(a_tru, a_sub, variables)
-    def grade_little_o(a_sub: str) -> Tuple[float, str]:
-        return bou.grade_little_o_expression(a_tru, a_sub, variables)
-    def grade_little_omega(a_sub: str) -> Tuple[float, str]:
-        return bou.grade_little_omega_expression(a_tru, a_sub, variables)
+
+    def get_bigo_grade_fn(grade_fn: bou.BigoGradingFunctionT) -> Callable[[str], Tuple[float, str]]:
+        def grade(a_sub: str) -> Tuple[float, str]:
+            return grade_fn(a_tru, a_sub, variables)
+        return grade
 
     bigo_type_name = pl.get_string_attrib(element, 'type', BigOType.BIGO.name).upper()
     bigo_type =  BigOType[bigo_type_name]
 
     if bigo_type is BigOType.BIGO:
-        pl.grade_question_parameterized(data, name, grade_bigo, weight=weight)
+        pl.grade_question_parameterized(data, name, get_bigo_grade_fn(bou.grade_bigo_expression), weight=weight)
     elif bigo_type is BigOType.THETA:
-        pl.grade_question_parameterized(data, name, grade_theta, weight=weight)
+        pl.grade_question_parameterized(data, name, get_bigo_grade_fn(bou.grade_theta_expression), weight=weight)
     elif bigo_type is BigOType.OMEGA:
-        pl.grade_question_parameterized(data, name, grade_omega, weight=weight)
+        pl.grade_question_parameterized(data, name, get_bigo_grade_fn(bou.grade_omega_expression), weight=weight)
     elif bigo_type is BigOType.LITTLE_O:
-        pl.grade_question_parameterized(data, name, grade_little_o, weight=weight)
+        pl.grade_question_parameterized(data, name, get_bigo_grade_fn(bou.grade_little_o_expression), weight=weight)
     elif bigo_type is BigOType.LITTLE_OMEGA:
-        pl.grade_question_parameterized(data, name, grade_little_omega, weight=weight)
+        pl.grade_question_parameterized(data, name, get_bigo_grade_fn(bou.grade_little_omega_expression), weight=weight)
     else:
         assert_never(bigo_type)
 
@@ -252,6 +251,7 @@ def get_variables_list(variables_string: str) -> List[str]:
     if variables_list == ['']:
         return []
     return variables_list
+
 
 def determine_score_params(score: Optional[float]) -> Tuple[str, float]:
     if score is not None:

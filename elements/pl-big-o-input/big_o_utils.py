@@ -1,10 +1,11 @@
-from typing import List, Tuple, Dict, Any
+from typing import Callable, List, Tuple, Dict, Any
 import sympy
 import ast
 from dataclasses import dataclass, field
 
 SympyMap = Dict[str, Any]
 ASTWhitelist = Tuple[Any, ...]
+BigoGradingFunctionT = Callable[[str, str, List[str]], Tuple[float, str]]
 
 # See https://github.com/PrairieLearn/PrairieLearn/blob/d10be38fec52929386efb67cce645cd615d589a5/python/python_helper_sympy.py
 # This is a stripped down version that adds factorial but remotes trig and complex numbers.
@@ -179,7 +180,7 @@ def convert_string_to_sympy(expr: str, variables: List[str]) -> Any:
 
 def grade_bigo_expression(a_true: str, a_sub: str, variables: List[str]) -> Tuple[float, str]:
     if a_true == a_sub:
-        return (1, "Correct!")
+        return (1, 'Correct!')
 
     sym_true = convert_string_to_sympy(a_true, variables)
     sym_sub = convert_string_to_sympy(a_sub, variables)
@@ -195,18 +196,18 @@ def grade_bigo_expression(a_true: str, a_sub: str, variables: List[str]) -> Tupl
     if L < sympy.sympify(0):
         return (0, 'Your expression is negative.')
     elif L == sympy.oo:
-        return (0, "Your answer is incorrect.")
+        return (0, 'Your answer is incorrect.')
     elif L == sympy.sympify(0):
-        return (.25, "Your answer is correct, but too loose.")
+        return (.25, 'Your answer is correct, but too loose.')
     elif L == sympy.sympify(1):
-        return (.5, "Your answer is correct, but you have unnecessary lower order terms.")
+        return (.5, 'Your answer is correct, but you have unnecessary lower order terms.')
     else:
-        return (.5, "Your answer is correct but has unncessary constant factors.")
+        return (.5, 'Your answer is correct but has unncessary constant factors.')
 
 
 def grade_theta_expression(a_true: str, a_sub: str, variables: List[str]) -> Tuple[float, str]:
     if a_true == a_sub:
-        return (1, "Correct!")
+        return (1, 'Correct!')
 
     sym_true = convert_string_to_sympy(a_true, variables)
     sym_sub = convert_string_to_sympy(a_sub, variables)
@@ -223,16 +224,16 @@ def grade_theta_expression(a_true: str, a_sub: str, variables: List[str]) -> Tup
     if omega_L < sympy.sympify(0) or bigo_L < sympy.sympify(0):
         return (0, 'Your expression is negative.')
     elif omega_L == sympy.oo or bigo_L == sympy.oo:
-        return (0, "Your answer is incorrect.")
+        return (0, 'Your answer is incorrect.')
     elif omega_L == sympy.sympify(1) and bigo_L == sympy.sympify(1):
-        return (0.25, "Incorrect, your answer has unnecessary lower order terms.")
+        return (0.25, 'Incorrect, your answer has unnecessary lower order terms.')
     else:
-        return (0.25, "Incorrect, your answer has unnecessary constant factors.")
+        return (0.25, 'Incorrect, your answer has unnecessary constant factors.')
 
 
 def grade_omega_expression(a_true: str, a_sub: str, variables: List[str]) -> Tuple[float, str]:
     if a_true == a_sub:
-        return (1, "Correct!")
+        return (1, 'Correct!')
 
     sym_true = convert_string_to_sympy(a_true, variables)
     sym_sub = convert_string_to_sympy(a_sub, variables)
@@ -248,18 +249,18 @@ def grade_omega_expression(a_true: str, a_sub: str, variables: List[str]) -> Tup
     if L < sympy.sympify(0):
         return (0, 'Your expression is negative.')
     elif L == sympy.oo:
-        return (0.25, "Your answer is correct, but too loose.")
+        return (0.25, 'Your answer is correct, but too loose.')
     elif L == sympy.sympify(0):
-        return (0, "Your answer is incorrect.")
+        return (0, 'Your answer is incorrect.')
     elif L == sympy.sympify(1):
-        return (.5, "Your answer is correct, but you have unnecessary lower order terms.")
+        return (.5, 'Your answer is correct, but you have unnecessary lower order terms.')
     else:
-        return (.5, "Your answer is correct but has unncessary constant factors.")
+        return (.5, 'Your answer is correct but has unncessary constant factors.')
 
 
 def grade_little_o_expression(a_true: str, a_sub: str, variables: List[str]) -> Tuple[float, str]:
     if a_true == a_sub:
-        return (1, "Correct!")
+        return (1, 'Correct!')
 
     sym_true = convert_string_to_sympy(a_true, variables)
     sym_sub = convert_string_to_sympy(a_sub, variables)
@@ -275,18 +276,18 @@ def grade_little_o_expression(a_true: str, a_sub: str, variables: List[str]) -> 
     if L < sympy.sympify(0):
         return (0, 'Your expression is negative.')
     elif L == sympy.oo:
-        return (0, "Your answer is incorrect.")
+        return (0, 'Your answer is incorrect.')
     elif L == sympy.sympify(0):
-        return (.25, "Your answer is correct, but too loose.")
+        return (.25, 'Your answer is correct, but too loose.')
     elif L == sympy.sympify(1):
-        return (.5, "Your answer is correct, but you have unnecessary lower order terms.")
+        return (.5, 'Your answer is correct, but you have unnecessary lower order terms.')
     else:
-        return (.5, "Your answer is correct but has unncessary constant factors.")
+        return (.5, 'Your answer is correct but has unncessary constant factors.')
 
 
 def grade_little_omega_expression(a_true: str, a_sub: str, variables: List[str]) -> Tuple[float, str]:
     if a_true == a_sub:
-        return (1, "Correct!")
+        return (1, 'Correct!')
 
     sym_true = convert_string_to_sympy(a_true, variables)
     sym_sub = convert_string_to_sympy(a_sub, variables)
@@ -302,17 +303,17 @@ def grade_little_omega_expression(a_true: str, a_sub: str, variables: List[str])
     if L < sympy.sympify(0):
         return (0, 'Your expression is negative.')
     elif L == sympy.oo:
-        return (0.25, "Your answer is correct, but too loose.")
+        return (0.25, 'Your answer is correct, but too loose.')
     elif L == sympy.sympify(0):
-        return (0, "Your answer is incorrect.")
-    elif L == sympy.sympify():
-        return (.5, "Your answer is correct, but you have unnecessary lower order terms.")
+        return (0, 'Your answer is incorrect.')
+    elif L == sympy.sympify(1):
+        return (.5, 'Your answer is correct, but you have unnecessary lower order terms.')
     else:
-        return (.5, "Your answer is correct but has unncessary constant factors.")
+        return (.5, 'Your answer is correct but has unncessary constant factors.')
 
 
 def point_to_error(s: str, ind: int, w: int = 5) -> str:
     w_left: str = ' ' * (ind - max(0, ind - w))
     w_right: str = ' ' * (min(ind + w, len(s)) - ind)
     initial: str = s[ind - len(w_left):ind + len(w_right)]
-    return f"{initial}\n{w_left}^{w_right}"
+    return f'{initial}\n{w_left}^{w_right}'
