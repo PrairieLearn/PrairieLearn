@@ -43,7 +43,7 @@ window.PLFileEditor = function (uuid, options) {
   } else if (options.fontSize) {
     this.editor.setFontSize(options.fontSize);
   } else {
-      this.editor.setFontSize(12);
+    this.editor.setFontSize(12);
   }
 
   if (options.minLines) {
@@ -150,7 +150,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
         );
       }
 
-      var fontSizeList = ["12px", "14px", "16px", "18px", "20px", "22px", "24px"];
+      var fontSizeList = ['12px', '14px', '16px', '18px', '20px', '22px', '24px'];
       var fontSelect = that.modal.find('#modal-' + uuid + '-fontsize');
       fontSelect.empty();
       for (const entries in fontSizeList) {
@@ -178,7 +178,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
 
   this.saveSettingsButton.click(function () {
     var theme = that.modal.find('#modal-' + uuid + '-themes').val();
-    var fontsize = that.editor.getFontSize();
+    var fontsize = that.modal.find('#modal-' + uuid + '-fontsize').val();
     that.editor.setTheme(theme);
     that.editor.setFontSize(fontsize);
     localStorage.setItem('pl-file-editor-theme', theme);
