@@ -45,7 +45,7 @@ BEGIN
 
     -- count the group size and compare with the max size
     SELECT
-        COUNT(gu), AVG(gc.maximum)
+        COUNT(DISTINCT gu.user_id), AVG(gc.maximum)
     INTO
         arg_cur_size, arg_max_size
     FROM
