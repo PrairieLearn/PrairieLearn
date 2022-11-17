@@ -192,7 +192,7 @@ public class JUnitAutograder implements TestExecutionListener {
 
         JSONObject results = new JSONObject();
         results.put("score", maxPoints > 0 ? Math.min(this.points / maxPoints, 1) : 0);
-        results.put("points", Math.max(this.points, maxPoints));
+        results.put("points", Math.min(this.points, maxPoints));
         results.put("max_points", maxPoints);
         results.put("output", this.output);
         results.put("message", this.message);
