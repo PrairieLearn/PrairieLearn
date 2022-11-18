@@ -8,7 +8,6 @@ var csrf = require('../../../lib/csrf');
 var sqldb = require('../../../prairielib/lib/sql-db');
 
 router.post('/', function (req, res, next) {
-  if (!config.hasAzure) return next(new Error('Microsoft login is not enabled'));
   const authData = {
     response: res,
     failureRedirect: '/pl',
