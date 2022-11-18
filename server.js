@@ -550,8 +550,10 @@ module.exports.initExpress = function () {
       next();
     },
     require('./middlewares/authzWorkspace'),
-    require('./pages/workspace/workspace'),
   ]);
+  app.use('/pl/workspace/:workspace_id', require('./pages/workspace/workspace'));
+  app.use('/pl/workspace/:workspace_id/logs', require('./pages/workspaceLogs/workspaceLogs'));
+
   // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
   if (config.devMode) {
     app.use('/pl/loadFromDisk', [
