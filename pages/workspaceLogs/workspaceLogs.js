@@ -121,6 +121,7 @@ router.get(
   asyncHandler(async (_req, res, _next) => {
     const workspaceLogs = await sqldb.queryAsync(sql.select_workspace_logs, {
       workspace_id: res.locals.workspace_id,
+      workspace_version: null,
       display_timezone:
         res.locals.course_instance.display_timezone ?? res.locals.course.display_timezone,
     });
@@ -133,9 +134,9 @@ router.get(
 router.get(
   '/version/:version',
   asyncHandler(async (req, res, _next) => {
-    const workspaceLogs = await sqldb.queryAsync(sql.select_workspace_version_logs, {
+    const workspaceLogs = await sqldb.queryAsync(sql.select_workspace_logs, {
       workspace_id: res.locals.workspace_id,
-      version: req.params.version,
+      workspace_version: req.params.version,
       display_timezone:
         res.locals.course_instance.display_timezone ?? res.locals.course.display_timezone,
     });
