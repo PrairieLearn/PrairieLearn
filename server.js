@@ -427,8 +427,10 @@ module.exports.initExpress = function () {
   app.use(/\/pl\/shibcallback/, require('./pages/authCallbackShib/authCallbackShib'));
 
   if (isEnterprise()) {
-    app.use('/pl/azure_login', require('./ee/auth/azure/login'));
-    app.use('/pl/azure_callback', require('./ee/auth/azure/callback'));
+    if (config.hasAzure) {
+      app.use('/pl/azure_login', require('./ee/auth/azure/login'));
+      app.use('/pl/azure_callback', require('./ee/auth/azure/callback'));
+    }
 
     app.use('/pl/auth/institution/:institution_id/saml', require('./ee/auth/saml/router'));
   }
@@ -1837,41 +1839,10 @@ if (config.startServer) {
         }
       },
       async () => {
-        if (!config.hasAzure) return;
-
-        let OIDCStrategy = require('passport-azure-ad').OIDCStrategy;
-        const azureConfig = {
-          identityMetadata: config.azureIdentityMetadata,
-          clientID: config.azureClientID,
-          responseType: config.azureResponseType,
-          responseMode: config.azureResponseMode,
-          redirectUrl: config.azureRedirectUrl,
-          allowHttpForRedirectUrl: config.azureAllowHttpForRedirectUrl,
-          clientSecret: config.azureClientSecret,
-          validateIssuer: config.azureValidateIssuer,
-          isB2C: config.azureIsB2C,
-          issuer: config.azureIssuer,
-          passReqToCallback: config.azurePassReqToCallback,
-          scope: config.azureScope,
-          loggingLevel: config.azureLoggingLevel,
-          nonceLifetime: config.azureNonceLifetime,
-          nonceMaxAmount: config.azureNonceMaxAmount,
-          useCookieInsteadOfSession: config.azureUseCookieInsteadOfSession,
-          cookieEncryptionKeys: config.azureCookieEncryptionKeys,
-          clockSkew: config.azureClockSkew,
-        };
-        passport.use(
-          new OIDCStrategy(azureConfig, function (
-            iss,
-            sub,
-            profile,
-            accessToken,
-            refreshToken,
-            done
-          ) {
-            return done(null, profile);
-          })
-        );
+        if (isEnterprise() && config.hasAzure) {
+          const { getAzureStrategy } = require('./ee/auth/azure/index');
+          passport.use(getAzureStrategy());
+        }
       },
       async () => {
         if (isEnterprise()) {
