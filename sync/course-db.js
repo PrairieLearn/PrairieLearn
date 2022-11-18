@@ -8,6 +8,7 @@ const Ajv = require('ajv').default;
 const betterAjvErrors = require('better-ajv-errors').default;
 const { parseISO, isValid, isAfter, isFuture } = require('date-fns');
 const { default: chalkDefault } = require('chalk');
+const config = require('../lib/config');
 const sqldb = require('../prairielib/lib/sql-db');
 
 const schemas = require('../schemas');
@@ -1103,13 +1104,20 @@ async function validateAssessment(assessment, questions, courseId) {
   /** @type {(qid: string) => Promise<void>} */
   const checkAndRecordQid = async (qid) => {
     if (qid[0] == '@') {
+      if (!config.questionSharingEnabled) {
+        errors.push(`You have attempted to import a question with '@', but question sharing is not enabled on this server.`); 
+        return;
+      }
       const firstSlash = qid.indexOf('/');
       const sourceCourse = qid.substring(1, firstSlash);
       const questionDirectory = qid.substring(firstSlash + 1, qid.length);
       const inImportedCourse = await checkImportedQid(sourceCourse, questionDirectory);
 
       // TODO: give a more verbose error message if the reason the question isn't found
-      // is because the course slug is invalid/doesn't exist? or just give the same message?
+      // is because the course slug is invalid/doesn't exist? or just give the same message as if the question id doesn't exist?
+
+      // TODO: Don't give an error or warning if we are in local dev, otherwise imported questions
+      // would always error syncs in dev environments
       if (!inImportedCourse) {
         missingQids.add(qid);
       }
