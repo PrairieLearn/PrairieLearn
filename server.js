@@ -1792,6 +1792,8 @@ if (config.startServer) {
         await awsHelper.init();
         await awsHelper.loadConfigSecrets();
 
+        console.log("Question sharing enabled: ", config.questionSharingEnabled);
+
         // This should be done as soon as we load our config so that we can
         // start exporting spans.
         await opentelemetry.init({

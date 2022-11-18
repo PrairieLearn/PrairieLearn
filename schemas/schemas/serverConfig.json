@@ -175,6 +175,10 @@
         "ensureExecutorImageAtStartup": {
             "description": "If enabled, the server won't start serving traffic until the executor image is present",
             "type": "boolean"
+        }, 
+        "questionSharingEnabled": {
+            "description": "Allow question from one course to be imported into assessments in another course on this server",
+            "type": "boolean"
         }
     }
 }
