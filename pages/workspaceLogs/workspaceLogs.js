@@ -39,6 +39,10 @@ function areContainerLogsEnabled() {
 /**
  * Loads all the logs for a given workspace version.
  *
+ * The logs for the current running version, if any, are fetched from the
+ * workspace host directly. We also load all the logs for the given version
+ * from S3. Together, this gives us all the logs for the given version.
+ *
  * @returns {Promise<string | null>}
  */
 async function loadLogsForWorkspaceVersion(workspaceId, version) {
@@ -49,9 +53,37 @@ async function loadLogsForWorkspaceVersion(workspaceId, version) {
   });
   const workspace = workspaceRes.rows[0];
 
+  const logParts = [];
+
+  // Load the logs from S3. When workspaces are rebooted, we write the logs to
+  // an object before shutting down the container. This means that we may have
+  // multiple objects for each container. Load all of them. The objects are keyed
+  // such that they are sorted by date, so we can just load them in order.
+  const s3Client = new AWS.S3({ maxRetries: 3 });
+  const logItems = await s3Client
+    .listObjectsV2({
+      Bucket: config.workspaceLogsS3Bucket,
+      Prefix: `${workspaceId}/${version}/`,
+      MaxKeys: 1000,
+    })
+    .promise();
+
+  if (logItems.Contents.length > 0) {
+    // Load all parts serially to avoid hitting S3 rate limits.
+    for (const item of logItems.Contents) {
+      const res = await s3Client
+        .getObject({
+          Bucket: config.workspaceLogsS3Bucket,
+          Key: item.Key,
+        })
+        .promise();
+      logParts.push(res.Body.toString('utf-8'));
+    }
+  }
+
   // If the current workspace version matches the requested version, we can
-  // reach out to the workspace host directly to get the logs. Otherwise, they
-  // should have been flushed to S3 already.
+  // reach out to the workspace host directly to get the remaining logs. Otherwise,
+  // they should have been flushed to S3 already.
   //
   // To avoid a race condition where a workspace shuts down by the time we reach
   // out to the host, we'll fall back to attempting to load the logs from S3 if
@@ -63,39 +95,8 @@ async function loadLogsForWorkspaceVersion(workspaceId, version) {
       headers: { 'Content-Type': 'application/json' },
     });
     if (res.ok) {
-      return res.text();
+      logParts.push(await res.text());
     }
-  }
-
-  // Load the logs from S3.
-  //
-  // We used to store a separate object per minute. For backwards compatibility,
-  // we'll still read every object in the bucket (up to 1000) and concatenate them.
-  // However, going forward, we only expect to store a single object per version.
-
-  const s3Client = new AWS.S3({ maxRetries: 3 });
-  const logItems = await s3Client
-    .listObjectsV2({
-      Bucket: config.workspaceLogsS3Bucket,
-      Prefix: `${workspaceId}/${version}/`,
-      MaxKeys: 1000,
-    })
-    .promise();
-
-  if (logItems.Contents.length === 0) {
-    return null;
-  }
-
-  // Load all parts serially to avoid hitting S3 rate limits.
-  const logParts = [];
-  for (const item of logItems.Contents) {
-    const res = await s3Client
-      .getObject({
-        Bucket: config.workspaceLogsS3Bucket,
-        Key: item.Key,
-      })
-      .promise();
-    logParts.push(res.Body.toString('utf-8'));
   }
 
   return logParts.join('');
