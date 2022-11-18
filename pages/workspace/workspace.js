@@ -46,7 +46,7 @@ router.post(
       await sqldb.queryAsync(sql.increment_workspace_version, { workspace_id });
       res.redirect(`/pl/workspace/${workspace_id}`);
     } else {
-      return next(error.make(400, 'unknown __action'));
+      return next(error.make(400, `unknown __action: ${req.body.__action}`));
     }
   })
 );
