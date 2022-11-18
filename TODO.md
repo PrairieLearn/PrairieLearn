@@ -37,5 +37,5 @@ To discuss with Matt/Nathan:
 
 
 Deployment considerations
-- [] Special case to silently fail question imports when running in local dev
-- [] Special case to only enable the feature on the main (Illinois) server!!!
+- [] Special case to silently fail question imports when running in local dev. Use some sort of config flag?
+- [] Special case to only enable the feature on the main (Illinois) server!!! Use a config flag!
