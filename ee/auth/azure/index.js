@@ -18,6 +18,7 @@ module.exports.getAzureStrategy = function () {
       // We're using the common metadata endpoint, so we need to disable issuer validation.
       validateIssuer: false,
       passReqToCallback: false,
+      // We don't want to use Express sessions, so we disable session support.
       useCookieInsteadOfSession: true,
     },
     function (iss, sub, profile, accessToken, refreshToken, done) {
