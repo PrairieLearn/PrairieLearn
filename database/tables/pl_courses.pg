@@ -8,6 +8,7 @@ columns
     id: bigint not null default nextval('pl_courses_id_seq'::regclass)
     institution_id: bigint not null default 1
     manual_grading_visible: boolean default false
+    question_sharing_enabled: boolean default false
     options: jsonb not null default '{}'::jsonb
     path: text
     repository: text
