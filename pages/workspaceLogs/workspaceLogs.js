@@ -10,7 +10,7 @@ const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const { WorkspaceLogs, WorkspaceVersionLogs } = require('./workspaceLogs.html');
-const fetch = require('node-fetch');
+const fetch = require('node-fetch').default;
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 

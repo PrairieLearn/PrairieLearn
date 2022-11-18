@@ -33,21 +33,11 @@ const LocalLock = require('../lib/local-lock');
 const config = require('../lib/config');
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
-const { ContainerS3LogForwarder } = require('./s3-log-forwarder');
 const { parseDockerLogs } = require('./lib/docker');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 let lastAutoUpdateTime = Date.now();
 let lastPushAllTime = Date.now();
-
-/**
- * Maps a container name (`${workspace_id}-${launch_uuid}`) to a log forwarder
- * for the corresponding workspace container. Ideally, this wouldn't be in the
- * global state, but the code isn't architected for that yet.
- *
- * @type {Map<string, import('./s3-log-forwarder').ContainerS3LogForwarder>}
- */
-const s3LogForwarders = new Map();
 
 let configFilename = 'config.json';
 if ('config' in argv) {
@@ -135,6 +125,8 @@ app.post(
       await sendGradedFilesArchive(workspace_id, res);
     } else if (action === 'getLogs') {
       await sendLogs(workspace_id, res);
+    } else if (action === 'stop') {
+      // TODO: do the thing?
     } else {
       res.status(500).send(`Action '${action}' undefined`);
     }
@@ -492,7 +484,8 @@ async function pruneRunawayContainers() {
     // Remove the preceding forward slash
     const name = container_info.Names[0].substring(1);
     if (!name.startsWith('workspace-') || db_workspaces_uuid_set.has(name)) return;
-    await dockerAttemptKillAndRemove(container_info.Id);
+    const container = docker.getContainer(container_info.Id);
+    await dockerAttemptKillAndRemove(container);
   });
 }
 
@@ -516,30 +509,34 @@ async function _getDockerContainerByLaunchUuid(launch_uuid) {
 }
 
 /**
- * Attempts to kill and remove a container.  Will fail silently if the container is already stopped
- * or does not exist.  Also removes the container's home directory.
- * @param {string | import('dockerode').Container} input Either the ID of the docker container, or an actual Dockerode container object.
+ * Attempts to kill and remove a container.  Will fail silently if the container
+ * is already stopped or does not exist.  Also removes the container's home directory.
+ *
+ * @param {import('dockerode').Container} input
  */
-async function dockerAttemptKillAndRemove(input) {
-  // Use these awful try-catch blocks because we actually do want to try each
-  let container;
-  if (typeof input === 'string') {
-    try {
-      container = await docker.getContainer(input);
-    } catch (_err) {
-      // Docker failed to get the container, oh well.
-      return;
-    }
-  } else {
-    container = input;
+async function dockerAttemptKillAndRemove(container) {
+  let containerInfo = null;
+  try {
+    containerInfo = await container.inspect();
+  } catch (err) {
+    // This container doesn't exist on this machine.
+    logger.error('Could not inspect container', err);
+    Sentry.captureException(err);
+    return;
   }
 
-  let name = null;
-  try {
-    name = (await container.inspect()).Name.substring(1);
-  } catch (err) {
-    logger.error('Error obtaining container name', err);
-  }
+  // Strip off the leading forward slash
+  const name = containerInfo.Name.substring(1);
+  const workspaceId = containerInfo.Config.Labels['prairielearn.workspace-id'];
+  // We use the version recorded in the container labels instead of in the
+  // workspace row from the database. We might be flushing these logs sometime
+  // after the workspace has been relaunched in a new version, and we want to
+  // associate the logs with the correct (older) version.
+  const version = containerInfo.Config.Labels['prairielearn.workspace-version'];
+  // For any container versions A and B, if A < B, then the `StartedAt` date for A
+  // should be before the `StartedAt` date for B. This means that we can use the
+  // date for ordering of logs from different versions.
+  const startedAt = containerInfo.State.StartedAt;
 
   try {
     await container.kill();
@@ -547,16 +544,12 @@ async function dockerAttemptKillAndRemove(input) {
     logger.error('Error killing container', err);
   }
 
-  // If there's an associated log forwarder for this container, shut it down
-  // so that it can flush any remaining logs to S3. We must do this before the
+  // Flush all logs from this container to S3. We must do this before the
   // container is removed, otherwise any remaining logs will be lost.
   try {
-    if (name) {
-      await s3LogForwarders.get(name)?.shutdown();
-      s3LogForwarders.delete(name);
-    }
+    await flushLogsToS3(workspaceId, version, startedAt);
   } catch (err) {
-    logger.error('Error shutting down log forwarder', err);
+    logger.error('Error flushing container logs to S3', err);
   }
 
   try {
@@ -1222,6 +1215,10 @@ function _createContainer(workspace, callback) {
               IpcMode: 'private',
               NetworkMode: networkMode,
             },
+            Labels: {
+              'prairielearn.workspace-id': String(workspace.id),
+              'prairielearn.workspace-version': String(workspace.version),
+            },
             Cmd: args, // FIXME: proper arg parsing
             name: localName,
             Volumes: {
@@ -1242,21 +1239,6 @@ function _createContainer(workspace, callback) {
             );
           }
         );
-      },
-      async () => {
-        if (config.workspaceLogsS3Bucket) {
-          const logForwarder = new ContainerS3LogForwarder(container, {
-            bucket: config.workspaceLogsS3Bucket,
-            prefix: `${workspace.id}/${workspace.version}`,
-            interval: config.workspaceLogsFlushIntervalSec * 1000,
-            tags: {
-              WorkspaceId: workspace.id,
-              CourseId: workspace.course_id,
-              InstitutionId: workspace.institution_id,
-            },
-          });
-          s3LogForwarders.set(localName, logForwarder);
-        }
       },
     ],
     (err) => {
@@ -1446,26 +1428,46 @@ async function sendGradedFilesArchive(workspace_id, res) {
 }
 
 /**
- * @returns {Promise<Buffer>}
- */
-async function getContainerLogs(workspace_id) {
-  const workspace = await _getWorkspaceAsync(workspace_id);
-  const container = await _getDockerContainerByLaunchUuid(workspace.launch_uuid);
-  const logs = await container.logs({ stdout: true, stderr: true, timestamps: true });
-  return parseDockerLogs(logs);
-}
-
-/**
- * @param {string | number} workspace_id
+ * @param {string | number} workspaceId
  * @param {import('express').Response} res
  */
-async function sendLogs(workspace_id, res) {
+async function sendLogs(workspaceId, res) {
   try {
-    const containerLogs = await getContainerLogs(workspace_id);
-    res.status(200).send(containerLogs);
+    const workspace = await _getWorkspaceAsync(workspaceId);
+    const container = await _getDockerContainerByLaunchUuid(workspace.launch_uuid);
+    const logs = await container.logs({ stdout: true, stderr: true, timestamps: true });
+    const parsedLogs = parseDockerLogs(logs);
+    res.status(200).send(parsedLogs);
   } catch (err) {
     logger.error('Error getting container logs', err);
     Sentry.captureException(err);
     res.status(500).send();
   }
+}
+
+async function flushLogsToS3(workspaceId, version, timestamp) {
+  if (!config.workspaceLogsS3Bucket) return;
+
+  const workspace = await _getWorkspaceAsync(workspaceId);
+  const container = await _getDockerContainerByLaunchUuid(workspace.launch_uuid);
+
+  const logs = await container.logs({ stdout: true, stderr: true, timestamps: true });
+  const parsedLogs = parseDockerLogs(logs);
+
+  const key = `${workspaceId}/${version}/${timestamp}.log`;
+  const tags = {
+    WorkspaceId: workspace.id,
+    CourseId: workspace.course_id,
+    InstitutionId: workspace.institution_id,
+  };
+
+  const s3 = new AWS.S3({ maxRetries: 3 });
+  await s3
+    .putObject({
+      Bucket: config.workspaceLogsS3Bucket,
+      Key: key,
+      Body: parsedLogs,
+      Tagging: new URLSearchParams(tags).toString(),
+    })
+    .promise();
 }
