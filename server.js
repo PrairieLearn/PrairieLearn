@@ -24,7 +24,6 @@ const multer = require('multer');
 const filesize = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const util = require('util');
 const Sentry = require('@prairielearn/sentry');
 
 const logger = require('./lib/logger');
@@ -443,6 +442,9 @@ module.exports.initExpress = function () {
   if (isEnterprise()) {
     app.use('/pl/prairietest/auth', require('./ee/auth/prairietest'));
   }
+
+  // Must come before CSRF middleware; we do our own signature verification here.
+  app.use('/pl/webhooks/terminate', require('./webhooks/terminate'));
 
   app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
   app.use(require('./middlewares/logRequest'));
@@ -2058,32 +2060,37 @@ if (config.startServer) {
           process.exit(0);
         }
 
-        const prepareForTermination = async () => {
-          logger.info('Preparing for termination...');
-          // We want to proceed with termination even if something goes wrong,
-          // so don't allow this function to throw.
-          try {
-            // By this point, we should have already been detached from the
-            // load balancer, so the following should be no-ops. However, we
-            // still do to ensure that we don't get any more traffic as we're
-            // shutting everything down.
-            await util.promisify(server.close).call(server);
-            await socketServer.close();
+        // SIGTERM can be used to gracefully shut down the process. This signal
+        // may come from another process, but we also send it to ourselves if
+        // we want to gracefully shut down. This is used below in the ASG
+        // lifecycle handler, and also within the "terminate" webhook.
+        process.once('SIGTERM', async () => {
+          // By this point, we should no longer be attached to the load balancer,
+          // so there's no point shutting down the HTTP server or the socket.io
+          // server.
+          //
+          // We use `allSettled()` here to ensure that all tasks can gracefully
+          // shut down, even if some of them fail.
+          logger.info('Shutting down async processing');
+          const results = await Promise.allSettled([
+            externalGraderResults.stop(),
+            cron.stop(),
+            serverJobs.stop(),
+          ]);
+          results.forEach((r) => {
+            if (r.status === 'rejected') {
+              logger.error('Error shutting down async processing', r.reason);
+              Sentry.captureException(r.reason);
+            }
+          });
 
-            // We use `allSettled()` here to ensure that all tasks can gracefully
-            // shut down, even if some of them fail.
-            await Promise.allSettled([
-              externalGraderResults.stop(),
-              cron.stop(),
-              serverJobs.stop(),
-            ]);
+          try {
+            await lifecycleHooks.completeInstanceTermination();
           } catch (err) {
-            logger.error('Error while shutting down server', err);
+            logger.error('Error completing instance termination', err);
             Sentry.captureException(err);
           }
-        };
 
-        const terminate = async () => {
           logger.info('Terminating...');
           // Shut down OpenTelemetry exporting.
           try {
@@ -2099,23 +2106,7 @@ if (config.startServer) {
           } finally {
             process.exit(0);
           }
-        };
-
-        // If we're running in EC2 auto scaling, this will wait for our instance
-        // to enter the `Terminating:Wait` state.
-        //
-        // If we're not running in EC2, this will be a no-op.
-        lifecycleHooks
-          .handleAndCompleteInstanceTermination(prepareForTermination)
-          .catch((err) => {
-            logger.error('Error handling instance termination', err);
-            Sentry.captureException(err);
-          })
-          .finally(terminate);
-
-        // Also listen for and handle SIGTERM, which can be sent to gracefully
-        // shutdown a process.
-        process.on('SIGTERM', () => prepareForTermination().finally(terminate));
+        });
       }
     }
   );

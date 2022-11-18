@@ -38,8 +38,12 @@ window.PLFileEditor = function (uuid, options) {
     this.editor.setTheme('ace/theme/chrome');
   }
 
-  if (options.fontSize) {
+  if (localStorage.getItem('pl-file-editor-fontsize')) {
+    this.editor.setFontSize(localStorage.getItem('pl-file-editor-fontsize'));
+  } else if (options.fontSize) {
     this.editor.setFontSize(options.fontSize);
+  } else {
+    this.editor.setFontSize(12);
   }
 
   if (options.minLines) {
@@ -95,10 +99,14 @@ window.PLFileEditor.prototype.syncSettings = function () {
     if (event.key === 'pl-file-editor-theme') {
       this.editor.setTheme(event.newValue);
     }
+    if (event.key === 'pl-file-editor-fontsize') {
+      this.editor.setFontSize(event.newValue);
+    }
   });
 
   window.addEventListener('pl-file-editor-settings-changed', () => {
     this.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
+    this.editor.setFontSize(localStorage.getItem('pl-file-editor-fontsize'));
   });
 };
 
@@ -141,27 +149,51 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
           })
         );
       }
+
+      var fontSizeList = ['12px', '14px', '16px', '18px', '20px', '22px', '24px'];
+      var fontSelect = that.modal.find('#modal-' + uuid + '-fontsize');
+      fontSelect.empty();
+      for (const entries in fontSizeList) {
+        fontSelect.append(
+          $('<option>', {
+            value: fontSizeList[entries],
+            text: fontSizeList[entries],
+            selected: localStorage.getItem('pl-file-editor-fontsize') === fontSizeList[entries],
+          })
+        );
+      }
     });
     that.modal.modal('show');
     sessionStorage.setItem('pl-file-editor-theme-current', that.editor.getTheme());
+    sessionStorage.setItem('pl-file-editor-fontsize-current', that.editor.getFontSize());
     that.modal.find('#modal-' + uuid + '-themes').change(function () {
       var theme = $(this).val();
       that.editor.setTheme(theme);
+    });
+    that.modal.find('#modal-' + uuid + '-fontsize').change(function () {
+      var fontSize = $(this).val();
+      that.editor.setFontSize(fontSize);
     });
   });
 
   this.saveSettingsButton.click(function () {
     var theme = that.modal.find('#modal-' + uuid + '-themes').val();
+    var fontsize = that.modal.find('#modal-' + uuid + '-fontsize').val();
     that.editor.setTheme(theme);
+    that.editor.setFontSize(fontsize);
     localStorage.setItem('pl-file-editor-theme', theme);
+    localStorage.setItem('pl-file-editor-fontsize', fontsize);
     sessionStorage.removeItem('pl-file-editor-theme-current');
+    sessionStorage.removeItem('pl-file-editor-fontsize-current');
     window.dispatchEvent(new Event('pl-file-editor-settings-changed'));
     that.modal.modal('hide');
   });
 
   this.closeSettingsButton.click(function () {
     that.editor.setTheme(sessionStorage.getItem('pl-file-editor-theme-current'));
+    that.editor.setFontSize(sessionStorage.getItem('pl-file-editor-fontsize-current'));
     sessionStorage.removeItem('pl-file-editor-theme-current');
+    sessionStorage.removeItem('pl-file-editor-fontsize-current');
   });
 };
 
