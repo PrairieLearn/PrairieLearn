@@ -125,8 +125,6 @@ app.post(
       await sendGradedFilesArchive(workspace_id, res);
     } else if (action === 'getLogs') {
       await sendLogs(workspace_id, res);
-    } else if (action === 'stop') {
-      // TODO: do the thing?
     } else {
       res.status(500).send(`Action '${action}' undefined`);
     }
@@ -494,7 +492,7 @@ async function pruneRunawayContainers() {
  * Throws an exception if the container was not found or if there
  * are multiple containers with the same UUID (this shouldn't happen?)
  * @param {string} launch_uuid UUID to search by
- * @return {import('dockerode').Container}
+ * @return {Promise<import('dockerode').Container>}
  */
 async function _getDockerContainerByLaunchUuid(launch_uuid) {
   try {
@@ -527,16 +525,6 @@ async function dockerAttemptKillAndRemove(container) {
 
   // Strip off the leading forward slash
   const name = containerInfo.Name.substring(1);
-  const workspaceId = containerInfo.Config.Labels['prairielearn.workspace-id'];
-  // We use the version recorded in the container labels instead of in the
-  // workspace row from the database. We might be flushing these logs sometime
-  // after the workspace has been relaunched in a new version, and we want to
-  // associate the logs with the correct (older) version.
-  const version = containerInfo.Config.Labels['prairielearn.workspace-version'];
-  // For any container versions A and B, if A < B, then the `StartedAt` date for A
-  // should be before the `StartedAt` date for B. This means that we can use the
-  // date for ordering of logs from different versions.
-  const startedAt = containerInfo.State.StartedAt;
 
   try {
     await container.kill();
@@ -547,14 +535,16 @@ async function dockerAttemptKillAndRemove(container) {
   // Flush all logs from this container to S3. We must do this before the
   // container is removed, otherwise any remaining logs will be lost.
   try {
-    await flushLogsToS3(workspaceId, version, startedAt);
+    await flushLogsToS3(container);
   } catch (err) {
+    Sentry.captureException(err);
     logger.error('Error flushing container logs to S3', err);
   }
 
   try {
     await container.remove();
   } catch (err) {
+    Sentry.captureException(err);
     logger.error('Error removing stopped container', err);
   }
 
@@ -1218,6 +1208,8 @@ function _createContainer(workspace, callback) {
             Labels: {
               'prairielearn.workspace-id': String(workspace.id),
               'prairielearn.workspace-version': String(workspace.version),
+              'prairielearn.course-id': String(workspace.course_id),
+              'prairielearn.institution-id': String(workspace.institution_id),
             },
             Cmd: args, // FIXME: proper arg parsing
             name: localName,
@@ -1445,20 +1437,38 @@ async function sendLogs(workspaceId, res) {
   }
 }
 
-async function flushLogsToS3(workspaceId, version, timestamp) {
+/**
+ * @param {import('dockerode').Container} container
+ */
+async function flushLogsToS3(container) {
   if (!config.workspaceLogsS3Bucket) return;
 
-  const workspace = await _getWorkspaceAsync(workspaceId);
-  const container = await _getDockerContainerByLaunchUuid(workspace.launch_uuid);
+  // Read all data from the container's labels instead of trying to look it up
+  // in the database, as some things (namely the version) may have changed.
+  const containerInfo = await container.inspect();
+
+  const workspaceId = containerInfo.Config.Labels['prairielearn.workspace-id'];
+  const courseId = containerInfo.Config.Labels['prairielearn.course-id'];
+  const institutionId = containerInfo.Config.Labels['prairielearn.institution-id'];
+  // We use the version recorded in the container labels instead of in the
+  // workspace row from the database. We might be flushing these logs sometime
+  // after the workspace has been relaunched in a new version, and we want to
+  // associate the logs with the correct (older) version.
+  const version = containerInfo.Config.Labels['prairielearn.workspace-version'];
+
+  // For any container versions A and B, if A < B, then the `StartedAt` date for A
+  // should be before the `StartedAt` date for B. This means that we can use the
+  // date for ordering of logs from different versions.
+  const startedAt = containerInfo.State.StartedAt;
 
   const logs = await container.logs({ stdout: true, stderr: true, timestamps: true });
   const parsedLogs = parseDockerLogs(logs);
 
-  const key = `${workspaceId}/${version}/${timestamp}.log`;
+  const key = `${workspaceId}/${version}/${startedAt}.log`;
   const tags = {
-    WorkspaceId: workspace.id,
-    CourseId: workspace.course_id,
-    InstitutionId: workspace.institution_id,
+    WorkspaceId: workspaceId,
+    CourseId: courseId,
+    InstitutionId: institutionId,
   };
 
   const s3 = new AWS.S3({ maxRetries: 3 });
