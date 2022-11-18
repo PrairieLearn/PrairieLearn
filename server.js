@@ -425,10 +425,11 @@ module.exports.initExpress = function () {
   app.use('/pl/oauth2login', require('./pages/authLoginOAuth2/authLoginOAuth2'));
   app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOAuth2'));
   app.use(/\/pl\/shibcallback/, require('./pages/authCallbackShib/authCallbackShib'));
-  app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
-  app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
 
   if (isEnterprise()) {
+    app.use('/pl/azure_login', require('./ee/auth/azure/login'));
+    app.use('/pl/azure_callback', require('./ee/auth/azure/callback'));
+
     app.use('/pl/auth/institution/:institution_id/saml', require('./ee/auth/saml/router'));
   }
 

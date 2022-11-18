@@ -2,7 +2,7 @@ const passport = require('passport');
 const express = require('express');
 const router = express.Router();
 
-const config = require('../../lib/config');
+const config = require('../../../lib/config');
 
 router.get(
   '/',

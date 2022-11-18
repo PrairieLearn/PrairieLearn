@@ -3,9 +3,9 @@ var passport = require('passport');
 var express = require('express');
 var router = express.Router();
 
-var config = require('../../lib/config');
-var csrf = require('../../lib/csrf');
-var sqldb = require('../../prairielib/lib/sql-db');
+var config = require('../../../lib/config');
+var csrf = require('../../../lib/csrf');
+var sqldb = require('../../../prairielib/lib/sql-db');
 
 // FIXME: do we need "all" below for both "get" and "post", or just one of them?
 router.all('/', function (req, res, next) {
