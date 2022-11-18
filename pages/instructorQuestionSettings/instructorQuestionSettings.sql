@@ -58,9 +58,13 @@ RETURNING
 
 -- BLOCK select_sharing_sets
 SELECT
-    ss.name
+    ss.id,
+    ss.name, 
+    CASE WHEN count(qss.question_id = $question_id) > 0 THEN 'true' ELSE 'false' END AS in_set 
 FROM
-    question_sharing_sets AS qss
-    JOIN sharing_sets AS ss ON qss.sharing_set_id = ss.id
+    sharing_sets AS ss
+    LEFT JOIN question_sharing_sets AS qss ON qss.sharing_set_id = ss.id
 WHERE
-    qss.question_id = $question_id;
+    ss.course_id = $course_id
+GROUP BY 
+    ss.id, ss.name;

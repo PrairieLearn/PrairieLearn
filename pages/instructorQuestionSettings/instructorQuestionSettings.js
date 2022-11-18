@@ -284,13 +284,18 @@ router.get('/', function (req, res, next) {
       (callback) => {
         sqldb.query(
           sql.select_sharing_sets,
-          { question_id: res.locals.question.id },
+          { question_id: res.locals.question.id, course_id: res.locals.course.id },
           (err, result) => {
             if (ERR(err, callback)) return;
-            res.locals.sharing_sets = result.rows;
+            res.locals.sharing_sets_in = result.rows.filter(row => row.in_set === 'true');
+            res.locals.sharing_sets_other = result.rows.filter(row => row.in_set === 'false');
+            console.log('r', result.rows);
+            console.log('in', res.locals.sharing_sets_in);
+            console.log('other', res.locals.sharing_sets_other);
             callback(null);
           }
-        );      }
+        );      
+      }
     ],
     (err) => {
       if (ERR(err, next)) return;
