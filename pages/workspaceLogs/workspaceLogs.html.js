@@ -70,7 +70,6 @@ const WorkspaceLogs = ({ workspaceLogs, resLocals }) => {
 };
 
 const WorkspaceVersionLogs = ({
-  version,
   workspaceLogs,
   containerLogs,
   containerLogsEnabled,

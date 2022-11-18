@@ -153,7 +153,6 @@ router.get(
 
     res.send(
       WorkspaceVersionLogs({
-        version: req.params.version,
         workspaceLogs: workspaceLogs.rows,
         containerLogs,
         containerLogsEnabled,
