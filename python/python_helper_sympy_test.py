@@ -13,7 +13,9 @@ class TestSympy:
         'm + 1',
         'm**2 + n**2 + 4 * n',
         'n * sin(m) + m**2 * cos(n)',
-        'i * n + m'
+        'i * n + m',
+        'i * i * n',
+        'sqrt(100)'
     ]
 
     EXPR_LIST: List[sympy.Expr] = [
@@ -21,7 +23,9 @@ class TestSympy:
         M + 1,
         M * M + N * N + 4 * N,
         N * sympy.sin(M) + M * M * sympy.cos(N),
-        sympy.I * N + M
+        sympy.I * N + M,
+        - N,
+        10
     ]
 
     @pytest.mark.parametrize('a_sub, sympy_ref', zip(EXPR_STRINGS, EXPR_LIST))
