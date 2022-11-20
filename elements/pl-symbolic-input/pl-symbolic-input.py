@@ -370,14 +370,29 @@ def grade(element_html, data):
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
+    variables = get_variables_list(pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT))
+    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
+    imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
+
+    # Get raw correct answer
+    a_tru = data['correct_answers'][name]
+
+    # Parse correct answer based on type
+    if isinstance(a_tru, str):
+        a_tru = phs.convert_string_to_sympy(a_tru, variables, allow_complex=allow_complex)
+    else:
+        a_tru = phs.json_to_sympy(a_tru, allow_complex=allow_complex)
+
+    # Substitute in imaginary unit symbol
+    a_tru_str = str(a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit)))
 
     result = data['test_type']
     if result == 'correct':
-        data['raw_submitted_answers'][name] = str(pl.from_json(data['correct_answers'][name]))
+        data['raw_submitted_answers'][name] = a_tru_str
         data['partial_scores'][name] = {'score': 1, 'weight': weight}
     elif result == 'incorrect':
-        data['raw_submitted_answers'][name] = str(pl.from_json(data['correct_answers'][name])) + ' + {:d}'.format(random.randint(1, 100))
+        data['raw_submitted_answers'][name] = f'{a_tru_str} + {random.randint(1, 100):d}'
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
     elif result == 'invalid':
         invalid_type = random.choice(['float', 'complex', 'expression', 'function', 'variable', 'syntax', 'escape', 'comment'])
