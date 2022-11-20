@@ -15,7 +15,18 @@ class TestSympy:
         'n * sin(m) + m**2 * cos(n)',
         'i * n + m',
         'i * i * n',
-        'sqrt(100)'
+        'sqrt(100)',
+        'cos(m)',
+        'sin(m)',
+        'tan(m)',
+        'arccos(m)',
+        'arcsin(m)',
+        'arctan(m)',
+        'acos(m)',
+        'asin(m)',
+        'atan(m)',
+        'arctan2(m, n)',
+        'atan2(m, n)',
     ]
 
     EXPR_LIST: List[sympy.Expr] = [
@@ -25,7 +36,18 @@ class TestSympy:
         N * sympy.sin(M) + M * M * sympy.cos(N),
         sympy.I * N + M,
         - N,
-        10
+        10,
+        sympy.cos(M),
+        sympy.sin(M),
+        sympy.tan(M),
+        sympy.acos(M),
+        sympy.asin(M),
+        sympy.atan(M),
+        sympy.acos(M),
+        sympy.asin(M),
+        sympy.atan(M),
+        sympy.atan2(M, N),
+        sympy.atan2(M, N),
     ]
 
     @pytest.mark.parametrize('a_sub, sympy_ref', zip(EXPR_STRINGS, EXPR_LIST))
