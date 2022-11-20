@@ -217,7 +217,7 @@ def check_transitions_redundant_for_json(transitions: FSMRawTransitionT) -> None
 
 
 def check_for_unreachable_states(fa: Union[DFA, NFA], dump_state_name: Optional[str]) -> None:
-    unreachable_states = fa.states - fa._compute_reachable_states()
+    unreachable_states = set(fa.states - fa._compute_reachable_states())
 
     if dump_state_name:
         unreachable_states.discard(dump_state_name)
