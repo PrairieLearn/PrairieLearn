@@ -1,5 +1,5 @@
 {
-    "include": ["./elements/pl-hidden-hints", "./elements/pl-order-blocks"],
+    "include": ["./elements/pl-hidden-hints", "./elements/pl-order-blocks", "./elements/pl-symbolic-input"],
     "extraPaths": ["./python"],
     "pythonVersion": "3.8"
 }
