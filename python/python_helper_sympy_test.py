@@ -29,14 +29,14 @@ class TestSympy:
         'atan2(m, n)',
     ]
 
-    EXPR_LIST: List[sympy.Expr] = [
+    EXPR_LIST: List = [
         M * N,
         M + 1,
         M * M + N * N + 4 * N,
         N * sympy.sin(M) + M * M * sympy.cos(N),
         sympy.I * N + M,
         - N,
-        10,
+        sympy.sympify(10),
         sympy.cos(M),
         sympy.sin(M),
         sympy.tan(M),
