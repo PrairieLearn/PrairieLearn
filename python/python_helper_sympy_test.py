@@ -66,14 +66,12 @@ class TestSympy:
     @pytest.mark.parametrize('a_sub', EXPR_STRINGS)
     def test_json_conversion(self, a_sub: str) -> None:
         sympy_expr = phs.convert_string_to_sympy(a_sub, ['n', 'm'], allow_complex=True)
-        json_expr = phs.sympy_to_json(sympy_expr)
-
         # Check that json serialization works
+        json_expr = phs.sympy_to_json(sympy_expr)
         assert type(json.dumps(json_expr)) == str
 
         # Check equivalence after converting back
         json_converted_expr = phs.json_to_sympy(json_expr)
-
         assert sympy_expr == json_converted_expr
 
 
