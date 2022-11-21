@@ -1,3 +1,4 @@
+// @ts-check
 const { callbackify } = require('util');
 
 const logger = require('../lib/logger');
