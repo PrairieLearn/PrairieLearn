@@ -107,20 +107,22 @@ module.exports.run = callbackify(async () => {
     (m) => m.Id === LOAD_BALANCER_REQUESTS_PER_MINUTE
   );
 
-  const maxPageViewsPerSecond = arrayMax(pageViewsPerSecondMetric.Values);
-  const maxActiveWorkersPerSecond = arrayMax(activeWorkersPerSecondMetric.Values);
-  const maxLoadBalancerRequestsPerMinute = arrayMax(loadBalancerRequestsPerMinuteMetric.Values);
+  const maxPageViewsPerSecond = Math.ceil(arrayMax(pageViewsPerSecondMetric.Values));
+  const maxActiveWorkersPerSecond = Math.ceil(arrayMax(activeWorkersPerSecondMetric.Values));
+  const maxLoadBalancerRequestsPerMinute = Math.ceil(
+    arrayMax(loadBalancerRequestsPerMinuteMetric.Values)
+  );
 
-  const desiredInstancesByPageViews = 1234;
-  const desiredInstancesByActiveWorkers = 1234;
-  const desiredInstancesByLoadBalancerRequests = 1234;
-  const desiredInstances = Math.round(
-    Math.max(
-      desiredInstancesByPageViews,
-      desiredInstancesByActiveWorkers,
-      desiredInstancesByLoadBalancerRequests,
-      1
-    )
+  const desiredInstancesByPageViews = maxPageViewsPerSecond / config.chunksPageViewsCapacityFactor;
+  const desiredInstancesByActiveWorkers =
+    maxActiveWorkersPerSecond / config.chunksActiveWorkersCapacityFactor;
+  const desiredInstancesByLoadBalancerRequests =
+    maxLoadBalancerRequestsPerMinute / config.chunksLoadBalancerRequestsCapacityFactor;
+  const desiredInstances = Math.max(
+    desiredInstancesByPageViews,
+    desiredInstancesByActiveWorkers,
+    desiredInstancesByLoadBalancerRequests,
+    1
   );
 
   await cloudwatch
@@ -141,6 +143,7 @@ module.exports.run = callbackify(async () => {
         {
           MetricName: 'DesiredInstances',
           Unit: 'Count',
+          Value: desiredInstances,
         },
       ],
       Namespace: 'Chunks',
