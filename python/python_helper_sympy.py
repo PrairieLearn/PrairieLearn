@@ -1,6 +1,19 @@
 import sympy
 import ast
 from dataclasses import dataclass
+from typing import Any, cast, Dict, List, Tuple, TypedDict, Literal
+
+SympyMapT = Dict[str, Any]
+ASTWhitelistT = Tuple[Any, ...]
+
+class SympyJson(TypedDict):
+    "A class with type signatures for the sympy json dict"
+    _type: Literal['sympy']
+    _value: str
+    _variables: List[str]
+
+    #{'_type': 'sympy', '_value': str(a), '_variables': variables}
+
 
 # Create a new instance of this class to access the member dictionaries. This
 # is to avoid accidentally modifying these dictionaries.
@@ -96,7 +109,7 @@ class HasFloatError(Exception):
 @dataclass
 class HasComplexError(Exception):
     offset:int
-    n: float
+    n: str
 
 @dataclass
 class HasInvalidExpressionError(Exception):
@@ -130,29 +143,30 @@ class HasCommentError(Exception):
     offset: int
 
 class CheckNumbers(ast.NodeTransformer):
-    def visit_Num(self, node):
+    def visit_Num(self, node: ast.Constant) -> ast.Constant:
         if isinstance(node.n, int):
-            return ast.Call(func=ast.Name(id='_Integer', ctx=ast.Load()), args=[node], keywords=[])
+            return cast(ast.Constant, ast.Call(func=ast.Name(id='_Integer', ctx=ast.Load()), args=[node], keywords=[]))
         elif isinstance(node.n, float):
             raise HasFloatError(node.col_offset, node.n)
         elif isinstance(node.n, complex):
-            raise HasComplexError(node.col_offset, node.n)
+            raise HasComplexError(node.col_offset, str(node.n))
         return node
 
 class CheckWhiteList(ast.NodeVisitor):
-    def __init__(self, whitelist):
+    def __init__(self, whitelist: ASTWhitelistT) -> None:
         self.whitelist = whitelist
 
-    def visit(self, node):
+    def visit(self, node: Any) -> Any:
         if not isinstance(node, self.whitelist):
             node = get_parent_with_location(node)
             raise HasInvalidExpressionError(node.col_offset)
         return super().visit(node)
 
 class CheckFunctions(ast.NodeVisitor):
-    def __init__(self, functions):
+    def __init__(self, functions: SympyMapT) -> None:
         self.functions = functions
-    def visit_Call(self, node):
+
+    def visit_Call(self, node: Any) -> Any:
         if isinstance(node.func, ast.Name):
             if node.func.id not in self.functions:
                 node = get_parent_with_location(node)
@@ -160,9 +174,10 @@ class CheckFunctions(ast.NodeVisitor):
         self.generic_visit(node)
 
 class CheckVariables(ast.NodeVisitor):
-    def __init__(self, variables):
+    def __init__(self, variables: SympyMapT) -> None:
         self.variables = variables
-    def visit_Name(self, node):
+
+    def visit_Name(self, node: Any) -> Any:
         if isinstance(node.ctx, ast.Load):
             if not is_name_of_function(node):
                 if node.id not in self.variables:
@@ -170,20 +185,20 @@ class CheckVariables(ast.NodeVisitor):
                     raise HasInvalidVariableError(node.col_offset, node.id)
         self.generic_visit(node)
 
-def is_name_of_function(node):
+def is_name_of_function(node: Any) -> bool:
     # The node is the name of a function if all of the following are true:
     # 1) it has type ast.Name
     # 2) its parent has type ast.Call
     # 3) it is not in the list of parent's args
-    return isinstance(node, ast.Name) and isinstance(node.parent, ast.Call) and (node not in node.parent.args)
+    return isinstance(node, ast.Name) and isinstance(node.parent, ast.Call) and (node not in node.parent.args) # type: ignore
 
-def get_parent_with_location(node):
+def get_parent_with_location(node: ast.AST) -> ast.AST:
     if hasattr(node, 'col_offset'):
         return node
     else:
-        return get_parent_with_location(node.parent)
+        return get_parent_with_location(node.parent) # type: ignore
 
-def evaluate(expr, locals_for_eval={}):
+def evaluate(expr: str, locals_for_eval: SympyMapT={}) -> sympy.Expr:
 
     # Disallow escape character
     if '\\' in expr:
@@ -196,13 +211,14 @@ def evaluate(expr, locals_for_eval={}):
     # Parse (convert string to AST)
     try:
         root = ast.parse(expr, mode='eval')
-    except Exception as err:
-        raise HasParseError(err.offset)
+    except SyntaxError as err:
+        offset = err.offset if err.offset is not None else -1
+        raise HasParseError(offset)
 
     # Link each node to its parent
     for node in ast.walk(root):
         for child in ast.iter_child_nodes(node):
-            child.parent = node
+            child.parent = node  # type: ignore
 
     # Disallow functions that are not in locals_for_eval
     CheckFunctions(locals_for_eval['functions']).visit(root)
@@ -218,7 +234,8 @@ def evaluate(expr, locals_for_eval={}):
     # https://nedbatchelder.com/blog/201206/eval_really_is_dangerous.html
     # http://blog.delroth.net/2013/03/escaping-a-python-sandbox-ndh-2013-quals-writeup/
     #
-    whitelist = (ast.Module, ast.Expr, ast.Load, ast.Expression, ast.Call, ast.Name, ast.Num, ast.UnaryOp, ast.UAdd, ast.USub, ast.BinOp, ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Mod, ast.Pow)
+    whitelist: ASTWhitelistT = (ast.Module, ast.Expr, ast.Load, ast.Expression, ast.Call, ast.Name, ast.Num, ast.Constant, ast.UnaryOp, ast.UAdd, ast.USub, ast.BinOp, ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Mod, ast.Pow)
+
     CheckWhiteList(whitelist).visit(root)
 
     # Disallow float and complex, and replace int with sympy equivalent
@@ -234,7 +251,7 @@ def evaluate(expr, locals_for_eval={}):
         locals = {**locals, **locals_for_eval[key]}
     return eval(compile(root, '<ast>', 'eval'), {'__builtins__': None}, locals)
 
-def convert_string_to_sympy(a, variables, *, allow_hidden=False, allow_complex=False, allow_trig_functions=True):
+def convert_string_to_sympy(expr: str, variables: List[str], *, allow_hidden: bool=False, allow_complex: bool=False, allow_trig_functions: bool=True) -> sympy.Expr:
     const = _Constants()
 
     # Create a whitelist of valid functions and variables (and a special flag
@@ -260,14 +277,15 @@ def convert_string_to_sympy(a, variables, *, allow_hidden=False, allow_complex=F
             locals_for_eval['variables'][variable] = sympy.Symbol(variable)
 
     # Do the conversion
-    return evaluate(a, locals_for_eval)
+    return evaluate(expr, locals_for_eval)
 
-def point_to_error(s, ind, w = 5):
-    w_left = ind - max(0, ind-w)
-    w_right = min(ind+w, len(s)) - ind
-    return s[ind-w_left:ind+w_right] + '\n' + ' '*w_left + '^' + ' '*w_right
+def point_to_error(s: str, ind: int, w: int = 5) -> str:
+    w_left: str = ' ' * (ind - max(0, ind - w))
+    w_right: str = ' ' * (min(ind + w, len(s)) - ind)
+    initial: str = s[ind - len(w_left):ind + len(w_right)]
+    return f'{initial}\n{w_left}^{w_right}'
 
-def sympy_to_json(a, *, allow_complex=True, allow_trig_functions=True):
+def sympy_to_json(a: sympy.Expr, *, allow_complex: bool=True, allow_trig_functions: bool=True) -> SympyJson:
     const = _Constants()
 
     # Get list of variables in the sympy expression
@@ -292,7 +310,7 @@ def sympy_to_json(a, *, allow_complex=True, allow_trig_functions=True):
 
     return {'_type': 'sympy', '_value': str(a), '_variables': variables}
 
-def json_to_sympy(a, *, allow_complex=True, allow_trig_functions=True):
+def json_to_sympy(a: SympyJson, *, allow_complex: bool=True, allow_trig_functions: bool=True) -> sympy.Expr:
     if not '_type' in a:
         raise ValueError('json must have key _type for conversion to sympy')
     if a['_type'] != 'sympy':

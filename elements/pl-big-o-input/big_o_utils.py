@@ -311,10 +311,3 @@ def grade_little_omega_expression(a_true: str, a_sub: str, variables: List[str])
         return (.5, 'Your answer is correct, but you have unnecessary lower order terms.')
     else:
         return (.5, 'Your answer is correct but has unncessary constant factors.')
-
-
-def point_to_error(s: str, ind: int, w: int = 5) -> str:
-    w_left: str = ' ' * (ind - max(0, ind - w))
-    w_right: str = ' ' * (min(ind + w, len(s)) - ind)
-    initial: str = s[ind - len(w_left):ind + len(w_right)]
-    return f'{initial}\n{w_left}^{w_right}'
