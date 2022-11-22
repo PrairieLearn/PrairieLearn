@@ -12,9 +12,6 @@ class SympyJson(TypedDict):
     _value: str
     _variables: List[str]
 
-    #{'_type': 'sympy', '_value': str(a), '_variables': variables}
-
-
 # Create a new instance of this class to access the member dictionaries. This
 # is to avoid accidentally modifying these dictionaries.
 class _Constants:
@@ -201,12 +198,14 @@ def get_parent_with_location(node: ast.AST) -> ast.AST:
 def evaluate(expr: str, locals_for_eval: SympyMapT={}) -> sympy.Expr:
 
     # Disallow escape character
-    if '\\' in expr:
-        raise HasEscapeError(expr.find('\\'))
+    ind = expr.find('\\')
+    if ind != -1:
+        raise HasEscapeError(ind)
 
     # Disallow comment character
-    if '#' in expr:
-        raise HasCommentError(expr.find('#'))
+    ind = expr.find('#')
+    if ind != -1:
+        raise HasCommentError(ind)
 
     # Parse (convert string to AST)
     try:
@@ -234,7 +233,7 @@ def evaluate(expr: str, locals_for_eval: SympyMapT={}) -> sympy.Expr:
     # https://nedbatchelder.com/blog/201206/eval_really_is_dangerous.html
     # http://blog.delroth.net/2013/03/escaping-a-python-sandbox-ndh-2013-quals-writeup/
     #
-    whitelist: ASTWhitelistT = (ast.Module, ast.Expr, ast.Load, ast.Expression, ast.Call, ast.Name, ast.Num, ast.Constant, ast.UnaryOp, ast.UAdd, ast.USub, ast.BinOp, ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Mod, ast.Pow)
+    whitelist: ASTWhitelistT = (ast.Module, ast.Expr, ast.Load, ast.Expression, ast.Call, ast.Name, ast.Constant, ast.UnaryOp, ast.UAdd, ast.USub, ast.BinOp, ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Mod, ast.Pow)
 
     CheckWhiteList(whitelist).visit(root)
 
@@ -262,14 +261,14 @@ def convert_string_to_sympy(expr: str, variables: Optional[List[str]], *, allow_
         'helpers': const.helpers,
     }
     if allow_hidden:
-        locals_for_eval['variables'] = {**locals_for_eval['variables'], **const.hidden_variables}
+        locals_for_eval['variables'].update(const.hidden_variables)
     if allow_complex:
-        locals_for_eval['variables'] = {**locals_for_eval['variables'], **const.complex_variables}
+        locals_for_eval['variables'].update(const.complex_variables)
         if allow_hidden:
-            locals_for_eval['variables'] = {**locals_for_eval['variables'], **const.hidden_complex_variables}
+            locals_for_eval['variables'].update(const.hidden_complex_variables)
 
     if allow_trig_functions:
-        locals_for_eval['functions'] = {**locals_for_eval['functions'], **const.trig_functions}
+        locals_for_eval['functions'].update(const.trig_functions)
 
     # If there is a list of variables, add each one to the whitelist
     if variables is not None:
@@ -292,21 +291,20 @@ def sympy_to_json(a: sympy.Expr, *, allow_complex: bool=True, allow_trig_functio
     variables = [str(v) for v in a.free_symbols]
 
     # Check that variables do not conflict with reserved names
-    reserved = {**const.helpers, **const.variables, **const.hidden_variables, **const.functions}
+    reserved = const.helpers.keys() | const.variables.keys() | const.hidden_variables.keys() | const.functions.keys()
     if allow_complex:
-        reserved = {**reserved, **const.complex_variables, **const.hidden_complex_variables}
+        reserved |= const.complex_variables.keys() | const.hidden_complex_variables.keys()
     if allow_trig_functions:
-        reserved = {**reserved, **const.trig_functions}
+        reserved |= const.trig_functions.keys()
 
-    for k in reserved.keys():
-        for v in variables:
-            if k == v:
-                raise ValueError('sympy expression has a variable with a reserved name: {:s}'.format(k))
+    for v in variables:
+        if v in reserved:
+            raise ValueError(f'sympy expression has a variable with a reserved name: {str(v)}')
 
     # Apply substitutions for hidden variables
-    a_sub = a.subs([(const.hidden_variables[key], key) for key in const.hidden_variables.keys()])
+    a_sub = a.subs([(val, key) for key, val in const.hidden_variables.items()])
     if allow_complex:
-        a_sub = a_sub.subs([(const.hidden_complex_variables[key], key) for key in const.hidden_complex_variables.keys()])
+        a_sub = a_sub.subs([(val, key) for key, val in const.hidden_complex_variables.items()])
 
     return {'_type': 'sympy', '_value': str(a_sub), '_variables': variables}
 
