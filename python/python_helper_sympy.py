@@ -288,7 +288,7 @@ def sympy_to_json(a: sympy.Expr, *, allow_complex: bool=True, allow_trig_functio
     const = _Constants()
 
     # Get list of variables in the sympy expression
-    variables = [str(v) for v in a.free_symbols]
+    variables = list(map(str, a.free_symbols))
 
     # Check that variables do not conflict with reserved names
     reserved = const.helpers.keys() | const.variables.keys() | const.hidden_variables.keys() | const.functions.keys()
