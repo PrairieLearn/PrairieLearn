@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS instance_questions_select_question(bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     instance_questions_select_question (
         IN instance_question_id bigint,
         OUT question questions

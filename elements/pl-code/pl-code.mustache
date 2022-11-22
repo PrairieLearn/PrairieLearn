@@ -1,7 +1,5 @@
 {{#prevent_select}}<!-- Well aren't you clever ;) -->{{/prevent_select}}
-<pre class="pl-code"><code
-{{#no_highlight}}class="nohighlight"{{/no_highlight}}
-{{#specify_language}}class="language-{{language}}"{{/specify_language}}
+<div class="pl-code"><span
 {{#prevent_select}}
 style="-moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; user-select:none;-o-user-select:none;"
 unselectable="on"
@@ -9,4 +7,4 @@ onselectstart="return false;"
 onmousedown="return false;"
 oncontextmenu="return false;"
 {{/prevent_select}}
->{{{code}}}</code></pre>
+>{{{code}}}</span></div>

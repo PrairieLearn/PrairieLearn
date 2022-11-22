@@ -1,0 +1,60 @@
+<pl-question-panel>
+<markdown>Questions below were designed to showcase the different features of 
+[`pl-code`](http://prairielearn.readthedocs.io/en/latest/elements/#pl-code-element). 
+ The goal of [`pl-code`](http://prairielearn.readthedocs.io/en/latest/elements/#pl-code-element)
+is to display different programming languages with appropriate syntax highlighting and code line emphasis.
+</markdown>
+</pl-question-panel>
+
+      
+<div class="card my-2">
+<div class="card-body">
+<pl-question-panel>
+<markdown>
+The most common use of `pl-code` is to display pre-written code with appropriate syntax highlighting.
+The language must be specified with the `language` attribute. In this case, we are requesting
+python with `language="python"`.
+</markdown>
+<pl-code language="python">
+def square(x):
+    return x * x
+</pl-code>
+</pl-question-panel>                
+</div>
+</div>
+
+<div class="card my-2">
+<div class="card-body">
+<pl-question-panel>
+<markdown>
+Another useful feature of `pl-code` is the ability to highlight specific lines. This is done by using
+`highlight-lines="low-high"` attribute. Moreover, one can disable selecting the code region by
+adding `prevent-select="true"`.
+</markdown>
+<pl-code language="python" highlight-lines="5-6" prevent-select="true">
+# Here's a version that highlights specific lines of code and disables selection
+def foo():
+    return 'foo'
+
+def square(x):
+    return x * x
+
+def bar(x):
+    return 'bar'
+</pl-code>
+</pl-question-panel>                
+</div>
+</div>
+
+<div class="card my-2">
+<div class="card-body">
+<pl-question-panel>
+<markdown>
+Lastly, `pl-code` also provides the ability to have code included from an external file. 
+This can be achieved with `source-file-name="my_code_file.py"` attribute.
+</markdown>
+<pl-code language="python" source-file-name="myCode.py"></pl-code>
+<pl-code language="html" source-file-name="sample-cd-data.xml"></pl-code>
+</pl-question-panel>
+</div>
+</div>

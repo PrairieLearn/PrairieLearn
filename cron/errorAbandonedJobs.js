@@ -1,12 +1,7 @@
-var ERR = require('async-stacktrace');
+const util = require('util');
 
-var serverJobs = require('../lib/server-jobs');
+const serverJobs = require('../lib/server-jobs');
 
-module.exports = {};
-
-module.exports.run = function(callback) {
-    serverJobs.errorAbandonedJobs(function(err) {
-        if (ERR(err, callback)) return;
-        callback(null);
-    });
+module.exports.run = function (callback) {
+  util.callbackify(serverJobs.errorAbandonedJobs)(callback);
 };

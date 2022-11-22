@@ -1,0 +1,19 @@
+{
+    "uuid": "DF0FF186-DECC-448C-B23C-78D86A966E4C",
+    "title": "Autograder demo: Using NumPy arrays",
+    "topic": "Autograder",
+    "tags": [
+        "sp20",
+        "nnytko2",
+        "code"
+    ],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-python",
+        "entrypoint": "/python_autograder/run.sh",
+        "timeout": 60
+    }
+}

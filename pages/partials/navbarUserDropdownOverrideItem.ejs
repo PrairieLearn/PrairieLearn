@@ -1,0 +1,25 @@
+<div class="list-group-item list-group-item-warning small p-2">
+    <div class="d-flex flex-row justify-content-between align-items-center">
+        <div class="p-0 mr-4">
+            <ul class="list-unstyled">
+                <li class="font-weight-bold"><%= override.name %></li>
+                <li><%= override.value %></li>
+            </ul>
+        </div>
+        <div>
+            <button class="btn btn-xs btn-warning" type="button" id="navbar-user-remove-<%= override.cookie %>-button">
+                <i class="fas fa-times mr-1"></i>
+                Remove
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+  $(function() {
+    $('#navbar-user-remove-<%= override.cookie %>-button').click(function() {
+      Cookies.remove('<%= override.cookie %>', { path: '/' });
+      location.reload();
+    });
+  });
+</script>

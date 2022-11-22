@@ -1,0 +1,15 @@
+{
+    "uuid": "b8ebc3fb-9662-496c-b7c3-31a29102b21c",
+    "title": "Construct the recipe for a new probiotic",
+    "topic": "Engineering",
+    "tags": ["Sp21","nnytko2"],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-python",
+        "entrypoint": "/python_autograder/run.sh",
+        "timeout": 15
+    }
+}

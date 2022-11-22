@@ -7,7 +7,8 @@
 // database to print out course and question ID
 //
 const ERR = require('async-stacktrace');
-const { sqldb, sqlLoader } = require('@prairielearn/prairielib');
+const sqldb = require('../prairielib/lib/sql-db');
+const sqlLoader = require('../prairielib/lib/sql-loader');
 const config = require('../lib/config');
 const logger = require('../lib/logger');
 const readline = require('readline');
@@ -17,46 +18,48 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 config.loadConfig('config.json');
 
 var pgConfig = {
-    user: config.postgresqlUser,
-    database: config.postgresqlDatabase,
-    host: config.postgresqlHost,
-    password: config.postgresqlPassword,
-    max: 100,
-    idleTimeoutMillis: 3000,
+  user: config.postgresqlUser,
+  database: config.postgresqlDatabase,
+  host: config.postgresqlHost,
+  password: config.postgresqlPassword,
+  max: 100,
+  idleTimeoutMillis: 3000,
 };
-logger.verbose('Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database);
-var idleErrorHandler = function(err) {
-    logger.error('idle client error', err);
+logger.verbose(
+  'Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database
+);
+var idleErrorHandler = function (err) {
+  logger.error('idle client error', err);
 };
-sqldb.init(pgConfig, idleErrorHandler, function(err) {
-    if (ERR(err)) return;
-    logger.verbose('Successfully connected to database');
+sqldb.init(pgConfig, idleErrorHandler, function (err) {
+  if (ERR(err)) return;
+  logger.verbose('Successfully connected to database');
 
-    var rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-        terminal: false,
-    });
+  var rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: false,
+  });
 
-    rl.on('line', lookup_path);
-    rl.on('close', function() {
-        sqldb.close(function() {});
-    });
+  rl.on('line', lookup_path);
+  rl.on('close', function () {
+    sqldb.close(function () {});
+  });
 });
 
-var lookup_path = function(line) {
-    //console.log(line);
+var lookup_path = function (line) {
+  //console.log(line);
 
-    var regexp = /instance_question\/(\d+)/;
-    var match = regexp.exec(line);
-    //console.log(match);
-    if (match) {
-        var iq_id = match[1];
-        sqldb.query(sql.iqsearch, {iq_id}, function(err, result) {
-            if (ERR(err)) return;
-            if (result.rows[0]) {
-                console.log(result.rows[0]);
-            }
-        });
-    }
+  var regexp = /instance_question\/(\d+)/;
+  var match = regexp.exec(line);
+  //console.log(match);
+  if (match) {
+    var iq_id = match[1];
+    sqldb.query(sql.iqsearch, { iq_id }, function (err, result) {
+      if (ERR(err)) return;
+      if (result.rows[0]) {
+        console.log(result.rows[0]);
+      }
+    });
+  }
 };

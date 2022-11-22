@@ -1,0 +1,19 @@
+{
+    "uuid": "12ead399-f913-4a0c-9922-f46a2fccb4ad",
+    "title": "Autograder demo: Adding leading/trailing code",
+    "topic": "Autograder",
+    "tags": [
+        "Fa20",
+        "nnytko2",
+        "code"
+    ],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-python",
+        "entrypoint": "/python_autograder/run.sh",
+        "timeout": 60
+    }
+}

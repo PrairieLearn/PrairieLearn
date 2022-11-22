@@ -11,22 +11,7 @@ FROM
 WHERE
     a.id = $assessment_id;
 
--- BLOCK select_instance_question
-SELECT
-    iq.id AS instance_question_id
-FROM
-    instance_questions AS iq
-    JOIN assessment_questions AS aq on (aq.id = iq.assessment_question_id)
-    JOIN questions AS q ON (q.id = aq.question_id)
-    JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-    JOIN users AS u ON (u.user_id = ai.user_id)
-WHERE
-    q.qid = $qid
-    AND ai.assessment_id = $assessment_id
-    AND ai.number = $instance_number
-    AND u.uid = $uid;
-
--- BLOCK select_assessment_instance
+-- BLOCK select_assessment_instance_uid
 SELECT
     ai.id AS assessment_instance_id
 FROM
@@ -36,3 +21,14 @@ WHERE
     ai.assessment_id = $assessment_id
     AND ai.number = $instance_number
     AND u.uid = $uid;
+
+-- BLOCK select_assessment_instance_group
+SELECT
+    ai.id AS assessment_instance_id
+FROM
+    assessment_instances AS ai
+    JOIN groups AS g ON (g.id = ai.group_id)
+WHERE
+    ai.assessment_id = $assessment_id
+    AND ai.number = $instance_number
+    AND g.name = $group_name;

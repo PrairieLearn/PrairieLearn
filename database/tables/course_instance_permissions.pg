@@ -1,0 +1,13 @@
+columns
+    course_instance_id: bigint not null
+    course_instance_role: enum_course_instance_role
+    course_permission_id: bigint not null
+    id: bigint not null default nextval('course_instance_permissions_id_seq'::regclass)
+
+indexes
+    course_instance_permissions_pkey: PRIMARY KEY (id) USING btree (id)
+    course_instance_permissions_course_permission_id_course_ins_key: UNIQUE (course_permission_id, course_instance_id) USING btree (course_permission_id, course_instance_id)
+
+foreign-key constraints
+    course_instance_permissions_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_instance_permissions_course_permission_id_fkey: FOREIGN KEY (course_permission_id) REFERENCES course_permissions(id) ON UPDATE CASCADE ON DELETE CASCADE

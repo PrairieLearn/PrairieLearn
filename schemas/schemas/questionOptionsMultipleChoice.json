@@ -1,5 +1,5 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "MultipleChoice question options",
     "description": "Options for a MultipleChoice question.",
     "type": "object",
@@ -10,6 +10,10 @@
         "incorrectAnswers"
     ],
     "properties": {
+        "comment": {
+            "description": "Arbitrary comment for reference purposes.",
+            "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+        },
         "text": {
             "description": "The question HTML text that comes before the options.",
             "type": "string"

@@ -1,0 +1,41 @@
+<pl-question-panel>
+
+  <p>We want to run the following code snippet, where we randomly define two 1d numpy
+    arrays, and call a function that computes the dot product between these two arrays:</p>
+<pl-code language=python>
+import numpy as np
+
+a = np.random.rand(4)
+b = np.random.rand(4)
+
+print("# Given two 1d numpy arrays:")
+print(a)
+print(b)
+print("# Your function returns:")
+print( my_dot_product(a,b) )
+</pl-code>
+
+  <p>
+    Write the function <code>my_dot_product</code>:
+  </p>
+
+</pl-question-panel>
+
+<pl-hide-in-panel answer="true">
+<pl-order-blocks answers-name="coding" grading-method="external" indentation="true" format="code" code-language="python">
+  <pl-answer>def my_dot_product(a,b):</pl-answer>
+  <pl-answer>return d</pl-answer>
+  <pl-answer>return </pl-answer>
+  <pl-answer>d = a*b</pl-answer>
+  <pl-answer>d = a@b</pl-answer>
+  <pl-answer>d = a.T@b</pl-answer>
+  <pl-answer>d = np.inner(a,b)</pl-answer>
+  <pl-answer>d = np.outer(a,b)</pl-answer>
+</pl-order-blocks>
+</pl-hide-in-panel>
+
+
+<pl-submission-panel>
+  <pl-external-grader-results></pl-external-grader-results>
+  <pl-file-preview></pl-file-preview>
+</pl-submission-panel>

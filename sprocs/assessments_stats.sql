@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessments_stats (
         IN assessment_id bigint,
         OUT number integer,
@@ -24,11 +24,12 @@ BEGIN
         FROM
             assessment_instances AS ai
             JOIN assessments AS a ON (a.id = ai.assessment_id)
-            JOIN users AS u ON (u.user_id = ai.user_id)
+            LEFT JOIN group_users AS gu ON (gu.group_id = ai.group_id)
+            JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
             JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
         WHERE
             a.id = assessments_stats.assessment_id
-            AND e.role = 'Student'
+            AND NOT users_is_instructor_in_course_instance(e.user_id, e.course_instance_id)
         GROUP BY u.user_id
     )
     SELECT

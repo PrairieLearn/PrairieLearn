@@ -1,0 +1,7 @@
+<% for (let i = 0; i < image.questions.length && i < 5; i++) { %>
+<% if (i > 0) { %> <br> <% } %>
+<a href="<%= urlPrefix %>/question/<%= image.questions[i].id %>"><%= image.questions[i].qid %></a>
+<% } %>
+<% if (image.questions.length > 5) { %>
+<br> and <%= image.questions.length - 5 %> more&hellip;
+<% } %>

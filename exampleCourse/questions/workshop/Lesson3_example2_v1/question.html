@@ -1,0 +1,18 @@
+<pl-question-panel>
+<p>
+Consider the Standard I-beam cross-section:
+</p>
+<p><pl-figure file-name="cross-section.png" directory="clientFilesQuestion"></pl-figure></p>
+<hr>
+<p>
+The table below has the geometric properties for different specifications for a steel beam:
+</p>
+<p><pl-figure file-name="properties.png" directory="clientFilesQuestion"></pl-figure></p>
+<hr>
+<p>
+For the <strong>{{params.name}}</strong> beam, what is the maximum normal stress $\sigma_x$ assuming that the maximum
+ moment is equal to $M_{max} = {{params.M}} \times 10^5 \rm\ lb \cdot in$.
+</p>
+</pl-question-panel>
+
+<pl-number-input answers-name="sigma" label="$\sigma_x =$" suffix="ksi"></pl-number-input>

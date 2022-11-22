@@ -15,9 +15,15 @@ SELECT * FROM assessments_stats($assessment_id);
 
 -- BLOCK questions
 SELECT
-    aq.*,q.qid,q.title,row_to_json(top) AS topic,
+    c.short_name AS course_short_name,
+    ci.short_name AS course_instance_short_name,
+    (aset.abbreviation || a.number) as assessment_label,
+    aq.*,
+    q.qid,
+    q.title AS question_title,
+    row_to_json(top) AS topic,
     q.id AS question_id,
-    admin_assessment_question_number(aq.id) as number,
+    admin_assessment_question_number(aq.id) as assessment_question_number,
     ag.number AS alternative_group_number,
     ag.number_choose AS alternative_group_number_choose,
     (count(*) OVER (PARTITION BY ag.number)) AS alternative_group_size,
@@ -31,7 +37,9 @@ FROM
     JOIN zones AS z ON (z.id = ag.zone_id)
     JOIN topics AS top ON (top.id = q.topic_id)
     JOIN assessments AS a ON (a.id = aq.assessment_id)
+    JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+    JOIN pl_courses AS c ON (c.id = ci.course_id)
 WHERE
     a.id = $assessment_id
     AND aq.deleted_at IS NULL

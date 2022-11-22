@@ -1,3 +1,3 @@
-define(["MCQServer"], function(MCQServer) {
-    return new MCQServer();
+define(['MCQServer'], function (MCQServer) {
+  return new MCQServer();
 });

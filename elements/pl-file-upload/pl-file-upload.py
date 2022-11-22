@@ -50,7 +50,7 @@ def render(element_html, data):
     file_names_json = json.dumps(file_names, allow_nan=False)
     answer_name = get_answer_name(raw_file_names)
 
-    html_params = {'name': answer_name, 'file_names': file_names_json, 'uuid': uuid}
+    html_params = {'name': answer_name, 'file_names': file_names_json, 'uuid': uuid, 'editable': data['editable']}
 
     files = data['submitted_answers'].get('_files', None)
     if files is not None:
@@ -78,6 +78,11 @@ def parse(element_html, data):
     if not files:
         add_format_error(data, 'No submitted answer for file upload.')
         return
+
+    # We will store the files in the submitted_answer["_files"] key,
+    # so delete the original submitted answer format to avoid
+    # duplication
+    del data['submitted_answers'][answer_name]
 
     try:
         parsed_files = json.loads(files)

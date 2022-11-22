@@ -1,8 +1,4 @@
-DROP FUNCTION IF EXISTS grader_loads_current(text,interval);
-DROP FUNCTION IF EXISTS grader_loads_current(text,interval,interval,double precision, double precision);
-DROP FUNCTION IF EXISTS grader_loads_current(text,interval,interval,double precision, double precision, double precision);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     grader_loads_current(
         IN queue_name text,
         IN grader_load_interval interval,   -- how far back to look to estimate current load
@@ -42,7 +38,9 @@ CREATE OR REPLACE FUNCTION
         OUT desired_instances_by_history_jobs double precision,
         OUT desired_instances_by_current_users double precision,
         OUT desired_instances_by_history_users double precision,
-        OUT desired_instances integer,      -- the actual number of requested grading instances
+        OUT desired_instances_current integer,  -- instantaneous number of requested grading instances
+        OUT desired_instances_history integer,  -- max of historical values
+        OUT desired_instances integer,          -- the actual number of requested grading instances
         OUT timestamp_formatted text
     )
 AS $$
@@ -53,12 +51,12 @@ BEGIN
     -- get information from the DB about jobs that still need to be graded
 
     SELECT
-        coalesce(max(extract(epoch FROM now() - gj.date)), 0),
-        coalesce(max(extract(epoch FROM now() - gj.grading_requested_at)) FILTER (WHERE gj.grading_submitted_at IS NULL), 0),
-        coalesce(max(extract(epoch FROM now() - gj.grading_submitted_at)) FILTER (WHERE gj.grading_received_at IS NULL), 0),
-        coalesce(max(extract(epoch FROM now() - gj.grading_received_at)) FILTER (WHERE gj.grading_started_at IS NULL), 0),
-        coalesce(max(extract(epoch FROM now() - gj.grading_started_at)) FILTER (WHERE gj.grading_finished_at IS NULL), 0),
-        coalesce(max(extract(epoch FROM now() - gj.grading_finished_at)) FILTER (WHERE gj.graded_at IS NULL), 0),
+        coalesce(max(DATE_PART('epoch', now() - gj.date)), 0),
+        coalesce(max(DATE_PART('epoch', now() - gj.grading_requested_at)) FILTER (WHERE gj.grading_submitted_at IS NULL), 0),
+        coalesce(max(DATE_PART('epoch', now() - gj.grading_submitted_at)) FILTER (WHERE gj.grading_received_at IS NULL), 0),
+        coalesce(max(DATE_PART('epoch', now() - gj.grading_received_at)) FILTER (WHERE gj.grading_started_at IS NULL), 0),
+        coalesce(max(DATE_PART('epoch', now() - gj.grading_started_at)) FILTER (WHERE gj.grading_finished_at IS NULL), 0),
+        coalesce(max(DATE_PART('epoch', now() - gj.grading_finished_at)) FILTER (WHERE gj.graded_at IS NULL), 0),
         -- number of jobs in-flight in different phases
         count(*),
         count(*) FILTER (WHERE gj.grading_submitted_at IS NULL AND gj.grading_requested_at IS NOT NULL),
@@ -171,7 +169,7 @@ BEGIN
     desired_instances_by_history_jobs := history_jobs * history_capacity_factor / jobs_per_instance;
     desired_instances_by_current_users := predicted_jobs_by_current_users / jobs_per_instance;
     desired_instances_by_history_users := predicted_jobs_by_history_users / jobs_per_instance;
-    desired_instances := ceiling(greatest(
+    desired_instances_current := ceiling(greatest(
         1,
         desired_instances_by_ungraded_jobs,
         desired_instances_by_current_jobs,
@@ -179,6 +177,18 @@ BEGIN
         desired_instances_by_current_users,
         desired_instances_by_history_users
     ));
+
+    -- ######################################################################
+    -- anti-flapping using historical information
+
+    SELECT coalesce(max(value), 0)
+    INTO desired_instances_history
+    FROM time_series
+    WHERE
+        name = 'desired_instances_current'
+        AND date > now() - history_interval;
+
+    desired_instances := greatest(desired_instances_current, desired_instances_history);
 
     -- ######################################################################
     -- write data to time_series table
@@ -218,6 +228,8 @@ BEGIN
         ('desired_instances_by_history_jobs', desired_instances_by_history_jobs),
         ('desired_instances_by_current_users', desired_instances_by_current_users),
         ('desired_instances_by_history_users', desired_instances_by_history_users),
+        ('desired_instances_current', desired_instances_current),
+        ('desired_instances_history', desired_instances_history),
         ('desired_instances', desired_instances);
 
     -- ######################################################################

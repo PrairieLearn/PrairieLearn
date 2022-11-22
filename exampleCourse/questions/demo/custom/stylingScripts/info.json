@@ -1,0 +1,11 @@
+{
+    "uuid": "41027D6D-016A-4202-9F09-3F7997391E8E",
+    "title": "Demo: Custom question styles and scripts",
+    "topic": "Custom",
+    "type": "v3",
+    "tags": ["Sp20", "nnytko2"],
+    "dependencies": {
+        "clientFilesQuestionStyles": [ "style.css" ],
+        "clientFilesQuestionScripts": [ "script.js" ]
+    }
+}

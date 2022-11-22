@@ -8,7 +8,7 @@
 
     2) Add this line to the header of the host page:
 
-        <script src="/javascripts/socket.io.js"></script>
+        <script src="<%= node_modules_asset_path('socket.io-client/dist/socket.io.min.js') %>"></script>
 
     To include this partial more than once (e.g., to display the results of
     more than one job sequence on the same page), just pass 'job_sequence' as
@@ -23,26 +23,36 @@
     $(function() {
         var socket = io();
 
-        socket.on('update', function() {window.location.reload(true);});
-        socket.on('change:stderr', function(msg) {$("#stderr-" + msg.job_id).text(msg.stderr);});
-        socket.on('change:stdout', function(msg) {$("#stdout-" + msg.job_id).text(msg.stdout);});
-        socket.on('change:output', function(msg) {$("#output-" + msg.job_id).text(msg.output);});
+        socket.on('update', function() {
+            window.location.reload(true);
+        });
+        socket.on('change:output', function(msg) {
+            $('#output-' + msg.job_id).html(msg.output);
+        });
 
         // Join the rooms for the job_sequence and for each individual job.
         // Check return values for a change that happened since we rendered the page
         // and reload if anything changed. This avoids the race condition where
         // jobs change between page render and socket activation.
 
-        socket.emit('joinJobSequence', {job_sequence_id: <%= job_sequence.id %>}, function(msg) {
-            if (msg.job_count != '<%= job_sequence.job_count %>') {window.location.reload(true);}
+        socket.emit('joinJobSequence', {
+            job_sequence_id: '<%= job_sequence.id %>',
+            token: '<%= job_sequence.token %>',
+        }, function(msg) {
+            if (msg.job_count != '<%= job_sequence.job_count %>') {
+                window.location.reload(true);
+            }
         });
 
         <% job_sequence.jobs.forEach(function(job) { %>
-        socket.emit('joinJob', {job_id: <%= job.id %>}, function(msg) {
-        if (msg.status != '<%= job.status %>') {window.location.reload(true);}
-            $("#stderr-" + <%= job.id %>).text(msg.stderr);
-            $("#stdout-" + <%= job.id %>).text(msg.stdout);
-            $("#output-" + <%= job.id %>).text(msg.output);
+        socket.emit('joinJob', {
+            job_id: '<%= job.id %>',
+            token: '<%= job.token %>',
+        }, function(msg) {
+            if (msg.status != '<%= job.status %>') {
+                window.location.reload(true);
+            }
+            $('#output-<%= job.id %>').html(msg.output);
         });
         <% }); %>
 
@@ -75,7 +85,7 @@
             <% if (job.status == 'Error' && job.exit_code != null) { %><p class="mb-1">Exit code: <%= job.exit_code %></p><% } %>
             <% if (job.exit_signal != null) { %><p class="mb-1">Exit signal: <%= job.exit_signal %></p><% } %>
             <% if (job.error_message != null) { %><p class="mb-1">Error message: <%= job.error_message %></p><% } %>
-            <pre id="output-<%= job.id %>" class="bg-dark text-white rounded p-3 mb-0 mt-3"><%= job.output %></pre>
+            <pre id="output-<%= job.id %>" class="text-white rounded p-3 mb-0 mt-3" style="background-color: black;"><%- job.output %></pre>
         </li>
     </div>
     <% }); %>

@@ -1,10 +1,5 @@
 <% if (typeof authn_user != 'undefined') { %>
-   <% if (authn_provider_name == 'Shibboleth' || authn_provider_name == 'Google' || authn_provider_name == 'Azure'
-          || authn_provider_name == 'LTI') { %>
-       <a class="btn btn-secondary" href="<%= plainUrlPrefix %>/logout">Log out</a>
-   <% } else { %>
-       <a class="btn btn-secondary disabled">Log out</a>
-   <% } %>
+   <a class="dropdown-item" href="<%= plainUrlPrefix %>/logout">Log out</a>
 <% } else { %>
-   <a class="btn btn-secondary disabled">Log out</a>
+   <a class="dropdown-item disabled">Log out</a>
 <% } %>

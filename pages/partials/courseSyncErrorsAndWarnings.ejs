@@ -1,0 +1,37 @@
+<% if (authz_data.has_course_permission_edit) { %>
+
+<% if (course.sync_errors) { %>
+  <div class="alert alert-danger" role="alert">
+    <h2 class="h5 alert-heading">Sync error</h2>
+    <p>
+      There was an error syncing this course's info; the information you see below
+      may be inconsistent with this course's <code>infoCourse.json</code> file.
+      Please correct the error and sync again.
+    </p>
+    <pre class="text-white rounded p-3 <% if (locals.course.example_course) { %>mb-0<% } %>" style="background-color: black;"><code><%- course.sync_errors_ansified %></code></pre>
+    <% if (!locals.course.example_course) { %>
+    <a class="btn btn-primary" role="button" href="<%= urlPrefix %>/course_admin/file_edit/infoCourse.json">
+      <i class="fa fa-edit"></i>
+      <span class="d-none d-sm-inline">Edit infoCourse.json to fix this error</span>
+    </a>
+    <% } %>
+  </div>
+<% } %>
+<% if (course.sync_warnings) { %>
+  <div class="alert alert-warning" role="alert">
+    <h2 class="h5 alert-heading">Sync warning</h2>
+    <p>
+      These warnings do not impact the ability to sync this course's info, but they
+      should still be reviewed and corrected.
+    </p>
+    <pre class="text-white rounded p-3 <% if (locals.course.example_course) { %>mb-0<% } %>" style="background-color: black;"><code><%- course.sync_warnings_ansified %></code></pre>
+    <% if (!locals.course.example_course) { %>
+    <a class="btn btn-primary" role="button" href="<%= urlPrefix %>/course_admin/file_edit/infoCourse.json">
+      <i class="fa fa-edit"></i>
+      <span class="d-none d-sm-inline">Edit infoCourse.json to fix this warning</span>
+    </a>
+    <% } %>
+  </div>
+<% } %>
+
+<% } %>

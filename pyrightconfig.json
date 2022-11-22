@@ -1,0 +1,5 @@
+{
+    "include": ["./elements/pl-hidden-hints", "./elements/pl-order-blocks"],
+    "extraPaths": ["./python"],
+    "pythonVersion": "3.8"
+}

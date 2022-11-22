@@ -64,7 +64,7 @@ SELECT t.typname AS name,
         SELECT e.enumlabel
         FROM pg_catalog.pg_enum e
         WHERE e.enumtypid = t.oid
-        ORDER BY e.enumlabel
+        ORDER BY e.enumsortorder
     ) AS values
 FROM pg_type t
     JOIN pg_enum e ON t.oid = e.enumtypid

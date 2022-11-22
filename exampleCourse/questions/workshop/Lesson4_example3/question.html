@@ -1,0 +1,50 @@
+<pl-question-panel>
+
+<p>The purpose of this experiment is to determine the convective heat transfer coefficients for
+   natural convection over pin fins. </p>
+
+   <p>Seven thermocouples are embedded along the length of the fin.
+   One thermocouple is placed at the base of the fin, which is the reference position $x_0 = 0$. We denote the temperature
+   at the base as $T_b = T(x_0)$. The other thermocouples are placed at positions $x_1$, $x_2$, ... with
+   corresponsing temperatures $T_1$, $T_2$, etc. </p>
+
+   <p>The pin fin has diameter $D$, length $L$
+   and is made of stainless steel with thermal conductivity $k = {{params.k}} \rm W/mK$.</p>
+
+<hr>
+<strong>
+    <p>The answers below will be checked using reference values and acceptable errors.
+      Make sure to check the expected tolerance for each answer.</p>
+</strong>
+</pl-question-panel>
+
+<pl-hide-in-panel answer=true>
+    <p> Measure the dimensions of the fin (in meters): </p>
+
+    <p><pl-number-input answers-name=D label="$D = $" rtol=1e-1 atol=0  size="20" suffix="m" show-correct-answer="false"></pl-number-input></p>
+
+    <p><pl-number-input answers-name=L label="$L = $" rtol=1e-1 atol=0  size="20" suffix="m" show-correct-answer="false"></pl-number-input></p>
+
+    <p> Record the distance of the first thermocouple from the base of the fin (in meters): </p>
+    <p><pl-number-input answers-name=x1 label="$x_1 = $" rtol=1e-1 atol=0 size="20"  suffix="m" show-correct-answer="false"></pl-number-input></p>
+
+    <p> Record the temperature at the first thermocouple from the base (in $^o\rm C$): </p>
+    <p><pl-number-input answers-name=T1 label="$T_1 = $" rtol=1e-9 atol=25 size="20"  suffix="$^o\rm C$" show-correct-answer="false"></pl-number-input></p>
+
+    <p> Record the temperature at the base (in $^o\rm C$): </p>
+    <p><pl-number-input answers-name=Tb label="$T_b = $" rtol=1e-9 atol=25  size="20"  suffix="$^o \rm C$" show-correct-answer="false"></pl-number-input></p>
+</pl-hide-in-panel>
+
+<pl-question-panel>
+<hr>
+<strong>
+    <p>The correct answer for this next parameter will be obtained using the recorded values above.</p>
+</strong>
+
+    <p> Use your data to determine the convective heat transfer rate of the film using the Fourier's law.
+       Assume: </p>
+    <p>   $\frac{dT}{dx}|_{x=0} \approx \frac{T_1 - T_b}{x_1}$ </p>
+
+</pl-question-panel>
+
+<p><pl-number-input answers-name="qf" label="$q_f = $" size="20" suffix="$W$"></pl-number-input></p>

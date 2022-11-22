@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS submissions_update_parsing(bigint,jsonb,jsonb);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     submissions_update_parsing(
         submission_id bigint,
         submitted_answer jsonb,

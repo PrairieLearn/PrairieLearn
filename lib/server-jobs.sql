@@ -27,10 +27,10 @@ WITH max_over_jobs_with_same_sequence AS (
         AND j.job_sequence_id IS NOT NULL
 )
 INSERT INTO jobs
-    (course_id,  course_instance_id,  assessment_id,  job_sequence_id, number_in_sequence,      last_in_sequence,  no_job_sequence_update,
+    (course_id,  course_instance_id,  course_request_id,  assessment_id,  job_sequence_id, number_in_sequence,      last_in_sequence,  no_job_sequence_update,
      user_id,  authn_user_id,  type,  description,  status,    command,  arguments,          working_directory,  env)
 SELECT
-    $course_id, $course_instance_id, $assessment_id, $job_sequence_id, new_number_in_sequence, $last_in_sequence, $no_job_sequence_update,
+    $course_id, $course_instance_id, $course_request_id, $assessment_id, $job_sequence_id, new_number_in_sequence, $last_in_sequence, $no_job_sequence_update,
     $user_id, $authn_user_id, $type, $description, 'Running', $command, $arguments::TEXT[], $working_directory, $env
 FROM
     max_over_jobs_with_same_sequence
@@ -46,9 +46,9 @@ WITH max_over_job_sequences_with_same_course AS (
         js.course_id IS NOT DISTINCT FROM $course_id
 )
 INSERT INTO job_sequences
-    (course_id,  course_instance_id,  assessment_id, number,      user_id,  authn_user_id,  type,  description)
+    (course_id,  course_instance_id,  course_request_id,  assessment_id, number,      user_id,  authn_user_id,  type,  description)
 SELECT
-    $course_id, $course_instance_id, $assessment_id, new_number, $user_id, $authn_user_id, $type, $description
+    $course_id, $course_instance_id, $course_request_id, $assessment_id, new_number, $user_id, $authn_user_id, $type, $description
 FROM
     max_over_job_sequences_with_same_course
 RETURNING id;
@@ -66,6 +66,8 @@ WITH updated_jobs AS (
         exit_signal = $exit_signal
     WHERE
         j.id = $job_id
+        -- Ensure we can't finish the same job multiple times.
+        AND status = 'Running'
     RETURNING
         j.*
 ),
@@ -109,6 +111,8 @@ WITH updated_jobs AS (
         error_message = $error_message
     WHERE
         j.id = $job_id
+        -- Ensure we can't finish the same job multiple times.
+        AND status = 'Running'::enum_job_status
     RETURNING
         j.*
 ),
@@ -134,11 +138,19 @@ WHERE
 
 -- BLOCK select_running_jobs
 SELECT
-    j.*
+    j.id,
+    j.job_sequence_id
 FROM
     jobs AS j
 WHERE
     j.status = 'Running';
+
+-- BLOCK select_abandoned_jobs
+SELECT id, job_sequence_id
+FROM jobs AS j
+WHERE
+    j.status = 'Running'
+    AND j.heartbeat_at < (CURRENT_TIMESTAMP - make_interval(secs => $timeout_secs));
 
 -- BLOCK error_abandoned_job_sequences
 UPDATE job_sequences AS js
@@ -156,7 +168,7 @@ WHERE
         ) -- no running jobs and no recently finished jobs
     )
 RETURNING
-    js.*;
+    js.id;
 
 -- BLOCK fail_job_sequence
 UPDATE job_sequences AS js
@@ -208,3 +220,8 @@ FROM
 WHERE
     js.id = $job_sequence_id
     AND js.course_id IS NOT DISTINCT FROM $course_id;
+
+-- BLOCK update_heartbeats
+UPDATE jobs AS j
+SET heartbeat_at = CURRENT_TIMESTAMP
+WHERE j.id IN (SELECT UNNEST($job_ids::bigint[]));

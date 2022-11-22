@@ -1,0 +1,13 @@
+<p>This question allows you to try multiple variants.
+Each of these variants is equivalent to the
+question you have been presented with, but may include changes in
+input values, parameters, and other settings. Although
+<% if (variantAttemptsLeft > 1) { %>
+you have <%= variantAttemptsLeft %> attempts left
+<% } else if (variantAttemptsTotal > 1) { %>
+this is your last attempt
+<% } else { %>
+you have a single attempt
+<% } %>
+with the current variant, you are allowed to try an unlimited number of other
+variants.</p>

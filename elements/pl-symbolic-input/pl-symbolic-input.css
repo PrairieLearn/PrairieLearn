@@ -2,3 +2,7 @@
     width: 500px;
     max-width: 100%;
 }
+
+.pl-symbolic-input-input {
+    height: auto;
+}

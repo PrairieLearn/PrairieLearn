@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     grading_job_status(
         grading_job_id bigint
     ) RETURNS TEXT AS $$

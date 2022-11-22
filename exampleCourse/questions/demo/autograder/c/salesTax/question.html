@@ -1,0 +1,51 @@
+<pl-question-panel>
+  <p>Write a program in C++ that prompts the user for the price of an
+    article (before taxes) and that prints the price of the article
+    including state sales tax at {{params.state_tax}}%, county sales
+    tax at {{params.county_tax}}%, and city sales tax at
+    {{params.city_tax}}%. The result must be printed with two decimal
+    places.</p>
+</pl-question-panel>
+
+<pl-file-editor file-name="tax.cpp"
+                source-file-name="tax_start.cpp"
+		ace-mode="ace/mode/c_cpp">
+</pl-file-editor>
+
+<pl-answer-panel>
+  <details class="card">
+    <summary class="card-header bg-dark text-light">
+      Reveal suggested answer
+    </summary>
+    <div class="card-body">
+      <pl-code language="cpp">
+#include &lt;iostream&gt;
+#include &lt;iomanip&gt;
+
+using namespace std;
+
+#define STATE_TAX  {{params.state_tax}}
+#define COUNTY_TAX {{params.county_tax}}
+#define CITY_TAX   {{params.city_tax}}
+
+int main(void) {
+
+    double price;
+    double tax;
+    
+    cin &gt;&gt; price;
+    
+    tax = price * (STATE_TAX + COUNTY_TAX + CITY_TAX) / 100;
+    cout &lt;&lt; fixed &lt;&lt; setprecision(2) &lt;&lt; price + tax &lt;&lt; endl;
+
+
+    return 0;
+}</pl-code>
+    </div>
+  </details>
+</pl-answer-panel>
+
+<pl-submission-panel>
+  <pl-external-grader-results></pl-external-grader-results>
+  <pl-file-preview></pl-file-preview>
+</pl-submission-panel>

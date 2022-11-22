@@ -19,7 +19,10 @@ SELECT
     a.type,
     a.number as assessment_number,
     a.title,
+    a.group_work AS group_work,
     a.assessment_set_id,
+    a.sync_errors,
+    a.sync_warnings,
     tstats.number,
     tstats.mean,
     tstats.std,
@@ -37,10 +40,16 @@ SELECT
     dstats.max AS max_duration,
     aset.abbreviation,
     aset.name,
-    aset.heading,
     aset.color,
     (aset.abbreviation || a.number) as label,
-    (lag(aset.id) OVER (PARTITION BY aset.id ORDER BY a.order_by, a.id) IS NULL) AS start_new_set,
+    (
+        LAG (CASE WHEN $assessments_group_by = 'Set' THEN aset.id ELSE am.id END)
+        OVER (
+            PARTITION BY (CASE WHEN $assessments_group_by = 'Set' THEN aset.id ELSE am.id END)
+            ORDER BY aset.number, a.order_by, a.id
+        ) IS NULL
+    ) AS start_new_assessment_group,
+    (CASE WHEN $assessments_group_by = 'Set' THEN aset.heading ELSE am.heading END) AS assessment_group_heading,
     coalesce(ic.open_issue_count, 0) AS open_issue_count
 FROM
     assessments AS a
@@ -50,11 +59,14 @@ FROM
     LEFT JOIN LATERAL assessments_duration_stats(a.id) AS dstats ON TRUE
     LEFT JOIN LATERAL authz_assessment(a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
     LEFT JOIN issue_count AS ic ON (ic.assessment_id = a.id)
+    LEFT JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
 WHERE
     ci.id = $course_instance_id
     AND a.deleted_at IS NULL
     AND aa.authorized
 ORDER BY
+    (CASE WHEN $assessments_group_by = 'Module' THEN am.number END), 
+    (CASE WHEN $assessments_group_by = 'Module' THEN am.id END),
     aset.number, a.order_by, a.id;
 
 -- BLOCK course_instance_files
@@ -109,7 +121,7 @@ SELECT
         || '_' || submission_number
         || '_' || filename
     ) AS filename,
-    decode(contents, 'base64') AS contents
+    base64_safe_decode(contents) AS contents
 FROM
     all_file_submissions
 ORDER BY

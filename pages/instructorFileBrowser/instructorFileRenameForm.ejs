@@ -6,16 +6,19 @@
     <input type="hidden" name="was_viewing_file" value="true">
   <% } %>
   <input type="hidden" name="old_file_name" value="<%= file.name %>">
+  <div class="container p-0 mb-4">
+    Use only letters, numbers, dashes, and underscores, with no spaces. A file extension is recommended, delimited by a period. If you want to move the file to a different directory, you can specify a relative path that is delimited by a forward slash and that includes "<code>..</code>".
+  </div>
   <div class="form-group">
       <label for="renameFileInput">Path:</label>
       <input type="text" class="form-control" id="renameFileInput" name="new_file_name" value="<%= file.name %>" size="<%= 1.5 * file.name.length %>" pattern="(?:[-A-Za-z0-9_]+|\.\.)(?:\/(?:[-A-Za-z0-9_]+|\.\.))*(?:\.[-A-Za-z0-9_]+)?" required>
       <div class="invalid-feedback" id="invalidMessage-<%= file.id %>">
       </div>
   </div>
-  <button type="button" class="btn btn-secondary" onclick="$('#instructorFileRenameForm-<%= file.id %>').popover('hide')">
-    Cancel
-  </button>
-  <button type="submit" class="btn btn-primary">Change</button>
+  <div class="text-right">
+    <button type="button" class="btn btn-secondary" onclick="$('#instructorFileRenameForm-<%= file.id %>').popover('hide')">Cancel</button>
+    <button type="submit" class="btn btn-primary">Change</button>
+  </div>
 </form>
 
 <script>
@@ -33,7 +36,7 @@
 
             elementDOM.setCustomValidity('');
             if (elementDOM.validity.patternMismatch) {
-                $('#invalidMessage-<%= file.id %>').text('Only letters, numbers, dashes, and underscores, with no spaces. Can have a file extension that is delimited by a period. Can have a path that is delimited by a forward slash and that includes "<code>..</code>".');
+                $('#invalidMessage-<%= file.id %>').text('Please match required format.');
             } else if (elementDOM.validity.valueMissing) {
                 $('#invalidMessage-<%= file.id %>').text('Please choose a name');
             } else {

@@ -8,8 +8,8 @@
   <input type="hidden" name="__variant_id" value="<%= variant.id %>">
   <% } %>
   <input type="hidden" name="file_id" value="<%= file.id %>">
-  <button type="button" class="btn btn-secondary" onclick="$('#<%= id %>').popover('hide')">
-    Cancel
-  </button>
-  <button type="submit" class="btn btn-primary">Delete</button>
+  <div class="text-right">
+    <button type="button" class="btn btn-secondary" onclick="$('#<%= id %>').popover('hide')">Cancel</button>
+    <button type="submit" class="btn btn-primary">Delete</button>
+  </div>
 </form>

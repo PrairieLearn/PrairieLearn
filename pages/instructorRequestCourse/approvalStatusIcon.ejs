@@ -1,0 +1,9 @@
+<% if (status == 'pending' ||
+       status == 'creating' ||
+       status == 'failed') { %>
+    <span class="badge badge-secondary"> <i class="fa fa-clock"></i> Pending </span>
+<% } else if (status == 'approved') { %>
+    <span class="badge badge-success"> <i class="fa fa-check"></i> Approved </span>
+<% } else if (status == 'denied') { %>
+    <span class="badge badge-danger"><i class="fa fa-times"></i> Denied </span>
+<% } %>

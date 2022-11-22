@@ -1,15 +1,22 @@
-var ERR = require('async-stacktrace');
+const util = require('util');
 
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const logger = require('../lib/logger');
+const sqldb = require('../prairielib/lib/sql-db');
+const sqlLoader = require('../prairielib/lib/sql-loader');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = {};
 
-module.exports.run = function(callback) {
-    sqldb.query(sql.all, [], function(err) {
-        if (ERR(err, callback)) return;
-        callback(null);
-    });
+module.exports.run = function (callback) {
+  util.callbackify(async () => {
+    const result = await sqldb.queryAsync(sql.select_assessments, {});
+    const assessments = result.rows;
+    for (const assessment of assessments) {
+      logger.verbose(
+        `calculateAssessmentQuestionStats: processing assessment_id = ${assessment.id}`
+      );
+      await sqldb.callAsync('assessment_questions_calculate_stats_for_assessment', [assessment.id]);
+    }
+  })(callback);
 };

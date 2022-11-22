@@ -1,0 +1,24 @@
+{
+    "uuid": "1f0966f5-f417-4df6-a104-a19e5494ee64",
+    "title": "Workspace test",
+    "topic": "Workspace",
+    "tags": [
+        "su20",
+        "nnytko2",
+        "tyang15"
+    ],
+    "type": "v3",
+    "workspaceOptions": {
+        "image": "prairielearn/workspace-xtermjs",
+        "port": 8080,
+        "home": "/home/prairie",
+        "gradedFiles": [
+            "starter_code.h",
+            "starter_code.c"
+        ],
+        "environment": {
+            "FOO": "bar baz",
+            "ILL": "ini"
+        }
+    }
+}

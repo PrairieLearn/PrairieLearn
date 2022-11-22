@@ -2,3 +2,7 @@
     width: 400px;
     max-width: 100%;
 }
+
+.pl-number-input-input {
+    height: auto;
+}

@@ -1,28 +1,37 @@
-const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
+const asyncHandler = require('express-async-handler');
 
-const config = require('../../lib/config');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const error = require('../../prairielib/error');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('../../prairielib/lib/sql-db');
+const fileStore = require('../../lib/file-store');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-router.get('/:file_id/:display_filename', function(req, res, next) {
-    let params = {
-        assessment_instance_id: res.locals.assessment_instance.id,
-        file_id: req.params.file_id,
-        display_filename: req.params.display_filename,
+router.get(
+  '/:unsafe_file_id/:unsafe_display_filename',
+  asyncHandler(async (req, res, next) => {
+    const params = {
+      assessment_instance_id: res.locals.assessment_instance.id,
+      unsafe_file_id: req.params.unsafe_file_id,
+      unsafe_display_filename: req.params.unsafe_display_filename,
     };
-    sqldb.queryZeroOrOneRow(sql.select_file, params, function(err, result) {
-        if (ERR(err, next)) return;
 
-        if (result.rows.length < 1) {
-            return next(new Error('No such file: ' + req.params.display_filename));
-        }
+    // Assert that the file belongs to this assessment, that the display
+    // filename matches, and that the file is not deleted.
+    const result = await sqldb.queryZeroOrOneRowAsync(sql.select_file, params);
+    if (result.rows.length === 0) {
+      return next(error.make(404, 'File not found'));
+    }
 
-        res.sendFile(result.rows[0].storage_filename, {root: config.filesRoot});
-    });
-});
+    const { id: fileId, display_filename: displayFilename } = result.rows[0];
+    const stream = await fileStore.getStream(fileId);
+    // Ensure the response is interpreted as an "attachment" (file to be downloaded)
+    // and not as a webpage.
+    res.attachment(displayFilename);
+    stream.on('error', next).pipe(res);
+  })
+);
 
 module.exports = router;

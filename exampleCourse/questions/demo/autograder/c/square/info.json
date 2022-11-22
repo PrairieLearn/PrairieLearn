@@ -1,0 +1,17 @@
+{
+    "uuid": "1e1a7e46-1511-49b8-8869-744276a309a0",
+    "title": "Autograder demo: Square function in C (Standard Output Override)",
+    "topic": "Autograder",
+    "tags": [
+        "jonatan","code", "c"
+    ],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-c",
+        "timeout": 100,
+        "entrypoint": "python3 /grade/tests/test.py"
+    }
+}

@@ -1,10 +1,6 @@
-DROP FUNCTION IF EXISTS check_course_instance_access(bigint, enum_role, text, timestamptz);
-DROP FUNCTION IF EXISTS check_course_instance_access(bigint, enum_role, text, bigint, timestamptz);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     check_course_instance_access (
         course_instance_id bigint,
-        role enum_role,
         uid text,
         user_institution_id bigint,
         date timestamptz
@@ -17,20 +13,15 @@ WITH selected_course AS (
     WHERE ci.id = check_course_instance_access.course_instance_id
 )
 SELECT
-    CASE
-        WHEN check_course_instance_access.role >= 'Instructor' THEN TRUE
-        ELSE (
-            SELECT
-                COALESCE(bool_or(
-                    check_course_instance_access_rule(ciar, check_course_instance_access.role,
-                        check_course_instance_access.uid, check_course_instance_access.user_institution_id,
-                        selected_course.institution_id, check_course_instance_access.date)
-                ), FALSE)
-            FROM
-                course_instance_access_rules AS ciar,
-                selected_course
-            WHERE
-                ciar.course_instance_id = check_course_instance_access.course_instance_id
-        )
-    END;
+    COALESCE(bool_or(
+        check_course_instance_access_rule(ciar,
+            check_course_instance_access.uid, check_course_instance_access.user_institution_id,
+            selected_course.institution_id, check_course_instance_access.date)
+    ), FALSE)
+FROM
+    course_instance_access_rules AS ciar,
+    selected_course
+WHERE
+    ciar.course_instance_id = check_course_instance_access.course_instance_id
+    AND ((ciar.role > 'Student') IS NOT TRUE);
 $$ LANGUAGE SQL STABLE;

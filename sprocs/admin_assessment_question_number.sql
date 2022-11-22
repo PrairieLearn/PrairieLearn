@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     admin_assessment_question_number (
         assessment_question_id bigint
     ) RETURNS text

@@ -1,0 +1,19 @@
+{
+    "uuid": "3d375a95-7497-4d80-b211-729ef61ecd81",
+    "title": "Autograder demo: Code with randomization",
+    "topic": "Autograder",
+    "tags": [
+        "sp20",
+        "nnytko2",
+        "code"
+    ],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-python",
+        "entrypoint": "/python_autograder/run.sh",
+        "timeout": 60
+    }
+}

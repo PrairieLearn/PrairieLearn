@@ -1,0 +1,60 @@
+<pl-question-panel>
+  <p> You can use Proof Blocks by using a <code>pl-order-blocks</code> element
+    with <code>grading-method="dag"</code>. Use the <code>depends</code>
+    attribute on each line is to denote which lines of the proof must appear
+    before that line. The autograder will use this dependency information to
+    construct the dependency graph of the proof. Then a correct answer is a
+    topological sort of the lines of the proof. This example also uses the option
+    <code>feedback="first-wrong"</code> to give the student feedback about where
+    the first wrong line of their proof was.
+  </p>
+
+  <p>
+    <strong>Example 1:</strong> Use a proof by contrapositive to show that if $2m^2 + n + 1$ is even then either $m$ or $n$ are odd.
+  </p>
+
+
+  </pl-question-panel>
+
+  <pl-order-blocks answers-name="even-implies-odd" source-blocks-order="random" grading-method="dag" feedback="first-wrong" partial-credit="lcs" solution-placement="bottom">
+    <pl-answer correct="true" tag="1" depends=""  > Proof by Contrapositive:</pl-answer>
+    <pl-answer correct="true" tag="2" depends="1" > Take some $m \in \mathbb{Z}$ </pl-answer>
+    <pl-answer correct="true" tag="3" depends="1" > Take some $n \in \mathbb{Z}$ </pl-answer>
+    <pl-answer correct="true" tag="4" depends="2" > Assume $m$ is even</pl-answer>
+    <pl-answer correct="true" tag="5" depends="3" > Assume $n$ is even</pl-answer>
+    <pl-answer correct="true" tag="6" depends="4" > $\exists l \in \mathbb{Z}$ such that $m = 2l$</pl-answer>
+    <pl-answer correct="true" tag="7" depends="5" > $\exists k \in \mathbb{Z}$ such that $n = 2k$</pl-answer>
+    <pl-answer correct="true" tag="8" depends="6,7" > $2m^2 + n + 1 = 2(2l)^2 + 2k + 1 = 2(4l^2 + k) + 1$ </pl-answer>
+    <pl-answer correct="true" tag="9" depends="8" > Then since $2(4l^2 + k)$ is even, $2(4l^2 + k) + 1$ is odd. </pl-answer>
+  </pl-order-blocks>
+
+  <hr>
+
+  <pl-question-panel>
+
+  <p>
+    <strong>Example 2:</strong>Let $A, B,$ and $C$ be propositions. Prove that $(A \land C) \lor (A \land B) \rightarrow A $
+  </p>
+
+  <p>
+    This example uses the <code>pl-block-group</code> element, which can be used
+    to divide a proof into cases. In a proof that has cases, a correct answer is
+    any topological sort of the lines, with the added condition that any lines in
+    the same <code>pl-block-group</code> element must appear contiguously in the
+    solution, as when you are writing a proof by cases, you finish one case before
+    proving the next case.
+  </p>
+  </pl-question-panel>
+
+<pl-order-blocks answers-name="proof-by-cases" source-blocks-order="random" grading-method="dag">
+  <pl-answer correct="true" tag="1"> Proof by Cases:</pl-answer>
+  <pl-block-group tag="g1" depends="1">
+    <pl-answer correct="true" tag="2"> Case $A \land C$: </pl-answer>
+    <pl-answer correct="true" tag="3" depends="2"> Since $A \land C$ is true, we know $A$ is true.</pl-answer>
+  </pl-block-group>
+  <pl-block-group tag="g2" depends="1">
+    <pl-answer correct="true" tag="4"> Case $A \land B$: </pl-answer>
+    <pl-answer correct="true" tag="5" depends="4"> Since $A \land B$ is true, we know $A$ is true.</pl-answer>
+  </pl-block-group>
+  <pl-answer correct="true" tag="6" depends="g1,g2">This completes the proof.</pl-answer>
+</pl-order-blocks>

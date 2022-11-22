@@ -1,0 +1,36 @@
+<pl-question-panel>
+  <pl-hide-in-manual-grading>
+    <p>
+      The Fibonacci numbers are 1, 1, 2, 3, 5, 8, ..., where each
+      number is the sum of the two before it. These are numbered $F_{{params.starting_index}}, F_{{params.second_index}}, \ldots$, and
+      \[
+      F_n = F_{n-1} + F_{n-2}.
+      \]
+    </p>
+    <p>
+      Write a Python function <code>fib</code> that takes a number <code>n</code>
+      and returns the Fibonacci number at index <code>n</code>, i.e., $F_n$.
+    </p>
+  </pl-hide-in-manual-grading>
+  <pl-manual-grading-only>
+    <p><strong>Note to grader:</strong> this student received the variant using an initial index of ${{params.starting_index}}$.</p>
+  </pl-manual-grading-only>
+  <pl-file-upload file-names="fib.py"></pl-file-upload>
+</pl-question-panel>
+
+<pl-answer-panel>
+  <pl-manual-grading-only>
+    <pl-code language="python">
+def fib(n):               # Note the function name
+    a, b = 1, 1           # Variable names are not important
+    for _ in range({{params.second_index}}, n): # A recursive option is acceptable too
+        a, b = b, a + b   # If the assignment is separate make sure the order doesn't change the result
+    return b              # Make sure the returned value matches the order above
+</pl-code>
+  </pl-manual-grading-only>
+</pl-answer-panel>
+
+<pl-submission-panel>
+  <pl-file-preview></pl-file-preview>
+  <pl-external-grader-results></pl-external-grader-results>
+</pl-submission-panel>

@@ -5,8 +5,8 @@
     <label for="token_name">Name:</label>
     <input type="text" class="form-control" id="token_name" name="token_name" placeholder="My token">
   </div>
-  <button type="button" class="btn btn-secondary" onclick="$('#<%= id %>').popover('hide')">
-    Cancel
-  </button>
-  <button type="submit" class="btn btn-primary">Generate token</button>
+  <div class="text-right">
+    <button type="button" class="btn btn-secondary" onclick="$('#<%= id %>').popover('hide')">Cancel</button>
+    <button type="submit" class="btn btn-primary">Generate token</button>
+  </div>
 </form>

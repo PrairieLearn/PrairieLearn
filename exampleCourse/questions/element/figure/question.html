@@ -1,0 +1,81 @@
+<pl-question-panel>
+    <p>
+        The examples below showcase different features of <code>pl-figure</code>.
+        The goal of this element is to display statically and dynamically generated images.
+    </p>
+</pl-question-panel>
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 1
+    </div>
+
+    <div class="card-body">
+        <pl-question-panel>
+            <p>
+                Here is an example of of a static figure.
+                By default, <code>pl-figure</code> will read static files from the <code>clientFilesQuestion</code> directory or from <code>clientFilesCourse</code> directory if overridden using the <code>directory</code> attribute.
+                Depending on the display size of the window, the size of the displayed figure will automatically adjust to fit within the window.
+            </p>
+            <pl-figure file-name="sin-x.png" alt="Graph of a sine wave"></pl-figure>
+        </pl-question-panel>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 2
+    </div>
+
+    <div class="card-body">
+        <pl-question-panel>
+            <p>
+                Here is an example of a fixed width figure.
+                The width of the displayed figure can be set using the <code>width</code> attribute; the size of the figure will automatically shrink if the the specified <code>width</code> is too big for the display window.
+            </p>
+            <pl-figure file-name="sin-x.png" width="300px" alt="Graph of a sine wave"></pl-figure>
+        </pl-question-panel>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 3
+    </div>
+
+    <div class="card-body">
+        <pl-question-panel>
+            <p>
+                Here is an example of a dynamic figure.  The contents of a dynamic image can be generated using the <code>file()</code> function inside <code>server.py</code> when
+                the attribute <code>type="dynamic"</code> is set in the element tag.
+            </p>
+            <pl-figure file-name="cos-x.png" type="dynamic" alt="Graph of 1*cos(x) function"></pl-figure>
+        </pl-question-panel>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 4
+    </div>
+
+    <div class="card-body">
+        <pl-question-panel>
+            <p>
+                Here is an example of inline figures.
+            </p>
+            <br>
+            <p>
+                Select <pl-figure file-name="true.png" inline="true" alt="Slider set to true"></pl-figure> instead of <pl-figure file-name="false.png" inline="true" alt="Slider set to false"></pl-figure> from below.
+            </p>
+        </pl-question-panel>
+        <pl-multiple-choice answers-name="booleans">
+            <pl-answer correct="true">Select this: <pl-figure file-name="true.png" inline="true" alt="Slider set to true"></pl-figure></pl-answer>
+            <pl-answer>Not this: <pl-figure file-name="false.png" inline="true" alt="Slider set to false"></pl-figure></pl-answer>
+        </pl-multiple-choice>
+        <br>
+        <p>
+            Use <code>inline="true"</code> to embed a figure inline with the rest of the elements, like texts.
+</p>
+    </div>
+</div>

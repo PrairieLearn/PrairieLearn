@@ -1,5 +1,5 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "Course information",
     "description": "The specification file for a course.",
     "type": "object",
@@ -11,6 +11,10 @@
         "topics"
     ],
     "properties": {
+        "comment": {
+            "description": "Arbitrary comment for reference purposes.",
+            "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+        },
         "uuid": {
             "description": "Unique identifier (UUID v4).",
             "type": "string",
@@ -34,6 +38,10 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
+                "comment": {
+                    "description": "Arbitrary comment for reference purposes.",
+                    "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+                },
                 "useNewQuestionRenderer": {
                     "description": "Feature flag to enable the new question renderer.",
                     "type": "boolean",
@@ -54,6 +62,10 @@
                     "color"
                 ],
                 "properties": {
+                    "comment": {
+                        "description": "Arbitrary comment for reference purposes.",
+                        "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+                    },
                     "abbreviation": {
                         "description": "Abbreviation (preferably 1 to 3 characters), e.g., 'HW', 'Q', 'PQ', etc.",
                         "type": "string"
@@ -72,6 +84,28 @@
                 }
             }
         },
+        "assessmentModules": {
+            "description": "Course modules.",
+            "type": "array",
+            "items": {
+                "description": "A single course module description.",
+                "type": "object",
+                "required": [
+                    "name",
+                    "heading"
+                ],
+                "properties": {
+                    "name": {
+                        "description": "Short name for a module (preferably 1 to 3 words), e.g., 'Introduction'.",
+                        "type": "string"
+                    },
+                    "heading": {
+                        "description": "Full name of the module (visible to students)",
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "topics": {
             "description": "Question topics (visible to students).",
             "type": "array",
@@ -83,6 +117,10 @@
                     "color"
                 ],
                 "properties": {
+                    "comment": {
+                        "description": "Arbitrary comment for reference purposes.",
+                        "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+                    },
                     "shortName": {
                         "description": "Short name (preferably 2 to 7 characters).",
                         "type": "string"
@@ -112,6 +150,10 @@
                     "color"
                 ],
                 "properties": {
+                    "comment": {
+                        "description": "Arbitrary comment for reference purposes.",
+                        "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+                    },
                     "shortName": {
                         "description": "Short name (preferably 2 to 7 characters).",
                         "type": "string"
