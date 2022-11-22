@@ -5,6 +5,7 @@ import numpy as np
 import uuid
 import sympy
 import pandas
+import math
 from python_helper_sympy import convert_string_to_sympy
 from python_helper_sympy import sympy_to_json
 from python_helper_sympy import json_to_sympy
@@ -107,6 +108,22 @@ def grade_question_parameterized(data: QuestionData,
     if feedback_content:
         data['partial_scores'][question_name]['feedback'] = feedback_content
 
+def determine_score_params(score: Optional[float]) -> Tuple[str, float]:
+    '''Determine score params taken from data dict'''
+
+    if score is not None:
+        try:
+            score_val: float = float(score)
+            if score_val >= 1:
+                return ('correct', 1.0)
+            elif score_val > 0:
+                return ('partial', math.floor(score_val * 100))
+            else:
+                return ('incorrect', 0.0)
+        except Exception:
+            raise ValueError(f'invalid score {score}')
+    else:
+        return '', 0.0
 
 def to_json(v):
     """to_json(v)

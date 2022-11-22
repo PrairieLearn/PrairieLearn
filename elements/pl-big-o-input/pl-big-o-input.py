@@ -6,7 +6,6 @@ import lxml.html
 from html import escape
 import sympy
 import chevron
-import math
 import python_helper_sympy as phs
 import big_o_utils as bou
 import random
@@ -80,7 +79,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if raw_submitted_answer is not None:
             raw_submitted_answer = escape(raw_submitted_answer)
 
-        score_type, score_value = determine_score_params(score)
+        score_type, score_value = pl.determine_score_params(score)
 
         html_params = {
             'question': True,
@@ -129,7 +128,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             if raw_submitted_answer is not None:
                 raw_submitted_answer = pl.escape_unicode_string(raw_submitted_answer)
 
-        score_type, score_value = determine_score_params(score)
+        score_type, score_value = pl.determine_score_params(score)
 
         html_params = {
             'submission': True,
@@ -191,39 +190,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     else:
         data['format_errors'][name] = s
         data['submitted_answers'][name] = None
-
-    '''
-    try:
-        phs.convert_string_to_sympy(a_sub, variables, allow_complex=False, allow_trig_functions=False)
-    except phs.HasFloatError as err:
-        s = f'Your answer contains the floating-point number {err.n}. ' \
-            f'All numbers must be expressed as integers (or ratios of integers)' \
-            f'<br><br><pre>{phs.point_to_error(a_sub, err.offset)}</pre>'
-    except phs.HasInvalidExpressionError as err:
-        s = f'Your answer has an invalid expression. '\
-            f'<br><br><pre>{phs.point_to_error(a_sub, err.offset)}</pre>'
-    except phs.HasInvalidFunctionError as err:
-        s = f'Your answer calls an invalid function "{err.text}". ' \
-            f'<br><br><pre>{phs.point_to_error(a_sub, err.offset)}</pre>'
-    except phs.HasInvalidVariableError as err:
-        s = f'Your answer refers to an invalid variable "{err.text}". ' \
-            f'<br><br><pre>{phs.point_to_error(a_sub, err.offset)}</pre>'
-    except phs.HasParseError as err:
-        s = f'Your answer has a syntax error. ' \
-            f'<br><br><pre>{phs.point_to_error(a_sub, err.offset)}</pre>'
-    except phs.HasEscapeError as err:
-        s = f'Your answer must not contain the character "\\". ' \
-            f'<br><br><pre>{phs.point_to_error(a_sub, err.offset)}</pre>'
-    except phs.HasCommentError as err:
-        s = f'Your answer must not contain the character "#". ' \
-            f'<br><br><pre>{phs.point_to_error(a_sub, err.offset)}</pre>'
-    except Exception:
-        s = 'Invalid format.'
-    finally:
-        if (s is not None):
-            data['format_errors'][name] = s
-            data['submitted_answers'][name] = None
-    '''
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
@@ -330,19 +296,3 @@ def get_variables_list(variables_string: str) -> List[str]:
     if variables_list == ['']:
         return []
     return variables_list
-
-
-def determine_score_params(score: Optional[float]) -> Tuple[str, float]:
-    if score is not None:
-        try:
-            score_val: float = float(score)
-            if score_val >= 1:
-                return ('correct', 1.0)
-            elif score_val > 0:
-                return ('partial', math.floor(score_val * 100))
-            else:
-                return ('incorrect', 0.0)
-        except Exception:
-            raise ValueError(f'invalid score {score}')
-    else:
-        return '', 0.0

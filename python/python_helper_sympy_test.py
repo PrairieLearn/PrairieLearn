@@ -54,6 +54,10 @@ class TestSympy:
     def test_string_conversion(self, a_sub: str, sympy_ref: sympy.Expr) -> None:
         assert sympy_ref == phs.convert_string_to_sympy(a_sub, ['n', 'm'], allow_complex=True)
 
+    @pytest.mark.parametrize('a_sub', EXPR_STRINGS)
+    def test_valid_format(self, a_sub: str) -> None:
+        assert phs.validate_string_as_sympy(a_sub, ['n', 'm'], allow_complex=True) is None
+
     @pytest.mark.parametrize('a_sub, sympy_ref', [
         ('i', sympy.I),
         ('j', sympy.I),
@@ -135,52 +139,19 @@ class TestExceptions:
         with pytest.raises(phs.HasCommentError):
             phs.convert_string_to_sympy(a_sub, self.VARIABLES)
 
-    # Test format error cases
-    #@pytest.mark.parametrize('a_sub', ['2*j', 'n + 3*i'])
-    #def test_not_allowed_complex_format(self, a_sub: str) -> None:
-    #    format_error = phs.validate_string_as_sympy(a_sub, self.VARIABLES, allow_complex=True)
-    #
-    #    assert 'complex' in format_error
+    # Test formatting strings from validation
 
-
-    @pytest.mark.parametrize('a_sub', NO_FLOATS_CASES)
-    def test_no_floats_format(self, a_sub: str) -> None:
-        format_error = phs.validate_string_as_sympy(a_sub, self.VARIABLES, allow_complex=False)
-
-        assert 'floating-point number' in format_error
-
-
-    @pytest.mark.parametrize('a_sub', INVALID_EXPRESSION_CASES)
-    def test_invalid_expression_format(self, a_sub: str) -> None:
-        format_error = phs.validate_string_as_sympy(a_sub, self.VARIABLES, allow_complex=False)
-
-        assert 'invalid expression' in format_error
-
-
-    @pytest.mark.parametrize('a_sub', INVALID_FUNCTION_CASES)
-    def test_invalid_function_format(self, a_sub: str) -> None:
-        format_error = phs.validate_string_as_sympy(a_sub, self.VARIABLES, allow_complex=False)
-
-        assert 'invalid function' in format_error
-
-    '''
-    @pytest.mark.parametrize('a_sub', INVALID_VARIABLE_CASES)
-    def test_invalid_variable_format(self, a_sub: str) -> None:
-        with pytest.raises(phs.HasInvalidVariableError):
-            phs.convert_string_to_sympy(a_sub, self.VARIABLES)
-
-    @pytest.mark.parametrize('a_sub', INVALID_PARSE_CASES)
-    def test_parse_error_format(self, a_sub: str) -> None:
-        with pytest.raises(phs.HasParseError):
-            phs.convert_string_to_sympy(a_sub, self.VARIABLES)
-
-    @pytest.mark.parametrize('a_sub', INVALID_ESCAPE_CASES)
-    def test_escape_error_format(self, a_sub: str) -> None:
-        with pytest.raises(phs.HasEscapeError):
-            phs.convert_string_to_sympy(a_sub, self.VARIABLES)
-
-    @pytest.mark.parametrize('a_sub', INVALID_COMMENT_CASES)
-    def test_comment_error_format(self, a_sub: str) -> None:
-        with pytest.raises(phs.HasCommentError):
-            phs.convert_string_to_sympy(a_sub, self.VARIABLES)
-    '''
+    @pytest.mark.parametrize('a_sub_list, target_string', [
+        (NO_FLOATS_CASES, 'floating-point number'),
+        (INVALID_EXPRESSION_CASES, 'invalid expression'),
+        (INVALID_FUNCTION_CASES, 'invalid function'),
+        (INVALID_VARIABLE_CASES, 'invalid variable'),
+        (INVALID_PARSE_CASES, 'syntax error'),
+        (INVALID_ESCAPE_CASES, 'must not contain the character "\\"'),
+        (INVALID_COMMENT_CASES, 'must not contain the character "#"')
+    ])
+    def test_invalid_format(self, a_sub_list: List[str], target_string: str) -> None:
+        for a_sub in a_sub_list:
+            format_error = phs.validate_string_as_sympy(a_sub, self.VARIABLES, allow_complex=False)
+            assert format_error is not None
+            assert target_string in format_error
