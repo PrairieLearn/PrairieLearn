@@ -319,3 +319,46 @@ def json_to_sympy(a: SympyJson, *, allow_complex: bool=True, allow_trig_function
         a['_variables'] = None
 
     return convert_string_to_sympy(a['_value'], a['_variables'], allow_hidden=True, allow_complex=allow_complex, allow_trig_functions=allow_trig_functions)
+
+def validate_string_as_sympy(expr: str, variables: Optional[List[str]], *, allow_hidden: bool=False, allow_complex: bool=False, allow_trig_functions: bool=True) -> Optional[str]:
+    '''Tries to parse expr as a sympy expression. If it fails, returns a string with an appropriate error message for display on the frontend.'''
+
+    try:
+        convert_string_to_sympy(expr, variables, allow_hidden=allow_hidden, allow_complex=allow_complex, allow_trig_functions=allow_trig_functions)
+    except HasFloatError as err:
+        return f'Your answer contains the floating-point number {err.n}. ' \
+            f'All numbers must be expressed as integers (or ratios of integers)' \
+            f'<br><br><pre>{point_to_error(expr, err.offset)}</pre>'
+    except HasComplexError as err:
+        err_string = [
+            f'Your answer contains the complex number {err.n}. '
+            'All numbers must be expressed as integers (or ratios of integers). '
+        ]
+
+        if allow_complex:
+            err_string.append('To include a complex number in your expression, write it as the product of an integer with the imaginary unit <code>i</code> or <code>j</code>. ')
+
+        err_string.append(f'<br><br><pre>{point_to_error(expr, err.offset)}</pre>')
+        return ''.join(err_string)
+    except HasInvalidExpressionError as err:
+        return f'Your answer has an invalid expression. '\
+            f'<br><br><pre>{point_to_error(expr, err.offset)}</pre>'
+    except HasInvalidFunctionError as err:
+        return f'Your answer calls an invalid function "{err.text}". ' \
+            f'<br><br><pre>{point_to_error(expr, err.offset)}</pre>'
+    except HasInvalidVariableError as err:
+        return f'Your answer refers to an invalid variable "{err.text}". ' \
+            f'<br><br><pre>{point_to_error(expr, err.offset)}</pre>'
+    except HasParseError as err:
+        return f'Your answer has a syntax error. ' \
+            f'<br><br><pre>{point_to_error(expr, err.offset)}</pre>'
+    except HasEscapeError as err:
+        return f'Your answer must not contain the character "\\". ' \
+            f'<br><br><pre>{point_to_error(expr, err.offset)}</pre>'
+    except HasCommentError as err:
+        return f'Your answer must not contain the character "#". ' \
+            f'<br><br><pre>{point_to_error(expr, err.offset)}</pre>'
+    except Exception:
+        return 'Invalid format.'
+
+    return None

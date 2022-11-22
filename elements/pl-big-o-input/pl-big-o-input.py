@@ -170,7 +170,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     variables = get_variables_list(pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT))
 
     a_sub = data['submitted_answers'].get(name)
-    if not a_sub:
+    if a_sub is None:
         data['format_errors'][name] = 'No submitted answer.'
         data['submitted_answers'][name] = None
         return
@@ -183,9 +183,16 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     # Strip whitespace
     a_sub = a_sub.strip()
-    data['submitted_answers'][name] = a_sub
 
-    s = None
+    s = phs.validate_string_as_sympy(a_sub, variables, allow_complex=False, allow_trig_functions=False)
+
+    if s is None:
+        data['submitted_answers'][name] = a_sub
+    else:
+        data['format_errors'][name] = s
+        data['submitted_answers'][name] = None
+
+    '''
     try:
         phs.convert_string_to_sympy(a_sub, variables, allow_complex=False, allow_trig_functions=False)
     except phs.HasFloatError as err:
@@ -216,6 +223,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         if (s is not None):
             data['format_errors'][name] = s
             data['submitted_answers'][name] = None
+    '''
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
