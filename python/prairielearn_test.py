@@ -42,7 +42,7 @@ def test_grade_question_parametrized_correct(
 
     question_data["submitted_answers"] = {question_name: student_answer}
 
-    good_feedback = " you did good"
+    good_feedback = "you did good"
     bad_feedback = "thats terrible"
 
     def grading_function(submitted_answer: str) -> Tuple[bool, Optional[str]]:
@@ -108,7 +108,7 @@ def test_grade_question_parametrized_key_error_blank(
 
     question_data["submitted_answers"] = {question_name: "True"}
 
-    def grading_function(ans: str) -> Tuple[bool, Optional[str]]:
+    def grading_function(_: str) -> Tuple[bool, Optional[str]]:
         decoy_dict: Dict[str, str] = dict()
         decoy_dict["junk"]  # This is to throw a key error
         return (True, None)

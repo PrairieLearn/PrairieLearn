@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, List, Optional, Tuple, Literal
 from typing_extensions import assert_never
 import prairielearn as pl
 import lxml.html
@@ -9,6 +9,7 @@ import chevron
 import math
 import python_helper_sympy as phs
 import big_o_utils as bou
+import random
 
 VARIABLES_DEFAULT = ''
 DISPLAY_DEFAULT = 'inline'
@@ -186,7 +187,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     s = None
     try:
-        phs.convert_string_to_sympy(a_sub, variables)
+        phs.convert_string_to_sympy(a_sub, variables, allow_complex=False, allow_trig_functions=False)
     except phs.HasFloatError as err:
         s = f'Your answer contains the floating-point number {err.n}. ' \
             f'All numbers must be expressed as integers (or ratios of integers)' \
@@ -244,6 +245,76 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         pl.grade_question_parameterized(data, name, get_grade_fn(bou.grade_little_omega_expression), weight=weight)
     else:
         assert_never(bigo_type)
+
+
+def test(element_html: str, data: pl.ElementTestData) -> None:
+    element = lxml.html.fragment_fromstring(element_html)
+    name = pl.get_string_attrib(element, 'answers-name')
+    weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
+
+    # Get raw correct answer
+    a_tru = data['correct_answers'][name]
+
+    result = data['test_type']
+    if result == 'correct':
+        data['raw_submitted_answers'][name] = a_tru
+        data['partial_scores'][name] = {'score': 1, 'weight': weight, 'feedback': 'Correct!'}
+
+    elif result == 'incorrect':
+        data['raw_submitted_answers'][name] = f'{a_tru} + {random.randint(1, 100):d}'
+        bigo_type_name = pl.get_string_attrib(element, 'type', BigOType.BIGO.name).upper()
+        bigo_type = BigOType[bigo_type_name]
+
+        data['partial_scores'][name] = \
+            {'score': 0.5, 'weight': weight, 'feedback': 'Your answer is correct, but you have unnecessary lower order terms.'} if bigo_type is not BigOType.THETA else \
+            {'score': 0.25, 'weight': weight, 'feedback': 'Incorrect, your answer has unnecessary lower order terms.'}
+
+    elif result == 'invalid':
+        invalid_type_choices: List[Literal['float', 'expression', 'function', 'variable', 'syntax', 'escape', 'comment']] = \
+            ['float', 'expression', 'function', 'variable', 'syntax', 'escape', 'comment']
+
+        invalid_type = random.choice(invalid_type_choices)
+
+        # TODO add detailed format errors if this gets checked in the future
+        if invalid_type == 'float':
+            invalid_input = 'n + 1.234'
+            data['raw_submitted_answers'][name] = invalid_input
+            data['format_errors'][name] = ''
+
+        elif invalid_type == 'expression':
+            invalid_input = '1 and 0'
+            data['raw_submitted_answers'][name] = invalid_input
+            data['format_errors'][name] = ''
+
+        elif invalid_type == 'function':
+            invalid_input = 'tan(n)'
+            data['raw_submitted_answers'][name] = invalid_input
+            data['format_errors'][name] = ''
+
+        elif invalid_type == 'variable':
+            invalid_input = 'n + m'
+            data['raw_submitted_answers'][name] = invalid_input
+            data['format_errors'][name] = ''
+
+        elif invalid_type == 'syntax':
+            invalid_input = 'n +* 1'
+            data['raw_submitted_answers'][name] = invalid_input
+            data['format_errors'][name] = ''
+
+        elif invalid_type == 'escape':
+            invalid_input = 'n + 1\\n'
+            data['raw_submitted_answers'][name] = invalid_input
+            data['format_errors'][name] = ''
+
+        elif invalid_type == 'comment':
+            invalid_input = 'n # some text'
+            data['raw_submitted_answers'][name] = invalid_input
+            data['format_errors'][name] = ''
+
+        else:
+            assert_never(invalid_type)
+    else:
+        assert_never(result)
 
 
 def get_variables_list(variables_string: str) -> List[str]:
