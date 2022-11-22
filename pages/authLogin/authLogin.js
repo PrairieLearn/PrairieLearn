@@ -2,6 +2,7 @@
 const { Router } = require('express');
 const asyncHandler = require('express-async-handler');
 
+const config = require('../../lib/config');
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
 const { isEnterprise } = require('../../lib/license');
@@ -50,6 +51,8 @@ router.get(
         })
         .filter(Boolean);
     }
+
+    res.locals.hasAzure = config.hasAzure && isEnterprise();
 
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   })
