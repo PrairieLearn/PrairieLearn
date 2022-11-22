@@ -150,7 +150,7 @@ module.exports.run = callbackify(async () => {
     })
     .promise();
 
-  await setAutoScalingGroupCapacity(config.chunksAutoScalingGroupName, 1);
+  await setAutoScalingGroupCapacity(config.chunksAutoScalingGroupName, desiredInstances);
 });
 
 /**
