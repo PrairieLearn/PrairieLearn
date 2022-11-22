@@ -25,6 +25,12 @@ class _Constants:
         }
         self.functions = {
             # These are shown to the student
+            'exp': sympy.exp,
+            'log': sympy.log,
+            'sqrt': sympy.sqrt,
+            'factorial': sympy.factorial
+        }
+        self.trig_functions = {
             'cos': sympy.cos,
             'sin': sympy.sin,
             'tan': sympy.tan,
@@ -36,9 +42,6 @@ class _Constants:
             'atan': sympy.atan,
             'arctan2': sympy.atan2,
             'atan2': sympy.atan2,
-            'exp': sympy.exp,
-            'log': sympy.log,
-            'sqrt': sympy.sqrt,
         }
 
 # Safe evaluation of user input to convert from string to sympy expression.
@@ -226,7 +229,7 @@ def evaluate(expr, locals_for_eval={}):
         locals = {**locals, **locals_for_eval[key]}
     return eval(compile(root, '<ast>', 'eval'), {'__builtins__': None}, locals)
 
-def convert_string_to_sympy(a, variables, allow_hidden=False, allow_complex=False):
+def convert_string_to_sympy(a, variables, *, allow_hidden=False, allow_complex=False, allow_trig_functions=True):
     const = _Constants()
 
     # Create a whitelist of valid functions and variables (and a special flag
@@ -243,6 +246,9 @@ def convert_string_to_sympy(a, variables, allow_hidden=False, allow_complex=Fals
         if allow_hidden:
             locals_for_eval['variables'] = {**locals_for_eval['variables'], **const.hidden_complex_variables}
 
+    if allow_trig_functions:
+        locals_for_eval['functions'] = {**locals_for_eval['functions'], **const.trig_functions}
+
     # If there is a list of variables, add each one to the whitelist
     if variables is not None:
         for variable in variables:
@@ -256,7 +262,7 @@ def point_to_error(s, ind, w = 5):
     w_right = min(ind+w, len(s)) - ind
     return s[ind-w_left:ind+w_right] + '\n' + ' '*w_left + '^' + ' '*w_right
 
-def sympy_to_json(a, allow_complex=True):
+def sympy_to_json(a, *, allow_complex=True, allow_trig_functions=True):
     const = _Constants()
 
     # Get list of variables in the sympy expression
@@ -266,6 +272,9 @@ def sympy_to_json(a, allow_complex=True):
     reserved = {**const.helpers, **const.variables, **const.hidden_variables, **const.functions}
     if allow_complex:
         reserved = {**reserved, **const.complex_variables, **const.hidden_complex_variables}
+    if allow_trig_functions:
+        reserved = {**reserved, **const.trig_functions}
+
     for k in reserved.keys():
         for v in variables:
             if k == v:
@@ -278,7 +287,7 @@ def sympy_to_json(a, allow_complex=True):
 
     return {'_type': 'sympy', '_value': str(a), '_variables': variables}
 
-def json_to_sympy(a, allow_complex=True):
+def json_to_sympy(a, *, allow_complex=True, allow_trig_functions=True):
     if not '_type' in a:
         raise ValueError('json must have key _type for conversion to sympy')
     if a['_type'] != 'sympy':
@@ -288,4 +297,4 @@ def json_to_sympy(a, allow_complex=True):
     if not '_variables' in a:
         a['_variables'] = None
 
-    return convert_string_to_sympy(a['_value'], a['_variables'], allow_hidden=True, allow_complex=allow_complex)
+    return convert_string_to_sympy(a['_value'], a['_variables'], allow_hidden=True, allow_complex=allow_complex, allow_trig_functions=allow_trig_functions)

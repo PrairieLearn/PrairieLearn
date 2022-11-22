@@ -2,6 +2,7 @@ from typing import Callable, List, Tuple, Dict, Any
 import sympy
 import ast
 from dataclasses import dataclass, field
+import python_helper_sympy as phs
 
 SympyMap = Dict[str, Any]
 ASTWhitelist = Tuple[Any, ...]
@@ -10,7 +11,7 @@ BigoGradingFunctionT = Callable[[str, str, List[str]], Tuple[float, str]]
 # See https://github.com/PrairieLearn/PrairieLearn/blob/d10be38fec52929386efb67cce645cd615d589a5/python/python_helper_sympy.py
 # This is a stripped down version that adds factorial but remotes trig and complex numbers.
 
-
+'''
 @dataclass
 class _Constants:
     helpers: SympyMap = field(
@@ -163,7 +164,7 @@ def evaluate(expr: str, locals_for_eval: Dict[str, Any] = {}) -> Any:
     return eval(compile(root, '<ast>', 'eval'), {'__builtins__': None}, locals)
 
 
-def convert_string_to_sympy(expr: str, variables: List[str]) -> Any:
+def phs.convert_string_to_sympy(expr: str, variables: List[str]) -> Any:
     const = _Constants()
 
     locals_for_eval = {
@@ -176,14 +177,14 @@ def convert_string_to_sympy(expr: str, variables: List[str]) -> Any:
         for variable in variables:
             locals_for_eval['variables'][variable] = sympy.Symbol(variable)
     return evaluate(expr, locals_for_eval)
-
+'''
 
 def grade_bigo_expression(a_true: str, a_sub: str, variables: List[str]) -> Tuple[float, str]:
     if a_true == a_sub:
         return (1, 'Correct!')
 
-    sym_true = convert_string_to_sympy(a_true, variables)
-    sym_sub = convert_string_to_sympy(a_sub, variables)
+    sym_true = phs.convert_string_to_sympy(a_true, variables, allow_complex=False, allow_trig_functions=False)
+    sym_sub = phs.convert_string_to_sympy(a_sub, variables, allow_complex=False, allow_trig_functions=False)
 
     if sym_true.equals(sym_sub):
         return (1, 'Correct! Note that your expression may be unnecessarily complex.')
@@ -209,8 +210,8 @@ def grade_theta_expression(a_true: str, a_sub: str, variables: List[str]) -> Tup
     if a_true == a_sub:
         return (1, 'Correct!')
 
-    sym_true = convert_string_to_sympy(a_true, variables)
-    sym_sub = convert_string_to_sympy(a_sub, variables)
+    sym_true = phs.convert_string_to_sympy(a_true, variables, allow_complex=False, allow_trig_functions=False)
+    sym_sub = phs.convert_string_to_sympy(a_sub, variables, allow_complex=False, allow_trig_functions=False)
 
     if sym_true.equals(sym_sub):
         return (1, 'Correct! Note that your expression may be unnecessarily complex.')
@@ -235,8 +236,8 @@ def grade_omega_expression(a_true: str, a_sub: str, variables: List[str]) -> Tup
     if a_true == a_sub:
         return (1, 'Correct!')
 
-    sym_true = convert_string_to_sympy(a_true, variables)
-    sym_sub = convert_string_to_sympy(a_sub, variables)
+    sym_true = phs.convert_string_to_sympy(a_true, variables, allow_complex=False, allow_trig_functions=False)
+    sym_sub = phs.convert_string_to_sympy(a_sub, variables, allow_complex=False, allow_trig_functions=False)
 
     if sym_true.equals(sym_sub):
         return (1, 'Correct! Note that your expression may be unnecessarily complex.')
@@ -262,8 +263,8 @@ def grade_little_o_expression(a_true: str, a_sub: str, variables: List[str]) -> 
     if a_true == a_sub:
         return (1, 'Correct!')
 
-    sym_true = convert_string_to_sympy(a_true, variables)
-    sym_sub = convert_string_to_sympy(a_sub, variables)
+    sym_true = phs.convert_string_to_sympy(a_true, variables, allow_complex=False, allow_trig_functions=False)
+    sym_sub = phs.convert_string_to_sympy(a_sub, variables, allow_complex=False, allow_trig_functions=False)
 
     if sym_true.equals(sym_sub):
         return (1, 'Correct! Note that your expression may be unnecessarily complex.')
@@ -289,8 +290,8 @@ def grade_little_omega_expression(a_true: str, a_sub: str, variables: List[str])
     if a_true == a_sub:
         return (1, 'Correct!')
 
-    sym_true = convert_string_to_sympy(a_true, variables)
-    sym_sub = convert_string_to_sympy(a_sub, variables)
+    sym_true = phs.convert_string_to_sympy(a_true, variables, allow_complex=False, allow_trig_functions=False)
+    sym_sub = phs.convert_string_to_sympy(a_sub, variables, allow_complex=False, allow_trig_functions=False)
 
     if sym_true.equals(sym_sub):
         return (1, 'Correct! Note that your expression may be unnecessarily complex.')

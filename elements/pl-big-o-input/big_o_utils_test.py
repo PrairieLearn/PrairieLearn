@@ -1,5 +1,6 @@
 import pytest
 import big_o_utils as bou
+import python_helper_sympy as phs
 
 VARIABLES = ['n']
 
@@ -218,35 +219,14 @@ class TestBigOInput:
 
 
 class TestExceptions:
-    @pytest.mark.parametrize('a_sub', ['3.5', '3.5*n', '3.14159*n**2'])
-    def test_no_floats(self, a_sub: str) -> None:
-        with pytest.raises(bou.HasFloatError):
-            bou.convert_string_to_sympy(a_sub, VARIABLES)
+    @pytest.mark.parametrize('a_sub', ['tan(n)', 'sin(n)', 'cos(n)', 'arccos(n)'])
+    @pytest.mark.parametrize('grading_fn', ALL_GRADING_FUNCTIONS)
+    def test_invalid_trig_function(self, a_sub: str, grading_fn: bou.BigoGradingFunctionT) -> None:
+        a_true = 'n**2'
 
-    @pytest.mark.parametrize('a_sub', ['5==5', '5!=5', '5>5', '5<5', '5>=5', '5<=5'])
-    def test_invalid_expression(self, a_sub: str) -> None:
-        with pytest.raises(bou.HasInvalidExpressionError):
-            bou.convert_string_to_sympy(a_sub, VARIABLES)
+        # Test for invalid functions in student submission and solution
+        with pytest.raises(phs.HasInvalidFunctionError):
+            grading_fn(a_true, a_sub, VARIABLES)
 
-    @pytest.mark.parametrize('a_sub', ['str(n)', 'sin(n)', 'cos(n)', 'dir(n)'])
-    def test_invalid_function(self, a_sub: str) -> None:
-        with pytest.raises(bou.HasInvalidFunctionError):
-            bou.convert_string_to_sympy(a_sub, VARIABLES)
-
-    @pytest.mark.parametrize('a_sub', ['x', 'y', 'z*n'])
-    def test_invalid_variable(self, a_sub: str) -> None:
-        with pytest.raises(bou.HasInvalidVariableError):
-            bou.convert_string_to_sympy(a_sub, VARIABLES)
-
-    @pytest.mark.parametrize('a_sub', ['(', 'n**', 'n**2+'])
-    def test_parse_error(self, a_sub: str) -> None:
-        with pytest.raises(bou.HasParseError):
-            bou.convert_string_to_sympy(a_sub, VARIABLES)
-
-    def test_escape_error(self) -> None:
-        with pytest.raises(bou.HasEscapeError):
-            bou.convert_string_to_sympy('\\', VARIABLES)
-
-    def test_comment_error(self) -> None:
-        with pytest.raises(bou.HasCommentError):
-            bou.convert_string_to_sympy('#', VARIABLES)
+        with pytest.raises(phs.HasInvalidFunctionError):
+            grading_fn(a_sub, a_true, VARIABLES)
