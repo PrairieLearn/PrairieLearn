@@ -143,7 +143,7 @@ class HasCommentError(Exception):
     offset: int
 
 class CheckNumbers(ast.NodeTransformer):
-    def visit_Num(self, node: ast.Constant) -> ast.Constant:
+    def visit_Constant(self, node: ast.Constant) -> ast.Constant:
         if isinstance(node.n, int):
             return cast(ast.Constant, ast.Call(func=ast.Name(id='_Integer', ctx=ast.Load()), args=[node], keywords=[]))
         elif isinstance(node.n, float):
