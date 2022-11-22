@@ -1,6 +1,6 @@
 import sympy
 import ast
-import sys
+from dataclasses import dataclass
 
 # Create a new instance of this class to access the member dictionaries. This
 # is to avoid accidentally modifying these dictionaries.
@@ -88,41 +88,46 @@ class _Constants:
 # A similar (but more complex) approach to us:
 #     https://github.com/newville/asteval
 
-class Error(Exception):
-    def __init__(self, offset):
-        self.offset = offset
+@dataclass
+class HasFloatError(Exception):
+    offset: int
+    n: float
 
-class HasFloatError(Error):
-    def __init__(self, offset, n):
-        super(HasFloatError, self).__init__(offset)
-        self.n = n
+@dataclass
+class HasComplexError(Exception):
+    offset:int
+    n: float
 
-class HasComplexError(Error):
-    def __init__(self, offset, n):
-        super(HasComplexError, self).__init__(offset)
-        self.n = n
+@dataclass
+class HasInvalidExpressionError(Exception):
+    offset: int
 
-class HasInvalidExpressionError(Error):
-    pass
 
-class HasInvalidFunctionError(Error):
-    def __init__(self, offset, text):
-        super(HasInvalidFunctionError, self).__init__(offset)
-        self.text = text
+@dataclass
+class HasInvalidFunctionError(Exception):
+    offset: int
+    text: str
 
-class HasInvalidVariableError(Error):
-    def __init__(self, offset, text):
-        super(HasInvalidVariableError, self).__init__(offset)
-        self.text = text
 
-class HasParseError(Error):
-    pass
+@dataclass
+class HasInvalidVariableError(Exception):
+    offset: int
+    text: str
 
-class HasEscapeError(Error):
-    pass
 
-class HasCommentError(Error):
-    pass
+@dataclass
+class HasParseError(Exception):
+    offset: int
+
+
+@dataclass
+class HasEscapeError(Exception):
+    offset: int
+
+
+@dataclass
+class HasCommentError(Exception):
+    offset: int
 
 class CheckNumbers(ast.NodeTransformer):
     def visit_Num(self, node):

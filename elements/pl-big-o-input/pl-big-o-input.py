@@ -7,6 +7,7 @@ from html import escape
 import sympy
 import chevron
 import math
+import python_helper_sympy as phs
 import big_o_utils as bou
 
 VARIABLES_DEFAULT = ''
@@ -185,29 +186,29 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     s = None
     try:
-        bou.convert_string_to_sympy(a_sub, variables)
-    except bou.HasFloatError as err:
+        phs.convert_string_to_sympy(a_sub, variables)
+    except phs.HasFloatError as err:
         s = f'Your answer contains the floating-point number {err.n}. ' \
             f'All numbers must be expressed as integers (or ratios of integers)' \
-            f'<br><br><pre>{bou.point_to_error(a_sub, err.offset)}</pre>'
-    except bou.HasInvalidExpressionError as err:
+            f'<br><br><pre>{phs.point_to_error(a_sub, err.offset)}</pre>'
+    except phs.HasInvalidExpressionError as err:
         s = f'Your answer has an invalid expression. '\
-            f'<br><br><pre>{bou.point_to_error(a_sub, err.offset)}</pre>'
-    except bou.HasInvalidFunctionError as err:
+            f'<br><br><pre>{phs.point_to_error(a_sub, err.offset)}</pre>'
+    except phs.HasInvalidFunctionError as err:
         s = f'Your answer calls an invalid function "{err.text}". ' \
-            f'<br><br><pre>{bou.point_to_error(a_sub, err.offset)}</pre>'
-    except bou.HasInvalidVariableError as err:
+            f'<br><br><pre>{phs.point_to_error(a_sub, err.offset)}</pre>'
+    except phs.HasInvalidVariableError as err:
         s = f'Your answer refers to an invalid variable "{err.text}". ' \
-            f'<br><br><pre>{bou.point_to_error(a_sub, err.offset)}</pre>'
-    except bou.HasParseError as err:
+            f'<br><br><pre>{phs.point_to_error(a_sub, err.offset)}</pre>'
+    except phs.HasParseError as err:
         s = f'Your answer has a syntax error. ' \
-            f'<br><br><pre>{bou.point_to_error(a_sub, err.offset)}</pre>'
-    except bou.HasEscapeError as err:
+            f'<br><br><pre>{phs.point_to_error(a_sub, err.offset)}</pre>'
+    except phs.HasEscapeError as err:
         s = f'Your answer must not contain the character "\\". ' \
-            f'<br><br><pre>{bou.point_to_error(a_sub, err.offset)}</pre>'
-    except bou.HasCommentError as err:
+            f'<br><br><pre>{phs.point_to_error(a_sub, err.offset)}</pre>'
+    except phs.HasCommentError as err:
         s = f'Your answer must not contain the character "#". ' \
-            f'<br><br><pre>{bou.point_to_error(a_sub, err.offset)}</pre>'
+            f'<br><br><pre>{phs.point_to_error(a_sub, err.offset)}</pre>'
     except Exception:
         s = 'Invalid format.'
     finally:
