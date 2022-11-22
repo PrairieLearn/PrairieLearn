@@ -1,6 +1,7 @@
 // @ts-check
 const { callbackify } = require('util');
 
+const config = require('../lib/config');
 const logger = require('../lib/logger');
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
@@ -8,6 +9,9 @@ const sqlLoader = require('../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports.run = callbackify(async () => {
-  const result = await sqldb.queryAsync(sql.clean_time_series, {});
-  logger.verbose(`Deleted ${result.rowCount} old rows from time_series table`);
+  const results = await sqldb.queryAsync(sql.clean_time_series, {
+    limit: config.cleanTimeSeriesBatchSize,
+    retention_period_sec: config.timeSeriesRetentionPeriodSec,
+  });
+  logger.verbose(`Deleted ${results.rowCount} old rows from the time_series table`);
 });

@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const async = require('async');
 const _ = require('lodash');
@@ -107,7 +108,7 @@ module.exports = {
       {
         name: 'cleanTimeSeries',
         module: require('./cleanTimeSeries'),
-        intervalSec: 'daily',
+        intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalCleanTimeSeriesSec,
       },
     ];
 
@@ -177,7 +178,7 @@ module.exports = {
     debug(`queueDailyJobs()`);
     const that = this;
     function timeToNextMS() {
-      const now = new Date();
+      const now = Date.now();
       const midnight = new Date(now).setHours(0, 0, 0, 0);
       const sinceMidnightMS = now - midnight;
       const cronDailyMS = config.cronDailySec * 1000;
@@ -243,11 +244,11 @@ module.exports = {
 
                   span.recordException(err);
                   span.setStatus({
-                    status: SpanStatusCode.ERROR,
+                    code: SpanStatusCode.ERROR,
                     message: err.message,
                   });
                 } else {
-                  span.setStatus({ status: SpanStatusCode.OK });
+                  span.setStatus({ code: SpanStatusCode.OK });
                 }
 
                 // resolve no matter what so that we run all jobs even if one fails
@@ -349,10 +350,10 @@ module.exports = {
   runJob(job, cronUuid, callback) {
     debug(`runJob(): ${job.name}`);
     logger.verbose('cron: starting ' + job.name, { cronUuid });
-    var startTime = new Date();
+    var startTime = Date.now();
     job.module.run((err) => {
       if (ERR(err, callback)) return;
-      var endTime = new Date();
+      var endTime = Date.now();
       var elapsedTimeMS = endTime - startTime;
       debug(`runJob(): ${job.name}: success, duration ${elapsedTimeMS} ms`);
       logger.verbose('cron: ' + job.name + ' success', {
