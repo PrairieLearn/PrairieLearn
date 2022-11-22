@@ -630,20 +630,26 @@ Gives automated feedback in the case of improper asymptotic input.
 **question.html**
 
 ```html
-<pl-symbolic-input answers-name="ans" variables="n" correct-answer="n**2" size="10"></pl-symbolic-input>
+<pl-symbolic-input
+  answers-name="ans"
+  variables="n"
+  correct-answer="n**2"
+  size="10"
+></pl-symbolic-input>
 ```
 
 #### Customizations
 
-| Attribute                    | Type                | Default  | Description                                                                                                                                                                                                       |
-| ---------------------------- | ------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`               | string              | —        | Variable name to store data in.                   |
-| `weight`                     | integer             | 1        | Weight to use when computing a weighted average score over elements.                                                                                                                                              |
-| `correct-answer`             | float               | special  | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                                                                  |
-| `display`                    | "block" or "inline" | "inline" | How to display the input field.                                                                                                                                                                                   |
-| `variables`                  | string              | —        | A comma-delimited list of symbols that can be used in the symbolic expression. Only one variable supported.                                                                                                                                    |
-| `size`                       | integer             | 35       | Size of the input box.                                                                                                                                                                                            |
-| `show-help-text`             | boolean             | true     | Show the question mark at the end of the input displaying required input parameters.                                                                                                                              |
+| Attribute        | Type                                                  | Default  | Description                                                                                                 |
+| ---------------- | ----------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------- |
+| `answers-name`   | string                                                | —        | Variable name to store data in.                                                                             |
+| `type`           | "big_o", "theta", "omega", "little_o", "little_omega" | "big_o"  | Type of asymptotic answer required.                                                                         |
+| `weight`         | integer                                               | 1        | Weight to use when computing a weighted average score over elements.                                        |
+| `correct-answer` | string                                                | -        | Correct answer for grading.                                                                                 |
+| `display`        | "block" or "inline"                                   | "inline" | How to display the input field.                                                                             |
+| `variables`      | string                                                | —        | A comma-delimited list of symbols that can be used in the symbolic expression. Only one variable supported. |
+| `size`           | integer                                               | 35       | Size of the input box.                                                                                      |
+| `show-help-text` | boolean                                               | true     | Show the question mark at the end of the input displaying required input parameters.                        |
 
 #### Details
 

@@ -19,7 +19,7 @@ WEIGHT_DEFAULT = 1
 
 
 class BigOType(Enum):
-    BIGO = r'O'
+    BIG_O = r'O'
     THETA = r'\Theta'
     OMEGA = r'\Omega'
     LITTLE_O = r'o'
@@ -53,7 +53,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     display = DisplayType(pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT))
     size = pl.get_integer_attrib(element, 'size', SIZE_DEFAULT)
 
-    bigo_type_name = pl.get_string_attrib(element, 'type', BigOType.BIGO.name).upper()
+    bigo_type_name = pl.get_string_attrib(element, 'type', BigOType.BIG_O.name).upper()
     bigo_type = BigOType[bigo_type_name].value
 
     operators: List[str] = ['exp', 'log', 'sqrt', 'factorial', '( )', '+', '-', '*', '/', '^', '**']
@@ -204,9 +204,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             return grade_fn(a_tru, a_sub, variables)
         return grade
 
-    bigo_type = BigOType[pl.get_string_attrib(element, 'type', BigOType.BIGO.name).upper()]
+    bigo_type = BigOType[pl.get_string_attrib(element, 'type', BigOType.BIG_O.name).upper()]
 
-    if bigo_type is BigOType.BIGO:
+    if bigo_type is BigOType.BIG_O:
         pl.grade_question_parameterized(data, name, get_grade_fn(bou.grade_bigo_expression), weight=weight)
     elif bigo_type is BigOType.THETA:
         pl.grade_question_parameterized(data, name, get_grade_fn(bou.grade_theta_expression), weight=weight)
@@ -235,7 +235,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
     elif result == 'incorrect':
         data['raw_submitted_answers'][name] = f'{a_tru} + {random.randint(1, 100):d}'
-        bigo_type = BigOType[pl.get_string_attrib(element, 'type', BigOType.BIGO.name).upper()]
+        bigo_type = BigOType[pl.get_string_attrib(element, 'type', BigOType.BIG_O.name).upper()]
 
         data['partial_scores'][name] = \
             {'score': 0.5, 'weight': weight, 'feedback': 'Your answer is correct, but you have unnecessary lower order terms.'} if bigo_type is not BigOType.THETA else \
