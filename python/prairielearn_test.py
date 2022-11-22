@@ -21,22 +21,21 @@ def test_inner_html():
 
 
 @pytest.mark.parametrize(
-    "question_name, student_answer, feedback_field, weight, expected_grade",
+    "question_name, student_answer, weight, expected_grade",
     [
-        ("base", "a", "base", 1, True),
-        ("base", "a, b", "base", 1, False),
-        ("base", "", "home", 2, False),
-        ("home", "b", "base", 2, True),
-        ("base", "c", None, 3, True),
-        ("base", "<>", None, 3, True),
-        ("base", "><", None, 3, False),
+        ("base", "a", 1, True),
+        ("base", "a, b", 1, False),
+        ("base", "", 2, False),
+        ("home", "b", 2, True),
+        ("base", "c", 3, True),
+        ("base", "<>", 3, True),
+        ("base", "><", 3, False),
     ],
 )
 def test_grade_question_parametrized_correct(
     question_data: pl.QuestionData,
     question_name: str,
     student_answer: str,
-    feedback_field: Optional[str],
     weight: int,
     expected_grade: bool,
 ) -> None:
@@ -52,11 +51,8 @@ def test_grade_question_parametrized_correct(
         return False, bad_feedback
 
     pl.grade_question_parameterized(
-        question_data, question_name, grading_function, weight, feedback_field
+        question_data, question_name, grading_function, weight
     )
-
-    if feedback_field is None:
-        feedback_field = question_name
 
     expected_score = 1.0 if expected_grade else 0.0
     assert question_data["partial_scores"][question_name]["score"] == expected_score
@@ -65,35 +61,30 @@ def test_grade_question_parametrized_correct(
 
     expected_feedback = good_feedback if expected_grade else bad_feedback
 
-    assert question_data["feedback"][feedback_field] == expected_feedback
     assert (
         question_data["partial_scores"][question_name]["feedback"] == expected_feedback
     )
 
 
 @pytest.mark.parametrize(
-    "student_ans, should_raise",
-    [("<evil javascript>", True), ("><", True), ("a < b", False), ("b > a", False)],
+    "student_ans, error_msg",
+    [("a", "stuff"), ("ab", "other stuff"), ("abc", "something else")],
 )
 def test_grade_question_parametrized_exception(
-    question_data: pl.QuestionData, student_ans: str, should_raise: bool
+    question_data: pl.QuestionData, student_ans: str, error_msg: str
 ) -> None:
+
     question_name = "name"
 
     question_data["submitted_answers"] = {question_name: student_ans}
 
-    def grading_function(ans: str) -> Tuple[bool, Optional[str]]:
-        return True, f"The answer {ans} is right"
+    def grading_function(_: str) -> Tuple[bool, Optional[str]]:
+        raise ValueError(error_msg)
 
-    if should_raise:
-        with pytest.raises(ValueError, match="input should not be present"):
-            pl.grade_question_parameterized(
-                question_data, question_name, grading_function
-            )
-    else:
-        pl.grade_question_parameterized(question_data, question_name, grading_function)
+    pl.grade_question_parameterized(question_data, question_name, grading_function)
 
-        assert question_data["partial_scores"][question_name]["score"] == 1.0
+    assert question_data["partial_scores"][question_name]["score"] == 0.0
+    assert question_data["format_errors"][question_name] == error_msg
 
 
 def test_grade_question_parametrized_bad_grade_function(

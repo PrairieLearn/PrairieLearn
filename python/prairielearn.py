@@ -55,8 +55,7 @@ class ElementTestData(QuestionData):
 def grade_question_parameterized(data: QuestionData,
                                  question_name: str,
                                  grade_function: Callable[[Any], Tuple[Union[bool, float], Optional[str]]],
-                                 weight: int = 1,
-                                 feedback_field_name: Optional[str] = None) -> None:
+                                 weight: int = 1) -> None:
     '''
     Grade question question_name, marked correct if grade_function(student_answer) returns True in
     its first argument. grade_function should take in a single parameter (which will be the submitted
@@ -67,8 +66,6 @@ def grade_question_parameterized(data: QuestionData,
         - The second element of the 2-tuple should either be:
             - a string containing feedback
             - None, if there is no feedback (usually this should only occur if the answer is correct)
-    Note: if the feedback_field_name is the same as the question name,
-    then the feedback_field_name does not need to be specified.
     '''
 
     # Create the data dictionary at first
@@ -99,7 +96,7 @@ def grade_question_parameterized(data: QuestionData,
 
     except ValueError as err:
         # Exit if there's a format error
-        data["format_errors"][question_name] = html.escape(str(err))
+        data["format_errors"][question_name] = str(err)
         return
 
 
@@ -108,18 +105,7 @@ def grade_question_parameterized(data: QuestionData,
 
     # Put all feedback here
     if feedback_content:
-        # Check for unescaped bad stuff in feedback string
-        if isinstance(submitted_answer, str):
-            contains_bad_chars = all(x in submitted_answer for x in {'<', '>'})
-            if contains_bad_chars and submitted_answer in feedback_content:
-                raise ValueError(f'Unescaped student input should not be present in the feedback for {question_name}.')
-
         data['partial_scores'][question_name]['feedback'] = feedback_content
-
-        if not feedback_field_name:
-            feedback_field_name = question_name
-
-        data['feedback'][feedback_field_name] = feedback_content
 
 
 def to_json(v):

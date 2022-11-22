@@ -28,8 +28,8 @@ def grade_bigo_expression(a_true: str, a_sub: str, variables: List[str]) -> Tupl
         return (.25, 'Your answer is correct, but too loose.')
     elif L == sympy.sympify(1):
         return (.5, 'Your answer is correct, but you have unnecessary lower order terms.')
-    else:
-        return (.5, 'Your answer is correct but has unncessary constant factors.')
+
+    return (.5, 'Your answer is correct but has unncessary constant factors.')
 
 
 def grade_theta_expression(a_true: str, a_sub: str, variables: List[str]) -> Tuple[float, str]:
@@ -54,8 +54,8 @@ def grade_theta_expression(a_true: str, a_sub: str, variables: List[str]) -> Tup
         return (0, 'Your answer is incorrect.')
     elif omega_L == sympy.sympify(1) and bigo_L == sympy.sympify(1):
         return (0.25, 'Incorrect, your answer has unnecessary lower order terms.')
-    else:
-        return (0.25, 'Incorrect, your answer has unnecessary constant factors.')
+
+    return (0.25, 'Incorrect, your answer has unnecessary constant factors.')
 
 
 def grade_omega_expression(a_true: str, a_sub: str, variables: List[str]) -> Tuple[float, str]:
@@ -81,8 +81,8 @@ def grade_omega_expression(a_true: str, a_sub: str, variables: List[str]) -> Tup
         return (0, 'Your answer is incorrect.')
     elif L == sympy.sympify(1):
         return (.5, 'Your answer is correct, but you have unnecessary lower order terms.')
-    else:
-        return (.5, 'Your answer is correct but has unncessary constant factors.')
+
+    return (.5, 'Your answer is correct but has unncessary constant factors.')
 
 
 def grade_little_o_expression(a_true: str, a_sub: str, variables: List[str]) -> Tuple[float, str]:
@@ -108,8 +108,8 @@ def grade_little_o_expression(a_true: str, a_sub: str, variables: List[str]) -> 
         return (.25, 'Your answer is correct, but too loose.')
     elif L == sympy.sympify(1):
         return (.5, 'Your answer is correct, but you have unnecessary lower order terms.')
-    else:
-        return (.5, 'Your answer is correct but has unncessary constant factors.')
+
+    return (.5, 'Your answer is correct but has unncessary constant factors.')
 
 
 def grade_little_omega_expression(a_true: str, a_sub: str, variables: List[str]) -> Tuple[float, str]:
@@ -135,5 +135,5 @@ def grade_little_omega_expression(a_true: str, a_sub: str, variables: List[str])
         return (0, 'Your answer is incorrect.')
     elif L == sympy.sympify(1):
         return (.5, 'Your answer is correct, but you have unnecessary lower order terms.')
-    else:
-        return (.5, 'Your answer is correct but has unncessary constant factors.')
+
+    return (.5, 'Your answer is correct but has unncessary constant factors.')
