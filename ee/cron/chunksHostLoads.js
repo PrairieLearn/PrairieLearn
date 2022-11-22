@@ -7,21 +7,39 @@ const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
+const PAGE_VIEWS_PER_SECOND = 'PageViewsPerSecond';
+const ACTIVE_WORKERS_PER_SECOND = 'ActiveWorkersPerSecond';
+const LOAD_BALANCER_REQUESTS_PER_MINUTE = 'LoadBalancerRequestsPerMinute';
+
+/**
+ * Finds the maximum value in the given array.
+ * @param {number[]} arr
+ */
+function arrayMax(arr) {
+  return arr.reduce((a, b) => Math.max(a, b), 0);
+}
+
 module.exports.run = callbackify(async () => {
-  if (!config.runningInEc2) return;
+  if (
+    !config.runningInEc2 ||
+    !config.chunksLoadBalancerDimensionName ||
+    !config.chunksTargetGroupDimensionName
+  ) {
+    return;
+  }
 
   const cloudwatch = new AWS.CloudWatch();
 
   const now = Date.now();
-  const startTime = new Date(now - 1000 * 60 * 5);
+  const startTime = new Date(now - 1000 * 60 * 15);
   const endTime = new Date(now + 1000 * 60 * 5);
-  const metrics = cloudwatch
+  const metrics = await cloudwatch
     .getMetricData({
       StartTime: startTime,
       EndTime: endTime,
       MetricDataQueries: [
         {
-          Id: 'PageViewsPerSecond',
+          Id: PAGE_VIEWS_PER_SECOND,
           MetricStat: {
             Metric: {
               Namespace: 'PrairieLearn',
@@ -38,7 +56,7 @@ module.exports.run = callbackify(async () => {
           },
         },
         {
-          Id: 'ActiveWorkersPerSecond',
+          Id: ACTIVE_WORKERS_PER_SECOND,
           MetricStat: {
             Metric: {
               Namespace: 'PrairieLearn',
@@ -55,7 +73,7 @@ module.exports.run = callbackify(async () => {
           },
         },
         {
-          Id: 'LoadBalancerRequestsPerMinute',
+          Id: LOAD_BALANCER_REQUESTS_PER_MINUTE,
           MetricStat: {
             Metric: {
               Namespace: 'AWS/ApplicationELB',
@@ -63,13 +81,11 @@ module.exports.run = callbackify(async () => {
               Dimensions: [
                 {
                   Name: 'LoadBalancer',
-                  // TODO: pull from config?
-                  Value: '',
+                  Value: config.chunksLoadBalancerDimensionName,
                 },
                 {
                   Name: 'TargetGroup',
-                  // TODO: pull from config?
-                  Value: '',
+                  Value: config.chunksTargetGroupDimensionName,
                 },
               ],
             },
@@ -81,9 +97,56 @@ module.exports.run = callbackify(async () => {
     })
     .promise();
 
-  await cloudwatch.putMetricData({ MetricData: [], Namespace: 'TESTING' }).promise();
+  const pageViewsPerSecondMetric = metrics.MetricDataResults.find(
+    (m) => m.Id === PAGE_VIEWS_PER_SECOND
+  );
+  const activeWorkersPerSecondMetric = metrics.MetricDataResults.find(
+    (m) => m.Id === ACTIVE_WORKERS_PER_SECOND
+  );
+  const loadBalancerRequestsPerMinuteMetric = metrics.MetricDataResults.find(
+    (m) => m.Id === LOAD_BALANCER_REQUESTS_PER_MINUTE
+  );
 
-  // TODO: add chunks ASG name to config.
+  const maxPageViewsPerSecond = arrayMax(pageViewsPerSecondMetric.Values);
+  const maxActiveWorkersPerSecond = arrayMax(activeWorkersPerSecondMetric.Values);
+  const maxLoadBalancerRequestsPerMinute = arrayMax(loadBalancerRequestsPerMinuteMetric.Values);
+
+  const desiredInstancesByPageViews = 1234;
+  const desiredInstancesByActiveWorkers = 1234;
+  const desiredInstancesByLoadBalancerRequests = 1234;
+  const desiredInstances = Math.round(
+    Math.max(
+      desiredInstancesByPageViews,
+      desiredInstancesByActiveWorkers,
+      desiredInstancesByLoadBalancerRequests,
+      1
+    )
+  );
+
+  await cloudwatch
+    .putMetricData({
+      MetricData: [
+        {
+          MetricName: 'DesiredInstancesByPageViews',
+          Unit: 'Count',
+        },
+        {
+          MetricName: 'DesiredInstancesByActiveWorkers',
+          Unit: 'Count',
+        },
+        {
+          MetricName: 'DesiredInstancesByLoadBalancerRequests',
+          Unit: 'Count',
+        },
+        {
+          MetricName: 'DesiredInstances',
+          Unit: 'Count',
+        },
+      ],
+      Namespace: 'Chunks',
+    })
+    .promise();
+
   await setAutoScalingGroupCapacity(config.chunksAutoScalingGroupName, 1);
 });
 
