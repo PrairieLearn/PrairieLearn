@@ -1,7 +1,5 @@
 from typing import Callable, List, Tuple, Dict, Any
 import sympy
-import ast
-from dataclasses import dataclass, field
 import python_helper_sympy as phs
 
 SympyMap = Dict[str, Any]
@@ -11,7 +9,7 @@ BigoGradingFunctionT = Callable[[str, str, List[str]], Tuple[float, str]]
 # See https://github.com/PrairieLearn/PrairieLearn/blob/d10be38fec52929386efb67cce645cd615d589a5/python/python_helper_sympy.py
 # This is a stripped down version that adds factorial but remotes trig and complex numbers.
 
-'''
+"""
 @dataclass
 class _Constants:
     helpers: SympyMap = field(
@@ -177,7 +175,8 @@ def phs.convert_string_to_sympy(expr: str, variables: List[str]) -> Any:
         for variable in variables:
             locals_for_eval['variables'][variable] = sympy.Symbol(variable)
     return evaluate(expr, locals_for_eval)
-'''
+"""
+
 
 def grade_bigo_expression(a_true: str, a_sub: str, variables: List[str]) -> Tuple[float, str]:
     if a_true == a_sub:

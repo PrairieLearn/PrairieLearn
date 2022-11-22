@@ -1,7 +1,7 @@
 import sympy
 import ast
 from dataclasses import dataclass
-from typing import Any, cast, Dict, List, Tuple, TypedDict, Literal
+from typing import Any, cast, Dict, List, Tuple, TypedDict, Literal, Optional
 
 SympyMapT = Dict[str, Any]
 ASTWhitelistT = Tuple[Any, ...]
@@ -251,7 +251,7 @@ def evaluate(expr: str, locals_for_eval: SympyMapT={}) -> sympy.Expr:
         locals = {**locals, **locals_for_eval[key]}
     return eval(compile(root, '<ast>', 'eval'), {'__builtins__': None}, locals)
 
-def convert_string_to_sympy(expr: str, variables: List[str], *, allow_hidden: bool=False, allow_complex: bool=False, allow_trig_functions: bool=True) -> sympy.Expr:
+def convert_string_to_sympy(expr: str, variables: Optional[List[str]], *, allow_hidden: bool=False, allow_complex: bool=False, allow_trig_functions: bool=True) -> sympy.Expr:
     const = _Constants()
 
     # Create a whitelist of valid functions and variables (and a special flag
@@ -304,11 +304,11 @@ def sympy_to_json(a: sympy.Expr, *, allow_complex: bool=True, allow_trig_functio
                 raise ValueError('sympy expression has a variable with a reserved name: {:s}'.format(k))
 
     # Apply substitutions for hidden variables
-    a = a.subs([(const.hidden_variables[key], key) for key in const.hidden_variables.keys()])
+    a_sub = a.subs([(const.hidden_variables[key], key) for key in const.hidden_variables.keys()])
     if allow_complex:
-        a = a.subs([(const.hidden_complex_variables[key], key) for key in const.hidden_complex_variables.keys()])
+        a_sub = a_sub.subs([(const.hidden_complex_variables[key], key) for key in const.hidden_complex_variables.keys()])
 
-    return {'_type': 'sympy', '_value': str(a), '_variables': variables}
+    return {'_type': 'sympy', '_value': str(a_sub), '_variables': variables}
 
 def json_to_sympy(a: SympyJson, *, allow_complex: bool=True, allow_trig_functions: bool=True) -> sympy.Expr:
     if not '_type' in a:
