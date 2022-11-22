@@ -204,8 +204,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             return grade_fn(a_tru, a_sub, variables)
         return grade
 
-    bigo_type_name = pl.get_string_attrib(element, 'type', BigOType.BIGO.name).upper()
-    bigo_type = BigOType[bigo_type_name]
+    bigo_type = BigOType[pl.get_string_attrib(element, 'type', BigOType.BIGO.name).upper()]
 
     if bigo_type is BigOType.BIGO:
         pl.grade_question_parameterized(data, name, get_grade_fn(bou.grade_bigo_expression), weight=weight)
@@ -236,8 +235,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
     elif result == 'incorrect':
         data['raw_submitted_answers'][name] = f'{a_tru} + {random.randint(1, 100):d}'
-        bigo_type_name = pl.get_string_attrib(element, 'type', BigOType.BIGO.name).upper()
-        bigo_type = BigOType[bigo_type_name]
+        bigo_type = BigOType[pl.get_string_attrib(element, 'type', BigOType.BIGO.name).upper()]
 
         data['partial_scores'][name] = \
             {'score': 0.5, 'weight': weight, 'feedback': 'Your answer is correct, but you have unnecessary lower order terms.'} if bigo_type is not BigOType.THETA else \

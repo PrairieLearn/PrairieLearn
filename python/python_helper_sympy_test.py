@@ -152,6 +152,6 @@ class TestExceptions:
     ])
     def test_invalid_format(self, a_sub_list: List[str], target_string: str) -> None:
         for a_sub in a_sub_list:
-            format_error = phs.validate_string_as_sympy(a_sub, self.VARIABLES, allow_complex=False)
+            format_error = phs.validate_string_as_sympy(a_sub, self.VARIABLES, allow_complex=False, allow_trig_functions=False)
             assert format_error is not None
             assert target_string in format_error
