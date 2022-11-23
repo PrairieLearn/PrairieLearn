@@ -45,7 +45,7 @@ BEGIN
     -- ############################################################
     -- check access with schedulers
 
-    << new_schedule_access >>
+    << schedule_access >>
     DECLARE
         exam_uuid uuid;
     BEGIN
@@ -56,22 +56,8 @@ BEGIN
 
         -- only enforce for mode:Exam otherwise skip
         IF mode != 'Exam' THEN
-            EXIT new_schedule_access;
+            EXIT schedule_access;
         END IF;
-
-        -- is there a checked-in PrairieSchedule reservation?
-        SELECT e.uuid
-        INTO exam_uuid
-        FROM
-            reservations AS r
-            JOIN exams AS e USING(exam_id)
-        WHERE
---                e.uuid = assessment_access_rule.exam_uuid AND
-            r.user_id = check_assessment_access_rule.user_id
-            AND r.delete_date IS NULL
-            AND date BETWEEN r.access_start AND r.access_end
-        ORDER BY r.access_end DESC -- choose the longest-lasting if >1
-        LIMIT 1;
 
         -- is there a checked-in pt_reservation?
         SELECT x.uuid
@@ -83,12 +69,11 @@ BEGIN
         WHERE
             (date BETWEEN r.access_start AND r.access_end)
             AND e.user_id = check_assessment_access_rule.user_id;
-            --AND x.uuid = assessment_access_rule.exam_uuid;
 
         IF FOUND THEN
             IF assessment_access_rule.exam_uuid = exam_uuid THEN
                 -- exam_uuid matches, so don't keep going to authorized := FALSE
-                EXIT new_schedule_access;
+                EXIT schedule_access;
             ELSE
                 -- checked-in so deny any exams that is not linked
                 authorized := FALSE;
@@ -100,7 +85,6 @@ BEGIN
             authorized := FALSE;
         END IF;
 
-    END new_schedule_access;
-
+    END schedule_access;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
