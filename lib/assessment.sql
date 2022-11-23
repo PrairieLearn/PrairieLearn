@@ -85,7 +85,7 @@ FROM assessments AS a
 WHERE a.id = $assessment_id;
 
 -- BLOCK update_assessment_statisics
-UPDATE assessments
+UPDATE assessments AS a
 SET
     statistics_last_updated_at = now(),
     score_stat_number = score_stats.number,
@@ -108,7 +108,7 @@ SET
     duration_stat_threshold_labels = duration_stats.threshold_labels,
     duration_stat_hist = duration_stats.hist
 FROM
-    assessments_stats(id) AS score_stats,
-    assessments_duration_stats(id) AS duration_stats
+    assessments_stats($assessment_id) AS score_stats,
+    assessments_duration_stats($assessment_id) AS duration_stats
 WHERE
-    id = $assessment_id;
+    a.id = $assessment_id;

@@ -44,7 +44,7 @@ router.get(
     res.locals.fileSubmissionsFilename = fileSubmissionsFilename(res.locals);
 
     // update assessment statistics if needed
-    assessment.updateAssessmentStatistics(res.locals.course_instance.id);
+    await assessment.updateAssessmentStatisticsForCourseInstance(res.locals.course_instance.id);
 
     var params = {
       course_instance_id: res.locals.course_instance.id,
@@ -52,7 +52,7 @@ router.get(
       req_date: res.locals.req_date,
       assessments_group_by: res.locals.course_instance.assessments_group_by,
     };
-    const result = sqldb.queryAsync(sql.select_assessments, params);
+    const result = await sqldb.queryAsync(sql.select_assessments, params);
 
     res.locals.rows = _.map(result.rows, (row) => {
       if (row.sync_errors) row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
@@ -72,7 +72,7 @@ router.get(
       // data, because this file only has aggregate data.
 
       // update assessment statistics if needed
-      assessment.updateAssessmentStatistics(res.locals.course_instance.id);
+      assessment.updateAssessmentStatisticsForCourseInstance(res.locals.course_instance.id);
 
       var params = {
         course_instance_id: res.locals.course_instance.id,

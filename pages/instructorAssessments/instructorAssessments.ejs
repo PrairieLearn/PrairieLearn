@@ -88,7 +88,7 @@
 
                 <td class="text-center align-middle"><%= row.score_stat_number %></td>
 
-                <% if (row.number > 0) { %>
+                <% if (row.score_stat_number > 0) { %>
                 <td class="text-center align-middle"><div id="scoreHist<%= i %>" class="miniHist"></div></td>
                 <script>
                   $(function() {
@@ -104,13 +104,13 @@
                 <td class="text-center align-middle"></td>
                 <% } %>
 
-                <% if (row.number > 0) { %>
+                <% if (row.score_stat_number > 0) { %>
                 <td class="text-center align-middle"><%- include('../partials/scorebar', {score: Math.round(row.score_stat_mean)}); %></td>
                 <% } else { %>
                 <td class="text-center align-middle"></td>
                 <% } %>
 
-                <% if (row.number > 0) { %>
+                <% if (row.score_stat_number > 0) { %>
                 <td class="text-center align-middle"><%= row.duration_stat_mean_formatted %></td>
                 <% } else { %>
                 <td class="text-center align-middle"></td>
