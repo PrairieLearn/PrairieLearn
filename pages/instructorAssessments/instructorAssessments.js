@@ -80,7 +80,7 @@ router.get(
         req_date: res.locals.req_date,
         assessments_group_by: res.locals.course_instance.assessments_group_by,
       };
-      const result = sqldb.queryAsync(sql.select_assessments, params);
+      const result = await sqldb.queryAsync(sql.select_assessments, params);
 
       var assessmentStats = result.rows;
       var csvHeaders = [
