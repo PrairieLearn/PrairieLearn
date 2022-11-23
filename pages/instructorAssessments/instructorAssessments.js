@@ -43,8 +43,9 @@ router.get(
     res.locals.csvFilename = csvFilename(res.locals);
     res.locals.fileSubmissionsFilename = fileSubmissionsFilename(res.locals);
 
-    // update assessment statistics if needed
-    await assessment.updateAssessmentStatisticsForCourseInstance(res.locals.course_instance.id);
+    if (req.query.recalcStats === '1') {
+      await assessment.updateAssessmentStatisticsForCourseInstance(res.locals.course_instance.id);
+    }
 
     var params = {
       course_instance_id: res.locals.course_instance.id,
@@ -53,12 +54,18 @@ router.get(
       assessments_group_by: res.locals.course_instance.assessments_group_by,
     };
     const result = await sqldb.queryAsync(sql.select_assessments, params);
+    res.locals.rows = result.rows;
 
-    res.locals.rows = _.map(result.rows, (row) => {
+    if (req.query.recalcStats === '1') {
+      for (const row of res.locals.rows) {
+        row.needs_statistics_update = false;
+      }
+    }
+
+    for (const row of res.locals.rows) {
       if (row.sync_errors) row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
       if (row.sync_warnings) row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
-      return row;
-    });
+    }
 
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   })

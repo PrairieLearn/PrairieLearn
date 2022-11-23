@@ -68,6 +68,7 @@
         "googleapis": "^109.0.0",
         "he": "^1.2.0",
         "highlight.js": "^11.6.0",
+        "htmx.org": "^1.8.4",
         "http-proxy-middleware": "^2.0.6",
         "http-status": "^1.5.3",
         "isbinaryfile": "^4.0.8",

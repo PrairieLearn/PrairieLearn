@@ -4,6 +4,7 @@
     <%- include('../partials/head'); %>
     <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('d3/dist/d3.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('htmx.org/dist/htmx.min.js') %>"></script>
     <script src="<%= asset_path('localscripts/histmini.js') %>"></script>
   </head>
   <script>
@@ -40,8 +41,8 @@
             </div>
         </div>
 
-        <div class="table-responsive">
-          <table class="table table-sm table-hover">
+        <div class="table-responsive" hx-get="<%= urlPrefix %>/instance_admin/assessments?recalcStats=1" hx-trigger="load" hx-select="#assessment-table">
+          <table class="table table-sm table-hover" id="assessment-table">
             <thead>
               <tr>
                 <th style="width: 1%"></th>
@@ -86,35 +87,59 @@
                 
                 <td class="align-middle"><%= row.tid %></td>
 
-                <td class="text-center align-middle"><%= row.score_stat_number %></td>
+                <td class="text-center align-middle" style="white-space: nowrap;">
+                  <%= row.score_stat_number %>
+                  <% if (row.needs_statistics_update) { %>
+                    <div class="spinner-border spinner-border-sm" role="status">
+                      <span class="sr-only">Loading...</span>
+                    </div>
+                  <% } %>
+                </td>
 
-                <% if (row.score_stat_number > 0) { %>
-                <td class="text-center align-middle"><div id="scoreHist<%= i %>" class="miniHist"></div></td>
-                <script>
-                  $(function() {
-                      var data = [<%= row.score_stat_score_hist %>];
-                      var options = {
-                          width: 60,
-                          height: 20,
-                      };
-                      histmini("#scoreHist<%= i %>", data, options);
-                  });
-                </script>
-                <% } else { %>
-                <td class="text-center align-middle"></td>
-                <% } %>
+                <td class="text-center align-middle" style="white-space: nowrap;">
+                  <% if (row.score_stat_number > 0) { %>
+                  <div id="scoreHist<%= i %>" class="miniHist d-inline-block"></div>
+                  <% if (row.needs_statistics_update) { %>
+                  <div class="spinner-border spinner-border-sm" role="status">
+                    <span class="sr-only">Loading...</span>
+                  </div>
+                  <% } %>
+                  <script>
+                    $(function() {
+                        var data = [<%= row.score_stat_score_hist %>];
+                        var options = {
+                            width: 60,
+                            height: 20,
+                        };
+                        histmini("#scoreHist<%= i %>", data, options);
+                    });
+                  </script>
+                  <% } %>
+                </td>
 
-                <% if (row.score_stat_number > 0) { %>
-                <td class="text-center align-middle"><%- include('../partials/scorebar', {score: Math.round(row.score_stat_mean)}); %></td>
-                <% } else { %>
-                <td class="text-center align-middle"></td>
-                <% } %>
+                <td class="text-center align-middle" style="white-space: nowrap;">
+                  <% if (row.score_stat_number > 0) { %>
+                  <div class="d-inline-block align-middle" style="min-width: 8em; max-width: 20em;">
+                    <%- include('../partials/scorebar', {score: Math.round(row.score_stat_mean)}); %>
+                  </div>
+                  <% } %>
+                  <% if (row.needs_statistics_update) { %>
+                    <div class="spinner-border spinner-border-sm" role="status">
+                      <span class="sr-only">Loading...</span>
+                    </div>
+                  <% } %>
+                </td>
 
-                <% if (row.score_stat_number > 0) { %>
-                <td class="text-center align-middle"><%= row.duration_stat_mean_formatted %></td>
-                <% } else { %>
-                <td class="text-center align-middle"></td>
-                <% } %>
+                <td class="text-center align-middle" style="white-space: nowrap;">
+                  <% if (row.score_stat_number > 0) { %>
+                  <%= row.duration_stat_mean_formatted %>
+                  <% } %>
+                  <% if (row.needs_statistics_update) { %>
+                    <div class="spinner-border spinner-border-sm" role="status">
+                      <span class="sr-only">Loading...</span>
+                    </div>
+                  <% } %>
+                </td>
 
               </tr>
               <% }); %>

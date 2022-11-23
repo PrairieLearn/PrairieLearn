@@ -35,6 +35,7 @@ SELECT
     a.score_stat_n_hundred_perc,
     a.score_stat_score_hist,
     format_interval(a.duration_stat_mean) AS duration_stat_mean_formatted,
+    EXISTS (SELECT 1 FROM assessment_instances AS ai WHERE ai.assessment_id = a.id AND ai.modified_at > a.statistics_last_updated_at) AS needs_statistics_update,
     aset.abbreviation,
     aset.name,
     aset.color,
