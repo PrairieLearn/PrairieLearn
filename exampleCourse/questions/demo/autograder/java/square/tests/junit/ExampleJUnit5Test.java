@@ -7,6 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.provider.ValueSource;
 
+@Tag("maxpoints=16")
 public class ExampleJUnit5Test {
 
     @ParameterizedTest(name = "Test with input {0}")

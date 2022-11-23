@@ -24,7 +24,6 @@ const multer = require('multer');
 const filesize = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const util = require('util');
 const Sentry = require('@prairielearn/sentry');
 
 const logger = require('./lib/logger');
@@ -426,10 +425,13 @@ module.exports.initExpress = function () {
   app.use('/pl/oauth2login', require('./pages/authLoginOAuth2/authLoginOAuth2'));
   app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOAuth2'));
   app.use(/\/pl\/shibcallback/, require('./pages/authCallbackShib/authCallbackShib'));
-  app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
-  app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
 
   if (isEnterprise()) {
+    if (config.hasAzure) {
+      app.use('/pl/azure_login', require('./ee/auth/azure/login'));
+      app.use('/pl/azure_callback', require('./ee/auth/azure/callback'));
+    }
+
     app.use('/pl/auth/institution/:institution_id/saml', require('./ee/auth/saml/router'));
   }
 
@@ -443,6 +445,9 @@ module.exports.initExpress = function () {
   if (isEnterprise()) {
     app.use('/pl/prairietest/auth', require('./ee/auth/prairietest'));
   }
+
+  // Must come before CSRF middleware; we do our own signature verification here.
+  app.use('/pl/webhooks/terminate', require('./webhooks/terminate'));
 
   app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
   app.use(require('./middlewares/logRequest'));
@@ -548,8 +553,10 @@ module.exports.initExpress = function () {
       next();
     },
     require('./middlewares/authzWorkspace'),
-    require('./pages/workspace/workspace'),
   ]);
+  app.use('/pl/workspace/:workspace_id', require('./pages/workspace/workspace'));
+  app.use('/pl/workspace/:workspace_id/logs', require('./pages/workspaceLogs/workspaceLogs'));
+
   // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
   if (config.devMode) {
     app.use('/pl/loadFromDisk', [
@@ -1834,41 +1841,10 @@ if (config.startServer) {
         }
       },
       async () => {
-        if (!config.hasAzure) return;
-
-        let OIDCStrategy = require('passport-azure-ad').OIDCStrategy;
-        const azureConfig = {
-          identityMetadata: config.azureIdentityMetadata,
-          clientID: config.azureClientID,
-          responseType: config.azureResponseType,
-          responseMode: config.azureResponseMode,
-          redirectUrl: config.azureRedirectUrl,
-          allowHttpForRedirectUrl: config.azureAllowHttpForRedirectUrl,
-          clientSecret: config.azureClientSecret,
-          validateIssuer: config.azureValidateIssuer,
-          isB2C: config.azureIsB2C,
-          issuer: config.azureIssuer,
-          passReqToCallback: config.azurePassReqToCallback,
-          scope: config.azureScope,
-          loggingLevel: config.azureLoggingLevel,
-          nonceLifetime: config.azureNonceLifetime,
-          nonceMaxAmount: config.azureNonceMaxAmount,
-          useCookieInsteadOfSession: config.azureUseCookieInsteadOfSession,
-          cookieEncryptionKeys: config.azureCookieEncryptionKeys,
-          clockSkew: config.azureClockSkew,
-        };
-        passport.use(
-          new OIDCStrategy(azureConfig, function (
-            iss,
-            sub,
-            profile,
-            accessToken,
-            refreshToken,
-            done
-          ) {
-            return done(null, profile);
-          })
-        );
+        if (isEnterprise() && config.hasAzure) {
+          const { getAzureStrategy } = require('./ee/auth/azure/index');
+          passport.use(getAzureStrategy());
+        }
       },
       async () => {
         if (isEnterprise()) {
@@ -2044,32 +2020,37 @@ if (config.startServer) {
           process.exit(0);
         }
 
-        const prepareForTermination = async () => {
-          logger.info('Preparing for termination...');
-          // We want to proceed with termination even if something goes wrong,
-          // so don't allow this function to throw.
-          try {
-            // By this point, we should have already been detached from the
-            // load balancer, so the following should be no-ops. However, we
-            // still do to ensure that we don't get any more traffic as we're
-            // shutting everything down.
-            await util.promisify(server.close).call(server);
-            await socketServer.close();
+        // SIGTERM can be used to gracefully shut down the process. This signal
+        // may come from another process, but we also send it to ourselves if
+        // we want to gracefully shut down. This is used below in the ASG
+        // lifecycle handler, and also within the "terminate" webhook.
+        process.once('SIGTERM', async () => {
+          // By this point, we should no longer be attached to the load balancer,
+          // so there's no point shutting down the HTTP server or the socket.io
+          // server.
+          //
+          // We use `allSettled()` here to ensure that all tasks can gracefully
+          // shut down, even if some of them fail.
+          logger.info('Shutting down async processing');
+          const results = await Promise.allSettled([
+            externalGraderResults.stop(),
+            cron.stop(),
+            serverJobs.stop(),
+          ]);
+          results.forEach((r) => {
+            if (r.status === 'rejected') {
+              logger.error('Error shutting down async processing', r.reason);
+              Sentry.captureException(r.reason);
+            }
+          });
 
-            // We use `allSettled()` here to ensure that all tasks can gracefully
-            // shut down, even if some of them fail.
-            await Promise.allSettled([
-              externalGraderResults.stop(),
-              cron.stop(),
-              serverJobs.stop(),
-            ]);
+          try {
+            await lifecycleHooks.completeInstanceTermination();
           } catch (err) {
-            logger.error('Error while shutting down server', err);
+            logger.error('Error completing instance termination', err);
             Sentry.captureException(err);
           }
-        };
 
-        const terminate = async () => {
           logger.info('Terminating...');
           // Shut down OpenTelemetry exporting.
           try {
@@ -2085,23 +2066,7 @@ if (config.startServer) {
           } finally {
             process.exit(0);
           }
-        };
-
-        // If we're running in EC2 auto scaling, this will wait for our instance
-        // to enter the `Terminating:Wait` state.
-        //
-        // If we're not running in EC2, this will be a no-op.
-        lifecycleHooks
-          .handleAndCompleteInstanceTermination(prepareForTermination)
-          .catch((err) => {
-            logger.error('Error handling instance termination', err);
-            Sentry.captureException(err);
-          })
-          .finally(terminate);
-
-        // Also listen for and handle SIGTERM, which can be sent to gracefully
-        // shutdown a process.
-        process.on('SIGTERM', () => prepareForTermination().finally(terminate));
+        });
       }
     }
   );
