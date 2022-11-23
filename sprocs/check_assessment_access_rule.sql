@@ -9,8 +9,6 @@ CREATE FUNCTION
         OUT authorized boolean,
         OUT exam_access_end TIMESTAMP WITH TIME ZONE
     ) AS $$
-DECLARE
-    ps_linked boolean;
 BEGIN
     authorized := TRUE;
 
@@ -51,7 +49,7 @@ BEGIN
     DECLARE
         reservation reservations;
     BEGIN
-        -- is an exam_id hardcoded into the access rule? Check that first
+        -- is an exam_uuid hardcoded into the access rule? Check that first
         IF assessment_access_rule.exam_uuid IS NOT NULL THEN
 
             -- require exam mode
@@ -60,7 +58,7 @@ BEGIN
                 EXIT schedule_access;
             END IF;
 
-            -- is there a checked-in reservation?
+            -- is there a checked-in PrairieSchedule reservation?
             SELECT r.*
             INTO reservation
             FROM
@@ -98,25 +96,17 @@ BEGIN
 
             -- we only get here if we don't have a reservation, so block access
             authorized := FALSE;
+        ELSE -- no rule.exam_uuid defined
 
---        ELSE -- no rule.exam_uuid defined, fail if course_instance.ps_linked=true
---
---            -- only needed for exams
---            EXIT schedule_access WHEN assessment_access_rule.mode IS DISTINCT FROM 'Exam';
---
---           -- is there a corresponding PrairieSchedule course
---            -- that we actually want to enforce? (course_instance.ps_linked=true)
---            PERFORM
---            FROM
---                assessments AS a
---                JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
---            WHERE
---                ci.ps_linked IS TRUE AND
---                a.id = assessment_access_rule.assessment_id;
---            EXIT schedule_access WHEN NOT FOUND; -- no linked PS course instance
---
---            authorized := FALSE;
---              EXIT schedule_access;
+            -- only needed for exams
+            EXIT schedule_access WHEN assessment_access_rule.mode IS DISTINCT FROM 'Exam';
+
+            -- used to check for course_instance.ps_linked here
+
+            -- need logic to check for any checked-in reservation and deny if it doesn't match
+
+            --authorized := FALSE;
+            EXIT schedule_access;
         END IF;
     END schedule_access;
 END;
