@@ -255,14 +255,14 @@ const FSMBuilder = (function () {
         c.fillStyle = c.strokeStyle = 'black'
       }
 
-      for (var i = 0; i < this.nodes.length; i++) {
+      for (let i = 0; i < this.nodes.length; i++) {
         c.lineWidth = 1;
 
-        var color = 'black';
-        var isSelected = false;
+        let color = 'black';
+        let isSelected = false;
 
         if (this.stateNamesToHighlight != null) {
-          for (var j = 0; j < this.stateNamesToHighlight.length; j++) {
+          for (let j = 0; j < this.stateNamesToHighlight.length; j++) {
             if (this.stateNamesToHighlight[j].name === this.nodes[i].text) {
               color = 'red';
             }
@@ -279,14 +279,14 @@ const FSMBuilder = (function () {
 
         this.nodes[i].draw(c, isSelected, this.nodeRadius, this.caretVisible);
       }
-      for (var i = 0; i < this.links.length; i++) {
+      for (let i = 0; i < this.links.length; i++) {
         c.lineWidth = 1;
 
-        var color = 'black';
-        var isSelected = false;
+        let color = 'black';
+        let isSelected = false;
 
         if (this.transitionsToHighlight != null) {
-          for (var j = 0; j < this.transitionsToHighlight.length; j++) {
+          for (let j = 0; j < this.transitionsToHighlight.length; j++) {
             // Check if should highlight self-transitions
             if (this.links[i] instanceof SelfLink) {
               if (this.links[i].node.text === this.transitionsToHighlight[j].startState
@@ -329,19 +329,19 @@ const FSMBuilder = (function () {
       if (this.currentLink != null) {
         c.lineWidth = 1;
         c.fillStyle = c.strokeStyle = 'black';
-        this.currentLink.draw(c, isSelected, this.nodeRadius, this.caretVisible);
+        this.currentLink.draw(c, true, this.nodeRadius, this.caretVisible);
       }
 
       c.restore();
     }
 
     selectObject(x, y) {
-      for (var i = 0; i < this.nodes.length; i++) {
+      for (let i = 0; i < this.nodes.length; i++) {
         if (this.nodes[i].containsPoint(x, y, this.nodeRadius)) {
           return this.nodes[i];
         }
       }
-      for (var i = 0; i < this.links.length; i++) {
+      for (let i = 0; i < this.links.length; i++) {
         if (this.links[i].containsPoint(x, y, this.nodeRadius)) {
           return this.links[i];
         }
@@ -350,7 +350,7 @@ const FSMBuilder = (function () {
     }
 
     snapNode(node) {
-      for (var i = 0; i < this.nodes.length; i++) {
+      for (let i = 0; i < this.nodes.length; i++) {
         if (this.nodes[i] === node) continue;
 
         if (Math.abs(node.x - this.nodes[i].x) < snapToPadding) {
@@ -417,14 +417,14 @@ const FSMBuilder = (function () {
 
         this.nodeRadius = backup.nodeRadius;
 
-        for (var i = 0; i < backup.nodes.length; i++) {
+        for (let i = 0; i < backup.nodes.length; i++) {
           var backupNode = backup.nodes[i];
           var node = new Node(backupNode.x, backupNode.y);
           node.isAcceptState = backupNode.isAcceptState;
           node.text = backupNode.text;
           this.nodes.push(node);
         }
-        for (var i = 0; i < backup.links.length; i++) {
+        for (let i = 0; i < backup.links.length; i++) {
           var backupLink = backup.links[i];
           var link = null;
           if (backupLink.type === 'SelfLink') {
@@ -462,7 +462,7 @@ const FSMBuilder = (function () {
         'links': [],
         'nodeRadius': this.nodeRadius
       };
-      for (var i = 0; i < this.nodes.length; i++) {
+      for (let i = 0; i < this.nodes.length; i++) {
         var node = this.nodes[i];
         var backupNode = {
           'x': node.x,
@@ -472,7 +472,7 @@ const FSMBuilder = (function () {
         };
         backup.nodes.push(backupNode);
       }
-      for (var i = 0; i < this.links.length; i++) {
+      for (let i = 0; i < this.links.length; i++) {
         var link = this.links[i];
         var backupLink = null;
         if (link instanceof SelfLink) {
@@ -530,12 +530,12 @@ const FSMBuilder = (function () {
 
     deleteSelectedObject() {
       if (this.selectedObject != null) {
-        for (var i = 0; i < this.nodes.length; i++) {
+        for (let i = 0; i < this.nodes.length; i++) {
           if (this.nodes[i] === this.selectedObject) {
             this.nodes.splice(i--, 1);
           }
         }
-        for (var i = 0; i < this.links.length; i++) {
+        for (let i = 0; i < this.links.length; i++) {
           if (this.links[i] === this.selectedObject
             || this.links[i].node === this.selectedObject
             || this.links[i].nodeA === this.selectedObject
@@ -554,7 +554,7 @@ const FSMBuilder = (function () {
   }
 
   function drawText(c, originalText, x, y, angleOrNull, isSelected, nodeRadius, caretVisible) {
-    text = originalText
+    let text = originalText
     //text = convertLatexShortcuts(originalText);
     c.font = '20px "Times New Roman", serif';
     var width = c.measureText(text).width;
@@ -604,8 +604,8 @@ const FSMBuilder = (function () {
 
 
   function drawArrow(c, x, y, angle) {
-    var dx = Math.cos(angle);
-    var dy = Math.sin(angle);
+    let dx = Math.cos(angle);
+    let dy = Math.sin(angle);
     c.beginPath();
     c.moveTo(x, y);
     c.lineTo(x - 8 * dx + 5 * dy, y - 8 * dy - 5 * dx);
@@ -657,8 +657,8 @@ const FSMBuilder = (function () {
   };
 
   Node.prototype.closestPointOnCircle = function (x, y, nodeRadius) {
-    var dx = x - this.x;
-    var dy = y - this.y;
+    let dx = x - this.x;
+    let dy = y - this.y;
     var scale = Math.sqrt(dx * dx + dy * dy);
     return {
       'x': this.x + dx * nodeRadius / scale,
@@ -702,8 +702,8 @@ const FSMBuilder = (function () {
   }
 
   Link.prototype.getAnchorPoint = function () {
-    var dx = this.nodeB.x - this.nodeA.x;
-    var dy = this.nodeB.y - this.nodeA.y;
+    let dx = this.nodeB.x - this.nodeA.x;
+    let dy = this.nodeB.y - this.nodeA.y;
     var scale = Math.sqrt(dx * dx + dy * dy);
     return {
       'x': this.nodeA.x + dx * this.parallelPart - dy * this.perpendicularPart / scale,
@@ -712,8 +712,8 @@ const FSMBuilder = (function () {
   };
 
   Link.prototype.setAnchorPoint = function (x, y) {
-    var dx = this.nodeB.x - this.nodeA.x;
-    var dy = this.nodeB.y - this.nodeA.y;
+    let dx = this.nodeB.x - this.nodeA.x;
+    let dy = this.nodeB.y - this.nodeA.y;
     var scale = Math.sqrt(dx * dx + dy * dy);
     this.parallelPart = (dx * (x - this.nodeA.x) + dy * (y - this.nodeA.y)) / (scale * scale);
     this.perpendicularPart = (dx * (y - this.nodeA.y) - dy * (x - this.nodeA.x)) / scale;
@@ -783,19 +783,19 @@ const FSMBuilder = (function () {
     }
     // draw the text
     if (stuff.hasCircle) {
-      var startAngle = stuff.startAngle;
-      var endAngle = stuff.endAngle;
+      let startAngle = stuff.startAngle;
+      let endAngle = stuff.endAngle;
       if (endAngle < startAngle) {
         endAngle += Math.PI * 2;
       }
-      var textAngle = (startAngle + endAngle) / 2 + stuff.isReversed * Math.PI;
-      var textX = stuff.circleX + stuff.circleRadius * Math.cos(textAngle);
-      var textY = stuff.circleY + stuff.circleRadius * Math.sin(textAngle);
+      let textAngle = (startAngle + endAngle) / 2 + stuff.isReversed * Math.PI;
+      let textX = stuff.circleX + stuff.circleRadius * Math.cos(textAngle);
+      let textY = stuff.circleY + stuff.circleRadius * Math.sin(textAngle);
       drawText(c, this.text, textX, textY, textAngle, isSelected, nodeRadius, caretVisible);
     } else {
-      var textX = (stuff.startX + stuff.endX) / 2;
-      var textY = (stuff.startY + stuff.endY) / 2;
-      var textAngle = Math.atan2(stuff.endX - stuff.startX, stuff.startY - stuff.endY);
+      let textX = (stuff.startX + stuff.endX) / 2;
+      let textY = (stuff.startY + stuff.endY) / 2;
+      let textAngle = Math.atan2(stuff.endX - stuff.startX, stuff.startY - stuff.endY);
       drawText(c, this.text, textX, textY, textAngle + this.lineAngleAdjust, isSelected, nodeRadius, caretVisible);
     }
   };
@@ -803,8 +803,8 @@ const FSMBuilder = (function () {
   Link.prototype.containsPoint = function (x, y, nodeRadius) {
     var stuff = this.getEndPointsAndCircle(nodeRadius);
     if (stuff.hasCircle) {
-      var dx = x - stuff.circleX;
-      var dy = y - stuff.circleY;
+      let dx = x - stuff.circleX;
+      let dy = y - stuff.circleY;
       var distance = Math.sqrt(dx * dx + dy * dy) - stuff.circleRadius;
       if (Math.abs(distance) < hitTargetPadding) {
         var angle = Math.atan2(dy, dx);
@@ -826,11 +826,11 @@ const FSMBuilder = (function () {
         return (angle > startAngle && angle < endAngle);
       }
     } else {
-      var dx = stuff.endX - stuff.startX;
-      var dy = stuff.endY - stuff.startY;
-      var length = Math.sqrt(dx * dx + dy * dy);
-      var percent = (dx * (x - stuff.startX) + dy * (y - stuff.startY)) / (length * length);
-      var distance = (dx * (y - stuff.startY) - dy * (x - stuff.startX)) / length;
+      let dx = stuff.endX - stuff.startX;
+      let dy = stuff.endY - stuff.startY;
+      let length = Math.sqrt(dx * dx + dy * dy);
+      let percent = (dx * (x - stuff.startX) + dy * (y - stuff.startY)) / (length * length);
+      let distance = (dx * (y - stuff.startY) - dy * (x - stuff.startX)) / length;
       return (percent > 0 && percent < 1 && Math.abs(distance) < hitTargetPadding);
     }
     return false;
@@ -903,8 +903,8 @@ const FSMBuilder = (function () {
 
   SelfLink.prototype.containsPoint = function (x, y, nodeRadius) {
     var stuff = this.getEndPointsAndCircle(nodeRadius);
-    var dx = x - stuff.circleX;
-    var dy = y - stuff.circleY;
+    let dx = x - stuff.circleX;
+    let dy = y - stuff.circleY;
     var distance = Math.sqrt(dx * dx + dy * dy) - stuff.circleRadius;
     return (Math.abs(distance) < hitTargetPadding);
   };
@@ -974,8 +974,8 @@ const FSMBuilder = (function () {
 
   StartLink.prototype.containsPoint = function (x, y, nodeRadius) {
     var stuff = this.getEndPoints(nodeRadius);
-    var dx = stuff.endX - stuff.startX;
-    var dy = stuff.endY - stuff.startY;
+    let dx = stuff.endX - stuff.startX;
+    let dy = stuff.endY - stuff.startY;
     var length = Math.sqrt(dx * dx + dy * dy);
     var percent = (dx * (x - stuff.startX) + dy * (y - stuff.startY)) / (length * length);
     var distance = (dx * (y - stuff.startY) - dy * (x - stuff.startX)) / length;
