@@ -122,7 +122,7 @@ const FSMBuilder = (function () {
         }
 
         //TODO This might need a null check?
-        if (this.movingObject) {
+        if (this.movingObject && this.selectedObject !== null) {
           this.selectedObject.setAnchorPoint(mouse.x, mouse.y);
           if (this.selectedObject instanceof Node) {
             this.snapNode(this.selectedObject);
