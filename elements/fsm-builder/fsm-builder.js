@@ -1,4 +1,4 @@
-
+// eslint-disable-next-line
 const FSMBuilder = (function () {
 
   const snapToPadding = 6; // pixels
@@ -131,7 +131,7 @@ const FSMBuilder = (function () {
         }
       };
 
-      this.canvas.onmouseup = (e) => {
+      this.canvas.onmouseup = (_e) => {
         this.movingObject = false;
 
         if (this.currentLink != null) {
@@ -146,7 +146,7 @@ const FSMBuilder = (function () {
 
       };
 
-      this.canvas.oncontextmenu = (e) => {
+      this.canvas.oncontextmenu = (_e) => {
         this.deleteSelectedObject()
         return false;
       }
@@ -930,6 +930,7 @@ const FSMBuilder = (function () {
     this.deltaY = 0;
 
     if (start) {
+      /* TODO double check that this function definition is not needed here. Then can delete.
       function circleFromThreePoints(x1, y1, x2, y2, x3, y3) {
         var a = det(x1, y1, 1, x2, y2, 1, x3, y3, 1);
         var bx = -det(x1 * x1 + y1 * y1, y1, 1, x2 * x2 + y2 * y2, y2, 1, x3 * x3 + y3 * y3, y3, 1);
@@ -940,7 +941,9 @@ const FSMBuilder = (function () {
           'y': -by / (2 * a),
           'radius': Math.sqrt(bx * bx + by * by - 4 * a * c) / (2 * Math.abs(a))
         };
-      } this.setAnchorPoint(start.x, start.y);
+      }
+      */
+      this.setAnchorPoint(start.x, start.y);
     }
   }
 
@@ -956,7 +959,7 @@ const FSMBuilder = (function () {
     };
   };
 
-  StartLink.prototype.draw = function (c, isSelected, nodeRadius, caretVisible) {
+  StartLink.prototype.draw = function (c, _isSelected, nodeRadius, _caretVisible) {
     var stuff = this.getEndPoints(nodeRadius);
 
     // draw the line
@@ -986,7 +989,7 @@ const FSMBuilder = (function () {
     this.to = to;
   }
 
-  TemporaryLink.prototype.draw = function (c, isSelected, nodeRadius, caretVisible) {
+  TemporaryLink.prototype.draw = function (c, _isSelected, _nodeRadius, _caretVisible) {
     // draw the line
     c.beginPath();
     c.moveTo(this.to.x, this.to.y);
