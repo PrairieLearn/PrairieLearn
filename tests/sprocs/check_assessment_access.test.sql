@@ -56,7 +56,8 @@ setup_assessments AS (
         (42, '85830431-0317-4a75-84d6-d9baf68e33a7', 'someExam', 'Some Exam', 4, 3),
         (43, '494ec9c0-4599-4539-92b4-ad0ed1c08b4f', 'someExam', 'Some Exam', 4, 3),
         (50, 'd92f7657-30b4-4bcd-9ccf-a2b4a5022c64', 'accessExam', 'Access Exam', 1, 1),
-        (51, 'f92f7657-30b4-4bcd-9ccf-a2b4a5022c64', 'accessExam', 'Access Exam', 1, 1)
+        (51, 'f92f7657-30b4-4bcd-9ccf-a2b4a5022c64', 'accessExam', 'Access Exam', 1, 1),
+        (52, 'a92f7657-30b4-4bcd-9ccf-a2b4a5022c64', 'accessExam', 'Access Exam', 1, 1)
 ),
 setup_assessment_access_rule AS (
     INSERT INTO assessment_access_rules (assessment_id, mode, start_date, end_date, credit, exam_uuid, uids, role) VALUES
@@ -73,7 +74,8 @@ setup_assessment_access_rule AS (
         (42, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, '40dec9a8-a5c6-476d-afd6-3ab52e3d0ed3', null, null),
         (43, 'Exam', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null, null, null),
         (50, 'Public', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null, '{valid@school.edu}', null),
-        (51, 'Public', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null, '{valid@school.edu}', 'Instructor')
+        (51, 'Public', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, null, '{valid@school.edu}', 'Instructor'),
+        (52, 'Public', '2010-01-01 00:00:01-00', '2010-12-31 23:59:59-00', 100, 'bf6df059-6760-4cf0-ac32-35a43e28a3e7', null, null)
 )
 SELECT true;
 

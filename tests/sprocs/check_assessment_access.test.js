@@ -257,12 +257,29 @@ describe('sproc check_assessment_access* tests', function () {
         callback(null);
       });
     });
+    it('should fail when mode:Public and exam_uuid is present', (callback) => {
+      let params = [
+        52,
+        'Public',
+        'None',
+        'None',
+        1000,
+        'valid@school.edu',
+        '2012-07-07 06:06:06-00',
+        'US/Central',
+      ];
+      sqldb.call(`check_assessment_access`, params, (err, result) => {
+        if (ERR(err, callback)) return;
+        assert.strictEqual(result.rows[0].authorized, false);
+        callback(null);
+      });
+    });
   });
 
   describe('check_assessment_access scheduler tests', function () {
     describe('PL course no course level scheduler linking', () => {
       describe('Exam without exam_uuid', () => {
-        caa_reservation_tests(10, 1, 13, true, true);
+        caa_reservation_tests(10, 1, 13, true, false);
       });
       describe('Exam with exam_uuid', () => {
         caa_reservation_tests(11, 1, 13, false, true);
@@ -271,7 +288,7 @@ describe('sproc check_assessment_access* tests', function () {
         caa_reservation_tests(12, 5, 13, false, true);
       });
     });
-
+/*
     describe('PL course linked to 1 PS course', () => {
       describe('Unlinked exam', () => {
         caa_reservation_tests(20, 2, 23, false, true);
@@ -295,6 +312,7 @@ describe('sproc check_assessment_access* tests', function () {
         caa_reservation_tests(42, 5, 43, false, false);
       });
     });
+*/
   });
 });
 

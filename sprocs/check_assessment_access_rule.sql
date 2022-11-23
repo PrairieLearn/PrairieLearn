@@ -43,71 +43,64 @@ BEGIN
     END IF;
 
     -- ############################################################
-    -- check access with PrairieSchedule using a linked course
+    -- check access with schedulers
 
-    << schedule_access >>
+    << new_schedule_access >>
     DECLARE
-        reservation reservations;
+        exam_uuid uuid;
     BEGIN
-        -- is an exam_uuid hardcoded into the access rule? Check that first
-        IF assessment_access_rule.exam_uuid IS NOT NULL THEN
-
-            -- require exam mode
-            IF check_assessment_access_rule.mode IS DISTINCT FROM 'Exam' THEN
-                authorized := FALSE;
-                EXIT schedule_access;
-            END IF;
-
-            -- is there a checked-in PrairieSchedule reservation?
-            SELECT r.*
-            INTO reservation
-            FROM
-                reservations AS r
-                JOIN exams AS e USING(exam_id)
-            WHERE
-                e.uuid = assessment_access_rule.exam_uuid
-                AND r.user_id = check_assessment_access_rule.user_id
-                AND r.delete_date IS NULL
-                AND date BETWEEN r.access_start AND r.access_end
-            ORDER BY r.access_end DESC -- choose the longest-lasting if >1
-            LIMIT 1;
-
-            IF FOUND THEN
-                -- we have a valid reservation, don't keep going to "authorized := FALSE"
-                EXIT schedule_access;
-            END IF;
-
-            -- is there a checked-in pt_reservation?
-            SELECT r.access_end
-            INTO exam_access_end
-            FROM
-                pt_reservations AS r
-                JOIN pt_enrollments AS e ON (e.id = r.enrollment_id)
-                JOIN pt_exams AS x ON (x.id = r.exam_id)
-            WHERE
-                (date BETWEEN r.access_start AND r.access_end)
-                AND e.user_id = check_assessment_access_rule.user_id
-                AND x.uuid = assessment_access_rule.exam_uuid;
-
-            IF FOUND THEN
-                -- we have a valid reservation, don't keep going to "authorized := FALSE"
-                EXIT schedule_access;
-            END IF;
-
-            -- we only get here if we don't have a reservation, so block access
+        -- error case, exam_uuids only work for mode:Exam assessments
+        IF assessment_access_rule.exam_uuid IS NOT NULL AND mode != 'Exam' THEN
             authorized := FALSE;
-        ELSE -- no rule.exam_uuid defined
-
-            -- only needed for exams
-            EXIT schedule_access WHEN assessment_access_rule.mode IS DISTINCT FROM 'Exam';
-
-            -- used to check for course_instance.ps_linked here
-
-            -- need logic to check for any checked-in reservation and deny if it doesn't match
-
-            --authorized := FALSE;
-            EXIT schedule_access;
         END IF;
-    END schedule_access;
+
+        -- only enforce for mode:Exam otherwise skip
+        IF mode != 'Exam' THEN
+            EXIT new_schedule_access;
+        END IF;
+
+        -- is there a checked-in PrairieSchedule reservation?
+        SELECT e.uuid
+        INTO exam_uuid
+        FROM
+            reservations AS r
+            JOIN exams AS e USING(exam_id)
+        WHERE
+--                e.uuid = assessment_access_rule.exam_uuid AND
+            r.user_id = check_assessment_access_rule.user_id
+            AND r.delete_date IS NULL
+            AND date BETWEEN r.access_start AND r.access_end
+        ORDER BY r.access_end DESC -- choose the longest-lasting if >1
+        LIMIT 1;
+
+        -- is there a checked-in pt_reservation?
+        SELECT x.uuid
+        INTO exam_uuid
+        FROM
+            pt_reservations AS r
+            JOIN pt_enrollments AS e ON (e.id = r.enrollment_id)
+            JOIN pt_exams AS x ON (x.id = r.exam_id)
+        WHERE
+            (date BETWEEN r.access_start AND r.access_end)
+            AND e.user_id = check_assessment_access_rule.user_id;
+            --AND x.uuid = assessment_access_rule.exam_uuid;
+
+        IF FOUND THEN
+            IF assessment_access_rule.exam_uuid = exam_uuid THEN
+                -- exam_uuid matches, so don't keep going to authorized := FALSE
+                EXIT new_schedule_access;
+            ELSE
+                -- checked-in so deny any exams that is not linked
+                authorized := FALSE;
+            END IF;
+        END IF;
+
+        IF assessment_access_rule.exam_uuid IS NOT NULL THEN
+            -- If we got here, we don't have a checked in reservation so this should fail
+            authorized := FALSE;
+        END IF;
+
+    END new_schedule_access;
+
 END;
 $$ LANGUAGE plpgsql VOLATILE;
