@@ -10,7 +10,6 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports.run = callbackify(async () => {
   const results = await sqldb.queryAsync(sql.clean_time_series, {
-    limit: config.cleanTimeSeriesBatchSize,
     retention_period_sec: config.timeSeriesRetentionPeriodSec,
   });
   logger.verbose(`Deleted ${results.rowCount} old rows from the time_series table`);
