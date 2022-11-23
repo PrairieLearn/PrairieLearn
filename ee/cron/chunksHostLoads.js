@@ -28,15 +28,13 @@ module.exports.run = callbackify(async () => {
     return;
   }
 
+  const now = Date.now();
   const cloudwatch = new AWS.CloudWatch();
 
-  const now = Date.now();
-  const startTime = new Date(now - 1000 * 60 * 15);
-  const endTime = new Date(now + 1000 * 60 * 5);
   const metrics = await cloudwatch
     .getMetricData({
-      StartTime: startTime,
-      EndTime: endTime,
+      StartTime: new Date(now - 1000 * 60 * 15),
+      EndTime: new Date(now),
       MetricDataQueries: [
         {
           Id: PAGE_VIEWS_PER_SECOND,
@@ -125,24 +123,42 @@ module.exports.run = callbackify(async () => {
     1
   );
 
+  /** @type {import('aws-sdk').CloudWatch.Dimensions} */
+  const dimensions = [{ Name: 'ServerGroup', Value: config.groupName }];
+
   await cloudwatch
     .putMetricData({
       MetricData: [
         {
           MetricName: 'DesiredInstancesByPageViews',
+          Dimensions: dimensions,
+          StorageResolution: 1,
+          Timestamp: new Date(now),
           Unit: 'Count',
+          Value: desiredInstancesByPageViews,
         },
         {
           MetricName: 'DesiredInstancesByActiveWorkers',
+          Dimensions: dimensions,
+          StorageResolution: 1,
+          Timestamp: new Date(now),
           Unit: 'Count',
+          Value: desiredInstancesByActiveWorkers,
         },
         {
           MetricName: 'DesiredInstancesByLoadBalancerRequests',
+          Dimensions: dimensions,
+          StorageResolution: 1,
+          Timestamp: new Date(now),
           Unit: 'Count',
+          Value: desiredInstancesByLoadBalancerRequests,
         },
         {
           MetricName: 'DesiredInstances',
+          Dimensions: dimensions,
+          StorageResolution: 1,
           Unit: 'Count',
+          Timestamp: new Date(now),
           Value: desiredInstances,
         },
       ],
