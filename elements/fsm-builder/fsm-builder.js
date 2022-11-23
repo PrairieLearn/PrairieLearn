@@ -78,7 +78,7 @@ const FSMBuilder = (function () {
         var mouse = this.crossBrowserRelativeMousePos(e);
         this.selectedObject = this.selectObject(mouse.x, mouse.y);
 
-        if (this.selectedObject == null) {
+        if (this.selectedObject === null) {
           this.selectedObject = new Node(mouse.x, mouse.y);
           this.nodes.push(this.selectedObject);
           this.resetCaret();
@@ -93,7 +93,7 @@ const FSMBuilder = (function () {
         var mouse = this.crossBrowserRelativeMousePos(e);
 
         if (this.currentLink != null) {
-          if (this.currentLink instanceof Link && this.shift == false) {
+          if (this.currentLink instanceof Link && this.shift === false) {
             this.currentLink.setAnchorPoint(mouse.x, mouse.y)
           } else {
             var targetNode = this.selectObject(mouse.x, mouse.y);
@@ -101,14 +101,14 @@ const FSMBuilder = (function () {
               targetNode = null;
             }
 
-            if (this.selectedObject == null) {
+            if (this.selectedObject === null) {
               if (targetNode != null) {
                 this.currentLink = new StartLink(targetNode, this.originalClick);
               } else {
                 this.currentLink = new TemporaryLink(this.originalClick, mouse);
               }
             } else {
-              if (targetNode == this.selectedObject) {
+              if (targetNode === this.selectedObject) {
                 this.currentLink = new SelfLink(this.selectedObject, mouse);
               } else if (targetNode != null) {
                 this.currentLink = new Link(this.selectedObject, targetNode);
@@ -160,7 +160,7 @@ const FSMBuilder = (function () {
       });
 
       $('#' + this.answersName + '-toggle-state-size').on('click', () => {
-        if (this.nodeRadius == smallStateSize) {
+        if (this.nodeRadius === smallStateSize) {
           this.nodeRadius = largeStateSize;
         }
         else {
@@ -173,12 +173,12 @@ const FSMBuilder = (function () {
       document.onkeydown = (e) => {
         var key = crossBrowserKey(e);
 
-        if (key == 16) {
+        if (key === 16) {
           this.shift = true;
         } else if (!canvasHasFocus()) {
           // don't read keystrokes when other things have focus
           return true;
-        } else if (key == 8) { // backspace key
+        } else if (key === 8) { // backspace key
           if (this.selectedObject != null && 'text' in this.selectedObject) {
             // Reset highlighting when user backspaces
             this.stateNamesToHighlight = this.transitionsToHighlight = null;
@@ -190,7 +190,7 @@ const FSMBuilder = (function () {
 
           // backspace is a shortcut for the back button, but do NOT want to change pages
           return false;
-        } else if (key == 46) { // delete key
+        } else if (key === 46) { // delete key
           this.deleteSelectedObject()
         }
       };
@@ -198,7 +198,7 @@ const FSMBuilder = (function () {
       document.onkeyup = (e) => {
         var key = crossBrowserKey(e);
 
-        if (key == 16) {
+        if (key === 16) {
           this.shift = false;
         }
       };
@@ -213,7 +213,7 @@ const FSMBuilder = (function () {
         } else {
           // For transitions. Set keyBounds to true if any
           // key in the alphabet is pressed or if key is a comma (0x2C)
-          keyBounds = this.alphabetList.includes(String.fromCharCode(key)) || key == 0x2C
+          keyBounds = this.alphabetList.includes(String.fromCharCode(key)) || key === 0x2C
         }
         if (!canvasHasFocus()) {
           // don't read keystrokes when other things have focus
@@ -229,7 +229,7 @@ const FSMBuilder = (function () {
 
           // don't let keys do their actions (like space scrolls down the page)
           return false;
-        } else if (key == 8) {
+        } else if (key === 8) {
           // backspace is a shortcut for the back button, but do NOT want to change pages
           return false;
         }
@@ -263,14 +263,14 @@ const FSMBuilder = (function () {
 
         if (this.stateNamesToHighlight != null) {
           for (var j = 0; j < this.stateNamesToHighlight.length; j++) {
-            if (this.stateNamesToHighlight[j].name == this.nodes[i].text) {
+            if (this.stateNamesToHighlight[j].name === this.nodes[i].text) {
               color = 'red';
             }
           }
         }
 
 
-        if (this.nodes[i] == this.selectedObject) {
+        if (this.nodes[i] === this.selectedObject) {
           color = 'blue';
           isSelected = true;
         }
@@ -289,9 +289,9 @@ const FSMBuilder = (function () {
           for (var j = 0; j < this.transitionsToHighlight.length; j++) {
             // Check if should highlight self-transitions
             if (this.links[i] instanceof SelfLink) {
-              if (this.links[i].node.text == this.transitionsToHighlight[j].startState
+              if (this.links[i].node.text === this.transitionsToHighlight[j].startState
                 && this.links[i].text.includes(this.transitionsToHighlight[j].char)
-                && this.links[i].node.text == this.transitionsToHighlight[j].endState) {
+                && this.links[i].node.text === this.transitionsToHighlight[j].endState) {
 
                 color = 'red';
               }
@@ -299,18 +299,18 @@ const FSMBuilder = (function () {
 
             // Otherwise, check if should highlight normal transitions
             else if (this.links[i] instanceof Link) {
-              if (this.links[i].nodeA.text == this.transitionsToHighlight[j].startState
+              if (this.links[i].nodeA.text === this.transitionsToHighlight[j].startState
                 && this.links[i].text.includes(this.transitionsToHighlight[j].char)
-                && this.links[i].nodeB.text == this.transitionsToHighlight[j].endState) {
+                && this.links[i].nodeB.text === this.transitionsToHighlight[j].endState) {
 
                 color = 'red';
               }
             }
 
             else if (this.links[i] instanceof StartLink) {
-              if (null == this.transitionsToHighlight[j].startState
-                && null == this.transitionsToHighlight[j].char
-                && this.links[i].node.text == this.transitionsToHighlight[j].endState) {
+              if (null === this.transitionsToHighlight[j].startState
+                && null === this.transitionsToHighlight[j].char
+                && this.links[i].node.text === this.transitionsToHighlight[j].endState) {
 
                 color = 'red';
               }
@@ -318,7 +318,7 @@ const FSMBuilder = (function () {
           }
         }
 
-        if (this.links[i] == this.selectedObject) {
+        if (this.links[i] === this.selectedObject) {
           color = 'blue';
           isSelected = true;
         }
@@ -351,7 +351,7 @@ const FSMBuilder = (function () {
 
     snapNode(node) {
       for (var i = 0; i < this.nodes.length; i++) {
-        if (this.nodes[i] == node) continue;
+        if (this.nodes[i] === node) continue;
 
         if (Math.abs(node.x - this.nodes[i].x) < snapToPadding) {
           node.x = this.nodes[i].x;
@@ -427,16 +427,16 @@ const FSMBuilder = (function () {
         for (var i = 0; i < backup.links.length; i++) {
           var backupLink = backup.links[i];
           var link = null;
-          if (backupLink.type == 'SelfLink') {
+          if (backupLink.type === 'SelfLink') {
             link = new SelfLink(this.nodes[backupLink.node]);
             link.anchorAngle = backupLink.anchorAngle;
             link.text = backupLink.text;
-          } else if (backupLink.type == 'StartLink') {
+          } else if (backupLink.type === 'StartLink') {
             link = new StartLink(this.nodes[backupLink.node]);
             link.deltaX = backupLink.deltaX;
             link.deltaY = backupLink.deltaY;
             link.text = backupLink.text;
-          } else if (backupLink.type == 'Link') {
+          } else if (backupLink.type === 'Link') {
             link = new Link(this.nodes[backupLink.nodeA], this.nodes[backupLink.nodeB]);
             link.parallelPart = backupLink.parallelPart;
             link.perpendicularPart = backupLink.perpendicularPart;
@@ -531,15 +531,15 @@ const FSMBuilder = (function () {
     deleteSelectedObject() {
       if (this.selectedObject != null) {
         for (var i = 0; i < this.nodes.length; i++) {
-          if (this.nodes[i] == this.selectedObject) {
+          if (this.nodes[i] === this.selectedObject) {
             this.nodes.splice(i--, 1);
           }
         }
         for (var i = 0; i < this.links.length; i++) {
-          if (this.links[i] == this.selectedObject
-            || this.links[i].node == this.selectedObject
-            || this.links[i].nodeA == this.selectedObject
-            || this.links[i].nodeB == this.selectedObject) {
+          if (this.links[i] === this.selectedObject
+            || this.links[i].node === this.selectedObject
+            || this.links[i].nodeA === this.selectedObject
+            || this.links[i].nodeB === this.selectedObject) {
             this.links.splice(i--, 1);
           }
         }
@@ -599,7 +599,7 @@ const FSMBuilder = (function () {
   }
 
   function canvasHasFocus() {
-    return (document.activeElement || document.body) == document.body;
+    return (document.activeElement || document.body) === document.body;
   }
 
 
@@ -725,7 +725,7 @@ const FSMBuilder = (function () {
   };
 
   Link.prototype.getEndPointsAndCircle = function (nodeRadius) {
-    if (this.perpendicularPart == 0) {
+    if (this.perpendicularPart === 0) {
       var midX = (this.nodeA.x + this.nodeB.x) / 2;
       var midY = (this.nodeA.y + this.nodeB.y) / 2;
       var start = this.nodeA.closestPointOnCircle(midX, midY, nodeRadius);
