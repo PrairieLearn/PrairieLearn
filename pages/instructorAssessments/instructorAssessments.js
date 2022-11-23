@@ -2,12 +2,13 @@ const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
+const asyncHandler = require('express-async-handler');
 const archiver = require('archiver');
 const router = express.Router();
 const { default: AnsiUp } = require('ansi_up');
 const ansiUp = new AnsiUp();
 
-const { paginateQuery } = require('../../lib/paginate');
+const { paginateQueryAsync } = require('../../lib/paginate');
 const sanitizeName = require('../../lib/sanitize-name');
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
@@ -16,6 +17,7 @@ const error = require('../../prairielib/lib/error');
 const debug = require('debug')('prairielearn:instructorAssessments');
 const logger = require('../../lib/logger');
 const { AssessmentAddEditor } = require('../../lib/editors');
+const assessment = require('../../lib/assessment');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -35,31 +37,14 @@ const fileSubmissionsName = (locals) => {
 
 const fileSubmissionsFilename = (locals) => `${fileSubmissionsName(locals)}.zip`;
 
-router.get('/', function (req, res, next) {
-  res.locals.csvFilename = csvFilename(res.locals);
-  res.locals.fileSubmissionsFilename = fileSubmissionsFilename(res.locals);
-  var params = {
-    course_instance_id: res.locals.course_instance.id,
-    authz_data: res.locals.authz_data,
-    req_date: res.locals.req_date,
-    assessments_group_by: res.locals.course_instance.assessments_group_by,
-  };
-  sqldb.query(sql.select_assessments, params, function (err, result) {
-    if (ERR(err, next)) return;
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    res.locals.csvFilename = csvFilename(res.locals);
+    res.locals.fileSubmissionsFilename = fileSubmissionsFilename(res.locals);
 
-    res.locals.rows = _.map(result.rows, (row) => {
-      if (row.sync_errors) row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
-      if (row.sync_warnings) row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
-      return row;
-    });
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  });
-});
-
-router.get('/:filename', function (req, res, next) {
-  if (req.params.filename === csvFilename(res.locals)) {
-    // There is no need to check if the user has permission to view student
-    // data, because this file only has aggregate data.
+    // update assessment statistics if needed
+    assessment.updateAssessmentStatistics(res.locals.course_instance.id);
 
     var params = {
       course_instance_id: res.locals.course_instance.id,
@@ -67,8 +52,36 @@ router.get('/:filename', function (req, res, next) {
       req_date: res.locals.req_date,
       assessments_group_by: res.locals.course_instance.assessments_group_by,
     };
-    sqldb.query(sql.select_assessments, params, function (err, result) {
-      if (ERR(err, next)) return;
+    const result = sqldb.queryAsync(sql.select_assessments, params);
+
+    res.locals.rows = _.map(result.rows, (row) => {
+      if (row.sync_errors) row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
+      if (row.sync_warnings) row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
+      return row;
+    });
+
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  })
+);
+
+router.get(
+  '/:filename',
+  asyncHandler(async (req, res) => {
+    if (req.params.filename === csvFilename(res.locals)) {
+      // There is no need to check if the user has permission to view student
+      // data, because this file only has aggregate data.
+
+      // update assessment statistics if needed
+      assessment.updateAssessmentStatistics(res.locals.course_instance.id);
+
+      var params = {
+        course_instance_id: res.locals.course_instance.id,
+        authz_data: res.locals.authz_data,
+        req_date: res.locals.req_date,
+        assessments_group_by: res.locals.course_instance.assessments_group_by,
+      };
+      const result = sqldb.query(sql.select_assessments, params);
+
       var assessmentStats = result.rows;
       var csvHeaders = [
         'Course',
@@ -109,18 +122,18 @@ router.get('/:filename', function (req, res, next) {
           assessmentStat.label,
           assessmentStat.title,
           assessmentStat.tid,
-          assessmentStat.number,
-          assessmentStat.mean,
-          assessmentStat.std,
-          assessmentStat.min,
-          assessmentStat.max,
-          assessmentStat.median,
-          assessmentStat.n_zero,
-          assessmentStat.n_hundred,
-          assessmentStat.n_zero_perc,
-          assessmentStat.n_hundred_perc,
+          assessmentStat.score_stat_number,
+          assessmentStat.score_stat_mean,
+          assessmentStat.score_stat_std,
+          assessmentStat.score_stat_min,
+          assessmentStat.score_stat_max,
+          assessmentStat.score_stat_median,
+          assessmentStat.score_stat_n_zero,
+          assessmentStat.score_stat_n_hundred,
+          assessmentStat.score_stat_n_zero_perc,
+          assessmentStat.score_stat_n_hundred_perc,
         ];
-        csvRow = csvRow.concat(assessmentStat.score_hist);
+        csvRow = csvRow.concat(assessmentStat.score_stat_score_hist);
         csvData.push(csvRow);
       });
       csvData.splice(0, 0, csvHeaders);
@@ -129,39 +142,31 @@ router.get('/:filename', function (req, res, next) {
         res.attachment(req.params.filename);
         res.send(csv);
       });
-    });
-  } else if (req.params.filename === fileSubmissionsFilename(res.locals)) {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      return next(error.make(403, 'Access denied (must be a student data viewer)'));
-    }
-
-    const params = {
-      course_instance_id: res.locals.course_instance.id,
-      limit: 100,
-    };
-
-    const archive = archiver('zip');
-    const dirname = fileSubmissionsName(res.locals);
-    const prefix = `${dirname}/`;
-    archive.append(null, { name: prefix });
-    res.attachment(req.params.filename);
-    archive.pipe(res);
-    paginateQuery(
-      sql.course_instance_files,
-      params,
-      (row, callback) => {
-        archive.append(row.contents, { name: prefix + row.filename });
-        callback(null);
-      },
-      (err) => {
-        if (ERR(err, next)) return;
-        archive.finalize();
+    } else if (req.params.filename === fileSubmissionsFilename(res.locals)) {
+      if (!res.locals.authz_data.has_course_instance_permission_view) {
+        throw error.make(403, 'Access denied (must be a student data viewer)');
       }
-    );
-  } else {
-    next(error.make(404, 'Unknown filename: ' + req.params.filename));
-  }
-});
+
+      const params = {
+        course_instance_id: res.locals.course_instance.id,
+        limit: 100,
+      };
+
+      const archive = archiver('zip');
+      const dirname = fileSubmissionsName(res.locals);
+      const prefix = `${dirname}/`;
+      archive.append(null, { name: prefix });
+      res.attachment(req.params.filename);
+      archive.pipe(res);
+      for await (const row of paginateQueryAsync(sql.course_instance_files, params)) {
+        archive.append(row.contents, { name: prefix + row.filename });
+      }
+      archive.finalize();
+    } else {
+      throw error.make(404, 'Unknown filename: ' + req.params.filename);
+    }
+  })
+);
 
 router.post('/', (req, res, next) => {
   debug(`Responding to post with action ${req.body.__action}`);
