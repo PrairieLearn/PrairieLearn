@@ -11,6 +11,7 @@ const error = require('../../prairielib/lib/error');
 const sanitizeName = require('../../lib/sanitize-name');
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
+const assessment = require('../../lib/assessment');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -29,20 +30,27 @@ router.get('/', function (req, res, next) {
   setFilenames(res.locals);
   async.series(
     [
+      async () => {
+        // make sure statistics are up to date
+        await assessment.updateAssessmentStatistics(res.locals.assessment.id);
+      },
+      async () => {
+        // re-fetch assessment to get updated statistics
+        const result = await sqldb.queryOneRowAsync(sql.select_assessment, {
+          assessment_id: res.locals.assessment.id,
+        });
+        res.locals.assessment = result.rows[0].assessment;
+      },
       function (callback) {
+        // Fetch assessments.stats_last_updated (the time when we last updated
+        // the _question_ statistics for this assessment). Note that this is
+        // different to assessments.statistics_last_updated_at (the time we last
+        // updated the assessment instance statistics stored in the assessments
+        // row itself).
         var params = { assessment_id: res.locals.assessment.id };
         sqldb.queryOneRow(sql.assessment_stats_last_updated, params, function (err, result) {
           if (ERR(err, callback)) return;
           res.locals.stats_last_updated = result.rows[0].stats_last_updated;
-          callback(null);
-        });
-      },
-      function (callback) {
-        debug('query assessment_stats');
-        var params = { assessment_id: res.locals.assessment.id };
-        sqldb.queryOneRow(sql.assessment_stats, params, function (err, result) {
-          if (ERR(err, callback)) return;
-          res.locals.assessment_stat = result.rows[0];
           callback(null);
         });
       },

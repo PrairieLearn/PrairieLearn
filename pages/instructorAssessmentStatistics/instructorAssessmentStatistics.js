@@ -11,6 +11,7 @@ const error = require('../../prairielib/lib/error');
 const sanitizeName = require('../../lib/sanitize-name');
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
+const assessment = require('../../lib/assessment');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -31,24 +32,23 @@ router.get('/', function (req, res, next) {
   setFilenames(res.locals);
   async.series(
     [
-      function (callback) {
-        debug('query assessment_stats');
-        var params = { assessment_id: res.locals.assessment.id };
-        sqldb.queryOneRow(sql.assessment_stats, params, function (err, result) {
-          if (ERR(err, callback)) return;
-          res.locals.assessment_stat = result.rows[0];
-          callback(null);
-        });
+      async () => {
+        // make sure statistics are up to date
+        await assessment.updateAssessmentStatistics(res.locals.assessment.id);
       },
-      function (callback) {
-        debug('query assessment_duration_stats');
-        // FIXME: change to assessment_instance_duration_stats and show all instances
-        var params = { assessment_id: res.locals.assessment.id };
-        sqldb.queryOneRow(sql.assessment_duration_stats, params, function (err, result) {
-          if (ERR(err, callback)) return;
-          res.locals.duration_stat = result.rows[0];
-          callback(null);
+      async () => {
+        // re-fetch assessment to get updated statistics
+        const result = await sqldb.queryOneRowAsync(sql.select_assessment, {
+          assessment_id: res.locals.assessment.id,
         });
+        res.locals.assessment = result.rows[0].assessment;
+      },
+      async () => {
+        // get formatted duration statistics
+        const result = await sqldb.queryOneRowAsync(sql.select_duration_stats, {
+          assessment_id: res.locals.assessment.id,
+        });
+        res.locals.duration_stat = result.rows[0];
       },
       function (callback) {
         debug('query assessment_score_histogram_by_date');
