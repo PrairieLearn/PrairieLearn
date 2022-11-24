@@ -3,7 +3,7 @@ SELECT to_jsonb(a) AS assessment
 FROM assessments AS a
 WHERE a.id = $assessment_id;
 
--- BLOCK assessment_duration_stats
+-- BLOCK select_duration_stats
 SELECT
     format_interval(duration_stat_median) AS median,
     format_interval(duration_stat_min) AS min,
