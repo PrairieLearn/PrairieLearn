@@ -48,6 +48,11 @@
               });
             }).catch((error) => {
               console.log('Error fetching statistics for assessment_id=' + assessment_id + ': ' + error);
+              var row = document.getElementById('row-' + assessment_id);
+              row.querySelector('.score-stat-number').innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
+              row.querySelector('.score-stat-score-hist').innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
+              row.querySelector('.score-stat-mean').innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
+              row.querySelector('.duration-stat-mean').innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
             }).finally(() => {
               callback(null);
             });

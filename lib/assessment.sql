@@ -85,7 +85,7 @@ SELECT
         FROM assessment_instances AS ai
         WHERE
             ai.assessment_id = a.id
-            AND ai.modified_at > a.statistics_last_updated_at
+            AND ai.modified_at > a.statistics_last_updated_at - interval '1 minute'
     ) AS needs_statistics_update
 FROM assessments AS a
 WHERE a.id = $assessment_id;
