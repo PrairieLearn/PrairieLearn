@@ -35,6 +35,7 @@ SELECT
     a.score_stat_n_hundred_perc,
     a.score_stat_score_hist,
     format_interval(a.duration_stat_mean) AS duration_stat_mean_formatted,
+    EXISTS (SELECT 1 FROM assessment_instances AS ai WHERE ai.assessment_id = a.id AND ai.modified_at > a.statistics_last_updated_at) AS needs_statistics_update,
     aset.abbreviation,
     aset.name,
     aset.color,
@@ -63,6 +64,23 @@ ORDER BY
     (CASE WHEN $assessments_group_by = 'Module' THEN am.number END), 
     (CASE WHEN $assessments_group_by = 'Module' THEN am.id END),
     aset.number, a.order_by, a.id;
+
+-- BLOCK select_assessment
+SELECT
+    a.id,
+    a.score_stat_number,
+    a.score_stat_mean,
+    a.score_stat_score_hist,
+    format_interval(a.duration_stat_mean) AS duration_stat_mean_formatted
+FROM
+    assessments AS a
+    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+    LEFT JOIN LATERAL authz_assessment(a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
+WHERE
+    a.id = $assessment_id
+    AND ci.id = $course_instance_id
+    AND a.deleted_at IS NULL
+    AND aa.authorized;
 
 -- BLOCK course_instance_files
 WITH all_file_submissions AS (

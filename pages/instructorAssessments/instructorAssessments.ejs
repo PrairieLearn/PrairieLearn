@@ -4,6 +4,7 @@
     <%- include('../partials/head'); %>
     <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('d3/dist/d3.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('async/dist/async.min.js') %>"></script>
     <script src="<%= asset_path('localscripts/histmini.js') %>"></script>
   </head>
   <script>
@@ -15,7 +16,41 @@
             trigger: 'hover',
         }).on("show.bs.popover", function() {
             $($(this).data("bs.popover").getTipElement()).css("max-width", "80%");
-        });;
+        });
+
+        var assessment_ids_needing_stats_update = <%- JSON.stringify(assessment_ids_needing_stats_update) %>;
+        async.eachLimit(assessment_ids_needing_stats_update, 3, function(assessment_id, callback) {
+          fetch('<%= urlPrefix %>/instance_admin/assessments/stats/' + assessment_id)
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error('status code: ' + response.status + ', status text: ' + response.statusText);
+              }
+              return response.text();
+            }).then((text) => {
+              // parse the HTML response
+              var template = document.createElement('template');
+              template.innerHTML = text;
+              var newContent = document.importNode(template.content, true);
+
+              // update the page content
+              var row = document.getElementById('row-' + assessment_id);
+              row.querySelector('.score-stat-number').innerHTML = newContent.querySelector('.score-stat-number').innerHTML;
+              row.querySelector('.score-stat-score-hist').innerHTML = newContent.querySelector('.score-stat-score-hist').innerHTML;
+              row.querySelector('.score-stat-mean').innerHTML = newContent.querySelector('.score-stat-mean').innerHTML;
+              row.querySelector('.duration-stat-mean').innerHTML = newContent.querySelector('.duration-stat-mean').innerHTML;
+
+              // re-evaluate scripts in the row to render statistics
+              row.querySelectorAll('script').forEach((scriptNode) => {
+                var newScriptNode = document.createElement("script");
+                newScriptNode.text = scriptNode.innerHTML;
+                scriptNode.parentNode.replaceChild(newScriptNode, scriptNode);
+              });
+            }).catch((error) => {
+              console.log('Error fetching statistics for assessment_id=' + assessment_id + ': ' + error);
+            }).finally(() => {
+              callback(null);
+            });
+        })
     });
   </script>
   <body>
@@ -54,13 +89,13 @@
               </tr>
             </thead>
             <tbody>
-              <% rows.forEach(function(row, i) { %>
+              <% rows.forEach(function(row) { %>
               <% if (row.start_new_assessment_group) { %>
               <tr>
                 <th colspan="7"><%= row.assessment_group_heading %></th>
               </tr>
               <% } %>
-              <tr>
+              <tr id="row-<%= row.id %>">
                 <td class="align-middle" style="width: 1%">
                   <a href="<%= urlPrefix %>/assessment/<%= row.id %>/" class="badge color-<%= row.color %> color-hover" role="button">
                     <%= row.label %></a>
@@ -86,35 +121,7 @@
                 
                 <td class="align-middle"><%= row.tid %></td>
 
-                <td class="text-center align-middle"><%= row.score_stat_number %></td>
-
-                <% if (row.score_stat_number > 0) { %>
-                <td class="text-center align-middle"><div id="scoreHist<%= i %>" class="miniHist"></div></td>
-                <script>
-                  $(function() {
-                      var data = [<%= row.score_stat_score_hist %>];
-                      var options = {
-                          width: 60,
-                          height: 20,
-                      };
-                      histmini("#scoreHist<%= i %>", data, options);
-                  });
-                </script>
-                <% } else { %>
-                <td class="text-center align-middle"></td>
-                <% } %>
-
-                <% if (row.score_stat_number > 0) { %>
-                <td class="text-center align-middle"><%- include('../partials/scorebar', {score: Math.round(row.score_stat_mean)}); %></td>
-                <% } else { %>
-                <td class="text-center align-middle"></td>
-                <% } %>
-
-                <% if (row.score_stat_number > 0) { %>
-                <td class="text-center align-middle"><%= row.duration_stat_mean_formatted %></td>
-                <% } else { %>
-                <td class="text-center align-middle"></td>
-                <% } %>
+                <%- include('./assessmentStats', {row}); %>
 
               </tr>
               <% }); %>
@@ -124,12 +131,12 @@
 
         <div class="card-footer">
           <p>
-            Download <a href="<%= urlPrefix %>/instance_admin/assessments/<%= csvFilename %>"><%= csvFilename %></a>
+            Download <a href="<%= urlPrefix %>/instance_admin/assessments/file/<%= csvFilename %>"><%= csvFilename %></a>
             (includes more statistics columns than displayed above)
           </p>
           <% if (authz_data.has_course_instance_permission_view) { %>
           <p class="mb-0">
-            Download <a href="<%= urlPrefix %>/instance_admin/assessments/<%= fileSubmissionsFilename %>"><%= fileSubmissionsFilename %></a>
+            Download <a href="<%= urlPrefix %>/instance_admin/assessments/file/<%= fileSubmissionsFilename %>"><%= fileSubmissionsFilename %></a>
             (includes all files ever submitted for this course instance)
           </p>
           <% } %>

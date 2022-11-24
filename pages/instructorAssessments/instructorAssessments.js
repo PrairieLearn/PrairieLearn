@@ -43,9 +43,6 @@ router.get(
     res.locals.csvFilename = csvFilename(res.locals);
     res.locals.fileSubmissionsFilename = fileSubmissionsFilename(res.locals);
 
-    // update assessment statistics if needed
-    await assessment.updateAssessmentStatisticsForCourseInstance(res.locals.course_instance.id);
-
     var params = {
       course_instance_id: res.locals.course_instance.id,
       authz_data: res.locals.authz_data,
@@ -53,19 +50,47 @@ router.get(
       assessments_group_by: res.locals.course_instance.assessments_group_by,
     };
     const result = await sqldb.queryAsync(sql.select_assessments, params);
+    res.locals.rows = result.rows;
 
-    res.locals.rows = _.map(result.rows, (row) => {
+    for (const row of res.locals.rows) {
       if (row.sync_errors) row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
       if (row.sync_warnings) row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
-      return row;
-    });
+    }
+
+    res.locals.assessment_ids_needing_stats_update = res.locals.rows
+      .filter((row) => row.needs_statistics_update)
+      .map((row) => row.id);
 
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   })
 );
 
 router.get(
-  '/:filename',
+  '/stats/:assessment_id',
+  asyncHandler(async (req, res) => {
+    // Update statistics for this assessment. We do this before checking authz
+    // on the assessment but this is ok because we won't send any data back if
+    // we aren't authorized.
+    await assessment.updateAssessmentStatistics(req.params.assessment_id);
+
+    var params = {
+      course_instance_id: res.locals.course_instance.id, // for authz checking
+      assessment_id: req.params.assessment_id,
+      authz_data: res.locals.authz_data,
+      req_date: res.locals.req_date,
+    };
+    const result = await sqldb.queryAsync(sql.select_assessment, params);
+    if (result.rowCount === 0) {
+      throw error.make(404, `Assessment not found: ${req.params.assessment_id}`);
+    }
+    res.locals.row = result.rows[0];
+
+    res.render(`${__dirname}/assessmentStats.ejs`, res.locals);
+  })
+);
+
+router.get(
+  '/file/:filename',
   asyncHandler(async (req, res) => {
     if (req.params.filename === csvFilename(res.locals)) {
       // There is no need to check if the user has permission to view student
