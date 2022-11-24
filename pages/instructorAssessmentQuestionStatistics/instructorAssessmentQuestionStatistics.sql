@@ -11,7 +11,7 @@ WHERE
     a.id = $assessment_id
 
 -- BLOCK assessment_stats
-SELECT * FROM assessments_stats($assessment_id);
+SELECT * FROM assessments_score_stats($assessment_id);
 
 -- BLOCK questions
 SELECT

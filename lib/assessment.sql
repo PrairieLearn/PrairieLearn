@@ -114,7 +114,7 @@ SET
     duration_stat_threshold_labels = duration_stats.threshold_labels,
     duration_stat_hist = duration_stats.hist
 FROM
-    assessments_stats($assessment_id) AS score_stats,
+    assessments_score_stats($assessment_id) AS score_stats,
     assessments_duration_stats($assessment_id) AS duration_stats
 WHERE
     a.id = $assessment_id;
