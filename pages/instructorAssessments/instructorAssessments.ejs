@@ -19,6 +19,7 @@
         });
 
         var assessment_ids_needing_stats_update = <%- JSON.stringify(assessment_ids_needing_stats_update) %>;
+        // Fetch new statistics in parallel, but with a limit to avoid saturating the server.
         async.eachLimit(assessment_ids_needing_stats_update, 3, function(assessment_id, callback) {
           fetch('<%= urlPrefix %>/instance_admin/assessments/stats/' + assessment_id)
             .then((response) => {

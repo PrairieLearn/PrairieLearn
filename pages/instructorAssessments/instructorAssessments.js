@@ -73,6 +73,9 @@ router.get(
     // we aren't authorized.
     await assessment.updateAssessmentStatistics(req.params.assessment_id);
 
+    // When fetching the assessment, we don't check whether it needs an update
+    // again because we don't want to get get stuck in a loop perpetually
+    // updating because students are still working.
     var params = {
       course_instance_id: res.locals.course_instance.id, // for authz checking
       assessment_id: req.params.assessment_id,

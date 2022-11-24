@@ -64,7 +64,13 @@ FROM
     assessments AS a
 WHERE
     a.course_instance_id = $course_instance_id
-    AND EXISTS (SELECT 1 FROM assessment_instances AS ai WHERE ai.assessment_id = a.id AND ai.modified_at > a.statistics_last_updated_at);
+    AND EXISTS (
+        SELECT 1
+        FROM assessment_instances AS ai
+        WHERE
+            ai.assessment_id = a.id
+            AND ai.modified_at > a.statistics_last_updated_at - interval '1 minute'
+    );
 
 -- BLOCK select_assessment_lock
 SELECT 1
