@@ -495,7 +495,8 @@ describe('Exam assessment', function () {
   describe('22. the brokenGeneration question', function () {
     describe('setting the question', function () {
       it('should succeed', function () {
-        locals.shouldHaveButtons = ['save'];
+        console.log("abcabc", locals)
+        locals.shouldHaveButtons = [];
         locals.postAction = 'save';
         locals.question = helperExam.questions.brokenGeneration;
       });
