@@ -13,6 +13,14 @@ class SympyJson(TypedDict):
     _value: str
     _variables: List[str]
 
+class LocalsForEval(TypedDict):
+    "A class with type signatures for the locals_for_eval dict"
+
+    functions: SympyMapT
+    variables: SympyMapT
+    helpers: SympyMapT
+
+
 # Create a new instance of this class to access the member dictionaries. This
 # is to avoid accidentally modifying these dictionaries.
 class _Constants:
@@ -215,7 +223,7 @@ def get_parent_with_location(node: ast.AST) -> ast.AST:
 
     return get_parent_with_location(node.parent) # type: ignore
 
-def evaluate(expr: str, locals_for_eval: SympyMapT={}) -> sympy.Expr:
+def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
 
     # Disallow escape character
     ind = expr.find('\\')
@@ -266,7 +274,7 @@ def evaluate(expr: str, locals_for_eval: SympyMapT={}) -> sympy.Expr:
     # Convert AST to code and evaluate it with no global expressions and with
     # a whitelist of local expressions
     locals = dict(chain.from_iterable(
-        local_expressions.items() for local_expressions in locals_for_eval.values()
+        cast(SympyMapT, local_expressions).items() for local_expressions in locals_for_eval.values()
     ))
 
     return eval(compile(root, '<ast>', 'eval'), {'__builtins__': None}, locals)
@@ -276,7 +284,7 @@ def convert_string_to_sympy(expr: str, variables: Optional[List[str]], *, allow_
 
     # Create a whitelist of valid functions and variables (and a special flag
     # for numbers that are converted to sympy integers).
-    locals_for_eval = {
+    locals_for_eval: LocalsForEval = {
         'functions': const.functions,
         'variables': const.variables,
         'helpers': const.helpers,
