@@ -133,7 +133,7 @@ class HasFloatError(BaseSympyError):
 
 @dataclass
 class HasComplexError(BaseSympyError):
-    offset:int
+    offset: int
     n: str
 
 @dataclass
@@ -301,8 +301,7 @@ def convert_string_to_sympy(expr: str, variables: Optional[List[str]], *, allow_
 
     # If there is a list of variables, add each one to the whitelist
     if variables is not None:
-        for variable in variables:
-            locals_for_eval['variables'][variable] = sympy.Symbol(variable)
+        locals_for_eval['variables'].update({variable: sympy.Symbol(variable) for variable in variables})
 
     # Do the conversion
     return evaluate(expr, locals_for_eval)
