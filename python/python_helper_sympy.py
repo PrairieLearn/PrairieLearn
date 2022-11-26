@@ -1,6 +1,7 @@
 import sympy
 import ast
 from dataclasses import dataclass
+from itertools import chain
 from typing import Any, cast, Dict, List, Tuple, TypedDict, Literal, Optional
 
 SympyMapT = Dict[str, Any]
@@ -98,45 +99,49 @@ class _Constants:
 # A similar (but more complex) approach to us:
 #     https://github.com/newville/asteval
 
+class BaseSympyError(Exception):
+    '''Exception base class for sympy parsing errors'''
+    pass
+
 @dataclass
-class HasFloatError(Exception):
+class HasFloatError(BaseSympyError):
     offset: int
     n: float
 
 @dataclass
-class HasComplexError(Exception):
+class HasComplexError(BaseSympyError):
     offset:int
     n: str
 
 @dataclass
-class HasInvalidExpressionError(Exception):
+class HasInvalidExpressionError(BaseSympyError):
     offset: int
 
 
 @dataclass
-class HasInvalidFunctionError(Exception):
-    offset: int
-    text: str
-
-
-@dataclass
-class HasInvalidVariableError(Exception):
+class HasInvalidFunctionError(BaseSympyError):
     offset: int
     text: str
 
 
 @dataclass
-class HasParseError(Exception):
+class HasInvalidVariableError(BaseSympyError):
+    offset: int
+    text: str
+
+
+@dataclass
+class HasParseError(BaseSympyError):
     offset: int
 
 
 @dataclass
-class HasEscapeError(Exception):
+class HasEscapeError(BaseSympyError):
     offset: int
 
 
 @dataclass
-class HasCommentError(Exception):
+class HasCommentError(BaseSympyError):
     offset: int
 
 class CheckNumbers(ast.NodeTransformer):
@@ -153,7 +158,7 @@ class CheckWhiteList(ast.NodeVisitor):
     def __init__(self, whitelist: ASTWhitelistT) -> None:
         self.whitelist = whitelist
 
-    def visit(self, node: Any) -> Any:
+    def visit(self, node: Any) -> None:
         if not isinstance(node, self.whitelist):
             node = get_parent_with_location(node)
             raise HasInvalidExpressionError(node.col_offset)
@@ -163,7 +168,7 @@ class CheckFunctions(ast.NodeVisitor):
     def __init__(self, functions: SympyMapT) -> None:
         self.functions = functions
 
-    def visit_Call(self, node: Any) -> Any:
+    def visit_Call(self, node: Any) -> None:
         if isinstance(node.func, ast.Name):
             if node.func.id not in self.functions:
                 node = get_parent_with_location(node)
@@ -174,7 +179,7 @@ class CheckVariables(ast.NodeVisitor):
     def __init__(self, variables: SympyMapT) -> None:
         self.variables = variables
 
-    def visit_Name(self, node: Any) -> Any:
+    def visit_Name(self, node: Any) -> None:
         if isinstance(node.ctx, ast.Load):
             if not is_name_of_function(node):
                 if node.id not in self.variables:
@@ -192,8 +197,8 @@ def is_name_of_function(node: Any) -> bool:
 def get_parent_with_location(node: ast.AST) -> ast.AST:
     if hasattr(node, 'col_offset'):
         return node
-    else:
-        return get_parent_with_location(node.parent) # type: ignore
+
+    return get_parent_with_location(node.parent) # type: ignore
 
 def evaluate(expr: str, locals_for_eval: SympyMapT={}) -> sympy.Expr:
 
@@ -245,9 +250,10 @@ def evaluate(expr: str, locals_for_eval: SympyMapT={}) -> sympy.Expr:
 
     # Convert AST to code and evaluate it with no global expressions and with
     # a whitelist of local expressions
-    locals = {}
-    for key in locals_for_eval:
-        locals = {**locals, **locals_for_eval[key]}
+    locals = dict(chain.from_iterable(
+        local_expressions.items() for local_expressions in locals_for_eval.values()
+    ))
+
     return eval(compile(root, '<ast>', 'eval'), {'__builtins__': None}, locals)
 
 def convert_string_to_sympy(expr: str, variables: Optional[List[str]], *, allow_hidden: bool=False, allow_complex: bool=False, allow_trig_functions: bool=True) -> sympy.Expr:
