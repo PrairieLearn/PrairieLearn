@@ -53,8 +53,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     display = DisplayType(pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT))
     size = pl.get_integer_attrib(element, 'size', SIZE_DEFAULT)
 
-    bigo_type_name = pl.get_string_attrib(element, 'type', BigOType.BIG_O.name).upper()
-    bigo_type = BigOType[bigo_type_name].value
+    bigo_type = BigOType[pl.get_string_attrib(element, 'type', BigOType.BIG_O.name).upper()].value
 
     operators: List[str] = ['exp', 'log', 'sqrt', 'factorial', '( )', '+', '-', '*', '/', '^', '**']
     constants: List[str] = ['pi', 'e']
