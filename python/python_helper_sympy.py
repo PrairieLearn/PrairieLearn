@@ -16,24 +16,38 @@ class SympyJson(TypedDict):
 # Create a new instance of this class to access the member dictionaries. This
 # is to avoid accidentally modifying these dictionaries.
 class _Constants:
-    def __init__(self):
+    helpers: SympyMapT
+    variables: SympyMapT
+    hidden_variables: SympyMapT
+    complex_variables: SympyMapT
+    hidden_complex_variables: SympyMapT
+    functions: SympyMapT
+    trig_functions: SympyMapT
+
+
+    def __init__(self) -> None:
         self.helpers = {
             '_Integer': sympy.Integer,
         }
+
         self.variables = {
             'pi': sympy.pi,
             'e': sympy.E,
         }
+
         self.hidden_variables = {
             '_Exp1': sympy.E,
         }
+
         self.complex_variables = {
             'i': sympy.I,
             'j': sympy.I,
         }
+
         self.hidden_complex_variables = {
             '_ImaginaryUnit': sympy.I,
         }
+
         self.functions = {
             # These are shown to the student
             'exp': sympy.exp,
@@ -41,6 +55,7 @@ class _Constants:
             'sqrt': sympy.sqrt,
             'factorial': sympy.factorial
         }
+
         self.trig_functions = {
             'cos': sympy.cos,
             'sin': sympy.sin,
