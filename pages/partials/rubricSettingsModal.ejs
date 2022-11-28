@@ -106,12 +106,15 @@
                 </tbody>
               </table>
               <button type="button" class="btn btn-sm btn-secondary">Add item</button>
-              <% if (variant.params) { %>
+              <% if (variant.params || variant.true_answer) { %>
               <small class="form-text text-muted">
                 Rubric items may be populated with values like:
                 <ul>
-                  <% Object.keys(variant.params).forEach((param) => { %>
-                  <li><code>{{params.<%= param %>}}</code></li>
+                  <% Object.keys(variant.params || {}).forEach((key) => { %>
+                  <li><code>{{params.<%= key %>}}</code></li>
+                  <% }); %>
+                  <% Object.keys(variant.true_answer || {}).forEach((key) => { %>
+                  <li><code>{{correct_answers.<%= key %>}}</code></li>
                   <% }); %>
                 </ul>
               </small>
