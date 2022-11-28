@@ -1,6 +1,8 @@
 <div class="form-group js-manual-grading-points">
-  <label class="w-100">
-    <%= type_label %> Points:
+  <span class="w-100">
+    <label for="js-<%= type %>-score-value-input">
+      <%= type_label %> Points:
+    </label>
     <span class="float-right js-<%= type %>-score-value-info">
       <% if (rubric?.rubric_data || type == 'auto') { %>
       <%= points %> / <%= max_points %>
@@ -13,8 +15,8 @@
         <i class="fas fa-list-check"></i>
       </button>
     </span>
-  </label>
-  <div class="input-group js-<%= type %>-score-value-input<% if (rubric?.rubric_data || type == 'auto') { %> d-none<% } %>">
+  </span>
+  <div class="input-group js-<%= type %>-score-value-input<% if (rubric?.rubric_data || type == 'auto') { %> d-none<% } %>" id="js-<%= type %>-score-value-input">
     <input type="number" step="any"
            class="form-control js-grading-score-input"
            name="score_<%= type %>_points"
@@ -82,7 +84,10 @@
     <span class="js-manual-grading-points">[<%= item.rubric_item.points %>]</span>
     <span class="js-manual-grading-percentage">[<%= item.rubric_item.points * 100 / (max_points || assessment_question.max_points) %>%]</span>
   </strong>
-  <%= item.rubric_item.short_text %>
+  <%= item.rubric_item.short_text_rendered %>
+  <small class="text-muted">
+    <%= item.rubric_item.staff_instructions_rendered %>
+  </small>
 </div>
 <% }); %>
 <hr/>

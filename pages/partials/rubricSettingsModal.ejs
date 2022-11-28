@@ -132,7 +132,9 @@
           </div>
         </div>
         <div class="modal-footer">
+          <% if (authz_data.has_course_instance_permission_edit) { %>
           <button type="submit" class="btn btn-primary">Confirm</button>
+          <% } %>
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
         </div>
       </div>
