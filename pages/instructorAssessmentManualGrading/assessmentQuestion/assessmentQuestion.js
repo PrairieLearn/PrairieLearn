@@ -33,7 +33,7 @@ router.get(
     };
 
     const result = await sqldb.queryAsync(sql.select_instance_questions_manual_grading, params);
-    res.send({ instance_questions: result.rows });
+    res.send({ instance_questions: result.rows.map((row, idx) => ({ index: idx + 1, ...row })) });
   })
 );
 

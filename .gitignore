@@ -14,7 +14,11 @@ docker-compose.override.yml
 ### JetBrains
 /.idea/
 
-.vscode
+### VSCode
+.vscode/*
+!.vscode/extensions.json
+
+### tmux
 .tmux.conf
 
 ## Backup files

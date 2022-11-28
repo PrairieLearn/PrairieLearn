@@ -8,6 +8,8 @@ var sqlLoader = require('../prairielib/lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
+const UUID_REGEXP = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
 module.exports = function (req, res, next) {
   res.locals.is_administrator = false;
   res.locals.news_item_notification_count = 0;
@@ -32,46 +34,42 @@ module.exports = function (req, res, next) {
 
   // look for load-testing override cookie
   if (req.cookies.load_test_token) {
-    if (
-      !csrf.checkToken(req.cookies.load_test_token, 'load_test', config.secretKey, {
-        maxAge: 24 * 60 * 60 * 1000,
-      })
-    ) {
+    const data = csrf.getCheckedData(req.cookies.load_test_token, config.secretKey, {
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    if (!data || !data.uuid || typeof data.uuid !== 'string' || !data.uuid.match(UUID_REGEXP)) {
       return next(new Error('invalid load_test_token'));
     }
 
+    const uuid = data.uuid;
+
+    const uid = `loadtest+${uuid}@prairielearn.com`;
+    const uin = `loadtest+${uuid}`;
+    const name = `Load Test ${uuid}`;
+    const authnProviderName = 'LoadTest';
+
     async.series(
       [
-        (callback) => {
-          const params = ['loadtest@prairielearn.org', 'Load Test', '999999999', 'dev'];
-          sqldb.call('users_select_or_insert', params, (err, result) => {
-            if (ERR(err, callback)) return;
-            res.locals.authn_user = result.rows[0].user;
-            res.locals.authn_institution = result.rows[0].institution;
-            res.locals.authn_provider_name = 'LoadTest';
-            res.locals.authn_is_administrator = result.rows[0].is_administrator;
-            checkAdministratorAccess(req, res);
-            callback(null);
+        async () => {
+          const result = await sqldb.callAsync('users_select_or_insert', [
+            uid,
+            name,
+            uin,
+            authnProviderName,
+          ]);
+          const userResult = await sqldb.queryOneRowAsync(sql.select_user, {
+            user_id: result.rows[0].user_id,
           });
-        },
-        (callback) => {
-          const params = {
-            uid: 'loadtest@prairielearn.org',
-            course_short_name: 'XC 101',
-          };
-          sqldb.query(sql.enroll_user, params, (err, _result) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
-        },
-        (callback) => {
-          const params = {
-            uid: 'loadtest@prairielearn.org',
-            course_short_name: 'XC 101',
-          };
-          sqldb.query(sql.insert_course_permissions_for_user, params, (err, _result) => {
-            if (ERR(err, callback)) return;
-            callback(null);
+          res.locals.authn_user = userResult.rows[0].user;
+          res.locals.authn_institution = userResult.rows[0].institution;
+          res.locals.authn_provider_name = 'LoadTest';
+          res.locals.authn_is_administrator = userResult.rows[0].is_administrator;
+          checkAdministratorAccess(req, res);
+
+          // Enroll the load test user in the example course.
+          await sqldb.queryAsync(sql.enroll_user_in_example_course, {
+            user_id: result.rows[0].user_id,
           });
         },
       ],
@@ -80,6 +78,8 @@ module.exports = function (req, res, next) {
         return next();
       }
     );
+
+    return;
   }
 
   // bypass auth for local /pl/ serving

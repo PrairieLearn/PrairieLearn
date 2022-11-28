@@ -49,12 +49,22 @@ BEGIN
 
     WITH
     matched_rows AS (
-        SELECT src.short_name AS src_short_name, src.uuid AS src_uuid, dest.id AS dest_id -- matched_rows cols have underscores
+        -- See `sync_questions.sql` for an explanation of the use of DISTINCT ON.
+        SELECT DISTINCT ON (src_short_name)
+            src.short_name AS src_short_name,
+            src.uuid AS src_uuid,
+            dest.id AS dest_id
         FROM disk_course_instances AS src LEFT JOIN course_instances AS dest ON (
             dest.course_id = syncing_course_id
-            AND (src.uuid = dest.uuid
-                 OR ((src.uuid IS NULL OR dest.uuid IS NULL)
-                     AND src.short_name = dest.short_name AND dest.deleted_at IS NULL)))
+            AND (
+                src.uuid = dest.uuid
+                OR (
+                    (src.uuid IS NULL OR dest.uuid IS NULL)
+                    AND src.short_name = dest.short_name AND dest.deleted_at IS NULL
+                )
+            )
+        )
+        ORDER BY src_short_name, (src.uuid = dest.uuid) DESC NULLS LAST
     ),
     deactivate_unmatched_dest_rows AS (
         UPDATE course_instances AS dest

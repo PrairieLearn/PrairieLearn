@@ -52,6 +52,7 @@ const namedLocks = require('./lib/named-locks');
 const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
 const { enrichSentryScope } = require('./lib/sentry');
+const lifecycleHooks = require('./lib/lifecycle-hooks');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -424,10 +425,13 @@ module.exports.initExpress = function () {
   app.use('/pl/oauth2login', require('./pages/authLoginOAuth2/authLoginOAuth2'));
   app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOAuth2'));
   app.use(/\/pl\/shibcallback/, require('./pages/authCallbackShib/authCallbackShib'));
-  app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
-  app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
 
   if (isEnterprise()) {
+    if (config.hasAzure) {
+      app.use('/pl/azure_login', require('./ee/auth/azure/login'));
+      app.use('/pl/azure_callback', require('./ee/auth/azure/callback'));
+    }
+
     app.use('/pl/auth/institution/:institution_id/saml', require('./ee/auth/saml/router'));
   }
 
@@ -441,6 +445,9 @@ module.exports.initExpress = function () {
   if (isEnterprise()) {
     app.use('/pl/prairietest/auth', require('./ee/auth/prairietest'));
   }
+
+  // Must come before CSRF middleware; we do our own signature verification here.
+  app.use('/pl/webhooks/terminate', require('./webhooks/terminate'));
 
   app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
   app.use(require('./middlewares/logRequest'));
@@ -546,8 +553,10 @@ module.exports.initExpress = function () {
       next();
     },
     require('./middlewares/authzWorkspace'),
-    require('./pages/workspace/workspace'),
   ]);
+  app.use('/pl/workspace/:workspace_id', require('./pages/workspace/workspace'));
+  app.use('/pl/workspace/:workspace_id/logs', require('./pages/workspaceLogs/workspaceLogs'));
+
   // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
   if (config.devMode) {
     app.use('/pl/loadFromDisk', [
@@ -1727,6 +1736,7 @@ module.exports.startServer = async () => {
 
 module.exports.stopServer = function (callback) {
   if (!server) return callback(new Error('cannot stop an undefined server'));
+  if (!server.listening) return callback(null);
   server.close(function (err) {
     if (ERR(err, callback)) return;
     callback(null);
@@ -1831,41 +1841,10 @@ if (config.startServer) {
         }
       },
       async () => {
-        if (!config.hasAzure) return;
-
-        let OIDCStrategy = require('passport-azure-ad').OIDCStrategy;
-        const azureConfig = {
-          identityMetadata: config.azureIdentityMetadata,
-          clientID: config.azureClientID,
-          responseType: config.azureResponseType,
-          responseMode: config.azureResponseMode,
-          redirectUrl: config.azureRedirectUrl,
-          allowHttpForRedirectUrl: config.azureAllowHttpForRedirectUrl,
-          clientSecret: config.azureClientSecret,
-          validateIssuer: config.azureValidateIssuer,
-          isB2C: config.azureIsB2C,
-          issuer: config.azureIssuer,
-          passReqToCallback: config.azurePassReqToCallback,
-          scope: config.azureScope,
-          loggingLevel: config.azureLoggingLevel,
-          nonceLifetime: config.azureNonceLifetime,
-          nonceMaxAmount: config.azureNonceMaxAmount,
-          useCookieInsteadOfSession: config.azureUseCookieInsteadOfSession,
-          cookieEncryptionKeys: config.azureCookieEncryptionKeys,
-          clockSkew: config.azureClockSkew,
-        };
-        passport.use(
-          new OIDCStrategy(azureConfig, function (
-            iss,
-            sub,
-            profile,
-            accessToken,
-            refreshToken,
-            done
-          ) {
-            return done(null, profile);
-          })
-        );
+        if (isEnterprise() && config.hasAzure) {
+          const { getAzureStrategy } = require('./ee/auth/azure/index');
+          passport.use(getAzureStrategy());
+        }
       },
       async () => {
         if (isEnterprise()) {
@@ -2002,12 +1981,7 @@ if (config.startServer) {
         logger.verbose('Starting server...');
         await module.exports.startServer();
       },
-      function (callback) {
-        socketServer.init(server, function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => socketServer.init(server),
       function (callback) {
         externalGradingSocket.init(function (err) {
           if (ERR(err, callback)) return;
@@ -2022,25 +1996,15 @@ if (config.startServer) {
       },
       async () => workspace.init(),
       async () => serverJobs.init(),
-      function (callback) {
-        nodeMetrics.init();
-        callback(null);
-      },
+      async () => nodeMetrics.init(),
       // These should be the last things to start before we actually start taking
       // requests, as they may actually end up executing course code.
-      (callback) => {
-        if (!config.externalGradingEnableResults) return callback(null);
-        externalGraderResults.init((err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+      async () => {
+        if (!config.externalGradingEnableResults) return;
+        await externalGraderResults.init();
       },
-      function (callback) {
-        cron.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => cron.init(),
+      async () => lifecycleHooks.completeInstanceLaunch(),
     ],
     function (err, data) {
       if (err) {
@@ -2056,13 +2020,52 @@ if (config.startServer) {
           process.exit(0);
         }
 
-        process.on('SIGTERM', () => {
-          opentelemetry
-            .shutdown()
-            .catch((err) => logger.error('Error shutting down OpenTelemetry', err))
-            .finally(() => {
-              process.exit(0);
-            });
+        // SIGTERM can be used to gracefully shut down the process. This signal
+        // may come from another process, but we also send it to ourselves if
+        // we want to gracefully shut down. This is used below in the ASG
+        // lifecycle handler, and also within the "terminate" webhook.
+        process.once('SIGTERM', async () => {
+          // By this point, we should no longer be attached to the load balancer,
+          // so there's no point shutting down the HTTP server or the socket.io
+          // server.
+          //
+          // We use `allSettled()` here to ensure that all tasks can gracefully
+          // shut down, even if some of them fail.
+          logger.info('Shutting down async processing');
+          const results = await Promise.allSettled([
+            externalGraderResults.stop(),
+            cron.stop(),
+            serverJobs.stop(),
+          ]);
+          results.forEach((r) => {
+            if (r.status === 'rejected') {
+              logger.error('Error shutting down async processing', r.reason);
+              Sentry.captureException(r.reason);
+            }
+          });
+
+          try {
+            await lifecycleHooks.completeInstanceTermination();
+          } catch (err) {
+            logger.error('Error completing instance termination', err);
+            Sentry.captureException(err);
+          }
+
+          logger.info('Terminating...');
+          // Shut down OpenTelemetry exporting.
+          try {
+            opentelemetry.shutdown();
+          } catch (err) {
+            logger.error('Error shutting down OpenTelemetry', err);
+            Sentry.captureException(err);
+          }
+
+          // Flush all events to Sentry.
+          try {
+            await Sentry.flush();
+          } finally {
+            process.exit(0);
+          }
         });
       }
     }

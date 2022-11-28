@@ -79,12 +79,20 @@ def worker_loop():
             cwd = inp.get('cwd', None)
             paths = inp.get('paths', None)
 
+            # "ping" is a special fake function name that the parent process
+            # will use to check if the worker is active and able to respond to
+            # calls. We just reply with "pong" to indicate that we're alive.
+            if file == None and fcn == 'ping':
+                json.dump({"present": True, "val": "pong"}, outf)
+                outf.write("\n");
+                outf.flush()
+                continue
+
             # "restart" is a special fake function name that causes
             # the forked worker to exit, returning control to the
             # zygote parent process
             if file == None and fcn == 'restart':
-                json_outp = try_dumps({"present": True, "val": "success"}, allow_nan=False)
-                outf.write(json_outp)
+                json.dump({"present": True, "val": "success"}, outf)
                 outf.write("\n");
                 outf.flush()
 
