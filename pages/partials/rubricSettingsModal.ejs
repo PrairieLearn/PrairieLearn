@@ -1,5 +1,5 @@
 <div class="modal" tabindex="-1" role="dialog" id="rubric-settings-modal-<%= type %>">
-  <div class="modal-dialog modal-lg border-info" role="document">
+  <div class="modal-dialog modal-xl border-info" role="document">
     <form name="rubric-settings-<%= type %>" method="POST">
       <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
       <input type="hidden" name="__action" value="modify_rubric_settings">
@@ -22,58 +22,100 @@
           </div>
           <div class="js-rubric-settings-<%= type %>">
             <hr/>
-            <div class="form-check">
-              <label class="form-check-label">
-                <input class="form-check-input" name="starting_points" type="radio" value="0"
-                       <% if ((rubric?.rubric_data?.starting_points ?? 0) == 0) { %>checked<% } %>>
-                Positive grading: start at zero and add points
-              </label>
-            </div>
-            <div class="form-check">
-              <label class="form-check-label">
-                <input class="form-check-input" name="starting_points" type="radio" value="<%= max_points %>"
-                       <% if (rubric?.rubric_data?.starting_points == max_points) { %>checked<% } %>>
-                Negative grading: start at 100% (<%= max_points %> points) and subtract penalties
-              </label>
-            </div>
-            <div class="form-check">
-              <label class="form-check-label">
-                <input class="form-check-input" name="starting_points" type="radio" value="CUSTOM"
-                       <% if (![0, max_points].includes(rubric?.rubric_data?.starting_points ?? 0)) { %>checked<% } %>>
-                Custom starting points
-              </label>
-            </div>
-            <div class="form-group js-starting-points-custom-<%= type %>">
-              <label>
-                <input class="form-control" name="starting_points_custom" type="number" value="<%= rubric?.rubric_data?.starting_points ?? max_points %>">
-              </label>
-            </div>
-            <hr/>
             <div class="form-row">
-              <div class="form-group col-6">
-                <label>
+              <div class="col-6">
+                <div class="form-check">
+                  <label class="form-check-label" data-toggle="tooltip"
+                         title="Start grading at zero and add points">
+                    <input class="form-check-input" name="starting_points" type="radio" value="0"
+                           <% if ((rubric?.rubric_data?.starting_points ?? 0) == 0) { %>checked<% } %>>
+                    Positive grading
+                  </label>
+                </div>
+                <div class="form-check">
+                  <label class="form-check-label" data-toggle="tooltip"
+                         title="Start grading at 100% (<%= max_points %> points) and subtract penalties">
+                    <input class="form-check-input" name="starting_points" type="radio" value="<%= max_points %>"
+                           <% if (rubric?.rubric_data?.starting_points == max_points) { %>checked<% } %>>
+                    Negative grading
+                  </label>
+                </div>
+                <div class="form-check">
+                  <label class="form-check-label">
+                    <input class="form-check-input" name="starting_points" type="radio" value="CUSTOM"
+                           <% if (![0, max_points].includes(rubric?.rubric_data?.starting_points ?? 0)) { %>checked<% } %>>
+                    Custom starting points
+                  </label>
+                </div>
+                <div class="js-starting-points-custom-<%= type %>">
+                  <label><span class="sr-only">Starting points</span>
+                    <input class="form-control" name="starting_points_custom" type="number" value="<%= rubric?.rubric_data?.starting_points ?? max_points %>">
+                  </label>
+                </div>
+              </div>
+              <div class="form-group col-3">
+                <label data-toggle="tooltip" title="Minimum number of points to be assigned to a student from the rubric (out of <%= max_points %>). Rubric items with negative points will not cause the grade to become lower than this value.">
                   Minimum points
                   <input class="form-control" name="min_points" type="number" value="<%= rubric?.rubric_data?.min_points ?? 0 %>">
                 </label>
-                <small class="form-text">
-                  Minimum number of points to be assigned to a student
-                  from the rubric (out of <%= max_points %>). Rubric
-                  items with negative points will not cause the grade to
-                  become lower than this value.
-                </small>
               </div>
-              <div class="form-group col-6">
-                <label>
+              <div class="form-group col-3">
+                <label data-toggle="tooltip" title="Minimum number of points to be assigned to a student from the rubric (out of <%= max_points %>). Rubric items with positive points will not cause the grade to become higher than this value.">
                   Maximum points
                   <input class="form-control" name="max_points" type="number" value="<%= rubric?.rubric_data?.max_points ?? max_points %>">
                 </label>
-                <small class="form-text">
-                  Minimum number of points to be assigned to a student
-                  from the rubric (out of <%= max_points %>). Rubric
-                  items with positive points will not cause the grade to
-                  become higher than this value.
-                </small>
               </div>
+            </div>
+            <hr/>
+            <div>
+              <table class="table table-sm table-hover">
+                <thead>
+                  <tr>
+                    <th><!-- Order --></th>
+                    <th>Points</th>
+                    <th>Text</th>
+                    <th>Description</th>
+                    <th>Grader note</th>
+                </thead>
+                <tbody>
+                  <% (rubric?.rubric_items || []).forEach((item) => { %>
+                  <tr>
+                    <td><!-- Reorder Controls --></td>
+                    <td style="max-width: 4rem">
+                      <input type="number" class="form-control" step="any"
+                             name="rubric_item_<%= item.rubric_item.id %>_points"
+                             value="<%= item.rubric_item.points %>">
+                    </td>
+                    <td>
+                      <input type="text" class="form-control"
+                             name="rubric_item_<%= item.rubric_item.id %>_short_text"
+                             value="<%= item.rubric_item.short_text %>">
+                    </td>
+                    <td>
+                      <textarea class="form-control"
+                                name="rubric_item_<%= item.rubric_item.id %>_description"
+                                ><%= item.rubric_item.description %></textarea>
+                    </td>
+                    <td>
+                      <textarea class="form-control"
+                                name="rubric_item_<%= item.rubric_item.id %>_staff_instructions"
+                                ><%= item.rubric_item.staff_instructions %></textarea>
+                    </td>
+                  </tr>
+                  <% }); %>
+                </tbody>
+              </table>
+              <button type="button" class="btn btn-sm btn-secondary">Add item</button>
+              <% if (variant.params) { %>
+              <small class="form-text text-muted">
+                Rubric items may be populated with values like:
+                <ul>
+                  <% Object.keys(variant.params).forEach((param) => { %>
+                  <li><code>{{params.<%= param %>}}</code></li>
+                  <% }); %>
+                </ul>
+              </small>
+              <% } %>
             </div>
             <!--
             <hr/>

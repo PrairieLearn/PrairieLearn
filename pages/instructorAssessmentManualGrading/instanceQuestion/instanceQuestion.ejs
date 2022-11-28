@@ -17,6 +17,7 @@
   </head>
   <script>
     $(function() {
+      $('[data-toggle="tooltip"]').tooltip();
       $('.js-manual-grading-pts-perc-select')
         .change(function () {
           const use_percentage = this.checked;
@@ -80,7 +81,7 @@
                  type_verbose: 'auto grading',
                  rubric: rubric_data_auto,
                  max_points: assessment_question.max_auto_points}); %>
-    <div id="content" class="container">
+    <div id="content" class="container-fluid">
       <% if (assessment_instance.open) { %>
       <div class="alert alert-danger" role="alert">
         This assessment instance is still open. Student may still be able to submit new answers.
@@ -134,11 +135,11 @@
       </script>
       <% } %>
       <div class="row">
-        <div class="col-lg-9 col-sm-12">
+        <div class="col-lg-9 col-12">
           <%- include('../../partials/question', {question_context: 'manual_grading'}); %>
         </div>
 
-        <div class="col-lg-3 col-sm-12">
+        <div class="col-lg-3 col-12">
           <div class="card mb-4 border-info">
             <div class="card-header bg-info text-white">Grading Panel</div>
             <div class="card-body">

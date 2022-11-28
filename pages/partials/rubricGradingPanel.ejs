@@ -1,18 +1,18 @@
 <div class="form-group js-manual-grading-points">
   <label class="w-100">
     <%= type_label %> Points:
-    <% if (rubric?.rubric_data || type == 'auto') { %>
     <span class="float-right js-<%= type %>-score-value-info">
+      <% if (rubric?.rubric_data || type == 'auto') { %>
       <%= points %> / <%= max_points %>
       <% if (authz_data.has_course_instance_permission_edit && !rubric?.rubric_data) { %>
       <span class="js-enable-<%= type %>-score-edit"><i class="fas fa-pencil"></i></span>
+      <% } %>
       <% } %>
       <button type="button" class="btn btn-outline-secondary"
               onclick="$('#rubric-settings-modal-<%= type %>').modal('show');">
         <i class="fas fa-list-check"></i>
       </button>
     </span>
-    <% } %>
   </label>
   <div class="input-group js-<%= type %>-score-value-input<% if (rubric?.rubric_data || type == 'auto') { %> d-none<% } %>">
     <input type="number" step="any"
