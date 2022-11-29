@@ -20,6 +20,7 @@ window.PLFileEditor = function (uuid, options) {
   this.restoreOriginalConfirm = this.element.find('.restore-original-confirm');
   this.restoreOriginalCancel = this.element.find('.restore-original-cancel');
   this.editor = ace.edit(this.editorElement.get(0));
+  this.editor.setKeyboardHandler('ace/keyboard/emacs');
   this.editor.setTheme('ace/theme/chrome');
   this.editor.getSession().setUseWrapMode(true);
   this.editor.setShowPrintMargin(false);
@@ -44,6 +45,14 @@ window.PLFileEditor = function (uuid, options) {
     this.editor.setFontSize(options.fontSize);
   } else {
     this.editor.setFontSize(12);
+  }
+
+  if (localStorage.getItem('pl-file-editor-keybindings')) {
+    this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keybindings'));
+  } else if (options.keyBindings) {
+    this.editor.setKeyboardHandler(options.keyBindings);
+  } else {
+    this.editor = ace.edit(this.editorElement.get(0));
   }
 
   if (options.minLines) {
@@ -102,11 +111,15 @@ window.PLFileEditor.prototype.syncSettings = function () {
     if (event.key === 'pl-file-editor-fontsize') {
       this.editor.setFontSize(event.newValue);
     }
+    // if (event.key === 'pl-file-editor-keybinding') {
+    //   this.editor.setKeyboardHandler(event.newValue);
+    // }
   });
 
   window.addEventListener('pl-file-editor-settings-changed', () => {
     this.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
     this.editor.setFontSize(localStorage.getItem('pl-file-editor-fontsize'));
+    // this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keybindings'));
   });
 };
 
@@ -162,10 +175,26 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
           })
         );
       }
+
+      var keyBindingList = ['Vim', 'Emacs', 'Sublime', 'VSCode'];
+      var keyBindSelect = that.modal.find('#modal-' + uuid + '-keyboardHandler');
+      keyBindSelect.empty();
+      for (const keybinds in keyBindingList) {
+        keyBindSelect.append(
+          $('<option>', {
+            value: keyBindingList[keybinds],
+            text: keyBindingList[keybinds],
+            selected: localStorage.getItem('pl-file-editor-keybindings') === keyBindingList[keybinds],
+          })
+        );
+      }
+
     });
     that.modal.modal('show');
     sessionStorage.setItem('pl-file-editor-theme-current', that.editor.getTheme());
     sessionStorage.setItem('pl-file-editor-fontsize-current', that.editor.getFontSize());
+    // sessionStorage.setItem('pl-file-editor-keybindings-current', that.editor.getKeyboardHandler());
+
     that.modal.find('#modal-' + uuid + '-themes').change(function () {
       var theme = $(this).val();
       that.editor.setTheme(theme);
@@ -174,17 +203,27 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
       var fontSize = $(this).val();
       that.editor.setFontSize(fontSize);
     });
+    // that.modal.find('#modal-' + uuid + '-keybindings').change(function () {
+    //   var keyBinds = $(this).val();
+    //   that.editor.setKeyboardHandler(keyBinds);
+    // });
   });
 
   this.saveSettingsButton.click(function () {
     var theme = that.modal.find('#modal-' + uuid + '-themes').val();
     var fontsize = that.modal.find('#modal-' + uuid + '-fontsize').val();
+    // var keybindings = that.modal.find('#modal-' + uuid + '-keybindings').val();
     that.editor.setTheme(theme);
     that.editor.setFontSize(fontsize);
+    // that.editor.setKeyboardHandler(keybindings);
+
     localStorage.setItem('pl-file-editor-theme', theme);
     localStorage.setItem('pl-file-editor-fontsize', fontsize);
+    // localStorage.setItem('pl-file-editor-keybindings', keybindings);
+
     sessionStorage.removeItem('pl-file-editor-theme-current');
     sessionStorage.removeItem('pl-file-editor-fontsize-current');
+    // sessionStorage.removeItem('pl-file-editor-keybindings-current');
     window.dispatchEvent(new Event('pl-file-editor-settings-changed'));
     that.modal.modal('hide');
   });
@@ -192,8 +231,10 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
   this.closeSettingsButton.click(function () {
     that.editor.setTheme(sessionStorage.getItem('pl-file-editor-theme-current'));
     that.editor.setFontSize(sessionStorage.getItem('pl-file-editor-fontsize-current'));
+    // that.editor.setKeyboardHandler(sessionStorage.getItem('pl-file-editor-keybindings-current'));
     sessionStorage.removeItem('pl-file-editor-theme-current');
     sessionStorage.removeItem('pl-file-editor-fontsize-current');
+    // sessionStorage.removeItem('pl-file-editor-keybindings-current');
   });
 };
 
