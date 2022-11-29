@@ -69,25 +69,29 @@
 <% if (rubric?.rubric_data) { %>
 <% (rubric?.rubric_items || []).forEach((item) => { %>
 <div>
-  <span class="btn-group-toggle" data-toggle="buttons">
-    <label class="btn btn-sm btn-outline-info text-truncate <%= item.grading_item ? 'active' : '' %>"
-           title="<%= item.rubric_item.key_binding %>"
-           style="width: 40px">
-      <input type="checkbox" name="rubric_item_selected_<%= type %>"
-             class="js-selectable-rubric-item"
-             value="<%= item.rubric_item.id %>" <%= item.grading_item ? 'checked' : '' %>
-             data-key-binding="<%= item.rubric_item.key_binding %>">
-      <%= item.rubric_item.key_binding || '\xa0' %>
-    </label>
+  <span class="btn-group align-top">
+    <span class="btn-group-toggle" data-toggle="buttons">
+      <label class="btn btn-sm btn-outline-info text-truncate <%= item.grading_item ? 'active' : '' %>"
+             title="<%= item.rubric_item.key_binding %>"
+             style="width: 30px">
+        <input type="checkbox" name="rubric_item_selected_<%= type %>"
+               class="js-selectable-rubric-item" id="js-selectable-rubric-item-<%= item.rubric_item.id %>"
+               value="<%= item.rubric_item.id %>" <%= item.grading_item ? 'checked' : '' %>
+               data-key-binding="<%= item.rubric_item.key_binding %>">
+        <%= item.rubric_item.key_binding || '\xa0' %>
+      </label>
+    </span>
   </span>
-  <strong>
-    <span class="js-manual-grading-points">[<%= item.rubric_item.points %>]</span>
-    <span class="js-manual-grading-percentage">[<%= item.rubric_item.points * 100 / (max_points || assessment_question.max_points) %>%]</span>
-  </strong>
-  <%= item.rubric_item.short_text_rendered %>
-  <small class="text-muted">
-    <%= item.rubric_item.staff_instructions_rendered %>
-  </small>
+  <label class="d-inline-block" for="js-selectable-rubric-item-<%= item.rubric_item.id %>">
+    <strong>
+      <span class="js-manual-grading-points">[<%= item.rubric_item.points %>]</span>
+      <span class="js-manual-grading-percentage">[<%= item.rubric_item.points * 100 / (max_points || assessment_question.max_points) %>%]</span>
+    </strong>
+    <%= item.rubric_item.short_text_rendered %>
+    <div class="small text-muted">
+      <%= item.rubric_item.staff_instructions_rendered %>
+    </div>
+  </label>
 </div>
 <% }); %>
 <hr/>
