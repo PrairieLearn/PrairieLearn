@@ -30,6 +30,7 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+      - uses: jakebailey/pyright-action@v1
       - name: Setup Graphviz
         uses: ts-graphviz/setup-graphviz@v1
       - name: Install dependencies
@@ -38,8 +39,8 @@ jobs:
           pip install -r images/plbase/python-requirements.txt
       - name: Run the Python linter
         run: make lint-python
-      #- name: Run the Python typechecker
-      #  run: make typecheck-python
+      - name: Run the Python typechecker
+        run: make typecheck-python
       - name: Run the Python tests
         run: make test-python
         timeout-minutes: 5
