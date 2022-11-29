@@ -34,8 +34,6 @@ BEGIN
         RAISE EXCEPTION 'Cannot find the group by provided join code: %', arg_join_code;
     END IF;
 
-    RAISE NOTICE 'This is logging: %', arg_group_id;
-
     -- lock the group
     -- to prevent many students join a group together breaking max size of the group
     PERFORM g.id
