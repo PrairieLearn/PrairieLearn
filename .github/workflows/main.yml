@@ -31,11 +31,11 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Run the Python linter
-        run: ./PrairieLearn/docker/lint_python.sh
+        run: make lint-python
       - name: Run the Python typechecker
-        run: ./PrairieLearn/docker/typecheck_python.sh
+        run: make typecheck-python
       - name: Run the Python tests
-        run: ./PrairieLearn/docker/test_python.sh
+        run: make test-python
         timeout-minutes: 5
 
   build:
