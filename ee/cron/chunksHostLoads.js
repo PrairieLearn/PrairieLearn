@@ -4,6 +4,8 @@ const { callbackify } = require('util');
 
 const config = require('../../lib/config');
 
+// These are used as IDs when reading CloudWatch metrics. They must start with
+// a lowercase letter and contain only numbers, letters, and underscores.
 const PAGE_VIEWS_PER_SECOND = 'pageViewsPerSecond';
 const ACTIVE_WORKERS_PER_SECOND = 'activeWorkersPerSecond';
 const LOAD_BALANCER_REQUESTS_PER_MINUTE = 'loadBalancerRequestsPerMinute';
