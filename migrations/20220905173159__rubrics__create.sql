@@ -34,13 +34,14 @@ CREATE TABLE IF NOT EXISTS rubric_grading_items (
     id BIGSERIAL PRIMARY KEY,
     rubric_grading_id BIGINT NOT NULL REFERENCES rubric_gradings(id) ON DELETE CASCADE ON UPDATE CASCADE,
     rubric_item_id BIGINT NOT NULL REFERENCES rubric_items(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    points DOUBLE PRECISION NOT NULL,
+    score DOUBLE PRECISION NOT NULL DEFAULT 1,
     note TEXT,
     deleted_at TIMESTAMP WITH TIME ZONE
 );
 
 -- TODO Consider other indices
 
+ALTER TABLE rubric_grading_items DROP CONSTRAINT IF EXISTS rubric_grading_items_rubric_grading_id_rubric_item_id_key;
 ALTER TABLE rubric_grading_items ADD CONSTRAINT rubric_grading_items_rubric_grading_id_rubric_item_id_key UNIQUE (rubric_grading_id, rubric_item_id);
 
 ALTER TABLE assessment_questions ADD COLUMN IF NOT EXISTS manual_rubric_id BIGINT REFERENCES rubrics(id) ON DELETE SET NULL ON UPDATE CASCADE;

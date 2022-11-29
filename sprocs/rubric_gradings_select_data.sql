@@ -20,7 +20,9 @@ BEGIN
     INTO rubric_items
     FROM
         rubric_items AS ri
-        LEFT JOIN rubric_grading_items AS rgi ON (rgi.rubric_item_id = ri.id AND rgi.rubric_grading_id = rubric_gradings_select_data.rubric_grading_id AND rgi.deleted_at IS NULL)
+        LEFT JOIN rubric_grading_items AS rgi ON (rgi.rubric_item_id = ri.id
+                                                  AND rgi.rubric_grading_id = rubric_gradings_select_data.rubric_grading_id
+                                                  AND rgi.deleted_at IS NULL)
     WHERE
         ri.rubric_id = rubric_gradings_select_data.rubric_id
         AND ri.deleted_at IS NULL;

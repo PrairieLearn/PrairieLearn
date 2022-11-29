@@ -17,10 +17,10 @@ BEGIN
     END IF;
 
     IF computed_points IS NULL THEN
-        SELECT LEAST(GREATEST(rubric.starting_points + SUM(COALESCE(ari.points, ri.points)) + COALESCE(adjust_points, 0),
+        SELECT LEAST(GREATEST(rubric.starting_points + SUM(COALESCE(ari.score, 1) * ri.points) + COALESCE(adjust_points, 0),
                               rubric.min_points), rubric.max_points)
         INTO computed_points
-        FROM JSONB_TO_RECORDSET(applied_rubric_items) AS ari(rubric_item_id BIGINT, points DOUBLE PRECISION, note TEXT)
+        FROM JSONB_TO_RECORDSET(applied_rubric_items) AS ari(rubric_item_id BIGINT, score DOUBLE PRECISION, note TEXT)
              JOIN rubric_items AS ri ON (ri.id = ari.rubric_item_id);
     END IF;
 
@@ -31,10 +31,10 @@ BEGIN
     RETURNING id INTO rubric_grading_id;
 
     INSERT INTO rubric_grading_items
-        (rubric_grading_id, rubric_item_id, points, note)
+        (rubric_grading_id, rubric_item_id, score, note)
     SELECT
-        rubric_grading_id, ari.rubric_item_id, COALESCE(ari.points, ri.points), ari.note
-    FROM JSONB_TO_RECORDSET(applied_rubric_items) AS ari(rubric_item_id BIGINT, points DOUBLE PRECISION, note TEXT)
+        rubric_grading_id, ari.rubric_item_id, COALESCE(ari.score, 1), ari.note
+    FROM JSONB_TO_RECORDSET(applied_rubric_items) AS ari(rubric_item_id BIGINT, score DOUBLE PRECISION, note TEXT)
          JOIN rubric_items AS ri ON (ri.id = ari.rubric_item_id);
 END;
 $$ LANGUAGE plpgsql VOLATILE;
