@@ -51,7 +51,7 @@ window.PLFileEditor = function (uuid, options) {
   } else if (options.keyBindings) {
     this.editor.setKeyboardHandler(options.keyBindings);
   } else {
-    this.editor.setKeyboardHandler("null")
+    this.editor.setKeyboardHandler('null');
   }
 
   if (options.minLines) {
@@ -179,8 +179,8 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
       var keyBindSelect = that.modal.find('#modal-' + uuid + '-keyboardHandler');
       keyBindSelect.empty();
       for (const index in keyBindingList) {
-        var keyBind = "ace/keyboard/" + keyBindingList[index].toLowerCase();
-        if (keyBindingList[index] === "Default") keyBind = "null";
+        var keyBind = 'ace/keyboard/' + keyBindingList[index].toLowerCase();
+        if (keyBindingList[index] === 'Default') keyBind = 'null';
 
         keyBindSelect.append(
           $('<option>', {
@@ -190,12 +190,14 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
           })
         );
       }
-
     });
     that.modal.modal('show');
     sessionStorage.setItem('pl-file-editor-theme-current', that.editor.getTheme());
     sessionStorage.setItem('pl-file-editor-fontsize-current', that.editor.getFontSize());
-    sessionStorage.setItem('pl-file-editor-keyboardHandler-current', that.editor.getKeyboardHandler());
+    sessionStorage.setItem(
+      'pl-file-editor-keyboardHandler-current',
+      that.editor.getKeyboardHandler()
+    );
 
     that.modal.find('#modal-' + uuid + '-themes').change(function () {
       var theme = $(this).val();
@@ -219,7 +221,6 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     that.editor.setTheme(theme);
     that.editor.setFontSize(fontsize);
     that.editor.setKeyboardHandler(keybindings);
-
     localStorage.setItem('pl-file-editor-theme', theme);
     localStorage.setItem('pl-file-editor-fontsize', fontsize);
     localStorage.setItem('pl-file-editor-keyboardHandler', keybindings);
@@ -235,7 +236,9 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
   this.closeSettingsButton.click(function () {
     that.editor.setTheme(sessionStorage.getItem('pl-file-editor-theme-current'));
     that.editor.setFontSize(sessionStorage.getItem('pl-file-editor-fontsize-current'));
-    that.editor.setKeyboardHandler(sessionStorage.getItem('pl-file-editor-keyboardHandler-current'));
+    that.editor.setKeyboardHandler(
+      sessionStorage.getItem('pl-file-editor-keyboardHandler-current')
+    );
 
     sessionStorage.removeItem('pl-file-editor-theme-current');
     sessionStorage.removeItem('pl-file-editor-fontsize-current');
