@@ -6,24 +6,28 @@
     <label for="js-<%= type %>-score-value-input-percentage" class="js-manual-grading-percentage">
       <%= type_label %> Score:
     </label>
-    <span class="float-right js-<%= type %>-score-value-info">
+    <span class="float-right">
       <% if (rubric?.rubric_data || type == 'auto') { %>
-      <span class="js-manual-grading-points">
+      <span class="js-manual-grading-points js-<%= type %>-score-value-info">
         <%= points %> / <%= max_points %>
       </span>
-      <span class="js-manual-grading-percentage">
+      <span class="js-manual-grading-percentage js-<%= type %>-score-value-info">
         <%= points * 100 / (max_points || assessment_question.max_points) %>%
       </span>
-      <% if (authz_data.has_course_instance_permission_edit && !rubric?.rubric_data) { %>
-      <span class="js-enable-<%= type %>-score-edit"><i class="fas fa-pencil"></i></span>
       <% } %>
+      <div class="btn-group btn-group-sm" role="group">
+      <% if (type == 'auto' && authz_data.has_course_instance_permission_edit && !rubric?.rubric_data) { %>
+      <button type="button" class="btn btn-outline-secondary js-enable-<%= type %>-score-edit js-<%= type %>-score-value-info">
+        <i class="fas fa-pencil"></i>
+      </button>
       <% } %>
       <% if (!locals.disable && authz_data.has_course_instance_permission_edit && course.manual_grading_visible) { %>
-      <button type="button" class="btn btn-sm btn-outline-secondary"
+      <button type="button" class="btn btn-outline-secondary"
               onclick="$('#rubric-settings-modal-<%= type %>').modal('show');">
         <i class="fas fa-list-check"></i>
       </button>
       <% } %>
+      </div>
     </span>
   </span>
   <div class="js-manual-grading-points">
