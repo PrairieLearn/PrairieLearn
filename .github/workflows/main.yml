@@ -18,35 +18,35 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  python:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: [3.8]
-
-    steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Setup Graphviz
-        uses: ts-graphviz/setup-graphviz@v1
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r images/plbase/python-requirements.txt
-      - name: Run the Python linter
-        run: make lint-python
-      - name: Run the Python typechecker
-        uses: jakebailey/pyright-action@v1
-      - name: Run the Python tests
-        run: make test-python
-        timeout-minutes: 5
+  #python:
+  #  runs-on: ubuntu-latest
+  #  strategy:
+  #    matrix:
+  #      python-version: [3.8]
+  #
+  #  steps:
+  #    - uses: actions/checkout@v3
+  #    - name: Set up Python ${{ matrix.python-version }}
+  #      uses: actions/setup-python@v4
+  #      with:
+  #        python-version: ${{ matrix.python-version }}
+  #    - name: Setup Graphviz
+  #      uses: ts-graphviz/setup-graphviz@v1
+  #    - name: Install dependencies
+  #      run: |
+  #        python -m pip install --upgrade pip
+  #        pip install -r images/plbase/python-requirements.txt
+  #    - name: Run the Python linter
+  #      run: make lint-python
+  #    - name: Run the Python typechecker
+  #      uses: jakebailey/pyright-action@v1
+  #    - name: Run the Python tests
+  #      run: make test-python
+  #      timeout-minutes: 5
 
   build:
     runs-on: ubuntu-latest
-    needs: python
+    #needs: python
     env:
       DOCKERHUB_USERNAME_SECRET: ${{ secrets.DOCKERHUB_USERNAME }}
 
