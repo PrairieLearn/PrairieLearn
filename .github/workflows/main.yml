@@ -38,8 +38,8 @@ jobs:
           pip install -r images/plbase/python-requirements.txt
       - name: Run the Python linter
         run: make lint-python
-      - name: Run the Python typechecker
-        run: make typecheck-python
+      #- name: Run the Python typechecker
+      #  run: make typecheck-python
       - name: Run the Python tests
         run: make test-python
         timeout-minutes: 5
