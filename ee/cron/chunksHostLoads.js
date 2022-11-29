@@ -4,9 +4,9 @@ const { callbackify } = require('util');
 
 const config = require('../../lib/config');
 
-const PAGE_VIEWS_PER_SECOND = 'PageViewsPerSecond';
-const ACTIVE_WORKERS_PER_SECOND = 'ActiveWorkersPerSecond';
-const LOAD_BALANCER_REQUESTS_PER_MINUTE = 'LoadBalancerRequestsPerMinute';
+const PAGE_VIEWS_PER_SECOND = 'pageViewsPerSecond';
+const ACTIVE_WORKERS_PER_SECOND = 'activeWorkersPerSecond';
+const LOAD_BALANCER_REQUESTS_PER_MINUTE = 'loadBalancerRequestsPerMinute';
 
 /**
  * Finds the maximum value in the given array.
