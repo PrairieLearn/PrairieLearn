@@ -61,6 +61,9 @@ arch=`uname -m`
 curl -LO https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh
 bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
 
+conda create --name "env" python=3.8 --file python /python-requirements.txt
+conda activate env
+
 # If R package installation is specifically disabled, we'll avoid installing anything R-related.
 if [[ "${SKIP_R_PACKAGES}" != "yes" ]]; then
     echo "installing R..."
