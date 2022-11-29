@@ -50,16 +50,20 @@ lint-js:
 	@yarn eslint --ext js --report-unused-disable-directives "**/*.js"
 	@yarn prettier --check "**/*.{js,ts,md}"
 lint-python:
-	@python3 -m flake8 ./
+	@python3 -m flake8p ./
 lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html"
 lint-links:
 	@node tools/validate-links.mjs
 
-format: format-js
+format: format-js format-python
 format-js:
 	@yarn eslint --ext js --fix "**/*.js"
 	@yarn prettier --write "**/*.{js,ts,md}"
+format-python:
+# Very annoying that isort doesn't allow this to be set in the config
+	@python3 -m isort ./elements/**/*.py ./question-servers/**/*.py
+	@python3 -m black ./
 
 typecheck: typecheck-js typecheck-python
 typecheck-js:

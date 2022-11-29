@@ -1,0 +1,23 @@
+[tool.flake8]
+# TODO add python directory here in later PR
+filename = ["./elements/**/*.py", "./question-servers/**/*.py"]
+ignore = ["E501"]
+# Black compatibility
+max-line-length = 88
+extend-ignore = ["E203", "W503"]
+
+[tool.black]
+include = '^\/elements\/.*\.pyi?$|^\/question-servers\/.*\.pyi?$'
+
+[tool.isort]
+profile = "black"
+
+[tool.pyright]
+include = [
+    "./elements/pl-hidden-hints",
+    "./elements/pl-order-blocks",
+    "./elements/pl-symbolic-input",
+    "./python/python_helper_sympy_test.py"
+]
+extraPaths = ["./python"]
+pythonVersion = "3.8"
