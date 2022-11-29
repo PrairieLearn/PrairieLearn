@@ -8,6 +8,7 @@ const sqldb = require('../../../prairielib/lib/sql-db');
 const sqlLoader = require('../../../prairielib/lib/sql-loader');
 const ltiOutcomes = require('../../../lib/ltiOutcomes');
 const manualGrading = require('../../../lib/manualGrading');
+const qs = require('qs');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -133,6 +134,7 @@ router.post(
         )
       );
     } else if (req.body.__action === 'modify_rubric_settings') {
+      const rubric_items = Object.values(qs.parse(qs.stringify(req.body)).rubric_item);
       const params = [
         res.locals.instance_question.assessment_question_id,
         req.body.rubric_type,
@@ -142,6 +144,7 @@ router.post(
           : req.body.starting_points,
         req.body.min_points,
         req.body.max_points,
+        JSON.stringify(rubric_items),
       ];
       await sqldb.callAsync('assessment_questions_update_rubric', params);
       res.redirect(req.originalUrl);

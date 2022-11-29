@@ -35,7 +35,7 @@
                 <div class="form-check">
                   <label class="form-check-label" data-toggle="tooltip"
                          title="Start grading at 100% (<%= max_points %> points) and subtract penalties">
-                    <input class="form-check-input" name="starting_points" type="radio" value="<%= max_points %>"
+                    <input class="form-check-input js-negative-grading" name="starting_points" type="radio" value="<%= max_points %>"
                            <% if (rubric?.rubric_data?.starting_points == max_points) { %>checked<% } %>>
                     Negative grading
                   </label>
@@ -68,44 +68,45 @@
             </div>
             <hr/>
             <div>
-              <table class="table table-sm table-hover">
+              <table class="table table-sm table-striped js-rubric-items-table">
                 <thead>
                   <tr>
                     <th><!-- Order --></th>
                     <th>Points</th>
                     <th>Text</th>
-                    <th>Description</th>
                     <th>Grader note</th>
                 </thead>
                 <tbody>
                   <% (rubric?.rubric_items || []).forEach((item) => { %>
                   <tr>
-                    <td><!-- Reorder Controls --></td>
+                    <td>
+                      <input type="hidden"
+                             name="rubric_item[cur<%= item.rubric_item.id %>][id]"
+                             value="<%= item.rubric_item.id %>">
+                      <!-- TODO move up/down, delete, keybinding -->
+                    </td>
                     <td style="max-width: 4rem">
                       <input type="number" class="form-control" step="any"
-                             name="rubric_item_<%= item.rubric_item.id %>_points"
+                             name="rubric_item[cur<%= item.rubric_item.id %>][points]"
                              value="<%= item.rubric_item.points %>">
                     </td>
                     <td>
                       <input type="text" class="form-control"
-                             name="rubric_item_<%= item.rubric_item.id %>_short_text"
+                             name="rubric_item[cur<%= item.rubric_item.id %>][short_text]"
                              value="<%= item.rubric_item.short_text %>">
                     </td>
                     <td>
                       <textarea class="form-control"
-                                name="rubric_item_<%= item.rubric_item.id %>_description"
-                                ><%= item.rubric_item.description %></textarea>
-                    </td>
-                    <td>
-                      <textarea class="form-control"
-                                name="rubric_item_<%= item.rubric_item.id %>_staff_instructions"
+                                name="rubric_item[cur<%= item.rubric_item.id %>][staff_instructions]"
                                 ><%= item.rubric_item.staff_instructions %></textarea>
                     </td>
                   </tr>
                   <% }); %>
                 </tbody>
               </table>
-              <button type="button" class="btn btn-sm btn-secondary">Add item</button>
+              <button type="button" class="btn btn-sm btn-secondary js-add-rubric-item-button">
+                Add item
+              </button>
               <% if (variant.params || variant.true_answer) { %>
               <small class="form-text text-muted">
                 Rubric items may be populated with values like:
@@ -151,5 +152,28 @@
       $('.js-starting-points-custom-<%= type %>')
         .toggle($('#rubric-settings-modal-<%= type %> input[name="starting_points"]:checked').val() == 'CUSTOM');
     }).change();
+    $('#rubric-settings-modal-<%= type %> .js-add-rubric-item-button').click(() => {
+      const table = $('#rubric-settings-modal-<%= type %> .js-rubric-items-table');
+      const next_id = table.data('next-new-id') ?? 1;
+      const points = $('#rubric-settings-modal-<%= type %> .js-negative-grading').prop('checked') ? -1 : +1;
+      table.data('next-new-id', next_id);
+      $('<tr>')
+        .append($('<td>'))
+        .append($('<td style="max-width: 4rem">')
+                .append($('<input type="number" class="form-control" step="any">')
+                        .attr('name', `rubric_item[new${next_id}][points]`)
+                        .val(points)))
+        .append($('<td>')
+                .append($('<input type="text" class="form-control">')
+                        .attr('name', `rubric_item[new${next_id}][short_text]`)))
+        // .append($('<td>')
+        //         .append($('<textarea class="form-control">')
+        //                 .attr('name', `rubric_item_new${next_id}_description`)))
+        .append($('<td>')
+                .append($('<textarea class="form-control">')
+                        .attr('name', `rubric_item[new${next_id}][staff_instructions]`)))
+        .appendTo(table)
+        .find('input[type="text"]:first').focus();
+    });
   });
 </script>
