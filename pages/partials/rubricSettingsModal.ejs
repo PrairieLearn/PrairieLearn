@@ -154,7 +154,7 @@
     }).change();
     $('#rubric-settings-modal-<%= type %> .js-add-rubric-item-button').click(() => {
       const table = $('#rubric-settings-modal-<%= type %> .js-rubric-items-table');
-      const next_id = table.data('next-new-id') ?? 1;
+      const next_id = (table.data('next-new-id') ?? 0) + 1;
       const points = $('#rubric-settings-modal-<%= type %> .js-negative-grading').prop('checked') ? -1 : +1;
       table.data('next-new-id', next_id);
       $('<tr>')
