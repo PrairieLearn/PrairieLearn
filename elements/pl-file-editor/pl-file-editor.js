@@ -51,7 +51,7 @@ window.PLFileEditor = function (uuid, options) {
   } else if (options.keyBindings) {
     this.editor.setKeyboardHandler(options.keyBindings);
   } else {
-    this.editor.setKeyboardHandler('null');
+    this.editor.setKeyboardHandler(null);
   }
 
   if (options.minLines) {
@@ -180,7 +180,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
       keyBindSelect.empty();
       for (const index in keyBindingList) {
         var keyBind = 'ace/keyboard/' + keyBindingList[index].toLowerCase();
-        if (keyBindingList[index] === 'Default') keyBind = 'null';
+        if (keyBindingList[index] === 'Default') keyBind = null;
 
         keyBindSelect.append(
           $('<option>', {
@@ -209,7 +209,11 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     });
     that.modal.find('#modal-' + uuid + '-keyboardHandler').change(function () {
       var keyBinds = $(this).val();
-      that.editor.setKeyboardHandler(keyBinds);
+      if (keyBinds == 'Default') {
+        that.editor.setKeyboardHandler(null);
+      } else {
+        that.editor.setKeyboardHandler(keyBinds);
+      }
     });
   });
 
@@ -223,7 +227,11 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     that.editor.setKeyboardHandler(keybindings);
     localStorage.setItem('pl-file-editor-theme', theme);
     localStorage.setItem('pl-file-editor-fontsize', fontsize);
-    localStorage.setItem('pl-file-editor-keyboardHandler', keybindings);
+    if (keybindings == 'Default') {
+      localStorage.setItem('pl-file-editor-keyboardHandler', null);
+    } else {
+      localStorage.setItem('pl-file-editor-keyboardHandler', keybindings);
+    }
 
     sessionStorage.removeItem('pl-file-editor-theme-current');
     sessionStorage.removeItem('pl-file-editor-fontsize-current');
