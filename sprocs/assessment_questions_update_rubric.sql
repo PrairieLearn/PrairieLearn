@@ -73,6 +73,7 @@ BEGIN
                                 id BIGINT,
                                 short_text TEXT,
                                 points DOUBLE PRECISION,
+                                description TEXT,
                                 staff_instructions TEXT))
     LOOP
         next_number := next_number + 1;
@@ -81,8 +82,9 @@ BEGIN
         SET
             number = next_number,
             points = rubric_item.points,
-            short_text = rubric_item.short_text,
-            staff_instructions = rubric_item.staff_instructions,
+            short_text = COALESCE(rubric_item.short_text, short_text),
+            description = COALESCE(rubric_item.description, description),
+            staff_instructions = COALESCE(rubric_item.staff_instructions, staff_instructions),
             deleted_at = NULL
         WHERE
             id = rubric_item.id

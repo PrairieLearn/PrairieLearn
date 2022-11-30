@@ -23,7 +23,7 @@
           <div class="js-rubric-settings-<%= type %>">
             <hr/>
             <div class="form-row">
-              <div class="col-6">
+              <div class="col-4">
                 <div class="form-check">
                   <label class="form-check-label" data-toggle="tooltip"
                          title="Start grading at zero and add points">
@@ -53,13 +53,13 @@
                   </label>
                 </div>
               </div>
-              <div class="form-group col-3">
+              <div class="form-group col-4">
                 <label data-toggle="tooltip" title="Minimum number of points to be assigned to a student from the rubric (out of <%= max_points %>). Rubric items with negative points will not cause the grade to become lower than this value.">
                   Minimum points
                   <input class="form-control" name="min_points" type="number" value="<%= rubric?.rubric_data?.min_points ?? 0 %>">
                 </label>
               </div>
-              <div class="form-group col-3">
+              <div class="form-group col-4">
                 <label data-toggle="tooltip" title="Minimum number of points to be assigned to a student from the rubric (out of <%= max_points %>). Rubric items with positive points will not cause the grade to become higher than this value.">
                   Maximum points
                   <input class="form-control" name="max_points" type="number" value="<%= rubric?.rubric_data?.max_points ?? max_points %>">
@@ -74,6 +74,7 @@
                     <th><!-- Order --></th>
                     <th>Points</th>
                     <th>Text</th>
+                    <th>Detailed description</th>
                     <th>Grader note</th>
                 </thead>
                 <tbody>
@@ -96,9 +97,24 @@
                              value="<%= item.rubric_item.short_text %>">
                     </td>
                     <td>
-                      <textarea class="form-control"
-                                name="rubric_item[cur<%= item.rubric_item.id %>][staff_instructions]"
-                                ><%= item.rubric_item.staff_instructions %></textarea>
+                      <label data-input-name="rubric_item[cur<%= item.rubric_item.id %>][description]"
+                             data-current-value="<%= item.rubric_item.description %>">
+                        <%= item.rubric_item.description %>
+                        <button type="button" class="btn btn-sm"
+                                onclick="enableRubricItemDescriptionField(event)">
+                          <i class="fas fa-pencil"></i>
+                        </button>
+                      </label>
+                    </td>
+                    <td>
+                      <label data-input-name="rubric_item[cur<%= item.rubric_item.id %>][staff_instructions]"
+                             data-current-value="<%= item.rubric_item.staff_instructions %>">
+                        <%= item.rubric_item.staff_instructions %>
+                        <button type="button" class="btn btn-sm"
+                                onclick="enableRubricItemDescriptionField(event)">
+                          <i class="fas fa-pencil"></i>
+                        </button>
+                      </label>
                     </td>
                   </tr>
                   <% }); %>
@@ -108,9 +124,9 @@
                 Add item
               </button>
               <% if (variant.params || variant.true_answer) { %>
-              <small class="form-text text-muted">
+              <div class="small form-text text-muted">
                 Rubric items may be populated with values like:
-                <ul>
+                <ul style="max-height: 7rem; overflow-y: auto;">
                   <% Object.keys(variant.params || {}).forEach((key) => { %>
                   <li><code>{{params.<%= key %>}}</code></li>
                   <% }); %>
@@ -118,10 +134,9 @@
                   <li><code>{{correct_answers.<%= key %>}}</code></li>
                   <% }); %>
                 </ul>
-              </small>
+              </div>
               <% } %>
             </div>
-            <!--
             <hr/>
             <div class="form-check">
               <label class="form-check-label">
@@ -129,7 +144,6 @@
                 Tag all previously graded submissions to be graded again
               </label>
             </div>
-            -->
           </div>
         </div>
         <div class="modal-footer">
@@ -143,6 +157,15 @@
   </div>
 </div>
 <script>
+  window.enableRubricItemDescriptionField = function(e) {
+    const cell = $(event.target).parents('label:first');
+    const data = cell.data();
+    const input = $('<textarea class="form-control">')
+          .attr('name', data.inputName)
+          .text(data.currentValue)
+    cell.after(input).remove();
+    input.focus();
+  }
   $(() => {
     $('#rubric-settings-modal-<%= type %> input[name="use_rubrics"]').change(() => {
       $('.js-rubric-settings-<%= type %>')
@@ -166,12 +189,18 @@
         .append($('<td>')
                 .append($('<input type="text" class="form-control">')
                         .attr('name', `rubric_item[new${next_id}][short_text]`)))
-        // .append($('<td>')
-        //         .append($('<textarea class="form-control">')
-        //                 .attr('name', `rubric_item_new${next_id}_description`)))
         .append($('<td>')
-                .append($('<textarea class="form-control">')
-                        .attr('name', `rubric_item[new${next_id}][staff_instructions]`)))
+                .append($('<label>')
+                        .data('input-name', `rubric_item[new${next_id}][description]`)
+                        .append($('<button type="button" class="btn btn-sm">')
+                                .click(enableRubricItemDescriptionField)
+                                .append('<i class="fas fa-pencil"></i>'))))
+        .append($('<td>')
+                .append($('<label>')
+                        .data('input-name', `rubric_item[new${next_id}][staff_instructions]`)
+                        .append($('<button type="button" class="btn btn-sm">')
+                                .click(enableRubricItemDescriptionField)
+                                .append('<i class="fas fa-pencil"></i>'))))
         .appendTo(table)
         .find('input[type="text"]:first').focus();
     });
