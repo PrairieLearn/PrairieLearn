@@ -134,7 +134,7 @@ router.get('/', function (req, res, next) {
               res.locals.disabledRoles = disabledRoles;
               res.locals.group_roles = groupRoles;
               res.locals.rolesAreBalanced = rolesAreBalanced;
-  
+
               if (usingGroupRoles) {
                 if (groupMember) {
                   groupAssessmentHelper.getAssessmentLevelPermissions(
