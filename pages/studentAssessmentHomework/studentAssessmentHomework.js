@@ -88,7 +88,6 @@ router.get('/', function (req, res, next) {
             res.locals.rolesAreBalanced = rolesAreBalanced;
 
             if (usingGroupRoles) {
-              // If the user is currently tied to a group, get whether they can view the role-select table or not
               if (groupMember) {
                 groupAssessmentHelper.getAssessmentLevelPermissions(
                   res.locals.assessment.id,

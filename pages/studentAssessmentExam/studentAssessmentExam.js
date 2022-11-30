@@ -40,8 +40,13 @@ router.get('/', function (req, res, next) {
           usingGroupRoles,
           group_info,
           join_code,
+          minimumSizeMet,
           start,
-          used_join_code
+          used_join_code,
+          validationErrors,
+          disabledRoles,
+          groupRoles,
+          rolesAreBalanced
         ) {
           if (ERR(err, next)) return;
           res.locals.permissions = permissions;
@@ -52,13 +57,27 @@ router.get('/', function (req, res, next) {
           res.locals.usingGroupRoles = usingGroupRoles;
           res.locals.group_info = group_info;
           res.locals.join_code = join_code;
+          res.locals.minimumSizeMet = minimumSizeMet;
           res.locals.start = start;
           res.locals.used_join_code = used_join_code;
+          res.locals.validationErrors = validationErrors;
+          res.locals.disabledRoles = disabledRoles;
+          res.locals.group_roles = groupRoles;
+          res.locals.rolesAreBalanced = rolesAreBalanced;
+
           if (usingGroupRoles) {
-            groupAssessmentHelper.getGroupRoles(res.locals.assessment.id, function (group_roles) {
-              res.locals.group_roles = group_roles;
+            if (groupMember) {
+              groupAssessmentHelper.getAssessmentLevelPermissions(
+                res.locals.assessment.id,
+                res.locals.user.user_id,
+                function (permissions) {
+                  res.locals.can_view_role_table = permissions.can_assign_roles_at_start;
+                  res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                }
+              );
+            } else {
               res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-            });
+            }
           } else {
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
           }
@@ -91,8 +110,13 @@ router.get('/', function (req, res, next) {
               usingGroupRoles,
               group_info,
               join_code,
+              minimumSizeMet,
               start,
-              used_join_code
+              used_join_code,
+              validationErrors,
+              disabledRoles,
+              groupRoles,
+              rolesAreBalanced
             ) {
               if (ERR(err, next)) return;
               res.locals.permissions = permissions;
@@ -103,16 +127,27 @@ router.get('/', function (req, res, next) {
               res.locals.usingGroupRoles = usingGroupRoles;
               res.locals.group_info = group_info;
               res.locals.join_code = join_code;
+              res.locals.minimumSizeMet = minimumSizeMet;
               res.locals.start = start;
               res.locals.used_join_code = used_join_code;
+              res.locals.validationErrors = validationErrors;
+              res.locals.disabledRoles = disabledRoles;
+              res.locals.group_roles = groupRoles;
+              res.locals.rolesAreBalanced = rolesAreBalanced;
+  
               if (usingGroupRoles) {
-                groupAssessmentHelper.getGroupRoles(
-                  res.locals.assessment.id,
-                  function (group_roles) {
-                    res.locals.group_roles = group_roles;
-                    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                  }
-                );
+                if (groupMember) {
+                  groupAssessmentHelper.getAssessmentLevelPermissions(
+                    res.locals.assessment.id,
+                    res.locals.user.user_id,
+                    function (permissions) {
+                      res.locals.can_view_role_table = permissions.can_assign_roles_at_start;
+                      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                    }
+                  );
+                } else {
+                  res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                }
               } else {
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
               }
@@ -198,6 +233,17 @@ router.post('/', function (req, res, next) {
           res.locals.groupsize = 0;
           res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         }
+      }
+    );
+  } else if (req.body.__action === 'update_group_roles') {
+    groupAssessmentHelper.updateGroupRoles(
+      req.body,
+      res.locals.assessment.id,
+      res.locals.user.user_id,
+      res.locals.authn_user.user_id,
+      function (err) {
+        if (ERR(err, next)) return;
+        res.redirect(req.originalUrl);
       }
     );
   } else if (req.body.__action === 'leave_group') {
