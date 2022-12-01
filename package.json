@@ -143,7 +143,7 @@
     },
     "devDependencies": {
         "@changesets/cli": "^2.25.2",
-        "@types/async": "^3.2.15",
+        "@types/async": "^3.2.16",
         "@types/body-parser": "^1.19.2",
         "@types/chai": "^4.3.0",
         "@types/chai-as-promised": "^7.1.5",
