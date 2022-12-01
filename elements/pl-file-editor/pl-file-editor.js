@@ -196,15 +196,10 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     that.modal.modal('show');
     sessionStorage.setItem('pl-file-editor-theme-current', that.editor.getTheme());
     sessionStorage.setItem('pl-file-editor-fontsize-current', that.editor.getFontSize());
-
-    if (localStorage.getItem('pl-file-editor-keyboardHandler') !== 'ace/keyboard/default') {
-      sessionStorage.setItem(
-        'pl-file-editor-keyboardHandler-current',
-        localStorage.getItem('pl-file-editor-keyboardHandler')
-      );
-    } else {
-      sessionStorage.setItem('pl-file-editor-keyboardHandler-current', 'ace/keyboard/default');
-    }
+    sessionStorage.setItem(
+      'pl-file-editor-keyboardHandler-current',
+      localStorage.getItem('pl-file-editor-keyboardHandler')
+    );
 
     that.modal.find('#modal-' + uuid + '-themes').change(function () {
       var theme = $(this).val();
