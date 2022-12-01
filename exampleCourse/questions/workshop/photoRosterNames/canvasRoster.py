@@ -34,7 +34,7 @@ if len(sys.argv) == 2:
 
 else:
 
-    response = requests.get("https://canvas.instructure.com/api/v1/courses?enrollment_type=teacher&exclude_blueprint_courses=true&enrollment_state=active", headers=headers)
+    response = requests.get(f"https://canvas.instructure.com/api/v1/courses?enrollment_type=teacher&exclude_blueprint_courses=true&enrollment_state=active&per_page={PER_PAGE}", headers=headers)
 
     print(" course_id\t    //   course_name\t\t\t\t // sis_course_id")
     for course in response.json():
