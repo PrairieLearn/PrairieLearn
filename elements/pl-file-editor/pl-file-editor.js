@@ -46,10 +46,8 @@ window.PLFileEditor = function (uuid, options) {
     this.editor.setFontSize(12);
   }
 
-  if (localStorage.getItem('pl-file-editor-keyboardHandler')) {
+  if (localStorage.getItem('pl-file-editor-keyboardHandler') != 'ace/keyboard/default') {
     this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
-  } else if (options.keyBindings) {
-    this.editor.setKeyboardHandler(options.keyBindings);
   } else {
     this.editor.setKeyboardHandler(null);
   }
@@ -118,7 +116,12 @@ window.PLFileEditor.prototype.syncSettings = function () {
   window.addEventListener('pl-file-editor-settings-changed', () => {
     this.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
     this.editor.setFontSize(localStorage.getItem('pl-file-editor-fontsize'));
-    this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
+
+    if (localStorage.getItem('pl-file-editor-keyboardHandler') != 'ace/keyboard/default') {
+      this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
+    } else {
+      this.editor.setKeyboardHandler(null);
+    }
   });
 };
 
@@ -180,7 +183,6 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
       keyBindSelect.empty();
       for (const index in keyBindingList) {
         var keyBind = 'ace/keyboard/' + keyBindingList[index].toLowerCase();
-        if (keyBindingList[index] === 'Default') keyBind = null;
 
         keyBindSelect.append(
           $('<option>', {
@@ -194,10 +196,15 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     that.modal.modal('show');
     sessionStorage.setItem('pl-file-editor-theme-current', that.editor.getTheme());
     sessionStorage.setItem('pl-file-editor-fontsize-current', that.editor.getFontSize());
-    sessionStorage.setItem(
-      'pl-file-editor-keyboardHandler-current',
-      that.editor.getKeyboardHandler()
-    );
+
+    if (that.editor.getKeyboardHandler()) {
+      sessionStorage.setItem(
+        'pl-file-editor-keyboardHandler-current',
+        that.editor.getKeyboardHandler()
+      );
+    } else {
+      sessionStorage.setItem('pl-file-editor-keyboardHandler-current', 'ace/keyboard/default');
+    }
 
     that.modal.find('#modal-' + uuid + '-themes').change(function () {
       var theme = $(this).val();
@@ -209,10 +216,10 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     });
     that.modal.find('#modal-' + uuid + '-keyboardHandler').change(function () {
       var keyBinds = $(this).val();
-      if (keyBinds == 'Default') {
-        that.editor.setKeyboardHandler(null);
-      } else {
+      if (keyBinds != 'ace/keyboard/default') {
         that.editor.setKeyboardHandler(keyBinds);
+      } else {
+        that.editor.setKeyboardHandler(null);
       }
     });
   });
@@ -220,18 +227,19 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
   this.saveSettingsButton.click(function () {
     var theme = that.modal.find('#modal-' + uuid + '-themes').val();
     var fontsize = that.modal.find('#modal-' + uuid + '-fontsize').val();
-    var keybindings = that.modal.find('#modal-' + uuid + '-keyboardHandler').val();
+    var keyBinds = that.modal.find('#modal-' + uuid + '-keyboardHandler').val();
 
     that.editor.setTheme(theme);
     that.editor.setFontSize(fontsize);
-    that.editor.setKeyboardHandler(keybindings);
+    if (keyBinds != 'ace/keyboard/default') {
+      that.editor.setKeyboardHandler(keyBinds);
+    } else {
+      that.editor.setKeyboardHandler(null);
+    }
+
     localStorage.setItem('pl-file-editor-theme', theme);
     localStorage.setItem('pl-file-editor-fontsize', fontsize);
-    if (keybindings == 'Default') {
-      localStorage.setItem('pl-file-editor-keyboardHandler', null);
-    } else {
-      localStorage.setItem('pl-file-editor-keyboardHandler', keybindings);
-    }
+    localStorage.setItem('pl-file-editor-keyboardHandler', keyBinds);
 
     sessionStorage.removeItem('pl-file-editor-theme-current');
     sessionStorage.removeItem('pl-file-editor-fontsize-current');
@@ -244,9 +252,16 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
   this.closeSettingsButton.click(function () {
     that.editor.setTheme(sessionStorage.getItem('pl-file-editor-theme-current'));
     that.editor.setFontSize(sessionStorage.getItem('pl-file-editor-fontsize-current'));
-    that.editor.setKeyboardHandler(
-      sessionStorage.getItem('pl-file-editor-keyboardHandler-current')
-    );
+
+    if (
+      sessionStorage.getItem('pl-file-editor-keyboardHandler-current') != 'ace/keyboard/default'
+    ) {
+      that.editor.setKeyboardHandler(
+        sessionStorage.getItem('pl-file-editor-keyboardHandler-current')
+      );
+    } else {
+      that.editor.setKeyboardHandler(null);
+    }
 
     sessionStorage.removeItem('pl-file-editor-theme-current');
     sessionStorage.removeItem('pl-file-editor-fontsize-current');
