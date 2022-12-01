@@ -2535,10 +2535,10 @@ accepts@^1.3.5, accepts@~1.3.4, accepts@~1.3.8:
     mime-types "~2.1.34"
     negotiator "0.6.3"
 
-ace-builds@^1.12.5:
-  version "1.12.5"
-  resolved "https://registry.yarnpkg.com/ace-builds/-/ace-builds-1.12.5.tgz#e037069148507b4b32c21f56b52a830e9a0759d3"
-  integrity sha512-2OTOZZdXVqWHfsV63n/bWLJ4uGnGNm9uwEQSECbEzMpKF2RKxD04lWu7s+eRBTZoEbqPXziyI1qamJH2OAwdwA==
+ace-builds@^1.13.1:
+  version "1.13.1"
+  resolved "https://registry.yarnpkg.com/ace-builds/-/ace-builds-1.13.1.tgz#8afa31a79bea3bb83fbbdf99c4176396a271ceca"
+  integrity sha512-HvkZv/AhDRSA4k5Co5Dg8dWOTfID0AQ7Sa5cU6V82fz/XfCA0A/icC3sdBoh9yg0WQoJqbFrRYc+ogr/971Vww==
 
 ace-code@^1.12.5:
   version "1.12.5"
