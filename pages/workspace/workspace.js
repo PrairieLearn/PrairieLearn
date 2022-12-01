@@ -24,34 +24,29 @@ router.get('/', (_req, res, _next) => {
     // student assessment
     res.locals.navTitle = `${res.locals.instance_question_info.question_number} - ${res.locals.course.short_name}`;
   }
+  res.locals.showLogs = res.locals.authn_is_administrator || res.locals.authn_is_instructor;
   res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 });
 
-router.get(
-  '/:action',
+router.post(
+  '/',
   asyncHandler(async (req, res, next) => {
     const workspace_id = res.locals.workspace_id;
-    const action = req.params.action;
 
-    if (action === 'reboot') {
+    if (req.body.__action === 'reboot') {
       debug(`Rebooting workspace ${workspace_id}`);
       await workspaceHelper.updateState(workspace_id, 'stopped', 'Rebooting container');
       await sqldb.queryAsync(sql.update_workspace_rebooted_at_now, {
         workspace_id,
       });
       res.redirect(`/pl/workspace/${workspace_id}`);
-    } else if (action === 'reset') {
+    } else if (req.body.__action === 'reset') {
       debug(`Resetting workspace ${workspace_id}`);
       await workspaceHelper.updateState(workspace_id, 'uninitialized', 'Resetting container');
       await sqldb.queryAsync(sql.increment_workspace_version, { workspace_id });
       res.redirect(`/pl/workspace/${workspace_id}`);
     } else {
-      return next(
-        error.make(400, 'unknown action', {
-          locals: res.locals,
-          body: req.body,
-        })
-      );
+      return next(error.make(400, `unknown __action: ${req.body.__action}`));
     }
   })
 );

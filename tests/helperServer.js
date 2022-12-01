@@ -47,29 +47,22 @@ module.exports = {
       let httpServer;
       async.series(
         [
-          async () => {
-            // We (currently) don't ever want tracing to run during tests.
-            await opentelemetry.init({ openTelemetryEnabled: false });
-          },
-          async () => {
-            await aws.init();
-          },
+          // We (currently) don't ever want tracing to run during tests.
+          async () => opentelemetry.init({ openTelemetryEnabled: false }),
+          async () => aws.init(),
           async () => {
             debug('before(): initializing DB');
             // pass "this" explicitly to enable this.timeout() calls
             await helperDb.before.call(that);
           },
-          util.callbackify(async () => {
+          async () => {
             debug('before(): create tmp dir for config.filesRoot');
             const tmpDir = await tmp.dir({ unsafeCleanup: true });
             config.filesRoot = tmpDir.path;
-          }),
-          function (callback) {
+          },
+          async () => {
             debug('before(): initializing cron');
-            cron.init(function (err) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
+            cron.init();
           },
           function (callback) {
             debug('before(): inserting dev user');
@@ -108,12 +101,9 @@ module.exports = {
             debug('before(): start server');
             httpServer = await server.startServer();
           },
-          function (callback) {
+          async () => {
             debug('before(): initialize socket server');
-            socketServer.init(httpServer, function (err) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
+            socketServer.init(httpServer);
           },
           function (callback) {
             debug('before(): initialize cache');
@@ -122,14 +112,11 @@ module.exports = {
               callback(null);
             });
           },
-          function (callback) {
+          async () => {
             debug('before(): initialize server jobs');
-            serverJobs.init(function (err) {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
+            serverJobs.init();
           },
-          async function () {
+          async () => {
             debug('before(): initialize freeform server');
             await freeformServer.init();
           },
@@ -178,19 +165,17 @@ module.exports = {
             callback(null);
           });
         },
-        function (callback) {
+        async () => {
           debug('after(): stop cron');
-          cron.stop(function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await cron.stop();
         },
-        function (callback) {
+        async () => {
           debug('after(): close socket server');
-          socketServer.close(function (err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-          });
+          await socketServer.close();
+        },
+        async () => {
+          debug('after(): close server jobs');
+          await serverJobs.stop();
         },
         function (callback) {
           debug('after(): close cache');
@@ -245,6 +230,14 @@ module.exports.waitForJobSequence = util.callbackify(module.exports.waitForJobSe
 
 module.exports.waitForJobSequenceSuccessAsync = async (job_sequence_id) => {
   const job_sequence = await module.exports.waitForJobSequenceAsync(job_sequence_id);
+
+  // In the case of a failure, print more information to aid debugging.
+  if (job_sequence.status !== 'Success') {
+    console.log(job_sequence);
+    const result = await sqldb.queryAsync(sql.select_jobs, { job_sequence_id });
+    console.log(result.rows);
+  }
+
   assert.equal(job_sequence.status, 'Success');
 };
 module.exports.waitForJobSequenceSuccess = util.callbackify(

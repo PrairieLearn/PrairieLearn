@@ -267,6 +267,7 @@ class CGrader:
                                     field=field)
 
     def add_manual_grading(self, points=1, name=None, description=None):
+        '''Old deprecated function, retained for compatibility reasons.'''
         if not name:
             name = 'Manual Grading - to be reviewed by a human grader'
         if not description:
@@ -306,7 +307,7 @@ class CGrader:
 
     def run_check_suite(self, exec_file, args=None,
                         use_suite_title=False, use_case_name=True, use_unit_test_id=True,
-                        use_iteration=False, sandboxed=True, use_malloc_debug=False):
+                        use_iteration=False, sandboxed=False, use_malloc_debug=False):
 
         if not args:
             args = []
@@ -319,8 +320,8 @@ class CGrader:
     
         out = self.run_command([exec_file] + args,
                                env={'CK_XML_LOG_FILE_NAME': log_file, 'TEMP': '/tmp',
-                                    'SANDBOX_UID': self.run_command('id -u'),
-                                    'SANDBOX_GID': self.run_command('id -g'),
+                                    'SANDBOX_UID': self.run_command('id -u') if not sandboxed else '',
+                                    'SANDBOX_GID': self.run_command('id -g') if not sandboxed else '',
                                     'LD_PRELOAD': '/lib/x86_64-linux-gnu/libc_malloc_debug.so'
                                     if use_malloc_debug else ''},
                                sandboxed=sandboxed)

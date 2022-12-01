@@ -21,7 +21,6 @@ SOURCE_HEADER_DEFAULT = 'Drag from here:'
 SOLUTION_HEADER_DEFAULT = 'Construct your solution here:'
 FILE_NAME_DEFAULT = 'user_code.py'
 SOLUTION_PLACEMENT_DEFAULT = 'right'
-INLINE_DEFAULT = False
 WEIGHT_DEFAULT = 1
 INDENT_OFFSET = 0
 TAB_SIZE_PX = 50
@@ -109,6 +108,7 @@ def prepare(element_html, data):
 
     correct_answers = []
     incorrect_answers = []
+    used_tags = set()
 
     def prepare_tag(html_tags, index, group_info={'tag': None, 'depends': None}):
         if html_tags.tag != 'pl-answer':
@@ -132,6 +132,11 @@ def prepare(element_html, data):
         tag, depends = get_graph_info(html_tags)
         if grading_method == 'ranking':
             tag = str(index)
+
+        if tag in used_tags:
+            raise Exception(f'Tag "{tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.')
+        else:
+            used_tags.add(tag)
 
         if check_indentation is False and answer_indent is not None:
             raise Exception('<pl-answer> should not specify indentation if indentation is disabled.')
@@ -161,6 +166,11 @@ def prepare(element_html, data):
                 raise Exception('Block groups only supported in the "dag" grading mode.')
 
             group_tag, group_depends = get_graph_info(html_tags)
+            if group_tag in used_tags:
+                raise Exception(f'Tag "{group_tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.')
+            else:
+                used_tags.add(group_tag)
+
             for grouped_tag in html_tags:
                 if html_tags.tag is etree.Comment:
                     continue
@@ -249,7 +259,6 @@ def render(element_html, data):
         dropzone_layout = pl.get_string_attrib(element, 'solution-placement', SOLUTION_PLACEMENT_DEFAULT)
         check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
         max_indent = pl.get_integer_attrib(element, 'max-indent', MAX_INDENTION_DEFAULT)
-        inline_layout = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
 
         help_text = 'Drag answer tiles into the answer area to the ' + dropzone_layout + '. '
 
@@ -274,7 +283,6 @@ def render(element_html, data):
             'dropzone_layout': 'pl-order-blocks-bottom' if dropzone_layout == 'bottom' else 'pl-order-blocks-right',
             'check_indentation': 'true' if check_indentation else 'false',
             'help_text': help_text,
-            'inline': 'inline' if inline_layout is True else None,
             'max_indent': max_indent,
             'uuid': uuid,
             'block_formatting': block_formatting
@@ -339,11 +347,11 @@ def render(element_html, data):
         if grading_method == 'unordered':
             ordering_message = 'in any order'
         elif grading_method == 'dag' or grading_method == 'ranking':
-            ordering_message = 'one possible correct order'
+            ordering_message = 'there may be other correct orders'
         else:
             ordering_message = 'in the specified order'
         check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
-        indentation_message = ', with correct indentation' if check_indentation is True else None
+        indentation_message = ', correct indentation needed' if check_indentation is True else None
 
         question_solution = [{
             'inner_html': solution['inner_html'],

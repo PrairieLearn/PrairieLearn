@@ -62,24 +62,15 @@ class MathFormula extends Embed {
   }
 
   static updateNode(node, value) {
-    // Wait for the page to be fully loaded. Mathjax will not work unless the page is fully loaded.
-    if (document.readyState === 'complete') {
-      let html = MathJax.tex2chtml(value);
+    MathJax.startup.promise.then(async () => {
+      let html = await MathJax.tex2chtmlPromise(value);
       let formatted = html.innerHTML;
       // Without trailing whitespace, cursor will not appear at end of text if LaTeX is at end
       node.innerHTML = formatted + '&#8201;';
-      MathJax.typeset();
+      await MathJax.typesetPromise();
       node.contentEditable = 'false';
       node.setAttribute('data-value', value);
-    } else {
-      window.addEventListener(
-        'load',
-        function () {
-          MathFormula.updateNode(node, value);
-        },
-        false
-      );
-    }
+    });
   }
 
   static value(domNode) {

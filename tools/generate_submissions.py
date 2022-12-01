@@ -61,10 +61,12 @@ def main():
                     pass
             
         with requests.get(url, cookies=cookies) as response:
+            assert response.status_code == 200
             root = html.document_fromstring(response.text)
             for iq in root.cssselect(f'a[href^="/pl/course_instance/{args.course_instance}/instance_question/"]'):
                 url = f'http://{args.host}' + iq.get('href')
                 with requests.get(url, cookies=cookies) as response:
+                    assert response.status_code == 200
                     root = html.document_fromstring(response.text)
                     data = {i.get('name'): i.get('value') for i in root.cssselect(f'input') if i.get('name')}
                     data['__action'] = 'save'

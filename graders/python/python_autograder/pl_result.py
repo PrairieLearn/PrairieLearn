@@ -2,7 +2,7 @@ import traceback
 import unittest
 from code_feedback import GradingComplete, Feedback
 from pl_execute import UserCodeFailed
-from pl_helpers import print_student_code, DoNotRun
+from pl_helpers import print_student_code, DoNotRun, GradingSkipped
 
 
 class PLTestResult(unittest.TestResult):
@@ -33,9 +33,15 @@ class PLTestResult(unittest.TestResult):
         self.done_grading = False
         self.grading_succeeded = True
 
+        # If we end grading early, we still want to run through the remaining test cases
+        # (but not execute them) so that we show the correct number of points on the grading panel
+        self.skip_grading = False
+
     def startTest(self, test):
         unittest.TestResult.startTest(self, test)
+
         options = getattr(test, test._testMethodName).__func__.__dict__
+
         points = options.get('points', 1)
         name = options.get('name', test.shortDescription())
         filename = test._testMethodName
@@ -54,11 +60,17 @@ class PLTestResult(unittest.TestResult):
 
     def addError(self, test, err):
         if isinstance(err[1], GradingComplete):
-            self.done_grading = True
-            self.addFailure(test, err)
+            # If grading stopped early, we will flag that but still loop through
+            # the remaining cases so that we have the correct point values
+            self.results[-1]['points'] = 0
+            self.skip_grading = True
         elif isinstance(err[1], DoNotRun):
             self.results[-1]['points'] = 0
             self.results[-1]['max_points'] = 0
+        elif isinstance(err[1], GradingSkipped):
+            self.results[-1]['points'] = 0
+            Feedback.set_name(test._testMethodName)
+            Feedback.add_feedback(' - Grading was skipped because an earlier test failed - ')
         elif isinstance(err[1], UserCodeFailed):
             # Student code raised Exception
             tr_list = traceback.format_exception(*err[1].err)

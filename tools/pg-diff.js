@@ -21,24 +21,26 @@ const yargs = require('yargs')
   )
   .strict();
 
-const args = yargs.argv;
+// TODO: remove cast once `@types/yargs` is fixed
+// https://github.com/yargs/yargs/issues/2175
+const argv = /** @type {Record<string, any>} */ (yargs.argv);
 
 const options = {
   outputFormat: 'string',
   coloredOutput: process.stdout.isTTY,
 };
 
-if (args.db && !Array.isArray(args.db) && args.dir && !Array.isArray(args.dir)) {
+if (argv.db && !Array.isArray(argv.db) && argv.dir && !Array.isArray(argv.dir)) {
   // Ensure correct ordering for the sake of diffs
   if (process.argv.indexOf('--db') < process.argv.indexOf('--dir')) {
-    databaseDiff.diffDatabaseAndDirectory(args.db, args.dir, options, handleResults);
+    databaseDiff.diffDatabaseAndDirectory(argv.db, argv.dir, options, handleResults);
   } else {
-    databaseDiff.diffDirectoryAndDatabase(args.dir, args.db, options, handleResults);
+    databaseDiff.diffDirectoryAndDatabase(argv.dir, argv.db, options, handleResults);
   }
-} else if (args.db && Array.isArray(args.db) && args.db.length === 2 && !args.dir) {
-  databaseDiff.diffDatabases(args.db[0], args.db[1], options, handleResults);
-} else if (args.dir && Array.isArray(args.dir) && args.dir.length === 2 && !args.db) {
-  databaseDiff.diffDirectories(args.dir[0], args.dir[1], options, handleResults);
+} else if (argv.db && Array.isArray(argv.db) && argv.db.length === 2 && !argv.dir) {
+  databaseDiff.diffDatabases(argv.db[0], argv.db[1], options, handleResults);
+} else if (argv.dir && Array.isArray(argv.dir) && argv.dir.length === 2 && !argv.db) {
+  databaseDiff.diffDirectories(argv.dir[0], argv.dir[1], options, handleResults);
 } else {
   yargs.showHelp();
   process.exit(1);

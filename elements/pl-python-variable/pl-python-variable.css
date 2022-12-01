@@ -1,8 +1,6 @@
 .pl-python-variable-table {
     display: block;
     overflow-x: scroll;
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-size: 12px;
     line-height: 20px;
 
     border-collapse: collapse;
@@ -50,7 +48,6 @@
 .pl-python-variable-table-dimensions {
     box-sizing: border-box;
     color: rgb(0, 0, 0);
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 14px;
     line-height: 20px;
     margin-bottom: 1rem;
