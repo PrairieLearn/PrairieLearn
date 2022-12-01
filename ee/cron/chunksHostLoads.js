@@ -1,6 +1,7 @@
 // @ts-check
 const AWS = require('aws-sdk');
 const { callbackify } = require('util');
+const _ = require('lodash');
 
 const config = require('../../lib/config');
 
@@ -9,14 +10,6 @@ const config = require('../../lib/config');
 const PAGE_VIEWS_PER_SECOND = 'pageViewsPerSecond';
 const ACTIVE_WORKERS_PER_SECOND = 'activeWorkersPerSecond';
 const LOAD_BALANCER_REQUESTS_PER_MINUTE = 'loadBalancerRequestsPerMinute';
-
-/**
- * Finds the maximum value in the given array.
- * @param {number[]} arr
- */
-function arrayMax(arr) {
-  return arr.reduce((a, b) => Math.max(a, b), 0);
-}
 
 module.exports.run = callbackify(async () => {
   if (
@@ -106,17 +99,20 @@ module.exports.run = callbackify(async () => {
     (m) => m.Id === LOAD_BALANCER_REQUESTS_PER_MINUTE
   );
 
-  const maxPageViewsPerSecond = Math.ceil(arrayMax(pageViewsPerSecondMetric.Values));
-  const maxActiveWorkersPerSecond = Math.ceil(arrayMax(activeWorkersPerSecondMetric.Values));
-  const maxLoadBalancerRequestsPerMinute = Math.ceil(
-    arrayMax(loadBalancerRequestsPerMinuteMetric.Values)
+  const maxPageViewsPerSecond = _.max(pageViewsPerSecondMetric.Values) ?? 0;
+  const maxActiveWorkersPerSecond = _.max(activeWorkersPerSecondMetric.Values) ?? 0;
+  const maxLoadBalancerRequestsPerMinute = _.max(loadBalancerRequestsPerMinuteMetric.Values) ?? 0;
+
+  const desiredInstancesByPageViews = Math.ceil(
+    maxPageViewsPerSecond / config.chunksPageViewsCapacityFactor
+  );
+  const desiredInstancesByActiveWorkers = Math.ceil(
+    maxActiveWorkersPerSecond / config.chunksActiveWorkersCapacityFactor
+  );
+  const desiredInstancesByLoadBalancerRequests = Math.ceil(
+    maxLoadBalancerRequestsPerMinute / config.chunksLoadBalancerRequestsCapacityFactor
   );
 
-  const desiredInstancesByPageViews = maxPageViewsPerSecond / config.chunksPageViewsCapacityFactor;
-  const desiredInstancesByActiveWorkers =
-    maxActiveWorkersPerSecond / config.chunksActiveWorkersCapacityFactor;
-  const desiredInstancesByLoadBalancerRequests =
-    maxLoadBalancerRequestsPerMinute / config.chunksLoadBalancerRequestsCapacityFactor;
   const desiredInstances = Math.max(
     desiredInstancesByPageViews,
     desiredInstancesByActiveWorkers,
