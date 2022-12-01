@@ -25,9 +25,7 @@ module.exports.run = callbackify(async () => {
 
   const metrics = await cloudwatch
     .getMetricData({
-      // Use the last 15 minutes of data.
-      // TODO: make this configurable?
-      StartTime: new Date(now - 1000 * 60 * 15),
+      StartTime: new Date(now - 1000 * config.chunksHostAutoScalingHistoryIntervalSec),
       EndTime: new Date(now),
       MetricDataQueries: [
         {
