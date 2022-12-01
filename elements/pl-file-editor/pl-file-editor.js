@@ -197,10 +197,10 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     sessionStorage.setItem('pl-file-editor-theme-current', that.editor.getTheme());
     sessionStorage.setItem('pl-file-editor-fontsize-current', that.editor.getFontSize());
 
-    if (that.editor.getKeyboardHandler()) {
+    if (localStorage.getItem('pl-file-editor-keyboardHandler') != 'ace/keyboard/default') {
       sessionStorage.setItem(
         'pl-file-editor-keyboardHandler-current',
-        that.editor.getKeyboardHandler()
+        localStorage.getItem('pl-file-editor-keyboardHandler')
       );
     } else {
       sessionStorage.setItem('pl-file-editor-keyboardHandler-current', 'ace/keyboard/default');
