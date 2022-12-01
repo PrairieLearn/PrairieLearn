@@ -12,7 +12,7 @@ import pytest
 from typing import Dict, Optional, Any, Tuple
 
 
-def test_inner_html():
+def test_inner_html() -> None:
     e = lxml.html.fragment_fromstring("<div>test</div>")
     assert pl.inner_html(e) == "test"
 
@@ -54,15 +54,18 @@ def test_grade_question_parametrized_correct(
         question_data, question_name, grading_function, weight
     )
 
+
     expected_score = 1.0 if expected_grade else 0.0
     assert question_data["partial_scores"][question_name]["score"] == expected_score
     assert type(question_data["partial_scores"][question_name]["score"]) == float
-    assert question_data["partial_scores"][question_name]["weight"] == weight
+
+    assert "weight" in question_data["partial_scores"][question_name]
+    assert question_data["partial_scores"][question_name].get("weight") == weight
 
     expected_feedback = good_feedback if expected_grade else bad_feedback
 
     assert (
-        question_data["partial_scores"][question_name]["feedback"] == expected_feedback
+        question_data["partial_scores"][question_name].get("feedback") == expected_feedback
     )
 
 
@@ -94,7 +97,7 @@ def test_grade_question_parametrized_bad_grade_function(
 
     question_data["submitted_answers"] = {question_name: "True"}
 
-    def grading_function(ans: str):
+    def grading_function(ans: str) -> Any:
         return "True", f"The answer {ans} is right"
 
     with pytest.raises(AssertionError):

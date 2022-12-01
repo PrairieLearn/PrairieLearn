@@ -58,9 +58,8 @@ def grade_question_parameterized(data: QuestionData,
                                  grade_function: Callable[[Any], Tuple[Union[bool, float], Optional[str]]],
                                  weight: int = 1) -> None:
     '''
-    Grade question question_name, marked correct if grade_function(student_answer) returns True in
-    its first argument. grade_function should take in a single parameter (which will be the submitted
-    answer) and return a 2-tuple.
+    Grade question question_name. grade_function should take in a single parameter
+    (which will be the submitted answer) and return a 2-tuple:
         - The first element of the 2-tuple should either be:
             - a boolean indicating whether the question should be marked correct
             - a partial score between 0 and 1, inclusive
@@ -71,8 +70,8 @@ def grade_question_parameterized(data: QuestionData,
 
     # Create the data dictionary at first
     data['partial_scores'][question_name] = {
-            'score': 0.0,
-            'weight': weight
+        'score': 0.0,
+        'weight': weight
     }
 
     try:
@@ -82,11 +81,9 @@ def grade_question_parameterized(data: QuestionData,
         data["format_errors"][question_name] = 'No answer was submitted'
         return
 
-    # Try to grade, exiting if there's an exception
     try:
         result, feedback_content = grade_function(submitted_answer)
 
-        # Check _must_ be done in this order. Int check is to deal with subclass issues
         if isinstance(result, bool):
             partial_score = 1.0 if result else 0.0
         elif isinstance(result, (float, int)):
@@ -96,15 +93,12 @@ def grade_question_parameterized(data: QuestionData,
             assert_never(result)
 
     except ValueError as err:
-        # Exit if there's a format error
         data["format_errors"][question_name] = str(err)
         return
 
 
-    # Set question score if grading succeeded
     data['partial_scores'][question_name]['score'] = partial_score
 
-    # Put all feedback here
     if feedback_content:
         data['partial_scores'][question_name]['feedback'] = feedback_content
 
