@@ -46,7 +46,7 @@ window.PLFileEditor = function (uuid, options) {
     this.editor.setFontSize(12);
   }
 
-  if (localStorage.getItem('pl-file-editor-keyboardHandler') != 'ace/keyboard/default') {
+  if (localStorage.getItem('pl-file-editor-keyboardHandler') !== 'ace/keyboard/default') {
     this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
   } else {
     this.editor.setKeyboardHandler(null);
@@ -117,7 +117,7 @@ window.PLFileEditor.prototype.syncSettings = function () {
     this.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
     this.editor.setFontSize(localStorage.getItem('pl-file-editor-fontsize'));
 
-    if (localStorage.getItem('pl-file-editor-keyboardHandler') != 'ace/keyboard/default') {
+    if (localStorage.getItem('pl-file-editor-keyboardHandler') !== 'ace/keyboard/default') {
       this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
     } else {
       this.editor.setKeyboardHandler(null);
@@ -197,7 +197,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     sessionStorage.setItem('pl-file-editor-theme-current', that.editor.getTheme());
     sessionStorage.setItem('pl-file-editor-fontsize-current', that.editor.getFontSize());
 
-    if (localStorage.getItem('pl-file-editor-keyboardHandler') != 'ace/keyboard/default') {
+    if (localStorage.getItem('pl-file-editor-keyboardHandler') !== 'ace/keyboard/default') {
       sessionStorage.setItem(
         'pl-file-editor-keyboardHandler-current',
         localStorage.getItem('pl-file-editor-keyboardHandler')
@@ -216,7 +216,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     });
     that.modal.find('#modal-' + uuid + '-keyboardHandler').change(function () {
       var keyBinds = $(this).val();
-      if (keyBinds != 'ace/keyboard/default') {
+      if (keyBinds !== 'ace/keyboard/default') {
         that.editor.setKeyboardHandler(keyBinds);
       } else {
         that.editor.setKeyboardHandler(null);
@@ -231,7 +231,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
 
     that.editor.setTheme(theme);
     that.editor.setFontSize(fontsize);
-    if (keyBinds != 'ace/keyboard/default') {
+    if (keyBinds !== 'ace/keyboard/default') {
       that.editor.setKeyboardHandler(keyBinds);
     } else {
       that.editor.setKeyboardHandler(null);
@@ -254,7 +254,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     that.editor.setFontSize(sessionStorage.getItem('pl-file-editor-fontsize-current'));
 
     if (
-      sessionStorage.getItem('pl-file-editor-keyboardHandler-current') != 'ace/keyboard/default'
+      sessionStorage.getItem('pl-file-editor-keyboardHandler-current') !== 'ace/keyboard/default'
     ) {
       that.editor.setKeyboardHandler(
         sessionStorage.getItem('pl-file-editor-keyboardHandler-current')
