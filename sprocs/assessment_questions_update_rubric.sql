@@ -71,10 +71,12 @@ BEGIN
                         FROM
                             JSONB_TO_RECORDSET(arg_rubric_items) AS ari(
                                 id BIGINT,
+                                "order" BIGINT,
                                 short_text TEXT,
                                 points DOUBLE PRECISION,
                                 description TEXT,
-                                staff_instructions TEXT))
+                                staff_instructions TEXT)
+                        ORDER BY ari."order")
     LOOP
         next_number := next_number + 1;
 

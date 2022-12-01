@@ -78,12 +78,21 @@
                     <th>Grader note</th>
                 </thead>
                 <tbody>
-                  <% (rubric?.rubric_items || []).forEach((item) => { %>
+                  <% (rubric?.rubric_items || []).forEach((item, index) => { %>
                   <tr>
                     <td>
                       <input type="hidden"
                              name="rubric_item[cur<%= item.rubric_item.id %>][id]"
                              value="<%= item.rubric_item.id %>">
+                      <input type="hidden" class="js-rubric-item-row-order"
+                             name="rubric_item[cur<%= item.rubric_item.id %>][order]"
+                             value="<%= index %>">
+                      <button type="button" class="btn btn-sm" onclick="moveRowDown(event)">
+                        <i class="fas fa-caret-down"></i>
+                      </button>
+                      <button type="button" class="btn btn-sm" onclick="moveRowUp(event)">
+                        <i class="fas fa-caret-up"></i>
+                      </button>
                       <!-- TODO move up/down, delete, keybinding -->
                     </td>
                     <td style="max-width: 4rem">
@@ -157,7 +166,7 @@
   </div>
 </div>
 <script>
-  window.enableRubricItemDescriptionField = function(e) {
+  window.enableRubricItemDescriptionField = function(event) {
     const cell = $(event.target).parents('label:first');
     const data = cell.data();
     const input = $('<textarea class="form-control">')
@@ -165,8 +174,22 @@
           .text(data.currentValue)
     cell.after(input).remove();
     input.focus();
-  }
+  };
+  window.updateRubricItemOrderField = function() {
+    $('.js-rubric-item-row-order').val(index => index);
+  };
+  window.moveRowDown = function(event) {
+    const row = $(event.target).parents('tr:first');
+    row.insertAfter(row.next());
+    updateRubricItemOrderField();
+  };
+  window.moveRowUp = function(event) {
+    const row = $(event.target).parents('tr:first');
+    row.insertBefore(row.prev());
+    updateRubricItemOrderField();
+  };
   $(() => {
+    updateRubricItemOrderField();
     $('#rubric-settings-modal-<%= type %> input[name="use_rubrics"]').change(() => {
       $('.js-rubric-settings-<%= type %>')
         .toggle($('#rubric-settings-modal-<%= type %> input[name="use_rubrics"]').is(':checked'));
@@ -181,7 +204,16 @@
       const points = $('#rubric-settings-modal-<%= type %> .js-negative-grading').prop('checked') ? -1 : +1;
       table.data('next-new-id', next_id);
       $('<tr>')
-        .append($('<td>'))
+        .append($('<td>')
+                .append($('<input type="hidden" class="js-rubric-item-row-order">')
+                        .attr('name', `rubric_item[new${next_id}][order]`))
+                .append($('<button type="button" class="btn btn-sm">')
+                        .append('<i class="fas fa-caret-down">')
+                        .click(moveRowDown))
+                .append($('<button type="button" class="btn btn-sm">')
+                        .append('<i class="fas fa-caret-up">')
+                        .click(moveRowUp))
+               )
         .append($('<td style="max-width: 4rem">')
                 .append($('<input type="number" class="form-control" step="any">')
                         .attr('name', `rubric_item[new${next_id}][points]`)
@@ -203,6 +235,7 @@
                                 .append('<i class="fas fa-pencil"></i>'))))
         .appendTo(table)
         .find('input[type="text"]:first').focus();
+      updateRubricItemOrderField();
     });
   });
 </script>
