@@ -59,7 +59,7 @@ const qidsExampleCourse = [
   'element/panels',
   'element/pythonVariable',
   'element/stringInput',
-  // FIXME: 'element/symbolicInput',
+  'element/symbolicInput',
   // FIXME: 'element/threeJS',
   'element/variableOutput',
   'element/orderBlocks',
