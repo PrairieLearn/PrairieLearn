@@ -2,10 +2,10 @@ from typing import Callable, List, Tuple
 import sympy
 import python_helper_sympy as phs
 
-BigoGradingFunctionT = Callable[[str, str, List[str]], Tuple[float, str]]
+BigOGradingFunctionT = Callable[[str, str, List[str]], Tuple[float, str]]
 
 
-def grade_bigo_expression(a_true: str, a_sub: str, variables: List[str]) -> Tuple[float, str]:
+def grade_big_o_expression(a_true: str, a_sub: str, variables: List[str]) -> Tuple[float, str]:
     if a_true == a_sub:
         return (1, 'Correct!')
 

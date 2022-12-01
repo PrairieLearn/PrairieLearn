@@ -5,7 +5,7 @@ import python_helper_sympy as phs
 VARIABLES = ['n']
 
 ALL_GRADING_FUNCTIONS = [
-    bou.grade_bigo_expression,
+    bou.grade_big_o_expression,
     bou.grade_theta_expression,
     bou.grade_omega_expression,
     bou.grade_little_o_expression,
@@ -15,7 +15,7 @@ ALL_GRADING_FUNCTIONS = [
 
 class TestBigOInput:
     @pytest.mark.parametrize('grading_fn', ALL_GRADING_FUNCTIONS)
-    def test_correct_answer(self, grading_fn: bou.BigoGradingFunctionT) -> None:
+    def test_correct_answer(self, grading_fn: bou.BigOGradingFunctionT) -> None:
         a_true = 'n**2'
         a_sub = 'n**2'
 
@@ -38,7 +38,7 @@ class TestBigOInput:
     )
     @pytest.mark.parametrize('grading_fn', ALL_GRADING_FUNCTIONS)
     def test_semantically_correct_answer(
-        self, a_true: str, a_sub: str, grading_fn: bou.BigoGradingFunctionT
+        self, a_true: str, a_sub: str, grading_fn: bou.BigOGradingFunctionT
     ) -> None:
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
@@ -59,7 +59,7 @@ class TestBigOInput:
     )
     @pytest.mark.parametrize('grading_fn', ALL_GRADING_FUNCTIONS)
     def test_lower_order_terms(
-        self, a_true: str, a_sub: str, grading_fn: bou.BigoGradingFunctionT
+        self, a_true: str, a_sub: str, grading_fn: bou.BigOGradingFunctionT
     ) -> None:
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
@@ -80,7 +80,7 @@ class TestBigOInput:
     )
     @pytest.mark.parametrize('grading_fn', ALL_GRADING_FUNCTIONS)
     def test_unnecessary_constants(
-        self, a_true: str, a_sub: str, grading_fn: bou.BigoGradingFunctionT
+        self, a_true: str, a_sub: str, grading_fn: bou.BigOGradingFunctionT
     ) -> None:
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
@@ -102,7 +102,7 @@ class TestBigOInput:
     )
     @pytest.mark.parametrize('grading_fn', ALL_GRADING_FUNCTIONS)
     def test_negative_submission(
-        self, a_true: str, a_sub: str, grading_fn: bou.BigoGradingFunctionT
+        self, a_true: str, a_sub: str, grading_fn: bou.BigOGradingFunctionT
     ) -> None:
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
@@ -125,10 +125,10 @@ class TestBigOInput:
         ],
     )
     @pytest.mark.parametrize(
-        'grading_fn', [bou.grade_bigo_expression, bou.grade_little_o_expression]
+        'grading_fn', [bou.grade_big_o_expression, bou.grade_little_o_expression]
     )
     def test_too_loose_bigo(
-        self, a_true: str, a_sub: str, grading_fn: bou.BigoGradingFunctionT
+        self, a_true: str, a_sub: str, grading_fn: bou.BigOGradingFunctionT
     ) -> None:
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
@@ -154,7 +154,7 @@ class TestBigOInput:
         'grading_fn', [bou.grade_omega_expression, bou.grade_little_omega_expression]
     )
     def test_too_loose_omega(
-        self, a_true: str, a_sub: str, grading_fn: bou.BigoGradingFunctionT
+        self, a_true: str, a_sub: str, grading_fn: bou.BigOGradingFunctionT
     ) -> None:
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
@@ -176,13 +176,13 @@ class TestBigOInput:
     @pytest.mark.parametrize(
         'grading_fn',
         [
-            bou.grade_bigo_expression,
+            bou.grade_big_o_expression,
             bou.grade_theta_expression,
             bou.grade_little_o_expression,
         ],
     )
     def test_incorrect_answer_bigo(
-        self, a_true: str, a_sub: str, grading_fn: bou.BigoGradingFunctionT
+        self, a_true: str, a_sub: str, grading_fn: bou.BigOGradingFunctionT
     ) -> None:
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
@@ -210,7 +210,7 @@ class TestBigOInput:
         ],
     )
     def test_incorrect_answer_omega(
-        self, a_true: str, a_sub: str, grading_fn: bou.BigoGradingFunctionT
+        self, a_true: str, a_sub: str, grading_fn: bou.BigOGradingFunctionT
     ) -> None:
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
@@ -221,7 +221,7 @@ class TestBigOInput:
 class TestExceptions:
     @pytest.mark.parametrize('a_sub', ['tan(n)', 'sin(n)', 'cos(n)', 'arccos(n)'])
     @pytest.mark.parametrize('grading_fn', ALL_GRADING_FUNCTIONS)
-    def test_invalid_trig_function(self, a_sub: str, grading_fn: bou.BigoGradingFunctionT) -> None:
+    def test_invalid_trig_function(self, a_sub: str, grading_fn: bou.BigOGradingFunctionT) -> None:
         a_true = 'n**2'
 
         # Test for invalid functions in student submission and solution

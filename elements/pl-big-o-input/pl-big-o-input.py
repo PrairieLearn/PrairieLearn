@@ -199,7 +199,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
     a_tru: str = data['correct_answers'].get(name, '')
 
-    def get_grade_fn(grade_fn: bou.BigoGradingFunctionT) -> Callable[[str], Tuple[float, str]]:
+    def get_grade_fn(grade_fn: bou.BigOGradingFunctionT) -> Callable[[str], Tuple[float, str]]:
         def grade(a_sub: str) -> Tuple[float, str]:
             return grade_fn(a_tru, a_sub, variables)
         return grade
@@ -207,7 +207,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     bigo_type = get_big_o_type(pl.get_string_attrib(element, 'type', BIG_O_TYPE_DEFAULT))
 
     if bigo_type is BigOType.BIG_O:
-        pl.grade_question_parameterized(data, name, get_grade_fn(bou.grade_bigo_expression), weight=weight)
+        pl.grade_question_parameterized(data, name, get_grade_fn(bou.grade_big_o_expression), weight=weight)
     elif bigo_type is BigOType.THETA:
         pl.grade_question_parameterized(data, name, get_grade_fn(bou.grade_theta_expression), weight=weight)
     elif bigo_type is BigOType.OMEGA:
