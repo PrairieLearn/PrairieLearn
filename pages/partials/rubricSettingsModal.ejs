@@ -79,7 +79,7 @@
                 </thead>
                 <tbody>
                   <% (rubric?.rubric_items || []).forEach((item, index) => { %>
-                  <tr>
+                  <tr ondragover="rowDragOver(event)">
                     <td>
                       <input type="hidden"
                              name="rubric_item[cur<%= item.rubric_item.id %>][id]"
@@ -87,13 +87,17 @@
                       <input type="hidden" class="js-rubric-item-row-order"
                              name="rubric_item[cur<%= item.rubric_item.id %>][order]"
                              value="<%= index %>">
-                      <button type="button" class="btn btn-sm" onclick="moveRowDown(event)">
-                        <i class="fas fa-caret-down"></i>
+                      <button type="button" class="btn btn-sm"
+                              draggable="true" ondragstart="rowDragStart(event)">
+                        <i class="fas fa-arrows-up-down"></i>
                       </button>
-                      <button type="button" class="btn btn-sm" onclick="moveRowUp(event)">
-                        <i class="fas fa-caret-up"></i>
+                      <button type="button" class="btn btn-sm sr-only" onclick="moveRowDown(event)">
+                        Move down
                       </button>
-                      <!-- TODO move up/down, delete, keybinding -->
+                      <button type="button" class="btn btn-sm sr-only" onclick="moveRowUp(event)">
+                        Move up
+                      </button>
+                      <!-- TODO delete, keybinding -->
                     </td>
                     <td style="max-width: 4rem">
                       <input type="number" class="form-control" step="any"
@@ -188,6 +192,23 @@
     row.insertBefore(row.prev());
     updateRubricItemOrderField();
   };
+  window.rowDragStart = function(event) {
+    window.rubricItemRowDragging = $(event.target).parents('tr:first');
+    event.originalEvent.dataTransfer.effectAllowed = "move";
+  }
+  window.rowDragOver = function(event) {
+    const row = $(event.target).parents('tr:first');
+    const rowList = window.rubricItemRowDragging.parents('tbody:first').find('tr');
+    const draggingRowIdx = rowList.index(window.rubricItemRowDragging);
+    const targetRowIdx = rowList.index(row);
+    if (targetRowIdx == -1 || draggingRowIdx == -1) return;
+    event.preventDefault();
+    if (targetRowIdx > draggingRowIdx)
+      row.after(window.rubricItemRowDragging);
+    else
+      row.before(window.rubricItemRowDragging);
+    updateRubricItemOrderField();
+  }
   $(() => {
     updateRubricItemOrderField();
     $('#rubric-settings-modal-<%= type %> input[name="use_rubrics"]').change(() => {
@@ -204,15 +225,15 @@
       const points = $('#rubric-settings-modal-<%= type %> .js-negative-grading').prop('checked') ? -1 : +1;
       table.data('next-new-id', next_id);
       $('<tr>')
+        .on('dragover', rowDragOver)
+        .on('dragenter', rowDragOver)
         .append($('<td>')
                 .append($('<input type="hidden" class="js-rubric-item-row-order">')
                         .attr('name', `rubric_item[new${next_id}][order]`))
                 .append($('<button type="button" class="btn btn-sm">')
-                        .append('<i class="fas fa-caret-down">')
-                        .click(moveRowDown))
-                .append($('<button type="button" class="btn btn-sm">')
-                        .append('<i class="fas fa-caret-up">')
-                        .click(moveRowUp))
+                        .attr('draggable', 'true')
+                        .append('<i class="fas fa-arrows-up-down">')
+                        .on('dragstart', rowDragStart))
                )
         .append($('<td style="max-width: 4rem">')
                 .append($('<input type="number" class="form-control" step="any">')
