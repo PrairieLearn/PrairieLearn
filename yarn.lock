@@ -8831,11 +8831,6 @@ pyright@^1.1.282:
   resolved "https://registry.yarnpkg.com/pyright/-/pyright-1.1.282.tgz#1b0e1d75e922f7836e0955edbf77cec602947668"
   integrity sha512-qwlGhY/4wkZJJlxiwGzKL7Do6rVSOcXp72zplxJ76BbVIWuiKpGUeYIhLdONEAD22UwLTp8XvmARQzDnJ3EMSQ==
 
-qrcode-svg@^1.1.0:
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/qrcode-svg/-/qrcode-svg-1.1.0.tgz#2087549843dc5d0a3f8e8aa046cd9bcf23708cc3"
-  integrity sha512-XyQCIXux1zEIA3NPb0AeR8UMYvXZzWEhgdBgBjH9gO7M48H9uoHzviNz8pXw3UzrAcxRRRn9gxHewAVK7bn9qw==
-
 qs@6.11.0, qs@^6.7.0:
   version "6.11.0"
   resolved "https://registry.yarnpkg.com/qs/-/qs-6.11.0.tgz#fd0d963446f7a65e1367e01abd85429453f0c37a"
