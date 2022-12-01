@@ -115,7 +115,7 @@ module.exports = {
       });
 
       module.exports.jobs.push({
-        name: 'chunksHostLoads',
+        name: 'chunksHostAutoScaling',
         module: require('../ee/cron/chunksHostAutoScaling'),
         intervalSec:
           config.cronOverrideAllIntervalsSec || config.cronIntervalChunksHostAutoScalingSec,
