@@ -67,7 +67,7 @@
         "generic-pool": "^3.9.0",
         "googleapis": "^109.0.0",
         "he": "^1.2.0",
-        "highlight.js": "^11.6.0",
+        "highlight.js": "^11.7.0",
         "http-proxy-middleware": "^2.0.6",
         "http-status": "^1.5.3",
         "isbinaryfile": "^4.0.8",
