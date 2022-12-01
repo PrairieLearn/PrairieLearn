@@ -622,7 +622,7 @@ Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. 
 
 ---
 
-### `pl-symbolic-input` element
+### `pl-big-o-input` element
 
 Fill in the blank field that allows for asymptotic mathematical input (i.e. big O, big Theta, etc.).
 Gives automated feedback in the case of improper asymptotic input.
@@ -630,12 +630,12 @@ Gives automated feedback in the case of improper asymptotic input.
 **question.html**
 
 ```html
-<pl-symbolic-input
+<pl-big-o-input
   answers-name="ans"
   variables="n"
   correct-answer="n**2"
   size="10"
-></pl-symbolic-input>
+></pl-big-o-input>
 ```
 
 #### Customizations
@@ -643,7 +643,7 @@ Gives automated feedback in the case of improper asymptotic input.
 | Attribute        | Type                                                  | Default  | Description                                                                                                 |
 | ---------------- | ----------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------- |
 | `answers-name`   | string                                                | —        | Variable name to store data in.                                                                             |
-| `type`           | "big_o", "theta", "omega", "little_o", "little_omega" | "big_o"  | Type of asymptotic answer required.                                                                         |
+| `type`           | "big-o", "theta", "omega", "little-o", "little-omega" | "big-o"  | Type of asymptotic answer required.                                                                         |
 | `weight`         | integer                                               | 1        | Weight to use when computing a weighted average score over elements.                                        |
 | `correct-answer` | string                                                | -        | Correct answer for grading.                                                                                 |
 | `display`        | "block" or "inline"                                   | "inline" | How to display the input field.                                                                             |
@@ -653,11 +653,12 @@ Gives automated feedback in the case of improper asymptotic input.
 
 #### Details
 
-Correct answers must be specified as strings, e.g., `n**2`. Only one variable is supported at the moment.
+Correct answers must be specified as strings (e.g., `n^2`, `2^n`, `n * log(n)`), with
+the same syntax as [`pl-symbolic-input`](#pl-symbolic-input-element). Only one variable is supported.
 
 #### Example implementations
 
-- [element/symbolicInput]
+- [element/bigOInput]
 
 #### See also
 

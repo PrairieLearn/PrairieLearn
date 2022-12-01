@@ -16,6 +16,7 @@ SIZE_DEFAULT = 35
 PLACEHOLDER_TEXT_THRESHOLD = 20
 SHOW_HELP_TEXT_DEFAULT = True
 WEIGHT_DEFAULT = 1
+BIG_O_TYPE_DEFAULT = 'big-o'
 
 
 class BigOType(Enum):
@@ -53,7 +54,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     display = DisplayType(pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT))
     size = pl.get_integer_attrib(element, 'size', SIZE_DEFAULT)
 
-    bigo_type = BigOType[pl.get_string_attrib(element, 'type', BigOType.BIG_O.name).upper()].value
+    bigo_type = get_big_o_type(pl.get_string_attrib(element, 'type', BIG_O_TYPE_DEFAULT)).value
 
     operators: List[str] = ['exp', 'log', 'sqrt', 'factorial', '( )', '+', '-', '*', '/', '^', '**']
     constants: List[str] = ['pi', 'e']
@@ -203,7 +204,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             return grade_fn(a_tru, a_sub, variables)
         return grade
 
-    bigo_type = BigOType[pl.get_string_attrib(element, 'type', BigOType.BIG_O.name).upper()]
+    bigo_type = get_big_o_type(pl.get_string_attrib(element, 'type', BIG_O_TYPE_DEFAULT))
 
     if bigo_type is BigOType.BIG_O:
         pl.grade_question_parameterized(data, name, get_grade_fn(bou.grade_bigo_expression), weight=weight)
@@ -293,3 +294,12 @@ def get_variables_list(variables_string: str) -> List[str]:
     if variables_list == ['']:
         return []
     return variables_list
+
+def get_big_o_type(big_o_type: str) -> BigOType:
+    big_o_type = big_o_type.upper()
+    accepted_names = {member.name.replace('_', '-') for member in BigOType}
+
+    if big_o_type not in accepted_names:
+        raise ValueError(f'{big_o_type} is not a valid type')
+
+    return BigOType[big_o_type.replace('-', '_')]
