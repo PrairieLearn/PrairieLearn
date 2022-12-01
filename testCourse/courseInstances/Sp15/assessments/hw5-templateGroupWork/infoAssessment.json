@@ -11,6 +11,28 @@
     "studentGroupCreate": true,
     "studentGroupJoin": true,
     "studentGroupLeave": true,
+    "groupRoles": [
+        {
+            "name": "Manager",
+            "minimum": 1,
+            "maximum": 1,
+            "canAssignRolesAtStart": true,
+            "canAssignRolesDuringAssessment": true
+        },
+        {
+            "name": "Recorder",
+            "minimum": 1,
+            "maximum": 1
+        },
+        {
+            "name": "Reflector",
+            "minimum": 1,
+            "maximum": 1
+        },
+        {
+            "name": "Contributor"
+        }
+    ],
     "allowAccess": [
         {
             "mode": "Public",
