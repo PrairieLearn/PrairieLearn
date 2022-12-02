@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 import prairielearn as pl  # noqa: E402
 import lxml.html           # noqa: E402
 import pytest
-from typing import Callable, Dict, Any
+from typing import Callable
 import math
 
 def test_inner_html():
@@ -33,22 +33,22 @@ def test_inner_html():
      (pl.set_all_or_nothing_score_data, 1., 1., 1., 1.),
     ]
 )
-def test_set_score_data(weight_set_function: Callable[[Dict[str, Any]], None],
-                          score_1: float,
-                          score_2: float,
-                          score_3: float,
-                          expected_score: float) -> None:
+def test_set_score_data(question_data: pl.QuestionData,
+                        weight_set_function: Callable[[pl.QuestionData], None],
+                        score_1: float,
+                        score_2: float,
+                        score_3: float,
+                        expected_score: float) -> None:
 
-    def prepare_partial_score_dict(score: float, weight: int) -> Dict[str, Any]:
+    def prepare_partial_score_dict(score: float, weight: int) -> pl.PartialScore:
         return {'score': score, 'weight': weight}
 
-    data: Dict[str, Any] = dict()
-    data['partial_scores'] = {
+    question_data['partial_scores'] = {
         'p1': prepare_partial_score_dict(score_1, 2),
         'p2': prepare_partial_score_dict(score_2, 4),
         'p3': prepare_partial_score_dict(score_3, 1)
     }
 
     # Assert equality
-    weight_set_function(data)
-    assert math.isclose(data['score'], expected_score)
+    weight_set_function(question_data)
+    assert math.isclose(question_data['score'], expected_score)
