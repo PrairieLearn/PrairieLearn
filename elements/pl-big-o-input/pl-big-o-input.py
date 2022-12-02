@@ -37,20 +37,30 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     required_attribs = ['answers-name']
     optional_attribs = ['weight', 'correct-answer', 'variables', 'size', 'display', 'show-help-text', 'type']
     pl.check_attribs(element, required_attribs, optional_attribs)
+    variables = get_variables_list(pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT))
+    if len(variables) > 1:
+        raise ValueError(f'Only one variable is supported for question {name}')
+
     name = pl.get_string_attrib(element, 'answers-name')
 
     if pl.has_attrib(element, 'correct-answer'):
         if name in data['correct_answers']:
             raise ValueError(f'duplicate correct_answers variable name: {name}')
-        data['correct_answers'][name] = pl.get_string_attrib(element, 'correct-answer')
+
+        a_true = pl.get_string_attrib(element, 'correct-answer')
+        # Try converting answer before storing
+        try:
+            phs.convert_string_to_sympy(a_true, variables, allow_complex=False, allow_trig_functions=False)
+        except phs.BaseSympyError as err:
+            raise ValueError(f'Parsing correct answer {a_true} for {name} failed')
+
+        data['correct_answers'][name] = a_true
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     variables = get_variables_list(pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT))
-    if len(variables) > 1:
-        raise ValueError('Only one variable is supported')
     display = DisplayType(pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT))
     size = pl.get_integer_attrib(element, 'size', SIZE_DEFAULT)
 

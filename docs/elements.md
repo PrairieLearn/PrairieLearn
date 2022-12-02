@@ -648,7 +648,7 @@ Gives automated feedback in the case of improper asymptotic input.
 
 #### Details
 
-Correct answers must be specified as strings (e.g., `n^2`, `2^n`, `n * log(n)`), with
+Correct answers must be specified as strings with Python syntax (e.g., `n**2`, `2**n`, `n * log(n)`), with
 the same syntax as [`pl-symbolic-input`](#pl-symbolic-input-element). Only one variable is supported.
 
 #### Example implementations
