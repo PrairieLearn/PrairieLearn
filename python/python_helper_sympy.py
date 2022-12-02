@@ -2,10 +2,10 @@ import sympy
 import ast
 from dataclasses import dataclass
 from itertools import chain
-from typing import Any, cast, Dict, List, Tuple, TypedDict, Literal, Optional
+from typing import Any, cast, Dict, List, Tuple, TypedDict, Literal, Optional, Union, Callable, Type
 
-SympyMapT = Dict[str, Any]
-ASTWhitelistT = Tuple[Any, ...]
+SympyMapT = Dict[str, Union[Callable, sympy.Basic]]
+ASTWhitelistT = Tuple[Type[ast.AST], ...]
 
 class SympyJson(TypedDict):
     "A class with type signatures for the sympy json dict"
@@ -57,7 +57,6 @@ class _Constants:
         }
 
         self.functions = {
-            # These are shown to the student
             'exp': sympy.exp,
             'log': sympy.log,
             'sqrt': sympy.sqrt,
@@ -181,7 +180,7 @@ class CheckWhiteList(ast.NodeVisitor):
     def __init__(self, whitelist: ASTWhitelistT) -> None:
         self.whitelist = whitelist
 
-    def visit(self, node: Any) -> None:
+    def visit(self, node: ast.AST) -> None:
         if not isinstance(node, self.whitelist):
             node = get_parent_with_location(node)
             raise HasInvalidExpressionError(node.col_offset)
@@ -191,33 +190,33 @@ class CheckFunctions(ast.NodeVisitor):
     def __init__(self, functions: SympyMapT) -> None:
         self.functions = functions
 
-    def visit_Call(self, node: Any) -> None:
+    def visit_Call(self, node: ast.Call) -> None:
         if isinstance(node.func, ast.Name):
             if node.func.id not in self.functions:
-                node = get_parent_with_location(node)
-                raise HasInvalidFunctionError(node.col_offset, node.func.id)
+                err_node = get_parent_with_location(node)
+                raise HasInvalidFunctionError(err_node.col_offset, err_node.func.id)
         self.generic_visit(node)
 
 class CheckVariables(ast.NodeVisitor):
     def __init__(self, variables: SympyMapT) -> None:
         self.variables = variables
 
-    def visit_Name(self, node: Any) -> None:
+    def visit_Name(self, node: ast.Name) -> None:
         if isinstance(node.ctx, ast.Load):
             if not is_name_of_function(node):
                 if node.id not in self.variables:
-                    node = get_parent_with_location(node)
-                    raise HasInvalidVariableError(node.col_offset, node.id)
+                    err_node = get_parent_with_location(node)
+                    raise HasInvalidVariableError(err_node.col_offset, err_node.id)
         self.generic_visit(node)
 
-def is_name_of_function(node: Any) -> bool:
+def is_name_of_function(node: ast.AST) -> bool:
     # The node is the name of a function if all of the following are true:
     # 1) it has type ast.Name
     # 2) its parent has type ast.Call
     # 3) it is not in the list of parent's args
     return isinstance(node, ast.Name) and isinstance(node.parent, ast.Call) and (node not in node.parent.args) # type: ignore
 
-def get_parent_with_location(node: ast.AST) -> ast.AST:
+def get_parent_with_location(node: ast.AST) -> Any:
     if hasattr(node, 'col_offset'):
         return node
 
