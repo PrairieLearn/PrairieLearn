@@ -272,9 +272,11 @@ def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
 
     # Convert AST to code and evaluate it with no global expressions and with
     # a whitelist of local expressions
-    locals = dict(chain.from_iterable(
-        cast(SympyMapT, local_expressions).items() for local_expressions in locals_for_eval.values()
-    ))
+    locals = {
+        name: expr
+        for local_expressions in locals_for_eval.values()
+        for name, expr in cast(SympyMapT, local_expressions).items()
+    }
 
     return eval(compile(root, '<ast>', 'eval'), {'__builtins__': None}, locals)
 
