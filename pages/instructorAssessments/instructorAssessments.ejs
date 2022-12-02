@@ -20,42 +20,39 @@
 
         var assessment_ids_needing_stats_update = <%- JSON.stringify(assessment_ids_needing_stats_update) %>;
         // Fetch new statistics in parallel, but with a limit to avoid saturating the server.
-        async.eachLimit(assessment_ids_needing_stats_update, 3, function(assessment_id, callback) {
-          fetch('<%= urlPrefix %>/instance_admin/assessments/stats/' + assessment_id)
-            .then((response) => {
-              if (!response.ok) {
-                throw new Error('status code: ' + response.status + ', status text: ' + response.statusText);
-              }
-              return response.text();
-            }).then((text) => {
-              // parse the HTML response
-              var template = document.createElement('template');
-              template.innerHTML = text;
-              var newContent = document.importNode(template.content, true);
+        async.eachLimit(assessment_ids_needing_stats_update, 3, async (assessment_id) => {
+          try {
+            const response = await fetch('<%= urlPrefix %>/instance_admin/assessments/stats/' + assessment_id);
+            if (!response.ok) {
+                throw new Error(`ERROR ${response.status} (${response.statusText}}`);
+            }
 
-              // update the page content
-              var row = document.getElementById('row-' + assessment_id);
-              row.querySelector('.score-stat-number').innerHTML = newContent.querySelector('.score-stat-number').innerHTML;
-              row.querySelector('.score-stat-score-hist').innerHTML = newContent.querySelector('.score-stat-score-hist').innerHTML;
-              row.querySelector('.score-stat-mean').innerHTML = newContent.querySelector('.score-stat-mean').innerHTML;
-              row.querySelector('.duration-stat-mean').innerHTML = newContent.querySelector('.duration-stat-mean').innerHTML;
+            // parse the HTML response
+            const template = document.createElement('template');
+            template.innerHTML = await response.text();
+            const newContent = document.importNode(template.content, true);
 
-              // re-evaluate scripts in the row to render statistics
-              row.querySelectorAll('script').forEach((scriptNode) => {
-                var newScriptNode = document.createElement("script");
-                newScriptNode.text = scriptNode.innerHTML;
-                scriptNode.parentNode.replaceChild(newScriptNode, scriptNode);
-              });
-            }).catch((error) => {
-              console.log('Error fetching statistics for assessment_id=' + assessment_id + ': ' + error);
-              var row = document.getElementById('row-' + assessment_id);
-              row.querySelector('.score-stat-number').innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
-              row.querySelector('.score-stat-score-hist').innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
-              row.querySelector('.score-stat-mean').innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
-              row.querySelector('.duration-stat-mean').innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
-            }).finally(() => {
-              callback(null);
+            // update the page content
+            const row = document.getElementById('row-' + assessment_id);
+            row.querySelector('.score-stat-number').innerHTML = newContent.querySelector('.score-stat-number').innerHTML;
+            row.querySelector('.score-stat-score-hist').innerHTML = newContent.querySelector('.score-stat-score-hist').innerHTML;
+            row.querySelector('.score-stat-mean').innerHTML = newContent.querySelector('.score-stat-mean').innerHTML;
+            row.querySelector('.duration-stat-mean').innerHTML = newContent.querySelector('.duration-stat-mean').innerHTML;
+
+            // re-evaluate scripts in the row to render statistics
+            row.querySelectorAll('script').forEach((scriptNode) => {
+              const newScriptNode = document.createElement("script");
+              newScriptNode.text = scriptNode.innerHTML;
+              scriptNode.parentNode.replaceChild(newScriptNode, scriptNode);
             });
+          } catch (err) {
+            console.log(`Error fetching statistics for assessment_id=${assessment_id}`, err);
+            const row = document.getElementById('row-' + assessment_id);
+            row.querySelector('.score-stat-number').innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
+            row.querySelector('.score-stat-score-hist').innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
+            row.querySelector('.score-stat-mean').innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
+            row.querySelector('.duration-stat-mean').innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
+          }
         })
     });
   </script>
