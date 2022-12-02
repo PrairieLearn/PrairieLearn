@@ -295,6 +295,7 @@ def get_variables_list(variables_string: str) -> List[str]:
         return []
     return variables_list
 
+
 def get_big_o_type(big_o_type: str) -> BigOType:
     big_o_type = big_o_type.upper()
     accepted_names = {member.name.replace('_', '-') for member in BigOType}
