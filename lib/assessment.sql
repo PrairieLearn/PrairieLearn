@@ -104,7 +104,7 @@ SET
     score_stat_n_hundred = score_stats.n_hundred,
     score_stat_n_zero_perc = score_stats.n_zero_perc,
     score_stat_n_hundred_perc = score_stats.n_hundred_perc,
-    score_stat_score_hist = score_stats.score_hist,
+    score_stat_hist = score_stats.score_hist,
     duration_stat_min = duration_stats.min,
     duration_stat_max = duration_stats.max,
     duration_stat_mean = duration_stats.mean,

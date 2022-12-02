@@ -111,7 +111,7 @@ router.get(
           res.locals.assessment.score_stat_n_hundred_perc,
         ],
       ];
-      _(res.locals.assessment.score_stat_score_hist).each(function (count, i) {
+      _(res.locals.assessment.score_stat_hist).each(function (count, i) {
         csvHeaders.push('Hist ' + (i + 1));
         csvData[0].push(count);
       });

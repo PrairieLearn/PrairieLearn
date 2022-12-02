@@ -27,7 +27,7 @@
           <div id="scoreHist" class="scoreHistogram"></div>
           <script>
             $(function() {
-                var data = [<%= assessment.score_stat_score_hist %>];
+                var data = [<%= assessment.score_stat_hist %>];
                 var xgrid = _.range(0, 110, 10);
                 var options = {
                     ymin: 0,

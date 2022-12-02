@@ -10,7 +10,7 @@ ALTER TABLE assessments ADD COLUMN score_stat_n_zero integer NOT NULL DEFAULT 0;
 ALTER TABLE assessments ADD COLUMN score_stat_n_hundred integer NOT NULL DEFAULT 0;
 ALTER TABLE assessments ADD COLUMN score_stat_n_zero_perc double precision NOT NULL DEFAULT 0;
 ALTER TABLE assessments ADD COLUMN score_stat_n_hundred_perc double precision NOT NULL DEFAULT 0;
-ALTER TABLE assessments ADD COLUMN score_stat_score_hist integer[] NOT NULL DEFAULT ARRAY[]::integer[];
+ALTER TABLE assessments ADD COLUMN score_stat_hist integer[] NOT NULL DEFAULT ARRAY[]::integer[];
 
 ALTER TABLE assessments ADD COLUMN duration_stat_min interval NOT NULL DEFAULT interval '0 seconds';
 ALTER TABLE assessments ADD COLUMN duration_stat_max interval NOT NULL DEFAULT interval '0 seconds';

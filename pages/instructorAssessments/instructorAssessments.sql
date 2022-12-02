@@ -33,7 +33,7 @@ SELECT
     a.score_stat_n_hundred,
     a.score_stat_n_zero_perc,
     a.score_stat_n_hundred_perc,
-    a.score_stat_score_hist,
+    a.score_stat_hist,
     format_interval(a.duration_stat_mean) AS duration_stat_mean_formatted,
     EXISTS (
         SELECT 1
@@ -76,7 +76,7 @@ SELECT
     a.id,
     a.score_stat_number,
     a.score_stat_mean,
-    a.score_stat_score_hist,
+    a.score_stat_hist,
     format_interval(a.duration_stat_mean) AS duration_stat_mean_formatted
 FROM
     assessments AS a

@@ -161,7 +161,7 @@ router.get(
           assessmentStat.score_stat_n_zero_perc,
           assessmentStat.score_stat_n_hundred_perc,
         ];
-        csvRow = csvRow.concat(assessmentStat.score_stat_score_hist);
+        csvRow = csvRow.concat(assessmentStat.score_stat_hist);
         csvData.push(csvRow);
       });
       csvData.splice(0, 0, csvHeaders);

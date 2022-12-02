@@ -26,6 +26,7 @@ columns
     obj: jsonb
     order_by: integer
     require_honor_code: boolean default true
+    score_stat_hist: integer[] not null default ARRAY[]::integer[]
     score_stat_max: double precision not null default 0
     score_stat_mean: double precision not null default 0
     score_stat_median: double precision not null default 0
@@ -35,7 +36,6 @@ columns
     score_stat_n_zero: integer not null default 0
     score_stat_n_zero_perc: double precision not null default 0
     score_stat_number: integer not null default 0
-    score_stat_score_hist: integer[] not null default ARRAY[]::integer[]
     score_stat_std: double precision not null default 0
     shuffle_questions: boolean default false
     statistics_last_updated_at: timestamp with time zone not null default (now() - '100 years'::interval)
