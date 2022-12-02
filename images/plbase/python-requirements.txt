@@ -27,4 +27,4 @@ statsmodels==0.13.2
 openpyxl==3.0.10
 pytest==7.2.0
 typing-extensions==4.4.0
-psutil==5.9.3
+psutil==5.9.4
