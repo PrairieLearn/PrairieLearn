@@ -8,13 +8,14 @@ SympyMapT = Dict[str, Union[Callable, sympy.Basic]]
 ASTWhitelistT = Tuple[Type[ast.AST], ...]
 
 class SympyJson(TypedDict):
-    "A class with type signatures for the sympy json dict"
+    """A class with type signatures for the sympy json dict"""
+    
     _type: Literal['sympy']
     _value: str
     _variables: List[str]
 
 class LocalsForEval(TypedDict):
-    "A class with type signatures for the locals_for_eval dict"
+    """A class with type signatures for the locals_for_eval dict"""
 
     functions: SympyMapT
     variables: SympyMapT
