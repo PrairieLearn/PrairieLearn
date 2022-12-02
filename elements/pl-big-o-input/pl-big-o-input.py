@@ -37,11 +37,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     required_attribs = ['answers-name']
     optional_attribs = ['weight', 'correct-answer', 'variables', 'size', 'display', 'show-help-text', 'type']
     pl.check_attribs(element, required_attribs, optional_attribs)
-    variables = get_variables_list(pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT))
-    if len(variables) > 1:
-        raise ValueError(f'Only one variable is supported for question {name}')
 
     name = pl.get_string_attrib(element, 'answers-name')
+    variables = get_variables_list(pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT))
+
+    if len(variables) > 1:
+        raise ValueError(f'Only one variable is supported for question {name}')
 
     if pl.has_attrib(element, 'correct-answer'):
         if name in data['correct_answers']:
@@ -51,7 +52,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         # Try converting answer before storing
         try:
             phs.convert_string_to_sympy(a_true, variables, allow_complex=False, allow_trig_functions=False)
-        except phs.BaseSympyError as err:
+        except phs.BaseSympyError:
             raise ValueError(f'Parsing correct answer {a_true} for {name} failed')
 
         data['correct_answers'][name] = a_true
