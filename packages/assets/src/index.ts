@@ -44,6 +44,8 @@ export function assertConfigured(): void {
 }
 
 export function handler(): RequestHandler {
+  assertConfigured();
+
   if (!options?.dev) {
     // We're running in production: serve all assets from the build directory.
     // Set headers to cache for as long as possible, since the assets will
