@@ -9,7 +9,7 @@ ASTWhitelistT = Tuple[Type[ast.AST], ...]
 
 class SympyJson(TypedDict):
     """A class with type signatures for the sympy json dict"""
-    
+
     _type: Literal['sympy']
     _value: str
     _variables: List[str]
@@ -183,8 +183,8 @@ class CheckWhiteList(ast.NodeVisitor):
 
     def visit(self, node: ast.AST) -> None:
         if not isinstance(node, self.whitelist):
-            node = get_parent_with_location(node)
-            raise HasInvalidExpressionError(node.col_offset)
+            err_node = get_parent_with_location(node)
+            raise HasInvalidExpressionError(err_node.col_offset)
         return super().visit(node)
 
 class CheckFunctions(ast.NodeVisitor):
