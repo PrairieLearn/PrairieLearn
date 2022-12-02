@@ -33,8 +33,7 @@ router.get('/', function (req, res, next) {
       async () => {
         // make sure statistics are up to date
         await assessment.updateAssessmentStatistics(res.locals.assessment.id);
-      },
-      async () => {
+
         // re-fetch assessment to get updated statistics
         const result = await sqldb.queryOneRowAsync(sql.select_assessment, {
           assessment_id: res.locals.assessment.id,
