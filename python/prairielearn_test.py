@@ -54,7 +54,6 @@ def test_grade_question_parametrized_correct(
         question_data, question_name, grading_function, weight
     )
 
-
     expected_score = 1.0 if expected_grade else 0.0
     assert question_data["partial_scores"][question_name]["score"] == expected_score
     assert type(question_data["partial_scores"][question_name]["score"]) == float
@@ -65,7 +64,8 @@ def test_grade_question_parametrized_correct(
     expected_feedback = good_feedback if expected_grade else bad_feedback
 
     assert (
-        question_data["partial_scores"][question_name].get("feedback") == expected_feedback
+        question_data["partial_scores"][question_name].get("feedback")
+        == expected_feedback
     )
 
 
