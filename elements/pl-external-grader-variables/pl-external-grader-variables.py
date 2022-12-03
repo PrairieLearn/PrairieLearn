@@ -1,5 +1,5 @@
 import prairielearn as pl
-import lxml.html
+import lxml
 import chevron
 
 
