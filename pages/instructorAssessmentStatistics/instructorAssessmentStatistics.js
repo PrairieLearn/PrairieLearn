@@ -38,6 +38,11 @@ router.get(
     res.locals.assessment = assessmentResult.rows[0].assessment;
 
     // get formatted duration statistics
+    //
+    // Note that these statistics only consider the highest-scoring assessment
+    // instance for each user, so the scatter plot of instance durations vs
+    // scores won't include low-scoring instances. It's not clear if we want to
+    // change this.
     const durationStatsResult = await sqldb.queryOneRowAsync(sql.select_duration_stats, {
       assessment_id: res.locals.assessment.id,
     });
