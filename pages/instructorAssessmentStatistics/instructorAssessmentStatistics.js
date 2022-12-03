@@ -116,7 +116,7 @@ router.get(
         csvData[0].push(count);
       });
       csvData.unshift(csvHeaders);
-      const csv = await csvStringifyAsync(csvData);
+      const csv = await nonblockingStringifyAsync(csvData);
       res.attachment(req.params.filename);
       res.send(csv);
     } else if (req.params.filename === res.locals.durationStatsCsvFilename) {
@@ -163,7 +163,7 @@ router.get(
         csvData[0].push(count);
       });
       csvData.unshift(csvHeaders);
-      const csv = await csvStringifyAsync(csvData);
+      const csv = await nonblockingStringifyAsync(csvData);
       res.attachment(req.params.filename);
       res.send(csv);
     } else if (req.params.filename === res.locals.statsByDateCsvFilename) {
@@ -202,7 +202,7 @@ router.get(
         csvData.push(groupData);
       }
       csvData.splice(0, 0, csvHeaders);
-      const csv = await csvStringifyAsync(csvData);
+      const csv = await nonblockingStringifyAsync(csvData);
       res.attachment(req.params.filename);
       res.send(csv);
     } else {
