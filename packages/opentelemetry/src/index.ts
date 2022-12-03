@@ -21,7 +21,7 @@ import { Span, SpanStatusCode, context, trace } from '@opentelemetry/api';
 import { hrTimeToMilliseconds } from '@opentelemetry/core';
 
 // Exporters go here.
-import { OTLPTraceExporter } from '@opentelemetry/exporter-otlp-grpc';
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
 import { JaegerExporter } from '@opentelemetry/exporter-jaeger';
 
 // Instrumentations go here.
