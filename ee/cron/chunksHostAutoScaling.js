@@ -101,21 +101,19 @@ module.exports.run = callbackify(async () => {
   const maxActiveWorkersPerSecond = _.max(activeWorkersPerSecondMetric.Values) ?? 0;
   const maxLoadBalancerRequestsPerMinute = _.max(loadBalancerRequestsPerMinuteMetric.Values) ?? 0;
 
-  const desiredInstancesByPageViews = Math.ceil(
-    maxPageViewsPerSecond / config.chunksPageViewsCapacityFactor
-  );
-  const desiredInstancesByActiveWorkers = Math.ceil(
-    maxActiveWorkersPerSecond / config.chunksActiveWorkersCapacityFactor
-  );
-  const desiredInstancesByLoadBalancerRequests = Math.ceil(
-    maxLoadBalancerRequestsPerMinute / config.chunksLoadBalancerRequestsCapacityFactor
-  );
+  const desiredInstancesByPageViews = maxPageViewsPerSecond / config.chunksPageViewsCapacityFactor;
+  const desiredInstancesByActiveWorkers =
+    maxActiveWorkersPerSecond / config.chunksActiveWorkersCapacityFactor;
+  const desiredInstancesByLoadBalancerRequests =
+    maxLoadBalancerRequestsPerMinute / config.chunksLoadBalancerRequestsCapacityFactor;
 
-  const desiredInstances = Math.max(
-    desiredInstancesByPageViews,
-    desiredInstancesByActiveWorkers,
-    desiredInstancesByLoadBalancerRequests,
-    1
+  const desiredInstances = Math.ceil(
+    Math.max(
+      desiredInstancesByPageViews,
+      desiredInstancesByActiveWorkers,
+      desiredInstancesByLoadBalancerRequests,
+      1
+    )
   );
 
   /** @type {import('aws-sdk').CloudWatch.Dimensions} */
