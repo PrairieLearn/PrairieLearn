@@ -45,7 +45,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     add_line_breaks = pl.has_attrib(element, "add-line-breaks")
 
     if varname not in data["params"]:
-        raise Exception(f"Could not find {varname} in params!")
+        raise ValueError(f"Could not find {varname} in params!")
 
     var_out = data["params"][varname]
 
