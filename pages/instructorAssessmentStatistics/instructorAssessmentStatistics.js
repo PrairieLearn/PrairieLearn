@@ -2,7 +2,7 @@ const _ = require('lodash');
 const express = require('express');
 const asyncHandler = require('express-async-handler');
 const router = express.Router();
-const csvStringifyAsync = require('../../lib/nonblocking-csv-stringify').nonblockingStringifyAsync;
+const { nonblockingStringifyAsync } = require('../../lib/nonblocking-csv-stringify');
 
 const error = require('../../prairielib/lib/error');
 const sanitizeName = require('../../lib/sanitize-name');
