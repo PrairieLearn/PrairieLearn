@@ -101,6 +101,20 @@ data['params']['matrix'] = pl.to_json(mat)
     </div>
 </div>
 
+<div class="card my-2">
+    <div class="card-body" >
+        <pl-question-panel>
+            <p>Here is a graph with negative weights. These weights will not be displayed unless specified with <code>show-negative-weights="true"</code>.</p>
+        </pl-question-panel>
+        <pl-matrix-latex params-name="matrix3"></pl-matrix-latex>
+        <pl-graph params-name-matrix="matrix3"></pl-graph>
+
+        <p>Enabling negative weights, we have the following:</p>
+
+        <pl-graph params-name-matrix="matrix3" show-negative-weights="true"></pl-graph>
+    </div>
+</div>
+
 <div class="card my-2" >
     <div class="card-body">
         <pl-question-panel>

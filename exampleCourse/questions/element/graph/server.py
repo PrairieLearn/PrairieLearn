@@ -15,6 +15,8 @@ def generate(data):
   mat2 = np.random.binomial(1, 0.5, (3, 3))
   data['params']['matrix2'] = pl.to_json(mat2)
 
+  data['params']['matrix3'] = pl.to_json(mat * -1)
+
   # chosen by dice roll, guaranteed to be random
   edge_mat = np.array([[-1,  0,  1,  0],
                        [ 0, -1,  1,  0],
