@@ -61,10 +61,12 @@ router.get(
   asyncHandler(async (req, res) => {
     setFilenames(res.locals);
     if (req.params.filename === res.locals.questionStatsCsvFilename) {
-      const questionStatsList = await sqldb.queryAsync(sql.questions, {
-        assessment_id: res.locals.assessment.id,
-        course_id: res.locals.course.id,
-      }).rows;
+      const questionStatsList = (
+        await sqldb.queryAsync(sql.questions, {
+          assessment_id: res.locals.assessment.id,
+          course_id: res.locals.course.id,
+        })
+      ).rows;
       const csvData = [];
       const csvHeaders = [
         'Course',
