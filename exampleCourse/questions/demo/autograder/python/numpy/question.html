@@ -10,10 +10,18 @@
     </p>
 
     <p>The setup code gives the following variables:</p>
-    <p><pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables></p>
+    <p>
+        <pl-external-grader-variables>
+            <pl-variable name="n" type="integer" description="Dimensionality of $\mathbf{A}$ and $\mathbf{b}$."></pl-variable>
+            <pl-variable name="A" type="numpy array ($n \times n$)" description="Matrix $\mathbf{A}$."></pl-variable>
+            <pl-variable name="b" type="numpy array (length $n$)" description="Vector $\mathbf{b}$."></pl-variable>
+        </pl-external-grader-variables>
+    </p>
 
     <p>Your code snippet should define the following variables:</p>
-    <pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+    <pl-external-grader-variables>
+        <pl-variable name="x" type="numpy array (length $n$)" description="Solution to $\mathbf{Ax}=\mathbf{b}$."></pl-variable>
+    </pl-external-grader-variables>
     <pl-file-editor
         file-name="user_code.py"
         ace-mode="ace/mode/python"
