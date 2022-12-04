@@ -64,7 +64,7 @@ typecheck: typecheck-js typecheck-python
 typecheck-js:
 	@yarn tsc
 typecheck-python:
-	@yarn pyright
+	@yarn pyright --skipunannotated
 
 changeset:
 	@yarn changeset

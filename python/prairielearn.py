@@ -16,7 +16,8 @@ import importlib
 import importlib.util
 import os
 import collections
-from typing import Dict, Any, TypedDict, Literal, Optional, Callable, Tuple, Union
+from enum import Enum
+from typing import Dict, Any, TypedDict, Literal, Optional, Callable, Tuple, Union, Type, TypeVar
 from typing_extensions import assert_never, NotRequired
 
 class PartialScore(TypedDict):
@@ -309,7 +310,14 @@ def has_attrib(element, name):
     old_name = name.replace('-', '_')
     return name in element.attrib or old_name in element.attrib
 
-def get_enum_attrib(enum_type, element, name, *args):
+EnumT = TypeVar('EnumT', bound=Enum)
+
+def get_enum_attrib(
+    enum_type: Type[EnumT],
+    element: lxml.html.HtmlElement,
+    name: str,
+    default: Optional[EnumT]=None
+) -> EnumT:
     """value = get_enum_attrib(enum_type, element, name, default)
 
     Returns the named attribute for the element parsed as an enum,
@@ -321,7 +329,8 @@ def get_enum_attrib(enum_type, element, name, *args):
     (replacing underscores with dashes and uppercasing). If default value is
     provided, must be a member of the given enum.
     """
-    enum_val, is_default = _get_attrib(element, name, *args)
+
+    enum_val, is_default = _get_attrib(element, name) if default is None else _get_attrib(element, name, default)
 
     # Default doesn't need to be converted, already a value of the enum
     if is_default:
