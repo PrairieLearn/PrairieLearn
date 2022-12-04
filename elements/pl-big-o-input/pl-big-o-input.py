@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Callable, List, Optional, Tuple, Literal, get_args
+from typing import Callable, Dict, List, Optional, Tuple, Literal, get_args
 from typing_extensions import assert_never
 import prairielearn as pl
 import lxml.html
@@ -13,6 +13,16 @@ import random
 InvalidTypeChoicesT = Literal[
     "float", "expression", "function", "variable", "syntax", "escape", "comment"
 ]
+
+INVALID_ANSWER_DICT: Dict[InvalidTypeChoicesT, str] = {
+    "float": "n + 1.234",
+    "expression": "1 and 0",
+    "function": "tan(n)",
+    "variable": "n + m",
+    "syntax": "n +* 1",
+    "escape": "n + 1\\n",
+    "comment": "n # some text",
+}
 
 
 class BigOType(Enum):
@@ -328,30 +338,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         invalid_type = random.choice(invalid_type_choices)
 
         # TODO add detailed format errors if this gets checked in the future
+        data["raw_submitted_answers"][name] = INVALID_ANSWER_DICT[invalid_type]
         data["format_errors"][name] = ""
 
-        if invalid_type == "float":
-            data["raw_submitted_answers"][name] = "n + 1.234"
-
-        elif invalid_type == "expression":
-            data["raw_submitted_answers"][name] = "1 and 0"
-
-        elif invalid_type == "function":
-            data["raw_submitted_answers"][name] = "tan(n)"
-
-        elif invalid_type == "variable":
-            data["raw_submitted_answers"][name] = "n + m"
-
-        elif invalid_type == "syntax":
-            data["raw_submitted_answers"][name] = "n +* 1"
-
-        elif invalid_type == "escape":
-            data["raw_submitted_answers"][name] = "n + 1\\n"
-
-        elif invalid_type == "comment":
-            data["raw_submitted_answers"][name] = "n # some text"
-
-        else:
-            assert_never(invalid_type)
     else:
         assert_never(result)
