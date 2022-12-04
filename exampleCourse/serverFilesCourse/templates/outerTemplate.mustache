@@ -1,0 +1,29 @@
+<style>
+details.statement {
+    border: 1px solid rgba(0,0,0,.125);
+    padding: .5em .5em 0;
+    margin-bottom: 15px;
+    background-color: rgba(0,0,0,.03);
+}
+
+.statement summary {
+    font-weight: bold;
+    margin: -.5em -.5em 0;
+    padding: .5em;
+    outline: none;
+}
+
+details.statement[open] {
+    padding: .5em;
+}
+
+details.statement[open] summary {
+    border-bottom: 1px solid rgba(0,0,0,.125);
+    margin-bottom: .5em;
+}
+</style>
+
+<details class="statement rounded" {{#is-open}}open{{/is-open}}>
+    <summary> Problem Statement </summary>
+    {{{problem-statement}}}
+</details>
