@@ -363,7 +363,7 @@ def convert_string_to_sympy(
     # If there is a list of variables, add each one to the whitelist
     if variables is not None:
         locals_for_eval["variables"].update(
-            {variable: sympy.Symbol(variable) for variable in variables}
+            (variable, sympy.Symbol(variable)) for variable in variables
         )
 
     # Do the conversion
