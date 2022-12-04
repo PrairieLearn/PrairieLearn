@@ -10,14 +10,6 @@ import python_helper_sympy as phs
 import big_o_utils as bou
 import random
 
-VARIABLES_DEFAULT = None
-DISPLAY_DEFAULT = "inline"
-SIZE_DEFAULT = 35
-PLACEHOLDER_TEXT_THRESHOLD = 20
-SHOW_HELP_TEXT_DEFAULT = True
-WEIGHT_DEFAULT = 1
-BIG_O_TYPE_DEFAULT = "big-o"
-
 InvalidTypeChoicesT = Literal[
     "float", "expression", "function", "variable", "syntax", "escape", "comment"
 ]
@@ -34,6 +26,15 @@ class BigOType(Enum):
 class DisplayType(Enum):
     INLINE = "inline"
     BLOCK = "block"
+
+
+VARIABLES_DEFAULT = None
+SIZE_DEFAULT = 35
+PLACEHOLDER_TEXT_THRESHOLD = 20
+SHOW_HELP_TEXT_DEFAULT = True
+WEIGHT_DEFAULT = 1
+DISPLAY_DEFAULT = DisplayType.INLINE
+BIG_O_TYPE_DEFAULT = BigOType.BIG_O
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -80,12 +81,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     variables = phs.get_variables_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
-    display = DisplayType(pl.get_string_attrib(element, "display", DISPLAY_DEFAULT))
+    display = pl.get_enum_attrib(DisplayType, element, "display", DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
 
-    bigo_type = get_big_o_type(
-        pl.get_string_attrib(element, "type", BIG_O_TYPE_DEFAULT)
-    ).value
+    bigo_type = pl.get_enum_attrib(BigOType, element, "type", BIG_O_TYPE_DEFAULT).value
 
     operators: List[str] = [
         "exp",
@@ -262,9 +261,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
         return grade
 
-    bigo_type = get_big_o_type(
-        pl.get_string_attrib(element, "type", BIG_O_TYPE_DEFAULT)
-    )
+    bigo_type = pl.get_enum_attrib(BigOType, element, "type", BIG_O_TYPE_DEFAULT)
 
     if bigo_type is BigOType.BIG_O:
         pl.grade_question_parameterized(
@@ -309,9 +306,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
     elif result == "incorrect":
         data["raw_submitted_answers"][name] = f"{random.randint(4, 100):d} * {a_tru}"
-        bigo_type = get_big_o_type(
-            pl.get_string_attrib(element, "type", BIG_O_TYPE_DEFAULT)
-        )
+        bigo_type = pl.get_enum_attrib(BigOType, element, "type", BIG_O_TYPE_DEFAULT)
+
         if bigo_type is BigOType.THETA:
             data["partial_scores"][name] = {
                 "score": 0.25,
