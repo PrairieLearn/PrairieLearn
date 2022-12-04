@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Callable, List, Optional, Tuple, Literal
+from typing import Callable, List, Optional, Tuple, Literal, get_args
 from typing_extensions import assert_never
 import prairielearn as pl
 import lxml.html
@@ -17,6 +17,10 @@ PLACEHOLDER_TEXT_THRESHOLD = 20
 SHOW_HELP_TEXT_DEFAULT = True
 WEIGHT_DEFAULT = 1
 BIG_O_TYPE_DEFAULT = "big-o"
+
+InvalidTypeChoicesT = Literal[
+    "float", "expression", "function", "variable", "syntax", "escape", "comment"
+]
 
 
 class BigOType(Enum):
@@ -309,43 +313,28 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             pl.get_string_attrib(element, "type", BIG_O_TYPE_DEFAULT)
         )
         if bigo_type is BigOType.THETA:
-            data["partial_scores"][name] =  {
+            data["partial_scores"][name] = {
                 "score": 0.25,
                 "weight": weight,
                 "feedback": bou.THETA_CONSTANT_FACTORS_FEEDBACK,
             }
         else:
             data["partial_scores"][name] = {
-                    "score": 0.5,
-                    "weight": weight,
-                    "feedback": bou.CONSTANT_FACTORS_FEEDBACK,
-                }
+                "score": 0.5,
+                "weight": weight,
+                "feedback": bou.CONSTANT_FACTORS_FEEDBACK,
+            }
 
     elif result == "invalid":
-        invalid_type_choices: List[
-            Literal[
-                "float",
-                "expression",
-                "function",
-                "variable",
-                "syntax",
-                "escape",
-                "comment",
-            ]
-        ] = [
-            "float",
-            "expression",
-            "function",
-            "variable",
-            "syntax",
-            "escape",
-            "comment",
-        ]
+        invalid_type_choices: List[InvalidTypeChoicesT] = list(
+            get_args(InvalidTypeChoicesT)
+        )
 
         invalid_type = random.choice(invalid_type_choices)
 
-        data["format_errors"][name] = ""
         # TODO add detailed format errors if this gets checked in the future
+        data["format_errors"][name] = ""
+
         if invalid_type == "float":
             data["raw_submitted_answers"][name] = "n + 1.234"
 
