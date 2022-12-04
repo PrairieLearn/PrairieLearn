@@ -33,6 +33,15 @@ class BigOType(Enum):
     LITTLE_OMEGA = r"\omega"
 
 
+GRADE_FUNCTION_DICT: Dict[BigOType, bou.BigOGradingFunctionT] = {
+    BigOType.BIG_O: bou.grade_big_o_expression,
+    BigOType.THETA: bou.grade_theta_expression,
+    BigOType.OMEGA: bou.grade_omega_expression,
+    BigOType.LITTLE_O: bou.grade_little_o_expression,
+    BigOType.LITTLE_OMEGA: bou.grade_little_omega_expression,
+}
+
+
 class DisplayType(Enum):
     INLINE = "inline"
     BLOCK = "block"
@@ -272,28 +281,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     bigo_type = pl.get_enum_attrib(BigOType, element, "type", BIG_O_TYPE_DEFAULT)
 
-    if bigo_type is BigOType.BIG_O:
-        pl.grade_question_parameterized(
-            data, name, get_grade_fn(bou.grade_big_o_expression), weight=weight
-        )
-    elif bigo_type is BigOType.THETA:
-        pl.grade_question_parameterized(
-            data, name, get_grade_fn(bou.grade_theta_expression), weight=weight
-        )
-    elif bigo_type is BigOType.OMEGA:
-        pl.grade_question_parameterized(
-            data, name, get_grade_fn(bou.grade_omega_expression), weight=weight
-        )
-    elif bigo_type is BigOType.LITTLE_O:
-        pl.grade_question_parameterized(
-            data, name, get_grade_fn(bou.grade_little_o_expression), weight=weight
-        )
-    elif bigo_type is BigOType.LITTLE_OMEGA:
-        pl.grade_question_parameterized(
-            data, name, get_grade_fn(bou.grade_little_omega_expression), weight=weight
-        )
-    else:
-        assert_never(bigo_type)
+    pl.grade_question_parameterized(
+        data, name, get_grade_fn(GRADE_FUNCTION_DICT[bigo_type]), weight=weight
+    )
 
 
 def test(element_html: str, data: pl.ElementTestData) -> None:
