@@ -10,20 +10,6 @@ import python_helper_sympy as phs
 import big_o_utils as bou
 import random
 
-InvalidTypeChoicesT = Literal[
-    "float", "expression", "function", "variable", "syntax", "escape", "comment"
-]
-
-INVALID_ANSWER_DICT: Dict[InvalidTypeChoicesT, str] = {
-    "float": "n + 1.234",
-    "expression": "1 and 0",
-    "function": "tan(n)",
-    "variable": "n + m",
-    "syntax": "n +* 1",
-    "escape": "n + 1\\n",
-    "comment": "n # some text",
-}
-
 
 class BigOType(Enum):
     BIG_O = r"O"
@@ -321,14 +307,20 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             }
 
     elif result == "invalid":
-        invalid_type_choices: List[InvalidTypeChoicesT] = list(
-            get_args(InvalidTypeChoicesT)
+        invalid_answer = random.choice(
+            [
+                "n + 1.234",
+                "1 and 0",
+                "tan(n)",
+                "n + m",
+                "n +* 1",
+                "n + 1\\n",
+                "n # some text",
+            ]
         )
 
-        invalid_type = random.choice(invalid_type_choices)
-
         # TODO add detailed format errors if this gets checked in the future
-        data["raw_submitted_answers"][name] = INVALID_ANSWER_DICT[invalid_type]
+        data["raw_submitted_answers"][name] = invalid_answer
         data["format_errors"][name] = ""
 
     else:
