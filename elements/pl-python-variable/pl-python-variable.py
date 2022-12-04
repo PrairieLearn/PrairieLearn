@@ -11,6 +11,7 @@ SHOW_HEADER_DEFAULT = True
 SHOW_INDEX_DEFAULT = True
 SHOW_DIMENSIONS_DEFAULT = True
 SHOW_DATATYPE_DEFAULT = False
+ADD_LINE_BREAKS_DEFAULT = False
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -42,7 +43,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "show-dimensions", SHOW_DIMENSIONS_DEFAULT
     )
     show_dtype = pl.get_boolean_attrib(element, "show-dtype", SHOW_DATATYPE_DEFAULT)
-    add_line_breaks = pl.has_attrib(element, "add-line-breaks")
+    add_line_breaks = pl.get_boolean_attrib(
+        element, "add-line-breaks", ADD_LINE_BREAKS_DEFAULT
+    )
 
     if varname not in data["params"]:
         raise ValueError(f"Could not find {varname} in params!")

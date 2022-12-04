@@ -1201,6 +1201,7 @@ def generate(data):
 | `show-index`      | boolean | true    | Show the index column of a DataFrame in default mode. (No effect in `text` mode.)                                                                           |
 | `show-dimensions` | boolean | true    | Show a footer with the dimensions of a DataFrame in default mode. (No effect in `text` mode.)                                                               |
 | `show-dtype`      | boolean | false   | Append a row to a DataFrame containing column data types for display. (No effect in `text` mode.)                                                           |
+| `add-line-breaks`      | boolean | false   | Add line breaks for Python dictionaries or lists.                                                          |
 
 #### Details
 
