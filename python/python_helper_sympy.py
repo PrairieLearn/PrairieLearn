@@ -515,3 +515,15 @@ def get_variables_list(variables_string: Optional[str]) -> List[str]:
         return [variable.strip() for variable in variables_string.split(",")]
 
     return []
+
+
+def process_student_input(student_input: str) -> str:
+    # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
+    # for exponentiation. In python, only the latter can be used.
+    a_sub = student_input.replace("^", "**")
+
+    # Replace unicode minus with hyphen minus wherever it occurs
+    a_sub = a_sub.replace("\u2212", "-")
+
+    # Strip whitespace
+    return a_sub.strip()
