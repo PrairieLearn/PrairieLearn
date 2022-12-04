@@ -69,6 +69,8 @@ class TestBigOInput:
     @pytest.mark.parametrize(
         "a_true, a_sub",
         [
+            ("1", "14"),
+            ("1", "20"),
             ("log(n)", "7*log(n)"),
             ("log(n)", "(32/3)*log(n)"),
             ("n**2", "2*n**2"),

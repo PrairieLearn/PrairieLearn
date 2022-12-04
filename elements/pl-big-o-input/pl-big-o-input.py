@@ -304,24 +304,22 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         }
 
     elif result == "incorrect":
-        data["raw_submitted_answers"][name] = f"{a_tru} + {random.randint(1, 100):d}"
-        bigo_type = BigOType[
-            pl.get_string_attrib(element, "type", BigOType.BIG_O.name).upper()
-        ]
-
-        data["partial_scores"][name] = (
-            {
-                "score": 0.5,
-                "weight": weight,
-                "feedback": "Your answer is correct, but you have unnecessary lower order terms.",
-            }
-            if bigo_type is not BigOType.THETA
-            else {
+        data["raw_submitted_answers"][name] = f"{random.randint(4, 100):d} * {a_tru}"
+        bigo_type = get_big_o_type(
+            pl.get_string_attrib(element, "type", BIG_O_TYPE_DEFAULT)
+        )
+        if bigo_type is BigOType.THETA:
+            data["partial_scores"][name] =  {
                 "score": 0.25,
                 "weight": weight,
-                "feedback": "Incorrect, your answer has unnecessary lower order terms.",
+                "feedback": bou.THETA_CONSTANT_FACTORS_FEEDBACK,
             }
-        )
+        else:
+            data["partial_scores"][name] = {
+                    "score": 0.5,
+                    "weight": weight,
+                    "feedback": bou.CONSTANT_FACTORS_FEEDBACK,
+                }
 
     elif result == "invalid":
         invalid_type_choices: List[
@@ -346,41 +344,28 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
         invalid_type = random.choice(invalid_type_choices)
 
+        data["format_errors"][name] = ""
         # TODO add detailed format errors if this gets checked in the future
         if invalid_type == "float":
-            invalid_input = "n + 1.234"
-            data["raw_submitted_answers"][name] = invalid_input
-            data["format_errors"][name] = ""
+            data["raw_submitted_answers"][name] = "n + 1.234"
 
         elif invalid_type == "expression":
-            invalid_input = "1 and 0"
-            data["raw_submitted_answers"][name] = invalid_input
-            data["format_errors"][name] = ""
+            data["raw_submitted_answers"][name] = "1 and 0"
 
         elif invalid_type == "function":
-            invalid_input = "tan(n)"
-            data["raw_submitted_answers"][name] = invalid_input
-            data["format_errors"][name] = ""
+            data["raw_submitted_answers"][name] = "tan(n)"
 
         elif invalid_type == "variable":
-            invalid_input = "n + m"
-            data["raw_submitted_answers"][name] = invalid_input
-            data["format_errors"][name] = ""
+            data["raw_submitted_answers"][name] = "n + m"
 
         elif invalid_type == "syntax":
-            invalid_input = "n +* 1"
-            data["raw_submitted_answers"][name] = invalid_input
-            data["format_errors"][name] = ""
+            data["raw_submitted_answers"][name] = "n +* 1"
 
         elif invalid_type == "escape":
-            invalid_input = "n + 1\\n"
-            data["raw_submitted_answers"][name] = invalid_input
-            data["format_errors"][name] = ""
+            data["raw_submitted_answers"][name] = "n + 1\\n"
 
         elif invalid_type == "comment":
-            invalid_input = "n # some text"
-            data["raw_submitted_answers"][name] = invalid_input
-            data["format_errors"][name] = ""
+            data["raw_submitted_answers"][name] = "n # some text"
 
         else:
             assert_never(invalid_type)
