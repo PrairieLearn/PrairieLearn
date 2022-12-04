@@ -356,13 +356,3 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             assert_never(invalid_type)
     else:
         assert_never(result)
-
-
-def get_big_o_type(big_o_type: str) -> BigOType:
-    big_o_type = big_o_type.upper()
-    accepted_names = {member.name.replace("_", "-") for member in BigOType}
-
-    if big_o_type not in accepted_names:
-        raise ValueError(f"{big_o_type} is not a valid type")
-
-    return BigOType[big_o_type.replace("-", "_")]
