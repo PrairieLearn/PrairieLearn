@@ -10,7 +10,7 @@ import python_helper_sympy as phs
 import big_o_utils as bou
 import random
 
-VARIABLES_DEFAULT = ""
+VARIABLES_DEFAULT = None
 DISPLAY_DEFAULT = "inline"
 SIZE_DEFAULT = 35
 PLACEHOLDER_TEXT_THRESHOLD = 20
@@ -47,7 +47,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     name = pl.get_string_attrib(element, "answers-name")
-    variables = get_variables_list(
+    variables = phs.get_variables_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
 
@@ -73,7 +73,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    variables = get_variables_list(
+    variables = phs.get_variables_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
     display = DisplayType(pl.get_string_attrib(element, "display", DISPLAY_DEFAULT))
@@ -211,7 +211,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    variables = get_variables_list(
+    variables = phs.get_variables_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
 
@@ -244,7 +244,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    variables = get_variables_list(
+    variables = phs.get_variables_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
@@ -386,13 +386,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             assert_never(invalid_type)
     else:
         assert_never(result)
-
-
-def get_variables_list(variables_string: str) -> List[str]:
-    variables_list = [variable.strip() for variable in variables_string.split(",")]
-    if variables_list == [""]:
-        return []
-    return variables_list
 
 
 def get_big_o_type(big_o_type: str) -> BigOType:

@@ -468,7 +468,8 @@ def validate_string_as_sympy(
 
         if allow_complex:
             err_string.append(
-                "To include a complex number in your expression, write it as the product of an integer with the imaginary unit <code>i</code> or <code>j</code>. "
+                "To include a complex number in your expression, write it as the product "
+                "of an integer with the imaginary unit <code>i</code> or <code>j</code>."
             )
 
         err_string.append(f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>")
@@ -507,3 +508,10 @@ def validate_string_as_sympy(
         return "Invalid format."
 
     return None
+
+
+def get_variables_list(variables_string: Optional[str]) -> List[str]:
+    if variables_string is not None:
+        return [variable.strip() for variable in variables_string.split(",")]
+
+    return []
