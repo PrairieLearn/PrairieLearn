@@ -105,19 +105,17 @@ def grade_question_parameterized(data: QuestionData,
 def determine_score_params(score: Optional[float]) -> Tuple[str, float]:
     '''Determine score params taken from data dict'''
 
-    if score is not None:
-        try:
-            score_val: float = float(score)
-            if score_val >= 1:
-                return ('correct', 1.0)
-            elif score_val > 0:
-                return ('partial', math.floor(score_val * 100))
-            else:
-                return ('incorrect', 0.0)
-        except Exception:
-            raise ValueError(f'invalid score {score}')
-    else:
+    if score is None:
         return '', 0.0
+
+    score_val = float(score)
+
+    if score_val >= 1:
+        return ('correct', 1.0)
+    elif score_val > 0:
+        return ('partial', math.floor(score_val * 100))
+
+    return ('incorrect', 0.0)
 
 def to_json(v):
     """to_json(v)
