@@ -197,16 +197,18 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # Display the correct answer.
     elif data["panel"] == "answer":
         a_tru = data["correct_answers"].get(name)
-        if a_tru is not None:
-            a_tru = sympy.sympify(a_tru)
-            html_params = {
-                "answer": True,
-                "a_tru": sympy.latex(a_tru),
-                "type": bigo_type,
-            }
-            with open("pl-big-o-input.mustache", "r", encoding="utf-8") as f:
-                return chevron.render(f, html_params).strip()
-        return ""
+
+        if a_tru is None:
+            return ""
+
+        a_tru = sympy.sympify(a_tru)
+        html_params = {
+            "answer": True,
+            "a_tru": sympy.latex(a_tru),
+            "type": bigo_type,
+        }
+        with open("pl-big-o-input.mustache", "r", encoding="utf-8") as f:
+            return chevron.render(f, html_params).strip()
 
     assert_never(data["panel"])
 
@@ -244,7 +246,11 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
-    a_tru: str = data["correct_answers"].get(name, "")
+    a_tru: Optional[str] = data["correct_answers"].get(name)
+
+    # No need to grade if no correct answer given
+    if a_tru is None:
+        return
 
     def get_grade_fn(
         grade_fn: bou.BigOGradingFunctionT,
