@@ -165,6 +165,7 @@ module.exports = {
       it('should have or not have grade button', function () {
         if (locals.question.type === 'Freeform') {
           elemList = locals.$('button[name="__action"][value="grade"]');
+          console.log("bbbbbbb", locals.shouldHaveButtons)
           if (locals.shouldHaveButtons.includes('grade')) {
             assert.lengthOf(elemList, 1);
           } else {
@@ -274,6 +275,24 @@ module.exports = {
         });
       });
       it('should have the correct submission.variant_id', function () {
+        console.log("=================")
+        console.log("=================")
+        console.log(locals)
+        console.log("=================")
+        console.log(locals.submissions)
+        console.log("=================")
+        console.log(locals.variant)
+        console.log("=================")
+        console.log("=================")
+
+        try {
+          const test = locals.variant.id;
+        } catch (error) {
+          console.log(" ");
+          console.log(error);
+          console.log("---------");
+          console.log(locals);
+        }
         assert.equal(locals.submission.variant_id, locals.variant.id);
       });
       it('should not be broken if Freeform', function () {
