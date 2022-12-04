@@ -18,8 +18,12 @@ CONSTANT_FACTORS_FEEDBACK = (
     "Your answer is correct but has unncessary constant factors."
 )
 
-THETA_CONSTANT_FACTORS_FEEDBACK = "Incorrect, your answer has unnecessary constant factors."
-THETA_LOWER_ORDER_TERMS_FEEDBACK = "Incorrect, your answer has unnecessary lower order terms."
+THETA_CONSTANT_FACTORS_FEEDBACK = (
+    "Incorrect, your answer has unnecessary constant factors."
+)
+THETA_LOWER_ORDER_TERMS_FEEDBACK = (
+    "Incorrect, your answer has unnecessary lower order terms."
+)
 
 
 def grade_big_o_expression(
