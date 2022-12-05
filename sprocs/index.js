@@ -42,7 +42,7 @@ module.exports.init = function (callback) {
       'assessment_instances_update_points.sql',
       'assessment_instances_update_score_perc.sql',
       'assessments_duration_stats.sql',
-      'assessments_stats.sql',
+      'assessments_score_stats.sql',
       'assessments_format.sql',
       'assessments_format_for_question.sql',
       'tags_for_question.sql',
