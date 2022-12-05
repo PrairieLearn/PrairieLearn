@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Callable, Dict, List, Optional, Tuple, Literal, get_args
+from typing import Dict, List, Optional
 from typing_extensions import assert_never
 import prairielearn as pl
 import lxml.html
@@ -257,18 +257,13 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     if a_tru is None:
         return
 
-    def get_grade_fn(
-        grade_fn: bou.BigOGradingFunctionT,
-    ) -> Callable[[str], Tuple[float, str]]:
-        def grade(a_sub: str) -> Tuple[float, str]:
-            return grade_fn(a_tru, a_sub, variables)
-
-        return grade
-
-    bigo_type = pl.get_enum_attrib(BigOType, element, "type", BIG_O_TYPE_DEFAULT)
+    big_o_type = pl.get_enum_attrib(BigOType, element, "type", BIG_O_TYPE_DEFAULT)
 
     pl.grade_question_parameterized(
-        data, name, get_grade_fn(GRADE_FUNCTION_DICT[bigo_type]), weight=weight
+        data,
+        name,
+        lambda a_sub: GRADE_FUNCTION_DICT[big_o_type](a_tru, a_sub, variables),
+        weight=weight,
     )
 
 
