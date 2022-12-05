@@ -28,17 +28,12 @@ GRADE_FUNCTION_DICT: Dict[BigOType, bou.BigOGradingFunctionT] = {
 }
 
 
-class DisplayType(Enum):
-    INLINE = "inline"
-    BLOCK = "block"
-
-
 VARIABLES_DEFAULT = None
 SIZE_DEFAULT = 35
 PLACEHOLDER_TEXT_THRESHOLD = 20
 SHOW_HELP_TEXT_DEFAULT = True
 WEIGHT_DEFAULT = 1
-DISPLAY_DEFAULT = DisplayType.INLINE
+DISPLAY_DEFAULT = pl.DisplayType.INLINE
 BIG_O_TYPE_DEFAULT = BigOType.BIG_O
 
 
@@ -86,7 +81,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     variables = phs.get_variables_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
-    display = pl.get_enum_attrib(DisplayType, element, "display", DISPLAY_DEFAULT)
+    display = pl.get_enum_attrib(pl.DisplayType, element, "display", DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
 
     bigo_type = pl.get_enum_attrib(BigOType, element, "type", BIG_O_TYPE_DEFAULT).value

@@ -54,6 +54,10 @@ class QuestionData(TypedDict):
 class ElementTestData(QuestionData):
     test_type: Literal['correct', 'incorrect', 'invalid']
 
+class DisplayType(Enum):
+    INLINE = "inline"
+    BLOCK = "block"
+
 def grade_question_parameterized(data: QuestionData,
                                  question_name: str,
                                  grade_function: Callable[[Any], Tuple[Union[bool, float], Optional[str]]],
