@@ -20,7 +20,7 @@ WHERE
     a.course_instance_id = 1
     AND aset.abbreviation = 'HW'
     AND a.group_work is TRUE
-    AND gc.using_group_roles is TRUE;
+    AND gc.has_roles is TRUE;
 
 -- BLOCK select_group_config
 SELECT minimum, maximum

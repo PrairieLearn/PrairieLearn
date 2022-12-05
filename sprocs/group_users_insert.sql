@@ -11,7 +11,7 @@ DECLARE
     arg_group_id bigint;
     arg_cur_size bigint;
     arg_max_size bigint;
-    arg_using_group_roles boolean;
+    arg_has_roles boolean;
     arg_default_group_role_id bigint;
     arg_required_roles_count bigint;
 BEGIN
@@ -60,12 +60,12 @@ BEGIN
     END IF;
 
     -- find whether assessment is using group roles
-    SELECT gc.using_group_roles INTO arg_using_group_roles
+    SELECT gc.has_roles INTO arg_has_roles
     FROM group_configs AS gc
     WHERE gc.assessment_id = arg_assessment_id AND gc.deleted_at IS NULL;
 
     -- find the default group role id
-    IF arg_using_group_roles THEN
+    IF arg_has_roles THEN
         -- if groupsize == 0, give an assigner role
         -- else if groupsize <= (# required roles), assign the user a random role where (min > 0)
         -- else, assign a role with the highest maximum

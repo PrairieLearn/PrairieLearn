@@ -9,7 +9,7 @@ DECLARE
     arg_group_id bigint;
     arg_assignee_id bigint;
     arg_group_role_id bigint;
-    arg_using_group_roles boolean;
+    arg_has_roles boolean;
     arg_required_roles_count bigint;
     arg_cur_size bigint;
     arg_has_required_role boolean;
@@ -26,11 +26,11 @@ BEGIN
     AND gc.deleted_at IS NULL;
 
     -- Handle role reassignment if using group roles
-    SELECT gc.using_group_roles INTO arg_using_group_roles
+    SELECT gc.has_roles INTO arg_has_roles
     FROM group_configs AS gc
     WHERE gc.assessment_id = arg_assessment_id AND gc.deleted_at IS NULL;
 
-    IF arg_using_group_roles THEN
+    IF arg_has_roles THEN
         -- Get current group size
         SELECT COUNT(DISTINCT user_id)
         INTO arg_cur_size

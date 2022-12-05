@@ -77,7 +77,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
     student_group_join: !!assessment.studentGroupJoin,
     student_group_leave: !!assessment.studentGroupLeave,
     advance_score_perc: assessment.advanceScorePerc,
-    using_group_roles: !!assessment.groupRoles,
+    has_roles: !!assessment.groupRoles,
   };
 
   // It used to be the case that assessment access rules could be associated with a

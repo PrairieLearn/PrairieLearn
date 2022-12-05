@@ -192,7 +192,7 @@ BEGIN
                 student_authz_create,
                 student_authz_join,
                 student_authz_leave,
-                using_group_roles
+                has_roles
             ) VALUES (
                 syncing_course_instance_id,
                 new_assessment_id,
@@ -201,7 +201,7 @@ BEGIN
                 (valid_assessment.data->>'student_group_create')::boolean,
                 (valid_assessment.data->>'student_group_join')::boolean,
                 (valid_assessment.data->>'student_group_leave')::boolean,
-                (valid_assessment.data->>'using_group_roles')::boolean
+                (valid_assessment.data->>'has_roles')::boolean
             ) ON CONFLICT (assessment_id)
             DO UPDATE
             SET 
@@ -210,7 +210,7 @@ BEGIN
                 student_authz_create = EXCLUDED.student_authz_create,
                 student_authz_join = EXCLUDED.student_authz_join,
                 student_authz_leave = EXCLUDED.student_authz_leave,
-                using_group_roles = EXCLUDED.using_group_roles,
+                has_roles = EXCLUDED.has_roles,
                 deleted_at = NULL;
 
             -- Insert all group roles
