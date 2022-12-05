@@ -25,7 +25,7 @@
               <% }%>
               form="role-select-form"
             >
-            <label for="<%= role.id %>-<%= user.uid %>" class=<%= rolesInfo.disabledRoles.includes(role.role_name) && "text-muted"%>>
+            <label for="<%= role.id %>-<%= user.uid %>" <% if (rolesInfo.disabledRoles.includes(role.role_name)) { %> class="text-muted" <% } %>>
               <%= role.role_name %>
             </label>
           <% }) %>
