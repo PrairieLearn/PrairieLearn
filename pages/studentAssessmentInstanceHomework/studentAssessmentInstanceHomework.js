@@ -83,7 +83,7 @@ router.get('/', function (req, res, next) {
                 maxsize,
                 groupsize,
                 needsize,
-                usingGroupRoles,
+                hasRoles,
                 group_info,
                 join_code,
                 start,
@@ -95,7 +95,7 @@ router.get('/', function (req, res, next) {
                 res.locals.maxsize = maxsize;
                 res.locals.groupsize = groupsize;
                 res.locals.needsize = needsize;
-                res.locals.usingGroupRoles = usingGroupRoles;
+                res.locals.hasRoles = hasRoles;
                 res.locals.group_info = group_info;
                 if (!groupMember) {
                   return next(error.make(403, 'Not a group member', res.locals));

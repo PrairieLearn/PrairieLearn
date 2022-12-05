@@ -31,7 +31,8 @@ router.get('/', function (req, res, next) {
     user_id: res.locals.user.user_id,
   };
 
-  sqldb.query(sql.find_single_assessment_instance, params, function (err, result) {
+  // TODO: Make this not an async function
+  sqldb.query(sql.find_single_assessment_instance, params, async function (err, result) {
     if (ERR(err, next)) return;
     if (result.rowCount === 0) {
       debug('no assessment instance');
@@ -48,63 +49,23 @@ router.get('/', function (req, res, next) {
       // If this assessment is group work and there is no existing instance,
       // show the group info page.
       if (res.locals.assessment.group_work) {
-        groupAssessmentHelper.getGroupInfo(
-          res.locals.assessment.id,
-          res.locals.user.user_id,
-          function (
-            err,
-            groupMember,
-            permissions,
-            minsize,
-            maxsize,
-            groupsize,
-            needsize,
-            usingGroupRoles,
-            group_info,
-            join_code,
-            minimumSizeMet,
-            start,
-            used_join_code,
-            validationErrors,
-            disabledRoles,
-            groupRoles,
-            rolesAreBalanced
-          ) {
-            if (ERR(err, next)) return;
-            res.locals.permissions = permissions;
-            res.locals.minsize = minsize;
-            res.locals.maxsize = maxsize;
-            res.locals.groupsize = groupsize;
-            res.locals.needsize = needsize;
-            res.locals.usingGroupRoles = usingGroupRoles;
-            res.locals.group_info = group_info;
-            res.locals.join_code = join_code;
-            res.locals.minimumSizeMet = minimumSizeMet;
-            res.locals.start = start;
-            res.locals.used_join_code = used_join_code;
-            res.locals.validationErrors = validationErrors;
-            res.locals.disabledRoles = disabledRoles;
-            res.locals.group_roles = groupRoles;
-            res.locals.rolesAreBalanced = rolesAreBalanced;
+        const groupInfo = await groupAssessmentHelper.getGroupInfo(res.locals.assessment.id, res.locals.user.user_id);
+        res.locals.permissions = groupInfo.permissions;
+        res.locals.hasRoles = groupInfo.hasRoles; // TODO: Wondering if this is redundant from 'rolesInfo'
+        res.locals.minSize = groupInfo.minSize;
+        res.locals.groupSize = groupInfo.groupSize;
+        res.locals.groupInfo = groupInfo.groupInfo; // TODO: Could rename to "groupMembers" because each row is a distinct group member?
+        res.locals.joinCode = groupInfo.joinCode;
+        res.locals.start = groupInfo.start;
+        res.locals.rolesInfo = groupInfo.rolesInfo;
+        res.locals.used_join_code = groupInfo.usedJoinCode; // TODO: Maybe rewrite
 
-            if (usingGroupRoles) {
-              if (groupMember) {
-                groupAssessmentHelper.getAssessmentLevelPermissions(
-                  res.locals.assessment.id,
-                  res.locals.user.user_id,
-                  function (permissions) {
-                    res.locals.can_view_role_table = permissions.can_assign_roles_at_start;
-                    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                  }
-                );
-              } else {
-                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-              }
-            } else {
-              res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-            }
-          }
-        );
+        if (groupInfo.isGroupMember && groupInfo.hasRoles) {
+          const result = await groupAssessmentHelper.getAssessmentLevelPermissions(res.locals.assessment.id, res.locals.user.user_id);
+          res.locals.canViewRoleTable = result.can_assign_roles_at_start;
+        }
+
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       } else {
         // Before allowing the user to create a new assessment instance, we need
         // to check if the current access rules require a password. If they do,
@@ -183,7 +144,7 @@ router.post('/', function (req, res, next) {
           res.redirect(req.originalUrl);
         } else {
           res.locals.permissions = permissions;
-          res.locals.groupsize = 0;
+          res.locals.groupSize = 0;
           res.locals.used_join_code = req.body.join_code;
           res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         }
@@ -206,7 +167,7 @@ router.post('/', function (req, res, next) {
             res.locals.uniqueGroupName = uniqueGroupName;
           }
           res.locals.permissions = permissions;
-          res.locals.groupsize = 0;
+          res.locals.groupSize = 0;
           res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         }
       }

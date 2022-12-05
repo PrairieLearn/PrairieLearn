@@ -166,7 +166,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {boolean} [studentGroupCreate]
  * @property {boolean} [studentGroupJoin]
  * @property {boolean} [studentGroupLeave]
- * @property {boolean} [usingGroupRoles]
+ * @property {boolean} [hasRoles]
  */
 
 /**

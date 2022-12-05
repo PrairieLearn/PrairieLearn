@@ -37,7 +37,7 @@ router.get('/', function (req, res, next) {
           maxsize,
           groupsize,
           needsize,
-          usingGroupRoles,
+          hasRoles,
           group_info,
           join_code,
           minimumSizeMet,
@@ -54,7 +54,7 @@ router.get('/', function (req, res, next) {
           res.locals.maxsize = maxsize;
           res.locals.groupsize = groupsize;
           res.locals.needsize = needsize;
-          res.locals.usingGroupRoles = usingGroupRoles;
+          res.locals.hasRoles = hasRoles;
           res.locals.group_info = group_info;
           res.locals.join_code = join_code;
           res.locals.minimumSizeMet = minimumSizeMet;
@@ -65,7 +65,7 @@ router.get('/', function (req, res, next) {
           res.locals.group_roles = groupRoles;
           res.locals.rolesAreBalanced = rolesAreBalanced;
 
-          if (usingGroupRoles) {
+          if (hasRoles) {
             if (groupMember) {
               groupAssessmentHelper.getAssessmentLevelPermissions(
                 res.locals.assessment.id,
@@ -107,7 +107,7 @@ router.get('/', function (req, res, next) {
               maxsize,
               groupsize,
               needsize,
-              usingGroupRoles,
+              hasRoles,
               group_info,
               join_code,
               minimumSizeMet,
@@ -124,7 +124,7 @@ router.get('/', function (req, res, next) {
               res.locals.maxsize = maxsize;
               res.locals.groupsize = groupsize;
               res.locals.needsize = needsize;
-              res.locals.usingGroupRoles = usingGroupRoles;
+              res.locals.hasRoles = hasRoles;
               res.locals.group_info = group_info;
               res.locals.join_code = join_code;
               res.locals.minimumSizeMet = minimumSizeMet;
@@ -135,7 +135,7 @@ router.get('/', function (req, res, next) {
               res.locals.group_roles = groupRoles;
               res.locals.rolesAreBalanced = rolesAreBalanced;
 
-              if (usingGroupRoles) {
+              if (hasRoles) {
                 if (groupMember) {
                   groupAssessmentHelper.getAssessmentLevelPermissions(
                     res.locals.assessment.id,

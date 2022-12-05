@@ -1,4 +1,4 @@
-<% if (groupsize == 0) { %>
+<% if (groupSize == 0) { %>
   <% if (!permissions.student_authz_join && !permissions.student_authz_create) { %>
     <p class="text-center">
       This is a group homework. Please wait for the instructor to assign groups.
@@ -32,15 +32,15 @@
 <%- include('../shared/groupWorkInitial.ejs', {permissions: permissions}); %>
 <% } %>
 <% } else {%>
-  <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: permissions, group_info: group_info}); %>
-  <% if (usingGroupRoles && !rolesAreBalanced) { %>
+  <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: permissions, groupInfo: groupInfo}); %>
+  <% if (hasRoles && !rolesInfo.rolesAreBalanced) { %>
     <div class="alert alert-danger my-2" role="alert">
-      A user has too many roles. Every student should be assigned to exactly <strong>one</strong> role with group size <strong><%= groupsize %></strong> 
+      A user has too many roles. Every student should be assigned to exactly <strong>one</strong> role with group size <strong><%= groupSize %></strong> 
     </div>
   <% } %>
-  <% if (usingGroupRoles && can_view_role_table) { %>
-    <% if (typeof validationErrors !== 'undefined' && validationErrors.length > 0) { %>
-      <% validationErrors.forEach(function ({ role_name, minimum, maximum, num_assigned }) { %>
+  <% if (hasRoles && canViewRoleTable) { %>
+    <% if (typeof rolesInfo.validationErrors !== 'undefined' && rolesInfo.validationErrors.length > 0) { %>
+      <% rolesInfo.validationErrors.forEach(function ({ role_name, minimum, maximum, num_assigned }) { %>
         <div class="alert alert-danger my-2" role="alert">
           <%= role_name %>
         <% if (num_assigned < minimum) { %>
@@ -53,7 +53,7 @@
       <% }) %>
     <% } %>
 
-    <%- include('../shared/groupRoleSelectTable.ejs', {group_info: group_info, group_roles: group_roles}); %>
+    <%- include('../shared/groupRoleSelectTable.ejs', {groupInfo: groupInfo, groupRoles: rolesInfo.groupRoles}); %>
     <% } %>
   <% if (locals.assessment.type === 'Exam' && locals.assessment.require_honor_code) { %>
     <div class="card card-secondary mb-4 test-class-honor-code">
@@ -82,9 +82,9 @@
     <button id="start-assessment" type="submit" class="btn btn-primary" disabled>Start assessment</button>
   </form>
   <% } %>
-  <% if (!minimumSizeMet) { %>
+  <% if (minSize - groupSize > 0) { %>
   <p class="text-center">
-    * Minimum group size is <%= minsize %>. You need at least <%= needsize %> more group member(s) to start.
+    * Minimum group size is <%= minSize %>. You need at least <%= minSize - groupSize %> more group member(s) to start.
   </p>
   <% } %>
 <% } %>
