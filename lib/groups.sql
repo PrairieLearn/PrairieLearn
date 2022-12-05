@@ -70,12 +70,23 @@ GROUP BY
     gu.group_id, g.name, g.join_code, u.uid, gc.minimum, gc.maximum, gc.student_authz_join, gc.student_authz_create, gc.student_authz_leave;
 
 -- BLOCK get_group_roles
-SELECT
-    gr.*
-FROM
-    group_roles as gr
-WHERE
-    gr.assessment_id = $assessment_id;
+WITH select_group_id AS (
+    SELECT DISTINCT group_id
+    FROM group_users as gu
+    JOIN groups as g ON gu.group_id = g.id
+    JOIN group_configs as gc ON g.group_config_id = gc.id
+    WHERE user_id = 1
+    AND gc.assessment_id = 14
+    AND g.deleted_at IS NULL
+    AND gc.deleted_at IS NULL
+)
+SELECT gr.id::INTEGER, gr.role_name, COUNT(gu.user_id)::INTEGER AS count, gr.maximum, gr.minimum
+FROM (SELECT * FROM group_roles WHERE assessment_id = 14) AS gr 
+LEFT JOIN (
+    SELECT * FROM group_users 
+    WHERE group_id = (SELECT group_id FROM select_group_id)
+    ) AS gu ON gu.group_role_id = gr.id
+GROUP BY gr.id, maximum, minimum, role_name;
 
 -- BLOCK get_assessment_level_permissions
 SELECT 

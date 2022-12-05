@@ -166,7 +166,6 @@ module.exports.init = function (callback) {
       'group_users_insert.sql',
       'sync_assessment_modules.sql',
       'group_roles_update.sql',
-      'group_roles_validate.sql',
       'group_leave.sql',
     ],
     function (filename, callback) {
