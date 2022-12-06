@@ -51,20 +51,14 @@ BEGIN
 
     -- Assign each user's role
     FOREACH arg_role_update IN ARRAY role_updates LOOP
-        -- Find user by uid
-        SELECT u.user_id
-        INTO arg_group_user_id
-        FROM users as u
-        WHERE u.uid = (arg_role_update->>'uid')::text;
-
-        DELETE FROM group_users WHERE user_id = arg_group_user_id AND group_id = arg_group_id;
+        DELETE FROM group_users WHERE user_id = (arg_role_update->>'user_id')::bigint AND group_id = arg_group_id;
 
         -- Update roles of user
         FOR arg_group_role_id IN SELECT * FROM JSONB_ARRAY_ELEMENTS(arg_role_update->'group_role_ids') LOOP
             INSERT INTO group_users (group_id, user_id, group_role_id)
             VALUES (
                 arg_group_id, 
-                arg_group_user_id,
+                (arg_role_update->>'user_id')::bigint,
                 arg_group_role_id::text::bigint
             );
         END LOOP;
@@ -84,7 +78,7 @@ BEGIN
         FROM group_roles
         WHERE assessment_id = arg_assessment_id AND (can_assign_roles_at_start AND can_assign_roles_during_assessment);
 
-        -- Insert into group_users a new row that assigns any arbitrary user with that role_id
+        -- Give the assigner role to the user who performed the update
         INSERT INTO group_users (group_id, user_id, group_role_id)
         VALUES (
             arg_group_id,

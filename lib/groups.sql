@@ -51,7 +51,7 @@ SELECT $authn_user_id, $user_id, cg.id, 'join' FROM create_group AS cg;
 
 -- BLOCK get_group_members
 SELECT
-    DISTINCT u.uid, gu.group_id, g.name AS group_name, g.join_code
+    DISTINCT u.uid, u.user_id, gu.group_id, g.name AS group_name, g.join_code
 FROM
     assessments AS a
     JOIN group_configs AS gc ON gc.assessment_id = a.id
