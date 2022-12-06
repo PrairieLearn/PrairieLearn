@@ -36,18 +36,18 @@ BEGIN
     WHERE gu.group_id = arg_group_id;
 
     -- Clear the group's role assignments
-    DELETE FROM group_users WHERE group_id = arg_group_id;
+    -- DELETE FROM group_users WHERE group_id = arg_group_id;
 
-    -- Assign every saved group user a "default" role
-    SELECT id INTO arg_default_group_role_id
-    FROM group_roles AS gr
-    WHERE gr.assessment_id = arg_assessment_id
-    ORDER BY gr.maximum DESC
-    LIMIT 1;
+    -- -- Assign every saved group user a "default" role
+    -- SELECT id INTO arg_default_group_role_id
+    -- FROM group_roles AS gr
+    -- WHERE gr.assessment_id = arg_assessment_id
+    -- ORDER BY gr.maximum DESC
+    -- LIMIT 1;
 
-    INSERT INTO group_users (group_id, user_id, group_role_id)
-    SELECT cgu.group_id, cgu.user_id, arg_default_group_role_id
-    FROM current_group_users cgu;
+    -- INSERT INTO group_users (group_id, user_id, group_role_id)
+    -- SELECT cgu.group_id, cgu.user_id, arg_default_group_role_id
+    -- FROM current_group_users cgu;
 
     -- Assign each user's role
     FOREACH arg_role_update IN ARRAY role_updates LOOP
@@ -72,7 +72,6 @@ BEGIN
 
     -- See if anyone has the assigner role
     -- If not, give it to somebody
-
     IF (
         SELECT COUNT(*)
         FROM group_users as gu LEFT JOIN group_roles as gr ON gr.id = gu.group_role_id

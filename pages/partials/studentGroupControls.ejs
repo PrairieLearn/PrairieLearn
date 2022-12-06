@@ -48,7 +48,12 @@
           <% } else { %>
           has too many assignments (found
           <% } %>
-          <%= count %> but expected <%= minimum %> minimum and <%= maximum %> maximum.)
+          <%= count %> but expected
+          <% if (minimum === maximum) { %>
+            <%= minimum%>.)
+          <% } else {%>
+            <%= minimum %> minimum and <%= maximum %> maximum.)
+          <% } %>  
         </div>
       <% }) %>
     <% } %>
