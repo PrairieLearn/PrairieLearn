@@ -7,7 +7,7 @@
       </tr>
     </thead>
     <tbody>
-      <% groupInfo.forEach(function (user) { %>
+      <% groupMembers.forEach(function (user) { %>
       <tr>
         <td><%= user.uid %></td>
         <td>
@@ -18,9 +18,9 @@
               id="<%= role.id %>-<%= user.uid %>"
               name="<%= role.id %>-<%= user.uid %>"
               value="checked"
-              <% if (rolesInfo.disabledRoles.includes(role.role_name)) {%>
+              <% if (rolesInfo.disabledRoles.includes(role.role_name)) { %>
                 disabled
-              <% } else if (user.role_names.includes(role.role_name)) { %>
+              <% } else if (rolesInfo.roleAssignments[user.uid].includes(role.role_name)) { %>
                 checked
               <% }%>
               form="role-select-form"

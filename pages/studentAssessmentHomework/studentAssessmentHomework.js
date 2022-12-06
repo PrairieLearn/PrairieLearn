@@ -49,10 +49,10 @@ router.get('/', async function (req, res, next) {
     if (res.locals.assessment.group_work) {
       const groupInfo = await groupAssessmentHelper.getGroupInfo(res.locals.assessment.id, res.locals.user.user_id);
       res.locals.permissions = groupInfo.permissions;
-      res.locals.hasRoles = groupInfo.hasRoles; // TODO: Wondering if this is redundant from 'rolesInfo'
+      res.locals.hasRoles = groupInfo.hasRoles;
       res.locals.minSize = groupInfo.minSize;
       res.locals.groupSize = groupInfo.groupSize;
-      res.locals.groupInfo = groupInfo.groupInfo; // TODO: Could rename to "groupMembers" because each row is a distinct group member?
+      res.locals.groupMembers = groupInfo.groupMembers;
       res.locals.joinCode = groupInfo.joinCode;
       res.locals.start = groupInfo.start;
       res.locals.rolesInfo = groupInfo.rolesInfo;

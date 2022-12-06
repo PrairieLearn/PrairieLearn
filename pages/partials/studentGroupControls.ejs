@@ -32,7 +32,7 @@
 <%- include('../shared/groupWorkInitial.ejs', {permissions: permissions}); %>
 <% } %>
 <% } else {%>
-  <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: permissions, groupInfo: groupInfo}); %>
+  <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: permissions, groupMembers: groupMembers}); %>
   <% if (hasRoles && !rolesInfo.rolesAreBalanced) { %>
     <div class="alert alert-danger my-2" role="alert">
       A user has too many roles. Every student should be assigned to exactly <strong>one</strong> role with group size <strong><%= groupSize %></strong> 
@@ -53,7 +53,7 @@
       <% }) %>
     <% } %>
 
-    <%- include('../shared/groupRoleSelectTable.ejs', {groupInfo: groupInfo, groupRoles: rolesInfo.groupRoles}); %>
+    <%- include('../shared/groupRoleSelectTable.ejs', {groupMembers: groupMembers, rolesInfo: rolesInfo}); %>
     <% } %>
   <% if (locals.assessment.type === 'Exam' && locals.assessment.require_honor_code) { %>
     <div class="card card-secondary mb-4 test-class-honor-code">

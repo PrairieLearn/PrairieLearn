@@ -49,10 +49,9 @@ INSERT INTO group_logs
     (authn_user_id, user_id, group_id, action)
 SELECT $authn_user_id, $user_id, cg.id, 'join' FROM create_group AS cg;
 
--- BLOCK get_group_info
+-- BLOCK get_group_members
 SELECT
-    DISTINCT gu.group_id, g.name, g.join_code, u.uid, gc.minimum, gc.maximum,gc.student_authz_join, gc.student_authz_create, gc.student_authz_leave,
-    STRING_AGG(DISTINCT gr.role_name, ', ' ORDER BY gr.role_name) AS role_names
+    DISTINCT u.uid, gu.group_id, g.name AS group_name, g.join_code
 FROM
     assessments AS a
     JOIN group_configs AS gc ON gc.assessment_id = a.id
@@ -60,31 +59,18 @@ FROM
     JOIN group_users AS gu ON gu.group_id = g.id
     JOIN group_users AS gu2 ON gu2.group_id = gu.group_id
     JOIN users AS u ON u.user_id = gu2.user_id
-    LEFT JOIN group_roles AS gr ON gr.id = gu2.group_role_id
 WHERE
     a.id = $assessment_id
     AND gu.user_id = $user_id
     AND g.deleted_at IS NULL
     AND gc.deleted_at IS NULL
-GROUP BY
-    gu.group_id, g.name, g.join_code, u.uid, gc.minimum, gc.maximum, gc.student_authz_join, gc.student_authz_create, gc.student_authz_leave;
 
 -- BLOCK get_group_roles
-WITH select_group_id AS (
-    SELECT DISTINCT group_id
-    FROM group_users as gu
-    JOIN groups as g ON gu.group_id = g.id
-    JOIN group_configs as gc ON g.group_config_id = gc.id
-    WHERE user_id = 1
-    AND gc.assessment_id = 14
-    AND g.deleted_at IS NULL
-    AND gc.deleted_at IS NULL
-)
 SELECT gr.id::INTEGER, gr.role_name, COUNT(gu.user_id)::INTEGER AS count, gr.maximum, gr.minimum
-FROM (SELECT * FROM group_roles WHERE assessment_id = 14) AS gr 
+FROM (SELECT * FROM group_roles WHERE assessment_id = $assessment_id) AS gr 
 LEFT JOIN (
     SELECT * FROM group_users 
-    WHERE group_id = (SELECT group_id FROM select_group_id)
+    WHERE group_id = $group_id
     ) AS gu ON gu.group_role_id = gr.id
 GROUP BY gr.id, maximum, minimum, role_name;
 
@@ -96,3 +82,12 @@ FROM
     group_roles as gr JOIN group_users as gu ON gr.id = gu.group_role_id
 WHERE
     gr.assessment_id = $assessment_id AND gu.user_id = $user_id;
+
+-- BLOCK get_role_assignments
+SELECT 
+    gu.user_id, u.uid, gr.role_name
+FROM 
+    users u JOIN group_users gu ON u.user_id = gu.user_id
+    JOIN group_roles gr ON gu.group_role_id = gr.id
+WHERE
+    gu.group_id = $group_id;
