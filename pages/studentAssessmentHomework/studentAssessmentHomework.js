@@ -47,7 +47,10 @@ router.get('/', async function (req, res, next) {
     // If this assessment is group work and there is no existing instance,
     // show the group info page.
     if (res.locals.assessment.group_work) {
-      const groupInfo = await groupAssessmentHelper.getGroupInfo(res.locals.assessment.id, res.locals.user.user_id);
+      const groupInfo = await groupAssessmentHelper.getGroupInfo(
+        res.locals.assessment.id,
+        res.locals.user.user_id
+      );
       res.locals.permissions = groupInfo.permissions;
       res.locals.hasRoles = groupInfo.hasRoles;
       res.locals.minSize = groupInfo.minSize;
@@ -59,7 +62,10 @@ router.get('/', async function (req, res, next) {
       res.locals.used_join_code = groupInfo.usedJoinCode; // TODO: Maybe rewrite
 
       if (groupInfo.isGroupMember && groupInfo.hasRoles) {
-        const result = await groupAssessmentHelper.getAssessmentLevelPermissions(res.locals.assessment.id, res.locals.user.user_id);
+        const result = await groupAssessmentHelper.getAssessmentLevelPermissions(
+          res.locals.assessment.id,
+          res.locals.user.user_id
+        );
         res.locals.canViewRoleTable = result.can_assign_roles_at_start;
       }
 
