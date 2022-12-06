@@ -366,7 +366,7 @@ module.exports.initExpress = function () {
   // "cacheable" route above.
   app.use(express.static(path.join(__dirname, 'public')));
 
-  app.use('/build', compiledAssets.handler());
+  app.use('/build/', compiledAssets.handler());
 
   // To allow for more aggressive caching of files served from node_modules/,
   // we insert a hash of the module version into the resource path. This allows
