@@ -25,7 +25,7 @@ const filesize = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const Sentry = require('@prairielearn/sentry');
-const transpiledAssets = require('@prairielearn/assets');
+const compiledAssets = require('@prairielearn/compiled-assets');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -365,7 +365,7 @@ module.exports.initExpress = function () {
   // "cacheable" route above.
   app.use(express.static(path.join(__dirname, 'public')));
 
-  app.use('/build', transpiledAssets.handler());
+  app.use('/build', compiledAssets.handler());
 
   // To allow for more aggressive caching of files served from node_modules/,
   // we insert a hash of the module version into the resource path. This allows
@@ -1948,7 +1948,7 @@ if (config.startServer) {
         });
       },
       async () => {
-        transpiledAssets.init({
+        compiledAssets.init({
           dev: config.devMode,
           sourceDirectory: path.resolve(__dirname, 'assets'),
           buildDirectory: path.resolve(__dirname, 'public/build'),

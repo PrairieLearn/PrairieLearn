@@ -13,7 +13,7 @@
         "@aws-sdk/client-auto-scaling": "^3.181.0",
         "@fortawesome/fontawesome-free": "^6.2.0",
         "@octokit/rest": "^19.0.5",
-        "@prairielearn/assets": "^1.0.0",
+        "@prairielearn/compiled-assets": "^1.0.0",
         "@prairielearn/bind-mount": "^1.0.0",
         "@prairielearn/html": "^2.0.0",
         "@prairielearn/opentelemetry": "^1.0.0",

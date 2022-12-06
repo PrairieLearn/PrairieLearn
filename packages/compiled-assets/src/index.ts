@@ -2,7 +2,7 @@ import type { RequestHandler } from 'express';
 import expressStaticGzip from 'express-static-gzip';
 import esbuild from 'esbuild';
 import path from 'path';
-import { globby } from 'globby';
+import globby from 'globby';
 import fs from 'fs-extra';
 import { html, HtmlSafeString } from '@prairielearn/html';
 
@@ -146,6 +146,8 @@ export async function build(
 
   const scriptsSourceRoot = path.resolve(sourceDirectory, 'scripts');
   const scriptsBuildRoot = path.resolve(buildDirectory, 'scripts');
+  await fs.ensureDir(scriptsBuildRoot);
+
   const files = await globby(path.join(scriptsSourceRoot, '*.{js,jsx,ts,tsx}'));
   const buildResult = await esbuild.build({
     entryPoints: files,

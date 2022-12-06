@@ -1,18 +1,18 @@
-/* eslint-disable no-console */
+#!/usr/bin/env node
 import fs from 'fs-extra';
 import prettyBytes from 'pretty-bytes';
 import path from 'path';
 import { promisify } from 'util';
 import zlib from 'zlib';
+import { program } from 'commander';
 
 import { build } from './index.js';
 
 const gzip = promisify(zlib.gzip);
 const brotli = promisify(zlib.brotliCompress);
 
-(async () => {
-  // TODO: make configurable from CLI args.
-  const metafile = await build('./assets', './public/build');
+program.command('build <source> <destination>').action(async (source, destination) => {
+  const metafile = await build(source, destination);
 
   // Write gzip and brotli versions of the output files. Record size information
   // so we can show it to the user.
@@ -43,7 +43,9 @@ const brotli = promisify(zlib.brotliCompress);
     };
   });
   console.table(results);
-})().catch((err) => {
+});
+
+program.parseAsync(process.argv).catch((err) => {
   console.error(err);
   process.exit(1);
 });

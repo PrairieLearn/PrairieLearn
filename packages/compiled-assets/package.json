@@ -1,7 +1,10 @@
 {
-  "name": "@prairielearn/assets",
+  "name": "@prairielearn/compiled-assets",
   "version": "1.0.0",
   "main": "dist/index.js",
+  "bin": {
+    "compiled-assets": "dist/cli.js"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
@@ -9,6 +12,7 @@
   },
   "dependencies": {
     "@prairielearn/html": "^2.1.1",
+    "commander": "^9.4.1",
     "esbuild": "^0.15.16",
     "espress": "^0.0.0",
     "express-static-gzip": "^2.1.7",
