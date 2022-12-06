@@ -14,6 +14,7 @@ DECLARE
     arg_required_roles_count bigint;
     arg_cur_size bigint;
     arg_has_required_role boolean;
+    arg_is_required_role boolean;
 BEGIN
     -- Find group id
     SELECT DISTINCT group_id
@@ -43,7 +44,7 @@ BEGIN
         FROM group_roles AS gr
         WHERE gr.assessment_id = arg_assessment_id AND gr.minimum > 0;
 
-        IF arg_cur_size <= arg_required_roles_count THEN
+        IF arg_cur_size <= arg_required_roles_count AND arg_cur_size > 1 THEN
             -- When group_size (pre-leave) <= num_required roles:
 
             -- 1. Grab a random other user from the group
@@ -63,17 +64,17 @@ BEGIN
                 VALUES (arg_group_id, arg_assignee_id, arg_group_role_id)
                 ON CONFLICT (group_id, user_id, group_role_id) DO NOTHING;
             END LOOP;
-        ELSE
+        ELSIF arg_cur_size > 1 THEN
             -- When group_size (pre-leave) > num_required roles:
 
             -- Iterate through all the user's roles
-            FOR arg_group_role_id, minimum IN
-                SELECT gu.group_role_id, gr.minimum
+            FOR arg_group_role_id, arg_is_required_role IN
+                SELECT gu.group_role_id, gr.minimum > 0
                 FROM group_users gu JOIN group_roles gr ON gu.group_role_id = gr.id
                 WHERE gu.group_id = arg_group_id AND gu.user_id = arg_user_id
             LOOP
                 -- If a given role is required, then:
-                IF minimum > 0 THEN
+                IF arg_is_required_role THEN
                     -- Try to find someone with a non-required role to replace
                     SELECT gu.user_id, gu.group_role_id
                     INTO arg_assignee_id, arg_assignee_old_role_id
@@ -100,51 +101,6 @@ BEGIN
                         END IF;
                 END IF;
             END LOOP;
-
-
-
-            -- 1. Get whether the leaving user has a required role
-            SELECT gr.minimum > 0
-            INTO arg_has_required_role
-            FROM group_users gu LEFT JOIN group_roles gr ON gu.group_role_id = gr.id
-            WHERE gu.group_id = arg_group_id AND gu.user_id = arg_user_id;
-
-            IF arg_has_required_role THEN
-                -- 2. If true, find a group member with a non-required role
-                SELECT gu.user_id
-                INTO arg_assignee_id
-                FROM group_users gu LEFT JOIN group_roles gr ON gu.group_role_id = gr.id
-                WHERE group_id = arg_group_id AND user_id != arg_user_id AND gr.minimum = 0
-                LIMIT 1;
-
-                -- 2.1 If there's no user with a non-required role, grab any non-assigner-role user
-                -- If a Reflector leaves, we don't want their role to overwrite the Manager
-
-                IF NOT FOUND THEN
-                    SELECT user_id
-                    INTO arg_assignee_id
-                    FROM group_users LEFT JOIN group_roles gr ON gu.group_role_id = gr.id
-                    WHERE group_id = arg_group_id AND user_id != arg_user_id
-                    LIMIT 1;
-
-                    INSERT INTO group_users (group_id, user_id, group_role_id)
-                    VALUES (arg_group_id, arg_assignee_id, arg_group_role_id)
-                    ON CONFLICT (group_id, user_id, group_role_id) DO NOTHING;
-                ELSE
-
-                END IF;
-
-                -- 3. Replace their role with the leaving user's role
-                SELECT gu.group_role_id
-                INTO arg_group_role_id
-                FROM group_users gu
-                WHERE gu.group_id = arg_group_id AND gu.user_id = arg_user_id
-                LIMIT 1;
-
-                UPDATE group_users
-                SET group_role_id = arg_group_role_id
-                WHERE group_id = arg_group_id AND user_id = arg_assignee_id;
-            END IF;
         END IF;
     END IF;
 
