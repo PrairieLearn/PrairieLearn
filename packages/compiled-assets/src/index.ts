@@ -13,7 +13,7 @@ const DEFAULT_OPTIONS = {
   publicPath: '/build/',
 };
 
-interface TranspiledAssetsOptions {
+interface CompiledAssetsOptions {
   /**
    * Whether the app is running in dev mode. If dev modde is enabled, then
    * assets will be built on the fly as they're requested. Otherwise, assets
@@ -28,18 +28,21 @@ interface TranspiledAssetsOptions {
   publicPath: string;
 }
 
-let options: TranspiledAssetsOptions = { ...DEFAULT_OPTIONS };
+let options: CompiledAssetsOptions = { ...DEFAULT_OPTIONS };
 
-export function init(newOptions: Partial<TranspiledAssetsOptions>): void {
+export function init(newOptions: Partial<CompiledAssetsOptions>): void {
   options = {
     ...DEFAULT_OPTIONS,
     ...newOptions,
   };
+  if (!options.publicPath.endsWith('/')) {
+    options.publicPath += '/';
+  }
 }
 
 export function assertConfigured(): void {
   if (!options) {
-    throw new Error('transpiled-assets was not configured');
+    throw new Error('@prairielearn/compiled-assets was not configured');
   }
 }
 
@@ -117,7 +120,7 @@ function readScriptsManifest(): Record<string, string> {
   return cachedScriptsManifest;
 }
 
-export function transpiledScriptPath(sourceFile: string): string {
+export function compiledScriptPath(sourceFile: string): string {
   assertConfigured();
 
   if (options.dev) {
@@ -133,8 +136,8 @@ export function transpiledScriptPath(sourceFile: string): string {
   return options.publicPath + 'scripts/' + scriptPath;
 }
 
-export function transpiledScriptTag(sourceFile: string): HtmlSafeString {
-  return html`<script src="${transpiledScriptPath(sourceFile)}"></script>`;
+export function compiledScriptTag(sourceFile: string): HtmlSafeString {
+  return html`<script src="${compiledScriptPath(sourceFile)}"></script>`;
 }
 
 export async function build(
