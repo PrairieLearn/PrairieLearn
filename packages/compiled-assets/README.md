@@ -70,7 +70,7 @@ router.get(() => {
       </body>
     </html>
   `;
-})
+});
 ```
 
 ### Building assets for production
