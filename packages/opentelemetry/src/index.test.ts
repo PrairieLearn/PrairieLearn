@@ -53,7 +53,6 @@ describe('instrumented', () => {
     }
 
     // Ensure the error was propagated back to the caller.
-    assert.isOk(maybeError);
     assert.equal(maybeError?.message, 'foo');
 
     // Ensure the correct span was recorded.
