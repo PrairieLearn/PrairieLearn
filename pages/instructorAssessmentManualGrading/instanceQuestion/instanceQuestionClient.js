@@ -44,6 +44,12 @@ function resetInstructorGradingPanel() {
       .focus();
   });
 
+  $('.js-show-rubric-settings-button').click(function () {
+    console.log('settings button', this);
+    const type = $(this).data('rubric-type');
+    $(`.rubric-settings-modal-${type}`).modal('show');
+  });
+
   $('.js-grading-score-input').on('input', function () {
     const form = $(this).parents('form');
     const auto_points =
@@ -110,7 +116,15 @@ function resetInstructorGradingPanel() {
       $(this).serialize(),
       function (data) {
         if (data.gradingPanel) {
-          $('.js-main-grading-panel').replaceWith(data.gradingPanel);
+          $('.js-main-grading-panel').html(data.gradingPanel);
+        }
+        if (data.rubricSettingsManual) {
+          const content = $(data.rubricSettingsManual).html();
+          $('.rubric-settings-modal-manual').html(content);
+        }
+        if (data.rubricSettingsAuto) {
+          const content = $(data.rubricSettingsAuto).html();
+          $('.rubric-settings-modal-auto').html(content);
         }
         resetInstructorGradingPanel();
       },

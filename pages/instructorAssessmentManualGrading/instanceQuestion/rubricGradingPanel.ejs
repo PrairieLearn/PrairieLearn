@@ -22,8 +22,8 @@
       </button>
       <% } %>
       <% if (!locals.disable && authz_data.has_course_instance_permission_edit && course.manual_grading_visible) { %>
-      <button type="button" class="btn btn-outline-secondary"
-              onclick="$('#rubric-settings-modal-<%= type %>').modal('show');">
+      <button type="button" class="btn btn-outline-secondary js-show-rubric-settings-button"
+              data-rubric-type="<%= type %>">
         <i class="fas fa-list-check"></i>
       </button>
       <% } %>

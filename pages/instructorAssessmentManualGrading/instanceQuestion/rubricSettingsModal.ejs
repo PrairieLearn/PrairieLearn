@@ -1,4 +1,4 @@
-<div class="modal js-rubric-settings-modal" tabindex="-1" role="dialog" id="rubric-settings-modal-<%= type %>">
+<div class="modal js-rubric-settings-modal rubric-settings-modal-<%= type %>" tabindex="-1" role="dialog">
   <div class="modal-dialog modal-xl border-info" role="document">
     <form name="rubric-settings-<%= type %>" method="POST">
       <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
@@ -8,7 +8,7 @@
       
       <div class="modal-content">
         <div class="modal-header bg-info text-light">
-          <h5 class="modal-title">Rubric settings: <%= type_verbose %></h5>
+          <h5 class="modal-title">Rubric settings: <%= type %> grading</h5>
           <button type="button" class="close" data-dismiss="modal" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>

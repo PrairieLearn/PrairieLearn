@@ -160,7 +160,31 @@ router.post(
       await prepareLocalsForRender(req, res);
       ejs.renderFile(path.join(__dirname, 'gradingPanel.ejs'), res.locals, (err, gradingPanel) => {
         if (ERR(err, next)) return;
-        res.send({ gradingPanel });
+        ejs.renderFile(
+          path.join(__dirname, 'rubricSettingsModal.ejs'),
+          {
+            type: 'manual',
+            rubric: res.locals.rubric_data_manual,
+            max_points: res.locals.assessment_question.max_manual_points,
+            ...res.locals,
+          },
+          (err, rubricSettingsManual) => {
+            if (ERR(err, next)) return;
+            ejs.renderFile(
+              path.join(__dirname, 'rubricSettingsModal.ejs'),
+              {
+                type: 'auto',
+                rubric: res.locals.rubric_data_auto,
+                max_points: res.locals.assessment_question.max_auto_points,
+                ...res.locals,
+              },
+              (err, rubricSettingsAuto) => {
+                if (ERR(err, next)) return;
+                res.send({ gradingPanel, rubricSettingsManual, rubricSettingsAuto });
+              }
+            );
+          }
+        );
       });
     } else if (typeof req.body.__action === 'string' && req.body.__action.startsWith('reassign_')) {
       const assigned_grader = req.body.__action.substring(9);

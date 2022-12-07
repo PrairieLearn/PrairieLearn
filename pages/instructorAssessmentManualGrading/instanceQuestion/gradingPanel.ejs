@@ -1,16 +1,3 @@
-<div class="<%= (typeof main_grading_panel !== 'undefined' && main_grading_panel) ? 'js-main-grading-panel' : '' %>">
-<% if (typeof main_grading_panel !== 'undefined' && main_grading_panel) { %>
-  <%- include('rubricSettingsModal',
-              {type: 'manual',
-               type_verbose: 'manual grading',
-               rubric: rubric_data_manual,
-               max_points: assessment_question.max_manual_points}); %>
-  <%- include('rubricSettingsModal',
-              {type: 'auto',
-               type_verbose: 'auto grading',
-               rubric: rubric_data_auto,
-               max_points: assessment_question.max_auto_points}); %>
-<% } %>
 <form name="instance_question-manual-grade-update-form" method="POST">
   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
   <input type="hidden" name="assessment_id" value="<%= assessment_instance.assessment_id %>">
@@ -83,4 +70,3 @@
     </div>
   </div>
 </form>
-</div>
