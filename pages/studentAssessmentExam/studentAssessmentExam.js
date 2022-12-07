@@ -11,7 +11,7 @@ var sqlLoader = require('../../prairielib/lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 var groupAssessmentHelper = require('../../lib/groups');
 
-router.get('/', function (req, res, next) {
+router.get('/', async function (req, res, next) {
   if (res.locals.assessment.type !== 'Exam') return next();
   var params = {
     assessment_id: res.locals.assessment.id,
@@ -26,140 +26,86 @@ router.get('/', function (req, res, next) {
     // students to create and start a new assessment instance.
     if (!checkPasswordOrRedirect(req, res)) return;
     if (res.locals.assessment.group_work) {
-      groupAssessmentHelper.getGroupInfo(
+      const groupInfo = await groupAssessmentHelper.getGroupInfo(
         res.locals.assessment.id,
-        res.locals.user.user_id,
-        function (
-          err,
-          groupMember,
-          permissions,
-          minsize,
-          maxsize,
-          groupsize,
-          needsize,
-          hasRoles,
-          group_info,
-          join_code,
-          minimumSizeMet,
-          start,
-          used_join_code,
-          validationErrors,
-          disabledRoles,
-          groupRoles,
-          rolesAreBalanced
-        ) {
-          if (ERR(err, next)) return;
-          res.locals.permissions = permissions;
-          res.locals.minsize = minsize;
-          res.locals.maxsize = maxsize;
-          res.locals.groupsize = groupsize;
-          res.locals.needsize = needsize;
-          res.locals.hasRoles = hasRoles;
-          res.locals.group_info = group_info;
-          res.locals.join_code = join_code;
-          res.locals.minimumSizeMet = minimumSizeMet;
-          res.locals.start = start;
-          res.locals.used_join_code = used_join_code;
-          res.locals.validationErrors = validationErrors;
-          res.locals.disabledRoles = disabledRoles;
-          res.locals.group_roles = groupRoles;
-          res.locals.rolesAreBalanced = rolesAreBalanced;
-
-          if (hasRoles) {
-            if (groupMember) {
-              groupAssessmentHelper.getAssessmentLevelPermissions(
-                res.locals.assessment.id,
-                res.locals.user.user_id,
-                function (permissions) {
-                  res.locals.can_view_role_table = permissions.can_assign_roles_at_start;
-                  res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                }
-              );
-            } else {
-              res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-            }
-          } else {
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-          }
-        }
+        res.locals.user.user_id
       );
-    } else {
-      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    }
-  } else {
-    sqldb.query(sql.select_single_assessment_instance, params, function (err, result) {
-      if (ERR(err, next)) return;
-      if (result.rowCount === 0) {
-        // Before allowing the user to create a new assessment instance, we need
-        // to check if the current access rules require a password. If they do,
-        // we'll ensure that the password has already been entered before allowing
-        // students to create and start a new assessment instance.
-        if (!checkPasswordOrRedirect(req, res)) return;
-        if (res.locals.assessment.group_work) {
-          groupAssessmentHelper.getGroupInfo(
+      res.locals.permissions = groupInfo.permissions;
+      res.locals.minSize = groupInfo.minSize;
+      res.locals.maxSize = groupInfo.maxSize;
+      res.locals.groupSize = groupInfo.groupSize;
+      res.locals.needsize = groupInfo.needsize;
+      res.locals.hasRoles = groupInfo.hasRoles;
+      res.locals.groupMembers = groupInfo.groupMembers;
+      res.locals.joinCode = groupInfo.joinCode;
+      res.locals.minimumSizeMet = groupInfo.minimumSizeMet;
+      res.locals.start = groupInfo.start;
+      res.locals.used_join_code = groupInfo.usedJoinCode;
+      res.locals.validationErrors = groupInfo.validationErrors;
+      res.locals.disabledRoles = groupInfo.disabledRoles;
+      res.locals.group_roles = groupInfo.groupRoles;
+      res.locals.rolesAreBalanced = groupInfo.rolesAreBalanced;
+
+      if (groupInfo.hasRoles) {
+        if (groupInfo.isGroupMember) {
+          const permissions = await groupAssessmentHelper.getAssessmentLevelPermissions(
             res.locals.assessment.id,
             res.locals.user.user_id,
-            function (
-              err,
-              groupMember,
-              permissions,
-              minsize,
-              maxsize,
-              groupsize,
-              needsize,
-              hasRoles,
-              group_info,
-              join_code,
-              minimumSizeMet,
-              start,
-              used_join_code,
-              validationErrors,
-              disabledRoles,
-              groupRoles,
-              rolesAreBalanced
-            ) {
-              if (ERR(err, next)) return;
-              res.locals.permissions = permissions;
-              res.locals.minsize = minsize;
-              res.locals.maxsize = maxsize;
-              res.locals.groupsize = groupsize;
-              res.locals.needsize = needsize;
-              res.locals.hasRoles = hasRoles;
-              res.locals.group_info = group_info;
-              res.locals.join_code = join_code;
-              res.locals.minimumSizeMet = minimumSizeMet;
-              res.locals.start = start;
-              res.locals.used_join_code = used_join_code;
-              res.locals.validationErrors = validationErrors;
-              res.locals.disabledRoles = disabledRoles;
-              res.locals.group_roles = groupRoles;
-              res.locals.rolesAreBalanced = rolesAreBalanced;
-
-              if (hasRoles) {
-                if (groupMember) {
-                  groupAssessmentHelper.getAssessmentLevelPermissions(
-                    res.locals.assessment.id,
-                    res.locals.user.user_id,
-                    function (permissions) {
-                      res.locals.can_view_role_table = permissions.can_assign_roles_at_start;
-                      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                    }
-                  );
-                } else {
-                  res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                }
-              } else {
-                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-              }
-            }
           );
+          res.locals.can_view_role_table = permissions.can_assign_roles_at_start;
+          res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         } else {
           res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         }
       } else {
-        res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       }
-    });
+    } else {
+      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    }
+  } else {
+    const result = await sqldb.queryAsync(sql.select_single_assessment_instance, params);
+    if (result.rowCount === 0) {
+      // Before allowing the user to create a new assessment instance, we need
+      // to check if the current access rules require a password. If they do,
+      // we'll ensure that the password has already been entered before allowing
+      // students to create and start a new assessment instance.
+      if (!checkPasswordOrRedirect(req, res)) return;
+      if (res.locals.assessment.group_work) {
+        const groupInfo = await groupAssessmentHelper.getGroupInfo(
+          res.locals.assessment.id,
+          res.locals.user.user_id
+        );
+        res.locals.permissions = groupInfo.permissions;
+        res.locals.minSize = groupInfo.minSize;
+        res.locals.groupSize = groupInfo.groupSize;
+        res.locals.maxSize = groupInfo.maxSize;
+        res.locals.groupSize = groupInfo.groupSize;
+        res.locals.hasRoles = groupInfo.hasRoles;
+        res.locals.groupMembers = groupInfo.groupMembers;
+        res.locals.joinCode = groupInfo.joinCode;
+        res.locals.start = groupInfo.start;
+        res.locals.usedJoinCode = groupInfo.usedJoinCode;
+        
+        if (groupInfo.hasRoles) {
+          if (groupInfo.isGroupMember) {
+            res.locals.rolesInfo = groupInfo.rolesInfo;
+            res.locals.validationErrors = groupInfo.rolesInfo.validationErrors;
+            res.locals.disabledRoles = groupInfo.rolesInfo.disabledRoles;
+            res.locals.group_roles = groupInfo.rolesInfo.groupRoles;
+            res.locals.rolesAreBalanced = groupInfo.rolesInfo.rolesAreBalanced;
+            const permissions = await groupAssessmentHelper.getAssessmentLevelPermissions(
+              res.locals.assessment.id,
+              res.locals.user.user_id,
+            );
+            res.locals.can_view_role_table = permissions.can_assign_roles_at_start;
+          } 
+        } 
+      } 
+      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    } else {
+      res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
+    }
   }
 });
 
