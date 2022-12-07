@@ -4,6 +4,7 @@ import path from 'path';
 import getPort from 'get-port';
 import { assert } from 'chai';
 import express from 'express';
+import fetch from 'node-fetch';
 
 import { init, compiledScriptPath, handler, CompiledAssetsOptions, build } from './index';
 
