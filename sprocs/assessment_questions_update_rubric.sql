@@ -85,6 +85,7 @@ BEGIN
             short_text = COALESCE(rubric_item.short_text, short_text),
             description = COALESCE(rubric_item.description, description),
             staff_instructions = COALESCE(rubric_item.staff_instructions, staff_instructions),
+            key_binding = CASE WHEN next_number > 10 THEN NULL ELSE MOD(next_number, 10) END,
             deleted_at = NULL
         WHERE
             id = rubric_item.id
@@ -92,9 +93,9 @@ BEGIN
 
         IF NOT FOUND THEN
             INSERT INTO rubric_items
-                (rubric_id, number, points, short_text, staff_instructions)
+                (rubric_id, number, points, short_text, staff_instructions, key_binding)
             VALUES
-                (arg_rubric_id, next_number, rubric_item.points, rubric_item.short_text, rubric_item.staff_instructions);
+                (arg_rubric_id, next_number, rubric_item.points, rubric_item.short_text, rubric_item.staff_instructions, CASE WHEN next_number > 10 THEN NULL ELSE MOD(next_number, 10) END);
         END IF;
     END LOOP;
 
