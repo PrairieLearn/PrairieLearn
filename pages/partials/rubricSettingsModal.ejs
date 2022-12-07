@@ -258,5 +258,18 @@
         .find('input[type="text"]:first').focus();
       updateRubricItemOrderField();
     });
+    $('#rubric-settings-modal-<%= type %> form').submit(function (e) {
+      e.preventDefault();
+      // TODO Save and restore current rubric and feedback
+      // TODO Move this script so it runs again after reloading
+      $(this).parents('.modal:first').modal('hide');
+      $.post($(this).attr('action'), $(this).serialize(), function(data) {
+        if (data.gradingPanel) {
+          $('.js-main-grading-panel').replaceWith(data.gradingPanel);
+        }
+        console.log(data);
+        resetInstructorGradingPanel();
+      }, 'json');
+    });
   });
 </script>

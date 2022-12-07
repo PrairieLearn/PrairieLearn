@@ -16,7 +16,7 @@
     <%- extraHeadersHtml %>
   </head>
   <script>
-    $(function() {
+    function resetInstructorGradingPanel() {
       $('[data-toggle="tooltip"]').tooltip();
       $('.js-manual-grading-pts-perc-select')
         .change(function () {
@@ -64,7 +64,8 @@
           return;
         $(`.js-selectable-rubric-item[data-key-binding="${event.key}"]`).click();
       });
-    })
+    }
+    $(resetInstructorGradingPanel);
   </script>
   <body>
     <%- include('../../partials/navbar'); %>

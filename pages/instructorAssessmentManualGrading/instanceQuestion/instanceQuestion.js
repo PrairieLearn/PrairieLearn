@@ -2,15 +2,59 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const util = require('util');
+const qs = require('qs');
+const ejs = require('ejs');
+const path = require('path');
+
 const question = require('../../../lib/question');
 const error = require('../../../prairielib/lib/error');
 const sqldb = require('../../../prairielib/lib/sql-db');
 const sqlLoader = require('../../../prairielib/lib/sql-loader');
 const ltiOutcomes = require('../../../lib/ltiOutcomes');
 const manualGrading = require('../../../lib/manualGrading');
-const qs = require('qs');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
+
+async function prepareLocalsForRender(req, res, next) {
+  res.locals.conflict_grading_job = null;
+  if (req.query.conflict_grading_job_id) {
+    const params = {
+      grading_job_id: req.query.conflict_grading_job_id,
+      instance_question_id: res.locals.instance_question.id, // for authz
+    };
+    res.locals.conflict_grading_job = (
+      await sqldb.queryZeroOrOneRowAsync(sql.select_grading_job_data, params)
+    ).rows[0];
+  }
+
+  // Even though getAndRenderVariant will select variants for the instance question, if the
+  // question has multiple variants, by default getAndRenderVariant may select a variant without
+  // submissions or even create a new one. We don't want that behaviour, so we select the last
+  // submission and pass it along to getAndRenderVariant explicitly.
+  const params = { instance_question_id: res.locals.instance_question.id };
+  const variant_with_submission = (
+    await sqldb.queryZeroOrOneRowAsync(sql.select_variant_with_last_submission, params)
+  ).rows[0];
+
+  if (variant_with_submission) {
+    res.locals.manualGradingInterface = true;
+    await util.promisify(question.getAndRenderVariant)(
+      variant_with_submission.variant_id,
+      null,
+      res.locals
+    );
+  }
+
+  // If student never loaded question or never submitted anything (submission is null)
+  if (!res.locals.submission) {
+    throw error.make(404, 'Instance question does not have a gradable submission.');
+  }
+
+  const graders_result = await sqldb.queryZeroOrOneRowAsync(sql.select_graders, {
+    course_instance_id: res.locals.course_instance.id,
+  });
+  res.locals.graders = graders_result.rows[0]?.graders;
+}
 
 router.get(
   '/',
@@ -19,45 +63,7 @@ router.get(
       return next(error.make(403, 'Access denied (must be a student data viewer)'));
     }
 
-    res.locals.conflict_grading_job = null;
-    if (req.query.conflict_grading_job_id) {
-      const params = {
-        grading_job_id: req.query.conflict_grading_job_id,
-        instance_question_id: res.locals.instance_question.id, // for authz
-      };
-      res.locals.conflict_grading_job = (
-        await sqldb.queryZeroOrOneRowAsync(sql.select_grading_job_data, params)
-      ).rows[0];
-    }
-
-    // Even though getAndRenderVariant will select variants for the instance question, if the
-    // question has multiple variants, by default getAndRenderVariant may select a variant without
-    // submissions or even create a new one. We don't want that behaviour, so we select the last
-    // submission and pass it along to getAndRenderVariant explicitly.
-    const params = { instance_question_id: res.locals.instance_question.id };
-    const variant_with_submission = (
-      await sqldb.queryZeroOrOneRowAsync(sql.select_variant_with_last_submission, params)
-    ).rows[0];
-
-    if (variant_with_submission) {
-      res.locals.manualGradingInterface = true;
-      await util.promisify(question.getAndRenderVariant)(
-        variant_with_submission.variant_id,
-        null,
-        res.locals
-      );
-    }
-
-    // If student never loaded question or never submitted anything (submission is null)
-    if (!res.locals.submission) {
-      return next(error.make(404, 'Instance question does not have a gradable submission.'));
-    }
-
-    const graders_result = await sqldb.queryZeroOrOneRowAsync(sql.select_graders, {
-      course_instance_id: res.locals.course_instance.id,
-    });
-    res.locals.graders = graders_result.rows[0]?.graders;
-
+    await prepareLocalsForRender(req, res, next);
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   })
 );
@@ -147,7 +153,18 @@ router.post(
         JSON.stringify(rubric_items),
       ];
       await sqldb.callAsync('assessment_questions_update_rubric', params);
-      res.redirect(req.originalUrl);
+
+      // TODO Move rubric retrieval to rendering (using values before updates)
+      // This form is handled by Ajax, so send a new version of the grading panel via JSON
+      await prepareLocalsForRender(req, res, next);
+      ejs.renderFile(
+        path.join(__dirname, '..', '..', 'partials', 'instructorGradingPanel.ejs'),
+        res.locals,
+        (err, gradingPanel) => {
+          console.log(gradingPanel);
+          res.send({ gradingPanel });
+        }
+      );
     } else if (typeof req.body.__action === 'string' && req.body.__action.startsWith('reassign_')) {
       const assigned_grader = req.body.__action.substring(9);
       const params = {

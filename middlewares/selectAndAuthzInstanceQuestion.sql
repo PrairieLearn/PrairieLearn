@@ -63,8 +63,6 @@ SELECT
     to_jsonb(a) AS assessment,
     to_jsonb(aset) AS assessment_set,
     to_jsonb(aai) AS authz_result,
-    to_jsonb(rgsd_manual) AS rubric_data_manual,
-    to_jsonb(rgsd_auto) AS rubric_data_auto,
     assessment_instance_label(ai, a, aset) AS assessment_instance_label,
     fl.list AS file_list
 FROM
@@ -83,8 +81,6 @@ FROM
     LEFT JOIN users AS ulg ON (ulg.user_id = iq.last_grader)
     JOIN LATERAL authz_assessment_instance(ai.id, $authz_data, $req_date, ci.display_timezone, a.group_work) AS aai ON TRUE
     JOIN LATERAL instance_questions_next_allowed_grade(iq.id) AS iqnag ON TRUE
-    JOIN LATERAL rubric_gradings_select_data(aq.manual_rubric_id, iq.manual_rubric_grading_id) as rgsd_manual ON TRUE
-    JOIN LATERAL rubric_gradings_select_data(aq.auto_rubric_id, iq.auto_rubric_grading_id) as rgsd_auto ON TRUE
     CROSS JOIN file_list AS fl
 WHERE
     iq.id = $instance_question_id
