@@ -21,6 +21,8 @@ CREATE FUNCTION
         IN arg_auto_points double precision,
         IN arg_feedback jsonb,
         IN arg_partial_scores jsonb,
+        IN arg_manual_rubric_items bigint[],
+        IN arg_auto_rubric_items bigint[],
         IN arg_authn_user_id bigint,
 
         -- resulting updates

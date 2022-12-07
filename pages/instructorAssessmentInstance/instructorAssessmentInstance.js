@@ -152,6 +152,8 @@ router.post('/', (req, res, next) => {
       req.body.auto_points,
       null, // feedback
       null, // partial_scores
+      null, // manual_rubric_items,
+      null, // auto_rubric_items,
       res.locals.authn_user.user_id,
     ];
     sqldb.call('instance_questions_update_score', params, (err, result) => {
@@ -184,6 +186,8 @@ router.post('/', (req, res, next) => {
       null, // auto_points
       null, // feedback
       null, // partial_scores
+      null, // manual_rubric_items,
+      null, // auto_rubric_items,
       res.locals.authn_user.user_id,
     ];
     sqldb.call('instance_questions_update_score', params, (err, result) => {

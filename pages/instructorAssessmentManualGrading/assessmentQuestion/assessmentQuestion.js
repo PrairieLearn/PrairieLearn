@@ -95,6 +95,8 @@ router.post(
         req.body.auto_points,
         null, // feedback
         null, // partial_scores
+        null, // manual_rubric_items,
+        null, // auto_rubric_items,
         res.locals.authn_user.user_id,
       ];
       const result = (await sqldb.callAsync('instance_questions_update_score', params)).rows[0];
@@ -124,6 +126,8 @@ router.post(
         null, // auto_points
         null, // feedback
         null, // partial_scores
+        null, // manual_rubric_items,
+        null, // auto_rubric_items,
         res.locals.authn_user.user_id,
       ];
       const result = (await sqldb.callAsync('instance_questions_update_score', params)).rows[0];

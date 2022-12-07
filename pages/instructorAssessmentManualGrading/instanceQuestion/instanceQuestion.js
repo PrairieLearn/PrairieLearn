@@ -93,6 +93,14 @@ router.post(
       return next(error.make(403, 'Access denied (must be a student data editor)'));
     }
     if (req.body.__action === 'add_manual_grade') {
+      let manual_rubric_items = req.body.rubric_item_selected_manual || [];
+      let auto_rubric_items = req.body.rubric_item_selected_auto || [];
+      if (!Array.isArray(manual_rubric_items)) {
+        manual_rubric_items = [manual_rubric_items];
+      }
+      if (!Array.isArray(auto_rubric_items)) {
+        auto_rubric_items = [auto_rubric_items];
+      }
       const params = [
         req.body.assessment_id,
         null, // assessment_instance_id,
@@ -110,6 +118,8 @@ router.post(
         req.body.use_score_perc ? null : req.body.score_auto_points || null, // auto_points
         { manual: req.body.submission_note }, // feedback
         null, // partial_scores
+        manual_rubric_items,
+        auto_rubric_items,
         res.locals.authn_user.user_id,
       ];
 
