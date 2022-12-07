@@ -1,11 +1,11 @@
-const ENCODE_HTML_RULES = {
+const ENCODE_HTML_RULES: Record<string, string> = {
   '&': '&amp;',
   '<': '&lt;',
   '>': '&gt;',
   '"': '&#34;',
   "'": '&#39;',
 };
-var MATCH_HTML = /[&<>'"]/g;
+const MATCH_HTML = /[&<>'"]/g;
 
 function encodeCharacter(c: string) {
   return ENCODE_HTML_RULES[c] || c;
