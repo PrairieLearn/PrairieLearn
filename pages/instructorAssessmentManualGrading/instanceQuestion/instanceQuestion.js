@@ -1,3 +1,4 @@
+const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
@@ -15,7 +16,7 @@ const manualGrading = require('../../../lib/manualGrading');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-async function prepareLocalsForRender(req, res, next) {
+async function prepareLocalsForRender(req, res) {
   res.locals.conflict_grading_job = null;
   if (req.query.conflict_grading_job_id) {
     const params = {
@@ -63,7 +64,7 @@ router.get(
       return next(error.make(403, 'Access denied (must be a student data viewer)'));
     }
 
-    await prepareLocalsForRender(req, res, next);
+    await prepareLocalsForRender(req, res);
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   })
 );
@@ -156,9 +157,9 @@ router.post(
 
       // TODO Move rubric retrieval to rendering (using values before updates)
       // This form is handled by Ajax, so send a new version of the grading panel via JSON
-      await prepareLocalsForRender(req, res, next);
+      await prepareLocalsForRender(req, res);
       ejs.renderFile(path.join(__dirname, 'gradingPanel.ejs'), res.locals, (err, gradingPanel) => {
-        console.log(gradingPanel);
+        if (ERR(err, next)) return;
         res.send({ gradingPanel });
       });
     } else if (typeof req.body.__action === 'string' && req.body.__action.startsWith('reassign_')) {

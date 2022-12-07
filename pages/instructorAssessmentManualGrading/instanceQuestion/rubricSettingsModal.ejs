@@ -1,4 +1,4 @@
-<div class="modal" tabindex="-1" role="dialog" id="rubric-settings-modal-<%= type %>">
+<div class="modal js-rubric-settings-modal" tabindex="-1" role="dialog" id="rubric-settings-modal-<%= type %>">
   <div class="modal-dialog modal-xl border-info" role="document">
     <form name="rubric-settings-<%= type %>" method="POST">
       <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
@@ -20,7 +20,7 @@
               Use rubrics
             </label>
           </div>
-          <div class="js-rubric-settings-<%= type %>">
+          <div class="js-rubric-settings-info">
             <hr/>
             <div class="form-row">
               <div class="col-4">
@@ -47,7 +47,7 @@
                     Custom starting points
                   </label>
                 </div>
-                <div class="js-starting-points-custom-<%= type %>">
+                <div class="js-starting-points-custom">
                   <label><span class="sr-only">Starting points</span>
                     <input class="form-control" name="starting_points_custom" type="number" value="<%= rubric?.rubric_data?.starting_points ?? max_points %>">
                   </label>
@@ -169,107 +169,3 @@
     </form>
   </div>
 </div>
-<script>
-  window.enableRubricItemDescriptionField = function(event) {
-    const cell = $(event.target).parents('label:first');
-    const data = cell.data();
-    const input = $('<textarea class="form-control">')
-          .attr('name', data.inputName)
-          .text(data.currentValue)
-    cell.after(input).remove();
-    input.focus();
-  };
-  window.updateRubricItemOrderField = function() {
-    $('.js-rubric-item-row-order').val(index => index);
-  };
-  window.moveRowDown = function(event) {
-    const row = $(event.target).parents('tr:first');
-    row.insertAfter(row.next());
-    updateRubricItemOrderField();
-  };
-  window.moveRowUp = function(event) {
-    const row = $(event.target).parents('tr:first');
-    row.insertBefore(row.prev());
-    updateRubricItemOrderField();
-  };
-  window.rowDragStart = function(event) {
-    window.rubricItemRowDragging = $(event.target).parents('tr:first');
-    event.originalEvent.dataTransfer.effectAllowed = "move";
-  }
-  window.rowDragOver = function(event) {
-    const row = $(event.target).parents('tr:first');
-    const rowList = window.rubricItemRowDragging.parents('tbody:first').find('tr');
-    const draggingRowIdx = rowList.index(window.rubricItemRowDragging);
-    const targetRowIdx = rowList.index(row);
-    if (targetRowIdx == -1 || draggingRowIdx == -1) return;
-    event.preventDefault();
-    if (targetRowIdx > draggingRowIdx)
-      row.after(window.rubricItemRowDragging);
-    else
-      row.before(window.rubricItemRowDragging);
-    updateRubricItemOrderField();
-  }
-  $(() => {
-    updateRubricItemOrderField();
-    $('#rubric-settings-modal-<%= type %> input[name="use_rubrics"]').change(() => {
-      $('.js-rubric-settings-<%= type %>')
-        .toggle($('#rubric-settings-modal-<%= type %> input[name="use_rubrics"]').is(':checked'));
-    }).change();
-    $('#rubric-settings-modal-<%= type %> input[name="starting_points"]').change(() => {
-      $('.js-starting-points-custom-<%= type %>')
-        .toggle($('#rubric-settings-modal-<%= type %> input[name="starting_points"]:checked').val() == 'CUSTOM');
-    }).change();
-    $('#rubric-settings-modal-<%= type %> .js-add-rubric-item-button').click(() => {
-      const table = $('#rubric-settings-modal-<%= type %> .js-rubric-items-table');
-      const next_id = (table.data('next-new-id') ?? 0) + 1;
-      const points = $('#rubric-settings-modal-<%= type %> .js-negative-grading').prop('checked') ? -1 : +1;
-      table.data('next-new-id', next_id);
-      $('<tr>')
-        .on('dragover', rowDragOver)
-        .on('dragenter', rowDragOver)
-        .append($('<td>')
-                .append($('<input type="hidden" class="js-rubric-item-row-order">')
-                        .attr('name', `rubric_item[new${next_id}][order]`))
-                .append($('<button type="button" class="btn btn-sm">')
-                        .attr('draggable', 'true')
-                        .append('<i class="fas fa-arrows-up-down">')
-                        .on('dragstart', rowDragStart))
-               )
-        .append($('<td style="max-width: 4rem">')
-                .append($('<input type="number" class="form-control" step="any">')
-                        .attr('name', `rubric_item[new${next_id}][points]`)
-                        .val(points)))
-        .append($('<td>')
-                .append($('<input type="text" class="form-control">')
-                        .attr('name', `rubric_item[new${next_id}][short_text]`)))
-        .append($('<td>')
-                .append($('<label>')
-                        .data('input-name', `rubric_item[new${next_id}][description]`)
-                        .append($('<button type="button" class="btn btn-sm">')
-                                .click(enableRubricItemDescriptionField)
-                                .append('<i class="fas fa-pencil"></i>'))))
-        .append($('<td>')
-                .append($('<label>')
-                        .data('input-name', `rubric_item[new${next_id}][staff_instructions]`)
-                        .append($('<button type="button" class="btn btn-sm">')
-                                .click(enableRubricItemDescriptionField)
-                                .append('<i class="fas fa-pencil"></i>'))))
-        .appendTo(table)
-        .find('input[type="text"]:first').focus();
-      updateRubricItemOrderField();
-    });
-    $('#rubric-settings-modal-<%= type %> form').submit(function (e) {
-      e.preventDefault();
-      // TODO Save and restore current rubric and feedback
-      // TODO Move this script so it runs again after reloading
-      $(this).parents('.modal:first').modal('hide');
-      $.post($(this).attr('action'), $(this).serialize(), function(data) {
-        if (data.gradingPanel) {
-          $('.js-main-grading-panel').replaceWith(data.gradingPanel);
-        }
-        console.log(data);
-        resetInstructorGradingPanel();
-      }, 'json');
-    });
-  });
-</script>
