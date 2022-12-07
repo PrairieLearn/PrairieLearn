@@ -1,6 +1,6 @@
 build:
 	@yarn turbo run build
-	@yarn compiled-assets build ./assets ./public/build
+	@packages/compiled-assets/dist/cli.js build ./assets ./public/build
 
 dev:
 	@yarn turbo run dev
