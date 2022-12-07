@@ -6,19 +6,6 @@ FROM
 WHERE
     gc.assessment_id = $assessment_id AND gc.deleted_at IS NULL;
 
--- BLOCK get_creator_role
-SELECT
-    gr.*
-FROM
-    group_roles AS gr
-WHERE
-    (gr.assessment_id = $assessment_id
-    AND gr.can_assign_roles_at_start)
-    OR
-    (gr.role_name = 'No group roles')
-ORDER BY gr.maximum
-LIMIT 1
-
 -- BLOCK create_group
 WITH
 create_group AS (
@@ -40,10 +27,22 @@ create_log AS (
         (authn_user_id, user_id, group_id, action)
     SELECT $authn_user_id, $user_id, cg.id, 'create' FROM create_group AS cg
 ),
+get_role AS (
+    SELECT
+        gr.id AS role_id
+    FROM
+        group_roles AS gr
+    WHERE
+        (gr.assessment_id = $assessment_id AND gr.can_assign_roles_at_start)
+        OR (gr.role_name = 'No group roles')
+    ORDER BY gr.maximum
+    LIMIT 1
+),
 join_group AS (
     INSERT INTO group_users
         (user_id, group_role_id, group_id)
-    SELECT $user_id, $group_role_id, cg.id FROM create_group AS cg
+    SELECT $user_id, gr.role_id, cg.id 
+    FROM create_group AS cg, (SELECT * FROM get_role) as gr
 )
 INSERT INTO group_logs
     (authn_user_id, user_id, group_id, action)
