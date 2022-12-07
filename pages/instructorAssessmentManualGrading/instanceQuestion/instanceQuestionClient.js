@@ -50,39 +50,8 @@ function resetInstructorGradingPanel() {
     $(`.rubric-settings-modal-${type}`).modal('show');
   });
 
-  $('.js-grading-score-input').on('input', function () {
-    const form = $(this).parents('form');
-    const auto_points =
-      this.name === 'score_auto_percent'
-        ? (this.value * assessment_question_max_auto_points) / 100
-        : form.find('[name=score_auto_points]').val();
-    const manual_points =
-      this.name === 'score_manual_percent'
-        ? (this.value * assessment_question_max_manual_points) / 100
-        : form.find('[name=score_manual_points]').val();
-    const points = Number(auto_points) + Number(manual_points);
-
-    form.find('[name=score_auto_points]').not(this).val(auto_points);
-    form
-      .find('[name=score_auto_percent]')
-      .not(this)
-      .val(
-        (auto_points * 100) /
-          (assessment_question_max_auto_points || assessment_question_max_points)
-      );
-    form.find('[name=score_manual_points]').not(this).val(manual_points);
-    form
-      .find('[name=score_manual_percent]')
-      .not(this)
-      .val(
-        (manual_points * 100) /
-          (assessment_question_max_manual_points || assessment_question_max_points)
-      );
-    form.find('.js-value-total-points').text(Math.round(points * 100) / 100);
-    form
-      .find('.js-value-total-percentage')
-      .text(Math.round((points * 10000) / assessment_question_max_points) / 100);
-  });
+  $('.js-selectable-rubric-item').change(computePointsFromRubric);
+  $('.js-grading-score-input').on('input', updatePointsView);
 
   $('.js-rubric-settings-modal input[name="use_rubrics"]')
     .change(function () {
@@ -135,6 +104,72 @@ function resetInstructorGradingPanel() {
   $('.js-rubric-settings-modal .js-add-rubric-item-button').click(addRubricItemRow);
 
   updateRubricItemOrderField();
+}
+
+function updatePointsView() {
+  const form = $('form[name=instance_question-manual-grade-update-form]');
+  const auto_points =
+    this.name === 'score_auto_percent'
+      ? (this.value * assessment_question_max_auto_points) / 100
+      : form.find('[name=score_auto_points]').val();
+  const manual_points =
+    this.name === 'score_manual_percent'
+      ? (this.value * assessment_question_max_manual_points) / 100
+      : form.find('[name=score_manual_points]').val();
+  const points = Math.round(100 * (Number(auto_points) + Number(manual_points))) / 100;
+  const auto_perc =
+    Math.round(
+      (auto_points * 10000) /
+        (assessment_question_max_auto_points || assessment_question_max_points)
+    ) / 100;
+  const manual_perc =
+    Math.round(
+      (manual_points * 10000) /
+        (assessment_question_max_manual_points || assessment_question_max_points)
+    ) / 100;
+  const total_perc = Math.round((points * 10000) / assessment_question_max_points) / 100;
+
+  console.log(this, form, points);
+  form.find('[name=score_auto_points]').not(this).val(auto_points);
+  form.find('[name=score_auto_percent]').not(this).val(auto_perc);
+  form.find('[name=score_manual_points]').not(this).val(manual_points);
+  form.find('[name=score_manual_percent]').not(this).val(manual_perc);
+
+  form.find('.js-value-manual-points').text(manual_points);
+  form.find('.js-value-auto-points').text(auto_points);
+  form.find('.js-value-total-points').text(points);
+  form.find('.js-value-manual-percentage').text(manual_perc);
+  form.find('.js-value-auto-percentage').text(auto_perc);
+  form.find('.js-value-total-percentage').text(total_perc);
+}
+
+function computePointsFromRubric() {
+  const manualInput = $('#js-manual-score-value-input-points');
+  const autoInput = $('#js-auto-score-value-input-points');
+  let computedPoints = {
+    manual: manualInput.data('rubric-starting-points') || 0,
+    auto: autoInput.data('rubric-starting-points') || 0,
+  };
+  $('.js-selectable-rubric-item:checked').each((index, item) => {
+    computedPoints[$(item).data('rubric-item-type')] += $(item).data('rubric-item-points');
+  });
+  if (manualInput.data('rubric-active')) {
+    manualInput.val(
+      Math.min(
+        Math.max(computedPoints.manual, manualInput.data('rubric-min-points')),
+        manualInput.data('rubric-max-points')
+      )
+    );
+  }
+  if (autoInput.data('rubric-active')) {
+    autoInput.val(
+      Math.min(
+        Math.max(computedPoints.auto, autoInput.data('rubric-min-points')),
+        autoInput.data('rubric-max-points')
+      )
+    );
+  }
+  updatePointsView();
 }
 
 function enableRubricItemDescriptionField(event) {
