@@ -91,22 +91,23 @@ BEGIN
             ORDER BY gr.maximum DESC
             LIMIT 1;
         END IF;
-    ELSE
-        SELECT id INTO arg_default_group_role_id
-        FROM group_roles AS gr
-        WHERE gr.role_name = 'No group roles'
-        LIMIT 1;
     END IF;
 
     -- join the group
-    INSERT INTO group_users
-        (user_id, group_id, group_role_id)
-    VALUES
-        (arg_user_id, arg_group_id, arg_default_group_role_id);
+    INSERT INTO group_users (user_id, group_id)
+    VALUES (arg_user_id, arg_group_id);
+
+    -- assign the role, if appropriate
+    IF arg_has_roles THEN
+        INSERT INTO group_user_roles
+            (user_id, group_id, group_role_id)
+        VALUES
+            (arg_user_id, arg_group_id, arg_default_group_role_id);
+    END IF;
 
     -- log the join
     INSERT INTO group_logs
-    (authn_user_id, user_id, group_id, action)
+        (authn_user_id, user_id, group_id, action)
     VALUES
         (arg_authn_user_id, arg_user_id, arg_group_id, 'join');
 END;

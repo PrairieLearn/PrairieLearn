@@ -34,12 +34,17 @@ get_role AS (
         group_roles AS gr
     WHERE
         (gr.assessment_id = $assessment_id AND gr.can_assign_roles_at_start)
-        OR (gr.role_name = 'No group roles')
     ORDER BY gr.maximum
     LIMIT 1
 ),
 join_group AS (
     INSERT INTO group_users
+        (user_id, group_id)
+    SELECT $user_id, cg.id 
+    FROM create_group AS cg
+),
+assign_role AS (
+    INSERT INTO group_user_roles
         (user_id, group_role_id, group_id)
     SELECT $user_id, gr.role_id, cg.id 
     FROM create_group AS cg, (SELECT * FROM get_role) as gr
@@ -68,7 +73,7 @@ WHERE
 SELECT gr.id::INTEGER, gr.role_name, COUNT(gu.user_id)::INTEGER AS count, gr.maximum, gr.minimum
 FROM (SELECT * FROM group_roles WHERE assessment_id = $assessment_id) AS gr 
 LEFT JOIN (
-    SELECT * FROM group_users 
+    SELECT * FROM group_user_roles
     WHERE group_id = $group_id
     ) AS gu ON gu.group_role_id = gr.id
 GROUP BY gr.id, maximum, minimum, role_name;
@@ -78,7 +83,7 @@ SELECT
     bool_or(gr.can_assign_roles_at_start) AS can_assign_roles_at_start, 
     bool_or(gr.can_assign_roles_during_assessment) AS can_assign_roles_during_assessment
 FROM
-    group_roles as gr JOIN group_users as gu ON gr.id = gu.group_role_id
+    group_roles as gr JOIN group_user_roles as gu ON gr.id = gu.group_role_id
 WHERE
     gr.assessment_id = $assessment_id AND gu.user_id = $user_id;
 
@@ -86,7 +91,7 @@ WHERE
 SELECT 
     gu.user_id, u.uid, gr.role_name
 FROM 
-    users u JOIN group_users gu ON u.user_id = gu.user_id
+    users u JOIN group_user_roles gu ON u.user_id = gu.user_id
     JOIN group_roles gr ON gu.group_role_id = gr.id
 WHERE
     gu.group_id = $group_id;

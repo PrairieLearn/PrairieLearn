@@ -50,17 +50,17 @@ BEGIN
             -- 1. Grab a random other user from the group
             SELECT user_id
             INTO arg_assignee_id
-            FROM group_users
+            FROM group_user_roles
             WHERE group_id = arg_group_id AND user_id != arg_user_id
             LIMIT 1;
 
             -- 2. Give them all of the leaving user's roles
             FOR arg_group_role_id IN
                 SELECT gu.group_role_id
-                FROM group_users gu
+                FROM group_user_roles gu
                 WHERE gu.group_id = arg_group_id AND gu.user_id = arg_user_id
             LOOP
-                INSERT INTO group_users (group_id, user_id, group_role_id)
+                INSERT INTO group_user_roles (group_id, user_id, group_role_id)
                 VALUES (arg_group_id, arg_assignee_id, arg_group_role_id)
                 ON CONFLICT (group_id, user_id, group_role_id) DO NOTHING;
             END LOOP;
@@ -70,7 +70,7 @@ BEGIN
             -- Iterate through all the user's roles
             FOR arg_group_role_id, arg_is_required_role IN
                 SELECT gu.group_role_id, gr.minimum > 0
-                FROM group_users gu JOIN group_roles gr ON gu.group_role_id = gr.id
+                FROM group_user_roles gu JOIN group_roles gr ON gu.group_role_id = gr.id
                 WHERE gu.group_id = arg_group_id AND gu.user_id = arg_user_id
             LOOP
                 -- If a given role is required, then:
@@ -78,24 +78,24 @@ BEGIN
                     -- Try to find someone with a non-required role to replace
                     SELECT gu.user_id, gu.group_role_id
                     INTO arg_assignee_id, arg_assignee_old_role_id
-                    FROM group_users gu LEFT JOIN group_roles gr ON gu.group_role_id = gr.id
+                    FROM group_user_roles gu LEFT JOIN group_roles gr ON gu.group_role_id = gr.id
                     WHERE group_id = arg_group_id AND user_id != arg_user_id AND gr.minimum = 0
                     LIMIT 1;
 
                     -- If we find someone with a non-required role, replace that role with the leaving user's role
                     IF FOUND THEN
-                        UPDATE group_users
+                        UPDATE group_user_roles
                         SET group_role_id = arg_group_role_id
                         WHERE group_id = arg_group_id AND user_id = arg_assignee_id AND group_role_id = arg_assignee_old_role_id;
                     ELSE
                         -- Otherwise, just give the leaving user's role to someone else randomly
                         SELECT user_id
                         INTO arg_assignee_id
-                        FROM group_users
+                        FROM group_user_roles
                         WHERE group_id = arg_group_id AND user_id != arg_user_id
                         LIMIT 1;
 
-                        INSERT INTO group_users (group_id, user_id, group_role_id)
+                        INSERT INTO group_user_roles (group_id, user_id, group_role_id)
                         VALUES (arg_group_id, arg_assignee_id, arg_group_role_id)
                         ON CONFLICT (group_id, user_id, group_role_id) DO NOTHING;
                         END IF;
@@ -106,6 +106,9 @@ BEGIN
 
     -- Delete the user from the group
     DELETE FROM group_users
+    WHERE user_id = arg_user_id AND group_id = arg_group_id;
+
+    DELETE FROM group_user_roles
     WHERE user_id = arg_user_id AND group_id = arg_group_id;
 
     -- Update logs

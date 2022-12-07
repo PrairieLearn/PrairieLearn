@@ -67,46 +67,31 @@ router.get('/', function (req, res, next) {
       assessment.renderText(
         res.locals.assessment,
         res.locals.urlPrefix,
-        function (err, assessment_text_templated) {
+        async function (err, assessment_text_templated) {
           if (ERR(err, next)) return;
           res.locals.assessment_text_templated = assessment_text_templated;
           debug('rendering EJS');
           if (res.locals.assessment.group_work) {
-            groupAssessmentHelper.getGroupInfo(
+            const groupInfo = await groupAssessmentHelper.getGroupInfo(
               res.locals.assessment.id,
-              res.locals.user.user_id,
-              function (
-                err,
-                groupMember,
-                permissions,
-                minsize,
-                maxsize,
-                groupsize,
-                needsize,
-                hasRoles,
-                group_info,
-                join_code,
-                start,
-                used_join_code
-              ) {
-                if (ERR(err, next)) return;
-                res.locals.permissions = permissions;
-                res.locals.minsize = minsize;
-                res.locals.maxsize = maxsize;
-                res.locals.groupsize = groupsize;
-                res.locals.needsize = needsize;
-                res.locals.hasRoles = hasRoles;
-                res.locals.group_info = group_info;
-                if (!groupMember) {
-                  return next(error.make(403, 'Not a group member', res.locals));
-                } else {
-                  res.locals.join_code = join_code;
-                  res.locals.start = start;
-                  res.locals.used_join_code = used_join_code;
-                }
-                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-              }
+              res.locals.user.user_id
             );
+            res.locals.permissions = groupInfo.permissions;
+            res.locals.minsize = groupInfo.minSize;
+            res.locals.maxsize = groupInfo.maxSize;
+            res.locals.groupsize = groupInfo.groupSize;
+            res.locals.needsize = groupInfo.needsize;
+            res.locals.hasRoles = groupInfo.hasRoles;
+            res.locals.groupMembers = groupInfo.groupMembers;
+            res.locals.rolesInfo = groupInfo.rolesInfo;
+            if (!groupInfo.isGroupMember) {
+              return next(error.make(403, 'Not a group member', res.locals));
+            } else {
+              res.locals.joinCode = groupInfo.joinCode;
+              res.locals.start = groupInfo.start;
+              res.locals.used_join_code = groupInfo.usedJoinCode;
+            }
+            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
           } else {
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
           }
