@@ -17,7 +17,7 @@ Create a directory of assets that you wish to bundle, e.g. `assets/`. Within tha
 │   │   └── bar.ts
 ```
 
-You can locate shared code in directories inside this directory. As long as those files aren't in the root of the assets directory, they won't become separate bundles.
+You can locate shared code in directories inside this directory. As long as those files aren't in the root of the `scripts/` directory, they won't become separate bundles.
 
 ```
 ├── assets/
