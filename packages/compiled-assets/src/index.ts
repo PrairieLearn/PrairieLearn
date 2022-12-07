@@ -13,22 +13,22 @@ const DEFAULT_OPTIONS = {
   publicPath: '/build/',
 };
 
-interface CompiledAssetsOptions {
+export interface CompiledAssetsOptions {
   /**
    * Whether the app is running in dev mode. If dev modde is enabled, then
    * assets will be built on the fly as they're requested. Otherwise, assets
    * should have been pre-compiled to the `buildDirectory` directory.
    */
-  dev: boolean;
+  dev?: boolean;
   /** Root directory of assets. */
-  sourceDirectory: string;
+  sourceDirectory?: string;
   /** Directory where the built assets will be output to. */
-  buildDirectory: string;
+  buildDirectory?: string;
   /** The path that assets will be served from, e.g. `/build/`. */
-  publicPath: string;
+  publicPath?: string;
 }
 
-let options: CompiledAssetsOptions = { ...DEFAULT_OPTIONS };
+let options: Required<CompiledAssetsOptions> = { ...DEFAULT_OPTIONS };
 
 export function init(newOptions: Partial<CompiledAssetsOptions>): void {
   options = {
@@ -171,8 +171,8 @@ export async function build(
   Object.entries(metafile.outputs).forEach(([outputPath, meta]) => {
     if (!meta.entryPoint) return;
 
-    const entryPath = path.relative(scriptsSourceRoot, meta.entryPoint);
-    const assetPath = path.relative(scriptsBuildRoot, outputPath);
+    const entryPath = path.basename(meta.entryPoint);
+    const assetPath = path.basename(outputPath);
 
     manifest[entryPath] = assetPath;
   });

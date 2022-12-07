@@ -3,46 +3,57 @@ import fs from 'fs-extra';
 import path from 'path';
 import getPort from 'get-port';
 import { assert } from 'chai';
+import express from 'express';
 
-import { init, compiledScriptPath, compiledScriptTag, handler, build } from './index';
+import { init, compiledScriptPath, handler, CompiledAssetsOptions, build } from './index';
 
-async function withProject(fn: (dir: string) => Promise<void>) {
-  await tmp.withDir(async (dir) => {
-    const scriptsRoot = path.join(dir.path, 'assets', 'scripts');
-    await fs.mkdir(scriptsRoot);
+async function testProject(options: CompiledAssetsOptions) {
+  await tmp.withDir(
+    async (dir) => {
+      const scriptsRoot = path.join(dir.path, 'assets', 'scripts');
+      await fs.ensureDir(scriptsRoot);
 
-    const jsScriptPath = path.join(scriptsRoot, 'foo.js');
-    const tsScriptPath = path.join(scriptsRoot, 'bar.ts');
-    fs.writeFile(jsScriptPath, 'console.log("foo")');
-    fs.writeFile(tsScriptPath, 'interface Foo {};\n\nconsole.log("bar")');
+      const jsScriptPath = path.join(scriptsRoot, 'foo.js');
+      const tsScriptPath = path.join(scriptsRoot, 'bar.ts');
+      fs.writeFile(jsScriptPath, 'console.log("foo")');
+      fs.writeFile(tsScriptPath, 'interface Foo {};\n\nconsole.log("bar")');
 
-    await fn(dir.path);
-  });
-}
+      if (!options.dev) {
+        await build(path.join(dir.path, 'assets'), path.join(dir.path, 'public', 'build'));
+      }
 
-describe('compiled-assets', () => {
-  it('serves files in dev mode', async () => {
-    await withProject(async (dir) => {
       init({
-        dev: false,
-        sourceDirectory: '',
-        buildDirectory: '',
+        sourceDirectory: path.join(dir.path, 'assets'),
+        buildDirectory: path.join(dir.path, 'public', 'build'),
         publicPath: '/build',
+        ...options,
       });
 
       const port = await getPort();
-    });
+      const app = express();
+      app.use('/build', handler());
+      const server = app.listen(port);
+
+      try {
+        const res = await fetch(`http://localhost:${port}${compiledScriptPath('foo.js')}`);
+        assert.isTrue(res.ok);
+        assert.match(await res.text(), /console\.log\("foo"\)/);
+      } finally {
+        server.close();
+      }
+    },
+    {
+      unsafeCleanup: true,
+    }
+  );
+}
+
+describe('compiled-assets', () => {
+  it('works in dev mode', async () => {
+    await testProject({ dev: true });
   });
 
-  it('serves files in prod mode', async () => {
-    await withProject(async (dir) => {
-      const sourceDirectory = path.join(dir, 'assets');
-      const buildDirectory = path.join(dir, 'public', 'build');
-      await build(sourceDirectory, buildDirectory);
-
-      assert.isTrue(await fs.pathExists(buildDirectory));
-      assert.isTrue(await fs.pathExists(path.join(buildDirectory, 'scripts', 'foo.js')));
-      assert.isTrue(await fs.pathExists(path.join(buildDirectory, 'scripts', 'bar.js')));
-    });
+  it('works in prod mode', async () => {
+    await testProject({ dev: false });
   });
 });
