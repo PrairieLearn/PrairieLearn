@@ -141,7 +141,7 @@ router.post(
         )
       );
     } else if (req.body.__action === 'modify_rubric_settings') {
-      const rubric_items = Object.values(qs.parse(qs.stringify(req.body)).rubric_item);
+      const rubric_items = Object.values(qs.parse(qs.stringify(req.body)).rubric_item || {});
       const params = [
         res.locals.instance_question.assessment_question_id,
         req.body.rubric_type,
@@ -153,39 +153,37 @@ router.post(
         req.body.max_points,
         JSON.stringify(rubric_items),
       ];
-      await sqldb.callAsync('assessment_questions_update_rubric', params);
+      const result = await sqldb.callAsync('assessment_questions_update_rubric', params);
+      res.locals.assessment_question[`${req.body.rubric_type}_rubric_id`] =
+        result.rows[0].arg_rubric_id;
 
-      // TODO Move rubric retrieval to rendering (using values before updates)
-      // This form is handled by Ajax, so send a new version of the grading panel via JSON
+      // This form is handled by Ajax, so send a new version of the grading panel via JSON.
       await prepareLocalsForRender(req, res);
-      ejs.renderFile(path.join(__dirname, 'gradingPanel.ejs'), res.locals, (err, gradingPanel) => {
-        if (ERR(err, next)) return;
-        ejs.renderFile(
-          path.join(__dirname, 'rubricSettingsModal.ejs'),
-          {
-            type: 'manual',
-            rubric: res.locals.rubric_data_manual,
-            max_points: res.locals.assessment_question.max_manual_points,
-            ...res.locals,
-          },
-          (err, rubricSettingsManual) => {
-            if (ERR(err, next)) return;
-            ejs.renderFile(
-              path.join(__dirname, 'rubricSettingsModal.ejs'),
-              {
-                type: 'auto',
-                rubric: res.locals.rubric_data_auto,
-                max_points: res.locals.assessment_question.max_auto_points,
-                ...res.locals,
-              },
-              (err, rubricSettingsAuto) => {
-                if (ERR(err, next)) return;
-                res.send({ gradingPanel, rubricSettingsManual, rubricSettingsAuto });
-              }
-            );
-          }
-        );
-      });
+      // Using util.promisify on renderFile instead of {async: true} from EJS, because the
+      // latter would require all includes in EJS to be translated to await recursively.
+      const gradingPanel = await util.promisify(ejs.renderFile)(
+        path.join(__dirname, 'gradingPanel.ejs'),
+        res.locals
+      );
+      const rubricSettingsManual = await util.promisify(ejs.renderFile)(
+        path.join(__dirname, 'rubricSettingsModal.ejs'),
+        {
+          type: 'manual',
+          rubric: res.locals.rubric_data_manual,
+          max_points: res.locals.assessment_question.max_manual_points,
+          ...res.locals,
+        }
+      );
+      const rubricSettingsAuto = await util.promisify(ejs.renderFile)(
+        path.join(__dirname, 'rubricSettingsModal.ejs'),
+        {
+          type: 'auto',
+          rubric: res.locals.rubric_data_auto,
+          max_points: res.locals.assessment_question.max_auto_points,
+          ...res.locals,
+        }
+      );
+      res.send({ gradingPanel, rubricSettingsManual, rubricSettingsAuto });
     } else if (typeof req.body.__action === 'string' && req.body.__action.startsWith('reassign_')) {
       const assigned_grader = req.body.__action.substring(9);
       const params = {

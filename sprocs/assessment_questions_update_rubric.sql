@@ -11,17 +11,14 @@ CREATE FUNCTION
     )
 AS $$
 DECLARE
-    aq_max_points DOUBLE PRECISION;
     next_number BIGINT := 0;
     rubric_item RECORD;
 BEGIN
 
     SELECT
-        CASE WHEN rubric_type = 'auto' THEN auto_rubric_id ELSE manual_rubric_id END,
-        CASE WHEN rubric_type = 'auto' THEN max_auto_points ELSE max_manual_points END
+        CASE WHEN rubric_type = 'auto' THEN auto_rubric_id ELSE manual_rubric_id END
     INTO
-        arg_rubric_id,
-        aq_max_points
+        arg_rubric_id
     FROM assessment_questions
     WHERE id = assessment_question_id
     FOR UPDATE;
@@ -40,6 +37,7 @@ BEGIN
             auto_rubric_id = CASE WHEN rubric_type = 'auto' THEN NULL ELSE auto_rubric_id END
         WHERE
             id = assessment_question_id;
+        arg_rubric_id := NULL;
         RETURN;
     END IF;
 
