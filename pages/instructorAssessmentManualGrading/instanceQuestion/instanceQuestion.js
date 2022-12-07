@@ -157,14 +157,10 @@ router.post(
       // TODO Move rubric retrieval to rendering (using values before updates)
       // This form is handled by Ajax, so send a new version of the grading panel via JSON
       await prepareLocalsForRender(req, res, next);
-      ejs.renderFile(
-        path.join(__dirname, '..', '..', 'partials', 'instructorGradingPanel.ejs'),
-        res.locals,
-        (err, gradingPanel) => {
-          console.log(gradingPanel);
-          res.send({ gradingPanel });
-        }
-      );
+      ejs.renderFile(path.join(__dirname, 'gradingPanel.ejs'), res.locals, (err, gradingPanel) => {
+        console.log(gradingPanel);
+        res.send({ gradingPanel });
+      });
     } else if (typeof req.body.__action === 'string' && req.body.__action.startsWith('reassign_')) {
       const assigned_grader = req.body.__action.substring(9);
       const params = {

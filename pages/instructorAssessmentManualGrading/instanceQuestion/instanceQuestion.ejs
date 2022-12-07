@@ -57,7 +57,7 @@
       $(document).keypress((event) => {
         // Ignore holding down the key events
         if (event.repeat) return;
-        event.target.setAttribute('oninput', 'return;');
+        //event.target.setAttribute('oninput', 'return;');
         // Ignore events that target an input element
         if ($(event.target).is(':input:not(:radio):not(:button):not(:checkbox)') ||
             event.target.isContentEditable)
@@ -103,11 +103,11 @@
               </div>
               <div class="row">
                 <div class="col-6">
-                  <%- include('../../partials/instructorGradingPanel',
+                  <%- include('gradingPanel',
                               {disable: true, skip_text: 'Accept existing score'}); %>
                 </div>
                 <div class="col-6">
-                  <%- include('../../partials/instructorGradingPanel',
+                  <%- include('gradingPanel',
                               {score_perc: conflict_grading_job.score * 100,
                                points: conflict_grading_job.score * assessment_question.max_points,
                                auto_points: conflict_grading_job.auto_points,
@@ -138,7 +138,7 @@
                 <i class="fas fa-arrow-left"></i>
                 Back to Question
               </a>
-              <%- include('../../partials/instructorGradingPanel', { main_grading_panel: true }); %>
+              <%- include('gradingPanel', { main_grading_panel: true }); %>
             </div>
             <div class="card-footer small">
               This box is not visible to students.
