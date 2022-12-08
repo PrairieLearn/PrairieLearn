@@ -50,7 +50,7 @@ router.get('/', async function (req, res, next) {
         if (groupInfo.isGroupMember) {
           const permissions = await groupAssessmentHelper.getAssessmentLevelPermissions(
             res.locals.assessment.id,
-            res.locals.user.user_id,
+            res.locals.user.user_id
           );
           res.locals.can_view_role_table = permissions.can_assign_roles_at_start;
           res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
@@ -86,7 +86,7 @@ router.get('/', async function (req, res, next) {
         res.locals.joinCode = groupInfo.joinCode;
         res.locals.start = groupInfo.start;
         res.locals.usedJoinCode = groupInfo.usedJoinCode;
-        
+
         if (groupInfo.hasRoles) {
           if (groupInfo.isGroupMember) {
             res.locals.rolesInfo = groupInfo.rolesInfo;
@@ -96,12 +96,12 @@ router.get('/', async function (req, res, next) {
             res.locals.rolesAreBalanced = groupInfo.rolesInfo.rolesAreBalanced;
             const permissions = await groupAssessmentHelper.getAssessmentLevelPermissions(
               res.locals.assessment.id,
-              res.locals.user.user_id,
+              res.locals.user.user_id
             );
             res.locals.can_view_role_table = permissions.can_assign_roles_at_start;
-          } 
-        } 
-      } 
+          }
+        }
+      }
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     } else {
       res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
