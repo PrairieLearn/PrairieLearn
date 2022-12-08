@@ -5,7 +5,6 @@ import numpy as np
 import uuid
 import sympy
 import pandas
-import math
 from python_helper_sympy import convert_string_to_sympy
 from python_helper_sympy import sympy_to_json
 from python_helper_sympy import json_to_sympy
@@ -16,9 +15,8 @@ import importlib
 import importlib.util
 import os
 import collections
-from enum import Enum
-from typing import Dict, Any, TypedDict, Literal, Optional, Callable, Tuple, Union, Type, TypeVar
-from typing_extensions import assert_never, NotRequired
+from typing import Dict, Any, TypedDict, Literal, Optional
+from typing_extensions import NotRequired
 
 class PartialScore(TypedDict):
     "A class with type signatures for the partial scores dict"
@@ -53,7 +51,6 @@ class QuestionData(TypedDict):
 
 class ElementTestData(QuestionData):
     test_type: Literal['correct', 'incorrect', 'invalid']
-
 
 def to_json(v):
     """to_json(v)
@@ -246,6 +243,7 @@ def has_attrib(element, name):
     """
     old_name = name.replace('-', '_')
     return name in element.attrib or old_name in element.attrib
+
 
 def get_string_attrib(element, name, *args):
     """value = get_string_attrib(element, name, default)
