@@ -33,7 +33,7 @@ SIZE_DEFAULT = 35
 PLACEHOLDER_TEXT_THRESHOLD = 20
 SHOW_HELP_TEXT_DEFAULT = True
 WEIGHT_DEFAULT = 1
-DISPLAY_DEFAULT = pl.DisplayType.INLINE
+DISPLAY_DEFAULT = bou.DisplayType.INLINE
 BIG_O_TYPE_DEFAULT = BigOType.BIG_O
 
 
@@ -81,10 +81,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     variables = phs.get_variables_list(
         pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
-    display = pl.get_enum_attrib(pl.DisplayType, element, "display", DISPLAY_DEFAULT)
+    display = bou.get_enum_attrib(bou.DisplayType, element, "display", DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
 
-    bigo_type = pl.get_enum_attrib(BigOType, element, "type", BIG_O_TYPE_DEFAULT).value
+    bigo_type = bou.get_enum_attrib(BigOType, element, "type", BIG_O_TYPE_DEFAULT).value
 
     operators: List[str] = [
         "exp",
@@ -120,7 +120,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if raw_submitted_answer is not None:
             raw_submitted_answer = escape(raw_submitted_answer)
 
-        score_type, score_value = pl.determine_score_params(score)
+        score_type, score_value = bou.determine_score_params(score)
 
         html_params = {
             "question": True,
@@ -175,7 +175,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             if raw_submitted_answer is not None:
                 raw_submitted_answer = pl.escape_unicode_string(raw_submitted_answer)
 
-        score_type, score_value = pl.determine_score_params(score)
+        score_type, score_value = bou.determine_score_params(score)
 
         html_params = {
             "submission": True,
@@ -251,9 +251,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     if a_tru is None:
         return
 
-    big_o_type = pl.get_enum_attrib(BigOType, element, "type", BIG_O_TYPE_DEFAULT)
+    big_o_type = bou.get_enum_attrib(BigOType, element, "type", BIG_O_TYPE_DEFAULT)
 
-    pl.grade_question_parameterized(
+    bou.grade_question_parameterized(
         data,
         name,
         lambda a_sub: GRADE_FUNCTION_DICT[big_o_type](a_tru, a_sub, variables),
@@ -280,7 +280,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
     elif result == "incorrect":
         data["raw_submitted_answers"][name] = f"{random.randint(4, 100):d} * {a_tru}"
-        bigo_type = pl.get_enum_attrib(BigOType, element, "type", BIG_O_TYPE_DEFAULT)
+        bigo_type = bou.get_enum_attrib(BigOType, element, "type", BIG_O_TYPE_DEFAULT)
 
         if bigo_type is BigOType.THETA:
             data["partial_scores"][name] = {

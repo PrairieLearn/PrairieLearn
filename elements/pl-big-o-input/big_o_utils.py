@@ -1,6 +1,11 @@
-from typing import Callable, List, Tuple
+from typing import Callable, List, Tuple, Any, Optional, Union, TypeVar, Type
+import math
+import lxml
 import sympy
 import python_helper_sympy as phs
+import prairielearn as pl
+from enum import Enum
+from typing_extensions import assert_never
 
 BigOGradingFunctionT = Callable[[str, str, List[str]], Tuple[float, str]]
 
@@ -190,18 +195,21 @@ def grade_little_omega_expression(
     return (0.5, CONSTANT_FACTORS_FEEDBACK)
 
 
+#### Start of generic utilities. Move these to prairieleran.py as-needed ####
 
-### Start of generic utilities. Move these to prairieleran.py as-needed
 
 class DisplayType(Enum):
     INLINE = "inline"
     BLOCK = "block"
 
-def grade_question_parameterized(data: QuestionData,
-                                 question_name: str,
-                                 grade_function: Callable[[Any], Tuple[Union[bool, float], Optional[str]]],
-                                 weight: int = 1) -> None:
-    '''
+
+def grade_question_parameterized(
+    data: pl.QuestionData,
+    question_name: str,
+    grade_function: Callable[[Any], Tuple[Union[bool, float], Optional[str]]],
+    weight: int = 1,
+) -> None:
+    """
     Grade question question_name. grade_function should take in a single parameter
     (which will be the submitted answer) and return a 2-tuple:
         - The first element of the 2-tuple should either be:
@@ -210,19 +218,16 @@ def grade_question_parameterized(data: QuestionData,
         - The second element of the 2-tuple should either be:
             - a string containing feedback
             - None, if there is no feedback (usually this should only occur if the answer is correct)
-    '''
+    """
 
     # Create the data dictionary at first
-    data['partial_scores'][question_name] = {
-        'score': 0.0,
-        'weight': weight
-    }
+    data["partial_scores"][question_name] = {"score": 0.0, "weight": weight}
 
     try:
-        submitted_answer = data['submitted_answers'][question_name]
+        submitted_answer = data["submitted_answers"][question_name]
     except KeyError:
         # Catch error if no answer submitted
-        data["format_errors"][question_name] = 'No answer was submitted'
+        data["format_errors"][question_name] = "No answer was submitted"
         return
 
     try:
@@ -240,35 +245,36 @@ def grade_question_parameterized(data: QuestionData,
         data["format_errors"][question_name] = str(err)
         return
 
-
-    data['partial_scores'][question_name]['score'] = partial_score
+    data["partial_scores"][question_name]["score"] = partial_score
 
     if feedback_content:
-        data['partial_scores'][question_name]['feedback'] = feedback_content
+        data["partial_scores"][question_name]["feedback"] = feedback_content
+
 
 def determine_score_params(score: Optional[float]) -> Tuple[str, float]:
-    '''Determine score params taken from data dict'''
+    """Determine score params taken from data dict"""
 
     if score is None:
-        return '', 0.0
+        return "", 0.0
 
     score_val = float(score)
 
     if score_val >= 1:
-        return ('correct', 1.0)
+        return ("correct", 1.0)
     elif score_val > 0:
-        return ('partial', math.floor(score_val * 100))
+        return ("partial", math.floor(score_val * 100))
 
-    return ('incorrect', 0.0)
+    return ("incorrect", 0.0)
 
 
-EnumT = TypeVar('EnumT', bound=Enum)
+EnumT = TypeVar("EnumT", bound=Enum)
+
 
 def get_enum_attrib(
     enum_type: Type[EnumT],
     element: lxml.html.HtmlElement,
     name: str,
-    default: Optional[EnumT]=None
+    default: Optional[EnumT] = None,
 ) -> EnumT:
     """value = get_enum_attrib(enum_type, element, name, default)
 
@@ -282,7 +288,11 @@ def get_enum_attrib(
     provided, must be a member of the given enum.
     """
 
-    enum_val, is_default = _get_attrib(element, name) if default is None else _get_attrib(element, name, default)
+    enum_val, is_default = (
+        pl._get_attrib(element, name)
+        if default is None
+        else pl._get_attrib(element, name, default)
+    )
 
     # Default doesn't need to be converted, already a value of the enum
     if is_default:

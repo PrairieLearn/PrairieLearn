@@ -1,6 +1,8 @@
 import pytest
 import big_o_utils as bou
 import python_helper_sympy as phs
+import prairielearn as pl
+from typing import Any, Tuple, Optional, Dict
 
 VARIABLES = ["n"]
 
@@ -236,7 +238,27 @@ class TestExceptions:
             grading_fn(a_sub, a_true, VARIABLES)
 
 
-### Start of generic utilites tests. Move these to prairieleran_test.py as needed
+#### Start of generic utilites tests. Move these to prairieleran_test.py as needed ####
+
+
+@pytest.fixture
+def question_data() -> pl.QuestionData:
+    return {
+        "params": dict(),
+        "correct_answers": dict(),
+        "submitted_answers": dict(),
+        "format_errors": dict(),
+        "partial_scores": dict(),
+        "score": 0.0,
+        "feedback": dict(),
+        "variant_seed": 0,
+        "options": dict(),
+        "raw_submitted_answers": dict(),
+        "editable": False,
+        "panel": "question",
+        "extensions": dict(),
+        "num_valid_submissions": 0,
+    }
 
 
 @pytest.mark.parametrize(
@@ -269,7 +291,7 @@ def test_grade_question_parametrized_correct(
             return True, good_feedback
         return False, bad_feedback
 
-    pl.grade_question_parameterized(
+    bou.grade_question_parameterized(
         question_data, question_name, grading_function, weight
     )
 
@@ -303,7 +325,7 @@ def test_grade_question_parametrized_exception(
     def grading_function(_: str) -> Tuple[bool, Optional[str]]:
         raise ValueError(error_msg)
 
-    pl.grade_question_parameterized(question_data, question_name, grading_function)
+    bou.grade_question_parameterized(question_data, question_name, grading_function)
 
     assert question_data["partial_scores"][question_name]["score"] == 0.0
     assert question_data["format_errors"][question_name] == error_msg
@@ -320,7 +342,7 @@ def test_grade_question_parametrized_bad_grade_function(
         return "True", f"The answer {ans} is right"
 
     with pytest.raises(AssertionError):
-        pl.grade_question_parameterized(question_data, question_name, grading_function)
+        bou.grade_question_parameterized(question_data, question_name, grading_function)
 
 
 def test_grade_question_parametrized_key_error_blank(
@@ -336,11 +358,11 @@ def test_grade_question_parametrized_key_error_blank(
         return (True, None)
 
     with pytest.raises(KeyError):
-        pl.grade_question_parameterized(question_data, question_name, grading_function)
+        bou.grade_question_parameterized(question_data, question_name, grading_function)
 
     # Empty out submitted answers
     question_data["submitted_answers"] = dict()
     question_data["format_errors"] = dict()
-    pl.grade_question_parameterized(question_data, question_name, grading_function)
+    bou.grade_question_parameterized(question_data, question_name, grading_function)
 
     assert question_data["format_errors"][question_name] == "No answer was submitted"
