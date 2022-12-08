@@ -1,6 +1,6 @@
-
 import pytest
 from prairielearn import QuestionData
+
 
 @pytest.fixture
 def question_data() -> QuestionData:
@@ -16,7 +16,7 @@ def question_data() -> QuestionData:
         "options": dict(),
         "raw_submitted_answers": dict(),
         "editable": False,
-        "panel": 'question',
+        "panel": "question",
         "extensions": dict(),
-        "num_valid_submissions": 0
+        "num_valid_submissions": 0,
     }

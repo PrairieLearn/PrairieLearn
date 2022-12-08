@@ -3,10 +3,8 @@
       "./elements/pl-hidden-hints",
       "./elements/pl-symbolic-input",
       "./elements/pl-big-o-input",
-      "python/python_helper_sympy.py",
-      "python/python_helper_sympy_test.py",
-      "python/prairielearn.py",
-      "python/prairielearn_test.py"
+      "./python/python_helper_sympy.py",
+      "./python/python_helper_sympy_test.py"
     ],
     "extraPaths": ["./python"],
     "pythonVersion": "3.8"
