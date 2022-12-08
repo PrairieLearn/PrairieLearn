@@ -6,7 +6,7 @@ sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../lib"))
 )
 
-from typing import Any, Dict
+from typing import Any, cast, Dict
 import prairielearn as pl  # noqa: E402
 import lxml.html  # noqa: E402
 import pandas as pd
@@ -38,7 +38,7 @@ def test_encoding_pandas(df: pd.DataFrame) -> None:
 
     # Deserialize and check equality
     loaded_str = json.loads(json_str)
-    deserialized_df = pl.from_json(loaded_str)
+    deserialized_df = cast(pd.DataFrame, pl.from_json(loaded_str))
 
     # Column types get erased, need to account for this in testing
     reference_df = df.copy()
@@ -53,7 +53,9 @@ def test_encoding_pandas(df: pd.DataFrame) -> None:
 def test_encoding_legacy(df: pd.DataFrame) -> None:
     """Add compatibility test for legacy encoding"""
 
-    reserialized_dataframe = pl.from_json(pandas_json_legacy_encoding(df))
+    reserialized_dataframe = cast(
+        pd.DataFrame, pl.from_json(pandas_json_legacy_encoding(df))
+    )
 
     pd.testing.assert_frame_equal(df, reserialized_dataframe)
 

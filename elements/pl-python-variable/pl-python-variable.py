@@ -67,7 +67,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         if show_dtype:
             descriptors = frame.agg([lambda s: s.dtype])
-            descriptors.index = ["dtype"]
+            descriptors.index = pandas.Index(["dtype"])
             other = descriptors.style.applymap(lambda v: "font-weight: bold;")
             frame_style.set_table_styles(
                 [{"selector": ".foot_row0", "props": "border-top: 1px solid black;"}]
