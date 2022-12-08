@@ -93,14 +93,40 @@ router.post(
       return next(error.make(403, 'Access denied (must be a student data editor)'));
     }
     if (req.body.__action === 'add_manual_grade') {
-      let manual_rubric_items = req.body.rubric_item_selected_manual || [];
-      let auto_rubric_items = req.body.rubric_item_selected_auto || [];
-      if (!Array.isArray(manual_rubric_items)) {
-        manual_rubric_items = [manual_rubric_items];
+      let manual_rubric_grading_id = null,
+        auto_rubric_grading_id = null;
+      if (res.locals.assessment_question.manual_rubric_id) {
+        let manual_rubric_items = req.body.rubric_item_selected_manual || [];
+        if (!Array.isArray(manual_rubric_items)) {
+          manual_rubric_items = [manual_rubric_items];
+        }
+        const params = [
+          res.locals.assessment_question.manual_rubric_id,
+          null, // old_rubric_grading_id, for updates
+          JSON.stringify(manual_rubric_items.map((id) => ({ rubric_item_id: id }))),
+          null, // adjust_points
+          null, // computed_points
+        ];
+        const update_result = (await sqldb.callAsync('rubric_gradings_insert', params)).rows[0];
+        manual_rubric_grading_id = update_result.rubric_grading_id;
       }
-      if (!Array.isArray(auto_rubric_items)) {
-        auto_rubric_items = [auto_rubric_items];
+
+      if (res.locals.assessment_question.auto_rubric_id) {
+        let auto_rubric_items = req.body.rubric_item_selected_auto || [];
+        if (!Array.isArray(auto_rubric_items)) {
+          auto_rubric_items = [auto_rubric_items];
+        }
+        const params = [
+          res.locals.assessment_question.auto_rubric_id,
+          null, // old_rubric_grading_id, for updates
+          JSON.stringify(manual_rubric_items.map((id) => ({ rubric_item_id: id }))),
+          null, // adjust_points
+          null, // computed_points
+        ];
+        const update_result = (await sqldb.callAsync('rubric_gradings_insert', params)).rows[0];
+        auto_rubric_grading_id = update_result.rubric_grading_id;
       }
+
       const params = [
         req.body.assessment_id,
         null, // assessment_instance_id,
@@ -118,8 +144,8 @@ router.post(
         req.body.use_score_perc ? null : req.body.score_auto_points || null, // auto_points
         { manual: req.body.submission_note }, // feedback
         null, // partial_scores
-        manual_rubric_items,
-        auto_rubric_items,
+        manual_rubric_grading_id,
+        auto_rubric_grading_id,
         res.locals.authn_user.user_id,
       ];
 
@@ -161,6 +187,7 @@ router.post(
         req.body.min_points,
         req.body.max_points,
         JSON.stringify(rubric_items),
+        res.locals.authn_user.user_id,
       ];
       const result = await sqldb.callAsync('assessment_questions_update_rubric', params);
       res.locals.assessment_question[`${req.body.rubric_type}_rubric_id`] =

@@ -7,6 +7,7 @@ CREATE FUNCTION
         IN min_points DOUBLE PRECISION,
         IN max_points DOUBLE PRECISION,
         IN arg_rubric_items JSONB,
+        IN arg_authn_user_id BIGINT,
         OUT arg_rubric_id BIGINT
     )
 AS $$
@@ -14,6 +15,7 @@ DECLARE
     next_number BIGINT := 0;
     rubric_item RECORD;
     assessment_question assessment_questions;
+    num_updated_instance_questions BIGINT;
 BEGIN
 
     SELECT * INTO assessment_question
@@ -101,35 +103,28 @@ BEGIN
 
     -- TODO Do this only for instance questions that have rubric items
     -- that have been affected by a change, depending on options
-    WITH updated_instance_questions AS (
-        UPDATE instance_questions iq
-        SET
-            manual_points = CASE WHEN rubric_type = 'auto' THEN manual_points ELSE rgi.arg_computed_points END,
-            auto_points = CASE WHEN rubric_type = 'auto' THEN rgi.arg_computed_points ELSE auto_points END,
-            manual_rubric_grading_id = CASE WHEN rubric_type = 'auto' THEN manual_rubric_grading_id ELSE rgi.rubric_grading_id END,
-            auto_rubric_grading_id = CASE WHEN rubric_type = 'auto' THEN rgi.rubric_grading_id ELSE auto_rubric_grading_id END,
-            points = CASE WHEN rubric_type = 'auto' THEN manual_points ELSE auto_points END + rgi.arg_computed_points
-            -- TODO score_perc, highest_submission_score (maybe use instance_questions_update_score?)
+
+    WITH new_rubric_gradings AS (
+        SELECT iq.*, rgi.*
         FROM
-            rubric_gradings AS rg
+            instance_questions iq
+            JOIN rubric_gradings rg ON (rg.id = CASE WHEN rubric_type = 'auto' THEN iq.auto_rubric_grading_id ELSE iq.manual_rubric_grading_id END)
             JOIN rubric_gradings_insert(arg_rubric_id, rg.id, NULL, NULL, NULL) AS rgi ON TRUE
         WHERE
             iq.assessment_question_id = arg_assessment_question_id
-            AND rg.id = CASE WHEN rubric_type = 'auto' THEN iq.auto_rubric_grading_id ELSE iq.manual_rubric_grading_id END
-        RETURNING iq.*
     )
-    INSERT INTO question_score_logs
-        (instance_question_id, auth_user_id,
-        max_points, max_manual_points, max_auto_points,
-        points, score_perc, auto_points, manual_points)
-    SELECT
-        iq.id, 1, -- TODO Add auth_user_id as argument
-        assessment_question.max_points, assessment_question.max_manual_points, assessment_question.max_auto_points,
-        iq.points, iq.score_perc, iq.auto_points, iq.manual_points
+    SELECT COUNT(1)
+    INTO num_updated_instance_questions
     FROM
-        updated_instance_questions iq;
+        new_rubric_gradings nrg
+        JOIN instance_questions_update_score(
+                NULL, nrg.assessment_instance_id, -- assessment_id, assessment_instance_id
+                NULL, nrg.id, NULL, NULL, NULL, NULL, -- submission, IQ, uid/group, number, qid, modified_at
+                NULL, NULL, NULL, NULL, NULL, NULL, -- total/manual/auto score/points
+                NULL, NULL, -- feedback, partial scores
+                CASE WHEN rubric_type = 'auto' THEN NULL ELSE nrg.rubric_grading_id END,
+                CASE WHEN rubric_type = 'auto' THEN nrg.rubric_grading_id ELSE NULL END,
+                arg_authn_user_id) ON TRUE;
 
-    -- TODO Add grading job?
-    -- TODO Handle issues arising from conflicting changes
 END;
 $$ LANGUAGE plpgsql VOLATILE;

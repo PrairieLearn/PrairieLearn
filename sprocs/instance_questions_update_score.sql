@@ -21,8 +21,8 @@ CREATE FUNCTION
         IN arg_auto_points double precision,
         IN arg_feedback jsonb,
         IN arg_partial_scores jsonb,
-        IN arg_manual_rubric_items bigint[],
-        IN arg_auto_rubric_items bigint[],
+        IN arg_manual_rubric_grading_id bigint,
+        IN arg_auto_rubric_grading_id bigint,
         IN arg_authn_user_id bigint,
 
         -- resulting updates
@@ -53,8 +53,6 @@ DECLARE
     new_manual_points double precision;
     new_auto_points double precision;
     new_correct boolean;
-    new_manual_rubric_grading_id bigint := NULL;
-    new_auto_rubric_grading_id bigint := NULL;
 BEGIN
     -- ##################################################################
     -- get the assessment_instance, max_points, and (possibly) submission_id
@@ -129,30 +127,20 @@ BEGIN
     modified_at_conflict = arg_modified_at IS NOT NULL AND current_modified_at != arg_modified_at;
 
     -- ##################################################################
-    -- generate rubric gradings object if applicable
+    -- if rubric grading has been provided, it overrides the points
 
-    -- TODO if points have been set, compute them first (??) and send as option for adjustment (??)
-
-    IF manual_rubric_id IS NOT NULL AND arg_manual_rubric_items IS NOT NULL THEN
-        WITH parsed_rubric_items AS (
-            SELECT jsonb_agg(jsonb_build_object('rubric_item_id', id)) AS items
-            FROM UNNEST(arg_manual_rubric_items) AS id
-        )
-        SELECT rubric_grading_id, arg_computed_points, NULL
-        INTO new_manual_rubric_grading_id, arg_manual_points, arg_manual_score_perc
-        FROM parsed_rubric_items pri
-             JOIN rubric_gradings_insert(manual_rubric_id, NULL, pri.items, NULL, NULL) ON TRUE;
+    IF manual_rubric_id IS NOT NULL AND arg_manual_rubric_grading_id IS NOT NULL THEN
+        SELECT computed_points, NULL
+        INTO arg_manual_points, arg_manual_score_perc
+        FROM rubric_gradings rg
+        WHERE rg.id = arg_manual_rubric_grading_id;
     END IF;
 
-    IF auto_rubric_id IS NOT NULL AND arg_auto_rubric_items IS NOT NULL THEN
-        WITH parsed_rubric_items AS (
-            SELECT jsonb_agg(jsonb_build_object('rubric_item_id', id)) AS items
-            FROM UNNEST(arg_auto_rubric_items) AS id
-        )
-        SELECT rubric_grading_id, arg_computed_points, NULL
-        INTO new_auto_rubric_grading_id, arg_auto_points, arg_auto_score_perc
-        FROM parsed_rubric_items pri
-             JOIN rubric_gradings_insert(auto_rubric_id, NULL, pri.items, NULL, NULL) ON TRUE;
+    IF auto_rubric_id IS NOT NULL AND arg_auto_rubric_grading_id IS NOT NULL THEN
+        SELECT computed_points, NULL
+        INTO arg_auto_points, arg_auto_score_perc
+        FROM rubric_gradings rg
+        WHERE rg.id = arg_auto_rubric_grading_id;
     END IF;
 
     -- ##################################################################
@@ -238,7 +226,7 @@ BEGIN
         VALUES
             (found_submission_id, arg_authn_user_id, arg_authn_user_id, now(), 'Manual',
              new_correct, new_score_perc / 100, new_auto_points, new_manual_points,
-             arg_feedback, arg_partial_scores, new_manual_rubric_grading_id, new_auto_rubric_grading_id)
+             arg_feedback, arg_partial_scores, arg_manual_rubric_grading_id, arg_auto_rubric_grading_id)
         RETURNING id INTO grading_job_id;
 
         IF NOT modified_at_conflict THEN
@@ -273,8 +261,8 @@ BEGIN
             score_perc = new_score_perc,
             auto_points = COALESCE(new_auto_points, auto_points),
             manual_points = COALESCE(new_manual_points, manual_points),
-            auto_rubric_grading_id = new_auto_rubric_grading_id,
-            manual_rubric_grading_id = new_manual_rubric_grading_id,
+            auto_rubric_grading_id = arg_auto_rubric_grading_id,
+            manual_rubric_grading_id = arg_manual_rubric_grading_id,
             status = 'complete',
             modified_at = now(),
             highest_submission_score = COALESCE(new_auto_score_perc / 100, highest_submission_score),
