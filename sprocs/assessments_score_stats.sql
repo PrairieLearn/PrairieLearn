@@ -1,5 +1,5 @@
 CREATE FUNCTION
-    assessments_stats (
+    assessments_score_stats (
         IN assessment_id bigint,
         OUT number integer,
         OUT min double precision,
@@ -28,7 +28,7 @@ BEGIN
             JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
             JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
         WHERE
-            a.id = assessments_stats.assessment_id
+            a.id = assessments_score_stats.assessment_id
             AND NOT users_is_instructor_in_course_instance(e.user_id, e.course_instance_id)
         GROUP BY u.user_id
     )
