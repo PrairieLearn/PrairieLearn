@@ -48,7 +48,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
 
     if varname not in data["params"]:
-        raise ValueError(f"Could not find {varname} in params!")
+        raise KeyError(f"Could not find {varname} in params!")
 
     var_out = data["params"][varname]
 
