@@ -99,6 +99,8 @@ BEGIN
         END IF;
     END LOOP;
 
+    -- TODO Do this only for instance questions that have rubric items
+    -- that have been affected by a change, depending on options
     UPDATE instance_questions iq
     SET
         manual_points = CASE WHEN rubric_type = 'auto' THEN manual_points ELSE rgi.arg_computed_points END,

@@ -51,9 +51,9 @@ BEGIN
     RETURNING id, computed_points INTO rubric_grading_id, arg_computed_points;
 
     INSERT INTO rubric_grading_items
-        (rubric_grading_id, rubric_item_id, score, points, note)
+        (rubric_grading_id, rubric_item_id, score, points, short_text, note)
     SELECT
-        rubric_grading_id, ari.rubric_item_id, COALESCE(ari.score, 1), COALESCE(ari.score, 1) * ri.points, ari.note
+        rubric_grading_id, ari.rubric_item_id, COALESCE(ari.score, 1), COALESCE(ari.score, 1) * ri.points, ri.short_text, ari.note
     FROM JSONB_TO_RECORDSET(applied_rubric_items) AS ari(rubric_item_id BIGINT, score DOUBLE PRECISION, note TEXT)
          JOIN rubric_items AS ri ON (ri.id = ari.rubric_item_id AND ri.rubric_id = rubric.id);
 END;
