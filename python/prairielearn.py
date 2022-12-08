@@ -53,14 +53,20 @@ class ElementTestData(QuestionData):
     test_type: Literal['correct', 'incorrect', 'invalid']
 
 
-def set_weighted_score_data(data: QuestionData) -> None:
-    "Sets main question score to be weighted average of all partial scores"
-    # TODO change to check that all weights are unset if using an equal weighting
+def set_weighted_score_data(data: QuestionData, weight_default: Optional[int]=None) -> None:
+    """
+    Sets main question score to be weighted average of all partial scores. Uses
+    weight_default to fill in a default weight for a question if one is missing.
+    """
+
     weight_total = 0
     score_total = 0.0
     for part in data["partial_scores"].values():
         score = part["score"]
-        weight = part["weight"]
+        weight = part.get("weight", weight_default)
+
+        if weight is None:
+            raise ValueError("Weight value missing. Must set default for missing weights")
 
         if score is None:
             raise ValueError("Can't set weighted score data if score is None.")
