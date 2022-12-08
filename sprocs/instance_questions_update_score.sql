@@ -46,6 +46,8 @@ DECLARE
     current_partial_score jsonb;
     current_auto_points double precision;
     current_manual_points double precision;
+    current_auto_rubric_grading_id bigint;
+    current_manual_rubric_grading_id bigint;
 
     new_score_perc double precision;
     new_auto_score_perc double precision;
@@ -71,6 +73,8 @@ BEGIN
         s.partial_scores,
         iq.auto_points,
         iq.manual_points,
+        iq.auto_rubric_grading_id,
+        iq.manual_rubric_grading_id,
         iq.modified_at
     INTO
         found_submission_id,
@@ -86,6 +90,8 @@ BEGIN
         current_partial_score,
         current_auto_points,
         current_manual_points,
+        current_auto_rubric_grading_id,
+        current_manual_rubric_grading_id,
         current_modified_at
     FROM
         instance_questions AS iq
@@ -134,6 +140,8 @@ BEGIN
         INTO arg_manual_points, arg_manual_score_perc
         FROM rubric_gradings rg
         WHERE rg.id = arg_manual_rubric_grading_id;
+    ELSE
+        arg_manual_rubric_grading_id := current_manual_rubric_grading_id;
     END IF;
 
     IF auto_rubric_id IS NOT NULL AND arg_auto_rubric_grading_id IS NOT NULL THEN
@@ -141,6 +149,8 @@ BEGIN
         INTO arg_auto_points, arg_auto_score_perc
         FROM rubric_gradings rg
         WHERE rg.id = arg_auto_rubric_grading_id;
+    ELSE
+        arg_auto_rubric_grading_id := current_auto_rubric_grading_id;
     END IF;
 
     -- ##################################################################
