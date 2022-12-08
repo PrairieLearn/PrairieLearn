@@ -22,7 +22,7 @@ class TestBigOInput:
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
         assert score == 1
-        assert "Correct!" == feedback
+        assert feedback == "Correct!"
 
     @pytest.mark.parametrize(
         "a_true, a_sub",

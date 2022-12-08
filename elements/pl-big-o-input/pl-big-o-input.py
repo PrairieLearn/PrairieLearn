@@ -64,7 +64,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             raise ValueError(f"duplicate correct_answers variable name: {name}")
 
         a_true = pl.get_string_attrib(element, "correct-answer")
-        # Try converting answer before storing
+        # Validate that the answer can be parsed before storing
         try:
             phs.convert_string_to_sympy(
                 a_true, variables, allow_complex=False, allow_trig_functions=False
