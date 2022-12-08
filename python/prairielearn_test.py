@@ -85,5 +85,5 @@ def test_set_weighted_score_data(
     }
 
     # Assert equality, check weight default setting
-    pl.set_weighted_score_data(question_data, 1)
+    pl.set_weighted_score_data(question_data)
     assert math.isclose(question_data["score"], expected_score)
