@@ -564,7 +564,7 @@ Fill in the blank field that allows for mathematical symbol input.
 **question.html**
 
 ```html
-<pl-symbolic-input answers-name="symbolic_math" variable="x, y" label="$z =$"></pl-symbolic-input>
+<pl-symbolic-input answers-name="symbolic_math" variables="x, y" label="$z =$"></pl-symbolic-input>
 ```
 
 **server.py**
@@ -630,7 +630,7 @@ Gives automated feedback in the case of improper asymptotic input.
 **question.html**
 
 ```html
-<pl-big-o-input answers-name="ans" variables="n" correct-answer="n**2" size="10"></pl-big-o-input>
+<pl-big-o-input answers-name="ans" variable="n" correct-answer="n**2" size="10"></pl-big-o-input>
 ```
 
 #### Customizations
