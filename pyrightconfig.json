@@ -1,6 +1,7 @@
 {
     "include": [
       "./elements/pl-hidden-hints",
+      "./elements/pl-order-blocks",
       "./elements/pl-symbolic-input",
       "./elements/pl-big-o-input",
       "./python/python_helper_sympy.py",
