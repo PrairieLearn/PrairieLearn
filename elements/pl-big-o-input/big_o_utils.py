@@ -34,6 +34,10 @@ THETA_LOWER_ORDER_TERMS_FEEDBACK = (
 def grade_big_o_expression(
     a_true: str, a_sub: str, variables: List[str]
 ) -> Tuple[float, str]:
+
+    a_true = a_true.replace(" ", "")
+    a_sub = a_sub.replace(" ", "")
+
     if a_true == a_sub:
         return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
@@ -67,6 +71,10 @@ def grade_big_o_expression(
 def grade_theta_expression(
     a_true: str, a_sub: str, variables: List[str]
 ) -> Tuple[float, str]:
+
+    a_true = a_true.replace(" ", "")
+    a_sub = a_sub.replace(" ", "")
+
     if a_true == a_sub:
         return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
@@ -99,6 +107,10 @@ def grade_theta_expression(
 def grade_omega_expression(
     a_true: str, a_sub: str, variables: List[str]
 ) -> Tuple[float, str]:
+
+    a_true = a_true.replace(" ", "")
+    a_sub = a_sub.replace(" ", "")
+
     if a_true == a_sub:
         return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
@@ -132,6 +144,10 @@ def grade_omega_expression(
 def grade_little_o_expression(
     a_true: str, a_sub: str, variables: List[str]
 ) -> Tuple[float, str]:
+
+    a_true = a_true.replace(" ", "")
+    a_sub = a_sub.replace(" ", "")
+
     if a_true == a_sub:
         return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 
@@ -165,6 +181,10 @@ def grade_little_o_expression(
 def grade_little_omega_expression(
     a_true: str, a_sub: str, variables: List[str]
 ) -> Tuple[float, str]:
+
+    a_true = a_true.replace(" ", "")
+    a_sub = a_sub.replace(" ", "")
+
     if a_true == a_sub:
         return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
 

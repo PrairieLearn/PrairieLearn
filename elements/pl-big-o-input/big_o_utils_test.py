@@ -17,9 +17,11 @@ ALL_GRADING_FUNCTIONS = [
 
 class TestBigOInput:
     @pytest.mark.parametrize("grading_fn", ALL_GRADING_FUNCTIONS)
-    def test_correct_answer(self, grading_fn: bou.BigOGradingFunctionT) -> None:
+    @pytest.mark.parametrize("a_sub", ["n**2", "n ** 2"])
+    def test_correct_answer(
+        self, a_sub: str, grading_fn: bou.BigOGradingFunctionT
+    ) -> None:
         a_true = "n**2"
-        a_sub = "n**2"
 
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
