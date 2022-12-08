@@ -240,7 +240,7 @@ class TestExceptions:
             grading_fn(a_sub, a_true, VARIABLES)
 
 
-#### Start of generic utilites tests. Move these to prairieleran_test.py as needed ####
+# Start of generic utilites tests. Move these to prairieleran_test.py as needed
 
 
 @pytest.fixture
