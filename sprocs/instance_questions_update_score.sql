@@ -40,6 +40,8 @@ DECLARE
     max_points double precision;
     max_manual_points double precision;
     max_auto_points double precision;
+    manual_rubric_id bigint;
+    auto_rubric_id bigint;
 
     current_partial_score jsonb;
     current_auto_points double precision;
@@ -51,6 +53,8 @@ DECLARE
     new_manual_points double precision;
     new_auto_points double precision;
     new_correct boolean;
+    new_manual_rubric_grading_id bigint := NULL;
+    new_auto_rubric_grading_id bigint := NULL;
 BEGIN
     -- ##################################################################
     -- get the assessment_instance, max_points, and (possibly) submission_id
@@ -62,6 +66,8 @@ BEGIN
         aq.max_points,
         aq.max_auto_points,
         aq.max_manual_points,
+        aq.manual_rubric_id,
+        aq.auto_rubric_id,
         COALESCE(g.name, u.uid),
         q.qid,
         s.partial_scores,
@@ -75,6 +81,8 @@ BEGIN
         max_points,
         max_auto_points,
         max_manual_points,
+        manual_rubric_id,
+        auto_rubric_id,
         found_uid_or_group,
         found_qid,
         current_partial_score,
@@ -119,6 +127,33 @@ BEGIN
     END IF;
 
     modified_at_conflict = arg_modified_at IS NOT NULL AND current_modified_at != arg_modified_at;
+
+    -- ##################################################################
+    -- generate rubric gradings object if applicable
+
+    -- TODO if points have been set, compute them first (??) and send as option for adjustment (??)
+
+    IF manual_rubric_id IS NOT NULL AND arg_manual_rubric_items IS NOT NULL THEN
+        WITH parsed_rubric_items AS (
+            SELECT jsonb_agg(jsonb_build_object('rubric_item_id', id)) AS items
+            FROM UNNEST(arg_manual_rubric_items) AS id
+        )
+        SELECT rubric_grading_id, arg_computed_points, NULL
+        INTO new_manual_rubric_grading_id, arg_manual_points, arg_manual_score_perc
+        FROM parsed_rubric_items pri
+             JOIN rubric_gradings_insert(manual_rubric_id, pri.items, NULL, arg_manual_points) ON TRUE;
+    END IF;
+
+    IF auto_rubric_id IS NOT NULL AND arg_auto_rubric_items IS NOT NULL THEN
+        WITH parsed_rubric_items AS (
+            SELECT jsonb_agg(jsonb_build_object('rubric_item_id', id)) AS items
+            FROM UNNEST(arg_auto_rubric_items) AS id
+        )
+        SELECT rubric_grading_id, arg_computed_points, NULL
+        INTO new_auto_rubric_grading_id, arg_auto_points, arg_auto_score_perc
+        FROM parsed_rubric_items pri
+             JOIN rubric_gradings_insert(auto_rubric_id, pri.items, NULL, arg_auto_points) ON TRUE;
+    END IF;
 
     -- ##################################################################
     -- check if partial_scores is an object
@@ -199,11 +234,11 @@ BEGIN
         INSERT INTO grading_jobs
             (submission_id, auth_user_id, graded_by, graded_at, grading_method,
              correct, score, auto_points, manual_points,
-             feedback, partial_scores)
+             feedback, partial_scores, manual_rubric_grading_id, auto_rubric_grading_id)
         VALUES
             (found_submission_id, arg_authn_user_id, arg_authn_user_id, now(), 'Manual',
              new_correct, new_score_perc / 100, new_auto_points, new_manual_points,
-             arg_feedback, arg_partial_scores)
+             arg_feedback, arg_partial_scores, new_manual_rubric_grading_id, new_auto_rubric_grading_id)
         RETURNING id INTO grading_job_id;
 
         IF NOT modified_at_conflict THEN
@@ -238,6 +273,8 @@ BEGIN
             score_perc = new_score_perc,
             auto_points = COALESCE(new_auto_points, auto_points),
             manual_points = COALESCE(new_manual_points, manual_points),
+            auto_rubric_grading_id = new_auto_rubric_grading_id,
+            manual_rubric_grading_id = new_manual_rubric_grading_id,
             status = 'complete',
             modified_at = now(),
             highest_submission_score = COALESCE(new_auto_score_perc / 100, highest_submission_score),
