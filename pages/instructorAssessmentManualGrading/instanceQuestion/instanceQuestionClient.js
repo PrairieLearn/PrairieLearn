@@ -45,7 +45,6 @@ function resetInstructorGradingPanel() {
   });
 
   $('.js-show-rubric-settings-button').click(function () {
-    console.log('settings button', this);
     const type = $(this).data('rubric-type');
     $(`.rubric-settings-modal-${type}`).modal('show');
   });
@@ -78,7 +77,10 @@ function resetInstructorGradingPanel() {
 
   $('.js-rubric-settings-modal form').submit(function (e) {
     e.preventDefault();
-    // TODO Save and restore current rubric and feedback
+    const rubricFormData = $(
+      'form[name=instance_question-manual-grade-update-form]'
+    ).serializeArray();
+
     $(this).parents('.modal:first').modal('hide');
     $.post(
       $(this).attr('action'),
@@ -86,6 +88,18 @@ function resetInstructorGradingPanel() {
       function (data) {
         if (data.gradingPanel) {
           $('.js-main-grading-panel').html(data.gradingPanel);
+
+          // Restore any values that had been set before the settings were configured.
+          const newRubricForm = $('form[name=instance_question-manual-grade-update-form]');
+          $(newRubricForm).find('input[type="checkbox"]').prop('checked', false);
+          (rubricFormData || []).forEach((item) => {
+            const input = $(newRubricForm).find(`[name="${item.name}"]`);
+            if (input.is('[type="checkbox"]')) {
+              input.filter(`[value="${item.value}"]`).prop('checked', true);
+            } else {
+              input.val(item.value);
+            }
+          });
         }
         if (data.rubricSettingsManual) {
           const content = $(data.rubricSettingsManual).html();
@@ -129,7 +143,6 @@ function updatePointsView() {
     ) / 100;
   const total_perc = Math.round((points * 10000) / assessment_question_max_points) / 100;
 
-  console.log(this, form, points);
   form.find('[name=score_auto_points]').not(this).val(auto_points);
   form.find('[name=score_auto_percent]').not(this).val(auto_perc);
   form.find('[name=score_manual_points]').not(this).val(manual_points);
