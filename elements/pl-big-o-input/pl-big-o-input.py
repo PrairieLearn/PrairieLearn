@@ -43,7 +43,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     optional_attribs = [
         "weight",
         "correct-answer",
-        "variables",
+        "variable",
         "size",
         "display",
         "show-help-text",
@@ -53,7 +53,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     name = pl.get_string_attrib(element, "answers-name")
     variables = phs.get_variables_list(
-        pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
+        pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
 
     if len(variables) > 1:
@@ -79,7 +79,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     variables = phs.get_variables_list(
-        pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
+        pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
     display = pl.get_enum_attrib(pl.DisplayType, element, "display", DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
@@ -103,7 +103,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     info_params = {
         "format": True,
-        "variables": variables,
+        "variable": variables,
         "operators": operators,
         "constants": constants,
     }
@@ -217,7 +217,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     variables = phs.get_variables_list(
-        pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
+        pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
 
     a_sub = data["submitted_answers"].get(name)
@@ -243,7 +243,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     variables = phs.get_variables_list(
-        pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
+        pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
     a_tru: Optional[str] = data["correct_answers"].get(name)
