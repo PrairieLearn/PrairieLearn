@@ -9,6 +9,7 @@ from python_helper_sympy import convert_string_to_sympy
 from python_helper_sympy import sympy_to_json
 from python_helper_sympy import json_to_sympy
 import re
+import math
 import colors
 import unicodedata
 import importlib
@@ -88,7 +89,10 @@ def all_questions_correct(data: QuestionData) -> bool:
     if len(partial_scores) == 0:
         return False
 
-    return all(part["score"] == 1.0 for part in partial_scores.values())
+    return all(
+        part["score"] is not None and math.isclose(part["score"], 1.0)
+        for part in partial_scores.values()
+    )
 
 
 def to_json(v):
