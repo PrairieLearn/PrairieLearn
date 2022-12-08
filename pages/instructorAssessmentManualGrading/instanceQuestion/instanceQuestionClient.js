@@ -118,6 +118,7 @@ function resetInstructorGradingPanel() {
   $('.js-rubric-settings-modal .js-add-rubric-item-button').click(addRubricItemRow);
 
   updateRubricItemOrderField();
+  computePointsFromRubric();
 }
 
 function updatePointsView() {

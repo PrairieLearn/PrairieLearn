@@ -35,6 +35,7 @@ CREATE TABLE IF NOT EXISTS rubric_grading_items (
     rubric_grading_id BIGINT NOT NULL REFERENCES rubric_gradings(id) ON DELETE CASCADE ON UPDATE CASCADE,
     rubric_item_id BIGINT NOT NULL REFERENCES rubric_items(id) ON DELETE CASCADE ON UPDATE CASCADE,
     score DOUBLE PRECISION NOT NULL DEFAULT 1,
+    points DOUBLE PRECISION NOT NULL,
     note TEXT,
     deleted_at TIMESTAMP WITH TIME ZONE
 );

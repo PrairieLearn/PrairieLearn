@@ -141,7 +141,7 @@ BEGIN
         SELECT rubric_grading_id, arg_computed_points, NULL
         INTO new_manual_rubric_grading_id, arg_manual_points, arg_manual_score_perc
         FROM parsed_rubric_items pri
-             JOIN rubric_gradings_insert(manual_rubric_id, pri.items, NULL, arg_manual_points) ON TRUE;
+             JOIN rubric_gradings_insert(manual_rubric_id, NULL, pri.items, NULL, NULL) ON TRUE;
     END IF;
 
     IF auto_rubric_id IS NOT NULL AND arg_auto_rubric_items IS NOT NULL THEN
@@ -152,7 +152,7 @@ BEGIN
         SELECT rubric_grading_id, arg_computed_points, NULL
         INTO new_auto_rubric_grading_id, arg_auto_points, arg_auto_score_perc
         FROM parsed_rubric_items pri
-             JOIN rubric_gradings_insert(auto_rubric_id, pri.items, NULL, arg_auto_points) ON TRUE;
+             JOIN rubric_gradings_insert(auto_rubric_id, NULL, pri.items, NULL, NULL) ON TRUE;
     END IF;
 
     -- ##################################################################
