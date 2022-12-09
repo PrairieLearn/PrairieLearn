@@ -42,7 +42,7 @@ class QuestionData(TypedDict):
     partial_scores: Dict[str, PartialScore]
     score: float
     feedback: Dict[str, Any]
-    variant_seed: int
+    variant_seed: str
     options: Dict[str, Any]
     raw_submitted_answers: Dict[str, Any]
     editable: bool

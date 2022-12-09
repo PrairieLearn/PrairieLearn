@@ -12,7 +12,7 @@ def question_data() -> QuestionData:
         "partial_scores": dict(),
         "score": 0.0,
         "feedback": dict(),
-        "variant_seed": 0,
+        "variant_seed": "",
         "options": dict(),
         "raw_submitted_answers": dict(),
         "editable": False,
