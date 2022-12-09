@@ -94,12 +94,18 @@ def to_json(v):
             M.append(row)
         return {'_type': 'sympy_matrix', '_value': M, '_variables': s, '_shape': [num_rows, num_cols]}
     elif isinstance(v, pandas.DataFrame):
+        # The next lines of code are required to address the JSON table-orient 
+        # generating numeric keys instead of strings for an index sequence with
+        # only numeric values (c.f. pandas-dev/pandas#46392)
         df_modified_names = v.copy()
 
         indexing_dtype = df_modified_names.columns.dtype
         if indexing_dtype == np.float64 or indexing_dtype == np.int64:
             df_modified_names.columns = df_modified_names.columns.astype('string')
 
+        # For version 2 storing a data frame, we use the table orientation alongside of
+        # enforcing a date format to allow for numeric values
+        # Details: https://pandas.pydata.org/docs/reference/api/pandas.read_json.html
         encoded_json_df = df_modified_names.to_json(orient="table", date_format="iso")
 
         return {'_type': 'dataframe-v2', '_value': encoded_json_df}
