@@ -38,7 +38,7 @@ def prepare(element_html, data) -> None:
         data["params"][params_name] = frontend_variables
     else:
         raise ValueError(
-            "Cannot define variables from both backend and frontend for variable name '{params_name}'"
+            "Cannot define variables from both 'question.html' and 'server.py' for variable name '{params_name}'"
         )
 
 
