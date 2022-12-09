@@ -3,12 +3,14 @@ import lxml
 import chevron
 
 
-def render(element_html: str, data: pl.QuestionData) -> str:
+def prepare(element_html, data) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, [], ["params-name"])
+    pl.check_attribs(element, ["params-name"], [])
+
+    params_name = pl.get_string_attrib(element, "params-name")
 
     # Get frontend variables
-    html_variables = []
+    frontend_variables = []
 
     for child in element:
         if child.tag == "pl-variable":
@@ -22,7 +24,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             if pl.has_attrib(child, "description"):
                 var_dict["description"] = pl.get_string_attrib(child, "description")
 
-            html_variables.append(var_dict)
+            frontend_variables.append(var_dict)
 
         elif child.tag is lxml.etree.Comment:
             continue
@@ -32,20 +34,22 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 f"Tags inside of pl-external-grader-variables must be pl-variable, not '{child.tag}'."
             )
 
-    has_backend_variables = pl.has_attrib(element, "params-name")
+    if params_name not in data['params']:
+        data["params"][params_name] = frontend_variables
+    else:
+        raise ValueError(
+            "Cannot define variables from both backend and frontend for variable name '{params_name}'"
+        )
 
-    if has_backend_variables and len(html_variables) > 0:
-        raise ValueError("Cannot define variables from both backend and frontend")
 
-    # Get backend variables
-    backend_variables = []
+def render(element_html: str, data: pl.QuestionData) -> str:
+    element = lxml.html.fragment_fromstring(element_html)
+    pl.check_attribs(element, ["params-name"], [])
 
-    if has_backend_variables:
-        params_name = pl.get_string_attrib(element, "params-name")
-        backend_variables = data["params"][params_name]
+    params_name = pl.get_string_attrib(element, "params-name")
 
-    # Make final variables list
-    names_user_description = backend_variables + html_variables
+    # Get final variables list
+    names_user_description = data["params"][params_name]
     has_names_user_description = len(names_user_description) > 0
 
     # Show descriptions if any variable has them set
