@@ -56,8 +56,8 @@ class ElementTestData(QuestionData):
 
 def set_weighted_score_data(data: QuestionData, weight_default: int=1) -> None:
     """
-    Sets main question score to be weighted average of all partial scores. Uses
-    weight_default to fill in a default weight for a question if one is missing.
+    Sets overall question score to be weighted average of all partial scores. Uses
+    weight_default to fill in a default weight for a score if one is missing.
     """
 
     weight_total = 0
@@ -75,12 +75,12 @@ def set_weighted_score_data(data: QuestionData, weight_default: int=1) -> None:
     data['score'] = score_total / weight_total
 
 def set_all_or_nothing_score_data(data: QuestionData) -> None:
-    "Gives points to main question score if all partial scores are correct"
+    """Gives points to main question score if all partial scores are correct."""
 
-    data['score'] = 1. if all_questions_correct(data) else 0.
+    data['score'] = 1.0 if all_questions_correct(data) else 0.0
 
 def all_questions_correct(data: QuestionData) -> bool:
-    "Return true if all questions are correct in partial scores and it's nonempty."
+    """Return true if all questions are correct in partial scores and it's nonempty."""
     partial_scores = data["partial_scores"]
 
     if len(partial_scores) == 0:
