@@ -25,6 +25,7 @@ const filesize = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const Sentry = require('@prairielearn/sentry');
+const compiledAssets = require('@prairielearn/compiled-assets');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -94,6 +95,7 @@ module.exports.initExpress = function () {
   app.use((req, res, next) => {
     res.locals.asset_path = assets.assetPath;
     res.locals.node_modules_asset_path = assets.nodeModulesAssetPath;
+    res.locals.compiled_script_tag = compiledAssets.compiledScriptTag;
     next();
   });
   app.use(function (req, res, next) {
@@ -363,6 +365,8 @@ module.exports.initExpress = function () {
   // This route is kept around for legacy reasons - new code should prefer the
   // "cacheable" route above.
   app.use(express.static(path.join(__dirname, 'public')));
+
+  app.use('/build/', compiledAssets.handler());
 
   // To allow for more aggressive caching of files served from node_modules/,
   // we insert a hash of the module version into the resource path. This allows
@@ -1942,6 +1946,14 @@ if (config.startServer) {
         news_items.init(notify_with_new_server, function (err) {
           if (ERR(err, callback)) return;
           callback(null);
+        });
+      },
+      async () => {
+        compiledAssets.init({
+          dev: config.devMode,
+          sourceDirectory: path.resolve(__dirname, 'assets'),
+          buildDirectory: path.resolve(__dirname, 'public/build'),
+          publicPath: '/build',
         });
       },
       // We need to initialize these first, as the code callers require these
