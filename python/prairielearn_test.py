@@ -31,7 +31,7 @@ def test_encoding_pandas(df: pd.DataFrame) -> None:
     """Test that new json encoding works"""
 
     # Test encoding as json doesn't throw exceptions
-    json_df = pl.to_json(df)
+    json_df = pl.to_json(df, new_df_encoding=True)
     json_str = json.dumps(json_df)
 
     assert type(json_str) == str
@@ -53,26 +53,12 @@ def test_encoding_pandas(df: pd.DataFrame) -> None:
 def test_encoding_legacy(df: pd.DataFrame) -> None:
     """Add compatibility test for legacy encoding"""
 
-    reserialized_dataframe = cast(
-        pd.DataFrame, pl.from_json(pandas_json_legacy_encoding(df))
-    )
+    reserialized_dataframe = cast(pd.DataFrame, pl.from_json(pl.to_json(df)))
 
     pd.testing.assert_frame_equal(df, reserialized_dataframe)
 
 
 ### Start of test utility functions
-
-
-def pandas_json_legacy_encoding(df: pd.DataFrame) -> Dict[str, Any]:
-    """Encodes pandas dataframe using legacy format"""
-    return {
-        "_type": "dataframe",
-        "_value": {
-            "index": list(df.index),
-            "columns": list(df.columns),
-            "data": df.values.tolist(),
-        },
-    }
 
 
 @pytest.fixture
