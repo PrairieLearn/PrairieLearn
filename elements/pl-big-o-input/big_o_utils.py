@@ -50,6 +50,8 @@ def grade_big_o_expression(
 
     if sym_true.equals(sym_sub):
         return (1, CORRECT_COMPLEX_FEEDBACK)
+    elif sym_sub.equals(sympy.sympify(0)):
+        return (0, INCORRECT_FEEDBACK)
 
     if sympy.limit(sym_sub, sympy.Symbol(variables[0]), sympy.oo) < sympy.sympify(0):
         return (0, NEGATIVE_FEEDBACK)
@@ -87,6 +89,8 @@ def grade_theta_expression(
 
     if sym_true.equals(sym_sub):
         return (1, CORRECT_COMPLEX_FEEDBACK)
+    elif sym_sub.equals(sympy.sympify(0)):
+        return (0, INCORRECT_FEEDBACK)
 
     if sympy.limit(sym_sub, sympy.Symbol(variables[0]), sympy.oo) < sympy.sympify(0):
         return (0, NEGATIVE_FEEDBACK)
@@ -123,6 +127,8 @@ def grade_omega_expression(
 
     if sym_true.equals(sym_sub):
         return (1, CORRECT_COMPLEX_FEEDBACK)
+    elif sym_sub.equals(sympy.sympify(0)):
+        return (0, INCORRECT_FEEDBACK)
 
     if sympy.limit(sym_sub, sympy.Symbol(variables[0]), sympy.oo) < sympy.sympify(0):
         return (0, NEGATIVE_FEEDBACK)
@@ -160,6 +166,8 @@ def grade_little_o_expression(
 
     if sym_true.equals(sym_sub):
         return (1, CORRECT_COMPLEX_FEEDBACK)
+    elif sym_sub.equals(sympy.sympify(0)):
+        return (0, INCORRECT_FEEDBACK)
 
     if sympy.limit(sym_sub, sympy.Symbol(variables[0]), sympy.oo) < sympy.sympify(0):
         return (0, NEGATIVE_FEEDBACK)
@@ -197,6 +205,8 @@ def grade_little_omega_expression(
 
     if sym_true.equals(sym_sub):
         return (1, CORRECT_COMPLEX_FEEDBACK)
+    elif sym_sub.equals(sympy.sympify(0)):
+        return (0, INCORRECT_FEEDBACK)
 
     if sympy.limit(sym_sub, sympy.Symbol(variables[0]), sympy.oo) < sympy.sympify(0):
         return (0, NEGATIVE_FEEDBACK)

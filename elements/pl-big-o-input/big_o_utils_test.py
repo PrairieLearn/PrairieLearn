@@ -170,6 +170,7 @@ class TestBigOInput:
     @pytest.mark.parametrize(
         "a_true, a_sub",
         [
+            ("log(n)", "0"),
             ("log(n)", "1"),
             ("log(n)", "log(log(n))"),
             ("n**2", "1"),
@@ -198,6 +199,7 @@ class TestBigOInput:
     @pytest.mark.parametrize(
         "a_true, a_sub",
         [
+            ("log(n)", "0"),
             ("1", "log(n)"),
             ("log(log(n))", "log(n)"),
             ("1", "n**2"),
@@ -221,7 +223,7 @@ class TestBigOInput:
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
         assert score == 0
-        assert "incorrect" in feedback or "Incorrect" in feedback
+        assert "incorrect" in feedback
 
 
 class TestExceptions:
