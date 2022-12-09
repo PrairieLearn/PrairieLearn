@@ -17,7 +17,7 @@ import { detectResources, Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { ExpressLayerType } from '@opentelemetry/instrumentation-express';
 import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
-import { Span, SpanStatusCode, context, trace } from '@opentelemetry/api';
+import { Span, SpanStatusCode, trace } from '@opentelemetry/api';
 import { hrTimeToMilliseconds } from '@opentelemetry/core';
 
 // Exporters go here.
@@ -117,7 +117,7 @@ instrumentations.forEach((i) => {
   i.enable();
 });
 
-let tracerProvider: NodeTracerProvider;
+let tracerProvider: NodeTracerProvider | null;
 
 export interface OpenTelemetryConfig {
   openTelemetryEnabled: boolean;
@@ -158,6 +158,9 @@ export async function init(config: OpenTelemetryConfig) {
         break;
       }
       case 'honeycomb': {
+        if (!config.honeycombApiKey) throw new Error('Missing Honeycomb API key');
+        if (!config.honeycombDataset) throw new Error('Missing Honeycomb dataset');
+
         // Create a Honeycomb exporter with the appropriate metadata from the
         // config we've been provided with.
         const metadata = new Metadata();
@@ -240,14 +243,17 @@ export async function init(config: OpenTelemetryConfig) {
     );
   }
 
-  tracerProvider = new NodeTracerProvider({
+  const nodeTracerProvider = new NodeTracerProvider({
     sampler,
     resource,
   });
-  tracerProvider.addSpanProcessor(spanProcessor);
-  tracerProvider.register();
+  nodeTracerProvider.addSpanProcessor(spanProcessor);
+  nodeTracerProvider.register();
 
-  instrumentations.forEach((i) => i.setTracerProvider(tracerProvider));
+  instrumentations.forEach((i) => i.setTracerProvider(nodeTracerProvider));
+
+  // Save the provider so we can shut it down later.
+  tracerProvider = tracerProvider;
 }
 
 /**
@@ -272,7 +278,7 @@ export async function instrumented<T>(
         const result = await fn(span);
         span.setStatus({ code: SpanStatusCode.OK });
         return result;
-      } catch (e) {
+      } catch (e: any) {
         span.setStatus({
           code: SpanStatusCode.ERROR,
           message: e.message,

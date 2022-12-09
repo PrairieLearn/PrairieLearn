@@ -36,6 +36,9 @@ docker-compose.override.yml
 
 # PrairieLearn
 
+## Compiled frontend assets
+public/build
+
 ## Config
 /config.json
 
