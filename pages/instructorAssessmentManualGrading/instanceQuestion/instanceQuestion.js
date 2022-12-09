@@ -102,7 +102,6 @@ router.post(
         }
         const params = [
           res.locals.assessment_question.manual_rubric_id,
-          null, // old_rubric_grading_id, for updates
           JSON.stringify(manual_rubric_items.map((id) => ({ rubric_item_id: id }))),
           null, // adjust_points
           null, // computed_points
@@ -118,7 +117,6 @@ router.post(
         }
         const params = [
           res.locals.assessment_question.auto_rubric_id,
-          null, // old_rubric_grading_id, for updates
           JSON.stringify(auto_rubric_items.map((id) => ({ rubric_item_id: id }))),
           null, // adjust_points
           null, // computed_points

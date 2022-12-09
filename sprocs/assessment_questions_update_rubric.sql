@@ -101,17 +101,15 @@ BEGIN
         END IF;
     END LOOP;
 
-    -- TODO Do this only for instance questions that have rubric items
-    -- that have been affected by a change, depending on options
-
     WITH new_rubric_gradings AS (
-        SELECT iq.*, rgi.*
+        SELECT iq.*, rgr.*
         FROM
             instance_questions iq
             JOIN rubric_gradings rg ON (rg.id = CASE WHEN rubric_type = 'auto' THEN iq.auto_rubric_grading_id ELSE iq.manual_rubric_grading_id END)
-            JOIN rubric_gradings_insert(arg_rubric_id, rg.id, NULL, NULL, NULL) AS rgi ON TRUE
+            JOIN rubric_gradings_recompute(rg.id) AS rgr ON TRUE
         WHERE
             iq.assessment_question_id = arg_assessment_question_id
+            AND rgr.rubric_grading_updated
     )
     SELECT COUNT(1)
     INTO num_updated_instance_questions
@@ -122,8 +120,8 @@ BEGIN
                 NULL, nrg.id, NULL, NULL, NULL, NULL, -- submission, IQ, uid/group, number, qid, modified_at
                 NULL, NULL, NULL, NULL, NULL, NULL, -- total/manual/auto score/points
                 NULL, NULL, -- feedback, partial scores
-                CASE WHEN rubric_type = 'auto' THEN NULL ELSE nrg.rubric_grading_id END,
-                CASE WHEN rubric_type = 'auto' THEN nrg.rubric_grading_id ELSE NULL END,
+                CASE WHEN rubric_type = 'auto' THEN NULL ELSE nrg.new_rubric_grading_id END,
+                CASE WHEN rubric_type = 'auto' THEN nrg.new_rubric_grading_id ELSE NULL END,
                 arg_authn_user_id) ON TRUE;
 
 END;

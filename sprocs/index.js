@@ -168,6 +168,7 @@ module.exports.init = function (callback) {
       'assessment_questions_update_rubric.sql',
       'rubric_gradings_select_data.sql',
       'rubric_gradings_insert.sql',
+      'rubric_gradings_recompute.sql',
     ],
     function (filename, callback) {
       logger.verbose('Loading ' + filename);

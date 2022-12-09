@@ -3,7 +3,10 @@ columns
     computed_points: double precision not null
     deleted_at: timestamp with time zone
     id: bigint not null default nextval('rubric_gradings_id_seq'::regclass)
+    max_points: double precision not null
+    min_points: double precision not null
     rubric_id: bigint not null
+    starting_points: double precision not null
 
 indexes
     rubric_gradings_pkey: PRIMARY KEY (id) USING btree (id)

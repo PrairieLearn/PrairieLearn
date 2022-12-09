@@ -27,6 +27,9 @@ CREATE TABLE IF NOT EXISTS rubric_gradings (
     rubric_id BIGINT NOT NULL REFERENCES rubrics(id) ON DELETE CASCADE ON UPDATE CASCADE,
     computed_points DOUBLE PRECISION NOT NULL,
     adjust_points DOUBLE PRECISION NOT NULL,
+    starting_points DOUBLE PRECISION NOT NULL,
+    max_points DOUBLE PRECISION NOT NULL,
+    min_points DOUBLE PRECISION NOT NULL,
     deleted_at TIMESTAMP WITH TIME ZONE
 );
 
