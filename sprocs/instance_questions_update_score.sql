@@ -140,8 +140,15 @@ BEGIN
         INTO arg_manual_points, arg_manual_score_perc
         FROM rubric_gradings rg
         WHERE rg.id = arg_manual_rubric_grading_id;
-    ELSE
+    ELSIF manual_rubric_id IS NOT NULL AND arg_points IS NULL AND arg_score_perc IS NULL AND
+          arg_manual_score_perc IS NULL AND arg_manual_points IS NULL THEN
+        -- If there is a rubric, and the manual_points will not be
+        -- updated, keep the current rubric grading.
         arg_manual_rubric_grading_id := current_manual_rubric_grading_id;
+    ELSE
+        -- If the manual_points will be updated and the rubric grading
+        -- has not been set, clear the rubric grading.
+        arg_manual_rubric_grading_id := NULL;
     END IF;
 
     IF auto_rubric_id IS NOT NULL AND arg_auto_rubric_grading_id IS NOT NULL THEN
@@ -149,8 +156,15 @@ BEGIN
         INTO arg_auto_points, arg_auto_score_perc
         FROM rubric_gradings rg
         WHERE rg.id = arg_auto_rubric_grading_id;
-    ELSE
+    ELSIF auto_rubric_id IS NOT NULL AND arg_partial_scores IS NULL AND
+          arg_auto_score_perc IS NULL AND arg_auto_points IS NULL THEN
+        -- If there is a rubric, and the auto_points will not be
+        -- updated, keep the current rubric grading.
         arg_auto_rubric_grading_id := current_auto_rubric_grading_id;
+    ELSE
+        -- If the auto_points will be updated and the rubric grading
+        -- has not been set, clear the rubric grading.
+        arg_auto_rubric_grading_id := NULL;
     END IF;
 
     -- ##################################################################
