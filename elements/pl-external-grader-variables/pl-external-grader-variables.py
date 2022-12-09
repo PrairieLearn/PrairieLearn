@@ -2,10 +2,12 @@ import prairielearn as pl
 import lxml
 import chevron
 
+EMPTY_DEFAULT = False
 
-def prepare(element_html, data) -> None:
+
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, ["params-name"], [])
+    pl.check_attribs(element, ["params-name"], ["empty"])
 
     params_name = pl.get_string_attrib(element, "params-name")
 
@@ -34,17 +36,35 @@ def prepare(element_html, data) -> None:
                 f"Tags inside of pl-external-grader-variables must be pl-variable, not '{child.tag}'."
             )
 
-    if params_name not in data['params']:
+    declared_empty = pl.get_boolean_attrib(element, "empty", EMPTY_DEFAULT)
+
+    if declared_empty:
+        if len(frontend_variables) > 0:
+            raise ValueError(
+                f"Variable name {params_name} was declared empty, but has variables defined in 'question.html'"
+            )
+        elif params_name in data["params"]:
+            raise ValueError(
+                f"Variable name {params_name} was declared empty, but has variables defined in 'server.py'"
+            )
+
+        data["params"][params_name] = []
+    elif params_name not in data["params"]:
+        if len(frontend_variables) == 0:
+            raise ValueError(
+                f"Variable name {params_name} has no variables defined in 'question.html' or 'server.py' Did you mean to set it to be empty?"
+            )
+
         data["params"][params_name] = frontend_variables
     else:
-        raise ValueError(
-            "Cannot define variables from both 'question.html' and 'server.py' for variable name '{params_name}'"
-        )
+        if len(frontend_variables) > 0:
+            raise ValueError(
+                "Cannot define variables from both 'question.html' and 'server.py' for variable name '{params_name}'"
+            )
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, ["params-name"], [])
 
     params_name = pl.get_string_attrib(element, "params-name")
 
