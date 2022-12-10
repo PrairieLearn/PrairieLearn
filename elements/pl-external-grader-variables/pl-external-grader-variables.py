@@ -1,6 +1,6 @@
-import prairielearn as pl
-import lxml
 import chevron
+import lxml
+import prairielearn as pl
 
 EMPTY_DEFAULT = False
 
