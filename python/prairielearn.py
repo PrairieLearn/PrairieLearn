@@ -2,6 +2,7 @@ import lxml.html
 import html
 import to_precision
 import numpy as np
+from enum import Enum
 import uuid
 import sympy
 import pandas
@@ -15,8 +16,9 @@ import importlib
 import importlib.util
 import os
 import collections
-from typing import Dict, Any, TypedDict, Literal, Optional
-from typing_extensions import NotRequired
+from typing import Dict, Any, TypedDict, Literal, Optional, Callable, Union, Tuple, TypeVar, Type
+from typing_extensions import NotRequired, assert_never
+import math
 
 class PartialScore(TypedDict):
     "A class with type signatures for the partial scores dict"
@@ -51,6 +53,117 @@ class QuestionData(TypedDict):
 
 class ElementTestData(QuestionData):
     test_type: Literal['correct', 'incorrect', 'invalid']
+
+
+class DisplayType(Enum):
+    INLINE = "inline"
+    BLOCK = "block"
+
+
+def grade_question_parameterized(
+    data: QuestionData,
+    question_name: str,
+    grade_function: Callable[[Any], Tuple[Union[bool, float], Optional[str]]],
+    weight: int = 1,
+) -> None:
+    """
+    Grade question question_name. grade_function should take in a single parameter
+    (which will be the submitted answer) and return a 2-tuple:
+        - The first element of the 2-tuple should either be:
+            - a boolean indicating whether the question should be marked correct
+            - a partial score between 0 and 1, inclusive
+        - The second element of the 2-tuple should either be:
+            - a string containing feedback
+            - None, if there is no feedback (usually this should only occur if the answer is correct)
+    """
+
+    # Create the data dictionary at first
+    data["partial_scores"][question_name] = {"score": 0.0, "weight": weight}
+
+    if question_name not in data["submitted_answers"]:
+        data["format_errors"][question_name] = "No answer was submitted"
+        return
+
+    submitted_answer = data["submitted_answers"][question_name]
+
+    # Run passed-in grading function
+    try:
+        result, feedback_content = grade_function(submitted_answer)
+    except ValueError as err:
+        data["format_errors"][question_name] = str(err)
+        return
+
+    # Try converting partial score
+    if isinstance(result, bool):
+        partial_score = 1.0 if result else 0.0
+    elif isinstance(result, (float, int)):
+        assert 0.0 <= result <= 1.0
+        partial_score = result
+    else:
+        assert_never(result)
+
+    # Set corresponding partial score and feedback
+    data["partial_scores"][question_name]["score"] = partial_score
+
+    if feedback_content:
+        data["partial_scores"][question_name]["feedback"] = feedback_content
+
+
+def determine_score_params(score: Optional[float]) -> Tuple[str, float]:
+    """Determine score params taken from data dict"""
+
+    if score is None:
+        return "", 0.0
+
+    score_val = float(score)
+
+    if score_val >= 1:
+        return ("correct", 1.0)
+    elif score_val > 0:
+        return ("partial", math.floor(score_val * 100))
+
+    return ("incorrect", 0.0)
+
+
+EnumT = TypeVar("EnumT", bound=Enum)
+
+
+def get_enum_attrib(
+    enum_type: Type[EnumT],
+    element: lxml.html.HtmlElement,
+    name: str,
+    default: Optional[EnumT] = None,
+) -> EnumT:
+    """value = get_enum_attrib(enum_type, element, name, default)
+
+    Returns the named attribute for the element parsed as an enum,
+    or the (optional) default value. If the default value is not provided
+    and the attribute is missing then an exception is thrown. An exception
+    is also thrown if the value for the enum provided is invalid.
+
+    Also, alters the enum names to comply with PL naming convention automatically
+    (replacing underscores with dashes and uppercasing). If default value is
+    provided, must be a member of the given enum.
+    """
+
+    enum_val, is_default = (
+        _get_attrib(element, name)
+        if default is None
+        else _get_attrib(element, name, default)
+    )
+
+    # Default doesn't need to be converted, already a value of the enum
+    if is_default:
+        return enum_val
+
+    upper_enum_str = enum_val.upper()
+    accepted_names = {member.name.replace("_", "-") for member in enum_type}
+
+    if upper_enum_str not in accepted_names:
+        raise ValueError(f"{enum_val} is not a valid type")
+
+    return enum_type[upper_enum_str.replace("-", "_")]
+
 
 def to_json(v):
     """to_json(v)
