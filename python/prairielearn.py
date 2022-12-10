@@ -107,9 +107,12 @@ def to_json(v, *, new_df_encoding=False):
             # For version 2 storing a data frame, we use the table orientation alongside of
             # enforcing a date format to allow for numeric values
             # Details: https://pandas.pydata.org/docs/reference/api/pandas.read_json.html
-            encoded_json_df = df_modified_names.to_json(orient="table", date_format="iso")
+            # Convert to JSON string with escape characters
+            encoded_json_str_df = df_modified_names.to_json(orient="table", date_format="iso")
+            # Export to native JSON structure
+            pure_json_df = json.loads(encoded_json_str_df)
 
-            return {'_type': 'dataframe-v2', '_value': encoded_json_df}
+            return {'_type': 'dataframe-v2', '_value': pure_json_df}
         else:
             return {'_type': 'dataframe', '_value': {'index': list(v.index), 'columns': list(v.columns), 'data': v.values.tolist()}
     }
@@ -182,7 +185,10 @@ def from_json(v):
                 else:
                     raise Exception('variable of type dataframe should have value with index, columns, and data')
             elif v['_type'] == 'dataframe-v2':
-                return pandas.read_json(v['_value'], orient="table")
+                # Convert native JSON back to a string representation so that
+                # pandas read_json() can process it.
+                value_str = json.dumps(v['_value'])
+                return pandas.read_json(value_str, orient="table")
             else:
                 raise Exception('variable has unknown type {:s}'.format(v['_type']))
     return v
