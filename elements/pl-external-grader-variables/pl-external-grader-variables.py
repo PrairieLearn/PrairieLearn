@@ -16,7 +16,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     for child in element:
         if child.tag == "pl-variable":
-            pl.check_attribs(child, ["name", "type"], ["description"])
+            pl.check_attribs(child, ["name", "type"], [])
 
             var_dict = {
                 "name": pl.get_string_attrib(child, "name"),
