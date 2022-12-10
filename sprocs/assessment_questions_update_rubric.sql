@@ -95,9 +95,12 @@ BEGIN
 
         IF NOT FOUND THEN
             INSERT INTO rubric_items
-                (rubric_id, number, points, short_text, staff_instructions, key_binding)
+                (rubric_id, number, points, short_text,
+                 description, staff_instructions, key_binding)
             VALUES
-                (arg_rubric_id, next_number, rubric_item.points, rubric_item.short_text, rubric_item.staff_instructions, CASE WHEN next_number > 10 THEN NULL ELSE MOD(next_number, 10) END);
+                (arg_rubric_id, next_number, rubric_item.points, rubric_item.short_text,
+                 rubric_item.description, rubric_item.staff_instructions,
+                 CASE WHEN next_number > 10 THEN NULL ELSE MOD(next_number, 10) END);
         END IF;
     END LOOP;
 
