@@ -1704,11 +1704,9 @@ data["params"]["names_from_user"] = [
 
 <p>Your code snippet should define the following variables:</p>
 <pl-external-grader-variables params-name="names_from_user">
-  <pl-variable
-    name="x"
-    type="numpy array (length $n$)"
-    description="Solution to $\mathbf{Ax}=\mathbf{b}$."
-  ></pl-variable>
+  <pl-variable name="x" type="numpy array (length $n$)"
+    >Solution to $\mathbf{Ax}=\mathbf{b}$.</pl-variable
+  >
 </pl-external-grader-variables>
 
 <!--
@@ -1737,13 +1735,12 @@ def generate(data):
 | `params-name` | string  | -       | Name of variable specification in `data['params']` to display, the format for which is given above.                                         |
 | `empty`       | boolean | false   | Whether the entry for the given `params-name` should be set to empty. Will throw an error if variables are defined and this is set to true. |
 
-The inner element `pl-variable` has the following attributes:
+The HTML inside the inner `pl-variable` tag is used as the description. If the tag is empty, no description is used for the given variable. The inner `pl-variable` tag has the following attributes:
 
-| Attribute     | Type   | Default | Description                                                                                                  |
-| ------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------ |
-| `name`        | string | -       | Name of the given variable. Required for all variables.                                                      |
-| `type`        | string | -       | Type of the given variable. Required for all variables.                                                      |
-| `description` | string | -       | Description of the given variable. Optional. If no variables have a description, this column will be hidden. |
+| Attribute | Type   | Default | Description                                             |
+| --------- | ------ | ------- | ------------------------------------------------------- |
+| `name`    | string | -       | Name of the given variable. Required for all variables. |
+| `type`    | string | -       | Type of the given variable. Required for all variables. |
 
 #### Example implementations
 

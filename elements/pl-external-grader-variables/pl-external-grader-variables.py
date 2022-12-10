@@ -23,8 +23,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 "type": pl.get_string_attrib(child, "type"),
             }
 
-            if pl.has_attrib(child, "description"):
-                var_dict["description"] = pl.get_string_attrib(child, "description")
+            description_html = pl.inner_html(child)
+
+            # Check for empty string, inner_html doesn't return None
+            if description_html:
+                var_dict["description"] = description_html
 
             frontend_variables.append(var_dict)
 
