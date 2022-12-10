@@ -391,70 +391,21 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
 
     elif result == 'invalid':
-        invalid_type_choices: List[Literal['float', 'complex', 'expression', 'function', 'variable', 'syntax', 'escape', 'comment']] = \
-            ['float', 'complex', 'expression', 'function', 'variable', 'syntax', 'escape', 'comment']
+        invalid_answer = random.choice(
+            [
+                "n + 1.234",
+                'x + (1+2j)',
+                "1 and 0",
+                "aatan(n)",
+                'x + y',
+                "x +* 1",
+                "x + 1\\n",
+                "x # some text",
+            ]
+        )
 
-        invalid_type = random.choice(invalid_type_choices)
-
-        if invalid_type == 'float':
-            invalid_input = 'x + 1.234'
-            data['raw_submitted_answers'][name] = invalid_input
-            data['format_errors'][name] = (
-                f'Your answer contains the floating-point number 1.234. '
-                'All numbers must be expressed as integers (or ratios of integers). '
-                f'<br><br><pre>{phs.point_to_error(invalid_input, 4)}</pre>'
-            )
-        elif invalid_type == 'complex':
-            invalid_input = 'x + (1+2j)'
-            data['raw_submitted_answers'][name] = invalid_input
-            data['format_errors'][name] = (
-                'Your answer contains the complex number 2j. '
-                'All numbers must be expressed as integers (or ratios of integers). '
-                f'<br><br><pre>f{phs.point_to_error(invalid_input, 7)}</pre>'
-            )
-        elif invalid_type == 'expression':
-            invalid_input = '1 and 0'
-            data['raw_submitted_answers'][name] = invalid_input
-            data['format_errors'][name] = (
-                'Your answer has an invalid expression. '
-                f'<br><br><pre>{phs.point_to_error(invalid_input, 0)}</pre>'
-            )
-        elif invalid_type == 'function':
-            invalid_input = 'aatan(x)'
-            data['raw_submitted_answers'][name] = invalid_input
-            data['format_errors'][name] = (
-                'Your answer calls an invalid function "aatan". '
-                f'<br><br><pre>{phs.point_to_error(invalid_input, 0)}</pre>'
-            )
-        elif invalid_type == 'variable':
-            invalid_input = 'x + y'
-            data['raw_submitted_answers'][name] = invalid_input
-            data['format_errors'][name] = (
-                'Your answer refers to an invalid variable "y". '
-                f'<br><br><pre>{phs.point_to_error(invalid_input, 4)}</pre>'
-            )
-        elif invalid_type == 'syntax':
-            invalid_input = 'x +* 1'
-            data['raw_submitted_answers'][name] = invalid_input
-            data['format_errors'][name] = (
-                'Your answer has a syntax error. '
-                f'<br><br><pre>{phs.point_to_error(invalid_input, 4)}</pre>'
-            )
-        elif invalid_type == 'escape':
-            invalid_input = 'x + 1\\n'
-            data['raw_submitted_answers'][name] = invalid_input
-            data['format_errors'][name] = (
-                'Your answer must not contain the character "\\". '
-                f'<br><br><pre>{phs.point_to_error(invalid_input, 5)}</pre>'
-            )
-        elif invalid_type == 'comment':
-            invalid_input = 'x # some text'
-            data['raw_submitted_answers'][name] = invalid_input
-            data['format_errors'][name] = (
-                'Your answer must not contain the character "#". '
-                f'<br><br><pre>{phs.point_to_error(invalid_input, 2)}</pre>'
-            )
-        else:
-            assert_never(invalid_type)
+        # TODO add back detailed format errors if this gets checked in the future
+        data["raw_submitted_answers"][name] = invalid_answer
+        data["format_errors"][name] = ""
     else:
         assert_never(result)
