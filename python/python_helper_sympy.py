@@ -73,6 +73,7 @@ class _Constants:
         self.functions = {
             "exp": sympy.exp,
             "log": sympy.log,
+            "ln": sympy.log,
             "sqrt": sympy.sqrt,
             "factorial": sympy.factorial,
         }
@@ -81,6 +82,9 @@ class _Constants:
             "cos": sympy.cos,
             "sin": sympy.sin,
             "tan": sympy.tan,
+            "sec": sympy.sec,
+            "cot": sympy.cot,
+            "csc": sympy.csc,
             "arccos": sympy.acos,
             "arcsin": sympy.asin,
             "arctan": sympy.atan,
@@ -89,6 +93,9 @@ class _Constants:
             "atan": sympy.atan,
             "arctan2": sympy.atan2,
             "atan2": sympy.atan2,
+            "atanh": sympy.atanh,
+            "acosh": sympy.acosh,
+            "asinh": sympy.asinh,
         }
 
 
@@ -443,7 +450,7 @@ def validate_string_as_sympy(
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    imaginary_unit: Optional[str] = None
+    imaginary_unit: Optional[str] = None,
 ) -> Optional[str]:
     """Tries to parse expr as a sympy expression. If it fails, returns a string with an appropriate error message for display on the frontend."""
 
@@ -509,10 +516,16 @@ def validate_string_as_sympy(
         return "Invalid format."
 
     # If complex numbers are not allowed, raise error if expression has the imaginary unit
-    if (not allow_complex) and (imaginary_unit is not None) and (expr_parsed.has(sympy.I)):
+    if (
+        (not allow_complex)
+        and (imaginary_unit is not None)
+        and (expr_parsed.has(sympy.I))
+    ):
         expr_parsed = expr_parsed.subs(sympy.I, sympy.Symbol(imaginary_unit))
-        return 'Your answer was simplified to this, which contains a complex number' \
-               f'(denoted ${imaginary_unit:s}$): $${sympy.latex(expr_parsed):s}$$'
+        return (
+            "Your answer was simplified to this, which contains a complex number"
+            f"(denoted ${imaginary_unit:s}$): $${sympy.latex(expr_parsed):s}$$"
+        )
 
     return None
 
