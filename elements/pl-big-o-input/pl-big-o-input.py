@@ -1,7 +1,7 @@
 import random
 from enum import Enum
 from html import escape
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 import big_o_utils as bou
 import chevron
@@ -87,20 +87,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     bigo_type = bou.get_enum_attrib(BigOType, element, "type", BIG_O_TYPE_DEFAULT).value
 
-    operators: List[str] = [
-        "exp",
-        "log",
-        "sqrt",
-        "factorial",
-        "( )",
-        "+",
-        "-",
-        "*",
-        "/",
-        "^",
-        "**",
-    ]
-    constants: List[str] = ["pi", "e"]
+    constants_class = phs._Constants()
+
+    operators = ["( )", "+", "-", "*", "/", "^", "**"]
+    operators.extend(constants_class.functions.keys())
+
+    constants = list(constants_class.variables.keys())
 
     info_params = {
         "format": True,
