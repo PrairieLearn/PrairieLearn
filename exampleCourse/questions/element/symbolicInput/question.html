@@ -42,7 +42,7 @@
         <pl-question-panel>
             <p>Write an expression for the complex number $c$ whose real part is $a$ and whose imaginary part is $b$.</p>
         </pl-question-panel>
-        <pl-symbolic-input answers-name="c" variables="a, b" allow-complex="true" imaginary-unit-for-display="j" label="$c=$"></pl-symbolic-input>
+        <pl-symbolic-input answers-name="c" variables="a, b" allow-complex="true" imaginary-unit-for-display="j" label="$c=$" display="block"></pl-symbolic-input>
     </div>
 </div>
 
@@ -69,17 +69,5 @@
         <p>Simplify the expression $x^2+x+1$, or leave it blank if the expression cannot be simplified further.</p>
       </pl-question-panel>
       <pl-symbolic-input answers-name="simplify" variables="x" allow-blank="true" blank-value="x^2+x+1"></pl-symbolic-input>
-    </div>
-</div>
-
-<div class="card my-2">
-    <div class="card-header">
-        A custom graded question that always gives partial credit.
-    </div>
-    <div class="card-body">
-      <pl-question-panel>
-        <p>Submit anything and get 50% credit.</p>
-      </pl-question-panel>
-      <pl-symbolic-input answers-name="partial" variables="x" allow-blank="true"></pl-symbolic-input>
     </div>
 </div>

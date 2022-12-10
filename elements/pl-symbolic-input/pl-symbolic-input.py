@@ -4,7 +4,6 @@ from html import escape
 import chevron
 import sympy
 import random
-import math
 import python_helper_sympy as phs
 from typing import Tuple, Union
 from typing_extensions import assert_never
@@ -14,7 +13,7 @@ WEIGHT_DEFAULT = 1
 CORRECT_ANSWER_DEFAULT = None
 VARIABLES_DEFAULT = None
 LABEL_DEFAULT = None
-DISPLAY_DEFAULT = 'inline'
+DISPLAY_DEFAULT = pl.DisplayType.INLINE
 ALLOW_COMPLEX_DEFAULT = False
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = 'i'
 SIZE_DEFAULT = 35
@@ -24,7 +23,7 @@ ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = '0'
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
     optional_attribs = ['weight', 'correct-answer', 'variables', 'label', 'display', 'allow-complex', 'imaginary-unit-for-display', 'size', 'show-help-text', 'allow-blank', 'blank-value']
@@ -34,21 +33,21 @@ def prepare(element_html, data):
     correct_answer = pl.get_string_attrib(element, 'correct-answer', CORRECT_ANSWER_DEFAULT)
     if correct_answer is not None:
         if name in data['correct_answers']:
-            raise Exception('duplicate correct_answers variable name: %s' % name)
+            raise ValueError('duplicate correct_answers variable name: %s' % name)
         data['correct_answers'][name] = correct_answer
 
     imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
-    if not (imaginary_unit == 'i' or imaginary_unit == 'j'):
-        raise Exception('imaginary-unit-for-display must be either i or j')
+    if imaginary_unit not in {'i', 'j'}:
+        raise ValueError('imaginary-unit-for-display must be either i or j')
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     label = pl.get_string_attrib(element, 'label', LABEL_DEFAULT)
     variables_string = pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT)
     variables = phs.get_variables_list(variables_string)
-    display = pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT)
+    display = pl.get_enum_attrib(pl.DisplayType, element, "display", DISPLAY_DEFAULT)
     allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
     imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, 'size', SIZE_DEFAULT)
@@ -94,16 +93,13 @@ def render(element_html, data):
         html_params[score_type] = True
         html_params['score_value'] = score_value
 
-        if display == 'inline':
-            html_params['inline'] = True
-        elif display == 'block':
-            html_params['block'] = True
-        else:
-            raise ValueError('method of display "%s" is not valid (must be "inline" or "block")' % display)
+        html_params[display.value] = True
+
         if raw_submitted_answer is not None:
             html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
+
         with open('pl-symbolic-input.mustache', 'r', encoding='utf-8') as f:
-            html = chevron.render(f, html_params).strip()
+            return chevron.render(f, html_params).strip()
 
     elif data['panel'] == 'submission':
         parse_error = data['format_errors'].get(name, None)
@@ -114,18 +110,20 @@ def render(element_html, data):
             'parse_error': parse_error,
             'uuid': pl.get_uuid()
         }
-        if parse_error is None and name in data['submitted_answers']:
-            a_sub = data['submitted_answers'][name]
-            if isinstance(a_sub, str):
-                # this is for backward-compatibility
-                a_sub = phs.convert_string_to_sympy(a_sub, variables, allow_complex=allow_complex)
+        if parse_error is None:
+            a_sub = data['submitted_answers'].get(name)
+            if a_sub is not None:
+                if isinstance(a_sub, str):
+                    # this is for backward-compatibility
+                    a_sub = phs.convert_string_to_sympy(a_sub, variables, allow_complex=allow_complex)
+                else:
+                    a_sub = phs.json_to_sympy(a_sub, allow_complex=allow_complex)
+                a_sub = a_sub.subs(sympy.I, sympy.Symbol(imaginary_unit))
+                html_params['a_sub'] = sympy.latex(a_sub)
+            # name not in data['submitted_answers']:
             else:
-                a_sub = phs.json_to_sympy(a_sub, allow_complex=allow_complex)
-            a_sub = a_sub.subs(sympy.I, sympy.Symbol(imaginary_unit))
-            html_params['a_sub'] = sympy.latex(a_sub)
-        elif name not in data['submitted_answers']:
-            html_params['missing_input'] = True
-            html_params['parse_error'] = None
+                html_params['missing_input'] = True
+                html_params['parse_error'] = None
         else:
             # Use the existing format text in the invalid popup.
             info_params = {
@@ -153,20 +151,15 @@ def render(element_html, data):
         html_params[score_type] = True
         html_params['score_value'] = score_value
 
-        if display == 'inline':
-            html_params['inline'] = True
-        elif display == 'block':
-            html_params['block'] = True
-        else:
-            raise ValueError('method of display "%s" is not valid (must be "inline" or "block")' % display)
+        html_params[display.value] = True
 
         html_params['error'] = html_params['parse_error'] or html_params.get('missing_input', False)
 
         with open('pl-symbolic-input.mustache', 'r', encoding='utf-8') as f:
-            html = chevron.render(f, html_params).strip()
+            return chevron.render(f, html_params).strip()
 
     elif data['panel'] == 'answer':
-        a_tru = data['correct_answers'].get(name, None)
+        a_tru = data['correct_answers'].get(name)
         if a_tru is not None:
             if isinstance(a_tru, str):
                 # this is so instructors can specify the true answer simply as a string
@@ -180,14 +173,11 @@ def render(element_html, data):
                 'a_tru': sympy.latex(a_tru)
             }
             with open('pl-symbolic-input.mustache', 'r', encoding='utf-8') as f:
-                html = chevron.render(f, html_params).strip()
+                return chevron.render(f, html_params).strip()
         else:
-            html = ''
+            return ''
 
-    else:
-        raise Exception('Invalid panel type: %s' % data['panel'])
-
-    return html
+    assert_never(data['panel'])
 
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
