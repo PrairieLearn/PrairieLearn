@@ -1,10 +1,11 @@
-from typing import Callable, List, Tuple, Any, Optional, Union, TypeVar, Type
 import math
-import lxml
-import sympy
-import python_helper_sympy as phs
-import prairielearn as pl
 from enum import Enum
+from typing import Any, Callable, List, Optional, Tuple, Type, TypeVar, Union
+
+import lxml
+import prairielearn as pl
+import python_helper_sympy as phs
+import sympy
 from typing_extensions import assert_never
 
 BigOGradingFunctionT = Callable[[str, str, List[str]], Tuple[float, str]]

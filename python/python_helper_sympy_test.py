@@ -1,8 +1,9 @@
 import json
+from typing import List
+
 import pytest
 import python_helper_sympy as phs
 import sympy
-from typing import List
 
 
 class TestSympy:

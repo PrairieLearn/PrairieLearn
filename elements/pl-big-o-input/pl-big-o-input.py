@@ -1,14 +1,15 @@
-from enum import Enum
-from typing import Dict, List, Optional
-from typing_extensions import assert_never
-import prairielearn as pl
-import lxml.html
-from html import escape
-import sympy
-import chevron
-import python_helper_sympy as phs
-import big_o_utils as bou
 import random
+from enum import Enum
+from html import escape
+from typing import Dict, List, Optional
+
+import big_o_utils as bou
+import chevron
+import lxml.html
+import prairielearn as pl
+import python_helper_sympy as phs
+import sympy
+from typing_extensions import assert_never
 
 
 class BigOType(Enum):
