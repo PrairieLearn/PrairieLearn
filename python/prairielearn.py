@@ -151,7 +151,7 @@ def from_json(v):
                 if ('_value' in v) and ('real' in v['_value']) and ('imag' in v['_value']):
                     return complex(v['_value']['real'], v['_value']['imag'])
                 else:
-                    raise Exception('variable of type complex should have value with real and imaginary pair')
+                    raise ValueError('variable of type complex should have value with real and imaginary pair')
             elif v['_type'] == 'ndarray':
                 if ('_value' in v):
                     if ('_dtype' in v):
@@ -159,7 +159,7 @@ def from_json(v):
                     else:
                         return np.array(v['_value'])
                 else:
-                    raise Exception('variable of type ndarray should have value')
+                    raise ValueError('variable of type ndarray should have value')
             elif v['_type'] == 'complex_ndarray':
                 if ('_value' in v) and ('real' in v['_value']) and ('imag' in v['_value']):
                     if ('_dtype' in v):
@@ -167,7 +167,7 @@ def from_json(v):
                     else:
                         return np.array(v['_value']['real']) + np.array(v['_value']['imag']) * 1j
                 else:
-                    raise Exception('variable of type complex_ndarray should have value with real and imaginary pair')
+                    raise ValueError('variable of type complex_ndarray should have value with real and imaginary pair')
             elif v['_type'] == 'sympy':
                 return json_to_sympy(v)
             elif v['_type'] == 'sympy_matrix':
@@ -181,20 +181,20 @@ def from_json(v):
                             M[i, j] = convert_string_to_sympy(value[i][j], variables)
                     return M
                 else:
-                    raise Exception('variable of type sympy_matrix should have value, variables, and shape')
+                    raise ValueError('variable of type sympy_matrix should have value, variables, and shape')
             elif v['_type'] == 'dataframe':
                 if ('_value' in v) and ('index' in v['_value']) and ('columns' in v['_value']) and ('data' in v['_value']):
                     val = v['_value']
                     return pandas.DataFrame(index=val['index'], columns=val['columns'], data=val['data'])
                 else:
-                    raise Exception('variable of type dataframe should have value with index, columns, and data')
+                    raise ValueError('variable of type dataframe should have value with index, columns, and data')
             elif v['_type'] == 'dataframe-v2':
                 # Convert native JSON back to a string representation so that
                 # pandas read_json() can process it.
                 value_str = json.dumps(v['_value'])
                 return pandas.read_json(value_str, orient="table")
             else:
-                raise Exception('variable has unknown type {:s}'.format(v['_type']))
+                raise ValueError('variable has unknown type {:s}'.format(v['_type']))
     return v
 
 
