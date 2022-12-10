@@ -13,3 +13,6 @@ def generate(data):
     data['correct_answers']['dx'] = 'x'
     x = sympy.var('x')
     data['correct_answers']['simplify'] = pl.to_json(x**2+x+1)
+
+def grade(data):
+    data['partial_scores']['partial'] = {'score': 0.5}

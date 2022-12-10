@@ -117,9 +117,9 @@ def determine_score_params(score: Optional[float]) -> Tuple[str, float]:
 
     score_val = float(score)
 
-    if score_val >= 1:
+    if score_val >= 1.0:
         return ("correct", 1.0)
-    elif score_val > 0:
+    elif score_val > 0.0:
         return ("partial", math.floor(score_val * 100))
 
     return ("incorrect", 0.0)

@@ -6,7 +6,7 @@ import sympy
 import random
 import math
 import python_helper_sympy as phs
-from typing import List, Literal
+from typing import Tuple, Union
 from typing_extensions import assert_never
 
 
@@ -88,19 +88,11 @@ def render(element_html, data):
             'show_placeholder': size >= PLACEHOLDER_TEXT_THRESHOLD
         }
 
-        partial_score = data['partial_scores'].get(name, {'score': None})
-        score = partial_score.get('score', None)
-        if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html_params['correct'] = True
-                elif score > 0:
-                    html_params['partial'] = math.floor(score * 100)
-                else:
-                    html_params['incorrect'] = True
-            except Exception:
-                raise ValueError(f'invalid score {score}')
+        score = data['partial_scores'].get(name, {'score': None}).get('score', None)
+
+        score_type, score_value = pl.determine_score_params(score)
+        html_params[score_type] = True
+        html_params['score_value'] = score_value
 
         if display == 'inline':
             html_params['inline'] = True
@@ -155,19 +147,11 @@ def render(element_html, data):
             if raw_submitted_answer is not None:
                 html_params['raw_submitted_answer'] = pl.escape_unicode_string(raw_submitted_answer)
 
-        partial_score = data['partial_scores'].get(name, {'score': None})
-        score = partial_score.get('score', None)
-        if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html_params['correct'] = True
-                elif score > 0:
-                    html_params['partial'] = math.floor(score * 100)
-                else:
-                    html_params['incorrect'] = True
-            except Exception:
-                raise ValueError(f'invalid score {score}')
+        score = data['partial_scores'].get(name, {'score': None}).get('score', None)
+
+        score_type, score_value = pl.determine_score_params(score)
+        html_params[score_type] = True
+        html_params['score_value'] = score_value
 
         if display == 'inline':
             html_params['inline'] = True
@@ -206,7 +190,7 @@ def render(element_html, data):
     return html
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     variables = phs.get_variables_list(pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT))
@@ -258,7 +242,7 @@ def parse(element_html, data):
         data['submitted_answers'][name] = None
 
 
-def grade(element_html, data):
+def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     variables = phs.get_variables_list(pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT))
@@ -271,33 +255,25 @@ def grade(element_html, data):
     if a_tru is None:
         return
 
-    # Get submitted answer (if it does not exist, score is zero)
-    a_sub = data['submitted_answers'].get(name, None)
-    if a_sub is None:
-        data['partial_scores'][name] = {'score': 0, 'weight': weight}
-        return
-
     # Parse true answer
     if isinstance(a_tru, str):
         # this is so instructors can specify the true answer simply as a string
-        a_tru = phs.convert_string_to_sympy(a_tru, variables, allow_complex=allow_complex)
+        a_tru_sympy = phs.convert_string_to_sympy(a_tru, variables, allow_complex=allow_complex)
     else:
-        a_tru = phs.json_to_sympy(a_tru, allow_complex=allow_complex)
+        a_tru_sympy = phs.json_to_sympy(a_tru, allow_complex=allow_complex)
 
-    # Parse submitted answer
-    if isinstance(a_sub, str):
-        # this is for backward-compatibility
-        a_sub = phs.convert_string_to_sympy(a_sub, variables, allow_complex=allow_complex)
-    else:
-        a_sub = phs.json_to_sympy(a_sub, allow_complex=allow_complex)
 
-    # Check equality
-    correct = a_tru.equals(a_sub)
+    def grade_function(a_sub: Union[str, phs.SympyJson]) -> Tuple[bool, None]:
+        # Parse submitted answer
+        if isinstance(a_sub, str):
+            # this is for backward-compatibility
+            a_sub_sympy = phs.convert_string_to_sympy(a_sub, variables, allow_complex=allow_complex, allow_trig_functions=True)
+        else:
+            a_sub_sympy = phs.json_to_sympy(a_sub, allow_complex=allow_complex, allow_trig_functions=True)
 
-    if correct:
-        data['partial_scores'][name] = {'score': 1, 'weight': weight}
-    else:
-        data['partial_scores'][name] = {'score': 0, 'weight': weight}
+        return a_tru_sympy.equals(a_sub_sympy), None
+
+    pl.grade_question_parameterized(data, name, grade_function, weight=weight)
 
 
 def test(element_html: str, data: pl.ElementTestData) -> None:
