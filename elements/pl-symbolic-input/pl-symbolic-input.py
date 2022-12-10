@@ -224,90 +224,29 @@ def parse(element_html, data):
         data['submitted_answers'][name] = None
         return
 
-    # Parse the submitted answer and put the result in a string
-    try:
-        # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
-        # for exponentiation. In python, only the latter can be used.
-        a_sub = a_sub.replace('^', '**')
+    a_proccessed = phs.process_student_input(a_sub)
 
-        # Replace unicode minus with hyphen minus wherever it occurs
-        a_sub = a_sub.replace(u'\u2212', '-')
+    error_msg = phs.validate_string_as_sympy(
+        a_proccessed, variables, allow_complex=allow_complex, allow_trig_functions=True, imaginary_unit=imaginary_unit
+    )
 
-        # Strip whitespace
-        a_sub = a_sub.strip()
+    if error_msg is not None:
+        data["format_errors"][name] = s
+        data["submitted_answers"][name] = None
+        return
 
-        # Convert safely to sympy
-        a_sub_parsed = phs.convert_string_to_sympy(a_sub, variables, allow_complex=allow_complex)
-
-        # If complex numbers are not allowed, raise error if expression has the imaginary unit
-        if (not allow_complex) and (a_sub_parsed.has(sympy.I)):
-            a_sub_parsed = a_sub_parsed.subs(sympy.I, sympy.Symbol(imaginary_unit))
-            s = 'Your answer was simplified to this, which contains a complex number (denoted ${:s}$): $${:s}$$'.format(imaginary_unit, sympy.latex(a_sub_parsed))
-            data['format_errors'][name] = s
-            data['submitted_answers'][name] = None
-            return
-
-        # Store result as json.
-        a_sub_json = phs.sympy_to_json(a_sub_parsed, allow_complex=allow_complex)
-    except phs.HasFloatError as err:
-        s = 'Your answer contains the floating-point number ' + str(err.n) + '. '
-        s += 'All numbers must be expressed as integers (or ratios of integers). '
-        s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
-        data['format_errors'][name] = s
-        data['submitted_answers'][name] = None
-        return
-    except phs.HasComplexError as err:
-        s = 'Your answer contains the complex number ' + str(err.n) + '. '
-        s += 'All numbers must be expressed as integers (or ratios of integers). '
-        if allow_complex:
-            s += 'To include a complex number in your expression, write it as the product of an integer with the imaginary unit <code>i</code> or <code>j</code>. '
-        s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
-        data['format_errors'][name] = s
-        data['submitted_answers'][name] = None
-        return
-    except phs.HasInvalidExpressionError as err:
-        s = 'Your answer has an invalid expression. '
-        s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
-        data['format_errors'][name] = s
-        data['submitted_answers'][name] = None
-        return
-    except phs.HasInvalidFunctionError as err:
-        s = 'Your answer calls an invalid function "' + err.text + '". '
-        s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
-        data['format_errors'][name] = s
-        data['submitted_answers'][name] = None
-        return
-    except phs.HasInvalidVariableError as err:
-        s = 'Your answer refers to an invalid variable "' + err.text + '". '
-        s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
-        data['format_errors'][name] = s
-        data['submitted_answers'][name] = None
-        return
-    except phs.HasParseError as err:
-        s = 'Your answer has a syntax error. '
-        s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
-        data['format_errors'][name] = s
-        data['submitted_answers'][name] = None
-        return
-    except phs.HasEscapeError as err:
-        s = 'Your answer must not contain the character "\\". '
-        s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
-        data['format_errors'][name] = s
-        data['submitted_answers'][name] = None
-        return
-    except phs.HasCommentError as err:
-        s = 'Your answer must not contain the character "#". '
-        s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
-        data['format_errors'][name] = s
-        data['submitted_answers'][name] = None
-        return
-    except Exception:
-        data['format_errors'][name] = 'Invalid format.'
-        data['submitted_answers'][name] = None
-        return
+    a_sub_parsed = phs.convert_string_to_sympy(
+            a_proccessed,
+            variables,
+            allow_hidden=True,
+            allow_complex=allow_complex,
+            allow_trig_functions=True,
+        )
 
     # Make sure we can parse the json again
     try:
+        a_sub_json = phs.sympy_to_json(a_sub_parsed, allow_complex=allow_complex)
+
         # Convert safely to sympy
         phs.json_to_sympy(a_sub_json, allow_complex=allow_complex)
 

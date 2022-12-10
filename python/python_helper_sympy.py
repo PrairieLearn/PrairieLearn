@@ -443,11 +443,12 @@ def validate_string_as_sympy(
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
+    imaginary_unit: Optional[str] = None
 ) -> Optional[str]:
     """Tries to parse expr as a sympy expression. If it fails, returns a string with an appropriate error message for display on the frontend."""
 
     try:
-        convert_string_to_sympy(
+        expr_parsed = convert_string_to_sympy(
             expr,
             variables,
             allow_hidden=allow_hidden,
@@ -506,6 +507,12 @@ def validate_string_as_sympy(
         )
     except Exception:
         return "Invalid format."
+
+    # If complex numbers are not allowed, raise error if expression has the imaginary unit
+    if (not allow_complex) and (imaginary_unit is not None) and (expr_parsed.has(sympy.I)):
+        expr_parsed = expr_parsed.subs(sympy.I, sympy.Symbol(imaginary_unit))
+        return 'Your answer was simplified to this, which contains a complex number' \
+               f'(denoted ${imaginary_unit:s}$): $${sympy.latex(expr_parsed):s}$$'
 
     return None
 
