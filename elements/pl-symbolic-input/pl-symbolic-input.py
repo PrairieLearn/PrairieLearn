@@ -24,14 +24,6 @@ ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = '0'
 
 
-def get_variables_list(variables_string):
-    if variables_string is not None:
-        variables_list = [variable.strip() for variable in variables_string.split(',')]
-        return variables_list
-    else:
-        return []
-
-
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
@@ -55,7 +47,7 @@ def render(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
     label = pl.get_string_attrib(element, 'label', LABEL_DEFAULT)
     variables_string = pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT)
-    variables = get_variables_list(variables_string)
+    variables = phs.get_variables_list(variables_string)
     display = pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT)
     allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
     imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
@@ -217,7 +209,7 @@ def render(element_html, data):
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    variables = get_variables_list(pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT))
+    variables = phs.get_variables_list(pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT))
     allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
     imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
     allow_blank = pl.get_boolean_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT)
@@ -330,7 +322,7 @@ def parse(element_html, data):
 def grade(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    variables = get_variables_list(pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT))
+    variables = phs.get_variables_list(pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT))
     allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
 
@@ -372,7 +364,7 @@ def grade(element_html, data):
 def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    variables = get_variables_list(pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT))
+    variables = phs.get_variables_list(pl.get_string_attrib(element, 'variables', VARIABLES_DEFAULT))
     allow_complex = pl.get_boolean_attrib(element, 'allow-complex', ALLOW_COMPLEX_DEFAULT)
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
     imaginary_unit = pl.get_string_attrib(element, 'imaginary-unit-for-display', IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT)
