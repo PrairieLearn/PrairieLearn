@@ -467,6 +467,7 @@ def validate_string_as_sympy(
             f"Your answer contains the floating-point number {err.n}. "
             f"All numbers must be expressed as integers (or ratios of integers)"
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
         )
     except HasComplexError as err:
         err_string = [
@@ -481,36 +482,43 @@ def validate_string_as_sympy(
             )
 
         err_string.append(f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>")
+        err_string.append("Note that the location of the syntax error is approximate.")
         return "".join(err_string)
     except HasInvalidExpressionError as err:
         return (
             f"Your answer has an invalid expression. "
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
         )
     except HasInvalidFunctionError as err:
         return (
             f'Your answer calls an invalid function "{err.text}". '
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
         )
     except HasInvalidVariableError as err:
         return (
             f'Your answer refers to an invalid variable "{err.text}". '
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
         )
     except HasParseError as err:
         return (
             f"Your answer has a syntax error. "
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
         )
     except HasEscapeError as err:
         return (
             f'Your answer must not contain the character "\\". '
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
         )
     except HasCommentError as err:
         return (
             f'Your answer must not contain the character "#". '
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
         )
     except Exception:
         return "Invalid format."
