@@ -231,7 +231,7 @@ def parse(element_html, data):
     )
 
     if error_msg is not None:
-        data["format_errors"][name] = s
+        data["format_errors"][name] = error_msg
         data["submitted_answers"][name] = None
         return
 
@@ -252,9 +252,9 @@ def parse(element_html, data):
 
         # Finally, store the result
         data['submitted_answers'][name] = a_sub_json
-    except Exception:
-        s = 'Your answer was simplified to this, which contains an invalid expression: $${:s}$$'.format(sympy.latex(a_sub_parsed))
-        data['format_errors'][name] = s
+    except ValueError:
+        data['format_errors'][name] = \
+            f'Your answer was simplified to this, which contains an invalid expression: $${sympy.latex(a_sub_parsed):s}$$'
         data['submitted_answers'][name] = None
 
 
