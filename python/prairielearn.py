@@ -15,7 +15,7 @@ import importlib
 import importlib.util
 import os
 import collections
-from typing import Dict, Any, TypedDict, Literal, Optional
+from typing import Dict, Any, TypedDict, Literal, Optional, List
 from typing_extensions import NotRequired
 
 class PartialScore(TypedDict):
@@ -167,14 +167,17 @@ def from_json(v):
     return v
 
 
-def inner_html(element):
+def inner_html(element: lxml.html.HtmlElement) -> str:
     inner = element.text
     if inner is None:
         inner = ''
-    inner = html.escape(str(inner))
+
+    res_list = [html.escape(str(inner))]
+
     for child in element:
-        inner += lxml.html.tostring(child, method='html').decode('utf-8')
-    return inner
+        res_list.append(lxml.html.tostring(child, method='html').decode('utf-8'))
+
+    return "".join(res_list)
 
 
 def compat_get(object, attrib, default):
@@ -184,7 +187,7 @@ def compat_get(object, attrib, default):
     return old_attrib in object
 
 
-def compat_array(arr):
+def compat_array(arr: List[str]) -> List[str]:
     new_arr = []
     for i in arr:
         new_arr.append(i)
@@ -192,13 +195,14 @@ def compat_array(arr):
     return new_arr
 
 
-def check_attribs(element, required_attribs, optional_attribs):
+def check_attribs(element: lxml.html.HtmlElement, required_attribs: List[str], optional_attribs: List[str]) -> None:
     for name in required_attribs:
         if not has_attrib(element, name):
-            raise Exception('Required attribute "%s" missing' % name)
+            raise ValueError(f'Required attribute "{name}" missing')
+
     extra_attribs = list(set(element.attrib) - set(compat_array(required_attribs)) - set(compat_array(optional_attribs)))
-    for name in extra_attribs:
-        raise Exception('Unknown attribute "%s"' % name)
+    if extra_attribs:
+        raise ValueError(f'Unknown attribute(s): {extra_attribs}')
 
 
 def _get_attrib(element, name, *args):

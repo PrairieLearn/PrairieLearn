@@ -26,7 +26,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             continue
 
         else:
-            raise Exception(f"Tags inside of pl-hidden-hints must be pl-hint, not '{child.tag}'.")
+            raise ValueError(f"Tags inside of pl-hidden-hints must be pl-hint, not '{child.tag}'.")
 
     # Sort hints by priority before displaying
     submission_count = data['num_valid_submissions']
