@@ -53,7 +53,7 @@ class QuestionData(TypedDict):
 class ElementTestData(QuestionData):
     test_type: Literal['correct', 'incorrect', 'invalid']
 
-def to_json(v, *, new_df_encoding=False):
+def to_json(v, *, df_encoding_version=1):
     """to_json(v)
 
     If v has a standard type that cannot be json serialized, it is replaced with
@@ -94,7 +94,10 @@ def to_json(v, *, new_df_encoding=False):
             M.append(row)
         return {'_type': 'sympy_matrix', '_value': M, '_variables': s, '_shape': [num_rows, num_cols]}
     elif isinstance(v, pandas.DataFrame):
-        if new_df_encoding:
+        if df_encoding_version == 1:
+            return {'_type': 'dataframe', '_value': {'index': list(v.index), 'columns': list(v.columns), 'data': v.values.tolist()}}
+
+        elif df_encoding_version == 2:
             # The next lines of code are required to address the JSON table-orient
             # generating numeric keys instead of strings for an index sequence with
             # only numeric values (c.f. pandas-dev/pandas#46392)
@@ -113,9 +116,10 @@ def to_json(v, *, new_df_encoding=False):
             pure_json_df = json.loads(encoded_json_str_df)
 
             return {'_type': 'dataframe-v2', '_value': pure_json_df}
+
         else:
-            return {'_type': 'dataframe', '_value': {'index': list(v.index), 'columns': list(v.columns), 'data': v.values.tolist()}
-    }
+            raise ValueError(f"Invalid df_encoding_version: {df_encoding_version}. Must be 1 or 2")
+
     else:
         return v
 
