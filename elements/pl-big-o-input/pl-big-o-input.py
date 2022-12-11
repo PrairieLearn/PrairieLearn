@@ -179,7 +179,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "a_sub": a_sub,
             "feedback": feedback,
             "raw_submitted_answer": raw_submitted_answer,
-            score_type: score_value
+            score_type: score_value,
         }
         with open("pl-big-o-input.mustache", "r", encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
@@ -266,7 +266,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["partial_scores"][name] = {
             "score": 1,
             "weight": weight,
-            "feedback": "Correct!",
+            "feedback": bou.CORRECT_UNCONDITIONAL_FEEDBACK,
         }
 
     elif result == "incorrect":
