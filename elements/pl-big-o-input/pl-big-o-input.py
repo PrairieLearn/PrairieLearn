@@ -129,8 +129,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "show_placeholder": size >= PLACEHOLDER_TEXT_THRESHOLD,
             "raw_submitted_answer": raw_submitted_answer,
             "type": bigo_type,
-            score_type: True,
-            "score_value": score_value,
+            score_type: score_value,
         }
 
         with open("pl-big-o-input.mustache", "r", encoding="utf-8") as f:
@@ -180,8 +179,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "a_sub": a_sub,
             "feedback": feedback,
             "raw_submitted_answer": raw_submitted_answer,
-            score_type: True,
-            "score_value": score_value,
+            score_type: score_value
         }
         with open("pl-big-o-input.mustache", "r", encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
