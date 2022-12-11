@@ -44,25 +44,26 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if declared_empty:
         if len(frontend_variables) > 0:
             raise ValueError(
-                f"Variable name '{params_name}' was declared empty, but has variables defined in 'question.html'"
+                f"Variable name '{params_name}' was declared empty, but has variables defined in 'question.html'."
             )
         elif params_name in data["params"]:
             raise ValueError(
-                f"Variable name '{params_name}' was declared empty, but has variables defined in 'server.py'"
+                f"Variable name '{params_name}' was declared empty, but has variables defined in 'server.py'."
             )
 
         data["params"][params_name] = []
     elif params_name not in data["params"]:
         if len(frontend_variables) == 0:
             raise ValueError(
-                f"Variable name '{params_name}' has no variables defined in 'question.html' or 'server.py' Did you mean to set it to be empty?"
+                f"Variable name '{params_name}' has no variables defined in 'question.html' or 'server.py'."
+                "Did you mean to set it to be empty?"
             )
 
         data["params"][params_name] = frontend_variables
     else:
         if len(frontend_variables) > 0:
             raise ValueError(
-                f"Cannot define variables from both 'question.html' and 'server.py' for variable name '{params_name}'"
+                f"Cannot define variables from both 'question.html' and 'server.py' for variable name '{params_name}'."
             )
 
 
