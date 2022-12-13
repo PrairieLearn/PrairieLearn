@@ -77,10 +77,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             # Get headers for all floating point columns and style them to use the desired number of sig figs.
             float_column_names = frame.select_dtypes(include="float").columns
 
-            # This format string uses the comma to distinguish groups of 3 digits,
-            # and displays the desired number of digits, as given by the instructor
+            # This format string displays the desired number of digits, as given by the instructor
+            # Switches between exponential and decimal notation as needed
             frame_style.format(
-                subset=float_column_names, formatter=f"{{:,.{num_digits}g}}"
+                subset=float_column_names, formatter=f"{{:.{num_digits}g}}"
             )
 
         if show_dtype:
