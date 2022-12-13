@@ -25,6 +25,7 @@ const filesize = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const Sentry = require('@prairielearn/sentry');
+const compiledAssets = require('@prairielearn/compiled-assets');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -94,6 +95,7 @@ module.exports.initExpress = function () {
   app.use((req, res, next) => {
     res.locals.asset_path = assets.assetPath;
     res.locals.node_modules_asset_path = assets.nodeModulesAssetPath;
+    res.locals.compiled_script_tag = compiledAssets.compiledScriptTag;
     next();
   });
   app.use(function (req, res, next) {
@@ -364,6 +366,8 @@ module.exports.initExpress = function () {
   // "cacheable" route above.
   app.use(express.static(path.join(__dirname, 'public')));
 
+  app.use('/build/', compiledAssets.handler());
+
   // To allow for more aggressive caching of files served from node_modules/,
   // we insert a hash of the module version into the resource path. This allows
   // us to treat those files as immutable and cache them essentially forever.
@@ -425,10 +429,13 @@ module.exports.initExpress = function () {
   app.use('/pl/oauth2login', require('./pages/authLoginOAuth2/authLoginOAuth2'));
   app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOAuth2'));
   app.use(/\/pl\/shibcallback/, require('./pages/authCallbackShib/authCallbackShib'));
-  app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
-  app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
 
   if (isEnterprise()) {
+    if (config.hasAzure) {
+      app.use('/pl/azure_login', require('./ee/auth/azure/login'));
+      app.use('/pl/azure_callback', require('./ee/auth/azure/callback'));
+    }
+
     app.use('/pl/auth/institution/:institution_id/saml', require('./ee/auth/saml/router'));
   }
 
@@ -550,8 +557,10 @@ module.exports.initExpress = function () {
       next();
     },
     require('./middlewares/authzWorkspace'),
-    require('./pages/workspace/workspace'),
   ]);
+  app.use('/pl/workspace/:workspace_id', require('./pages/workspace/workspace'));
+  app.use('/pl/workspace/:workspace_id/logs', require('./pages/workspaceLogs/workspaceLogs'));
+
   // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
   if (config.devMode) {
     app.use('/pl/loadFromDisk', [
@@ -1850,41 +1859,10 @@ if (config.startServer) {
         }
       },
       async () => {
-        if (!config.hasAzure) return;
-
-        let OIDCStrategy = require('passport-azure-ad').OIDCStrategy;
-        const azureConfig = {
-          identityMetadata: config.azureIdentityMetadata,
-          clientID: config.azureClientID,
-          responseType: config.azureResponseType,
-          responseMode: config.azureResponseMode,
-          redirectUrl: config.azureRedirectUrl,
-          allowHttpForRedirectUrl: config.azureAllowHttpForRedirectUrl,
-          clientSecret: config.azureClientSecret,
-          validateIssuer: config.azureValidateIssuer,
-          isB2C: config.azureIsB2C,
-          issuer: config.azureIssuer,
-          passReqToCallback: config.azurePassReqToCallback,
-          scope: config.azureScope,
-          loggingLevel: config.azureLoggingLevel,
-          nonceLifetime: config.azureNonceLifetime,
-          nonceMaxAmount: config.azureNonceMaxAmount,
-          useCookieInsteadOfSession: config.azureUseCookieInsteadOfSession,
-          cookieEncryptionKeys: config.azureCookieEncryptionKeys,
-          clockSkew: config.azureClockSkew,
-        };
-        passport.use(
-          new OIDCStrategy(azureConfig, function (
-            iss,
-            sub,
-            profile,
-            accessToken,
-            refreshToken,
-            done
-          ) {
-            return done(null, profile);
-          })
-        );
+        if (isEnterprise() && config.hasAzure) {
+          const { getAzureStrategy } = require('./ee/auth/azure/index');
+          passport.use(getAzureStrategy());
+        }
       },
       async () => {
         if (isEnterprise()) {
@@ -1982,6 +1960,14 @@ if (config.startServer) {
         news_items.init(notify_with_new_server, function (err) {
           if (ERR(err, callback)) return;
           callback(null);
+        });
+      },
+      async () => {
+        compiledAssets.init({
+          dev: config.devMode,
+          sourceDirectory: path.resolve(__dirname, 'assets'),
+          buildDirectory: path.resolve(__dirname, 'public/build'),
+          publicPath: '/build',
         });
       },
       // We need to initialize these first, as the code callers require these

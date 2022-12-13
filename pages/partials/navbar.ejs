@@ -91,7 +91,7 @@
 
           <% } %>
 
-          <% if (locals.course_instance && (authz_data.authn_has_course_permission_preview || authz_data.authn_has_course_instance_permission_view)) {
+          <% if (typeof viewType !== 'undefined' && locals.course_instance && (authz_data.authn_has_course_permission_preview || authz_data.authn_has_course_instance_permission_view)) {
             // Only show "View type" menu(s) if the following two things are true:
             // - The authn user was given access to a course instance (so, both viewType and authz_data also exist).
             // - In particular, the authn user has instructor access to this course instance.
@@ -340,7 +340,7 @@
 
     <% } %>
 
-    <% if (locals.course_instance && (authz_data.authn_has_course_permission_preview || authz_data.authn_has_course_instance_permission_view)) { %>
+    <% if (typeof viewType !== 'undefined' && locals.course_instance && (authz_data.authn_has_course_permission_preview || authz_data.authn_has_course_instance_permission_view)) { %>
 
       $(function() {
         const expires = 30; // in units of days
