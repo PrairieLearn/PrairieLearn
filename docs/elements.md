@@ -1190,18 +1190,19 @@ def generate(data):
 
 #### Customizations
 
-| Attribute         | Type    | Default | Description                                                                                                                                                 |
-| ----------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `params-name`     | string  | —       | The name of the key in `data['params']` to get a value from                                                                                                 |
-| `text`            | boolean | false   | Force the variable to be displayed in a textual format, as given by `repr(var)`. By default, special types like DataFrames will be rendered as HTML tables. |
-| `prefix`          | string  | (empty) | Any prefix to append to the output in `text` mode.                                                                                                          |
-| `suffix`          | string  | (empty) | Any suffix to append to the output in `text` mode.                                                                                                          |
-| `no-highlight`    | boolean | false   | Disable syntax highlighting in `text` mode.                                                                                                                 |
-| `show-header`     | boolean | true    | Show the header row of a DataFrame in default mode. (No effect in `text` mode.)                                                                             |
-| `show-index`      | boolean | true    | Show the index column of a DataFrame in default mode. (No effect in `text` mode.)                                                                           |
-| `show-dimensions` | boolean | true    | Show a footer with the dimensions of a DataFrame in default mode. (No effect in `text` mode.)                                                               |
-| `show-dtype`      | boolean | false   | Append a row to a DataFrame containing column data types for display. (No effect in `text` mode.)                                                           |
-| `add-line-breaks` | boolean | false   | Add line breaks for Python dictionaries or lists.                                                                                                           |
+| Attribute         | Type    | Default | Description                                                                                                                                                                                         |
+| ----------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `params-name`     | string  | —       | The name of the key in `data['params']` to get a value from                                                                                                                                         |
+| `text`            | boolean | false   | Force the variable to be displayed in a textual format, as given by `repr(var)`. By default, special types like DataFrames will be rendered as HTML tables.                                         |
+| `prefix`          | string  | (empty) | Any prefix to append to the output in `text` mode.                                                                                                                                                  |
+| `suffix`          | string  | (empty) | Any suffix to append to the output in `text` mode.                                                                                                                                                  |
+| `no-highlight`    | boolean | false   | Disable syntax highlighting in `text` mode.                                                                                                                                                         |
+| `show-header`     | boolean | true    | Show the header row of a DataFrame in default mode. (No effect in `text` mode.)                                                                                                                     |
+| `show-index`      | boolean | true    | Show the index column of a DataFrame in default mode. (No effect in `text` mode.)                                                                                                                   |
+| `show-dimensions` | boolean | true    | Show a footer with the dimensions of a DataFrame in default mode. (No effect in `text` mode.)                                                                                                       |
+| `show-dtype`      | boolean | false   | Append a row to a DataFrame containing column data types for display. (No effect in `text` mode.)                                                                                                   |
+| `num-sig-figs`    | integer | -       | Number of significant figures to display for floating point data, switching to exponential notation if necessary. If not set, displays complete floating point numbers. (No effect in `text` mode.) |
+| `add-line-breaks` | boolean | false   | Add line breaks for Python dictionaries or lists.                                                                                                                                                   |
 
 #### Details
 

@@ -13,13 +13,14 @@
   <pl-code source-file-name="test.py"></pl-code>
   <pl-python-variable params-name="df" show-dtype="true"></pl-python-variable>
   <p>
-    By default, a Pandas DataFrame will display its index column and header row, as well as a postscript label with the table dimensions. You can toggle these with attributes on the <code>pl-python-variable</code> tag. Here, we've set <code>show-header="false" show-index="false" show-dimensions="false" show-dtype="false"</code>:
+    By default, a Pandas DataFrame will display its index column and header row, as well as a postscript label with the table dimensions. You can toggle these with attributes on the <code>pl-python-variable</code> tag.
+    Here, we've set the following: <code>show-header="false" show-index="false" show-dimensions="false" show-dtype="false" num-sig-figs="4"</code>:
   </p>
-  <pl-python-variable params-name="df" show-header="false" show-index="false" show-dimensions="false"></pl-python-variable>
+  <pl-python-variable params-name="df" show-header="false" show-index="false" show-dimensions="false" num-sig-figs="4"></pl-python-variable>
   <p>
     Here's another Pandas DataFrame. This DataFrame has timestamps and uses the new encoding rule in <code>pl.to_json()</code> by setting the keyword argument <code>df_encoding_version=2</code>.
   </p>
-  <pl-python-variable params-name="df2" show-dimensions="true" show-dtype="true"></pl-python-variable>
+  <pl-python-variable params-name="df2" show-dimensions="true" show-dtype="true" num-sig-figs="2"></pl-python-variable>
   <p>
     Here is the same example with <code>text="true"</code>, forcing the variable to be rendered in its textual representation. The <code>show-header</code>, <code>show-index</code>, and <code>show-dimensions</code> attributes don't affect this.
   </p>
