@@ -76,7 +76,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         if num_sig_figs is not None:
             # Get headers for all floating point columns and style them to use the desired number of sig figs.
-            float_column_names = frame.select_dtypes(include=[np.float]).columns
+            float_column_names = frame.select_dtypes(include=[np.floating]).columns
 
             # This format string uses the comma to distinguish groups of 3 digits,
             # and displays the desired number of digits, as given by the instructor
