@@ -15,7 +15,7 @@ import importlib
 import importlib.util
 import os
 import collections
-from typing import Dict, Any, TypedDict, Literal, Optional, List
+from typing import Dict, Any, TypedDict, Literal, Optional, List, overload
 from typing_extensions import NotRequired
 
 class PartialScore(TypedDict):
@@ -200,7 +200,7 @@ def check_attribs(element: lxml.html.HtmlElement, required_attribs: List[str], o
         if not has_attrib(element, name):
             raise ValueError(f'Required attribute "{name}" missing')
 
-    extra_attribs = list(set(element.attrib) - set(compat_array(required_attribs)) - set(compat_array(optional_attribs)))
+    extra_attribs = set(element.attrib) - set(compat_array(required_attribs)) - set(compat_array(optional_attribs))
     if extra_attribs:
         raise ValueError(f'Unknown attribute(s): {extra_attribs}')
 
@@ -259,6 +259,14 @@ def get_string_attrib(element, name, *args):
     (str_val, is_default) = _get_attrib(element, name, *args)
     return str_val
 
+@overload
+def get_boolean_attrib(element: lxml.html.HtmlElement, name: str, *args: None) -> Optional[bool]: ...
+
+@overload
+def get_boolean_attrib(element: lxml.html.HtmlElement, name: str, *args: bool) -> bool: ...
+
+@overload
+def get_boolean_attrib(element: lxml.html.HtmlElement, name: str) -> bool: ...
 
 def get_boolean_attrib(element, name, *args):
     """value = get_boolean_attrib(element, name, default)
@@ -282,6 +290,14 @@ def get_boolean_attrib(element, name, *args):
     else:
         raise Exception('Attribute "%s" must be a boolean value: %s' % (name, val))
 
+@overload
+def get_integer_attrib(element: lxml.html.HtmlElement, name: str, *args: None) -> Optional[int]: ...
+
+@overload
+def get_integer_attrib(element: lxml.html.HtmlElement, name: str, *args: int) -> int: ...
+
+@overload
+def get_integer_attrib(element: lxml.html.HtmlElement, name: str) -> int: ...
 
 def get_integer_attrib(element, name, *args):
     """value = get_integer_attrib(element, name, default)
