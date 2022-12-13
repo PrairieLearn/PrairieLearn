@@ -222,7 +222,7 @@ def _get_attrib(element, name, *args):
     # to distinguish between default=None and no default being passed,
     # which means we need to explicitly handle the optional argument
     if len(args) > 1:
-        raise Exception('Only one additional argument is allowed')
+        raise ValueError('Only one additional argument is allowed')
 
     if name in element.attrib:
         return (element.attrib[name], False)
@@ -236,10 +236,10 @@ def _get_attrib(element, name, *args):
     if len(args) == 1:
         return (args[0], True)
 
-    raise Exception('Attribute "%s" missing and no default is available' % name)
+    raise ValueError(f'Attribute "{name}" missing and no default is available')
 
 
-def has_attrib(element, name):
+def has_attrib(element: lxml.html.HtmlElement, name: str) -> bool:
     """value = has_attrib(element, name)
 
     Returns true if the element has an attribute of that name,
@@ -280,15 +280,15 @@ def get_boolean_attrib(element, name, *args):
     if is_default:
         return val
 
-    true_values = ['true', 't', '1', 'True', 'T', 'TRUE', 'yes', 'y', 'Yes', 'Y', 'YES']
-    false_values = ['false', 'f', '0', 'False', 'F', 'FALSE', 'no', 'n', 'No', 'N', 'NO']
+    true_values = {'true', 't', '1', 'True', 'T', 'TRUE', 'yes', 'y', 'Yes', 'Y', 'YES'}
+    false_values = {'false', 'f', '0', 'False', 'F', 'FALSE', 'no', 'n', 'No', 'N', 'NO'}
 
     if val in true_values:
         return True
     elif val in false_values:
         return False
     else:
-        raise Exception('Attribute "%s" must be a boolean value: %s' % (name, val))
+        raise ValueError(f'Attribute "{name}" must be a boolean value: {val}')
 
 @overload
 def get_integer_attrib(element: lxml.html.HtmlElement, name: str, *args: None) -> Optional[int]: ...
@@ -317,7 +317,7 @@ def get_integer_attrib(element, name, *args):
     if int_val is None:
         # can't raise this exception directly in the above except
         # handler because it gives an overly complex displayed error
-        raise Exception('Attribute "%s" must be an integer: %s' % (name, val))
+        raise ValueError(f'Attribute "{name}" must be an integer: {val}')
     return int_val
 
 
