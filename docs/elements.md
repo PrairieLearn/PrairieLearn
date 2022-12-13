@@ -1201,7 +1201,7 @@ def generate(data):
 | `show-index`      | boolean | true    | Show the index column of a DataFrame in default mode. (No effect in `text` mode.)                                                                                                                   |
 | `show-dimensions` | boolean | true    | Show a footer with the dimensions of a DataFrame in default mode. (No effect in `text` mode.)                                                                                                       |
 | `show-dtype`      | boolean | false   | Append a row to a DataFrame containing column data types for display. (No effect in `text` mode.)                                                                                                   |
-| `num-sig-figs`    | integer | -       | Number of significant figures to display for floating point data, switching to exponential notation if necessary. If not set, displays complete floating point numbers. (No effect in `text` mode.) |
+| `digits`          | integer | -       | Number of significant figures to display for floating point data, switching to exponential notation if necessary. If not set, displays complete floating point numbers. (No effect in `text` mode.) |
 | `add-line-breaks` | boolean | false   | Add line breaks for Python dictionaries or lists.                                                                                                                                                   |
 
 #### Details

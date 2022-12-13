@@ -1,7 +1,6 @@
 from typing import Any, List, cast
 
 import lxml.html
-import numpy as np
 import pandas
 import prairielearn as pl
 
@@ -14,7 +13,7 @@ SHOW_INDEX_DEFAULT = True
 SHOW_DIMENSIONS_DEFAULT = True
 SHOW_DATATYPE_DEFAULT = False
 ADD_LINE_BREAKS_DEFAULT = False
-NUM_SIG_FIGS_DEFAULT = None
+NUM_DIGITS_DEFAULT = None
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -32,7 +31,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             "show-dimensions",
             "add-line-breaks",
             "show-dtype",
-            "num-sig-figs",
+            "digits",
         ],
     )
 
@@ -50,7 +49,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     add_line_breaks = pl.get_boolean_attrib(
         element, "add-line-breaks", ADD_LINE_BREAKS_DEFAULT
     )
-    num_sig_figs = pl.get_integer_attrib(element, "num-sig-figs", NUM_SIG_FIGS_DEFAULT)
+    num_digits = pl.get_integer_attrib(element, "digits", NUM_DIGITS_DEFAULT)
 
     if varname not in data["params"]:
         raise KeyError(
@@ -71,21 +70,18 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         frame_style = frame.style
 
         # Format integers using commas every 3 digits
-        integer_column_names = frame.select_dtypes(include=[np.integer]).columns
-        formatting_dict = dict.fromkeys(integer_column_names, "{:,d}")
+        integer_column_names = frame.select_dtypes(include="int").columns
+        frame_style.format(subset=integer_column_names, thousands=",")
 
-        if num_sig_figs is not None:
+        if num_digits is not None:
             # Get headers for all floating point columns and style them to use the desired number of sig figs.
-            float_column_names = frame.select_dtypes(include=[np.floating]).columns
+            float_column_names = frame.select_dtypes(include="float").columns
 
             # This format string uses the comma to distinguish groups of 3 digits,
             # and displays the desired number of digits, as given by the instructor
-            formatting_dict.update(
-                dict.fromkeys(float_column_names, f"{{:,.{num_sig_figs}g}}")
+            frame_style.format(
+                subset=float_column_names, formatter=f"{{:,.{num_digits}g}}"
             )
-
-        # Set formatting for each data type
-        frame_style.format(formatter=formatting_dict)
 
         if show_dtype:
             descriptors = frame.agg([lambda s: s.dtype])
