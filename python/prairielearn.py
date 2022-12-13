@@ -173,9 +173,9 @@ def inner_html(element: lxml.html.HtmlElement) -> str:
         inner = ''
 
     res_list = [html.escape(str(inner))]
-
-    for child in element:
-        res_list.append(lxml.html.tostring(child, method='html').decode('utf-8'))
+    res_list.extend(
+        lxml.html.tostring(child, method='html').decode('utf-8') for child in element
+    )
 
     return "".join(res_list)
 
