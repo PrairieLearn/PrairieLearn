@@ -169,17 +169,17 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
         );
       }
 
-      var keyBindingList = ['Default', 'Vim', 'Emacs', 'Sublime', 'VSCode'];
-      var keyBindSelect = that.modal.find('#modal-' + uuid + '-keyboardHandler');
-      keyBindSelect.empty();
-      for (const index in keyBindingList) {
-        var keyBind = 'ace/keyboard/' + keyBindingList[index].toLowerCase();
+      var keyboardHandlerList = ['Default', 'Vim', 'Emacs', 'Sublime', 'VSCode'];
+      var keyboardHandlerSelect = that.modal.find('#modal-' + uuid + '-keyboardHandler');
+      keyboardHandlerSelect.empty();
+      for (const index in keyboardHandlerList) {
+        var keyboardHandler = 'ace/keyboard/' + keyboardHandlerList[index].toLowerCase();
 
-        keyBindSelect.append(
+        keyboardHandlerSelect.append(
           $('<option>', {
-            value: keyBind,
-            text: keyBindingList[index],
-            selected: localStorage.getItem('pl-file-editor-keyboardHandler') === keyBind,
+            value: keyboardHandler,
+            text: keyboardHandlerList[index],
+            selected: localStorage.getItem('pl-file-editor-keyboardHandler') === keyboardHandler,
           })
         );
       }
@@ -207,12 +207,12 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
   this.saveSettingsButton.click(function () {
     var theme = that.modal.find('#modal-' + uuid + '-themes').val();
     var fontsize = that.modal.find('#modal-' + uuid + '-fontsize').val();
-    var keyBind = that.modal.find('#modal-' + uuid + '-keyboardHandler').val();
+    var keyboardHandler = that.modal.find('#modal-' + uuid + '-keyboardHandler').val();
 
     localStorage.setItem('pl-file-editor-theme', theme);
     localStorage.setItem('pl-file-editor-fontsize', fontsize);
-    localStorage.setItem('pl-file-editor-keyboardHandler', keyBind);
-    if (keyBind === 'ace/keyboard/default') {
+    localStorage.setItem('pl-file-editor-keyboardHandler', keyboardHandler);
+    if (keyboardHandler === 'ace/keyboard/default') {
       localStorage.removeItem('pl-file-editor-keyboardHandler');
     }
 
