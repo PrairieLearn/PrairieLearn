@@ -164,9 +164,14 @@ To block students from viewing closed assessment details, set `"showClosedAssess
         "timeLimitMin": 50,
         "showClosedAssessment": false,
         "credit": 100
+    },
+    {
+        "showClosedAssessment": false
     }
 ]
 ```
+
+Note that the `showClosedAssessment` statement is listed twice above, once while the assessment is in progress (`startDate` to `endDate`) and once in a second rule that will take effect after the `endDate`.
 
 The `showClosedAssessment` access rule restriction is only really useful in conjuction with [time limits](#time-limits). It is common to pair `"showClosedAssessment": false` with [disabled real-time grading](assessment.md#disabling-real-time-grading).
 
@@ -185,9 +190,15 @@ To block students from viewing closed assessment scores, set `"showClosedAssessm
         "showClosedAssessment": false,
         "showClosedAssessmentScore": false,
         "credit": 100
+    },
+    {
+        "showClosedAssessment": false,
+        "showClosedAssessmentScore": false
     }
 ]
 ```
+
+Note that the `showClosedAssessment` and `showClosedAssessmentScore` statements are listed twice above, once while the assessment is in progress (`startDate` to `endDate`) and once in a second rule that will take effect after the `endDate`.
 
 The `showClosedAssessmentScore` access rule restriction is only useful in conjunction with [disabling real-time grading](assessment.md#disabling-real-time-grading) and setting `"showClosedAssessment": false`.
 
