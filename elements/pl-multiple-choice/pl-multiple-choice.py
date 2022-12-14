@@ -5,7 +5,7 @@ import lxml.html
 import random
 import math
 import chevron
-import collections
+from collections import Counter
 from itertools import chain
 from typing import NamedTuple
 
@@ -109,14 +109,15 @@ def prepare(element_html, data):
 
     correct_answers, incorrect_answers = categorize_options(element, data)
 
-    # Ignore trailing/leading whitespace
-    choices = [choice.html.strip() for choice in chain(correct_answers, incorrect_answers)]
-
     # Making a conscious choice *NOT* to apply .lower() to all list elements
     # in case instructors want to explicitly have matrix M vs. vector m as
-    # possible options.
+    # possible options. Ignore trailing/leading whitespace
 
-    duplicates = [item for item, count in collections.Counter(choices).items() if count > 1]
+    choices_dict = Counter(
+        choice.html.strip() for choice in chain(correct_answers, incorrect_answers)
+    )
+
+    duplicates = [item for item, count in choices_dict.items() if count > 1]
 
     if duplicates:
         raise ValueError(f'pl-multiple-choice element has duplicate choices: {duplicates}')
