@@ -7,20 +7,22 @@ import {
   ReadableSpan,
   SpanProcessor,
   SimpleSpanProcessor,
-} from '@opentelemetry/sdk-trace-base';
-import { detectResources, Resource } from '@opentelemetry/resources';
-import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
-import { OTLPTraceExporter } from '@opentelemetry/exporter-otlp-grpc';
-import { ExpressLayerType } from '@opentelemetry/instrumentation-express';
-import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
-import { Sampler, Span, SpanStatusCode, context, trace } from '@opentelemetry/api';
-import {
   ParentBasedSampler,
   TraceIdRatioBasedSampler,
   AlwaysOnSampler,
   AlwaysOffSampler,
-  hrTimeToMilliseconds,
-} from '@opentelemetry/core';
+  Sampler,
+} from '@opentelemetry/sdk-trace-base';
+import { detectResources, Resource } from '@opentelemetry/resources';
+import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
+import { ExpressLayerType } from '@opentelemetry/instrumentation-express';
+import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
+import { Span, SpanStatusCode, trace } from '@opentelemetry/api';
+import { hrTimeToMilliseconds } from '@opentelemetry/core';
+
+// Exporters go here.
+import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
+import { JaegerExporter } from '@opentelemetry/exporter-jaeger';
 
 // Instrumentations go here.
 import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
@@ -34,11 +36,10 @@ import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis';
 // Resource detectors go here.
 import { awsEc2Detector } from '@opentelemetry/resource-detector-aws';
 import { processDetector, envDetector } from '@opentelemetry/resources';
-import { createBaggage } from '@opentelemetry/api/build/src/baggage/utils';
 
 /**
  * Extends `BatchSpanProcessor` to give it the ability to filter out spans
- * before they're queued up to send. This enhances our samping process so
+ * before they're queued up to send. This enhances our sampling process so
  * that we can filter spans _after_ they've been emitted.
  */
 class FilterBatchSpanProcessor extends BatchSpanProcessor {
@@ -87,7 +88,7 @@ const instrumentations = [
   new DnsInstrumentation(),
   new ExpressInstrumentation({
     // We use a lot of middleware; it makes the traces way too noisy. If we
-    // want telementry on a particular middleware, we should instrument it
+    // want telemetry on a particular middleware, we should instrument it
     // manually.
     ignoreLayersType: [ExpressLayerType.MIDDLEWARE],
     ignoreLayers: [
@@ -116,11 +117,11 @@ instrumentations.forEach((i) => {
   i.enable();
 });
 
-let tracerProvider: NodeTracerProvider;
+let tracerProvider: NodeTracerProvider | null;
 
 export interface OpenTelemetryConfig {
   openTelemetryEnabled: boolean;
-  openTelemetryExporter: 'console' | 'honeycomb' | SpanExporter;
+  openTelemetryExporter: 'console' | 'honeycomb' | 'jaeger' | SpanExporter;
   openTelemetrySamplerType: 'always-on' | 'always-off' | 'trace-id-ratio';
   openTelemetrySampleRate?: number;
   openTelemetrySpanProcessor?: 'batch' | 'simple';
@@ -157,6 +158,9 @@ export async function init(config: OpenTelemetryConfig) {
         break;
       }
       case 'honeycomb': {
+        if (!config.honeycombApiKey) throw new Error('Missing Honeycomb API key');
+        if (!config.honeycombDataset) throw new Error('Missing Honeycomb dataset');
+
         // Create a Honeycomb exporter with the appropriate metadata from the
         // config we've been provided with.
         const metadata = new Metadata();
@@ -168,6 +172,18 @@ export async function init(config: OpenTelemetryConfig) {
           url: 'grpc://api.honeycomb.io:443/',
           credentials: credentials.createSsl(),
           metadata,
+        });
+        break;
+      }
+      case 'jaeger': {
+        exporter = new JaegerExporter({
+          // By default, the UDP sender will be used, but that causes issues
+          // with packet sizes when Jaeger is running in Docker. We'll instead
+          // configure it to use the HTTP sender, which shouldn't face those
+          // same issues. We'll still allow the endpoint to be overridden via
+          // environment variable if needed.
+          endpoint:
+            process.env.OTEL_EXPORTER_JAEGER_ENDPOINT ?? 'http://localhost:14268/api/traces',
         });
         break;
       }
@@ -227,14 +243,17 @@ export async function init(config: OpenTelemetryConfig) {
     );
   }
 
-  tracerProvider = new NodeTracerProvider({
+  const nodeTracerProvider = new NodeTracerProvider({
     sampler,
     resource,
   });
-  tracerProvider.addSpanProcessor(spanProcessor);
-  tracerProvider.register();
+  nodeTracerProvider.addSpanProcessor(spanProcessor);
+  nodeTracerProvider.register();
 
-  instrumentations.forEach((i) => i.setTracerProvider(tracerProvider));
+  instrumentations.forEach((i) => i.setTracerProvider(nodeTracerProvider));
+
+  // Save the provider so we can shut it down later.
+  tracerProvider = tracerProvider;
 }
 
 /**
@@ -259,7 +278,7 @@ export async function instrumented<T>(
         const result = await fn(span);
         span.setStatus({ code: SpanStatusCode.OK });
         return result;
-      } catch (e) {
+      } catch (e: any) {
         span.setStatus({
           code: SpanStatusCode.ERROR,
           message: e.message,

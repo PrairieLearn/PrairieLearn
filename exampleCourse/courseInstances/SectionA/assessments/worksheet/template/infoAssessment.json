@@ -3,6 +3,7 @@
     "type": "Homework",
     "title": "Worksheet template: Newton's law",
     "set": "Worksheet",
+    "module": "AnotherModule",
     "number": "1",
     "allowAccess": [
         {

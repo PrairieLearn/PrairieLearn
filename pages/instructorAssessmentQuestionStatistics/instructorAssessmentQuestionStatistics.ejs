@@ -60,7 +60,7 @@
           </div>
         </div>
 
-        <% if (assessment_stat.number > 0) { %>
+        <% if (assessment.score_stat_number > 0) { %>
         <div class="card-body">
           <div id="difficultyDiscriminationScatter" class="scatter"></div>
           <script>
@@ -116,7 +116,7 @@
                 <th class="text-center">Question</th>
                 <th class="text-center">Mean score</th>
                 <th class="text-center">Discrimination</th>
-                <th class="text-center">Attempts</th>
+                <th class="text-center">Auto-graded Attempts</th>
                 <th class="text-center">Quintiles</th>
                 <th></th>
               </tr>
@@ -131,7 +131,13 @@
                 </td>
                 <td class="text-center align-middle"><%- include('../partials/scorebar', {score: Math.round(row.mean_question_score)}); %></td>
                 <td class="text-center align-middle"><%- include('../partials/scorebar', {score: Math.round(row.discrimination)}); %></td>
-                <td class="text-center"><%= formatFloat(row.average_number_submissions, 2); %></td>
+                <td class="text-center">
+                  <% if (row.max_auto_points > 0 || row.max_manual_points == 0 || row.average_number_submissions > 0) { %>
+                  <%= formatFloat(row.average_number_submissions, 2); %>
+                  <% } else { %>
+                  &mdash;
+                  <% } %>
+                </td>
                 <% if (row.number > 0) { %>
                 <td class="text-center"><div id="scoreHist<%= i %>" class="miniHist"></div></td>
                 <script>
@@ -149,7 +155,7 @@
                 <td class="text-center"></td>
                 <% } %>
                 <td class="align-middle text-nowrap" style="width: 1em;">
-                  <% if (authz_data.has_course_instance_permission_edit && course.manual_grading_visible) { %>
+                  <% if (authz_data.has_course_instance_permission_edit) { %>
                   <a class="btn btn-xs btn-primary" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/assessment_question/<%= row.id %>">Manual grading</a>
                   <% } %>
               </td>
@@ -166,7 +172,7 @@
             <ul>
               <li><strong>Mean score</strong> of a question is the average score for all students on the question. It is best to have a range of questions with different mean scores on the test, with some easy (mean score above 90%) and some hard (mean score below 50%).</li>
               <li><strong>Discrimination</strong> of a question is the correlation coefficient between the scores on the question and the total assessment scores. Discrimination values should be above 20%, unless a question is very easy (mean score above 95%), in which case it is acceptable to have lower discriminations. It is always better to have higher discriminations for all questions, and a range of discriminations is not desired.</li>
-              <li><strong>Attempts</strong> for a question is the average number of graded attempts made per student at the question.</li>
+              <li><strong>Auto-graded Attempts</strong> for a question is the average number of auto-graded attempts made per student at the question.</li>
               <li><strong>Quintiles</strong> shows the average scores on the question for students in the lowest 20% of the class, the next 20%, etc, where the quintiles are determined by total assessment score. Good questions should have very low scores for the lowest quintile (the left-most), and very high scores for the highest quintile (the right-most). This is essentially a graphical representation of the discrimination.
             </ul>
           </small>
@@ -221,6 +227,7 @@
               <td class="text-center">
                 <%= formatFloat(row.discrimination, 1) %>
               </td>
+              <% if (row.max_auto_points > 0 || row.max_manual_points == 0) { %>
               <td class="text-center">
                 <%= formatFloat(row.some_submission_perc, 1) %>
               </td>
@@ -342,7 +349,10 @@
                              [<%= row.quintile_question_scores %>],
                              _.defaults({ymax: 100}, options));
                 });
-              </script>
+                </script>
+              <% } else { %>
+              <td class="text-center" colspan="<%= assessment.type === 'Homework' ? 21 : 22 %>">Manually-graded question</td>
+              <% } %>
             </tr>
             <% }); %>
             </tbody>

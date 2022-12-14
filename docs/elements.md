@@ -79,6 +79,7 @@ The following **Conditional** elements are available:
 - [`pl-manual-grading-only`](#pl-manual-grading-only-element): Shows content only in manual grading.
 - [`pl-external-grader-results`](#pl-external-grader-results-element):
   Displays results from questions that are externally graded.
+- [`pl-hidden-hints`](#pl-hidden-hints): Displays hints as a student submits more on the current variant.
 
 Note: PrairieLearn Elements listed next have been
 **deprecated**. These elements are still supported for backwards
@@ -117,21 +118,31 @@ generation if two (or more) choices are identical.
 
 #### Customizations
 
-| Attribute                     | Type    | Default | Description                                                                                                                                                      |
-| ----------------------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`                | string  | —       | Variable name to store data in.                                                                                                                                  |
-| `weight`                      | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                             |
-| `inline`                      | boolean | false   | List answer choices on a single line instead of as separate paragraphs.                                                                                          |
-| `number-answers`              | integer | special | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.                                              |
-| `fixed-order`                 | boolean | false   | Disable the randomization of answer order.                                                                                                                       |
-| `hide-letter-keys`            | boolean | false   | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                               |
-| `all-of-the-above`            | boolean | false   | Add "All of the above" choice below all answer choices, but above "None of the above" if enabled. Bounded by `number-answers` and not affected by `fixed-order`. |
-| `none-of-the-above`           | boolean | false   | Add "None of the above" choice below all answer choices regardless of `fixed-order`, and is bounded by `number-answers`.                                         |
-| `all-of-the-above-feedback`   | string  | —       | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.       |
-| `none-of-the-above-feedback`  | string  | —       | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student.      |
-| `external-json`               | string  | special | Optional path to a JSON file to load external answer choices from. Answer choices are stored as lists under "correct" and "incorrect" key names.                 |
-| `external-json-correct-key`   | string  | special | Optionally override default json "correct" attribute name when using `external-json` file.                                                                       |
-| `external-json-incorrect-key` | string  | special | Optionally override default json "incorrect" attribute name when using `external-json` file.                                                                     |
+| Attribute                     | Type    | Default | Description                                                                                                                                                 |
+| ----------------------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name`                | string  | —       | Variable name to store data in.                                                                                                                             |
+| `weight`                      | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                        |
+| `inline`                      | boolean | false   | List answer choices on a single line instead of as separate paragraphs.                                                                                     |
+| `number-answers`              | integer | special | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.                                         |
+| `fixed-order`                 | boolean | false   | Disable the randomization of answer order.                                                                                                                  |
+| `hide-letter-keys`            | boolean | false   | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                          |
+| `all-of-the-above`            | string  | `false` | Add "All of the above" choice. See below for details.                                                                                                       |
+| `none-of-the-above`           | string  | `false` | Add "None of the above" choice. See below for details.                                                                                                      |
+| `all-of-the-above-feedback`   | string  | —       | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.  |
+| `none-of-the-above-feedback`  | string  | —       | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student. |
+| `external-json`               | string  | special | Optional path to a JSON file to load external answer choices from. Answer choices are stored as lists under "correct" and "incorrect" key names.            |
+| `external-json-correct-key`   | string  | special | Optionally override default json "correct" attribute name when using `external-json` file.                                                                  |
+| `external-json-incorrect-key` | string  | special | Optionally override default json "incorrect" attribute name when using `external-json` file.                                                                |
+
+The attributes `none-of-the-above` and `all-of-the-above` can be set to one of these values:
+
+- `false`: the corresponding choice will not be shown in the list of choices. This is the default.
+- `random`: the corresponding choice will always be shown, and will be randomly correct, with probability proportional to the total number of correct choices. In other words, if there are `N` possible correct choices in total, this choice will be correct with probability `1/N`.
+- `correct`: the corresponding choice will always be shown and will always be the correct answer.
+- `incorrect`: the corresponding choice will always be shown and will always be an incorrect answer (i.e., a distractor).
+- `true`: same as `random`, accepted for backwards compatibility.
+
+Note that "All of the above" and "None of the above", if set, are bounded by the `number-answers` value above. Also, these two values are always shown as the last choices, regardless of the setting for `fixed-order`. If both choices are shown, then "All of the above" will be listed before "None of the above".
 
 Inside the `pl-multiple-choice` element, each choice must be specified with
 a `pl-answer` that has attributes:
@@ -435,6 +446,8 @@ Element to arrange given blocks of code or text that are displayed initially in 
 | `solution-placement`  | "right" or "bottom"     | "right"                        | `right` shows the source and solution areas aligned side-by-side. `bottom` shows the solution area below the source area.                                                                                                                                                                                                                                                                                |
 | `partial-credit`      | "none" or "lcs"         | Depends on `grading-method`    | For the `dag` and `ranking` grading methods, you may specify `none` for no partial credit or `lcs` (default) for partial credit based on the LCS edit-distance from the student solution to some correct solution. For the other grading methods, using this property is not yet supported. Grading method `unordered` will always assign partial credit, and grading method `ordered` will never do so. |
 | `feedback`            | "none" or "first-wrong" | "none"                         | The level of feedback the student will recieve upon giving an incorrect answer. Available with the `dag` or `ranking` grading mode. `first-wrong` will tell the student which block in their answer was the first to be incorrect, `none` will give no feedback.                                                                                                                                         |
+| `format`              | "code" or "default"     | "default"                      | If this property is set to "code", then the contents of each of the blocks will be wrapped with a `pl-code` element.                                                                                                                                                                                                                                                                                     |
+| `code-language`       | string                  | -                              | The programming language syntax highlighting to use. Only available when using `format="code"`.                                                                                                                                                                                                                                                                                                          |
 
 Within the `pl-order-blocks` element, each element must either be a `pl-answer` or a `pl-block-group` (see details below for more info on `pl-block-group`). Each element within a `pl-block-group` must be a `pl-answer`. The `pl-answer` elements specify the content for each of the blocks, and may have the following attributes:
 
@@ -1892,6 +1905,59 @@ element contents only in a specific panel.
 
 ---
 
+### `pl-hidden-hints` element
+
+Display progressive hints that become accessible as the number of student submissions increases for the current variant.
+Hints are only open on page load when they are first revealed (when first reaching the desired submission count).
+Otherwise hints start closed and must be opened by the user. The submission counter is reset when new variants are
+generated. Note that **this element does not reveal new hints across variants.**
+
+Best used in situations where there is a penalty for more submissions to a given variant. This prevents students from
+spamming incorrect submissions to reveal all hints right away.
+
+#### Sample element
+
+```html
+<pl-hidden-hints>
+  <pl-hint> This is a hint that will be accessible immediately. </pl-hint>
+
+  <pl-hint show-after-submission="3">
+    This is a hint that will be accessible after three incorrect submissions for the current
+    variant.
+  </pl-hint>
+
+  <pl-hint show-after-submission="5">
+    This is a hint that will be accessible after five incorrect submissions for the current variant.
+  </pl-hint>
+</pl-hidden-hints>
+```
+
+#### Customizations
+
+For the inner `pl-hint` element:
+
+| Attribute               | Type | Default | Description                                                                                                                                                                                                 |
+| ----------------------- | ---- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `show-after-submission` | int  | -       | Number of submissions on the current variant needed before the hint is accessible. If not set, hint is always accessible. **Should only be set for questions that allow multiple submissions per variant.** |
+
+#### Details
+
+Add hints to a variant that are revealed with more submissions using the `show-after-submission` attribute. By default, hints without
+`show-after-submission` set are always shown. Hints with the same `show-after-submission` appear in the order they're written in the
+question HTML.
+
+#### Example implementations
+
+- [element/hiddenHints]
+
+#### See also
+
+- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
+- [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
+- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
+
+---
+
 ### `pl-hide-in-manual-grading` element
 
 Hide the contents so that it is **not** displayed to graders in the manual grading page.
@@ -2019,7 +2085,7 @@ new questions.
   param-names="r1,r2,isHorizontal"
   width="900"
   height="600"
-/>
+></pl-prairiedraw-figure>
 ```
 
 #### Customizations

@@ -13,6 +13,7 @@ router.get('/', function (req, res, next) {
     authz_data: res.locals.authz_data,
     user_id: res.locals.user.user_id,
     req_date: res.locals.req_date,
+    assessments_group_by: res.locals.course_instance.assessments_group_by,
   };
   sqldb.query(sql.select_assessments, params, function (err, result) {
     if (ERR(err, next)) return;

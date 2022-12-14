@@ -23,7 +23,9 @@ const DEFAULT_QUESTION_INFO = {
   type: 'Calculation',
   clientFiles: ['client.js', 'question.html', 'answer.html'],
 };
-const DEFAULT_COURSE_INSTANCE_INFO = {};
+const DEFAULT_COURSE_INSTANCE_INFO = {
+  groupAssessmentsBy: 'Set',
+};
 const DEFAULT_ASSESSMENT_INFO = {};
 
 const DEFAULT_ASSESSMENT_SETS = [
@@ -209,6 +211,12 @@ const FILE_UUID_REGEX =
  */
 
 /**
+ * @typedef AssessmentModule
+ * @property {string} name
+ * @property {string} heading
+ */
+
+/**
  * @typedef {Object} Course
  * @property {string} uuid
  * @property {string} name
@@ -220,6 +228,7 @@ const FILE_UUID_REGEX =
  * @property {Tag[]} tags
  * @property {Topic[]} topics
  * @property {AssessmentSet[]} assessmentSets
+ * @property {AssessmentModule[]} assessmentModules
  */
 
 /** @typedef {"Student" | "TA" | "Instructor" | "Superuser"} UserRole */
@@ -244,6 +253,7 @@ const FILE_UUID_REGEX =
  * @property {{ [uid: string]: "Student" | "TA" | "Instructor"}} userRoles
  * @property {CourseInstanceAllowAccess[]} allowAccess
  * @property {boolean} allowIssueReporting
+ * @property {"Set" | "Module"} groupAssessmentsBy
  */
 
 /**
@@ -271,7 +281,10 @@ const FILE_UUID_REGEX =
 /**
  * @typedef {Object} QuestionAlternative
  * @property {number | number[]} points
- * @property {number | number[]} maxPoints
+ * @property {number | number[]} autoPoints
+ * @property {number} maxPoints
+ * @property {number} manualPoints
+ * @property {number} maxAutoPoints
  * @property {string} id
  * @property {boolean} forceMaxPoints
  * @property {number} triesPerVariant
@@ -281,7 +294,10 @@ const FILE_UUID_REGEX =
 /**
  * @typedef {Object} ZoneQuestion
  * @property {number | number[]} points
- * @property {number | number[]} maxPoints
+ * @property {number | number[]} autoPoints
+ * @property {number} maxPoints
+ * @property {number} manualPoints
+ * @property {number} maxAutoPoints
  * @property {string} [id]
  * @property {boolean} forceMaxPoints
  * @property {QuestionAlternative[]} [alternatives]
@@ -319,6 +335,7 @@ const FILE_UUID_REGEX =
  * @property {"Homework" | "Exam"} type
  * @property {string} title
  * @property {string} set
+ * @property {string} module
  * @property {string} number
  * @property {boolean} allowIssueReporting
  * @property {boolean} allowRealTimeGrading
@@ -677,86 +694,56 @@ module.exports.loadCourseInfo = async function (coursePath) {
 
   const info = loadedData.data;
 
-  // Make a first pass over assessment sets, warn about duplicates
-  /** @type {Map<string, AssessmentSet>} */
-  const knownAssessmentSets = new Map();
-  /** @type{Set<string>} */
-  const duplicateAssessmentSetNames = new Set();
-  (info.assessmentSets || []).forEach((aset) => {
-    if (knownAssessmentSets.has(aset.name)) {
-      duplicateAssessmentSetNames.add(aset.name);
+  /**
+   * Used to retrieve fields such as "assessmentSets" and "topics".
+   * Adds a warning when syncing if duplicates are found.
+   * If defaults are provided, the entries from defaults not present in the resulting list are merged.
+   * @param {string} fieldName The member of `info` to inspect
+   * @param {string} entryIdentifier The member of each element of the field which uniquely identifies it, usually "name"
+   * @param {array} defaults
+   */
+  function getFieldWithoutDuplicates(fieldName, entryIdentifier, defaults) {
+    const known = new Map();
+    const duplicateEntryIds = new Set();
+
+    (info[fieldName] || []).forEach((entry) => {
+      const entryId = entry[entryIdentifier];
+      if (known.has(entryId)) {
+        duplicateEntryIds.add(entryId);
+      }
+      known.set(entryId, entry);
+    });
+
+    if (duplicateEntryIds.size > 0) {
+      const duplicateIdsString = [...duplicateEntryIds.values()]
+        .map((name) => `"${name}"`)
+        .join(', ');
+      const warning = `Found duplicates in '${fieldName}': ${duplicateIdsString}. Only the last of each duplicate will be synced.`;
+      infofile.addWarning(loadedData, warning);
     }
-    knownAssessmentSets.set(aset.name, aset);
-  });
-  if (duplicateAssessmentSetNames.size > 0) {
-    const quotedNames = [...duplicateAssessmentSetNames.values()].map((name) => `"${name}"`);
-    const duplicateNamesString = quotedNames.join(', ');
-    infofile.addWarning(
-      loadedData,
-      `Found duplicate assessment sets: ${duplicateNamesString}. Only the last of each duplicate will be synced.`
-    );
+
+    if (defaults) {
+      defaults.forEach((defaultEntry) => {
+        const defaultEntryId = defaultEntry[entryIdentifier];
+        if (!known.has(defaultEntryId)) {
+          known.set(defaultEntryId, defaultEntry);
+        }
+      });
+    }
+
+    // Turn the map back into a list; the JS spec ensures that Maps remember
+    // insertion order, so the order is preserved.
+    return [...known.values()];
   }
 
-  // Add any default assessment sets that weren't also defined by the course
-  DEFAULT_ASSESSMENT_SETS.forEach((aset) => {
-    if (!knownAssessmentSets.has(aset.name)) {
-      knownAssessmentSets.set(aset.name, aset);
-    }
-  });
-
-  // Turn the map back into a list; the JS spec ensures that Maps remember
-  // insertion order, so the order is preserved.
-  const assessmentSets = [...knownAssessmentSets.values()];
-
-  // Now, we do the same thing for tags
-  // Make a first pass over tags, warn about duplicates
-  const knownTags = new Map();
-  const duplicateTagNames = new Set();
-  (info.tags || []).forEach((tag) => {
-    if (knownTags.has(tag.name)) {
-      duplicateTagNames.add(tag.name);
-    }
-    knownTags.set(tag.name, tag);
-  });
-  if (duplicateTagNames.size > 0) {
-    const quotedNames = [...duplicateTagNames.values()].map((name) => `"${name}"`);
-    const duplicateNamesString = quotedNames.join(', ');
-    infofile.addWarning(
-      loadedData,
-      `Found duplicate tags: ${duplicateNamesString}. Only the last of each duplicate will be synced.`
-    );
-  }
-
-  // Add any default tags that weren't also defined by the course
-  DEFAULT_TAGS.forEach((tag) => {
-    if (!knownTags.has(tag.name)) {
-      knownTags.set(tag.name, tag);
-    }
-  });
-
-  // Turn the map back into a list; the JS spec ensures that Maps remember
-  // insertion order, so the order is preserved.
-  const tags = [...knownTags.values()];
-
-  // Finally, handle duplicate topics
-  const knownTopics = new Map();
-  const duplicateTopicNames = new Set();
-  (info.topics || []).forEach((topic) => {
-    if (knownTopics.has(topic.name)) {
-      duplicateTopicNames.add(topic.name);
-    }
-    knownTopics.set(topic.name, topic);
-  });
-  if (duplicateTopicNames.size > 0) {
-    const quotedNames = [...duplicateTopicNames.values()].map((name) => `"${name}"`);
-    const duplicateNamesString = quotedNames.join(', ');
-    infofile.addWarning(
-      loadedData,
-      `Found duplicate topics: ${duplicateNamesString}. Only the last of each duplicate will be synced.`
-    );
-  }
-
-  const topics = [...knownTopics.values()];
+  const assessmentSets = getFieldWithoutDuplicates(
+    'assessmentSets',
+    'name',
+    DEFAULT_ASSESSMENT_SETS
+  );
+  const tags = getFieldWithoutDuplicates('tags', 'name', DEFAULT_TAGS);
+  const topics = getFieldWithoutDuplicates('topics', 'name', null);
+  const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name', null);
 
   const exampleCourse =
     info.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5' &&
@@ -770,6 +757,7 @@ module.exports.loadCourseInfo = async function (coursePath) {
     title: info.title,
     timezone: info.timezone,
     assessmentSets,
+    assessmentModules,
     tags,
     topics,
     exampleCourse,
@@ -1093,36 +1081,35 @@ async function validateAssessment(assessment, questions) {
   };
   (assessment.zones || []).forEach((zone) => {
     (zone.questions || []).map((zoneQuestion) => {
-      if (
-        !allowRealTimeGrading &&
-        Array.isArray(zoneQuestion.points) &&
-        zoneQuestion.points.length > 1
-      ) {
+      /** @type {number | number[]} */
+      const autoPoints = zoneQuestion.autoPoints ?? zoneQuestion.points;
+      if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
         errors.push(
           `Cannot specify an array of multiple point values for a question if real-time grading is disabled`
         );
       }
       // We'll normalize either single questions or alternative groups
       // to make validation easier
-      /** @type {{ points: number | number[], maxPoints: number | number[] }[]} */
+      /** @type {{ points: number | number[], autoPoints: number | number[], maxPoints: number, maxAutoPoints: number, manualPoints: number }[]} */
       let alternatives = [];
       if ('alternatives' in zoneQuestion && 'id' in zoneQuestion) {
         errors.push('Cannot specify both "alternatives" and "id" in one question');
       } else if ('alternatives' in zoneQuestion) {
         zoneQuestion.alternatives.forEach((alternative) => checkAndRecordQid(alternative.id));
         alternatives = zoneQuestion.alternatives.map((alternative) => {
-          if (
-            !allowRealTimeGrading &&
-            Array.isArray(alternative.points) &&
-            alternative.points.length > 1
-          ) {
+          /** @type {number | number[]} */
+          const autoPoints = alternative.autoPoints ?? alternative.points;
+          if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
             errors.push(
               `Cannot specify an array of multiple point values for an alternative if real-time grading is disabled`
             );
           }
           return {
-            points: alternative.points || zoneQuestion.points,
-            maxPoints: alternative.maxPoints || zoneQuestion.maxPoints,
+            points: alternative.points ?? zoneQuestion.points,
+            maxPoints: alternative.maxPoints ?? zoneQuestion.maxPoints,
+            maxAutoPoints: alternative.maxAutoPoints ?? zoneQuestion.maxAutoPoints,
+            autoPoints: alternative.autoPoints ?? zoneQuestion.autoPoints,
+            manualPoints: alternative.manualPoints ?? zoneQuestion.manualPoints,
           };
         });
       } else if ('id' in zoneQuestion) {
@@ -1131,6 +1118,9 @@ async function validateAssessment(assessment, questions) {
           {
             points: zoneQuestion.points,
             maxPoints: zoneQuestion.maxPoints,
+            maxAutoPoints: zoneQuestion.maxAutoPoints,
+            autoPoints: zoneQuestion.autoPoints,
+            manualPoints: zoneQuestion.manualPoints,
           },
         ];
       } else {
@@ -1138,21 +1128,44 @@ async function validateAssessment(assessment, questions) {
       }
 
       alternatives.forEach((alternative) => {
+        if (
+          alternative.points === undefined &&
+          alternative.autoPoints === undefined &&
+          alternative.manualPoints === undefined
+        ) {
+          errors.push('Must specify "points", "autoPoints" or "manualPoints" for a question');
+        }
+        if (
+          alternative.points !== undefined &&
+          (alternative.autoPoints !== undefined ||
+            alternative.manualPoints !== undefined ||
+            alternative.maxAutoPoints !== undefined)
+        ) {
+          errors.push(
+            'Cannot specify "points" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified'
+          );
+        }
         if (assessment.type === 'Exam') {
-          if (alternative.maxPoints !== undefined) {
-            errors.push('Cannot specify "maxPoints" for a question in an "Exam" assessment');
-          }
-          if (alternative.points === undefined) {
-            errors.push('Must specify "points" for a question in an "Exam" assessment');
+          if (alternative.maxPoints !== undefined || alternative.maxAutoPoints !== undefined) {
+            errors.push(
+              'Cannot specify "maxPoints" or "maxAutoPoints" for a question in an "Exam" assessment'
+            );
           }
         }
         if (assessment.type === 'Homework') {
-          if (alternative.points === undefined) {
-            errors.push('Must specify "points" for a question in a "Homework" assessment');
-          }
-          if (Array.isArray(alternative.points)) {
+          if (
+            alternative.maxPoints !== undefined &&
+            (alternative.autoPoints !== undefined ||
+              alternative.manualPoints !== undefined ||
+              alternative.maxAutoPoints !== undefined)
+          ) {
             errors.push(
-              'Cannot specify "points" as a list for a question in a "Homework" assessment'
+              'Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified'
+            );
+          }
+          if (Array.isArray(alternative.autoPoints ?? alternative.points)) {
+            errors.push(
+              'Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment'
             );
           }
         }
@@ -1260,6 +1273,13 @@ module.exports.loadQuestions = async function (coursePath) {
     validate: validateQuestion,
     recursive: true,
   });
+  // Don't allow questions to start with '@', because it will be used to
+  // reference questions outside the course once question sharing is implemented.
+  for (let qid in questions) {
+    if (qid[0] === '@') {
+      infofile.addError(questions[qid], `Question IDs are not allowed to begin with '@'`);
+    }
+  }
   checkDuplicateUUIDs(
     questions,
     (uuid, ids) => `UUID "${uuid}" is used in other questions: ${ids.join(', ')}`

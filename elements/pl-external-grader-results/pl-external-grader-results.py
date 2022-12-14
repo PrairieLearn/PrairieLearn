@@ -114,8 +114,11 @@ def render(element_html, data):
                             test['max_points'] = round_value(results_test.get('max_points'))
                             correct = test['max_points'] == test['points']
 
-                            # Don't show points for test cases that are 0/0
-                            if correct and test['max_points'] == 0:
+                            # Don't show points for test cases that are 0/0.
+                            # Note that we compare with a string instead of a
+                            # number because we converted it to a string with
+                            # the above call to `round_value()`.
+                            if correct and test['max_points'] == '0':
                                 test['show_points'] = False
 
                             test['results_color'] = '#4CAF50' if correct else '#F44336'

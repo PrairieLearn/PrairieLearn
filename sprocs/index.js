@@ -42,7 +42,7 @@ module.exports.init = function (callback) {
       'assessment_instances_update_points.sql',
       'assessment_instances_update_score_perc.sql',
       'assessments_duration_stats.sql',
-      'assessments_stats.sql',
+      'assessments_score_stats.sql',
       'assessments_format.sql',
       'assessments_format_for_question.sql',
       'tags_for_question.sql',
@@ -97,7 +97,6 @@ module.exports.init = function (callback) {
       'submissions_insert.sql',
       'submissions_update_parsing.sql',
       'assessment_instances_update.sql',
-      'instance_questions_update_in_grading.sql',
       'assessment_instances_close.sql',
       'grading_job_status.sql',
       'grading_jobs_lock.sql',
@@ -165,6 +164,7 @@ module.exports.init = function (callback) {
       'workspace_hosts_drain_extra.sql',
       'workspace_hosts_find_terminable.sql',
       'group_users_insert.sql',
+      'sync_assessment_modules.sql',
     ],
     function (filename, callback) {
       logger.verbose('Loading ' + filename);

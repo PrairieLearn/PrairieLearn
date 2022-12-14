@@ -15,6 +15,46 @@
     <% } %>
     <%- extraHeadersHtml %>
   </head>
+  <script>
+    $(function() {
+        $('.js-manual-grading-pts-perc-select')
+            .change(function () {
+                const use_percentage = this.checked;
+                $('.js-manual-grading-pts-perc-select').prop('checked', use_percentage);
+                $('.js-manual-grading-points').toggle(!use_percentage);
+                $('.js-manual-grading-percentage').toggle(use_percentage);
+                Cookies.set('manual_grading_score_use', use_percentage ? 'percentage' : 'points');
+            })
+            .prop('checked', Cookies.get('manual_grading_score_use') === 'percentage')
+            .first().change();
+        $('.js-enable-auto-score-edit').click(function () {
+            const form = $(this).parents('form');
+            form.find('.js-auto-score-value-info').hide();
+            form.find('.js-auto-score-value-input').removeClass('d-none').show()
+                .find('input:visible:first').focus();
+        });
+        $('.js-grading-score-input').on('input', function () {
+            let form = $(this).parents('form');
+            let auto_points = this.name === 'score_auto_percent' ?
+                this.value * <%= assessment_question.max_auto_points %> / 100 :
+                form.find('[name=score_auto_points]').val();
+            let manual_points = this.name === 'score_manual_percent' ?
+                this.value * <%= assessment_question.max_manual_points %> / 100 :
+                form.find('[name=score_manual_points]').val();
+            let points = Number(auto_points) + Number(manual_points);
+
+            form.find('[name=score_auto_points]').not(this).val(auto_points);
+            form.find('[name=score_auto_percent]').not(this)
+                .val(auto_points * 100 / <%= assessment_question.max_auto_points || assessment_question.max_points || 1 %>);
+            form.find('[name=score_manual_points]').not(this).val(manual_points);
+            form.find('[name=score_manual_percent]').not(this)
+                .val(manual_points * 100 / <%= assessment_question.max_manual_points || assessment_question.max_points || 1 %>);
+            form.find('.js-value-total-points').text(Math.round(points * 100) / 100);
+            form.find('.js-value-total-percentage')
+                .text(Math.round(points * 10000 / <%= assessment_question.max_points || 1 %>) / 100);
+        });
+    })
+  </script>
   <body>
     <%- include('../../partials/navbar'); %>
     <div class="container-fluid">
@@ -56,8 +96,10 @@
                 </div>
                 <div class="col-6">
                   <%- include('../../partials/instructorGradingPanel',
-                              {score_perc: conflict_grading_job.score_perc,
+                              {score_perc: conflict_grading_job.score * 100,
                                points: conflict_grading_job.score * assessment_question.max_points,
+                               auto_points: conflict_grading_job.auto_points,
+                               manual_points: conflict_grading_job.manual_points,
                                submission: conflict_grading_job}); %>
                 </div>
               </div>
@@ -66,23 +108,11 @@
         </div>
       </div>
       <script>
-        $(function() {$('#conflictGradingJobModal').modal({})})
+        $(function() {
+            $('#conflictGradingJobModal').modal({}).find('.js-enable-auto-score-edit').click();
+        });
       </script>
       <% } %>
-      <script>
-        $(function() {
-            $('.manual-grading-pts-perc-select')
-                .change(function () {
-                    const use_percentage = this.checked;
-                    $('.manual-grading-pts-perc-select').prop('checked', use_percentage);
-                    $('.manual-grading-points').toggle(!use_percentage);
-                    $('.manual-grading-percentage').toggle(use_percentage);
-                    Cookies.set('manual_grading_score_use', use_percentage ? 'percentage' : 'points');
-                })
-                .prop('checked', Cookies.get('manual_grading_score_use') === 'percentage')
-                .first().change();
-        })
-      </script>
       <div class="row">
         <div class="col-lg-9 col-sm-12">
           <%- include('../../partials/question', {question_context: 'manual_grading'}); %>

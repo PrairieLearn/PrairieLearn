@@ -518,6 +518,9 @@ module.exports = {
     err = checkProp('panel',                 'string',  ['render'],                           []);
     if (err) return err;
     // prettier-ignore
+    err = checkProp('num_valid_submissions','integer',  ['render'],                           []);
+    if (err) return err;
+    // prettier-ignore
     err = checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           []);
     if (err) return err;
     // prettier-ignore
@@ -1020,29 +1023,31 @@ module.exports = {
   },
 
   async generateAsync(question, course, variant_seed) {
-    const context = await module.exports.getContext(question, course);
-    const data = {
-      params: {},
-      correct_answers: {},
-      variant_seed: parseInt(variant_seed, 36),
-      options: _.defaults({}, course.options, question.options),
-    };
-    _.extend(data.options, module.exports.getContextOptions(context));
-
-    return await withCodeCaller(context.course_dir_host, async (codeCaller) => {
-      const { courseIssues, data: resultData } = await module.exports.processQuestion(
-        'generate',
-        codeCaller,
-        data,
-        context
-      );
-      return {
-        courseIssues,
-        data: {
-          params: resultData.params,
-          true_answer: resultData.correct_answers,
-        },
+    return instrumented('freeform.generate', async () => {
+      const context = await module.exports.getContext(question, course);
+      const data = {
+        params: {},
+        correct_answers: {},
+        variant_seed: parseInt(variant_seed, 36),
+        options: _.defaults({}, course.options, question.options),
       };
+      _.extend(data.options, module.exports.getContextOptions(context));
+
+      return await withCodeCaller(context.course_dir_host, async (codeCaller) => {
+        const { courseIssues, data: resultData } = await module.exports.processQuestion(
+          'generate',
+          codeCaller,
+          data,
+          context
+        );
+        return {
+          courseIssues,
+          data: {
+            params: resultData.params,
+            true_answer: resultData.correct_answers,
+          },
+        };
+      });
     });
   },
 
@@ -1058,31 +1063,33 @@ module.exports = {
   },
 
   async prepareAsync(question, course, variant) {
-    if (variant.broken) throw new Error('attemped to prepare broken variant');
+    return instrumented('freeform.prepare', async () => {
+      if (variant.broken) throw new Error('attemped to prepare broken variant');
 
-    const context = await module.exports.getContext(question, course);
-    const data = {
-      params: _.get(variant, 'params', {}),
-      correct_answers: _.get(variant, 'true_answer', {}),
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: _.get(variant, 'options', {}),
-    };
-    _.extend(data.options, module.exports.getContextOptions(context));
-
-    return await withCodeCaller(context.course_dir_host, async (codeCaller) => {
-      const { courseIssues, data: resultData } = await module.exports.processQuestion(
-        'prepare',
-        codeCaller,
-        data,
-        context
-      );
-      return {
-        courseIssues,
-        data: {
-          params: resultData.params,
-          true_answer: resultData.correct_answers,
-        },
+      const context = await module.exports.getContext(question, course);
+      const data = {
+        params: _.get(variant, 'params', {}),
+        correct_answers: _.get(variant, 'true_answer', {}),
+        variant_seed: parseInt(variant.variant_seed, 36),
+        options: _.get(variant, 'options', {}),
       };
+      _.extend(data.options, module.exports.getContextOptions(context));
+
+      return await withCodeCaller(context.course_dir_host, async (codeCaller) => {
+        const { courseIssues, data: resultData } = await module.exports.processQuestion(
+          'prepare',
+          codeCaller,
+          data,
+          context
+        );
+        return {
+          courseIssues,
+          data: {
+            params: resultData.params,
+            true_answer: resultData.correct_answers,
+          },
+        };
+      });
     });
   },
 
@@ -1153,6 +1160,7 @@ module.exports = {
       editable: !!(locals.allowAnswerEditing && !locals.manualGradingInterface),
       manual_grading: !!locals.manualGradingInterface,
       panel: panel,
+      num_valid_submissions: _.get(variant, 'num_tries', null),
     };
 
     // Put base URLs in data.options for access by question code
@@ -1731,7 +1739,7 @@ module.exports = {
             raw_submitted_answer: resultData.raw_submitted_answers,
             partial_scores: resultData.partial_scores,
             score: resultData.score,
-            feedback: data.feedback,
+            feedback: resultData.feedback,
             gradable: resultData.gradable,
           },
         };
@@ -1874,7 +1882,7 @@ module.exports = {
       // treated as errors - that is, the above function won't throw
       // an error, even if there are course issues. However, we
       // still want to avoid caching anything that produced a course
-      // issue, as that might be a transitive error that would go away
+      // issue, as that might be a transient error that would go away
       // if the user refreshed, even if they didn't create a new variant.
       // Also, the `Error` objects that we use for course issues can't be
       // easily round-tripped through a cache, which means that pulling

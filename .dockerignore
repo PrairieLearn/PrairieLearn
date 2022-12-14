@@ -18,6 +18,7 @@
 !database/
 !docs/
 !docker/
+!ee/
 !elements/
 !exampleCourse/
 !executor.js

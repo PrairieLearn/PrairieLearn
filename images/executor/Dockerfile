@@ -1,11 +1,6 @@
 FROM prairielearn/prairielearn
 WORKDIR /PrairieLearn/
 
-# We need pkill in this image
-RUN yum -y install procps-ng
-
-RUN pip3 install psutil
-
 # Create our unprivileged user
 RUN groupadd executor \
     && useradd -g executor executor \
