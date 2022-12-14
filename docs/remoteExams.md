@@ -108,7 +108,7 @@ Some notes about this configuration:
 
 ## Asynchronous, timed exams
 
-We do **NOT** recommend exams to be run using this configuration (asynchronous with time limit). While giving exams asynchronously will simplify exam administration and provide students with more flexibility, it comes at the expense of making it easier to cheat. We recommend [synchronous, timed exams](#synchronous-timed-exams).
+We do **NOT** recommend exams to be run using this configuration (asynchronous with time limit) for high-stakes exams. While giving exams asynchronously will simplify exam administration and provide students with more flexibility, it comes at the expense of making it easier to cheat. We recommend [synchronous, timed exams](#synchronous-timed-exams).
 
 This configuration is good when:
 
@@ -149,7 +149,8 @@ Some notes about this configuration:
 
 ## Post-graded exams
 
-We do **NOT** recommend exams to be run using this post-graded configuration. Exams run in this manner forfeit the ability to provide immediate feedback as well as partial credit to students, but it's good for mimicking traditional pen-and-paper exams.
+This post-graded configuration is **NOT** our recommended approach, but it is good for mimicking traditional pen-and-paper exams. Exams run in this manner forfeit the ability to provide immediate feedback as well as partial credit to students. Instead, we recommend [synchronous, timed exams](#synchronous-timed-exams).
+
 
 This configuration is good when:
 
