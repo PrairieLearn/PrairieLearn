@@ -9,12 +9,14 @@ import collections
 from itertools import chain
 from typing import NamedTuple
 
+
 class AnswerTuple(NamedTuple):
     index: int
     correct: bool
-    child_html: str
-    child_feedback: str
+    html: str
+    feedback: str
     score: float
+
 
 SCORE_INCORRECT_DEFAULT = 0.0
 SCORE_CORRECT_DEFAULT = 1.0
@@ -28,7 +30,6 @@ HIDE_LETTER_KEYS_DEFAULT = False
 EXTERNAL_JSON_CORRECT_KEY_DEFAULT = 'correct'
 EXTERNAL_JSON_INCORRECT_KEY_DEFAULT = 'incorrect'
 FEEDBACK_DEFAULT = None
-
 
 
 def categorize_options(element, data):
@@ -81,23 +82,6 @@ def categorize_options(element, data):
     return correct_answers, incorrect_answers
 
 
-def generate(element_html, data):
-    element = lxml.html.fragment_fromstring(element_html)
-    correct_answers, incorrect_answers = categorize_options(element, data)
-
-    # Ignore trailing/leading whitespace
-    choices = [choice.html.strip() for choice in chain(correct_answers, incorrect_answers)]
-
-    # Making a conscious choice *NOT* to apply .lower() to all list elements
-    # in case instructors want to explicitly have matrix M vs. vector m as
-    # possible options.
-
-    duplicates = [item for item, count in collections.Counter(choices).items() if count > 1]
-
-    if duplicates:
-        raise ValueError(f'pl-multiple-choice element has duplicate choices: {duplicates}')
-
-
 def get_nota_aota_attrib(element, name, default):
     # NOTA and AOTA used to be boolean values, but are changed to
     # special strings. To ensure backwards compatibility, values
@@ -124,6 +108,18 @@ def prepare(element_html, data):
     name = pl.get_string_attrib(element, 'answers-name')
 
     correct_answers, incorrect_answers = categorize_options(element, data)
+
+    # Ignore trailing/leading whitespace
+    choices = [choice.html.strip() for choice in chain(correct_answers, incorrect_answers)]
+
+    # Making a conscious choice *NOT* to apply .lower() to all list elements
+    # in case instructors want to explicitly have matrix M vs. vector m as
+    # possible options.
+
+    duplicates = [item for item, count in collections.Counter(choices).items() if count > 1]
+
+    if duplicates:
+        raise ValueError(f'pl-multiple-choice element has duplicate choices: {duplicates}')
 
     len_correct = len(correct_answers)
     len_incorrect = len(incorrect_answers)
@@ -254,10 +250,10 @@ def prepare(element_html, data):
     # overwriting previous choice(s)
     display_answers = []
     correct_answer = None
-    for (i, (index, correct, html, feedback, score)) in enumerate(sampled_answers):
-        keyed_answer = {'key': pl.index2key(i), 'html': html, 'feedback': feedback, 'score': score}
+    for i, answer in enumerate(sampled_answers):
+        keyed_answer = {'key': pl.index2key(i), 'html': answer.html, 'feedback': answer.feedback, 'score': answer.score}
         display_answers.append(keyed_answer)
-        if correct:
+        if answer.correct:
             correct_answer = keyed_answer
 
     if name in data['params']:
