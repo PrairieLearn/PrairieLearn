@@ -82,7 +82,7 @@ def generate(element_html, data):
 
     if len(set(choices)) < len(choices):
         duplicates = [i for i in choices if choices.count(i) > 1]
-        raise Exception(f'pl-multiple-choice element has duplicate choices: {duplicates}')
+        raise ValueError(f'pl-multiple-choice element has duplicate choices: {duplicates}')
 
 
 def prepare(element_html, data):
