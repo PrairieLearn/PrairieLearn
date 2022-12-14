@@ -5,6 +5,16 @@ import lxml.html
 import random
 import math
 import chevron
+import collections
+from itertools import chain
+from typing import NamedTuple
+
+class AnswerTuple(NamedTuple):
+    index: int
+    correct: bool
+    child_html: str
+    child_feedback: str
+    score: float
 
 SCORE_INCORRECT_DEFAULT = 0.0
 SCORE_CORRECT_DEFAULT = 1.0
@@ -18,6 +28,7 @@ HIDE_LETTER_KEYS_DEFAULT = False
 EXTERNAL_JSON_CORRECT_KEY_DEFAULT = 'correct'
 EXTERNAL_JSON_INCORRECT_KEY_DEFAULT = 'incorrect'
 FEEDBACK_DEFAULT = None
+
 
 
 def categorize_options(element, data):
@@ -41,7 +52,7 @@ def categorize_options(element, data):
             if correct and score != SCORE_CORRECT_DEFAULT:
                 raise Exception('Correct answers must give full credit.')
 
-            answer_tuple = (index, correct, child_html, child_feedback, score)
+            answer_tuple = AnswerTuple(index, correct, child_html, child_feedback, score)
             if correct:
                 correct_answers.append(answer_tuple)
             else:
@@ -60,10 +71,10 @@ def categorize_options(element, data):
             with open(json_file, mode='r', encoding='utf-8') as f:
                 obj = json.load(f)
                 for text in obj.get(correct_attrib, []):
-                    correct_answers.append((index, True, text, None, SCORE_CORRECT_DEFAULT))
+                    correct_answers.append(AnswerTuple(index, True, text, None, SCORE_CORRECT_DEFAULT))
                     index += 1
                 for text in obj.get(incorrect_attrib, []):
-                    incorrect_answers.append((index, False, text, None, SCORE_INCORRECT_DEFAULT))
+                    incorrect_answers.append(AnswerTuple(index, False, text, None, SCORE_INCORRECT_DEFAULT))
                     index += 1
         except FileNotFoundError:
             raise Exception(f'JSON answer file: "{json_file}" could not be found')
@@ -74,16 +85,18 @@ def generate(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     correct_answers, incorrect_answers = categorize_options(element, data)
 
-    choices = correct_answers + incorrect_answers
+    # Ignore trailing/leading whitespace
+    choices = [choice.html.strip() for choice in chain(correct_answers, incorrect_answers)]
 
     # Making a conscious choice *NOT* to apply .lower() to all list elements
     # in case instructors want to explicitly have matrix M vs. vector m as
     # possible options.
 
-    if len(set(choices)) < len(choices):
-        duplicates = [i for i in choices if choices.count(i) > 1]
+    duplicates = [item for item, count in collections.Counter(choices).items() if count > 1]
+
+    if duplicates:
         raise ValueError(f'pl-multiple-choice element has duplicate choices: {duplicates}')
-        
+
 
 def get_nota_aota_attrib(element, name, default):
     # NOTA and AOTA used to be boolean values, but are changed to
@@ -99,7 +112,7 @@ def get_nota_aota_attrib(element, name, default):
     if string_value not in ['false', 'random', 'incorrect', 'correct']:
         raise Exception(f'pl-multiple-choice element has invalid value for {name} attribute, must be "false", "true", "random", "correct" or "incorrect"')
     return string_value
-    
+
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -217,7 +230,7 @@ def prepare(element_html, data):
     if fixed_order:
         # we can't simply skip the shuffle because we already broke the original
         # order by separating into correct/incorrect lists
-        sampled_answers.sort(key=lambda a: a[0])  # sort by stored original index
+        sampled_answers.sort(key=lambda a: a.index)  # sort by stored original index
 
     inline = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
 
@@ -226,14 +239,14 @@ def prepare(element_html, data):
         aota_text = 'All of these' if inline else 'All of the above'
         aota_feedback = pl.get_string_attrib(element, 'all-of-the-above-feedback', FEEDBACK_DEFAULT)
         aota_default_score = SCORE_CORRECT_DEFAULT if aota == 'correct' else SCORE_INCORRECT_DEFAULT
-        sampled_answers.append((len_total, aota == 'correct', aota_text, aota_feedback, aota_default_score))
+        sampled_answers.append(AnswerTuple(len_total, aota == 'correct', aota_text, aota_feedback, aota_default_score))
 
     # Add 'None of the above' option after shuffling
     if nota != 'false':
         nota_text = 'None of these' if inline else 'None of the above'
         nota_feedback = pl.get_string_attrib(element, 'none-of-the-above-feedback', FEEDBACK_DEFAULT)
         nota_default_score = SCORE_CORRECT_DEFAULT if nota == 'correct' else SCORE_INCORRECT_DEFAULT
-        sampled_answers.append((len_total + 1, nota == 'correct', nota_text, nota_feedback, nota_default_score))
+        sampled_answers.append(AnswerTuple(len_total + 1, nota == 'correct', nota_text, nota_feedback, nota_default_score))
 
     # 4. Write to data
     # Because 'All of the above' is below all the correct choice(s) when it's
