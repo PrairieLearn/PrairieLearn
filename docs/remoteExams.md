@@ -90,6 +90,7 @@ This configuration is good when:
         "showClosedAssessment": false
     },
     {
+        "active": false,
         "showClosedAssessment": false
     }
 ],
@@ -104,7 +105,7 @@ Some notes about this configuration:
 - After the timer expires the exam will auto-close and grade any saved but ungraded questions and show students their final score. After this time students will be unable to see any of the questions.
 - If a student closes their web browser before the exam is complete, their exam will be automatically closed and graded within 12 minutes after their timer expires. If they try and access their exam during this time it will immediately close and grade.
 - Before downloading final scores, wait at least 12 minutes after the last student would have finished to ensure all exams are closed. You can also check (and manually close exams) on the "Students" page under the assessment in PrairieLearn.
-- This configuration sets `"showClosedAssessment": false` to prevent students from seeing the details of their exam after it is over. This can help to mitigate cheating with students taking conflict exams. The final access rule containing only `"showClosedAssessment": false` is necessary because the earlier rules will only apply up until their `endDate` times.
+- This configuration sets `"showClosedAssessment": false` to prevent students from seeing the details of their exam after it is over. This can help to mitigate cheating with students taking conflict exams. The final access rule containing only `"showClosedAssessment": false` is necessary because the earlier rules will only apply up until their `endDate` times. The additional `"active": false` restriction here prevents students from starting the exam after the `endDate`.
 
 ## Asynchronous, timed exams
 
@@ -137,6 +138,7 @@ This configuration is good when:
         "showClosedAssessment": false
     },
     {
+        "active": false,
         "showClosedAssessment": false
     }
 ],
@@ -189,6 +191,7 @@ This configuration is good when:
         "showClosedAssessment": false
     },
     {
+        "active": false,
         "showClosedAssessment": false
     }
 ],
