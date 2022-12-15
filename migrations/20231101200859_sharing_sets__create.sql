@@ -28,8 +28,7 @@ ALTER TABLE pl_courses ADD COLUMN IF NOT EXISTS question_sharing_enabled boolean
 UPDATE pl_courses SET sharing_name = 'test-course' WHERE title = 'Test Course';
 UPDATE pl_courses SET sharing_id = '390bd8c3-7461-4b05-b5f8-dd5c821109d8' WHERE title = 'Test Course';
 
-UPDATE pl_courses SET question_sharing_enabled = true WHERE title = 'Test Course';
-UPDATE pl_courses SET question_sharing_enabled = true WHERE title = 'Example Course';
+UPDATE pl_courses SET question_sharing_enabled = true WHERE title IN ('Test Course', 'Example Course');
 
 
 INSERT INTO sharing_sets

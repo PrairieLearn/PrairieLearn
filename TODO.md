@@ -39,6 +39,7 @@ To discuss with Matt/Nathan:
 - [x] do we want to keep track of audit logs like with course permissions? or we don't care?
 - [x] do we want to have any bulk operations ready to go from the get-go?
 
+- [] if sharing is not enabled for a course, should we show the tab? what should we show on direct access to URL? An error page? or a page saying you need it enabled? What has worked for manual grading?
 
 Deployment considerations
 - [x] Special case to only enable the feature on the main (Illinois) server!!! Use a config flag!
