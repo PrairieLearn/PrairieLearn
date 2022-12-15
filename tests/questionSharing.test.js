@@ -1,8 +1,6 @@
 // @ts-check
 const { assert } = require('chai');
 const cheerio = require('cheerio');
-const fs = require('fs-extra');
-const path = require('path');
 const { step } = require('mocha-steps');
 
 const config = require('../lib/config');
@@ -11,15 +9,10 @@ const helperServer = require('./helperServer');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const sqldb = require('../prairielib/lib/sql-db');
 const sql = sqlLoader.loadSqlEquiv(__filename);
-const { setUser, parseInstanceQuestionId, saveOrGrade } = require('./helperClient');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
-const defaultUser = {
-  authUid: config.authUid,
-  authName: config.authName,
-  authUin: config.authUin,
-};
+
 
 describe('Question Sharing', function () {
   this.timeout(80000);
@@ -33,8 +26,25 @@ describe('Question Sharing', function () {
 
   describe('Create a sharing set and add a question to it', () => {
     
-    step('load sharing set admin page', async () => {
-    
+    step('set test course sharing name', async () => {
+      const sharingUrl = `${baseUrl}/course/1/course_admin/sharing`;
+      let sharingPage = await (await fetch(sharingUrl)).text();
+      let $sharingPage = cheerio.load(sharingPage);
+
+      const token = $sharingPage('#test_csrf_token').text();
+      const response = await fetch(sharingUrl, {
+        method: 'POST',
+        headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          __action: 'choose_sharing_name',
+          __csrf_token: token,
+          course_sharing_name: 'test-course'
+        }).toString(),
+      });
+
+      sharingPage = await (await fetch(sharingUrl)).text();
+      assert(sharingPage.includes('test-course'));
+
     });
 
   });

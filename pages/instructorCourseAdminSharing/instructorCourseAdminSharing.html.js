@@ -25,7 +25,7 @@ const addSharingSetPopover = (resLocals) => {
 
 const chooseSharingNamePopover = (resLocals) => {
   return html`
-    <form name="sharing-set-create" method="POST">
+    <form name="choose-sharing-name" method="POST">
       <input type="hidden" name="__action" value="choose_sharing_name">
       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
 
