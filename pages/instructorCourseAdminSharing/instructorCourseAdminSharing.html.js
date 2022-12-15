@@ -54,7 +54,7 @@ const chooseSharingNamePopover = (resLocals) => {
 const chooseSharingNameButton = (resLocals) => {
   return html`
     <button type="button" class="btn btn-xs btn-secondary mx-2" id="chooseSharingName" tabindex="0"
-      data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Create Sharing Set"
+      data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Choose Sharing Name"
       data-content="${chooseSharingNamePopover(resLocals)}"
       data-trigger="manual" onclick="$(this).popover('show')"
     >
