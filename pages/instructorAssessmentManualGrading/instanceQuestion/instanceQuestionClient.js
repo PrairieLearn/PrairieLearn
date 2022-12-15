@@ -44,6 +44,15 @@ function resetInstructorGradingPanel() {
       .focus();
   });
 
+  $('#submission-feedback')
+    .on('input', function () {
+      this.style.height = '';
+      const style = window.getComputedStyle(this);
+      this.style.height =
+        this.scrollHeight + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + 'px';
+    })
+    .trigger('input');
+
   $('.js-show-rubric-settings-button').click(function () {
     const type = $(this).data('rubric-type');
     $(`.rubric-settings-modal-${type}`).modal('show');
