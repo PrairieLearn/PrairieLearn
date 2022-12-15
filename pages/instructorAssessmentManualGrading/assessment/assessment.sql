@@ -13,10 +13,9 @@ WITH instance_questions_with_submission AS (
         JOIN instance_questions iq ON (iq.assessment_question_id = aq.id)
         LEFT JOIN users agu ON (agu.user_id = iq.assigned_grader)
         LEFT JOIN users lgu ON (lgu.user_id = iq.last_grader)
-    WHERE aq.assessment_id = $assessment_id
-          AND EXISTS(SELECT 1
-                     FROM variants AS v JOIN submissions AS s ON (s.variant_id = v.id)
-                     WHERE v.instance_question_id = iq.id)
+    WHERE
+        aq.assessment_id = $assessment_id
+        AND iq.status != 'unanswered'
     GROUP BY iq.assessment_question_id
 ),
 open_instances AS (

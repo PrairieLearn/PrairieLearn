@@ -75,7 +75,7 @@ aq_stats AS (
     SELECT
         least(100, greatest(0, avg(question_stats_by_user_or_group.score_perc)))                     AS mean_question_score,
         sqrt(var_pop(question_stats_by_user_or_group.score_perc))                                    AS question_score_variance,
-        corr(question_stats_by_user_or_group.score_perc, assessment_scores_by_user_or_group.score_perc) * 100 AS discrimination,
+        coalesce(corr(question_stats_by_user_or_group.score_perc, assessment_scores_by_user_or_group.score_perc) * 100, CASE WHEN count(question_stats_by_user_or_group.score_perc) > 0 THEN 0 ELSE NULL END) AS discrimination,
         avg(question_stats_by_user_or_group.some_submission_perc)                                    AS some_submission_perc,
         avg(question_stats_by_user_or_group.some_perfect_submission_perc)                            AS some_perfect_submission_perc,
         avg(question_stats_by_user_or_group.some_nonzero_submission_perc)                            AS some_nonzero_submission_perc,

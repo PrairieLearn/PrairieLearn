@@ -65,12 +65,11 @@ WINDOW
         ORDER BY
             z.number,
             CASE
-                WHEN a.type = 'Homework' THEN
+                WHEN (a.type = 'Homework' OR a.type = 'Exam') THEN
                     CASE
                         WHEN a.shuffle_questions THEN iq.order_by
                         ELSE aq.number
                     END
-                WHEN a.type = 'Exam' THEN iq.order_by
                 ELSE aq.number
             END,
             iq.id

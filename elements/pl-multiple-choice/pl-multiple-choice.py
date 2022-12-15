@@ -6,11 +6,13 @@ import random
 import math
 import chevron
 
+SCORE_INCORRECT_DEFAULT = 0.0
+SCORE_CORRECT_DEFAULT = 1.0
 WEIGHT_DEFAULT = 1
 FIXED_ORDER_DEFAULT = False
 INLINE_DEFAULT = False
-NONE_OF_THE_ABOVE_DEFAULT = False
-ALL_OF_THE_ABOVE_DEFAULT = False
+NONE_OF_THE_ABOVE_DEFAULT = 'false'
+ALL_OF_THE_ABOVE_DEFAULT = 'false'
 EXTERNAL_JSON_DEFAULT = None
 HIDE_LETTER_KEYS_DEFAULT = False
 EXTERNAL_JSON_CORRECT_KEY_DEFAULT = 'correct'
@@ -25,11 +27,21 @@ def categorize_options(element, data):
     index = 0
     for child in element:
         if child.tag in ['pl-answer', 'pl_answer']:
-            pl.check_attribs(child, required_attribs=[], optional_attribs=['correct', 'feedback'])
+            pl.check_attribs(child, required_attribs=[], optional_attribs=['score', 'correct', 'feedback'])
             correct = pl.get_boolean_attrib(child, 'correct', False)
             child_html = pl.inner_html(child)
             child_feedback = pl.get_string_attrib(child, 'feedback', FEEDBACK_DEFAULT)
-            answer_tuple = (index, correct, child_html, child_feedback)
+
+            default_score = SCORE_CORRECT_DEFAULT if correct else SCORE_INCORRECT_DEFAULT
+            score = pl.get_float_attrib(child, 'score', default_score)
+
+            if not (SCORE_INCORRECT_DEFAULT <= score <= SCORE_CORRECT_DEFAULT):
+                raise Exception(f'Score {score} is invalid, must be in the range [0.0, 1.0].')
+
+            if correct and score != SCORE_CORRECT_DEFAULT:
+                raise Exception('Correct answers must give full credit.')
+
+            answer_tuple = (index, correct, child_html, child_feedback, score)
             if correct:
                 correct_answers.append(answer_tuple)
             else:
@@ -48,14 +60,30 @@ def categorize_options(element, data):
             with open(json_file, mode='r', encoding='utf-8') as f:
                 obj = json.load(f)
                 for text in obj.get(correct_attrib, []):
-                    correct_answers.append((index, True, text, None))
+                    correct_answers.append((index, True, text, None, SCORE_CORRECT_DEFAULT))
                     index += 1
                 for text in obj.get(incorrect_attrib, []):
-                    incorrect_answers.append((index, False, text, None))
+                    incorrect_answers.append((index, False, text, None, SCORE_INCORRECT_DEFAULT))
                     index += 1
         except FileNotFoundError:
             raise Exception(f'JSON answer file: "{json_file}" could not be found')
     return correct_answers, incorrect_answers
+
+
+def get_nota_aota_attrib(element, name, default):
+    # NOTA and AOTA used to be boolean values, but are changed to
+    # special strings. To ensure backwards compatibility, values
+    # interpreted as true or false are assumed to be older
+    # interpretations. If the value cannot be interpreted as boolean,
+    # the string representation is used.
+    try:
+        boolean_value = pl.get_boolean_attrib(element, name, default != 'false')
+        string_value = 'random' if boolean_value else 'false'
+    except Exception:
+        string_value = pl.get_string_attrib(element, name, default)
+    if string_value not in ['false', 'random', 'incorrect', 'correct']:
+        raise Exception(f'pl-multiple-choice element has invalid value for {name} attribute, must be "false", "true", "random", "correct" or "incorrect"')
+    return string_value
 
 
 def prepare(element_html, data):
@@ -73,52 +101,54 @@ def prepare(element_html, data):
     len_incorrect = len(incorrect_answers)
     len_total = len_correct + len_incorrect
 
-    enable_nota = pl.get_boolean_attrib(element, 'none-of-the-above', NONE_OF_THE_ABOVE_DEFAULT)
-    enable_aota = pl.get_boolean_attrib(element, 'all-of-the-above', ALL_OF_THE_ABOVE_DEFAULT)
+    nota = get_nota_aota_attrib(element, 'none-of-the-above', NONE_OF_THE_ABOVE_DEFAULT)
+    aota = get_nota_aota_attrib(element, 'all-of-the-above', ALL_OF_THE_ABOVE_DEFAULT)
 
-    nota_correct = False
-    aota_correct = False
-    if enable_nota or enable_aota:
-        prob_space = len_correct + enable_nota + enable_aota
-        rand_int = random.randint(1, prob_space)
-        # Either 'None of the above' or 'All of the above' is correct
-        # with probability 1/(number_correct + enable-nota + enable-aota).
-        # However, if len_correct is 0, nota_correct is guaranteed to be True.
-        # Thus, if no correct option is provided, 'None of the above' will always
+    if aota in ['correct', 'random'] and len_correct < 2:
+        # To prevent confusion on the client side
+        raise Exception('pl-multiple-choice element must have at least 2 correct answers when all-of-the-above is set to "correct" or "random"')
+
+    if nota in ['incorrect', 'false'] and len_correct < 1:
+        # There must be a correct answer
+        raise Exception('pl-multiple-choice element must have at least 1 correct answer, or add none-of-the-above set to "correct" or "random"')
+
+    if len_correct == 0:
+        # If no correct option is provided, 'None of the above' will always
         # be correct, and 'All of the above' always incorrect
-        nota_correct = enable_nota and (rand_int == 1 or len_correct == 0)
+        if nota == 'random':
+            nota = 'correct'
+        if aota == 'random':
+            aota = 'incorrect'
+
+    if len_incorrect == 0:
         # 'All of the above' will always be correct when no incorrect option is
         # provided, while still never both True
-        aota_correct = enable_aota and (rand_int == 2 or len_incorrect == 0) and not nota_correct
-
-    if len_correct < 1 and not enable_nota:
-        # This means the code needs to handle the special case when len_correct == 0
-        raise Exception('pl-multiple-choice element must have at least 1 correct answer or set none-of-the-above')
-
-    if enable_aota and len_correct < 2:
-        # To prevent confusion on the client side
-        raise Exception('pl-multiple-choice element must have at least 2 correct answers when all-of-the-above is set')
+        if aota == 'random':
+            aota = 'correct'
+        if nota == 'random':
+            nota = 'incorrect'
 
     # 1. Pick the choice(s) to display
     number_answers = pl.get_integer_attrib(element, 'number-answers', None)
     # determine if user provides number-answers
-    set_num_answers = True
     if number_answers is None:
         set_num_answers = False
-        number_answers = len_total + enable_nota + enable_aota
-    # figure out how many choice(s) to choose from the *provided* choices,
-    # excluding 'none-of-the-above' and 'all-of-the-above'
-    number_answers -= (enable_nota + enable_aota)
+        number_answers = len_total
+    else:
+        set_num_answers = True
+        # figure out how many choice(s) to choose from the *provided* choices,
+        # excluding 'none-of-the-above' and 'all-of-the-above'
+        number_answers -= (1 if nota != 'false' else 0) + (1 if aota != 'false' else 0)
 
     expected_num_answers = number_answers
 
-    if enable_aota:
+    if aota in ['correct', 'random']:
         # min number if 'All of the above' is correct
         number_answers = min(len_correct, number_answers)
         # raise exception when the *provided* number-answers can't be satisfied
         if set_num_answers and number_answers < expected_num_answers:
             raise Exception(f'Not enough correct choices for all-of-the-above. Need {expected_num_answers - number_answers} more')
-    if enable_nota:
+    if nota in ['correct', 'random']:
         # if nota correct
         number_answers = min(len_incorrect, number_answers)
         # raise exception when the *provided* number-answers can't be satisfied
@@ -130,12 +160,22 @@ def prepare(element_html, data):
     # - nota and aota disabled
     number_answers = min(min(1, len_correct) + len_incorrect, number_answers)
 
-    if aota_correct:
+    if nota == 'random' or aota == 'random':
+        # Either 'None of the above' or 'All of the above' is correct
+        # with probability 1/(number_correct + nota + aota).
+        prob_space = len_correct + (1 if nota == 'random' else 0) + (1 if aota == 'random' else 0)
+        rand_int = random.randint(1, prob_space)
+        if nota == 'random':
+            nota = 'correct' if rand_int == 1 else 'incorrect'
+        if aota == 'random':
+            aota = 'correct' if rand_int == 2 else 'incorrect'
+
+    if aota == 'correct':
         # when 'All of the above' is correct, we choose all from correct
         # and none from incorrect
         number_correct = number_answers
         number_incorrect = 0
-    elif nota_correct:
+    elif nota == 'correct':
         # when 'None of the above' is correct, we choose all from incorrect
         # and none from correct
         number_correct = 0
@@ -165,23 +205,20 @@ def prepare(element_html, data):
         sampled_answers.sort(key=lambda a: a[0])  # sort by stored original index
 
     inline = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
-    if enable_aota:
-        if inline:
-            aota_text = 'All of these'
-        else:
-            aota_text = 'All of the above'
-        # Add 'All of the above' option after shuffling
-        aota_feedback = pl.get_string_attrib(element, 'all-of-the-above-feedback', FEEDBACK_DEFAULT)
-        sampled_answers.append((len_total, aota_correct, aota_text, aota_feedback))
 
-    if enable_nota:
-        if inline:
-            nota_text = 'None of these'
-        else:
-            nota_text = 'None of the above'
-        # Add 'None of the above' option after shuffling
+    # Add 'All of the above' option after shuffling
+    if aota != 'false':
+        aota_text = 'All of these' if inline else 'All of the above'
+        aota_feedback = pl.get_string_attrib(element, 'all-of-the-above-feedback', FEEDBACK_DEFAULT)
+        aota_default_score = SCORE_CORRECT_DEFAULT if aota == 'correct' else SCORE_INCORRECT_DEFAULT
+        sampled_answers.append((len_total, aota == 'correct', aota_text, aota_feedback, aota_default_score))
+
+    # Add 'None of the above' option after shuffling
+    if nota != 'false':
+        nota_text = 'None of these' if inline else 'None of the above'
         nota_feedback = pl.get_string_attrib(element, 'none-of-the-above-feedback', FEEDBACK_DEFAULT)
-        sampled_answers.append((len_total + 1, nota_correct, nota_text, nota_feedback))
+        nota_default_score = SCORE_CORRECT_DEFAULT if nota == 'correct' else SCORE_INCORRECT_DEFAULT
+        sampled_answers.append((len_total + 1, nota == 'correct', nota_text, nota_feedback, nota_default_score))
 
     # 4. Write to data
     # Because 'All of the above' is below all the correct choice(s) when it's
@@ -189,8 +226,8 @@ def prepare(element_html, data):
     # overwriting previous choice(s)
     display_answers = []
     correct_answer = None
-    for (i, (index, correct, html, feedback)) in enumerate(sampled_answers):
-        keyed_answer = {'key': pl.index2key(i), 'html': html, 'feedback': feedback}
+    for (i, (index, correct, html, feedback, score)) in enumerate(sampled_answers):
+        keyed_answer = {'key': pl.index2key(i), 'html': html, 'feedback': feedback, 'score': score}
         display_answers.append(keyed_answer)
         if correct:
             correct_answer = keyed_answer
@@ -211,7 +248,6 @@ def render(element_html, data):
     inline = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
 
     submitted_key = data['submitted_answers'].get(name, None)
-    correct_key = data['correct_answers'].get(name, {'key': None}).get('key', None)
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -232,8 +268,12 @@ def render(element_html, data):
                 'feedback': feedback
             }
             if answer_html['display_score_badge']:
-                answer_html['correct'] = (correct_key == answer['key'])
-                answer_html['incorrect'] = (correct_key != answer['key'])
+                if score >= 1:
+                    answer_html['correct'] = True
+                elif score > 0:
+                    answer_html['partial'] = True
+                else:
+                    answer_html['incorrect'] = True
             answerset.append(answer_html)
 
         html_params = {
@@ -340,15 +380,14 @@ def grade(element_html, data):
 
     submitted_key = data['submitted_answers'].get(name, None)
     correct_key = data['correct_answers'].get(name, {'key': None}).get('key', None)
-
-    score = 0
-    if (submitted_key is not None and submitted_key == correct_key):
-        score = 1
+    default_score = SCORE_CORRECT_DEFAULT if submitted_key == correct_key else SCORE_INCORRECT_DEFAULT
 
     feedback = None
+    score = 0
     for option in data['params'][name]:
         if option['key'] == submitted_key:
             feedback = option.get('feedback', None)
+            score = option.get('score', default_score)
 
     data['partial_scores'][name] = {'score': score, 'weight': weight, 'feedback': feedback}
 
@@ -369,7 +408,7 @@ def test(element_html, data):
     if result == 'correct':
         data['raw_submitted_answers'][name] = data['correct_answers'][name]['key']
         feedback = data['correct_answers'][name].get('feedback', None)
-        data['partial_scores'][name] = {'score': 1, 'weight': weight, 'feedback': feedback}
+        data['partial_scores'][name] = {'score': 1.0, 'weight': weight, 'feedback': feedback}
     elif result == 'incorrect':
         if len(incorrect_keys) > 0:
             random_key = random.choice(incorrect_keys)
@@ -377,7 +416,8 @@ def test(element_html, data):
             for option in data['params'][name]:
                 if option['key'] == random_key:
                     feedback = option.get('feedback', None)
-            data['partial_scores'][name] = {'score': 0, 'weight': weight, 'feedback': feedback}
+                    score = option.get('score', 0.0)
+            data['partial_scores'][name] = {'score': score, 'weight': weight, 'feedback': feedback}
         else:
             # actually an invalid submission
             data['raw_submitted_answers'][name] = '0'

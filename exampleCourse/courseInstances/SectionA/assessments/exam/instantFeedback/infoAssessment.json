@@ -3,6 +3,7 @@
     "type": "Exam",
     "title": "Exam with real-time autograding",
     "set": "Exam",
+    "module": "FinalModule",
     "number": "1",
     "allowAccess": [
         {

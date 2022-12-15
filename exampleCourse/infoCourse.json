@@ -13,6 +13,11 @@
       {"abbreviation": "G", "name": "GroupActivity", "heading": "Group Activities", "color": "pink1"}
 
     ],
+    "assessmentModules": [
+        {"name": "IntroModule", "heading": "Introductory Module"},
+        {"name": "AnotherModule", "heading": "Another Module"},
+        {"name": "FinalModule", "heading": "Final Module"}
+    ],
     "topics": [
         {"name": "Template", "color": "orange1", "description": "Templates to copy as the start for a new question."},
         {"name": "Autograder", "color": "orange2", "description": "Questions using the external code grading feature."},
