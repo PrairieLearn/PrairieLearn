@@ -423,7 +423,7 @@ const FILE_UUID_REGEX =
 
 /**
  * @param {string} courseDir
- * @param {number} courseId
+ * @param {number=} courseId
  * @returns {Promise<CourseData>}
  */
 module.exports.loadFullCourse = async function (courseDir, courseId) {
@@ -1394,7 +1394,7 @@ module.exports.loadCourseInstances = async function (coursePath) {
  * @param {string} coursePath
  * @param {string} courseInstance
  * @param {{ [qid: string]: any }} questions
- * @param {number} courseId
+ * @param {number=} courseId
  */
 module.exports.loadAssessments = async function (coursePath, courseInstance, questions, courseId) {
   const assessmentsPath = path.join('courseInstances', courseInstance, 'assessments');
