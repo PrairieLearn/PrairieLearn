@@ -8,10 +8,9 @@ import python_helper_sympy as phs
 VARIABLES = ["n"]
 
 ALL_GRADING_FUNCTIONS = [
-    bou.grade_big_o_expression,
+    bou.grade_o_expression,
     bou.grade_theta_expression,
     bou.grade_omega_expression,
-    bou.grade_little_omega_expression,
 ]
 
 
@@ -130,10 +129,8 @@ class TestBigOInput:
             ("2**n", "2**(n**2)"),
         ],
     )
-    def test_too_loose_bigo(
-        self, a_true: str, a_sub: str
-    ) -> None:
-        score, feedback = bou.grade_big_o_expression(a_true, a_sub, VARIABLES)
+    def test_too_loose_bigo(self, a_true: str, a_sub: str) -> None:
+        score, feedback = bou.grade_o_expression(a_true, a_sub, VARIABLES)
 
         assert 0 < score < 1
         assert "loose" in feedback
@@ -153,13 +150,8 @@ class TestBigOInput:
             ("2**(n**2)", "2**n"),
         ],
     )
-    @pytest.mark.parametrize(
-        "grading_fn", [bou.grade_omega_expression, bou.grade_little_omega_expression]
-    )
-    def test_too_loose_omega(
-        self, a_true: str, a_sub: str, grading_fn: bou.BigOGradingFunctionT
-    ) -> None:
-        score, feedback = grading_fn(a_true, a_sub, VARIABLES)
+    def test_too_loose_omega(self, a_true: str, a_sub: str) -> None:
+        score, feedback = bou.grade_omega_expression(a_true, a_sub, VARIABLES)
 
         assert 0 < score < 1
         assert "loose" in feedback
@@ -180,7 +172,7 @@ class TestBigOInput:
     @pytest.mark.parametrize(
         "grading_fn",
         [
-            bou.grade_big_o_expression,
+            bou.grade_o_expression,
             bou.grade_theta_expression,
         ],
     )
@@ -210,7 +202,6 @@ class TestBigOInput:
         [
             bou.grade_omega_expression,
             bou.grade_theta_expression,
-            bou.grade_little_omega_expression,
         ],
     )
     def test_incorrect_answer_omega(
