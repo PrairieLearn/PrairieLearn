@@ -153,7 +153,6 @@ Some notes about this configuration:
 
 This post-graded configuration is **NOT** our recommended approach, but it is good for mimicking traditional pen-and-paper exams. Exams run in this manner forfeit the ability to provide immediate feedback as well as partial credit to students. Instead, we recommend [synchronous, timed exams](#synchronous-timed-exams).
 
-
 This configuration is good when:
 
 - You want to mimic a pen-and-paper exam as much as possible.

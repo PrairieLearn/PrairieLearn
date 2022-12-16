@@ -172,7 +172,7 @@ To block students from viewing closed assessment details, set `"showClosedAssess
 ]
 ```
 
-Note that the `showClosedAssessment` statement is listed twice above, once while the assessment is in progress (`startDate` to `endDate`) and once in a second rule that will take effect after the `endDate`. The additional `"active": false` restriction  prevents students from starting the exam after the `endDate`.
+Note that the `showClosedAssessment` statement is listed twice above, once while the assessment is in progress (`startDate` to `endDate`) and once in a second rule that will take effect after the `endDate`. The additional `"active": false` restriction prevents students from starting the exam after the `endDate`.
 
 The `showClosedAssessment` access rule restriction is only really useful in conjunction with [time limits](#time-limits). It is common to pair `"showClosedAssessment": false` with [disabled real-time grading](assessment.md#disabling-real-time-grading).
 
