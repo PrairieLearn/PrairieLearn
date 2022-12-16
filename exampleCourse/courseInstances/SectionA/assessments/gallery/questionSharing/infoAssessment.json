@@ -8,7 +8,7 @@
         {
             "title": "Question Shared from Test Course",
             "questions": [
-                {"id": "@test-course/addNumbers", "points": 1}
+                {"id": "demo/annotated/mathNumberInput", "points": 1}
             ]
         }
     ]
