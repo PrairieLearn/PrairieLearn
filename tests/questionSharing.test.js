@@ -14,7 +14,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 
-// const UUID_REGEXP = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+const UUID_REGEXP = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
 function sharingPageUrl(courseId) {
   return `${baseUrl}/course/${courseId}/course_admin/sharing`;
@@ -41,27 +41,15 @@ describe('Question Sharing', function () {
 
   // Must sync two courses to test sharing from one to the other, and we must
   // force one sync to complete before the other to avoid database errors
-  before(
-    'set up testing server',
-    helperServer.before([
-      path.join(__dirname, '..', 'testCourse'),
-      // path.join(__dirname, '..', 'exampleCourse')
-    ])
-  );
-  after('shut down testing server', helperServer.after);
-
-  before('ensure course has question sharing enabled', async () => {
-    await sqldb.queryAsync(sql.enable_question_sharing, {});
-  });
 
   describe('Create a sharing set and add a question to it', () => {
     const testCourseId = 1;
     const testCourseSharingName = 'test-course';
-    // const exampleCourseId = 2;
-    // const exampleCourseSharingName = 'example-course';
-    // const sharingSetName = 'share-set-example';
+    const exampleCourseId = 2;
+    const exampleCourseSharingName = 'example-course';
+    const sharingSetName = 'share-set-example';
 
-    // let exampleCourseSharingId;
+    let exampleCourseSharingId;
 
     // step('Initialize courses, expect one to fail because of import', async () => {
     //   helperServer.before([
@@ -69,6 +57,18 @@ describe('Question Sharing', function () {
     //     path.join(__dirname, '..', 'exampleCourse')
     //   ])(() => null);
     // });
+
+    step(
+      'set up testing server',
+      helperServer.before([
+        path.join(__dirname, '..', 'testCourse'),
+        path.join(__dirname, '..', 'exampleCourse')
+      ])
+    );
+    
+    step('ensure course has question sharing enabled', async () => {
+      await sqldb.queryAsync(sql.enable_question_sharing, {});
+    });
 
     // step('ensure course has question sharing enabled', async () => {
     //   await sqldb.queryAsync(sql.enable_question_sharing, {});
@@ -88,48 +88,48 @@ describe('Question Sharing', function () {
       // TODO throw an exception in SQL, catch it, return an error
     });
 
-    // step('Set example course sharing name', async () => {
-    //   await setSharingName(exampleCourseId, exampleCourseSharingName);
-    //   let sharingPage = await (await fetch(sharingPageUrl(exampleCourseId))).text();
-    //   assert(sharingPage.includes(exampleCourseSharingName));
-    // });
+    step('Set example course sharing name', async () => {
+      await setSharingName(exampleCourseId, exampleCourseSharingName);
+      let sharingPage = await (await fetch(sharingPageUrl(exampleCourseId))).text();
+      assert(sharingPage.includes(exampleCourseSharingName));
+    });
 
-    // step('Generate sharing ID for example course', async () => {
-    //   const sharingUrl = sharingPageUrl(exampleCourseId);
-    //   let response = await helperClient.fetchCheerio(sharingUrl);
-    //   const token = response.$('#test_csrf_token').text();
-    //   await fetch(sharingUrl, {
-    //     method: 'POST',
-    //     headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-    //     body: new URLSearchParams({
-    //       __action: 'sharing_id_regenerate',
-    //       __csrf_token: token,
-    //     }).toString(),
-    //   });
+    step('Generate sharing ID for example course', async () => {
+      const sharingUrl = sharingPageUrl(exampleCourseId);
+      let response = await helperClient.fetchCheerio(sharingUrl);
+      const token = response.$('#test_csrf_token').text();
+      await fetch(sharingUrl, {
+        method: 'POST',
+        headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          __action: 'sharing_id_regenerate',
+          __csrf_token: token,
+        }).toString(),
+      });
 
-    //   response = await helperClient.fetchCheerio(sharingUrl);
-    //   exampleCourseSharingId = UUID_REGEXP.exec(response.text());
-    //   console.log(exampleCourseId);
-    // });
+      response = await helperClient.fetchCheerio(sharingUrl);
+      exampleCourseSharingId = UUID_REGEXP.exec(response.text());
+      assert(exampleCourseSharingId != null);
+    });
 
-    // step('Create a sharing set', async () => {
-    //   const sharingUrl = sharingPageUrl(exampleCourseId);
-    //   let response = await helperClient.fetchCheerio(sharingUrl);
-    //   const token = response.$('#test_csrf_token').text();
-    //   await fetch(sharingUrl, {
-    //     method: 'POST',
-    //     headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-    //     body: new URLSearchParams({
-    //       __action: 'sharing_set_create',
-    //       __csrf_token: token,
-    //       sharing_set_name: sharingSetName
-    //     }).toString(),
-    //   });
+    step('Create a sharing set', async () => {
+      const sharingUrl = sharingPageUrl(exampleCourseId);
+      let response = await helperClient.fetchCheerio(sharingUrl);
+      const token = response.$('#test_csrf_token').text();
+      await fetch(sharingUrl, {
+        method: 'POST',
+        headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          __action: 'sharing_set_create',
+          __csrf_token: token,
+          sharing_set_name: sharingSetName
+        }).toString(),
+      });
 
-    //   let sharingPage = await (await fetch(sharingPageUrl(exampleCourseId))).text();
-    //   console.log(sharingPage);
-    //   assert(sharingPage.includes(exampleCourseSharingName));
-    // });
+      let sharingPage = await (await fetch(sharingPageUrl(exampleCourseId))).text();
+      console.log(sharingPage);
+      assert(sharingPage.includes(exampleCourseSharingName));
+    });
 
     // step('Attempt to create another sharing set with the same name', async () => {
     //   // TODO ensure that the sharing set name you created only appears once on the page
@@ -162,5 +162,8 @@ describe('Question Sharing', function () {
     // step('Attempt to create another sharing set with the same name', async () => {
 
     // });
+
+    step('shut down testing server', helperServer.after);
+
   });
 });
