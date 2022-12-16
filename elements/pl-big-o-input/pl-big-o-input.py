@@ -25,7 +25,7 @@ GRADE_FUNCTION_DICT: Dict[BigOType, bou.BigOGradingFunctionT] = {
     BigOType.THETA: bou.grade_theta_expression,
     BigOType.OMEGA: bou.grade_omega_expression,
     BigOType.LITTLE_O: bou.grade_o_expression,
-    BigOType.LITTLE_OMEGA: bou.bou.grade_omega_expression,
+    BigOType.LITTLE_OMEGA: bou.grade_omega_expression,
 }
 
 
