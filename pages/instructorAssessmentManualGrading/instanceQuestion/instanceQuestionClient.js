@@ -61,6 +61,20 @@ function resetInstructorGradingPanel() {
   $('.js-selectable-rubric-item').change(computePointsFromRubric);
   $('.js-grading-score-input').on('input', updatePointsView);
 
+  $('.js-adjust-points-checkbox')
+    .change(function () {
+      $(this)
+        .parents('.js-adjust-points:first')
+        .find('.js-adjust-points-input-container')
+        .toggle($(this).is(':checked'));
+      computePointsFromRubric();
+    })
+    .change();
+  $('.js-adjust-points-input').on('input', function () {
+    // Update points based on perc or vice-versa
+    computePointsFromRubric();
+  });
+
   $('.js-rubric-settings-modal input[name="use_rubrics"]')
     .change(function () {
       $(this)
@@ -169,10 +183,22 @@ function updatePointsView() {
 function computePointsFromRubric() {
   const manualInput = $('#js-manual-score-value-input-points');
   const autoInput = $('#js-auto-score-value-input-points');
+  const form = manualInput.parents('form:first');
   let computedPoints = {
     manual: manualInput.data('rubric-starting-points') || 0,
     auto: autoInput.data('rubric-starting-points') || 0,
   };
+
+  if (form.find('input[name="adjust_points_selected_manual"]').is(':checked')) {
+    computedPoints.manual +=
+      parseFloat(form.find('input[name="score_manual_adjust_points"]').val()) || 0;
+  }
+
+  if (form.find('input[name="adjust_points_selected_auto"]').is(':checked')) {
+    computedPoints.auto +=
+      parseFloat(form.find('input[name="score_auto_adjust_points"]').val()) || 0;
+  }
+
   $('.js-selectable-rubric-item:checked').each((index, item) => {
     computedPoints[$(item).data('rubric-item-type')] += $(item).data('rubric-item-points');
   });
