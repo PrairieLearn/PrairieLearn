@@ -319,7 +319,9 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
 
   // TODO: this query is very inefficient, because it pulls in names of ALL shared questions that this
   // course has permissions on. We can optimize by only pulling in ones referenced by existing assessments.
-  const importedQuestions = await sqldb.queryAsync(sql.get_all_imported_questions, {courseId: courseId});
+  const importedQuestions = await sqldb.queryAsync(sql.get_all_imported_questions, {
+    courseId: courseId,
+  });
   for (let row of importedQuestions.rows) {
     questionIds['@' + row.sharing_name + '/' + row.qid] = row.id;
   }

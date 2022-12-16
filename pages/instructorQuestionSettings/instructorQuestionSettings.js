@@ -207,12 +207,16 @@ router.post('/', function (req, res, next) {
       });
     });
   } else if (req.body.__action === 'sharing_set_add') {
-    debug('Add question to sharing set')
-    sqldb.callZeroOrOneRow(sql.sharing_set_add, {sharing_set_id: req.body.sharing_set_id}, (err, result) => {
-      if (ERR(err, callback)) return;
+    debug('Add question to sharing set');
+    sqldb.callZeroOrOneRow(
+      sql.sharing_set_add,
+      { sharing_set_id: req.body.sharing_set_id },
+      (err, _result) => {
+        if (ERR(err, next)) return;
 
-      res.redirect(req.originalUrl);
-    })
+        res.redirect(req.originalUrl);
+      }
+    );
   } else {
     next(
       error.make(400, 'unknown __action: ' + req.body.__action, {
@@ -288,15 +292,15 @@ router.get('/', function (req, res, next) {
           (err, result) => {
             if (ERR(err, callback)) return;
             // TODO get postgres booleans working properly instead of this string hack
-            res.locals.sharing_sets_in = result.rows.filter(row => row.in_set === 'true');
-            res.locals.sharing_sets_other = result.rows.filter(row => row.in_set === 'false');
+            res.locals.sharing_sets_in = result.rows.filter((row) => row.in_set === 'true');
+            res.locals.sharing_sets_other = result.rows.filter((row) => row.in_set === 'false');
             console.log('r', result.rows);
             console.log('in', res.locals.sharing_sets_in);
             console.log('other', res.locals.sharing_sets_other);
             callback(null);
           }
-        );      
-      }
+        );
+      },
     ],
     (err) => {
       if (ERR(err, next)) return;

@@ -14,7 +14,6 @@ const sqldb = require('../prairielib/lib/sql-db');
 const schemas = require('../schemas');
 const infofile = require('./infofile');
 const jsonLoad = require('../lib/json-load');
-const question = require('../lib/question');
 const perf = require('./performance')('course-db');
 
 const chalk = new chalkDefault.constructor({ enabled: true, level: 3 });
@@ -1073,7 +1072,7 @@ async function validateAssessment(assessment, questions, courseId) {
     });
   }
 
-  const importedQuestions = {}
+  const importedQuestions = {};
   const foundQids = new Set();
   const duplicateQids = new Set();
   const missingQids = new Set();
@@ -1089,32 +1088,41 @@ async function validateAssessment(assessment, questions, courseId) {
       join sharing_sets as ss on qss.sharing_set_id = ss.id
       join course_sharing_sets as css on ss.id = css.sharing_set_id
       where css.course_id = $courseId
-      and q.course_id = (select id from pl_courses where sharing_name = $sourceCourse);`
+      and q.course_id = (select id from pl_courses where sharing_name = $sourceCourse);`;
 
     if (!(sourceCourse in importedQuestions)) {
-      let result = await sqldb.queryAsync(query, {courseId: courseId, sourceCourse: sourceCourse})
+      let result = await sqldb.queryAsync(query, {
+        courseId: courseId,
+        sourceCourse: sourceCourse,
+      });
       let questions = new Set();
       for (let row of result.rows) {
-        questions.add(row['qid'])
+        questions.add(row['qid']);
       }
       importedQuestions[sourceCourse] = questions;
     }
     return importedQuestions[sourceCourse].has(qid);
-  }
+  };
   /** @type {(qid: string) => Promise<void>} */
   const checkAndRecordQid = async (qid) => {
-    if (qid[0] == '@') {
+    if (qid[0] === '@') {
       if (!config.questionSharingEnabled) {
-        errors.push(`You have attempted to import a question with '@', but question sharing is not enabled on this server.`); 
+        errors.push(
+          `You have attempted to import a question with '@', but question sharing is not enabled on this server.`
+        );
         return;
-      } 
-      // TODO: this is obviously a bad place to course info, figure out a different place to refactor it to, 
+      }
+      // TODO: this is obviously a bad place to course info, figure out a different place to refactor it to,
       // maybe throw a SQL exception at the point when the questions are being put into the database?
       console.log(courseId);
-      let result = await sqldb.queryOneRowAsync(`select * from pl_courses where id = $courseId;`, {courseId: courseId});
+      let result = await sqldb.queryOneRowAsync(`select * from pl_courses where id = $courseId;`, {
+        courseId: courseId,
+      });
       let course = result.rows[0];
       if (!course.question_sharing_enabled) {
-        errors.push(`You have attempted to import a question with '@', but question sharing is not enabled for your course.`);
+        errors.push(
+          `You have attempted to import a question with '@', but question sharing is not enabled for your course.`
+        );
         return;
       }
 
@@ -1141,99 +1149,107 @@ async function validateAssessment(assessment, questions, courseId) {
       duplicateQids.add(qid);
     }
   };
-  await Promise.all((assessment.zones || []).map(async (zone) => {
-    await Promise.all((zone.questions || []).map(async (zoneQuestion) => {
-      /** @type {number | number[]} */
-      const autoPoints = zoneQuestion.autoPoints ?? zoneQuestion.points;
-      if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
-        errors.push(
-          `Cannot specify an array of multiple point values for a question if real-time grading is disabled`
-        );
-      }
-      // We'll normalize either single questions or alternative groups
-      // to make validation easier
-      /** @type {{ points: number | number[], autoPoints: number | number[], maxPoints: number, maxAutoPoints: number, manualPoints: number }[]} */
-      let alternatives = [];
-      if ('alternatives' in zoneQuestion && 'id' in zoneQuestion) {
-        errors.push('Cannot specify both "alternatives" and "id" in one question');
-      } else if ('alternatives' in zoneQuestion) {
-        await Promise.all(zoneQuestion.alternatives.map(async (alternative) =>  await checkAndRecordQid(alternative.id)));
-        alternatives = zoneQuestion.alternatives.map((alternative) => {
+  await Promise.all(
+    (assessment.zones || []).map(async (zone) => {
+      await Promise.all(
+        (zone.questions || []).map(async (zoneQuestion) => {
           /** @type {number | number[]} */
-          const autoPoints = alternative.autoPoints ?? alternative.points;
+          const autoPoints = zoneQuestion.autoPoints ?? zoneQuestion.points;
           if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
             errors.push(
-              `Cannot specify an array of multiple point values for an alternative if real-time grading is disabled`
+              `Cannot specify an array of multiple point values for a question if real-time grading is disabled`
             );
           }
-          return {
-            points: alternative.points ?? zoneQuestion.points,
-            maxPoints: alternative.maxPoints ?? zoneQuestion.maxPoints,
-            maxAutoPoints: alternative.maxAutoPoints ?? zoneQuestion.maxAutoPoints,
-            autoPoints: alternative.autoPoints ?? zoneQuestion.autoPoints,
-            manualPoints: alternative.manualPoints ?? zoneQuestion.manualPoints,
-          };
-        });
-      } else if ('id' in zoneQuestion) {
-        await checkAndRecordQid(zoneQuestion.id);
-        alternatives = [
-          {
-            points: zoneQuestion.points,
-            maxPoints: zoneQuestion.maxPoints,
-            maxAutoPoints: zoneQuestion.maxAutoPoints,
-            autoPoints: zoneQuestion.autoPoints,
-            manualPoints: zoneQuestion.manualPoints,
-          },
-        ];
-      } else {
-        errors.push(`Zone question must specify either "alternatives" or "id"`);
-      }
+          // We'll normalize either single questions or alternative groups
+          // to make validation easier
+          /** @type {{ points: number | number[], autoPoints: number | number[], maxPoints: number, maxAutoPoints: number, manualPoints: number }[]} */
+          let alternatives = [];
+          if ('alternatives' in zoneQuestion && 'id' in zoneQuestion) {
+            errors.push('Cannot specify both "alternatives" and "id" in one question');
+          } else if ('alternatives' in zoneQuestion) {
+            await Promise.all(
+              zoneQuestion.alternatives.map(
+                async (alternative) => await checkAndRecordQid(alternative.id)
+              )
+            );
+            alternatives = zoneQuestion.alternatives.map((alternative) => {
+              /** @type {number | number[]} */
+              const autoPoints = alternative.autoPoints ?? alternative.points;
+              if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
+                errors.push(
+                  `Cannot specify an array of multiple point values for an alternative if real-time grading is disabled`
+                );
+              }
+              return {
+                points: alternative.points ?? zoneQuestion.points,
+                maxPoints: alternative.maxPoints ?? zoneQuestion.maxPoints,
+                maxAutoPoints: alternative.maxAutoPoints ?? zoneQuestion.maxAutoPoints,
+                autoPoints: alternative.autoPoints ?? zoneQuestion.autoPoints,
+                manualPoints: alternative.manualPoints ?? zoneQuestion.manualPoints,
+              };
+            });
+          } else if ('id' in zoneQuestion) {
+            await checkAndRecordQid(zoneQuestion.id);
+            alternatives = [
+              {
+                points: zoneQuestion.points,
+                maxPoints: zoneQuestion.maxPoints,
+                maxAutoPoints: zoneQuestion.maxAutoPoints,
+                autoPoints: zoneQuestion.autoPoints,
+                manualPoints: zoneQuestion.manualPoints,
+              },
+            ];
+          } else {
+            errors.push(`Zone question must specify either "alternatives" or "id"`);
+          }
 
-      alternatives.forEach((alternative) => {
-        if (
-          alternative.points === undefined &&
-          alternative.autoPoints === undefined &&
-          alternative.manualPoints === undefined
-        ) {
-          errors.push('Must specify "points", "autoPoints" or "manualPoints" for a question');
-        }
-        if (
-          alternative.points !== undefined &&
-          (alternative.autoPoints !== undefined ||
-            alternative.manualPoints !== undefined ||
-            alternative.maxAutoPoints !== undefined)
-        ) {
-          errors.push(
-            'Cannot specify "points" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified'
-          );
-        }
-        if (assessment.type === 'Exam') {
-          if (alternative.maxPoints !== undefined || alternative.maxAutoPoints !== undefined) {
-            errors.push(
-              'Cannot specify "maxPoints" or "maxAutoPoints" for a question in an "Exam" assessment'
-            );
-          }
-        }
-        if (assessment.type === 'Homework') {
-          if (
-            alternative.maxPoints !== undefined &&
-            (alternative.autoPoints !== undefined ||
-              alternative.manualPoints !== undefined ||
-              alternative.maxAutoPoints !== undefined)
-          ) {
-            errors.push(
-              'Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified'
-            );
-          }
-          if (Array.isArray(alternative.autoPoints ?? alternative.points)) {
-            errors.push(
-              'Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment'
-            );
-          }
-        }
-      });
-    }));
-  }));
+          alternatives.forEach((alternative) => {
+            if (
+              alternative.points === undefined &&
+              alternative.autoPoints === undefined &&
+              alternative.manualPoints === undefined
+            ) {
+              errors.push('Must specify "points", "autoPoints" or "manualPoints" for a question');
+            }
+            if (
+              alternative.points !== undefined &&
+              (alternative.autoPoints !== undefined ||
+                alternative.manualPoints !== undefined ||
+                alternative.maxAutoPoints !== undefined)
+            ) {
+              errors.push(
+                'Cannot specify "points" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified'
+              );
+            }
+            if (assessment.type === 'Exam') {
+              if (alternative.maxPoints !== undefined || alternative.maxAutoPoints !== undefined) {
+                errors.push(
+                  'Cannot specify "maxPoints" or "maxAutoPoints" for a question in an "Exam" assessment'
+                );
+              }
+            }
+            if (assessment.type === 'Homework') {
+              if (
+                alternative.maxPoints !== undefined &&
+                (alternative.autoPoints !== undefined ||
+                  alternative.manualPoints !== undefined ||
+                  alternative.maxAutoPoints !== undefined)
+              ) {
+                errors.push(
+                  'Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified'
+                );
+              }
+              if (Array.isArray(alternative.autoPoints ?? alternative.points)) {
+                errors.push(
+                  'Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment'
+                );
+              }
+            }
+          });
+        })
+      );
+    })
+  );
 
   if (duplicateQids.size > 0) {
     errors.push(
@@ -1383,7 +1399,8 @@ module.exports.loadCourseInstances = async function (coursePath) {
 module.exports.loadAssessments = async function (coursePath, courseInstance, questions, courseId) {
   const assessmentsPath = path.join('courseInstances', courseInstance, 'assessments');
   /** @type {(assessment: Assessment) => Promise<{ warnings?: string[], errors?: string[] }>} */
-  const validateAssessmentWithQuestions = (assessment) => validateAssessment(assessment, questions, courseId);
+  const validateAssessmentWithQuestions = (assessment) =>
+    validateAssessment(assessment, questions, courseId);
   /** @type {{ [tid: string]: InfoFile<Assessment> }} */
   const assessments = await loadInfoForDirectory({
     coursePath,

@@ -79,25 +79,28 @@ module.exports = {
           function (callback) {
             debug('before(): sync from disk');
             async.series(
-              courseDirs.map(courseDir => function(callback) {
-                syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
-                  if (ERR(err, callback)) return;
-                  if (result.hadJsonErrorsOrWarnings) {
-                    console.log(logger.getOutput());
-                    return callback(
-                      new Error(
-                        `Errors or warnings found during sync of ${courseDir} (output printed to console)`
-                      )
-                    );
+              courseDirs.map(
+                (courseDir) =>
+                  function (callback) {
+                    syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
+                      if (ERR(err, callback)) return;
+                      if (result.hadJsonErrorsOrWarnings) {
+                        console.log(logger.getOutput());
+                        return callback(
+                          new Error(
+                            `Errors or warnings found during sync of ${courseDir} (output printed to console)`
+                          )
+                        );
+                      }
+                      callback(null);
+                    });
                   }
-                  callback(null);
-                })
-              }), 
+              ),
               function (err) {
                 if (ERR(err, callback)) return;
                 callback(null);
               }
-            )
+            );
           },
           function (callback) {
             debug('before(): set up load estimators');
