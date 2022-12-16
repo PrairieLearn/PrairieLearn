@@ -148,45 +148,6 @@ def grade_omega_expression(
     return (0.5, CONSTANT_FACTORS_FEEDBACK)
 
 
-def grade_little_o_expression(
-    a_true: str, a_sub: str, variables: List[str]
-) -> Tuple[float, str]:
-
-    a_true = a_true.replace(" ", "")
-    a_sub = a_sub.replace(" ", "")
-
-    if a_true == a_sub:
-        return (1, CORRECT_UNCONDITIONAL_FEEDBACK)
-
-    sym_true = phs.convert_string_to_sympy(
-        a_true, variables, allow_complex=False, allow_trig_functions=False
-    )
-    sym_sub = phs.convert_string_to_sympy(
-        a_sub, variables, allow_complex=False, allow_trig_functions=False
-    )
-
-    if sym_true.equals(sym_sub):
-        return (1, CORRECT_COMPLEX_FEEDBACK)
-    elif sym_sub.equals(sympy.sympify(0)):
-        return (0, INCORRECT_FEEDBACK)
-
-    if sympy.limit(sym_sub, sympy.Symbol(variables[0]), sympy.oo) < sympy.sympify(0):
-        return (0, NEGATIVE_FEEDBACK)
-
-    L = sympy.limit(sym_true / sym_sub, sympy.Symbol(variables[0]), sympy.oo)
-
-    if L < sympy.sympify(0):
-        return (0, NEGATIVE_FEEDBACK)
-    elif L == sympy.oo:
-        return (0, INCORRECT_FEEDBACK)
-    elif L == sympy.sympify(0):
-        return (0.25, TOO_LOOSE_FEEDBACK)
-    elif L == sympy.sympify(1):
-        return (0.5, LOWER_ORDER_TERMS_FEEDBACK)
-
-    return (0.5, CONSTANT_FACTORS_FEEDBACK)
-
-
 def grade_little_omega_expression(
     a_true: str, a_sub: str, variables: List[str]
 ) -> Tuple[float, str]:
