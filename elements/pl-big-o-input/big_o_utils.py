@@ -176,28 +176,25 @@ def grade_question_parameterized(
     # Create the data dictionary at first
     data["partial_scores"][question_name] = {"score": 0.0, "weight": weight}
 
-    try:
-        submitted_answer = data["submitted_answers"][question_name]
-    except KeyError:
-        # Catch error if no answer submitted
+    if question_name not in data["submitted_answers"]:
         data["format_errors"][question_name] = "No answer was submitted"
         return
 
-    try:
-        result, feedback_content = grade_function(submitted_answer)
+    submitted_answer = data["submitted_answers"][question_name]
 
-        if isinstance(result, bool):
-            partial_score = 1.0 if result else 0.0
-        elif isinstance(result, (float, int)):
-            assert 0.0 <= result <= 1.0
-            partial_score = result
-        else:
-            assert_never(result)
+    # Run passed-in grading function
+    result, feedback_content = grade_function(submitted_answer)
 
-    except ValueError as err:
-        data["format_errors"][question_name] = str(err)
-        return
+    # Try converting partial score
+    if isinstance(result, bool):
+        partial_score = 1.0 if result else 0.0
+    elif isinstance(result, (float, int)):
+        assert 0.0 <= result <= 1.0
+        partial_score = result
+    else:
+        assert_never(result)
 
+    # Set corresponding partial score and feedback
     data["partial_scores"][question_name]["score"] = partial_score
 
     if feedback_content:

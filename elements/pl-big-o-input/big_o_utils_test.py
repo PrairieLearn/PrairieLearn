@@ -301,27 +301,6 @@ def test_grade_question_parametrized_correct(
     )
 
 
-@pytest.mark.parametrize(
-    "student_ans, error_msg",
-    [("a", "stuff"), ("ab", "other stuff"), ("abc", "something else")],
-)
-def test_grade_question_parametrized_exception(
-    question_data: pl.QuestionData, student_ans: str, error_msg: str
-) -> None:
-
-    question_name = "name"
-
-    question_data["submitted_answers"] = {question_name: student_ans}
-
-    def grading_function(_: str) -> Tuple[bool, Optional[str]]:
-        raise ValueError(error_msg)
-
-    bou.grade_question_parameterized(question_data, question_name, grading_function)
-
-    assert question_data["partial_scores"][question_name]["score"] == 0.0
-    assert question_data["format_errors"][question_name] == error_msg
-
-
 def test_grade_question_parametrized_bad_grade_function(
     question_data: pl.QuestionData,
 ) -> None:
