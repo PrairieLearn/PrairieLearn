@@ -282,18 +282,13 @@ def grade_question_parameterized(
         data["partial_scores"][question_name]["feedback"] = feedback_content
 
 
-def determine_score_params(score: Optional[float]) -> Tuple[str, Union[bool, float]]:
+def determine_score_params(score: float) -> Tuple[str, Union[bool, float]]:
     """Determine score params taken from data dict"""
 
-    if score is None:
-        return "", False
-
-    score_val = float(score)
-
-    if score_val >= 1:
+    if score >= 1:
         return ("correct", True)
-    elif score_val > 0:
-        return ("partial", math.floor(score_val * 100))
+    elif score > 0:
+        return ("partial", math.floor(score * 100))
 
     return ("incorrect", True)
 

@@ -113,8 +113,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if raw_submitted_answer is not None:
             raw_submitted_answer = escape(raw_submitted_answer)
 
-        score_type, score_value = bou.determine_score_params(score)
-
         html_params = {
             "question": True,
             "name": name,
@@ -129,8 +127,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "show_placeholder": size >= PLACEHOLDER_TEXT_THRESHOLD,
             "raw_submitted_answer": raw_submitted_answer,
             "type": bigo_type,
-            score_type: score_value,
         }
+
+        if score is not None:
+            score_type, score_value = bou.determine_score_params(score)
+            html_params[score_type] = score_value
 
         with open("pl-big-o-input.mustache", "r", encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
@@ -167,8 +168,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             if raw_submitted_answer is not None:
                 raw_submitted_answer = pl.escape_unicode_string(raw_submitted_answer)
 
-        score_type, score_value = bou.determine_score_params(score)
-
         html_params = {
             "submission": True,
             "type": bigo_type,
@@ -179,8 +178,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "a_sub": a_sub,
             "feedback": feedback,
             "raw_submitted_answer": raw_submitted_answer,
-            score_type: score_value,
         }
+
+        if score is not None:
+            score_type, score_value = bou.determine_score_params(score)
+            html_params[score_type] = score_value
+
         with open("pl-big-o-input.mustache", "r", encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
 
