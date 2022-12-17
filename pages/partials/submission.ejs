@@ -1,7 +1,7 @@
 <div data-grading-job-status="<%= submission.grading_job_status %>" data-grading-job-id="<%= submission.grading_job_id %>" id="submission-<%= submission.id %>">
 
 <% if (submission.feedback?.manual ||
-       (submission.submission_number == submissionCount && (rubric_data_manual?.rubric_grading_data || rubric_data_auto?.rubric_grading_data))) { %>
+       (submission.submission_number == submissionCount && (locals.rubric_data_manual?.rubric_grading_data || locals.rubric_data_auto?.rubric_grading_data))) { %>
 <div class="card mb-4 grading-block border-info">
   <div class="card-header bg-info text-white d-flex submission-header <% if (submission.submission_number != submissionCount) { %> collapsed<% } %>" data-toggle="collapse" data-target="#submission-feedback-<%= submission.id %>-body">
     <div class="mr-auto">
@@ -18,8 +18,8 @@
     <div class="card-body">
     <% if (submission.submission_number == submissionCount) { %>
     <% [
-        {type: 'Manual', ...rubric_data_manual},
-        {type: 'Auto', ...rubric_data_auto},
+        {type: 'Manual', ...locals.rubric_data_manual},
+        {type: 'Auto', ...locals.rubric_data_auto},
        ].forEach((rubric) => { %>
       <% (rubric.rubric_items || []).forEach((item) => { %>
       <div>
