@@ -185,6 +185,7 @@ router.post(
         req.body.min_points,
         req.body.max_points,
         JSON.stringify(rubric_items),
+        !!req.body.tag_for_manual_grading,
         res.locals.authn_user.user_id,
       ];
       const result = await sqldb.callAsync('assessment_questions_update_rubric', params);

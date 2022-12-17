@@ -7,6 +7,7 @@ CREATE FUNCTION
         IN min_points DOUBLE PRECISION,
         IN max_points DOUBLE PRECISION,
         IN arg_rubric_items JSONB,
+        IN tag_for_manual_grading BOOLEAN,
         IN arg_authn_user_id BIGINT,
         OUT arg_rubric_id BIGINT
     )
@@ -127,5 +128,10 @@ BEGIN
                 CASE WHEN rubric_type = 'auto' THEN nrg.new_rubric_grading_id ELSE NULL END,
                 arg_authn_user_id) ON TRUE;
 
+    IF tag_for_manual_grading THEN
+        UPDATE instance_questions iq
+        SET requires_manual_grading = TRUE
+        WHERE iq.assessment_question_id = arg_assessment_question_id;
+    END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
