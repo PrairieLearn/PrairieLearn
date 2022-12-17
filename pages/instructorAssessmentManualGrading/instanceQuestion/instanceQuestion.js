@@ -103,7 +103,7 @@ router.post(
         const params = [
           res.locals.assessment_question.manual_rubric_id,
           JSON.stringify(manual_rubric_items.map((id) => ({ rubric_item_id: id }))),
-          null, // adjust_points
+          req.body.score_manual_adjust_points || null,
           null, // computed_points
         ];
         const update_result = (await sqldb.callAsync('rubric_gradings_insert', params)).rows[0];
@@ -118,7 +118,7 @@ router.post(
         const params = [
           res.locals.assessment_question.auto_rubric_id,
           JSON.stringify(auto_rubric_items.map((id) => ({ rubric_item_id: id }))),
-          null, // adjust_points
+          req.body.score_auto_adjust_points || null,
           null, // computed_points
         ];
         const update_result = (await sqldb.callAsync('rubric_gradings_insert', params)).rows[0];
