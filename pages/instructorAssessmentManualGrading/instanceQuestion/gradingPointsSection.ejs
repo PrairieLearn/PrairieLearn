@@ -107,29 +107,28 @@
   </label>
 </div>
 <% }); %>
-<div class="js-adjust-points">
-  <label>
-    <input type="checkbox" name="adjust_points_selected_<%= type %>"
-           class="js-adjust-points-checkbox"
-           value="true" <%= rubric.rubric_data?.adjust_points ? 'checked' : '' %>>
-    <span>Adjustment</span>
-  </label>
-  <div class="float-right js-adjust-points-input-container w-25">
+<div class="js-adjust-points d-flex justify-content-end">
+  <button type="button" class="js-adjust-points-enable btn btn-sm btn-link <%= rubric.rubric_grading_data?.adjust_points ? 'd-none' : '' %>">
+    Apply adjustment
+  </button>
+  <div class="js-adjust-points-input-container w-25 <%= rubric.rubric_grading_data?.adjust_points ? '' : 'd-none' %>">
     <div class="js-manual-grading-points">
-      <div class="input-group">
+      <div class="input-group input-group-sm">
         <input type="number" step="any"
-               class="form-control js-adjust-points-input form-control-sm"
+               class="form-control js-adjust-points-points"
                name="score_<%= type %>_adjust_points"
-               value="<%= rubric.rubric_data?.adjust_points || 0 %>"
+               data-max-points="<%= (max_points || assessment_question.max_points) %>"
+               value="<%= rubric.rubric_grading_data?.adjust_points || '' %>"
                <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %> />
       </div>
     </div>
     <div class="js-manual-grading-percentage">
-      <div class="input-group">
+      <div class="input-group input-group-sm">
         <input type="number" step="any"
-               class="form-control js-adjust-points-input form-control-sm"
+               class="form-control js-adjust-points-percentage"
                name="score_<%= type %>_adjust_percent"
-               value="<%= (rubric.rubric_data?.adjust_points || 0) * 100 / (max_points || assessment_question.max_points) %>"
+               data-max-points="<%= (max_points || assessment_question.max_points) %>"
+               value="<%= ((rubric.rubric_grading_data?.adjust_points || 0) * 100 / (max_points || assessment_question.max_points)) || '' %>"
                <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %> />
         <span class="input-group-append">
           <span class="input-group-text">%</span>

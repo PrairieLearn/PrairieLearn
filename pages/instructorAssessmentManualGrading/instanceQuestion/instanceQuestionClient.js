@@ -61,17 +61,28 @@ function resetInstructorGradingPanel() {
   $('.js-selectable-rubric-item').change(computePointsFromRubric);
   $('.js-grading-score-input').on('input', updatePointsView);
 
-  $('.js-adjust-points-checkbox')
-    .change(function () {
-      $(this)
-        .parents('.js-adjust-points:first')
-        .find('.js-adjust-points-input-container')
-        .toggle($(this).is(':checked'));
-      computePointsFromRubric();
-    })
-    .change();
-  $('.js-adjust-points-input').on('input', function () {
-    // Update points based on perc or vice-versa
+  $('.js-adjust-points-enable').click(function () {
+    $(this)
+      .hide()
+      .parents('.js-adjust-points:first')
+      .find('.js-adjust-points-input-container')
+      .show()
+      .removeClass('d-none')
+      .find('input:visible')
+      .focus();
+  });
+  $('.js-adjust-points-points').on('input', function () {
+    $(this)
+      .parents('.js-adjust-points')
+      .find('.js-adjust-points-percentage')
+      .val(($(this).val() * 100) / $(this).data('max-points'));
+    computePointsFromRubric();
+  });
+  $('.js-adjust-points-percentage').on('input', function () {
+    $(this)
+      .parents('.js-adjust-points')
+      .find('.js-adjust-points-points')
+      .val(($(this).val() * $(this).data('max-points')) / 100);
     computePointsFromRubric();
   });
 
@@ -185,19 +196,13 @@ function computePointsFromRubric() {
   const autoInput = $('#js-auto-score-value-input-points');
   const form = manualInput.parents('form:first');
   let computedPoints = {
-    manual: manualInput.data('rubric-starting-points') || 0,
-    auto: autoInput.data('rubric-starting-points') || 0,
+    manual:
+      (manualInput.data('rubric-starting-points') || 0) +
+      (parseFloat(form.find('input[name="score_manual_adjust_points"]').val()) || 0),
+    auto:
+      (autoInput.data('rubric-starting-points') || 0) +
+      (parseFloat(form.find('input[name="score_auto_adjust_points"]').val()) || 0),
   };
-
-  if (form.find('input[name="adjust_points_selected_manual"]').is(':checked')) {
-    computedPoints.manual +=
-      parseFloat(form.find('input[name="score_manual_adjust_points"]').val()) || 0;
-  }
-
-  if (form.find('input[name="adjust_points_selected_auto"]').is(':checked')) {
-    computedPoints.auto +=
-      parseFloat(form.find('input[name="score_auto_adjust_points"]').val()) || 0;
-  }
 
   $('.js-selectable-rubric-item:checked').each((index, item) => {
     computedPoints[$(item).data('rubric-item-type')] += $(item).data('rubric-item-points');
