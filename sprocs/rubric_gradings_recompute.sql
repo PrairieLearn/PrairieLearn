@@ -39,7 +39,6 @@ BEGIN
         JSONB_AGG(rgi),
         BOOL_OR(ri.id IS NULL OR
                 ri.points != rgi.points OR
-                ri.short_text != rgi.short_text OR
                 ri.deleted_at IS NOT NULL)
     INTO
         applied_rubric_items,

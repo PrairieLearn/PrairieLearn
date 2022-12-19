@@ -37,8 +37,7 @@ BEGIN
         rubric_items AS ri
         LEFT JOIN submission_count_per_rubric_item AS scpri ON (scpri.rubric_item_id = ri.id)
         LEFT JOIN rubric_grading_items AS rgi ON (rgi.rubric_item_id = ri.id
-                                                  AND rgi.rubric_grading_id = arg_rubric_grading_id
-                                                  AND rgi.deleted_at IS NULL)
+                                                  AND rgi.rubric_grading_id = arg_rubric_grading_id)
     WHERE
         ri.rubric_id = arg_rubric_id
         AND ri.deleted_at IS NULL;

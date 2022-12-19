@@ -1,5 +1,4 @@
 columns
-    deleted_at: timestamp with time zone
     id: bigint not null default nextval('rubric_grading_items_id_seq'::regclass)
     note: text
     points: double precision not null

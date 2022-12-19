@@ -29,8 +29,7 @@ CREATE TABLE IF NOT EXISTS rubric_gradings (
     adjust_points DOUBLE PRECISION NOT NULL,
     starting_points DOUBLE PRECISION NOT NULL,
     max_points DOUBLE PRECISION NOT NULL,
-    min_points DOUBLE PRECISION NOT NULL,
-    deleted_at TIMESTAMP WITH TIME ZONE
+    min_points DOUBLE PRECISION NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS rubric_grading_items (
@@ -40,8 +39,7 @@ CREATE TABLE IF NOT EXISTS rubric_grading_items (
     score DOUBLE PRECISION NOT NULL DEFAULT 1,
     points DOUBLE PRECISION NOT NULL,
     short_text TEXT,
-    note TEXT,
-    deleted_at TIMESTAMP WITH TIME ZONE
+    note TEXT
 );
 
 -- TODO Consider other indices
