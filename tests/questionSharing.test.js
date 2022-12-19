@@ -62,10 +62,10 @@ describe('Question Sharing', function () {
       'set up testing server',
       helperServer.before([
         path.join(__dirname, '..', 'testCourse'),
-        path.join(__dirname, '..', 'exampleCourse')
+        path.join(__dirname, '..', 'exampleCourse'),
       ])
     );
-    
+
     step('ensure course has question sharing enabled', async () => {
       await sqldb.queryAsync(sql.enable_question_sharing, {});
     });
@@ -122,7 +122,7 @@ describe('Question Sharing', function () {
         body: new URLSearchParams({
           __action: 'sharing_set_create',
           __csrf_token: token,
-          sharing_set_name: sharingSetName
+          sharing_set_name: sharingSetName,
         }).toString(),
       });
 
@@ -164,6 +164,5 @@ describe('Question Sharing', function () {
     // });
 
     step('shut down testing server', helperServer.after);
-
   });
 });
