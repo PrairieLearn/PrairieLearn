@@ -109,6 +109,11 @@ function resetInstructorGradingPanel() {
     })
     .change();
 
+  $('.js-rubric-item-delete').click(function () {
+    $(this).parents('tr:first').remove();
+    updateRubricItemOrderField();
+  });
+
   $('.js-rubric-settings-modal form').submit(function (e) {
     e.preventDefault();
     const rubricFormData = $(

@@ -68,6 +68,13 @@ BEGIN
             id = arg_rubric_id;
     END IF;
 
+    -- Mark all rubric items as deleted, they will be re-updated if they are still active
+    UPDATE rubric_items
+    SET deleted_at = NOW()
+    WHERE
+        rubric_id = arg_rubric_id
+        AND deleted_at IS NULL;
+
     FOR rubric_item IN (SELECT *
                         FROM
                             JSONB_TO_RECORDSET(arg_rubric_items) AS ari(
