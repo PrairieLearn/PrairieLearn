@@ -1097,6 +1097,10 @@ that if there are many submitted answers, the page will load slowly.
 
 This element displays a truth table with dropdowns to select the correct input. The number and content of rows can be selected, though by default the element generates all possible combinations of values for the variables selected.
 
+By default the table will automatically generate all possible combinations
+that the variables can hold. This means that there will be 2^n rows in the
+table by default.
+
 #### Sample Element
 
 ![](elements/pl-truth-table.png)
@@ -1117,7 +1121,7 @@ This element displays a truth table with dropdowns to select the correct input. 
 | `true-label`            | string  | "1"       | Which value is used to represent "true" in the table.                                                                                                                                                                                             |
 | `false-label`           | string  | "0"       | Which value is used to represent "false" in the table.                                    |
 | `num-rows`              | integer | 2^n       | The number of rows to display. If the value specified is more than the number of available rows, then this value is ignored. Otherwise, it chooses randomly between the number of rows available. n is the number of variables specified or the number of user specified rows if there are any specified.
- 
+
 #### Details
 
 Inside the `pl-truth-table` element, `pl-variable` elements specify the names of the variables to be used in the truth table's header and expression. There can be one or more `pl-answer-column` elements which specify the text of the answer columns and they must be specified with these attributes:
@@ -1126,7 +1130,7 @@ Inside the `pl-truth-table` element, `pl-variable` elements specify the names of
 | ----------------------- | ------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `expression`            | string  | -         | Takes a valid Python expression, using some of the variables in the truth table. This is the expression used to generate the answers.
 
-`pl-row` elements can optionally be included to customize the rows that will be displayed. 
+`pl-row` elements can optionally be included to customize the rows that will be displayed.
 
 #### Example Implementations
 
