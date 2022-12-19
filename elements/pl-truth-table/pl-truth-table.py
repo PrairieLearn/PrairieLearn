@@ -342,63 +342,65 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     elif data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
 
-        if parse_error is None:
-            partial_score = data["partial_scores"].get(name, {"score": None})
-            score = partial_score.get("score", None)
-            display_score_badge = score is not None and show_answer_feedback
+        if parse_error is not None:
+            return ""
 
-            variable_set = [
-                {"parse_error": parse_error, "html": variable["html"].strip()}
-                for variable in display_variables
+        partial_score = data["partial_scores"].get(name, {"score": None})
+        score = partial_score.get("score", None)
+        display_score_badge = score is not None and show_answer_feedback
+
+        variable_set = [
+            {"parse_error": parse_error, "html": variable["html"].strip()}
+            for variable in display_variables
+        ]
+
+        ans_column_set = [
+            {"html": ans_column["html"].strip()}
+            for ans_column in display_ans_columns
+        ]
+
+        row_set = []
+
+        for i, row in enumerate(display_rows):
+            value_set = [
+                {"html": true_label if val == "True" else false_label}
+                for val in row["values"]
             ]
 
-            ans_column_set = [
-                {"html": ans_column["html"].strip()}
-                for ans_column in display_ans_columns
-            ]
+            student_answer_set = []
 
-            row_set = []
+            for j in range(num_ans_columns):
+                student_answer = submitted_answers[(i * num_ans_columns) + j]
+                correct_answer = correct_answers[(i * num_ans_columns) + j]
 
-            for i, row in enumerate(display_rows):
-                value_set = [
-                    {"html": true_label if val == "True" else false_label}
-                    for val in row["values"]
-                ]
-
-                student_answer_set = []
-
-                for j in range(num_ans_columns):
-                    student_answer = submitted_answers[(i * num_ans_columns) + j]
-                    correct_answer = correct_answers[(i * num_ans_columns) + j]
-
-                    student_answer_set.append({
-                        "html": true_label if student_answer == "True" else false_label,
-                        "correct_answer": correct_answer,
-                        "correct": display_score_badge and student_answer == correct_answer,
-                    })
-
-                row_set.append({
-                    "key": row["key"],
-                    "values": value_set,
-                    "student_answers": student_answer_set,
-                    "display_score_badge": display_score_badge,
+                student_answer_set.append({
+                    "html": true_label if student_answer == "True" else false_label,
+                    "correct_answer": correct_answer,
+                    "correct": display_score_badge and student_answer == correct_answer,
                 })
 
-            html_params = {
-                "submission": True,
-                "uuid": pl.get_uuid(),
-                "inputs": variable_set,
-                "answer_columns": ans_column_set,
-                "rows": row_set,
-                "display_score_badge": score is not None,
-            }
+            row_set.append({
+                "key": row["key"],
+                "values": value_set,
+                "student_answers": student_answer_set,
+                "display_score_badge": display_score_badge,
+            })
 
-            if score is not None:
-                score_type, score_value = pl.determine_score_params(score)
-                html_params[score_type] = score_value
+        html_params = {
+            "submission": True,
+            "uuid": pl.get_uuid(),
+            "inputs": variable_set,
+            "answer_columns": ans_column_set,
+            "rows": row_set,
+            "display_score_badge": score is not None,
+        }
 
-            with open("pl-truth-table.mustache", "r", encoding="utf-8") as f:
-                return chevron.render(f, html_params).strip()
+        if score is not None:
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
+
+        with open("pl-truth-table.mustache", "r", encoding="utf-8") as f:
+            return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
         if pl.get_boolean_attrib(element, "hide-answer-panel", HIDE_ANSWER_PANEL_DEFAULT):
