@@ -14,7 +14,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 
-const UUID_REGEXP = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/
+const UUID_REGEXP = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/;
 
 function sharingPageUrl(courseId) {
   return `${baseUrl}/course/${courseId}/course_admin/sharing`;
@@ -145,7 +145,7 @@ describe('Question Sharing', function () {
           __action: 'course_sharing_set_add',
           __csrf_token: token,
           sharing_set_id: '1',
-          course_sharing_id: exampleCourseSharingId
+          course_sharing_id: exampleCourseSharingId,
         }).toString(),
       });
 

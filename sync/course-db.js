@@ -1106,11 +1106,9 @@ async function validateAssessment(assessment, questions, _courseId) {
   /** @type {(qid: string) => Promise<void>} */
   const checkAndRecordQid = async (qid) => {
     if (qid[0] === '@') {
-
       // TODO: re-enable these checks before pushing to production
-      // right now they are disabled to allow tests to pass. We need some way of having 
+      // right now they are disabled to allow tests to pass. We need some way of having
       // local sharing enabled locally. Maybe have 3 options for questionSharing? 'none', 'local', 'enabled'?
-
       // if (!config.questionSharingEnabled) {
       //   errors.push(
       //     `You have attempted to import a question with '@', but question sharing is not enabled on this server.`
@@ -1129,17 +1127,14 @@ async function validateAssessment(assessment, questions, _courseId) {
       //   );
       //   return;
       // }
-
       // const firstSlash = qid.indexOf('/');
       // const sourceCourse = qid.substring(1, firstSlash);
       // const questionDirectory = qid.substring(firstSlash + 1, qid.length);
       // const inImportedCourse = await checkImportedQid(sourceCourse, questionDirectory);
-
       // TODO: give a more verbose error message if the reason the question isn't found
       // is because the course slug is invalid/doesn't exist? or just give the same message as if the question id doesn't exist?
-
       // TODO: Don't give an error or warning if we are in local dev, otherwise imported questions
-      // would always error syncs in dev environments. 
+      // would always error syncs in dev environments.
       // TODO: re-enable for when not in local dev. How can I check for if we are in local dev? there doesn't seem to be a config param
       // For the question sharing tests, it might be ok to fail on initial sync, then add the sharing permissions, then succeed. But other
       // tests, like the element tests on the example course, will fail on importing a question.
