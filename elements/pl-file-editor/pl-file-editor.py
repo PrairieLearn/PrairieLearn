@@ -10,6 +10,7 @@ from text_unidecode import unidecode
 EDITOR_CONFIG_FUNCTION_DEFAULT = None
 ACE_MODE_DEFAULT = None
 ACE_THEME_DEFAULT = None
+FONT_SIZE_DEFAULT = None
 SOURCE_FILE_NAME_DEFAULT = None
 MIN_LINES_DEFAULT = None
 MAX_LINES_DEFAULT = None
@@ -33,7 +34,7 @@ def add_format_error(data, error_string):
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['file-name']
-    optional_attribs = ['ace-mode', 'ace-theme', 'editor-config-function', 'source-file-name', 'min-lines', 'max-lines', 'auto-resize', 'preview', 'focus', 'directory', 'normalize-to-ascii']
+    optional_attribs = ['ace-mode', 'ace-theme', 'font-size', 'editor-config-function', 'source-file-name', 'min-lines', 'max-lines', 'auto-resize', 'preview', 'focus', 'directory', 'normalize-to-ascii']
     pl.check_attribs(element, required_attribs, optional_attribs)
     source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
 
@@ -59,6 +60,7 @@ def render(element_html, data):
     editor_config_function = pl.get_string_attrib(element, 'editor-config-function', EDITOR_CONFIG_FUNCTION_DEFAULT)
     ace_mode = pl.get_string_attrib(element, 'ace-mode', ACE_MODE_DEFAULT)
     ace_theme = pl.get_string_attrib(element, 'ace-theme', ACE_THEME_DEFAULT)
+    font_size = pl.get_string_attrib(element, 'font-size', FONT_SIZE_DEFAULT)
     uuid = pl.get_uuid()
     source_file_name = pl.get_string_attrib(element, 'source-file-name', SOURCE_FILE_NAME_DEFAULT)
     directory = pl.get_string_attrib(element, 'directory', DIRECTORY_DEFAULT)
@@ -84,11 +86,13 @@ def render(element_html, data):
         'file_name': file_name,
         'ace_mode': ace_mode,
         'ace_theme': ace_theme,
+        'font_size': font_size,
         'editor_config_function': editor_config_function,
         'min_lines': min_lines,
         'max_lines': max_lines,
         'auto_resize': auto_resize,
         'preview': preview,
+        'read_only': 'false' if data['editable'] else 'true',
         'uuid': uuid,
         'focus': focus
     }
@@ -110,9 +114,10 @@ def render(element_html, data):
 
     html_params['original_file_contents'] = base64.b64encode(text_display.encode('UTF-8').strip()).decode()
 
-    submitted_file_contents = data['submitted_answers'].get(answer_name, None)
+    submitted_files = data['submitted_answers'].get('_files', [])
+    submitted_file_contents = [f.get('contents', None) for f in submitted_files if f.get('name', None) == file_name]
     if submitted_file_contents:
-        html_params['current_file_contents'] = submitted_file_contents
+        html_params['current_file_contents'] = submitted_file_contents[0]
     else:
         html_params['current_file_contents'] = html_params['original_file_contents']
 
@@ -137,6 +142,11 @@ def parse(element_html, data):
     if not file_contents:
         add_format_error(data, 'No submitted answer for {0}'.format(file_name))
         return
+
+    # We will store the files in the submitted_answer["_files"] key,
+    # so delete the original submitted answer format to avoid
+    # duplication
+    del data['submitted_answers'][answer_name]
 
     if normalize_to_ascii:
         try:

@@ -49,8 +49,8 @@ router.get('/', function (req, res, next) {
     }
     const params = [
       identity.email, // uid
-      identity.email, // name
-      null, // uin
+      identity.name || identity.email, // name (use email if name is not present)
+      identity.sub, // uin
       'Google', // provider
     ];
     sqldb.call('users_select_or_insert', params, (err, result) => {
@@ -62,6 +62,8 @@ router.get('/', function (req, res, next) {
       const pl_authn = csrf.generateToken(tokenData, config.secretKey);
       res.cookie('pl_authn', pl_authn, {
         maxAge: config.authnCookieMaxAgeMilliseconds,
+        httpOnly: true,
+        secure: true,
       });
       let redirUrl = res.locals.homeUrl;
       if ('preAuthUrl' in req.cookies) {

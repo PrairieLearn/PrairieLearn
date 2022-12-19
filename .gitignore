@@ -14,7 +14,11 @@ docker-compose.override.yml
 ### JetBrains
 /.idea/
 
-.vscode
+### VSCode
+.vscode/*
+!.vscode/extensions.json
+
+### tmux
 .tmux.conf
 
 ## Backup files
@@ -30,17 +34,13 @@ docker-compose.override.yml
 ### jupyter
 .ipynb_checkpoints
 
-## File explorers
-**/.DS_Store # OSX Finder
-
 # PrairieLearn
+
+## Compiled frontend assets
+public/build
 
 ## Config
 /config.json
-/aws-config.json
-
-## Dependencies
-node_modules
 
 ## Generated HTML
 
@@ -65,6 +65,10 @@ node_modules
 /tests/testFileEditor/courseDev/
 
 ## Programming languages
+
+## JavaScript dependencies
+node_modules
+yarn-error.log
 
 ### Python
 __pycache__/

@@ -243,8 +243,8 @@ def grade(element_html, data):
 
     # Remove the blank spaces between characters
     if (remove_spaces):
-        a_sub = a_sub.replace(' ', '')
-        a_tru = a_tru.replace(' ', '')
+        a_sub = ''.join(a_sub.split())
+        a_tru = ''.join(a_tru.split())
 
     # Modify string case for submission and true answer to be lower.
     if (ignore_case):

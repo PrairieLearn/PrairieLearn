@@ -51,9 +51,14 @@
               <span class="modal-number"></span> of
               <strong><%= assessment_set.name %>
               <%= assessment.number %></strong> for
-              <strong><span class="modal-name"></span></strong>
-              (<span class="modal-uid"></span>) started at
-              <strong><span class="modal-date"></span></strong> with a
+              <% if (assessment.group_work) { %>
+                <strong><span class="modal-group-name"></span></strong>
+                (<span class="modal-uid-list"></span>)
+              <% } else { %>
+                <strong><span class="modal-name"></span></strong>
+                (<span class="modal-uid"></span>)
+              <% } %>
+              started at <strong><span class="modal-date"></span></strong> with a
               score of
               <strong><span class="modal-score-perc"></span>%</strong>?
             </div>
@@ -228,6 +233,21 @@
                   data-class="text-center align-middle text-wrap"
                   data-formatter="listFormatter"
                   data-switchable="true">Group Members</th>
+              <th data-field="user_name_list"
+                  data-sortable="true"
+                  data-visible="false"
+                  data-class="text-center align-middle text-wrap"
+                  data-formatter="listFormatter"
+                  data-switchable="true">Group Member Names</th>
+              <th data-field="group_roles"
+                  data-sortable="true"
+                  data-class="text-center align-middle text-nowrap"
+                  data-formatter="uniqueListFormatter"
+                  data-switchable="true">Roles
+                <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help">
+                  <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                </button>
+              </th>
               <% } else { %>
               <th data-field="uid"
                   data-visible="false"
@@ -276,6 +296,7 @@
               <th data-field="time_remaining"
                   data-sortable="true"
                   data-sort-name="time_remaining_sec"
+                  data-sorter="timeRemainingLimitSorter"
                   data-formatter="timeRemainingLimitFormatter"
                   data-class="text-center align-middle text-nowrap"
                   data-switchable="true"

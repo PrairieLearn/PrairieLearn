@@ -1,3 +1,4 @@
+from copy import deepcopy
 import prairielearn as pl
 import lxml.html
 from lxml import etree
@@ -7,7 +8,7 @@ import base64
 import os
 import json
 import math
-from dag_checker import grade_dag, lcs_partial_credit
+from dag_checker import grade_dag, lcs_partial_credit, solve_dag
 
 PL_ANSWER_CORRECT_DEFAULT = True
 PL_ANSWER_INDENT_DEFAULT = -1
@@ -20,7 +21,6 @@ SOURCE_HEADER_DEFAULT = 'Drag from here:'
 SOLUTION_HEADER_DEFAULT = 'Construct your solution here:'
 FILE_NAME_DEFAULT = 'user_code.py'
 SOLUTION_PLACEMENT_DEFAULT = 'right'
-INLINE_DEFAULT = False
 WEIGHT_DEFAULT = 1
 INDENT_OFFSET = 0
 TAB_SIZE_PX = 50
@@ -40,6 +40,32 @@ def filter_multiple_from_array(data, keys):
     return [{key: item[key] for key in keys} for item in data]
 
 
+def get_graph_info(html_tags):
+    tag = pl.get_string_attrib(html_tags, 'tag', pl.get_uuid()).strip()
+    depends = pl.get_string_attrib(html_tags, 'depends', '')
+    depends = [tag.strip() for tag in depends.split(',')] if depends else []
+    return tag, depends
+
+
+def extract_dag(answers_list):
+    depends_graph = {ans['tag']: ans['depends'] for ans in answers_list}
+    group_belonging = {ans['tag']: ans['group_info']['tag'] for ans in answers_list}
+    group_depends = {ans['group_info']['tag']: ans['group_info']['depends'] for ans in answers_list if ans['group_info']['depends'] is not None}
+    depends_graph.update(group_depends)
+    return depends_graph, group_belonging
+
+
+def solve_problem(answers_list, grading_method):
+    if grading_method in ['external', 'unordered', 'ordered']:
+        return answers_list
+    elif grading_method == 'ranking':
+        return sorted(answers_list, key=lambda x: int(x['ranking']))
+    elif grading_method == 'dag':
+        depends_graph, group_belonging = extract_dag(answers_list)
+        solution = solve_dag(depends_graph, group_belonging)
+        return sorted(answers_list, key=lambda x: solution.index(x['tag']))
+
+
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
@@ -51,7 +77,8 @@ def prepare(element_html, data):
                         'solution-placement', 'max-incorrect',
                         'min-incorrect', 'weight',
                         'inline', 'max-indent',
-                        'feedback', 'partial-credit']
+                        'feedback', 'partial-credit',
+                        'format', 'code-language']
 
     pl.check_attribs(element, required_attribs=required_attribs, optional_attribs=optional_attribs)
 
@@ -74,19 +101,25 @@ def prepare(element_html, data):
        (grading_method in ['dag', 'ranking'] and feedback_type not in ['none', 'first-wrong']):
         raise Exception('feedback type "' + feedback_type + '" is not available with the "' + grading_method + '" grading-method.')
 
+    format = pl.get_string_attrib(element, 'format', 'default')
+    code_language = pl.get_string_attrib(element, 'code-language', None)
+    if format != 'code' and code_language is not None:
+        raise Exception('code-language attribute may only be used with format="code"')
+
     correct_answers = []
     incorrect_answers = []
+    used_tags = set()
 
-    def prepare_tag(html_tags, index, group=None):
+    def prepare_tag(html_tags, index, group_info={'tag': None, 'depends': None}):
         if html_tags.tag != 'pl-answer':
             raise Exception('Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>. \
                 Any html tags nested inside <pl-block-group> must be <pl-answer>')
 
         if grading_method == 'external':
             pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct'])
-        elif grading_method == 'unordered':
+        elif grading_method in ['unordered', 'ordered']:
             pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'indent'])
-        elif grading_method in ['ranking', 'ordered']:
+        elif grading_method == 'ranking':
             pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'ranking', 'indent'])
         elif grading_method == 'dag':
             pl.check_attribs(html_tags, required_attribs=[], optional_attribs=['correct', 'tag', 'depends', 'comment', 'indent'])
@@ -96,14 +129,20 @@ def prepare(element_html, data):
         inner_html = pl.inner_html(html_tags)
         ranking = pl.get_integer_attrib(html_tags, 'ranking', -1)
 
-        tag = pl.get_string_attrib(html_tags, 'tag', None)
+        tag, depends = get_graph_info(html_tags)
         if grading_method == 'ranking':
             tag = str(index)
-        depends = pl.get_string_attrib(html_tags, 'depends', '')
-        depends = depends.strip().split(',') if depends else []
+
+        if tag in used_tags:
+            raise Exception(f'Tag "{tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.')
+        else:
+            used_tags.add(tag)
 
         if check_indentation is False and answer_indent is not None:
             raise Exception('<pl-answer> should not specify indentation if indentation is disabled.')
+
+        if format == 'code':
+            inner_html = '<pl-code' + (' language="' + code_language + '"' if code_language else '') + '>' + inner_html + '</pl-code>'
 
         answer_data_dict = {'inner_html': inner_html,
                             'indent': answer_indent,
@@ -111,7 +150,7 @@ def prepare(element_html, data):
                             'index': index,
                             'tag': tag,          # set by HTML with DAG grader, set internally for ranking grader
                             'depends': depends,  # only used with DAG grader
-                            'group': group       # only used with DAG grader
+                            'group_info': group_info  # only used with DAG grader
                             }
         if is_correct:
             correct_answers.append(answer_data_dict)
@@ -119,7 +158,6 @@ def prepare(element_html, data):
             incorrect_answers.append(answer_data_dict)
 
     index = 0
-    group_counter = 0
     for html_tags in element:  # iterate through the html tags inside pl-order-blocks
         if html_tags.tag is etree.Comment:
             continue
@@ -127,18 +165,23 @@ def prepare(element_html, data):
             if grading_method != 'dag':
                 raise Exception('Block groups only supported in the "dag" grading mode.')
 
-            group_counter += 1
+            group_tag, group_depends = get_graph_info(html_tags)
+            if group_tag in used_tags:
+                raise Exception(f'Tag "{group_tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.')
+            else:
+                used_tags.add(group_tag)
+
             for grouped_tag in html_tags:
                 if html_tags.tag is etree.Comment:
                     continue
                 else:
-                    prepare_tag(grouped_tag, index, group_counter)
+                    prepare_tag(grouped_tag, index, {'tag': group_tag, 'depends': group_depends})
                     index += 1
         else:
             prepare_tag(html_tags, index)
             index += 1
 
-    if pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT) != 'external' and len(correct_answers) == 0:
+    if grading_method != 'external' and len(correct_answers) == 0:
         raise Exception('There are no correct answers specified for this question.')
 
     all_incorrect_answers = len(incorrect_answers)
@@ -165,17 +208,29 @@ def prepare(element_html, data):
     else:
         raise Exception('The specified option for the "source-blocks-order" attribute is invalid.')
 
-    # data['params'][answer_name] = filter_keys_from_array(mcq_options, 'inner_html')
     for option in mcq_options:
         option['uuid'] = pl.get_uuid()
 
     data['params'][answer_name] = mcq_options
     data['correct_answers'][answer_name] = correct_answers
 
+    # if the order of the blocks in the HTML is a correct solution, leave it unchanged, but if it
+    # isn't we need to change it into a solution before displaying it as such
+    data_copy = deepcopy(data)
+    data_copy['submitted_answers'] = {answer_name: correct_answers}
+    data_copy['partial_scores'] = {}
+    grade(element_html, data_copy)
+    if data_copy['partial_scores'][answer_name]['score'] != 1:
+        data['correct_answers'][answer_name] = solve_problem(correct_answers, grading_method)
+
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answers-name')
+    format = pl.get_string_attrib(element, 'format', 'default')
+
+    block_formatting = 'pl-order-blocks-code' if format == 'code' else 'list-group-item'
+    grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
 
     if data['panel'] == 'question':
         mcq_options = []
@@ -186,7 +241,6 @@ def render(element_html, data):
         answer_name = pl.get_string_attrib(element, 'answers-name')
         source_header = pl.get_string_attrib(element, 'source-header', SOURCE_HEADER_DEFAULT)
         solution_header = pl.get_string_attrib(element, 'solution-header', SOLUTION_HEADER_DEFAULT)
-        grading_method = pl.get_string_attrib(element, 'grading-method', GRADING_METHOD_DEFAULT)
 
         mcq_options = data['params'][answer_name]
         mcq_options = filter_multiple_from_array(mcq_options, ['inner_html', 'uuid'])
@@ -205,7 +259,6 @@ def render(element_html, data):
         dropzone_layout = pl.get_string_attrib(element, 'solution-placement', SOLUTION_PLACEMENT_DEFAULT)
         check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
         max_indent = pl.get_integer_attrib(element, 'max-indent', MAX_INDENTION_DEFAULT)
-        inline_layout = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
 
         help_text = 'Drag answer tiles into the answer area to the ' + dropzone_layout + '. '
 
@@ -230,9 +283,9 @@ def render(element_html, data):
             'dropzone_layout': 'pl-order-blocks-bottom' if dropzone_layout == 'bottom' else 'pl-order-blocks-right',
             'check_indentation': 'true' if check_indentation else 'false',
             'help_text': help_text,
-            'inline': 'inline' if inline_layout is True else None,
             'max_indent': max_indent,
-            'uuid': uuid
+            'uuid': uuid,
+            'block_formatting': block_formatting
         }
 
         with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
@@ -240,7 +293,7 @@ def render(element_html, data):
         return html
 
     elif data['panel'] == 'submission':
-        if pl.get_string_attrib(element, 'grading-method', 'ordered') == 'external':
+        if grading_method == 'external':
             return ''  # external grader is responsible for displaying results screen
 
         student_submission = ''
@@ -260,7 +313,8 @@ def render(element_html, data):
             'submission': True,
             'parse-error': data['format_errors'].get(answer_name, None),
             'student_submission': student_submission,
-            'feedback': feedback
+            'feedback': feedback,
+            'block_formatting': block_formatting
         }
 
         if score is not None:
@@ -280,7 +334,7 @@ def render(element_html, data):
         return html
 
     elif data['panel'] == 'answer':
-        if pl.get_string_attrib(element, 'grading-method', 'ordered') == 'external':
+        if grading_method == 'external':
             try:
                 base_path = data['options']['question_path']
                 file_lead_path = os.path.join(base_path, 'tests/ans.py')
@@ -290,33 +344,31 @@ def render(element_html, data):
             except FileNotFoundError:
                 return 'The reference solution is not provided for this question.'
 
-        grading_mode = pl.get_string_attrib(element, 'grading-method', 'ordered')
-        if grading_mode == 'unordered':
-            grading_mode = 'in any order'
-        elif grading_mode == 'dag' or grading_mode == 'ranking':
-            grading_mode = 'one possible correct order'
+        if grading_method == 'unordered':
+            ordering_message = 'in any order'
+        elif grading_method == 'dag' or grading_method == 'ranking':
+            ordering_message = 'there may be other correct orders'
         else:
-            grading_mode = 'in the specified order'
+            ordering_message = 'in the specified order'
         check_indentation = pl.get_boolean_attrib(element, 'indentation', INDENTION_DEFAULT)
-        indentation_message = ', with correct indentation' if check_indentation is True else None
+        indentation_message = ', correct indentation needed' if check_indentation is True else None
 
-        if answer_name in data['correct_answers']:
-            question_solution = [{
-                'inner_html': solution['inner_html'],
-                'indent': ((solution['indent'] or 0) * TAB_SIZE_PX) + INDENT_OFFSET
-            } for solution in data['correct_answers'][answer_name]]
+        question_solution = [{
+            'inner_html': solution['inner_html'],
+            'indent': ((solution['indent'] or 0) * TAB_SIZE_PX) + INDENT_OFFSET
+        } for solution in data['correct_answers'][answer_name]]
 
-            html_params = {
-                'true_answer': True,
-                'question_solution': question_solution,
-                'grading_mode': grading_mode,
-                'indentation_message': indentation_message
-            }
-            with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
-                html = chevron.render(f, html_params)
-            return html
-        else:
-            return ''
+        html_params = {
+            'true_answer': True,
+            'question_solution': question_solution,
+            'ordering_message': ordering_message,
+            'indentation_message': indentation_message,
+            'block_formatting': block_formatting
+        }
+        with open('pl-order-blocks.mustache', 'r', encoding='utf-8') as f:
+            html = chevron.render(f, html_params)
+        return html
+
     else:
         raise Exception('Invalid panel type')
 
@@ -429,13 +481,11 @@ def grade(element_html, data):
                 prev_rank = ranking
 
         elif grading_mode == 'dag':
-            depends_graph = {ans['tag']: ans['depends'] for ans in true_answer_list}
-            group_belonging = {ans['tag']: ans['group'] for ans in true_answer_list}
+            depends_graph, group_belonging = extract_dag(true_answer_list)
 
-        num_initial_correct = grade_dag(submission, depends_graph, group_belonging)
+        num_initial_correct, true_answer_length = grade_dag(submission, depends_graph, group_belonging)
         first_wrong = -1 if num_initial_correct == len(submission) else num_initial_correct
 
-        true_answer_length = len(depends_graph.keys())
         if partial_credit_type == 'none':
             if num_initial_correct == true_answer_length:
                 final_score = 1
@@ -498,7 +548,7 @@ def test(element_html, data):
 
         if grading_mode == 'dag' and feedback_type == 'first-wrong':
             feedback = FIRST_WRONG_FEEDBACK['wrong-at-block'].format(1)
-            group_belonging = {ans['tag']: ans['group'] for ans in data['correct_answers'][answer_name]}
+            group_belonging = {ans['tag']: ans['group_info']['tag'] for ans in data['correct_answers'][answer_name]}
             has_block_groups = group_belonging != {} and set(group_belonging.values()) != {None}
             if has_block_groups:
                 feedback += FIRST_WRONG_FEEDBACK['block-group']

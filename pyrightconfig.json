@@ -1,4 +1,10 @@
 {
-    "include": ["./elements/pl-order-blocks"],
-    "extraPaths": ["./question-servers/freeformPythonLib"]
+    "include": [
+      "./elements/pl-hidden-hints",
+      "./elements/pl-order-blocks",
+      "./elements/pl-symbolic-input",
+      "python/python_helper_sympy_test.py"
+    ],
+    "extraPaths": ["./python"],
+    "pythonVersion": "3.8"
 }

@@ -27,7 +27,7 @@ FROM
     -- Note that we specifically use a LEFT JOIN here - this is what allows the
     -- caller to differentiate between a chunk that exists and one that does not.
     -- Chunks that don't exist will have a NULL id, but they'll still contain
-    -- other information like the course instnace/assessment/question name so that
+    -- other information like the course instance/assessment/question name so that
     -- we can clean up unused chunks from disk.
     LEFT JOIN chunks ON (
         chunks.course_id = ($course_id)::bigint
@@ -36,9 +36,9 @@ FROM
         AND ((chunks_arr->>'assessmentId' IS NULL) OR (chunks.assessment_id = (chunks_arr->>'assessmentId')::bigint))
         AND ((chunks_arr->>'questionId' IS NULL) OR (chunks.question_id = (chunks_arr->>'questionId')::bigint))
     )
-    LEFT JOIN assessments AS a ON (a.id = chunks.assessment_id)
-    LEFT JOIN course_instances AS ci ON (ci.id = chunks.course_instance_id OR ci.id = a.course_instance_id)
-    LEFT JOIN questions AS q ON (q.id = chunks.question_id);
+    LEFT JOIN assessments AS a ON (a.id = (chunks_arr->>'assessmentId')::bigint)
+    LEFT JOIN course_instances AS ci ON (ci.id = (chunks_arr->>'courseInstanceId')::bigint OR ci.id = a.course_instance_id)
+    LEFT JOIN questions AS q ON (q.id = (chunks_arr->>'questionId')::bigint);
 
 -- BLOCK select_course_dir
 SELECT c.path

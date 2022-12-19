@@ -4,7 +4,7 @@ import json
 from os.path import join
 from types import FunctionType
 from collections import namedtuple
-from pl_helpers import (points, name, save_plot, not_repeated)
+from pl_helpers import points, name, save_plot, not_repeated, GradingSkipped
 from pl_execute import execute_code
 from code_feedback import Feedback
 
@@ -106,14 +106,18 @@ class PLTestCase(unittest.TestCase):
         Feedback.set_test(self)
 
 
-    def run(self, result=None):
+    def run(self, result):
         """
         Run the actual test suite, saving the results in 'result'.
         """
 
         test_id = self.id().split('.')[-1]
-        if not result.done_grading:
+        if not result.done_grading and not result.skip_grading:
             super(PLTestCase, self).run(result)
+        elif result.skip_grading:
+            result.startTest(self)
+            self.setUp()
+            result.addError(self, (None, GradingSkipped()))
 
 
 class PLTestCaseWithPlot(PLTestCase):

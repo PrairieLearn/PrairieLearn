@@ -3,6 +3,7 @@
     "type": "Homework",
     "title": "Group activity template using Jupyter notebooks",
     "set": "GroupActivity",
+    "module": "AnotherModule",
     "number": "2",
     "comment": "this is a group activity, with minimum size of 1 and maximum size of 5, where students can self-assign to groups.",
     "groupWork": true,

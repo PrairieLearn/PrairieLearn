@@ -38,7 +38,11 @@ tags_list AS (
         aq.id
 )
 SELECT
-    aq.*,q.qid,q.title,tags_list.tags_string,row_to_json(top) AS topic,
+    aq.*,
+    q.qid,
+    q.title,
+    tags_list.tags_string,
+    row_to_json(top) AS topic,
     q.id AS question_id,
     admin_assessment_question_number(aq.id) as number,
     tags_for_question(q.id) AS tags,
@@ -56,6 +60,7 @@ SELECT
     (z.max_points IS NOT NULL) AS zone_has_max_points,
     z.best_questions AS zone_best_questions,
     (z.best_questions IS NOT NULL) AS zone_has_best_questions,
+    aq.effective_advance_score_perc AS assessment_question_advance_score_perc,
     q.sync_errors,
     q.sync_warnings
 FROM

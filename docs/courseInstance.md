@@ -71,6 +71,18 @@ The course instance `allowAccess` rules determine who can access the course inst
     ]
 ```
 
+## Assessment page organization
+
+Instructors can group assessments by course modules (topics, sections or chapters in a course) or by assessment sets (homework, exam, etc). By default, all assessments in a course instance are grouped by `"Set"`. Setting the property `"groupAssessmentsBy"` to `"Module"` will group assessments together by module on the student assessments overview page.
+
+```json
+{
+  "groupAssessmentsBy": "Module"
+}
+```
+
+For more information about assessment modules, see [Course configuration](course.md#assessment-modules).
+
 ## Timezone
 
 The default timezone for course instances is the timezone of the course. This can be changed with the `timezone` property in `infoCourseInstance.json`. For example:

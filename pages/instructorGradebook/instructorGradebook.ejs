@@ -149,79 +149,102 @@
     .fixed-table-toolbar div.pagination-detail {
         margin: 0 1em 0 0 !important;
     }
+    .gradebook-uin {
+        max-width: 10em;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
   </style>
   <body>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
       <%- include('../partials/courseInstanceSyncErrorsAndWarnings'); %>
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-          Gradebook
+
+      <% if (!authz_data.has_course_instance_permission_view) { %>
+        <div class="card mb-4">
+          <div class="card-header bg-danger text-white">
+            Gradebook
+          </div>
+          <div class="card-body">
+            <h2>Insufficient permissions</h2>
+            <p>You must have permission to view student data in order to access the gradebook.</p>
+            <% if (authz_data.has_course_permission_own) { %>
+              <p>
+                You can grant yourself access to student data on the course's
+                <a href="<%= urlPrefix %>/course_admin/staff">Staff tab</a>.
+              </p>
+            <% } else if (course_owners.length > 0) { %>
+              <p>Contact one of the below course owners to request access.</p>
+              <ul>
+              <% course_owners.forEach(function(owner) { %>
+                <li>
+                  <%= owner.uid %> <% if (owner.name) { %> (<%= owner.name %>) <% } %>
+                </li>
+              <% }); %>
+              </ul>
+            <% } %>
+          </div>
+        </div>
+      <% } else { %>
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white">
+            Gradebook
+          </div>
+          <table id="gradebook-table"
+                data-unique-id="user_id"
+                data-classes="table table-sm table-hover table-bordered"
+                data-thead-classes="thead-light"
+                data-show-button-text="true"
+                data-minimum-count-columns="0"
+                data-search="true"
+                data-show-columns="true"
+                data-show-columns-toggle-all="true"
+                data-show-refresh="true"
+                data-pagination="true"
+                data-pagination-v-align="both"
+                data-pagination-h-align="left"
+                data-pagination-detail-h-align="right"
+                data-page-list="[10,20,50,100,200,500,unlimited]"
+                data-page-size="50"
+                data-smart-display="false"
+                data-show-extended-pagination="true"
+                data-toolbar=".fixed-table-pagination:nth(0)"
+                data-sticky-header="true">
+              <thead>
+                <tr>
+                  <th data-field="uid"
+                      data-sortable="true"
+                      data-class="sticky-column text-nowrap"
+                      data-switchable="false">UID</th>
+                  <th data-field="uin"
+                      data-sortable="true"
+                      data-class="text-nowrap gradebook-uin">UIN</th>
+                  <th data-field="user_name"
+                      data-sortable="true"
+                      data-class="text-nowrap">Name</th>
+                  <th data-field="role"
+                      data-sortable="true"
+                      data-sort-order="desc">
+                    Role
+                    <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help">
+                      <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                    </button>
+                  </th>
+                  <% course_assessments.forEach(function(assessment, iAssessment) { %>
+                  <th data-field="score_<%= assessment.assessment_id %>"
+                      data-sortable="true"
+                      data-class="text-nowrap"
+                      data-formatter="gradeFormatter"
+                      data-sort-order="desc"
+                      data-search-formatter="false"><%- include('../partials/assessment', {assessment: assessment}); %></th>
+                  <% }); %>
+                </tr>
+              </thead>
+          </table>
+
+          <div class="spinning-wheel card-body spinner-border"><span class="sr-only">Loading...</span></div>
         </div>
 
-        <!--
-        <div id="table-toolbar" class="p-2 pl-3">
-          Download <a href="<%= urlPrefix %>/<%= navPage %>/gradebook/<%= csvFilename %>"><%= csvFilename %></a>
-        </div>
-        -->
-
-        <table id="gradebook-table"
-               data-unique-id="user_id"
-               data-classes="table table-sm table-hover table-bordered"
-               data-thead-classes="thead-light"
-               data-show-button-text="true"
-               data-minimum-count-columns="0"
-               data-search="true"
-               data-show-columns="true"
-               data-show-columns-toggle-all="true"
-               data-show-refresh="true"
-               data-pagination="true"
-               data-pagination-v-align="both"
-               data-pagination-h-align="left"
-               data-pagination-detail-h-align="right"
-               data-page-list="[10,20,50,100,200,500,unlimited]"
-               data-page-size="50"
-               data-smart-display="false"
-               data-show-extended-pagination="true"
-               data-toolbar=".fixed-table-pagination:nth(0)"
-               data-sticky-header="true">
-            <thead>
-              <tr>
-                <th data-field="uid"
-                    data-sortable="true"
-                    data-class="sticky-column text-nowrap"
-                    data-switchable="false">UID</th>
-                <th data-field="uin"
-                    data-sortable="true"
-                    data-class="text-nowrap"
-                    data-switchable="false">UIN</th>
-                <th data-field="user_name"
-                    data-sortable="true"
-                    data-class="text-nowrap"
-                    data-switchable="false">Name</th>
-                <th data-field="role"
-                    data-sortable="true"
-                    data-sort-order="desc"
-                    data-switchable="false">
-                  Role
-                  <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help">
-                    <i class="bi-question-circle-fill" aria-hidden="true"></i>
-                  </button>
-                </th>
-                <% course_assessments.forEach(function(assessment, iAssessment) { %>
-                <th data-field="score_<%= assessment.assessment_id %>"
-                    data-sortable="true"
-                    data-class="text-nowrap"
-                    data-formatter="gradeFormatter"
-                    data-sort-order="desc"
-                    data-search-formatter="false"><%- include('../partials/assessment', {assessment: assessment}); %></th>
-                <% }); %>
-              </tr>
-            </thead>
-        </table>
-
-        <div class="spinning-wheel card-body spinner-border"><span class="sr-only">Loading...</span></div>
-        
         <div class="modal fade" id="role-help" tabindex="-1" role="dialog">
           <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
@@ -244,8 +267,7 @@
             </div>
           </div>
         </div>
-
-      </div>
+      <% } %>
     </div>
     <!-- needed for tests since we can't grab it out of javascript -->
     <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>"

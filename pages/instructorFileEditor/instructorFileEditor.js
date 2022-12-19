@@ -23,6 +23,7 @@ const sha256 = require('crypto-js/sha256');
 const b64Util = require('../../lib/base64-util');
 const fileStore = require('../../lib/file-store');
 const isBinaryFile = require('isbinaryfile').isBinaryFile;
+const modelist = require('ace-code/src/ext/modelist');
 const { decodePath } = require('../../lib/uri-util');
 const chunks = require('../../lib/chunks');
 const { idsEqual } = require('../../lib/id');
@@ -67,31 +68,8 @@ router.get('/*', (req, res, next) => {
     dirName: path.dirname(workingPath),
     fileName: path.basename(workingPath),
     fileNameForDisplay: path.normalize(workingPath),
+    aceMode: modelist.getModeForPath(workingPath).mode,
   };
-
-  const ext = path.extname(workingPath);
-  // If you add to this list, make sure the corresponding list in instructorFileBrowser.js is consistent.
-  const extensionModeMap = {
-    '.json': 'json',
-    '.html': 'html',
-    '.py': 'python',
-    '.txt': 'text',
-    '.md': 'markdown',
-    '.mustache': 'text',
-    '.css': 'css',
-    '.csv': 'text',
-    '.js': 'javascript',
-    '.m': 'matlab',
-    '.c': 'c_cpp',
-    '.cpp': 'c_cpp',
-    '.h': 'c_cpp',
-  };
-  const fileEditMode = extensionModeMap[ext];
-  if (fileEditMode) {
-    fileEdit.aceMode = fileEditMode;
-  } else {
-    debug(`Could not find an ace mode to match extension: ${ext}`);
-  }
 
   // Do not allow users to edit the exampleCourse
   if (res.locals.course.example_course) {
@@ -768,7 +746,7 @@ function saveAndSync(fileEdit, locals, callback) {
         type: 'reset_from_git',
         description: 'Reset state to remote git repository',
         command: 'git',
-        arguments: ['reset', '--hard', 'origin/master'],
+        arguments: ['reset', '--hard', `origin/${locals.course.branch}`],
         working_directory: fileEdit.coursePath,
         env: gitEnv,
         on_success: _pullFromRemoteHash,
@@ -1010,8 +988,8 @@ function saveAndSync(fileEdit, locals, callback) {
         ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
         endGitHash = hash;
         if (fileEdit.needToSync || config.chunksGenerator) {
-          /* If we're using chunks, then always sync on edit.  We need the sync data
-                       to force-generate new chunks. */
+          // If we're using chunks, then always sync on edit. We need the sync
+          // data to force-generate new chunks.
           _syncFromDisk();
         } else {
           _reloadQuestionServers();
