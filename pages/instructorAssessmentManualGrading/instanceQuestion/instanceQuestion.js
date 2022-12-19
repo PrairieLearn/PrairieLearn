@@ -212,7 +212,7 @@ router.post(
         !!req.body.tag_for_manual_grading,
         res.locals.authn_user.user_id,
       ];
-      const result = await sqldb.callAsync('assessment_questions_update_rubric', params);
+      await sqldb.callAsync('assessment_questions_update_rubric', params);
       res.redirect(req.originalUrl + '/grading_panel');
     } else if (typeof req.body.__action === 'string' && req.body.__action.startsWith('reassign_')) {
       const assigned_grader = req.body.__action.substring(9);
