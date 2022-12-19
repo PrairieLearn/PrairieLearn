@@ -5,9 +5,10 @@ import chevron
 import lxml.html
 import prairielearn as pl
 
-from typing import List, Tuple, TypedDict
+from typing import List, Tuple, NamedTuple
+from typing_extensions import assert_never
 
-class AnswerCol(TypedDict):
+class AnswerCol(NamedTuple):
     text: str
     expression: str
 
@@ -43,10 +44,7 @@ def get_question_information(element: lxml.html.HtmlElement) -> Tuple[List[str],
                     ).text_content()
 
 
-            cols.append({
-                "text": pl.inner_html(child),
-                "expression": expression
-            })
+            cols.append(AnswerCol(pl.inner_html(child), expression))
 
         elif child.tag is lxml.etree.Comment:
             continue
@@ -65,7 +63,7 @@ def build_expression(variables: List[str], expression: str) -> str:
     return " ".join(new_expression_list)
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
 
     required_attribs = ["answers-name"]
@@ -76,7 +74,7 @@ def prepare(element_html, data):
     variable_names, custom_rows, answer_columns = get_question_information(element)
 
     expressions = [
-        build_expression(variable_names, answer_col["expression"])
+        build_expression(variable_names, answer_col.expression)
         for answer_col in answer_columns
     ]
 
@@ -86,7 +84,7 @@ def prepare(element_html, data):
     fixed_order = pl.get_boolean_attrib(
         element, "fixed-order", FIXED_VARIABLES_ORDER_DEFAULT
     )
-    num_rows = pl.get_integer_attrib(element, "num-rows", -1)
+    num_rows = pl.get_integer_attrib(element, "num-rows", None)
 
     if len(custom_rows) > 0:
         random.shuffle(custom_rows)
@@ -102,8 +100,8 @@ def prepare(element_html, data):
     display_ans_columns = [
         {
             "key": str(i),
-            "html": ans_column["text"],
-            "expression": ans_column["expression"],
+            "html": ans_column.text,
+            "expression": ans_column.expression,
         }
         for i, ans_column in enumerate(answer_columns)
     ]
@@ -112,7 +110,7 @@ def prepare(element_html, data):
     correct_answers = []
     var_vals = {}
 
-    if num_rows != -1 and (len(custom_rows) > num_rows or default_num_rows > num_rows):
+    if num_rows is not None and (len(custom_rows) > num_rows or default_num_rows > num_rows):
         if len(custom_rows) > 0:
             custom_rows = random.sample(custom_rows, num_rows)
 
@@ -121,8 +119,6 @@ def prepare(element_html, data):
 
                 row_info = custom_rows[i].split()
                 values = []
-                var = ""
-                val = 0
 
                 for j in range(len(row_info)):
                     values.append(int(row_info[j]))
@@ -135,7 +131,7 @@ def prepare(element_html, data):
         else:
             used_indices = []
 
-            while len(used_indices) != num_rows:
+            while len(used_indices) < num_rows:
                 rand_index = random.randint(0, default_num_rows - 1)
 
                 if rand_index not in used_indices:
@@ -193,7 +189,6 @@ def prepare(element_html, data):
 
             row_info = custom_rows[i].split()
             values = []
-            var = ""
             val = 0
 
             for j in range(len(row_info)):
@@ -209,7 +204,7 @@ def prepare(element_html, data):
     data["correct_answers"][name] = correct_answers
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     display_variables, display_rows, display_ans_columns = data["params"].get(name)
@@ -234,7 +229,7 @@ def parse(element_html, data):
             data["format_errors"][expected_html_name] = "No answer was submitted."
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     display_variables, display_rows, display_ans_columns = data["params"].get(name)
@@ -253,8 +248,6 @@ def render(element_html, data):
     false_label = pl.get_string_attrib(element, "false-label", FALSE_LABEL_DEFAULT)
     blank_start = pl.get_boolean_attrib(element, "blank", BLANK_DEFAULT)
     show_answer_feedback = not hide_score_badge
-
-    html = ""
 
     if data["panel"] == "question":
         partial_score = data["partial_scores"].get(name, {"score": None})
@@ -280,7 +273,7 @@ def render(element_html, data):
         row_set = []
 
         for i, row in enumerate(display_rows):
-            student_answer = -1
+            student_answer = None
 
             value_set = []
 
@@ -295,9 +288,12 @@ def render(element_html, data):
                 if display_score_badge:
                     student_answer = submitted_answers[(i * num_ans_columns) + j]
                 correct_answer = correct_answers[(i * num_ans_columns) + j]
+
                 ans_column_html = {
                     "html": ans_column["html"].strip(),
                     "correct": display_score_badge and student_answer == correct_answer,
+                    "submitted_true": student_answer == "True",
+                    "submitted_false": student_answer == "False",
                 }
 
                 ans_column_row_set.append(ans_column_html)
@@ -335,7 +331,8 @@ def render(element_html, data):
                 raise ValueError("invalid score" + score)
 
         with open("pl-truth-table.mustache", "r", encoding="utf-8") as f:
-            html = chevron.render(f, html_params).strip()
+            return chevron.render(f, html_params).strip()
+
     elif data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
 
@@ -417,7 +414,8 @@ def render(element_html, data):
                     raise ValueError("invalid score" + score)
 
             with open("pl-truth-table.mustache", "r", encoding="utf-8") as f:
-                html = chevron.render(f, html_params).strip()
+                return chevron.render(f, html_params).strip()
+
     elif data["panel"] == "answer":
         if not pl.get_boolean_attrib(
             element, "hide-answer-panel", HIDE_ANSWER_PANEL_DEFAULT
@@ -487,19 +485,18 @@ def render(element_html, data):
             }
 
             with open("pl-truth-table.mustache", "r", encoding="utf-8") as f:
-                html = chevron.render(f, html_params).strip()
+                return chevron.render(f, html_params).strip()
 
-    return html
+    assert_never(data["panel"])
 
 
-def grade(element_html, data):
+def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
     partial_credit = pl.get_boolean_attrib(
         element, "partial-credit", PARTIAL_CREDIT_DEFAULT
     )
-    display_variables, display_rows, display_ans_columns = data["params"][name]
 
     submitted_answers = data["submitted_answers"].get(name, [])
     correct_answers = data["correct_answers"].get(name, [])
@@ -522,7 +519,7 @@ def grade(element_html, data):
     data["partial_scores"][name] = {"score": score, "weight": weight}
 
 
-def test(element_html, data):
+def test(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)

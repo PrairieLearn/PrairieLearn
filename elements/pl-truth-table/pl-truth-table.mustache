@@ -21,8 +21,8 @@
             <td>
             <div class="pl-truth-table-answer-cell">
                 <select name="{{name}}" class="form-control">
-                    <option value="True">{{true_label}}</option>
-                    <option value="False">{{false_label}}</option>
+                    <option value="True" {{#submitted_true}}selected{{/submitted_true}}>{{true_label}}</option>
+                    <option value="False" {{#submitted_false}}selected{{/submitted_false}}>{{false_label}}</option>
                 </select>
             {{#display_score_badge}}
                 &nbsp;
