@@ -73,7 +73,6 @@ def prepare(element_html, data):
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
 
-
     variable_names, custom_rows, answer_columns = get_question_information(element)
 
     expressions = [
@@ -95,23 +94,19 @@ def prepare(element_html, data):
     if not fixed_order:
         random.shuffle(variable_names)
 
-    display_variables = []
+    display_variables = [
+        {"key": str(i), "html": variable}
+        for i, variable in enumerate(variable_names)
+    ]
 
-    for i, variable in enumerate(variable_names):
-        keyed_variable = {"key": str(i), "html": variable}
-
-        display_variables.append(keyed_variable)
-
-    display_ans_columns = []
-
-    for i, ans_column in enumerate(answer_columns):
-        keyed_ans_column = {
+    display_ans_columns = [
+        {
             "key": str(i),
             "html": ans_column["text"],
             "expression": ans_column["expression"],
         }
-
-        display_ans_columns.append(keyed_ans_column)
+        for i, ans_column in enumerate(answer_columns)
+    ]
 
     display_rows = []
     correct_answers = []
