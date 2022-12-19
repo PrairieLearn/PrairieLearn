@@ -5,6 +5,12 @@ import chevron
 import lxml.html
 import prairielearn as pl
 
+from typing import List, Tuple, TypedDict
+
+class AnswerCol(TypedDict):
+    text: str
+    expression: str
+
 WEIGHT_DEFAULT = 1
 FIXED_VARIABLES_ORDER_DEFAULT = False
 TRUE_LABEL_DEFAULT = "1"
@@ -14,54 +20,41 @@ HIDE_ANSWER_PANEL_DEFAULT = False
 HIDE_SCORE_BADGE_DEFAULT = False
 BLANK_DEFAULT = True
 
-
-def get_form_name(answers_name, index):
+def get_form_name(answers_name: str, index: int) -> str:
     return f"{answers_name}-dropdown-{index}"
 
-
-def get_variable_names(element):
+def get_question_information(element: lxml.html.HtmlElement) -> Tuple[List[str], List[str], List[AnswerCol]]:
     variable_names = []
-    children = element[:]
+    rows = []
+    cols = []
 
-    for child in children:
-        if child.tag in ["pl-variable", "pl_variable"]:
+    for child in element:
+        if child.tag == "pl-variable":
             variable_names.append(pl.inner_html(child))
 
-    return variable_names
-
-
-def get_custom_rows(element):
-    rows = []
-    children = element[:]
-
-    for child in children:
-        if child.tag in ["pl-row", "pl_row"]:
+        elif child.tag == "pl-row":
             rows.append(pl.inner_html(child))
 
-    return rows
-
-
-def get_answer_columns(element):
-    cols = []
-    children = element[:]
-
-    for child in children:
-        if child.tag in ["pl-answer-column", "pl_answer_column"]:
+        elif child.tag == "pl-answer-column":
             expression = pl.get_string_attrib(child, "expression", None)
-
-            cols.append(
-                {
-                    "text": pl.inner_html(child),
-                    "expression": expression
-                    if expression != None
-                    else lxml.html.document_fromstring(
+            if expression is None:
+                expression = lxml.html.document_fromstring(
                         pl.inner_html(child)
-                    ).text_content(),
-                }
-            )
+                    ).text_content()
 
-    return cols
 
+            cols.append({
+                "text": pl.inner_html(child),
+                "expression": expression
+            })
+
+        elif child.tag is lxml.etree.Comment:
+            continue
+
+        else:
+            raise ValueError(f"Tags inside of pl-truth-table must be one of pl-variable, pl-row, or pl-answer-column, not '{child.tag}'.")
+
+    return variable_names, rows, cols
 
 def build_expression(variables, expression):
     new_expression = ""
@@ -83,9 +76,10 @@ def prepare(element_html, data):
     optional_attribs = ["fixed-order", "true-label", "false-label", "num-rows"]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
-    variable_names = get_variable_names(element)
-    custom_rows = get_custom_rows(element)
-    answer_columns = get_answer_columns(element)
+
+
+    variable_names, custom_rows, answer_columns = get_question_information(element)
+
     expressions = []
     for i in range(len(answer_columns)):
         expressions.append(
