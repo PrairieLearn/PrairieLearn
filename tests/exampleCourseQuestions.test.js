@@ -63,6 +63,7 @@ const qidsExampleCourse = [
   // FIXME: 'element/threeJS',
   'element/variableOutput',
   'element/orderBlocks',
+  'element/truthTable',
 ];
 
 describe('Auto-test questions in exampleCourse', function () {
