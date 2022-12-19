@@ -5,8 +5,9 @@ import chevron
 import lxml.html
 import prairielearn as pl
 
-from typing import List, Tuple, NamedTuple
+from typing import List, Tuple, NamedTuple, Dict
 from typing_extensions import assert_never
+from itertools import product, count
 
 class AnswerCol(NamedTuple):
     text: str
@@ -54,14 +55,6 @@ def get_question_information(element: lxml.html.HtmlElement) -> Tuple[List[str],
 
     return variable_names, rows, cols
 
-def build_expression(variables: List[str], expression: str) -> str:
-    new_expression_list = [
-        f'var_vals["{word}"]' if word in variables else word
-        for word in expression.split()
-    ]
-
-    return " ".join(new_expression_list)
-
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
@@ -74,7 +67,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     variable_names, custom_rows, answer_columns = get_question_information(element)
 
     expressions = [
-        build_expression(variable_names, answer_col.expression)
+        answer_col.expression
         for answer_col in answer_columns
     ]
 
@@ -108,8 +101,27 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     display_rows = []
     correct_answers = []
-    var_vals = {}
 
+    #var_vals = {"A": True, "B": False, "C": True, "D": False}
+    all_rows = True
+    row_counter = count(0)
+
+    if all_rows:
+        for value_assignment in product([True, False], repeat=num_vars):
+            var_vals = dict(zip(variable_names, value_assignment))
+
+            display_rows.append({
+                "key": str(next(row_counter)),
+                "values": list(map(str, value_assignment))
+            })
+
+            for expr in expressions:
+                #TODO get rid of this eval call!!!
+                val = eval(expr, var_vals)
+                correct_answers.append(str(val))
+
+
+    '''
     if num_rows is not None and (len(custom_rows) > num_rows or default_num_rows > num_rows):
         if len(custom_rows) > 0:
             custom_rows = random.sample(custom_rows, num_rows)
@@ -199,6 +211,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             display_rows.append(keyed_row)
             for j in range(len(answer_columns)):
                 correct_answers.append(str(bool(eval(expressions[j]))))
+    '''
 
     data["params"][name] = (display_variables, display_rows, display_ans_columns)
     data["correct_answers"][name] = correct_answers

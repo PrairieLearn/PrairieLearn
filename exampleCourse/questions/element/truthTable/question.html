@@ -8,15 +8,15 @@ What is the resulting values of the expressions
 given the values in the following truth tables?
 </p>
 </pl-question-panel>
-
-<pl-truth-table answers-name="answer1" fixed-order="true" true-label="true" false-label="false" num-rows="3">
+<!-- num-rows="3" -->
+<pl-truth-table answers-name="answer1" fixed-order="true" true-label="true" false-label="false" >
     {{#params.variables}}
     <pl-variable>{{name}}</pl-variable>
     {{/params.variables}}
     <pl-answer-column><pl-code language="python">A or B</pl-code></pl-answer-column>
     <pl-answer-column expression="C and D">C and D</pl-answer-column>
 </pl-truth-table>
-<pl-truth-table answers-name="answer2" true-label="on" false-label="off">
+<!-- pl-truth-table answers-name="answer2" true-label="on" false-label="off">
     <pl-variable>C</pl-variable>
     <pl-variable>D</pl-variable>
     <pl-variable>E</pl-variable>
@@ -30,4 +30,4 @@ given the values in the following truth tables?
     <pl-variable>x</pl-variable>
     <pl-variable>y</pl-variable>
     <pl-answer-column expression="x or y">X or Y</pl-answer-column>
-</pl-truth-table>
+</pl-truth-table -->
