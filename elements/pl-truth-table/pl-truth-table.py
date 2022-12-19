@@ -32,12 +32,15 @@ def get_question_information(element: lxml.html.HtmlElement) -> Tuple[List[str],
 
     for child in element:
         if child.tag == "pl-variable":
+            pl.check_attribs(child, [], [])
             variable_names.append(pl.inner_html(child))
 
         elif child.tag == "pl-row":
+            pl.check_attribs(child, [], [])
             rows.append(pl.inner_html(child))
 
         elif child.tag == "pl-answer-column":
+            pl.check_attribs(child, [], ["expression"])
             expression = pl.get_string_attrib(child, "expression", None)
             if expression is None:
                 expression = lxml.html.document_fromstring(
@@ -72,7 +75,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     ]
 
     num_vars = len(variable_names)
-    default_num_rows = pow(2, num_vars)
 
     fixed_order = pl.get_boolean_attrib(
         element, "fixed-order", FIXED_VARIABLES_ORDER_DEFAULT
@@ -332,16 +334,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         }
 
         if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html_params["correct"] = True
-                elif score > 0:
-                    html_params["partial"] = math.floor(score * 100)
-                else:
-                    html_params["incorrect"] = True
-            except Exception:
-                raise ValueError("invalid score" + score)
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
 
         with open("pl-truth-table.mustache", "r", encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
@@ -415,16 +409,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             }
 
             if html_params["display_score_badge"]:
-                try:
-                    score = float(score)
-                    if score >= 1:
-                        html_params["correct"] = True
-                    elif score > 0:
-                        html_params["partial"] = math.floor(score * 100)
-                    else:
-                        html_params["incorrect"] = True
-                except Exception:
-                    raise ValueError("invalid score" + score)
+                score_type, score_value = pl.determine_score_params(score)
+                html_params[score_type] = score_value
 
             with open("pl-truth-table.mustache", "r", encoding="utf-8") as f:
                 return chevron.render(f, html_params).strip()

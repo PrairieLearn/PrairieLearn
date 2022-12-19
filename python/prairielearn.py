@@ -15,7 +15,8 @@ import importlib
 import importlib.util
 import os
 import collections
-from typing import Dict, Any, TypedDict, Literal, Optional
+import math
+from typing import Dict, Any, TypedDict, Literal, Optional, Tuple, Union
 from typing_extensions import NotRequired
 
 class PartialScore(TypedDict):
@@ -51,6 +52,18 @@ class QuestionData(TypedDict):
 
 class ElementTestData(QuestionData):
     test_type: Literal['correct', 'incorrect', 'invalid']
+
+
+def determine_score_params(score: float) -> Tuple[str, Union[float, bool]]:
+    """Determine score params taken from data dict"""
+    score_val = float(score)
+
+    if score_val >= 1.0:
+        return ("correct", True)
+    elif score_val > 0.0:
+        return ("partial", math.floor(score_val * 100))
+
+    return ("incorrect", True)
 
 def to_json(v):
     """to_json(v)
