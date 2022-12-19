@@ -8,8 +8,8 @@ const Ajv = require('ajv').default;
 const betterAjvErrors = require('better-ajv-errors').default;
 const { parseISO, isValid, isAfter, isFuture } = require('date-fns');
 const { default: chalkDefault } = require('chalk');
-const config = require('../lib/config');
-const sqldb = require('../prairielib/lib/sql-db');
+// const config = require('../lib/config');
+// const sqldb = require('../prairielib/lib/sql-db');
 
 const schemas = require('../schemas');
 const infofile = require('./infofile');
@@ -1031,7 +1031,7 @@ async function validateQuestion(question) {
  * @param {{ [qid: string]: any }} questions
  * @returns {Promise<{ warnings: string[], errors: string[] }>}
  */
-async function validateAssessment(assessment, questions, courseId) {
+async function validateAssessment(assessment, questions, _courseId) {
   const warnings = [];
   const errors = [];
 
@@ -1072,7 +1072,7 @@ async function validateAssessment(assessment, questions, courseId) {
     });
   }
 
-  const importedQuestions = {};
+  // const importedQuestions = {};
   const foundQids = new Set();
   const duplicateQids = new Set();
   const missingQids = new Set();
@@ -1080,29 +1080,29 @@ async function validateAssessment(assessment, questions, courseId) {
   // TODO: should we hold off on this check until sync time in order to avoid
   // calling out to the database here?
   /** @type {(sourceCourse: string, qid: string) => Promise<boolean>} */
-  const checkImportedQid = async (sourceCourse, qid) => {
-    // TODO: move query to seperate file
-    let query = `select q.qid from
-      questions as q
-      join question_sharing_sets as qss on q.id = qss.question_id
-      join sharing_sets as ss on qss.sharing_set_id = ss.id
-      join course_sharing_sets as css on ss.id = css.sharing_set_id
-      where css.course_id = $courseId
-      and q.course_id = (select id from pl_courses where sharing_name = $sourceCourse);`;
+  // const checkImportedQid = async (sourceCourse, qid) => {
+  //   // TODO: move query to seperate file
+  //   let query = `select q.qid from
+  //     questions as q
+  //     join question_sharing_sets as qss on q.id = qss.question_id
+  //     join sharing_sets as ss on qss.sharing_set_id = ss.id
+  //     join course_sharing_sets as css on ss.id = css.sharing_set_id
+  //     where css.course_id = $courseId
+  //     and q.course_id = (select id from pl_courses where sharing_name = $sourceCourse);`;
 
-    if (!(sourceCourse in importedQuestions)) {
-      let result = await sqldb.queryAsync(query, {
-        courseId: courseId,
-        sourceCourse: sourceCourse,
-      });
-      let questions = new Set();
-      for (let row of result.rows) {
-        questions.add(row['qid']);
-      }
-      importedQuestions[sourceCourse] = questions;
-    }
-    return importedQuestions[sourceCourse].has(qid);
-  };
+  //   if (!(sourceCourse in importedQuestions)) {
+  //     let result = await sqldb.queryAsync(query, {
+  //       courseId: courseId,
+  //       sourceCourse: sourceCourse,
+  //     });
+  //     let questions = new Set();
+  //     for (let row of result.rows) {
+  //       questions.add(row['qid']);
+  //     }
+  //     importedQuestions[sourceCourse] = questions;
+  //   }
+  //   return importedQuestions[sourceCourse].has(qid);
+  // };
   /** @type {(qid: string) => Promise<void>} */
   const checkAndRecordQid = async (qid) => {
     if (qid[0] === '@') {
