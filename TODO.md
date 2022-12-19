@@ -15,6 +15,7 @@ On the settings page for each question:
 When trying to access a question:
 
 - [] Fix the hack I put in before, make sure it works for shared and non-shared questions
+- [] Check if course elements/clientFiles/serverFiles, etc. work as expected!
 
 Fill out the new documentation page!
 

@@ -24,6 +24,10 @@ ALTER TABLE pl_courses ADD COLUMN IF NOT EXISTS sharing_id text;
 ALTER TABLE pl_courses ADD COLUMN IF NOT EXISTS question_sharing_enabled boolean;
 
 
+-- TODO: get rid of this hack, after we have a proper solution for working syncs with missing imported questions: 
+ALTER TABLE assessment_questions DROP CONSTRAINT assessment_questions_question_id_fkey;
+
+
 -- Need to run (or re-run) after the test course is synced
 UPDATE pl_courses SET sharing_name = 'test-course' WHERE title = 'Test Course';
 UPDATE pl_courses SET sharing_id = '390bd8c3-7461-4b05-b5f8-dd5c821109d8' WHERE title = 'Test Course';

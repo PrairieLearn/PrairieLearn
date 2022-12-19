@@ -94,42 +94,42 @@ describe('Question Sharing', function () {
       assert(sharingPage.includes(exampleCourseSharingName));
     });
 
-    step('Generate sharing ID for example course', async () => {
-      const sharingUrl = sharingPageUrl(exampleCourseId);
-      let response = await helperClient.fetchCheerio(sharingUrl);
-      const token = response.$('#test_csrf_token').text();
-      await fetch(sharingUrl, {
-        method: 'POST',
-        headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          __action: 'sharing_id_regenerate',
-          __csrf_token: token,
-        }).toString(),
-      });
+    // step('Generate sharing ID for example course', async () => {
+    //   const sharingUrl = sharingPageUrl(exampleCourseId);
+    //   let response = await helperClient.fetchCheerio(sharingUrl);
+    //   const token = response.$('#test_csrf_token').text();
+    //   await fetch(sharingUrl, {
+    //     method: 'POST',
+    //     headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+    //     body: new URLSearchParams({
+    //       __action: 'sharing_id_regenerate',
+    //       __csrf_token: token,
+    //     }).toString(),
+    //   });
 
-      response = await helperClient.fetchCheerio(sharingUrl);
-      exampleCourseSharingId = UUID_REGEXP.exec(response.text());
-      assert(exampleCourseSharingId != null);
-    });
+    //   response = await helperClient.fetchCheerio(sharingUrl);
+    //   exampleCourseSharingId = UUID_REGEXP.exec(response.text());
+    //   assert(exampleCourseSharingId != null);
+    // });
 
-    step('Create a sharing set', async () => {
-      const sharingUrl = sharingPageUrl(exampleCourseId);
-      let response = await helperClient.fetchCheerio(sharingUrl);
-      const token = response.$('#test_csrf_token').text();
-      await fetch(sharingUrl, {
-        method: 'POST',
-        headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          __action: 'sharing_set_create',
-          __csrf_token: token,
-          sharing_set_name: sharingSetName,
-        }).toString(),
-      });
+    // step('Create a sharing set', async () => {
+    //   const sharingUrl = sharingPageUrl(exampleCourseId);
+    //   let response = await helperClient.fetchCheerio(sharingUrl);
+    //   const token = response.$('#test_csrf_token').text();
+    //   await fetch(sharingUrl, {
+    //     method: 'POST',
+    //     headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+    //     body: new URLSearchParams({
+    //       __action: 'sharing_set_create',
+    //       __csrf_token: token,
+    //       sharing_set_name: sharingSetName,
+    //     }).toString(),
+    //   });
 
-      let sharingPage = await (await fetch(sharingPageUrl(exampleCourseId))).text();
-      console.log(sharingPage);
-      assert(sharingPage.includes(exampleCourseSharingName));
-    });
+    //   let sharingPage = await (await fetch(sharingPageUrl(exampleCourseId))).text();
+    //   console.log(sharingPage);
+    //   assert(sharingPage.includes(exampleCourseSharingName));
+    // });
 
     // step('Attempt to create another sharing set with the same name', async () => {
     //   // TODO ensure that the sharing set name you created only appears once on the page
