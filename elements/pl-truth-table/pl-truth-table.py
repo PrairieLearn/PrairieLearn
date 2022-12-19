@@ -56,17 +56,13 @@ def get_question_information(element: lxml.html.HtmlElement) -> Tuple[List[str],
 
     return variable_names, rows, cols
 
-def build_expression(variables, expression):
-    new_expression = ""
-    words = expression.split()
+def build_expression(variables: List[str], expression: str) -> str:
+    new_expression_list = [
+        f'var_vals["{word}"]' if word in variables else word
+        for word in expression.split()
+    ]
 
-    for i in range(len(words)):
-        if words[i] in variables:
-            words[i] = 'var_vals["' + words[i] + '"]'
-
-        new_expression = new_expression + words[i] + " "
-
-    return new_expression
+    return " ".join(new_expression_list)
 
 
 def prepare(element_html, data):
@@ -80,11 +76,10 @@ def prepare(element_html, data):
 
     variable_names, custom_rows, answer_columns = get_question_information(element)
 
-    expressions = []
-    for i in range(len(answer_columns)):
-        expressions.append(
-            build_expression(variable_names, answer_columns[i]["expression"])
-        )
+    expressions = [
+        build_expression(variable_names, answer_col["expression"])
+        for answer_col in answer_columns
+    ]
 
     num_vars = len(variable_names)
     default_num_rows = pow(2, num_vars)
