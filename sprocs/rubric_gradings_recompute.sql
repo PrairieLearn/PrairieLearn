@@ -43,7 +43,7 @@ BEGIN
         rubric_items_changed
     FROM
         rubric_grading_items rgi
-        LEFT JOIN rubric_items AS ri ON (ri.id = rgi.rubric_item_id AND ri.deleted_at)
+        LEFT JOIN rubric_items AS ri ON (ri.id = rgi.rubric_item_id AND ri.deleted_at IS NULL)
     WHERE rgi.rubric_grading_id = old_rubric_grading_id;
 
     IF rubric_settings_changed IS NOT TRUE AND rubric_items_changed IS NOT TRUE THEN

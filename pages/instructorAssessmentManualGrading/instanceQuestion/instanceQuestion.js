@@ -86,6 +86,39 @@ router.get(
   })
 );
 
+router.get(
+  '/grading_panel',
+  asyncHandler(async (req, res, _next) => {
+    // This form is handled by Ajax, so send a new version of the grading panel via JSON.
+    await prepareLocalsForRender(req, res);
+    // Using util.promisify on renderFile instead of {async: true} from EJS, because the
+    // latter would require all includes in EJS to be translated to await recursively.
+    const gradingPanel = await util.promisify(ejs.renderFile)(
+      path.join(__dirname, 'gradingPanel.ejs'),
+      res.locals
+    );
+    const rubricSettingsManual = await util.promisify(ejs.renderFile)(
+      path.join(__dirname, 'rubricSettingsModal.ejs'),
+      {
+        type: 'manual',
+        rubric: res.locals.rubric_data_manual,
+        max_points: res.locals.assessment_question.max_manual_points,
+        ...res.locals,
+      }
+    );
+    const rubricSettingsAuto = await util.promisify(ejs.renderFile)(
+      path.join(__dirname, 'rubricSettingsModal.ejs'),
+      {
+        type: 'auto',
+        rubric: res.locals.rubric_data_auto,
+        max_points: res.locals.assessment_question.max_auto_points,
+        ...res.locals,
+      }
+    );
+    res.send({ gradingPanel, rubricSettingsManual, rubricSettingsAuto });
+  })
+);
+
 router.post(
   '/',
   asyncHandler(async (req, res, next) => {
@@ -147,15 +180,6 @@ router.post(
         res.locals.authn_user.user_id,
       ];
 
-      /*
-       * TODO: calling 'instance_questions_update_score' may not be the perfect thing to do here,
-       * because it won't respect the 'credit' property of the assessment_instance.  However, allowing
-       * the 'credit' calculation in a manually graded problem is also problematic, because it means
-       * that the behavior of the instructor editing the score on the manual grading page would be
-       * different than the behavior of the instructor editing the score on any of the other pages
-       * where they can edit score. Fundamentally, we need to rethink how to treat questions that are
-       * manually graded within PrairieLearn and how to handle those score calculations.
-       */
       const update_result = (await sqldb.callAsync('instance_questions_update_score', params))
         .rows[0];
       if (update_result.modified_at_conflict) {
@@ -189,36 +213,7 @@ router.post(
         res.locals.authn_user.user_id,
       ];
       const result = await sqldb.callAsync('assessment_questions_update_rubric', params);
-      res.locals.assessment_question[`${req.body.rubric_type}_rubric_id`] =
-        result.rows[0].arg_rubric_id;
-
-      // This form is handled by Ajax, so send a new version of the grading panel via JSON.
-      await prepareLocalsForRender(req, res);
-      // Using util.promisify on renderFile instead of {async: true} from EJS, because the
-      // latter would require all includes in EJS to be translated to await recursively.
-      const gradingPanel = await util.promisify(ejs.renderFile)(
-        path.join(__dirname, 'gradingPanel.ejs'),
-        res.locals
-      );
-      const rubricSettingsManual = await util.promisify(ejs.renderFile)(
-        path.join(__dirname, 'rubricSettingsModal.ejs'),
-        {
-          type: 'manual',
-          rubric: res.locals.rubric_data_manual,
-          max_points: res.locals.assessment_question.max_manual_points,
-          ...res.locals,
-        }
-      );
-      const rubricSettingsAuto = await util.promisify(ejs.renderFile)(
-        path.join(__dirname, 'rubricSettingsModal.ejs'),
-        {
-          type: 'auto',
-          rubric: res.locals.rubric_data_auto,
-          max_points: res.locals.assessment_question.max_auto_points,
-          ...res.locals,
-        }
-      );
-      res.send({ gradingPanel, rubricSettingsManual, rubricSettingsAuto });
+      res.redirect(req.originalUrl + '/grading_panel');
     } else if (typeof req.body.__action === 'string' && req.body.__action.startsWith('reassign_')) {
       const assigned_grader = req.body.__action.substring(9);
       const params = {
