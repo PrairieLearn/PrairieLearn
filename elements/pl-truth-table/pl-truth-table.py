@@ -215,14 +215,20 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 correct_answers.append(str(bool(eval(expressions[j]))))
     '''
 
-    data["params"][name] = (display_variables, display_rows, display_ans_columns)
+    data["params"][name] = {
+        "display_variables": display_variables,
+        "display_rows": display_rows,
+        "display_ans_columns": display_ans_columns
+    }
     data["correct_answers"][name] = correct_answers
 
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    display_variables, display_rows, display_ans_columns = data["params"].get(name)
+
+    display_rows = data["params"][name]["display_rows"]
+
     submitted_answers = data["submitted_answers"].get(name, [])
 
     for i in range(len(display_rows)):
@@ -247,7 +253,12 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    display_variables, display_rows, display_ans_columns = data["params"].get(name)
+
+
+    display_variables = data["params"][name]["display_variables"]
+    display_rows = data["params"][name]["display_rows"]
+    display_ans_columns = data["params"][name]["display_ans_columns"]
+
     correct_answers = data["correct_answers"].get(name)
     num_ans_columns = len(display_ans_columns)
 
@@ -522,8 +533,6 @@ def test(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
-
-    _, display_options = data["params"][name]
     correct_answers = data["correct_answers"].get(name, [])
 
     result = data["test_type"]
@@ -536,7 +545,7 @@ def test(element_html: str, data: pl.QuestionData) -> None:
     elif result == "incorrect":
         for i in range(len(correct_answers)):
             expected_html_name = get_form_name(name, i)
-            incorrect_answer = (correct_answers[i] + 1) % len(display_options)
+            incorrect_answer = "False" if correct_answers[i] == "True" else "True"
             data["raw_submitted_answers"][expected_html_name] = incorrect_answer
         data["partial_scores"][name] = {"score": 0, "weight": weight}
     elif result == "invalid":
