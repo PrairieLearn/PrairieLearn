@@ -235,7 +235,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         expected_html_name = get_form_name(name, i)
         try:
             student_answer = submitted_answers[i]
-        except (ValueError, TypeError):
+        except IndexError:
             data["format_errors"][
                 expected_html_name
             ] = "The submitted answer is not a legal option."
@@ -529,7 +529,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     data["partial_scores"][name] = {"score": score, "weight": weight}
 
 
-def test(element_html: str, data: pl.QuestionData) -> None:
+def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
@@ -554,3 +554,5 @@ def test(element_html: str, data: pl.QuestionData) -> None:
             data["raw_submitted_answers"][expected_html_name] = None
             data["format_errors"][expected_html_name] = "No answer was submitted."
         data["partial_scores"][name] = {"score": 0, "weight": weight}
+    else:
+        assert_never(result)
