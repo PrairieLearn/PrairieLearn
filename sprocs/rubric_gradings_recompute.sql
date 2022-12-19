@@ -37,15 +37,13 @@ BEGIN
 
     SELECT
         JSONB_AGG(rgi),
-        BOOL_OR(ri.id IS NULL OR
-                ri.points != rgi.points OR
-                ri.deleted_at IS NOT NULL)
+        BOOL_OR(ri.id IS NULL OR ri.points != rgi.points)
     INTO
         applied_rubric_items,
         rubric_items_changed
     FROM
         rubric_grading_items rgi
-        LEFT JOIN rubric_items AS ri ON (ri.id = rgi.rubric_item_id)
+        LEFT JOIN rubric_items AS ri ON (ri.id = rgi.rubric_item_id AND ri.deleted_at)
     WHERE rgi.rubric_grading_id = old_rubric_grading_id;
 
     IF rubric_settings_changed IS NOT TRUE AND rubric_items_changed IS NOT TRUE THEN
