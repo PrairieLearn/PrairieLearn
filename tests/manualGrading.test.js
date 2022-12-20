@@ -603,12 +603,20 @@ describe('Manual Grading', function () {
           short_text: 'Second rubric item (partial, with `markdown`)',
           description: 'Description with **markdown**',
           staff_instructions: 'Instructions with *markdown*',
+          short_text_render: 'Second rubric item (partial, with <code>markdown</code>)',
+          description_render: '<p>Description with <strong>markdown</strong></p>',
+          staff_instructions_render: '<p>Instructions with <em>markdown</em></p>',
         },
         {
           points: 1,
           short_text: 'Third rubric item (partial, with moustache: {{params.value1}})',
           description: 'Description with moustache: {{params.value2}}',
-          staff_instructions: 'Instructions with *markdown* and moustache: {{params.value3}}',
+          staff_instructions:
+            'Instructions with *markdown* and moustache: {{params.value3}}\n\nAnd more than one line',
+          short_text_render: 'Third rubric item (partial, with moustache: 37)',
+          description_render: '<p>Description with moustache: 43</p>',
+          staff_instructions_render:
+            '<p>Instructions with <em>markdown</em> and moustache: 49</p>\n<p>And more than one line</p>',
         },
         {
           points: -1.5,
@@ -654,22 +662,54 @@ describe('Manual Grading', function () {
       rubric_items.forEach((item, index) => {
         const idField = $manualGradingIQPage(idFields.get(index));
         assert.equal(idField.length, 1);
-        const id = idField.val();
-        assert.equal(idField.attr('name'), `rubric_item[cur${id}][id]`);
-        const points = form.find(`[name="rubric_item[cur${id}][points]"]`);
+        item.id = idField.val();
+        assert.equal(idField.attr('name'), `rubric_item[cur${item.id}][id]`);
+        const points = form.find(`[name="rubric_item[cur${item.id}][points]"]`);
         assert.equal(points.val(), item.points);
-        const shortText = form.find(`[name="rubric_item[cur${id}][short_text]"]`);
+        const shortText = form.find(`[name="rubric_item[cur${item.id}][short_text]"]`);
         assert.equal(shortText.val(), item.short_text);
         const description = form.find(
-          `label[data-input-name="rubric_item[cur${id}][description]"]`
+          `label[data-input-name="rubric_item[cur${item.id}][description]"]`
         );
         assert.equal(description.attr('data-current-value') ?? '', item.description ?? '');
         const staffInstructions = form.find(
-          `label[data-input-name="rubric_item[cur${id}][staff_instructions]"]`
+          `label[data-input-name="rubric_item[cur${item.id}][staff_instructions]"]`
         );
         assert.equal(
           staffInstructions.attr('data-current-value') ?? '',
           item.staff_instructions ?? ''
+        );
+      });
+    });
+
+    step('grading panel should have proper values for rubrics', async () => {
+      const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
+      const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
+      const form = $manualGradingIQPage('form[name=instance_question-manual-grade-update-form]');
+
+      const gradingItems = form.find(`.js-selectable-rubric-item[value]`);
+
+      rubric_items.forEach((item, index) => {
+        const checkbox = form.find(`.js-selectable-rubric-item[value="${item.id}"]`);
+        assert.equal(checkbox.length, 1);
+        const container = checkbox.parents('.js-selectable-rubric-item-label');
+        assert.equal(container.length, 1);
+        assert.equal(
+          container.find('[data-testid="rubric-item-points"]').text().trim(),
+          `[${item.points >= 0 ? '+' : ''}${item.points}]`
+        );
+        assert.equal(
+          container.find('[data-testid="rubric-item-short-text"]').html().trim(),
+          item.short_text_render ?? item.short_text
+        );
+        assert.equal(
+          container.find('[data-testid="rubric-item-description"]').html().trim(),
+          item.description_render ?? (item.description ? `<p>${item.description}</p>` : '')
+        );
+        assert.equal(
+          container.find('[data-testid="rubric-item-staff-instructions"]').html().trim(),
+          item.staff_instructions_render ??
+            (item.staff_instructions ? `<p>${item.staff_instructions}</p>` : '')
         );
       });
     });
