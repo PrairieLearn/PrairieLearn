@@ -518,6 +518,7 @@ def test(element_html, data):
         raise Exception('invalid result: %s' % result)
 
 
+
 def _get_min_options_to_select(element, default_val):
     """
     Given an HTML fragment containing a pl-checkbox element, returns the minimum number of options that must be selected in
