@@ -9,9 +9,6 @@ import chevron
 from enum import Enum
 from typing import NamedTuple, Optional, Tuple, List
 from itertools import count
-class DisplayType(Enum):
-    INLINE = "inline"
-    BLOCK = "block"
 
 class AnswerTuple(NamedTuple):
     index: int
@@ -440,7 +437,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         if not submitted_key_set.issubset(all_keys_set):
             one_bad_key = submitted_key_set.difference(all_keys_set).pop()
             one_bad_key_str = pl.escape_invalid_string(str(one_bad_key))
-            # FIXME: escape one_bad_key
             data['format_errors'][name] = f'You selected an invalid option: {one_bad_key_str}'
             return
 
@@ -555,6 +551,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         raise Exception('invalid result: %s' % result)
 
 
+#TODO remove default here
 
 def _get_min_options_to_select(element: lxml.html.HtmlElement, default_val: int) -> int:
     """
