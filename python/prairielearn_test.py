@@ -6,12 +6,13 @@ sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../lib"))
 )
 
-from typing import cast
+from typing import Any, cast
 import prairielearn as pl  # noqa: E402
 import lxml.html  # noqa: E402
 import pandas as pd
 import json
 import pytest
+import numpy as np
 from pytest_lazyfixture import lazy_fixture
 
 
@@ -55,3 +56,26 @@ def test_encoding_legacy(df: pd.DataFrame) -> None:
     reserialized_dataframe = cast(pd.DataFrame, pl.from_json(pl.to_json(df)))
 
     pd.testing.assert_frame_equal(df, reserialized_dataframe)
+
+@pytest.mark.parametrize(
+    "numpy_object", [
+        np.int64(5),
+        np.int32(-12),
+        np.uint8(55),
+        np.float128(-1100204.04010340),
+        np.float32(2.1100044587483),
+        np.float16(0.00000184388328),
+        np.arange(15),
+        np.array([1.2, 3.5, 5.1, np.nan]),
+        np.array([1, 2, 3, 4]),
+        np.array([(1.5, 2, 3), (4, 5, 6)]),
+        np.array([[1, 2], [3, 4]], dtype=complex),
+        np.ones((2, 3, 4), dtype=np.int16)
+    ]
+)
+def test_numpy_serialization(numpy_object: Any) -> None:
+    """Test equality after conversion of various numpy objects"""
+
+    json_object = json.dumps(pl.to_json(numpy_object))
+
+    assert np.array_equal(numpy_object, pl.from_json(json.loads(json_object)), equal_nan=True)
