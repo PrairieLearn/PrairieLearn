@@ -655,8 +655,8 @@ describe('Manual Grading', function () {
       const form = $manualGradingIQPage('form[name=rubric-settings-manual]');
 
       assert.equal(form.find('input[name="starting_points"][value="0"]').is(':checked'), true);
-      assert.equal(form.find('input[name="max_points"]').val(), 6);
-      assert.equal(form.find('input[name="min_points"]').val(), 0);
+      assert.equal(form.find('input[name="max_points"]').val(), '6');
+      assert.equal(form.find('input[name="min_points"]').val(), '0');
 
       const idFields = form.find(`input[name^="rubric_item"][name$="[id]"]`);
 
