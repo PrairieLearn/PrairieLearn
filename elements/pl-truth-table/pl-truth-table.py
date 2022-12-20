@@ -104,7 +104,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     display_rows = []
     correct_answers = []
 
-    #var_vals = {"A": True, "B": False, "C": True, "D": False}
+    #TODO redo logic involving custom rows
     all_rows = True
     row_counter = count(0)
 
@@ -119,6 +119,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
             for expr in expressions:
                 #TODO get rid of this eval call!!!
+                # Explanation: This eval call is similar to that made in the symbolic input question,
+                # there's an open refactor of the backend of that element, so this is going to need to wait
+                # until that is in until refactoring here and merging
                 val = eval(expr, var_vals)
                 correct_answers.append(str(val))
 
@@ -238,16 +241,10 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["format_errors"][name] = "Number of submitted answers doesn't match number of rows."
         return
 
-    # TODO this display checking doesn't quite work
-    for i in range(len(display_rows)):
+    # TODO this display checking doesn't quite work ?? Add tests checking for these errors
+    for i in range(expected_num_answers):
         student_answer = submitted_answers[i]
 
-
-        # A blank is a valid submission from the HTML, but causes a format error.
-        #if student_answer == -1:
-        #    data["format_errors"][
-        #        expected_html_name
-        #    ] = "The submitted answer was left blank."
         if student_answer is None:
             data["format_errors"][get_form_name(name, i)] = "No answer was submitted."
 
@@ -274,6 +271,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
     true_label = pl.get_string_attrib(element, "true-label", TRUE_LABEL_DEFAULT)
     false_label = pl.get_string_attrib(element, "false-label", FALSE_LABEL_DEFAULT)
+    #TODO start dropdowns as blank??
     blank_start = pl.get_boolean_attrib(element, "blank", BLANK_DEFAULT)
     show_answer_feedback = not hide_score_badge
 
@@ -387,8 +385,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             student_answer_set = []
 
             for j in range(num_ans_columns):
-                student_answer = submitted_answers[(i * num_ans_columns) + j]
-                correct_answer = correct_answers[(i * num_ans_columns) + j]
+                answer_index = (i * num_ans_columns) + j
+
+                format_error = data["format_errors"].get(get_form_name(name, answer_index))
+
+                if format_error is not None:
+                    student_answer_set.append({
+                        "parse_error": format_error
+                    })
+
+                    continue
+
+
+                student_answer = submitted_answers[answer_index]
+                correct_answer = correct_answers[answer_index]
 
                 student_answer_set.append({
                     "html": true_label if student_answer == "True" else false_label,
@@ -528,13 +538,32 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["raw_submitted_answers"][name] = incorrect_answers
         data["partial_scores"][name] = {"score": 0, "weight": weight}
     elif result == "invalid":
-        #TODO this is a global parse error, add a test case with a local one
-        data["raw_submitted_answers"][name] = correct_answers + [None]
-        data["format_errors"][name] = "Number of submitted answers doesn't match number of rows."
-        #for i in range(len(correct_answers)):
-        #    expected_html_name = get_form_name(name, i)
-        #    data["raw_submitted_answers"][expected_html_name] = None
-        #    data["format_errors"][expected_html_name] = "No answer was submitted."
+
+        test_case = random.randint(1,2)
         data["partial_scores"][name] = {"score": 0, "weight": weight}
+
+        if test_case == 1:
+            #TODO this is a global parse error, add a test case with a local one
+            data["raw_submitted_answers"][name] = correct_answers + [None]
+            data["format_errors"][name] = "Number of submitted answers doesn't match number of rows."
+            #for i in range(len(correct_answers)):
+            #    expected_html_name = get_form_name(name, i)
+            #    data["raw_submitted_answers"][expected_html_name] = None
+            #    data["format_errors"][expected_html_name] = "No answer was submitted."
+        elif test_case == 2:
+
+            # First, choose a random submission to change to None
+            random_index = random.randint(0, len(correct_answers)-1)
+            submitted_answers = correct_answers.copy()
+            submitted_answers[random_index] = None
+
+            data["raw_submitted_answers"][name] = submitted_answers
+
+            data["format_errors"][get_form_name(name, random_index)] = "No answer was submitted."
+
+        else:
+            # TODO change this later to assert never
+            raise ValueError
+
     else:
         assert_never(result)
