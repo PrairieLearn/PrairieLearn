@@ -1,7 +1,6 @@
 {
     "include": [
       "./elements/pl-hidden-hints",
-      "./elements/pl-python-variable",
       "./elements/pl-order-blocks",
       "./elements/pl-symbolic-input",
       "./python/prairielearn_test.py",

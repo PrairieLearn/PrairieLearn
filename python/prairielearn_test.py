@@ -57,8 +57,10 @@ def test_encoding_legacy(df: pd.DataFrame) -> None:
 
     pd.testing.assert_frame_equal(df, reserialized_dataframe)
 
+
 @pytest.mark.parametrize(
-    "numpy_object", [
+    "numpy_object",
+    [
         np.int64(5),
         np.int32(-12),
         np.uint8(55),
@@ -70,12 +72,14 @@ def test_encoding_legacy(df: pd.DataFrame) -> None:
         np.array([1, 2, 3, 4]),
         np.array([(1.5, 2, 3), (4, 5, 6)]),
         np.array([[1, 2], [3, 4]], dtype=complex),
-        np.ones((2, 3, 4), dtype=np.int16)
-    ]
+        np.ones((2, 3, 4), dtype=np.int16),
+    ],
 )
 def test_numpy_serialization(numpy_object: Any) -> None:
     """Test equality after conversion of various numpy objects"""
 
     json_object = json.dumps(pl.to_json(numpy_object))
 
-    assert np.array_equal(numpy_object, pl.from_json(json.loads(json_object)), equal_nan=True)
+    assert np.array_equal(
+        numpy_object, cast(Any, pl.from_json(json.loads(json_object))), equal_nan=True
+    )
