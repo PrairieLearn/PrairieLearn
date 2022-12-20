@@ -23,16 +23,17 @@ var outputComponent = 'output/svg';
     outputComponent = 'output/svg';
 <% } %>
 
-// If the user overrides the renderer with the pop-up menu for debugging,
-// reset that preference when the page reloads.
+// If the user overrides the renderer with the pop-up menu, reset that
+// preference when the page reloads. For now, this is preferable to
+// prohibiting the menu choice because it's useful for debugging.
 try {
-  const settings = JSON.parse(localStorage.getItem("MathJax-Menu-Settings")) || {};
-  delete settings["renderer"];
+  const settings = JSON.parse(localStorage.getItem('MathJax-Menu-Settings')) || {};
+  delete settings['renderer'];
   const settingsJson = JSON.stringify(settings);
-  if (settingsJson === "{}") {
-    localStorage.removeItem("MathJax-Menu-Settings");
+  if (settingsJson === '{}') {
+    localStorage.removeItem('MathJax-Menu-Settings');
   } else {
-    localStorage.setItem("MathJax-Menu-Settings", settingsJson);
+    localStorage.setItem('MathJax-Menu-Settings', settingsJson);
   }
 } catch(e) { }
 
@@ -42,7 +43,7 @@ var MathJax = {
     },
     svg: {
         // Using local instead of global prevents a MathJax bug if the user
-        // tries to switch the renderer with the pop-up menu. We could inhibit
+        // tries to switch the renderer with the pop-up menu. We could prevent
         // switching but it may be useful for debugging.
         fontCache: 'local'
     },
