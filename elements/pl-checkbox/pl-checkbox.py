@@ -5,7 +5,18 @@ import json
 import random
 import math
 import chevron
+from enum import Enum
+from typing import NamedTuple, Optional, Tuple, List
+from itertools import count
+class DisplayType(Enum):
+    INLINE = "inline"
+    BLOCK = "block"
 
+class AnswerTuple(NamedTuple):
+    index: int
+    correct: bool
+    html: str
+    feedback: Optional[str]
 
 WEIGHT_DEFAULT = 1
 FIXED_ORDER_DEFAULT = False
@@ -28,35 +39,24 @@ EXTERNAL_JSON_INCORRECT_KEY_DEFAULT = 'incorrect'
 MIN_SELECT_BLANK = 0
 
 
-def prepare(element_html, data):
-    element = lxml.html.fragment_fromstring(element_html)
-
-    required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-answer-panel', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method', 'hide-letter-keys', 'hide-score-badge', 'min-select', 'allow-blank', 'max-select', 'show-number-correct', 'external-json', 'external-json-correct-key', 'external-json-incorrect-key']
-
-    pl.check_attribs(element, required_attribs, optional_attribs)
-    name = pl.get_string_attrib(element, 'answers-name')
-
-    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', PARTIAL_CREDIT_DEFAULT)
-    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', None)
-    if not partial_credit and partial_credit_method is not None:
-        raise Exception('Cannot specify partial-credit-method if partial-credit is not enabled')
+def categorize_options(element: lxml.html.HtmlElement, data: pl.QuestionData) -> Tuple[List[AnswerTuple], List[AnswerTuple]]:
+    """Get provided correct and incorrect answers"""
 
     correct_answers = []
     incorrect_answers = []
-    index = 0
+    index = count(0)
+
     for child in element:
         if child.tag in ['pl-answer', 'pl_answer']:
             pl.check_attribs(child, required_attribs=[], optional_attribs=['correct', 'feedback'])
             correct = pl.get_boolean_attrib(child, 'correct', False)
             child_html = pl.inner_html(child)
             child_feedback = pl.get_string_attrib(child, 'feedback', FEEDBACK_DEFAULT)
-            answer_tuple = (index, correct, child_html, child_feedback)
+            answer_tuple = AnswerTuple(next(index), correct, child_html, child_feedback)
             if correct:
                 correct_answers.append(answer_tuple)
             else:
                 incorrect_answers.append(answer_tuple)
-            index += 1
 
     file_path = pl.get_string_attrib(element, 'external-json', EXTERNAL_JSON_DEFAULT)
     if file_path is not EXTERNAL_JSON_DEFAULT:
@@ -70,13 +70,37 @@ def prepare(element_html, data):
             with open(json_file, mode='r', encoding='utf-8') as f:
                 obj = json.load(f)
                 for text in obj.get(correct_attrib, []):
-                    correct_answers.append((index, True, text, FEEDBACK_DEFAULT))
-                    index += 1
+                    correct_answers.append(AnswerTuple(next(index), True, text, FEEDBACK_DEFAULT))
+
                 for text in obj.get(incorrect_attrib, []):
-                    incorrect_answers.append((index, False, text, FEEDBACK_DEFAULT))
-                    index += 1
+                    incorrect_answers.append(AnswerTuple(next(index), False, text, FEEDBACK_DEFAULT))
+
         except FileNotFoundError:
             raise Exception(f'JSON answer file: "{json_file}" could not be found')
+
+    return correct_answers, incorrect_answers
+
+
+def prepare(element_html: str, data: pl.QuestionData) -> None:
+    element = lxml.html.fragment_fromstring(element_html)
+
+    required_attribs = ['answers-name']
+    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-answer-panel', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method', 'hide-letter-keys', 'hide-score-badge', 'min-select', 'allow-blank', 'max-select', 'show-number-correct', 'external-json', 'external-json-correct-key', 'external-json-incorrect-key']
+
+    pl.check_attribs(element, required_attribs, optional_attribs)
+    name = pl.get_string_attrib(element, 'answers-name')
+
+    if name in data['params']:
+        raise Exception('duplicate params variable name: %s' % name)
+    if name in data['correct_answers']:
+        raise Exception('duplicate correct_answers variable name: %s' % name)
+
+    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', PARTIAL_CREDIT_DEFAULT)
+    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', None)
+    if not partial_credit and partial_credit_method is not None:
+        raise Exception('Cannot specify partial-credit-method if partial-credit is not enabled')
+
+    correct_answers, incorrect_answers = categorize_options(element, data)
 
     len_correct = len(correct_answers)
     len_incorrect = len(incorrect_answers)
@@ -94,10 +118,9 @@ def prepare(element_html, data):
     if min_correct < 1:
         raise ValueError('The attribute min-correct is {:d} but must be at least 1'.format(min_correct))
 
-    # FIXME: why enforce a maximum number of options?
-    max_answers = 26  # will not display more than 26 checkbox answers
+    # No longer need max number of options, this was an old limitation of the index2key function
 
-    number_answers = max(0, min(len_total, min(max_answers, number_answers)))
+    number_answers = max(0, min(len_total, number_answers))
     min_correct = min(len_correct, min(number_answers, max(0, max(number_answers - len_incorrect, min_correct))))
     max_correct = min(len_correct, min(number_answers, max(min_correct, max_correct)))
     if not (0 <= min_correct <= max_correct <= len_correct):
@@ -107,12 +130,10 @@ def prepare(element_html, data):
     if not (0 <= min_incorrect <= max_incorrect <= len_incorrect):
         raise ValueError('INTERNAL ERROR: incorrect number: (%d, %d, %d, %d)' % (min_incorrect, max_incorrect, len_incorrect, len_correct))
 
-    if allow_blank == True:
-        min_select = pl.get_integer_attrib(element, 'min-select', MIN_SELECT_BLANK)
-    else:
-        min_select = pl.get_integer_attrib(element, 'min-select', MIN_SELECT_DEFAULT)
-        if min_select < 1:
-            raise ValueError(f'The attribute min-select is {min_select} but must be at least 1')
+    min_select_default = MIN_SELECT_BLANK if allow_blank else MIN_SELECT_DEFAULT
+    min_select = pl.get_integer_attrib(element, 'min-select', min_select_default)
+    if min_select < min_select_default:
+        raise ValueError(f'The attribute min-select is {min_select} but must be at least {min_select_default}')
 
     max_select = pl.get_integer_attrib(element, 'max-select', number_answers)
 
@@ -135,29 +156,27 @@ def prepare(element_html, data):
     sampled_answers = sampled_correct + sampled_incorrect
     random.shuffle(sampled_answers)
 
+    #TODO change to use the same scheme as the unified multiple choice
     fixed_order = pl.get_boolean_attrib(element, 'fixed-order', FIXED_ORDER_DEFAULT)
     if fixed_order:
         # we can't simply skip the shuffle because we already broke the original
         # order by separating into correct/incorrect lists
-        sampled_answers.sort(key=lambda a: a[0])  # sort by stored original index
+        sampled_answers.sort(key=lambda a: a.index)  # sort by stored original index
 
     display_answers = []
     correct_answer_list = []
-    for (i, (index, correct, html, feedback)) in enumerate(sampled_answers):
-        keyed_answer = {'key': pl.index2key(i), 'html': html, 'feedback': feedback}
+    for i, answer in enumerate(sampled_answers):
+        keyed_answer = {'key': pl.index2key(i), 'html': answer.html, 'feedback': answer.feedback}
         display_answers.append(keyed_answer)
-        if correct:
+        if answer.correct:
             correct_answer_list.append(keyed_answer)
 
-    if name in data['params']:
-        raise Exception('duplicate params variable name: %s' % name)
-    if name in data['correct_answers']:
-        raise Exception('duplicate correct_answers variable name: %s' % name)
+
     data['params'][name] = display_answers
     data['correct_answers'][name] = correct_answer_list
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     partial_credit = pl.get_boolean_attrib(element, 'partial-credit', PARTIAL_CREDIT_DEFAULT)
@@ -398,7 +417,7 @@ def render(element_html, data):
     return html
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
 
@@ -437,7 +456,7 @@ def parse(element_html, data):
         return
 
 
-def grade(element_html, data):
+def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
@@ -478,7 +497,7 @@ def grade(element_html, data):
     data['partial_scores'][name] = {'score': score, 'weight': weight, 'feedback': feedback}
 
 
-def test(element_html, data):
+def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
@@ -486,9 +505,8 @@ def test(element_html, data):
     partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', PARTIAL_CREDIT_METHOD_DEFAULT)
 
     correct_answer_list = data['correct_answers'].get(name, [])
-    correct_keys = [answer['key'] for answer in correct_answer_list]
+    correct_keys = {answer['key'] for answer in correct_answer_list}
     number_answers = len(data['params'][name])
-    all_keys = [pl.index2key(i) for i in range(number_answers)]
 
     min_options_to_select = _get_min_options_to_select(element, MIN_SELECT_DEFAULT)
     max_options_to_select = _get_max_options_to_select(element, number_answers)
@@ -497,9 +515,9 @@ def test(element_html, data):
 
     if result == 'correct':
         if len(correct_keys) == 1:
-            data['raw_submitted_answers'][name] = correct_keys[0]
+            data['raw_submitted_answers'][name] = correct_keys.pop()
         elif len(correct_keys) > 1:
-            data['raw_submitted_answers'][name] = correct_keys
+            data['raw_submitted_answers'][name] = list(correct_keys)
         else:
             pass  # no raw_submitted_answer if no correct keys
         feedback = {option['key']: option.get('feedback', None) for option in data['params'][name]}
@@ -507,32 +525,32 @@ def test(element_html, data):
     elif result == 'incorrect':
         while True:
             # select answer keys at random
-            ans = [k for k in all_keys if random.choice([True, False])]
+            ans = {k for k in map(pl.index2key, range(number_answers)) if random.choice([True, False])}
             # break and use this choice if it isn't correct
-            if set(ans) != set(correct_keys) and min_options_to_select <= len(ans) <= max_options_to_select:
+            if ans != correct_keys and min_options_to_select <= len(ans) <= max_options_to_select:
                 break
         if partial_credit:
             if partial_credit_method == 'PC':
-                if set(ans) == set(correct_keys):
+                if ans == correct_keys:
                     score = 1
                 else:
-                    n_correct_answers = len(set(correct_keys)) - len(set(correct_keys) - set(ans))
-                    points = n_correct_answers - len(set(ans) - set(correct_keys))
-                    score = max(0, points / len(set(correct_keys)))
+                    n_correct_answers = len(correct_keys) - len(correct_keys - ans)
+                    points = n_correct_answers - len(ans - correct_keys)
+                    score = max(0, points / len(correct_keys))
             elif partial_credit_method == 'EDC':
-                number_wrong = len(set(ans) - set(correct_keys)) + len(set(correct_keys) - set(ans))
+                number_wrong = len(ans - correct_keys) + len(correct_keys - ans)
                 score = 1 - 1.0 * number_wrong / number_answers
             elif partial_credit_method == 'COV':
-                n_correct_answers = len(set(correct_keys) & set(ans))
-                base_score = n_correct_answers / len(set(correct_keys))
-                guessing_factor = n_correct_answers / len(set(ans))
+                n_correct_answers = len(correct_keys & ans)
+                base_score = n_correct_answers / len(correct_keys)
+                guessing_factor = n_correct_answers / len(ans)
                 score = base_score * guessing_factor
             else:
                 raise ValueError(f'Unknown value for partial_credit_method: {partial_credit_method}')
         else:
             score = 0
         feedback = {option['key']: option.get('feedback', None) for option in data['params'][name]}
-        data['raw_submitted_answers'][name] = ans
+        data['raw_submitted_answers'][name] = list(ans)
         data['partial_scores'][name] = {'score': score, 'weight': weight, 'feedback': feedback}
     elif result == 'invalid':
         # FIXME: add more invalid examples

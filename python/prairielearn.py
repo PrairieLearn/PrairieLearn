@@ -1240,7 +1240,7 @@ def load_host_script(script_name):
     return __import__(script_name)
 
 
-def index2key(i):
+def index2key(i: int) -> str:
     """
     index2key(i)
 
