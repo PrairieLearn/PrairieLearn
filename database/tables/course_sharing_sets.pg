@@ -5,7 +5,6 @@ columns
 
 indexes
     course_sharing_sets_pkey: PRIMARY KEY (id) USING btree (id)
-    course_sharing_sets_course_id_name_key: UNIQUE (course_id, name) USING btree (course_id, name)
 
 foreign-key constraints
     course_sharing_sets_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE

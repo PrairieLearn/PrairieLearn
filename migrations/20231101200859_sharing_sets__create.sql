@@ -2,7 +2,8 @@ CREATE TABLE IF NOT EXISTS sharing_sets (
     id BIGSERIAL PRIMARY KEY,
     course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,
     name text,
-    description text
+    description text, 
+    UNIQUE (name, course_id)
 );
 
 CREATE TABLE IF NOT EXISTS question_sharing_sets (
@@ -21,7 +22,7 @@ CREATE TABLE IF NOT EXISTS course_sharing_sets (
 
 ALTER TABLE pl_courses ADD COLUMN IF NOT EXISTS sharing_name text;
 ALTER TABLE pl_courses ADD COLUMN IF NOT EXISTS sharing_id text;
-ALTER TABLE pl_courses ADD COLUMN IF NOT EXISTS question_sharing_enabled boolean;
+ALTER TABLE pl_courses ADD COLUMN IF NOT EXISTS question_sharing_enabled boolean default false;
 
 
 -- TODO: get rid of this hack, after we have a proper solution for working syncs with missing imported questions: 
