@@ -15,6 +15,7 @@ import importlib
 import importlib.util
 import os
 import collections
+from itertools import chain, repeat
 from typing import Dict, Any, TypedDict, Literal, Optional, List, overload
 from typing_extensions import NotRequired
 
@@ -168,16 +169,18 @@ def from_json(v):
 
 
 def inner_html(element: lxml.html.HtmlElement) -> str:
-    inner = element.text
-    if inner is None:
-        inner = ''
+    """
+    Gets the inner HTML of an element. A bit ugly, but hacked together to be as fast as possible
+    (since this is a function that gets used in a ton of places). The performance increase from
+    the old version of this function could have a substantial impact on question render times.
+    """
 
-    res_list = [html.escape(str(inner))]
-    res_list.extend(
-        lxml.html.tostring(child, method='html').decode('utf-8') for child in element
-    )
+    inner = "" if element.text is None else element.text
 
-    return "".join(res_list)
+    return "".join(chain(
+        repeat(html.escape(str(inner)), 1),
+        (lxml.html.tostring(child, method='html').decode('utf-8') for child in element)
+    ))
 
 
 def compat_get(object, attrib, default):
