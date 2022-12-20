@@ -1107,28 +1107,28 @@ table by default.
 
 ```html
 <pl-truth-table answers-name="answer">
-    <pl-variable>A</pl-variable>
-    <pl-variable>B</pl-variable>
-    <pl-answer-column expression="A and B">A and B</pl-answer-column>
+  <pl-variable>A</pl-variable>
+  <pl-variable>B</pl-variable>
+  <pl-answer-column expression="A and B">A and B</pl-answer-column>
 </pl-truth-table>
 ```
 
 #### Customizations
 
-| Attribute               | Type    | Default   | Description                                                                                                                                                                                                              |
-| ----------------------- | ------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `fixed-order`           | boolean | false     | Specifies whether to display the variables in a fixed order. This effectively randomizes the placement of the answers.                                                                                                                                              |
-| `true-label`            | string  | "1"       | Which value is used to represent "true" in the table.                                                                                                                                                                                             |
-| `false-label`           | string  | "0"       | Which value is used to represent "false" in the table.                                    |
-| `num-rows`              | integer | 2^n       | The number of rows to display. If the value specified is more than the number of available rows, then this value is ignored. Otherwise, it chooses randomly between the number of rows available. n is the number of variables specified or the number of user specified rows if there are any specified.
+| Attribute     | Type    | Default | Description                                                                                                                                                                                                                                                                                               |
+| ------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fixed-order` | boolean | false   | Specifies whether to display the variables in a fixed order. This effectively randomizes the placement of the answers.                                                                                                                                                                                    |
+| `true-label`  | string  | "1"     | Which value is used to represent "true" in the table.                                                                                                                                                                                                                                                     |
+| `false-label` | string  | "0"     | Which value is used to represent "false" in the table.                                                                                                                                                                                                                                                    |
+| `num-rows`    | integer | 2^n     | The number of rows to display. If the value specified is more than the number of available rows, then this value is ignored. Otherwise, it chooses randomly between the number of rows available. n is the number of variables specified or the number of user specified rows if there are any specified. |
 
 #### Details
 
 Inside the `pl-truth-table` element, `pl-variable` elements specify the names of the variables to be used in the truth table's header and expression. There can be one or more `pl-answer-column` elements which specify the text of the answer columns and they must be specified with these attributes:
 
-| Attribute               | Type    | Default   | Description                                                                                                                                                                                                              |
-| ----------------------- | ------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `expression`            | string  | -         | Takes a valid Python expression, using some of the variables in the truth table. This is the expression used to generate the answers.
+| Attribute    | Type   | Default | Description                                                                                                                           |
+| ------------ | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `expression` | string | -       | Takes a valid Python expression, using some of the variables in the truth table. This is the expression used to generate the answers. |
 
 `pl-row` elements can optionally be included to customize the rows that will be displayed.
 
@@ -2213,7 +2213,7 @@ The provided `script-name` corresponds to a file located within the director for
 [element/stringinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/stringInput
 [element/symbolicinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/symbolicInput
 [element/threejs]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/threeJS
-[element/truthTable]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/truthTable
+[element/truthtable]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/truthTable
 [element/variableoutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/variableOutput
 [element/xsssafe]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/xssSafe
 
