@@ -265,7 +265,7 @@
 
     <div class="card-body">
         <pl-question-panel>
-            <p>Here, you can observe the behavior of the <code>feedback</code> attribute in <code>pl-answer</code>. Feedback is expected to convey a small piece of information that explains why an 
+            <p>Here, you can observe the behavior of the <code>feedback</code> attribute in <code>pl-answer</code>. Feedback is expected to convey a small piece of information that explains why an
                 answer is correct or incorrect. When an answer with a feedback setting is selected and graded, a small box containing the feedback is displayed next to the answer.</p>
 
             <p>Group work provides which of the following benefits:</p>
@@ -282,5 +282,28 @@
             <pl-answer feedback="Incorrect, groups generally work on large projects.">                                         The resources to work on a small project instead of a large project. </pl-answer>
             <pl-answer correct="true" feedback="Correct, most of the work done in these spaces is done through teams.">        Prepares you for a team-environment in the workplace or a research group.</pl-answer>
         </pl-checkbox>
+    </div>
+</div>
+
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 11
+    </div>
+
+    <div class="card-body">
+
+        <pl-question-panel>
+            <p>Here, the <code>pl-checkbox</code> element does not contain any <code>pl-answer</code> inner tag; instead, it pulls the correct and incorrect choices, if they exist,
+                from the <code>group-work.json</code> file inside of the <code>serverFilesQuestion/</code> directory. By default, the external json file should have <code>"correct"</code>
+                and <code>"incorrect"</code> attributes of type list to store choices, these attribute names can be overridden with <code>"external-json-correct-key"</code>
+                and <code>"external-json-incorrect-key"</code>.</p>
+
+            <p>Group work provides which of the following benefits:</p>
+        </pl-question-panel>
+
+        <pl-checkbox answers-name="group_ans_v11" external-json="serverFilesQuestion/group-work.json" external-json-incorrect-key="incorrect_choices">
+        </pl-checkbox>
+
     </div>
 </div>

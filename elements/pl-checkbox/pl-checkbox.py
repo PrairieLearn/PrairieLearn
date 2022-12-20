@@ -1,5 +1,7 @@
 import prairielearn as pl
 import lxml.html
+import pathlib
+import json
 import random
 import math
 import chevron
@@ -20,7 +22,9 @@ MIN_CORRECT_DEFAULT = 1
 MIN_SELECT_DEFAULT = 1
 FEEDBACK_DEFAULT = None
 ALLOW_BLANK_DEFAULT = False
-
+EXTERNAL_JSON_DEFAULT = None
+EXTERNAL_JSON_CORRECT_KEY_DEFAULT = 'correct'
+EXTERNAL_JSON_INCORRECT_KEY_DEFAULT = 'incorrect'
 MIN_SELECT_BLANK = 0
 
 
@@ -28,7 +32,7 @@ def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-answer-panel', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method', 'hide-letter-keys', 'hide-score-badge', 'min-select', 'allow-blank', 'max-select', 'show-number-correct']
+    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-answer-panel', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method', 'hide-letter-keys', 'hide-score-badge', 'min-select', 'allow-blank', 'max-select', 'show-number-correct', 'external-json', 'external-json-correct-key', 'external-json-incorrect-key']
 
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
@@ -53,6 +57,26 @@ def prepare(element_html, data):
             else:
                 incorrect_answers.append(answer_tuple)
             index += 1
+
+    file_path = pl.get_string_attrib(element, 'external-json', EXTERNAL_JSON_DEFAULT)
+    if file_path is not EXTERNAL_JSON_DEFAULT:
+        correct_attrib = pl.get_string_attrib(element, 'external-json-correct-key', EXTERNAL_JSON_CORRECT_KEY_DEFAULT)
+        incorrect_attrib = pl.get_string_attrib(element, 'external-json-incorrect-key', EXTERNAL_JSON_INCORRECT_KEY_DEFAULT)
+        if pathlib.PurePath(file_path).is_absolute():
+            json_file = file_path
+        else:
+            json_file = pathlib.PurePath(data['options']['question_path']).joinpath(file_path)
+        try:
+            with open(json_file, mode='r', encoding='utf-8') as f:
+                obj = json.load(f)
+                for text in obj.get(correct_attrib, []):
+                    correct_answers.append((index, True, text, FEEDBACK_DEFAULT))
+                    index += 1
+                for text in obj.get(incorrect_attrib, []):
+                    incorrect_answers.append((index, False, text, FEEDBACK_DEFAULT))
+                    index += 1
+        except FileNotFoundError:
+            raise Exception(f'JSON answer file: "{json_file}" could not be found')
 
     len_correct = len(correct_answers)
     len_incorrect = len(incorrect_answers)
