@@ -19,13 +19,16 @@ SHOW_NUMBER_CORRECT_DEFAULT = False
 MIN_CORRECT_DEFAULT = 1
 MIN_SELECT_DEFAULT = 1
 FEEDBACK_DEFAULT = None
+ALLOW_BLANK_DEFAULT = False
+
+MIN_SELECT_BLANK = 0
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-answer-panel', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method', 'hide-letter-keys', 'hide-score-badge', 'min-select', 'max-select', 'show-number-correct']
+    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-answer-panel', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method', 'hide-letter-keys', 'hide-score-badge', 'min-select', 'allow-blank', 'max-select', 'show-number-correct']
 
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
@@ -62,6 +65,8 @@ def prepare(element_html, data):
     min_correct = pl.get_integer_attrib(element, 'min-correct', MIN_CORRECT_DEFAULT)
     max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answers))
 
+    allow_blank = pl.get_boolean_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT)
+
     if min_correct < 1:
         raise ValueError('The attribute min-correct is {:d} but must be at least 1'.format(min_correct))
 
@@ -78,11 +83,14 @@ def prepare(element_html, data):
     if not (0 <= min_incorrect <= max_incorrect <= len_incorrect):
         raise ValueError('INTERNAL ERROR: incorrect number: (%d, %d, %d, %d)' % (min_incorrect, max_incorrect, len_incorrect, len_correct))
 
-    min_select = pl.get_integer_attrib(element, 'min-select', MIN_SELECT_DEFAULT)
-    max_select = pl.get_integer_attrib(element, 'max-select', number_answers)
+    if allow_blank == True:
+        min_select = pl.get_integer_attrib(element, 'min-select', MIN_SELECT_BLANK)
+    else:
+        min_select = pl.get_integer_attrib(element, 'min-select', MIN_SELECT_DEFAULT)
+        if min_select < 1:
+            raise ValueError(f'The attribute min-select is {min_select} but must be at least 1')
 
-    if min_select < 1:
-        raise ValueError(f'The attribute min-select is {min_select} but must be at least 1')
+    max_select = pl.get_integer_attrib(element, 'max-select', number_answers)
 
     # Check that min_select, max_select, number_answers, min_correct, and max_correct all have sensible values relative to each other.
     if min_select > max_select:
@@ -189,6 +197,8 @@ def render(element_html, data):
             else:
                 number_correct_text = ''
 
+            allow_blank = pl.get_boolean_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT)
+
             min_options_to_select = _get_min_options_to_select(element, MIN_SELECT_DEFAULT)
             max_options_to_select = _get_max_options_to_select(element, len(display_answers))
 
@@ -218,7 +228,10 @@ def render(element_html, data):
                     insert_text = f' at most <b>{max_options_to_select}</b> options.'
                 else:
                     # This is the case where we reveal nothing about min_options_to_select and max_options_to_select.
-                    insert_text = ' at least 1 option.'
+                    if allow_blank == True:
+                        insert_text = ' at least 0 options.'
+                    else:
+                        insert_text = ' at least 1 option.'
 
             insert_text += number_correct_text
 
@@ -365,23 +378,26 @@ def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
 
+    allow_blank = pl.get_boolean_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT)
+
     submitted_key = data['submitted_answers'].get(name, None)
     all_keys = [a['key'] for a in data['params'][name]]
 
-    # Check that at least one option was selected
-    if submitted_key is None:
-        data['format_errors'][name] = 'You must select at least one option.'
-        return
-
-    # Check that the selected options are a subset of the valid options
-    # FIXME: raise ValueError instead of treating as parse error?
-    submitted_key_set = set(submitted_key)
-    all_keys_set = set(all_keys)
-    if not submitted_key_set.issubset(all_keys_set):
-        one_bad_key = submitted_key_set.difference(all_keys_set).pop()
-        # FIXME: escape one_bad_key
-        data['format_errors'][name] = 'You selected an invalid option: {:s}'.format(str(one_bad_key))
-        return
+    if not allow_blank:
+        # Check that at least one option was selected
+        if submitted_key is None:
+            data['format_errors'][name] = 'You must select at least one option.'
+            return
+    else:
+        # Check that the selected options are a subset of the valid options
+        # FIXME: raise ValueError instead of treating as parse error?
+        submitted_key_set = set(submitted_key)
+        all_keys_set = set(all_keys)
+        if not submitted_key_set.issubset(all_keys_set):
+            one_bad_key = submitted_key_set.difference(all_keys_set).pop()
+            # FIXME: escape one_bad_key
+            data['format_errors'][name] = 'You selected an invalid option: {:s}'.format(str(one_bad_key))
+            return
 
     # Get minimum and maximum number of options to be selected
     min_options_to_select = _get_min_options_to_select(element, MIN_SELECT_DEFAULT)
@@ -514,10 +530,14 @@ def _get_min_options_to_select(element, default_val):
     """
     detailed_help_text = pl.get_boolean_attrib(element, 'detailed-help-text', DETAILED_HELP_TEXT_DEFAULT)
 
+    allow_blank = pl.get_boolean_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT)
+
     if pl.has_attrib(element, 'min-select'):
         min_options_to_select = pl.get_integer_attrib(element, 'min-select')
     elif pl.has_attrib(element, 'min-correct') and detailed_help_text:
         min_options_to_select = pl.get_integer_attrib(element, 'min-correct')
+    elif allow_blank:
+            min_options_to_select = MIN_SELECT_BLANK
     else:
         min_options_to_select = default_val
 
