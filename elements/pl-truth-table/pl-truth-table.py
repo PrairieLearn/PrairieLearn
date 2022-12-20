@@ -228,17 +228,20 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
 
     display_rows = data["params"][name]["display_rows"]
+    display_ans_columns = data["params"][name]["display_ans_columns"]
+
+    expected_num_answers = len(display_rows) * len(display_ans_columns)
+
     submitted_answers = data["submitted_answers"].get(name, [])
 
+    if expected_num_answers != len(submitted_answers):
+        data["format_errors"][name] = "Number of submitted answers doesn't match number of rows."
+        return
+
+    # TODO this display checking doesn't quite work
     for i in range(len(display_rows)):
-        expected_html_name = get_form_name(name, i)
-        try:
-            student_answer = submitted_answers[i]
-        except IndexError:
-            data["format_errors"][
-                expected_html_name
-            ] = "The submitted answer is not a legal option."
-            continue
+        student_answer = submitted_answers[i]
+
 
         # A blank is a valid submission from the HTML, but causes a format error.
         #if student_answer == -1:
@@ -246,7 +249,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         #        expected_html_name
         #    ] = "The submitted answer was left blank."
         if student_answer is None:
-            data["format_errors"][expected_html_name] = "No answer was submitted."
+            data["format_errors"][get_form_name(name, i)] = "No answer was submitted."
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -339,20 +342,32 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
-        for i in range(len(display_rows)):
-            expected_html_name = get_form_name(name, i)
-            parse_error = data["format_errors"].get(expected_html_name, None)
+        global_parse_error = data["format_errors"].get(name, None)
+        if global_parse_error is not None:
+            html_params = {
+                "submission": True,
+                "parse_error": global_parse_error,
+            }
 
-            # Exit if any row contains any format errors
-            if parse_error is not None:
-                return ""
+            with open("pl-truth-table.mustache", "r", encoding="utf-8") as f:
+                return chevron.render(f, html_params).strip()
+
+
+
+        #for i in range(len(display_rows)):
+        #    expected_html_name = get_form_name(name, i)
+        #    parse_error = data["format_errors"].get(expected_html_name, None)
+        #
+        # TODO fix this, Exit if any row contains any format errors
+        #    if parse_error is not None:
+        #        return ""
 
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)
         display_score_badge = score is not None and show_answer_feedback
 
         variable_set = [
-            {"parse_error": parse_error, "html": variable["html"].strip()}
+            {"html": variable["html"].strip()}
             for variable in display_variables
         ]
 
@@ -513,10 +528,13 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["raw_submitted_answers"][name] = incorrect_answers
         data["partial_scores"][name] = {"score": 0, "weight": weight}
     elif result == "invalid":
-        for i in range(len(correct_answers)):
-            expected_html_name = get_form_name(name, i)
-            data["raw_submitted_answers"][expected_html_name] = None
-            data["format_errors"][expected_html_name] = "No answer was submitted."
+        #TODO this is a global parse error, add a test case with a local one
+        data["raw_submitted_answers"][name] = correct_answers + [None]
+        data["format_errors"][name] = "Number of submitted answers doesn't match number of rows."
+        #for i in range(len(correct_answers)):
+        #    expected_html_name = get_form_name(name, i)
+        #    data["raw_submitted_answers"][expected_html_name] = None
+        #    data["format_errors"][expected_html_name] = "No answer was submitted."
         data["partial_scores"][name] = {"score": 0, "weight": weight}
     else:
         assert_never(result)
