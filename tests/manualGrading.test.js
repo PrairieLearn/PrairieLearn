@@ -688,9 +688,7 @@ describe('Manual Grading', function () {
       const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
       const form = $manualGradingIQPage('form[name=instance_question-manual-grade-update-form]');
 
-      const gradingItems = form.find(`.js-selectable-rubric-item[value]`);
-
-      rubric_items.forEach((item, index) => {
+      rubric_items.forEach((item) => {
         const checkbox = form.find(`.js-selectable-rubric-item[value="${item.id}"]`);
         assert.equal(checkbox.length, 1);
         const container = checkbox.parents('.js-selectable-rubric-item-label');
