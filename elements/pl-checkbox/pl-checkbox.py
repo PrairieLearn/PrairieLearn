@@ -1,6 +1,7 @@
 import prairielearn as pl
 import lxml.html
 import pathlib
+import html
 import json
 import random
 import math
@@ -192,15 +193,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     display_answers = data['params'].get(name, [])
     inline = pl.get_boolean_attrib(element, 'inline', INLINE_DEFAULT)
-    submitted_keys = data['submitted_answers'].get(name, [])
+    submitted_keys_raw = data['submitted_answers'].get(name, [])
 
     # if there is only one key then it is passed as a string,
     # not as a length-one list, so we fix that next
-    if isinstance(submitted_keys, str):
-        submitted_keys = [submitted_keys]
+    if isinstance(submitted_keys_raw, str):
+        submitted_keys_raw = [submitted_keys_raw]
 
-    correct_answer_list = data['correct_answers'].get(name, [])
-    correct_keys = [answer['key'] for answer in correct_answer_list]
+    submitted_keys = set(submitted_keys_raw)
+
+    correct_keys = {answer['key'] for answer in data['correct_answers'].get(name, [])}
 
     if data['panel'] == 'question':
         partial_score = data['partial_scores'].get(name, {'score': None})
@@ -233,10 +235,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             show_number_correct = pl.get_boolean_attrib(element, 'show-number-correct', SHOW_NUMBER_CORRECT_DEFAULT)
 
             if show_number_correct:
-                if len(correct_answer_list) == 1:
+                if len(correct_keys) == 1:
                     number_correct_text = ' There is exactly <b>1</b> correct option in the list above.'
                 else:
-                    number_correct_text = f' There are exactly <b>{len(correct_answer_list)}</b> correct options in the list above.'
+                    number_correct_text = f' There are exactly <b>{len(correct_keys)}</b> correct options in the list above.'
             else:
                 number_correct_text = ''
 
@@ -422,9 +424,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(element, 'answers-name')
 
     allow_blank = pl.get_boolean_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT)
-
     submitted_key = data['submitted_answers'].get(name, None)
-    all_keys = [a['key'] for a in data['params'][name]]
 
     if not allow_blank:
         # Check that at least one option was selected
@@ -435,11 +435,13 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         # Check that the selected options are a subset of the valid options
         # FIXME: raise ValueError instead of treating as parse error?
         submitted_key_set = set(submitted_key)
-        all_keys_set = set(all_keys)
+        all_keys_set = {a['key'] for a in data['params'][name]}
+
         if not submitted_key_set.issubset(all_keys_set):
             one_bad_key = submitted_key_set.difference(all_keys_set).pop()
+            one_bad_key_str = pl.escape_invalid_string(str(one_bad_key))
             # FIXME: escape one_bad_key
-            data['format_errors'][name] = 'You selected an invalid option: {:s}'.format(str(one_bad_key))
+            data['format_errors'][name] = f'You selected an invalid option: {one_bad_key_str}'
             return
 
     # Get minimum and maximum number of options to be selected
@@ -447,13 +449,11 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     max_options_to_select = _get_max_options_to_select(element, len(data['params'][name]))
 
     # Check that the number of submitted answers is in the interval [min_options_to_select, max_options_to_select].
-    n_submitted = len(submitted_key)
-    if n_submitted > max_options_to_select or n_submitted < min_options_to_select:
+    if not (min_options_to_select <= len(submitted_key) <= max_options_to_select):
         if min_options_to_select != max_options_to_select:
             data['format_errors'][name] = f'You must select between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options.'
         else:
             data['format_errors'][name] = f'You must select exactly <b>{min_options_to_select}</b> options.'
-        return
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
