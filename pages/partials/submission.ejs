@@ -23,20 +23,20 @@
        ].forEach((rubric) => { %>
       <% (rubric.rubric_items || []).forEach((item) => { %>
       <div>
-        <label class="js-selectable-rubric-item-label w-100">
+        <label class="w-100" data-testid="rubric-item-container-<%= item.rubric_item.id %>">
           <input type="checkbox" disabled <%= item.grading_item ? 'checked' : '' %> >
           <span class="text-<%= item.rubric_item.points >= 0 ? 'success' : 'danger' %>">
-            <strong>
+            <strong data-testid="rubric-item-points">
               [<%= (item.rubric_item.points >= 0 ? '+' : '') + item.rubric_item.points %>]
             </strong>
           </span>
-          <span class="d-inline-block">
+          <span class="d-inline-block" data-testid="rubric-item-short-text">
             <%- item.rubric_item.short_text_rendered %>
           </span>
           <% if (item.rubric_item.description) { %>
             <button type="button" class="btn btn-xs text-info" data-toggle="popover"
                     data-content="<%= item.rubric_item.description_rendered %>"
-                    data-html="true">
+                    data-html="true" data-testid="rubric-item-description">
               <i class="fas fa-circle-info"></i>
               <span class="sr-only">Details</span>
             </button>
