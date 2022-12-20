@@ -464,13 +464,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     number_answers = len(data['params'][name])
     partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', PARTIAL_CREDIT_METHOD_DEFAULT)
 
-    submitted_keys = data['submitted_answers'].get(name, [])
-    correct_answer_list = data['correct_answers'].get(name, [])
-    correct_keys = [answer['key'] for answer in correct_answer_list]
+    submittedSet = set(data['submitted_answers'].get(name, []))
+    correctSet = {answer['key'] for answer in data['correct_answers'].get(name, [])}
     feedback = {option['key']: option.get('feedback', None) for option in data['params'][name]}
-
-    submittedSet = set(submitted_keys)
-    correctSet = set(correct_keys)
 
     score = 0
     if not partial_credit and submittedSet == correctSet:
@@ -504,8 +500,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     partial_credit = pl.get_boolean_attrib(element, 'partial-credit', PARTIAL_CREDIT_DEFAULT)
     partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', PARTIAL_CREDIT_METHOD_DEFAULT)
 
-    correct_answer_list = data['correct_answers'].get(name, [])
-    correct_keys = {answer['key'] for answer in correct_answer_list}
+    correct_keys = {answer['key'] for answer in data['correct_answers'].get(name, [])}
     number_answers = len(data['params'][name])
 
     min_options_to_select = _get_min_options_to_select(element, MIN_SELECT_DEFAULT)
@@ -561,7 +556,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
 
 
-def _get_min_options_to_select(element, default_val):
+def _get_min_options_to_select(element: lxml.html.HtmlElement, default_val: int) -> int:
     """
     Given an HTML fragment containing a pl-checkbox element, returns the minimum number of options that must be selected in
     the checkbox element for a submission to be valid. In order of descending priority, the returned value equals:
@@ -587,7 +582,7 @@ def _get_min_options_to_select(element, default_val):
     return min_options_to_select
 
 
-def _get_max_options_to_select(element, default_val):
+def _get_max_options_to_select(element: lxml.html.HtmlElement, default_val: int) -> int:
     """
     Given an HTML fragment containing a pl-checkbox element, returns the maximum number of options that can be selected in
     the checkbox element for a submission to be valid. In order of descending priority, the returned value equals:
