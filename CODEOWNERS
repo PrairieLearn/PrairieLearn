@@ -1,7 +1,7 @@
 /elements/pl-hidden-hints @eliotwrobson
 /elements/pl-order-blocks @SethPoulsen
 /elements/pl-rich-text-editor @jonatanschroeder
-/elements/pl-truth-table @stac21
+/elements/pl-truth-table @stac21 @eliotwrobson
 
 /graders/c @jonatanschroeder
 /graders/java @jonatanschroeder
