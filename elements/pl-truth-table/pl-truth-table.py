@@ -241,7 +241,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["format_errors"][name] = "Number of submitted answers doesn't match number of rows."
         return
 
-    # TODO this display checking doesn't quite work ?? Add tests checking for these errors
     for i in range(expected_num_answers):
         student_answer = submitted_answers[i]
 
@@ -263,8 +262,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     submitted_answers = data["submitted_answers"].get(name, [])
 
-    if submitted_answers == "True" or submitted_answers == "False":
-        submitted_answers = [submitted_answers]
+    # TODO I think these lines can be deleted???
+    #if submitted_answers == "True" or submitted_answers == "False":
+    #    submitted_answers = [submitted_answers]
 
     hide_score_badge = pl.get_boolean_attrib(
         element, "hide-score-badge", HIDE_SCORE_BADGE_DEFAULT
@@ -340,25 +340,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
-        global_parse_error = data["format_errors"].get(name, None)
-        if global_parse_error is not None:
+        global_format_error = data["format_errors"].get(name, None)
+        if global_format_error is not None:
             html_params = {
                 "submission": True,
-                "parse_error": global_parse_error,
+                "parse_error": global_format_error,
             }
 
             with open("pl-truth-table.mustache", "r", encoding="utf-8") as f:
                 return chevron.render(f, html_params).strip()
-
-
-
-        #for i in range(len(display_rows)):
-        #    expected_html_name = get_form_name(name, i)
-        #    parse_error = data["format_errors"].get(expected_html_name, None)
-        #
-        # TODO fix this, Exit if any row contains any format errors
-        #    if parse_error is not None:
-        #        return ""
 
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)
@@ -520,38 +510,25 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     result = data["test_type"]
     if result == "correct":
         data["raw_submitted_answers"][name] = correct_answers
-        #for i in range(len(correct_answers)):
-        #    expected_html_name = get_form_name(name, i)
-        #    correct_answer = correct_answers[i]
-        #    data["raw_submitted_answers"][expected_html_name] = correct_answer
-
         data["partial_scores"][name] = {"score": 1, "weight": weight}
     elif result == "incorrect":
         incorrect_answers = [
             "False" if correct_answer == "True" else "True"
             for correct_answer in correct_answers
         ]
-
-        #for i in range(len(correct_answers)):
-        #    expected_html_name = get_form_name(name, i)
-        #    incorrect_answer =
         data["raw_submitted_answers"][name] = incorrect_answers
         data["partial_scores"][name] = {"score": 0, "weight": weight}
     elif result == "invalid":
 
-        test_case = random.randint(1,2)
+        test_case = random.randint(1, 2)
         data["partial_scores"][name] = {"score": 0, "weight": weight}
 
         if test_case == 1:
             #TODO this is a global parse error, add a test case with a local one
             data["raw_submitted_answers"][name] = correct_answers + [None]
             data["format_errors"][name] = "Number of submitted answers doesn't match number of rows."
-            #for i in range(len(correct_answers)):
-            #    expected_html_name = get_form_name(name, i)
-            #    data["raw_submitted_answers"][expected_html_name] = None
-            #    data["format_errors"][expected_html_name] = "No answer was submitted."
-        elif test_case == 2:
 
+        elif test_case == 2:
             # First, choose a random submission to change to None
             random_index = random.randint(0, len(correct_answers)-1)
             submitted_answers = correct_answers.copy()
@@ -559,6 +536,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
             data["raw_submitted_answers"][name] = submitted_answers
 
+            # Then check that this gives the desired parse error in only one index
             data["format_errors"][get_form_name(name, random_index)] = "No answer was submitted."
 
         else:

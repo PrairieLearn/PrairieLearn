@@ -1,33 +1,94 @@
 <pl-question-panel>
 <p>
-What is the resulting values of the expressions
-<pl-code language="python">y == A or B</pl-code>
-<pl-code language="python">y == C and D</pl-code>
-<pl-code language="python">y == D and E</pl-code>
-<pl-code language="python">y == X or Y</pl-code>
-given the values in the following truth tables?
+    Questions below were designed to showcase the different features of <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-truth-table-element"><code>pl-truth-table</code></a>.
+    The goal of the element is to allow users to create a truth table with dropdowns to select the correct answer given the different values in an expression.
 </p>
 </pl-question-panel>
-<!-- num-rows="3" -->
-<pl-truth-table answers-name="answer1" fixed-order="true" true-label="true" false-label="false" >
-    {{#params.variables}}
-    <pl-variable>{{name}}</pl-variable>
-    {{/params.variables}}
-    <pl-answer-column><pl-code language="python">A or B</pl-code></pl-answer-column>
-    <pl-answer-column expression="C and D">C and D</pl-answer-column>
-</pl-truth-table>
-<!-- pl-truth-table answers-name="answer2" true-label="on" false-label="off">
-    <pl-variable>C</pl-variable>
-    <pl-variable>D</pl-variable>
-    <pl-variable>E</pl-variable>
-    <pl-answer-column expression="D and E">D and E</pl-answer-column>
-    <pl-row>1 0 1</pl-row>
-    <pl-row>1 1 1</pl-row>
-    <pl-row>0 0 0</pl-row>
-    <pl-row>0 1 0</pl-row>
-</pl-truth-table>
-<pl-truth-table answers-name="answer3">
-    <pl-variable>x</pl-variable>
-    <pl-variable>y</pl-variable>
-    <pl-answer-column expression="x or y">X or Y</pl-answer-column>
-</pl-truth-table -->
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 1
+    </div>
+
+    <div class="card-body">
+        <pl-question-panel>
+            <p>
+                Here, you can observe the default behavior of the <code>pl-truth-table</code> element. The order of the variable names is randomized, which effectively randomizes the order of the problems.
+            </p>
+        </pl-question-panel>
+
+        <pl-truth-table answers-name="answer1">
+            <pl-variable>x</pl-variable>
+            <pl-variable>y</pl-variable>
+            <pl-answer-column expression="x or y">X or Y</pl-answer-column>
+        </pl-truth-table>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 2
+    </div>
+
+    <div class="card-body">
+        <pl-question-panel>
+            <p>
+                Here, the <code>pl-truth-table</code> element uses Mustache sections to display the variables as well as has multiple answer columns. The first answer column shows that other elements can be used within the <code>pl-answer-column</code> element, such as a <code>pl-code</code> element for syntax highlighting. This first answer column also shows that a <code>pl-answer-column</code> element's <code>expression</code> attribute is optional and the answer column's expression will default in that case to the text that lies within the column. The number of rows that appear is also customized using the <code>num-rows</code> attribute. The number of rows that appears is also limited to three via the <code>num-rows</code> attribute.
+            </p>
+        </pl-question-panel>
+
+        <pl-truth-table answers-name="answer2" num-rows="3">
+            {{#params.variables}}
+            <pl-variable>{{name}}</pl-variable>
+            {{/params.variables}}
+            <pl-answer-column><pl-code language="python">A or B</pl-code></pl-answer-column>
+            <pl-answer-column expression="C and D">C and D</pl-answer-column>
+        </pl-truth-table>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 3
+    </div>
+
+    <div class="card-body">
+        <pl-question-panel>
+            <p>
+                Here, the true and false labels are set to custom values using the <code>true-label</code> and <code>false-label</code> attributes. The order of the variables is also set to be a fixed order using the <code>fixed-order</code> attribute, effectively making the order of the problems fixed as well.
+            </p>
+        </pl-question-panel>
+
+        <pl-truth-table answers-name="answer3" fixed-order="true" true-label="true" false-label="false">
+            <pl-variable>A</pl-variable>
+            <pl-variable>B</pl-variable>
+            <pl-variable>C</pl-variable>
+            <pl-answer-column>A or B and C</pl-answer-column>
+        </pl-truth-table>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 4
+    </div>
+
+    <div class="card-body">
+        <pl-question-panel>
+            <p>
+                Here, the truth table has custom rows set by the instructor using the <code>pl-row</code> attribute.
+            </p>
+        </pl-question-panel>
+
+        <pl-truth-table answers-name="answer4">
+            <pl-variable>C</pl-variable>
+            <pl-variable>D</pl-variable>
+            <pl-variable>E</pl-variable>
+            <pl-answer-column expression="D and E">D and E</pl-answer-column>
+            <pl-row>1 0 1</pl-row>
+            <pl-row>1 1 1</pl-row>
+            <pl-row>0 0 0</pl-row>
+            <pl-row>0 1 0</pl-row>
+        </pl-truth-table>
+    </div>
+</div>
