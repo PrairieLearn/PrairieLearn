@@ -27,14 +27,15 @@ var outputComponent = 'output/svg';
 // preference when the page reloads. For now, this is preferable to
 // prohibiting the menu choice because it's useful for debugging.
 try {
-  const settings = JSON.parse(localStorage.getItem('MathJax-Menu-Settings')) || {};
-  delete settings['renderer'];
-  const settingsJson = JSON.stringify(settings);
-  if (settingsJson === '{}') {
-    localStorage.removeItem('MathJax-Menu-Settings');
-  } else {
-    localStorage.setItem('MathJax-Menu-Settings', settingsJson);
-  }
+    const settingsKey = 'MathJax-Menu-Settings';
+    const settings = JSON.parse(localStorage.getItem(settingsKey)) || {};
+    delete settings['renderer'];
+    const settingsJson = JSON.stringify(settings);
+    if (settingsJson === '{}') {
+        localStorage.removeItem(settingsKey);
+    } else {
+        localStorage.setItem(settingsKey, settingsJson);
+    }
 } catch(e) { }
 
 var MathJax = {
