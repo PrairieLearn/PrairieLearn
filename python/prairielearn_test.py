@@ -6,7 +6,7 @@ sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../lib"))
 )
 
-from typing import Any, cast
+from typing import Any, cast, Union
 import prairielearn as pl  # noqa: E402
 import lxml.html  # noqa: E402
 import pandas as pd
@@ -83,3 +83,13 @@ def test_numpy_serialization(numpy_object: Any) -> None:
     assert np.array_equal(
         numpy_object, cast(Any, pl.from_json(json.loads(json_object))), equal_nan=True
     )
+
+
+@pytest.mark.parametrize(
+    "non_numpy_object",
+    [1, 1.45, 2.2, 10],
+)
+def test_non_numpy_serialization(non_numpy_object: Union[float, int]) -> None:
+    """Test that normal integers / floats aren't serialized"""
+
+    assert non_numpy_object == pl.to_json(non_numpy_object)

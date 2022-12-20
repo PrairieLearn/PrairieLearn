@@ -78,9 +78,9 @@ def to_json(v, *, df_encoding_version=1):
     """
     if np.isscalar(v) and np.iscomplexobj(v):
         return {'_type': 'complex', '_value': {'real': v.real, 'imag': v.imag}}
-    elif np.issubdtype(type(v), np.integer):
+    elif np.issubdtype(type(v), np.integer) and type(v).__module__ == 'numpy':
         return {'_type': 'np_integer', '_concrete_type': type(v).__name__, '_value': int(v)}
-    elif np.issubdtype(type(v), np.floating):
+    elif np.issubdtype(type(v), np.floating) and type(v).__module__ == 'numpy':
         return {'_type': 'np_floating', '_concrete_type': type(v).__name__, '_value': float(v)}
     elif isinstance(v, np.ndarray):
         if np.isrealobj(v):
