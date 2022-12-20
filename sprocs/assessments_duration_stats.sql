@@ -64,5 +64,7 @@ BEGIN
         a.id = assessments_duration_stats.assessment_id
         AND ai.deleted_at IS NULL
         AND NOT users_is_instructor_in_course_instance(e.user_id, e.course_instance_id);
+
+    hist := coalesce(hist, array_fill(0, ARRAY[array_length(thresholds, 1) - 1]));
 END;
 $$ LANGUAGE plpgsql STABLE;
