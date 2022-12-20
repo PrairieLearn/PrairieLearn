@@ -1,8 +1,8 @@
-import math
 import random
 
 import chevron
 import lxml.html
+import lxml.etree
 import prairielearn as pl
 
 from typing import List, Tuple, NamedTuple, Dict
@@ -257,7 +257,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     display_rows = data["params"][name]["display_rows"]
     display_ans_columns = data["params"][name]["display_ans_columns"]
 
-    correct_answers = data["correct_answers"].get(name)
+    correct_answers = data["correct_answers"].get(name, [])
     num_ans_columns = len(display_ans_columns)
 
     submitted_answers = data["submitted_answers"].get(name, [])
@@ -302,10 +302,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             for j, ans_column in enumerate(display_ans_columns):
                 student_answer = None
+                answer_index = (i * num_ans_columns) + j
 
                 if display_score_badge:
-                    student_answer = submitted_answers[(i * num_ans_columns) + j]
-                correct_answer = correct_answers[(i * num_ans_columns) + j]
+                    student_answer = submitted_answers[answer_index]
+                correct_answer = correct_answers[answer_index]
 
                 ans_column_row_set.append({
                     "html": ans_column["html"].strip(),
@@ -480,25 +481,30 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         element, "partial-credit", PARTIAL_CREDIT_DEFAULT
     )
 
-    submitted_answers = data["submitted_answers"].get(name, [])
     correct_answers = data["correct_answers"].get(name, [])
-    number_answers = len(correct_answers)
 
-    # Count the number of answers that are correct.
-    num_correct = 0
-    for i in range(0, number_answers):
-        student_answer = submitted_answers[i]
+    def edc_grade_fn(submitted_answers: List[str]) -> Tuple[float, None]:
+        num_correct = sum(
+            1 if submitted_answer == correct_answer else 0
+            for (submitted_answer, correct_answer) in zip(submitted_answers, correct_answers)
+        )
 
-        if student_answer == correct_answers[i]:
-            num_correct += 1
+        return num_correct / len(correct_answers), None
 
-    score = 0
-    if not partial_credit and num_correct == number_answers:
-        score = 1
-    elif partial_credit:
-        # EDC grading
-        score = num_correct / number_answers
-    data["partial_scores"][name] = {"score": score, "weight": weight}
+    def no_partial_credit_grade_fn(submitted_answers: List[str]) -> Tuple[bool, None]:
+        for (submitted_answer, correct_answer) in zip(submitted_answers, correct_answers):
+            if submitted_answer != correct_answer:
+                return False, None
+
+        return True, None
+
+    # TODO maybe simplify parts of this grading framework as part of merging this in??
+    pl.grade_question_parameterized(
+        data,
+        name,
+        grade_function=edc_grade_fn if partial_credit else no_partial_credit_grade_fn,
+        weight=weight,
+    )
 
 
 def test(element_html: str, data: pl.ElementTestData) -> None:

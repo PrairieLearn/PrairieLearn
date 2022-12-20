@@ -16,8 +16,8 @@ import importlib.util
 import os
 import collections
 import math
-from typing import Dict, Any, TypedDict, Literal, Optional, Tuple, Union
-from typing_extensions import NotRequired
+from typing import Dict, Any, TypedDict, Literal, Optional, Tuple, Union, Callable
+from typing_extensions import NotRequired, assert_never
 
 class PartialScore(TypedDict):
     "A class with type signatures for the partial scores dict"
@@ -64,6 +64,52 @@ def determine_score_params(score: float) -> Tuple[str, Union[float, bool]]:
         return ("partial", math.floor(score_val * 100))
 
     return ("incorrect", True)
+
+def grade_question_parameterized(
+    data: QuestionData,
+    question_name: str,
+    grade_function: Callable[[Any], Tuple[Union[bool, float], Optional[str]]],
+    weight: int = 1,
+) -> None:
+    """
+    Grade question question_name. grade_function should take in a single parameter
+    (which will be the submitted answer) and return a 2-tuple:
+        - The first element of the 2-tuple should either be:
+            - a boolean indicating whether the question should be marked correct
+            - a partial score between 0 and 1, inclusive
+        - The second element of the 2-tuple should either be:
+            - a string containing feedback
+            - None, if there is no feedback (usually this should only occur if the answer is correct)
+    """
+
+    # Create the data dictionary at first
+    data["partial_scores"][question_name] = {"score": 0.0, "weight": weight}
+
+    if question_name not in data["submitted_answers"]:
+        data["format_errors"][question_name] = "No answer was submitted"
+        return
+
+    submitted_answer = data["submitted_answers"][question_name]
+
+    # Run passed-in grading function
+    result, feedback_content = grade_function(submitted_answer)
+
+    # Try converting partial score
+    if isinstance(result, bool):
+        partial_score = 1.0 if result else 0.0
+    elif isinstance(result, (float, int)):
+        assert 0.0 <= result <= 1.0
+        partial_score = result
+    else:
+        assert_never(result)
+
+    # Set corresponding partial score and feedback
+    data["partial_scores"][question_name]["score"] = partial_score
+
+    if feedback_content:
+        data["partial_scores"][question_name]["feedback"] = feedback_content
+
+
 
 def to_json(v):
     """to_json(v)
