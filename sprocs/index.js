@@ -166,7 +166,6 @@ module.exports.init = function (callback) {
       'group_users_insert.sql',
       'sync_assessment_modules.sql',
       'assessment_questions_update_rubric.sql',
-      'rubric_gradings_select_data.sql',
       'rubric_gradings_insert.sql',
       'rubric_gradings_recompute.sql',
     ],
