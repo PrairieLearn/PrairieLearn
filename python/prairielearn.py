@@ -201,11 +201,10 @@ def compat_array(arr: List[str]) -> List[str]:
 def check_attribs(element: lxml.html.HtmlElement, required_attribs: List[str], optional_attribs: List[str]) -> None:
     for name in required_attribs:
         if not has_attrib(element, name):
-            raise ValueError(f'Required attribute "{name}" missing')
-
-    extra_attribs = set(element.attrib) - set(compat_array(required_attribs)) - set(compat_array(optional_attribs))
-    if extra_attribs:
-        raise ValueError(f'Unknown attribute(s): {extra_attribs}')
+            raise Exception('Required attribute "%s" missing' % name)
+    extra_attribs = list(set(element.attrib) - set(compat_array(required_attribs)) - set(compat_array(optional_attribs)))
+    for name in extra_attribs:
+        raise Exception('Unknown attribute "%s"' % name)
 
 
 def _get_attrib(element, name, *args):
