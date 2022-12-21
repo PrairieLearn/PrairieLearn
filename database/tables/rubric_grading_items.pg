@@ -5,7 +5,7 @@ columns
     rubric_grading_id: bigint not null
     rubric_item_id: bigint not null
     score: double precision not null default 1
-    short_text: text
+    short_text: text not null
 
 indexes
     rubric_grading_items_pkey: PRIMARY KEY (id) USING btree (id)
