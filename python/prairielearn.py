@@ -274,15 +274,15 @@ def get_boolean_attrib(element, name, *args):
     if is_default:
         return val
 
-    true_values = {'true', 't', '1', 'True', 'T', 'TRUE', 'yes', 'y', 'Yes', 'Y', 'YES'}
-    false_values = {'false', 'f', '0', 'False', 'F', 'FALSE', 'no', 'n', 'No', 'N', 'NO'}
+    true_values = ['true', 't', '1', 'True', 'T', 'TRUE', 'yes', 'y', 'Yes', 'Y', 'YES']
+    false_values = ['false', 'f', '0', 'False', 'F', 'FALSE', 'no', 'n', 'No', 'N', 'NO']
 
     if val in true_values:
         return True
     elif val in false_values:
         return False
     else:
-        raise ValueError(f'Attribute "{name}" must be a boolean value: {val}')
+        raise Exception('Attribute "%s" must be a boolean value: %s' % (name, val))
 
 @overload
 def get_integer_attrib(element: lxml.html.HtmlElement, name: str, *args: None) -> Optional[int]: ...
