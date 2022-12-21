@@ -3,15 +3,19 @@
 $(() => {
   resetInstructorGradingPanel();
 
-  $(document).keypress((event) => {
+  document.addEventListener('keypress', (event) => {
     // Ignore holding down the key events
     if (event.repeat) return;
     // Ignore events that target an input element
     if (
-      !$(event.target).is(':input:not(:radio):not(:button):not(:checkbox)') &&
+      !['TEXTAREA', 'SELECT'].includes(event.target.tagName) &&
+      (event.target.tagName !== 'INPUT' ||
+        ['radio', 'button', 'submit', 'checkbox'].includes(event.target.type)) &&
       !event.target.isContentEditable
     ) {
-      $(`.js-selectable-rubric-item[data-key-binding="${event.key}"]`).click();
+      document
+        .querySelectorAll(`.js-selectable-rubric-item[data-key-binding="${event.key}"]`)
+        .forEach((item) => item.dispatchEvent(new MouseEvent('click')));
     }
   });
 });
@@ -22,32 +26,36 @@ function resetInstructorGradingPanel() {
   // The visibility of points or percentage is based on a toggle that is persisted in local storage,
   // so that graders can use the same setting across multiple instance questions as they move
   // through grading.
-  $('.js-manual-grading-pts-perc-select')
-    .change(function () {
+  document.querySelectorAll('.js-manual-grading-pts-perc-select').forEach((toggle) => {
+    toggle.addEventListener('change', function () {
       const use_percentage = this.checked;
-      $('.js-manual-grading-pts-perc-select').prop('checked', use_percentage);
-      $('.js-manual-grading-points').toggle(!use_percentage);
-      $('.js-manual-grading-percentage').toggle(use_percentage);
+      document.querySelectorAll('.js-manual-grading-pts-perc-select').forEach((toggle) => {
+        toggle.checked = use_percentage;
+      });
+      document.querySelectorAll('.js-manual-grading-points').forEach((element) => {
+        element.style.display = use_percentage ? 'none' : '';
+      });
+      document.querySelectorAll('.js-manual-grading-percentage').forEach((element) => {
+        element.style.display = use_percentage ? '' : 'none';
+      });
       window.localStorage.manual_grading_score_use = use_percentage ? 'percentage' : 'points';
-    })
-    .prop('checked', window.localStorage.manual_grading_score_use === 'percentage')
-    .first()
-    .change();
-
-  // Auto points are disabled by default to avoid confusion, since they are not typically changed by this interface.
-  $('.js-enable-auto-score-edit').click(function () {
-    const form = $(this).parents('form');
-    form.find('.js-auto-score-value-info').hide();
-    form
-      .find('.js-auto-score-value-input')
-      .removeClass('d-none')
-      .show()
-      .find('input:visible:first')
-      .focus();
+    });
+    toggle.checked = window.localStorage.manual_grading_score_use === 'percentage';
+    toggle.dispatchEvent(new Event('change'));
   });
 
-  $('#submission-feedback')
-    .on('input', function () {
+  // Auto points are disabled by default to avoid confusion, since they are not typically changed by this interface.
+  document.querySelector('.js-enable-auto-score-edit').addEventListener('click', function () {
+    const form = this.closest('form');
+    form.querySelector('.js-auto-score-value-info').style.display = 'none';
+    const input = form.querySelector('.js-auto-score-value-input');
+    input.classList.remove('d-none');
+    input.style.display = '';
+    input.querySelector('input').focus();
+  });
+
+  document.querySelectorAll('.js-submission-feedback').forEach((input) => {
+    input.addEventListener('input', function () {
       // Adjusts the height based on the feedback content. If the feedback changes, the height
       // changes as well. This is done by resetting the height (so the scrollHeight is computed
       // based on the minimum height) and then using the scrollHeight plus padding as the new height.
@@ -55,243 +63,284 @@ function resetInstructorGradingPanel() {
       const style = window.getComputedStyle(this);
       this.style.height =
         this.scrollHeight + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + 'px';
+    });
+    input.dispatchEvent(new Event('input'));
+  });
+
+  document.querySelectorAll('.js-show-rubric-settings-button').forEach((button) =>
+    button.addEventListener('click', function () {
+      const type = this.dataset.rubricType;
+      $(`.rubric-settings-modal-${type}`).modal('show');
     })
-    .trigger('input');
+  );
 
-  $('.js-show-rubric-settings-button').click(function () {
-    const type = $(this).data('rubric-type');
-    $(`.rubric-settings-modal-${type}`).modal('show');
-  });
+  document
+    .querySelectorAll('.js-selectable-rubric-item')
+    .forEach((item) => item.addEventListener('change', computePointsFromRubric));
+  document
+    .querySelectorAll('.js-grading-score-input')
+    .forEach((input) => input.addEventListener('input', updatePointsView));
 
-  $('.js-selectable-rubric-item').change(computePointsFromRubric);
-  $('.js-grading-score-input').on('input', updatePointsView);
-
-  $('.js-adjust-points-enable').click(function () {
-    $(this)
-      .hide()
-      .parents('.js-adjust-points:first')
-      .find('.js-adjust-points-input-container')
-      .show()
-      .removeClass('d-none')
-      .find('input:visible')
-      .focus();
-  });
-  $('.js-adjust-points-points').on('input', function () {
-    $(this)
-      .parents('.js-adjust-points')
-      .find('.js-adjust-points-percentage')
-      .val(($(this).val() * 100) / $(this).data('max-points'));
-    computePointsFromRubric();
-  });
-  $('.js-adjust-points-percentage').on('input', function () {
-    $(this)
-      .parents('.js-adjust-points')
-      .find('.js-adjust-points-points')
-      .val(($(this).val() * $(this).data('max-points')) / 100);
-    computePointsFromRubric();
-  });
-
-  $('.js-rubric-settings-modal input[name="use_rubrics"]')
-    .change(function () {
-      // Rubric settings are only visible if rubrics are enabled
-      $(this)
-        .parents('.js-rubric-settings-modal')
-        .find('.js-rubric-settings-info')
-        .toggle($(this).is(':checked'));
+  document.querySelectorAll('.js-adjust-points-enable').forEach((link) =>
+    link.addEventListener('click', function () {
+      this.style.display = 'none';
+      const input = this.closest('.js-adjust-points').querySelector(
+        '.js-adjust-points-input-container'
+      );
+      input.style.display = '';
+      input.classList.remove('d-none');
+      input.querySelector('input').focus();
     })
-    .change();
-
-  $('.js-rubric-settings-modal input[name="starting_points"]')
-    .change(function () {
-      // Custom starting points are only visible if starting point is set to custom.
-      $(this)
-        .parents('.js-rubric-settings-modal')
-        .find('.js-starting-points-custom')
-        .toggle(
-          $(this)
-            .parents('.js-rubric-settings-modal')
-            .find('input[name="starting_points"]:checked')
-            .val() === 'CUSTOM'
-        );
+  );
+  document.querySelectorAll('.js-adjust-points-points').forEach((input) =>
+    input.addEventListener('input', function () {
+      this.closest('.js-adjust-points').querySelector('.js-adjust-points-percentage').value =
+        ($(this).val() * 100) / $(this).data('max-points');
+      computePointsFromRubric();
     })
-    .change();
+  );
+  document.querySelectorAll('.js-adjust-points-percentage').forEach((input) =>
+    input.addEventListener('input', function () {
+      this.closest('.js-adjust-points').querySelector('.js-adjust-points-points').value =
+        ($(this).val() * $(this).data('max-points')) / 100;
+      computePointsFromRubric();
+    })
+  );
 
-  $('.js-add-rubric-item-button').click(addRubricItemRow);
-  $('.js-rubric-item-delete').click(function () {
-    $(this).parents('tr:first').remove();
-    updateRubricItemOrderField();
-  });
+  document
+    .querySelectorAll('.js-rubric-settings-modal input[name="use_rubrics"]')
+    .forEach((checkbox) => {
+      checkbox.addEventListener('change', function () {
+        // Rubric settings are only visible if rubrics are enabled
+        this.closest('.js-rubric-settings-modal').querySelector(
+          '.js-rubric-settings-info'
+        ).style.display = this.checked ? '' : 'none';
+      });
+      checkbox.dispatchEvent(new Event('change'));
+    });
 
-  $('.js-rubric-settings-modal form').submit(function (e) {
-    e.preventDefault();
-    // Save values in grading rubric so they can be re-applied once the form is re-created.
-    const rubricFormData = $(
-      'form[name=instance_question-manual-grade-update-form]'
-    ).serializeArray();
+  document
+    .querySelectorAll('.js-rubric-settings-modal input[name="starting_points"]')
+    .forEach((input) => {
+      input.addEventListener('change', function () {
+        // Custom starting points are only visible if starting point is set to custom.
+        const modal = this.closest('.js-rubric-settings-modal');
+        modal.querySelector('.js-starting-points-custom').style.display =
+          modal.querySelector('input[name="starting_points"]:checked').value === 'CUSTOM'
+            ? ''
+            : 'none';
+      });
+      input.dispatchEvent(new Event('change'));
+    });
 
-    $(this).parents('.modal:first').modal('hide');
-    $.post($(this).attr('action'), $(this).serialize())
-      .done(function (data) {
+  document
+    .querySelectorAll('.js-add-rubric-item-button')
+    .forEach((button) => button.addEventListener('click', addRubricItemRow));
+  document.querySelectorAll('.js-rubric-item-delete').forEach((button) =>
+    button.addEventListener('click', function () {
+      this.closest('tr').remove();
+      updateRubricItemOrderField();
+    })
+  );
+
+  document
+    .querySelectorAll('.js-rubric-items-table tbody tr')
+    .forEach((row) => row.addEventListener('dragover', rowDragOver));
+  document
+    .querySelectorAll('.js-rubric-item-move-button')
+    .forEach((row) => row.addEventListener('dragstart', rowDragStart));
+
+  document
+    .querySelectorAll('.js-rubric-item-description-field')
+    .forEach((button) => button.addEventListener('click', enableRubricItemDescriptionField));
+
+  document.querySelectorAll('.js-rubric-settings-modal form').forEach((form) =>
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      // Save values in grading rubric so they can be re-applied once the form is re-created.
+      const rubricFormData = Array.from(
+        new FormData(
+          document.querySelector('form[name=instance_question-manual-grade-update-form]')
+        ).entries()
+      );
+
+      $(this.closest('.modal')).modal('hide');
+      fetch(this.action, {
+        method: 'POST',
+        body: new URLSearchParams(new FormData(this)),
+      }).then(async (response) => {
+        const data = await response.json();
         if (data.gradingPanel) {
-          $('.js-main-grading-panel').html(data.gradingPanel);
+          document.querySelector('.js-main-grading-panel').innerHTML = data.gradingPanel;
 
           // Restore any values that had been set before the settings were configured.
-          const newRubricForm = $('form[name=instance_question-manual-grade-update-form]');
-          $(newRubricForm).find('input[type="checkbox"]').prop('checked', false);
-          (rubricFormData || []).forEach((item) => {
-            const input = $(newRubricForm).find(`[name="${item.name}"]`);
-            if (input.is('[type="checkbox"]')) {
-              input.filter(`[value="${item.value}"]`).prop('checked', true);
-            } else {
-              input.val(item.value);
-            }
+          const newRubricForm = document.querySelector(
+            'form[name=instance_question-manual-grade-update-form]'
+          );
+          newRubricForm.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+            input.checked = false;
+          });
+          rubricFormData.forEach(([item_name, item_value]) => {
+            newRubricForm.querySelectorAll(`[name="${item_name}"]`).forEach((input) => {
+              if (input.type !== 'checkbox') {
+                input.value = item_value;
+              } else if (input.value === item_value) {
+                input.checked = true;
+              }
+            });
           });
         }
         if (data.rubricSettingsManual) {
-          const content = $(data.rubricSettingsManual).html();
-          $('.rubric-settings-modal-manual').html(content);
+          document.querySelector('.rubric-settings-modal-manual').outerHTML =
+            data.rubricSettingsManual;
         }
         if (data.rubricSettingsAuto) {
-          const content = $(data.rubricSettingsAuto).html();
-          $('.rubric-settings-modal-auto').html(content);
+          document.querySelector('.rubric-settings-modal-auto').outerHTML = data.rubricSettingsAuto;
         }
         resetInstructorGradingPanel();
-      })
-      .fail(function (data) {
-        console.error(data.responseText);
       });
-  });
+    })
+  );
 
   updateRubricItemOrderField();
   computePointsFromRubric();
 }
 
 function updatePointsView() {
-  const form = $('form[name=instance_question-manual-grade-update-form]');
-  const max_auto_points = form.data('max-auto-points');
-  const max_manual_points = form.data('max-manual-points');
-  const max_points = form.data('max-points');
+  const form = document.querySelector('form[name=instance_question-manual-grade-update-form]');
+  const max_auto_points = form.dataset.maxAutoPoints;
+  const max_manual_points = form.dataset.maxManualPoints;
+  const max_points = form.dataset.maxPoints;
 
   const auto_points =
     this.name === 'score_auto_percent'
       ? (this.value * max_auto_points) / 100
-      : form.find('[name=score_auto_points]').val();
+      : form.querySelector('[name=score_auto_points]').value;
   const manual_points =
     this.name === 'score_manual_percent'
       ? (this.value * max_manual_points) / 100
-      : form.find('[name=score_manual_points]').val();
+      : form.querySelector('[name=score_manual_points]').value;
   const points = Math.round(100 * (Number(auto_points) + Number(manual_points))) / 100;
   const auto_perc = Math.round((auto_points * 10000) / (max_auto_points || max_points)) / 100;
   const manual_perc = Math.round((manual_points * 10000) / (max_manual_points || max_points)) / 100;
   const total_perc = Math.round((points * 10000) / max_points) / 100;
 
-  form.find('[name=score_auto_points]').not(this).val(auto_points);
-  form.find('[name=score_auto_percent]').not(this).val(auto_perc);
-  form.find('[name=score_manual_points]').not(this).val(manual_points);
-  form.find('[name=score_manual_percent]').not(this).val(manual_perc);
+  if (this.name !== 'score_auto_points') {
+    form.querySelector('[name=score_auto_points]').value = auto_points;
+  }
+  if (this.name !== 'score_auto_percent') {
+    form.querySelector('[name=score_auto_percent]').value = auto_perc;
+  }
+  if (this.name !== 'score_manual_points') {
+    form.querySelector('[name=score_manual_points]').value = manual_points;
+  }
+  if (this.name !== 'score_manual_percent') {
+    form.querySelector('[name=score_manual_percent]').value = manual_perc;
+  }
 
-  form.find('.js-value-manual-points').text(manual_points);
-  form.find('.js-value-auto-points').text(auto_points);
-  form.find('.js-value-total-points').text(points);
-  form.find('.js-value-manual-percentage').text(manual_perc);
-  form.find('.js-value-auto-percentage').text(auto_perc);
-  form.find('.js-value-total-percentage').text(total_perc);
+  form.querySelector('.js-value-manual-points').text = manual_points;
+  form.querySelector('.js-value-auto-points').text = auto_points;
+  form.querySelector('.js-value-total-points').text = points;
+  form.querySelector('.js-value-manual-percentage').text = manual_perc;
+  form.querySelector('.js-value-auto-percentage').text = auto_perc;
+  form.querySelector('.js-value-total-percentage').text = total_perc;
 }
 
 function computePointsFromRubric() {
-  const manualInput = $('#js-manual-score-value-input-points');
-  const autoInput = $('#js-auto-score-value-input-points');
-  const form = manualInput.parents('form:first');
+  const manualInput = document.querySelector('#js-manual-score-value-input-points');
+  const autoInput = document.querySelector('#js-auto-score-value-input-points');
+  const form = manualInput.closest('form');
   let computedPoints = {
     manual:
-      (manualInput.data('rubric-starting-points') || 0) +
-      (parseFloat(form.find('input[name="score_manual_adjust_points"]').val()) || 0),
+      (manualInput.dataset.rubricStartingPoints || 0) +
+      (parseFloat(form.querySelector('input[name="score_manual_adjust_points"]')?.value) || 0),
     auto:
-      (autoInput.data('rubric-starting-points') || 0) +
-      (parseFloat(form.find('input[name="score_auto_adjust_points"]').val()) || 0),
+      (autoInput.dataset.rubricStartingPoints || 0) +
+      (parseFloat(form.querySelector('input[name="score_auto_adjust_points"]')?.value) || 0),
   };
 
-  $('.js-selectable-rubric-item:checked').each((index, item) => {
-    computedPoints[$(item).data('rubric-item-type')] += $(item).data('rubric-item-points');
+  document.querySelectorAll('.js-selectable-rubric-item:checked').forEach((item) => {
+    computedPoints[item.dataset.rubricItemType] += parseFloat(item.dataset.rubricItemPoints);
   });
-  if (manualInput.data('rubric-active')) {
-    manualInput.val(
-      Math.min(
-        Math.max(computedPoints.manual, manualInput.data('rubric-min-points')),
-        manualInput.data('rubric-max-points')
-      )
+
+  if (manualInput.dataset.rubricActive) {
+    manualInput.value = Math.min(
+      Math.max(computedPoints.manual, manualInput.dataset.rubricMinPoints),
+      manualInput.dataset.rubricMaxPoints
     );
   }
-  if (autoInput.data('rubric-active')) {
-    autoInput.val(
-      Math.min(
-        Math.max(computedPoints.auto, autoInput.data('rubric-min-points')),
-        autoInput.data('rubric-max-points')
-      )
+  if (autoInput.dataset.rubricActive) {
+    autoInput.val = Math.min(
+      Math.max(computedPoints.auto, autoInput.dataset.rubricMinPoints),
+      autoInput.dataset.rubricMaxPoints
     );
   }
   updatePointsView();
 }
 
 function enableRubricItemDescriptionField(event) {
-  const cell = $(event.target).parents('label:first');
-  const data = cell.data();
-  const input = $('<textarea class="form-control">')
-    .attr('name', data.inputName)
-    .text(data.currentValue);
-  cell.after(input).remove();
+  const cell = event.target.closest('label');
+  const input = document.createElement('textarea');
+  input.classList.add('form-control');
+  input.name = cell.dataset.inputName;
+  input.text = cell.dataset.currentValue;
+  cell.parentNode.insertBefore(input, cell);
+  cell.remove();
   input.focus();
 }
 
 function updateRubricItemOrderField() {
-  $('.js-rubric-item-row-order').val((index) => index);
+  document.querySelectorAll('.js-rubric-item-row-order').forEach((input, index) => {
+    input.value = index;
+  });
 }
 
 function moveRowDown(event) {
-  const row = $(event.target).parents('tr:first');
-  row.insertAfter(row.next());
+  const row = event.target.closest('tr');
+  row.parentNode.insertBefore(row.nextSibling, row);
   updateRubricItemOrderField();
 }
 
 function moveRowUp(event) {
-  const row = $(event.target).parents('tr:first');
-  row.insertBefore(row.prev());
+  const row = event.target.closest('tr');
+  row.parentNode.insertBefore(row, row.nextSibling);
   updateRubricItemOrderField();
 }
 
 function rowDragStart(event) {
-  window.rubricItemRowDragging = $(event.target).parents('tr:first');
+  window.rubricItemRowDragging = event.target.closest('tr');
   if (event.originalEvent?.dataTransfer) {
     event.originalEvent.dataTransfer.effectAllowed = 'move';
   }
 }
 
 function rowDragOver(event) {
-  const row = $(event.target).parents('tr:first');
-  const rowList = window.rubricItemRowDragging.parents('tbody:first').find('tr');
-  const draggingRowIdx = rowList.index(window.rubricItemRowDragging);
-  const targetRowIdx = rowList.index(row);
-  // If the indices are -1, then the dragging row and the target row are not in the same table
-  if (targetRowIdx === -1 || draggingRowIdx === -1) return;
+  const row = event.target.closest('tr');
+  // Rows in different tables don't count
+  if (!row || row.parent !== window.rubricItemRowDragging.parent) return;
+  const rowList = Array.from(row.parentNode.childNodes);
+  const draggingRowIdx = rowList.indexOf(window.rubricItemRowDragging);
+  const targetRowIdx = rowList.indexOf(row);
   event.preventDefault();
-  if (targetRowIdx > draggingRowIdx) {
-    row.after(window.rubricItemRowDragging);
+  if (targetRowIdx < draggingRowIdx) {
+    row.parentNode.insertBefore(window.rubricItemRowDragging, row);
+  } else if (row.nextSibling) {
+    row.parentNode.insertBefore(window.rubricItemRowDragging, row.nextSibling);
   } else {
-    row.before(window.rubricItemRowDragging);
+    row.parentNode.appendChild(window.rubricItemRowDragging);
   }
   updateRubricItemOrderField();
 }
 
 function addRubricItemRow() {
-  const modal = $(this).parents('.modal:first');
-  const table = modal.find('.js-rubric-items-table');
-  const next_id = (table.data('next-new-id') ?? 0) + 1;
-  const points = modal.find('.js-negative-grading').prop('checked') ? -1 : +1;
-  table.data('next-new-id', next_id);
+  const modal = this.closest('.modal:first');
+  const table = modal.querySelector('.js-rubric-items-table');
+  const next_id = (table.dataset.nextNewId ?? 0) + 1;
+  const points = modal.querySelector('.js-negative-grading')?.checked ? -1 : +1;
+  table.dataset.nextNewId = next_id;
 
   $('<tr>')
     .on('dragover', rowDragOver)
-    .on('dragenter', rowDragOver)
     .append(
       $('<td>')
         .append(

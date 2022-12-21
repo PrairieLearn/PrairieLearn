@@ -80,7 +80,7 @@
                 </thead>
                 <tbody>
                   <% (rubric?.rubric_items || []).forEach((item, index) => { %>
-                  <tr ondragover="rowDragOver(event)">
+                  <tr>
                     <td class="text-nowrap">
                       <input type="hidden"
                              name="rubric_item[cur<%= item.rubric_item.id %>][id]"
@@ -88,16 +88,17 @@
                       <input type="hidden" class="js-rubric-item-row-order"
                              name="rubric_item[cur<%= item.rubric_item.id %>][order]"
                              value="<%= index %>">
-                      <button type="button" class="btn btn-sm"
-                              draggable="true" ondragstart="rowDragStart(event)">
+                      <button type="button" class="btn btn-sm js-rubric-item-move-button" draggable="true">
                         <i class="fas fa-arrows-up-down"></i>
                       </button>
+                      <!-- TODO for accessibility, review as move to external JS file broke this
                       <button type="button" class="btn btn-sm sr-only" onclick="moveRowDown(event)">
                         Move down
                       </button>
                       <button type="button" class="btn btn-sm sr-only" onclick="moveRowUp(event)">
                         Move up
                       </button>
+                      -->
                       <button type="button" class="btn btn-sm js-rubric-item-delete text-danger">
                         <i class="fas fa-trash"></i>
                         <span class="sr-only">Delete</span>
@@ -117,8 +118,7 @@
                       <label data-input-name="rubric_item[cur<%= item.rubric_item.id %>][description]"
                              data-current-value="<%= item.rubric_item.description %>">
                         <%= item.rubric_item.description %>
-                        <button type="button" class="btn btn-sm"
-                                onclick="enableRubricItemDescriptionField(event)">
+                        <button type="button" class="btn btn-sm js-rubric-item-description-field">
                           <i class="fas fa-pencil"></i>
                         </button>
                       </label>
@@ -127,8 +127,7 @@
                       <label data-input-name="rubric_item[cur<%= item.rubric_item.id %>][staff_instructions]"
                              data-current-value="<%= item.rubric_item.staff_instructions %>">
                         <%= item.rubric_item.staff_instructions %>
-                        <button type="button" class="btn btn-sm"
-                                onclick="enableRubricItemDescriptionField(event)">
+                        <button type="button" class="btn btn-sm js-rubric-item-description-field">
                           <i class="fas fa-pencil"></i>
                         </button>
                       </label>
