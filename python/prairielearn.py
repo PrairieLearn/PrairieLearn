@@ -53,7 +53,7 @@ class QuestionData(TypedDict):
 class ElementTestData(QuestionData):
     test_type: Literal['correct', 'incorrect', 'invalid']
 
-def to_json(v, *, df_encoding_version=1):
+def to_json(v):
     """to_json(v)
 
     If v has a standard type that cannot be json serialized, it is replaced with
