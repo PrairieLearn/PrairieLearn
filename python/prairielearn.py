@@ -2,7 +2,6 @@ import lxml.html
 import html
 import to_precision
 import numpy as np
-import json
 import uuid
 import sympy
 import pandas
