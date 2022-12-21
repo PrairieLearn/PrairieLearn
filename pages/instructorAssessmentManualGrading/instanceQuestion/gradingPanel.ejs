@@ -1,4 +1,7 @@
-<form name="instance_question-manual-grade-update-form" method="POST">
+<form name="instance_question-manual-grade-update-form" method="POST"
+      data-max-auto-points="<%= assessment_question.max_auto_points %>"
+      data-max-manual-points="<%= assessment_question.max_manual_points %>"
+      data-max-points="<%= assessment_question.max_points %>">
   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
   <input type="hidden" name="assessment_id" value="<%= assessment_instance.assessment_id %>">
   <input type="hidden" name="assessment_question_id" value="<%= instance_question.assessment_question_id %>">

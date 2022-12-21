@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global assessment_question_max_points, assessment_question_max_manual_points, assessment_question_max_auto_points, Cookies */
+/* global Cookies */
 
 $(() => {
   resetInstructorGradingPanel();
@@ -164,26 +164,22 @@ function resetInstructorGradingPanel() {
 
 function updatePointsView() {
   const form = $('form[name=instance_question-manual-grade-update-form]');
+  const max_auto_points = form.data('max-auto-points');
+  const max_manual_points = form.data('max-manual-points');
+  const max_points = form.data('max-points');
+
   const auto_points =
     this.name === 'score_auto_percent'
-      ? (this.value * assessment_question_max_auto_points) / 100
+      ? (this.value * max_auto_points) / 100
       : form.find('[name=score_auto_points]').val();
   const manual_points =
     this.name === 'score_manual_percent'
-      ? (this.value * assessment_question_max_manual_points) / 100
+      ? (this.value * max_manual_points) / 100
       : form.find('[name=score_manual_points]').val();
   const points = Math.round(100 * (Number(auto_points) + Number(manual_points))) / 100;
-  const auto_perc =
-    Math.round(
-      (auto_points * 10000) /
-        (assessment_question_max_auto_points || assessment_question_max_points)
-    ) / 100;
-  const manual_perc =
-    Math.round(
-      (manual_points * 10000) /
-        (assessment_question_max_manual_points || assessment_question_max_points)
-    ) / 100;
-  const total_perc = Math.round((points * 10000) / assessment_question_max_points) / 100;
+  const auto_perc = Math.round((auto_points * 10000) / (max_auto_points || max_points)) / 100;
+  const manual_perc = Math.round((manual_points * 10000) / (max_manual_points || max_points)) / 100;
+  const total_perc = Math.round((points * 10000) / max_points) / 100;
 
   form.find('[name=score_auto_points]').not(this).val(auto_points);
   form.find('[name=score_auto_percent]').not(this).val(auto_perc);
