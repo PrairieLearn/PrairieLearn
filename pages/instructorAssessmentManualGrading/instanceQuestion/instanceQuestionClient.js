@@ -115,16 +115,15 @@ function resetInstructorGradingPanel() {
   });
 
   $('.js-rubric-settings-modal form').submit(function (e) {
+    console.log(e);
     e.preventDefault();
     const rubricFormData = $(
       'form[name=instance_question-manual-grade-update-form]'
     ).serializeArray();
 
     $(this).parents('.modal:first').modal('hide');
-    $.post(
-      $(this).attr('action'),
-      $(this).serialize(),
-      function (data) {
+    $.post($(this).attr('action'), $(this).serialize())
+      .done(function (data) {
         if (data.gradingPanel) {
           $('.js-main-grading-panel').html(data.gradingPanel);
 
@@ -149,9 +148,10 @@ function resetInstructorGradingPanel() {
           $('.rubric-settings-modal-auto').html(content);
         }
         resetInstructorGradingPanel();
-      },
-      'json'
-    );
+      })
+      .fail(function (data) {
+        console.error(data.responseText);
+      });
   });
 
   $('.js-rubric-settings-modal .js-add-rubric-item-button').click(addRubricItemRow);

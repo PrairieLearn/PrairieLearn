@@ -1,6 +1,6 @@
 <div class="modal js-rubric-settings-modal rubric-settings-modal-<%= type %>" tabindex="-1" role="dialog">
   <div class="modal-dialog modal-xl border-info" role="document">
-    <form name="rubric-settings-<%= type %>" method="POST">
+    <form name="rubric-settings-<%= type %>" method="POST" class="needs-validation">
       <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
       <input type="hidden" name="__action" value="modify_rubric_settings">
       <input type="hidden" name="rubric_type" value="<%= type %>">
@@ -104,12 +104,12 @@
                       </button>
                     </td>
                     <td style="max-width: 4rem">
-                      <input type="number" class="form-control" step="any"
+                      <input type="number" class="form-control" step="any" required
                              name="rubric_item[cur<%= item.rubric_item.id %>][points]"
                              value="<%= item.rubric_item.points %>">
                     </td>
                     <td>
-                      <input type="text" class="form-control"
+                      <input type="text" class="form-control" required maxlength="100"
                              name="rubric_item[cur<%= item.rubric_item.id %>][short_text]"
                              value="<%= item.rubric_item.short_text %>">
                     </td>

@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS rubric_items (
     rubric_id BIGINT NOT NULL REFERENCES rubrics(id) ON DELETE CASCADE ON UPDATE CASCADE,
     number BIGINT NOT NULL,
     points DOUBLE PRECISION NOT NULL,
-    short_text TEXT,
+    short_text TEXT NOT NULL,
     description TEXT,
     staff_instructions TEXT,
     key_binding TEXT,

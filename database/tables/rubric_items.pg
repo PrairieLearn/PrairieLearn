@@ -6,7 +6,7 @@ columns
     number: bigint not null
     points: double precision not null
     rubric_id: bigint not null
-    short_text: text
+    short_text: text not null
     staff_instructions: text
 
 indexes
