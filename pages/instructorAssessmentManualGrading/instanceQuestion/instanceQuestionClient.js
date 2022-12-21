@@ -7,8 +7,7 @@ $(() => {
   $(document).keypress((event) => {
     // Ignore holding down the key events
     if (event.repeat) return;
-    //event.target.setAttribute('oninput', 'return;');
-    //Ignore events that target an input element
+    // Ignore events that target an input element
     if (
       !$(event.target).is(':input:not(:radio):not(:button):not(:checkbox)') &&
       !event.target.isContentEditable
@@ -46,6 +45,9 @@ function resetInstructorGradingPanel() {
 
   $('#submission-feedback')
     .on('input', function () {
+      // Adjusts the height based on the feedback content. If the feedback changes, the height
+      // changes as well. This is done by resetting the height (so the scrollHeight is computed
+      // based on the minimum height) and then using the scrollHeight plus padding as the new height.
       this.style.height = '';
       const style = window.getComputedStyle(this);
       this.style.height =

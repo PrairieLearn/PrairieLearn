@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS rubric_grading_items (
     rubric_item_id BIGINT NOT NULL REFERENCES rubric_items(id) ON DELETE CASCADE ON UPDATE CASCADE,
     score DOUBLE PRECISION NOT NULL DEFAULT 1,
     points DOUBLE PRECISION NOT NULL,
-    short_text TEXT,
+    short_text TEXT NOT NULL,
     note TEXT
 );
 
