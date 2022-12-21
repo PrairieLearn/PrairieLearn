@@ -1,5 +1,4 @@
 /* eslint-env browser,jquery */
-/* global Cookies */
 
 $(() => {
   resetInstructorGradingPanel();
@@ -26,9 +25,9 @@ function resetInstructorGradingPanel() {
       $('.js-manual-grading-pts-perc-select').prop('checked', use_percentage);
       $('.js-manual-grading-points').toggle(!use_percentage);
       $('.js-manual-grading-percentage').toggle(use_percentage);
-      Cookies.set('manual_grading_score_use', use_percentage ? 'percentage' : 'points');
+      window.localStorage.manual_grading_score_use = use_percentage ? 'percentage' : 'points';
     })
-    .prop('checked', Cookies.get('manual_grading_score_use') === 'percentage')
+    .prop('checked', window.localStorage.manual_grading_score_use === 'percentage')
     .first()
     .change();
 
