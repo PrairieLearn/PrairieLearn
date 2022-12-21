@@ -42,9 +42,6 @@ CREATE TABLE IF NOT EXISTS rubric_grading_items (
     note TEXT
 );
 
--- TODO Consider other indices
-
-ALTER TABLE rubric_grading_items DROP CONSTRAINT IF EXISTS rubric_grading_items_rubric_grading_id_rubric_item_id_key;
 ALTER TABLE rubric_grading_items ADD CONSTRAINT rubric_grading_items_rubric_grading_id_rubric_item_id_key UNIQUE (rubric_grading_id, rubric_item_id);
 
 ALTER TABLE assessment_questions ADD COLUMN IF NOT EXISTS manual_rubric_id BIGINT REFERENCES rubrics(id) ON DELETE SET NULL ON UPDATE CASCADE;
