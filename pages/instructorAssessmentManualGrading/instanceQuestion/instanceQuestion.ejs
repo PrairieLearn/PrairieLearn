@@ -14,13 +14,8 @@
     <script src="/localscripts/question<%= effectiveQuestionType %>.js"></script>
     <% } %>
     <%- extraHeadersHtml %>
+    <%- compiled_script_tag('instructorAssessmentManualGradingInstanceQuestion.js') %>
   </head>
-  <script>
-    const assessment_question_max_auto_points = <%= assessment_question.max_auto_points %>;
-    const assessment_question_max_manual_points = <%= assessment_question.max_manual_points %>;
-    const assessment_question_max_points = <%= assessment_question.max_points %>;
-    <%- include('instanceQuestionClient.js'); %>
-  </script>
   <body>
     <%- include('../../partials/navbar'); %>
     <div class="container-fluid">
