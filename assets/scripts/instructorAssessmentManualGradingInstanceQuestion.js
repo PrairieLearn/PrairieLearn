@@ -19,6 +19,9 @@ $(() => {
 function resetInstructorGradingPanel() {
   $('[data-toggle="tooltip"]').tooltip();
 
+  // The visibility of points or percentage is based on a toggle that is persisted in local storage,
+  // so that graders can use the same setting across multiple instance questions as they move
+  // through grading.
   $('.js-manual-grading-pts-perc-select')
     .change(function () {
       const use_percentage = this.checked;
@@ -31,6 +34,7 @@ function resetInstructorGradingPanel() {
     .first()
     .change();
 
+  // Auto points are disabled by default to avoid confusion, since they are not typically changed by this interface.
   $('.js-enable-auto-score-edit').click(function () {
     const form = $(this).parents('form');
     form.find('.js-auto-score-value-info').hide();
@@ -89,6 +93,7 @@ function resetInstructorGradingPanel() {
 
   $('.js-rubric-settings-modal input[name="use_rubrics"]')
     .change(function () {
+      // Rubric settings are only visible if rubrics are enabled
       $(this)
         .parents('.js-rubric-settings-modal')
         .find('.js-rubric-settings-info')
@@ -98,6 +103,7 @@ function resetInstructorGradingPanel() {
 
   $('.js-rubric-settings-modal input[name="starting_points"]')
     .change(function () {
+      // Custom starting points are only visible if starting point is set to custom.
       $(this)
         .parents('.js-rubric-settings-modal')
         .find('.js-starting-points-custom')
@@ -110,14 +116,15 @@ function resetInstructorGradingPanel() {
     })
     .change();
 
+  $('.js-add-rubric-item-button').click(addRubricItemRow);
   $('.js-rubric-item-delete').click(function () {
     $(this).parents('tr:first').remove();
     updateRubricItemOrderField();
   });
 
   $('.js-rubric-settings-modal form').submit(function (e) {
-    console.log(e);
     e.preventDefault();
+    // Save values in grading rubric so they can be re-applied once the form is re-created.
     const rubricFormData = $(
       'form[name=instance_question-manual-grade-update-form]'
     ).serializeArray();
@@ -154,8 +161,6 @@ function resetInstructorGradingPanel() {
         console.error(data.responseText);
       });
   });
-
-  $('.js-rubric-settings-modal .js-add-rubric-item-button').click(addRubricItemRow);
 
   updateRubricItemOrderField();
   computePointsFromRubric();
@@ -266,10 +271,14 @@ function rowDragOver(event) {
   const rowList = window.rubricItemRowDragging.parents('tbody:first').find('tr');
   const draggingRowIdx = rowList.index(window.rubricItemRowDragging);
   const targetRowIdx = rowList.index(row);
+  // If the indices are -1, then the dragging row and the target row are not in the same table
   if (targetRowIdx === -1 || draggingRowIdx === -1) return;
   event.preventDefault();
-  if (targetRowIdx > draggingRowIdx) row.after(window.rubricItemRowDragging);
-  else row.before(window.rubricItemRowDragging);
+  if (targetRowIdx > draggingRowIdx) {
+    row.after(window.rubricItemRowDragging);
+  } else {
+    row.before(window.rubricItemRowDragging);
+  }
   updateRubricItemOrderField();
 }
 
@@ -308,14 +317,14 @@ function addRubricItemRow() {
     )
     .append(
       $('<td style="max-width: 4rem">').append(
-        $('<input type="number" class="form-control" step="any">')
+        $('<input type="number" class="form-control" step="any" required>')
           .attr('name', `rubric_item[new${next_id}][points]`)
           .val(points)
       )
     )
     .append(
       $('<td>').append(
-        $('<input type="text" class="form-control">').attr(
+        $('<input type="text" class="form-control" required maxlength="100">').attr(
           'name',
           `rubric_item[new${next_id}][short_text]`
         )
@@ -343,8 +352,9 @@ function addRubricItemRow() {
           )
       )
     )
+    .append('New')
     .appendTo(table)
-    .find('input[type="text"]:first')
+    .find('input[type="number"]:first')
     .focus();
 
   updateRubricItemOrderField();
