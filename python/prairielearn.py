@@ -100,32 +100,7 @@ def to_json(v, *, df_encoding_version=1):
             M.append(row)
         return {'_type': 'sympy_matrix', '_value': M, '_variables': s, '_shape': [num_rows, num_cols]}
     elif isinstance(v, pandas.DataFrame):
-        if df_encoding_version == 1:
-            return {'_type': 'dataframe', '_value': {'index': list(v.index), 'columns': list(v.columns), 'data': v.values.tolist()}}
-
-        elif df_encoding_version == 2:
-            # The next lines of code are required to address the JSON table-orient
-            # generating numeric keys instead of strings for an index sequence with
-            # only numeric values (c.f. pandas-dev/pandas#46392)
-            df_modified_names = v.copy()
-
-            indexing_dtype = df_modified_names.columns.dtype
-            if indexing_dtype == np.float64 or indexing_dtype == np.int64:
-                df_modified_names.columns = df_modified_names.columns.astype('string')
-
-            # For version 2 storing a data frame, we use the table orientation alongside of
-            # enforcing a date format to allow for numeric values
-            # Details: https://pandas.pydata.org/docs/reference/api/pandas.read_json.html
-            # Convert to JSON string with escape characters
-            encoded_json_str_df = df_modified_names.to_json(orient="table", date_format="iso")
-            # Export to native JSON structure
-            pure_json_df = json.loads(encoded_json_str_df)
-
-            return {'_type': 'dataframe-v2', '_value': pure_json_df}
-
-        else:
-            raise ValueError(f"Invalid df_encoding_version: {df_encoding_version}. Must be 1 or 2")
-
+        return {'_type': 'dataframe', '_value': {'index': list(v.index), 'columns': list(v.columns), 'data': v.values.tolist()}}
     else:
         return v
 
@@ -206,11 +181,6 @@ def from_json(v):
                     return pandas.DataFrame(index=val['index'], columns=val['columns'], data=val['data'])
                 else:
                     raise ValueError('variable of type dataframe should have value with index, columns, and data')
-            elif v['_type'] == 'dataframe-v2':
-                # Convert native JSON back to a string representation so that
-                # pandas read_json() can process it.
-                value_str = json.dumps(v['_value'])
-                return pandas.read_json(value_str, orient="table")
             else:
                 raise ValueError('variable has unknown type {:s}'.format(v['_type']))
     return v
