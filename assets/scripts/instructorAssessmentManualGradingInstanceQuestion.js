@@ -333,78 +333,35 @@ function rowDragOver(event) {
 }
 
 function addRubricItemRow() {
-  const modal = this.closest('.modal:first');
+  const modal = this.closest('.modal');
   const table = modal.querySelector('.js-rubric-items-table');
-  const next_id = (table.dataset.nextNewId ?? 0) + 1;
+  const next_id = parseFloat(table.dataset.nextNewId ?? 0) + 1;
   const points = modal.querySelector('.js-negative-grading')?.checked ? -1 : +1;
   table.dataset.nextNewId = next_id;
 
-  $('<tr>')
-    .on('dragover', rowDragOver)
-    .append(
-      $('<td>')
-        .append(
-          $('<input type="hidden" class="js-rubric-item-row-order">').attr(
-            'name',
-            `rubric_item[new${next_id}][order]`
-          )
-        )
-        .append(
-          $('<button type="button" class="btn btn-sm">')
-            .attr('draggable', 'true')
-            .append('<i class="fas fa-arrows-up-down">')
-            .on('dragstart', rowDragStart)
-        )
-        .append(
-          $('<button type="button" class="btn btn-sm sr-only">')
-            .text('Move down')
-            .click(moveRowDown)
-        )
-        .append(
-          $('<button type="button" class="btn btn-sm sr-only">').text('Move up').click(moveRowUp)
-        )
-    )
-    .append(
-      $('<td style="max-width: 4rem">').append(
-        $('<input type="number" class="form-control" step="any" required>')
-          .attr('name', `rubric_item[new${next_id}][points]`)
-          .val(points)
-      )
-    )
-    .append(
-      $('<td>').append(
-        $('<input type="text" class="form-control" required maxlength="100">').attr(
-          'name',
-          `rubric_item[new${next_id}][short_text]`
-        )
-      )
-    )
-    .append(
-      $('<td>').append(
-        $('<label>')
-          .data('input-name', `rubric_item[new${next_id}][description]`)
-          .append(
-            $('<button type="button" class="btn btn-sm">')
-              .click(enableRubricItemDescriptionField)
-              .append('<i class="fas fa-pencil"></i>')
-          )
-      )
-    )
-    .append(
-      $('<td>').append(
-        $('<label>')
-          .data('input-name', `rubric_item[new${next_id}][staff_instructions]`)
-          .append(
-            $('<button type="button" class="btn btn-sm">')
-              .click(enableRubricItemDescriptionField)
-              .append('<i class="fas fa-pencil"></i>')
-          )
-      )
-    )
-    .append('New')
-    .appendTo(table)
-    .find('input[type="number"]:first')
-    .focus();
+  const row = modal
+    .querySelector('.js-new-row-rubric-item')
+    .content.firstElementChild.cloneNode(true);
+  table.appendChild(row);
 
+  row.addEventListener('dragover', rowDragOver);
+  row.querySelector('.js-rubric-item-move-button').addEventListener('dragstart', rowDragStart);
+
+  row.querySelector('.js-rubric-item-row-order').name = `rubric_item[new${next_id}][order]`;
+  row.querySelector('.js-rubric-item-points').name = `rubric_item[new${next_id}][points]`;
+  row.querySelector('.js-rubric-item-points').value = points;
+  row.querySelector('.js-rubric-item-short-text').name = `rubric_item[new${next_id}][short_text]`;
+  row.querySelector(
+    '.js-rubric-item-description'
+  ).dataset.inputName = `rubric_item[new${next_id}][description]`;
+  row.querySelector(
+    '.js-rubric-item-staff-instructions'
+  ).dataset.inputName = `rubric_item[new${next_id}][staff_instructions]`;
+
+  row
+    .querySelectorAll('.js-rubric-item-description-field')
+    .forEach((button) => button.addEventListener('click', enableRubricItemDescriptionField));
+
+  row.querySelector('.js-rubric-item-points').focus();
   updateRubricItemOrderField();
 }

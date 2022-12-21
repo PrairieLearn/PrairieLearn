@@ -145,6 +145,51 @@
               <button type="button" class="btn btn-sm btn-secondary js-add-rubric-item-button">
                 Add item
               </button>
+              <template class="js-new-row-rubric-item">
+                <tr>
+                  <td class="text-nowrap">
+                    <input type="hidden" class="js-rubric-item-row-order">
+                    <button type="button" class="btn btn-sm js-rubric-item-move-button" draggable="true">
+                      <i class="fas fa-arrows-up-down"></i>
+                    </button>
+                    <!-- TODO for accessibility, review as move to external JS file broke this
+                    <button type="button" class="btn btn-sm sr-only" onclick="moveRowDown(event)">
+                           Move down
+                         </button>
+                         <button type="button" class="btn btn-sm sr-only" onclick="moveRowUp(event)">
+                           Move up
+                         </button>
+                    -->
+                    <button type="button" class="btn btn-sm js-rubric-item-delete text-danger">
+                      <i class="fas fa-trash"></i>
+                      <span class="sr-only">Delete</span>
+                    </button>
+                  </td>
+                  <td style="max-width: 4rem">
+                    <input type="number" class="form-control js-rubric-item-points" step="any" required>
+                  </td>
+                  <td>
+                    <input type="text" class="form-control js-rubric-item-short-text" required maxlength="100">
+                  </td>
+                  <td>
+                    <label class="js-rubric-item-description">
+                      <button type="button" class="btn btn-sm js-rubric-item-description-field">
+                        <i class="fas fa-pencil"></i>
+                      </button>
+                    </label>
+                  </td>
+                  <td>
+                    <label class="js-rubric-item-staff-instructions">
+                      <button type="button" class="btn btn-sm js-rubric-item-description-field">
+                        <i class="fas fa-pencil"></i>
+                      </button>
+                    </label>
+                  </td>
+                  <td>
+                    New
+                  </td>
+                </tr>
+              </template>
               <% if (variant.params || variant.true_answer) { %>
               <div class="small form-text text-muted">
                 Rubric items may be populated with values like:
