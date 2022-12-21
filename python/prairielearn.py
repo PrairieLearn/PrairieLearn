@@ -262,15 +262,6 @@ def get_string_attrib(element, name, *args):
     (str_val, is_default) = _get_attrib(element, name, *args)
     return str_val
 
-@overload
-def get_boolean_attrib(element: lxml.html.HtmlElement, name: str, *args: None) -> Optional[bool]: ...
-
-@overload
-def get_boolean_attrib(element: lxml.html.HtmlElement, name: str, *args: bool) -> bool: ...
-
-@overload
-def get_boolean_attrib(element: lxml.html.HtmlElement, name: str) -> bool: ...
-
 def get_boolean_attrib(element, name, *args):
     """value = get_boolean_attrib(element, name, default)
 
