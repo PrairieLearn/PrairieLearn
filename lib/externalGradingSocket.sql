@@ -26,5 +26,5 @@ FROM
 WHERE
     gj_orig.id = $grading_job_id
     AND gj.grading_method != 'Manual'
-ORDER BY gj.date, gj.id
+ORDER BY gj.date DESC, gj.id DESC
 LIMIT 1;
