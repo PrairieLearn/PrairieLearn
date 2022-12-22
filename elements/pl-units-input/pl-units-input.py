@@ -210,14 +210,16 @@ def parse(element_html, data):
         data['submitted_answers'][name] = blank_value
 
     ureg = UnitRegistry()
+    parsed_answer = ureg.Quantity(a_sub)
 
     # checks for no unit in submitted answer
-    if ureg.Quantity(a_sub).dimensionless:
+    if parsed_answer.dimensionless:
         data['format_errors'][name] = 'Invalid format. The submitted answer has no unit.'
         data['submitted_answers'][name] = None
 
     # checks for no number in submitted answer
-    numberless = units.DimensionfulQuantity.check_numberless(a_sub)
+    # TODO maybe make a helper function that checks for this?
+    numberless = '1' not in a_sub and parsed_answer.magnitude == 1
     if numberless and not allow_numberless:
         data['format_errors'][name] = 'Invalid format. The submitted answer has no number.'
         data['submitted_answers'][name] = None
