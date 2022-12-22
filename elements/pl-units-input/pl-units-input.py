@@ -46,6 +46,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             raise ValueError("Duplicate correct_answers variable name: {name}")
         data['correct_answers'][name] = correct_answer
 
+    digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
+    if digits <= 0:
+        raise ValueError(f"Number of digits specified must be at least 1, not {digits}.")
+
 
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
@@ -71,14 +75,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         elif comparison == 'exact':
             placeholder_text = 'Number (exact) + Unit'
         elif comparison == 'sigfig':
-            #TODO fix number name mistake
             digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
-            placeholder_text = f'Number ({digits} significant figures) + Unit'
+            figure_str = 'figure' if digits == 1 else 'figures'
+            placeholder_text = f'Number ({digits} significant {figure_str}) + Unit'
         elif comparison == 'relabs':
             rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, 'atol', ATOL_DEFAULT)
             placeholder_text = f'Number (rtol={rtol}, atol={atol}) + Unit'
         else:
+            #TODO maybe can't ever get here?
             placeholder_text = 'Number + Unit'
 
         html_params = {
@@ -99,18 +104,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
-
-        # if score is not None:
-        #     try:
-        #         score = float(score)
-        #         if score >= 1:
-        #             html_params['correct'] = True
-        #         elif score > 0:
-        #             html_params['partial'] = math.floor(score * 100)
-        #         else:
-        #             html_params['incorrect'] = True
-        #     except ValueError:
-        #         raise ValueError('invalid score' + score)
 
         html_params['display_append_span'] = html_params['show_info'] or suffix
 
@@ -158,18 +151,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
-
-        # if score is not None:
-        #     try:
-        #         score = float(score)
-        #         if score >= 1:
-        #             html_params['correct'] = True
-        #         elif score > 0:
-        #             html_params['partial'] = math.floor(score * 100)
-        #         else:
-        #             html_params['incorrect'] = True
-        #     except ValueError:
-        #         raise ValueError('invalid score' + score)
 
         html_params['error'] = html_params['parse_error'] or html_params.get('missing_input', False)
         with open('pl-units-input.mustache', 'r', encoding='utf-8') as f:
