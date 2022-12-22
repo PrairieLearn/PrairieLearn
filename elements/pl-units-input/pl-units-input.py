@@ -5,7 +5,8 @@ import chevron
 import lxml.html
 import prairielearn as pl
 
-from pint import UnitRegistry, errors
+from pint import UnitRegistry, errors, Quantity
+from typing import Tuple, Optional
 from typing_extensions import assert_never
 
 WEIGHT_DEFAULT = 1
@@ -231,6 +232,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
     comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
+    digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
+    rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
+    atol = pl.get_float_attrib(element, 'atol', ATOL_DEFAULT)
 
     a_tru = data['correct_answers'].get(name, None)
     if a_tru is None:
@@ -239,48 +243,75 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     # Store cache in path local to question. Needed to prevent slow grading / parsing times
     # due to object creation
     ureg = UnitRegistry(cache_folder=":auto:")
-    a_tru_parsed = ureg.Quantity(a_tru)  # implicit assumption that true answer is formatted correctly
+    parsed_correct_ans = ureg.Quantity(a_tru)  # implicit assumption that true answer is formatted correctly
 
 
-    a_sub = data['submitted_answers'].get(name, None)
-    if a_sub is None:
-        data['partial_scores'][name] = {'score': 0, 'weight': weight}
-        return
+    #a_sub = data['submitted_answers'].get(name, None)
+    #if a_sub is None:
+    #    data['partial_scores'][name] = {'score': 0, 'weight': weight}
+    #    return
 
-    a_sub_parsed = ureg.Quantity(a_sub)  # will return no error, assuming parse() catches all of them
+    def magnitude_comparison(correct_ans: Quantity, submitted_ans: Quantity) -> bool:
+        """Returns true if student_ans is close enough to correct answer in magnitude based on comparison algorithm"""
+        if comparison == 'exact':
+            return correct_ans.magnitude == submitted_ans.magnitude
+        elif comparison == 'sigfig':
+            return pl.is_correct_scalar_sf(correct_ans.magnitude, submitted_ans.magnitude, digits)
+        elif comparison == 'relabs':
+            return pl.is_correct_scalar_ra(correct_ans.magnitude, submitted_ans.magnitude, rtol, atol)
+
+        #TODO add assert never here
+
+    def grade_unit_input(submitted_ans: str) -> Tuple[float, Optional[str]]:
+        # will return no error, assuming parse() catches all of them
+        parsed_submission = ureg.Quantity(submitted_ans)
+        magnitudes_match = magnitude_comparison(parsed_correct_ans, parsed_submission)
+        units_match = parsed_correct_ans.units == parsed_submission.units
+
+        if magnitudes_match and units_match:
+            return 1.0, None
+        elif magnitudes_match and not units_match:
+            return 0.7, "The magnitude of your answer is correct, but your units are incorrect."
+        elif units_match and not magnitudes_match:
+            return 0.3, "Your answer has correct units, but the magnitude does not match the reference solution."
+
+        return 0.0, "Your answer is incorrect."
+
+
+    pl.grade_question_parameterized(data, name, grade_unit_input, weight)
 
     # TODO rewrite this with grade question parameterized framework
 
-    if comparison == 'exact':
-        if a_tru_parsed == a_sub_parsed:
-            data['partial_scores'][name] = {'score': 1, 'weight': weight}
-        elif a_tru_parsed.units == a_sub_parsed.units:  # if units are in the same dimension, allow half marks
-            data['partial_scores'][name] = {'score': 0.5, 'weight': weight}
-        else:
-            data['partial_scores'][name] = {'score': 0, 'weight': weight}
-    elif comparison == 'sigfig':
-        digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
-        units_equal = a_tru_parsed.units == a_sub_parsed.units
+    # if comparison == 'exact':
+    #     if a_tru_parsed == a_sub_parsed:
+    #         data['partial_scores'][name] = {'score': 1, 'weight': weight}
+    #     elif a_tru_parsed.units == a_sub_parsed.units:  # if units are in the same dimension, allow half marks
+    #         data['partial_scores'][name] = {'score': 0.5, 'weight': weight}
+    #     else:
+    #         data['partial_scores'][name] = {'score': 0, 'weight': weight}
+    # elif comparison == 'sigfig':
 
-        if pl.is_correct_scalar_sf(a_tru_parsed.magnitude, a_sub_parsed.magnitude, digits) and units_equal:
-            data['partial_scores'][name] = {'score': 1, 'weight': weight}
-        elif units_equal:  # if units are in the same dimension, allow half marks
-            data['partial_scores'][name] = {'score': 0.5, 'weight': weight}
-        else:
-            data['partial_scores'][name] = {'score': 0, 'weight': weight}
-    elif comparison == 'relabs':
-        rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
-        atol = pl.get_float_attrib(element, 'atol', ATOL_DEFAULT)
-        units_equal = a_tru_parsed.units == a_sub_parsed.units
+    #     units_equal = a_tru_parsed.units == a_sub_parsed.units
 
-        if pl.is_correct_scalar_ra(a_tru_parsed.magnitude, a_sub_parsed.magnitude, rtol, atol) and units_equal:
-            data['partial_scores'][name] = {'score': 1, 'weight': weight}
-        elif units_equal:  # if units are in the same dimension, allow half marks
-            data['partial_scores'][name] = {'score': 0.5, 'weight': weight}
-        else:
-            data['partial_scores'][name] = {'score': 0, 'weight': weight}
-    else:
-        raise ValueError('method of comparison "%s" us not valid' % comparison)
+    #     if  and units_equal:
+    #         data['partial_scores'][name] = {'score': 1, 'weight': weight}
+    #     elif units_equal:  # if units are in the same dimension, allow half marks
+    #         data['partial_scores'][name] = {'score': 0.5, 'weight': weight}
+    #     else:
+    #         data['partial_scores'][name] = {'score': 0, 'weight': weight}
+    # elif comparison == 'relabs':
+    #     rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
+    #     atol = pl.get_float_attrib(element, 'atol', ATOL_DEFAULT)
+    #     units_equal = a_tru_parsed.units == a_sub_parsed.units
+
+    #     if  and units_equal:
+    #         data['partial_scores'][name] = {'score': 1, 'weight': weight}
+    #     elif units_equal:  # if units are in the same dimension, allow half marks
+    #         data['partial_scores'][name] = {'score': 0.5, 'weight': weight}
+    #     else:
+    #         data['partial_scores'][name] = {'score': 0, 'weight': weight}
+    # else:
+    #     raise ValueError('method of comparison "%s" us not valid' % comparison)
 
 
 def test(element_html: str, data: pl.ElementTestData) -> None:
