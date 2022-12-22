@@ -5,7 +5,7 @@ import chevron
 import lxml.html
 import prairielearn as pl
 
-from pint import UnitRegistry
+from pint import UnitRegistry, errors
 
 WEIGHT_DEFAULT = 1
 CORRECT_ANSWER_DEFAULT = None
@@ -193,7 +193,6 @@ def parse(element_html, data):
     allow_blank = pl.get_string_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT)
     allow_numberless = pl.get_string_attrib(element, 'allow-numberless', ALLOW_NUMBERLESS_DEFAULT)
     blank_value = pl.get_string_attrib(element, 'blank-value', str(BLANK_VALUE_DEFAULT))
-    numberless_value = pl.get_string_attrib(element, 'numberless-value', str(NUMBERLESS_VALUE_DEFAULT))
 
     # retrieves submitted answer
     a_sub = data['submitted_answers'].get(name, None)
@@ -210,7 +209,13 @@ def parse(element_html, data):
         data['submitted_answers'][name] = blank_value
 
     ureg = UnitRegistry()
-    parsed_answer = ureg.Quantity(a_sub)
+
+    # checks for invalids by parsing as a dimensionful quantity
+    # TODO check for more possible exceptions here?
+    try:
+        parsed_answer = ureg.Quantity(a_sub)
+    except errors.UndefinedUnitError:  # incorrect units
+        data['format_errors'][name] = 'Invalid unit.'
 
     # checks for no unit in submitted answer
     if parsed_answer.dimensionless:
@@ -218,23 +223,11 @@ def parse(element_html, data):
         data['submitted_answers'][name] = None
 
     # checks for no number in submitted answer
-    # TODO maybe make a helper function that checks for this?
+    # TODO maybe make a helper function that checks for this? I don't think this is being done right
     numberless = '1' not in a_sub and parsed_answer.magnitude == 1
     if numberless and not allow_numberless:
         data['format_errors'][name] = 'Invalid format. The submitted answer has no number.'
         data['submitted_answers'][name] = None
-    elif numberless and allow_numberless:
-        data['submitted_answers'][name] = numberless_value + a_sub
-
-    # checks for invalids by parsing as a dimensionful quantity
-    try:
-        Q_(a_sub)
-    except units.units.InvalidUnit:  # incorrect units
-        data['format_errors'][name] = 'Invalid unit.'
-    except units.units.DisallowedExpression:  # incorrect usage of prefixes + imperial
-        data['format_errors'][name] = 'Invalid unit.'
-    except ValueError:  # can't convert to float
-        data['format_errors'][name] = 'Invalid number.'
 
 
 def grade(element_html, data):
@@ -246,35 +239,41 @@ def grade(element_html, data):
     a_tru = data['correct_answers'].get(name, None)
     if a_tru is None:
         return
-    a_tru = units.DimensionfulQuantity.from_string(a_tru)  # implicit assumption that true answer is formatted correctly
+
+    ureg = UnitRegistry()
+
+    a_tru_parsed = ureg.Quantity(a_tru)  # implicit assumption that true answer is formatted correctly
 
     a_sub = data['submitted_answers'].get(name, None)
     if a_sub is None:
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
         return
-    a_sub = units.DimensionfulQuantity.from_string(a_sub)  # will return no error, assuming parse() catches all of them
+
+    a_sub_parsed = ureg.Quantity(a_sub)  # will return no error, assuming parse() catches all of them
+
+    # TODO rewrite this with grade question parameterized framework
 
     if comparison == 'exact':
-        if a_tru == a_sub:
+        if a_tru_parsed == a_sub_parsed:
             data['partial_scores'][name] = {'score': 1, 'weight': weight}
-        elif a_tru.unit == a_sub.unit:  # if units are in the same dimension, allow half marks
+        elif a_tru_parsed.units == a_sub_parsed.units:  # if units are in the same dimension, allow half marks
             data['partial_scores'][name] = {'score': 0.5, 'weight': weight}
         else:
             data['partial_scores'][name] = {'score': 0, 'weight': weight}
     elif comparison == 'sigfig':
         digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
-        if a_tru.sigfig_equals(a_sub, digits):
+        if a_tru_parsed.sigfig_equals(a_sub_parsed, digits):
             data['partial_scores'][name] = {'score': 1, 'weight': weight}
-        elif a_tru.unit == a_sub.unit:  # if units are in the same dimension, allow half marks
+        elif a_tru_parsed.units == a_sub_parsed.units:  # if units are in the same dimension, allow half marks
             data['partial_scores'][name] = {'score': 0.5, 'weight': weight}
         else:
             data['partial_scores'][name] = {'score': 0, 'weight': weight}
     elif comparison == 'relabs':
         rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
         atol = pl.get_float_attrib(element, 'atol', ATOL_DEFAULT)
-        if a_tru.relabs_equals(a_sub, rtol, atol):
+        if a_tru_parsed.relabs_equals(a_sub_parsed, rtol, atol):
             data['partial_scores'][name] = {'score': 1, 'weight': weight}
-        elif a_tru.unit == a_sub.unit:  # if units are in the same dimension, allow half marks
+        elif a_tru_parsed.units == a_sub_parsed.units:  # if units are in the same dimension, allow half marks
             data['partial_scores'][name] = {'score': 0.5, 'weight': weight}
         else:
             data['partial_scores'][name] = {'score': 0, 'weight': weight}
@@ -294,6 +293,7 @@ def test(element_html, data):
         data['raw_submitted_answers'][name] = str(a_tru)
         data['partial_scores'][name] = {'score': 1, 'weight': weight}
     elif result == 'incorrect':
+        # TODO add test case where unit is switched, and test case where
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
         i = units.DimensionfulQuantity.get_index(a_tru)
         u = 's' if a_tru[i:].strip() == 'm' else 'm'
