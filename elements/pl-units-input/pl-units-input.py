@@ -262,18 +262,22 @@ def grade(element_html, data):
             data['partial_scores'][name] = {'score': 0, 'weight': weight}
     elif comparison == 'sigfig':
         digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
-        if a_tru_parsed.sigfig_equals(a_sub_parsed, digits):
+        units_equal = a_tru_parsed.units == a_sub_parsed.units
+
+        if pl.is_correct_scalar_sf(a_tru_parsed.magnitude, a_sub_parsed.magnitude, digits) and units_equal:
             data['partial_scores'][name] = {'score': 1, 'weight': weight}
-        elif a_tru_parsed.units == a_sub_parsed.units:  # if units are in the same dimension, allow half marks
+        elif units_equal:  # if units are in the same dimension, allow half marks
             data['partial_scores'][name] = {'score': 0.5, 'weight': weight}
         else:
             data['partial_scores'][name] = {'score': 0, 'weight': weight}
     elif comparison == 'relabs':
         rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
         atol = pl.get_float_attrib(element, 'atol', ATOL_DEFAULT)
-        if a_tru_parsed.relabs_equals(a_sub_parsed, rtol, atol):
+        units_equal = a_tru_parsed.units == a_sub_parsed.units
+
+        if pl.is_correct_scalar_ra(a_tru_parsed.magnitude, a_sub_parsed.magnitude, rtol, atol) and units_equal:
             data['partial_scores'][name] = {'score': 1, 'weight': weight}
-        elif a_tru_parsed.units == a_sub_parsed.units:  # if units are in the same dimension, allow half marks
+        elif units_equal:  # if units are in the same dimension, allow half marks
             data['partial_scores'][name] = {'score': 0.5, 'weight': weight}
         else:
             data['partial_scores'][name] = {'score': 0, 'weight': weight}
