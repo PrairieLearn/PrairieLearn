@@ -14,10 +14,9 @@ LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = 'inline'
 ALLOW_BLANK_DEFAULT = False
-ALLOW_NUMBERLESS_DEFAULT = False
+UNITS_ONLY_DEFAULT = False
 BLANK_VALUE_DEFAULT = ''
-NUMBERLESS_VALUE_DEFAULT = 0
-COMPARISON_DEFAULT = 'sigfig'
+COMPARISON_DEFAULT = 'relabs'
 RTOL_DEFAULT = 1e-2
 ATOL_DEFAULT = 1e-8
 DIGITS_DEFAULT = 2
@@ -32,8 +31,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     required_attribs = ['answers-name']
     optional_attribs = [
         'weight', 'correct-answer', 'label', 'suffix', 'display',
-        'allow-blank', 'allow-numberless',
-        'blank-value', 'numberless-value',
+        'allow-blank',
+        'blank-value', 'units-only',
         'comparison', 'rtol', 'atol', 'digits',
         'size', 'show-help-text', 'show-placeholder'
     ]
@@ -57,6 +56,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     size = pl.get_integer_attrib(element, 'size', SIZE_DEFAULT)
     comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
     show_placeholder = pl.get_boolean_attrib(element, 'show-placeholder', SHOW_PLACEHOLDER_DEFAULT)
+    units_only = pl.get_boolean_attrib(element, 'units-only', UNITS_ONLY_DEFAULT)
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -64,10 +64,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         # Get info strings
         with open('pl-units-input.mustache', 'r', encoding='utf-8') as f:
-            info = chevron.render(f, {'format': True}).strip()
+            info = chevron.render(f, {'format': True, 'units_only': units_only}).strip()
 
-        #TODO change placeholder for units only?
-        if comparison == 'exact':
+        if units_only:
+            placeholder_text = "Unit"
+        elif comparison == 'exact':
             placeholder_text = 'Number (exact) + Unit'
         elif comparison == 'sigfig':
             #TODO fix number name mistake
@@ -197,8 +198,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     allow_blank = pl.get_string_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT)
-    allow_numberless = pl.get_string_attrib(element, 'allow-numberless', ALLOW_NUMBERLESS_DEFAULT)
-    blank_value = pl.get_string_attrib(element, 'blank-value', str(BLANK_VALUE_DEFAULT))
+    units_only = pl.get_boolean_attrib(element, 'units-only', UNITS_ONLY_DEFAULT)
+    blank_value = pl.get_string_attrib(element, 'blank-value', BLANK_VALUE_DEFAULT)
 
     # retrieves submitted answer
     a_sub = data['submitted_answers'].get(name, None)
@@ -236,8 +237,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # checks for no number in submitted answer
     # TODO maybe make a helper function that checks for this? I don't think this is being done right
     numberless = '1' not in a_sub and parsed_answer.magnitude == 1
-    if numberless and not allow_numberless:
-        data['format_errors'][name] = 'Invalid format. The submitted answer has no number.'
+
+    if numberless and not units_only:
+        data['format_errors'][name] = 'Invalid format. The submitted answer should be a unit only.'
         data['submitted_answers'][name] = None
         return
 
