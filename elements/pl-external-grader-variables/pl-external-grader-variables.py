@@ -42,7 +42,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     declared_empty = pl.get_boolean_attrib(element, "empty", EMPTY_DEFAULT)
 
     if declared_empty:
-        if len(frontend_variables) > 0:
+        if frontend_variables:
             raise ValueError(
                 f"Variable name '{params_name}' was declared empty, but has variables defined in 'question.html'."
             )
@@ -53,7 +53,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         data["params"][params_name] = []
     elif params_name not in data["params"]:
-        if len(frontend_variables) == 0:
+        if not frontend_variables:
             raise ValueError(
                 f"Variable name '{params_name}' has no variables defined in 'question.html' or 'server.py'."
                 "Did you mean to set it to be empty?"
