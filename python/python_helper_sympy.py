@@ -324,7 +324,8 @@ def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
     ast.fix_missing_locations(root)
 
     # Convert AST to code and evaluate it with no global expressions and with
-    # a whitelist of local expressions
+    # a whitelist of local expressions. Flattens out the inner dictionaries
+    # that appear in locals_for_eval for the final call to eval.
     locals = {
         name: expr
         for local_expressions in locals_for_eval.values()
@@ -371,10 +372,11 @@ def convert_string_to_sympy(
     return evaluate(expr, locals_for_eval)
 
 
-def point_to_error(s: str, ind: int, w: int = 5) -> str:
+def point_to_error(expr: str, ind: int, w: int = 5) -> str:
+    """Generate a string with a pointer to error in expr with index ind"""
     w_left: str = " " * (ind - max(0, ind - w))
-    w_right: str = " " * (min(ind + w, len(s)) - ind)
-    initial: str = s[ind - len(w_left) : ind + len(w_right)]
+    w_right: str = " " * (min(ind + w, len(expr)) - ind)
+    initial: str = expr[ind - len(w_left) : ind + len(w_right)]
     return f"{initial}\n{w_left}^{w_right}"
 
 
@@ -400,11 +402,13 @@ def sympy_to_json(
     if allow_trig_functions:
         reserved |= const.trig_functions.keys()
 
-    for v in variables:
-        if v in reserved:
-            raise ValueError(
-                f"sympy expression has a variable with a reserved name: {str(v)}"
-            )
+    # Check if reserved variables conflict, raise an error if they do
+    conflicting_reserved_variables = reserved & set(variables)
+
+    if conflicting_reserved_variables:
+        raise ValueError(
+            f"sympy expression has a variable with a reserved name: {conflicting_reserved_variables}"
+        )
 
     # Apply substitutions for hidden variables
     a_sub = a.subs([(val, key) for key, val in const.hidden_variables.items()])
@@ -512,18 +516,19 @@ def validate_string_as_sympy(
 
 
 def get_variables_list(variables_string: Optional[str]) -> List[str]:
-    if variables_string is not None:
-        return [variable.strip() for variable in variables_string.split(",")]
+    if variables_string is None:
+        return []
 
-    return []
+    return list(map(str.strip, variables_string.split(",")))
+
 
 
 def process_student_input(student_input: str) -> str:
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
-    # for exponentiation. In python, only the latter can be used.
+    # for exponentiation. In Python, only the latter can be used.
     a_sub = student_input.replace("^", "**")
 
-    # Replace unicode minus with hyphen minus wherever it occurs
+    # Replace Unicode minus with hyphen minus wherever it occurs
     a_sub = a_sub.replace("\u2212", "-")
 
     # Strip whitespace

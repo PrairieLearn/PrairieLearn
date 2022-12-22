@@ -101,7 +101,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "constants": constants,
     }
 
-    score = data["partial_scores"].get(name, {"score": None}).get("score")
+    score = data["partial_scores"].get(name, {}).get("score")
 
     if data["panel"] == "question":
         editable = data["editable"]

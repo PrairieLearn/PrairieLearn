@@ -148,7 +148,7 @@ def grade_omega_expression(
     return (0.5, CONSTANT_FACTORS_FEEDBACK)
 
 
-# Start of generic utilities. Move these to prairieleran.py as-needed
+# Start of generic utilities. Move these to prairielearn.py as-needed
 
 
 class DisplayType(Enum):
