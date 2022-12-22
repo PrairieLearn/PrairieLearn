@@ -63,6 +63,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     show_placeholder = pl.get_boolean_attrib(element, 'show-placeholder', SHOW_PLACEHOLDER_DEFAULT)
     units_only = pl.get_boolean_attrib(element, 'units-only', UNITS_ONLY_DEFAULT)
 
+    partial_scores = data['partial_scores'].get(name, {})
+    score = partial_scores.get('score')
+
     if data['panel'] == 'question':
         editable = data['editable']
         raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
@@ -101,7 +104,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             'uuid': pl.get_uuid()
         }
 
-        score = data['partial_scores'].get(name, {}).get('score', None)
         if score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
@@ -148,10 +150,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             if raw_submitted_answer is not None:
                 html_params['raw_submitted_answer'] = pl.escape_unicode_string(raw_submitted_answer)
 
-        score = data['partial_scores'].get(name, {}).get('score', None)
         if score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
+
+        feedback = partial_scores.get('feedback')
+        if feedback is not None:
+            html_params['feedback'] = feedback
 
         html_params['error'] = html_params['parse_error'] or html_params.get('missing_input', False)
         with open('pl-units-input.mustache', 'r', encoding='utf-8') as f:
