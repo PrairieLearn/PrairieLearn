@@ -218,9 +218,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
         return
 
-    # Store cache in path local to question. Needed to prevent slow grading / parsing times
-    # due to object creation. TODO double check that doing this is ok
-    ureg = UnitRegistry(cache_folder=data['options']['question_path'])
+    # TODO double check that doing this is ok. May need to switch to directory local to question / server
+    ureg = UnitRegistry(cache_folder=":auto:")
 
     # checks for invalids by parsing as a dimensionful quantity
     # TODO check for more possible exceptions here?
@@ -258,7 +257,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     # Store cache in path local to question. Needed to prevent slow grading / parsing times
     # due to object creation
-    ureg = UnitRegistry(cache_folder=data['options']['question_path'])
+    ureg = UnitRegistry(cache_folder=":auto:")
     a_tru_parsed = ureg.Quantity(a_tru)  # implicit assumption that true answer is formatted correctly
 
 
@@ -317,7 +316,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     elif result == 'incorrect':
         # TODO add test case where unit is switched, and test case where number is
         data['partial_scores'][name] = {'score': 0.5, 'weight': weight}
-        answer = UnitRegistry(cache_folder=data['options']['question_path']).Quantity(a_tru) * 2
+        answer = UnitRegistry(cache_folder=":auto:").Quantity(a_tru) * 2
         data['raw_submitted_answers'][name] = str(answer)
     elif result == 'invalid':
         data['raw_submitted_answers'][name] = '1 vfg'
