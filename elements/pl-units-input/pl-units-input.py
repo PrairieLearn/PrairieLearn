@@ -23,6 +23,7 @@ ATOL_DEFAULT = 1e-8
 DIGITS_DEFAULT = 2
 SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
+SHOW_PLACEHOLDER_DEFAULT = True
 PLACEHOLDER_TEXT_THRESHOLD = 4  # Minimum size to show the placeholder text
 
 
@@ -34,7 +35,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         'allow-blank', 'allow-numberless',
         'blank-value', 'numberless-value',
         'comparison', 'rtol', 'atol', 'digits',
-        'size', 'show-help-text'
+        'size', 'show-help-text', 'show-placeholder'
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -55,6 +56,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     display = pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, 'size', SIZE_DEFAULT)
     comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
+    show_placeholder = pl.get_boolean_attrib(element, 'show-placeholder', SHOW_PLACEHOLDER_DEFAULT)
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -68,6 +70,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if comparison == 'exact':
             placeholder_text = 'Number (exact) + Unit'
         elif comparison == 'sigfig':
+            #TODO fix number name mistake
             digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
             placeholder_text = f'Number ({digits} significant figures) + Unit'
         elif comparison == 'relabs':
@@ -86,7 +89,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             'info': info,
             'size': size,
             'show_info': pl.get_boolean_attrib(element, 'show-help-text', SHOW_HELP_TEXT_DEFAULT),
-            'show_placeholder': size >= PLACEHOLDER_TEXT_THRESHOLD,
+            'show_placeholder': show_placeholder and size >= PLACEHOLDER_TEXT_THRESHOLD,
             'shortinfo': placeholder_text,
             'uuid': pl.get_uuid()
         }
@@ -205,11 +208,14 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         return
 
     # checks for blank answer
-    if not a_sub and not allow_blank:
-        data['format_errors'][name] = 'Invalid format. The submitted answer was left blank.'
-        data['submitted_answers'][name] = None
-    elif not a_sub and allow_blank:
-        data['submitted_answers'][name] = blank_value
+    if not a_sub:
+        if allow_blank:
+            data['submitted_answers'][name] = blank_value
+        else:
+            data['format_errors'][name] = 'Invalid format. The submitted answer was left blank.'
+            data['submitted_answers'][name] = None
+
+        return
 
     ureg = UnitRegistry()
 
