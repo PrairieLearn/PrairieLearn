@@ -6,6 +6,7 @@ import lxml.html
 import prairielearn as pl
 
 from pint import UnitRegistry, errors
+from typing_extensions import assert_never
 
 WEIGHT_DEFAULT = 1
 CORRECT_ANSWER_DEFAULT = None
@@ -42,7 +43,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     if correct_answer is not None:
         if name in data['correct_answers']:
-            raise Exception('duplicate correct_answers variable name: %s' % name)
+            raise ValueError("Duplicate correct_answers variable name: {name}")
         data['correct_answers'][name] = correct_answer
 
 
@@ -60,12 +61,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
 
         # Get info strings
-        info_params = {'format': True}
         with open('pl-units-input.mustache', 'r', encoding='utf-8') as f:
-            template = f.read()
-            info = chevron.render(template, info_params).strip()
-            info_params.pop('format', None)
+            info = chevron.render(f, {'format': True}).strip()
 
+        #TODO change placeholder for units only?
         if comparison == 'exact':
             placeholder_text = 'Number (exact) + Unit'
         elif comparison == 'sigfig':
@@ -106,7 +105,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         #             html_params['partial'] = math.floor(score * 100)
         #         else:
         #             html_params['incorrect'] = True
-        #     except Exception:
+        #     except ValueError:
         #         raise ValueError('invalid score' + score)
 
         html_params['display_append_span'] = html_params['show_info'] or suffix
@@ -120,8 +119,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         if raw_submitted_answer is not None:
             html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
+
         with open('pl-units-input.mustache', 'r', encoding='utf-8') as f:
-            html = chevron.render(f, html_params).strip()
+            return chevron.render(f, html_params).strip()
 
     elif data['panel'] == 'submission':
         parse_error = data['format_errors'].get(name, None)
@@ -136,7 +136,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             # Get submitted answer, raising an exception if it does not exist
             a_sub = data['submitted_answers'].get(name, None)
             if a_sub is None:
-                raise Exception('submitted answer is None')
+                raise ValueError('submitted answer is None')
 
             html_params['suffix'] = suffix
             html_params['a_sub'] = a_sub
@@ -164,33 +164,30 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         #             html_params['partial'] = math.floor(score * 100)
         #         else:
         #             html_params['incorrect'] = True
-        #     except Exception:
+        #     except ValueError:
         #         raise ValueError('invalid score' + score)
 
         html_params['error'] = html_params['parse_error'] or html_params.get('missing_input', False)
         with open('pl-units-input.mustache', 'r', encoding='utf-8') as f:
-            html = chevron.render(f, html_params).strip()
+            return chevron.render(f, html_params).strip()
 
     #TODO make this display consistent with number input
     elif data['panel'] == 'answer':
-        a_tru = pl.from_json(data['correct_answers'].get(name, None))
-        if a_tru is not None:
-            html_params = {
-                'answer': True,
-                'label': label,
-                'first_tru': a_tru[0],
-                'last_tru': a_tru[1],
-                'suffix': suffix
-            }
-            with open('pl-units-input.mustache', 'r', encoding='utf-8') as f:
-                html = chevron.render(f, html_params).strip()
-        else:
-            html = ''
+        a_tru = data['correct_answers'].get(name, None)
 
-    else:
-        raise Exception('Invalid panel type: %s' % data['panel'])
+        if a_tru is None:
+            return ""
 
-    return html
+        html_params = {
+            'answer': True,
+            'label': label,
+            'a_tru': a_tru,
+            'suffix': suffix
+        }
+        with open('pl-units-input.mustache', 'r', encoding='utf-8') as f:
+            return chevron.render(f, html_params).strip()
+
+    assert_never(data['panel'])
 
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
@@ -222,11 +219,13 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         parsed_answer = ureg.Quantity(a_sub)
     except errors.UndefinedUnitError:  # incorrect units
         data['format_errors'][name] = 'Invalid unit.'
+        return
 
     # checks for no unit in submitted answer
     if parsed_answer.dimensionless:
         data['format_errors'][name] = 'Invalid format. The submitted answer has no unit.'
         data['submitted_answers'][name] = None
+        return
 
     # checks for no number in submitted answer
     # TODO maybe make a helper function that checks for this? I don't think this is being done right
@@ -234,6 +233,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if numberless and not allow_numberless:
         data['format_errors'][name] = 'Invalid format. The submitted answer has no number.'
         data['submitted_answers'][name] = None
+        return
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
@@ -291,7 +291,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         raise ValueError('method of comparison "%s" us not valid' % comparison)
 
 
-def test(element_html: str, data: pl.QuestionData) -> None:
+def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
@@ -303,12 +303,12 @@ def test(element_html: str, data: pl.QuestionData) -> None:
         data['raw_submitted_answers'][name] = str(a_tru)
         data['partial_scores'][name] = {'score': 1, 'weight': weight}
     elif result == 'incorrect':
-        # TODO add test case where unit is switched, and test case where
-        data['partial_scores'][name] = {'score': 0, 'weight': weight}
-        i = units.DimensionfulQuantity.get_index(a_tru)
-        u = 's' if a_tru[i:].strip() == 'm' else 'm'
-        answer = a_tru[:i] + u
+        # TODO add test case where unit is switched, and test case where number is
+        data['partial_scores'][name] = {'score': 0.5, 'weight': weight}
+        answer = UnitRegistry().Quantity(a_tru) * 2
         data['raw_submitted_answers'][name] = str(answer)
     elif result == 'invalid':
         data['raw_submitted_answers'][name] = '1 vfg'
         data['format_errors'][name] = 'Invalid unit.'
+    else:
+        assert_never(result)
