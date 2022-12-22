@@ -55,7 +55,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     elif params_name not in data["params"]:
         if not frontend_variables:
             raise ValueError(
-                f"Variable name '{params_name}' has no variables defined in 'question.html' or 'server.py'."
+                f"Variable name '{params_name}' has no variables defined in 'question.html' or 'server.py'. "
                 "Did you mean to set it to be empty?"
             )
 
