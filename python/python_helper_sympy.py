@@ -1,6 +1,5 @@
 import ast
 from dataclasses import dataclass
-from itertools import chain
 from typing import (
     Any,
     Callable,
@@ -520,7 +519,6 @@ def get_variables_list(variables_string: Optional[str]) -> List[str]:
         return []
 
     return list(map(str.strip, variables_string.split(",")))
-
 
 
 def process_student_input(student_input: str) -> str:

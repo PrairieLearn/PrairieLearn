@@ -28,8 +28,8 @@ GRADE_FUNCTION_DICT: Dict[BigOType, bou.BigOGradingFunctionT] = {
     BigOType.LITTLE_OMEGA: bou.grade_omega_expression,
 }
 
-
-VARIABLES_DEFAULT = None
+# Always need to have some variable to substitute
+VARIABLES_DEFAULT = 'n'
 SIZE_DEFAULT = 35
 PLACEHOLDER_TEXT_THRESHOLD = 20
 SHOW_HELP_TEXT_DEFAULT = True
@@ -90,6 +90,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     constants_class = phs._Constants()
 
     operators = ["( )", "+", "-", "*", "/", "^", "**"]
+    operators.extend(variables)
     operators.extend(constants_class.functions.keys())
 
     constants = list(constants_class.variables.keys())
