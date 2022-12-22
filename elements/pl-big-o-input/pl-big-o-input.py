@@ -29,7 +29,7 @@ GRADE_FUNCTION_DICT: Dict[BigOType, bou.BigOGradingFunctionT] = {
 }
 
 # Always need to have some variable to substitute
-VARIABLES_DEFAULT = 'n'
+VARIABLES_DEFAULT = "n"
 SIZE_DEFAULT = 35
 PLACEHOLDER_TEXT_THRESHOLD = 20
 SHOW_HELP_TEXT_DEFAULT = True
