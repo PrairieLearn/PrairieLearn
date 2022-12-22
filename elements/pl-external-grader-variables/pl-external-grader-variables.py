@@ -61,7 +61,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         data["params"][params_name] = frontend_variables
     else:
-        if len(frontend_variables) > 0:
+        if not frontend_variables:
             raise ValueError(
                 f"Cannot define variables from both 'question.html' and 'server.py' for variable name '{params_name}'."
             )
