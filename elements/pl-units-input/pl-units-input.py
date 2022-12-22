@@ -25,7 +25,7 @@ SHOW_HELP_TEXT_DEFAULT = True
 PLACEHOLDER_TEXT_THRESHOLD = 4  # Minimum size to show the placeholder text
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
     optional_attribs = [
@@ -46,7 +46,7 @@ def prepare(element_html, data):
         data['correct_answers'][name] = correct_answer
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     label = pl.get_string_attrib(element, 'label', LABEL_DEFAULT)
@@ -92,19 +92,22 @@ def render(element_html, data):
             'uuid': pl.get_uuid()
         }
 
-        partial_score = data['partial_scores'].get(name, {'score': None})
-        score = partial_score.get('score', None)
+        score = data['partial_scores'].get(name, {}).get('score', None)
         if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html_params['correct'] = True
-                elif score > 0:
-                    html_params['partial'] = math.floor(score * 100)
-                else:
-                    html_params['incorrect'] = True
-            except Exception:
-                raise ValueError('invalid score' + score)
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
+
+        # if score is not None:
+        #     try:
+        #         score = float(score)
+        #         if score >= 1:
+        #             html_params['correct'] = True
+        #         elif score > 0:
+        #             html_params['partial'] = math.floor(score * 100)
+        #         else:
+        #             html_params['incorrect'] = True
+        #     except Exception:
+        #         raise ValueError('invalid score' + score)
 
         html_params['display_append_span'] = html_params['show_info'] or suffix
 
@@ -147,19 +150,22 @@ def render(element_html, data):
             if raw_submitted_answer is not None:
                 html_params['raw_submitted_answer'] = pl.escape_unicode_string(raw_submitted_answer)
 
-        partial_score = data['partial_scores'].get(name, {'score': None})
-        score = partial_score.get('score', None)
+        score = data['partial_scores'].get(name, {}).get('score', None)
         if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html_params['correct'] = True
-                elif score > 0:
-                    html_params['partial'] = math.floor(score * 100)
-                else:
-                    html_params['incorrect'] = True
-            except Exception:
-                raise ValueError('invalid score' + score)
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
+
+        # if score is not None:
+        #     try:
+        #         score = float(score)
+        #         if score >= 1:
+        #             html_params['correct'] = True
+        #         elif score > 0:
+        #             html_params['partial'] = math.floor(score * 100)
+        #         else:
+        #             html_params['incorrect'] = True
+        #     except Exception:
+        #         raise ValueError('invalid score' + score)
 
         html_params['error'] = html_params['parse_error'] or html_params.get('missing_input', False)
         with open('pl-units-input.mustache', 'r', encoding='utf-8') as f:
@@ -187,7 +193,7 @@ def render(element_html, data):
     return html
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     allow_blank = pl.get_string_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT)
@@ -230,7 +236,7 @@ def parse(element_html, data):
         data['submitted_answers'][name] = None
 
 
-def grade(element_html, data):
+def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
@@ -285,7 +291,7 @@ def grade(element_html, data):
         raise ValueError('method of comparison "%s" us not valid' % comparison)
 
 
-def test(element_html, data):
+def test(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
