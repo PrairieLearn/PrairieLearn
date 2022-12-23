@@ -100,25 +100,23 @@ def get_units_agnostic_grading_fn(
         # will return no error, assuming parse() catches all of them
         parsed_sub_base_unit = ureg.Quantity(submitted_ans).to_base_units()
 
+        if not correct_ans_base_unit.check(parsed_sub_base_unit.dimensionality):
+            return 0.0, (
+                f"Your answer has dimensionality <code>{parsed_sub_base_unit.dimensionality}</code>, "
+                f"which is inconsistent with <code>{correct_ans_base_unit.dimensionality}</code>."
+            )
+
         magnitudes_match = pl.is_correct_scalar_ra(
             parsed_sub_base_unit.magnitude,
             correct_ans_base_unit.magnitude,
             rtol,
             parsed_atol.magnitude,
         )
-        dimensions_match = correct_ans_base_unit.check(
-            parsed_sub_base_unit.dimensionality
-        )
 
-        if magnitudes_match and dimensions_match:
-            return 1.0, None
-        elif magnitudes_match and not dimensions_match:
-            return 0.5, (
-                f"Your answer has dimensionality {parsed_sub_base_unit.dimensionality}, "
-                f"which is inconsistent with {correct_ans_base_unit.dimensionality}."
-            )
+        if not magnitudes_match:
+            return 0.0, "Your answer is incorrect."
 
-        return 0.0, "Your answer is incorrect."
+        return 1.0, None
 
     return grade_units_fixed
 
