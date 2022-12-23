@@ -5,21 +5,38 @@ import chevron
 import lxml.html
 import prairielearn as pl
 
+from enum import Enum
 from pint import UnitRegistry, errors, Quantity
 from typing import Tuple, Optional
 from typing_extensions import assert_never
 
+class DisplayType(Enum):
+    INLINE = "inline"
+    BLOCK = "block"
+
+class ComparisonType(Enum):
+    RELABS = "relabs"
+    SIGFIG = "sigfig"
+    EXACT = "exact"
+    DECDIG = "decdig"
+
+class GradingMode(Enum):
+    UNITS_ONLY = 1
+    UNITS_FIXED = 2
+    UNITS_AGNOSTIC = 2
+
+GRADING_MODE_DEFAULT = GradingMode.UNITS_FIXED
 WEIGHT_DEFAULT = 1
 CORRECT_ANSWER_DEFAULT = None
 LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
-DISPLAY_DEFAULT = 'inline'
+DISPLAY_DEFAULT = DisplayType.INLINE
 ALLOW_BLANK_DEFAULT = False
 UNITS_ONLY_DEFAULT = False
 BLANK_VALUE_DEFAULT = ''
-COMPARISON_DEFAULT = 'relabs'
+COMPARISON_DEFAULT = ComparisonType.RELABS
 RTOL_DEFAULT = 1e-2
-ATOL_DEFAULT = 1e-8
+ATOL_DEFAULT = '1e-8'
 DIGITS_DEFAULT = 2
 SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
@@ -33,7 +50,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     optional_attribs = [
         'weight', 'correct-answer', 'label', 'suffix', 'display',
         'allow-blank',
-        'blank-value', 'units-only',
+        'blank-value', 'grading-mode',
         'comparison', 'rtol', 'atol', 'digits',
         'size', 'show-help-text', 'show-placeholder'
     ]
@@ -47,21 +64,36 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             raise ValueError("Duplicate correct_answers variable name: {name}")
         data['correct_answers'][name] = correct_answer
 
-    digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
-    if digits <= 0:
+    digits = pl.get_integer_attrib(element, 'digits', None)
+    if digits is not None and digits <= 0:
         raise ValueError(f"Number of digits specified must be at least 1, not {digits}.")
 
+    atol = pl.get_string_attrib(element, 'atol', ATOL_DEFAULT)
+    grading_mode = pl.get_enum_attrib(GradingMode, element, 'grading-mode', GRADING_MODE_DEFAULT)
+
+    ureg = UnitRegistry(cache_folder=":auto:")
+    parsed_atol = ureg.Quantity(atol)
+
+    # In units agnostic mode, absolute tolerance must have units. Otherwise just a float
+    if grading_mode is GradingMode.UNITS_AGNOSTIC:
+        if parsed_atol.dimensionless:
+            raise ValueError(f"atol parameter '{atol}' must have units in unit agnostic grading.")
+        if pl.has_attrib(element, 'comparison'):
+            raise ValueError(f"Cannot change comparison type in unit agnostic grading.")
+    else:
+        if not parsed_atol.dimensionless:
+            raise ValueError(f"atol parameter {atol} may only have units in units agnostic grading.")
 
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     label = pl.get_string_attrib(element, 'label', LABEL_DEFAULT)
     suffix = pl.get_string_attrib(element, 'suffix', SUFFIX_DEFAULT)
-    display = pl.get_string_attrib(element, 'display', DISPLAY_DEFAULT)
+    display = pl.get_enum_attrib(DisplayType, element, 'display', DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, 'size', SIZE_DEFAULT)
-    comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
+    comparison = pl.get_enum_attrib(ComparisonType, element, 'comparison', COMPARISON_DEFAULT)
     show_placeholder = pl.get_boolean_attrib(element, 'show-placeholder', SHOW_PLACEHOLDER_DEFAULT)
-    units_only = pl.get_boolean_attrib(element, 'units-only', UNITS_ONLY_DEFAULT)
+    grading_mode = pl.get_enum_attrib(GradingMode, element, 'grading-mode', GRADING_MODE_DEFAULT)
 
     partial_scores = data['partial_scores'].get(name, {})
     score = partial_scores.get('score')
@@ -72,23 +104,26 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         # Get info strings
         with open('pl-units-input.mustache', 'r', encoding='utf-8') as f:
-            info = chevron.render(f, {'format': True, 'units_only': units_only}).strip()
+            info = chevron.render(f, {'format': True, 'units_only': grading_mode is GradingMode.UNITS_ONLY}).strip()
 
-        if units_only:
+        if grading_mode is GradingMode.UNITS_ONLY:
             placeholder_text = "Unit"
-        elif comparison == 'exact':
+        elif grading_mode is GradingMode.UNITS_AGNOSTIC or comparison is ComparisonType.RELABS:
+            rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
+            atol = pl.get_string_attrib(element, 'atol', ATOL_DEFAULT)
+            placeholder_text = f'Number (rtol={rtol}, atol={atol}) + Unit'
+        elif comparison is ComparisonType.EXACT:
             placeholder_text = 'Number (exact) + Unit'
-        elif comparison == 'sigfig':
+        elif comparison is ComparisonType.SIGFIG:
             digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
             figure_str = 'figure' if digits == 1 else 'figures'
             placeholder_text = f'Number ({digits} significant {figure_str}) + Unit'
-        elif comparison == 'relabs':
-            rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
-            atol = pl.get_float_attrib(element, 'atol', ATOL_DEFAULT)
-            placeholder_text = f'Number (rtol={rtol}, atol={atol}) + Unit'
+        elif comparison is ComparisonType.DECDIG:
+            digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
+            digit_str = 'digit' if digits == 1 else 'digits'
+            placeholder_text = f'Number ({digits} {digit_str} after decimal) + Unit'
         else:
-            #TODO maybe can't ever get here?
-            placeholder_text = 'Number + Unit'
+            assert_never(comparison)
 
         html_params = {
             'question': True,
@@ -110,12 +145,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         html_params['display_append_span'] = html_params['show_info'] or suffix
 
-        if display == 'inline':
+        if display is DisplayType.INLINE:
             html_params['inline'] = True
-        elif display == 'block':
+        elif display is DisplayType.BLOCK:
             html_params['block'] = True
         else:
-            raise ValueError('method of display "%s" is not valid (must be "inline" or "block")' % display)
+            assert_never(display)
 
         if raw_submitted_answer is not None:
             html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
@@ -236,87 +271,37 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', WEIGHT_DEFAULT)
-    comparison = pl.get_string_attrib(element, 'comparison', COMPARISON_DEFAULT)
+    comparison = pl.get_enum_attrib(ComparisonType, element, 'comparison', COMPARISON_DEFAULT)
     digits = pl.get_integer_attrib(element, 'digits', DIGITS_DEFAULT)
     rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
-    atol = pl.get_float_attrib(element, 'atol', ATOL_DEFAULT)
+    atol = pl.get_string_attrib(element, 'atol', ATOL_DEFAULT)
+    grading_mode = pl.get_enum_attrib(GradingMode, element, 'grading-mode', GRADING_MODE_DEFAULT)
 
     a_tru = data['correct_answers'].get(name, None)
     if a_tru is None:
         return
 
-    # Store cache in path local to question. Needed to prevent slow grading / parsing times
+    # Store cache on system. Needed to prevent slow grading / parsing times
     # due to object creation
     ureg = UnitRegistry(cache_folder=":auto:")
     parsed_correct_ans = ureg.Quantity(a_tru)  # implicit assumption that true answer is formatted correctly
-
-
-    #a_sub = data['submitted_answers'].get(name, None)
-    #if a_sub is None:
-    #    data['partial_scores'][name] = {'score': 0, 'weight': weight}
-    #    return
+    parsed_atol = ureg.Quantity(atol)
 
     def magnitude_comparison(correct_ans: Quantity, submitted_ans: Quantity) -> bool:
         """Returns true if student_ans is close enough to correct answer in magnitude based on comparison algorithm"""
-        if comparison == 'exact':
+        if comparison is ComparisonType.EXACT:
             return correct_ans.magnitude == submitted_ans.magnitude
-        elif comparison == 'sigfig':
-            return pl.is_correct_scalar_sf(correct_ans.magnitude, submitted_ans.magnitude, digits)
-        elif comparison == 'relabs':
-            return pl.is_correct_scalar_ra(correct_ans.magnitude, submitted_ans.magnitude, rtol, atol)
+        elif comparison is ComparisonType.SIGFIG:
+            return pl.is_correct_scalar_sf(submitted_ans.magnitude, correct_ans.magnitude, digits)
+        elif comparison is ComparisonType.DECDIG:
+            return pl.is_correct_scalar_dd(submitted_ans.magnitude, correct_ans.magnitude, digits)
+        elif comparison is ComparisonType.RELABS:
+            return pl.is_correct_scalar_ra(submitted_ans.magnitude, correct_ans.magnitude, rtol, parsed_atol.magnitude)
 
-        #TODO add assert never here
-
-    def grade_unit_input(submitted_ans: str) -> Tuple[float, Optional[str]]:
-        # will return no error, assuming parse() catches all of them
-        parsed_submission = ureg.Quantity(submitted_ans)
-        magnitudes_match = magnitude_comparison(parsed_correct_ans, parsed_submission)
-        units_match = parsed_correct_ans.units == parsed_submission.units
-
-        if magnitudes_match and units_match:
-            return 1.0, None
-        elif magnitudes_match and not units_match:
-            return 0.7, "The magnitude of your answer is correct, but your units are incorrect."
-        elif units_match and not magnitudes_match:
-            return 0.3, "Your answer has correct units, but the magnitude does not match the reference solution."
-
-        return 0.0, "Your answer is incorrect."
+        assert_never(comparison)
 
 
     pl.grade_question_parameterized(data, name, grade_unit_input, weight)
-
-    # TODO rewrite this with grade question parameterized framework
-
-    # if comparison == 'exact':
-    #     if a_tru_parsed == a_sub_parsed:
-    #         data['partial_scores'][name] = {'score': 1, 'weight': weight}
-    #     elif a_tru_parsed.units == a_sub_parsed.units:  # if units are in the same dimension, allow half marks
-    #         data['partial_scores'][name] = {'score': 0.5, 'weight': weight}
-    #     else:
-    #         data['partial_scores'][name] = {'score': 0, 'weight': weight}
-    # elif comparison == 'sigfig':
-
-    #     units_equal = a_tru_parsed.units == a_sub_parsed.units
-
-    #     if  and units_equal:
-    #         data['partial_scores'][name] = {'score': 1, 'weight': weight}
-    #     elif units_equal:  # if units are in the same dimension, allow half marks
-    #         data['partial_scores'][name] = {'score': 0.5, 'weight': weight}
-    #     else:
-    #         data['partial_scores'][name] = {'score': 0, 'weight': weight}
-    # elif comparison == 'relabs':
-    #     rtol = pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT)
-    #     atol = pl.get_float_attrib(element, 'atol', ATOL_DEFAULT)
-    #     units_equal = a_tru_parsed.units == a_sub_parsed.units
-
-    #     if  and units_equal:
-    #         data['partial_scores'][name] = {'score': 1, 'weight': weight}
-    #     elif units_equal:  # if units are in the same dimension, allow half marks
-    #         data['partial_scores'][name] = {'score': 0.5, 'weight': weight}
-    #     else:
-    #         data['partial_scores'][name] = {'score': 0, 'weight': weight}
-    # else:
-    #     raise ValueError('method of comparison "%s" us not valid' % comparison)
 
 
 def test(element_html: str, data: pl.ElementTestData) -> None:
