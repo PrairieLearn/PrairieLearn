@@ -18,7 +18,7 @@ class DisplayType(Enum):
 class GradingMode(Enum):
     UNITS_ONLY = 1
     UNITS_FIXED = 2
-    UNITS_AGNOSTIC = 2
+    UNITS_AGNOSTIC = 3
 
 GRADING_MODE_DEFAULT = GradingMode.UNITS_FIXED
 WEIGHT_DEFAULT = 1
@@ -27,7 +27,6 @@ LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = DisplayType.INLINE
 ALLOW_BLANK_DEFAULT = False
-UNITS_ONLY_DEFAULT = False
 BLANK_VALUE_DEFAULT = ''
 COMPARISON_DEFAULT = uu.ComparisonType.RELABS
 RTOL_DEFAULT = 1e-2
@@ -63,18 +62,30 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if digits is not None and digits <= 0:
         raise ValueError(f"Number of digits specified must be at least 1, not {digits}.")
 
-    atol = pl.get_string_attrib(element, 'atol', ATOL_DEFAULT)
     grading_mode = pl.get_enum_attrib(GradingMode, element, 'grading-mode', GRADING_MODE_DEFAULT)
 
     ureg = UnitRegistry(cache_folder=":auto:")
+    atol = pl.get_string_attrib(element, 'atol', ATOL_DEFAULT)
     parsed_atol = ureg.Quantity(atol)
 
     # In units agnostic mode, absolute tolerance must have units. Otherwise just a float
     if grading_mode is GradingMode.UNITS_AGNOSTIC:
+        if not pl.has_attrib(element, 'atol'):
+            raise ValueError(f"atol is a required parameter for units agnostic grading.")
+
         if parsed_atol.dimensionless:
             raise ValueError(f"atol parameter '{atol}' must have units in unit agnostic grading.")
+
         if pl.has_attrib(element, 'comparison'):
             raise ValueError(f"Cannot change comparison type in unit agnostic grading.")
+
+        if correct_answer is not None:
+            parsed_answer = ureg.Quantity(correct_answer)
+
+            if not parsed_answer.check(parsed_atol.dimensionality):
+                raise ValueError(
+                    f"Correct answer has dimensionality: {parsed_answer.dimensionality}, "
+                    f"which does not match atol dimensionality: {parsed_atol.dimensionality}.")
     else:
         if not parsed_atol.dimensionless:
             raise ValueError(f"atol parameter {atol} may only have units in units agnostic grading.")
@@ -217,7 +228,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     allow_blank = pl.get_string_attrib(element, 'allow-blank', ALLOW_BLANK_DEFAULT)
     blank_value = pl.get_string_attrib(element, 'blank-value', BLANK_VALUE_DEFAULT)
 
-    units_only = pl.get_boolean_attrib(element, 'grading-mode', UNITS_ONLY_DEFAULT) is GradingMode.UNITS_ONLY
+    units_only = pl.get_enum_attrib(GradingMode, element, 'grading-mode', GRADING_MODE_DEFAULT) is GradingMode.UNITS_ONLY
 
     # retrieves submitted answer
     a_sub = data['submitted_answers'].get(name, None)
@@ -297,7 +308,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             ureg=ureg,
             correct_ans=a_tru,
             rtol=pl.get_float_attrib(element, 'rtol', RTOL_DEFAULT),
-            atol=pl.get_string_attrib(element, 'atol', ATOL_DEFAULT)
+            atol=pl.get_string_attrib(element, 'atol') # No default in this case.
         )
     else:
         assert_never(grading_mode)

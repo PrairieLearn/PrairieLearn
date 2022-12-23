@@ -15,11 +15,11 @@ class ComparisonType(Enum):
 
 def get_units_only_grading_fn(
     *, ureg: UnitRegistry, correct_ans: str
-) -> Callable[[str], Tuple[bool, None]]:
+) -> Callable[[str], Tuple[bool, Optional[str]]]:
     """Returns the grading function used for units only grading mode."""
     parsed_correct_ans = ureg.Quantity(correct_ans)
 
-    def grade_units_only(submitted_ans: str) -> Tuple[bool, None]:
+    def grade_units_only(submitted_ans: str) -> Tuple[bool, Optional[str]]:
         parsed_submission = ureg.Quantity(submitted_ans)
         if parsed_correct_ans.units == parsed_submission.units:
             return True, None
@@ -36,7 +36,7 @@ def get_units_fixed_grading_fn(
     comparison: ComparisonType,
     digits: int,
     rtol: float,
-    atol: str
+    atol: str,
 ) -> Callable[[str], Tuple[float, Optional[str]]]:
 
     parsed_correct_ans = ureg.Quantity(correct_ans)
@@ -84,7 +84,7 @@ def get_units_fixed_grading_fn(
                 "Your answer has correct units, but the magnitude does not match the reference solution.",
             )
 
-        return 0.0, "Your answer is incorrect."
+        return 0.0, "Your answer has incorrect units and magnitude."
 
     return grade_units_fixed
 
@@ -92,21 +92,31 @@ def get_units_fixed_grading_fn(
 def get_units_agnostic_grading_fn(
     *, ureg: UnitRegistry, correct_ans: str, rtol: float, atol: str
 ) -> Callable[[str], Tuple[float, Optional[str]]]:
+    # Assume atol and correct answer have same dimensionality, checked in prepare method
     correct_ans_base_unit = ureg.Quantity(correct_ans).to_base_units()
     parsed_atol = ureg.Quantity(atol).to_base_units()
 
     def grade_units_fixed(submitted_ans: str) -> Tuple[float, Optional[str]]:
         # will return no error, assuming parse() catches all of them
         parsed_sub_base_unit = ureg.Quantity(submitted_ans).to_base_units()
+
         magnitudes_match = pl.is_correct_scalar_ra(
             parsed_sub_base_unit.magnitude,
             correct_ans_base_unit.magnitude,
             rtol,
             parsed_atol.magnitude,
         )
+        dimensions_match = correct_ans_base_unit.check(
+            parsed_sub_base_unit.dimensionality
+        )
 
-        if magnitudes_match:
+        if magnitudes_match and dimensions_match:
             return 1.0, None
+        elif magnitudes_match and not dimensions_match:
+            return 0.5, (
+                f"Your answer has dimensionality {parsed_sub_base_unit.dimensionality}, "
+                f"which is inconsistent with {correct_ans_base_unit.dimensionality}."
+            )
 
         return 0.0, "Your answer is incorrect."
 

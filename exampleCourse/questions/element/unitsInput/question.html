@@ -80,3 +80,17 @@
         <pl-units-input answers-name="c_6" show-placeholder="false" show-help-text="false" size="10" comparison="exact" correct-answer="5280ft"></pl-units-input>
     </div>
 </div>
+
+
+<div class="card my-2">
+    <div class="card-body">
+        <pl-question-panel>
+            <p> This is an example of the units agnostic grading mode. The submitted answer and reference solutions will be
+                first be converted to base units and then compared. This is done by setting <code>grading-mode="units-agnostic"</code>.
+                We must also supply an absolute tolerance with an included unit, so we set <code>atol="1cm"</code>.
+            </p>
+            <p> What is the length of a meter stick? </p>
+        </pl-question-panel>
+        <pl-units-input answers-name="c_7" grading-mode="units-agnostic" correct-answer="1m" atol="1cm"></pl-units-input>
+    </div>
+</div>
