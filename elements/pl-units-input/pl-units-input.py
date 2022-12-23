@@ -5,7 +5,7 @@ import chevron
 import lxml.html
 import prairielearn as pl
 import unit_utils as uu
-from pint import UnitRegistry, errors
+from pint import Unit, UnitRegistry, errors
 from typing_extensions import assert_never
 
 
@@ -372,15 +372,42 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
     a_tru = data["correct_answers"][name]
+    grading_mode = pl.get_enum_attrib(
+        GradingMode, element, "grading-mode", GRADING_MODE_DEFAULT
+    )
 
     result = data["test_type"]
     if result == "correct":
-        data["raw_submitted_answers"][name] = str(a_tru)
+        if grading_mode is GradingMode.UNITS_ONLY:
+            data["raw_submitted_answers"][name] = str(Unit(a_tru))
+        else:
+            data["raw_submitted_answers"][name] = a_tru
+
         data["partial_scores"][name] = {"score": 1, "weight": weight}
     elif result == "incorrect":
-        # TODO add other test cases.
-        data["partial_scores"][name] = {"score": 0.5, "weight": weight}
-        answer = UnitRegistry(cache_folder=":auto:").Quantity(a_tru) * 2
+        # TODO Possibly add other test cases
+        ureg = UnitRegistry(cache_folder=":auto:")
+        if grading_mode is GradingMode.UNITS_ONLY:
+            answer = str((ureg.Quantity(a_tru) * ureg.meters).units)
+            partial_score = 0.0
+            feedback = uu.INCORRECT_FEEDBACK
+        elif grading_mode is GradingMode.UNITS_FIXED:
+            answer = ureg.Quantity(a_tru) * 2
+            partial_score = 0.3
+            feedback = uu.CORRECT_UNITS_INCORRECT_MAGNITUDE_FEEDBACK
+        elif grading_mode is GradingMode.UNITS_AGNOSTIC:
+            answer = ureg.Quantity(a_tru) * 2
+            partial_score = 0.0
+            feedback = uu.INCORRECT_FEEDBACK
+        else:
+            assert_never(grading_mode)
+
+        data["partial_scores"][name] = {
+            "score": partial_score,
+            "weight": weight,
+            "feedback": feedback,
+        }
+
         data["raw_submitted_answers"][name] = str(answer)
     elif result == "invalid":
         data["raw_submitted_answers"][name] = "1 vfg"

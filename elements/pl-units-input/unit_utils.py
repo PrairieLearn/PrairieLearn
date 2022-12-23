@@ -7,6 +7,15 @@ from typing_extensions import assert_never
 
 # TODO write tests for each of these functions
 
+CORRECT_UNITS_INCORRECT_MAGNITUDE_FEEDBACK = "Your answer has correct units, but the magnitude does not match the reference solution."
+INCORRECT_UNITS_CORRECT_MAGNITUDE_FEEDBACK = (
+    "The magnitude of your answer is correct, but your units are incorrect."
+)
+INCORRECT_UNITS_AND_MAGNITUDE_FEEDBACK = (
+    "Your answer has incorrect units and magnitude."
+)
+INCORRECT_FEEDBACK = "Your answer is incorrect."
+
 
 class ComparisonType(Enum):
     RELABS = "relabs"
@@ -26,7 +35,7 @@ def get_units_only_grading_fn(
         if parsed_correct_ans.units == parsed_submission.units:
             return True, None
 
-        return False, "Your answer is incorrect."
+        return False, INCORRECT_FEEDBACK
 
     return grade_units_only
 
@@ -76,17 +85,11 @@ def get_units_fixed_grading_fn(
         if magnitudes_match and units_match:
             return 1.0, None
         elif magnitudes_match and not units_match:
-            return (
-                0.7,
-                "The magnitude of your answer is correct, but your units are incorrect.",
-            )
+            return 0.7, INCORRECT_UNITS_CORRECT_MAGNITUDE_FEEDBACK
         elif units_match and not magnitudes_match:
-            return (
-                0.3,
-                "Your answer has correct units, but the magnitude does not match the reference solution.",
-            )
+            return 0.3, CORRECT_UNITS_INCORRECT_MAGNITUDE_FEEDBACK
 
-        return 0.0, "Your answer has incorrect units and magnitude."
+        return 0.0, INCORRECT_UNITS_AND_MAGNITUDE_FEEDBACK
 
     return grade_units_fixed
 
@@ -116,7 +119,7 @@ def get_units_agnostic_grading_fn(
         )
 
         if not magnitudes_match:
-            return 0.0, "Your answer is incorrect."
+            return 0.0, INCORRECT_FEEDBACK
 
         return 1.0, None
 
