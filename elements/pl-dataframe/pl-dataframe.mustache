@@ -1,0 +1,18 @@
+<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
+<script>
+$(document).ready(function(){
+    $('.interactive-dataframe').DataTable();
+});
+</script>
+
+{{{frame_html}}}
+
+<pl-code language="python">
+import pandas as pd
+{{varname}} = pd.DataFrame({{{code_string}}})
+</pl-code>
+{{#num_rows}}
+{{#num_cols}}
+    <p class="pl-dataframe-table-dimensions">{{num_rows}} rows x {{num_cols}} columns</p>
+{{/num_cols}}
+{{/num_rows}}

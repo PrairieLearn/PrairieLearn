@@ -1,5 +1,6 @@
 from typing import Any, List, cast
 
+import chevron
 import lxml.html
 import pandas
 import prairielearn as pl
@@ -13,6 +14,7 @@ SHOW_INDEX_DEFAULT = True
 SHOW_DIMENSIONS_DEFAULT = True
 SHOW_DATATYPE_DEFAULT = False
 ADD_LINE_BREAKS_DEFAULT = False
+INTERACTIVE_DEFAULT = True
 NUM_DIGITS_DEFAULT = None
 
 
@@ -26,6 +28,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             "show-index",
             "show-dimensions",
             "show-dtype",
+            "interactive",
             "digits",
         ],
     )
@@ -36,6 +39,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     varname = pl.get_string_attrib(element, "params-name")
     show_header = pl.get_boolean_attrib(element, "show-header", SHOW_HEADER_DEFAULT)
     show_index = pl.get_boolean_attrib(element, "show-index", SHOW_INDEX_DEFAULT)
+    interactive = pl.get_boolean_attrib(element, "interactive", INTERACTIVE_DEFAULT)
     show_dimensions = pl.get_boolean_attrib(
         element, "show-dimensions", SHOW_DIMENSIONS_DEFAULT
     )
@@ -54,7 +58,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if not isinstance(frame, pandas.DataFrame):
         raise ValueError(f"Parameter name '{varname}' does not encode a dataframe.")
 
-    html_list: List[str] = []
+    frame = cast(pandas.DataFrame, frame)
 
     frame_style = frame.style
 
@@ -68,9 +72,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         # This format string displays the desired number of digits, as given by the instructor
         # Switches between exponential and decimal notation as needed
-        frame_style.format(
-            subset=float_column_names, formatter=f"{{:.{num_digits}g}}"
-        )
+        frame_style.format(subset=float_column_names, formatter=f"{{:.{num_digits}g}}")
 
     if show_dtype:
         descriptors = frame.agg([lambda s: s.dtype])
@@ -88,12 +90,23 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         frame_style.hide()
 
     # Might be worth moving everything out of the CSS file and handle it all with the builtin styler.
-    frame_style.set_table_attributes("class=pl-dataframe-table")
-
-    html_list.append(frame_style.to_html())
-    if show_dimensions:
-        html_list.append(
-            f'<p class="pl-dataframe-table-dimensions">{frame.shape[0]} rows x {frame.shape[1]} columns</p>'
+    # TODO switch interactivity to use UUID as id
+    if interactive:
+        frame_style.set_table_attributes(
+            'class="pl-dataframe-table interactive-dataframe"'
         )
+    else:
+        frame_style.set_table_attributes('class="pl-dataframe-table"')
 
-    return "".join(html_list)
+    info_params = {
+        "frame_html": frame_style.to_html(),
+        "varname": varname,
+        "code_string": frame.to_dict("split"),
+    }
+
+    if show_dimensions:
+        info_params["num_rows"] = frame.shape[0]
+        info_params["num_cols"] = frame.shape[1]
+
+    with open("pl-dataframe.mustache", "r", encoding="utf-8") as f:
+        return chevron.render(f, info_params).strip()
