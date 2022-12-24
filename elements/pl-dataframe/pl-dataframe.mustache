@@ -7,6 +7,32 @@ $(document).ready(function(){
 
 {{{frame_html}}}
 
+<table class="pl-dataframe-table interactive-dataframe">
+<thead>
+    <tr>
+    {{#frame_header}}
+        <th>{{.}}</th>
+    {{/frame_header}}
+    </tr>
+</thead>
+<tbody>
+    {{#frame_data}}
+    <tr>
+    {{#.}}
+        <td>{{.}}</td>
+    {{/.}}
+    </tr>
+    {{/frame_data}}
+</tbody>
+<tfoot>
+    <tr>
+    {{#frame_footer}}
+        <th>{{.}}</th>
+    {{/frame_footer}}
+    </tr>
+</tfoot>
+</table>
+
 {{{dtype_row}}}
 
 <pl-code language="python">

@@ -103,9 +103,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     else:
         frame_style.set_table_attributes('class="pl-dataframe-table"')
 
-    print(frame_style.to_string(delimiter='*'))
+    #print(frame_style.to_html())
+    data_types_list = list(map(str, descriptors.values.tolist()[0]))
+    #print(frame_style.to_string(delimiter='*'))
     info_params = {
         "frame_html": frame_style.to_html(),
+        "frame_header": list(map(str, frame.columns)),
+        "frame_data": frame.values.tolist(),
+        "frame_footer": data_types_list,
         "varname": varname,
         "code_string": frame.to_dict("split"),
     }
@@ -115,4 +120,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         info_params["num_cols"] = frame.shape[1]
 
     with open("pl-dataframe.mustache", "r", encoding="utf-8") as f:
-        return chevron.render(f, info_params).strip()
+        html = chevron.render(f, info_params).strip()
+        #print(html)
+        return html
