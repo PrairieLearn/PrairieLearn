@@ -119,6 +119,7 @@ pre {
    but it can prevent thin lines from disappearing. */
 mjx-container {
   shape-rendering: geometricPrecision;
+  text-rendering: geometricPrecision;
 }
 
 /**************
