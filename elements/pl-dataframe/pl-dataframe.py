@@ -61,6 +61,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     frame = cast(pandas.DataFrame, frame)
 
     frame_style = frame.style
+    dtype_row = None
 
     # Format integers using commas every 3 digits
     integer_column_names = frame.select_dtypes(include="int").columns
@@ -78,9 +79,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         descriptors = frame.agg([lambda s: s.dtype])
         descriptors.index = pandas.Index(["dtype"])
         other = descriptors.style.applymap(lambda v: "font-weight: bold;")
+        #dtype_row = other.to_html()
         frame_style.set_table_styles(
             [{"selector": ".foot_row0", "props": "border-top: 1px solid black;"}]
         )
+        #print(frame_style.to_html())
+        #dtype_row = "<tfoot><tr>" + "<th>dtype</th>" + " ".join([f"<th>{i}</th>\n" for i in descriptors])+"</tr>\n  </tfoot>"
+
         frame_style.concat(other)
 
     if not show_header:
@@ -98,6 +103,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     else:
         frame_style.set_table_attributes('class="pl-dataframe-table"')
 
+    print(frame_style.to_string(delimiter='*'))
     info_params = {
         "frame_html": frame_style.to_html(),
         "varname": varname,
