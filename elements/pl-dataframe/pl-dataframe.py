@@ -45,7 +45,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
     show_dtype = pl.get_boolean_attrib(element, "show-dtype", SHOW_DATATYPE_DEFAULT)
 
-    num_digits = pl.get_integer_attrib(element, "digits", NUM_DIGITS_DEFAULT)
+    num_digits = 2#pl.get_integer_attrib(element, "digits", NUM_DIGITS_DEFAULT)
 
     if varname not in data["params"]:
         raise KeyError(
@@ -63,17 +63,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     frame_style = frame.style
     dtype_row = None
 
-    # Format integers using commas every 3 digits
-    integer_column_names = frame.select_dtypes(include="int").columns
-    frame_style.format(subset=integer_column_names, thousands=",")
-
-    if num_digits is not None:
-        # Get headers for all floating point columns and style them to use the desired number of sig figs.
-        float_column_names = frame.select_dtypes(include="float").columns
-
-        # This format string displays the desired number of digits, as given by the instructor
-        # Switches between exponential and decimal notation as needed
-        frame_style.format(subset=float_column_names, formatter=f"{{:.{num_digits}g}}")
 
     if show_dtype:
         descriptors = frame.agg([lambda s: s.dtype])
@@ -83,11 +72,28 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         frame_style.set_table_styles(
             [{"selector": ".foot_row0", "props": "border-top: 1px solid black;"}]
         )
+
+    # Format integers using commas every 3 digits
+    integer_column_names = frame.select_dtypes(include="int").columns
+    frame[integer_column_names] = frame[integer_column_names].applymap(lambda n: "{:,}".format(n))
+    #frame_style.format(subset=integer_column_names, thousands=",")
+
+    if num_digits is not None:
+        # Get headers for all floating point columns and style them to use the desired number of sig figs.
+        float_column_names = frame.select_dtypes(include="float").columns
+
+        frame[float_column_names] = frame[float_column_names].applymap(lambda n: f"{{:.{num_digits}g}}".format(n))
+        #print(frame)
+        # This format string displays the desired number of digits, as given by the instructor
+        # Switches between exponential and decimal notation as needed
+        #frame_style.format(subset=float_column_names, formatter=f"{{:.{num_digits}g}}")
+
         #print(frame_style.to_html())
         #dtype_row = "<tfoot><tr>" + "<th>dtype</th>" + " ".join([f"<th>{i}</th>\n" for i in descriptors])+"</tr>\n  </tfoot>"
 
         frame_style.concat(other)
 
+    # TODO maybe remove this option, it breaks the interactive table.
     if not show_header:
         frame_style.hide(axis="columns")
 
