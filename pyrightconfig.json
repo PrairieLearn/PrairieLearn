@@ -3,7 +3,10 @@
       "./elements/pl-hidden-hints",
       "./elements/pl-order-blocks",
       "./elements/pl-symbolic-input",
-      "python/python_helper_sympy_test.py"
+      "./elements/pl-dataframe",
+      "./python/prairielearn_test.py",
+      "./python/conftest.py",
+      "./python/python_helper_sympy_test.py"
     ],
     "extraPaths": ["./python"],
     "pythonVersion": "3.8"
