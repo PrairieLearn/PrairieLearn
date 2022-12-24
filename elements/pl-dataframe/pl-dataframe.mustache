@@ -6,32 +6,48 @@ $(document).ready(function(){
 });
 </script>
 
-{{{frame_html}}}
-
 <table class="pl-dataframe-table interactive-dataframe">
 <thead>
-    <tr>
     {{#frame_header}}
+    <tr>
+        {{#show_index}}
+            {{#index_name}}
+            <th>{{.}}</th>
+            {{/index_name}}
+        {{/show_index}}
+        {{#header_data}}
         <th>{{.}}</th>
-    {{/frame_header}}
+        {{/header_data}}
     </tr>
+    {{/frame_header}}
 </thead>
+
 <tbody>
     {{#frame_data}}
     <tr>
-    {{#.}}
+        {{#show_index}}
+            {{#index}}
+            <td>{{.}}</td>
+            {{/index}}
+        {{/show_index}}
+        {{#row}}
         <td>{{.}}</td>
-    {{/.}}
+        {{/row}}
     </tr>
     {{/frame_data}}
 </tbody>
+{{#frame_footer}}
 <tfoot>
     <tr>
-    {{#frame_footer}}
+    {{#show_index}}
+        <th>dtype</th>
+    {{/show_index}}
+    {{#data_types}}
         <th>{{.}}</th>
-    {{/frame_footer}}
+    {{/data_types}}
     </tr>
 </tfoot>
+{{/frame_footer}}
 </table>
 
 {{{dtype_row}}}

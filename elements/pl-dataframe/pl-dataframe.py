@@ -24,11 +24,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         element,
         required_attribs=["params-name"],
         optional_attribs=[
-            "show-header",
             "show-index",
             "show-dimensions",
             "show-dtype",
-            "interactive",
             "digits",
         ],
     )
@@ -37,15 +35,13 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     varname = pl.get_string_attrib(element, "params-name")
-    show_header = pl.get_boolean_attrib(element, "show-header", SHOW_HEADER_DEFAULT)
     show_index = pl.get_boolean_attrib(element, "show-index", SHOW_INDEX_DEFAULT)
-    interactive = pl.get_boolean_attrib(element, "interactive", INTERACTIVE_DEFAULT)
     show_dimensions = pl.get_boolean_attrib(
         element, "show-dimensions", SHOW_DIMENSIONS_DEFAULT
     )
     show_dtype = pl.get_boolean_attrib(element, "show-dtype", SHOW_DATATYPE_DEFAULT)
 
-    num_digits = 2#pl.get_integer_attrib(element, "digits", NUM_DIGITS_DEFAULT)
+    num_digits = pl.get_integer_attrib(element, "digits", NUM_DIGITS_DEFAULT)
 
     if varname not in data["params"]:
         raise KeyError(
@@ -60,18 +56,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     frame = cast(pandas.DataFrame, frame)
 
-    frame_style = frame.style
-    dtype_row = None
-
+    frame_footer_dict = {}
 
     if show_dtype:
         descriptors = frame.agg([lambda s: s.dtype])
-        descriptors.index = pandas.Index(["dtype"])
-        other = descriptors.style.applymap(lambda v: "font-weight: bold;")
-        #dtype_row = other.to_html()
-        frame_style.set_table_styles(
-            [{"selector": ".foot_row0", "props": "border-top: 1px solid black;"}]
-        )
+        #descriptors.index = pandas.Index(["dtype"])
+        frame_footer_dict["data_types"] = list(map(str, descriptors.values.tolist()[0]))
 
     # Format integers using commas every 3 digits
     integer_column_names = frame.select_dtypes(include="int").columns
@@ -83,40 +73,28 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         float_column_names = frame.select_dtypes(include="float").columns
 
         frame[float_column_names] = frame[float_column_names].applymap(lambda n: f"{{:.{num_digits}g}}".format(n))
-        #print(frame)
-        # This format string displays the desired number of digits, as given by the instructor
-        # Switches between exponential and decimal notation as needed
-        #frame_style.format(subset=float_column_names, formatter=f"{{:.{num_digits}g}}")
 
-        #print(frame_style.to_html())
-        #dtype_row = "<tfoot><tr>" + "<th>dtype</th>" + " ".join([f"<th>{i}</th>\n" for i in descriptors])+"</tr>\n  </tfoot>"
 
-        frame_style.concat(other)
+    frame_header = {
+        "index_name": " " if frame.index.name is None else frame.index.name,
+        "header_data": list(map(str, frame.columns))
+    }
 
-    # TODO maybe remove this option, it breaks the interactive table.
-    if not show_header:
-        frame_style.hide(axis="columns")
+    frame_data = [
+        {
+            "index": str(index),
+            "row": list(map(str, row)),
+        }
+        for index, row in frame.iterrows()
+    ]
 
-    if not show_index:
-        frame_style.hide()
 
-    # Might be worth moving everything out of the CSS file and handle it all with the builtin styler.
-    # TODO switch interactivity to use UUID as id
-    if interactive:
-        frame_style.set_table_attributes(
-            'class="pl-dataframe-table interactive-dataframe"'
-        )
-    else:
-        frame_style.set_table_attributes('class="pl-dataframe-table"')
-
-    #print(frame_style.to_html())
-    data_types_list = list(map(str, descriptors.values.tolist()[0]))
     #print(frame_style.to_string(delimiter='*'))
     info_params = {
-        "frame_html": frame_style.to_html(),
-        "frame_header": list(map(str, frame.columns)),
-        "frame_data": frame.values.tolist(),
-        "frame_footer": data_types_list,
+        "show_index": show_index,
+        "frame_header": frame_header,
+        "frame_data": frame_data,
+        "frame_footer": frame_footer_dict,
         "varname": varname,
         "code_string": frame.to_dict("split"),
     }
