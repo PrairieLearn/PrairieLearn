@@ -175,10 +175,10 @@ def inner_html(element: lxml.html.HtmlElement) -> str:
     the old version of this function could have a substantial impact on question render times.
     """
 
-    inner = "" if element.text is None else element.text
+    inner = "" if element.text is None else html.escape(element.text)
 
     return "".join(chain(
-        repeat(html.escape(str(inner)), 1),
+        repeat(inner, 1),
         (lxml.html.tostring(child, method='html').decode('utf-8') for child in element)
     ))
 
