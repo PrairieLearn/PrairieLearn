@@ -31,7 +31,7 @@
     </span>
   </span>
   <div class="js-manual-grading-points">
-    <div class="input-group js-<%= type %>-score-value-input<% if (rubric?.rubric_data || type == 'auto') { %> d-none<% } %>">
+    <div class="input-group js-<%= type %>-score-value-input <% if (rubric?.rubric_data || type == 'auto') { %> d-none<% } %>">
       <input type="number" step="any"
              id="js-<%= type %>-score-value-input-points"
              class="form-control js-grading-score-input js-<%= type %>-score-value-input-points"
@@ -48,7 +48,7 @@
     </div>
   </div>
   <div class="js-manual-grading-percentage">
-    <div class="input-group js-<%= type %>-score-value-input<% if (rubric?.rubric_data || type == 'auto') { %> d-none<% } %>">
+    <div class="input-group js-<%= type %>-score-value-input <% if (rubric?.rubric_data || type == 'auto') { %> d-none<% } %>">
       <input type="number" step="any"
              id="js-<%= type %>-score-value-input-percentage"
              class="form-control js-grading-score-input"
@@ -79,6 +79,7 @@
         <input type="checkbox" name="rubric_item_selected_<%= type %>"
                class="js-selectable-rubric-item"
                value="<%= item.rubric_item.id %>" <% if (item.grading_item) { %>checked<% } %>
+               <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %>
                data-rubric-item-points="<%= item.rubric_item.points %>"
                data-rubric-item-type="<%= type %>"
                data-key-binding="<%= item.rubric_item.key_binding %>">
@@ -108,7 +109,7 @@
     </div>
   <% }); %>
   <div class="js-adjust-points d-flex justify-content-end">
-    <button type="button" class="js-adjust-points-enable btn btn-sm btn-link <%= rubric.rubric_grading_data?.adjust_points ? 'd-none' : '' %>">
+    <button type="button" class="js-adjust-points-enable btn btn-sm btn-link <%= (rubric.rubric_grading_data?.adjust_points || locals.disable || !authz_data.has_course_instance_permission_edit) ? 'd-none' : '' %>">
       Apply adjustment
     </button>
     <div class="js-adjust-points-input-container w-25 <%= rubric.rubric_grading_data?.adjust_points ? '' : 'd-none' %>">

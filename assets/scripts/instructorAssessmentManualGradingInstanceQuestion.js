@@ -12,7 +12,9 @@ $(() => {
       !event.target.isContentEditable
     ) {
       document
-        .querySelectorAll(`.js-selectable-rubric-item[data-key-binding="${event.key}"]`)
+        .querySelectorAll(
+          `.js-selectable-rubric-item[data-key-binding="${event.key}"]:not(:disabled)`
+        )
         .forEach((item) => item.dispatchEvent(new MouseEvent('click')));
     }
   });
