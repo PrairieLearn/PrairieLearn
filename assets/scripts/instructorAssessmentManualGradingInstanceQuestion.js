@@ -43,13 +43,17 @@ function resetInstructorGradingPanel() {
   });
 
   // Auto points are disabled by default to avoid confusion, since they are not typically changed by this interface.
-  document.querySelector('.js-enable-auto-score-edit').addEventListener('click', function () {
-    const form = this.closest('form');
-    form.querySelector('.js-auto-score-value-info').style.display = 'none';
-    const input = form.querySelector('.js-auto-score-value-input');
-    input.classList.remove('d-none');
-    input.style.display = '';
-    input.querySelector('input').focus();
+  document.querySelectorAll('.js-enable-auto-score-edit').forEach((pencil) => {
+    pencil.addEventListener('click', function () {
+      const form = this.closest('form');
+      form.querySelectorAll('.js-auto-score-value-info').forEach((element) => {
+        element.style.display = 'none';
+      });
+      const input = form.querySelector('.js-auto-score-value-input');
+      input.classList.remove('d-none');
+      input.style.display = '';
+      input.querySelector('input').focus();
+    });
   });
 
   document.querySelectorAll('.js-submission-feedback').forEach((input) => {
