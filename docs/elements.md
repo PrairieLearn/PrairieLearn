@@ -274,11 +274,11 @@ import random
 
 def generate(data):
 
-  # Generate a random value
-  x = random.uniform(1, 2)
+    # Generate a random value
+    x = random.uniform(1, 2)
 
-  # Answer to fill in the blank input
-  data["correct_answers"]["ans_rtol"] = x
+    # Answer to fill in the blank input
+    data["correct_answers"]["ans_rtol"] = x
 ```
 
 ---
@@ -299,11 +299,11 @@ import random
 
 def generate(data):
 
-  # Generate a random value
-  x = random.uniform(1, 2)
+    # Generate a random value
+    x = random.uniform(1, 2)
 
-  # Answer to fill in the blank input
-  data["correct_answers"]["ans_sig"] = round(x, 2)
+    # Answer to fill in the blank input
+    data["correct_answers"]["ans_sig"] = round(x, 2)
 ```
 
 #### Customizations
@@ -379,15 +379,15 @@ man proportions his belief to the evidence.
 ```python
 def generate(data):
 
-  QUESTION1 = "aristotle"
+    QUESTION1 = "aristotle"
 
-  data["params"][QUESTION1] = [
-    {"tag": "true", "ans": "whole"},
-    {"tag": "false", "ans": "part"},
-    {"tag": "false", "ans": "inverse"}
-  ]
+    data["params"][QUESTION1] = [
+        {"tag": "true", "ans": "whole"},
+        {"tag": "false", "ans": "part"},
+        {"tag": "false", "ans": "inverse"}
+    ]
 
-  return data
+    return data
 ```
 
 #### Customizations
@@ -502,11 +502,11 @@ import random
 
 def generate(data):
 
-  # Generate a random whole number
-  x = random.randint(1, 10)
+    # Generate a random whole number
+    x = random.randint(1, 10)
 
-  # Answer to fill in the blank input
-  data["correct_answers"]["int_value"] = x
+    # Answer to fill in the blank input
+    data["correct_answers"]["int_value"] = x
 ```
 
 #### Customizations
@@ -573,14 +573,14 @@ import sympy
 
 def generate(data):
 
-  # Declare math symbols
-  x, y = sympy.symbols("x y")
+    # Declare math symbols
+    x, y = sympy.symbols("x y")
 
-  # Describe the equation
-  z = x + y + 1
+    # Describe the equation
+    z = x + y + 1
 
-  # Answer to fill in the blank input stored as JSON.
-  data["correct_answers"]["symbolic_math"] = pl.to_json(z)
+    # Answer to fill in the blank input stored as JSON.
+    data["correct_answers"]["symbolic_math"] = pl.to_json(z)
 ```
 
 #### Customizations
@@ -639,8 +639,8 @@ Fill in the blank field that allows for **string** value input.
 ```python
 def generate(data):
 
-  # Answer to fill in the blank input
-  data["correct_answers"]["string_value"] = "Learn"
+    # Answer to fill in the blank input
+    data["correct_answers"]["string_value"] = "Learn"
 ```
 
 #### Customizations
@@ -764,11 +764,11 @@ import numpy as np
 
 def generate(data):
 
-  # Generate a random 3x3 matrix
-  mat = np.random.random((3, 3))
+    # Generate a random 3x3 matrix
+    mat = np.random.random((3, 3))
 
-  # Answer to each matrix entry converted to JSON
-  data["correct_answers"]["matrixA"] = pl.to_json(mat)
+    # Answer to each matrix entry converted to JSON
+    data["correct_answers"]["matrixA"] = pl.to_json(mat)
 ```
 
 #### Customizations
@@ -827,11 +827,11 @@ import prairielearn as pl
 import numpy as np
 
 def generate(data):
-  # Randomly generate a 2x2 matrix
-  matrixB = np.random.random((2, 2))
+    # Randomly generate a 2x2 matrix
+    matrixB = np.random.random((2, 2))
 
-  # Answer exported to question.
-  data["correct_answers"]["matrixB"] = pl.to_json(matrixB)
+    # Answer exported to question.
+    data["correct_answers"]["matrixB"] = pl.to_json(matrixB)
 ```
 
 #### Customizations
@@ -1160,8 +1160,8 @@ Displays the value of a Python variable, with formatted display of Pandas DataFr
 import prairielearn as pl
 
 def generate(data):
-  data_dictionary = { "a": 1, "b": 2, "c": 3 }
-  data["params"]["variable"] = pl.to_json(data_dictionary)
+    data_dictionary = { "a": 1, "b": 2, "c": 3 }
+    data["params"]["variable"] = pl.to_json(data_dictionary)
 ```
 
 ---
@@ -1183,9 +1183,9 @@ import prairielearn as pl
 import pandas as pd
 
 def generate(data):
-  d = {"col1": [1, 2], "col2": [3, 4]}
-  df = pd.DataFrame(data=d)
-  data["params"]["df"] = pl.to_json(df)
+    d = {"col1": [1, 2], "col2": [3, 4]}
+    df = pd.DataFrame(data=d)
+    data["params"]["df"] = pl.to_json(df)
 ```
 
 #### Customizations
@@ -1352,15 +1352,15 @@ import numpy as np
 
 def generate(data):
 
-  # Create fixed matrix
-  matrixC = np.matrix("5 6; 7 8")
-  matrixD = np.matrix("-1 4; 3 2")
-  # Random matrices can be generated with:
-  # mat = np.random.random((2, 2))
+    # Create fixed matrix
+    matrixC = np.matrix("5 6; 7 8")
+    matrixD = np.matrix("-1 4; 3 2")
+    # Random matrices can be generated with:
+    # mat = np.random.random((2, 2))
 
-  # Export each matrix as a JSON object for the question view.
-  data["params"]["matrixC"] = pl.to_json(matrixC)
-  data["params"]["matrixD"] = pl.to_json(matrixD)
+    # Export each matrix as a JSON object for the question view.
+    data["params"]["matrixC"] = pl.to_json(matrixC)
+    data["params"]["matrixD"] = pl.to_json(matrixD)
 ```
 
 #### Customizations
@@ -1457,11 +1457,11 @@ import numpy as np
 
 def generate(data):
 
-  # Construct a matrix
-  mat = np.matrix("1 2; 3 4")
+    # Construct a matrix
+    mat = np.matrix("1 2; 3 4")
 
-  # Export matrix to be displayed in question.html
-  data["params"]["matrixC"] = pl.to_json(mat)
+    # Export matrix to be displayed in question.html
+    data["params"]["matrixC"] = pl.to_json(mat)
 ```
 
 #### Customizations
@@ -1547,10 +1547,10 @@ import prairielearn as pl
 import numpy as np
 
 def generate(data):
-  mat = np.random.random((3, 3))
-  mat = mat / np.linalg.norm(mat, 1, axis=0)
-  data["params"]["labels"] = pl.to_json(["A", "B", "C"])
-  data["params"]["matrix"] = pl.to_json(mat)
+    mat = np.random.random((3, 3))
+    mat = mat / np.linalg.norm(mat, 1, axis=0)
+    data["params"]["labels"] = pl.to_json(["A", "B", "C"])
+    data["params"]["matrix"] = pl.to_json(mat)
 ```
 
 #### Customizations
