@@ -1,4 +1,4 @@
-<form name="instance_question-manual-grade-update-form" method="POST"
+<form name="manual-grading-form" method="POST"
       data-max-auto-points="<%= assessment_question.max_auto_points %>"
       data-max-manual-points="<%= assessment_question.max_manual_points %>"
       data-max-points="<%= assessment_question.max_points %>">
@@ -17,48 +17,48 @@
     </label>
   </div>
   <%- include('gradingPointsSection',
-      { type: 'manual', type_label: 'Manual',
-        points: locals.manual_points ?? instance_question.manual_points,
-        max_points: assessment_question.max_manual_points,
-        rubric: rubric_data_manual,
-      }); %>
+    { type: 'manual', type_label: 'Manual',
+      points: locals.manual_points ?? instance_question.manual_points,
+      max_points: assessment_question.max_manual_points,
+      rubric: rubric_data_manual,
+  }); %>
   <% if (assessment_question.max_auto_points > 0 || (locals.auto_points ?? instance_question.auto_points) > 0) { %>
-  <%- include('gradingPointsSection',
+    <%- include('gradingPointsSection',
       { type: 'auto', type_label: 'Auto',
         points: locals.auto_points ?? instance_question.auto_points,
         max_points: assessment_question.max_auto_points,
         rubric: rubric_data_auto,
-      }); %>
-  <div class="form-group js-manual-grading-points w-100">
-    Total Points:
-    <span class="float-right">
-      <span class="js-value-total-points"><%= Math.round(100 * (locals.points ?? instance_question.points)) / 100 %></span> /
-      <%= assessment_question.max_points %>
-    </span>
-  </div>
-  <div class="form-group js-manual-grading-percentage w-100">
-    Total Score:
-    <span class="float-right">
-      <span class="js-value-total-percentage"><%= Math.round(100 * (locals.score_perc ?? instance_question.score_perc)) / 100 %></span>%
-    </span>
-  </div>
+    }); %>
+    <div class="form-group js-manual-grading-points w-100">
+      Total Points:
+      <span class="float-right">
+        <span class="js-value-total-points"><%= Math.round(100 * (locals.points ?? instance_question.points)) / 100 %></span> /
+        <%= assessment_question.max_points %>
+      </span>
+    </div>
+    <div class="form-group js-manual-grading-percentage w-100">
+      Total Score:
+      <span class="float-right">
+        <span class="js-value-total-percentage"><%= Math.round(100 * (locals.score_perc ?? instance_question.score_perc)) / 100 %></span>%
+      </span>
+    </div>
   <% } %>
   <div class="form-group">
     <label>Feedback:
       <textarea name="submission_note" class="form-control js-submission-feedback"
                 style="min-height=1em;"
-                <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>readonly<% } %>
+        <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>readonly<% } %>
                 aria-describedby="submission-feedback-help"><%= submission.feedback?.manual %></textarea>
-      <small id="submission-feedback-help" class="form-text text-muted">
-        Markdown formatting, such as *emphasis* or `code`, is permitted
-        and will be used to format the feedback when presented to the
-        student.
-      </small>
+        <small id="submission-feedback-help" class="form-text text-muted">
+          Markdown formatting, such as *emphasis* or `code`, is permitted
+          and will be used to format the feedback when presented to the
+          student.
+        </small>
     </label>
   </div>
   <div class="text-right">
     <% if (!locals.disable && authz_data.has_course_instance_permission_edit) { %>
-    <button type="submit" class="btn btn-primary" name="__action" value="add_manual_grade">Submit</button>
+      <button type="submit" class="btn btn-primary" name="__action" value="add_manual_grade">Submit</button>
     <% } %>
     <div class="btn-group">
       <a role="button" class="btn btn-secondary"
@@ -66,16 +66,16 @@
         <%= locals.skip_text || ((!locals.disable && authz_data.has_course_instance_permission_edit) ? 'Skip' : 'Next') %>
       </a>
       <% if (!locals.disable && authz_data.has_course_instance_permission_edit) { %>
-      <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-        <span class="sr-only">Change assigned grader</span>
-      </button>
-      <div class="dropdown-menu dropdown-menu-right">
-        <% (locals.graders || []).forEach(grader => { %>
-        <button type="submit" class="dropdown-item" name="__action" value="reassign_<%= grader.user_id %>">Assign to: <%= grader.name %> (<%= grader.uid %>)</button>
-        <% }); %>
-        <button type="submit" class="dropdown-item" name="__action" value="reassign_nobody">Tag for grading without assigned grader</button>
-        <button type="submit" class="dropdown-item" name="__action" value="reassign_graded">Tag as graded (keep current grade)</button>
-      </div>
+        <button type="button" class="btn btn-secondary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <span class="sr-only">Change assigned grader</span>
+        </button>
+        <div class="dropdown-menu dropdown-menu-right">
+          <% (locals.graders || []).forEach(grader => { %>
+            <button type="submit" class="dropdown-item" name="__action" value="reassign_<%= grader.user_id %>">Assign to: <%= grader.name %> (<%= grader.uid %>)</button>
+          <% }); %>
+          <button type="submit" class="dropdown-item" name="__action" value="reassign_nobody">Tag for grading without assigned grader</button>
+          <button type="submit" class="dropdown-item" name="__action" value="reassign_graded">Tag as graded (keep current grade)</button>
+        </div>
       <% } %>
     </div>
   </div>

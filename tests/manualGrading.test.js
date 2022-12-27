@@ -374,7 +374,7 @@ describe('Manual Grading', function () {
       setUser(mockStaff[2]);
       const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
       const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-      const form = $manualGradingIQPage('form[name=instance_question-manual-grade-update-form]');
+      const form = $manualGradingIQPage('form[name=manual-grading-form]');
       score_percent = 30;
       score_points = (score_percent * 6) / 100;
       feedback_note = 'Test feedback note';
@@ -404,7 +404,7 @@ describe('Manual Grading', function () {
         setUser(defaultUser);
         const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
         const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-        const form = $manualGradingIQPage('form[name=instance_question-manual-grade-update-form]');
+        const form = $manualGradingIQPage('form[name=manual-grading-form]');
         assert.equal(form.find('input[name=score_manual_percent]').val(), score_percent);
         assert.equal(form.find('input[name=score_manual_points]').val(), score_points);
         assert.equal(form.find('textarea').text(), feedback_note);
@@ -485,7 +485,7 @@ describe('Manual Grading', function () {
       setUser(mockStaff[2]);
       const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
       const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-      const form = $manualGradingIQPage('form[name=instance_question-manual-grade-update-form]');
+      const form = $manualGradingIQPage('form[name=manual-grading-form]');
       score_points = 4.5;
       score_percent = (score_points / 6) * 100;
       feedback_note = 'Test feedback note updated';
@@ -515,7 +515,7 @@ describe('Manual Grading', function () {
         setUser(defaultUser);
         const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
         const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-        const form = $manualGradingIQPage('form[name=instance_question-manual-grade-update-form]');
+        const form = $manualGradingIQPage('form[name=manual-grading-form]');
         assert.equal(form.find('input[name=score_manual_percent]').val(), score_percent);
         assert.equal(form.find('input[name=score_manual_points]').val(), score_points);
         assert.equal(form.find('textarea').text(), feedback_note);
@@ -686,7 +686,7 @@ describe('Manual Grading', function () {
     step('grading panel should have proper values for rubrics', async () => {
       const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
       const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-      const form = $manualGradingIQPage('form[name=instance_question-manual-grade-update-form]');
+      const form = $manualGradingIQPage('form[name=manual-grading-form]');
 
       rubric_items.forEach((item) => {
         const checkbox = form.find(`.js-selectable-rubric-item[value="${item.id}"]`);
@@ -717,7 +717,7 @@ describe('Manual Grading', function () {
       setUser(mockStaff[2]);
       const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
       const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-      const form = $manualGradingIQPage('form[name=instance_question-manual-grade-update-form]');
+      const form = $manualGradingIQPage('form[name=manual-grading-form]');
       applied_rubrics = [0, 2, 3];
       score_points = _.sumBy(applied_rubrics, (index) => rubric_items[index].points); // should be 5.4
       score_percent = (score_points / 6) * 100; // should be 90%
@@ -753,7 +753,7 @@ describe('Manual Grading', function () {
         setUser(defaultUser);
         const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
         const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-        const form = $manualGradingIQPage('form[name=instance_question-manual-grade-update-form]');
+        const form = $manualGradingIQPage('form[name=manual-grading-form]');
         assert.equal(form.find('input[name=score_manual_percent]').val(), score_percent);
         assert.equal(form.find('input[name=score_manual_points]').val(), score_points);
         assert.equal(form.find('textarea').text(), feedback_note);

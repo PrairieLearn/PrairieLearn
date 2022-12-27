@@ -145,7 +145,7 @@ function resetInstructorGradingPanel() {
     form.addEventListener('submit', function (e) {
       e.preventDefault();
       const gradingForm = document.querySelector(
-        '.js-main-grading-panel form[name=instance_question-manual-grade-update-form]'
+        '.js-main-grading-panel form[name=manual-grading-form]'
       );
       // Save values in grading rubric so they can be re-applied once the form is re-created.
       const rubricFormData = Array.from(new FormData(gradingForm).entries());
@@ -161,7 +161,7 @@ function resetInstructorGradingPanel() {
 
           // Restore any values that had been set before the settings were configured.
           const newRubricForm = document.querySelector(
-            '.js-main-grading-panel form[name=instance_question-manual-grade-update-form]'
+            '.js-main-grading-panel form[name=manual-grading-form]'
           );
           newRubricForm.querySelectorAll('input[type="checkbox"]').forEach((input) => {
             input.checked = false;
@@ -212,82 +212,78 @@ function resetRubricItemRowsListeners() {
 }
 
 function updatePointsView() {
-  document
-    .querySelectorAll('form[name=instance_question-manual-grade-update-form]')
-    .forEach((form) => {
-      const max_auto_points = form.dataset.maxAutoPoints;
-      const max_manual_points = form.dataset.maxManualPoints;
-      const max_points = form.dataset.maxPoints;
+  document.querySelectorAll('form[name=manual-grading-form]').forEach((form) => {
+    const max_auto_points = form.dataset.maxAutoPoints;
+    const max_manual_points = form.dataset.maxManualPoints;
+    const max_points = form.dataset.maxPoints;
 
-      const auto_points =
-        this.name === 'score_auto_percent'
-          ? (this.value * max_auto_points) / 100
-          : form.querySelector('[name=score_auto_points]').value;
-      const manual_points =
-        this.name === 'score_manual_percent'
-          ? (this.value * max_manual_points) / 100
-          : form.querySelector('[name=score_manual_points]').value;
-      const points = Math.round(100 * (Number(auto_points) + Number(manual_points))) / 100;
-      const auto_perc = Math.round((auto_points * 10000) / (max_auto_points || max_points)) / 100;
-      const manual_perc =
-        Math.round((manual_points * 10000) / (max_manual_points || max_points)) / 100;
-      const total_perc = Math.round((points * 10000) / max_points) / 100;
+    const auto_points =
+      this.name === 'score_auto_percent'
+        ? (this.value * max_auto_points) / 100
+        : form.querySelector('[name=score_auto_points]').value;
+    const manual_points =
+      this.name === 'score_manual_percent'
+        ? (this.value * max_manual_points) / 100
+        : form.querySelector('[name=score_manual_points]').value;
+    const points = Math.round(100 * (Number(auto_points) + Number(manual_points))) / 100;
+    const auto_perc = Math.round((auto_points * 10000) / (max_auto_points || max_points)) / 100;
+    const manual_perc =
+      Math.round((manual_points * 10000) / (max_manual_points || max_points)) / 100;
+    const total_perc = Math.round((points * 10000) / max_points) / 100;
 
-      if (this.name !== 'score_auto_points') {
-        form.querySelector('[name=score_auto_points]').value = auto_points;
-      }
-      if (this.name !== 'score_auto_percent') {
-        form.querySelector('[name=score_auto_percent]').value = auto_perc;
-      }
-      if (this.name !== 'score_manual_points') {
-        form.querySelector('[name=score_manual_points]').value = manual_points;
-      }
-      if (this.name !== 'score_manual_percent') {
-        form.querySelector('[name=score_manual_percent]').value = manual_perc;
-      }
+    if (this.name !== 'score_auto_points') {
+      form.querySelector('[name=score_auto_points]').value = auto_points;
+    }
+    if (this.name !== 'score_auto_percent') {
+      form.querySelector('[name=score_auto_percent]').value = auto_perc;
+    }
+    if (this.name !== 'score_manual_points') {
+      form.querySelector('[name=score_manual_points]').value = manual_points;
+    }
+    if (this.name !== 'score_manual_percent') {
+      form.querySelector('[name=score_manual_percent]').value = manual_perc;
+    }
 
-      form.querySelector('.js-value-manual-points').innerText = manual_points;
-      form.querySelector('.js-value-auto-points').innerText = auto_points;
-      form.querySelector('.js-value-total-points').innerText = points;
-      form.querySelector('.js-value-manual-percentage').innerText = manual_perc;
-      form.querySelector('.js-value-auto-percentage').innerText = auto_perc;
-      form.querySelector('.js-value-total-percentage').innerText = total_perc;
-    });
+    form.querySelector('.js-value-manual-points').innerText = manual_points;
+    form.querySelector('.js-value-auto-points').innerText = auto_points;
+    form.querySelector('.js-value-total-points').innerText = points;
+    form.querySelector('.js-value-manual-percentage').innerText = manual_perc;
+    form.querySelector('.js-value-auto-percentage').innerText = auto_perc;
+    form.querySelector('.js-value-total-percentage').innerText = total_perc;
+  });
 }
 
 function computePointsFromRubric() {
-  document
-    .querySelectorAll('form[name=instance_question-manual-grade-update-form]')
-    .forEach((form) => {
-      const manualInput = form.querySelector('.js-manual-score-value-input-points');
-      const autoInput = form.querySelector('.js-auto-score-value-input-points');
-      let computedPoints = {
-        manual:
-          (parseFloat(manualInput.dataset.rubricStartingPoints) || 0) +
-          (parseFloat(form.querySelector('input[name="score_manual_adjust_points"]')?.value) || 0),
-        auto:
-          (parseFloat(autoInput.dataset.rubricStartingPoints) || 0) +
-          (parseFloat(form.querySelector('input[name="score_auto_adjust_points"]')?.value) || 0),
-      };
+  document.querySelectorAll('form[name=manual-grading-form]').forEach((form) => {
+    const manualInput = form.querySelector('.js-manual-score-value-input-points');
+    const autoInput = form.querySelector('.js-auto-score-value-input-points');
+    let computedPoints = {
+      manual:
+        (parseFloat(manualInput.dataset.rubricStartingPoints) || 0) +
+        (parseFloat(form.querySelector('input[name="score_manual_adjust_points"]')?.value) || 0),
+      auto:
+        (parseFloat(autoInput.dataset.rubricStartingPoints) || 0) +
+        (parseFloat(form.querySelector('input[name="score_auto_adjust_points"]')?.value) || 0),
+    };
 
-      form.querySelectorAll('.js-selectable-rubric-item:checked').forEach((item) => {
-        computedPoints[item.dataset.rubricItemType] += parseFloat(item.dataset.rubricItemPoints);
-      });
-
-      if (manualInput.dataset.rubricActive) {
-        manualInput.value = Math.min(
-          Math.max(computedPoints.manual, manualInput.dataset.rubricMinPoints),
-          manualInput.dataset.rubricMaxPoints
-        );
-      }
-      if (autoInput.dataset.rubricActive) {
-        autoInput.value = Math.min(
-          Math.max(computedPoints.auto, autoInput.dataset.rubricMinPoints),
-          autoInput.dataset.rubricMaxPoints
-        );
-      }
-      updatePointsView();
+    form.querySelectorAll('.js-selectable-rubric-item:checked').forEach((item) => {
+      computedPoints[item.dataset.rubricItemType] += parseFloat(item.dataset.rubricItemPoints);
     });
+
+    if (manualInput.dataset.rubricActive) {
+      manualInput.value = Math.min(
+        Math.max(computedPoints.manual, manualInput.dataset.rubricMinPoints),
+        manualInput.dataset.rubricMaxPoints
+      );
+    }
+    if (autoInput.dataset.rubricActive) {
+      autoInput.value = Math.min(
+        Math.max(computedPoints.auto, autoInput.dataset.rubricMinPoints),
+        autoInput.dataset.rubricMaxPoints
+      );
+    }
+    updatePointsView();
+  });
 }
 
 function enableRubricItemDescriptionField(event) {
