@@ -18,6 +18,16 @@ $(() => {
         .forEach((item) => item.dispatchEvent(new MouseEvent('click')));
     }
   });
+  const modal = document.querySelector('#conflictGradingJobModal');
+  if (modal) {
+    $(modal)
+      .modal({})
+      .on('shown.bs.modal', function () {
+        modal
+          .querySelectorAll('.js-submission-feedback')
+          .forEach((item) => item.dispatchEvent(new Event('input')));
+      });
+  }
 });
 
 function resetInstructorGradingPanel() {
@@ -64,9 +74,11 @@ function resetInstructorGradingPanel() {
       // changes as well. This is done by resetting the height (so the scrollHeight is computed
       // based on the minimum height) and then using the scrollHeight plus padding as the new height.
       this.style.height = '';
-      const style = window.getComputedStyle(this);
-      this.style.height =
-        this.scrollHeight + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + 'px';
+      if (this.scrollHeight) {
+        const style = window.getComputedStyle(this);
+        this.style.height =
+          this.scrollHeight + parseFloat(style.paddingTop) + parseFloat(style.paddingBottom) + 'px';
+      }
     });
     input.dispatchEvent(new Event('input'));
   });

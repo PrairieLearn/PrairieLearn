@@ -37,7 +37,7 @@
       <% } %>
       <% if (conflict_grading_job) { %>
       <div id="conflictGradingJobModal" class="modal fade">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-xl">
           <div class="modal-content">
             <div class="modal-header bg-danger text-light">
               <div class="modal-title">Grading conflict identified</div>
@@ -79,11 +79,6 @@
           </div>
         </div>
       </div>
-      <script>
-        $(function() {
-            $('#conflictGradingJobModal').modal({}).find('.js-enable-auto-score-edit').click();
-        });
-      </script>
       <% } %>
       <div class="row">
         <div class="col-lg-8 col-12">
