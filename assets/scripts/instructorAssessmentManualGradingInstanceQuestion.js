@@ -194,7 +194,7 @@ function resetInstructorGradingPanel() {
   computePointsFromRubric();
 }
 
-function resetRubricItemRowsListeners(context) {
+function resetRubricItemRowsListeners() {
   document
     .querySelectorAll('.js-rubric-items-table tbody tr')
     .forEach((row) => row.addEventListener('dragover', rowDragOver));
@@ -204,6 +204,12 @@ function resetRubricItemRowsListeners(context) {
   document
     .querySelectorAll('.js-rubric-item-description-field')
     .forEach((button) => button.addEventListener('click', enableRubricItemDescriptionField));
+  document
+    .querySelectorAll('.js-rubric-item-move-down-button')
+    .forEach((button) => button.addEventListener('click', moveRowDown));
+  document
+    .querySelectorAll('.js-rubric-item-move-up-button')
+    .forEach((button) => button.addEventListener('click', moveRowUp));
 }
 
 function updatePointsView() {
@@ -297,13 +303,14 @@ function updateRubricItemOrderField() {
 
 function moveRowDown(event) {
   const row = event.target.closest('tr');
-  row.parentNode.insertBefore(row.nextSibling, row);
+  console.log(row, row.nextElementSibling);
+  row.parentNode.insertBefore(row.nextElementSibling, row);
   updateRubricItemOrderField();
 }
 
 function moveRowUp(event) {
   const row = event.target.closest('tr');
-  row.parentNode.insertBefore(row, row.nextSibling);
+  row.parentNode.insertBefore(row.previousElementSibling, row.nextElementSibling);
   updateRubricItemOrderField();
 }
 
