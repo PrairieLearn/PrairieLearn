@@ -165,7 +165,6 @@ module.exports.init = function (callback) {
       'workspace_hosts_find_terminable.sql',
       'group_users_insert.sql',
       'sync_assessment_modules.sql',
-      'assessment_questions_update_rubric.sql',
       'rubric_gradings_insert.sql',
       'rubric_gradings_recompute.sql',
     ],

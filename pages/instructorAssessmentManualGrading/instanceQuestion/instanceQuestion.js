@@ -108,7 +108,7 @@ router.get(
     // latter would require all includes in EJS to be translated to await recursively.
     const gradingPanel = await util.promisify(ejs.renderFile)(
       path.join(__dirname, 'gradingPanel.ejs'),
-      res.locals
+      { context: 'main', ...res.locals }
     );
     const rubricSettingsManual = await util.promisify(ejs.renderFile)(
       path.join(__dirname, 'rubricSettingsModal.ejs'),
@@ -211,8 +211,9 @@ router.post(
         )
       );
     } else if (req.body.__action === 'modify_rubric_settings') {
+      // Parse using qs, which allows deep objects to be created based on parameter names
       const rubric_items = Object.values(qs.parse(qs.stringify(req.body)).rubric_item || {});
-      const params = [
+      await manualGrading.updateAssessmentQuestionRubric(
         res.locals.instance_question.assessment_question_id,
         req.body.rubric_type,
         !!req.body.use_rubrics,
@@ -221,11 +222,10 @@ router.post(
           : req.body.starting_points,
         req.body.min_points,
         req.body.max_points,
-        JSON.stringify(rubric_items),
+        rubric_items,
         !!req.body.tag_for_manual_grading,
-        res.locals.authn_user.user_id,
-      ];
-      await sqldb.callAsync('assessment_questions_update_rubric', params);
+        res.locals.authn_user.user_id
+      );
       res.redirect(req.originalUrl + '/grading_panel');
     } else if (typeof req.body.__action === 'string' && req.body.__action.startsWith('reassign_')) {
       const assigned_grader = req.body.__action.substring(9);

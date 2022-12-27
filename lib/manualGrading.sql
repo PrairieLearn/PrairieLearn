@@ -78,3 +78,92 @@ FROM
 WHERE
     r.id = $rubric_id
     AND r.deleted_at IS NULL;
+
+-- BLOCK select_assessment_question_for_update
+SELECT *
+FROM assessment_questions
+WHERE id = $assessment_question_id
+FOR UPDATE;
+
+-- BLOCK insert_rubric
+INSERT INTO rubrics
+    (starting_points, min_points, max_points)
+VALUES
+    ($starting_points, $min_points, $max_points)
+RETURNING id;
+
+-- BLOCK update_rubric
+UPDATE rubrics
+SET
+    starting_points = $starting_points,
+    min_points = $min_points,
+    max_points = $max_points,
+    modified_at = CURRENT_TIMESTAMP
+WHERE
+    id = $rubric_id;
+
+-- BLOCK update_assessment_question_rubric_id
+UPDATE assessment_questions
+SET
+    manual_rubric_id = $manual_rubric_id,
+    auto_rubric_id = $auto_rubric_id
+WHERE
+    id = $assessment_question_id;
+
+-- BLOCK delete_rubric_items
+UPDATE rubric_items
+SET deleted_at = NOW()
+WHERE
+    rubric_id = $rubric_id
+    AND deleted_at IS NULL
+    AND NOT (id = ANY($active_rubric_items::BIGINT[]));
+
+-- BLOCK update_rubric_item
+UPDATE rubric_items
+SET
+    number = $number::bigint,
+    points = $points,
+    short_text = COALESCE($short_text, short_text),
+    description = COALESCE($description, description),
+    staff_instructions = COALESCE($staff_instructions, staff_instructions),
+    key_binding = CASE WHEN $number > 10 THEN NULL ELSE MOD($number, 10) END,
+    deleted_at = NULL
+WHERE
+    id = $id
+    AND rubric_id = $rubric_id
+RETURNING id;
+
+-- BLOCK insert_rubric_item
+INSERT INTO rubric_items
+    (rubric_id, number, points, short_text, description, staff_instructions, key_binding)
+VALUES
+    ($rubric_id, $number::bigint, $points, $short_text, $description, $staff_instructions,
+     CASE WHEN $number > 10 THEN NULL ELSE MOD($number, 10) END);
+
+-- BLOCK recompute_instance_questions
+WITH new_rubric_gradings AS (
+    SELECT iq.*, rgr.*
+    FROM
+        instance_questions iq
+        JOIN rubric_gradings rg ON (rg.id = CASE WHEN $rubric_type = 'auto' THEN iq.auto_rubric_grading_id ELSE iq.manual_rubric_grading_id END)
+        JOIN rubric_gradings_recompute(rg.id) AS rgr ON TRUE
+    WHERE
+        iq.assessment_question_id = $assessment_question_id
+        AND rgr.rubric_grading_updated
+)
+SELECT COUNT(1)
+FROM
+    new_rubric_gradings nrg
+    JOIN instance_questions_update_score(
+            NULL, nrg.assessment_instance_id, -- assessment_id, assessment_instance_id
+            NULL, nrg.id, NULL, NULL, NULL, NULL, -- submission, IQ, uid/group, number, qid, modified_at
+            NULL, NULL, NULL, NULL, NULL, NULL, -- total/manual/auto score/points
+            NULL, NULL, -- feedback, partial scores
+            CASE WHEN $rubric_type = 'auto' THEN NULL ELSE nrg.new_rubric_grading_id END,
+            CASE WHEN $rubric_type = 'auto' THEN nrg.new_rubric_grading_id ELSE NULL END,
+            $authn_user_id) ON TRUE;
+
+-- BLOCK tag_for_manual_grading
+UPDATE instance_questions iq
+SET requires_manual_grading = TRUE
+WHERE iq.assessment_question_id = $assessment_question_id;

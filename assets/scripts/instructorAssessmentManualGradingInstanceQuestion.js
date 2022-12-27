@@ -309,7 +309,7 @@ function enableRubricItemDescriptionField(event) {
   const input = document.createElement('textarea');
   input.classList.add('form-control');
   input.name = cell.dataset.inputName;
-  input.innerText = cell.dataset.currentValue;
+  input.innerText = cell.dataset.currentValue || '';
   cell.parentNode.insertBefore(input, cell);
   cell.remove();
   input.focus();
