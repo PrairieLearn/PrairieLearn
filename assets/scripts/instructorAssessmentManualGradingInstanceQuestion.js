@@ -270,20 +270,20 @@ function computePointsFromRubric() {
       computedPoints[item.dataset.rubricItemType] += parseFloat(item.dataset.rubricItemPoints);
     });
 
-    if (manualInput.dataset.rubricActive) {
+    if (manualInput.dataset.rubricActive === 'true') {
       manualInput.value = Math.min(
         Math.max(computedPoints.manual, manualInput.dataset.rubricMinPoints),
         manualInput.dataset.rubricMaxPoints
       );
     }
-    if (autoInput.dataset.rubricActive) {
+    if (autoInput.dataset.rubricActive === 'true') {
       autoInput.value = Math.min(
         Math.max(computedPoints.auto, autoInput.dataset.rubricMinPoints),
         autoInput.dataset.rubricMaxPoints
       );
     }
-    updatePointsView();
   });
+  updatePointsView();
 }
 
 function enableRubricItemDescriptionField(event) {
