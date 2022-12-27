@@ -64,12 +64,15 @@
                               {disable: true, skip_text: 'Accept existing score'}); %>
                 </div>
                 <div class="col-6">
-                  <%- include('gradingPanel',
-                              {score_perc: conflict_grading_job.score * 100,
-                               points: conflict_grading_job.score * assessment_question.max_points,
-                               auto_points: conflict_grading_job.auto_points,
-                               manual_points: conflict_grading_job.manual_points,
-                               submission: conflict_grading_job}); %>
+                  <%- include('gradingPanel', {
+                      score_perc: conflict_grading_job.score * 100,
+                      points: conflict_grading_job.score * assessment_question.max_points,
+                      auto_points: conflict_grading_job.auto_points,
+                      manual_points: conflict_grading_job.manual_points,
+                      submission: conflict_grading_job,
+                      rubric_data_manual: conflict_grading_job.rubric_data_manual,
+                      rubric_data_auto: conflict_grading_job.rubric_data_auto
+                  }); %>
                 </div>
               </div>
             </div>

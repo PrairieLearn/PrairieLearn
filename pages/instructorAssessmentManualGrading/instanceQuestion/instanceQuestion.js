@@ -25,6 +25,19 @@ async function prepareLocalsForRender(req, res) {
     res.locals.conflict_grading_job = (
       await sqldb.queryZeroOrOneRowAsync(sql.select_grading_job_data, params)
     ).rows[0];
+    res.locals.conflict_grading_job.rubric_data_manual =
+      await manualGrading.selectRubricGradingData(
+        res.locals.assessment_question.id,
+        res.locals.assessment_question.manual_rubric_id,
+        res.locals.conflict_grading_job.manual_rubric_grading_id,
+        res.locals.rubric_mustache_data
+      );
+    res.locals.conflict_grading_job.rubric_data_auto = await manualGrading.selectRubricGradingData(
+      res.locals.assessment_question.id,
+      res.locals.assessment_question.auto_rubric_id,
+      res.locals.conflict_grading_job.auto_rubric_grading_id,
+      res.locals.rubric_mustache_data
+    );
   }
 
   // Even though getAndRenderVariant will select variants for the instance question, if the
