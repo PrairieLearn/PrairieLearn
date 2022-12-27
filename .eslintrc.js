@@ -48,5 +48,12 @@ module.exports = {
         mocha: true,
       },
     },
+    {
+      files: ['assets/scripts/*.js'],
+      env: {
+        browser: true,
+        jquery: true,
+      },
+    },
   ],
 };

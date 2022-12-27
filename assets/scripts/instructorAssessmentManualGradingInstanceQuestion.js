@@ -1,5 +1,3 @@
-/* eslint-env browser,jquery */
-
 $(() => {
   resetInstructorGradingPanel();
 
@@ -143,17 +141,6 @@ function resetInstructorGradingPanel() {
     })
   );
 
-  document
-    .querySelectorAll('.js-rubric-items-table tbody tr')
-    .forEach((row) => row.addEventListener('dragover', rowDragOver));
-  document
-    .querySelectorAll('.js-rubric-item-move-button')
-    .forEach((row) => row.addEventListener('dragstart', rowDragStart));
-
-  document
-    .querySelectorAll('.js-rubric-item-description-field')
-    .forEach((button) => button.addEventListener('click', enableRubricItemDescriptionField));
-
   document.querySelectorAll('.js-rubric-settings-modal form').forEach((form) =>
     form.addEventListener('submit', function (e) {
       e.preventDefault();
@@ -202,8 +189,21 @@ function resetInstructorGradingPanel() {
     })
   );
 
+  resetRubricItemRowsListeners();
   updateRubricItemOrderField();
   computePointsFromRubric();
+}
+
+function resetRubricItemRowsListeners(context) {
+  document
+    .querySelectorAll('.js-rubric-items-table tbody tr')
+    .forEach((row) => row.addEventListener('dragover', rowDragOver));
+  document
+    .querySelectorAll('.js-rubric-item-move-button')
+    .forEach((row) => row.addEventListener('dragstart', rowDragStart));
+  document
+    .querySelectorAll('.js-rubric-item-description-field')
+    .forEach((button) => button.addEventListener('click', enableRubricItemDescriptionField));
 }
 
 function updatePointsView() {
@@ -342,10 +342,7 @@ function addRubricItemRow() {
   const row = modal
     .querySelector('.js-new-row-rubric-item')
     .content.firstElementChild.cloneNode(true);
-  table.appendChild(row);
-
-  row.addEventListener('dragover', rowDragOver);
-  row.querySelector('.js-rubric-item-move-button').addEventListener('dragstart', rowDragStart);
+  table.querySelector('tbody').appendChild(row);
 
   row.querySelector('.js-rubric-item-row-order').name = `rubric_item[new${next_id}][order]`;
   row.querySelector('.js-rubric-item-points').name = `rubric_item[new${next_id}][points]`;
@@ -358,10 +355,8 @@ function addRubricItemRow() {
     '.js-rubric-item-staff-instructions'
   ).dataset.inputName = `rubric_item[new${next_id}][staff_instructions]`;
 
-  row
-    .querySelectorAll('.js-rubric-item-description-field')
-    .forEach((button) => button.addEventListener('click', enableRubricItemDescriptionField));
-
   row.querySelector('.js-rubric-item-points').focus();
+
+  resetRubricItemRowsListeners();
   updateRubricItemOrderField();
 }
