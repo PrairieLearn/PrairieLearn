@@ -1,9 +1,9 @@
 <div class="form-group">
   <span class="w-100">
-    <label for="js-<%= type %>-score-value-input-points" class="js-manual-grading-points">
+    <label for="js-<%= type %>-score-value-input-points-<%= context %>" class="js-manual-grading-points">
       <%= type_label %> Points:
     </label>
-    <label for="js-<%= type %>-score-value-input-percentage" class="js-manual-grading-percentage">
+    <label for="js-<%= type %>-score-value-input-percentage-<%= context %>" class="js-manual-grading-percentage">
       <%= type_label %> Score:
     </label>
     <span class="float-right">
@@ -21,7 +21,7 @@
             <i class="fas fa-pencil"></i>
           </button>
         <% } %>
-        <% if (!locals.disable && authz_data.has_course_instance_permission_edit && course.manual_grading_visible) { %>
+        <% if (locals.context == 'main' && authz_data.has_course_instance_permission_edit && course.manual_grading_visible) { %>
           <button type="button" class="btn btn-outline-secondary js-show-rubric-settings-button"
                   data-rubric-type="<%= type %>">
             <i class="fas fa-list-check"></i>
@@ -33,7 +33,7 @@
   <div class="js-manual-grading-points">
     <div class="input-group js-<%= type %>-score-value-input <% if (rubric?.rubric_data || type == 'auto') { %> d-none<% } %>">
       <input type="number" step="any"
-             id="js-<%= type %>-score-value-input-points"
+             id="js-<%= type %>-score-value-input-points-<%= context %>"
              class="form-control js-grading-score-input js-<%= type %>-score-value-input-points"
              data-rubric-active="<%= !!rubric?.rubric_data %>"
              data-rubric-starting-points="<%= rubric?.rubric_data?.starting_points %>"
@@ -50,11 +50,11 @@
   <div class="js-manual-grading-percentage">
     <div class="input-group js-<%= type %>-score-value-input <% if (rubric?.rubric_data || type == 'auto') { %> d-none<% } %>">
       <input type="number" step="any"
-             id="js-<%= type %>-score-value-input-percentage"
+             id="js-<%= type %>-score-value-input-percentage-<%= context %>"
              class="form-control js-grading-score-input"
              name="score_<%= type %>_percent"
              value="<%= points * 100 / (max_points || assessment_question.max_points) %>"
-             <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %> />
+      <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %> />
       <span class="input-group-append">
         <span class="input-group-text">%</span>
       </span>

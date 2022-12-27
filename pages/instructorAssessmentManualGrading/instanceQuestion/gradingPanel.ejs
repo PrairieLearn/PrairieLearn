@@ -46,10 +46,10 @@
   <div class="form-group">
     <label>Feedback:
       <textarea name="submission_note" class="form-control js-submission-feedback"
-                style="min-height=1em;"
+                style="min-height: 1em;"
         <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>readonly<% } %>
-                aria-describedby="submission-feedback-help"><%= submission.feedback?.manual %></textarea>
-        <small id="submission-feedback-help" class="form-text text-muted">
+                aria-describedby="submission-feedback-help-<%= context %>"><%= submission.feedback?.manual %></textarea>
+        <small id="submission-feedback-help-<%= context %>" class="form-text text-muted">
           Markdown formatting, such as *emphasis* or `code`, is permitted
           and will be used to format the feedback when presented to the
           student.
