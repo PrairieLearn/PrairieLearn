@@ -379,7 +379,7 @@ man proportions his belief to the evidence.
 ```python
 def generate(data):
 
-  QUESTION1 = 'aristotle'
+  QUESTION1 = "aristotle"
 
   data["params"][QUESTION1] = [
     {"tag": "true", "ans": "whole"},
@@ -1251,7 +1251,7 @@ def file(data):
     if data["filename"]=="figure.png":
         plt.plot([1,2,3],[3,4,-2])
         buf = io.BytesIO()
-        plt.savefig(buf,format='png')
+        plt.savefig(buf,format="png")
         return buf
 ```
 
