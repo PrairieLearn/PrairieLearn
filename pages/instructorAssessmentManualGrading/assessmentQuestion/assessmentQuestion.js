@@ -78,9 +78,12 @@ router.post(
       await sqldb.queryAsync(sql.update_instance_questions, params);
       res.send({});
     } else if (req.body.__action === 'edit_question_points') {
+      // The sproc validates either assessment_instance_id if provided, or assessment_id if
+      // not. Since in this case assessment_id is auth'ed and asessment_instance_id is not, only
+      // assessment_id is passed as parameter.
       const params = [
-        res.locals.assessment_id,
-        req.body.assessment_instance_id,
+        res.locals.assessment.id,
+        null, // assessment_instance_id, set to null as it is untrusted
         null, // submission_id
         req.body.instance_question_id,
         null, // uid
@@ -107,9 +110,12 @@ router.post(
       await util.promisify(ltiOutcomes.updateScore)(req.body.assessment_instance_id);
       res.send({});
     } else if (req.body.__action === 'edit_question_score_perc') {
+      // The sproc validates either assessment_instance_id if provided, or assessment_id if
+      // not. Since in this case assessment_id is auth'ed and asessment_instance_id is not, only
+      // assessment_id is passed as parameter.
       const params = [
-        res.locals.assessment_id,
-        req.body.assessment_instance_id,
+        res.locals.assessment.id,
+        null, // assessment_instance_id, set to null as it is untrusted
         null, // submission_id
         req.body.instance_question_id,
         null, // uid
