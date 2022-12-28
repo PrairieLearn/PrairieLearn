@@ -1,3 +1,4 @@
+import math
 from typing import Any, Dict, Optional, Tuple
 
 import big_o_utils as bou
@@ -24,8 +25,8 @@ class TestBigOInput:
 
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
-        assert score == 1
-        assert feedback == "Correct!"
+        assert score == 1.0
+        assert feedback == bou.CORRECT_UNCONDITIONAL_FEEDBACK
 
     @pytest.mark.parametrize(
         "a_true, a_sub",
@@ -45,8 +46,8 @@ class TestBigOInput:
     ) -> None:
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
-        assert score == 1
-        assert "complex" in feedback
+        assert score == 1.0
+        assert feedback == bou.CORRECT_COMPLEX_FEEDBACK
 
     @pytest.mark.parametrize(
         "a_true, a_sub",
@@ -111,8 +112,8 @@ class TestBigOInput:
     ) -> None:
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
-        assert score == 0
-        assert "negative" in feedback
+        assert score == 0.0
+        assert feedback == bou.NEGATIVE_FEEDBACK
 
     @pytest.mark.parametrize(
         "a_true, a_sub",
@@ -133,7 +134,7 @@ class TestBigOInput:
         score, feedback = bou.grade_o_expression(a_true, a_sub, VARIABLES)
 
         assert 0 < score < 1
-        assert "loose" in feedback
+        assert feedback == bou.TOO_LOOSE_FEEDBACK
 
     @pytest.mark.parametrize(
         "a_true, a_sub",
@@ -154,7 +155,7 @@ class TestBigOInput:
         score, feedback = bou.grade_omega_expression(a_true, a_sub, VARIABLES)
 
         assert 0 < score < 1
-        assert "loose" in feedback
+        assert feedback == bou.TOO_LOOSE_FEEDBACK
 
     @pytest.mark.parametrize(
         "a_true, a_sub",
@@ -181,8 +182,8 @@ class TestBigOInput:
     ) -> None:
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
-        assert score == 0
-        assert "incorrect" in feedback
+        assert score == 0.0
+        assert feedback == bou.INCORRECT_FEEDBACK
 
     @pytest.mark.parametrize(
         "a_true, a_sub",
@@ -209,8 +210,8 @@ class TestBigOInput:
     ) -> None:
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
-        assert score == 0
-        assert "incorrect" in feedback
+        assert score == 0.0
+        assert feedback == bou.INCORRECT_FEEDBACK
 
 
 class TestExceptions:
