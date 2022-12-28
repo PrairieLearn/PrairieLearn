@@ -140,28 +140,51 @@ VALUES
     ($rubric_id, $number::bigint, $points, $short_text, $description, $staff_instructions,
      CASE WHEN $number > 10 THEN NULL ELSE MOD($number, 10) END);
 
--- BLOCK recompute_instance_questions
-WITH new_rubric_gradings AS (
-    SELECT iq.*, rgr.*
+-- BLOCK select_instance_questions_to_update
+WITH rubric_gradings_to_review AS (
+    SELECT
+        rg.*,
+        iq.id AS instance_question_id,
+        rg.starting_points != r.starting_points OR
+        rg.max_points != r.max_points OR
+        rg.min_points != r.min_points AS rubric_settings_changed
     FROM
-        instance_questions iq
-        JOIN rubric_gradings rg ON (rg.id = CASE WHEN $rubric_type = 'auto' THEN iq.auto_rubric_grading_id ELSE iq.manual_rubric_grading_id END)
-        JOIN rubric_gradings_recompute(rg.id) AS rgr ON TRUE
+        instance_questions AS iq
+        JOIN rubric_gradings AS rg ON (rg.id = CASE WHEN $rubric_type = 'auto' THEN iq.auto_rubric_grading_id ELSE iq.manual_rubric_grading_id END)
+        JOIN rubrics AS r ON (r.id = rg.rubric_id)
     WHERE
         iq.assessment_question_id = $assessment_question_id
-        AND rgr.rubric_grading_updated
+),
+grading_items_to_review AS (
+    SELECT
+        rgr.id AS rubric_grading_id,
+        JSONB_AGG(rgi) AS applied_rubric_items,
+        BOOL_OR(ri.id IS NULL OR ri.points != rgi.points) AS rubric_items_changed
+    FROM
+        rubric_gradings_to_review AS rgr
+        JOIN rubric_grading_items AS rgi ON (rgi.rubric_grading_id = rgr.id)
+        LEFT JOIN rubric_items AS ri ON (ri.id = rgi.rubric_item_id AND ri.deleted_at IS NULL)
+    GROUP BY rgr.id
 )
-SELECT COUNT(1)
+SELECT
+    rgr.*, gir.*
 FROM
-    new_rubric_gradings nrg
-    JOIN instance_questions_update_score(
-            NULL, nrg.assessment_instance_id, -- assessment_id, assessment_instance_id
-            NULL, nrg.id, NULL, NULL, NULL, NULL, -- submission, IQ, uid/group, number, qid, modified_at
-            NULL, NULL, NULL, NULL, NULL, NULL, -- total/manual/auto score/points
-            NULL, NULL, -- feedback, partial scores
-            CASE WHEN $rubric_type = 'auto' THEN NULL ELSE nrg.new_rubric_grading_id END,
-            CASE WHEN $rubric_type = 'auto' THEN nrg.new_rubric_grading_id ELSE NULL END,
-            $authn_user_id) ON TRUE;
+    rubric_gradings_to_review AS rgr
+    LEFT JOIN grading_item_to_review AS gir ON (gir.rubric_grading_id = rgr.id)
+WHERE
+    rgr.rubric_settings_changed IS TRUE OR gir.rubric_items_changed;
+
+-- SELECT COUNT(1)
+-- FROM
+--     rubric_gradings nrg
+--     JOIN instance_questions_update_score(
+--             NULL, nrg.assessment_instance_id, -- assessment_id, assessment_instance_id
+--             NULL, nrg.id, NULL, NULL, NULL, NULL, -- submission, IQ, uid/group, number, qid, modified_at
+--             NULL, NULL, NULL, NULL, NULL, NULL, -- total/manual/auto score/points
+--             NULL, NULL, -- feedback, partial scores
+--             CASE WHEN $rubric_type = 'auto' THEN NULL ELSE nrg.new_rubric_grading_id END,
+--             CASE WHEN $rubric_type = 'auto' THEN nrg.new_rubric_grading_id ELSE NULL END,
+--             $authn_user_id) ON TRUE;
 
 -- BLOCK tag_for_manual_grading
 UPDATE instance_questions iq
