@@ -88,7 +88,6 @@ router.post(
     if (req.body.__action === 'add_manual_grade') {
       const params = [
         req.body.assessment_id,
-        null, // assessment_instance_id,
         null, // submission_id
         res.locals.instance_question.id, // instance_question_id,
         null, // uid
