@@ -79,6 +79,25 @@ WHERE
     r.id = $rubric_id
     AND r.deleted_at IS NULL;
 
+-- BLOCK select_rubric_items
+WITH rubric_items_data AS (
+    SELECT JSONB_AGG(ri) AS items
+    FROM rubric_items AS ri
+    WHERE
+        ri.rubric_id = $rubric_id
+        AND ri.id = ANY($rubric_items::BIGINT[])
+        AND ri.deleted_at IS NULL
+)
+SELECT
+    TO_JSONB(r) AS rubric_data,
+    rid.items AS rubric_item_data
+FROM
+    rubrics r
+    LEFT JOIN rubric_items_data rid ON (TRUE)
+WHERE
+    r.id = $rubric_id
+    AND r.deleted_at IS NULL;
+
 -- BLOCK select_assessment_question_for_update
 SELECT *
 FROM assessment_questions
@@ -181,3 +200,28 @@ WHERE
 UPDATE instance_questions iq
 SET requires_manual_grading = TRUE
 WHERE iq.assessment_question_id = $assessment_question_id;
+
+-- BLOCK insert_rubric_grading
+WITH inserted_rubric_grading AS (
+    INSERT INTO rubric_gradings
+        (rubric_id, computed_points, adjust_points, starting_points, max_points, min_points)
+    SELECT r.id, $computed_points, COALESCE($adjust_points, 0), r.starting_points, r.max_points, r.min_points
+    FROM rubrics r
+    WHERE r.id = $rubric_id
+    RETURNING *
+), inserted_rubric_grading_items AS (
+    INSERT INTO rubric_grading_items
+        (rubric_grading_id, rubric_item_id, score, points, short_text, note)
+    SELECT
+        irg.id, ari.rubric_item_id, COALESCE(ari.score, 1), ri.points, ri.short_text, ari.note
+    FROM
+        inserted_rubric_grading AS irg
+        JOIN JSONB_TO_RECORDSET($rubric_items::JSONB) AS ari(rubric_item_id BIGINT, score DOUBLE PRECISION, note TEXT) ON (TRUE)
+        JOIN rubric_items AS ri ON (ri.id = ari.rubric_item_id AND ri.rubric_id = $rubric_id)
+    RETURNING *
+)
+SELECT irg.id
+FROM
+    inserted_rubric_grading AS irg
+    LEFT JOIN inserted_rubric_grading_items AS irgi ON (TRUE)
+LIMIT 1;
