@@ -172,8 +172,7 @@ router.post(
       }
 
       const params = [
-        req.body.assessment_id,
-        null, // assessment_instance_id,
+        res.locals.assessment.id,
         null, // submission_id
         res.locals.instance_question.id, // instance_question_id,
         null, // uid

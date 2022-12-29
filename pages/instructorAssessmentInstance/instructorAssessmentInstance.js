@@ -136,8 +136,7 @@ router.post('/', (req, res, next) => {
     });
   } else if (req.body.__action === 'edit_question_points') {
     const params = [
-      null, // assessment_id
-      res.locals.assessment_instance.id,
+      res.locals.assessment.id,
       null, // submission_id
       req.body.instance_question_id,
       null, // uid
@@ -170,8 +169,7 @@ router.post('/', (req, res, next) => {
     });
   } else if (req.body.__action === 'edit_question_score_perc') {
     const params = [
-      null, // assessment_id
-      res.locals.assessment_instance.id,
+      res.locals.assessment.id,
       null, // submission_id
       req.body.instance_question_id,
       null, // uid
