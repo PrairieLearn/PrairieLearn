@@ -66,7 +66,7 @@ class TestBigOInput:
     ) -> None:
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
-        assert 0 < score < 1
+        assert 0.0 < score < 1.0
         assert "lower order" in feedback
 
     @pytest.mark.parametrize(
@@ -89,7 +89,7 @@ class TestBigOInput:
     ) -> None:
         score, feedback = grading_fn(a_true, a_sub, VARIABLES)
 
-        assert 0 < score < 1
+        assert 0.0 < score < 1.0
         assert "constant" in feedback
 
     @pytest.mark.parametrize(
@@ -132,7 +132,7 @@ class TestBigOInput:
     def test_too_loose_bigo(self, a_true: str, a_sub: str) -> None:
         score, feedback = bou.grade_o_expression(a_true, a_sub, VARIABLES)
 
-        assert 0 < score < 1
+        assert 0.0 < score < 1.0
         assert feedback == bou.TOO_LOOSE_FEEDBACK
 
     @pytest.mark.parametrize(
@@ -153,7 +153,7 @@ class TestBigOInput:
     def test_too_loose_omega(self, a_true: str, a_sub: str) -> None:
         score, feedback = bou.grade_omega_expression(a_true, a_sub, VARIABLES)
 
-        assert 0 < score < 1
+        assert 0.0 < score < 1.0
         assert feedback == bou.TOO_LOOSE_FEEDBACK
 
     @pytest.mark.parametrize(
