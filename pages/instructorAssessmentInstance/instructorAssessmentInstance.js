@@ -1,5 +1,6 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
+const util = require('util');
 const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
 const router = express.Router();
@@ -9,6 +10,7 @@ const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const sanitizeName = require('../../lib/sanitize-name');
 const ltiOutcomes = require('../../lib/ltiOutcomes');
+const manualGrading = require('../../lib/manualGrading');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -135,13 +137,10 @@ router.post('/', (req, res, next) => {
       });
     });
   } else if (req.body.__action === 'edit_question_points') {
-    const params = [
+    util.callbackify(manualGrading.updateInstanceQuestionScore)(
       res.locals.assessment.id,
-      null, // submission_id
+      res.locals.assessment_instance.id,
       req.body.instance_question_id,
-      null, // uid
-      null, // assessment_instance_number
-      null, // qid
       req.body.modified_at,
       null, // score_perc
       req.body.points,
@@ -154,27 +153,21 @@ router.post('/', (req, res, next) => {
       null, // manual_rubric_items,
       null, // auto_rubric_items,
       res.locals.authn_user.user_id,
-    ];
-    sqldb.call('instance_questions_update_score', params, (err, result) => {
-      if (ERR(err, next)) return;
-      if (result.rows[0].modified_at_conflict) {
-        return res.redirect(
-          `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${result.rows[0].grading_job_id}`
-        );
-      }
-      ltiOutcomes.updateScore(res.locals.assessment_instance.id, (err) => {
+      (err, result) => {
         if (ERR(err, next)) return;
+        if (result.modified_at_conflict) {
+          return res.redirect(
+            `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${result.grading_job_id}`
+          );
+        }
         res.redirect(req.originalUrl);
-      });
-    });
+      }
+    );
   } else if (req.body.__action === 'edit_question_score_perc') {
-    const params = [
+    util.callbackify(manualGrading.updateInstanceQuestionScore)(
       res.locals.assessment.id,
-      null, // submission_id
+      res.locals.assessment_instance.id,
       req.body.instance_question_id,
-      null, // uid
-      null, // assessment_instance_number
-      null, // qid
       req.body.modified_at,
       req.body.score_perc,
       null, // points
@@ -187,19 +180,16 @@ router.post('/', (req, res, next) => {
       null, // manual_rubric_items,
       null, // auto_rubric_items,
       res.locals.authn_user.user_id,
-    ];
-    sqldb.call('instance_questions_update_score', params, (err, result) => {
-      if (ERR(err, next)) return;
-      if (result.rows[0].modified_at_conflict) {
-        return res.redirect(
-          `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${result.rows[0].grading_job_id}`
-        );
-      }
-      ltiOutcomes.updateScore(res.locals.assessment_instance.id, (err) => {
+      (err, result) => {
         if (ERR(err, next)) return;
+        if (result.modified_at_conflict) {
+          return res.redirect(
+            `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${result.grading_job_id}`
+          );
+        }
         res.redirect(req.originalUrl);
-      });
-    });
+      }
+    );
   } else {
     return next(
       error.make(400, 'unknown __action', {

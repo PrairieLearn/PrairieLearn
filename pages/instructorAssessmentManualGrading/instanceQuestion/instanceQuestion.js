@@ -170,6 +170,8 @@ router.post(
         res.locals.assessment_instance.id,
         res.locals.instance_question.id,
         req.body.modified_at,
+        null, // score_perc,
+        null, // points
         req.body.use_score_perc ? req.body.score_manual_percent : null, // manual_score_perc
         req.body.use_score_perc ? null : req.body.score_manual_points, // manual_points
         req.body.use_score_perc ? req.body.score_auto_percent || null : null, // auto_score_perc
