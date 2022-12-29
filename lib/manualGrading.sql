@@ -126,7 +126,7 @@ SET
     short_text = COALESCE($short_text, short_text),
     description = COALESCE($description, description),
     staff_instructions = COALESCE($staff_instructions, staff_instructions),
-    key_binding = CASE WHEN $number > 10 THEN NULL ELSE MOD($number, 10) END,
+    key_binding = CASE WHEN $number > 10 THEN NULL ELSE MOD($number + 1, 10) END,
     deleted_at = NULL
 WHERE
     id = $id
@@ -138,18 +138,21 @@ INSERT INTO rubric_items
     (rubric_id, number, points, short_text, description, staff_instructions, key_binding)
 VALUES
     ($rubric_id, $number::bigint, $points, $short_text, $description, $staff_instructions,
-     CASE WHEN $number > 10 THEN NULL ELSE MOD($number, 10) END);
+     CASE WHEN $number > 10 THEN NULL ELSE MOD($number + 1, 10) END);
 
 -- BLOCK select_instance_questions_to_update
 WITH rubric_gradings_to_review AS (
     SELECT
         rg.*,
+        aq.assessment_id,
+        iq.assessment_instance_id,
         iq.id AS instance_question_id,
         rg.starting_points != r.starting_points OR
         rg.max_points != r.max_points OR
         rg.min_points != r.min_points AS rubric_settings_changed
     FROM
         instance_questions AS iq
+        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN rubric_gradings AS rg ON (rg.id = CASE WHEN $rubric_type = 'auto' THEN iq.auto_rubric_grading_id ELSE iq.manual_rubric_grading_id END)
         JOIN rubrics AS r ON (r.id = rg.rubric_id)
     WHERE
@@ -170,21 +173,9 @@ SELECT
     rgr.*, gir.*
 FROM
     rubric_gradings_to_review AS rgr
-    LEFT JOIN grading_item_to_review AS gir ON (gir.rubric_grading_id = rgr.id)
+    LEFT JOIN grading_items_to_review AS gir ON (gir.rubric_grading_id = rgr.id)
 WHERE
     rgr.rubric_settings_changed IS TRUE OR gir.rubric_items_changed;
-
--- SELECT COUNT(1)
--- FROM
---     rubric_gradings nrg
---     JOIN instance_questions_update_score(
---             NULL, nrg.assessment_instance_id, -- assessment_id, assessment_instance_id
---             NULL, nrg.id, NULL, NULL, NULL, NULL, -- submission, IQ, uid/group, number, qid, modified_at
---             NULL, NULL, NULL, NULL, NULL, NULL, -- total/manual/auto score/points
---             NULL, NULL, -- feedback, partial scores
---             CASE WHEN $rubric_type = 'auto' THEN NULL ELSE nrg.new_rubric_grading_id END,
---             CASE WHEN $rubric_type = 'auto' THEN nrg.new_rubric_grading_id ELSE NULL END,
---             $authn_user_id) ON TRUE;
 
 -- BLOCK tag_for_manual_grading
 UPDATE instance_questions iq

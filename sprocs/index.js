@@ -166,7 +166,6 @@ module.exports.init = function (callback) {
       'group_users_insert.sql',
       'sync_assessment_modules.sql',
       'rubric_gradings_insert.sql',
-      'rubric_gradings_recompute.sql',
     ],
     function (filename, callback) {
       logger.verbose('Loading ' + filename);

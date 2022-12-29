@@ -7,11 +7,11 @@ const ejs = require('ejs');
 const path = require('path');
 
 const question = require('../../../lib/question');
+const manualGrading = require('../../../lib/manualGrading');
+
 const error = require('../../../prairielib/lib/error');
 const sqldb = require('../../../prairielib/lib/sql-db');
 const sqlLoader = require('../../../prairielib/lib/sql-loader');
-const ltiOutcomes = require('../../../lib/ltiOutcomes');
-const manualGrading = require('../../../lib/manualGrading');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -139,21 +139,18 @@ router.post(
       return next(error.make(403, 'Access denied (must be a student data editor)'));
     }
     if (req.body.__action === 'add_manual_grade') {
-      let manual_rubric_grading_id = null,
-        auto_rubric_grading_id = null;
+      let manual_rubric_data = null,
+        auto_rubric_data = null;
       if (res.locals.assessment_question.manual_rubric_id) {
         let manual_rubric_items = req.body.rubric_item_selected_manual || [];
         if (!Array.isArray(manual_rubric_items)) {
           manual_rubric_items = [manual_rubric_items];
         }
-        const params = [
-          res.locals.assessment_question.manual_rubric_id,
-          JSON.stringify(manual_rubric_items.map((id) => ({ rubric_item_id: id }))),
-          req.body.score_manual_adjust_points || null,
-          null, // computed_points
-        ];
-        const update_result = (await sqldb.callAsync('rubric_gradings_insert', params)).rows[0];
-        manual_rubric_grading_id = update_result.rubric_grading_id;
+        manual_rubric_data = {
+          rubric_id: res.locals.assessment_question.manual_rubric_id,
+          applied_rubric_items: manual_rubric_items.map((id) => ({ rubric_item_id: id })),
+          adjust_points: req.body.score_manual_adjust_points || null,
+        };
       }
 
       if (res.locals.assessment_question.auto_rubric_id) {
@@ -161,50 +158,39 @@ router.post(
         if (!Array.isArray(auto_rubric_items)) {
           auto_rubric_items = [auto_rubric_items];
         }
-        const params = [
-          res.locals.assessment_question.auto_rubric_id,
-          JSON.stringify(auto_rubric_items.map((id) => ({ rubric_item_id: id }))),
-          req.body.score_auto_adjust_points || null,
-          null, // computed_points
-        ];
-        const update_result = (await sqldb.callAsync('rubric_gradings_insert', params)).rows[0];
-        auto_rubric_grading_id = update_result.rubric_grading_id;
+        auto_rubric_data = {
+          rubric_id: res.locals.assessment_question.auto_rubric_id,
+          applied_rubric_items: auto_rubric_items.map((id) => ({ rubric_item_id: id })),
+          adjust_points: req.body.score_auto_adjust_points || null,
+        };
       }
 
-      const params = [
+      const update_result = await manualGrading.updateInstanceQuestionScore(
         res.locals.assessment.id,
-        null, // submission_id
-        res.locals.instance_question.id, // instance_question_id,
-        null, // uid
-        null, // assessment_instance_number
-        null, // qid
+        res.locals.assessment_instance.id,
+        res.locals.instance_question.id,
         req.body.modified_at,
-        null, // score_perc
-        null, // points
         req.body.use_score_perc ? req.body.score_manual_percent : null, // manual_score_perc
         req.body.use_score_perc ? null : req.body.score_manual_points, // manual_points
         req.body.use_score_perc ? req.body.score_auto_percent || null : null, // auto_score_perc
         req.body.use_score_perc ? null : req.body.score_auto_points || null, // auto_points
         { manual: req.body.submission_note }, // feedback
         null, // partial_scores
-        manual_rubric_grading_id,
-        auto_rubric_grading_id,
-        res.locals.authn_user.user_id,
-      ];
+        manual_rubric_data,
+        auto_rubric_data,
+        res.locals.authn_user.user_id
+      );
 
-      const update_result = (await sqldb.callAsync('instance_questions_update_score', params))
-        .rows[0];
       if (update_result.modified_at_conflict) {
         return res.redirect(
           req.baseUrl + `?conflict_grading_job_id=${update_result.grading_job_id}`
         );
       }
-      await util.promisify(ltiOutcomes.updateScore)(req.body.assessment_instance_id);
       res.redirect(
         await manualGrading.nextUngradedInstanceQuestionUrl(
           res.locals.urlPrefix,
           res.locals.assessment.id,
-          req.body.assessment_question_id,
+          res.locals.assessment_question.id,
           res.locals.authz_data.user.user_id,
           res.locals.instance_question.id
         )
@@ -241,7 +227,7 @@ router.post(
         await manualGrading.nextUngradedInstanceQuestionUrl(
           res.locals.urlPrefix,
           res.locals.assessment.id,
-          req.body.assessment_question_id,
+          res.locals.assessment_question.id,
           res.locals.authz_data.user.user_id,
           res.locals.instance_question.id
         )
