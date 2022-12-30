@@ -485,4 +485,4 @@ If a question has more than one of the above options, each of them overrides the
     data["correct_answers"]["c"] = a - b
   ```
 
-- Similarly, for grading functions involving floating point numbers, _avoid exact comparisons with `==`._ Floating point calculations in Python introduce error, and comparisons with `==` might unexpectedly fail. Instead, the function [`math.isclose`](https://docs.python.org/3/library/math.html#math.isclose) should be used, as it performs comparisons with tolerance values.
+- Similarly, for grading functions involving floating point numbers, _avoid exact comparisons with `==`._ Floating point calculations in Python introduce error, and comparisons with `==` might unexpectedly fail. Instead, the function [`math.isclose`](https://docs.python.org/3/library/math.html#math.isclose) can be used, as it performs comparisons within given tolerance values. The functions `pl.is_correct_scalar_ra`, `pl.is_correct_scalar_sf`, and `pl.is_correct_scalar_dd` can be used to perform more specialized comparisons.
