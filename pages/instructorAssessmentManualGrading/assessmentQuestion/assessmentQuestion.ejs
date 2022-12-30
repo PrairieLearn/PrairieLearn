@@ -273,7 +273,6 @@
                             data-base-content="<%= include('../../partials/editQuestionPointsForm',
                                                            {id: 'editQuestionPoints_${field}_${row.id}', field: '${field}',
                                                             instance_question: {id: '${row.id}',
-                                                            assessment_instance_id: '${row.assessment_instance_id}',
                                                             points: '${points}', max_points: '${max}',
                                                             modified_at: '${row.modified_at}'}}); %>">
                       <i class="fa fa-edit" aria-hidden="true"></i>
@@ -304,7 +303,7 @@
                             data-html="true" data-placement="auto" title="Change question percentage score"
                             data-base-content="<%= include('../../partials/editQuestionScorePercForm',
                                                            {id: 'editQuestionScorePerc${row.id}',
-                                                            instance_question: {id: '${row.id}', assessment_instance_id: '${row.assessment_instance_id}', score_perc: '${row.score_perc}', modified_at: '${row.modified_at}'}}); %>">
+                                                            instance_question: {id: '${row.id}', score_perc: '${row.score_perc}', modified_at: '${row.modified_at}'}}); %>">
                       <i class="fa fa-edit" aria-hidden="true"></i>
                     </button>`;
           }
