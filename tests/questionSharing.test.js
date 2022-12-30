@@ -1,4 +1,5 @@
 // @ts-check
+const ERR = require('async-stacktrace');
 const { assert } = require('chai');
 // const cheerio = require('cheerio');
 const { step } = require('mocha-steps');
@@ -11,10 +12,20 @@ const sqlLoader = require('../prairielib/lib/sql-loader');
 const sqldb = require('../prairielib/lib/sql-db');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
+const syncFromDisk = require('../sync/syncFromDisk');
+const logger = require('./dummyLogger');
+
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 
 const UUID_REGEXP = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/;
+
+const testCourseId = 1;
+const testCourseSharingName = 'test-course';
+const exampleCourseId = 2;
+const exampleCourseSharingName = 'example-course';
+const sharingSetName = 'share-set-example';
+
 
 function sharingPageUrl(courseId) {
   return `${baseUrl}/course/${courseId}/course_admin/sharing`;
@@ -36,6 +47,15 @@ async function setSharingName(courseId, name) {
   });
 }
 
+async function accessSharedQuestion() {
+  const assessmentsUrl = `${baseUrl}/course_instance/${exampleCourseId}/instructor/instance_admin/assessments`
+  const assessmentsPage = await helperClient.fetchCheerio(assessmentsUrl);
+  const sharedQuestionAssessmentUrl = siteUrl + assessmentsPage.$(`a:contains("Example of Importing Questions From Another Course")`).attr('href');
+  let res = await helperClient.fetchCheerio(sharedQuestionAssessmentUrl);
+  assert.equal(res.ok, true);
+  return res;
+}
+
 describe('Question Sharing', function () {
   this.timeout(80000);
 
@@ -43,20 +63,7 @@ describe('Question Sharing', function () {
   // force one sync to complete before the other to avoid database errors
 
   describe('Create a sharing set and add a question to it', () => {
-    const testCourseId = 1;
-    const testCourseSharingName = 'test-course';
-    const exampleCourseId = 2;
-    const exampleCourseSharingName = 'example-course';
-    const sharingSetName = 'share-set-example';
-
     let exampleCourseSharingId;
-
-    // step('Initialize courses, expect one to fail because of import', async () => {
-    //   helperServer.before([
-    //     path.join(__dirname, '..', 'testCourse'),
-    //     path.join(__dirname, '..', 'exampleCourse')
-    //   ])(() => null);
-    // });
 
     step(
       'set up testing server',
@@ -68,6 +75,13 @@ describe('Question Sharing', function () {
 
     step('ensure course has question sharing enabled', async () => {
       await sqldb.queryAsync(sql.enable_question_sharing, {});
+    });
+
+    step('Fail to access shared question, because permission has not yet been granted', async () => {
+      let res = await accessSharedQuestion();
+      // TODO: currently the QID won't show up on the page at all. If we add a dummy question to the DB, 
+      // then the name of it will show up, but it should fail to load when you access the link
+      assert(!res.text().includes("addNumbers"));
     });
 
     step('Fail if trying to set an invalid sharing name', async () => {
@@ -160,6 +174,33 @@ describe('Question Sharing', function () {
     // step('Attempt to create another sharing set with the same name', async () => {
 
     // });
+
+    step('Add question "addNumbers" to sharing set', async () => {
+
+    });
+
+    step('Resync example course so that the shared question gets added in properly', (callback) => {
+      const courseDir = path.join(__dirname, '..', 'exampleCourse');
+      syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
+        if (ERR(err, callback)) return;
+        if (result.hadJsonErrorsOrWarnings) {
+          console.log(logger.getOutput());
+          return callback(
+            new Error(
+              `Errors or warnings found during sync of ${courseDir} (output printed to console)`
+            )
+          );
+        }
+        callback(null);
+      });
+    });
+
+    step('Successfully access shared question', async () => {
+      let res = await accessSharedQuestion();
+      // TODO: currently the QID won't show up on the page at all. If we add a dummy question to the DB, 
+      // then the name of it will show up, but it should fail to load when you access the link
+      assert(res.text().includes("addNumbers"));
+    });
 
     step('shut down testing server', helperServer.after);
   });
