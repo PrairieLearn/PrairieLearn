@@ -2,8 +2,8 @@ CREATE FUNCTION
     instance_questions_update_score(
         -- identify the instance_question/submission
         IN arg_assessment_id bigint,        -- must provide assessment_id (typically considered safe for authn)
-        IN arg_submission_id bigint,        -- submission_id is optional
         IN arg_instance_question_id bigint, -- must provide instance_question_id
+        IN arg_submission_id bigint,        -- submission_id is optional (last submission used if not provided)
         IN arg_modified_at timestamptz,     -- if modified_at is specified, update only if matches previous value
 
         -- specify what should be updated
