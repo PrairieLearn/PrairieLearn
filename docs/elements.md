@@ -982,9 +982,10 @@ The `focus` attribute defaults to `"false"`. Setting this to true will cause the
 
 ### `pl-file-preview` element
 
-Provides an in-browser preview of a file submitted by a student as part of an external grading system. Shows the submitted
-file in the corresponding submission panel. Usually used in conjunction with some combination of `pl-file-editor`,
-`pl-file-upload`, and `pl-external-grader-results` elements.
+Provides an in-browser preview of pure-text or image files submitted by a student as part of an external grading system.
+Does not support other file types (e.g., PDF). Shows the submitted file in the corresponding submission panel.
+Used in conjunction with submission elements like `pl-file-editor`, `pl-file-upload`, and `pl-rich-text-editor`.
+Commonly appears in the submission panel with companion `pl-external-grader-results` element.
 
 #### Sample element
 
