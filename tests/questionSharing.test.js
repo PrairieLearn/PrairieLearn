@@ -45,7 +45,7 @@ async function setSharingName(courseId, name) {
   });
 }
 
-async function accessSharedQuestion() {
+async function accessSharedQuestionAssessment() {
   const assessmentsUrl = `${baseUrl}/course_instance/${exampleCourseId}/instructor/instance_admin/assessments`;
   const assessmentsPage = await helperClient.fetchCheerio(assessmentsUrl);
   const sharedQuestionAssessmentUrl =
@@ -82,7 +82,7 @@ describe('Question Sharing', function () {
     step(
       'Fail to access shared question, because permission has not yet been granted',
       async () => {
-        let res = await accessSharedQuestion();
+        let res = await accessSharedQuestionAssessment();
         // TODO: currently the QID won't show up on the page at all. If we add a dummy question to the DB,
         // then the name of it will show up, but it should fail to load when you access the link
         assert(!res.text().includes('addNumbers'));
@@ -229,7 +229,7 @@ describe('Question Sharing', function () {
     );
 
     step('Successfully access shared question', async () => {
-      let res = await accessSharedQuestion();
+      let res = await accessSharedQuestionAssessment();
       const sharedQuestionUrl = siteUrl + res.$(`a:contains("Add two numbers")`).attr('href');
 
       res = await helperClient.fetchCheerio(sharedQuestionUrl);
