@@ -719,8 +719,10 @@ describe('Manual Grading', function () {
       const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
       const form = $manualGradingIQPage('form[name=manual-grading-form]');
       applied_rubrics = [0, 2, 3];
-      score_points = _.sumBy(applied_rubrics, (index) => rubric_items[index].points); // should be 5.4
-      score_percent = (score_points / 6) * 100; // should be 90%
+      score_points = _.sumBy(applied_rubrics, (index) => rubric_items[index].points);
+      assert.equal(score_points, 5.4);
+      score_percent = (score_points / 6) * 100;
+      assert.equal(score_percent, 90);
       feedback_note = 'Test feedback note updated after rubrics';
 
       await fetch(manualGradingIQUrl, {
