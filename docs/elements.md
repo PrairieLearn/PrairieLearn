@@ -80,6 +80,7 @@ The following **Conditional** elements are available:
 - [`pl-external-grader-results`](#pl-external-grader-results-element):
   Displays results from questions that are externally graded.
 - [`pl-hidden-hints`](#pl-hidden-hints): Displays hints as a student submits more on the current variant.
+- [`pl-file-preview`](#pl-file-preview): To display previously submitted files.
 
 Note: PrairieLearn Elements listed next have been
 **deprecated**. These elements are still supported for backwards
@@ -972,9 +973,36 @@ The `focus` attribute defaults to `"false"`. Setting this to true will cause the
 #### See also
 
 - [`pl-file-upload` to receive files as a submission](#pl-file-upload-element)
+- [`pl-file-preview` to display previously submitted files](#pl-file-preview)
 - [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results)
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 - [`pl-string-input` for receiving a single string value](#pl-string-input-element)
+
+---
+
+### `pl-file-preview` element
+
+Provides an in-browser preview of a file submitted by a student as part of an external grading system. Shows the submitted
+file in the corresponding submission panel. Usually used in conjunction with some combination of `pl-file-editor`,
+`pl-file-upload`, and `pl-external-grader-results` elements.
+
+#### Sample element
+
+```html
+<pl-file-preview></pl-file-preview>
+```
+
+#### Example implementations
+
+- [element/fileEditor]
+- [demo/autograder/codeEditor]
+
+#### See also
+
+- [`pl-file-editor` to provide an in-browser code environment](#pl-file-editor-element)
+- [`pl-file-upload` to receive files as a submission](#pl-file-upload-element)
+- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results)
+- [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 
 ---
 
