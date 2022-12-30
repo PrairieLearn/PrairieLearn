@@ -2,7 +2,7 @@
 
 See [`elements/`](https://github.com/PrairieLearn/PrairieLearn/tree/master/elements) for example elements.
 
-Element code uses the libraries in [`freeformPythonLib/`](https://github.com/PrairieLearn/PrairieLearn/tree/master/question-servers/freeformPythonLib).
+Element code uses the libraries in [the `python/` module](https://github.com/PrairieLearn/PrairieLearn/tree/master/python).
 
 ### Anatomy of an element
 

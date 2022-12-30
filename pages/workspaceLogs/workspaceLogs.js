@@ -119,7 +119,7 @@ router.get(
       workspace_id: res.locals.workspace_id,
       workspace_version: null,
       display_timezone:
-        res.locals.course_instance.display_timezone ?? res.locals.course.display_timezone,
+        res.locals.course_instance?.display_timezone ?? res.locals.course.display_timezone,
     });
     res.send(WorkspaceLogs({ workspaceLogs: workspaceLogs.rows, resLocals: res.locals }));
   })
@@ -134,7 +134,7 @@ router.get(
       workspace_id: res.locals.workspace_id,
       workspace_version: req.params.version,
       display_timezone:
-        res.locals.course_instance.display_timezone ?? res.locals.course.display_timezone,
+        res.locals.course_instance?.display_timezone ?? res.locals.course.display_timezone,
     });
     const containerLogsEnabled = areContainerLogsEnabled();
     const containerLogsExpired = areContainerLogsExpired(workspaceLogs.rows);
