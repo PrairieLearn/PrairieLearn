@@ -35,8 +35,8 @@ To discuss with Matt/Nathan:
 - [] rules for sharing names? no spaces? no @ at the begining? (@@ would look weird). Maybe just say it must start with an alphabetic or alphanumeric character? upper and/or lower case?
 - [] Special case to silently fail question imports when running in local dev. What config flag do I use? need to have a seperate on than the one for enabling question sharing?
 - [] What should the settings page look like for imported questions? There are somethings that it would be good to be able to see, like the 'Tags' and 'Tests' but most of the rest of it should NOT be seen. I think for now we should just hide the tab entirely, worry about details later
-- [] Statistics Tab! For now: hide completely, later, make it so it works properly, 
-with assessments from the consuming course rather than from the sharing course
+- [] Statistics Tab! For now: hide completely, later, make it so it works properly,
+  with assessments from the consuming course rather than from the sharing course
 - [] User interface of 'Add...' button on question settings page when there are no sharing sets to show there. Have a 'create new' button with a text box right there? or link to the other page for now?
 
 - [] do we have a good way for testing different config options in the unit tests?

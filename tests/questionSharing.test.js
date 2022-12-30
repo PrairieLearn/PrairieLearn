@@ -26,7 +26,6 @@ const exampleCourseId = 2;
 const exampleCourseSharingName = 'example-course';
 const sharingSetName = 'share-set-example';
 
-
 function sharingPageUrl(courseId) {
   return `${baseUrl}/course/${courseId}/course_admin/sharing`;
 }
@@ -48,9 +47,13 @@ async function setSharingName(courseId, name) {
 }
 
 async function accessSharedQuestion() {
-  const assessmentsUrl = `${baseUrl}/course_instance/${exampleCourseId}/instructor/instance_admin/assessments`
+  const assessmentsUrl = `${baseUrl}/course_instance/${exampleCourseId}/instructor/instance_admin/assessments`;
   const assessmentsPage = await helperClient.fetchCheerio(assessmentsUrl);
-  const sharedQuestionAssessmentUrl = siteUrl + assessmentsPage.$(`a:contains("Example of Importing Questions From Another Course")`).attr('href');
+  const sharedQuestionAssessmentUrl =
+    siteUrl +
+    assessmentsPage
+      .$(`a:contains("Example of Importing Questions From Another Course")`)
+      .attr('href');
   let res = await helperClient.fetchCheerio(sharedQuestionAssessmentUrl);
   assert.equal(res.ok, true);
   return res;
@@ -77,12 +80,15 @@ describe('Question Sharing', function () {
       await sqldb.queryAsync(sql.enable_question_sharing, {});
     });
 
-    step('Fail to access shared question, because permission has not yet been granted', async () => {
-      let res = await accessSharedQuestion();
-      // TODO: currently the QID won't show up on the page at all. If we add a dummy question to the DB, 
-      // then the name of it will show up, but it should fail to load when you access the link
-      assert(!res.text().includes("addNumbers"));
-    });
+    step(
+      'Fail to access shared question, because permission has not yet been granted',
+      async () => {
+        let res = await accessSharedQuestion();
+        // TODO: currently the QID won't show up on the page at all. If we add a dummy question to the DB,
+        // then the name of it will show up, but it should fail to load when you access the link
+        assert(!res.text().includes('addNumbers'));
+      }
+    );
 
     step('Fail if trying to set an invalid sharing name', async () => {
       // TODO throw an exception in SQL, catch it, return an error
@@ -161,7 +167,7 @@ describe('Question Sharing', function () {
           sharing_set_id: '1',
           course_sharing_id: exampleCourseSharingId,
         }).toString(),
-      });  // TODO: should this endpoint return an error if the sharing set passed in is not valid or doesn't belong to the course?
+      }); // TODO: should this endpoint return an error if the sharing set passed in is not valid or doesn't belong to the course?
 
       let sharingPage = await (await fetch(sharingPageUrl(testCourseId))).text();
       assert(sharingPage.includes('XC 101'));
@@ -176,16 +182,15 @@ describe('Question Sharing', function () {
     // });
 
     step('Add question "addNumbers" to sharing set', async () => {
-      // TODO: should this block of code be factored out to helperClient as a 
+      // TODO: should this block of code be factored out to helperClient as a
       // helper function for getting to the page of a question with a given qid?
       // or does this code already exist somewhere and I am duplicating effort here?
-      const questionsUrl = `${baseUrl}/course/${testCourseId}/course_admin/questions`
+      const questionsUrl = `${baseUrl}/course/${testCourseId}/course_admin/questions`;
       const questionsPage = await helperClient.fetchCheerio(questionsUrl);
       const questionData = questionsPage.$('#questionsTable').attr('data-data');
       const questions = JSON.parse(questionData);
-      const addNumbersInfo = questions.find(questionInfo => questionInfo.qid == 'addNumbers');
-      
-      
+      const addNumbersInfo = questions.find((questionInfo) => questionInfo.qid === 'addNumbers');
+
       const questionSettingsUrl = `${baseUrl}/course_instance/${testCourseId}/instructor/question/${addNumbersInfo.id}/settings`;
       let response = await helperClient.fetchCheerio(questionSettingsUrl);
       assert.equal(response.ok, true);
@@ -223,11 +228,10 @@ describe('Question Sharing', function () {
 
     // step('Successfully access shared question', async () => {
     //   let res = await accessSharedQuestion();
-    //   // TODO: currently the QID won't show up on the page at all. If we add a dummy question to the DB, 
+    //   // TODO: currently the QID won't show up on the page at all. If we add a dummy question to the DB,
     //   // then the name of it will show up, but it should fail to load when you access the link
     //   assert(res.text().includes("addNumbers"));
     // });
-
 
     step('shut down testing server', helperServer.after);
   });
