@@ -168,6 +168,7 @@ router.post(
       const update_result = await manualGrading.updateInstanceQuestionScore(
         res.locals.assessment.id,
         res.locals.instance_question.id,
+        null, // submission_id
         req.body.modified_at,
         {
           manual_score_perc: req.body.use_score_perc ? req.body.score_manual_percent : null,

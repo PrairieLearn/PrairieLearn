@@ -79,6 +79,7 @@ router.post(
       const result = await manualGrading.updateInstanceQuestionScore(
         res.locals.assessment.id,
         req.body.instance_question_id,
+        null, // submission_id
         req.body.modified_at,
         {
           points: req.body.points,
@@ -98,6 +99,7 @@ router.post(
       const result = await manualGrading.updateInstanceQuestionScore(
         res.locals.assessment.id,
         req.body.instance_question_id,
+        null, // submission_id
         req.body.modified_at,
         { score_perc: req.body.score_perc },
         res.locals.authn_user.user_id
