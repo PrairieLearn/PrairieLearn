@@ -467,24 +467,24 @@ To set custom feedback, the grading function should set the corresponding entry 
 
 For generated floating point answers, it's important to round values before displaying them to the student, as this could cause unexpected behavior when students perform calculations. For example, the following is problematic:
 
-  ```python
-  def generate(data):
-      a = 33.33337
-      b = 33.33333
-      data["params"]["a_for_student"] = f'{a:.2f}'
-      data["params"]["b_for_student"] = f'{a:.2f}'
-      data["correct_answers"]["c"] = a - b
-  ```
-
-  The rounding should be done before the format strings are set, as in the following example:
-
-  ```python
-  def generate(data):
-    a = np.round(33.33337, 2)
-    b = np.round(33.33333, 2)
+```python
+def generate(data):
+    a = 33.33337
+    b = 33.33333
     data["params"]["a_for_student"] = f'{a:.2f}'
-    data["params"]["b_for_student"] = f'{b:.2f}'
+    data["params"]["b_for_student"] = f'{a:.2f}'
     data["correct_answers"]["c"] = a - b
-  ```
+```
+
+The rounding should be done before the format strings are set, as in the following example:
+
+```python
+def generate(data):
+  a = np.round(33.33337, 2)
+  b = np.round(33.33333, 2)
+  data["params"]["a_for_student"] = f'{a:.2f}'
+  data["params"]["b_for_student"] = f'{b:.2f}'
+  data["correct_answers"]["c"] = a - b
+```
 
 Similarly, for grading functions involving floating point numbers, _avoid exact comparisons with `==`._ Floating point calculations in Python introduce error, and comparisons with `==` might unexpectedly fail. Instead, the function [`math.isclose`](https://docs.python.org/3/library/math.html#math.isclose) can be used, as it performs comparisons within given tolerance values. The functions `pl.is_correct_scalar_ra`, `pl.is_correct_scalar_sf`, and `pl.is_correct_scalar_dd` can be used to perform more specialized comparisons.
