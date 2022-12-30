@@ -225,8 +225,3 @@ FROM
     inserted_rubric_grading AS irg
     LEFT JOIN inserted_rubric_grading_items AS irgi ON (TRUE)
 LIMIT 1;
-
--- BLOCK select_assessment_instance_id
-SELECT assessment_instance_id
-FROM instance_questions
-WHERE id = $instance_question_id;

@@ -1,14 +1,9 @@
 CREATE FUNCTION
     instance_questions_update_score(
-        -- identify the assessment/assessment_instance
-        IN arg_assessment_id bigint,          -- must provide assessment_id (for authn)
-
         -- identify the instance_question/submission
-        IN arg_submission_id bigint,        -- must provide submission_id
-        IN arg_instance_question_id bigint, -- OR instance_question_id
-        IN arg_uid_or_group text,           -- OR (uid/group, assessment_instance_number, qid)
-        IN arg_assessment_instance_number integer,
-        IN arg_qid text,
+        IN arg_assessment_id bigint,        -- must provide assessment_id (typically considered safe for authn)
+        IN arg_submission_id bigint,        -- submission_id is optional
+        IN arg_instance_question_id bigint, -- must provide instance_question_id
         IN arg_modified_at timestamptz,     -- if modified_at is specified, update only if matches previous value
 
         -- specify what should be updated
@@ -25,16 +20,14 @@ CREATE FUNCTION
         IN arg_authn_user_id bigint,
 
         -- resulting updates
-        OUT modified_at_conflict boolean,
+        OUT assessment_instance_id bigint, -- Used by caller to update LTI outcomes
+        OUT modified_at_conflict boolean,  -- If true, grading job was created, but scores were not
         OUT grading_job_id bigint
     )
 AS $$
 DECLARE
     found_submission_id bigint;
     instance_question_id bigint;
-    assessment_instance_id bigint;
-    found_uid_or_group text;
-    found_qid text;
     current_modified_at timestamptz;
     max_points double precision;
     max_manual_points double precision;
@@ -67,8 +60,6 @@ BEGIN
         aq.max_manual_points,
         aq.manual_rubric_id,
         aq.auto_rubric_id,
-        COALESCE(g.name, u.uid),
-        q.qid,
         s.partial_scores,
         iq.auto_points,
         iq.manual_points,
@@ -84,8 +75,6 @@ BEGIN
         max_manual_points,
         manual_rubric_id,
         auto_rubric_id,
-        found_uid_or_group,
-        found_qid,
         current_partial_score,
         current_auto_points,
         current_manual_points,
@@ -97,35 +86,17 @@ BEGIN
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q on (q.id = aq.question_id)
         JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-        LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.deleted_at IS NULL)
-        LEFT JOIN users AS u ON (u.user_id = ai.user_id)
         JOIN assessments AS a ON (a.id = ai.assessment_id)
         LEFT JOIN variants AS v ON (v.instance_question_id = iq.id)
         LEFT JOIN submissions AS s ON (s.variant_id = v.id)
     WHERE
-        ( -- make sure we belong to the correct assessment (for authn)
-            a.id = arg_assessment_id
-        )
-        AND
-        ( -- make sure we have the correct instance_question/submission
-            (s.id = arg_submission_id)
-            OR (arg_submission_id IS NULL AND iq.id = arg_instance_question_id)
-            OR (arg_submission_id IS NULL AND arg_instance_question_id IS NULL
-                AND (g.name = arg_uid_or_group OR u.uid = arg_uid_or_group)
-                AND ai.number = arg_assessment_instance_number AND q.qid = arg_qid)
-        )
+        a.id = arg_assessment_id
+        AND iq.id = arg_instance_question_id
+        AND (s.id = arg_submission_id OR arg_submission_id IS NULL)
     ORDER BY s.date DESC, ai.number DESC;
 
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'could not locate submission_id=%, instance_question_id=%, uid=%, assessment_instance_number=%, qid=%, assessment_id=%', arg_submission_id, arg_instance_question_id, arg_uid_or_group, arg_assessment_instance_number, arg_qid, arg_assessment_id;
-    END IF;
-
-    IF arg_uid_or_group IS NOT NULL AND (found_uid_or_group IS NULL OR found_uid_or_group != arg_uid_or_group) THEN
-        RAISE EXCEPTION 'found submission with id=%, but user/group does not match %', arg_submission_id, arg_uid_or_group;
-    END IF;
-
-    IF arg_qid IS NOT NULL AND (found_qid IS NULL OR found_qid != arg_qid) THEN
-        RAISE EXCEPTION 'found submission with id=%, but question does not match %', arg_submission_id, arg_qid;
+        RAISE EXCEPTION 'could not locate submission_id=%, instance_question_id=% assessment_id=%', arg_submission_id, arg_instance_question_id, arg_assessment_id;
     END IF;
 
     modified_at_conflict = arg_modified_at IS NOT NULL AND current_modified_at != arg_modified_at;
