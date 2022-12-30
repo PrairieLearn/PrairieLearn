@@ -16,6 +16,7 @@ When trying to access a question:
 
 - [] Fix the hack I put in before, make sure it works for shared and non-shared questions
 - [] Check if course elements/clientFiles/serverFiles, etc. work as expected!
+- [] Give access denied! for the endpoints for all Tabs except the 'Preview' tab (meaning the Files, Settings, and Statistics pages should all give 404)
 
 Fill out the new documentation page!
 
@@ -33,6 +34,9 @@ To discuss with Matt/Nathan:
 - [] should sharing set names allow spaces?
 - [] rules for sharing names? no spaces? no @ at the begining? (@@ would look weird). Maybe just say it must start with an alphabetic or alphanumeric character? upper and/or lower case?
 - [] Special case to silently fail question imports when running in local dev. What config flag do I use? need to have a seperate on than the one for enabling question sharing?
+- [] What should the settings page look like for imported questions? There are somethings that it would be good to be able to see, like the 'Tags' and 'Tests' but most of the rest of it should NOT be seen. I think for now we should just hide the tab entirely, worry about details later
+- [] Statistics Tab! For now: hide completely, later, make it so it works properly, 
+with assessments from the consuming course rather than from the sharing course
 
 - [] do we have a good way for testing different config options in the unit tests?
 

@@ -175,32 +175,33 @@ describe('Question Sharing', function () {
 
     // });
 
-    step('Add question "addNumbers" to sharing set', async () => {
+    // step('Add question "addNumbers" to sharing set', async () => {
 
-    });
+    // });
 
-    step('Resync example course so that the shared question gets added in properly', (callback) => {
-      const courseDir = path.join(__dirname, '..', 'exampleCourse');
-      syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
-        if (ERR(err, callback)) return;
-        if (result.hadJsonErrorsOrWarnings) {
-          console.log(logger.getOutput());
-          return callback(
-            new Error(
-              `Errors or warnings found during sync of ${courseDir} (output printed to console)`
-            )
-          );
-        }
-        callback(null);
-      });
-    });
+    // step('Resync example course so that the shared question gets added in properly', (callback) => {
+    //   const courseDir = path.join(__dirname, '..', 'exampleCourse');
+    //   syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
+    //     if (ERR(err, callback)) return;
+    //     if (result.hadJsonErrorsOrWarnings) {
+    //       console.log(logger.getOutput());
+    //       return callback(
+    //         new Error(
+    //           `Errors or warnings found during sync of ${courseDir} (output printed to console)`
+    //         )
+    //       );
+    //     }
+    //     callback(null);
+    //   });
+    // });
 
-    step('Successfully access shared question', async () => {
-      let res = await accessSharedQuestion();
-      // TODO: currently the QID won't show up on the page at all. If we add a dummy question to the DB, 
-      // then the name of it will show up, but it should fail to load when you access the link
-      assert(res.text().includes("addNumbers"));
-    });
+    // step('Successfully access shared question', async () => {
+    //   let res = await accessSharedQuestion();
+    //   // TODO: currently the QID won't show up on the page at all. If we add a dummy question to the DB, 
+    //   // then the name of it will show up, but it should fail to load when you access the link
+    //   assert(res.text().includes("addNumbers"));
+    // });
+
 
     step('shut down testing server', helperServer.after);
   });
