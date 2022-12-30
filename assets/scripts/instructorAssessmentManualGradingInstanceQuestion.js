@@ -167,6 +167,9 @@ function resetInstructorGradingPanel() {
       );
       // Save values in grading rubric so they can be re-applied once the form is re-created.
       const rubricFormData = Array.from(new FormData(gradingForm).entries());
+      // The CSRF token of the returned panels is not valid for the current form (it uses a
+      // different URL), so save the old value to be used in future requests.
+      const oldCsrfToken = gradingForm.querySelector('[name=__csrf_token]').value;
 
       $(this.closest('.modal')).modal('hide');
       fetch(this.action, {
@@ -186,7 +189,9 @@ function resetInstructorGradingPanel() {
           });
           rubricFormData.forEach(([item_name, item_value]) => {
             newRubricForm.querySelectorAll(`[name="${item_name}"]`).forEach((input) => {
-              if (input.type !== 'checkbox') {
+              if (input.name === 'modified_at') {
+                // Do not reset modified_at, as the rubric settings may have changed it
+              } else if (input.type !== 'checkbox') {
                 input.value = item_value;
               } else if (input.value === item_value) {
                 input.checked = true;
@@ -201,6 +206,7 @@ function resetInstructorGradingPanel() {
         if (data.rubricSettingsAuto) {
           document.querySelector('.rubric-settings-modal-auto').outerHTML = data.rubricSettingsAuto;
         }
+        document.querySelector('input[name=__csrf_token]').value = oldCsrfToken;
         resetInstructorGradingPanel();
       });
     })

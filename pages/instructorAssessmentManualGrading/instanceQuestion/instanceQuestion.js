@@ -100,7 +100,7 @@ router.get(
 );
 
 router.get(
-  '/grading_panel',
+  '/grading_rubric_panels',
   asyncHandler(async (req, res, _next) => {
     // This form is handled by Ajax, so send a new version of the grading panel via JSON.
     await prepareLocalsForRender(req, res);
@@ -212,7 +212,7 @@ router.post(
         !!req.body.tag_for_manual_grading,
         res.locals.authn_user.user_id
       );
-      res.redirect(req.originalUrl + '/grading_panel');
+      res.redirect(req.originalUrl + '/grading_rubric_panels');
     } else if (typeof req.body.__action === 'string' && req.body.__action.startsWith('reassign_')) {
       const assigned_grader = req.body.__action.substring(9);
       const params = {
