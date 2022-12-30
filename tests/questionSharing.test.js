@@ -175,9 +175,37 @@ describe('Question Sharing', function () {
 
     // });
 
-    // step('Add question "addNumbers" to sharing set', async () => {
-
-    // });
+    step('Add question "addNumbers" to sharing set', async () => {
+      // TODO: should this block of code be factored out to helperClient as a 
+      // helper function for getting to the page of a question with a given qid?
+      // or does this code already exist somewhere and I am duplicating effort here?
+      const questionsUrl = `${baseUrl}/course/${testCourseId}/course_admin/questions`
+      const questionsPage = await helperClient.fetchCheerio(questionsUrl);
+      const questionData = questionsPage.$('#questionsTable').attr('data-data');
+      const questions = JSON.parse(questionData);
+      const addNumbersInfo = questions.find(questionInfo => questionInfo.qid == 'addNumbers');
+      
+      
+      
+      const questionSettingsUrl = `${baseUrl}/course_instance/${testCourseId}/instructor/question/${addNumbersInfo.id}/settings`;
+      let response = await helperClient.fetchCheerio(questionSettingsUrl);
+      assert.equal(response.ok, true);
+    
+      const token = response.$('#test_csrf_token').text();
+      response = await fetch(questionSettingsUrl, {
+        method: 'POST',
+        headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+          __action: 'sharing_set_add',
+          __csrf_token: token,
+          sharing_set_id: '1',
+        }).toString(),
+      });
+      console.log(response);
+      let settingsPage = await (await fetch(questionSettingsUrl)).text();
+      console.log(settingsPage);
+      // assert(settingsPage.includes('to-example'));
+    });
 
     // step('Resync example course so that the shared question gets added in properly', (callback) => {
     //   const courseDir = path.join(__dirname, '..', 'exampleCourse');

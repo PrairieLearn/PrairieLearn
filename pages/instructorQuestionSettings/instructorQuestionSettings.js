@@ -208,9 +208,9 @@ router.post('/', function (req, res, next) {
     });
   } else if (req.body.__action === 'sharing_set_add') {
     debug('Add question to sharing set');
-    sqldb.callZeroOrOneRow(
+    sqldb.queryZeroOrOneRow(
       sql.sharing_set_add,
-      { sharing_set_id: req.body.sharing_set_id },
+      { question_id: res.locals.question.id, sharing_set_id: req.body.sharing_set_id },
       (err, _result) => {
         if (ERR(err, next)) return;
 

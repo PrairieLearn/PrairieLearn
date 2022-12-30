@@ -30,16 +30,24 @@ ALTER TABLE assessment_questions DROP CONSTRAINT assessment_questions_question_i
 
 
 -- Need to run (or re-run) after the test course is synced
+-- Run with command:
+-- docker exec -it mypl psql postgres -f PrairieLearn/migrations/20231101200859_sharing_sets__create.sql
+
 UPDATE pl_courses SET sharing_name = 'test-course' WHERE title = 'Test Course';
 UPDATE pl_courses SET sharing_id = '390bd8c3-7461-4b05-b5f8-dd5c821109d8' WHERE title = 'Test Course';
 
 UPDATE pl_courses SET question_sharing_enabled = true WHERE title IN ('Test Course', 'Example Course');
 
-
 INSERT INTO sharing_sets
     (course_id, name, description)
     select
         id, 'to-example', 'Questions to be shared with the example course.'
+    from pl_courses WHERE title = 'Test Course';
+
+INSERT INTO sharing_sets
+    (course_id, name, description)
+    select
+        id, 'blah', 'Nonsense sharing set name.'
     from pl_courses WHERE title = 'Test Course';
 
 INSERT INTO question_sharing_sets

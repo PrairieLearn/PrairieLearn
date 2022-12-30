@@ -68,3 +68,9 @@ WHERE
     ss.course_id = $course_id
 GROUP BY 
     ss.id, ss.name;
+
+-- BLOCK sharing_set_add
+INSERT INTO question_sharing_sets
+    (question_id, sharing_set_id)
+VALUES
+    ($question_id, $sharing_set_id);
