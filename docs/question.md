@@ -208,6 +208,8 @@ def grade(data):
 
     # grade() can also set `data['format_errors'][NAME]` if there is any reason to mark the question
     # invalid during grading time.  This will cause the question to not use up one of the student's attempts' on exams.
+    # You are encouraged, though, to do any checks for invalid data that can be done in `parse(data)` there instead,
+    # since that method is also called when the student hits "Save only" or in assessments without real-time grading.
 
     # As an example, we will give half points for incorrect answers larger than "x",
     # only if not already correct. Use math.isclose to avoid possible floating point errors.
@@ -443,7 +445,7 @@ Example of valid HTML:
 
 For most [elements] there are four different ways of auto-grading the student answer. This applies to elements like [`pl-number-input`](elements/#pl-number-input-element) and [`pl-string-input`](elements/#pl-string-input-element) that allow students to input an answer of their choosing, but not [`pl-multiple-choice`](elements/#pl-multiple-choice-element) or [`pl-checkbox`](elements/#pl-checkbox-element) that are much more constrained. The four ways are:
 
-1. Set the correct answer using the correct-answer attributes for each element in `question.html`. This will use the built-in grading methods for each element. We normally want some degree of randomization of the question, so this is the least-used method.
+1. Set the correct answer using the correct-answer attributes for each element in `question.html`. This will use the built-in grading methods for each element. Given that this option is typically used for answers with a hard-coded value, without randomization, it is not expected to be used frequently.
 
 2. Set `data["correct_answers"][VAR_NAME]` in server.py. This is for questions where you can pre-compute a single correct answer based on the (randomized) parameters.
 
