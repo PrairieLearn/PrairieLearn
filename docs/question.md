@@ -208,6 +208,8 @@ def grade(data):
 
     # grade() can also set `data['format_errors'][NAME]` if there is any reason to mark the question
     # invalid during grading time.  This will cause the question to not use up one of the student's attempts' on exams.
+    # You are encouraged, though, to do any checks for invalid data that can be done in `parse(data)` there instead,
+    # since that method is also called when the student hits "Save only" or in assessments without real-time grading.
 
     # As an example, we will give half points for incorrect answers larger than "x",
     # only if not already correct. Use math.isclose to avoid possible floating point errors.
