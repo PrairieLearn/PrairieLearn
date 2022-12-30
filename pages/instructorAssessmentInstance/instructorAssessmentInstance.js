@@ -139,7 +139,6 @@ router.post('/', (req, res, next) => {
   } else if (req.body.__action === 'edit_question_points') {
     util.callbackify(manualGrading.updateInstanceQuestionScore)(
       res.locals.assessment.id,
-      res.locals.assessment_instance.id,
       req.body.instance_question_id,
       req.body.modified_at,
       {
@@ -161,7 +160,6 @@ router.post('/', (req, res, next) => {
   } else if (req.body.__action === 'edit_question_score_perc') {
     util.callbackify(manualGrading.updateInstanceQuestionScore)(
       res.locals.assessment.id,
-      res.locals.assessment_instance.id,
       req.body.instance_question_id,
       req.body.modified_at,
       { score_perc: req.body.score_perc },

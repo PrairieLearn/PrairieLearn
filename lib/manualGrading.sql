@@ -205,7 +205,7 @@ WHERE iq.assessment_question_id = $assessment_question_id;
 WITH inserted_rubric_grading AS (
     INSERT INTO rubric_gradings
         (rubric_id, computed_points, adjust_points, starting_points, max_points, min_points)
-    SELECT r.id, $computed_points, COALESCE($adjust_points, 0), r.starting_points, r.max_points, r.min_points
+    SELECT r.id, $computed_points, $adjust_points, r.starting_points, r.max_points, r.min_points
     FROM rubrics r
     WHERE r.id = $rubric_id
     RETURNING *
@@ -225,3 +225,8 @@ FROM
     inserted_rubric_grading AS irg
     LEFT JOIN inserted_rubric_grading_items AS irgi ON (TRUE)
 LIMIT 1;
+
+-- BLOCK select_assessment_instance_id
+SELECT assessment_instance_id
+FROM instance_questions
+WHERE id = $instance_question_id;

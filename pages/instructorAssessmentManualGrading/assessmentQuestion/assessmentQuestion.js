@@ -78,7 +78,6 @@ router.post(
     } else if (req.body.__action === 'edit_question_points') {
       const result = await manualGrading.updateInstanceQuestionScore(
         res.locals.assessment.id,
-        req.body.assessment_instance_id, // TODO Review
         req.body.instance_question_id,
         req.body.modified_at,
         {
@@ -98,7 +97,6 @@ router.post(
     } else if (req.body.__action === 'edit_question_score_perc') {
       const result = await manualGrading.updateInstanceQuestionScore(
         res.locals.assessment.id,
-        req.body.assessment_instance_id, // TODO Review, unsafe
         req.body.instance_question_id,
         req.body.modified_at,
         { score_perc: req.body.score_perc },

@@ -167,7 +167,6 @@ router.post(
 
       const update_result = await manualGrading.updateInstanceQuestionScore(
         res.locals.assessment.id,
-        res.locals.assessment_instance.id,
         res.locals.instance_question.id,
         req.body.modified_at,
         {
