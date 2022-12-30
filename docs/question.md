@@ -206,7 +206,7 @@ def grade(data):
     # We can modify or delete any of these if we have a custom grading method.
     # This function only runs if `parse()` did not produce format errors, so we can assume all data is valid.
 
-    # grade() can also set `data['format_errors'][NAME]` if there is any reason to mark the question
+    # grade(data) can also set data['format_errors'][NAME] if there is any reason to mark the question
     # invalid during grading time.  This will cause the question to not use up one of the student's attempts' on exams.
     # You are encouraged, though, to do any checks for invalid data that can be done in `parse(data)` there instead,
     # since that method is also called when the student hits "Save only" or in assessments without real-time grading.
@@ -457,15 +457,15 @@ If a question has more than one of the above options, each of them overrides the
 
 ### Custom Question Best Practices
 
-- Although custom questions usually don't use the grading functions from individual elements, it is _highly_ recommended that built-in elements are used for student input. Parsed student answers are present in the `data["submitted_answers"]` dictionary.
+Although custom questions usually don't use the grading functions from individual elements, it is _highly_ recommended that built-in elements are used for student input. Parsed student answers are present in the `data["submitted_answers"]` dictionary.
 
-- Any custom grading function for the whole question should set `data["score"]` as a value between 0.0 and 1.0, which will be the final score for the given question.
+Any custom grading function for the whole question should set `data["score"]` as a value between 0.0 and 1.0, which will be the final score for the given question.
 
-- If a custom grading function is only grading a specific part of a question, the grading function should set the corresponding dictionary entry in `data["partial_scores"]` and then recompute the final `data["score"]` value for the whole question. To avoid showing score badges for individual parts, the dictionary entries in `data["partial_scores"]` should be unset.
+If a custom grading function is only grading a specific part of a question, the grading function should set the corresponding dictionary entry in `data["partial_scores"]` and then recompute the final `data["score"]` value for the whole question. To avoid showing score badges for individual parts, the dictionary entries in `data["partial_scores"]` should be unset.
 
-- To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`.
+To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above custom question](#Question-server.py) for an example of this.
 
-- For generated floating point answers, it's important to round values before displaying them to the student, as this could cause unexpected behavior when students perform calculations. For example, the following is problematic:
+For generated floating point answers, it's important to round values before displaying them to the student, as this could cause unexpected behavior when students perform calculations. For example, the following is problematic:
 
   ```python
   def generate(data):
@@ -487,4 +487,4 @@ If a question has more than one of the above options, each of them overrides the
     data["correct_answers"]["c"] = a - b
   ```
 
-- Similarly, for grading functions involving floating point numbers, _avoid exact comparisons with `==`._ Floating point calculations in Python introduce error, and comparisons with `==` might unexpectedly fail. Instead, the function [`math.isclose`](https://docs.python.org/3/library/math.html#math.isclose) can be used, as it performs comparisons within given tolerance values. The functions `pl.is_correct_scalar_ra`, `pl.is_correct_scalar_sf`, and `pl.is_correct_scalar_dd` can be used to perform more specialized comparisons.
+Similarly, for grading functions involving floating point numbers, _avoid exact comparisons with `==`._ Floating point calculations in Python introduce error, and comparisons with `==` might unexpectedly fail. Instead, the function [`math.isclose`](https://docs.python.org/3/library/math.html#math.isclose) can be used, as it performs comparisons within given tolerance values. The functions `pl.is_correct_scalar_ra`, `pl.is_correct_scalar_sf`, and `pl.is_correct_scalar_dd` can be used to perform more specialized comparisons.
