@@ -1,7 +1,7 @@
 // @ts-check
-// const ERR = require('async-stacktrace');
+const ERR = require('async-stacktrace');
 const { assert } = require('chai');
-// const cheerio = require('cheerio');
+const cheerio = require('cheerio');
 const { step } = require('mocha-steps');
 const path = require('path');
 const config = require('../lib/config');
@@ -12,8 +12,8 @@ const sqlLoader = require('../prairielib/lib/sql-loader');
 const sqldb = require('../prairielib/lib/sql-db');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-// const syncFromDisk = require('../sync/syncFromDisk');
-// const logger = require('./dummyLogger');
+const syncFromDisk = require('../sync/syncFromDisk');
+const logger = require('./dummyLogger');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -210,28 +210,31 @@ describe('Question Sharing', function () {
       assert(settingsPage.includes('share-set-example'));
     });
 
-    // step('Resync example course so that the shared question gets added in properly', (callback) => {
-    //   const courseDir = path.join(__dirname, '..', 'exampleCourse');
-    //   syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
-    //     if (ERR(err, callback)) return;
-    //     if (result.hadJsonErrorsOrWarnings) {
-    //       console.log(logger.getOutput());
-    //       return callback(
-    //         new Error(
-    //           `Errors or warnings found during sync of ${courseDir} (output printed to console)`
-    //         )
-    //       );
-    //     }
-    //     callback(null);
-    //   });
-    // });
+    step('Re-sync example course so that the shared question gets added in properly', (callback) => {
+      const courseDir = path.join(__dirname, '..', 'exampleCourse');
+      syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
+        if (ERR(err, callback)) return;
+        if (result.hadJsonErrorsOrWarnings) {
+          console.log(logger.getOutput());
+          return callback(
+            new Error(
+              `Errors or warnings found during sync of ${courseDir} (output printed to console)`
+            )
+          );
+        }
+        callback(null);
+      });
+    });
 
-    // step('Successfully access shared question', async () => {
-    //   let res = await accessSharedQuestion();
-    //   // TODO: currently the QID won't show up on the page at all. If we add a dummy question to the DB,
-    //   // then the name of it will show up, but it should fail to load when you access the link
-    //   assert(res.text().includes("addNumbers"));
-    // });
+    step('Successfully access shared question', async () => {
+      let res = await accessSharedQuestion();
+      const sharedQuestionUrl =
+      siteUrl + res.$(`a:contains("Add two numbers")`)
+        .attr('href');
+      
+      res = await helperClient.fetchCheerio(sharedQuestionUrl);
+      assert.equal(res.ok, true);
+    });
 
     step('shut down testing server', helperServer.after);
   });
