@@ -117,7 +117,7 @@ The `question.html` is a template used to render the question to the student. A 
 
 <p>
   <pl-number-input
-    answers_name="F"
+    answers-name="F"
     comparison="sigfig"
     digits="2"
     label="$F =$"
@@ -130,7 +130,7 @@ The `question.html` is regular HTML, with four special features:
 
 1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values. If you use triple-braces (like `{{{params.html}}}`) then raw HTML is substituted (don't use this unless you know you need it). This is using [Mustache](https://mustache.github.io/mustache.5.html) templating.
 
-2. Special HTML elements (like `<pl-number-input>`) enable input and formatted output. See the [list of PrairieLearn elements](elements.md).
+2. Special HTML elements (like `<pl-number-input>`) enable input and formatted output. See the [list of PrairieLearn elements](elements.md). Note that that **all submission elements must have unique `answers-name` attributes.** This is is necessary for questions to be graded properly.
 
 3. A special `<markdown>` tag allows you to write Markdown inline in questions.
 
