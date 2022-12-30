@@ -73,4 +73,4 @@ GROUP BY
 INSERT INTO question_sharing_sets
     (question_id, sharing_set_id)
 VALUES
-    ($question_id, $sharing_set_id);
+    ($question_id, $sharing_set_id); -- TODO do any validation? ensure the sharing_set_id exists and belongs to this course?

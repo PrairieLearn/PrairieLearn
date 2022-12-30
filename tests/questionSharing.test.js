@@ -1,5 +1,5 @@
 // @ts-check
-const ERR = require('async-stacktrace');
+// const ERR = require('async-stacktrace');
 const { assert } = require('chai');
 // const cheerio = require('cheerio');
 const { step } = require('mocha-steps');
@@ -12,8 +12,8 @@ const sqlLoader = require('../prairielib/lib/sql-loader');
 const sqldb = require('../prairielib/lib/sql-db');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-const syncFromDisk = require('../sync/syncFromDisk');
-const logger = require('./dummyLogger');
+// const syncFromDisk = require('../sync/syncFromDisk');
+// const logger = require('./dummyLogger');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -123,7 +123,7 @@ describe('Question Sharing', function () {
     });
 
     step('Create a sharing set', async () => {
-      const sharingUrl = sharingPageUrl(exampleCourseId);
+      const sharingUrl = sharingPageUrl(testCourseId);
       let response = await helperClient.fetchCheerio(sharingUrl);
       const token = response.$('#test_csrf_token').text();
       await fetch(sharingUrl, {
@@ -161,7 +161,7 @@ describe('Question Sharing', function () {
           sharing_set_id: '1',
           course_sharing_id: exampleCourseSharingId,
         }).toString(),
-      });
+      });  // TODO: should this endpoint return an error if the sharing set passed in is not valid or doesn't belong to the course?
 
       let sharingPage = await (await fetch(sharingPageUrl(testCourseId))).text();
       assert(sharingPage.includes('XC 101'));
@@ -186,11 +186,10 @@ describe('Question Sharing', function () {
       const addNumbersInfo = questions.find(questionInfo => questionInfo.qid == 'addNumbers');
       
       
-      
       const questionSettingsUrl = `${baseUrl}/course_instance/${testCourseId}/instructor/question/${addNumbersInfo.id}/settings`;
       let response = await helperClient.fetchCheerio(questionSettingsUrl);
       assert.equal(response.ok, true);
-    
+
       const token = response.$('#test_csrf_token').text();
       response = await fetch(questionSettingsUrl, {
         method: 'POST',
@@ -200,11 +199,10 @@ describe('Question Sharing', function () {
           __csrf_token: token,
           sharing_set_id: '1',
         }).toString(),
-      });
-      console.log(response);
+      }); // TODO: should this endpoint return an error if the sharing set passed in is not valid or doesn't belong to the course?
+
       let settingsPage = await (await fetch(questionSettingsUrl)).text();
-      console.log(settingsPage);
-      // assert(settingsPage.includes('to-example'));
+      assert(settingsPage.includes('share-set-example'));
     });
 
     // step('Resync example course so that the shared question gets added in properly', (callback) => {

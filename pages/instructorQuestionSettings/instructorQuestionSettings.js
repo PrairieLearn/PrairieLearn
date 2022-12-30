@@ -294,9 +294,6 @@ router.get('/', function (req, res, next) {
             // TODO get postgres booleans working properly instead of this string hack
             res.locals.sharing_sets_in = result.rows.filter((row) => row.in_set === 'true');
             res.locals.sharing_sets_other = result.rows.filter((row) => row.in_set === 'false');
-            // console.log('r', result.rows);
-            // console.log('in', res.locals.sharing_sets_in);
-            // console.log('other', res.locals.sharing_sets_other);
             callback(null);
           }
         );
