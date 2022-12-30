@@ -290,13 +290,16 @@ function computePointsFromRubric() {
 
     if (manualInput.dataset.rubricActive === 'true') {
       manualInput.value = Math.min(
-        Math.max(computedPoints.manual, manualInput.dataset.rubricMinPoints),
+        Math.max(
+          Math.round(computedPoints.manual * 100) / 100,
+          manualInput.dataset.rubricMinPoints
+        ),
         manualInput.dataset.rubricMaxPoints
       );
     }
     if (autoInput.dataset.rubricActive === 'true') {
       autoInput.value = Math.min(
-        Math.max(computedPoints.auto, autoInput.dataset.rubricMinPoints),
+        Math.max(Math.round(computedPoints.auto * 100) / 100, autoInput.dataset.rubricMinPoints),
         autoInput.dataset.rubricMaxPoints
       );
     }
