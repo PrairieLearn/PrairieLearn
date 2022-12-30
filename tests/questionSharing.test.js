@@ -1,7 +1,6 @@
 // @ts-check
 const ERR = require('async-stacktrace');
 const { assert } = require('chai');
-const cheerio = require('cheerio');
 const { step } = require('mocha-steps');
 const path = require('path');
 const config = require('../lib/config');
@@ -210,28 +209,29 @@ describe('Question Sharing', function () {
       assert(settingsPage.includes('share-set-example'));
     });
 
-    step('Re-sync example course so that the shared question gets added in properly', (callback) => {
-      const courseDir = path.join(__dirname, '..', 'exampleCourse');
-      syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
-        if (ERR(err, callback)) return;
-        if (result.hadJsonErrorsOrWarnings) {
-          console.log(logger.getOutput());
-          return callback(
-            new Error(
-              `Errors or warnings found during sync of ${courseDir} (output printed to console)`
-            )
-          );
-        }
-        callback(null);
-      });
-    });
+    step(
+      'Re-sync example course so that the shared question gets added in properly',
+      (callback) => {
+        const courseDir = path.join(__dirname, '..', 'exampleCourse');
+        syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
+          if (ERR(err, callback)) return;
+          if (result.hadJsonErrorsOrWarnings) {
+            console.log(logger.getOutput());
+            return callback(
+              new Error(
+                `Errors or warnings found during sync of ${courseDir} (output printed to console)`
+              )
+            );
+          }
+          callback(null);
+        });
+      }
+    );
 
     step('Successfully access shared question', async () => {
       let res = await accessSharedQuestion();
-      const sharedQuestionUrl =
-      siteUrl + res.$(`a:contains("Add two numbers")`)
-        .attr('href');
-      
+      const sharedQuestionUrl = siteUrl + res.$(`a:contains("Add two numbers")`).attr('href');
+
       res = await helperClient.fetchCheerio(sharedQuestionUrl);
       assert.equal(res.ok, true);
     });
