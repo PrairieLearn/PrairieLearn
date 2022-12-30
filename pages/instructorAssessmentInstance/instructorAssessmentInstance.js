@@ -142,16 +142,11 @@ router.post('/', (req, res, next) => {
       res.locals.assessment_instance.id,
       req.body.instance_question_id,
       req.body.modified_at,
-      null, // score_perc
-      req.body.points,
-      null, // manual_score_perc
-      req.body.manual_points,
-      null, // auto_score_perc
-      req.body.auto_points,
-      null, // feedback
-      null, // partial_scores
-      null, // manual_rubric_items,
-      null, // auto_rubric_items,
+      {
+        points: req.body.points,
+        manual_points: req.body.manual_points,
+        auto_points: req.body.auto_points,
+      },
       res.locals.authn_user.user_id,
       (err, result) => {
         if (ERR(err, next)) return;
@@ -169,16 +164,7 @@ router.post('/', (req, res, next) => {
       res.locals.assessment_instance.id,
       req.body.instance_question_id,
       req.body.modified_at,
-      req.body.score_perc,
-      null, // points
-      null, // manual_score_perc
-      null, // manual_points
-      null, // auto_score_perc
-      null, // auto_points
-      null, // feedback
-      null, // partial_scores
-      null, // manual_rubric_items,
-      null, // auto_rubric_items,
+      { score_perc: req.body.score_perc },
       res.locals.authn_user.user_id,
       (err, result) => {
         if (ERR(err, next)) return;
