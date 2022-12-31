@@ -459,9 +459,7 @@ If a question has more than one of the above options, each of them overrides the
 
 Although custom questions usually don't use the grading functions from individual elements, it is _highly_ recommended that built-in elements are used for student input. Parsed student answers are present in the `data["submitted_answers"]` dictionary.
 
-Any custom grading function for the whole question should set `data["score"]` as a value between 0.0 and 1.0, which will be the final score for the given question.
-
-If a custom grading function is only grading a specific part of a question, the grading function should set the corresponding dictionary entry in `data["partial_scores"]` and then recompute the final `data["score"]` value for the whole question. To avoid showing score badges for individual parts, the dictionary entries in `data["partial_scores"]` should be unset.
+Any custom grading function for the whole question should set `data["score"]` as a value between 0.0 and 1.0, which will be the final score for the given question. If a custom grading function is only grading a specific part of a question, the grading function should set the corresponding dictionary entry in `data["partial_scores"]` and then recompute the final `data["score"]` value for the whole question. Alternatively, if you would prefer not to show score badges for individual parts, you may unset the dictionary entries in `data["partial_scores"]`.
 
 To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above custom question](#Question-server.py) for an example of this.
 
