@@ -50,7 +50,7 @@
           <%= rubric.type %> grading adjustment:
         </span>
         <span class="text-<%= rubric?.rubric_grading_data?.adjust_points >= 0 ? 'success' : 'danger' %>">
-          <strong>
+          <strong data-testid="rubric-adjust-points">
             [<%= (rubric?.rubric_grading_data?.adjust_points >= 0 ? '+' : '') + rubric?.rubric_grading_data?.adjust_points %>]
           </strong>
         </span>
