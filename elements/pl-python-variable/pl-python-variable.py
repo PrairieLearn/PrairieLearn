@@ -40,7 +40,10 @@ def render(element_html, data):
     if var_type == 'dataframe':
         html += var_out.to_html(header=show_header, index=show_index, classes=['pl-python-variable-table'])
         if show_dimensions:
-            html += '<p class="pl-python-variable-table-dimensions">{} rows x {} columns</p>'.format(str(var_out.shape[0]), str(var_out.shape[1]))
+            html += (
+                f'<pl-dataframe params-name={varname} show-header={show_header} show-code=False'
+                f' show_index={show_index} show_dimensions={show_dimensions}></pl-dataframe>'
+            )
     else:
         no_highlight = pl.get_boolean_attrib(element, 'no-highlight', NO_HIGHLIGHT_DEFAULT)
         prefix = pl.get_string_attrib(element, 'prefix', PREFIX_DEFAULT)
