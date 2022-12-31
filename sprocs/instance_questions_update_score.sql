@@ -1,8 +1,7 @@
 CREATE FUNCTION
     instance_questions_update_score(
         -- identify the assessment/assessment_instance
-        IN arg_assessment_id bigint,          -- must provide assessment_id
-        IN arg_assessment_instance_id bigint, -- OR assessment_instance_id
+        IN arg_assessment_id bigint,          -- must provide assessment_id (for authn)
 
         -- identify the instance_question/submission
         IN arg_submission_id bigint,        -- must provide submission_id
@@ -90,9 +89,8 @@ BEGIN
         LEFT JOIN variants AS v ON (v.instance_question_id = iq.id)
         LEFT JOIN submissions AS s ON (s.variant_id = v.id)
     WHERE
-        ( -- make sure we belong to the correct assessment/assessment_instance
-            ai.id = arg_assessment_instance_id
-            OR (arg_assessment_instance_id IS NULL AND a.id = arg_assessment_id)
+        ( -- make sure we belong to the correct assessment (for authn)
+            a.id = arg_assessment_id
         )
         AND
         ( -- make sure we have the correct instance_question/submission
@@ -105,7 +103,7 @@ BEGIN
     ORDER BY s.date DESC, ai.number DESC;
 
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'could not locate submission_id=%, instance_question_id=%, uid=%, assessment_instance_number=%, qid=%, assessment_id=%, assessment_instance_id=%', arg_submission_id, arg_instance_question_id, arg_uid_or_group, arg_assessment_instance_number, arg_qid, arg_assessment_id, arg_assessment_instance_id;
+        RAISE EXCEPTION 'could not locate submission_id=%, instance_question_id=%, uid=%, assessment_instance_number=%, qid=%, assessment_id=%', arg_submission_id, arg_instance_question_id, arg_uid_or_group, arg_assessment_instance_number, arg_qid, arg_assessment_id;
     END IF;
 
     IF arg_uid_or_group IS NOT NULL AND (found_uid_or_group IS NULL OR found_uid_or_group != arg_uid_or_group) THEN
