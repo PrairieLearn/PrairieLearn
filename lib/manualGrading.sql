@@ -90,7 +90,7 @@ WITH rubric_items_data AS (
 )
 SELECT
     TO_JSONB(r) AS rubric_data,
-    rid.items AS rubric_item_data
+    COALESCE(rid.items, '[]'::JSONB) AS rubric_item_data
 FROM
     rubrics r
     LEFT JOIN rubric_items_data rid ON (TRUE)
