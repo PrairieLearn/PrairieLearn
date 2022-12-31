@@ -1,63 +1,23 @@
-<!-- TODO figure out how to replace this with node version -->
-<script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
-<script>
-$(document).ready(function(){
-    $('.interactive-dataframe').DataTable();
-});
-</script>
+<ul class="nav nav-tabs">
+  <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#table-{{uuid}}">Table</a></li>
+  <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#code-{{uuid}}">Code</a></li>
+</ul>
 
-<table class="pl-dataframe-table interactive-dataframe">
-<thead>
-    {{#frame_header}}
-    <tr>
-        {{#show_index}}
-            {{#index_name}}
-            <th>{{.}}</th>
-            {{/index_name}}
-        {{/show_index}}
-        {{#header_data}}
-        <th>{{.}}</th>
-        {{/header_data}}
-    </tr>
-    {{/frame_header}}
-</thead>
+<div class="tab-content">
+  <div id="table-{{uuid}}" class="tab-pane fade show active">
+    {{{frame_html}}}
 
-<tbody>
-    {{#frame_data}}
-    <tr>
-        {{#show_index}}
-            {{#index}}
-            <td>{{.}}</td>
-            {{/index}}
-        {{/show_index}}
-        {{#row}}
-        <td>{{.}}</td>
-        {{/row}}
-    </tr>
-    {{/frame_data}}
-</tbody>
-{{#frame_footer}}
-<tfoot>
-    <tr>
-    {{#show_index}}
-        <th>dtype</th>
-    {{/show_index}}
-    {{#data_types}}
-        <th>{{.}}</th>
-    {{/data_types}}
-    </tr>
-</tfoot>
-{{/frame_footer}}
-</table>
-
-{{{dtype_row}}}
-
-<pl-code language="python">
+    {{#num_rows}}
+    {{#num_cols}}
+        <p class="pl-dataframe-table-dimensions">{{num_rows}} rows x {{num_cols}} columns</p>
+    {{/num_cols}}
+    {{/num_rows}}
+  </div>
+  <div id="code-{{uuid}}" class="tab-pane fade">
+<!-- Don't unindent this, since it will add annoying indentations to the display -->
+    <pl-code language="python">
 import pandas as pd
 {{varname}} = pd.DataFrame({{{code_string}}})
-</pl-code>
-{{#num_rows}}
-{{#num_cols}}
-    <p class="pl-dataframe-table-dimensions">{{num_rows}} rows x {{num_cols}} columns</p>
-{{/num_cols}}
-{{/num_rows}}
+    </pl-code>
+  </div>
+</div>

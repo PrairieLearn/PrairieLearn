@@ -16,6 +16,7 @@ SHOW_DATATYPE_DEFAULT = False
 ADD_LINE_BREAKS_DEFAULT = False
 INTERACTIVE_DEFAULT = True
 NUM_DIGITS_DEFAULT = None
+DISPLAY_VARNAME_DEFAULT = "df"
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -24,7 +25,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         element,
         required_attribs=["params-name"],
         optional_attribs=[
+            "display-varname",
             "show-index",
+            "show-header",
             "show-dimensions",
             "show-dtype",
             "digits",
@@ -35,7 +38,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     varname = pl.get_string_attrib(element, "params-name")
+    display_varname = pl.get_string_attrib(element, "display-varname", DISPLAY_VARNAME_DEFAULT)
     show_index = pl.get_boolean_attrib(element, "show-index", SHOW_INDEX_DEFAULT)
+    show_header = pl.get_boolean_attrib(element, "show-header", SHOW_HEADER_DEFAULT)
     show_dimensions = pl.get_boolean_attrib(
         element, "show-dimensions", SHOW_DIMENSIONS_DEFAULT
     )
@@ -56,54 +61,50 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     frame = cast(pandas.DataFrame, frame)
 
-    frame_footer_dict = {}
-
-    if show_dtype:
-        descriptors = frame.agg([lambda s: s.dtype])
-        #descriptors.index = pandas.Index(["dtype"])
-        frame_footer_dict["data_types"] = list(map(str, descriptors.values.tolist()[0]))
+    frame_style = frame.style
 
     # Format integers using commas every 3 digits
     integer_column_names = frame.select_dtypes(include="int").columns
-    frame[integer_column_names] = frame[integer_column_names].applymap(lambda n: "{:,}".format(n))
-    #frame_style.format(subset=integer_column_names, thousands=",")
+    frame_style.format(subset=integer_column_names, thousands=",")
 
     if num_digits is not None:
         # Get headers for all floating point columns and style them to use the desired number of sig figs.
         float_column_names = frame.select_dtypes(include="float").columns
 
-        frame[float_column_names] = frame[float_column_names].applymap(lambda n: f"{{:.{num_digits}g}}".format(n))
+        # This format string displays the desired number of digits, as given by the instructor
+        # Switches between exponential and decimal notation as needed
+        frame_style.format(
+            subset=float_column_names, formatter=f"{{:.{num_digits}g}}"
+        )
 
+    if show_dtype:
+        descriptors = frame.agg([lambda s: s.dtype])
+        descriptors.index = pandas.Index(["dtype"])
+        other = descriptors.style.applymap(lambda v: "font-weight: bold;")
+        frame_style.set_table_styles(
+            [{"selector": ".foot_row0", "props": "border-top: 1px solid black;"}]
+        )
+        frame_style.concat(other)
 
-    frame_header = {
-        "index_name": " " if frame.index.name is None else frame.index.name,
-        "header_data": list(map(str, frame.columns))
-    }
+    if not show_header:
+        frame_style.hide(axis="columns")
 
-    frame_data = [
-        {
-            "index": str(index),
-            "row": list(map(str, row)),
-        }
-        for index, row in frame.iterrows()
-    ]
+    if not show_index:
+        frame_style.hide()
 
+    # Might be worth moving everything out of the CSS file and handle it all with the builtin styler.
+    frame_style.set_table_attributes("class=pl-dataframe-table")
 
-    #print(frame_style.to_string(delimiter='*'))
-    info_params = {
-        "show_index": show_index,
-        "frame_header": frame_header,
-        "frame_data": frame_data,
-        "frame_footer": frame_footer_dict,
-        "varname": varname,
-        "code_string": frame.to_dict("split"),
+    html_params = {
+        "uuid": pl.get_uuid(),
+        "frame_html": frame_style.to_html(),
+        "varname": display_varname,
+        "code_string": repr(frame.to_dict('split'))
     }
 
     if show_dimensions:
-        info_params["num_rows"] = frame.shape[0]
-        info_params["num_cols"] = frame.shape[1]
+        html_params["num_rows"] = frame.shape[0]
+        html_params["num_cols"] = frame.shape[1]
 
-    with open("pl-dataframe.mustache", "r", encoding="utf-8") as f:
-        html = chevron.render(f, info_params).strip()
-        #print(html)
-        return html
+    with open('pl-dataframe.mustache', 'r', encoding='utf-8') as f:
+        return chevron.render(f, html_params).strip()
