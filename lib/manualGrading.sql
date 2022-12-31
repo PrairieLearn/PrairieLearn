@@ -194,7 +194,7 @@ FROM
     rubric_gradings_to_review AS rgr
     LEFT JOIN grading_items_to_review AS gir ON (gir.rubric_grading_id = rgr.id)
 WHERE
-    rgr.rubric_settings_changed IS TRUE OR gir.rubric_items_changed;
+    rgr.rubric_settings_changed IS NOT FALSE OR gir.rubric_items_changed IS NOT FALSE;
 
 -- BLOCK tag_for_manual_grading
 UPDATE instance_questions iq
