@@ -68,11 +68,6 @@ def graphviz_from_adj_matrix(element: lxml.html.HtmlElement, data: pl.QuestionDa
     return G.string()
 
 
-MATRIX_BACKENDS = {
-    'adjacency-matrix': graphviz_from_adj_matrix
-}
-
-
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     optional_attribs = ['engine', 'params-name-matrix', 'weights', 'weights-digits', 'weights-presentation-type', 'params-name-labels', 'params-type', 'show-negative-weights']
 
@@ -87,12 +82,13 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
+    matrix_backends = {'adjacency-matrix': graphviz_from_adj_matrix}
+
     # Load all extensions
     extensions = pl.load_all_extensions(data)
     for extension in extensions.values():
-        backends = extension.backends
-        for name, backend in backends.items():
-            MATRIX_BACKENDS[name] = backend
+        matrix_backends.update(extension.backends)
+
 
     # Get attribs
     element = lxml.html.fragment_fromstring(element_html)
@@ -104,8 +100,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         raise ValueError('No graph source given! Must either define graph in HTML or provide source in params.')
 
     if input_param is not None:
-        if input_type in MATRIX_BACKENDS:
-            graphviz_data = json.dumps(MATRIX_BACKENDS[input_type](element, data))
+        if input_type in matrix_backends:
+            graphviz_data = json.dumps(matrix_backends[input_type](element, data))
         else:
             raise ValueError(f'Unknown graph type "{input_type}".')
     else:
