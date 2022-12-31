@@ -175,8 +175,9 @@ router.post('/', function (req, res, next) {
       if (failedUids.length > 0) {
         res.locals.errormsg += 'Failed to add ' + failedUids + '. Please check if the uid exist.\n';
       }
+    })().then(() => {
       obtainInfo(req, res, next);
-    })();
+    });
   } else if (req.body.__action === 'delete_member') {
     const assessment_id = res.locals.assessment.id;
     const group_id = req.body.group_id;
@@ -198,8 +199,9 @@ router.post('/', function (req, res, next) {
         res.locals.errormsg +=
           'Failed to remove ' + failedUids + '. Please check if the uid exist.\n';
       }
+    })().then(() => {
       obtainInfo(req, res, next);
-    })();
+    });
   } else if (req.body.__action === 'delete_group') {
     const params = [res.locals.assessment.id, req.body.group_id, res.locals.authn_user.user_id];
     sqldb.call('assessment_groups_delete_group', params, function (err, _result) {

@@ -1,5 +1,5 @@
 const courseDB = require('../sync/course-db');
-(async () => {
+await (async () => {
   const courseData = await courseDB.loadFullCourse('/course');
   const errors = [];
   courseDB.writeErrorsAndWarningsForCourseData(null, courseData, (line) =>

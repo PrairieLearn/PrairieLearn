@@ -367,11 +367,11 @@ async.series(
       });
     },
   ],
-  function (err, data) {
+  async function (err, data) {
     if (err) {
       Sentry.captureException(err);
       logger.error('Error initializing workspace host:', err, data);
-      markSelfUnhealthy(err);
+      await markSelfUnhealthy(err);
     } else {
       logger.info('Workspace host ready');
     }
