@@ -253,7 +253,7 @@ const checkSettingsResults = (starting_points, min_points, max_points) => {
     const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
     const form = $manualGradingIQPage('form[name=rubric-settings-manual]');
 
-    if (starting_points == 0 || starting_points == 6) {
+    if (starting_points === 0 || starting_points === 6) {
       assert.equal(
         form.find(`input[name="starting_points"][value="${starting_points}"]`).is(':checked'),
         true
