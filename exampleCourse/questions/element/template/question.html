@@ -1,4 +1,8 @@
 <pl-template file-name="outerTemplate.mustache" subdirectory="templates">
   <pl-variable name="is-open">True</pl-variable>
-  <pl-variable name="problem-statement" file-name="statement.html"></pl-variable>
+  <pl-variable name="problem-statement" parent-directory="question_path" subdirectory="serverFilesQuestion" file-name="statement.html"></pl-variable>
+</pl-template>
+
+<pl-template file-name="cardTemplate.mustache" parent-directory="question_path" subdirectory="serverFilesQuestion">
+  <pl-variable name="header"><b>A bolded card header</b></pl-variable>
 </pl-template>
