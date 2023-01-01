@@ -13,7 +13,7 @@
   "dependencies": {
     "@prairielearn/html": "^2.1.1",
     "commander": "^9.4.1",
-    "esbuild": "^0.15.16",
+    "esbuild": "^0.16.12",
     "express": "^4.18.2",
     "express-static-gzip": "^2.1.7",
     "fs-extra": "^11.1.0",
