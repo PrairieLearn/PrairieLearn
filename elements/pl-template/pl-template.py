@@ -1,12 +1,21 @@
+import copy
+import os
+from enum import Enum
+
+import chevron
 import lxml
 import prairielearn as pl
-import chevron
-import os
-import copy
 
-#TODO change this into an enum and use enum getter
-PARENT_DIRECTORY_CHOICE_DEFAULT = "server_files_course_path"
 
+class ParentDirectoryEnum(Enum):
+    QUESTION = "question_path"
+    CLIENT_FILES_QUESTION = "client_files_question_path"
+    CLIENT_FILES_COURSE = "client_files_course_path"
+    SERVER_FILES_COURSE = "server_files_course_path"
+    COURSE_EXTENSIONS = "course_extensions_path"
+
+
+PARENT_DIRECTORY_CHOICE_DEFAULT = ParentDirectoryEnum.SERVER_FILES_COURSE
 SUBDIRECTORY_DEFAULT = ""
 WARN_UNDEFINED_DEFAULT = True
 
@@ -17,34 +26,47 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     optional_attribs = ["subdirectory", "parent-directory", "warn-undefined"]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
-    # Load in entries from data dict. Allows filling templates with entries from data['params'] for example.
+    # Load in entries from data dict. Allows filling templates with entries from data['params'], for example.
     variable_dict = copy.deepcopy(data)
+    options_dict = data["options"]
 
     for child in element:
         if child.tag == "pl-variable":
-            pl.check_attribs(child, ["name"], ["file-name", "subdirectory", "parent-directory"])
+            pl.check_attribs(
+                child, ["name"], ["file-name", "subdirectory", "parent-directory"]
+            )
 
             name = pl.get_string_attrib(child, "name")
 
             if name in variable_dict:
-                raise ValueError(f"Duplicate pl-template variable name: {name}")
+                raise ValueError(f'Duplicate pl-template variable name: "{name}"')
 
             inner_html = pl.inner_html(child)
             has_template_file = pl.has_attrib(child, "file-name")
 
             if inner_html and has_template_file:
                 raise ValueError(
-                    f"pl-variable {name} must have at most one of file-name or its inner html defined"
+                    f'pl-variable "{name}" must have at most one of file-name or its inner html defined'
                 )
 
             elif has_template_file:
                 variable_file_name = pl.get_string_attrib(child, "file-name")
                 # Default parent directory and subdirectory to what's defined in the outer template.
                 # TODO maybe change the defaults? Could be confusing, and may not save that much writing on the frontend
-                variable_subdirectory = pl.get_string_attrib(child, "subdirectory", SUBDIRECTORY_DEFAULT)
-                variable_parent_directory_choice = pl.get_string_attrib(child, "parent-directory", PARENT_DIRECTORY_CHOICE_DEFAULT)
+                variable_subdirectory = pl.get_string_attrib(
+                    child, "subdirectory", SUBDIRECTORY_DEFAULT
+                )
 
-                variable_parent_directory = data["options"][variable_parent_directory_choice]
+                variable_parent_directory_choice = pl.get_enum_attrib(
+                    ParentDirectoryEnum,
+                    child,
+                    "parent-directory",
+                    PARENT_DIRECTORY_CHOICE_DEFAULT,
+                )
+
+                variable_parent_directory = options_dict[
+                    variable_parent_directory_choice.value
+                ]
 
                 file_path = os.path.join(
                     variable_parent_directory, variable_subdirectory, variable_file_name
@@ -61,18 +83,23 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         else:
             raise ValueError(
-                f"Tags inside of pl-template must be pl-variable, not '{child.tag}'."
+                f'Tags inside of pl-template must be pl-variable, not "{child.tag}".'
             )
 
-    parent_directory_choice = pl.get_string_attrib(element, "parent-directory", PARENT_DIRECTORY_CHOICE_DEFAULT)
-
-    parent_directory = data["options"][parent_directory_choice]
+    parent_directory_choice = pl.get_enum_attrib(
+        ParentDirectoryEnum,
+        element,
+        "parent-directory",
+        PARENT_DIRECTORY_CHOICE_DEFAULT,
+    )
+    parent_directory = options_dict[parent_directory_choice.value]
 
     subdirectory = pl.get_string_attrib(element, "subdirectory", SUBDIRECTORY_DEFAULT)
 
     file_name = pl.get_string_attrib(element, "file-name")
-    warn_undefined = pl.get_string_attrib(element, "warn-undefined", WARN_UNDEFINED_DEFAULT)
-
+    warn_undefined = pl.get_string_attrib(
+        element, "warn-undefined", WARN_UNDEFINED_DEFAULT
+    )
 
     file_path = os.path.join(parent_directory, subdirectory, file_name)
 
