@@ -13,7 +13,7 @@
     "typescript": "^4.9.3"
   },
   "dependencies": {
-    "@sentry/node": "^7.23.0",
+    "@sentry/node": "^7.28.1",
     "execa": "^5.1.1"
   }
 }
