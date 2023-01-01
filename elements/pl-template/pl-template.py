@@ -1,6 +1,7 @@
 import copy
 import os
 from enum import Enum
+from typing import Any, Dict, cast
 
 import chevron
 import lxml
@@ -27,7 +28,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     # Load in entries from data dict. Allows filling templates with entries from data['params'], for example.
-    variable_dict = copy.deepcopy(data)
+    variable_dict = cast(Dict[str, Any], copy.deepcopy(data))
     options_dict = data["options"]
 
     for child in element:
