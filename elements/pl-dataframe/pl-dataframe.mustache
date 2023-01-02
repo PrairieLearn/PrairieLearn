@@ -1,4 +1,4 @@
-{{#show_code}}
+{{#show_python}}
 <ul class="nav nav-tabs">
   <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#table-{{uuid}}">Table</a></li>
   <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#code-{{uuid}}">Code</a></li>
@@ -6,7 +6,7 @@
 
 <div class="tab-content">
   <div id="table-{{uuid}}" class="tab-pane fade show active">
-{{/show_code}}
+{{/show_python}}
 
 <div>
 {{{frame_html}}}
@@ -18,7 +18,7 @@
 {{/num_rows}}
 </div>
 
-{{#show_code}}
+{{#show_python}}
 </div>
 <div id="code-{{uuid}}" class="tab-pane fade">
 <!-- Don't unindent this, since it will add annoying indentations to the display -->
@@ -29,4 +29,4 @@ import pandas as pd
 </div>
 
 </div>
-{{/show_code}}
+{{/show_python}}

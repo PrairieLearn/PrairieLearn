@@ -10,7 +10,7 @@ SHOW_INDEX_DEFAULT = True
 SHOW_DIMENSIONS_DEFAULT = True
 SHOW_DATATYPE_DEFAULT = False
 NUM_DIGITS_DEFAULT = None
-show_python_DEFAULT = True
+SHOW_PYTHON_DEFAULT = True
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -35,7 +35,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     varname = pl.get_string_attrib(element, "params-name")
     show_index = pl.get_boolean_attrib(element, "show-index", SHOW_INDEX_DEFAULT)
     show_header = pl.get_boolean_attrib(element, "show-header", SHOW_HEADER_DEFAULT)
-    show_python = pl.get_boolean_attrib(element, "show-python", show_python_DEFAULT)
+    show_python = pl.get_boolean_attrib(element, "show-python", SHOW_PYTHON_DEFAULT)
     show_dimensions = pl.get_boolean_attrib(
         element, "show-dimensions", SHOW_DIMENSIONS_DEFAULT
     )
