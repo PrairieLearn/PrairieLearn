@@ -8,7 +8,7 @@ const Ajv = require('ajv').default;
 const betterAjvErrors = require('better-ajv-errors').default;
 const { parseISO, isValid, isAfter, isFuture } = require('date-fns');
 const { default: chalkDefault } = require('chalk');
-// const config = require('../lib/config');
+const config = require('../lib/config');
 // const sqldb = require('../prairielib/lib/sql-db');
 
 const schemas = require('../schemas');
@@ -1109,13 +1109,13 @@ async function validateAssessment(assessment, questions, _courseId) {
       // TODO: re-enable these checks before pushing to production
       // right now they are disabled to allow tests to pass. We need some way of having
       // local sharing enabled locally. Maybe have 3 options for questionSharing? 'none', 'local', 'enabled'?
-      // if (!config.questionSharingEnabled) {
-      //   errors.push(
-      //     `You have attempted to import a question with '@', but question sharing is not enabled on this server.`
-      //   );
-      //   return;
-      // }
-      // // TODO: this is obviously a bad place to course info, figure out a different place to refactor it to,
+      if (!config.questionSharingEnabled) {
+        errors.push(
+          `You have attempted to import a question with '@', but question sharing is not enabled on this server.`
+        );
+        return;
+      }
+      // // TODO: this is obviously a bad place to query course info, figure out a different place to refactor it to,
       // // maybe throw a SQL exception at the point when the questions are being put into the database?
       // let result = await sqldb.queryOneRowAsync(`select * from pl_courses where id = $courseId;`, {
       //   courseId: courseId,
