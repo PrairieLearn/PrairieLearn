@@ -30,6 +30,3 @@ def generate(data):
 
     data["params"]["df"] = pl.to_json(df.head(15))
     data["params"]["df2"] = pl.to_json(df2, df_encoding_version=2)
-    data["params"]["matrix"] = pl.to_json(np.random.random((3, 3)))
-
-    return data
