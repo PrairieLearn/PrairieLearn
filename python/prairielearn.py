@@ -108,7 +108,7 @@ def to_json(v, *, df_encoding_version=1):
                 df_modified_names.columns = df_modified_names.columns.astype('string')
 
             # For version 2 storing a data frame, we use the table orientation alongside of
-            # enforcing a date format to allow for numeric values
+            # enforcing a date format to allow for passing datetime and missing (`pd.NA`/`np.nan`) values
             # Details: https://pandas.pydata.org/docs/reference/api/pandas.read_json.html
             # Convert to JSON string with escape characters
             encoded_json_str_df = df_modified_names.to_json(orient="table", date_format="iso")
