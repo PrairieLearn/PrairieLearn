@@ -32,7 +32,7 @@
   </span>
   <div class="js-manual-grading-points">
     <div class="input-group js-<%= type %>-score-value-input <% if (rubric?.rubric_data || type == 'auto') { %> d-none<% } %>">
-      <input type="number" step="any"
+      <input type="number" step="any" required
              id="js-<%= type %>-score-value-input-points-<%= context %>"
              class="form-control js-grading-score-input js-<%= type %>-score-value-input-points"
              data-rubric-active="<%= !!rubric?.rubric_data %>"
@@ -49,7 +49,7 @@
   </div>
   <div class="js-manual-grading-percentage">
     <div class="input-group js-<%= type %>-score-value-input <% if (rubric?.rubric_data || type == 'auto') { %> d-none<% } %>">
-      <input type="number" step="any"
+      <input type="number" step="any" required
              id="js-<%= type %>-score-value-input-percentage-<%= context %>"
              class="form-control js-grading-score-input"
              name="score_<%= type %>_percent"
