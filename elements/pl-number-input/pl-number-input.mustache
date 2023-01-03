@@ -16,7 +16,7 @@
             <span class="input-group-text">{{{label}}}</span>
         </span>
         {{/label}}
-        <input name="{{name}}" type="text" class="form-control {{^display_append_span}}rounded-right{{/display_append_span}} pl-number-input-input" size="{{size}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
+        <input name="{{name}}" autocomplete="off" type="text" class="form-control {{^display_append_span}}rounded-right{{/display_append_span}} pl-number-input-input" size="{{size}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
 
           <span class="input-group-append">
             {{#suffix}}<span class="input-group-text {{^show_info}}rounded-right{{/show_info}}">{{suffix}}</span>{{/suffix}}
