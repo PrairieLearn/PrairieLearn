@@ -162,6 +162,7 @@ function resetInstructorGradingPanel() {
   document.querySelectorAll('.js-rubric-settings-modal form').forEach((form) =>
     form.addEventListener('submit', function (e) {
       e.preventDefault();
+      const modal = this.closest('.modal');
       const gradingForm = document.querySelector(
         '.js-main-grading-panel form[name=manual-grading-form]'
       );
@@ -171,12 +172,19 @@ function resetInstructorGradingPanel() {
       // different URL), so save the old value to be used in future requests.
       const oldCsrfToken = gradingForm.querySelector('[name=__csrf_token]').value;
 
-      $(this.closest('.modal')).modal('hide');
       fetch(this.action, {
         method: 'POST',
         body: new URLSearchParams(new FormData(this)),
       }).then(async (response) => {
         const data = await response.json();
+        if (data.err) {
+          console.error(data.err);
+          const alert = form.querySelector('.js-settings-error-alert');
+          alert.classList.remove('d-none');
+          alert.innerText = data.err;
+          return;
+        }
+        $(modal).modal('hide');
         if (data.gradingPanel) {
           document.querySelector('.js-main-grading-panel').innerHTML = data.gradingPanel;
 

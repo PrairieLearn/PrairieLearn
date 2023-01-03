@@ -198,21 +198,29 @@ router.post(
       );
     } else if (req.body.__action === 'modify_rubric_settings') {
       // Parse using qs, which allows deep objects to be created based on parameter names
+      // e.g., the key `rubric_item[cur1][points]` converts to `rubric_item: { cur1: { points: ... } ... }`
       const rubric_items = Object.values(qs.parse(qs.stringify(req.body)).rubric_item || {});
-      await manualGrading.updateAssessmentQuestionRubric(
-        res.locals.instance_question.assessment_question_id,
-        req.body.rubric_type,
-        !!req.body.use_rubrics,
-        req.body.starting_points === 'CUSTOM'
-          ? req.body.starting_points_custom
-          : req.body.starting_points,
-        req.body.min_points,
-        req.body.max_points,
-        rubric_items,
-        !!req.body.tag_for_manual_grading,
-        res.locals.authn_user.user_id
-      );
-      res.redirect(req.originalUrl + '/grading_rubric_panels');
+      manualGrading
+        .updateAssessmentQuestionRubric(
+          res.locals.instance_question.assessment_question_id,
+          req.body.rubric_type,
+          !!req.body.use_rubrics,
+          req.body.starting_points === 'CUSTOM'
+            ? req.body.starting_points_custom
+            : req.body.starting_points,
+          req.body.min_points,
+          req.body.max_points,
+          rubric_items,
+          !!req.body.tag_for_manual_grading,
+          res.locals.authn_user.user_id
+        )
+        .then(() => {
+          res.redirect(req.originalUrl + '/grading_rubric_panels');
+        })
+        .catch((err) => {
+          console.log(err);
+          res.send({ err: String(err) });
+        });
     } else if (typeof req.body.__action === 'string' && req.body.__action.startsWith('reassign_')) {
       const assigned_grader = req.body.__action.substring(9);
       const params = {
