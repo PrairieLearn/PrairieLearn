@@ -41,14 +41,15 @@ LIMIT 1;
 WITH submission_count_per_rubric_item AS (
     SELECT
         rgi.rubric_item_id,
-        COUNT(1) AS num_submissions
+        COUNT(DISTINCT iq.id) AS num_submissions
     FROM
         instance_questions iq
-        JOIN rubric_gradings rg ON (rg.id IN (iq.manual_rubric_grading_id, iq.auto_rubric_grading_id))
+        JOIN variants AS v ON (v.instance_question_id = iq.id)
+        JOIN submissions AS s ON (s.variant_id = v.id)
+        JOIN rubric_gradings rg ON (rg.id IN (s.manual_rubric_grading_id, s.auto_rubric_grading_id) AND rg.rubric_id = $rubric_id)
         JOIN rubric_grading_items rgi ON (rgi.rubric_grading_id = rg.id)
     WHERE
         iq.assessment_question_id = $assessment_question_id
-        AND rg.rubric_id = $rubric_id
     GROUP BY rgi.rubric_item_id
 ), rubric_items_data AS (
     SELECT
@@ -161,21 +162,25 @@ VALUES
 
 -- BLOCK select_instance_questions_to_update
 WITH rubric_gradings_to_review AS (
-    SELECT
+    SELECT DISTINCT ON (iq.id) -- Select only the latest submission for each instance question
         rg.*,
         aq.assessment_id,
         iq.assessment_instance_id,
         iq.id AS instance_question_id,
+        s.id AS submission_id,
         rg.starting_points != r.starting_points OR
         rg.max_points != r.max_points OR
         rg.min_points != r.min_points AS rubric_settings_changed
     FROM
         instance_questions AS iq
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-        JOIN rubric_gradings AS rg ON (rg.id = CASE WHEN $rubric_type = 'auto' THEN iq.auto_rubric_grading_id ELSE iq.manual_rubric_grading_id END)
+        JOIN variants AS v ON (v.instance_question_id = iq.id)
+        JOIN submissions AS s ON (s.variant_id = v.id)
+        JOIN rubric_gradings AS rg ON (rg.id = CASE WHEN $rubric_type = 'auto' THEN s.auto_rubric_grading_id ELSE s.manual_rubric_grading_id END)
         JOIN rubrics AS r ON (r.id = rg.rubric_id)
     WHERE
         iq.assessment_question_id = $assessment_question_id
+    ORDER BY iq.id, s.date DESC, s.id DESC
 ),
 grading_items_to_review AS (
     SELECT

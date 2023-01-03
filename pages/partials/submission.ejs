@@ -1,7 +1,6 @@
 <div data-grading-job-status="<%= submission.grading_job_status %>" data-grading-job-id="<%= submission.grading_job_id %>" id="submission-<%= submission.id %>">
 
-<% if (submission.feedback?.manual ||
-       (submission.submission_number == submissionCount && (locals.rubric_data_manual?.rubric_grading_data || locals.rubric_data_auto?.rubric_grading_data))) { %>
+<% if (submission.feedback?.manual || submission.rubric_data_manual?.rubric_grading_data || submission.rubric_data_auto?.rubric_grading_data) { %>
 <div class="card mb-4 grading-block border-info">
   <div class="card-header bg-info text-white d-flex submission-header <% if (submission.submission_number != submissionCount) { %> collapsed<% } %>" data-toggle="collapse" data-target="#submission-feedback-<%= submission.id %>-body">
     <div class="mr-auto">
@@ -16,10 +15,9 @@
   </div>
   <div class="collapse <% if (submission.submission_number == submissionCount) { %>show<% } %>" id="submission-feedback-<%= submission.id %>-body">
     <div class="card-body">
-    <% if (submission.submission_number == submissionCount) { %>
     <% [
-        {type: 'Manual', ...locals.rubric_data_manual},
-        {type: 'Auto', ...locals.rubric_data_auto},
+        {type: 'Manual', ...submission.rubric_data_manual},
+        {type: 'Auto', ...submission.rubric_data_auto},
        ].forEach((rubric) => { %>
       <% (rubric.rubric_items || []).forEach((item) => { %>
       <div>
@@ -57,7 +55,6 @@
       </div>
       <% } // end of adjust points %>
     <% }); // end of each type of rubric %>
-    <% } // end of check of last submission %>
     <% if (submission.feedback?.manual) { %>
       <div data-testid="feedback-body">
         <%- submission.feedback_manual_html %>

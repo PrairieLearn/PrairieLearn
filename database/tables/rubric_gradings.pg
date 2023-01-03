@@ -16,6 +16,6 @@ foreign-key constraints
 referenced by
     grading_jobs: FOREIGN KEY (auto_rubric_grading_id) REFERENCES rubric_gradings(id) ON UPDATE CASCADE ON DELETE SET NULL
     grading_jobs: FOREIGN KEY (manual_rubric_grading_id) REFERENCES rubric_gradings(id) ON UPDATE CASCADE ON DELETE SET NULL
-    instance_questions: FOREIGN KEY (auto_rubric_grading_id) REFERENCES rubric_gradings(id) ON UPDATE CASCADE ON DELETE SET NULL
-    instance_questions: FOREIGN KEY (manual_rubric_grading_id) REFERENCES rubric_gradings(id) ON UPDATE CASCADE ON DELETE SET NULL
     rubric_grading_items: FOREIGN KEY (rubric_grading_id) REFERENCES rubric_gradings(id) ON UPDATE CASCADE ON DELETE CASCADE
+    submissions: FOREIGN KEY (auto_rubric_grading_id) REFERENCES rubric_gradings(id) ON UPDATE CASCADE ON DELETE SET NULL
+    submissions: FOREIGN KEY (manual_rubric_grading_id) REFERENCES rubric_gradings(id) ON UPDATE CASCADE ON DELETE SET NULL

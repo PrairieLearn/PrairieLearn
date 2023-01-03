@@ -63,8 +63,8 @@ BEGIN
         s.partial_scores,
         iq.auto_points,
         iq.manual_points,
-        iq.auto_rubric_grading_id,
-        iq.manual_rubric_grading_id,
+        s.auto_rubric_grading_id,
+        s.manual_rubric_grading_id,
         iq.modified_at
     INTO
         found_submission_id,
@@ -235,6 +235,8 @@ BEGIN
                     WHEN arg_partial_scores IS NULL THEN partial_scores
                     ELSE arg_partial_scores
                 END,
+                auto_rubric_grading_id = arg_auto_rubric_grading_id,
+                manual_rubric_grading_id = arg_manual_rubric_grading_id,
                 graded_at = now(),
                 override_score = COALESCE(new_auto_score_perc / 100, override_score),
                 score = COALESCE(new_auto_score_perc / 100, score),
@@ -254,8 +256,6 @@ BEGIN
             score_perc = new_score_perc,
             auto_points = COALESCE(new_auto_points, auto_points),
             manual_points = COALESCE(new_manual_points, manual_points),
-            auto_rubric_grading_id = arg_auto_rubric_grading_id,
-            manual_rubric_grading_id = arg_manual_rubric_grading_id,
             status = 'complete',
             modified_at = now(),
             highest_submission_score = COALESCE(new_auto_score_perc / 100, highest_submission_score),

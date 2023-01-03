@@ -47,8 +47,8 @@ ALTER TABLE rubric_grading_items ADD CONSTRAINT rubric_grading_items_rubric_grad
 ALTER TABLE assessment_questions ADD COLUMN IF NOT EXISTS manual_rubric_id BIGINT REFERENCES rubrics(id) ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE assessment_questions ADD COLUMN IF NOT EXISTS auto_rubric_id BIGINT REFERENCES rubrics(id) ON DELETE SET NULL ON UPDATE CASCADE;
 
-ALTER TABLE instance_questions ADD COLUMN IF NOT EXISTS manual_rubric_grading_id BIGINT REFERENCES rubric_gradings(id) ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE instance_questions ADD COLUMN IF NOT EXISTS auto_rubric_grading_id BIGINT REFERENCES rubric_gradings(id) ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS manual_rubric_grading_id BIGINT REFERENCES rubric_gradings(id) ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS auto_rubric_grading_id BIGINT REFERENCES rubric_gradings(id) ON DELETE SET NULL ON UPDATE CASCADE;
 
 ALTER TABLE grading_jobs ADD COLUMN IF NOT EXISTS manual_rubric_grading_id BIGINT REFERENCES rubric_gradings(id) ON DELETE SET NULL ON UPDATE CASCADE;
 ALTER TABLE grading_jobs ADD COLUMN IF NOT EXISTS auto_rubric_grading_id BIGINT REFERENCES rubric_gradings(id) ON DELETE SET NULL ON UPDATE CASCADE;

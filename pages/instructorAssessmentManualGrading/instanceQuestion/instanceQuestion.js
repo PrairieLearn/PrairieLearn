@@ -16,6 +16,29 @@ const sqlLoader = require('../../../prairielib/lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 async function prepareLocalsForRender(req, res) {
+  // Even though getAndRenderVariant will select variants for the instance question, if the
+  // question has multiple variants, by default getAndRenderVariant may select a variant without
+  // submissions or even create a new one. We don't want that behaviour, so we select the last
+  // submission and pass it along to getAndRenderVariant explicitly.
+  const params = { instance_question_id: res.locals.instance_question.id };
+  const variant_with_submission = (
+    await sqldb.queryZeroOrOneRowAsync(sql.select_variant_with_last_submission, params)
+  ).rows[0];
+
+  if (variant_with_submission) {
+    res.locals.manualGradingInterface = true;
+    await util.promisify(question.getAndRenderVariant)(
+      variant_with_submission.variant_id,
+      null,
+      res.locals
+    );
+  }
+
+  // If student never loaded question or never submitted anything (submission is null)
+  if (!res.locals.submission) {
+    throw error.make(404, 'Instance question does not have a gradable submission.');
+  }
+
   res.locals.conflict_grading_job = null;
   if (req.query.conflict_grading_job_id) {
     const params = {
@@ -38,29 +61,6 @@ async function prepareLocalsForRender(req, res) {
       res.locals.conflict_grading_job.auto_rubric_grading_id,
       res.locals.rubric_mustache_data
     );
-  }
-
-  // Even though getAndRenderVariant will select variants for the instance question, if the
-  // question has multiple variants, by default getAndRenderVariant may select a variant without
-  // submissions or even create a new one. We don't want that behaviour, so we select the last
-  // submission and pass it along to getAndRenderVariant explicitly.
-  const params = { instance_question_id: res.locals.instance_question.id };
-  const variant_with_submission = (
-    await sqldb.queryZeroOrOneRowAsync(sql.select_variant_with_last_submission, params)
-  ).rows[0];
-
-  if (variant_with_submission) {
-    res.locals.manualGradingInterface = true;
-    await util.promisify(question.getAndRenderVariant)(
-      variant_with_submission.variant_id,
-      null,
-      res.locals
-    );
-  }
-
-  // If student never loaded question or never submitted anything (submission is null)
-  if (!res.locals.submission) {
-    throw error.make(404, 'Instance question does not have a gradable submission.');
   }
 
   const graders_result = await sqldb.queryZeroOrOneRowAsync(sql.select_graders, {
@@ -114,7 +114,7 @@ router.get(
       path.join(__dirname, 'rubricSettingsModal.ejs'),
       {
         type: 'manual',
-        rubric: res.locals.rubric_data_manual,
+        rubric: res.locals.submission?.rubric_data_manual,
         max_points: res.locals.assessment_question.max_manual_points,
         ...res.locals,
       }
@@ -123,7 +123,7 @@ router.get(
       path.join(__dirname, 'rubricSettingsModal.ejs'),
       {
         type: 'auto',
-        rubric: res.locals.rubric_data_auto,
+        rubric: res.locals.submission?.rubric_data_auto,
         max_points: res.locals.assessment_question.max_auto_points,
         ...res.locals,
       }
