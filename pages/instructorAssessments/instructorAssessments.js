@@ -166,9 +166,14 @@ router.get(
       });
       csvData.splice(0, 0, csvHeaders);
       csvStringify(csvData, function (err, csv) {
-        if (err) throw Error('Error formatting CSV', err);
-        res.attachment(req.params.filename);
-        res.send(csv);
+        if (err) {
+          throw Error('Error formatting CSV', err);
+        } else if (csv) {
+          res.write(csv);
+        } else {
+          res.attachment(req.params.filename);
+          res.end();
+        }
       });
     } else if (req.params.filename === fileSubmissionsFilename(res.locals)) {
       if (!res.locals.authz_data.has_course_instance_permission_view) {

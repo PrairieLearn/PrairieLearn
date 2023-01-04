@@ -93,9 +93,14 @@ router.get('/:filename', (req, res, next) => {
       });
       csvData.splice(0, 0, csvHeaders);
       csvStringify(csvData, (err, csv) => {
-        if (err) throw Error('Error formatting CSV', err);
-        res.attachment(req.params.filename);
-        res.send(csv);
+        if (err) {
+          throw Error('Error formatting CSV', err);
+        } else if (csv) {
+          res.write(csv);
+        } else {
+          res.attachment(req.params.filename);
+          res.end();
+        }
       });
     });
   } else {
