@@ -22,13 +22,13 @@
       <%- include('../../partials/questionSyncErrorsAndWarnings'); %>
     </div>
     <%- include('rubricSettingsModal',
-                {type: 'manual',
-                 rubric: submission.rubric_data_manual,
-                 max_points: assessment_question.max_manual_points}); %>
+                { type: 'manual',
+                  rubric: locals.rubric_data_manual,
+                  max_points: assessment_question.max_manual_points }); %>
     <%- include('rubricSettingsModal',
-                {type: 'auto',
-                 rubric: submission.rubric_data_auto,
-                 max_points: assessment_question.max_auto_points}); %>
+                { type: 'auto',
+                  rubric: locals.rubric_data_auto,
+                  max_points: assessment_question.max_auto_points}); %>
     <div id="content" class="container-fluid">
       <% if (assessment_instance.open) { %>
       <div class="alert alert-danger" role="alert">
@@ -73,8 +73,6 @@
                     auto_points: conflict_grading_job.auto_points,
                     manual_points: conflict_grading_job.manual_points,
                     submission: conflict_grading_job,
-                    rubric_data_manual: conflict_grading_job.rubric_data_manual,
-                    rubric_data_auto: conflict_grading_job.rubric_data_auto,
                     context: 'conflicting'
                   }); %>
                 </div>

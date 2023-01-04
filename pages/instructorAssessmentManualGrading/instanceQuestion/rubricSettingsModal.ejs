@@ -4,7 +4,7 @@
       <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
       <input type="hidden" name="__action" value="modify_rubric_settings">
       <input type="hidden" name="rubric_type" value="<%= type %>">
-      <input type="hidden" name="modified_at" value="<%= rubric?.rubric_data?.modified_at %>">
+      <input type="hidden" name="modified_at" value="<%= rubric?.modified_at %>">
       
       <div class="modal-content">
         <div class="modal-header bg-info text-light">
@@ -17,7 +17,7 @@
           <div class="alert alert-danger js-settings-error-alert d-none" role="alert"></div>
           <div class="form-check">
             <label class="form-check-label">
-              <input class="form-check-input" name="use_rubrics" type="checkbox" value="true" <% if (rubric?.rubric_data) { %>checked<% } %>>
+              <input class="form-check-input" name="use_rubrics" type="checkbox" value="true" <% if (rubric) { %>checked<% } %>>
               Use rubrics
             </label>
           </div>
@@ -29,7 +29,7 @@
                   <label class="form-check-label" data-toggle="tooltip"
                          title="Start grading at zero and add points">
                     <input class="form-check-input" name="starting_points" type="radio" value="0"
-                           <% if ((rubric?.rubric_data?.starting_points ?? 0) == 0) { %>checked<% } %>>
+                           <% if ((rubric?.starting_points ?? 0) == 0) { %>checked<% } %>>
                     Positive grading
                   </label>
                 </div>
@@ -37,33 +37,33 @@
                   <label class="form-check-label" data-toggle="tooltip"
                          title="Start grading at 100% (<%= max_points %> points) and subtract penalties">
                     <input class="form-check-input js-negative-grading" name="starting_points" type="radio" value="<%= max_points %>"
-                           <% if (rubric?.rubric_data?.starting_points == max_points) { %>checked<% } %>>
+                           <% if (rubric?.starting_points == max_points) { %>checked<% } %>>
                     Negative grading
                   </label>
                 </div>
                 <div class="form-check">
                   <label class="form-check-label">
                     <input class="form-check-input" name="starting_points" type="radio" value="CUSTOM"
-                           <% if (![0, max_points].includes(rubric?.rubric_data?.starting_points ?? 0)) { %>checked<% } %>>
+                           <% if (![0, max_points].includes(rubric?.starting_points ?? 0)) { %>checked<% } %>>
                     Custom starting points
                   </label>
                 </div>
                 <div class="js-starting-points-custom">
                   <label><span class="sr-only">Starting points</span>
-                    <input class="form-control" name="starting_points_custom" type="number" value="<%= rubric?.rubric_data?.starting_points ?? max_points %>">
+                    <input class="form-control" name="starting_points_custom" type="number" value="<%= rubric?.starting_points ?? max_points %>">
                   </label>
                 </div>
               </div>
               <div class="form-group col-4">
                 <label data-toggle="tooltip" title="Minimum number of points to be assigned to a student from the rubric (out of <%= max_points %>). Rubric items with negative points will not cause the grade to become lower than this value.">
                   Minimum points
-                  <input class="form-control" name="min_points" type="number" value="<%= rubric?.rubric_data?.min_points ?? 0 %>">
+                  <input class="form-control" name="min_points" type="number" value="<%= rubric?.min_points ?? 0 %>">
                 </label>
               </div>
               <div class="form-group col-4">
                 <label data-toggle="tooltip" title="Minimum number of points to be assigned to a student from the rubric (out of <%= max_points %>). Rubric items with positive points will not cause the grade to become higher than this value.">
                   Maximum points
-                  <input class="form-control" name="max_points" type="number" value="<%= rubric?.rubric_data?.max_points ?? max_points %>">
+                  <input class="form-control" name="max_points" type="number" value="<%= rubric?.max_points ?? max_points %>">
                 </label>
               </div>
             </div>
@@ -84,10 +84,10 @@
                   <tr>
                     <td class="text-nowrap">
                       <input type="hidden"
-                             name="rubric_item[cur<%= item.rubric_item.id %>][id]"
-                             value="<%= item.rubric_item.id %>">
+                             name="rubric_item[cur<%= item.id %>][id]"
+                             value="<%= item.id %>">
                       <input type="hidden" class="js-rubric-item-row-order"
-                             name="rubric_item[cur<%= item.rubric_item.id %>][order]"
+                             name="rubric_item[cur<%= item.id %>][order]"
                              value="<%= index %>">
                       <button type="button" class="btn btn-sm js-rubric-item-move-button" draggable="true">
                         <i class="fas fa-arrows-up-down"></i>
@@ -105,27 +105,27 @@
                     </td>
                     <td style="max-width: 4rem">
                       <input type="number" class="form-control" step="any" required
-                             name="rubric_item[cur<%= item.rubric_item.id %>][points]"
-                             value="<%= item.rubric_item.points %>">
+                             name="rubric_item[cur<%= item.id %>][points]"
+                             value="<%= item.points %>">
                     </td>
                     <td>
                       <input type="text" class="form-control" required maxlength="100"
-                             name="rubric_item[cur<%= item.rubric_item.id %>][short_text]"
-                             value="<%= item.rubric_item.short_text %>">
+                             name="rubric_item[cur<%= item.id %>][short_text]"
+                             value="<%= item.short_text %>">
                     </td>
                     <td>
-                      <label data-input-name="rubric_item[cur<%= item.rubric_item.id %>][description]"
-                             data-current-value="<%= item.rubric_item.description %>">
-                        <%= item.rubric_item.description %>
+                      <label data-input-name="rubric_item[cur<%= item.id %>][description]"
+                             data-current-value="<%= item.description %>">
+                        <%= item.description %>
                         <button type="button" class="btn btn-sm js-rubric-item-description-field">
                           <i class="fas fa-pencil"></i>
                         </button>
                       </label>
                     </td>
                     <td>
-                      <label data-input-name="rubric_item[cur<%= item.rubric_item.id %>][staff_instructions]"
-                             data-current-value="<%= item.rubric_item.staff_instructions %>">
-                        <%= item.rubric_item.staff_instructions %>
+                      <label data-input-name="rubric_item[cur<%= item.id %>][staff_instructions]"
+                             data-current-value="<%= item.staff_instructions %>">
+                        <%= item.staff_instructions %>
                         <button type="button" class="btn btn-sm js-rubric-item-description-field">
                           <i class="fas fa-pencil"></i>
                         </button>

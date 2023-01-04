@@ -48,19 +48,14 @@ async function prepareLocalsForRender(req, res) {
     res.locals.conflict_grading_job = (
       await sqldb.queryZeroOrOneRowAsync(sql.select_grading_job_data, params)
     ).rows[0];
-    res.locals.conflict_grading_job.rubric_data_manual =
+    res.locals.conflict_grading_job.rubric_grading_manual =
       await manualGrading.selectRubricGradingData(
-        res.locals.assessment_question.id,
-        res.locals.assessment_question.manual_rubric_id,
-        res.locals.conflict_grading_job.manual_rubric_grading_id,
-        res.locals.rubric_mustache_data
+        res.locals.conflict_grading_job.manual_rubric_grading_id
       );
-    res.locals.conflict_grading_job.rubric_data_auto = await manualGrading.selectRubricGradingData(
-      res.locals.assessment_question.id,
-      res.locals.assessment_question.auto_rubric_id,
-      res.locals.conflict_grading_job.auto_rubric_grading_id,
-      res.locals.rubric_mustache_data
-    );
+    res.locals.conflict_grading_job.rubric_grading_auto =
+      await manualGrading.selectRubricGradingData(
+        res.locals.conflict_grading_job.auto_rubric_grading_id
+      );
   }
 
   const graders_result = await sqldb.queryZeroOrOneRowAsync(sql.select_graders, {
@@ -102,33 +97,36 @@ router.get(
 router.get(
   '/grading_rubric_panels',
   asyncHandler(async (req, res, _next) => {
-    // This form is handled by Ajax, so send a new version of the grading panel via JSON.
-    await prepareLocalsForRender(req, res);
-    // Using util.promisify on renderFile instead of {async: true} from EJS, because the
-    // latter would require all includes in EJS to be translated to await recursively.
-    const gradingPanel = await util.promisify(ejs.renderFile)(
-      path.join(__dirname, 'gradingPanel.ejs'),
-      { context: 'main', ...res.locals }
-    );
-    const rubricSettingsManual = await util.promisify(ejs.renderFile)(
-      path.join(__dirname, 'rubricSettingsModal.ejs'),
-      {
-        type: 'manual',
-        rubric: res.locals.submission?.rubric_data_manual,
-        max_points: res.locals.assessment_question.max_manual_points,
-        ...res.locals,
-      }
-    );
-    const rubricSettingsAuto = await util.promisify(ejs.renderFile)(
-      path.join(__dirname, 'rubricSettingsModal.ejs'),
-      {
-        type: 'auto',
-        rubric: res.locals.submission?.rubric_data_auto,
-        max_points: res.locals.assessment_question.max_auto_points,
-        ...res.locals,
-      }
-    );
-    res.send({ gradingPanel, rubricSettingsManual, rubricSettingsAuto });
+    try {
+      await prepareLocalsForRender(req, res);
+      // Using util.promisify on renderFile instead of {async: true} from EJS, because the
+      // latter would require all includes in EJS to be translated to await recursively.
+      const gradingPanel = await util.promisify(ejs.renderFile)(
+        path.join(__dirname, 'gradingPanel.ejs'),
+        { context: 'main', ...res.locals }
+      );
+      const rubricSettingsManual = await util.promisify(ejs.renderFile)(
+        path.join(__dirname, 'rubricSettingsModal.ejs'),
+        {
+          type: 'manual',
+          rubric: res.locals.rubric_data_manual,
+          max_points: res.locals.assessment_question.max_manual_points,
+          ...res.locals,
+        }
+      );
+      const rubricSettingsAuto = await util.promisify(ejs.renderFile)(
+        path.join(__dirname, 'rubricSettingsModal.ejs'),
+        {
+          type: 'auto',
+          rubric: res.locals.rubric_data_auto,
+          max_points: res.locals.assessment_question.max_auto_points,
+          ...res.locals,
+        }
+      );
+      res.send({ gradingPanel, rubricSettingsManual, rubricSettingsAuto });
+    } catch (err) {
+      res.send({ err: String(err) });
+    }
   })
 );
 
