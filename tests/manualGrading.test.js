@@ -212,7 +212,9 @@ const checkGradingResults = (assigned_grader, grader) => {
       assert.equal(container.length, 0);
     } else {
       rubric_items.forEach((item, index) => {
-        const container = $questionsPage(`[data-testid="rubric-item-container-${item.id}"]`);
+        const container = $questionsPage('[data-testid="submission-with-feedback"]')
+          .first()
+          .find(`[data-testid="rubric-item-container-${item.id}"]`);
         assert.equal(container.length, 1);
         assert.equal(
           container.find('input[type="checkbox"]').is(':checked'),
@@ -975,6 +977,139 @@ describe('Manual Grading', function () {
 
         checkGradingResults(mockStaff[0], mockStaff[0]);
       });
+    });
+
+    describe('New submission after manual grading', () => {
+      step('re-open assessment', async () => {
+        setUser(defaultUser);
+        const instancesBody = await (await fetch(instancesAssessmentUrl)).text();
+        const $instancesBody = cheerio.load(instancesBody);
+        const token = $instancesBody('input[name=__csrf_token]').val();
+        const response = await fetch(instancesAssessmentUrl, {
+          method: 'POST',
+          headers: { 'Content-type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({
+            __action: 'set_time_limit_all',
+            __csrf_token: token,
+            plus_minus: 'unlimited',
+            time_add: 0,
+            time_ref: 'minutes',
+            reopen_closed: 'on',
+          }).toString(),
+        });
+        assert.equal(response.status, 200);
+      });
+
+      step('load page as student', async () => {
+        iqUrl = await loadHomeworkQuestionUrl(mockStudents[0]);
+        iqId = parseInstanceQuestionId(iqUrl);
+        manualGradingIQUrl = `${manualGradingAssessmentUrl}/instance_question/${iqId}`;
+
+        const instance_questions = (await sqldb.queryAsync(sql.get_instance_question, { iqId }))
+          .rows;
+        assert.lengthOf(instance_questions, 1);
+        assert.equal(instance_questions[0].requires_manual_grading, false);
+      });
+
+      step('submit an answer to the question', async () => {
+        const gradeRes = await saveOrGrade(iqUrl, {}, 'save', [
+          { name: 'fib.py', contents: Buffer.from(fibonacciSolution).toString('base64') },
+        ]);
+        const questionsPage = await gradeRes.text();
+        const $questionsPage = cheerio.load(questionsPage);
+
+        assert.equal(gradeRes.status, 200);
+        assert.equal(
+          getLatestSubmissionStatus($questionsPage),
+          'manual grading: waiting for grading'
+        );
+      });
+
+      step('should tag question as requiring grading', async () => {
+        const instanceQuestions = (await sqldb.queryAsync(sql.get_instance_question, { iqId }))
+          .rows;
+        assert.lengthOf(instanceQuestions, 1);
+        assert.equal(instanceQuestions[0].requires_manual_grading, true);
+      });
+
+      step('student view should keep the old feedback/rubrics', async () => {
+        iqUrl = await loadHomeworkQuestionUrl(mockStudents[0]);
+        const questionsPage = await (await fetch(iqUrl)).text();
+        const $questionsPage = cheerio.load(questionsPage);
+        const submissions = $questionsPage('[data-testid="submission-with-feedback"]');
+        assert.equal(submissions.eq(0).find('[id^="submission-feedback-"]').length, 0);
+        assert.equal(submissions.eq(1).find('[id^="submission-feedback-"]').length, 1);
+        assert.equal(
+          submissions.eq(1).find('[data-testid="feedback-body"]').first().text().trim(),
+          feedback_note
+        );
+      });
+
+      step('manual grading page should warn about an open instance', async () => {
+        setUser(defaultUser);
+        const manualGradingPage = await (await fetch(manualGradingAssessmentUrl)).text();
+        $manualGradingPage = cheerio.load(manualGradingPage);
+        const row = $manualGradingPage('div.alert:contains("has one open instance")');
+        assert.equal(row.length, 1);
+      });
+
+      step('manual grading page should list one question requiring grading', async () => {
+        const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
+        assert.equal(row.length, 1);
+        const count = row.find('td[data-testid="iq-to-grade-count"]').text().replace(/\s/g, '');
+        assert.equal(count, '1/1');
+        manualGradingAssessmentQuestionUrl =
+          siteUrl + row.find(`a:contains("${manualGradingQuestionTitle}")`).attr('href');
+        manualGradingNextUngradedUrl = manualGradingAssessmentQuestionUrl + '/next_ungraded';
+      });
+
+      step(
+        'manual grading page for assessment question should warn about an open instance',
+        async () => {
+          setUser(defaultUser);
+          const manualGradingAQPage = await (
+            await fetch(manualGradingAssessmentQuestionUrl)
+          ).text();
+          const $manualGradingAQPage = cheerio.load(manualGradingAQPage);
+          const row = $manualGradingAQPage('div.alert:contains("has one open instance")');
+          assert.equal(row.length, 1);
+        }
+      );
+
+      step('manual grading page for assessment question should list one instance', async () => {
+        setUser(defaultUser);
+        const manualGradingAQData = await (
+          await fetch(manualGradingAssessmentQuestionUrl + '/instances.json')
+        ).text();
+        const instanceList = JSON.parse(manualGradingAQData)?.instance_questions;
+        assert(instanceList);
+        assert.lengthOf(instanceList, 1);
+        assert.equal(instanceList[0].id, iqId);
+        assert.isOk(instanceList[0].requires_manual_grading);
+      });
+
+      step(
+        'manual grading page for instance question should warn about an open instance',
+        async () => {
+          setUser(defaultUser);
+          const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
+          const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
+          const row = $manualGradingIQPage('div.alert:contains("is still open")');
+          assert.equal(row.length, 1);
+        }
+      );
+
+      step('submit a new grade', async () => {
+        setUser(mockStaff[1]);
+        applied_rubrics = [1, 2, 4];
+        adjust_points = null;
+        score_points = 9;
+        score_percent = 150;
+        feedback_note = 'Test feedback note for second submission';
+        await submitGradeForm();
+      });
+
+      checkGradingResults(mockStaff[0], mockStaff[1]);
     });
   });
 });

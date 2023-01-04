@@ -1,4 +1,4 @@
-<div data-grading-job-status="<%= submission.grading_job_status %>" data-grading-job-id="<%= submission.grading_job_id %>" id="submission-<%= submission.id %>">
+<div data-testid="submission-with-feedback" data-grading-job-status="<%= submission.grading_job_status %>" data-grading-job-id="<%= submission.grading_job_id %>" id="submission-<%= submission.id %>">
 
 <% if (submission.feedback?.manual || submission.rubric_grading_manual || submission.rubric_grading_auto) { %>
 <div class="card mb-4 grading-block border-info">
