@@ -191,6 +191,7 @@ const checkGradingResults = (assigned_grader, grader) => {
     iqUrl = await loadHomeworkQuestionUrl(mockStudents[0]);
     const questionsPage = await (await fetch(iqUrl)).text();
     const $questionsPage = cheerio.load(questionsPage);
+    const feedbackBlock = $questionsPage('[data-testid="submission-with-feedback"]').first();
 
     assert.equal(getLatestSubmissionStatus($questionsPage), `manual grading: ${score_percent}%`);
     assert.equal(
@@ -203,18 +204,16 @@ const checkGradingResults = (assigned_grader, grader) => {
       `${score_points}`
     );
     assert.equal(
-      $questionsPage('[data-testid="feedback-body"]').first().text().trim(),
+      feedbackBlock.find('[data-testid="feedback-body"]').first().text().trim(),
       feedback_note
     );
 
     if (!rubric_items) {
-      const container = $questionsPage(`[data-testid^="rubric-item-container-"]`);
+      const container = feedbackBlock.find(`[data-testid^="rubric-item-container-"]`);
       assert.equal(container.length, 0);
     } else {
       rubric_items.forEach((item, index) => {
-        const container = $questionsPage('[data-testid="submission-with-feedback"]')
-          .first()
-          .find(`[data-testid="rubric-item-container-${item.id}"]`);
+        const container = feedbackBlock.find(`[data-testid="rubric-item-container-${item.id}"]`);
         assert.equal(container.length, 1);
         assert.equal(
           container.find('input[type="checkbox"]').is(':checked'),
@@ -240,11 +239,11 @@ const checkGradingResults = (assigned_grader, grader) => {
     }
     if (adjust_points) {
       assert.equal(
-        $questionsPage('[data-testid="rubric-adjust-points"]').text().trim(),
+        feedbackBlock.find('[data-testid="rubric-adjust-points"]').text().trim(),
         `[${adjust_points >= 0 ? '+' : ''}${adjust_points}]`
       );
     } else {
-      assert.equal($questionsPage('[data-testid="rubric-adjust-points"]').length, 0);
+      assert.equal(feedbackBlock.find('[data-testid="rubric-adjust-points"]').length, 0);
     }
   });
 };
