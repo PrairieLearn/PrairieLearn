@@ -187,15 +187,18 @@
                   </td>
                 </tr>
               </template>
-              <% if (variant.params || variant.true_answer) { %>
+              <% if (variant.params || variant.true_answer || submission?.submitted_answer) { %>
               <div class="small form-text text-muted">
                 Rubric items may be populated with values like:
                 <ul style="max-height: 7rem; overflow-y: auto;">
                   <% Object.keys(variant.params || {}).forEach((key) => { %>
-                  <li><code>{{params.<%= key %>}}</code></li>
+                    <li><code>{{params.<%= key %>}}</code></li>
                   <% }); %>
                   <% Object.keys(variant.true_answer || {}).forEach((key) => { %>
-                  <li><code>{{correct_answers.<%= key %>}}</code></li>
+                    <li><code>{{correct_answers.<%= key %>}}</code></li>
+                  <% }); %>
+                  <% Object.keys(submission?.submitted_answer || {}).forEach((key) => { %>
+                    <li><code>{{submitted_answers.<%= key %>}}</code></li>
                   <% }); %>
                 </ul>
               </div>
