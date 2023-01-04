@@ -1,3 +1,5 @@
+/* global ClipboardJS */
+
 $(() => {
   resetInstructorGradingPanel();
 
@@ -32,6 +34,31 @@ $(() => {
 
 function resetInstructorGradingPanel() {
   $('[data-toggle="tooltip"]').tooltip();
+
+  document.querySelectorAll('.js-rubric-settings-modal').forEach((modal) => {
+    let clipboard = new ClipboardJS(modal.querySelectorAll('.js-copy-on-click'), {
+      container: modal,
+    });
+    clipboard.on('success', (e) => {
+      e.trigger.animate(
+        [
+          { backgroundColor: '', color: '', offset: 0 },
+          { backgroundColor: '#000', color: '#fff', offset: 0.5 },
+          { backgroundColor: '', color: '', offset: 1 },
+        ],
+        500
+      );
+      $(e.trigger)
+        .popover({
+          content: 'Copied!',
+          placement: 'right',
+        })
+        .popover('show');
+      window.setTimeout(function () {
+        $(e.trigger).popover('hide');
+      }, 1000);
+    });
+  });
 
   // The visibility of points or percentage is based on a toggle that is persisted in local storage,
   // so that graders can use the same setting across multiple instance questions as they move

@@ -13,6 +13,7 @@
     <script src="/localscripts/question.js"></script>
     <script src="/localscripts/question<%= effectiveQuestionType %>.js"></script>
     <% } %>
+    <script src="<%= node_modules_asset_path('clipboard/dist/clipboard.min.js') %>"></script>
     <%- extraHeadersHtml %>
     <%- compiled_script_tag('instructorAssessmentManualGradingInstanceQuestion.js') %>
   </head>
