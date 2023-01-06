@@ -9,7 +9,7 @@ const betterAjvErrors = require('better-ajv-errors').default;
 const { parseISO, isValid, isAfter, isFuture } = require('date-fns');
 const { default: chalkDefault } = require('chalk');
 const config = require('../lib/config');
-// const sqldb = require('../prairielib/lib/sql-db');
+const sqldb = require('../prairielib/lib/sql-db');
 
 const schemas = require('../schemas');
 const infofile = require('./infofile');
@@ -1031,7 +1031,7 @@ async function validateQuestion(question) {
  * @param {{ [qid: string]: any }} questions
  * @returns {Promise<{ warnings: string[], errors: string[] }>}
  */
-async function validateAssessment(assessment, questions, _courseId) {
+async function validateAssessment(assessment, questions, courseId) {
   const warnings = [];
   const errors = [];
 
@@ -1072,7 +1072,7 @@ async function validateAssessment(assessment, questions, _courseId) {
     });
   }
 
-  // const importedQuestions = {};
+  const importedQuestions = {};
   const foundQids = new Set();
   const duplicateQids = new Set();
   const missingQids = new Set();
@@ -1080,29 +1080,29 @@ async function validateAssessment(assessment, questions, _courseId) {
   // TODO: should we hold off on this check until sync time in order to avoid
   // calling out to the database here?
   /** @type {(sourceCourse: string, qid: string) => Promise<boolean>} */
-  // const checkImportedQid = async (sourceCourse, qid) => {
-  //   // TODO: move query to seperate file
-  //   let query = `select q.qid from
-  //     questions as q
-  //     join question_sharing_sets as qss on q.id = qss.question_id
-  //     join sharing_sets as ss on qss.sharing_set_id = ss.id
-  //     join course_sharing_sets as css on ss.id = css.sharing_set_id
-  //     where css.course_id = $courseId
-  //     and q.course_id = (select id from pl_courses where sharing_name = $sourceCourse);`;
+  const checkImportedQid = async (sourceCourse, qid) => {
+    // TODO: move query to seperate file
+    let query = `select q.qid from
+      questions as q
+      join question_sharing_sets as qss on q.id = qss.question_id
+      join sharing_sets as ss on qss.sharing_set_id = ss.id
+      join course_sharing_sets as css on ss.id = css.sharing_set_id
+      where css.course_id = $courseId
+      and q.course_id = (select id from pl_courses where sharing_name = $sourceCourse);`;
 
-  //   if (!(sourceCourse in importedQuestions)) {
-  //     let result = await sqldb.queryAsync(query, {
-  //       courseId: courseId,
-  //       sourceCourse: sourceCourse,
-  //     });
-  //     let questions = new Set();
-  //     for (let row of result.rows) {
-  //       questions.add(row['qid']);
-  //     }
-  //     importedQuestions[sourceCourse] = questions;
-  //   }
-  //   return importedQuestions[sourceCourse].has(qid);
-  // };
+    if (!(sourceCourse in importedQuestions)) {
+      let result = await sqldb.queryAsync(query, {
+        courseId: courseId,
+        sourceCourse: sourceCourse,
+      });
+      let questions = new Set();
+      for (let row of result.rows) {
+        questions.add(row['qid']);
+      }
+      importedQuestions[sourceCourse] = questions;
+    }
+    return importedQuestions[sourceCourse].has(qid);
+  };
   /** @type {(qid: string) => Promise<void>} */
   const checkAndRecordQid = async (qid) => {
     if (qid[0] === '@') {
@@ -1115,6 +1115,7 @@ async function validateAssessment(assessment, questions, _courseId) {
         );
         return;
       }
+
       // // TODO: this is obviously a bad place to query course info, figure out a different place to refactor it to,
       // // maybe throw a SQL exception at the point when the questions are being put into the database?
       // let result = await sqldb.queryOneRowAsync(`select * from pl_courses where id = $courseId;`, {
@@ -1131,16 +1132,18 @@ async function validateAssessment(assessment, questions, _courseId) {
       // const sourceCourse = qid.substring(1, firstSlash);
       // const questionDirectory = qid.substring(firstSlash + 1, qid.length);
       // const inImportedCourse = await checkImportedQid(sourceCourse, questionDirectory);
-      // TODO: give a more verbose error message if the reason the question isn't found
-      // is because the course slug is invalid/doesn't exist? or just give the same message as if the question id doesn't exist?
-      // TODO: Don't give an error or warning if we are in local dev, otherwise imported questions
-      // would always error syncs in dev environments.
-      // TODO: re-enable for when not in local dev. How can I check for if we are in local dev? there doesn't seem to be a config param
-      // For the question sharing tests, it might be ok to fail on initial sync, then add the sharing permissions, then succeed. But other
-      // tests, like the element tests on the example course, will fail on importing a question.
+      // // TODO: give a more verbose error message if the reason the question isn't found
+      // // is because the course slug is invalid/doesn't exist? or just give the same message as if the question id doesn't exist?
+      // // TODO: Don't give an error or warning if we are in local dev, otherwise imported questions
+      // // would always error syncs in dev environments.
+      // // TODO: re-enable for when not in local dev. How can I check for if we are in local dev? there doesn't seem to be a config param
+      // // For the question sharing tests, it might be ok to fail on initial sync, then add the sharing permissions, then succeed. But other
+      // // tests, like the element tests on the example course, will fail on importing a question.
       // if (!inImportedCourse) {
       //   missingQids.add(qid);
       // }
+
+      
     } else if (!(qid in questions)) {
       missingQids.add(qid);
     }

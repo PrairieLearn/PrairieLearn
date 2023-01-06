@@ -69,6 +69,7 @@ describe('Question Sharing', function () {
   describe('Create a sharing set and add a question to it', () => {
     let exampleCourseSharingId;
 
+
     step(
       'set up testing server',
       helperServer.before([
@@ -77,9 +78,45 @@ describe('Question Sharing', function () {
       ])
     );
 
+    // step(
+    //   'set up testing server',
+    //   async () => {
+    //     let syncSucceeded = true;
+    //     try {
+    //       helperServer.before([
+    //         path.join(__dirname, '..', 'testCourse'),
+    //         path.join(__dirname, '..', 'exampleCourse'),
+    //       ])();
+    //     } catch (err) {
+    //       syncSucceeded = false;
+    //       console.log('caught the error!')
+    //     }
+    //     // console.log(syncSucceeded);
+    //     // assert(!syncSucceeded); // Sync should fail because question sharing not yet enabled for course
+    // });
+    
     step('ensure course has question sharing enabled', async () => {
       await sqldb.queryAsync(sql.enable_question_sharing, {});
     });
+
+    // step(
+    //   'Now that sharing is enabled for the example course, sync should succeed',
+    //   (callback) => {
+    //     const courseDir = path.join(__dirname, '..', 'exampleCourse');
+    //     syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
+    //       if (ERR(err, callback)) return;
+    //       if (result.hadJsonErrorsOrWarnings) {
+    //         console.log(logger.getOutput());
+    //         return callback(
+    //           new Error(
+    //             `Errors or warnings found during sync of ${courseDir} (output printed to console)`
+    //           )
+    //         );
+    //       }
+    //       callback(null);
+    //     });
+    //   }
+    // );
 
     step(
       'Fail to access shared question, because permission has not yet been granted',
