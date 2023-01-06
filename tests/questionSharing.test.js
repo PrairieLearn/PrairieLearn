@@ -68,33 +68,35 @@ describe('Question Sharing', function () {
 
     step('set up testing server', helperServer.before(path.join(__dirname, '..', 'testCourse')));
 
-    step(
-      'Initial sync of example course, fails because sharing not enabled',
-      (callback) => {
-        const courseDir = path.join(__dirname, '..', 'exampleCourse');
-        syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
-          if (ERR(err, callback)) return;
-          // TODO: assert that the sync actually failed?
-          callback(null);
-        });
-      }
-    );
-    
+    step('Initial sync of example course, fails because sharing not enabled', (callback) => {
+      const courseDir = path.join(__dirname, '..', 'exampleCourse');
+      syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
+        if (ERR(err, callback)) return;
+        assert(result.hadJsonErrorsOrWarnings);
+        callback(null);
+      });
+    });
+
     step('ensure course has question sharing enabled', async () => {
       await sqldb.queryAsync(sql.enable_question_sharing, {});
     });
 
-    step(
-      'Resync coures with sharing enabled',
-      (callback) => {
-        const courseDir = path.join(__dirname, '..', 'exampleCourse');
-        syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
-          if (ERR(err, callback)) return;
-          // TODO: assert that the sync actually failed?
-          callback(null);
-        });
-      }
-    );
+    step('Resync coures with sharing enabled', (callback) => {
+      const courseDir = path.join(__dirname, '..', 'exampleCourse');
+      syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
+        if (ERR(err, callback)) return;
+        // TODO: technically this would have an error because there is no permissions on the
+        // shared question, but we are configured to ignore sharing errors locally. Is this the right thing to do?
+        if (result.hadJsonErrorsOrWarnings) {
+          return callback(
+            new Error(
+              `Errors or warnings found during sync of ${courseDir} (output printed to console)`
+            )
+          );
+        }
+        callback(null);
+      });
+    });
 
     step(
       'Fail to access shared question, because permission has not yet been granted',

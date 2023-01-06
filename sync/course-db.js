@@ -1126,7 +1126,6 @@ async function validateAssessment(assessment, questions, courseId) {
         return;
       }
 
-
       const firstSlash = qid.indexOf('/');
       const sourceCourse = qid.substring(1, firstSlash);
       const questionDirectory = qid.substring(firstSlash + 1, qid.length);
@@ -1136,8 +1135,6 @@ async function validateAssessment(assessment, questions, courseId) {
       if (!config.ignoreQuestionImportFailures && !inImportedCourse) {
         missingQids.add(qid);
       }
-
-        
     } else if (!(qid in questions)) {
       missingQids.add(qid);
     }
