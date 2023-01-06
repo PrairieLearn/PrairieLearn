@@ -63,31 +63,22 @@ async function accessSharedQuestionAssessment() {
 describe('Question Sharing', function () {
   this.timeout(80000);
 
-  // Must sync two courses to test sharing from one to the other, and we must
-  // force one sync to complete before the other to avoid database errors
-
   describe('Create a sharing set and add a question to it', () => {
     let exampleCourseSharingId;
 
-
-    // step(
-    //   'set up testing server',
-    //   helperServer.before([
-    //     path.join(__dirname, '..', 'testCourse'),
-    //     path.join(__dirname, '..', 'exampleCourse'),
-    //   ])
-    // );
+    step('set up testing server', helperServer.before(path.join(__dirname, '..', 'testCourse')));
 
     step(
-      'set up testing server',
+      'Initial sync of example course, fails because sharing not enabled',
       (callback) => {
-        helperServer.before([
-          path.join(__dirname, '..', 'testCourse'),
-          path.join(__dirname, '..', 'exampleCourse'),
-        ], true)(() => {
-          callback();
+        const courseDir = path.join(__dirname, '..', 'exampleCourse');
+        syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
+          if (ERR(err, callback)) return;
+          // TODO: assert that the sync actually failed?
+          callback(null);
         });
-    });
+      }
+    );
     
     step('ensure course has question sharing enabled', async () => {
       await sqldb.queryAsync(sql.enable_question_sharing, {});
@@ -99,6 +90,7 @@ describe('Question Sharing', function () {
         const courseDir = path.join(__dirname, '..', 'exampleCourse');
         syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
           if (ERR(err, callback)) return;
+          // TODO: assert that the sync actually failed?
           callback(null);
         });
       }

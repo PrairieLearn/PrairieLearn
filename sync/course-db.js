@@ -1106,9 +1106,6 @@ async function validateAssessment(assessment, questions, courseId) {
   /** @type {(qid: string) => Promise<void>} */
   const checkAndRecordQid = async (qid) => {
     if (qid[0] === '@') {
-      // TODO: re-enable these checks before pushing to production
-      // right now they are disabled to allow tests to pass. We need some way of having
-      // local sharing enabled locally. Maybe have 3 options for questionSharing? 'none', 'local', 'enabled'?
       if (!config.questionSharingEnabled) {
         errors.push(
           `You have attempted to import a question with '@', but question sharing is not enabled on this server.`
