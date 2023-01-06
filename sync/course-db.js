@@ -1118,16 +1118,18 @@ async function validateAssessment(assessment, questions, courseId) {
 
       // // TODO: this is obviously a bad place to query course info, figure out a different place to refactor it to,
       // // maybe throw a SQL exception at the point when the questions are being put into the database?
-      // let result = await sqldb.queryOneRowAsync(`select * from pl_courses where id = $courseId;`, {
-      //   courseId: courseId,
-      // });
-      // let course = result.rows[0];
-      // if (!course.question_sharing_enabled) {
-      //   errors.push(
-      //     `You have attempted to import a question with '@', but question sharing is not enabled for your course.`
-      //   );
-      //   return;
-      // }
+      let result = await sqldb.queryOneRowAsync(`select * from pl_courses where id = $courseId;`, {
+        courseId: courseId,
+      });
+      let course = result.rows[0];
+      if (!course.question_sharing_enabled) {
+        errors.push(
+          `You have attempted to import a question with '@', but question sharing is not enabled for your course.`
+        );
+        return;
+      }
+
+
       // const firstSlash = qid.indexOf('/');
       // const sourceCourse = qid.substring(1, firstSlash);
       // const questionDirectory = qid.substring(firstSlash + 1, qid.length);
@@ -1143,7 +1145,7 @@ async function validateAssessment(assessment, questions, courseId) {
       //   missingQids.add(qid);
       // }
 
-      
+        
     } else if (!(qid in questions)) {
       missingQids.add(qid);
     }

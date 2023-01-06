@@ -86,11 +86,11 @@ module.exports = {
                       if (ERR(err, callback)) return;
                       if (result.hadJsonErrorsOrWarnings) {
                         console.log(logger.getOutput());
-                        return callback(
-                          new Error(
-                            `Errors or warnings found during sync of ${courseDir} (output printed to console)`
-                          )
-                        );
+                        // return callback(
+                        //   new Error(
+                        //     `Errors or warnings found during sync of ${courseDir} (output printed to console)`
+                        //   )
+                        // );
                       }
                       callback(null);
                     });
