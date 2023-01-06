@@ -1116,8 +1116,8 @@ async function validateAssessment(assessment, questions, courseId) {
         return;
       }
 
-      // // TODO: this is obviously a bad place to query course info, figure out a different place to refactor it to,
-      // // maybe throw a SQL exception at the point when the questions are being put into the database?
+      // TODO: this is obviously a bad place to query course info, figure out a different place to refactor it to,
+      // maybe throw a SQL exception at the point when the questions are being put into the database?
       let result = await sqldb.queryOneRowAsync(`select * from pl_courses where id = $courseId;`, {
         courseId: courseId,
       });
@@ -1130,20 +1130,15 @@ async function validateAssessment(assessment, questions, courseId) {
       }
 
 
-      // const firstSlash = qid.indexOf('/');
-      // const sourceCourse = qid.substring(1, firstSlash);
-      // const questionDirectory = qid.substring(firstSlash + 1, qid.length);
-      // const inImportedCourse = await checkImportedQid(sourceCourse, questionDirectory);
-      // // TODO: give a more verbose error message if the reason the question isn't found
-      // // is because the course slug is invalid/doesn't exist? or just give the same message as if the question id doesn't exist?
-      // // TODO: Don't give an error or warning if we are in local dev, otherwise imported questions
-      // // would always error syncs in dev environments.
-      // // TODO: re-enable for when not in local dev. How can I check for if we are in local dev? there doesn't seem to be a config param
-      // // For the question sharing tests, it might be ok to fail on initial sync, then add the sharing permissions, then succeed. But other
-      // // tests, like the element tests on the example course, will fail on importing a question.
-      // if (!inImportedCourse) {
-      //   missingQids.add(qid);
-      // }
+      const firstSlash = qid.indexOf('/');
+      const sourceCourse = qid.substring(1, firstSlash);
+      const questionDirectory = qid.substring(firstSlash + 1, qid.length);
+      const inImportedCourse = await checkImportedQid(sourceCourse, questionDirectory);
+      // TODO: give a more verbose error message if the reason the question isn't found
+      // is because the course slug is invalid/doesn't exist? or just give the same message as if the question id doesn't exist?
+      if (!config.ignoreQuestionImportFailures && !inImportedCourse) {
+        missingQids.add(qid);
+      }
 
         
     } else if (!(qid in questions)) {

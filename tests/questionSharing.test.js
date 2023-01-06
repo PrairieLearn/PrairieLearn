@@ -84,12 +84,9 @@ describe('Question Sharing', function () {
         helperServer.before([
           path.join(__dirname, '..', 'testCourse'),
           path.join(__dirname, '..', 'exampleCourse'),
-        ])(() => {
-          console.log('finished syncing');
+        ], true)(() => {
           callback();
         });
-        // console.log(syncSucceeded);
-        // assert(!syncSucceeded); // Sync should fail because question sharing not yet enabled for course
     });
     
     step('ensure course has question sharing enabled', async () => {
@@ -97,19 +94,11 @@ describe('Question Sharing', function () {
     });
 
     step(
-      'Now that sharing is enabled for the example course, sync should succeed',
+      'Resync coures with sharing enabled',
       (callback) => {
         const courseDir = path.join(__dirname, '..', 'exampleCourse');
         syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
           if (ERR(err, callback)) return;
-          if (result.hadJsonErrorsOrWarnings) {
-            console.log(logger.getOutput());
-            // return callback(
-            //   new Error(
-            //     `Errors or warnings found during sync of ${courseDir} (output printed to console)`
-            //   )
-            // );
-          }
           callback(null);
         });
       }

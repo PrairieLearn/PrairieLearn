@@ -37,7 +37,7 @@ const helperDb = require('./helperDb');
 const courseDirDefault = path.join(__dirname, '..', 'testCourse');
 
 module.exports = {
-  before: (courses) => {
+  before: (courses, allowCourseSyncFailure=false) => {
     let courseDirs;
     if (typeof courses === 'string') {
       courseDirs = [courses];
@@ -84,13 +84,13 @@ module.exports = {
                   function (callback) {
                     syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
                       if (ERR(err, callback)) return;
-                      if (result.hadJsonErrorsOrWarnings) {
+                      if (result.hadJsonErrorsOrWarnings && !allowCourseSyncFailure) {
                         console.log(logger.getOutput());
-                        // return callback(
-                        //   new Error(
-                        //     `Errors or warnings found during sync of ${courseDir} (output printed to console)`
-                        //   )
-                        // );
+                        return callback(
+                          new Error(
+                            `Errors or warnings found during sync of ${courseDir} (output printed to console)`
+                          )
+                        );
                       }
                       callback(null);
                     });
