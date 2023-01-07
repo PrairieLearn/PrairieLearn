@@ -77,7 +77,7 @@ describe('Course element extensions', function () {
   });
 
   describe('Extensions can insert client-side assets into the page', function () {
-    before('set up testing server', helperServer.before(exampleCourseDir));
+    before('set up testing server', helperServer.before(exampleCourseDir, true));
     after('shut down testing server', helperServer.after);
 
     const locals = {};
