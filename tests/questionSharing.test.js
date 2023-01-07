@@ -88,11 +88,7 @@ describe('Question Sharing', function () {
         // TODO: technically this would have an error because there is no permissions on the
         // shared question, but we are configured to ignore sharing errors locally. Is this the right thing to do?
         if (result.hadJsonErrorsOrWarnings) {
-          return callback(
-            new Error(
-              `Errors or warnings found during sync of ${courseDir} (output printed to console)`
-            )
-          );
+          return callback(new Error(`Errors or warnings found during sync of ${courseDir}`));
         }
         callback(null);
       });
@@ -235,12 +231,7 @@ describe('Question Sharing', function () {
         syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
           if (ERR(err, callback)) return;
           if (result.hadJsonErrorsOrWarnings) {
-            console.log(logger.getOutput());
-            return callback(
-              new Error(
-                `Errors or warnings found during sync of ${courseDir} (output printed to console)`
-              )
-            );
+            return callback(new Error(`Errors or warnings found during sync of ${courseDir}`));
           }
           callback(null);
         });

@@ -27,6 +27,7 @@ const { promisify } = require('util');
 /**
  * @typedef {Object} SyncResults
  * @property {boolean} hadJsonErrors
+ * @property {boolean} hadJsonErrorsOrWarnings
  * @property {string} courseId
  * @property {import('./course-db').CourseData} courseData
  */
