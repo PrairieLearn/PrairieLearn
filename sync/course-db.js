@@ -1132,7 +1132,8 @@ async function validateAssessment(assessment, questions, courseId) {
       const inImportedCourse = await checkImportedQid(sourceCourse, questionDirectory);
       // TODO: give a more verbose error message if the reason the question isn't found
       // is because the course slug is invalid/doesn't exist? or just give the same message as if the question id doesn't exist?
-      if (!config.ignoreQuestionImportFailures && !inImportedCourse) {
+      if (!config.devMode && !inImportedCourse) {
+        // In dev mode, ignore errors because imported questions are most likely from courses not in the server
         missingQids.add(qid);
       }
     } else if (!(qid in questions)) {
