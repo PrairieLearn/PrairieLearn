@@ -121,9 +121,15 @@ router.get(
         csvData[0].push(count);
       });
       csvData.unshift(csvHeaders);
-      const csv = await nonblockingStringifyAsync(csvData);
-      res.attachment(req.params.filename);
-      res.send(csv);
+      try {
+        res.attachment(req.params.filename);
+        await nonblockingStringifyAsync(csvData, (chunk) => {
+          res.write(chunk);
+        });
+        res.end();
+      } catch (err) {
+        throw Error('Error formatting CSV', err);
+      }
     } else if (req.params.filename === res.locals.durationStatsCsvFilename) {
       // get formatted duration statistics
       const durationStatsResult = await sqldb.queryOneRowAsync(sql.select_duration_stats, {
@@ -168,9 +174,15 @@ router.get(
         csvData[0].push(count);
       });
       csvData.unshift(csvHeaders);
-      const csv = await nonblockingStringifyAsync(csvData);
-      res.attachment(req.params.filename);
-      res.send(csv);
+      try {
+        res.attachment(req.params.filename);
+        await nonblockingStringifyAsync(csvData, (chunk) => {
+          res.write(chunk);
+        });
+        res.end();
+      } catch (err) {
+        throw Error('Error formatting CSV', err);
+      }
     } else if (req.params.filename === res.locals.statsByDateCsvFilename) {
       const histByDateResult = await sqldb.queryAsync(sql.assessment_score_histogram_by_date, {
         assessment_id: res.locals.assessment.id,
@@ -207,9 +219,15 @@ router.get(
         csvData.push(groupData);
       }
       csvData.splice(0, 0, csvHeaders);
-      const csv = await nonblockingStringifyAsync(csvData);
-      res.attachment(req.params.filename);
-      res.send(csv);
+      try {
+        res.attachment(req.params.filename);
+        await nonblockingStringifyAsync(csvData, (chunk) => {
+          res.write(chunk);
+        });
+        res.end();
+      } catch (err) {
+        throw Error('Error formatting CSV', err);
+      }
     } else {
       throw error.make(404, 'Unknown filename: ' + req.params.filename);
     }

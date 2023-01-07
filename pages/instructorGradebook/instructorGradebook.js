@@ -100,10 +100,15 @@ router.get('/:filename', function (req, res, next) {
           return [row.uid, row.uin, row.user_name, row.role].concat(score_percs);
         });
         csvData.splice(0, 0, csvHeaders);
-        csvStringify(csvData, function (err, csv) {
-          if (ERR(err, next)) return;
-          res.attachment(req.params.filename);
-          res.send(csv);
+        res.attachment(req.params.filename);
+        csvStringify(csvData, function (err, chunk) {
+          if (err) {
+            throw Error('Error formatting CSV', err);
+          } else if (chunk) {
+            res.write(chunk);
+          } else {
+            res.end();
+          }
         });
       });
     });

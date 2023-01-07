@@ -122,10 +122,15 @@ router.get(
 
         csvData.push(questionStatsData);
       });
-      const csv = await nonblockingStringifyAsync(csvData);
-
-      res.attachment(req.params.filename);
-      res.send(csv);
+      try {
+        res.attachment(req.params.filename);
+        await nonblockingStringifyAsync(csvData, (chunk) => {
+          res.write(chunk);
+        });
+        res.end();
+      } catch (err) {
+        throw Error('Error formatting CSV', err);
+      }
     } else {
       throw error.make(404, 'Unknown filename: ' + req.params.filename);
     }

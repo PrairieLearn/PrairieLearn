@@ -1,28 +1,44 @@
-const { describe } = require('../../lib/databaseDescribe');
-
 const assert = require('chai').assert;
 const csvStringify = require('../../lib/nonblocking-csv-stringify');
+const { nonblockingStringifyAsync } = require('../../lib/nonblocking-csv-stringify');
 
-/**
- * Run test: mocha tests/lib/nonblocking-csv-stringify.test.js
- */
-describe('nonblocking-csv-stringify', () => {
-  it('should stringify data to CSV format', () => {
-    const data = [
-      ['col1', 'col2', 'col3'],
-      ['row1_v1', 'row1_v2', 'row1_v3'],
-      ['row2_v1', 'row2_v2', 'row2_v3'],
-      ['row3_v1', 'row3_v2', 'row3_v3'],
-    ];
+describe('nonblocking-csv-stringify', async function () {
+  const NUM_ROWS = 30;
+  const generateTestData = (numRows = NUM_ROWS) => {
+    let chunks = [];
+    for (let i = 0; i < numRows; i++) {
+      const chunk = [`row${i}_v1`, `row${i}_v2`, `row${i}_v3`];
+      chunks.push(chunk);
+    }
+    return chunks;
+  };
 
-    const expected = "col1,col2,col3\nrow1_v1,row1_v2,row1_v3\nrow2_v1,row2_v2,row2_v3\nrow3_v1,row3_v2,row3_v3\n";
+  const data = generateTestData();
+  const EXPECTED_CSV_STRING = data.map((row) => row.join(',')).join('\n') + '\n';
 
-    const callback = (err, csv) => {
-      if (err) return err;
-      const actual = csv;
-      assert.equal(actual, expected);
+  it('should stringify small data to CSV format callback-style', function () {
+    let chunks = [];
+    const callback = (err, chunk) => {
+      if (err) {
+        throw Error('Error formatting CSV', err);
+      } else if (chunk) {
+        chunks.push(chunk);
+      } else {
+        assert.equal(chunks.join(''), EXPECTED_CSV_STRING);
+      }
     };
-
     csvStringify(data, callback);
+  });
+
+  it('should stringify small data to CSV format async', async function () {
+    try {
+      let chunks = [];
+      await nonblockingStringifyAsync(data, (chunk) => {
+        chunks.push(chunk);
+      });
+      assert.equal(chunks.join(''), EXPECTED_CSV_STRING);
+    } catch (err) {
+      throw Error('Error formatting CSV', err);
+    }
   });
 });

@@ -68,10 +68,15 @@ var sendInstancesCsv = function (res, req, columns, options, callback) {
     if (ERR(err, callback)) return;
 
     var rows = result.rows;
-    csvMaker.rowsToCsv(rows, columns, function (err, csv) {
-      if (ERR(err, callback)) return;
-      res.attachment(req.params.filename);
-      res.send(csv);
+    res.attachment(req.params.filename);
+    csvMaker.rowsToCsv(rows, columns, function (err, chunk) {
+      if (ERR(err, callback)) {
+        return;
+      } else if (chunk) {
+        res.write(chunk);
+      } else {
+        res.end();
+      }
     });
   });
 };
@@ -208,10 +213,15 @@ router.get('/:filename', function (req, res, next) {
         ['Assigned manual grader', 'assigned_grader'],
         ['Last manual grader', 'last_grader'],
       ]);
-      csvMaker.rowsToCsv(result.rows, columns, function (err, csv) {
-        if (ERR(err, next)) return;
-        res.attachment(req.params.filename);
-        res.send(csv);
+      res.attachment(req.params.filename);
+      csvMaker.rowsToCsv(result.rows, columns, function (err, chunk) {
+        if (ERR(err, next)) {
+          return;
+        } else if (chunk) {
+          res.write(chunk);
+        } else {
+          res.end();
+        }
       });
     });
   } else if (req.params.filename === res.locals.submissionsForManualGradingCsvFilename) {
@@ -240,10 +250,15 @@ router.get('/:filename', function (req, res, next) {
         ['score_perc', null],
         ['feedback', null],
       ]);
-      csvMaker.rowsToCsv(result.rows, columns, function (err, csv) {
-        if (ERR(err, next)) return;
-        res.attachment(req.params.filename);
-        res.send(csv);
+      res.attachment(req.params.filename);
+      csvMaker.rowsToCsv(result.rows, columns, function (err, chunk) {
+        if (ERR(err, next)) {
+          return;
+        } else if (chunk) {
+          res.write(chunk);
+        } else {
+          res.end();
+        }
       });
     });
   } else if (
@@ -299,10 +314,15 @@ router.get('/:filename', function (req, res, next) {
         ['Manual points', 'manual_points'],
         ['Max manual points', 'max_manual_points'],
       ]);
-      csvMaker.rowsToCsv(result.rows, columns, function (err, csv) {
-        if (ERR(err, next)) return;
-        res.attachment(req.params.filename);
-        res.send(csv);
+      res.attachment(req.params.filename);
+      csvMaker.rowsToCsv(result.rows, columns, function (err, chunk) {
+        if (ERR(err, next)) {
+          return;
+        } else if (chunk) {
+          res.write(chunk);
+        } else {
+          res.end();
+        }
       });
     });
   } else if (req.params.filename === res.locals.filesForManualGradingZipFilename) {
@@ -383,10 +403,15 @@ router.get('/:filename', function (req, res, next) {
         ['groupName', 'name'],
         ['UID', 'uid'],
       ];
-      csvMaker.rowsToCsv(result.rows, columns, function (err, csv) {
-        if (ERR(err, next)) return;
-        res.attachment(req.params.filename);
-        res.send(csv);
+      res.attachment(req.params.filename);
+      csvMaker.rowsToCsv(result.rows, columns, function (err, chunk) {
+        if (ERR(err, next)) {
+          return;
+        } else if (chunk) {
+          res.write(chunk);
+        } else {
+          res.end();
+        }
       });
     });
   } else if (req.params.filename === res.locals.scoresGroupCsvFilename) {

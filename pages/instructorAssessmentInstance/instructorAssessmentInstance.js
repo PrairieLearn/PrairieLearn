@@ -92,13 +92,13 @@ router.get('/:filename', (req, res, next) => {
         ];
       });
       csvData.splice(0, 0, csvHeaders);
-      csvStringify(csvData, (err, csv) => {
+      res.attachment(req.params.filename);
+      csvStringify(csvData, function (err, chunk) {
         if (err) {
           throw Error('Error formatting CSV', err);
-        } else if (csv) {
-          res.write(csv);
+        } else if (chunk) {
+          res.write(chunk);
         } else {
-          res.attachment(req.params.filename);
           res.end();
         }
       });
