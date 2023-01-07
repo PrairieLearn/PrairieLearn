@@ -83,13 +83,11 @@ def prepare(element_html, data):
     if not (0 <= min_incorrect <= max_incorrect <= len_incorrect):
         raise ValueError('INTERNAL ERROR: incorrect number: (%d, %d, %d, %d)' % (min_incorrect, max_incorrect, len_incorrect, len_correct))
 
-    if allow_blank == True:
-        min_select = pl.get_integer_attrib(element, 'min-select', MIN_SELECT_BLANK)
-    else:
-        min_select = pl.get_integer_attrib(element, 'min-select', MIN_SELECT_DEFAULT)
-        if min_select < 1:
-            raise ValueError(f'The attribute min-select is {min_select} but must be at least 1')
-
+    min_select_default = MIN_SELECT_BLANK if allow_blank else MIN_SELECT_DEFAULT
+    min_select = pl.get_integer_attrib(element, 'min-select', min_select_default)
+    if min_select < min_select_default:
+        raise ValueError(f'the attribute min-select is {min_select} but must be at least {min_select_default}')
+ 
     max_select = pl.get_integer_attrib(element, 'max-select', number_answers)
 
     # Check that min_select, max_select, number_answers, min_correct, and max_correct all have sensible values relative to each other.
@@ -228,7 +226,7 @@ def render(element_html, data):
                     insert_text = f' at most <b>{max_options_to_select}</b> options.'
                 else:
                     # This is the case where we reveal nothing about min_options_to_select and max_options_to_select.
-                    if allow_blank == True:
+                    if allow_blank:
                         insert_text = ' at least 0 options.'
                     else:
                         insert_text = ' at least 1 option.'
