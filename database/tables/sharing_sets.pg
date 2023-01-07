@@ -1,7 +1,7 @@
 columns
-    id: bigint not null default nextval('sharing_sets_id_seq'::regclass)
     course_id: bigint not null
     description: text
+    id: bigint not null default nextval('sharing_sets_id_seq'::regclass)
     name: text
 
 indexes
@@ -13,3 +13,4 @@ foreign-key constraints
 
 referenced by
     course_sharing_sets: FOREIGN KEY (sharing_set_id) REFERENCES sharing_sets(id) ON UPDATE CASCADE ON DELETE CASCADE
+    question_sharing_sets: FOREIGN KEY (sharing_set_id) REFERENCES sharing_sets(id) ON UPDATE CASCADE ON DELETE CASCADE

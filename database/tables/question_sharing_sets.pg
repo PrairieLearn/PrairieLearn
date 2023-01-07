@@ -5,8 +5,6 @@ columns
 
 indexes
     question_sharing_sets_pkey: PRIMARY KEY (id) USING btree (id)
-    question_sharing_sets_question_id_sharing_set_id_key: UNIQUE (question_id, sharing_set_id) USING btree (question_id, sharing_set_id)
-    question_sharing_sets_sharing_set_id_idx: USING btree (sharing_set_id)
 
 foreign-key constraints
     question_sharing_sets_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE

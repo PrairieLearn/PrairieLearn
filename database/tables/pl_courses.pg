@@ -8,17 +8,17 @@ columns
     id: bigint not null default nextval('pl_courses_id_seq'::regclass)
     institution_id: bigint not null default 1
     manual_grading_visible: boolean default false
-    question_sharing_enabled: boolean default false
     options: jsonb not null default '{}'::jsonb
     path: text
+    question_sharing_enabled: boolean default false
     repository: text
+    sharing_id: text
+    sharing_name: text
     short_name: text
     sync_errors: text
     sync_job_sequence_id: bigint
     sync_warnings: text
     title: text
-    sharing_name: text
-    sharing_id: text
 
 indexes
     pl_courses_pkey: PRIMARY KEY (id) USING btree (id)

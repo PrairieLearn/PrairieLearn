@@ -1,6 +1,6 @@
 columns
-    id: bigint not null default nextval('course_sharing_sets_id_seq'::regclass)
     course_id: bigint not null
+    id: bigint not null default nextval('course_sharing_sets_id_seq'::regclass)
     sharing_set_id: bigint not null
 
 indexes
