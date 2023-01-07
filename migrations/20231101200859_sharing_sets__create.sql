@@ -25,10 +25,6 @@ ALTER TABLE pl_courses ADD COLUMN IF NOT EXISTS sharing_id text;
 ALTER TABLE pl_courses ADD COLUMN IF NOT EXISTS question_sharing_enabled boolean default false;
 
 
--- TODO: get rid of this hack, after we have a proper solution for working syncs with missing imported questions: 
-ALTER TABLE assessment_questions DROP CONSTRAINT assessment_questions_question_id_fkey;
-
-
 -- Need to run (or re-run) after the test course is synced
 -- Run with command:
 -- docker exec -it mypl psql postgres -f PrairieLearn/migrations/20231101200859_sharing_sets__create.sql

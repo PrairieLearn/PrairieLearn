@@ -19,6 +19,7 @@ DECLARE
     assessment_question JSONB;
     new_assessment_id bigint;
     new_assessment_ids bigint[];
+    new_question_id bigint;
     zone_index integer;
     new_zone_id bigint;
     new_alternative_group_id bigint;
@@ -385,6 +386,17 @@ BEGIN
                             computed_max_auto_points := (assessment_question->>'max_points')::double precision;
                         END IF;
                     END IF;
+
+                    IF (assessment_question->>'question_id')::bigint IS NULL THEN 
+                        -- TODO this should NEVER be hit in production, because it is inserting 
+                        -- fake questions into the question table to make syn succeed
+                        INSERT INTO questions AS dest (course_id, qid, uuid, deleted_at)
+                        VALUES (syncing_course_id, null, null, null) RETURNING dest.id INTO new_question_id;
+
+                    ELSE 
+                        new_question_id := (assessment_question->>'question_id')::bigint;
+                    END IF;
+
                     INSERT INTO assessment_questions AS aq (
                         number,
                         max_points,
@@ -414,9 +426,7 @@ BEGIN
                         (assessment_question->>'grade_rate_minutes')::double precision,
                         NULL,
                         new_assessment_id,
-                        COALESCE((assessment_question->>'question_id')::bigint, 999999), -- TODO FIXME. This is a dirty hack to avoid null question_id
-                        -- errors when there is an imported question that can't be accessed. Instead, we need to do something more clever like insert
-                        -- a dummy row into assessment_questions to enable sync success in environments where shared questions can't be accessed
+                        new_question_id,
                         new_alternative_group_id,
                         (assessment_question->>'number_in_alternative_group')::integer,
                         (assessment_question->>'advance_score_perc')::double precision,
