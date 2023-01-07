@@ -316,7 +316,7 @@ describe('test file editor', function () {
   });
 
   describe('the exampleCourse', function () {
-    before('set up testing server', helperServer.before(courseDirExampleCourse));
+    before('set up testing server', helperServer.before(courseDirExampleCourse, true));
 
     after('shut down testing server', helperServer.after);
 
