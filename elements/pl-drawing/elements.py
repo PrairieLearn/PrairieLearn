@@ -35,21 +35,27 @@ elements = {}
 
 
 class BaseElement:
+    @staticmethod
     def generate(element, data):
         return {}
 
+    @staticmethod
     def is_gradable():
         return False
 
+    @staticmethod
     def grade(ref, student, tol, angtol):
         return True
 
+    @staticmethod
     def grading_name(element):
         return None
 
+    @staticmethod
     def validate_attributes():
         return True
 
+    @staticmethod
     def get_attributes():
         """
         Returns a list of attributes that the element may contain.
@@ -58,6 +64,7 @@ class BaseElement:
 
 
 class ControlledLine(BaseElement):
+    @staticmethod
     def generate(el, data):
         if 'draw-error-box' in el.attrib:
             obj_draw = el.attrib['draw-error-box'] == 'true'
@@ -88,9 +95,11 @@ class ControlledLine(BaseElement):
             'offset_y': offset_y
         }
 
+    @staticmethod
     def is_gradable():
         return True
 
+    @staticmethod
     def grade(ref, st, tol, angtol):
         ex1, ex2 = st['x1'], st['x2']
         ey1, ey2 = st['y1'], st['y2']
@@ -101,11 +110,13 @@ class ControlledLine(BaseElement):
             abserr(ex1, rx1) <= ref['offset_x'] + tol and abserr(ey1, ry1) <= ref['offset_y'] + tol and abserr(ex2, rx2) <= ref['offset_x'] + tol and abserr(ey2, ry2) <= ref['offset_y'] + tol
         ) or (abserr(ex1, rx2) <= ref['offset_x'] + tol and abserr(ey1, ry2) <= ref['offset_y'] + tol and abserr(ex2, rx1) <= ref['offset_x'] + tol and abserr(ey2, ry1) <= ref['offset_y'] + tol)
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'x2', 'y2', 'x3', 'y3', 'draw-error-box', 'offset-tol-x', 'offset-tol-y', 'offset-control-tol-x', 'offset-control-tol-y', 'color', 'stroke-width', 'handle-radius']
 
 
 class ControlledCurvedLine(BaseElement):
+    @staticmethod
     def generate(el, data):
         if 'draw-error-box' in el.attrib:
             obj_draw = el.attrib['draw-error-box'] == 'true'
@@ -147,9 +158,11 @@ class ControlledCurvedLine(BaseElement):
             'offset_control_y': offset_control_y
         }
 
+    @staticmethod
     def is_gradable():
         return True
 
+    @staticmethod
     def grade(ref, st, tol, angtol):
         ex1, ex2, exm = st['x1'], st['x3'], st['x2']
         ey1, ey2, eym = st['y1'], st['y3'], st['y2']
@@ -160,11 +173,13 @@ class ControlledCurvedLine(BaseElement):
         b2 = (abserr(ex1, rx2) <= ref['offset_x'] + tol and abserr(ey1, ry2) <= ref['offset_y'] + tol and abserr(ex2, rx1) <= ref['offset_x'] + tol and abserr(ey2, ry1) <= ref['offset_y'] + tol and abserr(exm, rxm) <= ref['offset_control_x'] + tol and abserr(eym, rym) <= ref['offset_control_y'] + tol)
         return b1 or b2
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'x2', 'y2', 'x3', 'y3', 'draw-error-box', 'offset-tol-x', 'offset-tol-y', 'offset-control-tol-x', 'offset-control-tol-y', 'color', 'stroke-width', 'handle-radius']
 
 
 class Roller(BaseElement):
+    @staticmethod
     def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'brown1')
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
@@ -186,11 +201,13 @@ class Roller(BaseElement):
             'evented': drawing_defaults['selectable']
         }
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'height', 'width', 'angle', 'draw-pin', 'draw-ground', 'label', 'offsetx', 'offsety', 'color', 'stroke-color', 'stroke-width']
 
 
 class Clamped(BaseElement):
+    @staticmethod
     def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'black')
         return {
@@ -209,11 +226,13 @@ class Clamped(BaseElement):
             'evented': drawing_defaults['selectable']
         }
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'height', 'width', 'angle', 'label', 'offsetx', 'offsety', 'color', 'stroke-width']
 
 
 class FixedPin(BaseElement):
+    @staticmethod
     def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'brown1')
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
@@ -236,11 +255,13 @@ class FixedPin(BaseElement):
         }
         return obj
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'height', 'width', 'angle', 'draw-pin', 'draw-ground', 'label', 'offsetx', 'offsety', 'color', 'stroke-color', 'stroke-width']
 
 
 class Rod(BaseElement):
+    @staticmethod
     def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'white')
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
@@ -264,11 +285,13 @@ class Rod(BaseElement):
             'evented': drawing_defaults['selectable']
         }
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'x2', 'y2', 'width', 'draw-pin', 'label1', 'offsetx1', 'offsety1', 'label2', 'offsetx2', 'offsety2', 'color', 'stroke-color', 'stroke-width']
 
 
 class CollarRod(BaseElement):
+    @staticmethod
     def generate(el, data):
         w = pl.get_float_attrib(el, 'width', 20)
         color = pl.get_color_attrib(el, 'color', 'white')
@@ -299,11 +322,13 @@ class CollarRod(BaseElement):
             'evented': drawing_defaults['selectable']
         }
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'x2', 'y2', 'width', 'draw-pin', 'label1', 'offsetx1', 'offsety1', 'label2', 'offsetx2', 'offsety2', 'draw-collar-end1', 'w1', 'h1', 'draw-collar-end2', 'w2', 'h2', 'color', 'stroke-color', 'stroke-width']
 
 
 class ThreePointRod(BaseElement):
+    @staticmethod
     def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'white')
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
@@ -338,11 +363,13 @@ class ThreePointRod(BaseElement):
             'evented': drawing_defaults['selectable']
         }
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'x2', 'y2', 'x3', 'y3', 'width', 'draw-pin', 'label1', 'offsetx1', 'offsety1', 'label2', 'offsetx2', 'offsety2', 'label3', 'offsetx3', 'offsety3', 'color', 'stroke-color', 'stroke-width']
 
 
 class FourPointRod(BaseElement):
+    @staticmethod
     def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'white')
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
@@ -385,11 +412,13 @@ class FourPointRod(BaseElement):
             'evented': drawing_defaults['selectable']
         }
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'x2', 'y2', 'x3', 'y3', 'x4', 'y4', 'width', 'draw-pin', 'label1', 'offsetx1', 'offsety1', 'label2', 'offsetx2', 'offsety2', 'label3', 'offsetx3', 'offsety3', 'label4', 'offsetx4', 'offsety4', 'color', 'stroke-color', 'stroke-width']
 
 
 class Pulley(BaseElement):
+    @staticmethod
     def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'gray')
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
@@ -419,11 +448,13 @@ class Pulley(BaseElement):
             'fill': color
         }
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'x2', 'y2', 'x3', 'y3', 'alternative-path', 'radius', 'label', 'offsetx', 'offsety', 'color', 'stroke-color', 'stroke-width']
 
 
 class Vector(BaseElement):
+    @staticmethod
     def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'red3')
         anchor_is_tail = pl.get_boolean_attrib(el, 'anchor-is-tail', True)
@@ -488,9 +519,11 @@ class Vector(BaseElement):
             'evented': drawing_defaults['selectable']
         }
 
+    @staticmethod
     def is_gradable():
         return True
 
+    @staticmethod
     def grade(ref, st, tol, angtol):
         epos = np.array([st['left'], st['top']]).astype(np.float64)
         eang = st['angle']
@@ -537,11 +570,13 @@ class Vector(BaseElement):
 
         return True
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'anchor-is-tail', 'width', 'angle', 'label', 'offsetx', 'offsety', 'color', 'stroke-width', 'arrow-head-width', 'arrow-head-length', 'disregard-sense', 'draw-error-box', 'offset-forward', 'offset-backward', 'optional-grading']
 
 
 class PairedVector(BaseElement):
+    @staticmethod
     def generate(el, data):
         grid_size = pl.get_integer_attrib(el, 'grid-size', 20)
         color = pl.get_color_attrib(el, 'color', 'red3')
@@ -631,9 +666,11 @@ class PairedVector(BaseElement):
             'evented': drawing_defaults['selectable']
         }
 
+    @staticmethod
     def is_gradable():
         return True
 
+    @staticmethod
     def grade(ref, st, tol, angtol):
         ref2 = ref.copy()
         st2 = st.copy()
@@ -663,21 +700,25 @@ class PairedVector(BaseElement):
         angdiff = abs(angdiff - 180)
         return ((poss[0][1] and poss[1][0]) or (poss[0][0] and poss[1][1])) and angdiff < 2 * angtol
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'x2', 'y2', 'anchor-is-tail', 'width', 'angle1', 'angle2', 'label', 'offsetx', 'offsety', 'color', 'stroke-width', 'arrow-head-width', 'arrow-head-length', 'disregard-sense', 'draw-error-box', 'offset-forward', 'offset-backward', 'optional-grading', 'weight']
 
 
 class DoubleHeadedVector(BaseElement):
+    @staticmethod
     def generate(el, data):
         obj = Vector.generate(el, data)
         obj['type'] = 'pl-double-headed-vector'
         return obj
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'anchor-is-tail', 'width', 'angle', 'label', 'offsetx', 'offsety', 'color', 'stroke-width', 'arrow-head-width', 'arrow-head-length', 'disregard-sense', 'draw-error-box', 'offset-forward', 'offset-backward', 'optional-grading']
 
 
 class ArcVector(BaseElement):
+    @staticmethod
     def generate(el, data):
         disregard_sense = pl.get_boolean_attrib(el, 'disregard-sense', False)
         color = pl.get_color_attrib(el, 'color', 'purple')
@@ -736,9 +777,11 @@ class ArcVector(BaseElement):
             'clockwiseDirection': clockwise_direction
         }
 
+    @staticmethod
     def is_gradable():
         return True
 
+    @staticmethod
     def grade(ref, st, tol, angtol):
         epos = np.array([st['left'], st['top']]).astype(np.float64)
         st_start_arrow = st['drawStartArrow']
@@ -758,11 +801,13 @@ class ArcVector(BaseElement):
 
         return True
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'radius', 'start-angle', 'end-angle', 'draw-center', 'clockwise-direction', 'label', 'offsetx', 'offsety', 'color', 'stroke-width', 'arrow-head-width', 'arrow-head-length', 'disregard-sense', 'draw-error-box', 'anchor-is-tail']
 
 
 class DistributedLoad(BaseElement):
+    @staticmethod
     def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'red3')
         anchor_is_tail = pl.get_boolean_attrib(el, 'anchor-is-tail', True)
@@ -838,9 +883,11 @@ class DistributedLoad(BaseElement):
             'selectable': drawing_defaults['selectable']
         }
 
+    @staticmethod
     def is_gradable():
         return True
 
+    @staticmethod
     def grade(ref, st, tol, angtol):
         epos = np.array([st['left'], st['top']]).astype(np.float64)
         eang = st['angle']
@@ -895,11 +942,13 @@ class DistributedLoad(BaseElement):
 
         return True
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'anchor-is-tail', 'width', 'spacing', 'w1', 'w2', 'angle', 'label1', 'offsetx1', 'offsety1', 'label2', 'offsetx2', 'offsety2', 'color', 'stroke-width', 'arrow-head-width', 'arrow-head-length', 'disregard-sense', 'draw-error-box', 'offset-forward', 'offset-backward']
 
 
 class Point(BaseElement):
+    @staticmethod
     def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'black')
         # Error box for grading
@@ -940,9 +989,11 @@ class Point(BaseElement):
             'evented': drawing_defaults['selectable']
         }
 
+    @staticmethod
     def is_gradable():
         return True
 
+    @staticmethod
     def grade(ref, st, tol, angtol):
         epos = np.array([st['left'], st['top']]).astype(np.float64)
         rpos = np.array([ref['left'], ref['top']])
@@ -953,11 +1004,13 @@ class Point(BaseElement):
 
         return True
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'radius', 'label', 'offsetx', 'offsety', 'opacity', 'color']
 
 
 class Coordinates(BaseElement):
+    @staticmethod
     def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'black')
         return {
@@ -984,11 +1037,13 @@ class Coordinates(BaseElement):
             'selectable': drawing_defaults['selectable']
         }
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'width', 'angle', 'label', 'offsetx', 'offsety', 'label-x', 'offsetx-label-x', 'offsety-label-x', 'label-y', 'offsetx-label-y', 'offsety-label-y', 'color', 'stroke-width', 'arrow-head-width', 'arrow-head-length']
 
 
 class Dimensions(BaseElement):
+    @staticmethod
     def generate(el, data):
         color = pl.get_color_attrib(el, 'stroke-color', 'black')
         offset = pl.get_float_attrib(el, 'dim-offset', 0)
@@ -1045,11 +1100,13 @@ class Dimensions(BaseElement):
             'selectable': drawing_defaults['selectable']
         }
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'width', 'angle', 'x2', 'y2', 'dim-offset', 'dim-offset-angle', 'start-support-line', 'end-support-line', 'label', 'offsetx', 'offsety', 'stroke-color', 'stroke-width', 'draw-start-arrow', 'draw-end-arrow', 'arrow-head-width', 'arrow-head-length']
 
 
 class ArcDimensions(BaseElement):
+    @staticmethod
     def generate(el, data):
         color = pl.get_color_attrib(el, 'stroke-color', 'black')
         return {
@@ -1077,11 +1134,13 @@ class ArcDimensions(BaseElement):
             'evented': drawing_defaults['selectable']
         }
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'radius', 'start-angle', 'end-angle', 'start-support-line', 'end-support-line', 'draw-center', 'draw-start-arrow', 'draw-end-arrow', 'label', 'offsetx', 'offsety', 'stroke-color', 'stroke-width', 'arrow-head-width', 'arrow-head-length']
 
 
 class Rectangle(BaseElement):
+    @staticmethod
     def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'green1')
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
@@ -1102,11 +1161,13 @@ class Rectangle(BaseElement):
             'evented': pl.get_boolean_attrib(el, 'selectable', drawing_defaults['selectable'])
         }
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'height', 'width', 'angle', 'opacity', 'color', 'stroke-color', 'stroke-width', 'selectable']
 
 
 class Triangle(BaseElement):
+    @staticmethod
     def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'red1')
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
@@ -1125,11 +1186,13 @@ class Triangle(BaseElement):
             'evented': pl.get_boolean_attrib(el, 'selectable', drawing_defaults['selectable'])
         }
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'x2', 'y2', 'x3', 'y3', 'color', 'opacity', 'stroke-color', 'stroke-width', 'selectable']
 
 
 class Circle(BaseElement):
+    @staticmethod
     def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'grey')
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
@@ -1152,11 +1215,13 @@ class Circle(BaseElement):
             'scaling': True
         }
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'radius', 'opacity', 'color', 'stroke-color', 'stroke-width', 'label', 'offsetx', 'offsety', 'selectable']
 
 
 class Polygon(BaseElement):
+    @staticmethod
     def generate(el, data):
         pointlist = json.loads(pl.get_string_attrib(el, 'plist', '[{"x": 66.21260699999999, "y": 82.746078}, {"x": 25.880586, "y": 78.50701}, {"x": 17.448900000000002, "y": 38.839035}, {"x": 52.569852, "y": 18.561946}, {"x": 82.707481, "y": 45.697991}]'))
         color = pl.get_color_attrib(el, 'color', 'white')
@@ -1172,11 +1237,13 @@ class Polygon(BaseElement):
             'evented': pl.get_boolean_attrib(el, 'selectable', drawing_defaults['selectable']),
         }
 
+    @staticmethod
     def get_attributes():
         return ['plist', 'opacity', 'color', 'stroke-color', 'stroke-width', 'selectable']
 
 
 class Spring(BaseElement):
+    @staticmethod
     def generate(el, data):
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         x1 = pl.get_float_attrib(el, 'x1', drawing_defaults['x1'])
@@ -1205,11 +1272,13 @@ class Spring(BaseElement):
             'evented': drawing_defaults['selectable']
         }
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'width', 'angle', 'height', 'interval', 'x2', 'y2', 'stroke-color', 'stroke-width', 'draw-pin']
 
 
 class Line(BaseElement):
+    @staticmethod
     def generate(el, data):
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         x1 = pl.get_float_attrib(el, 'x1', drawing_defaults['x1'])
@@ -1241,11 +1310,13 @@ class Line(BaseElement):
             'evented': drawing_defaults['selectable']
         }
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'width', 'angle', 'x2', 'y2', 'opacity', 'stroke-color', 'stroke-width', 'dashed-size']
 
 
 class Arc(BaseElement):
+    @staticmethod
     def generate(el, data):
         stroke_color = pl.get_color_attrib(el, 'stroke-color', 'black')
         theta1 = pl.get_float_attrib(el, 'start-angle', drawing_defaults['angle']) * math.pi / 180
@@ -1271,11 +1342,13 @@ class Arc(BaseElement):
             'originY': 'center'
         }
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'radius', 'start-angle', 'end-angle', 'opacity', 'stroke-color', 'stroke-width', 'dashed-size']
 
 
 class Text(BaseElement):
+    @staticmethod
     def generate(el, data):
         return {
             'left': pl.get_float_attrib(el, 'x1', drawing_defaults['x1']),
@@ -1287,11 +1360,13 @@ class Text(BaseElement):
             'latex': pl.get_boolean_attrib(el, 'latex', True)
         }
 
+    @staticmethod
     def get_attributes():
         return ['label', 'latex', 'font-size', 'x1', 'y1', 'offsetx', 'offsety']
 
 
 class Axes(BaseElement):
+    @staticmethod
     def generate(el, data):
         if 'origin' in el.attrib:
             origin = json.loads(pl.get_string_attrib(el, 'origin'))
@@ -1323,11 +1398,13 @@ class Axes(BaseElement):
             'evented': drawing_defaults['selectable']
         }
 
+    @staticmethod
     def get_attributes():
         return ['origin', 'xneg', 'yneg', 'xpos', 'ypos', 'label-x', 'offsetx-label-x', 'offsety-label-x', 'label-y', 'offsetx-label-y', 'offsety-label-y', 'supporting-lines', 'grid-label', 'color', 'stroke-width']
 
 
 class GraphLine(BaseElement):
+    @staticmethod
     def generate(el, data):
         curved_line = False
 
@@ -1423,6 +1500,7 @@ class GraphLine(BaseElement):
                         'type': 'pl-controlled-curved-line'})
         return obj
 
+    @staticmethod
     def grading_name(element):
         curved_line = False
         if 'end-points' in element.attrib:
@@ -1445,6 +1523,7 @@ class GraphLine(BaseElement):
         else:
             return 'pl-controlled-curved-line'
 
+    @staticmethod
     def get_attributes():
         return ['origin', 'end-points', 'end-gradients', 'draw-error-box', 'offset-tol-x', 'offset-tol-y', 'offset-control-tol-x', 'offset-control-tol-y', 'color', 'stroke-width']
 
@@ -1484,17 +1563,21 @@ elements['pl-paired-vector'] = PairedVector
 
 class UnplaceableBaseElement(BaseElement):
     # Used only to get attributes
+    @staticmethod
     def generate(element):
         raise Exception('Cannot create element!')
 
+    @staticmethod
     def is_gradable():
         return False
 
+    @staticmethod
     def grade(ref, st, tol, angtol):
         raise Exception('This element should not be graded!  If you see this message, something has gone terribly wrong!')
 
 
 class DrawingElement(UnplaceableBaseElement):
+    @staticmethod
     def get_attributes():
         return ['gradable',
                 'answers-name',
@@ -1512,34 +1595,41 @@ class DrawingElement(UnplaceableBaseElement):
 
 
 class DrawingInitial(UnplaceableBaseElement):
+    @staticmethod
     def get_attributes():
         return ['draw-error-box']
 
 
 class DrawingAnswer(UnplaceableBaseElement):
+    @staticmethod
     def get_attributes():
         return ['draw-error-box']
 
 
 class DrawingGroup(UnplaceableBaseElement):
+    @staticmethod
     def get_attributes():
         return ['visible']
 
 
 class DrawingControls(UnplaceableBaseElement):
+    @staticmethod
     def get_attributes():
         return []
 
 
 class DrawingControlsGroup(UnplaceableBaseElement):
+    @staticmethod
     def get_attributes():
         return ['label']
 
 
 class DrawingControlsButton(UnplaceableBaseElement):
+    @staticmethod
     def validate_attributes():
         return False
 
+    @staticmethod
     def get_attributes():
         return ['type']
 

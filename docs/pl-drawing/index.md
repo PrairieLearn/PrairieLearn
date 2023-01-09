@@ -1589,6 +1589,7 @@ Here is an example definition of the `pl-point` element:
 
 ```python
 class Point(BaseElement):
+    @staticmethod
     def generate(el, data):
         color = pl.get_color_attrib(el, 'color', 'black')
 
@@ -1603,9 +1604,11 @@ class Point(BaseElement):
             'evented': drawing_defaults['selectable']
         }
 
+    @staticmethod
     def is_gradable():
         return True
 
+    @staticmethod
     def grade(ref, st, tol, angtol):
         epos = np.array([st['left'], st['top']]).astype(np.float64)
         rpos = np.array([ref['left'], ref['top']])
@@ -1614,6 +1617,7 @@ class Point(BaseElement):
             return False
         return True
 
+    @staticmethod
     def get_attributes():
         return ['x1', 'y1', 'radius', 'label', 'offsetx', 'offsety', 'color']
 ```
