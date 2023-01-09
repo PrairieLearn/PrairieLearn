@@ -317,6 +317,38 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
     });
   }
 
+  /** @type {Set<string>} */
+  const importedQids = new Set();
+  /** @type {Map<string, string[]>} */
+  const importedQidAssessmentMap = new Map();
+  Object.entries(assessments).forEach(([tid, assessment]) => {
+    if (!assessment.data) return;
+    (assessment.data.zones || []).forEach((zone) => {
+      (zone.questions || []).forEach((question) => {
+        let qids = question.alternatives
+          ? question.alternatives.map((alternative) => alternative.id)
+          : [];
+        if (question.id) {
+          qids.push(question.id);
+        }
+        qids.forEach((qid) => {
+          if (qid[0] === '@') {
+            importedQids.add(qid);
+            let tids = importedQidAssessmentMap.get(qid);
+            if (!tids) {
+              tids = [];
+              importedQidAssessmentMap.set(qid, tids);
+            }
+            tids.push(tid);
+          }
+        });
+      });
+    });
+  });
+  // TODO: check if config allows question sharing
+  // TODO: check if this course has question sharing enabled
+  // TODO: run query to check all imported questions, if this course actually has permissions on them
+
   // TODO: this query is very inefficient, because it pulls in names of ALL shared questions that this
   // course has permissions on. We can optimize by only pulling in ones referenced by existing assessments.
   const importedQuestions = await sqldb.queryAsync(sql.get_all_imported_questions, {
