@@ -12,6 +12,7 @@ get_question_details <- function(dir, pattern = "^test.*\\.[rR]$") {
     files <- list.files(path = dir,
                         pattern = pattern,
                         full.names = FALSE)
+    files <- sort(files)
 
     rl <- lapply(files, function(f) {
         lines <- readLines(file.path(dir, f))
