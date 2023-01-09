@@ -7,9 +7,11 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 13,
   },
+  plugins: ['no-floating-promise'],
   rules: {
     curly: ['error', 'multi-line', 'consistent'],
     eqeqeq: ['error', 'smart'],
+    'no-floating-promise/no-floating-promise': 'error',
     'handle-callback-err': 'error',
     'no-restricted-syntax': [
       'error',

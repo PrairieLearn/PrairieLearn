@@ -85,7 +85,7 @@ describe('local locks', function () {
                 resolve();
               }
             }, 100);
-          })();
+          })().then(() => {});
         }
       });
     });
