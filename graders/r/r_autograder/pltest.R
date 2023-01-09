@@ -19,7 +19,8 @@ result <- tryCatch({
                                                          verbose = Sys.getenv("DEBUG", "off") == "on"))
 
     ## Aggregate test results and process NAs as some question may have exited
-    res <- merge(test_results, question_details, by = "file", all = TRUE)
+    test_results <- test_results[with(test_results, order(file, first)), ]
+    res <- cbind(test_results, question_details)
     ## Correct answers get full points, other get nothing
     res$points <- ifelse( !is.na(res$result) & res$result==TRUE,  res$max_points, 0)
     ## For false answer we collate call and diff output (from diffobj::diffPrint)
