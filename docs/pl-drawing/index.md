@@ -1562,11 +1562,22 @@ This will load the `BaseElement` class, which contains the following method defi
 
 ```python
 class BaseElement:
+    @staticmethod
     def generate(element)
+
+    @staticmethod
     def is_gradable()
+
+    @staticmethod
     def grade(ref, student, tol, angtol)
+
+    @staticmethod
     def grading_name(element)
+
+    @staticmethod
     def validate_attributes()
+
+    @staticmethod
     def get_attributes()
 ```
 
