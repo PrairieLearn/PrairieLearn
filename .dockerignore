@@ -9,9 +9,11 @@
 !.mocharc.js
 !.prettierignore
 !.prettierrc.json
+!.yarnrc.yml
 !tsconfig.json
 !turbo.json
 !pyrightconfig.json
+!.yarn/
 !admin_queries/
 !api/
 !cron/
