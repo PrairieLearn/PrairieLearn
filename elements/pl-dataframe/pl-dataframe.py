@@ -2,7 +2,7 @@ from typing import cast
 
 import chevron
 import lxml.html
-import pandas
+import pandas as pd
 import prairielearn as pl
 
 SHOW_HEADER_DEFAULT = True
@@ -51,10 +51,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # Always assume that entry in params dict is serialized dataframe
     frame = pl.from_json(data["params"][varname])
 
-    if not isinstance(frame, pandas.DataFrame):
+    if not isinstance(frame, pd.DataFrame):
         raise ValueError(f"Parameter name '{varname}' does not encode a dataframe.")
 
-    frame = cast(pandas.DataFrame, frame)
+    frame = cast(pd.DataFrame, frame)
 
     frame_style = frame.style
 
@@ -71,8 +71,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         frame_style.format(subset=float_column_names, formatter=f"{{:.{num_digits}g}}")
 
     if show_dtype:
-        descriptors = frame.agg([lambda s: s.dtype])
-        descriptors.index = pandas.Index(["dtype"])
+        descriptors: pd.DataFrame = frame.agg([lambda s: s.dtype]).set_axis(
+            ["dtype"], copy=False
+        )
         other = descriptors.style.applymap(lambda v: "font-weight: bold;")
         frame_style.set_table_styles(
             [{"selector": ".foot_row0", "props": "border-top: 1px solid black;"}]
