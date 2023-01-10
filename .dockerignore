@@ -1,7 +1,7 @@
-# blacklist all
+# denylist all
 *
 
-# whitelist things to copy
+# allowlist things to copy
 !.editorconfig
 !.eslintignore
 !.eslintrc.js
@@ -14,6 +14,8 @@
 !turbo.json
 !pyrightconfig.json
 !.yarn/
+.yarn/cache
+.yarn/install-state.gz
 !admin_queries/
 !api/
 !cron/

@@ -19,7 +19,7 @@ RUN cd /PrairieLearn \
     && yarn install --frozen-lockfile \
     && yarn cache clean
 
-# NOTE: Modify .dockerignore to whitelist files/directories to copy.
+# NOTE: Modify .dockerignore to allowlist files/directories to copy.
 COPY . /PrairieLearn/
 
 # set up PrairieLearn and run migrations to initialize the DB
