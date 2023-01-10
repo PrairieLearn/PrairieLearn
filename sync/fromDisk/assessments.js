@@ -269,6 +269,16 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
   return assessmentParams;
 }
 
+// function extractInfo(qid) {
+//   const firstSlash = qid.indexOf('/');
+//   const sourceCourse = qid.substring(1, firstSlash);
+//   const questionDirectory = qid.substring(firstSlash + 1, qid.length);
+//   return {
+//     sourceCourse: sourceCourse,
+//     qid: questionDirectory
+//   }
+// }
+
 /**
  * @param {any} courseId
  * @param {any} courseInstanceId
@@ -373,7 +383,17 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
     }
   }
 
+  // let questionInfo = Array.from(importedQids).map(extractInfo);
+
   // TODO: run query to check all imported questions, if this course actually has permissions on them
+
+  // const inImportedCourse = await checkImportedQid(sourceCourse, questionDirectory);
+  // // TODO: give a more verbose error message if the reason the question isn't found
+  // // is because the course slug is invalid/doesn't exist? or just give the same message as if the question id doesn't exist?
+  // if (!config.devMode && !inImportedCourse) {
+  //   // In dev mode, ignore errors because imported questions are most likely from courses not in the server
+  //   missingQids.add(qid);
+  // }
 
   // TODO: this query is very inefficient, because it pulls in names of ALL shared questions that this
   // course has permissions on. We can optimize by only pulling in ones referenced by existing assessments.
