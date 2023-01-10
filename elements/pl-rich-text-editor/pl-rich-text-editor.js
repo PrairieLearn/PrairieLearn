@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global Quill,he, MathJax, QuillMarkdown, showdown */
+/* global Quill,he, MathJax, QuillMarkdown, showdown, outputComponent */
 
 window.PLRTE = function (uuid, options) {
   if (!options.modules) options.modules = {};
