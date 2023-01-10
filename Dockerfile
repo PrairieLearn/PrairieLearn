@@ -10,7 +10,7 @@ ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
 # This is suboptimal, as a change to any file under `package/` will
 # invalidate this layer's cache, but it's unavoidable.
 COPY packages/ /PrairieLearn/packages/
-COPY package.json yarn.lock /PrairieLearn/
+COPY package.json yarn.lock .yarn .yarnrc.yml /PrairieLearn/
 RUN cd /PrairieLearn \
     && yarn install --frozen-lockfile \
     && yarn cache clean
