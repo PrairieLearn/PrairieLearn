@@ -44,7 +44,7 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
   perf.start('sync');
 
   const courseData = await perf.timedAsync('loadCourseData', () =>
-    courseDB.loadFullCourse(courseDir, courseId)
+    courseDB.loadFullCourse(courseDir)
   );
   logger.info('Syncing info to database');
   await perf.timedAsync('syncCourseInfo', () => syncCourseInfo.sync(courseData, courseId));
