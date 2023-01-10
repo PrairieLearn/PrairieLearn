@@ -345,8 +345,34 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
       });
     });
   });
-  // TODO: check if config allows question sharing
-  // TODO: check if this course has question sharing enabled
+
+  if (importedQids.size > 0) {
+    if (!config.questionSharingEnabled) {
+      for (let qid of importedQids) {
+        importedQidAssessmentMap.get(qid).forEach((tid) => {
+          // TODO: should this be an error or a warning?
+          infofile.addWarning(
+            assessments[tid],
+            `You have attempted to import a question with '@', but question sharing is not enabled on this server.`
+          );
+        });
+      }
+    }
+
+    let result = await sqldb.queryOneRowAsync(sql.get_course_info, { courseId: courseId });
+    if (!result.rows[0].question_sharing_enabled) {
+      for (let qid of importedQids) {
+        importedQidAssessmentMap.get(qid).forEach((tid) => {
+          // TODO: should this be an error or a warning?
+          infofile.addWarning(
+            assessments[tid],
+            `You have attempted to import a question with '@', but question sharing is not enabled for your course.`
+          );
+        });
+      }
+    }
+  }
+
   // TODO: run query to check all imported questions, if this course actually has permissions on them
 
   // TODO: this query is very inefficient, because it pulls in names of ALL shared questions that this

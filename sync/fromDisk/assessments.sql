@@ -25,3 +25,6 @@ join sharing_sets as ss on qss.sharing_set_id = ss.id
 join course_sharing_sets as css on ss.id = css.sharing_set_id
 join pl_courses as c on c.id = ss.course_id
 where css.course_id = $courseId;
+
+-- BLOCK get_course_info
+SELECT question_sharing_enabled FROM pl_courses WHERE id = $courseId;
