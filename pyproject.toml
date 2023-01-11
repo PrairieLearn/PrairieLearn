@@ -15,6 +15,7 @@ skip_glob = ["tools/*", "exampleCourse/*", "testCourse/*", "node_modules/*"]
 
 [tool.pyright]
 include = [
+    "./elements/pl-external-grader-variables",
     "./elements/pl-hidden-hints",
     "./elements/pl-symbolic-input",
     "./python/conftest.py",
