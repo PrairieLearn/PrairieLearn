@@ -3651,7 +3651,7 @@ __metadata:
     async: ^3.2.4
     async-mutex: ^0.4.0
     async-stacktrace: 0.0.2
-    aws-sdk: ^2.1292.0
+    aws-sdk: ^2.1293.0
     backbone: ^1.4.1
     base64url: ^3.0.1
     better-ajv-errors: ^1.2.0
@@ -4264,7 +4264,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"aws-sdk@npm:^2.1292.0, aws-sdk@npm:^2.293.0, aws-sdk@npm:^2.80.0":
+"aws-sdk@npm:^2.1293.0":
+  version: 2.1293.0
+  resolution: "aws-sdk@npm:2.1293.0"
+  dependencies:
+    buffer: 4.9.2
+    events: 1.1.1
+    ieee754: 1.1.13
+    jmespath: 0.16.0
+    querystring: 0.2.0
+    sax: 1.2.1
+    url: 0.10.3
+    util: ^0.12.4
+    uuid: 8.0.0
+    xml2js: 0.4.19
+  checksum: d1673c2a7c7d9d79c273dc9d8ae9058c7f3756199ce82aca0f4609edb84f26477059a78428ccd8bf328f54a986c831bc6800ca5dd7c457ba5116ebeefb02d819
+  languageName: node
+  linkType: hard
+
+"aws-sdk@npm:^2.293.0, aws-sdk@npm:^2.80.0":
   version: 2.1292.0
   resolution: "aws-sdk@npm:2.1292.0"
   dependencies:
