@@ -2,9 +2,7 @@
   "name": "@prairielearn/compiled-assets",
   "version": "1.0.0",
   "main": "dist/index.js",
-  "bin": {
-    "compiled-assets": "dist/cli.js"
-  },
+  "bin": "dist/cli.js",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
