@@ -3500,7 +3500,7 @@ __metadata:
     "@types/tmp": ^0.2.3
     "@types/uuid": ^8.3.4
     "@types/yargs": ^17.0.15
-    ace-builds: ^1.13.1
+    ace-builds: ^1.14.0
     ace-code: ^1.13.1
     ajv: ^7.2.4
     ansi_up: ^5.1.0
@@ -3674,10 +3674,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ace-builds@npm:^1.13.1":
-  version: 1.13.1
-  resolution: "ace-builds@npm:1.13.1"
-  checksum: 51cf3bf42b6ea5899ce7078f3b2bdbe8d585d201202d43ad6390330c8dab05c80f9b774e100471246c4465ac350b16497b56f05270f0245a9139c600cf06e635
+"ace-builds@npm:^1.14.0":
+  version: 1.14.0
+  resolution: "ace-builds@npm:1.14.0"
+  checksum: 11d07e0875381ff8061beed336c52f2bc532fbf51fc4a410d97789b27e47d2094fbb779dffe00db00c6d781f3f72bdc83313b2ad6460e5b8e5fa8a343c5f3720
   languageName: node
   linkType: hard
 
