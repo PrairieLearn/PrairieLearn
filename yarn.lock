@@ -3635,7 +3635,7 @@ __metadata:
     socket.io-redis: ^6.1.1
     streamifier: ^0.1.1
     tablesorter: ^2.31.3
-    tar: ^6.1.12
+    tar: ^6.1.13
     three: ^0.147.0
     tmp: 0.2.1
     tmp-promise: ^3.0.3
@@ -13994,7 +13994,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tar@npm:^6.1.11, tar@npm:^6.1.12":
+"tar@npm:^6.1.11":
   version: 6.1.12
   resolution: "tar@npm:6.1.12"
   dependencies:
@@ -14008,7 +14008,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tar@npm:^6.1.2":
+"tar@npm:^6.1.13, tar@npm:^6.1.2":
   version: 6.1.13
   resolution: "tar@npm:6.1.13"
   dependencies:
