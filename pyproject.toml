@@ -1,5 +1,4 @@
 [tool.flake8]
-# TODO add python directory here in later PR
 filename = ["./elements/**/*.py", "./python/*.py"]
 ignore = ["E501"]
 
