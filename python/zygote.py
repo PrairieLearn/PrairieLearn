@@ -70,7 +70,7 @@ def try_dumps(obj, sort_keys=False, allow_nan=False):
     try:
         return json.dumps(obj, sort_keys=sort_keys, allow_nan=allow_nan)
     except TypeError:
-        print(f"Error converting this object to json:\n{obj:s}\n")
+        print(f"Error converting this object to json:\n{obj}\n")
         raise
 
 
