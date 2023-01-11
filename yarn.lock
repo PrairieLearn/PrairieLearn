@@ -3566,7 +3566,7 @@ __metadata:
     jest: ^29.3.1
     jju: ^1.3.0
     jose: ^4.11.1
-    jquery: ^3.6.1
+    jquery: ^3.6.3
     jquery-ui-dist: ^1.13.2
     jquery-ui-touch-punch: ^0.2.3
     js-cookie: ^2.2.1
@@ -9667,10 +9667,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jquery@npm:>=1.2.6, jquery@npm:>=1.8.0 <4.0.0, jquery@npm:^3.6.1":
+"jquery@npm:>=1.2.6, jquery@npm:>=1.8.0 <4.0.0":
   version: 3.6.1
   resolution: "jquery@npm:3.6.1"
   checksum: 6177d866a74f1137cad800f142c7cdbd5ab19cd4282546f8bdb4890c9f933b1d542ab96f2aa15d007e43c98de7315b0513e849ec5359d3ac5640f720892fe547
+  languageName: node
+  linkType: hard
+
+"jquery@npm:^3.6.3":
+  version: 3.6.3
+  resolution: "jquery@npm:3.6.3"
+  checksum: 0fd366bdcaa0c84a7a8751ce20f8192290141913978b5059574426d9b01f4365daa675f95aab3eec94fd794d27b08d32078a2236bef404b8ba78073009988ce6
   languageName: node
   linkType: hard
 
