@@ -5,7 +5,7 @@ flake8-black==0.3.5
 flake8-isort==5.0.3
 lxml==4.9.1
 matplotlib==3.6.2
-networkx==2.8.8
+networkx==3.0
 numpy==1.23.5
 pandas==1.5.2
 pycryptodome==3.16.0
