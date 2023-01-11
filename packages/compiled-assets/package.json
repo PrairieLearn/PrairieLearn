@@ -2,9 +2,7 @@
   "name": "@prairielearn/compiled-assets",
   "version": "1.0.0",
   "main": "dist/index.js",
-  "bin": {
-    "compiled-assets": "dist/cli.js"
-  },
+  "bin": "dist/cli.js",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
@@ -23,6 +21,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "*",
+    "@types/node": "^18.11.18",
     "chai": "^4.3.7",
     "get-port": "^5.1.1",
     "mocha": "^10.1.0",

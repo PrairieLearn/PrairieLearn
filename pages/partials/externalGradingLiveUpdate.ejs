@@ -19,8 +19,9 @@
 
       var status = $(elem).data('grading-job-status');
       var submissionId = $(elem).attr('id').replace('submission-', '');
-      updateStatus(submissionId, status);
-      if (status !== 'graded' && status !== 'canceled') {
+      updateStatus({id: submissionId, grading_job_status: status});
+      // Grading is not pending if it's done, or it's save-only, or has been canceled
+      if (status !== 'graded' && status !== 'none' && status !== 'canceled') {
         gradingPending = true;
       }
     });
