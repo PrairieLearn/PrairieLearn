@@ -59,14 +59,14 @@ RETURNING
 -- BLOCK select_sharing_sets
 SELECT
     ss.id,
-    ss.name, 
-    CASE WHEN count(qss.question_id = $question_id) > 0 THEN 'true' ELSE 'false' END AS in_set 
+    ss.name,
+    (count(qss.question_id = $question_id) > 0)::boolean AS in_set
 FROM
     sharing_sets AS ss
     LEFT JOIN question_sharing_sets AS qss ON qss.sharing_set_id = ss.id
 WHERE
     ss.course_id = $course_id
-GROUP BY 
+GROUP BY
     ss.id, ss.name;
 
 -- BLOCK sharing_set_add
