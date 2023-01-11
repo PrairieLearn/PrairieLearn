@@ -1,16 +1,9 @@
-# lol
-import sys
-import os
-
-sys.path.insert(
-    0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../lib"))
-)
-
-import prairielearn as pl  # noqa: E402
-import lxml.html  # noqa: E402
-import pytest
 import math
-from typing import Callable, Optional
+from typing import Callable
+
+import lxml.html
+import prairielearn as pl
+import pytest
 
 
 def test_inner_html() -> None:
@@ -19,15 +12,6 @@ def test_inner_html() -> None:
 
     e = lxml.html.fragment_fromstring("<div>test&gt;test</div>")
     assert pl.inner_html(e) == "test&gt;test"
-
-
-def prepare_partial_score_dict(
-    score: float, weight: Optional[int] = None
-) -> pl.PartialScore:
-    if weight is not None:
-        return {"score": score, "weight": weight}
-
-    return {"score": score}
 
 
 @pytest.mark.parametrize(
@@ -56,9 +40,9 @@ def test_set_score_data(
 ) -> None:
 
     question_data["partial_scores"] = {
-        "p1": prepare_partial_score_dict(score_1, 2),
-        "p2": prepare_partial_score_dict(score_2, 4),
-        "p3": prepare_partial_score_dict(score_3),  # No weight tests default behavior
+        "p1": {"score": score_1, "weight": 2},
+        "p2": {"score": score_2, "weight": 4},
+        "p3": {"score": score_3},  # No weight tests default behavior
     }
 
     # Assert equality

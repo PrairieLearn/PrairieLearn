@@ -77,9 +77,9 @@ def set_weighted_score_data(data: QuestionData, weight_default: int=1) -> None:
 def set_all_or_nothing_score_data(data: QuestionData) -> None:
     """Gives points to main question score if all partial scores are correct."""
 
-    data['score'] = 1.0 if all_questions_correct(data) else 0.0
+    data['score'] = 1.0 if all_partial_scores_correct(data) else 0.0
 
-def all_questions_correct(data: QuestionData) -> bool:
+def all_partial_scores_correct(data: QuestionData) -> bool:
     """Return true if all questions are correct in partial scores and it's nonempty."""
     partial_scores = data["partial_scores"]
 
