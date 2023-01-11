@@ -3176,13 +3176,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/jest@npm:^29.2.3":
-  version: 29.2.3
-  resolution: "@types/jest@npm:29.2.3"
+"@types/jest@npm:^29.2.5":
+  version: 29.2.5
+  resolution: "@types/jest@npm:29.2.5"
   dependencies:
     expect: ^29.0.0
     pretty-format: ^29.0.0
-  checksum: 55370906711b600a05b9e497c22aa74d80d8adcdbe4ac2f1bc9311f6f6ca0dd192862b6f38df6ac0d45e92396bcd796e377b1d8058c10bdfd584aeee580c3ce1
+  checksum: d668470f00ec4cb8b8457f1fd90f7358fad8f22d74b85006dad6be522d6b9bf10f49f597e88d1d1a518d211c1b65be32a1f27f0e49ce0658d110a9206b8ea310
   languageName: node
   linkType: hard
 
@@ -3488,7 +3488,7 @@ __metadata:
     "@types/dockerode": ^3.3.14
     "@types/folder-hash": ^4.0.2
     "@types/fs-extra": ^9.0.13
-    "@types/jest": ^29.2.3
+    "@types/jest": ^29.2.5
     "@types/loopbench": ^1.2.1
     "@types/mocha": ^10.0.1
     "@types/node": ^18.11.18
