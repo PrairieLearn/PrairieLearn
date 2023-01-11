@@ -12,7 +12,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     params_name = pl.get_string_attrib(element, "params-name")
 
     # Get frontend variables
-    frontend_variables = []
+    html_variables = []
 
     for child in element:
         if child.tag == "pl-variable":
@@ -29,7 +29,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             if description_html:
                 var_dict["description"] = description_html
 
-            frontend_variables.append(var_dict)
+            html_variables.append(var_dict)
 
         elif child.tag is lxml.etree.Comment:
             continue
@@ -42,7 +42,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     declared_empty = pl.get_boolean_attrib(element, "empty", EMPTY_DEFAULT)
 
     if declared_empty:
-        if frontend_variables:
+        if html_variables:
             raise ValueError(
                 f"Variable name '{params_name}' was declared empty, but has variables defined in 'question.html'."
             )
@@ -53,15 +53,15 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         data["params"][params_name] = []
     elif params_name not in data["params"]:
-        if not frontend_variables:
+        if not html_variables:
             raise ValueError(
                 f"Variable name '{params_name}' has no variables defined in 'question.html' or 'server.py'. "
                 "Did you mean to set it to be empty?"
             )
 
-        data["params"][params_name] = frontend_variables
+        data["params"][params_name] = html_variables
     else:
-        if frontend_variables:
+        if html_variables:
             raise ValueError(
                 f"Cannot define variables from both 'question.html' and 'server.py' for variable name '{params_name}'."
             )
