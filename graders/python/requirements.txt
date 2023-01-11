@@ -15,7 +15,7 @@ colormath==3.0.0
 nltk==3.7
 beautifulsoup4==4.11.1
 bokeh==3.0.2
-folium==0.13.0
+folium==0.14.0
 Pygments==2.13.0
 PuLP==2.6.0
 ipython==8.7.0
