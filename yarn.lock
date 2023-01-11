@@ -3553,7 +3553,7 @@ __metadata:
     fast-glob: ^3.2.12
     file-type: ^16.5.4
     filesize: ^9.0.11
-    folder-hash: ^4.0.2
+    folder-hash: ^4.0.4
     fs-extra: ^10.1.0
     generic-pool: ^3.9.0
     googleapis: ^109.0.1
@@ -7528,16 +7528,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"folder-hash@npm:^4.0.2":
-  version: 4.0.2
-  resolution: "folder-hash@npm:4.0.2"
+"folder-hash@npm:^4.0.4":
+  version: 4.0.4
+  resolution: "folder-hash@npm:4.0.4"
   dependencies:
     debug: ^4.3.3
-    graceful-fs: ~4.2.9
-    minimatch: ~5.0.0
+    minimatch: ~5.1.2
   bin:
     folder-hash: bin/folder-hash
-  checksum: c087a02f5c39e6869c72e40d196ee642a972e5219b83239ba61f2971c710b6fbee0e9bfbe834cdb59104a7a696596be75c4c3365fc1e7aae8bbe652a650c8092
+  checksum: 1864e4a1376d3484c60b1e41135d368cb380f67135ebca4b995be3af2a6502b4dac2b5468c5dcd5ab4a5cd11f0936f43aefb42e944bd88a8344d5c2cc7427599
   languageName: node
   linkType: hard
 
@@ -8064,7 +8063,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"graceful-fs@npm:^4.1.15, graceful-fs@npm:^4.1.2, graceful-fs@npm:^4.1.5, graceful-fs@npm:^4.1.6, graceful-fs@npm:^4.1.9, graceful-fs@npm:^4.2.0, graceful-fs@npm:^4.2.2, graceful-fs@npm:^4.2.6, graceful-fs@npm:^4.2.9, graceful-fs@npm:~4.2.9":
+"graceful-fs@npm:^4.1.15, graceful-fs@npm:^4.1.2, graceful-fs@npm:^4.1.5, graceful-fs@npm:^4.1.6, graceful-fs@npm:^4.1.9, graceful-fs@npm:^4.2.0, graceful-fs@npm:^4.2.2, graceful-fs@npm:^4.2.6, graceful-fs@npm:^4.2.9":
   version: 4.2.10
   resolution: "graceful-fs@npm:4.2.10"
   checksum: 3f109d70ae123951905d85032ebeae3c2a5a7a997430df00ea30df0e3a6c60cf6689b109654d6fdacd28810a053348c4d14642da1d075049e6be1ba5216218da
@@ -10954,7 +10953,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"minimatch@npm:5.0.1, minimatch@npm:~5.0.0":
+"minimatch@npm:5.0.1":
   version: 5.0.1
   resolution: "minimatch@npm:5.0.1"
   dependencies:
@@ -10969,6 +10968,15 @@ __metadata:
   dependencies:
     brace-expansion: ^2.0.1
   checksum: 215edd0978320a3354188f84a537d45841f2449af4df4379f79b9b777e71aa4f5722cc9d1717eabd2a70d38ef76ab7b708d24d83ea6a6c909dfd8833de98b437
+  languageName: node
+  linkType: hard
+
+"minimatch@npm:~5.1.2":
+  version: 5.1.2
+  resolution: "minimatch@npm:5.1.2"
+  dependencies:
+    brace-expansion: ^2.0.1
+  checksum: 32ffda25b9fb8270a1c1beafdb7489dc0e411af553495136509a945691f63c9b6b000eeeaaf8bffe3efa609c1d6d3bc0f5a106f6c3443b5c05da649100ded964
   languageName: node
   linkType: hard
 
