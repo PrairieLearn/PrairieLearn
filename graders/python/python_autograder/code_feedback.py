@@ -37,19 +37,19 @@ class Feedback:
     test_name = None
     feedback_file = None
     prefix_message = "\nFeedback for case %d\n---------------------\n"
-    buffer = ''
+    buffer = ""
 
     @classmethod
     def set_name(cls, name):
         cls.test_name = name
         cls.feedback_file = "feedback_" + name
-        cls.buffer = ''
+        cls.buffer = ""
 
     @classmethod
     def set_main_output(cls):
         cls.test_name = "output"
         cls.feedback_file = "output"
-        cls.buffer = ''
+        cls.buffer = ""
 
     @classmethod
     def set_test(cls, test):
@@ -75,7 +75,7 @@ class Feedback:
 
     @classmethod
     def clear_iteration_prefix(cls):
-        cls.buffer = ''
+        cls.buffer = ""
 
     @classmethod
     def add_feedback(cls, text):
@@ -84,11 +84,12 @@ class Feedback:
 
         Adds some text to the feedback output for the current test.
         """
-        with open("/grade/run/" + cls.feedback_file + ".txt", 'a+',
-                  encoding='utf-8') as f:
+        with open(
+            "/grade/run/" + cls.feedback_file + ".txt", "a+", encoding="utf-8"
+        ) as f:
             f.write(cls.buffer + text)
-            f.write('\n')
-            cls.buffer = ''
+            f.write("\n")
+            cls.buffer = ""
 
     @classmethod
     def finish(cls, fb_text):
@@ -108,7 +109,7 @@ class Feedback:
         Used to hook into disallowed functions, raises an exception if
         the student tries to call it.
         """
-        raise RuntimeError(f'The use of this function is not allowed.')
+        raise RuntimeError(f"The use of this function is not allowed.")
 
     @classmethod
     def check_numpy_array_sanity(cls, name, num_axes, data):
@@ -123,6 +124,7 @@ class Feedback:
         """
 
         import numpy as np
+
         if data is None:
             cls.finish("'%s' is None or not defined" % name)
 
@@ -130,24 +132,27 @@ class Feedback:
             cls.finish("'%s' is not a numpy array" % name)
 
         if isinstance(data, np.matrix):
-            cls.finish("'%s' is a numpy matrix. Do not use those. "
-                       "bit.ly/array-vs-matrix" % name)
+            cls.finish(
+                "'%s' is a numpy matrix. Do not use those. "
+                "bit.ly/array-vs-matrix" % name
+            )
 
         if len(data.shape) != num_axes:
             cls.finish(
-                    "'%s' does not have the correct number of axes--"
-                    "got: %d, expected: %d" % (
-                        name, len(data.shape), num_axes))
+                "'%s' does not have the correct number of axes--"
+                "got: %d, expected: %d" % (name, len(data.shape), num_axes)
+            )
 
         if data.dtype.kind not in "fc":
             cls.finish(
-                    "'%s' does not consist of floating point numbers--"
-                    "got: '%s'" % (name, data.dtype))
+                "'%s' does not consist of floating point numbers--"
+                "got: '%s'" % (name, data.dtype)
+            )
 
     @classmethod
-    def check_numpy_array_features(cls, name, ref, data,
-                                   accuracy_critical=False,
-                                   report_failure=True):
+    def check_numpy_array_features(
+        cls, name, ref, data, accuracy_critical=False, report_failure=True
+    ):
         """
         Feedback.check_numpy_array_features(name, ref, data)
 
@@ -166,7 +171,7 @@ class Feedback:
                 cls.add_feedback(msg)
 
             if accuracy_critical:
-                cls.finish('')
+                cls.finish("")
             else:
                 return False
 
@@ -177,28 +182,37 @@ class Feedback:
             return bad("'%s' is not a numpy array" % name)
 
         if isinstance(data, np.matrix):
-            return bad("'%s' is a numpy matrix. Do not use those. "
-                       "bit.ly/array-vs-matrix" % name)
+            return bad(
+                "'%s' is a numpy matrix. Do not use those. "
+                "bit.ly/array-vs-matrix" % name
+            )
 
         if ref.shape != data.shape:
             return bad(
-                    "'%s' does not have correct shape--"
-                    "got: '%s', expected: '%s'" % (
-                        name, data.shape, ref.shape))
+                "'%s' does not have correct shape--"
+                "got: '%s', expected: '%s'" % (name, data.shape, ref.shape)
+            )
 
         if ref.dtype.kind != data.dtype.kind:
             return bad(
-                    "'%s' does not have correct data type--"
-                    "got: '%s', expected: '%s'" % (
-                        name, data.dtype, ref.dtype))
+                "'%s' does not have correct data type--"
+                "got: '%s', expected: '%s'" % (name, data.dtype, ref.dtype)
+            )
 
         return True
 
     @classmethod
-    def check_numpy_array_allclose(cls, name, ref, data,
-                                   accuracy_critical=False, rtol=1e-05,
-                                   atol=1e-08, report_success=True,
-                                   report_failure=True):
+    def check_numpy_array_allclose(
+        cls,
+        name,
+        ref,
+        data,
+        accuracy_critical=False,
+        rtol=1e-05,
+        atol=1e-08,
+        report_success=True,
+        report_failure=True,
+    ):
         """
         Feedback.check_numpy_allclose(name, ref, data)
 
@@ -216,9 +230,9 @@ class Feedback:
 
         import numpy as np
 
-        if not cls.check_numpy_array_features(name, ref, data,
-                                              accuracy_critical,
-                                              report_failure):
+        if not cls.check_numpy_array_features(
+            name, ref, data, accuracy_critical, report_failure
+        ):
             return False
 
         good = np.allclose(ref, data, rtol=rtol, atol=atol)
@@ -236,9 +250,15 @@ class Feedback:
         return good
 
     @classmethod
-    def check_list(cls, name, ref, data, entry_type=None,
-                            accuracy_critical=False,
-                            report_failure=True):
+    def check_list(
+        cls,
+        name,
+        ref,
+        data,
+        entry_type=None,
+        accuracy_critical=False,
+        report_failure=True,
+    ):
         """
         Feedback.check_list(name, ref, data)
 
@@ -256,7 +276,7 @@ class Feedback:
             if report_failure:
                 cls.add_feedback(msg)
             if accuracy_critical:
-                cls.finish('')
+                cls.finish("")
             else:
                 return False
 
@@ -267,8 +287,10 @@ class Feedback:
             return bad("'%s' is not a list" % name)
 
         if len(ref) != len(data):
-            return bad("'%s' has the wrong length--expected %d, got %d"
-                       % (name, len(ref), len(data)))
+            return bad(
+                "'%s' has the wrong length--expected %d, got %d"
+                % (name, len(ref), len(data))
+            )
 
         if entry_type is not None:
             for i, entry in enumerate(data):
@@ -278,8 +300,15 @@ class Feedback:
         return True
 
     @classmethod
-    def check_tuple(cls, name, ref, data, accuracy_critical=False,
-                    report_failure=True, report_success=True):
+    def check_tuple(
+        cls,
+        name,
+        ref,
+        data,
+        accuracy_critical=False,
+        report_failure=True,
+        report_success=True,
+    ):
         """
         Feedback.check_tuple(name, ref, data)
 
@@ -298,7 +327,7 @@ class Feedback:
                 cls.add_feedback(msg)
 
             if accuracy_critical:
-                cls.finish('')
+                cls.finish("")
             else:
                 return False
 
@@ -317,8 +346,11 @@ class Feedback:
             if type(data[i]) != type(ref[i]):  # noqa: E721
                 good = False
                 if report_failure:
-                    cls.add_feedback("{}[{}] should be of type {}"
-                                     .format(name, i, type(ref[i]).__name__))
+                    cls.add_feedback(
+                        "{}[{}] should be of type {}".format(
+                            name, i, type(ref[i]).__name__
+                        )
+                    )
             elif data[i] != ref[i]:
                 good = False
 
@@ -331,9 +363,17 @@ class Feedback:
         return True
 
     @classmethod
-    def check_scalar(cls, name, ref, data, accuracy_critical=False,
-                     rtol=1e-5, atol=1e-8, report_success=True,
-                     report_failure=True):
+    def check_scalar(
+        cls,
+        name,
+        ref,
+        data,
+        accuracy_critical=False,
+        rtol=1e-5,
+        atol=1e-8,
+        report_success=True,
+        report_failure=True,
+    ):
         """
         Feedback.check_scalar(name, ref, data)
 
@@ -362,7 +402,7 @@ class Feedback:
                 cls.add_feedback(msg)
 
             if accuracy_critical:
-                cls.finish('')
+                cls.finish("")
             else:
                 return False
 
@@ -381,9 +421,9 @@ class Feedback:
 
         good = False
 
-        if rtol is not None and abs(ref-data) < abs(ref)*rtol:
+        if rtol is not None and abs(ref - data) < abs(ref) * rtol:
             good = True
-        if atol is not None and abs(ref-data) < atol:
+        if atol is not None and abs(ref - data) < atol:
             good = True
 
         if not good:
@@ -411,32 +451,38 @@ class Feedback:
                 try:
                     callable_name = f.__name__
                 except Exception as e_name:
-                    callable_name = (
-                                "<unable to retrieve name; encountered %s: %s>"
-                                % (
-                                    type(e_name).__name__,
-                                    str(e_name)))
+                    callable_name = "<unable to retrieve name; encountered %s: %s>" % (
+                        type(e_name).__name__,
+                        str(e_name),
+                    )
                 from traceback import format_exc
+
                 cls.add_feedback(
-                        "The callable '%s' supplied in your code failed with "
-                        "an exception while it was being called by the "
-                        "grading code:"
-                        "%s"
-                        % (
-                            callable_name,
-                            "".join(format_exc())))
+                    "The callable '%s' supplied in your code failed with "
+                    "an exception while it was being called by the "
+                    "grading code:"
+                    "%s" % (callable_name, "".join(format_exc()))
+                )
             else:
                 cls.add_feedback(
-                        "Your code was supposed to supply a function or "
-                        "callable, but the variable you supplied was not "
-                        "callable.")
+                    "Your code was supposed to supply a function or "
+                    "callable, but the variable you supplied was not "
+                    "callable."
+                )
 
             raise GradingComplete()
 
     @classmethod
-    def check_plot(cls, name, ref, plot, check_axes_scale=None,
-                   accuracy_critical=False, report_failure=True,
-                   report_success=True):
+    def check_plot(
+        cls,
+        name,
+        ref,
+        plot,
+        check_axes_scale=None,
+        accuracy_critical=False,
+        report_failure=True,
+        report_success=True,
+    ):
         """
         Feedback.check_plot(name, ref, plot, check_axes_scale)
 
@@ -451,15 +497,15 @@ class Feedback:
         - ``report_success``: If true, feedback will be given on success.
         """
 
-        import numpy as np
         import matplotlib.axes
+        import numpy as np
 
         def bad(msg):
             if report_failure:
                 cls.add_feedback(msg)
 
             if accuracy_critical:
-                cls.finish('')
+                cls.finish("")
             else:
                 return False
 
@@ -473,13 +519,13 @@ class Feedback:
         if check_axes_scale:
             scales_match = True
 
-            if 'x' in check_axes_scale:
+            if "x" in check_axes_scale:
                 xscale = plot.get_xscale()
                 ref_xscale = ref.get_xscale()
                 if xscale != ref_xscale:
                     scales_match = False
 
-            if 'y' in check_axes_scale:
+            if "y" in check_axes_scale:
                 yscale = plot.get_yscale()
                 ref_yscale = ref.get_yscale()
                 if yscale != ref_yscale:
@@ -495,26 +541,25 @@ class Feedback:
             return bad("No lines were plotted in '%s'" % name)
 
         if len(user_lines) != len(ref_lines):
-            return bad("%d lines were plotted in '%s' but %d lines were "
-                       "expected"
-                       % (len(user_lines), name, len(ref_lines)))
+            return bad(
+                "%d lines were plotted in '%s' but %d lines were "
+                "expected" % (len(user_lines), name, len(ref_lines))
+            )
 
         ref_datas = {}
         for i, ref_line in enumerate(ref_lines):
-            ref_data = np.array([ref_line.get_data()[0],
-                                 ref_line.get_data()[1]])
+            ref_data = np.array([ref_line.get_data()[0], ref_line.get_data()[1]])
             ref_data = ref_data[np.lexsort(ref_data.T)]
             ref_datas[i] = ref_data
 
         num_correct = 0
         for i, line in enumerate(user_lines):
-            data = np.array([line.get_data()[0],
-                             line.get_data()[1]])
+            data = np.array([line.get_data()[0], line.get_data()[1]])
             data = data[np.lexsort(data.T)]
             for j, ref in ref_datas.items():
                 if data.shape == ref.shape and np.allclose(data, ref):
                     num_correct += 1
-                    del[ref_datas[j]]
+                    del [ref_datas[j]]
                     break
 
         if num_correct == len(ref_lines):
@@ -524,11 +569,17 @@ class Feedback:
         else:
             return bad("'%s' is inaccurate" % name)
 
-
     @classmethod
-    def check_dataframe(cls, name, ref, data, subset_columns=[],
-                        check_values=True, allow_order_variance=True,
-                        display_input=False):
+    def check_dataframe(
+        cls,
+        name,
+        ref,
+        data,
+        subset_columns=[],
+        check_values=True,
+        allow_order_variance=True,
+        display_input=False,
+    ):
         """
         ``check_dataframe``
         Checks and adds feedback regarding the correctness of
