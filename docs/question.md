@@ -447,7 +447,7 @@ For most [elements] there are four different ways of auto-grading the student an
 
 1. Set the correct answer using the correct-answer attributes for each element in `question.html`. This will use the built-in grading methods for each element. Given that this option is typically used for answers with a hard-coded value, without randomization, it is not expected to be used frequently.
 
-2. Set `data["correct_answers"][VAR_NAME]` in server.py. This is for questions where you can pre-compute a single correct answer based on the (randomized) parameters.
+2. Set `data["correct_answers"][VAR_NAME]` in `server.py`. This is for questions where you can pre-compute a single correct answer based on the (randomized) parameters.
 
 3. Write a [custom `grade(data)`](#question-serverpy) function in server.py that checks `data["submitted_answers"][VAR_NAME]` and sets scores. This can do anything, including having multiple correct answers, testing properties of the submitted answer for correctness, compute correct answers of some elements based on the value of other elements, etc.
 
@@ -455,15 +455,15 @@ For most [elements] there are four different ways of auto-grading the student an
 
 If a question has more than one of the above options, each of them overrides the one before it. Even if options 3 (custom grade function) or 4 (external grader) are used, then it can still be helpful to set a correct answer so that it is shown to students as a sample of what would be accepted. If there are multiple correct answers then it's probably a good idea to add a note with [`pl-answer-panel`](elements/#pl-answer-panel-element) that any correct answer would be accepted and the displayed answer is only an example. Moreover, if there is no relevant information to display on the correct answer panel (i.e., a question has multiple correct answers and is meant to be attempted until a full score is achieved), then the panel can be hidden by setting `showCorrectAnswer: false` in `info.json`.
 
-### Custom Question Best Practices
+### Custom grading best practices
 
-Although custom questions usually don't use the grading functions from individual elements, it is _highly_ recommended that built-in elements are used for student input. Parsed student answers are present in the `data["submitted_answers"]` dictionary.
+Although questions with custom grading usually don't use the grading functions from individual elements, it is _highly_ recommended that built-in elements are used for student input, as these elements include helpful parsing and feedback by default. Parsed student answers are present in the `data["submitted_answers"]` dictionary.
 
 Any custom grading function for the whole question should set `data["score"]` as a value between 0.0 and 1.0, which will be the final score for the given question. If a custom grading function is only grading a specific part of a question, the grading function should set the corresponding dictionary entry in `data["partial_scores"]` and then recompute the final `data["score"]` value for the whole question. Alternatively, if you would prefer not to show score badges for individual parts, you may unset the dictionary entries in `data["partial_scores"]`.
 
 To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above custom question](#Question-server.py) or [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction) for examples of this. Note that the feeback set in the `data["feedback"]` dictionary is meant for use by custom grader code in a `server.py` file, while the feedback set in `data["partial_scores"]` is meant for use by element grader code.
 
-For generated floating point answers, it's important to round values before displaying them to the student, as this could cause unexpected behavior when students perform calculations. For example, the following is problematic:
+For generated floating point answers, it's important to use consistent rounding when displaying numbers to students _and_ when computing the correct answer. For example, the following is problematic:
 
 ```python
 def generate(data):
@@ -471,10 +471,12 @@ def generate(data):
     b = 33.33333
     data["params"]["a_for_student"] = f'{a:.2f}'
     data["params"]["b_for_student"] = f'{a:.2f}'
+    # Note how the correct answer is computed with full precision,
+    # but the parameters displayed to students are rounded.
     data["correct_answers"]["c"] = a - b
 ```
 
-The rounding should be done before the format strings are set, as in the following example:
+Instead, the numbers should be rounded at the beginning:
 
 ```python
 def generate(data):
