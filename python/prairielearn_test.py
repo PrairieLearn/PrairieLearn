@@ -1,27 +1,27 @@
 # lol
-import sys
 import os
+import sys
 
 sys.path.insert(
     0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../lib"))
 )
 
-from typing import cast
-import prairielearn as pl  # noqa: E402
 import lxml.html  # noqa: E402
-import pandas as pd
-import json
-import pytest
-from pytest_lazyfixture import lazy_fixture
+import prairielearn as pl  # noqa: E402
 
 
-def test_inner_html() -> None:
+def test_inner_html():
     e = lxml.html.fragment_fromstring("<div>test</div>")
     assert pl.inner_html(e) == "test"
 
     e = lxml.html.fragment_fromstring("<div>test&gt;test</div>")
     assert pl.inner_html(e) == "test&gt;test"
 
+import pandas as pd
+import json
+import pytest
+from pytest_lazyfixture import lazy_fixture
+from typing import cast
 
 @pytest.mark.parametrize(
     "df", lazy_fixture(["city_dataframe", "breast_cancer_dataframe"])
@@ -51,7 +51,5 @@ def test_encoding_pandas(df: pd.DataFrame) -> None:
 )
 def test_encoding_legacy(df: pd.DataFrame) -> None:
     """Add compatibility test for legacy encoding"""
-
     reserialized_dataframe = cast(pd.DataFrame, pl.from_json(pl.to_json(df)))
-
     pd.testing.assert_frame_equal(df, reserialized_dataframe)
