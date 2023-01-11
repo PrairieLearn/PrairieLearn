@@ -3552,7 +3552,7 @@ __metadata:
     fabric: ^4.6.0
     fast-glob: ^3.2.12
     file-type: ^16.5.4
-    filesize: ^9.0.11
+    filesize: ^10.0.6
     folder-hash: ^4.0.2
     fs-extra: ^10.1.0
     generic-pool: ^3.9.0
@@ -7414,10 +7414,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"filesize@npm:^9.0.11":
-  version: 9.0.11
-  resolution: "filesize@npm:9.0.11"
-  checksum: 7e8a9f9a4089e3ee29de64c241b50db8db4008351ace959873cb950bac0c2e1e09f4b45f42eaed8acd589a895dde978ed199e7a9982902fa06ca0be48e5ea92d
+"filesize@npm:^10.0.6":
+  version: 10.0.6
+  resolution: "filesize@npm:10.0.6"
+  checksum: ed420c3989581c4a56e4c86f49ef8d7f22d2c8e5b00892493c12589c23327b0b875936613782226b0a623f261560c8dff59730f5d08a6d8968533bd28d3dfbe5
   languageName: node
   linkType: hard
 

@@ -63,7 +63,7 @@
         "express-async-handler": "^1.2.0",
         "fabric": "^4.6.0",
         "file-type": "^16.5.4",
-        "filesize": "^9.0.11",
+        "filesize": "^10.0.6",
         "folder-hash": "^4.0.2",
         "fs-extra": "^10.1.0",
         "generic-pool": "^3.9.0",
