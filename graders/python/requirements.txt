@@ -20,6 +20,6 @@ Pygments==2.13.0
 PuLP==2.6.0
 ipython==8.7.0
 nbformat==5.7.0
-nbconvert==7.2.5
+nbconvert==7.2.7
 automata-lib==6.0.2
 typing-extensions==4.4.0
