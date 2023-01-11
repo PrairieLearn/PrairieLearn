@@ -163,7 +163,7 @@
         "@types/pem": "^1.9.6",
         "@types/pg": "^8.6.5",
         "@types/tmp": "^0.2.3",
-        "@types/uuid": "^8.3.4",
+        "@types/uuid": "^9.0.0",
         "@types/yargs": "^17.0.15",
         "chai": "^4.3.7",
         "chai-as-promised": "^7.1.1",
