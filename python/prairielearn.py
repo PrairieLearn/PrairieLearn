@@ -78,9 +78,9 @@ def to_json(v):
     if np.isscalar(v) and np.iscomplexobj(v):
         return {'_type': 'complex', '_value': {'real': v.real, 'imag': v.imag}}
     elif np.issubdtype(type(v), np.integer) and type(v).__module__ == 'numpy':
-        return {'_type': 'np_integer', '_concrete_type': type(v).__name__, '_value': int(v)}
+        return {'_type': 'np_integer', '_concrete_type': type(v).__name__, '_value': str(v)}
     elif np.issubdtype(type(v), np.floating) and type(v).__module__ == 'numpy':
-        return {'_type': 'np_floating', '_concrete_type': type(v).__name__, '_value': float(v)}
+        return {'_type': 'np_floating', '_concrete_type': type(v).__name__, '_value': str(v)}
     elif isinstance(v, np.ndarray):
         if np.isrealobj(v):
             return {'_type': 'ndarray', '_value': v.tolist(), '_dtype': str(v.dtype)}
@@ -718,8 +718,8 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
     Returns a tuple with the parsed value in the first entry and a dictionary with
     the intended value of "data" in the second entry.
 
-    On successful parsing, "data" will contain a 'submitted_answers' key that is the
-    JSON encoded parsed answer.
+    On successful parsing, "data" will contain a 'submitted_answers' key that is
+    a JSON compatible parsed answer.
 
     If parsing failed, the first entry will be 'None' and the "data" entry will
     contain a 'format_errors' key.
