@@ -1,7 +1,14 @@
 [tool.flake8]
 # TODO add python directory here in later PR
-filename = ["./elements/**/*.py"]
+filename = ["./elements/**/*.py", "./python/*.py"]
 ignore = ["E501"]
+
+# For zygote, allow imports in different places
+per-file-ignores = """
+    zygote.py: E402, F401
+"""
+
+
 # Black compatibility
 max-line-length = 88
 extend-ignore = ["E203", "W503"]

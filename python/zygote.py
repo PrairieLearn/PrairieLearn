@@ -60,6 +60,7 @@ import sklearn
 
 matplotlib.use("PDF")
 
+
 # This function tries to convert a python object to valid JSON. If an exception
 # is raised, this function prints the object and re-raises the exception. This is
 # helpful because the object - which contains something that cannot be converted
@@ -68,8 +69,8 @@ matplotlib.use("PDF")
 def try_dumps(obj, sort_keys=False, allow_nan=False):
     try:
         return json.dumps(obj, sort_keys=sort_keys, allow_nan=allow_nan)
-    except:
-        print("Error converting this object to json:\n{:s}\n".format(str(obj)))
+    except TypeError:
+        print(f"Error converting this object to json:\n{obj:s}\n")
         raise
 
 
@@ -100,7 +101,7 @@ def worker_loop():
             # "ping" is a special fake function name that the parent process
             # will use to check if the worker is active and able to respond to
             # calls. We just reply with "pong" to indicate that we're alive.
-            if file == None and fcn == "ping":
+            if file is None and fcn == "ping":
                 json.dump({"present": True, "val": "pong"}, outf)
                 outf.write("\n")
                 outf.flush()
@@ -109,7 +110,7 @@ def worker_loop():
             # "restart" is a special fake function name that causes
             # the forked worker to exit, returning control to the
             # zygote parent process
-            if file == None and fcn == "restart":
+            if file is None and fcn == "restart":
                 json.dump({"present": True, "val": "success"}, outf)
                 outf.write("\n")
                 outf.flush()
