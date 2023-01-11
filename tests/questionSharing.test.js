@@ -94,16 +94,19 @@ describe('Question Sharing', function () {
       });
     });
 
-    // step(
-    //   'Fail to access shared question, because permission has not yet been granted',
-    //   async () => {
-    //     let res = await accessSharedQuestionAssessment();
-    //     // TODO: Now that we add a dummy question to the DB,
-    //     // then the name of it will show up, but it should fail to load when you access the link
-    //     // this should be updated to actually attempt to go to the link, then hit access denied or something
-    //     assert(!res.text().includes('addNumbers'));
-    //   }
-    // );
+    step(
+      'Fail to access shared question, because permission has not yet been granted',
+      async () => {
+        let res = await accessSharedQuestionAssessment();
+        // TODO: Now that we add a dummy question to the DB,
+        // then the name of it will show up, but it should fail to load when you access the link
+        // this should be updated to actually attempt to go to the link, then hit access denied or something
+        assert(!res.text().includes('addNumbers'));
+        // const sharedQuestionUrl = siteUrl + res.$(`a:contains("Add two numbers")`).attr('href');
+        // let addNumbersPage = await helperClient.fetchCheerio(sharedQuestionUrl);
+        // assert(!addNumbersPage.ok);
+      }
+    );
 
     step('Fail if trying to set an invalid sharing name', async () => {
       // TODO throw an exception in SQL, catch it, return an error
@@ -244,7 +247,7 @@ describe('Question Sharing', function () {
       const sharedQuestionUrl = siteUrl + res.$(`a:contains("Add two numbers")`).attr('href');
 
       res = await helperClient.fetchCheerio(sharedQuestionUrl);
-      assert.equal(res.ok, true);
+      assert(res.ok);
     });
 
     step('shut down testing server', helperServer.after);

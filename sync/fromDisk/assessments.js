@@ -360,8 +360,7 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
     if (!config.questionSharingEnabled) {
       for (let qid of importedQids) {
         importedQidAssessmentMap.get(qid).forEach((tid) => {
-          // TODO: should this be an error or a warning?
-          infofile.addWarning(
+          infofile.addError(
             assessments[tid],
             `You have attempted to import a question with '@', but question sharing is not enabled on this server.`
           );
@@ -373,8 +372,7 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
     if (!result.rows[0].question_sharing_enabled) {
       for (let qid of importedQids) {
         importedQidAssessmentMap.get(qid).forEach((tid) => {
-          // TODO: should this be an error or a warning?
-          infofile.addWarning(
+          infofile.addError(
             assessments[tid],
             `You have attempted to import a question with '@', but question sharing is not enabled for your course.`
           );
@@ -385,23 +383,28 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
 
   // let questionInfo = Array.from(importedQids).map(extractInfo);
 
-  // TODO: run query to check all imported questions, if this course actually has permissions on them
-
-  // const inImportedCourse = await checkImportedQid(sourceCourse, questionDirectory);
-  // // TODO: give a more verbose error message if the reason the question isn't found
-  // // is because the course slug is invalid/doesn't exist? or just give the same message as if the question id doesn't exist?
-  // if (!config.devMode && !inImportedCourse) {
-  //   // In dev mode, ignore errors because imported questions are most likely from courses not in the server
-  //   missingQids.add(qid);
-  // }
-
-  // TODO: this query is very inefficient, because it pulls in names of ALL shared questions that this
-  // course has permissions on. We can optimize by only pulling in ones referenced by existing assessments.
+  // TODO: this is very inefficient, because it pulls in names of ALL shared questions that this
+  // course has permissions on. Move this validation check to the database for efficiency
   const importedQuestions = await sqldb.queryAsync(sql.get_all_imported_questions, {
     courseId: courseId,
   });
   for (let row of importedQuestions.rows) {
     questionIds['@' + row.sharing_name + '/' + row.qid] = row.id;
+  }
+
+  let missingQids = Array.from(importedQids).filter((qid) => !(qid in importedQuestions));
+  // ignore question import errors in dev mode
+  if (!config.devMode) {
+    missingQids.forEach((qid) => {
+      importedQidAssessmentMap.get(qid).forEach((tid) => {
+        // TODO: give a more verbose error message if the reason the question isn't found
+        // is because the course slug is invalid/doesn't exist? or just give the same message as if the question id doesn't exist?
+        infofile.addError(
+          assessments[tid],
+          `The following questions do not exist in this course: ${[...missingQids].join(', ')}`
+        );
+      });
+    });
   }
 
   const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
