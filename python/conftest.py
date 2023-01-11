@@ -1,6 +1,7 @@
-import pytest
-import pandas as pd
 import numpy as np
+import pandas as pd
+import pytest
+from prairielearn import QuestionData
 
 
 @pytest.fixture
@@ -66,8 +67,6 @@ def breast_cancer_dataframe() -> pd.DataFrame:
     }
 
     return pd.DataFrame.from_dict(pd_dict)
-
-from prairielearn import QuestionData
 
 
 @pytest.fixture

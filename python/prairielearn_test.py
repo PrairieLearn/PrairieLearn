@@ -1,8 +1,13 @@
-import pandas as pd
 import json
+import math
+from typing import Callable, cast
+
+import lxml.html
+import pandas as pd
+import prairielearn as pl
 import pytest
 from pytest_lazyfixture import lazy_fixture
-from typing import cast
+
 
 @pytest.mark.parametrize(
     "df", lazy_fixture(["city_dataframe", "breast_cancer_dataframe"])
@@ -34,14 +39,6 @@ def test_encoding_legacy(df: pd.DataFrame) -> None:
     """Add compatibility test for legacy encoding"""
     reserialized_dataframe = cast(pd.DataFrame, pl.from_json(pl.to_json(df)))
     pd.testing.assert_frame_equal(df, reserialized_dataframe)
-
-
-import math
-from typing import Callable
-
-import lxml.html
-import prairielearn as pl
-import pytest
 
 
 def test_inner_html() -> None:
