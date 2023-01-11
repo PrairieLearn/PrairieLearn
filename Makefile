@@ -56,10 +56,13 @@ lint-html:
 lint-links:
 	@node tools/validate-links.mjs
 
-format: format-js
+format: format-js format-python
 format-js:
 	@yarn eslint --ext js --fix "**/*.js"
 	@yarn prettier --write "**/*.{js,ts,md}"
+format-python:
+	@python3 -m isort ./
+	@python3 -m black ./
 
 typecheck: typecheck-js typecheck-python
 typecheck-js:

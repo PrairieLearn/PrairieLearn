@@ -1,5 +1,5 @@
-import prairielearn as pl
 import lxml.html
+import prairielearn as pl
 
 
 def prepare(element_html, data):
@@ -8,8 +8,8 @@ def prepare(element_html, data):
 
 
 def render(element_html, data):
-    if not data['manual_grading']:
+    if not data["manual_grading"]:
         element = lxml.html.fragment_fromstring(element_html)
         return pl.inner_html(element)
     else:
-        return ''
+        return ""

@@ -12,10 +12,10 @@
 !.yarnrc.yml
 !tsconfig.json
 !turbo.json
-!pyrightconfig.json
 !.yarn/
 .yarn/cache
 .yarn/install-state.gz
+!pyproject.toml
 !admin_queries/
 !api/
 !cron/
@@ -43,7 +43,6 @@
 !question-servers/
 !requirements.txt
 !server.js
-!setup.cfg
 !schemas/
 !sprocs/
 !sync/
