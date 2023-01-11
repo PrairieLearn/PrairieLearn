@@ -71,8 +71,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         frame_style.format(subset=float_column_names, formatter=f"{{:.{num_digits}g}}")
 
     if show_dtype:
-        descriptors: pd.DataFrame = frame.agg([lambda s: s.dtype]).set_axis(
-            ["dtype"], copy=False
+        descriptors = frame.agg([lambda s: s.dtype]).set_axis(
+            ["dtype"], axis="index", copy=False
         )
         other = descriptors.style.applymap(lambda v: "font-weight: bold;")
         frame_style.set_table_styles(
