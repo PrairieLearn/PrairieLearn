@@ -1703,7 +1703,9 @@ An overlay is pre-defined as a "overlay area" with a static size. By default, el
 
 ### `pl-external-grader-variables` element
 
-Displays variables that are given to the student, or expected for the student to define in externally-graded questions.
+Displays variables that are given to the student, or expected for the student to define in externally-graded Python questions.
+In particular, **we advise against using this element for any non-Python externally graded question**, since the way this element
+stores parameters is specifically for use with the Python autograder.
 
 The list of variables can be defined in in `data['params']` or the question HTML itself (but not both!). If defined in the
 question HTML itself, the variable information is added to `data['params']` for use by the external grader. If no descriptions
