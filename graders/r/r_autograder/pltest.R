@@ -16,6 +16,7 @@ result <- tryCatch({
     ## Run tests in the test directory
     cat("[pltest] about to call tests from", getwd(), "\n")
     test_results <- as.data.frame(tinytest::run_test_dir(tests_dir,
+                                                         lc_collate = NA,
                                                          verbose = Sys.getenv("DEBUG", "off") == "on"))
 
     ## Aggregate test results and process NAs as some question may have exited
