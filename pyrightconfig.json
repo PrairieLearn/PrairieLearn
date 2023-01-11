@@ -1,7 +1,6 @@
 {
     "include": [
       "./elements/pl-hidden-hints",
-      "./elements/pl-external-grader-variables",
       "./elements/pl-order-blocks",
       "./elements/pl-symbolic-input",
       "python/python_helper_sympy_test.py"
