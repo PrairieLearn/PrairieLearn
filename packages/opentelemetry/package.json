@@ -13,7 +13,7 @@
     "@opentelemetry/core": "^1.8.0",
     "@opentelemetry/exporter-jaeger": "^1.8.0",
     "@opentelemetry/exporter-trace-otlp-grpc": "^0.34.0",
-    "@opentelemetry/instrumentation-aws-sdk": "^0.32.0",
+    "@opentelemetry/instrumentation-aws-sdk": "^0.33.0",
     "@opentelemetry/instrumentation-connect": "^0.31.0",
     "@opentelemetry/instrumentation-dns": "^0.31.0",
     "@opentelemetry/instrumentation-express": "^0.32.0",
