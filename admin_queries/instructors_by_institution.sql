@@ -20,5 +20,5 @@ GROUP BY
     i.short_name, u.uid, u.name, plc.short_name, plc.id, cp.course_role,
     cip.course_instance_role
 ORDER BY
-    u.uid, plc.short_name
+    plc.short_name, u.uid
 ;
