@@ -17,7 +17,7 @@ beautifulsoup4==4.11.1
 bokeh==3.0.2
 folium==0.13.0
 Pygments==2.13.0
-PuLP==2.6.0
+PuLP==2.7.0
 ipython==8.7.0
 nbformat==5.7.0
 nbconvert==7.2.5
