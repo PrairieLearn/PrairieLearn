@@ -282,7 +282,7 @@ def test_grade_question_parametrized_correct(
             return True, good_feedback
         return False, bad_feedback
 
-    bou.grade_question_parameterized(
+    bou.grade_answer_parameterized(
         question_data, question_name, grading_function, weight
     )
 
@@ -312,7 +312,7 @@ def test_grade_question_parametrized_bad_grade_function(
         return "True", f"The answer {ans} is right"
 
     with pytest.raises(AssertionError):
-        bou.grade_question_parameterized(question_data, question_name, grading_function)
+        bou.grade_answer_parameterized(question_data, question_name, grading_function)
 
 
 def test_grade_question_parametrized_key_error_blank(
@@ -328,11 +328,11 @@ def test_grade_question_parametrized_key_error_blank(
         return (True, None)
 
     with pytest.raises(KeyError):
-        bou.grade_question_parameterized(question_data, question_name, grading_function)
+        bou.grade_answer_parameterized(question_data, question_name, grading_function)
 
     # Empty out submitted answers
     question_data["submitted_answers"] = dict()
     question_data["format_errors"] = dict()
-    bou.grade_question_parameterized(question_data, question_name, grading_function)
+    bou.grade_answer_parameterized(question_data, question_name, grading_function)
 
     assert question_data["format_errors"][question_name] == "No answer was submitted"

@@ -248,7 +248,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     big_o_type = bou.get_enum_attrib(BigOType, element, "type", BIG_O_TYPE_DEFAULT)
 
-    bou.grade_question_parameterized(
+    bou.grade_answer_parameterized(
         data,
         name,
         lambda a_sub: GRADE_FUNCTION_DICT[big_o_type](a_tru, a_sub, variables),

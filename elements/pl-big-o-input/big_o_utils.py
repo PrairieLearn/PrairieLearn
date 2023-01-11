@@ -156,7 +156,7 @@ class DisplayType(Enum):
     BLOCK = "block"
 
 
-def grade_question_parameterized(
+def grade_answer_parameterized(
     data: pl.QuestionData,
     question_name: str,
     grade_function: Callable[[Any], Tuple[Union[bool, float], Optional[str]]],
