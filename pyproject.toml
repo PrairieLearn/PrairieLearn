@@ -16,8 +16,10 @@ skip_glob = ["tools/*", "exampleCourse/*", "testCourse/*", "node_modules/*"]
 [tool.pyright]
 include = [
     "./elements/pl-hidden-hints",
-    "./elements/pl-order-blocks",
     "./elements/pl-symbolic-input",
+    "./python/conftest.py",
+    "./python/prairielearn.py",
+    "./python/prairielearn_test.py",
     "./python/python_helper_sympy_test.py"
 ]
 extraPaths = ["./python"]
