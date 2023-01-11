@@ -2,6 +2,7 @@ import collections
 import html
 import importlib
 import importlib.util
+import math
 import os
 import re
 import unicodedata
@@ -53,6 +54,46 @@ class QuestionData(TypedDict):
 
 class ElementTestData(QuestionData):
     test_type: Literal["correct", "incorrect", "invalid"]
+
+
+def set_weighted_score_data(data: QuestionData, weight_default: int = 1) -> None:
+    """
+    Sets overall question score to be weighted average of all partial scores. Uses
+    weight_default to fill in a default weight for a score if one is missing.
+    """
+
+    weight_total = 0
+    score_total = 0.0
+    for part in data["partial_scores"].values():
+        score = part["score"]
+        weight = part.get("weight", weight_default)
+
+        if score is None:
+            raise ValueError("Can't set weighted score data if score is None.")
+
+        score_total += score * weight
+        weight_total += weight
+
+    data["score"] = score_total / weight_total
+
+
+def set_all_or_nothing_score_data(data: QuestionData) -> None:
+    """Gives points to main question score if all partial scores are correct."""
+
+    data["score"] = 1.0 if all_partial_scores_correct(data) else 0.0
+
+
+def all_partial_scores_correct(data: QuestionData) -> bool:
+    """Return true if all questions are correct in partial scores and it's nonempty."""
+    partial_scores = data["partial_scores"]
+
+    if len(partial_scores) == 0:
+        return False
+
+    return all(
+        part["score"] is not None and math.isclose(part["score"], 1.0)
+        for part in partial_scores.values()
+    )
 
 
 def to_json(v):
