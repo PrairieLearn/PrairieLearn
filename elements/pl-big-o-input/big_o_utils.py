@@ -216,13 +216,12 @@ EnumT = TypeVar("EnumT", bound=Enum)
 
 
 def get_enum_attrib(
-    enum_type: Type[EnumT],
     element: lxml.html.HtmlElement,
     name: str,
+    enum_type: Type[EnumT],
     default: Optional[EnumT] = None,
 ) -> EnumT:
-    """value = get_enum_attrib(enum_type, element, name, default)
-
+    """
     Returns the named attribute for the element parsed as an enum,
     or the (optional) default value. If the default value is not provided
     and the attribute is missing then an exception is thrown. An exception

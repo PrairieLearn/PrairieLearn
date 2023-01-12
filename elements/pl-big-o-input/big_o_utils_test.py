@@ -301,7 +301,7 @@ def test_grade_answer_parametrized_correct(
     )
 
 
-def test_grade_question_parametrized_bad_grade_function(
+def test_grade_answer_parametrized_bad_grade_function(
     question_data: pl.QuestionData,
 ) -> None:
     question_name = "name"
@@ -315,7 +315,7 @@ def test_grade_question_parametrized_bad_grade_function(
         bou.grade_answer_parameterized(question_data, question_name, grading_function)
 
 
-def test_grade_question_parametrized_key_error_blank(
+def test_grade_answer_parametrized_key_error_blank(
     question_data: pl.QuestionData,
 ) -> None:
     question_name = "name"

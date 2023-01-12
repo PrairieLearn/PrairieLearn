@@ -82,10 +82,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     variables = phs.get_variables_list(
         pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
-    display = bou.get_enum_attrib(bou.DisplayType, element, "display", DISPLAY_DEFAULT)
+    display = bou.get_enum_attrib(element, "display", bou.DisplayType, DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
 
-    bigo_type = bou.get_enum_attrib(BigOType, element, "type", BIG_O_TYPE_DEFAULT).value
+    bigo_type = bou.get_enum_attrib(element, "type", BigOType, BIG_O_TYPE_DEFAULT).value
 
     constants_class = phs._Constants()
 
@@ -246,7 +246,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     if a_tru is None:
         return
 
-    big_o_type = bou.get_enum_attrib(BigOType, element, "type", BIG_O_TYPE_DEFAULT)
+    big_o_type = bou.get_enum_attrib(element, "type", BigOType, BIG_O_TYPE_DEFAULT)
 
     bou.grade_answer_parameterized(
         data,
@@ -275,7 +275,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
     elif result == "incorrect":
         data["raw_submitted_answers"][name] = f"{random.randint(4, 100):d} * {a_tru}"
-        bigo_type = bou.get_enum_attrib(BigOType, element, "type", BIG_O_TYPE_DEFAULT)
+        bigo_type = bou.get_enum_attrib(element, "type", BigOType, BIG_O_TYPE_DEFAULT)
 
         if bigo_type is BigOType.THETA:
             data["partial_scores"][name] = {
