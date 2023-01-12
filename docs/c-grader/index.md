@@ -135,10 +135,12 @@ The instruction above will compile the student-provided C/C++ file with the inst
 It is also possible to compile multiple student files and multiple question-provided files into a single executable, by providing lists of files:
 
 ```python
-self.compile_file(["student_file1.c", "student_file2.c"], "executable",
-                  add_c_file=["/grade/tests/question_file1.c",
-                              "/grade/tests/question_file2.c"],
-                  flags=["-I/grade/tests", "-I/grade/student"])
+self.compile_file(
+    ["student_file1.c", "student_file2.c"],
+    "executable",
+    add_c_file=["/grade/tests/question_file1.c", "/grade/tests/question_file2.c"],
+    flags=["-I/grade/tests", "-I/grade/student"],
+)
 ```
 
 If the compilation involves include (`.h`) files, the flags `-I/grade/tests` (for question-provided includes) and `-I/grade/student` (for student-provided includes) are recommended as well. The specific `.h` files don't need to be listed as arguments to `compile_file`.
