@@ -141,8 +141,8 @@ let update_queue = {}; // key: path of file on local, value: action ('update' or
 let workspacePrefix; // Jobs directory
 let watcher;
 
-async.series(
-  [
+async
+  .series([
     async () => {
       if (config.runningInEc2) {
         await awsHelper.loadConfigSecrets(); // sets config.* variables
@@ -366,17 +366,15 @@ async.series(
         }
       });
     },
-  ],
-  function (err, data) {
-    if (err) {
-      Sentry.captureException(err);
-      logger.error('Error initializing workspace host:', err, data);
-      markSelfUnhealthy(err);
-    } else {
-      logger.info('Workspace host ready');
-    }
-  }
-);
+  ])
+  .then(() => {
+    logger.info('Workspace host ready');
+  })
+  .catch(async function (err) {
+    Sentry.captureException(err);
+    logger.error('Error initializing workspace host:', err);
+    await markSelfUnhealthy(err);
+  });
 
 /**
  * Push all of the contents of a container's home directory to S3.
