@@ -142,7 +142,6 @@ def to_json(v, *, new_np_scalar_encoding=False):
                 "_value": str(v),
             }
 
-    # TODO maybe add encoding of complex numpy object?
     if np.isscalar(v) and np.iscomplexobj(v):
         return {"_type": "complex", "_value": {"real": v.real, "imag": v.imag}}
     elif isinstance(v, np.ndarray):
