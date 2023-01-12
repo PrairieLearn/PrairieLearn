@@ -2102,6 +2102,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@jsdoc/salty@npm:^0.2.1":
+  version: 0.2.2
+  resolution: "@jsdoc/salty@npm:0.2.2"
+  dependencies:
+    lodash: ^4.17.21
+  checksum: 1342470c6fda7fdc1c609a3e3b2e827dee21695ceacfb562f75563f93a87125837008075b448e8529a3b5ca5ca872f81e73bb30cc1de69847c890e4506607025
+  languageName: node
+  linkType: hard
+
 "@koa/router@npm:^9.0.0":
   version: 9.4.0
   resolution: "@koa/router@npm:9.4.0"
@@ -3002,6 +3011,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@sinonjs/fake-timers@npm:10.0.2":
+  version: 10.0.2
+  resolution: "@sinonjs/fake-timers@npm:10.0.2"
+  dependencies:
+    "@sinonjs/commons": ^2.0.0
+  checksum: c62aa98e7cefda8dedc101ce227abc888dc46b8ff9706c5f0a8dfd9c3ada97d0a5611384738d9ba0b26b59f99c2ba24efece8e779bb08329e9e87358fa309824
+  languageName: node
+  linkType: hard
+
 "@sinonjs/fake-timers@npm:^7.0.4":
   version: 7.1.2
   resolution: "@sinonjs/fake-timers@npm:7.1.2"
@@ -3262,12 +3280,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/fs-extra@npm:^9.0.13":
-  version: 9.0.13
-  resolution: "@types/fs-extra@npm:9.0.13"
+"@types/fs-extra@npm:^11.0.1":
+  version: 11.0.1
+  resolution: "@types/fs-extra@npm:11.0.1"
   dependencies:
+    "@types/jsonfile": "*"
     "@types/node": "*"
-  checksum: add79e212acd5ac76b97b9045834e03a7996aef60a814185e0459088fd290519a3c1620865d588fa36c4498bf614210d2a703af5cf80aa1dbc125db78f6edac3
+  checksum: 3e930346e5d84f419deb8ced1c582beef8cb20d0bd8a0eb145a37d75bab0572a1895f0e48a0d681d386b3a58b9a992b2d2acecc464bcaec2548f53ea00718651
   languageName: node
   linkType: hard
 
@@ -3346,6 +3365,15 @@ __metadata:
   version: 0.0.29
   resolution: "@types/json5@npm:0.0.29"
   checksum: e60b153664572116dfea673c5bda7778dbff150498f44f998e34b5886d8afc47f16799280e4b6e241c0472aef1bc36add771c569c68fc5125fc2ae519a3eb9ac
+  languageName: node
+  linkType: hard
+
+"@types/jsonfile@npm:*":
+  version: 6.1.1
+  resolution: "@types/jsonfile@npm:6.1.1"
+  dependencies:
+    "@types/node": "*"
+  checksum: 0f8fe0a9221a00e8413cffba723dfe16553868724b830237256fb0052ecd5cac96498189d1235a001cfa815f352008261c9ceb373f0aa58227f891e0c7a12c4d
   languageName: node
   linkType: hard
 
@@ -3643,7 +3671,7 @@ __metadata:
     "@types/cheerio": ^0.22.31
     "@types/dockerode": ^3.3.14
     "@types/folder-hash": ^4.0.2
-    "@types/fs-extra": ^9.0.13
+    "@types/fs-extra": ^11.0.1
     "@types/jest": ^29.2.5
     "@types/loopbench": ^1.2.1
     "@types/mocha": ^10.0.1
@@ -3712,7 +3740,7 @@ __metadata:
     folder-hash: ^4.0.4
     fs-extra: ^11.1.0
     generic-pool: ^3.9.0
-    googleapis: ^109.0.1
+    googleapis: ^110.0.0
     he: ^1.2.0
     highlight.js: ^11.7.0
     htmlhint: ^1.1.4
@@ -3726,10 +3754,10 @@ __metadata:
     jquery-ui-dist: ^1.13.2
     jquery-ui-touch-punch: ^0.2.3
     js-cookie: ^2.2.1
-    jsdoc: ^3.6.11
+    jsdoc: ^4.0.0
     json-stable-stringify: ^1.0.2
     json-stringify-safe: ^5.0.1
-    klaw: ^3.0.0
+    klaw: ^4.1.0
     lodash: ^4.17.21
     logform: ^2.4.2
     loopbench: ^2.0.0
@@ -3779,7 +3807,7 @@ __metadata:
     search-string: ^3.1.0
     serve-favicon: ^2.5.0
     showdown: ^1.9.1
-    sinon: ^14.0.2
+    sinon: ^15.0.1
     socket.io: ^4.5.4
     socket.io-client: ^4.5.4
     socket.io-redis: ^6.1.1
@@ -8050,13 +8078,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"googleapis@npm:^109.0.1":
-  version: 109.0.1
-  resolution: "googleapis@npm:109.0.1"
+"googleapis@npm:^110.0.0":
+  version: 110.0.0
+  resolution: "googleapis@npm:110.0.0"
   dependencies:
     google-auth-library: ^8.0.2
     googleapis-common: ^6.0.0
-  checksum: d07b928d6003c9d4959689466f305474c3fd9e43412d6d8de57c2995a380baf70d0cdff9575559757fe76149d8edb75b1609e75ad5539548f7836c43e2b954ca
+  checksum: 4cfa66d007ecca350e9df240a476792654385e878c76d3ca755a5df3898c97cd3256134b788c4765513bca393062f9e033f746245eba45ae189769918d1ccd98
   languageName: node
   linkType: hard
 
@@ -9739,11 +9767,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jsdoc@npm:^3.6.11":
-  version: 3.6.11
-  resolution: "jsdoc@npm:3.6.11"
+"jsdoc@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "jsdoc@npm:4.0.0"
   dependencies:
     "@babel/parser": ^7.9.4
+    "@jsdoc/salty": ^0.2.1
     "@types/markdown-it": ^12.2.3
     bluebird: ^3.7.2
     catharsis: ^0.9.0
@@ -9756,11 +9785,10 @@ __metadata:
     mkdirp: ^1.0.4
     requizzle: ^0.2.3
     strip-json-comments: ^3.1.0
-    taffydb: 2.6.2
     underscore: ~1.13.2
   bin:
     jsdoc: jsdoc.js
-  checksum: 7920b5cba6200c8f56c9ac2ac5e89d06b6581dd1ce22e66976409fad8b68c16bfd8cd30fe9af58baeacc9f6bd9ba06d901ca4f5e234944f42a3c37e55e4ddcf0
+  checksum: 3aa99ccb13986e07929abda10276caa2b428faeb230563f89b3dea041f97bc9354f70eb4bd1add961b9041cd950fa8c5cdfad15f59e8ac6e6d3a58b153fc7184
   languageName: node
   linkType: hard
 
@@ -9873,13 +9901,13 @@ __metadata:
   linkType: hard
 
 "json5@npm:^1.0.1":
-  version: 1.0.1
-  resolution: "json5@npm:1.0.1"
+  version: 1.0.2
+  resolution: "json5@npm:1.0.2"
   dependencies:
     minimist: ^1.2.0
   bin:
     json5: lib/cli.js
-  checksum: e76ea23dbb8fc1348c143da628134a98adf4c5a4e8ea2adaa74a80c455fc2cdf0e2e13e6398ef819bfe92306b610ebb2002668ed9fc1af386d593691ef346fc3
+  checksum: 866458a8c58a95a49bef3adba929c625e82532bcff1fe93f01d29cb02cac7c3fe1f4b79951b7792c2da9de0b32871a8401a6e3c5b36778ad852bf5b8a61165d7
   languageName: node
   linkType: hard
 
@@ -10025,6 +10053,13 @@ __metadata:
   dependencies:
     graceful-fs: ^4.1.9
   checksum: 1bf9de22392c80d28de8a2babd6f0de29fa52fcdc1654838fd35174b3641c168ec32b8b03022191e3c190efd535c31fce23f85e29cb260245571da7263ef418e
+  languageName: node
+  linkType: hard
+
+"klaw@npm:^4.1.0":
+  version: 4.1.0
+  resolution: "klaw@npm:4.1.0"
+  checksum: 23fcdd8b837f7d51f0a62bebc4e5f83ee8338083597f33f97ae6aed3305c53220c8bf9f1a81024c11658b2e71022868f3b2ba4c39298af4eaacd38ef1e3a878e
   languageName: node
   linkType: hard
 
@@ -13345,17 +13380,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sinon@npm:^14.0.2":
-  version: 14.0.2
-  resolution: "sinon@npm:14.0.2"
+"sinon@npm:^15.0.1":
+  version: 15.0.1
+  resolution: "sinon@npm:15.0.1"
   dependencies:
     "@sinonjs/commons": ^2.0.0
-    "@sinonjs/fake-timers": ^9.1.2
+    "@sinonjs/fake-timers": 10.0.2
     "@sinonjs/samsam": ^7.0.1
     diff: ^5.0.0
     nise: ^5.1.2
     supports-color: ^7.2.0
-  checksum: de7730cd7785a457e42f9a93e955780c870296036a13816e3c0c5648360afae82fdc748e36c854cf26fb8abd117855a7211aee49265c334fa61439aae17a1b72
+  checksum: 4b5acff291b4650cf736bf45fc9eceed44dceca63b663cbd55926dd688fe8e9baa4b4629e296ee5d5b64245aedec5c540fea0416b8bb35bccfb98ca9e9ed87f3
   languageName: node
   linkType: hard
 
@@ -13938,13 +13973,6 @@ __metadata:
   dependencies:
     jquery: ">=1.2.6"
   checksum: 6fad5f03a3a03f814bdd84bdeb1b939cfb1744fa17ddb3c9eb225457f75f34b7b133bc500b6d7ce481073c36cc52f297045274fe17a54db9a97caf74c29aa5e2
-  languageName: node
-  linkType: hard
-
-"taffydb@npm:2.6.2":
-  version: 2.6.2
-  resolution: "taffydb@npm:2.6.2"
-  checksum: 8fea9cdff71735a40320c4beeb80cb98837076cb89614bc55ac5d67561f35ebae158cfc07a193a1099b5e32746433b2c086b0cd6d56f29aa7c7678e74968335b
   languageName: node
   linkType: hard
 
