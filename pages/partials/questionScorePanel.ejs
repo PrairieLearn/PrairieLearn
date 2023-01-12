@@ -10,8 +10,8 @@
       <% } %>
       <% if (assessment.type == 'Homework') { %>
       <tr>
-        <td>History:</td>
-        <td><%- include('../partials/questionAwardedPoints', {awarded_points: instance_question.variants_points_list, init_points: assessment_question.init_points});  %></td>
+        <td>Previous variants:</td>
+        <td><%- include('../partials/questionAwardedPoints', {awarded_points: instance_question.variants_points_list, init_points: assessment_question.init_points, instance_question_id: instance_question.id, previous_variants: instance_question_info.previous_variants});  %></td>
       </tr>
       <% } %>
       <% let list_grading_method = true; %>

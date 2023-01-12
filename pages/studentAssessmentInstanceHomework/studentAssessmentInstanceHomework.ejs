@@ -66,22 +66,22 @@
           <thead>
             <% if (has_manual_grading_question && has_auto_grading_question) { %>
             <tr>
-              <th rowspan="2">Question</th>
-              <th class="text-center" colspan="3">Auto-grading</th>
-              <th class="text-center" rowspan="2">Manual grading points</th>
-              <th class="text-center" rowspan="2">Total points</th>
+              <th>Question</th>
+              <th class="text-center">Value</th>
+              <th class="text-center">Previous variants</th>
+              <th class="text-center">Auto-grading points</th>
+              <th class="text-center">Manual grading points</th>
+              <th class="text-center">Total points</th>
             </tr>
             <tr>
-              <th class="text-center">Value</th>
-              <th class="text-center">History</th>
-              <th class="text-center">Points</th>
+
             </tr>
             <% } else { %>
             <tr>
               <th>Question</th>
               <% if (has_auto_grading_question) { %>
               <th class="text-center">Value</th>
-              <th class="text-center">History</th>
+              <th class="text-center">Previous variants</th>
               <th class="text-center">Awarded points</th>
               <% } %>
               <% if (has_manual_grading_question) { %>
@@ -120,7 +120,7 @@
               </td>
               <% if (has_auto_grading_question) { %>
               <td class="text-center"><%- include('../partials/questionValue', {value: question.current_value});  %></td>
-              <td class="text-center"><%- include('../partials/questionAwardedPoints', {awarded_points: question.variants_points_list, init_points: question.init_points});  %></td>
+              <td class="text-center"><%- include('../partials/questionAwardedPoints', {awarded_points: question.variants_points_list, init_points: question.init_points, instance_question_id: question.id, previous_variants: question.previous_variants});  %></td>
               <% } %>
               <% if (has_auto_grading_question && has_manual_grading_question) { %>
               <td class="text-center">

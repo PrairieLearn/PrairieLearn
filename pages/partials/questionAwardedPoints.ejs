@@ -1,11 +1,9 @@
 <% include('pointsFormatter'); %>
 
-<% for (var i = 0; i < awarded_points.length; i++) { %>
-    <% if (awarded_points[i] < init_points) { %>
-        <% if (awarded_points[i] > 0) { %>
-            <span class="badge badge-warning"><%= getStringFromFloat(awarded_points[i]) %></span>
-        <% } %>
-    <% } else { %>
-        <span class="badge badge-success"><%= getStringFromFloat(awarded_points[i]) %></span>
+<% if (previous_variants) { %>
+    <% for (var i = 0; i < previous_variants.length; i++) { %>
+        <span class="badge badge-secondary">
+            <a class="text-white" href="<%= urlPrefix %>/instance_question/<%= instance_question_id %>/?variant_id=<%= previous_variants[i].variant_id %>"><%= Math.round(previous_variants[i].max_submission_score * 100) + "%"  %></a> 
+        </span>
     <% } %>
 <% } %>
