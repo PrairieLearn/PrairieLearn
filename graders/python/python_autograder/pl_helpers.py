@@ -7,7 +7,6 @@ from os.path import join, splitext
 
 import pygments
 from code_feedback import Feedback
-from IPython import get_ipython
 from IPython.core.interactiveshell import InteractiveShell
 from nbformat import read
 from pygments.formatters import Terminal256Formatter

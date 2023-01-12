@@ -1,6 +1,6 @@
 [tool.flake8]
 # TODO add python directory here in later PR
-filename = ["./elements/**/*.py"]
+filename = ["./elements/**/*.py", "./graders/**/*.py"]
 ignore = ["E501"]
 # Black compatibility
 max-line-length = 88

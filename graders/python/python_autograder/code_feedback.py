@@ -109,7 +109,7 @@ class Feedback:
         Used to hook into disallowed functions, raises an exception if
         the student tries to call it.
         """
-        raise RuntimeError(f"The use of this function is not allowed.")
+        raise RuntimeError("The use of this function is not allowed.")
 
     @classmethod
     def check_numpy_array_sanity(cls, name, num_axes, data):
