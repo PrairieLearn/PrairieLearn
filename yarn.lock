@@ -3686,7 +3686,7 @@ __metadata:
     "@types/yargs": ^17.0.19
     ace-builds: ^1.14.0
     ace-code: ^1.14.0
-    ajv: ^7.2.4
+    ajv: ^8.12.0
     ansi_up: ^5.1.0
     archiver: ^5.3.1
     async: ^3.2.4
@@ -3974,15 +3974,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ajv@npm:^7.2.4":
-  version: 7.2.4
-  resolution: "ajv@npm:7.2.4"
+"ajv@npm:^8.12.0":
+  version: 8.12.0
+  resolution: "ajv@npm:8.12.0"
   dependencies:
     fast-deep-equal: ^3.1.1
     json-schema-traverse: ^1.0.0
     require-from-string: ^2.0.2
     uri-js: ^4.2.2
-  checksum: 3c5be34cc37779e167be4406e620e2f4e69f04b50092e5e9cab609c8be822166ad850dac15e60c49642f46f5735eda2ca89efcd399189b116a56ac843a9a5023
+  checksum: 4dc13714e316e67537c8b31bc063f99a1d9d9a497eb4bbd55191ac0dcd5e4985bbb71570352ad6f1e76684fb6d790928f96ba3b2d4fd6e10024be9612fe3f001
   languageName: node
   linkType: hard
 
