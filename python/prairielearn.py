@@ -224,7 +224,7 @@ def from_json(v):
                 if "_concrete_type" in v and "_value" in v:
                     return getattr(np, v["_concrete_type"])(v["_value"])
                 else:
-                    raise ValueError(
+                    raise Exception(
                         f"variable of type {v['_type']} needs both concrete type and value information"
                     )
             elif v["_type"] == "ndarray":
@@ -876,8 +876,8 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
     Returns a tuple with the parsed value in the first entry and a dictionary with
     the intended value of "data" in the second entry.
 
-    On successful parsing, "data" will contain a 'submitted_answers' key that is
-    a JSON compatible parsed answer.
+    On successful parsing, "data" will contain a 'submitted_answers' key that is the
+    JSON encoded parsed answer.
 
     If parsing failed, the first entry will be 'None' and the "data" entry will
     contain a 'format_errors' key.
