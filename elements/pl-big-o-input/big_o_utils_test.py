@@ -231,7 +231,7 @@ class TestExceptions:
 
 # Start of generic utilites tests. Move these to prairieleran_test.py as needed
 
-
+# TODO get rid of this fixture once functions/tests get promoted (duplicate fixture)
 @pytest.fixture
 def question_data() -> pl.QuestionData:
     return {
@@ -264,7 +264,7 @@ def question_data() -> pl.QuestionData:
         ("base", "><", 3, False),
     ],
 )
-def test_grade_question_parametrized_correct(
+def test_grade_answer_parametrized_correct(
     question_data: pl.QuestionData,
     question_name: str,
     student_answer: str,
