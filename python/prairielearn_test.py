@@ -73,7 +73,7 @@ def test_set_score_data(
     ],
 )
 def test_numpy_serialization(numpy_object: Any) -> None:
-    """Test equality after conversion of various numpy objects"""
+    """Test equality after conversion of various numpy objects."""
 
     json_object = json.dumps(
         pl.to_json(numpy_object, new_np_scalar_encoding=True), allow_nan=False
@@ -92,7 +92,7 @@ def test_numpy_serialization(numpy_object: Any) -> None:
     ],
 )
 def test_legacy_serialization(old_object_to_encode: Any) -> None:
-    """Test that nothing happens under the old encoding for numpy ints."""
+    """Test that nothing happens under the old encoding for numpy scalars."""
 
     encoded_object = pl.to_json(old_object_to_encode)
 
