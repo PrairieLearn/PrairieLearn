@@ -96,15 +96,18 @@ def all_partial_scores_correct(data: QuestionData) -> bool:
     )
 
 
-def to_json(v):
+def to_json(v, *, new_np_scalar_encoding=False):
     """to_json(v)
 
     If v has a standard type that cannot be json serialized, it is replaced with
     a {'_type':..., '_value':...} pair that can be json serialized:
 
-        complex -> '_type': 'complex'
+
         numpy integer -> '_type': 'np_integer'
         numpy float -> '_type': 'np_floating'
+        numpy complex -> '_type': 'np_complex'
+
+        complex -> '_type': 'complex'
         non-complex ndarray (assumes each element can be json serialized) -> '_type': 'ndarray'
         complex ndarray -> '_type': 'complex_ndarray'
         sympy.Expr (i.e., any scalar sympy expression) -> '_type': 'sympy'
@@ -119,21 +122,29 @@ def to_json(v):
     If v can be json serialized or does not have a standard type, then it is
     returned without change.
     """
+    if new_np_scalar_encoding and type(v).__module__ == "numpy":
+        if np.issubdtype(type(v), np.integer):
+            return {
+                "_type": "np_integer",
+                "_concrete_type": type(v).__name__,
+                "_value": str(v),
+            }
+        elif np.issubdtype(type(v), np.floating):
+            return {
+                "_type": "np_floating",
+                "_concrete_type": type(v).__name__,
+                "_value": str(v),
+            }
+        elif np.issubdtype(type(v), np.complexfloating):
+            return {
+                "_type": "np_complex",
+                "_concrete_type": type(v).__name__,
+                "_value": str(v),
+            }
+
     # TODO maybe add encoding of complex numpy object?
     if np.isscalar(v) and np.iscomplexobj(v):
         return {"_type": "complex", "_value": {"real": v.real, "imag": v.imag}}
-    elif np.issubdtype(type(v), np.integer) and type(v).__module__ == "numpy":
-        return {
-            "_type": "np_integer",
-            "_concrete_type": type(v).__name__,
-            "_value": str(v),
-        }
-    elif np.issubdtype(type(v), np.floating) and type(v).__module__ == "numpy":
-        return {
-            "_type": "np_floating",
-            "_concrete_type": type(v).__name__,
-            "_value": str(v),
-        }
     elif isinstance(v, np.ndarray):
         if np.isrealobj(v):
             return {"_type": "ndarray", "_value": v.tolist(), "_dtype": str(v.dtype)}
@@ -182,6 +193,7 @@ def from_json(v):
         '_type': 'complex' -> complex
         '_type': 'np_integer' -> numpy integer
         '_type': 'np_floating' -> numpy float
+        '_type': 'np_complex' -> numpy complex
         '_type': 'ndarray' -> non-complex ndarray
         '_type': 'complex_ndarray' -> complex ndarray
         '_type': 'sympy' -> sympy.Expr
@@ -209,19 +221,12 @@ def from_json(v):
                     raise Exception(
                         "variable of type complex should have value with real and imaginary pair"
                     )
-            elif v["_type"] == "np_integer":
+            elif v["_type"] in {"np_integer", "np_floating", "np_complex"}:
                 if "_concrete_type" in v and "_value" in v:
                     return getattr(np, v["_concrete_type"])(v["_value"])
                 else:
                     raise ValueError(
-                        "variable of type np_integer needs both concrete type and value information"
-                    )
-            elif v["_type"] == "np_floating":
-                if "_concrete_type" in v and "_value" in v:
-                    return getattr(np, v["_concrete_type"])(v["_value"])
-                else:
-                    raise ValueError(
-                        "variable of type np_floating needs both concrete type and value information"
+                        f"variable of type {v['_type']} needs both concrete type and value information"
                     )
             elif v["_type"] == "ndarray":
                 if "_value" in v:

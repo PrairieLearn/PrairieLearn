@@ -62,6 +62,8 @@ def test_set_score_data(
         np.float32(2.1100044587483),
         np.float16(0.00000184388328),
         np.int64((2**53) + 5),
+        np.complex128("12+3j"),
+        np.complex256("12+3j"),
         np.arange(15),
         np.array([1.2, 3.5, 5.1]),
         np.array([1, 2, 3, 4]),
@@ -73,18 +75,38 @@ def test_set_score_data(
 def test_numpy_serialization(numpy_object: Any) -> None:
     """Test equality after conversion of various numpy objects"""
 
-    json_object = json.dumps(pl.to_json(numpy_object), allow_nan=False)
-
-    assert np.array_equal(
-        numpy_object, cast(Any, pl.from_json(json.loads(json_object)))
+    json_object = json.dumps(
+        pl.to_json(numpy_object, new_np_scalar_encoding=True), allow_nan=False
     )
+    decoded_json_object = pl.from_json(json.loads(json_object))
+
+    assert type(numpy_object) == type(decoded_json_object)
+    np.testing.assert_array_equal(numpy_object, decoded_json_object)
 
 
 @pytest.mark.parametrize(
-    "non_numpy_object",
-    [1, 1.45, 2.2, 10],
+    "old_object_to_encode",
+    [
+        np.int64(5),
+        np.float16(0.00000184388328),
+    ],
 )
-def test_non_numpy_serialization(non_numpy_object: Union[float, int]) -> None:
-    """Test that normal integers / floats aren't serialized"""
+def test_legacy_serialization(old_object_to_encode: Any) -> None:
+    """Test that nothing happens under the old encoding for numpy ints."""
 
-    assert non_numpy_object == pl.to_json(non_numpy_object)
+    encoded_object = pl.to_json(old_object_to_encode)
+
+    assert type(old_object_to_encode) == type(encoded_object)
+    assert old_object_to_encode == encoded_object
+
+
+def test_legacy_complex_serialization() -> None:
+    """Test legacy complex serialization."""
+
+    complex_num_string = "12+3j"
+
+    encoded_object = pl.from_json(pl.to_json(np.complex128(complex_num_string)))
+    expected_result = complex(complex_num_string)
+
+    assert type(expected_result) == type(encoded_object)
+    assert expected_result == encoded_object
