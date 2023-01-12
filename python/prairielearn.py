@@ -777,7 +777,7 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
             if not np.isfinite(a_sub_parsed):
                 raise ValueError('The submitted answer is not a finite number.')
             value = a_sub_parsed
-            data['submitted_answers'] = value
+            data['submitted_answers'] = to_json(value)
         except Exception as error:
             data['format_errors'] = f'Invalid format: {str(error)}'
 
