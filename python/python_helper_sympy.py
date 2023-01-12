@@ -1,5 +1,4 @@
 import ast
-import sys
 
 import sympy
 
@@ -357,13 +356,13 @@ def sympy_to_json(a, allow_complex=True):
 
 
 def json_to_sympy(a, allow_complex=True):
-    if not "_type" in a:
+    if "_type" not in a:
         raise ValueError("json must have key _type for conversion to sympy")
     if a["_type"] != "sympy":
         raise ValueError('json must have _type == "sympy" for conversion to sympy')
-    if not "_value" in a:
+    if "_value" not in a:
         raise ValueError("json must have key _value for conversion to sympy")
-    if not "_variables" in a:
+    if "_variables" not in a:
         a["_variables"] = None
 
     return convert_string_to_sympy(
