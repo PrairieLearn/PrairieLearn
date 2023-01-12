@@ -1704,14 +1704,13 @@ An overlay is pre-defined as a "overlay area" with a static size. By default, el
 ### `pl-external-grader-variables` element
 
 Displays variables that are given to the student, or expected for the student to define in externally-graded Python questions.
-In particular, **we advise against using this element for any non-Python externally graded question**, since the way this element
-stores parameters is specifically for use with the Python autograder.
+In particular, **we advise against using this element for any non-Python externally graded question**, since the way this element stores parameters is specifically for use with the Python autograder. If you want to display a table of variables for a question using a different autograder, consider using a standard HTML `<table>` instead.
 
-The list of variables can be defined in in `data['params']` or the question HTML itself (but not both!). If defined in the
-question HTML itself, the variable information is added to `data['params']` for use by the external grader. If no descriptions
+The list of variables can be defined in in `data["params"]` or the question HTML itself (but not both!). If defined in the
+question HTML itself, the variable information is added to `data["params"]` for use by the external grader. If no descriptions
 are present, this colmun is hidden in the table shown to the student.
 
-If stored in `data['params']`, the variables list has the following format:
+If stored in `data["params"]`, the variables list has the following format:
 
 ```python
 data["params"]["names_for_user"] = [
@@ -1763,7 +1762,7 @@ def generate(data):
 
 | Attribute     | Type    | Default | Description                                                                                                                                 |
 | ------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `params-name` | string  | -       | Name of variable specification in `data['params']` to display, the format for which is given above.                                         |
+| `params-name` | string  | -       | Name of variable specification in `data["params"]` to display, the format for which is given above.                                         |
 | `empty`       | boolean | false   | Whether the entry for the given `params-name` should be set to empty. Will throw an error if variables are defined and this is set to true. |
 
 The HTML inside the inner `pl-variable` tag is used as the description. If the tag is empty, no description is used for the given variable. The inner `pl-variable` tag has the following attributes:
