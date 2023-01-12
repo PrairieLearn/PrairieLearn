@@ -96,18 +96,21 @@ def all_partial_scores_correct(data: QuestionData) -> bool:
     )
 
 
-def to_json(v, *, new_np_scalar_encoding=False):
+def to_json(v, *, np_encoding=1):
     """to_json(v)
 
     If v has a standard type that cannot be json serialized, it is replaced with
     a {'_type':..., '_value':...} pair that can be json serialized:
 
+        If np_encoding is set to 2, will serialize numpy scalars as follows:
 
         numpy integer -> '_type': 'np_integer'
         numpy float -> '_type': 'np_floating'
         numpy complex -> '_type': 'np_complex'
 
-        complex -> '_type': 'complex'
+        Otherwise, performs the following encodings:
+
+        any complex scalar (including numpy) -> '_type': 'complex'
         non-complex ndarray (assumes each element can be json serialized) -> '_type': 'ndarray'
         complex ndarray -> '_type': 'complex_ndarray'
         sympy.Expr (i.e., any scalar sympy expression) -> '_type': 'sympy'
@@ -122,7 +125,10 @@ def to_json(v, *, new_np_scalar_encoding=False):
     If v can be json serialized or does not have a standard type, then it is
     returned without change.
     """
-    if new_np_scalar_encoding and type(v).__module__ == "numpy":
+    if np_encoding not in {1, 2}:
+        raise ValueError(f"Invaild np_encoding {np_encoding}, must be 1 or 2.")
+
+    if np_encoding == 2 and type(v).__module__ == "numpy":
         if np.issubdtype(type(v), np.integer):
             return {
                 "_type": "np_integer",
