@@ -1,17 +1,27 @@
-from collections import Counter
-import networkx as nx
 import itertools
+from collections import Counter
 from copy import deepcopy
+
+import networkx as nx
 
 
 def validate_grouping(graph, group_belonging):
     for node in graph:
         group_tag = group_belonging.get(node)
         if group_tag is None:
-            if sum(group_belonging.get(dependency) is not None for (dependency, _) in graph.in_edges(node)) != 0:
+            if (
+                sum(
+                    group_belonging.get(dependency) is not None
+                    for (dependency, _) in graph.in_edges(node)
+                )
+                != 0
+            ):
                 return False
         else:
-            if not all(group_belonging.get(dependency) == group_tag for (dependency, _) in graph.in_edges(node)):
+            if not all(
+                group_belonging.get(dependency) == group_tag
+                for (dependency, _) in graph.in_edges(node)
+            ):
                 return False
     return True
 
@@ -94,15 +104,23 @@ def dag_to_nx(depends_graph, group_belonging):
     add_edges_for_groups(graph, group_belonging)
 
     if not nx.is_directed_acyclic_graph(graph):
-        raise Exception('Dependency between blocks does not form a Directed Acyclic Graph; Problem unsolvable.')
+        raise Exception(
+            "Dependency between blocks does not form a Directed Acyclic Graph; Problem unsolvable."
+        )
 
     return graph
 
 
 def add_edges_for_groups(graph, group_belonging):
-    groups = {group: [tag for tag in group_belonging if group_belonging[tag] == group] for group in set(group_belonging.values()) if group is not None}
+    groups = {
+        group: [tag for tag in group_belonging if group_belonging[tag] == group]
+        for group in set(group_belonging.values())
+        if group is not None
+    }
     if not validate_grouping(graph, group_belonging):
-        raise Exception('Blocks within in a `pl-block-group` are not allowed to depend on blocks outside their group.')
+        raise Exception(
+            "Blocks within in a `pl-block-group` are not allowed to depend on blocks outside their group."
+        )
 
     # if a group G depends on a node N, all blocks in the group G should depend on Node N
     for group_tag in groups:
@@ -139,7 +157,7 @@ def grade_dag(submission, depends_graph, group_belonging):
 
 
 def is_vertex_cover(G, vertex_cover):
-    """ this function from
+    """this function from
     https://docs.ocean.dwavesys.com/projects/dwave-networkx/en/latest/_modules/dwave_networkx/algorithms/cover.html#is_vertex_cover
     """
     cover = set(vertex_cover)
@@ -185,10 +203,19 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
     for i in range(len(submission_no_distractors)):
         for j in range(i + 2, len(submission_no_distractors)):
             node1, node2 = submission_no_distractors[i], submission_no_distractors[j]
-            if group_belonging.get(node1) is None or group_belonging.get(node1) != group_belonging.get(node2):
+            if group_belonging.get(node1) is None or group_belonging.get(
+                node1
+            ) != group_belonging.get(node2):
                 continue
-            if not all([group_belonging[x] == group_belonging[node1] for x in submission_no_distractors[i:j + 1]]):
-                problematic_subgraph.add_nodes_from(submission_no_distractors[i:j + 1])
+            if not all(
+                [
+                    group_belonging[x] == group_belonging[node1]
+                    for x in submission_no_distractors[i : j + 1]
+                ]
+            ):
+                problematic_subgraph.add_nodes_from(
+                    submission_no_distractors[i : j + 1]
+                )
 
     if problematic_subgraph.number_of_nodes() == 0:
         mvc_size = 0
@@ -201,9 +228,15 @@ def lcs_partial_credit(submission, depends_graph, group_belonging):
                     continue
 
                 # make sure deleting subset will resolve a separated pl-block-group
-                edited_submission = [x for x in submission_no_distractors if x not in subset]
-                edited_group_belonging = {key: group_belonging.get(key) for key in edited_submission}
-                if len(edited_submission) == check_grouping(edited_submission, edited_group_belonging):
+                edited_submission = [
+                    x for x in submission_no_distractors if x not in subset
+                ]
+                edited_group_belonging = {
+                    key: group_belonging.get(key) for key in edited_submission
+                }
+                if len(edited_submission) == check_grouping(
+                    edited_submission, edited_group_belonging
+                ):
                     mvc_size = len(subset)
                     break
 
