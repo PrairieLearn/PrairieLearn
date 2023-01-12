@@ -3002,6 +3002,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@sinonjs/fake-timers@npm:10.0.2":
+  version: 10.0.2
+  resolution: "@sinonjs/fake-timers@npm:10.0.2"
+  dependencies:
+    "@sinonjs/commons": ^2.0.0
+  checksum: c62aa98e7cefda8dedc101ce227abc888dc46b8ff9706c5f0a8dfd9c3ada97d0a5611384738d9ba0b26b59f99c2ba24efece8e779bb08329e9e87358fa309824
+  languageName: node
+  linkType: hard
+
 "@sinonjs/fake-timers@npm:^7.0.4":
   version: 7.1.2
   resolution: "@sinonjs/fake-timers@npm:7.1.2"
@@ -3262,12 +3271,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/fs-extra@npm:^9.0.13":
-  version: 9.0.13
-  resolution: "@types/fs-extra@npm:9.0.13"
+"@types/fs-extra@npm:^11.0.1":
+  version: 11.0.1
+  resolution: "@types/fs-extra@npm:11.0.1"
   dependencies:
+    "@types/jsonfile": "*"
     "@types/node": "*"
-  checksum: add79e212acd5ac76b97b9045834e03a7996aef60a814185e0459088fd290519a3c1620865d588fa36c4498bf614210d2a703af5cf80aa1dbc125db78f6edac3
+  checksum: 3e930346e5d84f419deb8ced1c582beef8cb20d0bd8a0eb145a37d75bab0572a1895f0e48a0d681d386b3a58b9a992b2d2acecc464bcaec2548f53ea00718651
   languageName: node
   linkType: hard
 
@@ -3346,6 +3356,15 @@ __metadata:
   version: 0.0.29
   resolution: "@types/json5@npm:0.0.29"
   checksum: e60b153664572116dfea673c5bda7778dbff150498f44f998e34b5886d8afc47f16799280e4b6e241c0472aef1bc36add771c569c68fc5125fc2ae519a3eb9ac
+  languageName: node
+  linkType: hard
+
+"@types/jsonfile@npm:*":
+  version: 6.1.1
+  resolution: "@types/jsonfile@npm:6.1.1"
+  dependencies:
+    "@types/node": "*"
+  checksum: 0f8fe0a9221a00e8413cffba723dfe16553868724b830237256fb0052ecd5cac96498189d1235a001cfa815f352008261c9ceb373f0aa58227f891e0c7a12c4d
   languageName: node
   linkType: hard
 
@@ -3643,7 +3662,7 @@ __metadata:
     "@types/cheerio": ^0.22.31
     "@types/dockerode": ^3.3.14
     "@types/folder-hash": ^4.0.2
-    "@types/fs-extra": ^9.0.13
+    "@types/fs-extra": ^11.0.1
     "@types/jest": ^29.2.5
     "@types/loopbench": ^1.2.1
     "@types/mocha": ^10.0.1
@@ -3779,7 +3798,7 @@ __metadata:
     search-string: ^3.1.0
     serve-favicon: ^2.5.0
     showdown: ^1.9.1
-    sinon: ^14.0.2
+    sinon: ^15.0.1
     socket.io: ^4.5.4
     socket.io-client: ^4.5.4
     socket.io-redis: ^6.1.1
@@ -9873,13 +9892,13 @@ __metadata:
   linkType: hard
 
 "json5@npm:^1.0.1":
-  version: 1.0.1
-  resolution: "json5@npm:1.0.1"
+  version: 1.0.2
+  resolution: "json5@npm:1.0.2"
   dependencies:
     minimist: ^1.2.0
   bin:
     json5: lib/cli.js
-  checksum: e76ea23dbb8fc1348c143da628134a98adf4c5a4e8ea2adaa74a80c455fc2cdf0e2e13e6398ef819bfe92306b610ebb2002668ed9fc1af386d593691ef346fc3
+  checksum: 866458a8c58a95a49bef3adba929c625e82532bcff1fe93f01d29cb02cac7c3fe1f4b79951b7792c2da9de0b32871a8401a6e3c5b36778ad852bf5b8a61165d7
   languageName: node
   linkType: hard
 
@@ -13345,17 +13364,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sinon@npm:^14.0.2":
-  version: 14.0.2
-  resolution: "sinon@npm:14.0.2"
+"sinon@npm:^15.0.1":
+  version: 15.0.1
+  resolution: "sinon@npm:15.0.1"
   dependencies:
     "@sinonjs/commons": ^2.0.0
-    "@sinonjs/fake-timers": ^9.1.2
+    "@sinonjs/fake-timers": 10.0.2
     "@sinonjs/samsam": ^7.0.1
     diff: ^5.0.0
     nise: ^5.1.2
     supports-color: ^7.2.0
-  checksum: de7730cd7785a457e42f9a93e955780c870296036a13816e3c0c5648360afae82fdc748e36c854cf26fb8abd117855a7211aee49265c334fa61439aae17a1b72
+  checksum: 4b5acff291b4650cf736bf45fc9eceed44dceca63b663cbd55926dd688fe8e9baa4b4629e296ee5d5b64245aedec5c540fea0416b8bb35bccfb98ca9e9ed87f3
   languageName: node
   linkType: hard
 
