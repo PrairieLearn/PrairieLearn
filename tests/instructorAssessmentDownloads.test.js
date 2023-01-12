@@ -2,6 +2,7 @@ const _ = require('lodash');
 const assert = require('chai').assert;
 const request = require('request');
 const cheerio = require('cheerio');
+// eslint-disable-next-line import/no-unresolved -- https://github.com/import-js/eslint-plugin-import/issues/2132
 const { parse: csvParse } = require('csv-parse/sync');
 
 const helperServer = require('./helperServer');
