@@ -7,14 +7,12 @@ const jju = require('jju');
 const Ajv = require('ajv').default;
 const betterAjvErrors = require('better-ajv-errors').default;
 const { parseISO, isValid, isAfter, isFuture } = require('date-fns');
-const { default: chalkDefault } = require('chalk');
+const { chalk } = require('../lib/chalk');
 
 const schemas = require('../schemas');
 const infofile = require('./infofile');
 const jsonLoad = require('../lib/json-load');
 const perf = require('./performance')('course-db');
-
-const chalk = new chalkDefault.constructor({ enabled: true, level: 3 });
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv({ allErrors: true });
