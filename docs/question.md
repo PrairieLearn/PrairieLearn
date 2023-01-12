@@ -487,7 +487,7 @@ def generate(data):
   data["correct_answers"]["c"] = a - b
 ```
 
-Similarly, for grading functions involving floating point numbers, _avoid exact comparisons with `==`._ Floating point calculations in Python introduce error, and comparisons with `==` might unexpectedly fail. Instead, the function [`math.isclose`](https://docs.python.org/3/library/math.html#math.isclose) can be used, as it performs comparisons within given tolerance values. The functions `is_correct_scalar_ra`, `is_correct_scalar_sf`, and `is_correct_scalar_dd` found in [`prairielearn.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/python/prairielearn.py) can be used to perform more specialized comparisons.
+Similarly, for grading functions involving floating point numbers, _avoid exact comparisons with `==`._ Floating point calculations in Python introduce error, and comparisons with `==` might unexpectedly fail. Instead, the function [`math.isclose`](https://docs.python.org/3/library/math.html#math.isclose) can be used, as it performs comparisons within given tolerance values. The functions [`is_correct_scalar_ra`](https://github.com/PrairieLearn/PrairieLearn/blob/master/python/prairielearn.py#L1312), [`is_correct_scalar_sf`](https://github.com/PrairieLearn/PrairieLearn/blob/master/python/prairielearn.py#L1332), and [`is_correct_scalar_dd`](https://github.com/PrairieLearn/PrairieLearn/blob/master/python/prairielearn.py#L1316) can be imported from `prairielearn.py` can be used to perform more specialized comparisons.
 
 Specifically, the function `is_correct_scalar_ra` compares floats using relative and absolute tolerances. The function
 `is_correct_scalar_sf` compares floats up to the number of significant figures given by the `digits` parameter. The function
