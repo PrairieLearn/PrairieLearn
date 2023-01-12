@@ -3746,7 +3746,7 @@ __metadata:
     htmlhint: ^1.1.4
     http-proxy-middleware: ^2.0.6
     http-status: ^1.6.2
-    isbinaryfile: ^4.0.10
+    isbinaryfile: ^5.0.0
     jest: ^29.3.1
     jju: ^1.4.0
     jose: ^4.11.2
@@ -9086,10 +9086,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"isbinaryfile@npm:^4.0.10":
-  version: 4.0.10
-  resolution: "isbinaryfile@npm:4.0.10"
-  checksum: a6b28db7e23ac7a77d3707567cac81356ea18bd602a4f21f424f862a31d0e7ab4f250759c98a559ece35ffe4d99f0d339f1ab884ffa9795172f632ab8f88e686
+"isbinaryfile@npm:^5.0.0":
+  version: 5.0.0
+  resolution: "isbinaryfile@npm:5.0.0"
+  checksum: 25cc27388d51b8322c103f5894f9e72ec04e017734e57c4b70be2666501ec7e7f6cbb4a5fcfd15260a7cac979bd1ddb7f5231f5a3098c0695c4e7c049513dfaf
   languageName: node
   linkType: hard
 

@@ -72,7 +72,7 @@
         "highlight.js": "^11.7.0",
         "http-proxy-middleware": "^2.0.6",
         "http-status": "^1.6.2",
-        "isbinaryfile": "^4.0.10",
+        "isbinaryfile": "^5.0.0",
         "jju": "^1.4.0",
         "jose": "^4.11.2",
         "jquery": "^3.6.3",
