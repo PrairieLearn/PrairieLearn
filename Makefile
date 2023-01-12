@@ -28,7 +28,7 @@ start-s3rver:
 test: test-js test-python
 test-js: test-prairielearn test-prairielib test-grader-host test-workspace-host test-packages
 test-prairielearn: start-support
-	@yarn mocha --bail --parallel "tests/**/*.test.{js,mjs}"
+	@yarn mocha --bail --parallel "tests/**/*.test.{js,mjs}" || { echo "Mocha failed. Repeating for full diagnostics." ; yarn mocha --parallel "tests/**/*.test.{js,mjs}" ; false ; }
 test-prairielearn-serial: start-support
 	@yarn mocha "tests/**/*.test.{js,mjs}"
 test-prairielib:
