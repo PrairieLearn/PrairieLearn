@@ -1,7 +1,9 @@
+import json
 import math
-from typing import Callable
+from typing import Any, Callable, Union, cast
 
 import lxml.html
+import numpy as np
 import prairielearn as pl
 import pytest
 
@@ -59,7 +61,7 @@ def test_set_score_data(
         np.float128(-1100204.04010340),
         np.float32(2.1100044587483),
         np.float16(0.00000184388328),
-        np.int64((2**53)+5),
+        np.int64((2**53) + 5),
         np.arange(15),
         np.array([1.2, 3.5, 5.1]),
         np.array([1, 2, 3, 4]),

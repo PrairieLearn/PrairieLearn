@@ -119,12 +119,21 @@ def to_json(v):
     If v can be json serialized or does not have a standard type, then it is
     returned without change.
     """
+    # TODO maybe add encoding of complex numpy object?
     if np.isscalar(v) and np.iscomplexobj(v):
-        return {'_type': 'complex', '_value': {'real': v.real, 'imag': v.imag}}
-    elif np.issubdtype(type(v), np.integer) and type(v).__module__ == 'numpy':
-        return {'_type': 'np_integer', '_concrete_type': type(v).__name__, '_value': str(v)}
-    elif np.issubdtype(type(v), np.floating) and type(v).__module__ == 'numpy':
-        return {'_type': 'np_floating', '_concrete_type': type(v).__name__, '_value': str(v)}
+        return {"_type": "complex", "_value": {"real": v.real, "imag": v.imag}}
+    elif np.issubdtype(type(v), np.integer) and type(v).__module__ == "numpy":
+        return {
+            "_type": "np_integer",
+            "_concrete_type": type(v).__name__,
+            "_value": str(v),
+        }
+    elif np.issubdtype(type(v), np.floating) and type(v).__module__ == "numpy":
+        return {
+            "_type": "np_floating",
+            "_concrete_type": type(v).__name__,
+            "_value": str(v),
+        }
     elif isinstance(v, np.ndarray):
         if np.isrealobj(v):
             return {"_type": "ndarray", "_value": v.tolist(), "_dtype": str(v.dtype)}
@@ -199,6 +208,20 @@ def from_json(v):
                 else:
                     raise Exception(
                         "variable of type complex should have value with real and imaginary pair"
+                    )
+            elif v["_type"] == "np_integer":
+                if "_concrete_type" in v and "_value" in v:
+                    return getattr(np, v["_concrete_type"])(v["_value"])
+                else:
+                    raise ValueError(
+                        "variable of type np_integer needs both concrete type and value information"
+                    )
+            elif v["_type"] == "np_floating":
+                if "_concrete_type" in v and "_value" in v:
+                    return getattr(np, v["_concrete_type"])(v["_value"])
+                else:
+                    raise ValueError(
+                        "variable of type np_floating needs both concrete type and value information"
                     )
             elif v["_type"] == "ndarray":
                 if "_value" in v:
