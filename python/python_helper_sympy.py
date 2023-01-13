@@ -406,7 +406,7 @@ def sympy_to_json(
 
     if conflicting_reserved_variables:
         raise ValueError(
-            f"sympy expression has a variable with a reserved name: {conflicting_reserved_variables}"
+            f"sympy expression has variables with reserved names: {conflicting_reserved_variables}"
         )
 
     # Apply substitutions for hidden variables
