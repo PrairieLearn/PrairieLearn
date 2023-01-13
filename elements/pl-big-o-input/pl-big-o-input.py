@@ -28,7 +28,6 @@ GRADE_FUNCTION_DICT: Dict[BigOType, bou.BigOGradingFunctionT] = {
     BigOType.LITTLE_OMEGA: bou.grade_omega_expression,
 }
 
-# Always need to have some variable to substitute
 VARIABLES_DEFAULT = ""
 SIZE_DEFAULT = 35
 PLACEHOLDER_TEXT_THRESHOLD = 20
