@@ -7,4 +7,5 @@ COPY src /xterm
 WORKDIR /xterm
 RUN yarn install --frozen-lockfile
 
-ENTRYPOINT node server.js
+RUN useradd -m student
+ENTRYPOINT node server.js -w /home/student
