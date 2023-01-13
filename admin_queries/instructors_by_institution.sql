@@ -1,8 +1,12 @@
 SELECT
     i.short_name AS institution,
-    u.uid, u.name, plc.short_name AS course, plc.id AS course_id, cp.course_role,
+    plc.short_name AS course,
+    plc.id AS course_id,
+    u.uid,
+    u.name,
+    cp.course_role,
     cip.course_instance_role,
-    array_agg(ci.short_name) FILTER (where ci.short_name IS NOT NULL) AS course_instances_with_permissions
+    array_agg(ci.short_name ORDER BY ci.id DESC) FILTER (WHERE ci.short_name IS NOT NULL) AS course_instances_with_permissions
 FROM
     course_permissions AS cp
     JOIN users AS u USING(user_id)
@@ -17,7 +21,12 @@ WHERE
     AND ci.deleted_at IS NULL
     AND cp.course_role = ANY($course_roles::enum_course_role[])
 GROUP BY
-    i.short_name, u.uid, u.name, plc.short_name, plc.id, cp.course_role,
+    i.short_name,
+    plc.short_name,
+    plc.id,
+    u.uid,
+    u.name,
+    cp.course_role,
     cip.course_instance_role
 ORDER BY
     plc.short_name, u.uid
