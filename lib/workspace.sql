@@ -19,6 +19,7 @@ FOR UPDATE;
 -- BLOCK select_workspace_data
 SELECT
     to_jsonb(w.*) AS workspace,
+    to_jsonb(v.*) AS variant,
     to_jsonb(q.*) AS question,
     to_jsonb(c.*) AS course
 FROM
