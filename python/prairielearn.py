@@ -126,11 +126,7 @@ def to_json(v, *, np_encoding=1):
     if np_encoding not in {1, 2}:
         raise ValueError(f"Invaild np_encoding {np_encoding}, must be 1 or 2.")
 
-    if (
-        np_encoding == 2
-        and isinstance(v, np.number)
-        and type(v).__module__ == np.__name__
-    ):
+    if np_encoding == 2 and isinstance(v, np.number):
         return {
             "_type": "np_scalar",
             "_concrete_type": type(v).__name__,
