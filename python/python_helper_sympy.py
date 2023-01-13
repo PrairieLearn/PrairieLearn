@@ -152,7 +152,7 @@ class HasFloatError(BaseSympyError):
 @dataclass
 class HasComplexError(BaseSympyError):
     offset: int
-    n: str
+    n: complex
 
 
 @dataclass
@@ -201,7 +201,7 @@ class CheckNumbers(ast.NodeTransformer):
         elif isinstance(node.n, float):
             raise HasFloatError(node.col_offset, node.n)
         elif isinstance(node.n, complex):
-            raise HasComplexError(node.col_offset, str(node.n))
+            raise HasComplexError(node.col_offset, node.n)
         return node
 
 
