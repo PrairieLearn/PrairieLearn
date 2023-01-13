@@ -118,6 +118,13 @@ module.exports = {
         module: require('../ee/cron/workspaceHostLoads'),
         intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostLoadsSec,
       });
+
+      module.exports.jobs.push({
+        name: 'chunksHostAutoScaling',
+        module: require('../ee/cron/chunksHostAutoScaling'),
+        intervalSec:
+          config.cronOverrideAllIntervalsSec || config.cronIntervalChunksHostAutoScalingSec,
+      });
     }
 
     logger.verbose(
