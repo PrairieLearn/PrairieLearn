@@ -624,8 +624,7 @@ module.exports.loadInfoFile = async function ({
     }
 
     // Validate file against schema
-    /** @type {import('ajv').ValidateFunction<T>} */
-    const validate = ajv.compile(schema);
+    const validate = /** @type {import('ajv').ValidateFunction<T>} */ (ajv.compile(schema));
     try {
       const valid = validate(json);
       if (!valid) {

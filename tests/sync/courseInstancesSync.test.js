@@ -302,7 +302,7 @@ describe('Course instance syncing', () => {
       (ci) => ci.short_name === 'repeatedCourseInstance' && ci.deleted_at == null
     );
     assert.equal(syncedCourseInstance.uuid, newCourseInstance.courseInstance.uuid);
-    assert.match(syncedCourseInstance.sync_errors, /should have required property 'longName'/);
+    assert.match(syncedCourseInstance.sync_errors, /must have required property 'longName'/);
 
     // check that the old deleted course instance does not have any errors
     const deletedCourseInstance = syncedCourseInstances.find(
