@@ -1,6 +1,6 @@
 import json
 import math
-from typing import Any, Callable, Union, cast
+from typing import Any, Callable
 
 import lxml.html
 import numpy as np
@@ -58,6 +58,7 @@ def test_set_score_data(
         np.int64(5),
         np.int32(-12),
         np.uint8(55),
+        np.byte(3),
         np.float128(-1100204.04010340),
         np.float32(2.1100044587483),
         np.float16(0.00000184388328),

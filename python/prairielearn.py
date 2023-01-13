@@ -104,9 +104,7 @@ def to_json(v, *, np_encoding=1):
 
         If np_encoding is set to 2, will serialize numpy scalars as follows:
 
-        numpy integer -> '_type': 'np_integer'
-        numpy float -> '_type': 'np_floating'
-        numpy complex -> '_type': 'np_complex'
+        numpy scalar -> '_type': 'np_scalar'
 
         Otherwise, performs the following encodings:
 
@@ -128,25 +126,16 @@ def to_json(v, *, np_encoding=1):
     if np_encoding not in {1, 2}:
         raise ValueError(f"Invaild np_encoding {np_encoding}, must be 1 or 2.")
 
-    if np_encoding == 2 and type(v).__module__ == "numpy":
-        if np.issubdtype(type(v), np.integer):
-            return {
-                "_type": "np_integer",
-                "_concrete_type": type(v).__name__,
-                "_value": str(v),
-            }
-        elif np.issubdtype(type(v), np.floating):
-            return {
-                "_type": "np_floating",
-                "_concrete_type": type(v).__name__,
-                "_value": str(v),
-            }
-        elif np.issubdtype(type(v), np.complexfloating):
-            return {
-                "_type": "np_complex",
-                "_concrete_type": type(v).__name__,
-                "_value": str(v),
-            }
+    if (
+        np_encoding == 2
+        and isinstance(v, np.number)
+        and type(v).__module__ == np.__name__
+    ):
+        return {
+            "_type": "np_scalar",
+            "_concrete_type": type(v).__name__,
+            "_value": str(v),
+        }
 
     if np.isscalar(v) and np.iscomplexobj(v):
         return {"_type": "complex", "_value": {"real": v.real, "imag": v.imag}}
@@ -196,9 +185,7 @@ def from_json(v):
     using to_json(...), then it is replaced:
 
         '_type': 'complex' -> complex
-        '_type': 'np_integer' -> numpy integer
-        '_type': 'np_floating' -> numpy float
-        '_type': 'np_complex' -> numpy complex
+        '_type': 'np_scalar' -> numpy scalar defined by '_concrete_type'
         '_type': 'ndarray' -> non-complex ndarray
         '_type': 'complex_ndarray' -> complex ndarray
         '_type': 'sympy' -> sympy.Expr
@@ -226,7 +213,7 @@ def from_json(v):
                     raise Exception(
                         "variable of type complex should have value with real and imaginary pair"
                     )
-            elif v["_type"] in {"np_integer", "np_floating", "np_complex"}:
+            elif v["_type"] == "np_scalar":
                 if "_concrete_type" in v and "_value" in v:
                     return getattr(np, v["_concrete_type"])(v["_value"])
                 else:
