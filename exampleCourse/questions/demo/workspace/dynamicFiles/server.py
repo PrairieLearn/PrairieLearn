@@ -1,5 +1,4 @@
 import base64
-import binascii
 import os
 import random
 import string
@@ -22,7 +21,7 @@ def generate(data):
         # Binary data must be encoded using hex or base64, and the encoding must be provided
         {
             "name": "binary1.bin",
-            "contents": binascii.hexlify(random_binary).decode(),
+            "contents": random_binary.hex(),
             "encoding": "hex",
         },
         {
