@@ -122,6 +122,23 @@ module.exports = {
       });
     }
 
+    const enabledJobs = config.cronEnabledJobs;
+    const disabledJobs = config.cronDisabledJobs;
+
+    if (enabledJobs && disabledJobs) {
+      throw new Error('Cannot set both cronEnabledJobs and cronDisabledJobs');
+    }
+
+    module.exports.jobs = module.exports.jobs.filter((job) => {
+      if (enabledJobs) {
+        return enabledJobs.includes(job.name);
+      } else if (disabledJobs) {
+        return !disabledJobs.includes(job.name);
+      } else {
+        return true;
+      }
+    });
+
     logger.verbose(
       'initializing cron',
       _.map(module.exports.jobs, (j) => _.pick(j, ['name', 'intervalSec']))
