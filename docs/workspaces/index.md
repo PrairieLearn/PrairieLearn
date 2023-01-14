@@ -161,6 +161,43 @@ A minimal `question.html` for an externally graded workspace should look somethi
 </pl-submission-panel>
 ```
 
+### Creating dynamic files
+
+As mentioned above, workspace questions can optionally include a `workspace/` subdirectory within the regular [PrairieLearn question directory structure](../question.md#directory-structure). If this `workspace/` subdirectory exists, its contents will be copied into the home directory of the student's workspace container.
+
+Questions using workspaces can also be randomized, i.e., include files that contain random and dynamic content. This is done using [the `server.py` file in the question directory](../question.md#question-serverpy). In addition to other random parameters that can be created for the question page itself, the `_files` parameter can also be set, containing an array of files to be created. Each element of the array must include a `name` property, containing the file name (which can include a path with directories), and a `contents` property, containing the contents of the file. For example:
+
+```py
+def generate(data):
+
+    # Generate 1000 random bytes
+    random_binary = os.urandom(1000)
+    # Generate 1000 random printable ASCII characters, ending with a line break
+    random_text = "".join(random.choices(string.printable, k=1000)) + "\n"
+
+    data["params"]["_files"] = [
+        # By default, `contents` is interpreted as regular text
+        {"name": "static.txt", "contents": "test file with data\n"},
+        # The contents can be dynamic
+        {"name": "dynamic.txt", "contents": random_text},
+        # If the name contains a path, the necessary directories are created
+        {"name": "path/with/long/file/name.txt", "contents": random_text},
+        # Binary data must be encoded using hex or base64, and the encoding must be provided
+        {
+            "name": "binary1.bin",
+            "contents": binascii.hexlify(random_binary).decode(),
+            "encoding": "hex",
+        },
+        {
+            "name": "binary2.bin",
+            "contents": base64.b64encode(random_binary).decode(),
+            "encoding": "base64",
+        },
+    ]
+```
+
+By default, `contents` is expected to be a string in UTF-8 format. To provide binary content, the value must be encoded using base64 or hex, as shown in the example above. In this case, the `encoding` property must also be provided.
+
 ## Running locally (on Docker)
 
 - First, create an empty directory to use to share job data between containers.
