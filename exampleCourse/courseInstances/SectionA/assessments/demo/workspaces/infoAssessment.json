@@ -7,10 +7,11 @@
     "zones": [
         {
             "questions": [
-                {"id": "demo/workspace/vscode",       "points": 1, "maxPoints": 5},
-                {"id": "demo/workspace/jupyterlab",   "points": 1, "maxPoints": 5},
-                {"id": "demo/workspace/xtermjs",      "points": 1, "maxPoints": 5},
-                {"id": "demo/workspace/desktop",      "points": 1, "maxPoints": 5}
+              {"id": "demo/workspace/vscode",       "points": 1, "maxPoints": 5},
+              {"id": "demo/workspace/jupyterlab",   "points": 1, "maxPoints": 5},
+              {"id": "demo/workspace/xtermjs",      "points": 1, "maxPoints": 5},
+              {"id": "demo/workspace/desktop",      "points": 1, "maxPoints": 5},
+              {"id": "demo/workspace/dynamicFiles", "points": 1, "maxPoints": 5}
             ]
         }
     ]
