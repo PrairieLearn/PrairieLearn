@@ -1,5 +1,4 @@
 import pprint
-from typing import List
 
 import lxml.html
 import pandas
