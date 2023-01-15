@@ -8,7 +8,7 @@
 \usage{
 source_as_uid(file, uid = "ag")
 
-source_std(name)
+source_std(name, uid = "ag")
 
 source_ref(name, uid = "ag")
 }

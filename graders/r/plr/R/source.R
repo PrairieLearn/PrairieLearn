@@ -61,13 +61,13 @@ source_as_uid <- function(file, uid="ag") {
 }
 
 #' @rdname source_as_uid
-source_std <- function(name) {
-  full_path = file.path("/grade/student", name)
-  source_as_uid(file = full_path)
+source_std <- function(name, uid = "ag") {
+  full_path <- file.path("/grade/student", name)
+  source_as_uid(file = full_path, uid = uid)
 }
 
 #' @rdname source_as_uid
 source_ref <- function(name, uid = "ag") {
-  full_path = file.path("/grade/tests", name)
+  full_path <- file.path("/grade/tests", name)
   source_as_uid(file = full_path, uid = uid)
 }
