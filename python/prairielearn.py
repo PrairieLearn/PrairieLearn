@@ -4,15 +4,11 @@ import importlib
 import importlib.util
 import math
 import os
-
-import collections
-from itertools import chain, repeat
-from typing import Dict, Any, TypedDict, Literal, Optional, List, overload
-
 import re
 import unicodedata
 import uuid
-from typing import Any, Dict, Literal, Optional, TypedDict
+from itertools import chain, repeat
+from typing import Any, Dict, List, Literal, Optional, TypedDict, overload
 
 import colors
 import lxml.html
@@ -21,7 +17,6 @@ import pandas
 import sympy
 import to_precision
 from python_helper_sympy import convert_string_to_sympy, json_to_sympy, sympy_to_json
-
 from typing_extensions import NotRequired
 
 
