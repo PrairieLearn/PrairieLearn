@@ -1,4 +1,3 @@
-
 import math
 from typing import Callable
 
@@ -56,4 +55,3 @@ def test_set_score_data(
     # Assert equality
     weight_set_function(question_data)
     assert math.isclose(question_data["score"], expected_score)
-
