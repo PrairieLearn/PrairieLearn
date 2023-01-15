@@ -1,22 +1,27 @@
-import lxml.html
+import collections
 import html
-import to_precision
-import numpy as np
-import uuid
-import sympy
-import pandas
-from python_helper_sympy import convert_string_to_sympy
-from python_helper_sympy import sympy_to_json
-from python_helper_sympy import json_to_sympy
-import re
-import colors
-import unicodedata
 import importlib
 import importlib.util
+import math
 import os
+
 import collections
 from itertools import chain, repeat
 from typing import Dict, Any, TypedDict, Literal, Optional, List, overload
+
+import re
+import unicodedata
+import uuid
+from typing import Any, Dict, Literal, Optional, TypedDict
+
+import colors
+import lxml.html
+import numpy as np
+import pandas
+import sympy
+import to_precision
+from python_helper_sympy import convert_string_to_sympy, json_to_sympy, sympy_to_json
+
 from typing_extensions import NotRequired
 
 
@@ -44,7 +49,7 @@ class QuestionData(TypedDict):
     partial_scores: Dict[str, PartialScore]
     score: float
     feedback: Dict[str, Any]
-    variant_seed: int
+    variant_seed: str
     options: Dict[str, Any]
     raw_submitted_answers: Dict[str, Any]
     editable: bool
@@ -56,6 +61,45 @@ class QuestionData(TypedDict):
 class ElementTestData(QuestionData):
     test_type: Literal["correct", "incorrect", "invalid"]
 
+
+def set_weighted_score_data(data: QuestionData, weight_default: int = 1) -> None:
+    """
+    Sets overall question score to be weighted average of all partial scores. Uses
+    weight_default to fill in a default weight for a score if one is missing.
+    """
+
+    weight_total = 0
+    score_total = 0.0
+    for part in data["partial_scores"].values():
+        score = part["score"]
+        weight = part.get("weight", weight_default)
+
+        if score is None:
+            raise ValueError("Can't set weighted score data if score is None.")
+
+        score_total += score * weight
+        weight_total += weight
+
+    data["score"] = score_total / weight_total
+
+
+def set_all_or_nothing_score_data(data: QuestionData) -> None:
+    """Gives points to main question score if all partial scores are correct."""
+
+    data["score"] = 1.0 if all_partial_scores_correct(data) else 0.0
+
+
+def all_partial_scores_correct(data: QuestionData) -> bool:
+    """Return true if all questions are correct in partial scores and it's nonempty."""
+    partial_scores = data["partial_scores"]
+
+    if len(partial_scores) == 0:
+        return False
+
+    return all(
+        part["score"] is not None and math.isclose(part["score"], 1.0)
+        for part in partial_scores.values()
+    )
 
 def to_json(v):
     """to_json(v)
@@ -217,6 +261,7 @@ def from_json(v):
     return v
 
 
+
 def inner_html(element: lxml.html.HtmlElement) -> str:
     """
     Gets the inner HTML of an element. A bit ugly, but hacked together to be as fast as possible
@@ -235,6 +280,7 @@ def inner_html(element: lxml.html.HtmlElement) -> str:
             ),
         )
     )
+
 
 
 def compat_get(object, attrib, default):
