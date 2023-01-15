@@ -75,17 +75,23 @@ def graphviz_from_adj_matrix(
 
     for in_node, row in zip(mat_label, mat):
         for out_node, x in zip(mat_label, row):
-            if (show_negative_weights) or x > 0:
-                if show_weights:
-                    G.add_edge(
-                        out_node,
-                        in_node,
-                        label=pl.string_from_2darray(
-                            x, presentation_type=presentation_type, digits=digits
-                        ),
-                    )
-                else:
-                    G.add_edge(out_node, in_node)
+            # If showing negative weights, show every entry that is not None
+            if show_negative_weights and x is None:
+                continue
+            # Otherwise, only show positive weights
+            elif not show_negative_weights and x <= 0:
+                continue
+
+            if show_weights:
+                G.add_edge(
+                    out_node,
+                    in_node,
+                    label=pl.string_from_2darray(
+                        x, presentation_type=presentation_type, digits=digits
+                    ),
+                )
+            else:
+                G.add_edge(out_node, in_node)
 
     G.layout(engine)
     return G.string()
