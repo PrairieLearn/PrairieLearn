@@ -29,4 +29,6 @@ def generate(data):
             "contents": base64.b64encode(random_binary).decode(),
             "encoding": "base64",
         },
+        # A question file can also be added by using its path in the question instead of its contents
+        {"name": "provided.txt", "questionFile": "clientFilesQuestion/provided.txt"},
     ]
