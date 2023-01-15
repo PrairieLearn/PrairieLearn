@@ -36,6 +36,9 @@ docker-compose.override.yml
 
 # PrairieLearn
 
+## Compiled frontend assets
+public/build
+
 ## Config
 /config.json
 
@@ -61,11 +64,18 @@ docker-compose.override.yml
 /tests/testFileEditor/courseOrigin/
 /tests/testFileEditor/courseDev/
 
-## Programming languages
-
-## JavaScript dependencies
+## Yarn 
 node_modules
 yarn-error.log
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+## Programming languages
 
 ### Python
 __pycache__/

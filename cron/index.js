@@ -113,7 +113,31 @@ module.exports = {
         module: require('../ee/cron/workspaceHostLoads'),
         intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostLoadsSec,
       });
+
+      module.exports.jobs.push({
+        name: 'chunksHostAutoScaling',
+        module: require('../ee/cron/chunksHostAutoScaling'),
+        intervalSec:
+          config.cronOverrideAllIntervalsSec || config.cronIntervalChunksHostAutoScalingSec,
+      });
     }
+
+    const enabledJobs = config.cronEnabledJobs;
+    const disabledJobs = config.cronDisabledJobs;
+
+    if (enabledJobs && disabledJobs) {
+      throw new Error('Cannot set both cronEnabledJobs and cronDisabledJobs');
+    }
+
+    module.exports.jobs = module.exports.jobs.filter((job) => {
+      if (enabledJobs) {
+        return enabledJobs.includes(job.name);
+      } else if (disabledJobs) {
+        return !disabledJobs.includes(job.name);
+      } else {
+        return true;
+      }
+    });
 
     logger.verbose(
       'initializing cron',

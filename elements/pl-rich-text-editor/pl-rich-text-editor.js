@@ -63,8 +63,8 @@ class MathFormula extends Embed {
 
   static updateNode(node, value) {
     MathJax.startup.promise.then(async () => {
-      let html = await MathJax.tex2chtmlPromise(value);
-      let formatted = html.innerHTML;
+      const html = await (MathJax.tex2chtmlPromise || MathJax.tex2svgPromise)(value);
+      const formatted = html.innerHTML;
       // Without trailing whitespace, cursor will not appear at end of text if LaTeX is at end
       node.innerHTML = formatted + '&#8201;';
       await MathJax.typesetPromise();

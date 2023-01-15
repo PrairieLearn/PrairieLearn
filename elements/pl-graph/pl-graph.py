@@ -1,10 +1,10 @@
-import prairielearn as pl
-import lxml.html
-import chevron
 import json
-import pygraphviz
-import numpy as np
 
+import chevron
+import lxml.html
+import numpy as np
+import prairielearn as pl
+import pygraphviz
 
 ENGINE_DEFAULT = "dot"
 PARAMS_NAME_MATRIX_DEFAULT = None
@@ -31,6 +31,7 @@ def graphviz_from_adj_matrix(
     show_negative_weights = pl.get_string_attrib(
         element, "show-negative-weights", SHOW_NEGATIVE_WEIGHTS_DEFAULT
     )
+
     mat = np.array(pl.from_json(data["params"][input_param]))
     show_weights = pl.get_boolean_attrib(
         element, "weights", WEIGHTS_DEFAULT
