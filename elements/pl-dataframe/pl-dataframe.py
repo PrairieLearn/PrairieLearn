@@ -4,11 +4,17 @@ import chevron
 import lxml.html
 import pandas as pd
 import prairielearn as pl
+from enum import Enum
+
+class DtypeLanguage(Enum):
+    NONE = 1
+    PYTHON = 2
+    R = 3
 
 SHOW_HEADER_DEFAULT = True
 SHOW_INDEX_DEFAULT = True
 SHOW_DIMENSIONS_DEFAULT = True
-SHOW_DATATYPE_DEFAULT = False
+SHOW_DATATYPE_DEFAULT = DtypeLanguage.NONE
 NUM_DIGITS_DEFAULT = None
 SHOW_PYTHON_DEFAULT = True
 
@@ -39,7 +45,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     show_dimensions = pl.get_boolean_attrib(
         element, "show-dimensions", SHOW_DIMENSIONS_DEFAULT
     )
-    show_dtype = pl.get_boolean_attrib(element, "show-dtype", SHOW_DATATYPE_DEFAULT)
+    show_dtype = pl.get_enum_attrib(element, "show-dtype", DtypeLanguage, SHOW_DATATYPE_DEFAULT)
 
     num_digits = pl.get_integer_attrib(element, "digits", NUM_DIGITS_DEFAULT)
 
@@ -70,7 +76,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # Switches between exponential and decimal notation as needed
         frame_style.format(subset=float_column_names, formatter=f"{{:.{num_digits}g}}")
 
-    if show_dtype:
+    if show_dtype is not DtypeLanguage.NONE:
         descriptors = frame.agg([lambda s: s.dtype]).set_axis(
             ["dtype"], axis="index", copy=False
         )
