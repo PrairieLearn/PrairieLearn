@@ -10,7 +10,7 @@ source_as_uid(file, uid = "ag")
 
 source_std(name)
 
-source_ref(name)
+source_ref(name, uid = "ag")
 }
 \arguments{
 \item{file}{Path to an R file to be sourced, typically containing student

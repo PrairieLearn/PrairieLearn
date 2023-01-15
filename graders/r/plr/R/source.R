@@ -67,7 +67,7 @@ source_std <- function(name) {
 }
 
 #' @rdname source_as_uid
-source_ref <- function(name) {
+source_ref <- function(name, uid = "ag") {
   full_path = file.path("/grade/tests", name)
-  source_as_uid(file = full_path)
+  source_as_uid(file = full_path, uid = uid)
 }
