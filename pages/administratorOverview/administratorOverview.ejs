@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <%- include('../partials/head'); %>
-    <script src="<%= node_modules_asset_path('chart.js/dist/Chart.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('chart.js/dist/chart.umd.js') %>"></script>
     <style>
     canvas {
       border: none;
@@ -321,11 +321,10 @@
             var questionCacheHitRate = <%= question_render_cache_stats.question_cache_hit_rate ? question_render_cache_stats.question_cache_hit_rate : 0 %>;
             var panelCacheHitRate = <%= question_render_cache_stats.panel_cache_hit_rate ? question_render_cache_stats.panel_cache_hit_rate : 0 %>;
             // This draws the percentage in the middle of the pie
-            Chart.pluginService.register({
+            Chart.register({
+              id: 'draw-percentage',
               beforeDraw: function(chart) {
-                var width = chart.chart.width,
-                height = chart.chart.height,
-                ctx = chart.chart.ctx;
+                var { width, height, ctx } = chart;
                 ctx.restore();
                 var fontSize = (height / 160).toFixed(2);
                 ctx.font = fontSize + "em sans-serif";
@@ -340,7 +339,7 @@
             function buildChart(ctx, hitRate) {
               var roundedHitRate = Math.round(hitRate * 10000) / 100;
               return new Chart(ctx, {
-                type: 'pie',
+                type: 'doughnut',
                 data: {
                   datasets: [{
                     data: [roundedHitRate, 100 - roundedHitRate],
@@ -349,10 +348,10 @@
                   labels: ['Cache hit %', 'Cache miss %'],
                 },
                 options: {
+                  cutout: '70%',
                   legend: {
                     display: false,
                   },
-                  cutoutPercentage: 70,
                 }
               });
             };
