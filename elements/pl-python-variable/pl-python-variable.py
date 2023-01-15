@@ -72,14 +72,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # Note this will always work, since if from_json can't convert the object, it does nothing.
     var_out = pl.from_json(data["params"][varname])
 
-    html_list: List[str] = []
-
     # render the output variable
     if isinstance(var_out, pandas.DataFrame) and not force_text:
         # TODO Because of this, we need to wait for pl-dataframe to get merged before this will work.
-        html_list.append(
-            f'<pl-dataframe show-header="{show_header}" show-index="{show_index}" show-dimensions="{show_dimensions}" show-python="False"></pl-dataframe>'
-        )
+        return f'<pl-dataframe show-header="{show_header}" show-index="{show_index}" show-dimensions="{show_dimensions}" show-python="False"></pl-dataframe>'
 
     else:
         no_highlight = pl.get_boolean_attrib(
@@ -103,8 +99,4 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             sort_dicts=sort_dicts,
         )
 
-        html_list.append(
-            f'<pl-code language="python" no-highlight="{no_highlight}">{prefix}{var_string}{suffix}</pl-code>'
-        )
-
-    return "".join(html_list)
+        return f'<pl-code language="python" no-highlight="{no_highlight}">{prefix}{var_string}{suffix}</pl-code>'
