@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Any, cast
+from typing import cast
 
 import chevron
 import lxml.html
@@ -47,6 +47,10 @@ def convert_pandas_dtype_to_r(s: pd.Series) -> str:
         return "Not supported"
 
     return "Unknown"
+
+
+def get_pandas_dtype(s: pd.Series) -> str:
+    return s.dtype
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -110,7 +114,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     if show_dtype is not DtypeLanguage.NONE:
         if show_dtype is DtypeLanguage.PYTHON:
-            get_dtype_function = lambda s: s.dtype
+            get_dtype_function = get_pandas_dtype
         elif show_dtype is DtypeLanguage.R:
             get_dtype_function = convert_pandas_dtype_to_r
         else:
