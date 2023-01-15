@@ -10,7 +10,8 @@ from pytest_lazyfixture import lazy_fixture
 
 
 @pytest.mark.parametrize(
-    "df", lazy_fixture(["city_dataframe", "breast_cancer_dataframe"])
+    "df",
+    lazy_fixture(["city_dataframe", "breast_cancer_dataframe", "r_types_dataframe"]),
 )
 def test_encoding_pandas(df: pd.DataFrame) -> None:
     """Test that new json encoding works"""
@@ -33,7 +34,8 @@ def test_encoding_pandas(df: pd.DataFrame) -> None:
 
 
 @pytest.mark.parametrize(
-    "df", lazy_fixture(["city_dataframe", "breast_cancer_dataframe"])
+    "df",
+    lazy_fixture(["city_dataframe", "breast_cancer_dataframe", "r_types_dataframe"]),
 )
 def test_encoding_legacy(df: pd.DataFrame) -> None:
     """Add compatibility test for legacy encoding"""

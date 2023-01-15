@@ -70,6 +70,31 @@ def breast_cancer_dataframe() -> pd.DataFrame:
 
 
 @pytest.fixture
+def r_types_dataframe() -> pd.DataFrame:
+    return pd.DataFrame(
+        {
+            # Scalars
+            "integer": 1,
+            "numeric": 3.14,
+            "logical": False,
+            "character": "foo",
+            # TODO adding in complex numbers won't deserialize correctly, fix this (somehow?)
+            # "complex": complex(1, 2),
+            # Series
+            "numeric-list": pd.Series([1.0] * 3).astype("float64"),
+            "integer-list": pd.Series([1] * 3, dtype="int64"),
+            # "complex-list": pd.Series(np.array([1, 2, 3]) + np.array([4, 5, 6]) *1j).astype("complex128"),
+            "character-list": pd.Series(["hello", "world", "stat"]),
+            "logical-list": pd.Series([True, False, True]),
+            "character-string-list": pd.Series(["a", "b", "c"]),
+            # Time Dependency: https://pandas.pydata.org/docs/user_guide/timeseries.html
+            "POSIXct-POSIXt-timestamp": pd.Timestamp("20230102"),
+            "POSIXct-POSIXt-date_range": pd.date_range("2023", freq="D", periods=3),
+        }
+    )
+
+
+@pytest.fixture
 def question_data() -> QuestionData:
     return {
         "params": dict(),

@@ -1,15 +1,18 @@
-from typing import cast
+from enum import Enum
+from typing import Any, cast
 
 import chevron
 import lxml.html
 import pandas as pd
 import prairielearn as pl
-from enum import Enum
+from typing_extensions import assert_never
+
 
 class DtypeLanguage(Enum):
     NONE = 1
     PYTHON = 2
     R = 3
+
 
 SHOW_HEADER_DEFAULT = True
 SHOW_INDEX_DEFAULT = True
@@ -17,6 +20,33 @@ SHOW_DIMENSIONS_DEFAULT = True
 SHOW_DATATYPE_DEFAULT = DtypeLanguage.NONE
 NUM_DIGITS_DEFAULT = None
 SHOW_PYTHON_DEFAULT = True
+
+
+def convert_pandas_dtype_to_r(s: pd.Series) -> str:
+    # Force series to avoid odd element-wise output
+    s.dtype
+
+    if pd.api.types.is_float_dtype(s):
+        return "numeric"
+    elif pd.api.types.is_integer_dtype(s):
+        return "integer"
+    elif pd.api.types.is_object_dtype(s) or pd.api.types.is_string_dtype(s):
+        return "character"
+    elif pd.api.types.is_categorical_dtype(s):
+        # Check if ordered
+        if s.cat.ordered:
+            return "ordered factor"
+        return "factor"
+    elif pd.api.types.is_bool_dtype(s):
+        return "logical"
+    elif pd.api.types.is_complex_dtype(s):
+        return "complex"
+    elif pd.api.types.is_datetime64_any_dtype(s):
+        return "POSIXct"
+    elif pd.api.types.is_timedelta64_dtype(s) or pd.api.types.is_period_dtype(s):
+        return "Not supported"
+
+    return "Unknown"
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -45,7 +75,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     show_dimensions = pl.get_boolean_attrib(
         element, "show-dimensions", SHOW_DIMENSIONS_DEFAULT
     )
-    show_dtype = pl.get_enum_attrib(element, "show-dtype", DtypeLanguage, SHOW_DATATYPE_DEFAULT)
+    show_dtype = pl.get_enum_attrib(
+        element, "show-dtype", DtypeLanguage, SHOW_DATATYPE_DEFAULT
+    )
 
     num_digits = pl.get_integer_attrib(element, "digits", NUM_DIGITS_DEFAULT)
 
@@ -77,7 +109,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         frame_style.format(subset=float_column_names, formatter=f"{{:.{num_digits}g}}")
 
     if show_dtype is not DtypeLanguage.NONE:
-        descriptors = frame.agg([lambda s: s.dtype]).set_axis(
+        if show_dtype is DtypeLanguage.PYTHON:
+            get_dtype_function = lambda s: s.dtype
+        elif show_dtype is DtypeLanguage.R:
+            get_dtype_function = convert_pandas_dtype_to_r
+        else:
+            assert_never(show_dtype)
+
+        # old agg function:
+        descriptors = frame.agg([get_dtype_function]).set_axis(
             ["dtype"], axis="index", copy=False
         )
         other = descriptors.style.applymap(lambda v: "font-weight: bold;")

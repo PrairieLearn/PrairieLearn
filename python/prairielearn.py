@@ -8,14 +8,14 @@ import os
 import re
 import unicodedata
 import uuid
-from typing import Any, Dict, Literal, Optional, TypedDict, Type, TypeVar
+from enum import Enum
+from typing import Any, Dict, Literal, Optional, Type, TypedDict, TypeVar
 
 import colors
 import lxml.html
 import numpy as np
 import pandas
 import sympy
-from enum import Enum
 import to_precision
 from python_helper_sympy import convert_string_to_sympy, json_to_sympy, sympy_to_json
 from typing_extensions import NotRequired
@@ -58,7 +58,6 @@ class ElementTestData(QuestionData):
     test_type: Literal["correct", "incorrect", "invalid"]
 
 
-
 EnumT = TypeVar("EnumT", bound=Enum)
 
 
@@ -95,6 +94,7 @@ def get_enum_attrib(
         raise ValueError(f"{enum_val} is not a valid type")
 
     return enum_type[upper_enum_str.replace("-", "_")]
+
 
 def set_weighted_score_data(data: QuestionData, weight_default: int = 1) -> None:
     """
@@ -142,11 +142,18 @@ def to_json(v, *, df_encoding_version=1):
     If v has a standard type that cannot be json serialized, it is replaced with
     a {'_type':..., '_value':...} pair that can be json serialized:
 
+        If df_encoding_version is set to 2, then the following mapping is used:
+
+        pandas.DataFrame -> '_type': 'dataframe_v2'
+
+        Otherwise, the following mappings are used:
+
         complex -> '_type': 'complex'
         non-complex ndarray (assumes each element can be json serialized) -> '_type': 'ndarray'
         complex ndarray -> '_type': 'complex_ndarray'
         sympy.Expr (i.e., any scalar sympy expression) -> '_type': 'sympy'
         sympy.Matrix -> '_type': 'sympy_matrix'
+        pandas.DataFrame -> '_type': 'dataframe'
 
     If v is an ndarray, this function preserves its dtype (by adding '_dtype' as
     a third field in the dictionary).
@@ -216,7 +223,7 @@ def to_json(v, *, df_encoding_version=1):
             # Export to native JSON structure
             pure_json_df = json.loads(encoded_json_str_df)
 
-            return {"_type": "dataframe-v2", "_value": pure_json_df}
+            return {"_type": "dataframe_v2", "_value": pure_json_df}
 
         else:
             raise ValueError(
@@ -237,6 +244,8 @@ def from_json(v):
         '_type': 'complex_ndarray' -> complex ndarray
         '_type': 'sympy' -> sympy.Expr
         '_type': 'sympy_matrix' -> sympy.Matrix
+        '_type': 'dataframe' -> pandas.DataFrame
+        '_type': 'dataframe_v2' -> pandas.DataFrame
 
     If v encodes an ndarray and has the field '_dtype', this function recovers
     its dtype.
@@ -319,7 +328,7 @@ def from_json(v):
                     raise Exception(
                         "variable of type dataframe should have value with index, columns, and data"
                     )
-            elif v["_type"] == "dataframe-v2":
+            elif v["_type"] == "dataframe_v2":
                 # Convert native JSON back to a string representation so that
                 # pandas read_json() can process it.
                 value_str = json.dumps(v["_value"])

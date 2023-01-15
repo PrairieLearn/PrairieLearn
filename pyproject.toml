@@ -23,6 +23,7 @@ skip_glob = ["tools/*", "exampleCourse/*", "testCourse/*", "node_modules/*"]
 include = [
     "./elements/pl-hidden-hints",
     "./elements/pl-symbolic-input",
+    "./elements/pl-dataframe.py",
     "./python/conftest.py",
     "./python/prairielearn.py",
     "./python/prairielearn_test.py",
