@@ -68,11 +68,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             f'Could not find {varname} in params. Please make sure to set params-name="{varname}" in the element.'
         )
 
-    var_out = data["params"][varname]
 
-    # determine the type of variable to render
-    if isinstance(var_out, dict) and "_type" in var_out:
-        var_out = pl.from_json(var_out)
+    # Note this will always work, since if from_json can't convert the object, it does nothing.
+    var_out = pl.from_json(data["params"][varname])
 
     html_list: List[str] = []
 
