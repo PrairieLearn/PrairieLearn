@@ -1,7 +1,14 @@
 #' Source a file as a particular user
 #'
+#' The \code{source_std} helper sources a user-specified file from the
+#' \code{/grade/student/} directory as the user \code{"ag"}. Similarly, the
+#' \code{source_std} helper sources a user-specified file from the
+#' \code{/grade/tests/} directory as the user \code{"ag"}
+#'
 #' @param file Path to an R file to be sourced, typically containing student
 #' code to be evaluated safely, that is, with lower privileges.
+#' @param name Name of file (usually student or reference solution) to be
+#' sourced.
 #' @param uid Optional numeric or character user id identifying the user id with
 #' (presumably lower) privileges as which the code is running. The corresponding
 #' numeric \code{uid} is obtained via \code{\link[unix]{user_info}} when a
@@ -17,10 +24,12 @@
 #'
 #' @examples
 #' \dontrun{
-#' std <- source_as(file = "/grade/student/sub.R")
-#' ref <- source_as(file = "/grade/student/ans.R")
+#' std <- source_as_uid(file = "/grade/student/sub.R", uid = "ag")
+#' ref <- source_as_uid(file = "/grade/student/ans.R", uid = "ag")
+#' std <- source_std("sub.R")
+#' ref <- source_ref("ans.R")
 #' }
-source_as <- function(file, uid="ag") {
+source_as_uid <- function(file, uid="ag") {
 
   # get and set integer uid
   if (!is.null(uid) && class(uid) == "character") uid <- user_info(uid)$uid
@@ -49,4 +58,16 @@ source_as <- function(file, uid="ag") {
   # return sourced objects as an environment
   return(sourced_env)
 
+}
+
+#' @rdname source_as_uid
+source_std <- function(name) {
+  full_path = file.path("/grade/student", name)
+  source_as_uid(file = full_path)
+}
+
+#' @rdname source_as_uid
+source_ref <- function(name) {
+  full_path = file.path("/grade/tests", name)
+  source_as_uid(file = full_path)
 }
