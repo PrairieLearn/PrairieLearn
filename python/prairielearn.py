@@ -101,6 +101,7 @@ def all_partial_scores_correct(data: QuestionData) -> bool:
         for part in partial_scores.values()
     )
 
+
 def to_json(v):
     """to_json(v)
 
@@ -261,7 +262,6 @@ def from_json(v):
     return v
 
 
-
 def inner_html(element: lxml.html.HtmlElement) -> str:
     """
     Gets the inner HTML of an element. A bit ugly, but hacked together to be as fast as possible
@@ -280,7 +280,6 @@ def inner_html(element: lxml.html.HtmlElement) -> str:
             ),
         )
     )
-
 
 
 def compat_get(object, attrib, default):
@@ -368,6 +367,23 @@ def get_string_attrib(element, name, *args):
     """
     (str_val, is_default) = _get_attrib(element, name, *args)
     return str_val
+
+
+@overload
+def get_boolean_attrib(
+    element: lxml.html.HtmlElement, name: str, *args: None
+) -> Optional[bool]:
+    ...
+
+
+@overload
+def get_boolean_attrib(element: lxml.html.HtmlElement, name: str, *args: bool) -> bool:
+    ...
+
+
+@overload
+def get_boolean_attrib(element: lxml.html.HtmlElement, name: str) -> bool:
+    ...
 
 
 def get_boolean_attrib(element, name, *args):

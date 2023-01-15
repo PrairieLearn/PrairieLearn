@@ -6,15 +6,14 @@ SUBMISSION_DEFAULT = False
 ANSWER_DEFAULT = False
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = []
     optional_attribs = ["question", "submission", "answer"]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
 
-def render(element_html, data):
-    element = lxml.html.fragment_fromstring(element_html)
+def render(element_html: str, data: pl.QuestionData) -> str:
     hide_in_question = pl.get_boolean_attrib(element, "question", QUESTION_DEFAULT)
     hide_in_submission = pl.get_boolean_attrib(
         element, "submission", SUBMISSION_DEFAULT
@@ -27,5 +26,5 @@ def render(element_html, data):
     ):
         element = lxml.html.fragment_fromstring(element_html)
         return pl.inner_html(element)
-    else:
-        return ""
+
+    return ""

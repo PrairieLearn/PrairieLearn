@@ -21,7 +21,11 @@ skip_glob = ["tools/*", "exampleCourse/*", "testCourse/*", "node_modules/*"]
 
 [tool.pyright]
 include = [
+    "./elements/pl-answer-panel",
     "./elements/pl-hidden-hints",
+    "./elements/pl-hide-in-panel",
+    "./elements/pl-question-panel",
+    "./elements/pl-submission-panel",
     "./elements/pl-symbolic-input",
     "./python/conftest.py",
     "./python/prairielearn.py",
