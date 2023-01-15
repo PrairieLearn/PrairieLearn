@@ -59,6 +59,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     width = pl.get_integer_attrib(element, "width", WIDTH_DEFAULT)
     compact = pl.get_boolean_attrib(element, "compact", COMPACT_DEFAULT)
     sort_dicts = pl.get_boolean_attrib(element, "sort-dicts", SORT_DICTS_DEFAULT)
+    # TODO this is a python 3.10-only addition, maybe hold off on adding this till non-US servers are upgraded.
     underscore_numbers = pl.get_boolean_attrib(
         element, "underscore-numbers", UNDERSCORE_NUMBERS_DEFAULT
     )
@@ -67,7 +68,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         raise KeyError(
             f'Could not find {varname} in params. Please make sure to set params-name="{varname}" in the element.'
         )
-
 
     # Note this will always work, since if from_json can't convert the object, it does nothing.
     var_out = pl.from_json(data["params"][varname])
