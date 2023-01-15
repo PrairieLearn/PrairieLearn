@@ -14,6 +14,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
+    element = lxml.html.fragment_fromstring(element_html)
     hide_in_question = pl.get_boolean_attrib(element, "question", QUESTION_DEFAULT)
     hide_in_submission = pl.get_boolean_attrib(
         element, "submission", SUBMISSION_DEFAULT
@@ -24,7 +25,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         or (data["panel"] == "submission" and not hide_in_submission)
         or (data["panel"] == "answer" and not hide_in_answer)
     ):
-        element = lxml.html.fragment_fromstring(element_html)
         return pl.inner_html(element)
 
     return ""
