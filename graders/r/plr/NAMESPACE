@@ -1,5 +1,6 @@
 importFrom("unix", "eval_safe", "user_info")
 importFrom("jsonlite", "write_json")
+importFrom("utils", "lsf.str")
 
 export("source_and_eval_safe",
        "eval_safe_as",
