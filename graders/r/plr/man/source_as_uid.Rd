@@ -35,9 +35,13 @@ to the supplied \code{uid}.
 }
 \description{
 The \code{source_std} helper sources a user-specified file from the
-\code{/grade/student/} directory as the user \code{"ag"}. Similarly, the
-\code{source_std} helper sources a user-specified file from the
-\code{/grade/tests/} directory as the user \code{"ag"}
+\code{/grade/student/} directory as a user-specified \code{"uid"}. The
+\code{source_ref} helper does the same for the \code{/grade/tests/}
+directory. Generally, \code{source_std} should be used to source a student's
+solution, and \code{source_ref} should be used to source the reference
+solution. Both functions default to the user \code{"ag"}, which is the
+recommended user when sourcing student solutions. Situations could arise
+where higher privileges are necessary when sourcing reference solutions.
 }
 \examples{
 \dontrun{
