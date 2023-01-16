@@ -52,7 +52,7 @@ source_as_uid <- function(file, uid="ag") {
   Sys.chmod(file, mode=oldmode)
 
   for (f in lsf.str(envir = sourced_env)) {
-    body(sourced_env[[f]]) <- parse(text = paste("eval_safe(", as.expression(body(env[[f]])), ", uid =", uid, ")"))
+    body(sourced_env[[f]]) <- parse(text = paste("eval_safe(", as.expression(body(sourced_env[[f]])), ", uid =", uid, ")"))
   }
 
   # return sourced objects as an environment
