@@ -1392,10 +1392,13 @@ def is_correct_ndarray2D_ra(a_sub, a_tru, rtol=1e-5, atol=1e-8):
 
 
 def is_correct_scalar_ra(a_sub, a_tru, rtol=1e-5, atol=1e-8):
+    """Compare a_sub and a_tru using relative tolerance rtol and absolute tolerance atol."""
     return np.allclose(a_sub, a_tru, rtol, atol)
 
 
 def is_correct_scalar_dd(a_sub, a_tru, digits=2):
+    """Compare a_sub and a_tru using digits many digits after the decimal place."""
+
     # If answers are complex, check real and imaginary parts separately
     if np.iscomplexobj(a_sub) or np.iscomplexobj(a_tru):
         return is_correct_scalar_dd(
@@ -1412,6 +1415,8 @@ def is_correct_scalar_dd(a_sub, a_tru, digits=2):
 
 
 def is_correct_scalar_sf(a_sub, a_tru, digits=2):
+    """Compare a_sub and a_tru using digits many significant figures."""
+
     # If answers are complex, check real and imaginary parts separately
     if np.iscomplexobj(a_sub) or np.iscomplexobj(a_tru):
         return is_correct_scalar_sf(
