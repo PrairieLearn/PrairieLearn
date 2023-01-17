@@ -8,7 +8,7 @@ import prairielearn as pl
 from typing_extensions import assert_never
 
 
-class DtypeLanguage(Enum):
+class DisplayLanguage(Enum):
     NONE = 1
     PYTHON = 2
     R = 3
@@ -17,7 +17,8 @@ class DtypeLanguage(Enum):
 SHOW_HEADER_DEFAULT = True
 SHOW_INDEX_DEFAULT = True
 SHOW_DIMENSIONS_DEFAULT = True
-SHOW_DATATYPE_DEFAULT = DtypeLanguage.NONE
+DISPLAY_LANGUAGE_DEFAULT = DisplayLanguage.PYTHON
+SHOW_DTYPE_DEFAULT = False
 NUM_DIGITS_DEFAULT = None
 SHOW_PYTHON_DEFAULT = True
 
@@ -79,8 +80,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     show_dimensions = pl.get_boolean_attrib(
         element, "show-dimensions", SHOW_DIMENSIONS_DEFAULT
     )
-    show_dtype = pl.get_enum_attrib(
-        element, "show-dtype", DtypeLanguage, SHOW_DATATYPE_DEFAULT
+    show_dtype = pl.get_boolean_attrib(element, "show-dtype", SHOW_DTYPE_DEFAULT)
+
+
+    display_language = pl.get_enum_attrib(
+        element, "display-language", DisplayLanguage, DISPLAY_LANGUAGE_DEFAULT
     )
 
     num_digits = pl.get_integer_attrib(element, "digits", NUM_DIGITS_DEFAULT)
@@ -112,10 +116,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # Switches between exponential and decimal notation as needed
         frame_style.format(subset=float_column_names, formatter=f"{{:.{num_digits}g}}")
 
-    if show_dtype is not DtypeLanguage.NONE:
-        if show_dtype is DtypeLanguage.PYTHON:
+    if show_dtype:
+        if display_language is DtypeLanguage.PYTHON:
             get_dtype_function = get_pandas_dtype
-        elif show_dtype is DtypeLanguage.R:
+        elif display_language is DtypeLanguage.R:
             get_dtype_function = convert_pandas_dtype_to_r
         else:
             assert_never(show_dtype)

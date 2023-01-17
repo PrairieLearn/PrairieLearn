@@ -1275,8 +1275,9 @@ def generate(data):
 | `show-header`     | boolean               | true    | Show the header row of a DataFrame.                                                                                                                                     |
 | `show-index`      | boolean               | true    | Show the index column of a DataFrame.                                                                                                                                   |
 | `show-dimensions` | boolean               | true    | Show a footer with the dimensions of a DataFrame.                                                                                                                       |
-| `show-dtype`      | "none", "python", "r" | "none"  | Show the data types contained in each column of the DataFrame at the bottom of each column corresponding to the language given, where "none" doesn't display the types. |
-| `show-python`     | boolean               | true    | Show code that can be used to recreate the DataFrame in a separate tab.                                                                                                 |
+| `show-dtype`      | boolean | false  | Show the data types contained in each column of the DataFrame at the bottom of each column. Types used correspond to the `display-language` parameter. |
+| `display-language`      | "python", "r" | "python"  | Language to use for displaying data types and indices. |
+| `show-python`     | boolean               | true    | Show code that can be used to recreate the DataFrame in Python in a separate tab.                                                                                                 |
 | `digits`          | integer               | -       | Number of digits to display for floating point entries.                                                                                                                 |
 
 #### Details
