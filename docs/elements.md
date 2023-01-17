@@ -24,6 +24,8 @@ PrairieLearn presently provides the following templated **input field** elements
   such as -71, 0, 5, 21, and so on.
 - [`pl-symbolic-input`](#pl-symbolic-input-element): Fill in a **symbolic** value
   such as `x^2`, `sin(z)`, `mc^2`, and so on.
+- [`pl-big-o-input`](#pl-big-o-input-element): Fill in a **symbolic** value
+  representing asymptotic input.
 - [`pl-string-input`](#pl-string-input-element): Fill in a **string** value
   such as "Illinois", "GATTACA", "computer", and so on.
 - [`pl-matching`](#pl-matching-element): Select a matching option for each entry in
@@ -618,6 +620,48 @@ Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. 
 - [`pl-number-input` for numeric input](#pl-number-input-element)
 - [`pl-integer-input` for integer input](#pl-integer-input-element)
 - [`pl-string-input` for string input](#pl-string-input-element)
+
+---
+
+### `pl-big-o-input` element
+
+Fill in the blank field that allows for asymptotic mathematical input (i.e. big O, big Theta, etc.).
+Gives automated feedback in the case of improper asymptotic input.
+
+**question.html**
+
+```html
+<pl-big-o-input answers-name="ans" variable="n" correct-answer="n**2" size="10"></pl-big-o-input>
+```
+
+#### Customizations
+
+| Attribute        | Type                                                  | Default  | Description                                                                          |
+| ---------------- | ----------------------------------------------------- | -------- | ------------------------------------------------------------------------------------ |
+| `answers-name`   | string                                                | —        | Variable name to store data in.                                                      |
+| `type`           | "big-o", "theta", "omega", "little-o", "little-omega" | "big-o"  | Type of asymptotic answer required.                                                  |
+| `weight`         | integer                                               | 1        | Weight to use when computing a weighted average score over elements.                 |
+| `correct-answer` | string                                                | -        | Correct answer for grading.                                                          |
+| `display`        | "block" or "inline"                                   | "inline" | How to display the input field.                                                      |
+| `variable`       | string                                                | —        | A symbol for use in the symbolic expression. Only one variable supported.            |
+| `size`           | integer                                               | 35       | Size of the input box.                                                               |
+| `show-help-text` | boolean                                               | true     | Show the question mark at the end of the input displaying required input parameters. |
+
+#### Details
+
+Correct answers must be specified as strings with Python syntax (e.g., `n**2`, `2**n`, `n * log(n)`), with
+the same syntax as [`pl-symbolic-input`](#pl-symbolic-input-element). Only one variable is supported.
+
+#### Example implementations
+
+- [element/bigOInput]
+
+#### See also
+
+- [`pl-number-input` for numeric input](#pl-number-input-element)
+- [`pl-integer-input` for integer input](#pl-integer-input-element)
+- [`pl-string-input` for string input](#pl-string-input-element)
+- [`pl-symbolic-input` for mathematical expression input](#pl-symbolic-input-element)
 
 ---
 
@@ -2172,6 +2216,8 @@ The provided `script-name` corresponds to a file located within the director for
 <!-- Element option overview questions -->
 
 [element/checkbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/checkbox
+[element/bigoinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/bigOInput
+[element/hiddenhints]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/hiddenHints
 [element/code]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/code
 [element/drawinggallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingGallery
 [element/codedocumentation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/codeDocumentation
