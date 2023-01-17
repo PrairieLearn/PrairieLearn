@@ -105,12 +105,12 @@ data['params']['matrix'] = pl.to_json(mat)
     <div class="card-body" >
         <pl-question-panel>
             <p>Here is a graph with negative weights. These weights will not be displayed unless specified with
-                <code>parse-negative-weights="true"</code>.
+                <code>negative-weights="true"</code>.
                 In the input matrix, to hide an edge, simply set the corresponding entry to <code>None</code>.
             </p>
         </pl-question-panel>
         <pl-python-variable params-name="matrix3"></pl-python-variable>
-        <pl-graph params-name-matrix="matrix3" params-name-labels="labels" parse-negative-weights="true"></pl-graph>
+        <pl-graph params-name-matrix="matrix3" params-name-labels="labels" negative-weights="true"></pl-graph>
     </div>
 </div>
 

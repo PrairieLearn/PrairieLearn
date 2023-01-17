@@ -29,7 +29,7 @@ def graphviz_from_adj_matrix(
         element, "params-name-labels", PARAMS_NAME_LABELS_DEFAULT
     )
     negative_weights = pl.get_string_attrib(
-        element, "parse-negative-weights", NEGATIVE_WEIGHTS_DEFAULT
+        element, "negative-weights", NEGATIVE_WEIGHTS_DEFAULT
     )
 
     mat = np.array(pl.from_json(data["params"][input_param]))
