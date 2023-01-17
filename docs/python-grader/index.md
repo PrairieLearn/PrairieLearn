@@ -136,7 +136,7 @@ from code_feedback import Feedback
 @points(10)
 @name("name of the test case")
 def test_0(self):
-   if Feedback.check_scalar('name of the variable', self.ref.variable_name, self.st.variable_names):
+   if Feedback.check_scalar("name of the variable", self.ref.variable_name, self.st.variable_names):
        Feedback.set_score(1)
    else:
        Feedback.set_score(0)
