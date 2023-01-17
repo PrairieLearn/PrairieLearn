@@ -65,6 +65,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             "show-dimensions",
             "show-dtype",
             "show-python",
+            "display-language",
             "digits",
         ],
     )
@@ -81,7 +82,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "show-dimensions", SHOW_DIMENSIONS_DEFAULT
     )
     show_dtype = pl.get_boolean_attrib(element, "show-dtype", SHOW_DTYPE_DEFAULT)
-
 
     display_language = pl.get_enum_attrib(
         element, "display-language", DisplayLanguage, DISPLAY_LANGUAGE_DEFAULT
@@ -117,9 +117,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         frame_style.format(subset=float_column_names, formatter=f"{{:.{num_digits}g}}")
 
     if show_dtype:
-        if display_language is DtypeLanguage.PYTHON:
+        if display_language is DisplayLanguage.PYTHON:
             get_dtype_function = get_pandas_dtype
-        elif display_language is DtypeLanguage.R:
+        elif display_language is DisplayLanguage.R:
             get_dtype_function = convert_pandas_dtype_to_r
         else:
             assert_never(show_dtype)
@@ -138,9 +138,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         frame_style.hide(axis="columns")
 
     if show_index:
-        # Switch row indices to being 1-based if supplied indices are numeric. Otherwise, leave untouched.
-        if show_dtype is DtypeLanguage.R and pd.api.types.is_numeric_dtype(frame_style.index):
-           frame_style.index = list(range(1, len(frame_style.index) + 1))
+        # Switch row indices to being 1-based if supplied indices are integer. Otherwise, leave untouched.
+        # TODO double check if this will cause unexpected behavior if these aren't just indices.
+        if display_language is DisplayLanguage.R and pd.api.types.is_integer_dtype(
+            frame_style.index
+        ):
+            frame_style.format_index(lambda x: x + 1)
     else:
         frame_style.hide()
 
