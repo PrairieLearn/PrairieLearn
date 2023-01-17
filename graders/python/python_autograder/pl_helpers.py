@@ -117,7 +117,8 @@ def print_student_code(st_code="user_code.py", ipynb_key="#grade", as_feedback=T
         if extension == ".ipynb":
             contents = extract_ipynb_contents(f, ipynb_key).strip()
             lines = filter(
-                lambda l: not l.strip().startswith(ipynb_key), contents.split("\n")
+                lambda item: not item.strip().startswith(ipynb_key),
+                contents.split("\n"),
             )
             contents = "\n".join(lines)
         else:

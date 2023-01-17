@@ -13,13 +13,13 @@ CODEBASE = "/grade/student"
 DATAFILE = "/grade/data/data.json"
 SB_USER = "sbuser"
 
-TIMEOUT_MESSAGE = (
-    "\n\nTIMEOUT! Typically this means the program took too long,"
-    "\nrequested more inputs than provided, or an infinite loop was found."
-    "\nIf your program is reading data using scanf inside a loop, this "
-    "\ncould also mean that scanf does not support the input provided "
-    "\n(e.g., reading an int if the input is a double).\n"
-)
+TIMEOUT_MESSAGE = """
+TIMEOUT! Typically this means the program took too long,
+requested more inputs than provided, or an infinite loop was found.
+If your program is reading data using scanf inside a loop, this
+could also mean that scanf does not support the input provided
+(e.g., reading an int if the input is a double).
+"""
 
 
 class UngradableException(Exception):
