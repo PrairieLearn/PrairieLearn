@@ -105,6 +105,11 @@ module.exports = {
         intervalSec:
           config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostTransitionsSec,
       },
+      {
+        name: 'cleanTimeSeries',
+        module: require('./cleanTimeSeries'),
+        intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalCleanTimeSeriesSec,
+      },
     ];
 
     if (isEnterprise()) {
