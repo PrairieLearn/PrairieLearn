@@ -32,7 +32,7 @@ jobs:
           node-version: 16.x
 
       - name: Install Dependencies
-        run: yarn --frozen-lockfile
+        run: yarn --immutable
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets
