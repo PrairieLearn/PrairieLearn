@@ -50,7 +50,7 @@ def convert_pandas_dtype_to_r(s: pd.Series) -> str:
 
 
 def get_pandas_dtype(s: pd.Series) -> str:
-    return s.dtype
+    return str(s.dtype)
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -140,9 +140,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # Switch row indices to being 1-based if supplied indices are integer. Otherwise, leave untouched.
         # TODO double check if this will cause unexpected behavior if these aren't just indices.
         if display_language is DisplayLanguage.R and pd.api.types.is_integer_dtype(
-            frame_style.index
+            frame.index
         ):
-            frame_style.format_index(lambda x: x + 1)
+            frame_style.format_index(lambda x: x + 1)  # type: ignore
     else:
         frame_style.hide()
 
