@@ -1269,16 +1269,16 @@ def generate(data):
 
 #### Customizations
 
-| Attribute         | Type                  | Default | Description                                                                                                                                                             |
-| ----------------- | --------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `params-name`     | string                | —       | The name of the key in `data['params']` to get a value from.                                                                                                            |
-| `show-header`     | boolean               | true    | Show the header row of a DataFrame.                                                                                                                                     |
-| `show-index`      | boolean               | true    | Show the index column of a DataFrame.                                                                                                                                   |
-| `show-dimensions` | boolean               | true    | Show a footer with the dimensions of a DataFrame.                                                                                                                       |
-| `show-dtype`      | boolean | false  | Show the data types contained in each column of the DataFrame at the bottom of each column. Types used correspond to the `display-language` parameter. |
-| `display-language`      | "python", "r" | "python"  | Language to use for displaying data types and indices. |
-| `show-python`     | boolean               | true    | Show code that can be used to recreate the DataFrame in Python in a separate tab.                                                                                                 |
-| `digits`          | integer               | -       | Number of digits to display for floating point entries.                                                                                                                 |
+| Attribute          | Type          | Default  | Description                                                                                                                                            |
+| ------------------ | ------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `params-name`      | string        | —        | The name of the key in `data['params']` to get a value from.                                                                                           |
+| `show-header`      | boolean       | true     | Show the header row of a DataFrame.                                                                                                                    |
+| `show-index`       | boolean       | true     | Show the index column of a DataFrame.                                                                                                                  |
+| `show-dimensions`  | boolean       | true     | Show a footer with the dimensions of a DataFrame.                                                                                                      |
+| `show-dtype`       | boolean       | false    | Show the data types contained in each column of the DataFrame at the bottom of each column. Types used correspond to the `display-language` parameter. |
+| `display-language` | "python", "r" | "python" | Language to use for displaying data types and indices.                                                                                                 |
+| `show-python`      | boolean       | true     | Show code that can be used to recreate the DataFrame in Python in a separate tab.                                                                      |
+| `digits`           | integer       | -        | Number of digits to display for floating point entries.                                                                                                |
 
 #### Details
 
