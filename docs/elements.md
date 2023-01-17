@@ -1273,7 +1273,7 @@ def generate(data):
 | ------------------ | ------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `params-name`      | string        | —        | The name of the key in `data['params']` to get a value from.                                                                                           |
 | `show-header`      | boolean       | true     | Show the header row of a DataFrame.                                                                                                                    |
-| `show-index`       | boolean       | true     | Show the index column of a DataFrame.                                                                                                                  |
+| `show-index`       | boolean       | true     | Show the index column of a DataFrame.  Indices used correspond to the `display-language` parameter.                                                                                                                |
 | `show-dimensions`  | boolean       | true     | Show a footer with the dimensions of a DataFrame.                                                                                                      |
 | `show-dtype`       | boolean       | false    | Show the data types contained in each column of the DataFrame at the bottom of each column. Types used correspond to the `display-language` parameter. |
 | `display-language` | "python", "r" | "python" | Language to use for displaying data types and indices.                                                                                                 |
