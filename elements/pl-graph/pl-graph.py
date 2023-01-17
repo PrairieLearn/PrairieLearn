@@ -13,7 +13,7 @@ PARAMS_TYPE_DEFAULT = "adjacency-matrix"
 WEIGHTS_DEFAULT = None
 WEIGHTS_DIGITS_DEFAULT = 2
 WEIGHTS_PRESENTATION_TYPE_DEFAULT = "f"
-SHOW_NEGATIVE_WEIGHTS_DEFAULT = False
+PARSE_NEGATIVE_WEIGHTS_DEFAULT = False
 
 
 def graphviz_from_adj_matrix(
@@ -28,8 +28,8 @@ def graphviz_from_adj_matrix(
     input_label = pl.get_string_attrib(
         element, "params-name-labels", PARAMS_NAME_LABELS_DEFAULT
     )
-    show_negative_weights = pl.get_string_attrib(
-        element, "show-negative-weights", SHOW_NEGATIVE_WEIGHTS_DEFAULT
+    parse_negative_weights = pl.get_string_attrib(
+        element, "parse-negative-weights", PARSE_NEGATIVE_WEIGHTS_DEFAULT
     )
 
     mat = np.array(pl.from_json(data["params"][input_param]))
@@ -76,10 +76,10 @@ def graphviz_from_adj_matrix(
     for in_node, row in zip(mat_label, mat):
         for out_node, x in zip(mat_label, row):
             # If showing negative weights, show every entry that is not None
-            if show_negative_weights and x is None:
-                continue
             # Otherwise, only show positive weights
-            elif not show_negative_weights and x <= 0:
+            if (parse_negative_weights and x is None) or (
+                not parse_negative_weights and x <= 0
+            ):
                 continue
 
             if show_weights:
@@ -106,7 +106,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "weights-presentation-type",
         "params-name-labels",
         "params-type",
-        "show-negative-weights",
+        "parse-negative-weights",
     ]
 
     # Load attributes from extensions if they have any
