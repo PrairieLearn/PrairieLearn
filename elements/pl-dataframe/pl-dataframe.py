@@ -133,7 +133,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if not show_header:
         frame_style.hide(axis="columns")
 
-    if not show_index:
+    if show_index:
+        # Switch row indices to being 1-based if supplied indices are numeric. Otherwise, leave untouched.
+        if show_dtype is DtypeLanguage.R and pd.api.types.is_numeric_dtype(frame_style.index):
+           frame_style.index = list(range(1, len(frame_style.index) + 1))
+    else:
         frame_style.hide()
 
     # Might be worth moving everything out of the CSS file and handle it all with the builtin styler.
