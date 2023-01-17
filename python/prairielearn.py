@@ -87,6 +87,11 @@ def get_enum_attrib(
     if is_default:
         return enum_val
 
+    if enum_val != enum_val.lower():
+        raise ValueError(
+            f'Value "{enum_val}" assigned to "{name}" cannot have uppercase characters.'
+        )
+
     upper_enum_str = enum_val.upper()
     accepted_names = {member.name.replace("_", "-") for member in enum_type}
 

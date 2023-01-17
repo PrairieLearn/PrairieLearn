@@ -9,9 +9,8 @@ from typing_extensions import assert_never
 
 
 class DisplayLanguage(Enum):
-    NONE = 1
-    PYTHON = 2
-    R = 3
+    PYTHON = 1
+    R = 2
 
 
 SHOW_HEADER_DEFAULT = True
@@ -122,7 +121,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         elif display_language is DisplayLanguage.R:
             get_dtype_function = convert_pandas_dtype_to_r
         else:
-            assert_never(show_dtype)
+            assert_never(display_language)
 
         # old agg function:
         descriptors = frame.agg([get_dtype_function]).set_axis(

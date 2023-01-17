@@ -24,7 +24,7 @@ include = [
     "./elements/pl-big-o-input",
     "./elements/pl-hidden-hints",
     "./elements/pl-symbolic-input",
-    "./elements/pl-dataframe.py",
+    "./elements/pl-dataframe",
     "./python/conftest.py",
     "./python/prairielearn.py",
     "./python/prairielearn_test.py",

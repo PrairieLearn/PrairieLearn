@@ -1,5 +1,6 @@
 import json
 import math
+from enum import Enum
 from typing import Callable, cast
 
 import lxml.html
@@ -85,3 +86,43 @@ def test_set_score_data(
     # Assert equality
     weight_set_function(question_data)
     assert math.isclose(question_data["score"], expected_score)
+
+
+class TestEnum(Enum):
+    DEFAULT = 0
+    TEST_CHOICE_1 = 1
+    TEST_CHOICE_2 = 2
+    TEST_CHOICE_3 = 3
+
+
+@pytest.mark.parametrize(
+    "html_str, expected_result",
+    [
+        ("<pl-thing></pl-thing>", TestEnum.DEFAULT),
+        ('<pl-thing test-choice="default"></pl-thing>', TestEnum.DEFAULT),
+        ('<pl-thing test-choice="test-choice-1"></pl-thing>', TestEnum.TEST_CHOICE_1),
+        ('<pl-thing test-choice="test-choice-2"></pl-thing>', TestEnum.TEST_CHOICE_2),
+        ('<pl-thing test-choice="test-choice-3"></pl-thing>', TestEnum.TEST_CHOICE_3),
+    ],
+)
+def test_get_enum_attrib(html_str: str, expected_result: TestEnum) -> None:
+    element = lxml.html.fragment_fromstring(html_str)
+    result = pl.get_enum_attrib(element, "test-choice", TestEnum, TestEnum.DEFAULT)
+
+    assert result is expected_result
+
+
+@pytest.mark.parametrize(
+    "html_str",
+    [
+        "<pl-thing></pl-thing>",
+        '<pl-thing test-choice="DEFAULT"></pl-thing>',
+        '<pl-thing test-choice="Default"></pl-thing>',
+        '<pl-thing test-choice="test_choice_1"></pl-thing>',
+    ],
+)
+def test_get_enum_attrib_exceptions(html_str: str) -> None:
+    element = lxml.html.fragment_fromstring(html_str)
+
+    with pytest.raises(Exception):
+        pl.get_enum_attrib(element, "test-choice", TestEnum)
