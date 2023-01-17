@@ -90,7 +90,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     if varname not in data["params"]:
         raise KeyError(
-            f'Could not find {varname} in params. Please make sure to set params-name="{varname}" in the element.'
+            f'Could not find "{varname}" in params. Please double check the parameter name is spelled correctly.'
         )
 
     # Always assume that entry in params dict is serialized dataframe
