@@ -160,6 +160,10 @@ def to_json(v, *, df_encoding_version=1):
         sympy.Matrix -> '_type': 'sympy_matrix'
         pandas.DataFrame -> '_type': 'dataframe'
 
+    Note that the 'dataframe_v2' encoding allows for missing and date time values whereas
+    the 'dataframe' (default) does not. However, the 'dataframe' encoding allows for complex
+    numbers while 'dataframe_v2' does not.
+
     If v is an ndarray, this function preserves its dtype (by adding '_dtype' as
     a third field in the dictionary).
 
