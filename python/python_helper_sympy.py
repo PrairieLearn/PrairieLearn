@@ -330,7 +330,8 @@ def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
     ast.fix_missing_locations(root)
 
     # Convert AST to code and evaluate it with no global expressions and with
-    # a whitelist of local expressions
+    # a whitelist of local expressions. Flattens out the inner dictionaries
+    # that appear in locals_for_eval for the final call to eval.
     locals = {
         name: expr
         for local_expressions in locals_for_eval.values()
@@ -378,6 +379,7 @@ def convert_string_to_sympy(
 
 
 def point_to_error(expr: str, ind: int, w: int = 5) -> str:
+    """Generate a string with a pointer to error in expr with index ind"""
     w_left: str = " " * (ind - max(0, ind - w))
     w_right: str = " " * (min(ind + w, len(expr)) - ind)
     initial: str = expr[ind - len(w_left) : ind + len(w_right)]
