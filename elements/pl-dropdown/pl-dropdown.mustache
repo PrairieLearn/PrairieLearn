@@ -1,16 +1,7 @@
-<script>
-    $(function(){
-        $('#pl-dropdown-{{uuid}} [data-toggle="popover"]').popover({
-            sanitize: false,
-            container: 'body',
-            template: '<div class="popover pl-dropdown-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
-        });
-    });
-</script>
 
 {{#question}}
-    <div id="pl-dropdown-{{uuid}}" class="d-inline-block form-group form-inline">
-        <select name="{{answers-name}}" class="form-control">
+    <span class="d-inline-block form-group form-inline">
+        <select name="{{answers-name}}" class="form-control" {{^editable}}disabled{{/editable}}>
             {{#options}}
                 <option value="{{value}}" {{#selected}}selected{{/selected}}>{{{value}}}</option>
             {{/options}}
@@ -23,11 +14,11 @@
                 <span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
             {{/correct}}
         {{/has_submission}}
-    </div>
+    </span>
 {{/question}}
 
 {{#submission}}
-    <div id="pl-dropdown-{{uuid}}" class="d-inline-block">
+    <span class="d-inline-block">
 
         {{^parse-error}}
             <code class="user-output">{{{submitted-answer}}}</code>
@@ -43,15 +34,25 @@
         {{/parse-error}}
 
         {{#parse-error}}
+            <script>
+              $(function(){
+                  $('#pl-dropdown-popover-button-{{uuid}}').popover({ sanitize: false });
+              });
+            </script>
             <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
-            <a href="javascript:void(0);" role="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Format Error" tabindex="0" data-content="{{parse-error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></a>
+            <button id="pl-dropdown-popover-button-{{uuid}}" class="btn btn-sm btn-secondary small border ml-1"
+                    data-placement="auto" data-trigger="focus" data-toggle="popover"
+                    data-html="true" title="Format Error" data-container="body"
+                    data-content="{{parse-error}}">
+              Why <i class="fa fa-question-circle" aria-hidden="true"></i>
+            </button>
         {{/parse-error}}
-    </div>
+    </span>
 {{/submission}}
 
 
 {{#answer}}
-    <div id="pl-dropdown-{{uuid}}" class="d-inline-block">
+    <span class="d-inline-block">
         <code class="user-output">{{{correct-answer}}}</code>
-    </div>
+    </span>
 {{/answer}}

@@ -4,7 +4,7 @@ const express = require('express');
 const router = express.Router();
 
 const error = require('../../prairielib/lib/error');
-const sqlDb = require('../../prairielib/lib/sql-db');
+const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const github = require('../../lib/github');
@@ -16,7 +16,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', (req, res, next) => {
   res.locals.coursesRoot = config.coursesRoot;
-  sqlDb.queryOneRow(sql.get_requests, [], (err, result) => {
+  sqldb.queryOneRow(sql.get_requests, [], (err, result) => {
     if (ERR(err, next)) return;
 
     _.assign(res.locals, result.rows[0]);
@@ -41,7 +41,7 @@ router.post('/', (req, res, next) => {
       user_id,
       action,
     };
-    sqlDb.queryOneRow(sql.update_course_request, params, (err, _result) => {
+    sqldb.queryOneRow(sql.update_course_request, params, (err, _result) => {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
@@ -53,10 +53,10 @@ router.post('/', (req, res, next) => {
       user_id,
       action: 'creating',
     };
-    sqlDb.queryOneRow(sql.update_course_request, params, (err, _result) => {
+    sqldb.queryOneRow(sql.update_course_request, params, (err, _result) => {
       if (ERR(err, next)) return;
 
-      /* Create the course in the background */
+      // Create the course in the background
       if (ERR(err, next)) return;
       const repo_options = {
         short_name: req.body.short_name,
@@ -67,6 +67,10 @@ router.post('/', (req, res, next) => {
         repo_short_name: req.body.repository_short_name,
         github_user: req.body.github_user.length > 0 ? req.body.github_user : null,
         course_request_id: id,
+        first_name: req.body.first_name,
+        last_name: req.body.last_name,
+        work_email: req.body.work_email,
+        institution: req.body.institution,
       };
 
       github.createCourseRepoJob(repo_options, res.locals.authn_user, (err, job_id) => {

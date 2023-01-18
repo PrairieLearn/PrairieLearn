@@ -1,0 +1,17 @@
+<pl-question-panel>
+<p>
+  The function $f(x) = {{params.f}}$ is illustrated below.  Select the values of $x$
+  corresponding to {{params.option}} function values.
+</p>
+<pl-figure file-name=figure.png type="dynamic"></pl-figure>
+</pl-question-panel>
+
+<pl-checkbox answers-name="select" hide-letter-keys="true" number-answers=4>
+    <pl-answer correct={{params.x0}}> $x = -6$ </pl-answer>
+    <pl-answer correct={{params.x1}}> $x = -4$ </pl-answer>
+    <pl-answer correct={{params.x2}}> $x = -2$ </pl-answer>
+    <pl-answer correct={{params.x3}}> $x = 0$ </pl-answer>
+    <pl-answer correct={{params.x4}}> $x = 2$ </pl-answer>
+    <pl-answer correct={{params.x5}}> $x = 4$ </pl-answer>
+    <pl-answer correct={{params.x6}}> $x = 6$ </pl-answer>
+</pl-checkbox>

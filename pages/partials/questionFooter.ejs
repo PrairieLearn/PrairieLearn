@@ -1,3 +1,4 @@
+<% if (question_context !== 'manual_grading') { %>
   <div class="card-footer" id="question-panel-footer">
 <% if (question.type == 'Freeform') { %>
     <% if (showTrueAnswer && (question_context == 'student_exam')) { %>
@@ -34,9 +35,6 @@
             <% } %>
             </button>
           <% } %>
-          <% if (showManualGradingMsg) { %>
-          <span class="order-4 ml-2">This question will be manually graded.</span>
-          <% } %>
         </span>
         <span class="d-flex">
           <input type="hidden" name="__variant_id" value="<%= variant.id %>">
@@ -55,6 +53,13 @@
               1 point available for this attempt
               <% } else { %>
               <%= instance_question.points_list[0] %> points available for this attempt
+              <% } %>
+              <% if (assessment_question?.max_manual_points > 0) { %>
+                <% if (instance_question.points_list[0] > assessment_question?.max_manual_points) { %>
+                  &mdash; <%= instance_question.points_list[0] - assessment_question?.max_manual_points %> auto-graded, <%= assessment_question?.max_manual_points %> manually graded
+                <% } else { %>
+                  &mdash; manually graded
+                <% } %>
               <% } %>
               <% if (instance_question.points_list.length == 2) { %>
               <br />(following attempt is worth: <%= instance_question.points_list[1] %>)
@@ -104,9 +109,6 @@
             <% } %>
             </button>
               <% } %>
-              <% if (showManualGradingMsg) { %>
-              <span class="order-4 ml-2">This question will be manually graded.</span>
-              <% } %>
           </span>
           <span class="d-flex">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
@@ -142,6 +144,7 @@
     </form>
 <% } %>
   </div>
+<% } %>
 <script>
   // Install on page load and reinstall on websocket re-render
   $('a.disable-on-click').on('click', function() {

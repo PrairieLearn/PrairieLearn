@@ -1,0 +1,58 @@
+{
+    "uuid": "C19C0B7C-8728-49FE-8682-4E48E9694E3A",
+    "type": "Homework",
+    "title": "Workshop from Summer 2020",
+    "set": "Workshop",
+    "number": "1",
+    "comment": "This assessment was created for the workshop offered in Summer 2020",
+    "zones": [
+        {
+            "title": "Lesson 1",
+            "comment": "Workshop Day 1: https://prairielearn.readthedocs.io/en/latest/workshop/lesson1/",
+            "questions": [
+                {"id": "workshop/PeriodicTable1", "points": 1, "maxPoints": 3},
+                {"id": "workshop/Lesson1_example1_v1", "points": 1, "maxPoints": 3},
+                {"id": "workshop/Lesson1_example1_v2", "points": 1, "maxPoints": 3},
+                {"id": "workshop/Lesson1_example2", "points": 1, "maxPoints": 3},
+                {"id": "workshop/Lesson1_example3_v1", "points": 1, "maxPoints": 3},
+                {"id": "workshop/Lesson1_example3_v2", "points": 1, "maxPoints": 3},
+                {"id": "workshop/Lesson1_example3_v3", "points": 1, "maxPoints": 3}
+            ]
+        },
+        {
+            "title": "Lesson 3",
+            "comment": "Workshop Day 3: https://prairielearn.readthedocs.io/en/latest/workshop/lesson3/",
+            "questions": [
+                {"id": "workshop/Lesson3_example1_v1", "points": 1, "maxPoints": 3},
+                {"id": "workshop/Lesson3_example1_v2", "points": 1, "maxPoints": 3},
+                {"id": "workshop/Lesson3_example1_v3", "points": 1, "maxPoints": 3},
+                {"id": "workshop/Lesson3_example2_v1", "points": 1, "maxPoints": 3},
+                {"id": "workshop/Lesson3_example2_v2", "points": 1, "maxPoints": 3},
+                {"id": "workshop/Lesson3_example2_v3", "points": 1, "maxPoints": 3},
+                {"id": "workshop/Lesson3_example3", "points": 1, "maxPoints": 3},
+                {"id": "workshop/Lesson3_example4_v1", "points": 1, "maxPoints": 3},
+                {"id": "workshop/Lesson3_example4_v2", "points": 1, "maxPoints": 3}
+            ]
+        },
+        {
+            "title": "Lesson 4",
+            "comment": "Workshop Day 4: https://prairielearn.readthedocs.io/en/latest/workshop/lesson4/",
+            "questions": [
+                {"id": "workshop/Lesson4_example1", "points": 1, "maxPoints": 3},
+                {"id": "workshop/Lesson4_example2", "points": 1, "maxPoints": 3},
+                {"id": "workshop/Lesson4_example3", "points": 1, "maxPoints": 3},
+                {"id": "workshop/Lesson4_example4", "points": 1, "maxPoints": 3}
+            ]
+        },
+        {
+            "title": "Lesson 5",
+            "comment": "Workshop Day 5: https://prairielearn.readthedocs.io/en/latest/workshop/lesson5/",
+            "questions": [
+              {"id": "workshop/Lesson5_example1", "points": 1, "maxPoints": 3},
+              {"id": "workshop/Lesson5_example2", "points": 1, "maxPoints": 3},
+              {"id": "workshop/Lesson5_example3", "points": 1, "maxPoints": 3},
+              {"id": "demo/drawing/centroid", "points": 1, "maxPoints": 3}
+            ]
+        }
+    ]
+}

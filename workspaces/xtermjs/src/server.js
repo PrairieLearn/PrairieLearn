@@ -48,19 +48,19 @@ const default_env = {
   LC_CTYPE: 'C.UTF-8',
 };
 
-/* Static files */
+// Static files
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
 app.use('/xterm', express.static('node_modules/xterm'));
 app.use('/xterm-fit', express.static('node_modules/xterm-addon-fit'));
 
-/* Create one pseudoterminal that all connections share */
+// Create one pseudoterminal that all connections share
 let websockets = {};
 let ws_id = 0;
 let term_output;
 let term;
 
-/* Wrap the initialization so we can restart the terminal if the client
-   kills it (for example with ctrl-d) */
+// Wrap the initialization so we can restart the terminal if the client kills
+// it (for example with ctrl-d)
 const spawn_terminal = () => {
   term_output = '';
   term = pty.spawn(options.command, [], {
@@ -89,7 +89,7 @@ const spawn_terminal = () => {
 };
 spawn_terminal();
 
-/* Listen for any incoming websocket connections */
+// Listen for any incoming websocket connections
 app.ws('/', (ws, req) => {
   const id = ws_id++;
   websockets[id] = ws;
@@ -101,6 +101,8 @@ app.ws('/', (ws, req) => {
       term.write(val.value);
     } else if (val.event === 'resize') {
       term.resize(val.value.cols, val.value.rows);
+    } else if (val.event === 'heartbeat') {
+      // do nothing
     }
   });
   ws.on('close', (msg) => {

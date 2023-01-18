@@ -14,7 +14,9 @@ WITH first_calculation AS (
     FROM
         variants AS v
         JOIN submissions AS s ON (s.variant_id = v.id)
-    WHERE v.instance_question_id = instance_question_id_param
+    WHERE
+        v.instance_question_id = instance_question_id_param
+        AND s.gradable IS TRUE
 ),
 second_calculation AS (
     SELECT array_increments_above_max(submission_score_array_var) AS incremental_submission_score_array_var

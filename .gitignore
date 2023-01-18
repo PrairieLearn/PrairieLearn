@@ -14,35 +14,38 @@ docker-compose.override.yml
 ### JetBrains
 /.idea/
 
-.vscode
+### VSCode
+.vscode/*
+!.vscode/extensions.json
+
+### tmux
 .tmux.conf
 
 ## Backup files
 
 ### vi
-**/*.swp 
+**/*.swp
 **/*.swo
 **/*~
 
 ### emacs
 **/[#]*[#]
 
-## File explorers
-**/.DS_Store # OSX Finder
+### jupyter
+.ipynb_checkpoints
 
 # PrairieLearn
 
+## Compiled frontend assets
+public/build
+
 ## Config
 /config.json
-/aws-config.json
-
-## Dependencies
-node_modules
 
 ## Generated HTML
 
 ### mkdocs
-/site/ 
+/site/
 
 ### jsdoc
 /docs/code-docs/
@@ -60,6 +63,17 @@ node_modules
 /tests/testFileEditor/courseLive/
 /tests/testFileEditor/courseOrigin/
 /tests/testFileEditor/courseDev/
+
+## Yarn 
+node_modules
+yarn-error.log
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
 
 ## Programming languages
 
@@ -79,3 +93,9 @@ __pycache__/
 
 ## s3rver file store
 /s3rver
+
+## Turborepo caches
+.turbo
+
+## Compiled package files
+packages/*/dist

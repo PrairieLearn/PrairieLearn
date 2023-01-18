@@ -14,6 +14,7 @@ const syncTopics = require('./fromDisk/topics');
 const syncQuestions = require('./fromDisk/questions');
 const syncTags = require('./fromDisk/tags');
 const syncAssessmentSets = require('./fromDisk/assessmentSets');
+const syncAssessmentModules = require('./fromDisk/assessmentModules');
 const syncAssessments = require('./fromDisk/assessments');
 const freeformServer = require('../question-servers/freeform');
 const perf = require('./performance')('sync');
@@ -42,11 +43,7 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
   perf.start('sync');
 
   const courseData = await perf.timedAsync('loadCourseData', () =>
-    courseDB.loadFullCourseNew(courseDir)
-  );
-  // Write any errors and warnings to sync log
-  courseDB.writeErrorsAndWarningsForCourseData(courseId, courseData, (line) =>
-    logger.info(line || '')
+    courseDB.loadFullCourse(courseDir)
   );
   logger.info('Syncing info to database');
   await perf.timedAsync('syncCourseInfo', () => syncCourseInfo.sync(courseData, courseId));
@@ -59,6 +56,9 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
   );
   await perf.timedAsync('syncTags', () => syncTags.sync(courseId, courseData, questionIds));
   await perf.timedAsync('syncAssessmentSets', () => syncAssessmentSets.sync(courseId, courseData));
+  await perf.timedAsync('syncAssessmentModules', () =>
+    syncAssessmentModules.sync(courseId, courseData)
+  );
   perf.start('syncAssessments');
   await Promise.all(
     Object.entries(courseData.courseInstances).map(async ([ciid, courseInstanceData]) => {
@@ -89,6 +89,15 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
   } else {
     logger.info(chalk.green('✓ Course sync successful'));
   }
+
+  // Note that we deliberately log warnings/errors after syncing to the database
+  // since in some cases we actually discover new warnings/errors during the
+  // sync process. For instance, we don't actually validate exam UUIDs until
+  // the database sync step.
+  courseDB.writeErrorsAndWarningsForCourseData(courseId, courseData, (line) =>
+    logger.info(line || '')
+  );
+
   perf.end('sync');
   return {
     hadJsonErrors: courseDataHasErrors,

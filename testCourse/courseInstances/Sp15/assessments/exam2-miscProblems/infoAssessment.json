@@ -4,6 +4,7 @@
     "title": "Miscellaneous exam",
     "set": "Exam",
     "number": "2",
+    "module": "Module2",
     "allowAccess": [
         {
             "mode": "Exam",

@@ -14,7 +14,6 @@ const config = require('../../lib/config');
 const cache = require('../../lib/cache');
 
 var timeTolerance = 3000; // seconds
-var redirUrl;
 
 router.post('/', function (req, res, next) {
   debug(req.body);
@@ -130,6 +129,8 @@ router.post('/', function (req, res, next) {
         var pl_authn = csrf.generateToken(tokenData, config.secretKey);
         res.cookie('pl_authn', pl_authn, {
           maxAge: config.authnCookieMaxAgeMilliseconds,
+          httpOnly: true,
+          secure: true,
         });
 
         const params = {
@@ -160,8 +161,9 @@ router.post('/', function (req, res, next) {
               });
             }
 
-            redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/assessment/${result.rows[0].assessment_id}/`;
-            res.redirect(redirUrl);
+            res.redirect(
+              `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/assessment/${result.rows[0].assessment_id}/`
+            );
           } else {
             // No linked assessment
 
@@ -173,12 +175,13 @@ router.post('/', function (req, res, next) {
                   error.make(403, 'Access denied (could not determine if user is instructor)')
                 );
               }
-              if (result.rows[0].is_instructor) {
-                redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/instructor/instance_admin/lti`;
-                res.redirect(redirUrl);
+              if (!result.rows[0].is_instructor) {
+                // Show an error that the assignment is unavailable
+                return next(error.make(400, 'Assignment not available yet'));
               }
-              // Show an error that the assignment is unavailable
-              return next(error.make(400, 'Assignment not available yet'));
+              res.redirect(
+                `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/instructor/instance_admin/lti`
+              );
             });
           }
         });
