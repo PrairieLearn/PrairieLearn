@@ -3,6 +3,7 @@ import numpy as np
 import numpy.linalg as la
 import prairielearn as pl
 import networkx as nx
+import string
 
 def generate(data):
     data['params']['weight1'] = random.randint(1, 10)
@@ -27,10 +28,21 @@ def generate(data):
                          [ 0,  1, -1,  0]])
     data['params']['edge-inc-mat'] = pl.to_json(edge_mat)
 
-    data['params']['graph_thing'] = pl.to_json(nx.path_graph(3))
+    random_graph = nx.gnm_random_graph(5, 6)
 
-    graph = nx.MultiGraph()
-    graph.add_edge(1,2,weight=3)
-    graph.add_edge(1,2,weight=4)
+    for in_node, out_node, edge_data in random_graph.edges(data=True):
+        edge_data['label'] = random.choice(string.ascii_lowercase)
+        edge_data['weight'] = random.randint(1, 10)
 
-    data['params']['graph_thing'] = pl.to_json(graph)
+    data['params']['random-graph'] = pl.to_json(random_graph)
+
+    multigraph = nx.MultiDiGraph([
+        (1,2),
+        (2,1),
+        (1,2),
+        (1,3),
+        (3,2),
+        (2,3)
+    ])
+
+    data['params']['multigraph'] = pl.to_json(multigraph)
