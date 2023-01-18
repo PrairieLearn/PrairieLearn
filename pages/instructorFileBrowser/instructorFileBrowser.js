@@ -13,14 +13,10 @@ const hljs = require('highlight.js');
 const FileType = require('file-type');
 const { isBinaryFile } = require('isbinaryfile');
 const { encodePath, decodePath } = require('../../lib/uri-util');
+const { parentContainsChild } = require('../../lib/file-paths');
 const editorUtil = require('../../lib/editorUtil');
 const { default: AnsiUp } = require('ansi_up');
 const { getCourseOwners } = require('../../lib/course');
-
-function contains(parentPath, childPath) {
-  const relPath = path.relative(parentPath, childPath);
-  return !(relPath.split(path.sep)[0] === '..' || path.isAbsolute(relPath));
-}
 
 function isHidden(item) {
   return item[0] === '.';
@@ -120,7 +116,7 @@ function getPaths(req, res, callback) {
     }
   }
 
-  if (!contains(paths.rootPath, paths.workingPath)) {
+  if (!parentContainsChild(paths.rootPath, paths.workingPath)) {
     let err = new Error('Invalid working directory');
     err.info =
       `<p>The working directory</p>` +
@@ -132,7 +128,7 @@ function getPaths(req, res, callback) {
   }
 
   const found = paths.invalidRootPaths.find((invalidRootPath) =>
-    contains(invalidRootPath, paths.workingPath)
+    parentContainsChild(invalidRootPath, paths.workingPath)
   );
   if (found) {
     let err = new Error('Invalid working directory');
@@ -150,7 +146,7 @@ function getPaths(req, res, callback) {
     {
       name: path.basename(curPath),
       path: path.relative(res.locals.course.path, curPath),
-      canView: contains(paths.rootPath, curPath),
+      canView: parentContainsChild(paths.rootPath, curPath),
       encodedPath: encodePath(path.relative(res.locals.course.path, curPath)),
     },
   ];
@@ -163,7 +159,7 @@ function getPaths(req, res, callback) {
         paths.branch.push({
           name: path.basename(curPath),
           path: path.relative(res.locals.course.path, curPath),
-          canView: contains(paths.rootPath, curPath),
+          canView: parentContainsChild(paths.rootPath, curPath),
           encodedPath: encodePath(path.relative(res.locals.course.path, curPath)),
         });
       }
@@ -223,7 +219,7 @@ function browseDirectory(file_browser, callback) {
                   file_browser.has_course_permission_edit &&
                   !file_browser.example_course,
                 canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
-                  contains(invalidRootPath, filepath)
+                  parentContainsChild(invalidRootPath, filepath)
                 ),
                 sync_errors: sync_data.errors,
                 sync_errors_ansified: ansiUp.ansi_to_html(sync_data.errors),
@@ -239,7 +235,7 @@ function browseDirectory(file_browser, callback) {
                 path: path.relative(file_browser.paths.coursePath, filepath),
                 encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
                 canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
-                  contains(invalidRootPath, filepath)
+                  parentContainsChild(invalidRootPath, filepath)
                 ),
               };
             } else {
@@ -336,7 +332,7 @@ function browseFile(file_browser, callback) {
         canDelete:
           movable && file_browser.has_course_permission_edit && !file_browser.example_course,
         canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
-          contains(invalidRootPath, filepath)
+          parentContainsChild(invalidRootPath, filepath)
         ),
       };
       callback(null);
