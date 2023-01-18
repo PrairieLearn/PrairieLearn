@@ -116,9 +116,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         score = data["partial_scores"].get(name, {"score": None}).get("score", None)
 
-        score_type, score_value = pl.determine_score_params(score)
-        html_params[score_type] = True
-        html_params["score_value"] = score_value
+        if score is not None:
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
 
         html_params[display.value] = True
 
@@ -179,9 +179,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         score = data["partial_scores"].get(name, {"score": None}).get("score", None)
 
-        score_type, score_value = pl.determine_score_params(score)
-        html_params[score_type] = True
-        html_params["score_value"] = score_value
+        if score is not None:
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
 
         html_params[display.value] = True
 

@@ -73,45 +73,6 @@ class DisplayType(Enum):
     BLOCK = "block"
 
 
-EnumT = TypeVar("EnumT", bound=Enum)
-
-
-def get_enum_attrib(
-    element: lxml.html.HtmlElement,
-    name: str,
-    enum_type: Type[EnumT],
-    default: Optional[EnumT] = None,
-) -> EnumT:
-    """
-    Returns the named attribute for the element parsed as an enum,
-    or the (optional) default value. If the default value is not provided
-    and the attribute is missing then an exception is thrown. An exception
-    is also thrown if the value for the enum provided is invalid.
-
-    Also, alters the enum names to comply with PL naming convention automatically
-    (replacing underscores with dashes and uppercasing). If default value is
-    provided, must be a member of the given enum.
-    """
-
-    enum_val, is_default = (
-        _get_attrib(element, name)
-        if default is None
-        else _get_attrib(element, name, default)
-    )
-
-    # Default doesn't need to be converted, already a value of the enum
-    if is_default:
-        return enum_val
-
-    upper_enum_str = enum_val.upper()
-    accepted_names = {member.name.replace("_", "-") for member in enum_type}
-
-    if upper_enum_str not in accepted_names:
-        raise ValueError(f"{enum_val} is not a valid type")
-
-    return enum_type[upper_enum_str.replace("-", "_")]
-
-
 def grade_answer_parameterized(
     data: QuestionData,
     question_name: str,
@@ -139,11 +100,7 @@ def grade_answer_parameterized(
     submitted_answer = data["submitted_answers"][question_name]
 
     # Run passed-in grading function
-    try:
-        result, feedback_content = grade_function(submitted_answer)
-    except ValueError as err:
-        data["format_errors"][question_name] = str(err)
-        return
+    result, feedback_content = grade_function(submitted_answer)
 
     # Try converting partial score
     if isinstance(result, bool):
@@ -161,20 +118,53 @@ def grade_answer_parameterized(
         data["partial_scores"][question_name]["feedback"] = feedback_content
 
 
-def determine_score_params(score: Optional[float]) -> Tuple[str, float]:
+def determine_score_params(score: float) -> Tuple[str, Union[bool, float]]:
     """Determine score params taken from data dict"""
 
-    if score is None:
-        return "", 0.0
+    if score >= 1:
+        return ("correct", True)
+    elif score > 0:
+        return ("partial", math.floor(score * 100))
 
-    score_val = float(score)
+    return ("incorrect", True)
 
-    if score_val >= 1.0:
-        return ("correct", 1.0)
-    elif score_val > 0.0:
-        return ("partial", math.floor(score_val * 100))
 
-    return ("incorrect", 0.0)
+EnumT = TypeVar("EnumT", bound=Enum)
+
+
+def get_enum_attrib(
+    element: lxml.html.HtmlElement,
+    name: str,
+    enum_type: Type[EnumT],
+    default: Optional[EnumT] = None,
+) -> EnumT:
+    """
+    Returns the named attribute for the element parsed as an enum,
+    or the (optional) default value. If the default value is not provided
+    and the attribute is missing then an exception is thrown. An exception
+    is also thrown if the value for the enum provided is invalid.
+    Also, alters the enum names to comply with PL naming convention automatically
+    (replacing underscores with dashes and uppercasing). If default value is
+    provided, must be a member of the given enum.
+    """
+
+    enum_val, is_default = (
+        _get_attrib(element, name)
+        if default is None
+        else _get_attrib(element, name, default)
+    )
+
+    # Default doesn't need to be converted, already a value of the enum
+    if is_default:
+        return enum_val
+
+    upper_enum_str = enum_val.upper()
+    accepted_names = {member.name.replace("_", "-") for member in enum_type}
+
+    if upper_enum_str not in accepted_names:
+        raise ValueError(f"{enum_val} is not a valid type")
+
+    return enum_type[upper_enum_str.replace("-", "_")]
 
 
 def set_weighted_score_data(data: QuestionData, weight_default: int = 1) -> None:
