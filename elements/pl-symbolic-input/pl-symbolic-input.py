@@ -137,20 +137,21 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
         }
-        if parse_error is None and name in data["submitted_answers"]:
-            a_sub = data["submitted_answers"][name]
-            if isinstance(a_sub, str):
-                # this is for backward-compatibility
-                a_sub = phs.convert_string_to_sympy(
-                    a_sub, variables, allow_complex=allow_complex
-                )
+        if parse_error is None:
+            a_sub = data["submitted_answers"].get(name)
+            if a_sub is not None:
+                if isinstance(a_sub, str):
+                    # this is for backward-compatibility
+                    a_sub = phs.convert_string_to_sympy(
+                        a_sub, variables, allow_complex=allow_complex
+                    )
+                else:
+                    a_sub = phs.json_to_sympy(a_sub, allow_complex=allow_complex)
+                a_sub = a_sub.subs(sympy.I, sympy.Symbol(imaginary_unit))
+                html_params["a_sub"] = sympy.latex(a_sub)
             else:
-                a_sub = phs.json_to_sympy(a_sub, allow_complex=allow_complex)
-            a_sub = a_sub.subs(sympy.I, sympy.Symbol(imaginary_unit))
-            html_params["a_sub"] = sympy.latex(a_sub)
-        elif name not in data["submitted_answers"]:
-            html_params["missing_input"] = True
-            html_params["parse_error"] = None
+                html_params["missing_input"] = True
+                html_params["parse_error"] = None
         else:
             # Use the existing format text in the invalid popup.
             info_params = {
@@ -314,7 +315,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
         return a_tru_sympy.equals(a_sub_sympy), None
 
-    pl.grade_question_parameterized(data, name, grade_function, weight=weight)
+    pl.grade_answer_parameterized(data, name, grade_function, weight=weight)
 
 
 def test(element_html: str, data: pl.ElementTestData) -> None:
