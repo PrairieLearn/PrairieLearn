@@ -56,6 +56,76 @@ class ElementTestData(QuestionData):
     test_type: Literal["correct", "incorrect", "invalid"]
 
 
+class DisplayType(Enum):
+    INLINE = "inline"
+    BLOCK = "block"
+
+
+def grade_question_parameterized(
+    data: QuestionData,
+    question_name: str,
+    grade_function: Callable[[Any], Tuple[Union[bool, float], Optional[str]]],
+    weight: int = 1,
+) -> None:
+    """
+    Grade question question_name. grade_function should take in a single parameter
+    (which will be the submitted answer) and return a 2-tuple:
+        - The first element of the 2-tuple should either be:
+            - a boolean indicating whether the question should be marked correct
+            - a partial score between 0 and 1, inclusive
+        - The second element of the 2-tuple should either be:
+            - a string containing feedback
+            - None, if there is no feedback (usually this should only occur if the answer is correct)
+    """
+
+    # Create the data dictionary at first
+    data["partial_scores"][question_name] = {"score": 0.0, "weight": weight}
+
+    if question_name not in data["submitted_answers"]:
+        data["format_errors"][question_name] = "No answer was submitted"
+        return
+
+    submitted_answer = data["submitted_answers"][question_name]
+
+    # Run passed-in grading function
+    try:
+        result, feedback_content = grade_function(submitted_answer)
+    except ValueError as err:
+        data["format_errors"][question_name] = str(err)
+        return
+
+    # Try converting partial score
+    if isinstance(result, bool):
+        partial_score = 1.0 if result else 0.0
+    elif isinstance(result, (float, int)):
+        assert 0.0 <= result <= 1.0
+        partial_score = result
+    else:
+        assert_never(result)
+
+    # Set corresponding partial score and feedback
+    data["partial_scores"][question_name]["score"] = partial_score
+
+    if feedback_content:
+        data["partial_scores"][question_name]["feedback"] = feedback_content
+
+
+def determine_score_params(score: Optional[float]) -> Tuple[str, float]:
+    """Determine score params taken from data dict"""
+
+    if score is None:
+        return "", 0.0
+
+    score_val = float(score)
+
+    if score_val >= 1.0:
+        return ("correct", 1.0)
+    elif score_val > 0.0:
+        return ("partial", math.floor(score_val * 100))
+
+    return ("incorrect", 0.0)
+
+
 def set_weighted_score_data(data: QuestionData, weight_default: int = 1) -> None:
     """
     Sets overall question score to be weighted average of all partial scores. Uses

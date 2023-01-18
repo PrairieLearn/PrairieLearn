@@ -1,20 +1,20 @@
+import sympy
 import ast
 from dataclasses import dataclass
+from itertools import chain
 from typing import (
     Any,
-    Callable,
+    cast,
     Dict,
     List,
+    Tuple,
+    TypedDict,
     Literal,
     Optional,
-    Tuple,
-    Type,
-    TypedDict,
     Union,
-    cast,
+    Callable,
+    Type,
 )
-
-import sympy
 
 SympyMapT = Dict[str, Union[Callable, sympy.Basic]]
 ASTWhitelistT = Tuple[Type[ast.AST], ...]
@@ -73,6 +73,7 @@ class _Constants:
         self.functions = {
             "exp": sympy.exp,
             "log": sympy.log,
+            "ln": sympy.log,
             "sqrt": sympy.sqrt,
             "factorial": sympy.factorial,
         }
@@ -81,6 +82,9 @@ class _Constants:
             "cos": sympy.cos,
             "sin": sympy.sin,
             "tan": sympy.tan,
+            "sec": sympy.sec,
+            "cot": sympy.cot,
+            "csc": sympy.csc,
             "arccos": sympy.acos,
             "arcsin": sympy.asin,
             "arctan": sympy.atan,
@@ -89,6 +93,9 @@ class _Constants:
             "atan": sympy.atan,
             "arctan2": sympy.atan2,
             "atan2": sympy.atan2,
+            "atanh": sympy.atanh,
+            "acosh": sympy.acosh,
+            "asinh": sympy.asinh,
         }
 
 
@@ -152,7 +159,7 @@ class HasFloatError(BaseSympyError):
 @dataclass
 class HasComplexError(BaseSympyError):
     offset: int
-    n: complex
+    n: str
 
 
 @dataclass
@@ -201,7 +208,7 @@ class CheckNumbers(ast.NodeTransformer):
         elif isinstance(node.n, float):
             raise HasFloatError(node.col_offset, node.n)
         elif isinstance(node.n, complex):
-            raise HasComplexError(node.col_offset, node.n)
+            raise HasComplexError(node.col_offset, str(node.n))
         return node
 
 
@@ -323,8 +330,7 @@ def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
     ast.fix_missing_locations(root)
 
     # Convert AST to code and evaluate it with no global expressions and with
-    # a whitelist of local expressions. Flattens out the inner dictionaries
-    # that appear in locals_for_eval for the final call to eval.
+    # a whitelist of local expressions
     locals = {
         name: expr
         for local_expressions in locals_for_eval.values()
@@ -371,11 +377,10 @@ def convert_string_to_sympy(
     return evaluate(expr, locals_for_eval)
 
 
-def point_to_error(expr: str, ind: int, w: int = 5) -> str:
-    """Generate a string with a pointer to error in expr with index ind"""
+def point_to_error(s: str, ind: int, w: int = 5) -> str:
     w_left: str = " " * (ind - max(0, ind - w))
-    w_right: str = " " * (min(ind + w, len(expr)) - ind)
-    initial: str = expr[ind - len(w_left) : ind + len(w_right)]
+    w_right: str = " " * (min(ind + w, len(s)) - ind)
+    initial: str = s[ind - len(w_left) : ind + len(w_right)]
     return f"{initial}\n{w_left}^{w_right}"
 
 
@@ -401,13 +406,11 @@ def sympy_to_json(
     if allow_trig_functions:
         reserved |= const.trig_functions.keys()
 
-    # Check if reserved variables conflict, raise an error if they do
-    conflicting_reserved_variables = reserved & set(variables)
-
-    if conflicting_reserved_variables:
-        raise ValueError(
-            f"sympy expression has variables with reserved names: {conflicting_reserved_variables}"
-        )
+    for v in variables:
+        if v in reserved:
+            raise ValueError(
+                f"sympy expression has a variable with a reserved name: {str(v)}"
+            )
 
     # Apply substitutions for hidden variables
     a_sub = a.subs([(val, key) for key, val in const.hidden_variables.items()])
@@ -422,13 +425,13 @@ def sympy_to_json(
 def json_to_sympy(
     a: SympyJson, *, allow_complex: bool = True, allow_trig_functions: bool = True
 ) -> sympy.Expr:
-    if "_type" not in a:
+    if not "_type" in a:
         raise ValueError("json must have key _type for conversion to sympy")
     if a["_type"] != "sympy":
         raise ValueError('json must have _type == "sympy" for conversion to sympy')
-    if "_value" not in a:
+    if not "_value" in a:
         raise ValueError("json must have key _value for conversion to sympy")
-    if "_variables" not in a:
+    if not "_variables" in a:
         a["_variables"] = None
 
     return convert_string_to_sympy(
@@ -447,11 +450,12 @@ def validate_string_as_sympy(
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
+    imaginary_unit: Optional[str] = None,
 ) -> Optional[str]:
     """Tries to parse expr as a sympy expression. If it fails, returns a string with an appropriate error message for display on the frontend."""
 
     try:
-        convert_string_to_sympy(
+        expr_parsed = convert_string_to_sympy(
             expr,
             variables,
             allow_hidden=allow_hidden,
@@ -463,6 +467,7 @@ def validate_string_as_sympy(
             f"Your answer contains the floating-point number {err.n}. "
             f"All numbers must be expressed as integers (or ratios of integers)"
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
         )
     except HasComplexError as err:
         err_string = [
@@ -477,56 +482,75 @@ def validate_string_as_sympy(
             )
 
         err_string.append(f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>")
+        err_string.append("Note that the location of the syntax error is approximate.")
         return "".join(err_string)
     except HasInvalidExpressionError as err:
         return (
             f"Your answer has an invalid expression. "
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
         )
     except HasInvalidFunctionError as err:
         return (
             f'Your answer calls an invalid function "{err.text}". '
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
         )
     except HasInvalidVariableError as err:
         return (
             f'Your answer refers to an invalid variable "{err.text}". '
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
         )
     except HasParseError as err:
         return (
             f"Your answer has a syntax error. "
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
         )
     except HasEscapeError as err:
         return (
             f'Your answer must not contain the character "\\". '
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
         )
     except HasCommentError as err:
         return (
             f'Your answer must not contain the character "#". '
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
         )
     except Exception:
         return "Invalid format."
+
+    # If complex numbers are not allowed, raise error if expression has the imaginary unit
+    if (
+        (not allow_complex)
+        and (imaginary_unit is not None)
+        and (expr_parsed.has(sympy.I))
+    ):
+        expr_parsed = expr_parsed.subs(sympy.I, sympy.Symbol(imaginary_unit))
+        return (
+            "Your answer was simplified to this, which contains a complex number"
+            f"(denoted ${imaginary_unit:s}$): $${sympy.latex(expr_parsed):s}$$"
+        )
 
     return None
 
 
 def get_variables_list(variables_string: Optional[str]) -> List[str]:
-    if variables_string is None:
-        return []
+    if variables_string is not None:
+        return [variable.strip() for variable in variables_string.split(",")]
 
-    return list(map(str.strip, variables_string.split(",")))
+    return []
 
 
 def process_student_input(student_input: str) -> str:
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
-    # for exponentiation. In Python, only the latter can be used.
+    # for exponentiation. In python, only the latter can be used.
     a_sub = student_input.replace("^", "**")
 
-    # Replace Unicode minus with hyphen minus wherever it occurs
+    # Replace unicode minus with hyphen minus wherever it occurs
     a_sub = a_sub.replace("\u2212", "-")
 
     # Strip whitespace
