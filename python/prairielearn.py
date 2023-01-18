@@ -8,7 +8,7 @@ import re
 import unicodedata
 import uuid
 from typing import Any, Dict, Literal, Optional, TypedDict
-
+import networkx as nx
 import colors
 import lxml.html
 import numpy as np
@@ -154,6 +154,11 @@ def to_json(v):
                 "data": v.values.tolist(),
             },
         }
+    elif isinstance(v, (nx.Graph, nx.DiGraph, nx.MultiGraph, nx.MultiDiGraph)):
+        return {
+            "_type": "networkx_graph",
+            "_value": nx.adjacency_data(v)
+        }
     else:
         return v
 
@@ -251,6 +256,8 @@ def from_json(v):
                     raise Exception(
                         "variable of type dataframe should have value with index, columns, and data"
                     )
+            elif v["_type"] == "networkx_graph":
+                return nx.adjacency_graph(v["_value"])
             else:
                 raise Exception("variable has unknown type {:s}".format(v["_type"]))
     return v
