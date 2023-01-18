@@ -313,9 +313,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 a_sub, allow_complex=allow_complex, allow_trig_functions=True
             )
 
-        equality_result = phs.timed_sympy_equals(a_tru_sympy, a_sub_sympy)
-
-        return equality_result is True, None
+        return a_tru_sympy.equals(a_sub_sympy), None
 
     pl.grade_answer_parameterized(data, name, grade_function, weight=weight)
 
