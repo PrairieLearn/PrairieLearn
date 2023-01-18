@@ -75,5 +75,5 @@ def test_networkx_serialization(networkx_graph: Any) -> None:
 
     assert type(networkx_graph) == type(decoded_json_object)
 
-    assert nx.utils.nodes_equal(networkx_graph, decoded_json_object)
+    assert nx.utils.nodes_equal(networkx_graph.nodes(), decoded_json_object.nodes())
     assert nx.utils.edges_equal(networkx_graph.edges(), decoded_json_object.edges())
