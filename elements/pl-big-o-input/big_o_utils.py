@@ -25,6 +25,7 @@ THETA_CONSTANT_FACTORS_FEEDBACK = (
 THETA_LOWER_ORDER_TERMS_FEEDBACK = (
     "Incorrect, your answer has unnecessary lower order terms."
 )
+TIMEOUT_FEEDBACK = "The grading code timed out. Please try submitting again."
 
 
 def grade_o_expression(
@@ -44,9 +45,14 @@ def grade_o_expression(
         a_sub, variables, allow_complex=False, allow_trig_functions=False
     )
 
-    if sym_true.equals(sym_sub):
+    equality_result = phs.timed_sympy_equals(sym_true, sym_sub)
+
+    if equality_result:
         return (1, CORRECT_COMPLEX_FEEDBACK)
-    elif sym_sub.equals(sympy.sympify(0)):
+    elif equality_result is None:
+        return (0, TIMEOUT_FEEDBACK)
+
+    if sym_sub.equals(sympy.sympify(0)):
         return (0, INCORRECT_FEEDBACK)
 
     if sympy.limit(sym_sub, sympy.Symbol(variables[0]), sympy.oo) < sympy.sympify(0):
@@ -83,9 +89,14 @@ def grade_theta_expression(
         a_sub, variables, allow_complex=False, allow_trig_functions=False
     )
 
-    if sym_true.equals(sym_sub):
+    equality_result = phs.timed_sympy_equals(sym_true, sym_sub)
+
+    if equality_result:
         return (1, CORRECT_COMPLEX_FEEDBACK)
-    elif sym_sub.equals(sympy.sympify(0)):
+    elif equality_result is None:
+        return (0, TIMEOUT_FEEDBACK)
+
+    if sym_sub.equals(sympy.sympify(0)):
         return (0, INCORRECT_FEEDBACK)
 
     if sympy.limit(sym_sub, sympy.Symbol(variables[0]), sympy.oo) < sympy.sympify(0):
@@ -121,9 +132,14 @@ def grade_omega_expression(
         a_sub, variables, allow_complex=False, allow_trig_functions=False
     )
 
-    if sym_true.equals(sym_sub):
+    equality_result = phs.timed_sympy_equals(sym_true, sym_sub)
+
+    if equality_result:
         return (1, CORRECT_COMPLEX_FEEDBACK)
-    elif sym_sub.equals(sympy.sympify(0)):
+    elif equality_result is None:
+        return (0, TIMEOUT_FEEDBACK)
+
+    if sym_sub.equals(sympy.sympify(0)):
         return (0, INCORRECT_FEEDBACK)
 
     if sympy.limit(sym_sub, sympy.Symbol(variables[0]), sympy.oo) < sympy.sympify(0):

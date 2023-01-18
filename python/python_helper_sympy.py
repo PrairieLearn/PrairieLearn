@@ -15,6 +15,7 @@ from typing import (
 )
 
 import sympy
+import timeout_decorator
 
 SympyMapT = Dict[str, Union[Callable, sympy.Basic]]
 ASTWhitelistT = Tuple[Type[ast.AST], ...]
@@ -559,3 +560,23 @@ def process_student_input(student_input: str) -> str:
 
     # Strip whitespace
     return a_sub.strip()
+
+
+def timed_sympy_equals(
+    expr_1: sympy.Expr, expr_2: sympy.Expr, timeout_seconds: int = 3
+) -> Optional[bool]:
+    """
+    Check if expr_1 is equal to expr_2, where the comparison times
+    out after timeout_seconds. Returns None if comparison times out.
+    """
+
+    @timeout_decorator.timeout(timeout_seconds)
+    def inner_equality_function(
+        inner_expr_1: sympy.Expr, inner_expr_2: sympy.Expr
+    ) -> bool:
+        return inner_expr_1.equals(inner_expr_2)
+
+    try:
+        return inner_equality_function(expr_1, expr_2) is True
+    except timeout_decorator.timeout_decorator.TimeoutError:
+        return None
