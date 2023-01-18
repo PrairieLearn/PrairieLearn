@@ -63,7 +63,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
     variables_string = pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     variables = phs.get_variables_list(variables_string)
-    display = pl.get_enum_attrib(pl.DisplayType, element, "display", DISPLAY_DEFAULT)
+    display = pl.get_enum_attrib(element, "display", pl.DisplayType, DISPLAY_DEFAULT)
     allow_complex = pl.get_boolean_attrib(
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
     )
@@ -137,22 +137,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
         }
-        if parse_error is None:
+        if parse_error is None and name in data["submitted_answers"]:
             a_sub = data["submitted_answers"].get(name)
-            if a_sub is not None:
-                if isinstance(a_sub, str):
-                    # this is for backward-compatibility
-                    a_sub = phs.convert_string_to_sympy(
-                        a_sub, variables, allow_complex=allow_complex
-                    )
-                else:
-                    a_sub = phs.json_to_sympy(a_sub, allow_complex=allow_complex)
-                a_sub = a_sub.subs(sympy.I, sympy.Symbol(imaginary_unit))
-                html_params["a_sub"] = sympy.latex(a_sub)
-            # name not in data['submitted_answers']:
+            if isinstance(a_sub, str):
+                # this is for backward-compatibility
+                a_sub = phs.convert_string_to_sympy(
+                    a_sub, variables, allow_complex=allow_complex
+                )
             else:
-                html_params["missing_input"] = True
-                html_params["parse_error"] = None
+                a_sub = phs.json_to_sympy(a_sub, allow_complex=allow_complex)
+            a_sub = a_sub.subs(sympy.I, sympy.Symbol(imaginary_unit))
+            html_params["a_sub"] = sympy.latex(a_sub)
+        elif name not in data["submitted_answers"]:
+            html_params["missing_input"] = True
+            html_params["parse_error"] = None
         else:
             # Use the existing format text in the invalid popup.
             info_params = {

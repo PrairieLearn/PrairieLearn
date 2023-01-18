@@ -159,7 +159,7 @@ class HasFloatError(BaseSympyError):
 @dataclass
 class HasComplexError(BaseSympyError):
     offset: int
-    n: str
+    n: complex
 
 
 @dataclass
@@ -208,7 +208,7 @@ class CheckNumbers(ast.NodeTransformer):
         elif isinstance(node.n, float):
             raise HasFloatError(node.col_offset, node.n)
         elif isinstance(node.n, complex):
-            raise HasComplexError(node.col_offset, str(node.n))
+            raise HasComplexError(node.col_offset, node.n)
         return node
 
 
@@ -377,10 +377,10 @@ def convert_string_to_sympy(
     return evaluate(expr, locals_for_eval)
 
 
-def point_to_error(s: str, ind: int, w: int = 5) -> str:
+def point_to_error(expr: str, ind: int, w: int = 5) -> str:
     w_left: str = " " * (ind - max(0, ind - w))
-    w_right: str = " " * (min(ind + w, len(s)) - ind)
-    initial: str = s[ind - len(w_left) : ind + len(w_right)]
+    w_right: str = " " * (min(ind + w, len(expr)) - ind)
+    initial: str = expr[ind - len(w_left) : ind + len(w_right)]
     return f"{initial}\n{w_left}^{w_right}"
 
 
@@ -406,11 +406,13 @@ def sympy_to_json(
     if allow_trig_functions:
         reserved |= const.trig_functions.keys()
 
-    for v in variables:
-        if v in reserved:
-            raise ValueError(
-                f"sympy expression has a variable with a reserved name: {str(v)}"
-            )
+    # Check if reserved variables conflict, raise an error if they do
+    conflicting_reserved_variables = reserved & set(variables)
+
+    if conflicting_reserved_variables:
+        raise ValueError(
+            f"sympy expression has variables with reserved names: {conflicting_reserved_variables}"
+        )
 
     # Apply substitutions for hidden variables
     a_sub = a.subs([(val, key) for key, val in const.hidden_variables.items()])
@@ -425,13 +427,13 @@ def sympy_to_json(
 def json_to_sympy(
     a: SympyJson, *, allow_complex: bool = True, allow_trig_functions: bool = True
 ) -> sympy.Expr:
-    if not "_type" in a:
+    if "_type" not in a:
         raise ValueError("json must have key _type for conversion to sympy")
     if a["_type"] != "sympy":
         raise ValueError('json must have _type == "sympy" for conversion to sympy')
-    if not "_value" in a:
+    if "_value" not in a:
         raise ValueError("json must have key _value for conversion to sympy")
-    if not "_variables" in a:
+    if "_variables" not in a:
         a["_variables"] = None
 
     return convert_string_to_sympy(
@@ -539,18 +541,18 @@ def validate_string_as_sympy(
 
 
 def get_variables_list(variables_string: Optional[str]) -> List[str]:
-    if variables_string is not None:
-        return [variable.strip() for variable in variables_string.split(",")]
+    if variables_string is None:
+        return []
 
-    return []
+    return list(map(str.strip, variables_string.split(",")))
 
 
 def process_student_input(student_input: str) -> str:
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
-    # for exponentiation. In python, only the latter can be used.
+    # for exponentiation. In Python, only the latter can be used.
     a_sub = student_input.replace("^", "**")
 
-    # Replace unicode minus with hyphen minus wherever it occurs
+    # Replace Unicode minus with hyphen minus wherever it occurs
     a_sub = a_sub.replace("\u2212", "-")
 
     # Strip whitespace
