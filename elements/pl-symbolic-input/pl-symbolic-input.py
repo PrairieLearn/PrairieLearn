@@ -47,7 +47,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
     if correct_answer is not None:
         if name in data["correct_answers"]:
-            raise ValueError("duplicate correct_answers variable name: %s" % name)
+            raise ValueError(f"Duplicate correct_answers variable name: {name}")
         data["correct_answers"][name] = correct_answer
 
     imaginary_unit = pl.get_string_attrib(
@@ -138,7 +138,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "uuid": pl.get_uuid(),
         }
         if parse_error is None and name in data["submitted_answers"]:
-            a_sub = data["submitted_answers"].get(name)
+            a_sub = data["submitted_answers"][name]
             if isinstance(a_sub, str):
                 # this is for backward-compatibility
                 a_sub = phs.convert_string_to_sympy(

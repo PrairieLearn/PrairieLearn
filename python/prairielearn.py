@@ -7,7 +7,19 @@ import os
 import re
 import unicodedata
 import uuid
-from typing import Any, Dict, Literal, Optional, TypedDict, Type, Callable, Tuple, Union, TypeVar
+from enum import Enum
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Literal,
+    Optional,
+    Tuple,
+    Type,
+    TypedDict,
+    TypeVar,
+    Union,
+)
 
 import colors
 import lxml.html
@@ -17,7 +29,7 @@ import sympy
 import to_precision
 from python_helper_sympy import convert_string_to_sympy, json_to_sympy, sympy_to_json
 from typing_extensions import NotRequired, assert_never
-from enum import Enum
+
 
 class PartialScore(TypedDict):
     "A class with type signatures for the partial scores dict"
@@ -99,7 +111,8 @@ def get_enum_attrib(
 
     return enum_type[upper_enum_str.replace("-", "_")]
 
-def grade_question_parameterized(
+
+def grade_answer_parameterized(
     data: QuestionData,
     question_name: str,
     grade_function: Callable[[Any], Tuple[Union[bool, float], Optional[str]]],

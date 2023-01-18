@@ -1,20 +1,20 @@
-import sympy
 import ast
 from dataclasses import dataclass
-from itertools import chain
 from typing import (
     Any,
-    cast,
+    Callable,
     Dict,
     List,
-    Tuple,
-    TypedDict,
     Literal,
     Optional,
-    Union,
-    Callable,
+    Tuple,
     Type,
+    TypedDict,
+    Union,
+    cast,
 )
+
+import sympy
 
 SympyMapT = Dict[str, Union[Callable, sympy.Basic]]
 ASTWhitelistT = Tuple[Type[ast.AST], ...]
