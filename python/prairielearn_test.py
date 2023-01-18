@@ -1,7 +1,9 @@
+import json
 import math
-from typing import Callable
+from typing import Any, Callable
 
 import lxml.html
+import networkx as nx
 import prairielearn as pl
 import pytest
 
@@ -48,3 +50,28 @@ def test_set_score_data(
     # Assert equality
     weight_set_function(question_data)
     assert math.isclose(question_data["score"], expected_score)
+
+
+@pytest.mark.parametrize(
+    "networkx_graph",
+    [
+        nx.cycle_graph(20),
+        nx.ladder_graph(20),
+        nx.lollipop_graph(20, 20),
+        nx.gn_graph(20),
+        nx.gnc_graph(20),
+    ],
+)
+def test_networkx_serialization(networkx_graph: Any) -> None:
+    """Test equality after conversion of various numpy objects."""
+
+    # Add some data to test that it's retained
+    for i, (in_node, out_node, edge_data) in enumerate(networkx_graph.edges(data=True)):
+        edge_data["label"] = i
+        edge_data["weight"] = chr(ord("a") + i)
+
+    json_object = json.dumps(pl.to_json(networkx_graph), allow_nan=False)
+    decoded_json_object = pl.from_json(json.loads(json_object))
+
+    assert type(networkx_graph) == type(decoded_json_object)
+    assert nx.utils.nodes_equal(networkx_graph, decoded_json_object)

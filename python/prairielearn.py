@@ -8,9 +8,10 @@ import re
 import unicodedata
 import uuid
 from typing import Any, Dict, Literal, Optional, TypedDict
-import networkx as nx
+
 import colors
 import lxml.html
+import networkx as nx
 import numpy as np
 import pandas
 import sympy
@@ -155,10 +156,7 @@ def to_json(v):
             },
         }
     elif isinstance(v, (nx.Graph, nx.DiGraph, nx.MultiGraph, nx.MultiDiGraph)):
-        return {
-            "_type": "networkx_graph",
-            "_value": nx.adjacency_data(v)
-        }
+        return {"_type": "networkx_graph", "_value": nx.adjacency_data(v)}
     else:
         return v
 

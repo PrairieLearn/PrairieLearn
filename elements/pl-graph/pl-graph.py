@@ -2,10 +2,10 @@ import json
 
 import chevron
 import lxml.html
+import networkx as nx
 import numpy as np
 import prairielearn as pl
 import pygraphviz
-import networkx as nx
 
 ENGINE_DEFAULT = "dot"
 PARAMS_NAME_MATRIX_DEFAULT = None
@@ -19,20 +19,25 @@ NEGATIVE_WEIGHTS_DEFAULT = False
 DIRECTED_DEFAULT = True
 NETWORKX_EDGE_LABEL_DEFAULT = None
 
+
 def graphviz_from_networkx(
     element: lxml.html.HtmlElement, data: pl.QuestionData
 ) -> str:
 
     engine = pl.get_string_attrib(element, "engine", ENGINE_DEFAULT)
-    input_param_graph = pl.get_string_attrib(element, "params-name-networkx", PARAMS_NAME_GRAPH_DEFAULT)
-    graph_edge_label = pl.get_string_attrib(element, "networkx-edge-label", NETWORKX_EDGE_LABEL_DEFAULT)
+    input_param_graph = pl.get_string_attrib(
+        element, "params-name-networkx", PARAMS_NAME_GRAPH_DEFAULT
+    )
+    graph_edge_label = pl.get_string_attrib(
+        element, "networkx-edge-label", NETWORKX_EDGE_LABEL_DEFAULT
+    )
 
     networkx_graph = pl.from_json(data["params"][input_param_graph])
 
     # Show the data according to the given input parameter
     if graph_edge_label is not None:
-        for in_node, out_node, data in networkx_graph.edges(data=True):
-            data['label'] = data[graph_edge_label]
+        for in_node, out_node, edge_data in networkx_graph.edges(data=True):
+            edge_data["label"] = edge_data[graph_edge_label]
 
     G = nx.nx_agraph.to_agraph(networkx_graph)
     G.layout(engine)
@@ -154,7 +159,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 def render(element_html: str, data: pl.QuestionData) -> str:
     matrix_backends = {
         "adjacency-matrix": graphviz_from_adj_matrix,
-        "networkx": graphviz_from_networkx
+        "networkx": graphviz_from_networkx,
     }
 
     # Load all extensions
@@ -170,11 +175,17 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "params-name-matrix", PARAMS_NAME_MATRIX_DEFAULT
     )
 
-    input_param_graph = pl.get_string_attrib(element, "params-name-networkx", PARAMS_NAME_GRAPH_DEFAULT)
+    input_param_graph = pl.get_string_attrib(
+        element, "params-name-networkx", PARAMS_NAME_GRAPH_DEFAULT
+    )
 
     input_type = pl.get_string_attrib(element, "params-type", PARAMS_TYPE_DEFAULT)
 
-    if len(str(element.text)) == 0 and input_param_matrix is None and input_param_graph is None:
+    if (
+        len(str(element.text)) == 0
+        and input_param_matrix is None
+        and input_param_graph is None
+    ):
         raise ValueError(
             "No graph source given! Must either define graph in HTML or provide source in params."
         )
