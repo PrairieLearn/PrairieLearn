@@ -74,4 +74,4 @@ def test_networkx_serialization(networkx_graph: Any) -> None:
     decoded_json_object = pl.from_json(json.loads(json_object))
 
     assert type(networkx_graph) == type(decoded_json_object)
-    assert nx.utils.nodes_equal(networkx_graph, decoded_json_object)
+    assert nx.utils.graphs_equal(networkx_graph, decoded_json_object)
