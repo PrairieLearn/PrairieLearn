@@ -70,6 +70,7 @@ def test_set_score_data(
         np.array([1, 2, 3, 4]),
         np.array([(1.5, 2, 3), (4, 5, 6)]),
         np.array([[1, 2], [3, 4]], dtype=complex),
+        np.array([[1, "stuff"], [3, None]], dtype=object),
         np.ones((2, 3, 4), dtype=np.int16),
     ],
 )
@@ -80,7 +81,7 @@ def test_numpy_serialization(numpy_object: Any) -> None:
     decoded_json_object = pl.from_json(json.loads(json_object))
 
     assert type(numpy_object) == type(decoded_json_object)
-    np.testing.assert_array_equal(numpy_object, decoded_json_object)
+    np.testing.assert_array_equal(numpy_object, decoded_json_object, strict=True)
 
 
 @pytest.mark.parametrize(
