@@ -1236,7 +1236,7 @@ module.exports = {
     course_instance,
     locals
   ) {
-    return instrumented('freeform.render', async (span) => {
+    return instrumented('freeform.render', async () => {
       debug('render()');
       const htmls = {
         extraHeadersHtml: '',
