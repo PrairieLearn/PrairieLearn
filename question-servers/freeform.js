@@ -1312,7 +1312,6 @@ module.exports = {
               courseIssues: newCourseIssues,
               html,
               renderedElementNames,
-              cacheHit,
             } = await module.exports.renderPanelInstrumented(
               'answer',
               codeCaller,
@@ -1329,11 +1328,6 @@ module.exports = {
             allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
           },
           async () => {
-            // The logPageView middleware knows to write this to the DB
-            // when we log the page view - sorry for mutable object hell
-            locals.panel_render_count = panelCount;
-            locals.panel_render_cache_hit_count = cacheHitCount;
-
             span.setAttribute('panel_count', panelCount);
             span.setAttribute('cache_hit_count', cacheHitCount);
 
