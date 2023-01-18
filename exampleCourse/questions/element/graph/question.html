@@ -85,6 +85,19 @@ data['params']['matrix'] = pl.to_json(mat)
 <div class="card my-2">
     <div class="card-body" >
         <pl-question-panel>
+            <p>To force the graph to be undirected, the attribute <code>directed</code> can be set to <code>"false"</code>.  Here is an undirected graph.
+                <b>The input matrix must be symmetric in this case.</b>
+            </p>
+        </pl-question-panel>
+        <pl-matrix-latex params-name="symmetric_matrix"></pl-matrix-latex>
+        <pl-graph params-name-matrix="symmetric_matrix" params-name-labels="labels" directed="false"></pl-graph>
+    </div>
+</div>
+
+
+<div class="card my-2">
+    <div class="card-body" >
+        <pl-question-panel>
             <p>The formatting of the weight labels can also be changed with the <code>weights-digits</code> and <code>weights-presentation-type</code> attributes. This example has <code>weights-digits="5"</code>.</p>
         </pl-question-panel>
         <pl-graph params-name-matrix="matrix" params-name-labels="labels" weights-digits="5"></pl-graph>
@@ -98,6 +111,19 @@ data['params']['matrix'] = pl.to_json(mat)
         </pl-question-panel>
         <pl-matrix-latex params-name="matrix2"></pl-matrix-latex>
         <pl-graph params-name-matrix="matrix2"></pl-graph>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-body" >
+        <pl-question-panel>
+            <p>Here is a graph with negative weights. These weights will not be displayed unless specified with
+                <code>negative-weights="true"</code>.
+                In the input matrix, to hide an edge, simply set the corresponding entry to <code>None</code>.
+            </p>
+        </pl-question-panel>
+        <pl-python-variable params-name="matrix3"></pl-python-variable>
+        <pl-graph params-name-matrix="matrix3" params-name-labels="labels" negative-weights="true"></pl-graph>
     </div>
 </div>
 
