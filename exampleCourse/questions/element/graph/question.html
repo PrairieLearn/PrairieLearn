@@ -85,6 +85,18 @@ data['params']['matrix'] = pl.to_json(mat)
 <div class="card my-2">
     <div class="card-body" >
         <pl-question-panel>
+            <p>To force the graph to be undirected, the attribute <code>directed</code> can be set to <code>"false"</code>.  Here is an undirected graph.
+                The input matrix must be symmetric in this case.
+            </p>
+        </pl-question-panel>
+        <pl-graph params-name-matrix="symmetric_matrix" params-name-labels="labels" directed="false"></pl-graph>
+    </div>
+</div>
+
+
+<div class="card my-2">
+    <div class="card-body" >
+        <pl-question-panel>
             <p>The formatting of the weight labels can also be changed with the <code>weights-digits</code> and <code>weights-presentation-type</code> attributes. This example has <code>weights-digits="5"</code>.</p>
         </pl-question-panel>
         <pl-graph params-name-matrix="matrix" params-name-labels="labels" weights-digits="5"></pl-graph>

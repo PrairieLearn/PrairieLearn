@@ -11,6 +11,7 @@ def generate(data):
   mat = mat / la.norm(mat, 1, axis=0)
   data['params']['labels'] = pl.to_json(['A', 'B', 'C'])
   data['params']['matrix'] = pl.to_json(mat)
+  data['params']['symmetric_matrix'] = pl.to_json(np.maximum(mat, mat.T))
 
   mat2 = np.random.binomial(1, 0.5, (3, 3))
   data['params']['matrix2'] = pl.to_json(mat2)
