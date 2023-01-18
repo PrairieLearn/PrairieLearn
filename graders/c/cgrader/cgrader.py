@@ -14,6 +14,7 @@ DATAFILE = "/grade/data/data.json"
 SB_USER = "sbuser"
 
 TIMEOUT_MESSAGE = """
+
 TIMEOUT! Typically this means the program took too long,
 requested more inputs than provided, or an infinite loop was found.
 If your program is reading data using scanf inside a loop, this
