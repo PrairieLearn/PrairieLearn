@@ -67,8 +67,8 @@ def test_networkx_serialization(networkx_graph: Any) -> None:
 
     # Add some data to test that it's retained
     for i, (in_node, out_node, edge_data) in enumerate(networkx_graph.edges(data=True)):
-        edge_data["label"] = i
-        edge_data["weight"] = chr(ord("a") + i)
+        edge_data["weight"] = i
+        edge_data["label"] = chr(ord("a") + i)
 
     json_object = json.dumps(pl.to_json(networkx_graph), allow_nan=False)
     decoded_json_object = pl.from_json(json.loads(json_object))
