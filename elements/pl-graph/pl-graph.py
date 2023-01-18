@@ -85,7 +85,7 @@ def graphviz_from_adj_matrix(
         for out_node, x in zip(mat_label, row):
             # If showing negative weights, show every entry that is not None
             # Otherwise, only show positive weights
-            if x is None or (not negative_weights and x <= 0):
+            if x is None or (not negative_weights and x <= 0.0):
                 continue
 
             if show_weights:

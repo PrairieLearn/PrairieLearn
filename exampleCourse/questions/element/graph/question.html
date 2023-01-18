@@ -86,9 +86,10 @@ data['params']['matrix'] = pl.to_json(mat)
     <div class="card-body" >
         <pl-question-panel>
             <p>To force the graph to be undirected, the attribute <code>directed</code> can be set to <code>"false"</code>.  Here is an undirected graph.
-                The input matrix must be symmetric in this case.
+                <b>The input matrix must be symmetric in this case.</b>
             </p>
         </pl-question-panel>
+        <pl-matrix-latex params-name="symmetric_matrix"></pl-matrix-latex>
         <pl-graph params-name-matrix="symmetric_matrix" params-name-labels="labels" directed="false"></pl-graph>
     </div>
 </div>
