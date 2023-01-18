@@ -1326,8 +1326,6 @@ module.exports = {
 
             courseIssues.push(...newCourseIssues);
             htmls.answerHtml = html;
-            panelCount++;
-            if (cacheHit) cacheHitCount++;
             allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
           },
           async () => {
