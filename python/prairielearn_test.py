@@ -4,9 +4,8 @@ from enum import Enum
 from typing import Any, Callable, cast
 
 import lxml.html
-import pandas as pd
 import numpy as np
-
+import pandas as pd
 import prairielearn as pl
 import pytest
 from pytest_lazyfixture import lazy_fixture
@@ -175,4 +174,3 @@ def test_get_enum_attrib_exceptions(html_str: str) -> None:
 
     with pytest.raises(Exception):
         pl.get_enum_attrib(element, "test-choice", TestEnum)
-
