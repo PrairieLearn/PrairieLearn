@@ -57,6 +57,7 @@ line.axis {
 .statsPlot .label {
     font-size: 14px;
     font-weight: normal;
+    fill: black;
 }
 
 .statsPlot .fitLine {

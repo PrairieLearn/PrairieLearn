@@ -11,5 +11,5 @@ def generate(data):
     data['params']['df'] = pl.to_json(df.head(15))
     data['params']['matrix'] = pl.to_json(np.random.random((3, 3)))
     data['params']['my_dictionary'] = {'a': 1, 'b': 2, 'c': 3}
-    
+
     return data

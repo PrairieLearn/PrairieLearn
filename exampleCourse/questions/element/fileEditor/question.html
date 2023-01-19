@@ -10,16 +10,13 @@
   <p>
     <strong>Note:</strong>There is no autograding setup for this example.
   </p>
-</pl-question-panel>
 
-<div class="card my-2">
-  <div class="card-header">
-    Part 1
-  </div>
-
-  <div class="card-body">
-
-    <pl-question-panel>
+  <div class="card my-2">
+    <div class="card-header">
+      Part 1
+    </div>
+    
+    <div class="card-body">
       <p>
         The default behavior for the <code>pl-file-editor</code> element is displayed here.
         The only required parameter is <code>file-name</code>, which is the name of the file where the student answer will be saved to.
@@ -29,22 +26,18 @@
       <p> 
         Implement a function that determines if a number is even or odd.
       </p>
-    </pl-question-panel>
-
-    <pl-file-editor file-name="is_odd.py" >
-    </pl-file-editor>
-  </div>
-</div>
-
-
-<div class="card my-2">
-  <div class="card-header">
-     Part 2
+      
+      <pl-file-editor file-name="is_odd.py" >
+      </pl-file-editor>
+    </div>
   </div>
 
-  <div class="card-body">
-
-    <pl-question-panel>
+  <div class="card my-2">
+    <div class="card-header">
+      Part 2
+    </div>
+    
+    <div class="card-body">
       <p>
         The file editor area is highly configurable. Within this example, the programming language syntax highlighting is enabled 
         for <strong>Python</strong> using <code>ace-mode="ace/mode/python"</code>. In addition,
@@ -54,21 +47,18 @@
       <p>
          Implement a function that determines if a number is even or odd.
       </p>
-    </pl-question-panel>
 
-    <pl-file-editor file-name="is_odd2.py" ace-mode="ace/mode/python" source-file-name="initial_code.py">
-    </pl-file-editor>
+      <pl-file-editor file-name="is_odd2.py" ace-mode="ace/mode/python" source-file-name="initial_code.py">
+      </pl-file-editor>
+    </div>
   </div>
-</div>
-
-<div class="card my-2">
-  <div class="card-header">
-    Part 3
-  </div>
-
-  <div class="card-body">
-
-    <pl-question-panel>
+  
+  <div class="card my-2">
+    <div class="card-header">
+      Part 3
+    </div>
+    
+    <div class="card-body">
       <p>
         For long programming assignments, the minimum and the maximum number of lines of code to simultaneously display can be set. 
         The minimum value causes a pre-allocation of the editor height for its viewing area using <code>min-lines="40"</code>. Meanwhile,
@@ -80,21 +70,17 @@
       <p> 
         Implement a function that determines if a number is even or odd.
       </p>
-    </pl-question-panel>
-
-    <pl-file-editor file-name="is_odd3.py" source-file-name="spacing-demo.txt" min-lines="40" max-lines="60">
-    </pl-file-editor>
+      <pl-file-editor file-name="is_odd3.py" source-file-name="spacing-demo.txt" min-lines="40" max-lines="60">
+      </pl-file-editor>
+    </div>
   </div>
-</div>
-
-<div class="card my-2">
-  <div class="card-header">
-     Part 4
-  </div>
-
-  <div class="card-body">
-
-    <pl-question-panel>
+  
+  <div class="card my-2">
+    <div class="card-header">
+      Part 4
+    </div>
+    
+    <div class="card-body">
       <p>
         Moreover, for variable length programming assignments, the file editor can be set to automatically expand when new lines are added. 
         Expansion is enabled by setting <code>auto-resize="true"</code> and results in the editor window growing downward. It's good
@@ -105,9 +91,33 @@
       <p> 
         Implement a function that determines if a number is even or odd.
       </p>
-    </pl-question-panel>
-
-    <pl-file-editor file-name="is_odd4.py" auto-resize="true">
-    </pl-file-editor>
+      
+      <pl-file-editor file-name="is_odd4.py" auto-resize="true">
+      </pl-file-editor>
+    </div>
   </div>
-</div>
+  
+  <div class="card my-2">
+    <div class="card-header">
+      Part 5
+    </div>
+    
+    <div class="card-body">
+      <p>
+        For students using non-latin keyboards, it is possible that non-English characters may be introduced into the box. This can cause confusion if these characters resemble a latin character (e.g., the cyrillic character <strong>&#x0430;</strong> looks a lot like the latin character <strong>a</strong>). Similarly, students may copy from text editors and paste into the answer box, causing characters like fancy quotes to be introduced. The attribute <code>normalize-to-ascii="true"</code> converts many Unicode characters to the ASCII character that mostly resembles it.
+      </p>
+
+      <p> 
+        Implement a function that determines if a number is even or odd.
+      </p>
+
+      <pl-file-editor file-name="is_odd5.py" normalize-to-ascii="true">
+      </pl-file-editor>
+    </div>
+  </div>
+
+</pl-question-panel>
+
+<pl-submission-panel>
+  <pl-file-preview></pl-file-preview>
+</pl-submission-panel>

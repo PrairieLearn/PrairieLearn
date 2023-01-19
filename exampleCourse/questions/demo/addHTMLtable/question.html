@@ -1,0 +1,34 @@
+<pl-question-panel>
+
+    <p> This question demos multiple ways of generating HTML tables from data in <code class="user-output">server.py</code>. </p>
+
+    <div class="card my-2">
+        <div class="card-header">
+            Example Table 1:
+        </div>
+        <div class="card-body">
+            {{{params.mytable}}}
+        </div>
+    </div>
+
+    <div class="card my-2">
+        <div class="card-header">
+            Example Table 2: Adding table properties
+        </div>
+        <div class="card-body">
+            <table style="width:30%" border="black">
+                {{{params.mytable2}}}
+            </table>
+        </div>
+    </div>
+
+    <div class="card my-2">
+        <div class="card-header">
+            Example Table 3: Getting a table from console output
+        </div>
+        <div class="card-body">
+            <pre>{{params.mytable3}}</pre>
+        </div>
+    </div>
+
+</pl-question-panel>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
   </head>
@@ -12,8 +12,6 @@
     <%- include('../partials/navbar', {navPage: 'assessments'}); %>
     <div id="content" class="container">
 
-      <%- include('../partials/advertisement'); %>
-      
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">Assessments</div>
 
@@ -28,27 +26,41 @@
           </thead>
           <tbody>
             <% rows.forEach(function(row) { %>
-            <% if (row.start_new_set) { %>
+            <% if (row.start_new_assessment_group) { %>
             <tr>
-              <th colspan="4"><%= row.assessment_set_heading %></th>
+              <th colspan="4" data-testid="assessment-group-heading">
+                <%= row.assessment_group_heading %>
+              </th>
             </tr>
             <% } %>
             <tr>
               <td class="align-middle" style="width: 1%">
-                <% if (row.multiple_instance_header) { %>
-                <span class="badge color-<%= row.assessment_set_color %>"><%= row.label %></span>
+                <% if (row.multiple_instance_header || (!row.active && row.assessment_instance_id === null)) { %>
+                  <span
+                    class="badge color-<%= row.assessment_set_color %>"
+                    data-testid="assessment-set-badge"
+                  >
+                    <%= row.label %>
+                  </span>
                 <% } else { %>
-                <a href="<%= urlPrefix %><%= row.link %>"
-                   class="badge color-<%= row.assessment_set_color %> color-hover">
-                  <%= row.label %>
-                </a>
+                  <a
+                    href="<%= urlPrefix %><%= row.link %>"
+                    class="badge color-<%= row.assessment_set_color %> color-hover"
+                    data-testid="assessment-set-badge"
+                  >
+                    <%= row.label %>
+                  </a>
                 <% } %>
               </td>
               <td class="align-middle">
-                <% if (row.multiple_instance_header) { %>
+                <% if (row.multiple_instance_header || (!row.active && row.assessment_instance_id === null)) { %>
                 <%= row.title %>
                 <% } else { %>
-                <a href="<%= urlPrefix %><%= row.link %>"><%= row.title %></a>
+                <a href="<%= urlPrefix %><%= row.link %>"><%= row.title %>
+                <% if (row.group_work) { %>
+                  <i class="fas fa-users" aria-label="Group work"></i>
+                <% } %>
+                </a>
                 <% } %>
               </td>
               <td class="text-center align-middle">
@@ -68,7 +80,11 @@
                 <a href="<%= urlPrefix %><%= row.link %>" class="btn btn-primary btn-sm" role="button">New instance</a>
                 <% } else { // multiple_instance_header %>
                 <% if (row.assessment_instance_id) { %>
+                <% if(row.show_closed_assessment_score) { %>
                 <%- include('../partials/scorebar', {score: row.assessment_instance_score_perc}) %>
+                <% } else { %>
+                Score not shown
+                <% } %>
                 <% } else { %>
                 Not started
                 <% } %>

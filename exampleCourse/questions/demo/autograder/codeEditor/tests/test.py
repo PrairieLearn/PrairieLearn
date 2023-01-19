@@ -8,15 +8,6 @@ import numpy.random
 
 class Test(PLTestCase):
     @points(1)
-    @name('Check fib(0)')
-    def test_0(self):
-        user_val = Feedback.call_user(self.st.fib, 0)
-        if Feedback.check_scalar("fib(0)", self.ref.fib(0), user_val):
-            Feedback.set_score(1)
-        else:
-            Feedback.set_score(0)
-
-    @points(1)
     @name('Check fib(1)')
     def test_1(self):
         user_val = Feedback.call_user(self.st.fib, 1)

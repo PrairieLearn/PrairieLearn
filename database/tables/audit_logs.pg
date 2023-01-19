@@ -5,7 +5,9 @@ columns
     course_id: bigint
     course_instance_id: bigint
     date: timestamp with time zone default CURRENT_TIMESTAMP
+    group_id: bigint
     id: bigint not null default nextval('audit_logs_id_seq'::regclass)
+    institution_id: bigint
     new_state: jsonb
     old_state: jsonb
     parameters: jsonb
@@ -15,3 +17,6 @@ columns
 
 indexes
     audit_logs_pkey: PRIMARY KEY (id) USING btree (id)
+
+foreign-key constraints
+    audit_logs_group_id_fkey: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE

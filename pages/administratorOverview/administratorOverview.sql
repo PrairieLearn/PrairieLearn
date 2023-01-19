@@ -10,6 +10,48 @@ select_administrator_users AS (
         administrators AS adm
         JOIN users AS u ON (u.user_id = adm.user_id)
 ),
+select_course_request_jobs AS (
+    SELECT
+        cr.id,
+        count(js.start_date) AS num_jobs,
+        jsonb_agg(jsonb_build_object(
+            'start_date', js.start_date,
+            'finish_date', js.finish_date,
+            'authn_user_id', u.user_id,
+            'authn_user_name', u.name,
+            'status', js.status,
+            'id', js.id,
+            'number', js.number
+        )) AS jobs
+    FROM job_sequences AS js
+    LEFT JOIN course_requests AS cr ON cr.id = js.course_request_id
+    LEFT JOIN users AS u ON js.authn_user_id = u.user_id
+    GROUP BY cr.id
+),
+select_course_requests AS (
+    SELECT
+        coalesce(
+            jsonb_agg(jsonb_build_object(
+                'id', r.id,
+                'short_name', r.short_name,
+                'title', r.title,
+                'user_name', u.name,
+                'user_id', u.uid,
+                'github_user', r.github_user,
+                'first_name', r.first_name,
+                'last_name', r.last_name,
+                'work_email', r.work_email,
+                'institution', r.institution,
+                'status', r.approved_status,
+                'jobs', coalesce(j.jobs, '{}'::jsonb)
+            )),
+            '[]'::jsonb
+        ) AS course_requests
+    FROM course_requests AS r
+    INNER JOIN users AS u ON u.user_id = r.user_id
+    LEFT JOIN select_course_request_jobs AS j ON j.id = r.id
+    WHERE r.approved_status != 'approved' AND r.approved_status != 'denied'
+),
 select_courses AS (
     SELECT
         coalesce(
@@ -81,6 +123,7 @@ select_institutions AS (
 )
 SELECT
     administrator_users,
+    course_requests,
     courses,
     networks,
     configs,
@@ -88,6 +131,7 @@ SELECT
     institutions
 FROM
     select_administrator_users,
+    select_course_requests,
     select_courses,
     select_networks,
     select_config,
@@ -96,3 +140,12 @@ FROM
 
 -- BLOCK select_course
 SELECT * FROM pl_courses WHERE id = $course_id;
+
+-- BLOCK update_course_request
+UPDATE course_requests
+SET approved_by = $user_id,
+    approved_status = $action
+WHERE course_requests.id = $id;
+
+-- BLOCK select_course_request
+SELECT * FROM course_requests WHERE id = $id;

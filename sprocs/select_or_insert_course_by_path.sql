@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     select_or_insert_course_by_path(
         IN path text,
         OUT course_id bigint

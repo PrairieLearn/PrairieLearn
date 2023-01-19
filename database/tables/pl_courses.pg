@@ -1,24 +1,34 @@
 columns
+    branch: text default 'master'::text
     commit_hash: text
     deleted_at: timestamp with time zone
     display_timezone: text
+    example_course: boolean not null default false
     grading_queue: text
     id: bigint not null default nextval('pl_courses_id_seq'::regclass)
     institution_id: bigint not null default 1
+    manual_grading_visible: boolean default false
     options: jsonb not null default '{}'::jsonb
     path: text
     repository: text
     short_name: text
+    sync_errors: text
+    sync_job_sequence_id: bigint
+    sync_warnings: text
     title: text
 
 indexes
     pl_courses_pkey: PRIMARY KEY (id) USING btree (id)
+    pl_courses_example_course_key: USING btree (example_course)
 
 foreign-key constraints
     pl_courses_institution_id_fkey: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE SET NULL
+    pl_courses_sync_job_sequence_id_fkey: FOREIGN KEY (sync_job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by
+    assessment_modules: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     assessment_sets: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    chunks: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     course_instances: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     course_permissions: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     courses: FOREIGN KEY (pl_course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE SET NULL

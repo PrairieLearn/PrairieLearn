@@ -1,17 +1,17 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
     <%- include('../partials/mathjax'); %>
-    <script src="/javascripts/socket.io.js"></script>
+    <script src="<%= node_modules_asset_path('socket.io-client/dist/socket.io.min.js') %>"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
     <% if (question.type != 'Freeform') { %>
-    <script src="/javascripts/lodash.min.js"></script>
-    <script src="/javascripts/require.js"></script>
-    <script src="/localscripts/question.js"></script>
-    <script src="/localscripts/question<%= effectiveQuestionType %>.js"></script>
+    <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
+    <script src="<%= asset_path('javascripts/require.js') %>"></script>
+    <script src="<%= asset_path('localscripts/question.js') %>"></script>
+    <script src="<%= asset_path(`localscripts/question${effectiveQuestionType}.js`) %>"></script>
     <% } %>
     <%- extraHeadersHtml %>
   </head>
@@ -31,44 +31,17 @@
           <%- include('../partials/question', {question_context: 'student_homework'}); %>
         </div>
 
-        <!-- SIDEBAR ---------------------------------------------------------------------->
+        <%# Sidebar %> 
         <div class="col-md-3 col-sm-4 col-xs-12">
 
           <%- include('../partials/assessmentScorePanel') %>
 
           <%- include('../partials/questionScorePanel') %>
 
-          <p class="text-center">
-            <% if (instance_question_info.prev_instance_question_id) { %>
-            <a class="btn btn-primary" href="<%= urlPrefix %>/instance_question/<%= instance_question_info.prev_instance_question_id %>/">Previous question</a>
-            <% } else { %>
-            <a class="btn btn-primary disabled" tabindex="-1">Previous question</a>
-            <% } %>
-          </p>
-          <p class="text-center mb-4">
-            <% if (instance_question_info.next_instance_question_id) { %>
-            <a class="btn btn-primary" href="<%= urlPrefix %>/instance_question/<%= instance_question_info.next_instance_question_id %>/">Next question</a>
-            <% } else { %>
-            <a class="btn btn-primary disabled" tabindex="-1">Next question</a>
-            <% } %>
-          </p>
+          <%- include('../partials/questionNavSideButtonGroup') %>
 
-          <%- include('../partials/attachFilePanel') %>
-
-          <% if (video) { %>
-          <div class="modal" id="youtubemodal">
-            <div class="modal-dialog" style="width: 620px">
-              <div class="modal-content">
-                <div class="modal-body no-overflow">
-                  <iframe id="player" width="560" height="315" data-url="https://www.youtube.com/embed/{{video}}?rel=0&wmode=Opaque&enablejsapi=1&autoplay=1" frameborder="0"></iframe>
-                  <button type="button" class="close" data-dismiss="modal" id="youtubeclose">x</button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <p class="text-center">
-            <a class="btn btn-warning" href="#youtubemodal" data-toggle="modal">Help video</a>
-          </p>
+          <% if (config.attachedFilesDialogEnabled) { %>
+              <%- include('../partials/attachFilePanel') %>
           <% } %>
 
           <%- include('../partials/instructorInfoPanel') %>
@@ -77,6 +50,6 @@
       </div>
     </div>
     <!-- Needs to be located below element scripts -->
-    <script src="/localscripts/questionPageScripts.js"></script>
+    <script src="<%= asset_path('localscripts/questionPageScripts.js') %>"></script>
   </body>
 </html>

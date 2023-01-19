@@ -50,8 +50,8 @@
           <ul class="list-group list-group-flush">
               {{#images}}
                   <li class="list-group-item">
-                      <div><strong>Figure</strong></div>
-                      <img src="{{.}}"/>
+                      <div><strong>{{#label}}{{label}}{{/label}}{{^label}}Figure{{/label}}</strong></div>
+                      <img src="{{#url}}{{url}}{{/url}}{{^url}}{{.}}{{/url}}"/>
                   </li>
               {{/images}}
           </ul>
@@ -103,8 +103,8 @@
               {{#has_images}}
                   <li class="list-group-item">
                       {{#images}}
-                      <div><strong>Figure</strong></div>
-                      <img src="{{.}}"/>
+                      <div><strong>{{#label}}{{label}}{{/label}}{{^label}}Figure{{/label}}</strong></div>
+                      <img src="{{#url}}{{url}}{{/url}}{{^url}}{{.}}{{/url}}"/>
                       {{/images}}
                   </li>
               {{/has_images}}

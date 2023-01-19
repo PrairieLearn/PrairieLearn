@@ -21,7 +21,7 @@ WITH object_data AS (
     WHERE
         ci.id = $course_instance_id
         AND a.deleted_at IS NULL
-        AND ($assessment_id::bigint IS NULL OR a.id = $assessment_id)
+        AND ($unsafe_assessment_id::bigint IS NULL OR a.id = $unsafe_assessment_id)
 )
 SELECT
     coalesce(jsonb_agg(
@@ -44,32 +44,36 @@ WITH object_data AS (
         u.user_id,
         u.uid AS user_uid,
         u.name AS user_name,
-        coalesce(e.role, 'None'::enum_role) AS user_role,
+        users_get_displayed_role(u.user_id, ci.id) AS user_role,
         ai.max_points,
+        ai.max_bonus_points,
         ai.points,
         ai.score_perc,
         ai.number AS assessment_instance_number,
         ai.open,
+        gi.id AS group_id,
+        gi.name AS group_name,
+        gi.uid_list AS group_uids,
         CASE
             WHEN ai.open AND ai.date_limit IS NOT NULL
-                THEN greatest(0, floor(extract(epoch from (ai.date_limit - current_timestamp)) / (60 * 1000)))::text || ' min'
+                THEN greatest(0, floor(DATE_PART('epoch', (ai.date_limit - current_timestamp)) / (60 * 1000)))::text || ' min'
             WHEN ai.open THEN 'Open'
             ELSE 'Closed'
         END AS time_remaining,
         format_date_iso8601(ai.date, ci.display_timezone) AS start_date,
-        EXTRACT(EPOCH FROM ai.duration) AS duration_seconds,
+        DATE_PART('epoch', ai.duration) AS duration_seconds,
         (row_number() OVER (PARTITION BY u.user_id ORDER BY score_perc DESC, ai.number DESC, ai.id DESC)) = 1 AS highest_score
     FROM
         assessments AS a
         JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
         JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-        JOIN users AS u ON (u.user_id = ai.user_id)
-        LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
+        LEFT JOIN group_info(a.id) AS gi ON (gi.id = ai.group_id)
+        LEFT JOIN users AS u ON (u.user_id = ai.user_id)
     WHERE
         ci.id = $course_instance_id
-        AND ($assessment_id::bigint IS NULL OR a.id = $assessment_id)
-        AND ($assessment_instance_id::bigint IS NULL OR ai.id = $assessment_instance_id)
+        AND ($unsafe_assessment_id::bigint IS NULL OR a.id = $unsafe_assessment_id)
+        AND ($unsafe_assessment_instance_id::bigint IS NULL OR ai.id = $unsafe_assessment_instance_id)
 )
 SELECT
     coalesce(jsonb_agg(
@@ -93,12 +97,11 @@ WITH object_data AS (
         aar.exam_uuid,
         aar.id AS assessment_access_rule_id,
         aar.mode,
-        aar.number,
         aar.number AS assessment_access_rule_number,
         aar.password,
-        aar.role,
         aar.seb_config,
         aar.show_closed_assessment,
+        aar.show_closed_assessment_score,
         format_date_iso8601(aar.start_date, ci.display_timezone) AS start_date,
         aar.time_limit_min,
         aar.uids
@@ -109,12 +112,62 @@ WITH object_data AS (
         JOIN assessment_access_rules AS aar ON (aar.assessment_id = a.id)
     WHERE
         ci.id = $course_instance_id
-        AND a.id = $assessment_id
+        AND a.id = $unsafe_assessment_id
 )
 SELECT
     coalesce(jsonb_agg(
         to_jsonb(object_data)
         ORDER BY assessment_access_rule_number, assessment_access_rule_id
+    ), '[]'::jsonb) AS item
+FROM
+    object_data;
+
+-- BLOCK select_course_instance_info
+WITH object_data AS (
+    SELECT
+        ci.id AS course_instance_id,
+        ci.long_name AS course_instance_long_name,
+        ci.short_name AS course_instance_short_name,
+        ci.course_id AS course_instance_course_id,
+        ci.display_timezone,
+        format_date_iso8601(ci.deleted_at, ci.display_timezone) AS deleted_at,
+        ci.hide_in_enroll_page,
+        pl_c.title AS course_title,
+        pl_c.short_name AS course_short_name
+    FROM
+        course_instances AS ci
+        JOIN pl_courses AS pl_c ON (pl_c.id = ci.course_id)
+    WHERE
+        ci.id = $course_instance_id
+)
+SELECT
+    to_jsonb(object_data) AS item
+FROM
+    object_data;
+
+-- BLOCK select_course_instance_access_rules
+WITH object_data AS (
+    SELECT
+        ci.id AS course_instance_id,
+        ci.short_name AS course_instance_short_name,
+        ci.long_name AS course_instance_long_name,
+        ci.course_id AS course_instance_course_id,
+        format_date_iso8601(ciar.end_date, ci.display_timezone) AS end_date,
+        ciar.id AS course_instance_access_rule_id,
+        ciar.institution,
+        ciar.number AS course_instance_access_rule_number,
+        format_date_iso8601(ciar.start_date, ci.display_timezone) AS start_date,
+        ciar.uids
+    FROM
+        course_instances AS ci
+        JOIN course_instance_access_rules AS ciar ON (ciar.course_instance_id = ci.id)
+    WHERE
+        ci.id = $course_instance_id
+)
+SELECT
+    coalesce(jsonb_agg(
+        to_jsonb(object_data)
+        ORDER BY course_instance_access_rule_number, course_instance_access_rule_id
     ), '[]'::jsonb) AS item
 FROM
     object_data;
@@ -127,15 +180,26 @@ WITH object_data AS (
         iq.id AS instance_question_id,
         iq.number AS instance_question_number,
         aq.max_points AS assessment_question_max_points,
+        aq.max_auto_points AS assessment_question_max_auto_points,
+        aq.max_manual_points AS assessment_question_max_manual_points,
         iq.points AS instance_question_points,
-        iq.score_perc AS instance_question_score_perc
+        iq.auto_points AS instance_question_auto_points,
+        iq.manual_points AS instance_question_manual_points,
+        iq.score_perc AS instance_question_score_perc,
+        iq.highest_submission_score,
+        iq.last_submission_score,
+        iq.number_attempts,
+        DATE_PART('epoch', iq.duration) AS duration_seconds
     FROM
         assessment_instances AS ai
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
+        JOIN assessments AS a ON (a.id = aq.assessment_id)
+        JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     WHERE
-        ai.id = $assessment_instance_id
+        ai.id = $unsafe_assessment_instance_id
+        AND ci.id = $course_instance_id
 )
 SELECT
     coalesce(jsonb_agg(
@@ -152,7 +216,10 @@ WITH object_data AS (
         u.user_id,
         u.uid AS user_uid,
         u.name AS user_name,
-        coalesce(e.role, 'None'::enum_role) AS user_role,
+        users_get_displayed_role(u.user_id, ci.id) AS user_role,
+        gi.id AS group_id,
+        gi.name AS group_name,
+        gi.uid_list AS group_uids,
         a.id AS assessment_id,
         a.tid AS assessment_name,
         (aset.abbreviation || a.number) AS assessment_label,
@@ -163,7 +230,11 @@ WITH object_data AS (
         iq.id AS instance_question_id,
         iq.number AS instance_question_number,
         aq.max_points AS assessment_question_max_points,
+        aq.max_auto_points AS assessment_question_max_auto_points,
+        aq.max_manual_points AS assessment_question_max_manual_points,
         iq.points AS instance_question_points,
+        iq.auto_points AS instance_question_auto_points,
+        iq.manual_points AS instance_question_manual_points,
         iq.score_perc AS instance_question_score_perc,
         v.id AS variant_id,
         v.number AS variant_number,
@@ -189,8 +260,8 @@ WITH object_data AS (
         JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
         JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-        JOIN users AS u ON (u.user_id = ai.user_id)
-        LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
+        LEFT JOIN group_info(a.id) AS gi ON (gi.id = ai.group_id)
+        LEFT JOIN users AS u ON (u.user_id = ai.user_id)
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
@@ -198,8 +269,8 @@ WITH object_data AS (
         JOIN submissions AS s ON (s.variant_id = v.id)
     WHERE
         ci.id = $course_instance_id
-        AND ($assessment_instance_id::bigint IS NULL OR ai.id = $assessment_instance_id)
-        AND ($submission_id::bigint IS NULL OR s.id = $submission_id)
+        AND ($unsafe_assessment_instance_id::bigint IS NULL OR ai.id = $unsafe_assessment_instance_id)
+        AND ($unsafe_submission_id::bigint IS NULL OR s.id = $unsafe_submission_id)
 )
 SELECT
     coalesce(jsonb_agg(
@@ -208,3 +279,13 @@ SELECT
     ), '[]'::jsonb) AS item
 FROM
     object_data;
+
+-- BLOCK select_assessment_instance
+SELECT ai.id AS assessment_instance_id
+FROM
+    assessment_instances AS ai
+    JOIN assessments AS a ON (a.id = ai.assessment_id)
+    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+WHERE
+    ai.id = $unsafe_assessment_instance_id
+    AND ci.id = $course_instance_id;

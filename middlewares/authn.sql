@@ -3,6 +3,7 @@ SELECT
     to_jsonb(u.*) AS user,
     to_jsonb(i.*) AS institution,
     (adm.id IS NOT NULL) AS is_administrator,
+    users_is_instructor_in_any_course(u.user_id) AS is_instructor,
     (SELECT count(*) FROM news_item_notifications WHERE user_id = $user_id) AS news_item_notification_count
 FROM
     users AS u
@@ -11,20 +12,18 @@ FROM
 WHERE
     u.user_id = $user_id;
 
--- BLOCK enroll_user_as_instructor
+-- BLOCK enroll_user_in_example_course
 INSERT INTO enrollments
-    (user_id, course_instance_id, role)
+    (user_id, course_instance_id)
 (
     SELECT
-        u.user_id, ci.id, 'Instructor'
+        u.user_id, ci.id
     FROM
         users AS u,
         course_instances AS ci
         JOIN pl_courses AS c ON (c.id = ci.course_id)
     WHERE
-        u.uid = $uid
-        AND c.short_name = $course_short_name
+        u.user_id = $user_id
+        AND c.example_course IS TRUE
 )
-ON CONFLICT (user_id, course_instance_id) DO UPDATE
-SET
-    role = 'Instructor';
+ON CONFLICT DO NOTHING;

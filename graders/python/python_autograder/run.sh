@@ -44,7 +44,15 @@ chmod 1777 "$MERGE_DIR"
 export FILENAMES_DIR=$MERGE_DIR'/filenames'
 mkdir $FILENAMES_DIR
 chmod 777 $FILENAMES_DIR
-mv $MERGE_DIR/ans.py $MERGE_DIR/setup_code.py $MERGE_DIR/test.py $FILENAMES_DIR
+mv $MERGE_DIR/ans.py $MERGE_DIR/setup_code.py $MERGE_DIR/test.py $JOB_DIR/data/data.json $FILENAMES_DIR
+
+# Leading and trailing code are optional -- check if they exist before we move them.
+if [[ -f "$MERGE_DIR/leading_code.py" ]]; then
+    mv $MERGE_DIR/leading_code.py $FILENAMES_DIR
+fi
+if [[ -f "$MERGE_DIR/trailing_code.py" ]]; then
+    mv $MERGE_DIR/trailing_code.py $FILENAMES_DIR
+fi
 
 ##########################
 # RUN

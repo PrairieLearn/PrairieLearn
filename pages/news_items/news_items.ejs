@@ -1,8 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <%- include('../partials/head'); %>
-    <link href="/stylesheets/issues.css" rel="stylesheet" />
+    <% if (typeof news_item_notification_count != 'undefined' && news_item_notification_count > 0) { %>
+        <%- include('../partials/head', {pageNote: news_item_notification_count.toString() + ' Unread'}); %>
+    <% } else { %>
+        <%- include('../partials/head'); %>
+    <% } %>
+    <link href="<%= asset_path('stylesheets/issues.css') %>" rel="stylesheet" />
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: 'news_items'}); %>

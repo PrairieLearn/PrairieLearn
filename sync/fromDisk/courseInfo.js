@@ -1,25 +1,39 @@
-const ERR = require('async-stacktrace');
+// @ts-check
+const sqldb = require('../../prairielib/lib/sql-db');
+const sqlLoader = require('../../prairielib/lib/sql-loader');
 
-const error = require('@prairielearn/prairielib/error');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const infofile = require('../infofile');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-module.exports.sync = (courseInfo, course_id, callback) => {
+/**
+ * @param {import('../course-db').CourseData} courseData
+ * @param {any} courseId
+ */
+module.exports.sync = async function (courseData, courseId) {
+  if (infofile.hasErrors(courseData.course)) {
     const params = {
-        course_id: course_id,
-        short_name: courseInfo.name,
-        title: courseInfo.title,
-        display_timezone: courseInfo.timezone || null,
-        grading_queue: courseInfo.name.toLowerCase().replace(' ', ''),
-        options: courseInfo.options || {},
+      course_id: courseId,
+      sync_errors: infofile.stringifyErrors(courseData.course),
+      sync_warnings: infofile.stringifyWarnings(courseData.course),
     };
-    sqldb.queryZeroOrOneRow(sql.update_course, params, (err, result) => {
-        if (ERR(err, callback)) return;
-        if (result.rowCount !== 1) return callback(error.makeWithData('Unable to find course', {course_id, courseInfo}));
-        courseInfo.courseId = course_id;
-        courseInfo.timezone = result.rows[0].display_timezone;
-        callback(null);
-    });
+    const res = await sqldb.queryZeroOrOneRowAsync(sql.update_course_errors, params);
+    if (res.rowCount !== 1) throw new Error(`Unable to find course with ID ${courseId}`);
+    return;
+  }
+
+  const courseInfo = courseData.course.data;
+  const params = {
+    course_id: courseId,
+    short_name: courseInfo.name,
+    title: courseInfo.title,
+    display_timezone: courseInfo.timezone || null,
+    grading_queue: courseInfo.name.toLowerCase().replace(' ', ''),
+    example_course: courseInfo.exampleCourse,
+    options: courseInfo.options || {},
+    sync_warnings: infofile.stringifyWarnings(courseData.course),
+  };
+  const res = await sqldb.queryZeroOrOneRowAsync(sql.update_course, params);
+  if (res.rowCount !== 1) throw new Error(`Unable to find course with ID ${courseId}`);
+  courseInfo.timezone = res.rows[0].display_timezone;
 };

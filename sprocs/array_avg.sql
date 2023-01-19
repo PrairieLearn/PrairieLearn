@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     array_avg_sfunc (
         state array_and_number,
         input DOUBLE PRECISION[]
@@ -16,7 +16,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     array_avg_ffunc (
         state array_and_number
     ) RETURNS DOUBLE PRECISION[] AS $$
@@ -29,7 +29,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
-DROP AGGREGATE IF EXISTS array_avg (DOUBLE PRECISION[]) CASCADE;
 CREATE AGGREGATE array_avg (DOUBLE PRECISION[]) (
     SFUNC = array_avg_sfunc,
     STYPE = array_and_number,

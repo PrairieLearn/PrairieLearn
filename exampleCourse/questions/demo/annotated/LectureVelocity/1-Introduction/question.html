@@ -1,0 +1,71 @@
+<pl-question-panel>
+
+<p>We are often interested in computing how fast a quantity is changing. We may be interested in the <i>average rate of change</i>
+ on a given interval, or the <i>instantaneous rate of change</i> at a specified point.</p>
+
+<p> Example: for a moving object with position  $s(t)$, the <i>average velocity </i> on the interval from $[t_i, t_f]$ is given by: </p>
+
+$$v_a = \frac{s(t_f) - s(t_i)}{t_f - t_i}$$
+
+<div class="alert alert-warning" role="alert">
+
+<p>Without loss of generality, we can write the average rate of change of a function $f(x)$ in the interval $[a, a+h]$ as:</p>
+
+$$v_a = \frac{f(a+h) - f(a)}{h}$$
+
+</div>
+
+<p> How is the average rate of change of a function connected to its graph? Take a look at the graph below:</p>
+
+<p>
+<pl-figure file-name="figure1.png" type="dynamic" width="400px"></pl-figure>
+</p>
+
+<p> Construct a right triangle in which the hypotenuse connects the points $a$ and $b$. What are the lengths of the legs
+of this triangle?</p>
+
+</pl-question-panel>
+
+<p>
+<pl-integer-input answers-name="base" label="$\textrm{base} = $" size=16 allow-blank=True></pl-integer-input>
+<pl-integer-input answers-name="height" label="$\textrm{height} = $" size=16 allow-blank=True></pl-integer-input>
+</p>
+
+<pl-question-panel>
+
+<p> What is the slope of the line connecting points $a$ and $b$?</p>
+
+</pl-question-panel>
+
+<p>
+<pl-number-input answers-name="slope" label="$\textrm{slope} = $" size=26 allow-blank=True></pl-number-input>
+</p>
+
+<pl-question-panel>
+
+<p> Use the expression above for $v_a$ to compute the average rate of change for the function $f(x)$ in the interval between points $a$ and $b$. </p>
+
+</pl-question-panel>
+
+<p>
+<pl-number-input answers-name="va" label="$v_a = $" size=26 allow-blank=True></pl-number-input>
+</p>
+
+<pl-question-panel>
+<p> Based on your answers above, how can we relate the average rate of change with a geometric interpretation of the function graph?  </p>
+</pl-question-panel>
+
+<pl-answer-panel>
+<p>In this video, we provide the solution for this example (note that the given function $f(x)$ may not be exactly the same).</p>
+<p><iframe width="560" height="315" src="https://www.youtube.com/embed/9EpeXYiHf2c" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></p>
+</pl-answer-panel>
+
+
+<pl-question-panel>
+  <!-- This is not part of the question, and is included for documentation purposes-->
+  <p></p>
+  <div class="alert alert-info p-2" role="alert">
+      <small>Note: this example question includes the introduction of a concept with corresponding short quiz questions. Read more  <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/lecture/selfGuided/__docs/docs.md" target="_blank">here</a>.</small>
+        <pl-github-link></pl-github-link>
+  </div>
+</pl-question-panel>

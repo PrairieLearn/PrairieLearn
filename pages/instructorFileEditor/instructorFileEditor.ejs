@@ -1,14 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
-    <%- include('../partials/head'); %>
-    <script src="/javascripts/lodash.min.js"></script>
-    <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
-    <script src="/node_modules/ace-builds/src-min-noconflict/ace.js"></script>
-    <script src="/node_modules/crypto-js/crypto-js.js"></script>
+    <%- include('../partials/head', {pageTitle: 'Edit ' + fileEdit.fileName}); %>
+    <script src="<%= node_modules_asset_path('ace-builds/src-min-noconflict/ace.js') %>"></script>
+    <script src="<%= node_modules_asset_path('crypto-js/crypto-js.js') %>"></script>
     <script src="./file_edit?serve=client"></script>
-    <script src="/javascripts/socket.io.js"></script>
+    <script src="<%= node_modules_asset_path('socket.io-client/dist/socket.io.min.js') %>"></script>
 </head>
 
 <body>
@@ -16,12 +14,35 @@
 
     <div id="content" class="container-fluid">
 
+        <% if (fileEdit.sync_errors) { %>
+        <div class="alert alert-danger" role="alert">
+            <h2 class="h5 alert-heading">Sync error</h2>
+            <p>
+                There were one or more errors in this file the last time you tried to sync.
+                This file will not be able to be synced until the errors are corrected.
+                The errors are listed below.
+            </p>
+            <pre class="text-white rounded p-3 mb-0" style="background-color: black;"><code><%- fileEdit.sync_errors_ansified %></code></pre>
+        </div>
+        <% } %>
+        <% if (fileEdit.sync_warnings) { %>
+        <div class="alert alert-warning" role="alert">
+            <h2 class="h5 alert-heading">Sync warning</h2>
+            <p>
+                There were one or more warnings in this file the last time you tried to sync.
+                These warnings do not prevent this file from being synced, but they should still be fixed.
+                The warnings are listed below.
+            </p>
+            <pre class="text-white rounded p-3 mb-0" style="background-color: black;"><code><%- fileEdit.sync_warnings_ansified %></code></pre>
+        </div>
+        <% } %>
+
         <script>
             $(function() {
                 new window.InstructorFileEditor({
                     contents: "<%- fileEdit.editContents %>",
                     <% if (fileEdit.aceMode) { %>
-                    aceMode: "ace/mode/<%= fileEdit.aceMode %>",
+                    aceMode: "<%= fileEdit.aceMode %>",
                     <% } %>
                     origHash: "<%- fileEdit.origHash %>",
                     diskHash: "<%- fileEdit.diskHash %>",
@@ -111,7 +132,7 @@
                 <div class="card-body row collapse" id="help-<%= fileEdit.uuid %>">
                     <div class="container-fluid">
                         <p>
-                            You are editing the file <code><%= fileEdit.fileNameForDisplay %></code>. To save changes, click <strong>Save and sync</strong>.
+                            You are editing the file <code><%= fileEdit.fileNameForDisplay %></code>. To save changes, click <strong>Save and sync</strong> or use <strong>Ctrl-S</strong> (Windows/Linux) or <strong>Cmd-S</strong> (Mac).
                             <% if (config.fileEditorUseGit) { %>
                             Doing so will write your changes to disk, will push them to the remote GitHub repository, and will sync them to the database.
                             <% } else { %>

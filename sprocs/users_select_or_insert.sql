@@ -1,11 +1,10 @@
-DROP FUNCTION IF EXISTS users_select_or_insert(text, text, text, text);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     users_select_or_insert(
         IN uid text,
         IN name text,
         IN uin text,
         IN authn_provider_name text,
+        IN institution_id bigint DEFAULT NULL,
         OUT user_id bigint
     )
 AS $$
@@ -14,11 +13,14 @@ DECLARE
     institution institutions%rowtype;
     new_u users%rowtype;
 BEGIN
-    -- try and get an existing user with "uin" as the key
+    -- Try and get an existing user with "uin" as the key. If an `institution_id`
+    -- was provided, limit search to users in that institution.
     SELECT *
     INTO u
     FROM users
-    WHERE users.uin = users_select_or_insert.uin;
+    WHERE
+        users.uin = users_select_or_insert.uin
+        AND (users_select_or_insert.institution_id IS NULL OR u.institution_id = users_select_or_insert.institution_id);
 
     -- if we couldn't match "uin", try "uid"
     IF u.user_id IS NULL THEN
@@ -46,6 +48,14 @@ BEGIN
         WHERE users_select_or_insert.uid ~ i.uid_regexp
         ORDER BY i.id ASC
         LIMIT 1;
+    END IF;
+
+    -- If we've matched an institution and an `institution_id` was provided,
+    -- check that they match each other. This is mostly useful for SAML authn
+    -- providers, as we want to ensure that any identity they return is scoped
+    -- to the appropriate institution.
+    IF institution_id IS NOT NULL AND (institution.id IS NULL OR institution.id != institution_id) THEN
+        RAISE EXCEPTION 'Institution mismatch: % != %', institution.id, institution_id;
     END IF;
 
     -- if we've matched an institution, make sure the authn_provider is valid for it

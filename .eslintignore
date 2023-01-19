@@ -6,3 +6,8 @@
 /question-servers/default-calculation/
 /coverage/
 /out/
+/workspaces/
+/site/
+
+# Transpiled code
+packages/*/dist/

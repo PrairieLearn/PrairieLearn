@@ -1,0 +1,36 @@
+[tool.flake8]
+filename = ["./elements/**/*.py", "./python/*.py"]
+ignore = ["E501"]
+
+# For zygote, allow imports in different places
+per-file-ignores = """
+    zygote.py: E402, F401
+"""
+
+
+# Black compatibility
+max-line-length = 88
+extend-ignore = ["E203", "W503"]
+
+[tool.black]
+exclude = '^\/tools\/.*\.py$|^\/exampleCourse\/.*\.py$|^\/testCourse\/.*\.py$|^\/node_modules\/.*\.pyi?$'
+
+[tool.isort]
+profile = "black"
+skip_glob = ["tools/*", "exampleCourse/*", "testCourse/*", "node_modules/*"]
+
+[tool.pyright]
+include = [
+    "./elements/pl-big-o-input",
+    "./elements/pl-graph",
+    "./elements/pl-hidden-hints",
+    "./elements/pl-symbolic-input",
+    "./elements/pl-dataframe",
+    "./python/conftest.py",
+    "./python/prairielearn.py",
+    "./python/prairielearn_test.py",
+    "./python/python_helper_sympy.py",
+    "./python/python_helper_sympy_test.py"
+]
+extraPaths = ["./python"]
+pythonVersion = "3.8"

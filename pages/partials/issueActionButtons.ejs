@@ -4,7 +4,7 @@
     <div class="btn-group btn-group-sm">
         <% // This is temporarily disabled until we can fully integrate replies into PL %>
         <% if (false && issue.manually_reported) { %>
-        <button class="btn btn-outline-secondary" type="button" title="Reply to issue" data-toggle="modal" data-target="#issueResponseModal" data-uid="<%= issue.user_uid %>" data-issue-id="<%= issue.issue_id %>" data-student-message="<%= issue.student_message %>"><i class="fa fa-reply fa-fw"></i></a>
+        <button class="btn btn-outline-secondary" type="button" title="Reply to issue" data-toggle="modal" data-target="#issueResponseModal" data-uid="<%= issue.user_uid %>" data-issue-id="<%= issue.issue_id %>" data-student-message="<%= issue.student_message %>"><i class="fa fa-reply fa-fw"></i></button>
         <% } %>
         <% if (issue.open) { %>
         <button class="btn btn-outline-secondary" name="__action" value="close" title="Close issue"><i class="fa fa-times fa-fw" aria-hidden="true"></i></button>

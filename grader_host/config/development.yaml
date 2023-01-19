@@ -1,0 +1,4 @@
+parent: base
+properties:
+  useConsoleLoggingForJobs:
+    default: true

@@ -1,13 +1,12 @@
 .pl-python-variable-table {
     display: block;
     overflow-x: scroll;
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-size: 12px;
     line-height: 20px;
 
     border-collapse: collapse;
     border: none;
     border-spacing: 0;
+    margin-bottom: 1rem;
 }
 
 .pl-python-variable-table thead {
@@ -49,12 +48,11 @@
 .pl-python-variable-table-dimensions {
     box-sizing: border-box;
     color: rgb(0, 0, 0);
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
     font-size: 14px;
     line-height: 20px;
-    margin-bottom: 0px;
+    margin-bottom: 1rem;
     margin-left: 0px;
     margin-right: 0px;
-    margin-top: 14px;
+    margin-top: 1rem;
     text-align: left;
 }

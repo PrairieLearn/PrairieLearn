@@ -1,0 +1,43 @@
+
+<pl-question-panel>
+
+<p>The origin of the drawing canvas below is the <strong>left-top</strong> corner. Each square has unit 20. </p>
+
+<p>Insert a vector with tail at position $({{params.xP}}, {{params.yP}})$.
+  The vector should make an angle $\alpha = {{params.alpha_abs}}^o$ {{params.direction}} with respect to the horizonal axis.</p>
+
+</pl-question-panel>
+<p>
+<pl-drawing grid-size="20" gradable="true" hide-answer-panel="false" answers-name="ans" height="300" width="440" >
+
+    <pl-drawing-answer draw-error-box="true" >
+      <pl-vector x1={{params.xP}} y1={{params.yP}} angle={{params.alpha}}></pl-vector>
+    </pl-drawing-answer>
+
+    <pl-controls>
+        <pl-controls-group label="Vector:" >
+            <pl-drawing-button type="pl-vector"></pl-drawing-button>
+        </pl-controls-group>
+        <!--<pl-controls-group label="Guide line (not graded):">-->
+        <!--    <pl-drawing-button type="help-line"></pl-drawing-button>-->
+        <!--</pl-controls-group>-->
+        <pl-controls-group label="Delete button:">
+            <pl-drawing-button type="delete"></pl-drawing-button>
+        </pl-controls-group>
+
+
+    </pl-controls>
+
+</pl-drawing>
+</p>
+
+
+<pl-question-panel>
+  <!-- This is not part of the question, and is included for documentation purposes-->
+  <p></p>
+  <div class="alert alert-info p-2" role="alert">
+      <small>Note: this is an example of <i>repeated variant</i> question.
+        Read more <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/homework/template/__docs/docs.md" target="_blank">here</a>.</small>
+        <pl-github-link></pl-github-link>
+  </div>
+</pl-question-panel>

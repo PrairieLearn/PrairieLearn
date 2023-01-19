@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <%- include('../partials/head'); %>
-    <link href="/stylesheets/issues.css" rel="stylesheet" />
+    <%- include('../partials/head', {pageNote: news_item.formatted_date, pageTitle: news_item.title}); %>
+    <link href="<%= asset_path('stylesheets/issues.css') %>" rel="stylesheet" />
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: 'news_item'}); %>

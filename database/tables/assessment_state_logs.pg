@@ -2,6 +2,7 @@ columns
     assessment_instance_id: bigint not null
     auth_user_id: bigint
     date: timestamp with time zone default CURRENT_TIMESTAMP
+    date_limit: timestamp with time zone
     id: bigint not null default nextval('assessment_state_logs_id_seq'::regclass)
     open: boolean
 

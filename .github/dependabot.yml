@@ -1,0 +1,82 @@
+version: 2
+updates:
+- package-ecosystem: npm
+  directory: "/"
+  schedule:
+    interval: monthly
+    time: "06:00"
+    timezone: America/Chicago
+  open-pull-requests-limit: 99
+  rebase-strategy: disabled
+- package-ecosystem: github-actions
+  directory: "/"
+  schedule:
+    interval: monthly
+    time: "06:00"
+    timezone: America/Chicago
+  open-pull-requests-limit: 99
+  rebase-strategy: disabled
+- package-ecosystem: docker
+  directory: "/"
+  schedule:
+    interval: monthly
+    time: "06:00"
+    timezone: America/Chicago
+  open-pull-requests-limit: 99
+  rebase-strategy: disabled
+- package-ecosystem: pip
+  directory: "/graders/python"
+  schedule:
+    interval: monthly
+    time: "06:00"
+    timezone: America/Chicago
+  open-pull-requests-limit: 99
+  rebase-strategy: disabled
+- package-ecosystem: docker
+  directory: "/graders/python"
+  schedule:
+    interval: monthly
+    time: "06:00"
+    timezone: America/Chicago
+  open-pull-requests-limit: 99
+  rebase-strategy: disabled
+- package-ecosystem: npm
+  directory: "/grader_host"
+  schedule:
+    interval: monthly
+    time: "06:00"
+    timezone: America/Chicago
+  open-pull-requests-limit: 99
+  rebase-strategy: disabled
+- package-ecosystem: docker
+  directory: "/images/plbase"
+  schedule:
+    interval: monthly
+    time: "06:00"
+    timezone: America/Chicago
+  open-pull-requests-limit: 99
+  rebase-strategy: disabled
+- package-ecosystem: pip
+  directory: "/images/plbase"
+  schedule:
+    interval: monthly
+    time: "06:00"
+    timezone: America/Chicago
+  open-pull-requests-limit: 99
+  rebase-strategy: disabled
+- package-ecosystem: docker
+  directory: "/workspaces/jupyterlab"
+  schedule:
+    interval: monthly
+    time: "06:00"
+    timezone: America/Chicago
+  open-pull-requests-limit: 99
+  rebase-strategy: disabled
+- package-ecosystem: docker
+  directory: "/workspaces/xtermjs"
+  schedule:
+    interval: monthly
+    time: "06:00"
+    timezone: America/Chicago
+  open-pull-requests-limit: 99
+  rebase-strategy: disabled

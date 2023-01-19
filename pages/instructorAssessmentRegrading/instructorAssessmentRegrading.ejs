@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
   </head>
@@ -11,7 +11,9 @@
     </script>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
+      <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
+      <% if (authz_data.has_course_instance_permission_edit) { %>
       <div class="modal fade" id="regradeAllAssessmentInstancesModal" tabindex="-1" role="dialog" aria-labelledby="regradeAllAssessmentInstances">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
@@ -35,12 +37,14 @@
           </div>
         </div>
       </div>
+      <% } %>
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_set.name %> <%= assessment.number %>: Regrading
         </div>
 
+        <% if (authz_data.has_course_instance_permission_edit) { %>
         <div class="card-body">
           <p>
             <button type="button" class="btn btn-primary" tabindex="0"
@@ -50,9 +54,10 @@
           </p>
           <p class="small">
             To regrade assessment instances for specific students, use
-            the "Action" dropdown on the assessment instances page.
+            the "Action" dropdown on the <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/instances">assessment instances page</a>.
           </p>
         </div>
+        <% } %>
 
         <div class="table-responsive">
           <table class="table table-sm table-hover">

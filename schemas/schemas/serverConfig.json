@@ -1,9 +1,13 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "Backend Config",
     "description": "A configuration file for the PrairieLearn server.",
     "type": "object",
     "properties": {
+        "comment": {
+            "description": "Arbitrary comment for reference purposes.",
+            "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+        },
         "courseDirs": {
             "description": "Paths of the course directories.",
             "type": "array",
@@ -30,7 +34,7 @@
         },
         "redisUrl": {
             "description": "The url for connecting to Redis.",
-            "type": "string"
+            "type": ["string", "null"]
         },
         "logFilename": {
             "description": "Filename to use for server logging.",
@@ -120,8 +124,8 @@
             "description": "The ARN of the role that should be provided to external grading containers for resource access.",
             "type": "string"
         },
-        "externalGradingWebhookUrl": {
-            "description": "The endpoint that should be hit when a grading result is updated. Should be null when running locally.",
+        "cacheImageRegistry": {
+            "description": "The ECR registry name to use. Like 'aws_account_id.dkr.ecr.region.amazonaws.com'. Should be null when running locally.",
             "type": "string"
         },
         "externalGradingDefaultTimeout": {
@@ -136,6 +140,10 @@
             "description": "The region for AWS resources.",
             "type": "string"
         },
+        "instanceId": {
+            "description": "The default instanceId to use for this server. Will be replaced by the auto-detected EC2 instanceId if running inside EC2.",
+            "type": "string"
+        },
         "hasShib": {
             "description": "Enables Shibboleth authentication",
             "type": "boolean"
@@ -148,17 +156,25 @@
             "description": "Enables OAuth authentication",
             "type": "boolean"
         },
-        "useWorkers": {
-            "description": "Enable persistent, forking Python workers",
-            "type": "boolean"
-        },
         "workersCount": {
             "description": "The number of workers to use (or null to use workersPerCpu).",
             "type": "integer"
         },
+        "workersExecutionMode": {
+            "description": "The type of worker to use (either native or containerized in Docker)",
+            "enum": [
+                "native",
+                "container",
+                "disabled"
+            ]
+        },
         "workersPerCpu": {
             "description": "The number of workers per CPU (if workersCount is null).",
             "type": "number"
+        },
+        "ensureExecutorImageAtStartup": {
+            "description": "If enabled, the server won't start serving traffic until the executor image is present",
+            "type": "boolean"
         }
     }
 }
