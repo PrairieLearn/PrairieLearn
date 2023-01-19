@@ -57,6 +57,7 @@ jobs:
       uses: docker/build-push-action@v3
       with:
         context: .
+        load: true
         push: false
         # IMPORTANT: this image must be named `prairielearn/prairielearn` for the
         # `prairielearn/executor` image to build correctly.
