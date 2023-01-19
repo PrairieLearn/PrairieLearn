@@ -1,7 +1,7 @@
 // @ts-check
 const { experimentAsync } = require('tzientist');
 const _ = require('lodash');
-const { trace, context, SpanStatusCode } = require('@opentelemetry/api');
+const { trace, context, SpanStatusCode } = require('@prairielearn/opentelemetry');
 
 const calculationInprocess = require('./calculation-inprocess');
 const calculationSubprocess = require('./calculation-subprocess');

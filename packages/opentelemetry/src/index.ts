@@ -137,13 +137,12 @@ export interface OpenTelemetryConfig {
  */
 export async function init(config: OpenTelemetryConfig) {
   if (!config.openTelemetryEnabled) {
-    // If not enabled, do nothing. We used to disable the instrumentations, but
-    // per maintainers, that can actually be problematic. See the comments on
-    // https://github.com/open-telemetry/opentelemetry-js-contrib/issues/970
-    // The Express instrumentation also logs a benign error, which can be
-    // confusing to users. There's a fix in progress if we want to switch back
-    // to disabling instrumentations in the future:
-    // https://github.com/open-telemetry/opentelemetry-js-contrib/pull/972
+    // Even if not enabled, we'll still set up a tracer provider so that code can still
+    // get a span with something like `trace.getSpan(context.active())` without having
+    // to check if that returns an undefined span.
+    const nodeTracerProvider = new NodeTracerProvider();
+    nodeTracerProvider.register();
+    tracerProvider = nodeTracerProvider;
     return;
   }
 
@@ -253,7 +252,7 @@ export async function init(config: OpenTelemetryConfig) {
   instrumentations.forEach((i) => i.setTracerProvider(nodeTracerProvider));
 
   // Save the provider so we can shut it down later.
-  tracerProvider = tracerProvider;
+  tracerProvider = nodeTracerProvider;
 }
 
 /**
