@@ -164,44 +164,46 @@ function questionFunctionExperiment(name, control, candidate) {
   };
 }
 
-module.exports.generate = (question, course, variant_seed, callback) => {
+async function callFunction(func, course, question, inputData) {
   const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-  filePaths.questionFilePath(
+  const { fullPath: questionServerPath } = await filePaths.questionFilePathAsync(
     'server.js',
     question.directory,
     coursePath,
-    question,
-    (err, questionServerPath) => {
-      if (ERR(err, callback)) return;
-      withCodeCaller(coursePath, async (codeCaller) => {
-        const res = await codeCaller.call('v2-question', null, questionServerPath, 'generate', [
-          {
-            questionServerPath,
-            func: 'generate',
-            coursePath,
-            question,
-          },
-        ]);
-        return res.result;
-      }).then(
-        (questionData) => {
-          let data = {
-            params: questionData.params,
-            true_answer: questionData.trueAnswer,
-            options: questionData.options || question.options || {},
-          };
-          callback(null, [], data);
-        },
-        (err) => {
-          let data = {
-            variant_seed: variant_seed,
-            question: question,
-            course: course,
-          };
-          err.status = 500;
-          return ERR(error.addData(err, data), callback);
-        }
-      );
+    question
+  );
+  return withCodeCaller(coursePath, async (codeCaller) => {
+    const res = await codeCaller.call('v2-question', null, questionServerPath, 'generate', [
+      {
+        questionServerPath,
+        func: 'generate',
+        coursePath,
+        question,
+        ...inputData,
+      },
+    ]);
+    return res.result;
+  });
+}
+
+module.exports.generate = (question, course, variant_seed, callback) => {
+  callFunction('generate', course, question, { variant_seed }).then(
+    (questionData) => {
+      let data = {
+        params: questionData.params,
+        true_answer: questionData.trueAnswer,
+        options: questionData.options || question.options || {},
+      };
+      callback(null, [], data);
+    },
+    (err) => {
+      let data = {
+        variant_seed: variant_seed,
+        question: question,
+        course: course,
+      };
+      err.status = 500;
+      return ERR(error.addData(err, data), callback);
     }
   );
 };
