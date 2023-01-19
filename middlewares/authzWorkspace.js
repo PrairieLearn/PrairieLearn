@@ -33,8 +33,8 @@ module.exports = asyncHandler(async (req, res, next) => {
     } else if (res.locals.assessment_instance_id) {
       await selectAndAuthzAssessmentInstance(req, res);
     } else {
-      /* If we have neither assessment instance nor question instance ids, we are probably viewing in
-               instructor view and should authorize for that. */
+      // If we have neither assessment instance nor question instance ids,
+      // we are probably viewing in instructor view and should authorize for that.
       res.locals.course_instance = { id: res.locals.course_instance_id };
       await authzHasCoursePreviewOrInstanceView(req, res);
       await selectAndAuthzInstructorQuestion(req, res);

@@ -42,7 +42,7 @@
                 new window.InstructorFileEditor({
                     contents: "<%- fileEdit.editContents %>",
                     <% if (fileEdit.aceMode) { %>
-                    aceMode: "ace/mode/<%= fileEdit.aceMode %>",
+                    aceMode: "<%= fileEdit.aceMode %>",
                     <% } %>
                     origHash: "<%- fileEdit.origHash %>",
                     diskHash: "<%- fileEdit.diskHash %>",

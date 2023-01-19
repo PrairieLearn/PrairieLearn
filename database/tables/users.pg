@@ -12,7 +12,7 @@ columns
 indexes
     users_pkey: PRIMARY KEY (user_id) USING btree (user_id)
     users_uid_key: UNIQUE (uid) USING btree (uid)
-    users_uin_key: UNIQUE (uin) USING btree (uin)
+    users_uin_institution_id_key: UNIQUE USING btree (uin, institution_id)
     users_institution_id_key: USING btree (institution_id)
 
 foreign-key constraints

@@ -169,6 +169,24 @@ router.post('/', function (req, res, next) {
   }
 });
 
+router.get('/variant/:variant_id/submission/:submission_id', function (req, res, next) {
+  question.renderPanelsForSubmission(
+    req.params.submission_id,
+    res.locals.question.id,
+    res.locals.instance_question.id,
+    req.params.variant_id,
+    res.locals.urlPrefix,
+    null, // questionContext
+    null, // csrfToken
+    null, // authorizedEdit
+    false, // renderScorePanels
+    (err, results) => {
+      if (ERR(err, next)) return;
+      res.send({ submissionPanel: results.submissionPanel });
+    }
+  );
+});
+
 router.get('/', function (req, res, next) {
   if (res.locals.assessment.type !== 'Homework') return next();
   question.getAndRenderVariant(req.query.variant_id, null, res.locals, function (err) {

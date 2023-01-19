@@ -3,6 +3,7 @@ var _ = require('lodash');
 var express = require('express');
 var router = express.Router();
 
+const { getCourseOwners } = require('../../lib/course');
 var error = require('../../prairielib/lib/error');
 var sqldb = require('../../prairielib/lib/sql-db');
 var sqlLoader = require('../../prairielib/lib/sql-loader');
@@ -11,7 +12,13 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_permission_edit) {
-    return next(error.make(403, 'Access denied (must be a course Editor)'));
+    getCourseOwners(res.locals.course.id)
+      .then((owners) => {
+        res.locals.course_owners = owners;
+        res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      })
+      .catch((err) => next(err));
+    return;
   }
   var params = {
     course_instance_id: res.locals.course_instance.id,

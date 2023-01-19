@@ -6,6 +6,12 @@ docs_dir: docs
 # Fix "Edit on GitHub" link: (defaults to edit/master/docs/, note the s)
 edit_uri: blob/master/docs/
 
+markdown_extensions:
+  # Allows us to use 2-space indents on lists, which is compatible with how
+  # Prettier formats Markdown files.
+  # https://pypi.org/project/mdx-truly-sane-lists/
+  - mdx_truly_sane_lists
+
 extra_javascript:
   - mathjax-config.js
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
@@ -38,8 +44,7 @@ nav:
   - 'Manual grading': 'manualGrading.md'
   - 'What to tell students': 'whatToTellStudents.md'
   - 'FAQ': 'faq.md'
-  - 'API': 'api.md'
-  - 'Running in production': 'running-in-production.md'
+  - 'API': 'api.md'  
 - Developer Guide:
   - 'Developer guide': 'dev-guide.md'
   - 'Installing with local source': 'installingLocal.md'
@@ -47,8 +52,14 @@ nav:
   - 'Server configuration': 'configJson.md'
   - 'Question element writing': 'devElements.md'
   - 'Element extensions': 'elementExtensions.md'
+  - 'Code execution': 'codeExecution.md'
   - 'Docker packaging': 'docker.md'
   - 'Contributing to PL development': 'contributing.md'
+- Running in Production:
+  - 'Setup': 'running-in-production/setup.md'
+  - 'Using Docker Compose': 'running-in-production/docker-compose.md'  
+  - 'User Authentication': 'running-in-production/authentication.md'
+  - 'Admin User': 'running-in-production/admin-user.md'
 - Deprecated Features:
   - 'Old v1/v2 question format': 'oldQuestion.md'
   - 'Old PrairieDraw graphics': 'PrairieDraw.md'

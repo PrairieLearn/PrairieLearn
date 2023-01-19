@@ -55,11 +55,6 @@ SELECT
         'prev_instance_question', iqi.prev_instance_question,
         'next_instance_question', iqi.next_instance_question,
         'question_number', iqi.question_number,
-        'max_points', CASE
-            WHEN a.type = 'Exam' THEN COALESCE(iq.points_list[1], 0)
-            ELSE aq.max_points
-        END,
-        'remaining_points', iq.points_list[(iq.number_attempts + 2):array_length(iq.points_list, 1)],
         'advance_score_perc', aq.effective_advance_score_perc,
         'sequence_locked', iqi.sequence_locked
     ) AS instance_question_info,

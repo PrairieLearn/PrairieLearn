@@ -1,10 +1,10 @@
-FROM ubuntu:18.04
+FROM ubuntu:22.04
 
-LABEL maintainer="jonatan@cs.ubc.ca"
+LABEL maintainer="jonatan@yorku.ca"
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt update && apt install -y make openjdk-11-jdk-headless jq && apt clean
+RUN apt update && apt install -y make openjdk-18-jdk-headless jq && apt clean
 
 ENV LANG=en_US.UTF-8
 

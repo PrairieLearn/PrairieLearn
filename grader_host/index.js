@@ -8,6 +8,8 @@ const AWS = require('aws-sdk');
 const { exec } = require('child_process');
 const path = require('path');
 const byline = require('byline');
+const Sentry = require('@prairielearn/sentry');
+
 const sqldb = require('../prairielib/lib/sql-db');
 const sanitizeObject = require('../prairielib/lib/util').sanitizeObject;
 
@@ -45,6 +47,12 @@ async.series(
       });
     },
     async () => {
+      if (config.sentryDsn) {
+        await Sentry.init({
+          dsn: config.sentryDsn,
+          environment: config.sentryEnvironment,
+        });
+      }
       await lifecycle.init();
     },
     (callback) => {
@@ -54,8 +62,8 @@ async.series(
         database: config.postgresqlDatabase,
         user: config.postgresqlUser,
         password: config.postgresqlPassword,
-        max: 2,
-        idleTimeoutMillis: 30000,
+        max: config.postgresqlPoolSize,
+        idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
       };
       globalLogger.info(
         'Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database
@@ -120,6 +128,9 @@ async.series(
     },
   ],
   (err) => {
+    Sentry.captureException(err, {
+      level: 'fatal',
+    });
     globalLogger.error('Error in main loop:', err);
     util.callbackify(lifecycle.abandonLaunch)((err) => {
       if (err) globalLogger.error('Error in lifecycle.abandon():', err);
@@ -254,7 +265,7 @@ function initDocker(info, callback) {
           callback(null);
         }
       },
-      (callback) => {
+      async () => {
         logger.info(`Pulling latest version of "${image}" image`);
         var repository = new dockerUtil.DockerName(image);
         if (config.cacheImageRegistry) {
@@ -265,20 +276,20 @@ function initDocker(info, callback) {
           tag: repository.getTag() || 'latest',
         };
         logger.info(`Pulling image: ${JSON.stringify(params)}`);
-        docker.createImage(dockerAuth, params, (err, stream) => {
-          if (err) {
-            logger.warn(
-              `Error pulling "${image}" image; attempting to fall back to cached version`
-            );
-            logger.warn('createImage error:', err);
-            return ERR(err, callback);
-          }
 
+        const stream = await docker.createImage(dockerAuth, params);
+
+        return new Promise((resolve, reject) => {
           docker.modem.followProgress(
             stream,
             (err) => {
-              if (ERR(err, callback)) return;
-              callback(null);
+              if (err) {
+                globalLogger.error('Error pulling "${image}" image:', err);
+                reject(err);
+              } else {
+                globalLogger.info('Successfully pulled "${image}" image');
+                resolve();
+              }
             },
             (output) => {
               logger.info('docker output:', output);
@@ -469,17 +480,22 @@ function runJob(info, callback) {
           callback(null, container);
         });
       },
-      (container, callback) => {
+      async (container) => {
         const timeoutId = setTimeout(() => {
           results.timedOut = true;
-          container.kill();
+          container.kill().catch((err) => {
+            globalLogger.error('Error killing container', err);
+          });
         }, jobTimeout * 1000);
+
         logger.info('Waiting for container to complete');
-        container.wait((err) => {
+        try {
+          await container.wait();
+        } finally {
           clearTimeout(timeoutId);
-          if (ERR(err, callback)) return;
-          callback(null, container);
-        });
+        }
+
+        return container;
       },
       (container, callback) => {
         timeReporter.reportEndTime(jobId, (err, time) => {
@@ -606,7 +622,7 @@ function uploadResults(info, callback) {
         const params = {
           Bucket: s3Bucket,
           Key: `${s3RootKey}/results.json`,
-          Body: Buffer.from(JSON.stringify(results, null, '  '), 'binary'),
+          Body: Buffer.from(JSON.stringify(results, null, 2)),
         };
         s3.putObject(params, (err) => {
           if (ERR(err, callback)) return;

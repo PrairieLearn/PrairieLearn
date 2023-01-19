@@ -91,3 +91,9 @@ properties:
   postgresqlPassword:
     default: null
     envVar: PG_PASSWORD
+  postgresqlPoolSize:
+    default: 2
+    envVar: PG_POOLSIZE
+  postgresqlIdleTimeoutMillis:
+    default: 30000
+    envVar: PG_IDLETIMEOUTMILLIS

@@ -64,6 +64,8 @@ SELECT
     q.id AS question_id,
     q.qid,
     aq.max_points,
+    aq.max_manual_points,
+    aq.max_auto_points,
     qo.row_order,
     qo.question_number,
     admin_assessment_question_number(aq.id) as instructor_question_number,

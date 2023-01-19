@@ -44,22 +44,6 @@
               <%- include('../partials/attachFilePanel') %>
           <% } %>
 
-          <% if (video) { %>
-          <div class="modal" id="youtubemodal">
-            <div class="modal-dialog" style="width: 620px">
-              <div class="modal-content">
-                <div class="modal-body no-overflow">
-                  <iframe id="player" width="560" height="315" data-url="https://www.youtube.com/embed/{{video}}?rel=0&wmode=Opaque&enablejsapi=1&autoplay=1" frameborder="0"></iframe>
-                  <button type="button" class="close" data-dismiss="modal" id="youtubeclose">x</button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <p class="text-center">
-            <a class="btn btn-warning" href="#youtubemodal" data-toggle="modal">Help video</a>
-          </p>
-          <% } %>
-
           <%- include('../partials/instructorInfoPanel') %>
 
         </div>

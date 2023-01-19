@@ -1,20 +1,23 @@
--- BLOCK assessment_stats
-SELECT * FROM assessments_stats($assessment_id);
+-- BLOCK select_assessment
+SELECT to_jsonb(a) AS assessment
+FROM assessments AS a
+WHERE a.id = $assessment_id;
 
--- BLOCK assessment_duration_stats
+-- BLOCK select_duration_stats
 SELECT
-    format_interval(ads.median) AS median,
-    format_interval(ads.min) AS min,
-    format_interval(ads.max) AS max,
-    format_interval(ads.mean) AS mean,
-    DATE_PART('epoch', ads.median) / 60 AS median_mins,
-    DATE_PART('epoch', ads.min) / 60  AS min_mins,
-    DATE_PART('epoch', ads.max) / 60  AS max_mins,
-    DATE_PART('epoch', ads.mean) / 60  AS mean_mins,
-    threshold_seconds,
-    threshold_labels,
-    hist
-FROM assessments_duration_stats($assessment_id) AS ads;
+    format_interval(duration_stat_median) AS median,
+    format_interval(duration_stat_min) AS min,
+    format_interval(duration_stat_max) AS max,
+    format_interval(duration_stat_mean) AS mean,
+    DATE_PART('epoch', duration_stat_median) / 60 AS median_mins,
+    DATE_PART('epoch', duration_stat_min) / 60  AS min_mins,
+    DATE_PART('epoch', duration_stat_max) / 60  AS max_mins,
+    DATE_PART('epoch', duration_stat_mean) / 60  AS mean_mins,
+    duration_stat_threshold_seconds AS threshold_seconds,
+    duration_stat_threshold_labels AS threshold_labels,
+    duration_stat_hist AS hist
+FROM assessments
+WHERE id = $assessment_id;
 
 -- BLOCK assessment_score_histogram_by_date
 WITH assessment_instances_by_user_and_date AS (
@@ -26,8 +29,7 @@ WITH assessment_instances_by_user_and_date AS (
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
         JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-        LEFT JOIN group_info($assessment_id) AS gi ON (gi.id = ai.group_id)
-        LEFT JOIN group_users AS gu ON (gu.group_id = gi.id)
+        LEFT JOIN group_users AS gu ON (gu.group_id = ai.group_id)
         JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
         JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
     WHERE

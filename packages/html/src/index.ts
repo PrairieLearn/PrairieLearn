@@ -1,5 +1,22 @@
-import ejs from 'ejs';
-import path from 'path';
+const ENCODE_HTML_RULES: Record<string, string> = {
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&#34;',
+  "'": '&#39;',
+};
+const MATCH_HTML = /[&<>'"]/g;
+
+function encodeCharacter(c: string) {
+  return ENCODE_HTML_RULES[c] || c;
+}
+
+/**
+ * Based on the `escapeXML` function from the `ejs` library.
+ */
+function escapeHtmlRaw(value: string): string {
+  return value == undefined ? '' : String(value).replace(MATCH_HTML, encodeCharacter);
+}
 
 function escapeValue(value: unknown): string {
   if (value instanceof HtmlSafeString) {
@@ -8,7 +25,7 @@ function escapeValue(value: unknown): string {
   } else if (Array.isArray(value)) {
     return value.map((val) => escapeValue(val)).join('');
   } else if (typeof value === 'string' || typeof value === 'number') {
-    return ejs.escapeXML(String(value));
+    return escapeHtmlRaw(String(value));
   } else if (value == null) {
     // undefined or null -- render nothing
     return '';
@@ -37,7 +54,9 @@ export class HtmlSafeString {
   }
 }
 
-export function html(strings: TemplateStringsArray, ...values: any[]): HtmlSafeString {
+export type HtmlValue = string | number | boolean | HtmlSafeString | undefined | null | HtmlValue[];
+
+export function html(strings: TemplateStringsArray, ...values: HtmlValue[]): HtmlSafeString {
   return new HtmlSafeString(strings, values);
 }
 
@@ -47,7 +66,7 @@ export function html(strings: TemplateStringsArray, ...values: any[]): HtmlSafeS
  * popover.
  */
 export function escapeHtml(html: HtmlSafeString): HtmlSafeString {
-  return unsafeHtml(ejs.escapeXML(html.toString()));
+  return unsafeHtml(escapeHtmlRaw(html.toString()));
 }
 
 /**
@@ -59,20 +78,4 @@ export function escapeHtml(html: HtmlSafeString): HtmlSafeString {
  */
 export function unsafeHtml(value: string): HtmlSafeString {
   return new HtmlSafeString([value], []);
-}
-
-/**
- * This is a shim to allow for the use of EJS templates inside of HTML tagged
- * template literals.
- *
- * The resulting string is assumed to be appropriately escaped and will be used
- * verbatim in the resulting HTML.
- *
- * @param filename The name of the file from which relative includes should be resolved.
- * @param template The raw EJS template string.
- * @param data Any data to be made available to the template.
- * @returns The rendered EJS.
- */
-export function renderEjs(filename: string, template: string, data: any = {}): HtmlSafeString {
-  return unsafeHtml(ejs.render(template, data, { views: [path.dirname(filename)] }));
 }

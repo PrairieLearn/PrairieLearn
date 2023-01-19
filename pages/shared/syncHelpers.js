@@ -132,7 +132,7 @@ module.exports.pullAndUpdate = function (locals, callback) {
         type: 'reset_from_git',
         description: 'Reset state to remote git repository',
         command: 'git',
-        arguments: ['reset', '--hard', 'origin/' + locals.course.branch],
+        arguments: ['reset', '--hard', `origin/${locals.course.branch}`],
         working_directory: locals.course.path,
         env: gitEnv,
         on_success: syncStage2,
@@ -323,40 +323,45 @@ module.exports.ecrUpdate = function (locals, callback) {
       callback(null, job_sequence_id);
 
       var lastIndex = locals.images.length - 1;
-      async.eachOfSeries(locals.images || [], (image, index, callback) => {
-        if (ERR(err, callback)) return;
+      async.eachOfSeries(
+        locals.images || [],
+        (image, index, callback) => {
+          var jobOptions = {
+            course_id: locals.course ? locals.course.id : null,
+            type: 'image_sync',
+            description: `Pull image from Docker Hub and push to PL registry: ${image.image}`,
+            job_sequence_id,
+          };
 
-        var jobOptions = {
-          course_id: locals.course ? locals.course.id : null,
-          type: 'image_sync',
-          description: `Pull image from Docker Hub and push to PL registry: ${image.image}`,
-          job_sequence_id,
-        };
-
-        if (index === lastIndex) {
-          jobOptions.last_in_sequence = true;
-        }
-
-        serverJobs.createJob(jobOptions, (err, job) => {
-          if (err) {
-            logger.error('Error in createJob()', err);
-            serverJobs.failJobSequence(job_sequence_id);
-            return callback(err);
+          if (index === lastIndex) {
+            jobOptions.last_in_sequence = true;
           }
-          debug('successfully created job ', { job_sequence_id });
 
-          // continue executing here to launch the actual job
-          dockerUtil.pullAndPushToECR(image.image, auth, job, (err) => {
+          serverJobs.createJob(jobOptions, (err, job) => {
             if (err) {
-              job.fail(error.newMessage(err, `Error syncing ${image.image}`));
+              logger.error('Error in createJob()', err);
               return callback(err);
             }
+            debug('successfully created job ', { job_sequence_id });
 
-            job.succeed();
-            callback(null);
+            // continue executing here to launch the actual job
+            dockerUtil.pullAndPushToECR(image.image, auth, job, (err) => {
+              if (err) {
+                job.fail(error.newMessage(err, `Error syncing ${image.image}`));
+                return callback(err);
+              }
+
+              job.succeed();
+              callback(null);
+            });
           });
-        });
-      });
+        },
+        (err) => {
+          if (err) {
+            serverJobs.failJobSequence(job_sequence_id);
+          }
+        }
+      );
     });
   });
 };

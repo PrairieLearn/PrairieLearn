@@ -35,9 +35,6 @@
             <% } %>
             </button>
           <% } %>
-          <% if (showManualGradingMsg) { %>
-          <span class="order-4 ml-2">This question will be manually graded.</span>
-          <% } %>
         </span>
         <span class="d-flex">
           <input type="hidden" name="__variant_id" value="<%= variant.id %>">
@@ -56,6 +53,13 @@
               1 point available for this attempt
               <% } else { %>
               <%= instance_question.points_list[0] %> points available for this attempt
+              <% } %>
+              <% if (assessment_question?.max_manual_points > 0) { %>
+                <% if (instance_question.points_list[0] > assessment_question?.max_manual_points) { %>
+                  &mdash; <%= instance_question.points_list[0] - assessment_question?.max_manual_points %> auto-graded, <%= assessment_question?.max_manual_points %> manually graded
+                <% } else { %>
+                  &mdash; manually graded
+                <% } %>
               <% } %>
               <% if (instance_question.points_list.length == 2) { %>
               <br />(following attempt is worth: <%= instance_question.points_list[1] %>)
@@ -104,9 +108,6 @@
                <small class="font-italic ml-2">Unlimited attempts</small>
             <% } %>
             </button>
-              <% } %>
-              <% if (showManualGradingMsg) { %>
-              <span class="order-4 ml-2">This question will be manually graded.</span>
               <% } %>
           </span>
           <span class="d-flex">

@@ -24,6 +24,8 @@ PrairieLearn presently provides the following templated **input field** elements
   such as -71, 0, 5, 21, and so on.
 - [`pl-symbolic-input`](#pl-symbolic-input-element): Fill in a **symbolic** value
   such as `x^2`, `sin(z)`, `mc^2`, and so on.
+- [`pl-big-o-input`](#pl-big-o-input-element): Fill in a **symbolic** value
+  representing asymptotic input.
 - [`pl-string-input`](#pl-string-input-element): Fill in a **string** value
   such as "Illinois", "GATTACA", "computer", and so on.
 - [`pl-matching`](#pl-matching-element): Select a matching option for each entry in
@@ -75,8 +77,12 @@ The following **Conditional** elements are available:
 - [`pl-answer-panel`](#pl-answer-panel-element): Displays the correct
   answer to a given question.
 - [`pl-hide-in-panel`](#pl-hide-in-panel-element): Hides content in one or more display panels.
+- [`pl-hide-in-manual-grading`](#pl-hide-in-manual-grading-element): Hides content in the manual grading page.
+- [`pl-manual-grading-only`](#pl-manual-grading-only-element): Shows content only in manual grading.
 - [`pl-external-grader-results`](#pl-external-grader-results-element):
   Displays results from questions that are externally graded.
+- [`pl-hidden-hints`](#pl-hidden-hints): Displays hints as a student submits more on the current variant.
+- [`pl-file-preview`](#pl-file-preview): Displays a preview of submitted files.
 
 Note: PrairieLearn Elements listed next have been
 **deprecated**. These elements are still supported for backwards
@@ -112,21 +118,31 @@ incorrect answers and displays them in a random order as radio buttons.
 
 #### Customizations
 
-| Attribute                     | Type    | Default | Description                                                                                                                                                      |
-| ----------------------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`                | string  | —       | Variable name to store data in.                                                                                                                                  |
-| `weight`                      | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                             |
-| `inline`                      | boolean | false   | List answer choices on a single line instead of as separate paragraphs.                                                                                          |
-| `number-answers`              | integer | special | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.                                              |
-| `fixed-order`                 | boolean | false   | Disable the randomization of answer order.                                                                                                                       |
-| `hide-letter-keys`            | boolean | false   | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                               |
-| `all-of-the-above`            | boolean | false   | Add "All of the above" choice below all answer choices, but above "None of the above" if enabled. Bounded by `number-answers` and not affected by `fixed-order`. |
-| `none-of-the-above`           | boolean | false   | Add "None of the above" choice below all answer choices regardless of `fixed-order`, and is bounded by `number-answers`.                                         |
-| `all-of-the-above-feedback`   | string  | —       | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.       |
-| `none-of-the-above-feedback`  | string  | —       | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student.      |
-| `external-json`               | string  | special | Optional path to a JSON file to load external answer choices from. Answer choices are stored as lists under "correct" and "incorrect" key names.                 |
-| `external-json-correct-key`   | string  | special | Optionally override default json "correct" attribute name when using `external-json` file.                                                                       |
-| `external-json-incorrect-key` | string  | special | Optionally override default json "incorrect" attribute name when using `external-json` file.                                                                     |
+| Attribute                     | Type    | Default | Description                                                                                                                                                 |
+| ----------------------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name`                | string  | —       | Variable name to store data in.                                                                                                                             |
+| `weight`                      | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                        |
+| `inline`                      | boolean | false   | List answer choices on a single line instead of as separate paragraphs.                                                                                     |
+| `number-answers`              | integer | special | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.                                         |
+| `fixed-order`                 | boolean | false   | Disable the randomization of answer order.                                                                                                                  |
+| `hide-letter-keys`            | boolean | false   | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                          |
+| `all-of-the-above`            | string  | `false` | Add "All of the above" choice. See below for details.                                                                                                       |
+| `none-of-the-above`           | string  | `false` | Add "None of the above" choice. See below for details.                                                                                                      |
+| `all-of-the-above-feedback`   | string  | —       | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.  |
+| `none-of-the-above-feedback`  | string  | —       | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student. |
+| `external-json`               | string  | special | Optional path to a JSON file to load external answer choices from. Answer choices are stored as lists under "correct" and "incorrect" key names.            |
+| `external-json-correct-key`   | string  | special | Optionally override default json "correct" attribute name when using `external-json` file.                                                                  |
+| `external-json-incorrect-key` | string  | special | Optionally override default json "incorrect" attribute name when using `external-json` file.                                                                |
+
+The attributes `none-of-the-above` and `all-of-the-above` can be set to one of these values:
+
+- `false`: the corresponding choice will not be shown in the list of choices. This is the default.
+- `random`: the corresponding choice will always be shown, and will be randomly correct, with probability proportional to the total number of correct choices. In other words, if there are `N` possible correct choices in total, this choice will be correct with probability `1/N`.
+- `correct`: the corresponding choice will always be shown and will always be the correct answer.
+- `incorrect`: the corresponding choice will always be shown and will always be an incorrect answer (i.e., a distractor).
+- `true`: same as `random`, accepted for backwards compatibility.
+
+Note that "All of the above" and "None of the above", if set, are bounded by the `number-answers` value above. Also, these two values are always shown as the last choices, regardless of the setting for `fixed-order`. If both choices are shown, then "All of the above" will be listed before "None of the above".
 
 Inside the `pl-multiple-choice` element, each choice must be specified with
 a `pl-answer` that has attributes:
@@ -135,6 +151,7 @@ a `pl-answer` that has attributes:
 | ---------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `correct`  | boolean | false   | Is this a correct answer to the question?                                                                                                      |
 | `feedback` | string  | —       | Helper text (HTML) to be displayed to the student next to the option after question is graded if this option has been selected by the student. |
+| `score`    | float   | -       | Score given to answer choice if selected by student. Defaults to 1.0 for correct answers and 0.0 for incorrect answers.                        |
 
 #### Example implementations
 
@@ -260,11 +277,11 @@ import random
 
 def generate(data):
 
-  # Generate a random value
-  x = random.uniform(1, 2)
+    # Generate a random value
+    x = random.uniform(1, 2)
 
-  # Answer to fill in the blank input
-  data["correct_answers"]["ans_rtol"] = x
+    # Answer to fill in the blank input
+    data["correct_answers"]["ans_rtol"] = x
 ```
 
 ---
@@ -285,11 +302,11 @@ import random
 
 def generate(data):
 
-  # Generate a random value
-  x = random.uniform(1, 2)
+    # Generate a random value
+    x = random.uniform(1, 2)
 
-  # Answer to fill in the blank input
-  data["correct_answers"]["ans_sig"] = round(x, 2)
+    # Answer to fill in the blank input
+    data["correct_answers"]["ans_sig"] = round(x, 2)
 ```
 
 #### Customizations
@@ -306,7 +323,7 @@ def generate(data):
 | `rtol`                | number                          | 1e-2     | Relative tolerance for `comparison="relabs"`.                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `atol`                | number                          | 1e-8     | Absolute tolerance for `comparison="relabs"`.                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `digits`              | integer                         | 2        | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.                                                                                                                                                                                                                                                                                                                                                                                               |
-| `allow-complex`       | boolean                         | false    | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answers'][answers-name] = pl.to_json(ans)`.                                                                                                                                                                                                                                                                          |
+| `allow-complex`       | boolean                         | false    | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data["correct_answers"][answers-name] = pl.to_json(ans)`.                                                                                                                                                                                                                                                                          |
 | `allow-blank`         | boolean                         | false    | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                                                                                                                                                                                                                                                                                                                                        |
 | `blank-value`         | string                          | 0 (zero) | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., fractions if allowed, complex numbers if allowed, etc.).                                                                                                                                                                                                                                                                  |
 | `show-help-text`      | boolean                         | true     | Show the question mark at the end of the input displaying required input parameters.                                                                                                                                                                                                                                                                                                                                                                                                    |
@@ -365,15 +382,15 @@ man proportions his belief to the evidence.
 ```python
 def generate(data):
 
-  QUESTION1 = 'aristotle'
+    QUESTION1 = "aristotle"
 
-  data['params'][QUESTION1] = [
-    {'tag': 'true', 'ans': 'whole'},
-    {'tag': 'false', 'ans': 'part'},
-    {'tag': 'false', 'ans': 'inverse'}
-  ]
+    data["params"][QUESTION1] = [
+        {"tag": "true", "ans": "whole"},
+        {"tag": "false", "ans": "part"},
+        {"tag": "false", "ans": "inverse"}
+    ]
 
-  return data
+    return data
 ```
 
 #### Customizations
@@ -429,6 +446,8 @@ Element to arrange given blocks of code or text that are displayed initially in 
 | `solution-placement`  | "right" or "bottom"     | "right"                        | `right` shows the source and solution areas aligned side-by-side. `bottom` shows the solution area below the source area.                                                                                                                                                                                                                                                                                |
 | `partial-credit`      | "none" or "lcs"         | Depends on `grading-method`    | For the `dag` and `ranking` grading methods, you may specify `none` for no partial credit or `lcs` (default) for partial credit based on the LCS edit-distance from the student solution to some correct solution. For the other grading methods, using this property is not yet supported. Grading method `unordered` will always assign partial credit, and grading method `ordered` will never do so. |
 | `feedback`            | "none" or "first-wrong" | "none"                         | The level of feedback the student will recieve upon giving an incorrect answer. Available with the `dag` or `ranking` grading mode. `first-wrong` will tell the student which block in their answer was the first to be incorrect, `none` will give no feedback.                                                                                                                                         |
+| `format`              | "code" or "default"     | "default"                      | If this property is set to "code", then the contents of each of the blocks will be wrapped with a `pl-code` element.                                                                                                                                                                                                                                                                                     |
+| `code-language`       | string                  | -                              | The programming language syntax highlighting to use. Only available when using `format="code"`.                                                                                                                                                                                                                                                                                                          |
 
 Within the `pl-order-blocks` element, each element must either be a `pl-answer` or a `pl-block-group` (see details below for more info on `pl-block-group`). Each element within a `pl-block-group` must be a `pl-answer`. The `pl-answer` elements specify the content for each of the blocks, and may have the following attributes:
 
@@ -448,7 +467,7 @@ Different grading options are defined via the attribute `grading-method`:
   the correct answers (defined in `pl-answer`) appear in the HTML file. There is no partial credit for this option.
 - `unordered`: in this method, if `n` is the total number of correct blocks, each correct block moved to the solution area is given `1/n` points, and each incorrect block moved to the solution area is subtracted by `1/n` points. The final score will be at least 0 (the student cannot earn a negative score by only moving incorrect answers). Note the ordering of the blocks does not matter. That is, any permutation of the answers within the solution area is accepted. There is partial credit for this option.
 - `ranking`: in this method, the `ranking` attribute of the `pl-answer` options are used to check answer ordering. Every answer block _X_ should have a `ranking` integer that is less than or equal to the answer block immediately below _X_. That is, the sequence of `ranking` integers of all the answer blocks should form a _nonstrictly increasing_ sequence. If `n` is the total number of answers, each correctly ordered answer is worth `1/n`, up to the first incorrectly ordered answer. There is partial credit for this option.
-- `dag`: in this method, the `depends` attibute of the `pl-answer` options are used to declare the directed acyclic graph relation between the blocks, and a correct answer is any topological sort of that directed acyclic graph. If `pl-block-group` elements are used to divide some blocks into groups, then a correct answer is a topological sort of the lines of the proof with the added condition that the lines of each group must be listed contiguously.
+- `dag`: in this method, the `depends` attibute of the `pl-answer` options are used to declare the directed acyclic graph relation between the blocks, and a correct answer is any topological sort of that directed acyclic graph. If `pl-block-group` elements are used to divide some blocks into groups, then a correct answer is a topological sort of the lines of the proof with the added condition that the lines of each group must be listed contiguously (as an example, this is useful for expressing a [proof by cases][demo/proofblocks] when the `dag` grader is used for mathematical proofs). Blocks inside a `pl-block-group` element may only depend or be depended on by blocks within the same `pl-block-group`, and `pl-blocks-group`s can be given their own `tag` and `depends` properties so that a block may depend on an entire group, or a group may depend on a block or group.
 - `external`: in this method, the blocks moved to the solution area will be saved in the file `user_code.py`, and the correctness of the code will be checked using the external grader. Depending on the external grader grading code logic, it may be possible to enable or disable partial credit. The attribute `correct` for `pl-answer` can still be used in conjunction with `min-incorrect` and `max-incorrect` for display purposes only, but not used for grading purposes. The attributes `ranking` and `indent` are not allowed for this grading method.
 
 Different ordering of the blocks in the source area defined via the attribute `source-blocks-order`:
@@ -486,11 +505,11 @@ import random
 
 def generate(data):
 
-  # Generate a random whole number
-  x = random.randint(1, 10)
+    # Generate a random whole number
+    x = random.randint(1, 10)
 
-  # Answer to fill in the blank input
-  data["correct_answers"]["int_value"] = x
+    # Answer to fill in the blank input
+    data["correct_answers"]["int_value"] = x
 ```
 
 #### Customizations
@@ -557,21 +576,21 @@ import sympy
 
 def generate(data):
 
-  # Declare math symbols
-  x, y = sympy.symbols('x y')
+    # Declare math symbols
+    x, y = sympy.symbols("x y")
 
-  # Describe the equation
-  z = x + y + 1
+    # Describe the equation
+    z = x + y + 1
 
-  # Answer to fill in the blank input stored as JSON.
-  data['correct_answers']['symbolic_math'] = pl.to_json(z)
+    # Answer to fill in the blank input stored as JSON.
+    data["correct_answers"]["symbolic_math"] = pl.to_json(z)
 ```
 
 #### Customizations
 
 | Attribute                    | Type                | Default  | Description                                                                                                                                                                                                       |
 | ---------------------------- | ------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`               | string              | —        | Variable name to store data in. If the correct answer `ans` is a `sympy` object, you should use `import prairielearn as pl` and `data['correct_answers'][answers-name] = pl.to_json(ans)`.                        |
+| `answers-name`               | string              | —        | Variable name to store data in. If the correct answer `ans` is a `sympy` object, you should use `import prairielearn as pl` and `data["correct_answers"][answers-name] = pl.to_json(ans)`.                        |
 | `weight`                     | integer             | 1        | Weight to use when computing a weighted average score over elements.                                                                                                                                              |
 | `correct-answer`             | float               | special  | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                                                                  |
 | `label`                      | text                | —        | A prefix to display before the input box (e.g., `label="$F =$"`).                                                                                                                                                 |
@@ -604,6 +623,48 @@ Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. 
 
 ---
 
+### `pl-big-o-input` element
+
+Fill in the blank field that allows for asymptotic mathematical input (i.e. big O, big Theta, etc.).
+Gives automated feedback in the case of improper asymptotic input.
+
+**question.html**
+
+```html
+<pl-big-o-input answers-name="ans" variable="n" correct-answer="n**2" size="10"></pl-big-o-input>
+```
+
+#### Customizations
+
+| Attribute        | Type                                                  | Default  | Description                                                                          |
+| ---------------- | ----------------------------------------------------- | -------- | ------------------------------------------------------------------------------------ |
+| `answers-name`   | string                                                | —        | Variable name to store data in.                                                      |
+| `type`           | "big-o", "theta", "omega", "little-o", "little-omega" | "big-o"  | Type of asymptotic answer required.                                                  |
+| `weight`         | integer                                               | 1        | Weight to use when computing a weighted average score over elements.                 |
+| `correct-answer` | string                                                | -        | Correct answer for grading.                                                          |
+| `display`        | "block" or "inline"                                   | "inline" | How to display the input field.                                                      |
+| `variable`       | string                                                | —        | A symbol for use in the symbolic expression. Only one variable supported.            |
+| `size`           | integer                                               | 35       | Size of the input box.                                                               |
+| `show-help-text` | boolean                                               | true     | Show the question mark at the end of the input displaying required input parameters. |
+
+#### Details
+
+Correct answers must be specified as strings with Python syntax (e.g., `n**2`, `2**n`, `n * log(n)`), with
+the same syntax as [`pl-symbolic-input`](#pl-symbolic-input-element). Only one variable is supported.
+
+#### Example implementations
+
+- [element/bigOInput]
+
+#### See also
+
+- [`pl-number-input` for numeric input](#pl-number-input-element)
+- [`pl-integer-input` for integer input](#pl-integer-input-element)
+- [`pl-string-input` for string input](#pl-string-input-element)
+- [`pl-symbolic-input` for mathematical expression input](#pl-symbolic-input-element)
+
+---
+
 ### `pl-string-input` element
 
 Fill in the blank field that allows for **string** value input.
@@ -623,8 +684,8 @@ Fill in the blank field that allows for **string** value input.
 ```python
 def generate(data):
 
-  # Answer to fill in the blank input
-  data["correct_answers"]["string_value"] = "Learn"
+    # Answer to fill in the blank input
+    data["correct_answers"]["string_value"] = "Learn"
 ```
 
 #### Customizations
@@ -680,17 +741,18 @@ Given a list of statements, select a matching option for each entry from a drop-
 
 #### Customizations
 
-| Attribute           | Type                                                       | Default       | Description                                                                                                                                                                                                            |
-| ------------------- | ---------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`      | string                                                     | —             | Variable name to store data in.                                                                                                                                                                                        |
-| `weight`            | integer                                                    | 1             | Weight to use when computing a weighted average score over elements.                                                                                                                                                   |
-| `fixed-order`       | boolean                                                    | False         | Whether or not to display the statements in a fixed order; otherwise they are shuffled. Options are always shuffled.                                                                                                   |
-| `number-statements` | integer                                                    | special       | The number of statements to display. Defaults to all statements.                                                                                                                                                       |
-| `number-options`    | integer                                                    | special       | The number of options to display. Defaults to all options. The `none-of-the-above` option does not count towards this number.                                                                                          |
-| `none-of-the-above` | boolean                                                    | false         | Whether or not to add a "None of the above" to the end of the options.                                                                                                                                                 |
-| `blank`             | boolean                                                    | True          | Option to add blank dropdown entry as the default selection in each drop-down list.                                                                                                                                    |
-| `counter-type`      | "decimal" or "lower-alpha" or "upper-alpha" or "full-text" | "lower-alpha" | The type of counter to use when enumerating the options. If set to "full-text", the column of options will be hidden, and the text of each option will be used in the statements' dropdown lists, instead of counters. |
-| `hide-score-badge`  | boolean                                                    | false         | Whether or not to hide the correct/incorrect score badge next to each graded answer choice.                                                                                                                            |
+| Attribute             | Type                                                       | Default       | Description                                                                                                                                                                                                            |
+| --------------------- | ---------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name`        | string                                                     | —             | Variable name to store data in.                                                                                                                                                                                        |
+| `weight`              | integer                                                    | 1             | Weight to use when computing a weighted average score over elements.                                                                                                                                                   |
+| `fixed-order`         | boolean                                                    | False         | Whether or not to display the statements in a fixed order; otherwise they are shuffled.                                                                                                                                |
+| `fixed-options-order` | boolean                                                    | False         | Whether or not to display the options in a fixed order; otherwise they are shuffled. See the details of `pl-option` below for more information on option ordering.                                                     |
+| `number-statements`   | integer                                                    | special       | The number of statements to display. Defaults to all statements.                                                                                                                                                       |
+| `number-options`      | integer                                                    | special       | The number of options to display. Defaults to all options. The `none-of-the-above` option does not count towards this number.                                                                                          |
+| `none-of-the-above`   | boolean                                                    | false         | Whether or not to add a "None of the above" to the end of the options.                                                                                                                                                 |
+| `blank`               | boolean                                                    | True          | Option to add blank dropdown entry as the default selection in each drop-down list.                                                                                                                                    |
+| `counter-type`        | "decimal" or "lower-alpha" or "upper-alpha" or "full-text" | "lower-alpha" | The type of counter to use when enumerating the options. If set to "full-text", the column of options will be hidden, and the text of each option will be used in the statements' dropdown lists, instead of counters. |
+| `hide-score-badge`    | boolean                                                    | false         | Whether or not to hide the correct/incorrect score badge next to each graded answer choice.                                                                                                                            |
 
 Inside the `pl-matching` element, a series of `pl-statement` and `pl-option` elements specify the questions the student must answer and the options to which they can be matched, respectively. Statements are displayed in the left column, and options in the right.
 
@@ -703,6 +765,13 @@ The content of a `pl-statement` can be any HTML element, including other Prairie
 | `match`   | string | —       | Identifies the option as the correct response for this `pl-statement`. If `match` corresponds to the `name` of any `pl-option` element, the statement will be linked to that `pl-option`, otherwise a new option is implicitly created based on this `match` value. |
 
 The content of a `pl-option` can be any HTML element, including other PrairieLearn elements. `pl-option` elements are optional; options are created by default based on the `match` attribute of each `pl-statement`. Additional `pl-option` elements can be added to serve as distractors (an option that is always incorrect, such as "New York City" in the example above), or to render formatted HTML/PrairieLearn elements instead of plain text (see the last question in the demo problem linked in the "Example implementations" below).
+
+When the `fixed-options-order` feature is used, options are shown in the following order:
+
+1. Any explicitly-defined `pl-option` elements are shown first, in the order they are declared.
+2. Any implicitly-defined options defined by a `pl-statement` `match` attribute are shown next, in the order they are declared.
+
+It is recommended to explicitly define `pl-option` elements when using `fixed-options-order` to have complete certainty on the order they will be shown.
 
 A `pl-option` must be specified with these attributes:
 
@@ -740,11 +809,11 @@ import numpy as np
 
 def generate(data):
 
-  # Generate a random 3x3 matrix
-  mat = np.random.random((3, 3))
+    # Generate a random 3x3 matrix
+    mat = np.random.random((3, 3))
 
-  # Answer to each matrix entry converted to JSON
-  data['correct_answers']['matrixA'] = pl.to_json(mat)
+    # Answer to each matrix entry converted to JSON
+    data["correct_answers"]["matrixA"] = pl.to_json(mat)
 ```
 
 #### Customizations
@@ -803,11 +872,11 @@ import prairielearn as pl
 import numpy as np
 
 def generate(data):
-  # Randomly generate a 2x2 matrix
-  matrixB = np.random.random((2, 2))
+    # Randomly generate a 2x2 matrix
+    matrixB = np.random.random((2, 2))
 
-  # Answer exported to question.
-  data['correct_answers']['matrixB'] = pl.to_json(matrixB)
+    # Answer exported to question.
+    data["correct_answers"]["matrixB"] = pl.to_json(matrixB)
 ```
 
 #### Customizations
@@ -821,7 +890,7 @@ def generate(data):
 | `rtol`           | number                          | 1e-2     | Relative tolerance for `comparison="relabs"`.                                                                                                                                                                  |
 | `atol`           | number                          | 1e-8     | Absolute tolerance for `comparison="relabs"`.                                                                                                                                                                  |
 | `digits`         | integer                         | 2        | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.                                                                                                                      |
-| `allow-complex`  | boolean                         | false    | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answers'][answers-name] = pl.to_json(ans)`. |
+| `allow-complex`  | boolean                         | false    | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data["correct_answers"][answers-name] = pl.to_json(ans)`. |
 | `show-help-text` | boolean                         | true     | Show the question mark at the end of the input displaying required input parameters.                                                                                                                           |
 
 #### Details
@@ -873,13 +942,15 @@ Provides an in-browser rich text editor, aimed mostly at manual grading essay-ty
 
 #### Customizations
 
-| Attribute          | Type   | Default            | description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| ------------------ | ------ | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `file-name`        | string | -                  | The name of the output file; will be used to store the student's answer in the `_files` submitted answer                                                                                                                                                                                                                                                                                                                                              |
-| `quill-theme`      | string | `snow`             | Specifies a Quill editor theme; the most common themes are `snow` (which uses a default toolbar) or `bubble` (which hides the default toolbar, showing formatting options when text is selected). See [the Quill documentation](https://quilljs.com/docs/themes/) for more information about additional themes.                                                                                                                                       |
-| `source-file-name` | string | None               | Name of the source file with existing HTML content to be displayed in the editor.                                                                                                                                                                                                                                                                                                                                                                     |
-| `directory`        | string | special            | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `clientFilesCourse` or `serverFilesCourse`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory. |
-| `placeholder`      | string | "Your answer here" | Text to be shown in the editor as a placeholder when there is no student input.                                                                                                                                                                                                                                                                                                                                                                       |
+| Attribute            | Type    | Default            | description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| -------------------- | ------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `file-name`          | string  | -                  | The name of the output file; will be used to store the student's answer in the `_files` submitted answer                                                                                                                                                                                                                                                                                                                                              |
+| `quill-theme`        | string  | `snow`             | Specifies a Quill editor theme; the most common themes are `snow` (which uses a default toolbar) or `bubble` (which hides the default toolbar, showing formatting options when text is selected). See [the Quill documentation](https://quilljs.com/docs/themes/) for more information about additional themes.                                                                                                                                       |
+| `source-file-name`   | string  | None               | Name of the source file with existing content to be displayed in the editor. The format of this file must match the format specified in the `format` attribute.                                                                                                                                                                                                                                                                                       |
+| `directory`          | string  | special            | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `clientFilesCourse` or `serverFilesCourse`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory. |
+| `placeholder`        | string  | "Your answer here" | Text to be shown in the editor as a placeholder when there is no student input.                                                                                                                                                                                                                                                                                                                                                                       |
+| `format`             | string  | `html`             | Format used to save the student's response. The element supports `html` and `markdown` formats. This format also affects how the source file name or inner HTML is interpreted.                                                                                                                                                                                                                                                                       |
+| `markdown-shortcuts` | boolean | `true`             | Whether or not the editor accepts shortcuts based on markdown format (e.g., typing `_word_` causes the word to become italic).                                                                                                                                                                                                                                                                                                                        |
 
 #### Example implementations
 
@@ -921,6 +992,7 @@ def fib(n):
 | `file-name`          | string  | -                  | The name of this file; will be used to store this file in the `_files` submitted answer                                                                                                                                                                                                                                                                                                                                                               |
 | `ace-mode`           | string  | None               | Specifies an Ace editor mode to enable things like intelligent code indenting and syntax highlighting; see the full list of modes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/mode).                                                                                                                                                                                                                                                    |
 | `ace-theme`          | string  | `ace/theme/chrome` | Specifies an Ace editor theme; see the full list of themes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/theme).                                                                                                                                                                                                                                                                                                                          |
+| `font-size`          | string  | `12px`             | Sets the font size for the Ace editor. Specified as a CSS-style size (e.g., `1rem`, `110%`, `16pt`, or `20px`).                                                                                                                                                                                                                                                                                                                                       |
 | `source-file-name`   | string  | None               | Name of the source file with existing code to be displayed in the browser text editor (instead of writing the existing code between the element tags as illustrated in the above code snippet).                                                                                                                                                                                                                                                       |
 | `directory`          | string  | special            | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `clientFilesCourse` or `serverFilesCourse`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory. |
 | `min-lines`          | integer | None               | Minimum number of lines the editor should show initially.                                                                                                                                                                                                                                                                                                                                                                                             |
@@ -945,9 +1017,37 @@ The `focus` attribute defaults to `"false"`. Setting this to true will cause the
 #### See also
 
 - [`pl-file-upload` to receive files as a submission](#pl-file-upload-element)
+- [`pl-file-preview` to display previously submitted files](#pl-file-preview)
 - [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results)
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 - [`pl-string-input` for receiving a single string value](#pl-string-input-element)
+
+---
+
+### `pl-file-preview` element
+
+Provides an in-browser preview of pure-text or image files submitted by a student as part of an external grading system.
+Does not support other file types (e.g., PDF). Shows the submitted file in the corresponding submission panel.
+Used in conjunction with submission elements like `pl-file-editor`, `pl-file-upload`, and `pl-rich-text-editor`.
+Commonly appears in the submission panel with companion `pl-external-grader-results` element.
+
+#### Sample element
+
+```html
+<pl-file-preview></pl-file-preview>
+```
+
+#### Example implementations
+
+- [element/fileEditor]
+- [demo/autograder/codeEditor]
+
+#### See also
+
+- [`pl-file-editor` to provide an in-browser code environment](#pl-file-editor-element)
+- [`pl-file-upload` to receive files as a submission](#pl-file-upload-element)
+- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results)
+- [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 
 ---
 
@@ -1018,7 +1118,7 @@ This element displays a 3D scene with objects that the student can (optionally) 
 | `body-canrotate`                | boolean | true      | If you can rotate the body in the UI.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `camera-canmove`                | boolean | true      | If you can move the camera (i.e., change the view) in the UI.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `body-pose-format`              | string  | rpy       | Determines how `body-orientation` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.                                                                                                                                                                                                                                                                                                                                                            |
-| `answer-pose-format`            | string  | rpy       | Determines how the answer `data['correct_answers'][answer-name]` is interpreted. If `homogeneous`, then the answer must be a 4x4 homogeneous transformation matrix `[[...], [...], [...], [...]]`. Otherwise, the answer must be a list with two elements. The first element must describe position as `[x, y, z]`. The second element must describe orientation, interpreted based on `answer-pose-format`. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle. |
+| `answer-pose-format`            | string  | rpy       | Determines how the answer `data["correct_answers"][answer-name]` is interpreted. If `homogeneous`, then the answer must be a 4x4 homogeneous transformation matrix `[[...], [...], [...], [...]]`. Otherwise, the answer must be a list with two elements. The first element must describe position as `[x, y, z]`. The second element must describe orientation, interpreted based on `answer-pose-format`. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle. |
 | `text-pose-format`              | string  | matrix    | Determines how the pose of the body is displayed as text. If `matrix` then position is `[x, y, z]` and orientation is a 3x3 rotation matrix. If `quaternion` then position is `[x, y, z]` and orientation is `[x, y, z, w]`. If `homogeneous` then pose is a 4x4 homogeneous transformation matrix.                                                                                                                                                                                                                                                                                                                                                      |
 | `show-pose-in-question`         | boolean | true      | If the current pose of the body is displayed in the question panel.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `show-pose-in-correct-answer`   | boolean | true      | If the current pose of the body is displayed in the correct answer panel.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
@@ -1133,8 +1233,8 @@ Displays the value of a Python variable, with formatted display of Pandas DataFr
 import prairielearn as pl
 
 def generate(data):
-  data_dictionary = { 'a': 1, 'b': 2, 'c': 3 }
-  data['params']['variable'] = pl.to_json(data_dictionary)
+    data_dictionary = { "a": 1, "b": 2, "c": 3 }
+    data["params"]["variable"] = pl.to_json(data_dictionary)
 ```
 
 ---
@@ -1156,16 +1256,16 @@ import prairielearn as pl
 import pandas as pd
 
 def generate(data):
-  d = {'col1': [1, 2], 'col2': [3, 4]}
-  df = pd.DataFrame(data=d)
-  data['params']['df'] = pl.to_json(df)
+    d = {"col1": [1, 2], "col2": [3, 4]}
+    df = pd.DataFrame(data=d)
+    data["params"]["df"] = pl.to_json(df)
 ```
 
 #### Customizations
 
 | Attribute         | Type    | Default | Description                                                                                                                                                 |
 | ----------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `params-name`     | string  | —       | The name of the key in `data['params']` to get a value from                                                                                                 |
+| `params-name`     | string  | —       | The name of the key in `data["params"]` to get a value from                                                                                                 |
 | `text`            | boolean | false   | Force the variable to be displayed in a textual format, as given by `repr(var)`. By default, special types like DataFrames will be rendered as HTML tables. |
 | `prefix`          | string  | (empty) | Any prefix to append to the output in `text` mode.                                                                                                          |
 | `suffix`          | string  | (empty) | Any suffix to append to the output in `text` mode.                                                                                                          |
@@ -1217,14 +1317,14 @@ Display a statically or dynamically generated image.
 
 #### Dynamically generated figures
 
-If `type="dynamic"`, then the contents of the image file must be returned by a function `file()` that is located either in element code or in `server.py`. The contents must be a string (with utf-8 encoding), a bytes-like object, or a file-like object. The filename will be available to this function as `data['filename']`. For example, to generate the `figure.png` for the dynamic `pl-figure` above, this code might appear in `server.py` to generate a "fake" `figure.png`:
+If `type="dynamic"`, then the contents of the image file must be returned by a function `file()` that is located either in element code or in `server.py`. The contents must be a string (with utf-8 encoding), a bytes-like object, or a file-like object. The filename will be available to this function as `data["filename"]`. For example, to generate the `figure.png` for the dynamic `pl-figure` above, this code might appear in `server.py` to generate a "fake" `figure.png`:
 
 ```python
 def file(data):
-    if data['filename']=='figure.png':
+    if data["filename"]=="figure.png":
         plt.plot([1,2,3],[3,4,-2])
         buf = io.BytesIO()
-        plt.savefig(buf,format='png')
+        plt.savefig(buf,format="png")
         return buf
 ```
 
@@ -1278,12 +1378,12 @@ Provide a download link to a static or dynamically generated file.
 
 #### Details
 
-If `type="dynamic"`, then the contents of the file must be returned by a function `file()` that is located either in element code or in `server.py`. The contents must be a string (with utf-8 encoding), a bytes-like object, or a file-like object. The filename will be available to this function as `data['filename']`. For example, this code might appear in `server.py` to generate a file called `data.txt`:
+If `type="dynamic"`, then the contents of the file must be returned by a function `file()` that is located either in element code or in `server.py`. The contents must be a string (with utf-8 encoding), a bytes-like object, or a file-like object. The filename will be available to this function as `data["filename"]`. For example, this code might appear in `server.py` to generate a file called `data.txt`:
 
 ```python
 def file(data):
-    if data['filename']=='data.txt':
-        return 'This data is generated by code.'
+    if data["filename"]=="data.txt":
+        return "This data is generated by code."
 ```
 
 If `file()` does not return anything, it will be treated as if `file()` returned the empty string.
@@ -1325,15 +1425,15 @@ import numpy as np
 
 def generate(data):
 
-  # Create fixed matrix
-  matrixC = np.matrix('5 6; 7 8')
-  matrixD = np.matrix('-1 4; 3 2')
-  # Random matrices can be generated with:
-  # mat = np.random.random((2, 2))
+    # Create fixed matrix
+    matrixC = np.matrix("5 6; 7 8")
+    matrixD = np.matrix("-1 4; 3 2")
+    # Random matrices can be generated with:
+    # mat = np.random.random((2, 2))
 
-  # Export each matrix as a JSON object for the question view.
-  data['params']['matrixC'] = pl.to_json(matrixC)
-  data['params']['matrixD'] = pl.to_json(matrixD)
+    # Export each matrix as a JSON object for the question view.
+    data["params"]["matrixC"] = pl.to_json(matrixC)
+    data["params"]["matrixD"] = pl.to_json(matrixD)
 ```
 
 #### Customizations
@@ -1353,7 +1453,7 @@ Attributes for `<variable>` (one of these for each variable to display):
 
 | Attribute     | Type    | Default | Description                                                     |
 | ------------- | ------- | ------- | --------------------------------------------------------------- |
-| `params-name` | string  | —       | Name of variable in `data['params']` to display.                |
+| `params-name` | string  | —       | Name of variable in `data["params"]` to display.                |
 | `comment`     | string  | —       | Comment to add after the displayed variable.                    |
 | `digits`      | integer | —       | Number of digits to display after the decimal for the variable. |
 
@@ -1392,7 +1492,7 @@ A = c(1.23, 4.56) # vector
 A = matrix(c(1.23, 4.56, 8.90, 1.23), nrow = 2, ncol = 2, byrow = TRUE) # matrix
 ```
 
-If a variable `v` is a complex object, you should use `import prairielearn as pl` and `data['params'][params-name] = pl.to_json(v)`.
+If a variable `v` is a complex object, you should use `import prairielearn as pl` and `data["params"][params-name] = pl.to_json(v)`.
 
 #### Example implementations
 
@@ -1430,24 +1530,24 @@ import numpy as np
 
 def generate(data):
 
-  # Construct a matrix
-  mat = np.matrix('1 2; 3 4')
+    # Construct a matrix
+    mat = np.matrix("1 2; 3 4")
 
-  # Export matrix to be displayed in question.html
-  data['params']['matrixC'] = pl.to_json(mat)
+    # Export matrix to be displayed in question.html
+    data["params"]["matrixC"] = pl.to_json(mat)
 ```
 
 #### Customizations
 
 | Attribute           | Type    | Default | Description                                                                                                                                                                                                                        |
 | ------------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `params-name`       | string  | —       | Name of variable in `data['params']` to display.                                                                                                                                                                                   |
+| `params-name`       | string  | —       | Name of variable in `data["params"]` to display.                                                                                                                                                                                   |
 | `presentation-type` | string  | `'f'`   | Number display format. If `presentation-type` is `'sigfig'`, each number is formatted using the `to_precision` module to `digits` significant figures. Otherwise, each number is formatted as `'{:.{digits}{presentation-type}}'`. |
 | `digits`            | integer | `"2"`   | Number of digits to display according to the choice of `presentation-type`                                                                                                                                                         |
 
 #### Details
 
-Depending on whether `data['params']` contains either a scalar or 2D numpy array of numbers,
+Depending on whether `data["params"]` contains either a scalar or 2D numpy array of numbers,
 one of the following will be returned.
 
 - **scalar**
@@ -1520,10 +1620,10 @@ import prairielearn as pl
 import numpy as np
 
 def generate(data):
-  mat = np.random.random((3, 3))
-  mat = mat / np.linalg.norm(mat, 1, axis=0)
-  data['params']['labels'] = pl.to_json(['A', 'B', 'C'])
-  data['params']['matrix'] = pl.to_json(mat)
+    mat = np.random.random((3, 3))
+    mat = mat / np.linalg.norm(mat, 1, axis=0)
+    data["params"]["labels"] = pl.to_json(["A", "B", "C"])
+    data["params"]["matrix"] = pl.to_json(mat)
 ```
 
 #### Customizations
@@ -1536,6 +1636,8 @@ def generate(data):
 | `params-type`               | string  | `adjacency-matrix` | How to interpret the input data in `params-name-matrix`. By default, only `adjacency-matrix` exists but custom types can be added through extensions.                                                                                                                   |
 | `weights`                   | boolean | `None`             | When using an adjacency matrix, whether or not to show the edge weights. By default will automatically show weights for stochastic matrices (when they are not binary `0`/`1`).                                                                                         |
 | `weights-digits`            | integer | `"2"`              | When using an adjacency matrix, how many digits to show for the weights.                                                                                                                                                                                                |
+| `negative-weights`          | boolean | false              | Whether to recognize negative weights in an adjacency matrix. If set to false, then all weights at most 0 are ignored (not counted as an edge). If set to true, then all weights that are not `None` are recognized.                                                    |
+| `directed`                  | boolean | true               | Whether to treat edges in an adjacency matrix as directed or undirected. If set to false, then edges will be rendered as undirected. _The input adjacency matrix must be symmetric if this is set to false._                                                            |
 | `weights-presentation-type` | string  | `'f'`              | Number display format for the weights when using an adjacency matrix. If presentation-type is 'sigfig', each number is formatted using the to_precision module to digits significant figures. Otherwise, each number is formatted as `{:.{digits}{presentation-type}}`. |
 
 #### Example implementations
@@ -1647,7 +1749,7 @@ An overlay is pre-defined as a "overlay area" with a static size. By default, el
 
 ### `pl-external-grader-variables` element
 
-Displays variables that are given to the student, or expected for the student to define in externally-graded questions. The list of variables should be stored in `data['params']` and has the following format:
+Displays variables that are given to the student, or expected for the student to define in externally-graded questions. The list of variables should be stored in `data["params"]` and has the following format:
 
 ```python
 data["params"]["names_for_user"] = [
@@ -1691,7 +1793,7 @@ def generate(data):
 
 | Attribute     | Type   | Default | Description                                                                                         |
 | ------------- | ------ | ------- | --------------------------------------------------------------------------------------------------- |
-| `params-name` | string | `None`  | Name of variable specification in `data['params']` to display, the format for which is given above. |
+| `params-name` | string | `None`  | Name of variable specification in `data["params"]` to display, the format for which is given above. |
 
 #### Example implementations
 
@@ -1751,12 +1853,12 @@ Displays the contents of question directions.
 <pl-question-panel> This is question-panel text. </pl-question-panel>
 ```
 
-### Details
+#### Details
 
 Contents are only shown during question input portion. When a student
 either makes a submission or receives the correct answer, the information
 between these tags is hidden. If content exists outside of a question panel,
-then it will be displayed alongside or answer.
+then it will be displayed alongside the answer.
 
 #### Example implementations
 
@@ -1875,6 +1977,119 @@ element contents only in a specific panel.
 
 ---
 
+### `pl-hidden-hints` element
+
+Display progressive hints that become accessible as the number of student submissions increases for the current variant.
+Hints are only open on page load when they are first revealed (when first reaching the desired submission count).
+Otherwise hints start closed and must be opened by the user. The submission counter is reset when new variants are
+generated. Note that **this element does not reveal new hints across variants.**
+
+Best used in situations where there is a penalty for more submissions to a given variant. This prevents students from
+spamming incorrect submissions to reveal all hints right away.
+
+#### Sample element
+
+```html
+<pl-hidden-hints>
+  <pl-hint> This is a hint that will be accessible immediately. </pl-hint>
+
+  <pl-hint show-after-submission="3">
+    This is a hint that will be accessible after three incorrect submissions for the current
+    variant.
+  </pl-hint>
+
+  <pl-hint show-after-submission="5">
+    This is a hint that will be accessible after five incorrect submissions for the current variant.
+  </pl-hint>
+</pl-hidden-hints>
+```
+
+#### Customizations
+
+For the inner `pl-hint` element:
+
+| Attribute               | Type | Default | Description                                                                                                                                                                                                 |
+| ----------------------- | ---- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `show-after-submission` | int  | -       | Number of submissions on the current variant needed before the hint is accessible. If not set, hint is always accessible. **Should only be set for questions that allow multiple submissions per variant.** |
+
+#### Details
+
+Add hints to a variant that are revealed with more submissions using the `show-after-submission` attribute. By default, hints without
+`show-after-submission` set are always shown. Hints with the same `show-after-submission` appear in the order they're written in the
+question HTML.
+
+#### Example implementations
+
+- [element/hiddenHints]
+
+#### See also
+
+- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
+- [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
+- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
+
+---
+
+### `pl-hide-in-manual-grading` element
+
+Hide the contents so that it is **not** displayed to graders in the manual grading page.
+
+#### Sample element
+
+```html
+<pl-hide-in-manual-grading>
+  This text will be shown to students, but not to graders.
+</pl-hide-in-manual-grading>
+```
+
+#### Details
+
+This element is typically used to abbreviate the question description and allow graders to focus on the actual answers during grading. It is the reverse of [the `pl-manual-grading-only` element](#pl-manual-grading-only-element), which explicitly shows content only during grading.
+
+#### Example implementations
+
+- [demo/manualGrade/codeUpload]
+
+#### See also
+
+- [`pl-manual-grading-only` to show content only during manual grading.](#pl-manual-grading-only-element)
+- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
+- [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
+- [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
+- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
+
+---
+
+### `pl-manual-grading-only` element
+
+Hide the contents so that it is **only** displayed to graders in the manual grading page.
+
+#### Sample element
+
+```html
+<pl-manual-grading-only>
+  This text will be shown to graders, but not to students.
+</pl-manual-grading-only>
+```
+
+#### Details
+
+This element is typically used to provide graders with additional information that may not be presented to students. Examples may include grading instructions, sample answers, acceptable values for individual results, random parameters used in the question generation, or pre-computed values calculated in explicit `parse` functions. It is the reverse of [the `pl-hide-in-manual-grading` element](#pl-hide-in-manual-grading-element), which explicitly hides content during grading.
+
+#### Example implementations
+
+- [demo/manualGrade/codeUpload]
+
+#### See also
+
+- [`pl-hide-in-manual-grading` to hide content during manual grading.](#pl-hide-in-manual-grading-element)
+- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
+- [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
+- [`pl-answer-panel` for displaying the question's solution.](#pl-answer-panel-element)
+- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
+
+---
+
 ### `pl-external-grader-results` element
 
 Displays results from externally-graded questions.
@@ -1942,7 +2157,7 @@ new questions.
   param-names="r1,r2,isHorizontal"
   width="900"
   height="600"
-/>
+></pl-prairiedraw-figure>
 ```
 
 #### Customizations
@@ -2003,6 +2218,8 @@ The provided `script-name` corresponds to a file located within the director for
 <!-- Element option overview questions -->
 
 [element/checkbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/checkbox
+[element/bigoinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/bigOInput
+[element/hiddenhints]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/hiddenHints
 [element/code]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/code
 [element/drawinggallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingGallery
 [element/codedocumentation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/codeDocumentation

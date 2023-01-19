@@ -1,9 +1,8 @@
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
-const tracing = require('./lib/tracing');
+const opentelemetry = require('@prairielearn/opentelemetry');
 
 const ERR = require('async-stacktrace');
-const util = require('util');
 const fs = require('fs');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -22,9 +21,11 @@ const onFinished = require('on-finished');
 const { v4: uuidv4 } = require('uuid');
 const argv = require('yargs-parser')(process.argv.slice(2));
 const multer = require('multer');
-const filesize = require('filesize');
+const { filesize } = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
+const Sentry = require('@prairielearn/sentry');
+const compiledAssets = require('@prairielearn/compiled-assets');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -36,6 +37,7 @@ const externalGradingSocket = require('./lib/externalGradingSocket');
 const workspace = require('./lib/workspace');
 const sqldb = require('./prairielib/lib/sql-db');
 const migrations = require('./prairielib/lib/migrations');
+const error = require('./prairielib/error');
 const sprocs = require('./sprocs');
 const news_items = require('./news_items');
 const cron = require('./cron');
@@ -45,11 +47,15 @@ const serverJobs = require('./lib/server-jobs');
 const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
 const { LocalCache } = require('./lib/local-cache');
-const workers = require('./lib/workers');
+const codeCaller = require('./lib/code-caller');
 const assets = require('./lib/assets');
 const namedLocks = require('./lib/named-locks');
+const nodeMetrics = require('./lib/node-metrics');
+const { isEnterprise } = require('./lib/license');
+const { enrichSentryScope } = require('./lib/sentry');
+const lifecycleHooks = require('./lib/lifecycle-hooks');
 
-process.on('warning', (e) => console.warn(e)); // eslint-disable-line no-console
+process.on('warning', (e) => console.warn(e));
 
 // If there is only one argument, legacy it into the config option
 if (argv['_'].length === 1) {
@@ -66,7 +72,7 @@ if ('h' in argv || 'help' in argv) {
     --exit                              Run all the initialization and exit
 `;
 
-  console.log(msg); // eslint-disable-line no-console
+  console.log(msg);
   process.exit(0);
 }
 
@@ -79,7 +85,9 @@ module.exports.initExpress = function () {
   app.set('views', path.join(__dirname, 'pages'));
   app.set('view engine', 'ejs');
   app.set('trust proxy', config.trustProxy);
-  config.devMode = app.get('env') === 'development';
+
+  // This should come first so that we get instrumentation on all our requests.
+  app.use(Sentry.Handlers.requestHandler());
 
   // Set res.locals variables first, so they will be available on
   // all pages including the error page (which we could jump to at
@@ -87,6 +95,7 @@ module.exports.initExpress = function () {
   app.use((req, res, next) => {
     res.locals.asset_path = assets.assetPath;
     res.locals.node_modules_asset_path = assets.nodeModulesAssetPath;
+    res.locals.compiled_script_tag = compiledAssets.compiledScriptTag;
     next();
   });
   app.use(function (req, res, next) {
@@ -257,20 +266,22 @@ module.exports.initExpress = function () {
     logLevel: 'silent',
     logProvider: (_provider) => logger,
     router: async (req) => {
-      try {
-        const match = req.url.match(/^\/pl\/workspace\/([0-9]+)\/container\//);
-        if (!match) throw new Error(`Could not match URL: ${req.url}`);
-        const workspace_id = match[1];
-        const result = await sqldb.queryOneRowAsync(
-          `SELECT hostname FROM workspaces WHERE id = $workspace_id;`,
-          { workspace_id }
-        );
-        const url = `http://${result.rows[0].hostname}/`;
-        return url;
-      } catch (err) {
-        logger.error(`Error in router for url=${req.url}: ${err}`);
-        return 'not-matched';
+      const match = req.url.match(/^\/pl\/workspace\/([0-9]+)\/container\//);
+      if (!match) throw new Error(`Could not match URL: ${req.url}`);
+
+      const workspace_id = match[1];
+      const result = await sqldb.queryZeroOrOneRowAsync(
+        "SELECT hostname FROM workspaces WHERE id = $workspace_id AND state = 'running';",
+        { workspace_id }
+      );
+
+      if (result.rows.length === 0) {
+        // If updating this message, also update the message our Sentry
+        // `beforeSend` handler.
+        throw error.make(404, 'Workspace is not running');
       }
+
+      return `http://${result.rows[0].hostname}/`;
     },
     onProxyReq: (proxyReq) => {
       stripSensitiveCookies(proxyReq);
@@ -282,12 +293,13 @@ module.exports.initExpress = function () {
       logger.error(`Error proxying workspace request: ${err}`, {
         err,
         url: req.url,
+        originalUrl: req.url,
       });
-      /* Check to make sure we weren't already in the middle of sending a response
-               before replying with an error 500 */
+      // Check to make sure we weren't already in the middle of sending a
+      // response before replying with an error 500
       if (res && !res.headersSent) {
         if (res.status && res.send) {
-          res.status(500).send('Error proxying workspace request');
+          res.status(err.status ?? 500).send('Error proxying workspace request');
         }
       }
     },
@@ -315,9 +327,10 @@ module.exports.initExpress = function () {
   app.use('/pl/workspace/:workspace_id/container', [
     cookieParser(),
     (req, res, next) => {
+      // Needed for workspaceAuthRouter and `selectAndValidateWorkspace` middleware.
       res.locals.workspace_id = req.params.workspace_id;
       next();
-    }, // needed for workspaceAuthRouter
+    },
     workspaceAuthRouter,
     workspaceProxy,
   ]);
@@ -352,6 +365,8 @@ module.exports.initExpress = function () {
   // This route is kept around for legacy reasons - new code should prefer the
   // "cacheable" route above.
   app.use(express.static(path.join(__dirname, 'public')));
+
+  app.use('/build/', compiledAssets.handler());
 
   // To allow for more aggressive caching of files served from node_modules/,
   // we insert a hash of the module version into the resource path. This allows
@@ -413,15 +428,31 @@ module.exports.initExpress = function () {
   app.use(require('./middlewares/effectiveRequestChanged'));
   app.use('/pl/oauth2login', require('./pages/authLoginOAuth2/authLoginOAuth2'));
   app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOAuth2'));
-  app.use('/pl/shibcallback', require('./pages/authCallbackShib/authCallbackShib'));
-  app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
-  app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
+  app.use(/\/pl\/shibcallback/, require('./pages/authCallbackShib/authCallbackShib'));
+
+  if (isEnterprise()) {
+    if (config.hasAzure) {
+      app.use('/pl/azure_login', require('./ee/auth/azure/login'));
+      app.use('/pl/azure_callback', require('./ee/auth/azure/callback'));
+    }
+
+    app.use('/pl/auth/institution/:institution_id/saml', require('./ee/auth/saml/router'));
+  }
+
   app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
   app.use('/pl/login', require('./pages/authLogin/authLogin'));
   // disable SEB until we can fix the mcrypt issues
   // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
   app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
   app.use('/pl/api', require('./middlewares/authnToken')); // authn for the API, set res.locals.authn_user
+
+  if (isEnterprise()) {
+    app.use('/pl/prairietest/auth', require('./ee/auth/prairietest'));
+  }
+
+  // Must come before CSRF middleware; we do our own signature verification here.
+  app.use('/pl/webhooks/terminate', require('./webhooks/terminate'));
+
   app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
   app.use(require('./middlewares/logRequest'));
 
@@ -526,8 +557,10 @@ module.exports.initExpress = function () {
       next();
     },
     require('./middlewares/authzWorkspace'),
-    require('./pages/workspace/workspace'),
   ]);
+  app.use('/pl/workspace/:workspace_id', require('./pages/workspace/workspace'));
+  app.use('/pl/workspace/:workspace_id/logs', require('./pages/workspaceLogs/workspaceLogs'));
+
   // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
   if (config.devMode) {
     app.use('/pl/loadFromDisk', [
@@ -714,6 +747,10 @@ module.exports.initExpress = function () {
   // API ///////////////////////////////////////////////////////////////
 
   app.use('/pl/api/v1', require('./api/v1'));
+
+  if (isEnterprise()) {
+    app.use('/pl/institution/:institution_id/admin', require('./ee/institution/admin'));
+  }
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
@@ -1269,13 +1306,6 @@ module.exports.initExpress = function () {
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
     require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
   ]);
-  app.use('/pl/course_instance/:course_instance_id/report_cheating', [
-    function (req, res, next) {
-      res.locals.navSubPage = 'report_cheating';
-      next();
-    },
-    require('./pages/studentReportCheating/studentReportCheating'),
-  ]);
   if (config.devMode) {
     app.use(
       '/pl/course_instance/:course_instance_id/loadFromDisk',
@@ -1587,7 +1617,6 @@ module.exports.initExpress = function () {
   app.get('/pl/webhooks/ping', function (req, res, _next) {
     res.send('.');
   });
-  app.use('/pl/webhooks/grading', require('./webhooks/grading/grading'));
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
@@ -1598,6 +1627,54 @@ module.exports.initExpress = function () {
   app.use(require('./middlewares/notFound'));
 
   app.use(require('./middlewares/redirectEffectiveAccessDenied'));
+
+  /**
+   * Attempts to extract a numeric status code from a Postgres error object.
+   * The convention we use is to use a `ERRCODE` value of `ST###`, where ###
+   * is the three-digit HTTP status code.
+   *
+   * For example, the following exception would set a 404 status code:
+   *
+   * RAISE EXCEPTION 'Entity not found' USING ERRCODE = 'ST404';
+   *
+   * @param {any} err
+   * @returns {number | null} The extracted HTTP status code
+   */
+  function maybeGetStatusCodeFromSqlError(err) {
+    const rawCode = err?.data?.sqlError?.code;
+    if (!rawCode?.startsWith('ST')) return null;
+
+    const parsedCode = Number(rawCode.toString().substring(2));
+    if (Number.isNaN(parsedCode)) return null;
+
+    return parsedCode;
+  }
+
+  // This should come first so that both Sentry and our own error page can
+  // read the error ID and any status code.
+  app.use((err, req, res, next) => {
+    const _ = require('lodash');
+    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+    res.locals.error_id = _.times(12, () => _.sample(chars)).join('');
+
+    err.status = err.status ?? maybeGetStatusCodeFromSqlError(err) ?? 500;
+
+    next(err);
+  });
+
+  // We need to add our own handler here to ensure that we add the appropriate
+  // information to the current Sentry scope.
+  //
+  // Note that this is typically done by our `logResponse` middleware, but
+  // that doesn't run soon enough for the Sentry error handler to pick up.
+  app.use((err, req, res, next) => {
+    enrichSentryScope(req, res);
+    next(err);
+  });
+  app.use(Sentry.Handlers.errorHandler());
+
+  // Note that the Sentry error handler should come before our error page.
   app.use(require('./pages/error/error'));
 
   return app;
@@ -1608,6 +1685,7 @@ module.exports.initExpress = function () {
 //////////////////////////////////////////////////////////////////////
 // Server startup ////////////////////////////////////////////////////
 
+/** @type {import('http').Server | import('https').Server} */
 var server;
 
 module.exports.startServer = async () => {
@@ -1619,23 +1697,43 @@ module.exports.startServer = async () => {
     const ca = [await fs.promises.readFile(config.sslCAFile)];
     var options = { key, cert, ca };
     server = https.createServer(options, app);
-    server.listen(config.serverPort);
-    server.timeout = 600000; // 10 minutes
     logger.verbose('server listening to HTTPS on port ' + config.serverPort);
   } else if (config.serverType === 'http') {
     server = http.createServer(app);
-    server.listen(config.serverPort);
-    server.timeout = 600000; // 10 minutes
     logger.verbose('server listening to HTTP on port ' + config.serverPort);
   } else {
     throw new Error('unknown serverType: ' + config.serverType);
   }
+
+  server.timeout = config.serverTimeout;
+  server.keepAliveTimeout = config.serverKeepAliveTimeout;
+  server.listen(config.serverPort);
+
+  // Wait for the server to either start successfully or error out.
+  await new Promise((resolve, reject) => {
+    let done = false;
+
+    server.on('error', (err) => {
+      if (!done) {
+        done = true;
+        reject(err);
+      }
+    });
+
+    server.on('listening', () => {
+      if (!done) {
+        done = true;
+        resolve();
+      }
+    });
+  });
 
   return server;
 };
 
 module.exports.stopServer = function (callback) {
   if (!server) return callback(new Error('cannot stop an undefined server'));
+  if (!server.listening) return callback(null);
   server.close(function (err) {
     if (ERR(err, callback)) return;
     callback(null);
@@ -1676,10 +1774,6 @@ if (config.startServer) {
           configFilename = argv['config'];
         }
 
-        // Before we start executing any real code, ensure that tracing has
-        // been configured correctly.
-        await tracing.waitForStart();
-
         // Load config values from AWS as early as possible so we can use them
         // to set values for e.g. the database connection
         await config.loadConfigAsync(configFilename);
@@ -1688,7 +1782,34 @@ if (config.startServer) {
 
         // This should be done as soon as we load our config so that we can
         // start exporting spans.
-        await tracing.init(config);
+        await opentelemetry.init({
+          ...config,
+          serviceName: 'prairielearn',
+        });
+
+        // Same with Sentry configuration.
+        if (config.sentryDsn) {
+          await Sentry.init({
+            dsn: config.sentryDsn,
+            environment: config.sentryEnvironment,
+            beforeSend: (event) => {
+              // This will be necessary until we can consume the following change:
+              // https://github.com/chimurai/http-proxy-middleware/pull/823
+              //
+              // The following error message should match the error that's thrown
+              // from the `router` function in our `http-proxy-middleware` config.
+              if (
+                event.exception?.values?.some(
+                  (value) => value.type === 'Error' && value.value === 'Workspace is not running'
+                )
+              ) {
+                return null;
+              }
+
+              return event;
+            },
+          });
+        }
 
         if (config.logFilename) {
           logger.addFileLogging(config.logFilename);
@@ -1701,7 +1822,7 @@ if (config.startServer) {
             (time, stack) => {
               const msg = `BLOCKED-AT: Blocked for ${time}ms`;
               logger.verbose(msg, { time, stack });
-              console.log(msg + '\n' + stack.join('\n')); // eslint-disable-line no-console
+              console.log(msg + '\n' + stack.join('\n'));
             },
             { threshold: config.blockedWarnThresholdMS }
           ); // threshold in milliseconds
@@ -1710,48 +1831,23 @@ if (config.startServer) {
             (time) => {
               const msg = `BLOCKED: Blocked for ${time}ms (set config.blockedAtWarnEnable for stack trace)`;
               logger.verbose(msg, { time });
-              console.log(msg); // eslint-disable-line no-console
+              console.log(msg);
             },
             { threshold: config.blockedWarnThresholdMS }
           ); // threshold in milliseconds
         }
       },
       async () => {
-        if (!config.hasAzure) return;
-
-        let OIDCStrategy = require('passport-azure-ad').OIDCStrategy;
-        const azureConfig = {
-          identityMetadata: config.azureIdentityMetadata,
-          clientID: config.azureClientID,
-          responseType: config.azureResponseType,
-          responseMode: config.azureResponseMode,
-          redirectUrl: config.azureRedirectUrl,
-          allowHttpForRedirectUrl: config.azureAllowHttpForRedirectUrl,
-          clientSecret: config.azureClientSecret,
-          validateIssuer: config.azureValidateIssuer,
-          isB2C: config.azureIsB2C,
-          issuer: config.azureIssuer,
-          passReqToCallback: config.azurePassReqToCallback,
-          scope: config.azureScope,
-          loggingLevel: config.azureLoggingLevel,
-          nonceLifetime: config.azureNonceLifetime,
-          nonceMaxAmount: config.azureNonceMaxAmount,
-          useCookieInsteadOfSession: config.azureUseCookieInsteadOfSession,
-          cookieEncryptionKeys: config.azureCookieEncryptionKeys,
-          clockSkew: config.azureClockSkew,
-        };
-        passport.use(
-          new OIDCStrategy(azureConfig, function (
-            iss,
-            sub,
-            profile,
-            accessToken,
-            refreshToken,
-            done
-          ) {
-            return done(null, profile);
-          })
-        );
+        if (isEnterprise() && config.hasAzure) {
+          const { getAzureStrategy } = require('./ee/auth/azure/index');
+          passport.use(getAzureStrategy());
+        }
+      },
+      async () => {
+        if (isEnterprise()) {
+          const { strategy } = require('./ee/auth/saml/index');
+          passport.use(strategy);
+        }
       },
       async function () {
         const pgConfig = {
@@ -1764,8 +1860,15 @@ if (config.startServer) {
         };
         function idleErrorHandler(err) {
           logger.error('idle client error', err);
-          // https://github.com/PrairieLearn/PrairieLearn/issues/2396
-          process.exit(1);
+          Sentry.captureException(err, {
+            level: 'fatal',
+            tags: {
+              // This may have been set by `sql-db.js`. We include this in the
+              // Sentry tags to more easily debug idle client errors.
+              last_query: err?.data?.lastQuery ?? undefined,
+            },
+          });
+          Sentry.close().finally(() => process.exit(1));
         }
 
         logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
@@ -1779,14 +1882,17 @@ if (config.startServer) {
         logger.verbose('Successfully connected to database');
       },
       function (callback) {
-        if (!config.runMigrations) return callback(null);
+        // Using the `--migrate-and-exit` flag will override the value of
+        // `config.runMigrations`. This allows us to use the same config when
+        // running migrations as we do when we start the server.
+        if (!config.runMigrations && !argv['migrate-and-exit']) return callback(null);
         migrations.init(path.join(__dirname, 'migrations'), 'prairielearn', function (err) {
           if (ERR(err, callback)) return;
           callback(null);
         });
       },
       function (callback) {
-        if ('migrate-and-exit' in argv && argv['migrate-and-exit']) {
+        if (argv['migrate-and-exit']) {
           logger.info('option --migrate-and-exit passed, running DB setup and exiting');
           process.exit(0);
         } else {
@@ -1803,7 +1909,23 @@ if (config.startServer) {
         // of its sprocs, allowing us to update servers while old
         // servers are still running. See docs/dev-guide.md for
         // more info.
-        await sqldb.setRandomSearchSchemaAsync(config.instanceId);
+        //
+        // We use the combination of instance ID and port number to uniquely
+        // identify each server; in some cases, we're running multiple instances
+        // on the same physical host.
+        //
+        // The schema prefix should not exceed 28 characters; this is due to
+        // the underlying Postgres limit of 63 characters for schema names.
+        // Currently, EC2 instance IDs are 19 characters long, and we use
+        // 4-digit port numbers, so this will be safe (19+1+4=24). If either
+        // of those ever get longer, we have a little wiggle room. Nonetheless,
+        // we'll check to make sure we don't exceed the limit and fail fast if
+        // we do.
+        const schemaPrefix = `${config.instanceId}:${config.serverPort}`;
+        if (schemaPrefix.length > 28) {
+          throw new Error(`Schema prefix is too long: ${schemaPrefix}`);
+        }
+        await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
       },
       function (callback) {
         sprocs.init(function (err) {
@@ -1819,12 +1941,27 @@ if (config.startServer) {
           callback(null);
         });
       },
-      function (callback) {
-        cron.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
+      async () => {
+        compiledAssets.init({
+          dev: config.devMode,
+          sourceDirectory: path.resolve(__dirname, 'assets'),
+          buildDirectory: path.resolve(__dirname, 'public/build'),
+          publicPath: '/build',
         });
       },
+      // We need to initialize these first, as the code callers require these
+      // to be set up.
+      function (callback) {
+        load.initEstimator('request', 1);
+        load.initEstimator('authed_request', 1);
+        load.initEstimator('python', 1, false);
+        load.initEstimator('python_worker_active', 1);
+        load.initEstimator('python_worker_idle', 1, false);
+        load.initEstimator('python_callback_waiting', 1);
+        callback(null);
+      },
+      async () => await codeCaller.init(),
+      async () => await assets.init(),
       (callback) => {
         redis.init((err) => {
           if (ERR(err, callback)) return;
@@ -1837,37 +1974,7 @@ if (config.startServer) {
           callback(null);
         });
       },
-      (callback) => {
-        externalGrader.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        if (!config.externalGradingEnableResults) return callback(null);
-        externalGraderResults.init((err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      async () => await assets.init(),
-      function (callback) {
-        load.initEstimator('request', 1);
-        load.initEstimator('authed_request', 1);
-        load.initEstimator('python', 1, false);
-        load.initEstimator('python_worker_active', 1);
-        load.initEstimator('python_worker_idle', 1, false);
-        load.initEstimator('python_callback_waiting', 1);
-        callback(null);
-      },
-      function (callback) {
-        workers.init();
-        callback(null);
-      },
-      async () => {
-        logger.verbose('Starting server...');
-        await module.exports.startServer();
-      },
+      async () => await freeformServer.init(),
       function (callback) {
         if (!config.devMode) return callback(null);
         module.exports.insertDevUser(function (err) {
@@ -1875,42 +1982,39 @@ if (config.startServer) {
           callback(null);
         });
       },
-      function (callback) {
-        socketServer.init(server, function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+      async () => {
+        logger.verbose('Starting server...');
+        await module.exports.startServer();
       },
+      async () => socketServer.init(server),
       function (callback) {
         externalGradingSocket.init(function (err) {
           if (ERR(err, callback)) return;
           callback(null);
         });
       },
-      function (callback) {
-        util.callbackify(workspace.init)((err) => {
+      (callback) => {
+        externalGrader.init(function (err) {
           if (ERR(err, callback)) return;
           callback(null);
         });
       },
-      function (callback) {
-        serverJobs.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+      async () => workspace.init(),
+      async () => serverJobs.init(),
+      async () => nodeMetrics.init(),
+      // These should be the last things to start before we actually start taking
+      // requests, as they may actually end up executing course code.
+      async () => {
+        if (!config.externalGradingEnableResults) return;
+        await externalGraderResults.init();
       },
-      function (callback) {
-        freeformServer.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
+      async () => cron.init(),
+      async () => lifecycleHooks.completeInstanceLaunch(),
     ],
     function (err, data) {
       if (err) {
         logger.error('Error initializing PrairieLearn server:', err, data);
-        logger.error('Exiting...');
-        process.exit(1);
+        throw err;
       } else {
         logger.info('PrairieLearn server ready, press Control-C to quit');
         if (config.devMode) {
@@ -1920,6 +2024,54 @@ if (config.startServer) {
           logger.info('exit option passed, quitting...');
           process.exit(0);
         }
+
+        // SIGTERM can be used to gracefully shut down the process. This signal
+        // may come from another process, but we also send it to ourselves if
+        // we want to gracefully shut down. This is used below in the ASG
+        // lifecycle handler, and also within the "terminate" webhook.
+        process.once('SIGTERM', async () => {
+          // By this point, we should no longer be attached to the load balancer,
+          // so there's no point shutting down the HTTP server or the socket.io
+          // server.
+          //
+          // We use `allSettled()` here to ensure that all tasks can gracefully
+          // shut down, even if some of them fail.
+          logger.info('Shutting down async processing');
+          const results = await Promise.allSettled([
+            externalGraderResults.stop(),
+            cron.stop(),
+            serverJobs.stop(),
+          ]);
+          results.forEach((r) => {
+            if (r.status === 'rejected') {
+              logger.error('Error shutting down async processing', r.reason);
+              Sentry.captureException(r.reason);
+            }
+          });
+
+          try {
+            await lifecycleHooks.completeInstanceTermination();
+          } catch (err) {
+            logger.error('Error completing instance termination', err);
+            Sentry.captureException(err);
+          }
+
+          logger.info('Terminating...');
+          // Shut down OpenTelemetry exporting.
+          try {
+            opentelemetry.shutdown();
+          } catch (err) {
+            logger.error('Error shutting down OpenTelemetry', err);
+            Sentry.captureException(err);
+          }
+
+          // Flush all events to Sentry.
+          try {
+            await Sentry.flush();
+          } finally {
+            process.exit(0);
+          }
+        });
       }
     }
   );

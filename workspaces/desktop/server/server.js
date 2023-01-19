@@ -77,14 +77,14 @@ const attach_listeners = (proc) => {
 };
 
 const spawn_gui = async (width, height) => {
-  /* First, create the Xorg server */
+  // First, create the Xorg server
   if (xvfb_proc) {
     await kill_and_wait(xvfb_proc);
   }
   xvfb_proc = child_process.spawn('/usr/bin/Xvfb', [':1', '-screen', '0', `${width}x${height}x24`]);
   attach_listeners(xvfb_proc);
 
-  /* Then, create the vnc server */
+  // Then, create the VNC server
   if (x11vnc_proc) {
     await kill_and_wait(x11vnc_proc);
   }
@@ -111,9 +111,8 @@ const spawn_gui = async (width, height) => {
   );
   attach_listeners(x11vnc_proc);
 
-  /* Now finally, create the window manager
-       We don't need to kill this.  For some reason it gets mad if we _do_ try to kill it.  So,
-       I'm not touching it. */
+  // Now finally, create the window manager. We don't need to kill this.
+  // For some reason it gets mad if we _do_ try to kill it.  So, I'm not touching it.
   wm_proc = child_process.spawn(options.de, [], {
     env: {
       DISPLAY: ':1',
@@ -122,7 +121,7 @@ const spawn_gui = async (width, height) => {
   attach_listeners(wm_proc);
 };
 
-/* Static files */
+// Static files
 app.use('/', express.static('public'));
 app.use('/novnc', express.static('node_modules/@novnc/novnc'));
 app.use('/spinjs', express.static('node_modules/spin.js/'));
@@ -139,15 +138,14 @@ app.get('/resize', (req, res) => {
   }
 
   if (!x11vnc_proc) {
-    /* Let's only resize the window on launch.  We don't want the user to refresh
-           and have all their running apps disappear because the x server was restarted. */
-
+    // Let's only resize the window on launch.  We don't want the user to refresh
+    // and have all their running apps disappear because the x server was restarted.
     spawn_gui(width, height);
   }
   res.sendStatus(200);
 });
 
-/* Websocket proxy */
+// Websocket proxy
 server.on('upgrade', (req, socket, head) => {
   ws_proxy.ws(req, socket, head);
 });

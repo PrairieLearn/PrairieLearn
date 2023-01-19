@@ -24,12 +24,17 @@ WITH
             NULL::integer AS assessment_instance_id,
             NULL::integer AS assessment_instance_number,
             NULL::integer AS assessment_instance_score_perc,
-            NULL::boolean AS assessment_instance_open
+            NULL::boolean AS assessment_instance_open,
+            am.id AS assessment_module_id,
+            am.name AS assessment_module_name,
+            am.heading AS assessment_module_heading,
+            am.number AS assessment_module_number
         FROM
             assessments AS a
             JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
             JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
             LEFT JOIN LATERAL authz_assessment(a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
+            LEFT JOIN assessment_modules AS am ON am.id = a.assessment_module_id
         WHERE
             ci.id = $course_instance_id
             AND a.multiple_instance
@@ -60,10 +65,16 @@ WITH
             ai.id AS assessment_instance_id,
             ai.number AS assessment_instance_number,
             ai.score_perc AS assessment_instance_score_perc,
-            ai.open AS assessment_instance_open
+            ai.open AS assessment_instance_open,
+            am.id AS assessment_module_id,
+            am.name AS assessment_module_name,
+            am.heading AS assessment_module_heading,
+            am.number AS assessment_module_number
         FROM
             assessment_instances AS ai
             JOIN multiple_instance_assessments AS mia ON (mia.assessment_id = ai.assessment_id)
+            LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
+            LEFT JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
         WHERE
             ai.user_id = $user_id
     ),
@@ -92,7 +103,11 @@ WITH
             ai.id AS assessment_instance_id,
             ai.number AS assessment_instance_number,
             ai.score_perc AS assessment_instance_score_perc,
-            ai.open AS assessment_instance_open
+            ai.open AS assessment_instance_open,
+            am.id AS assessment_module_id,
+            am.name AS assessment_module_name,
+            am.heading AS assessment_module_heading,
+            am.number AS assessment_module_number
         FROM
             -- join group_users first to find all group assessments
             group_configs AS gc
@@ -103,6 +118,7 @@ WITH
             JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
             LEFT JOIN assessment_instances AS ai ON (ai.assessment_id = a.id AND (ai.user_id = $user_id OR ai.group_id = gu.group_id))
             LEFT JOIN LATERAL authz_assessment(a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
+            LEFT JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
         WHERE
             ci.id = $course_instance_id
             AND NOT a.multiple_instance
@@ -124,10 +140,28 @@ SELECT
         WHEN assessment_instance_id IS NULL THEN '/assessment/' || assessment_id || '/'
         ELSE '/assessment_instance/' || assessment_instance_id || '/'
     END AS link,
-    (lag(assessment_set_id) OVER (PARTITION BY assessment_set_id ORDER BY assessment_order_by, assessment_id, assessment_instance_number NULLS FIRST) IS NULL) AS start_new_set
+    (
+        LAG (CASE WHEN $assessments_group_by = 'Set' THEN assessment_set_id ELSE assessment_module_id END) 
+        OVER (
+            PARTITION BY (CASE WHEN $assessments_group_by = 'Set' THEN assessment_set_id ELSE assessment_module_id END) 
+            -- Note that we set `NULLS FIRST` to ensure that the rows from
+            -- `multiple_instance_assessments` are always first, as they have a
+            -- null `assessment_instance_number`.
+            ORDER BY assessment_set_number, assessment_order_by, assessment_id, assessment_instance_number NULLS FIRST
+        ) IS NULL
+    ) AS start_new_assessment_group,
+    (CASE WHEN $assessments_group_by = 'Set' THEN assessment_set_heading ELSE assessment_module_heading END) AS assessment_group_heading
 FROM
     all_rows
 WHERE
     authorized
-ORDER BY
-    assessment_set_number, assessment_order_by, assessment_id, assessment_instance_number NULLS FIRST;
+ORDER BY 
+    CASE WHEN $assessments_group_by = 'Module' THEN assessment_module_number END, 
+    CASE WHEN $assessments_group_by = 'Module' THEN assessment_module_id END,
+    assessment_set_number,
+    assessment_order_by,
+    assessment_id,
+    assessment_instance_number
+    -- As with the `PARTITION` above, we deliberately set `NULLS FIRST` to
+    -- ensure the correct ordering of rows from `multiple_instance_assessments`.
+    NULLS FIRST;
