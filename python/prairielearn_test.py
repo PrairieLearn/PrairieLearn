@@ -77,7 +77,9 @@ def test_set_score_data(
 def test_numpy_serialization(numpy_object: Any) -> None:
     """Test equality after conversion of various numpy objects."""
 
-    json_object = json.dumps(pl.to_json(numpy_object, np_encoding=2), allow_nan=False)
+    json_object = json.dumps(
+        pl.to_json(numpy_object, np_encoding_version=2), allow_nan=False
+    )
     decoded_json_object = pl.from_json(json.loads(json_object))
 
     assert type(numpy_object) == type(decoded_json_object)

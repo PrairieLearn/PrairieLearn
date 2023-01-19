@@ -96,7 +96,7 @@ def all_partial_scores_correct(data: QuestionData) -> bool:
     )
 
 
-def to_json(v, *, np_encoding=1):
+def to_json(v, *, np_encoding_version=1):
     """to_json(v)
 
     If v has a standard type that cannot be json serialized, it is replaced with
@@ -123,10 +123,10 @@ def to_json(v, *, np_encoding=1):
     If v can be json serialized or does not have a standard type, then it is
     returned without change.
     """
-    if np_encoding not in {1, 2}:
-        raise ValueError(f"Invaild np_encoding {np_encoding}, must be 1 or 2.")
+    if np_encoding_version not in {1, 2}:
+        raise ValueError(f"Invaild np_encoding {np_encoding_version}, must be 1 or 2.")
 
-    if np_encoding == 2 and isinstance(v, np.number):
+    if np_encoding_version == 2 and isinstance(v, np.number):
         return {
             "_type": "np_scalar",
             "_concrete_type": type(v).__name__,
