@@ -50,8 +50,9 @@ module.exports = {
             configRequire(
               [questionServerPath],
               function (server) {
-                if (server === undefined)
+                if (server === undefined) {
                   return callback('Unable to load "server.js" for qid: ' + question.qid);
+                }
                 setTimeout(function () {
                   // use a setTimeout() to get out of requireJS error handling
                   return callback(null, server);
