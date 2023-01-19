@@ -22,14 +22,14 @@ const { default: AnsiUp } = require('ansi_up');
 const sha256 = require('crypto-js/sha256');
 const b64Util = require('../../lib/base64-util');
 const fileStore = require('../../lib/file-store');
-const isBinaryFile = require('isbinaryfile').isBinaryFile;
+const { isBinaryFile } = require('isbinaryfile');
 const modelist = require('ace-code/src/ext/modelist');
 const { decodePath } = require('../../lib/uri-util');
 const chunks = require('../../lib/chunks');
 const { idsEqual } = require('../../lib/id');
+const { getPaths } = require('../../lib/instructorFileBrowser');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
-const { getPaths } = require('../../lib/getPaths');
 
 router.get('/*', (req, res, next) => {
   if (!res.locals.authz_data.has_course_permission_edit) {
