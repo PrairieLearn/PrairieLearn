@@ -129,7 +129,7 @@ def determine_score_params(score: float) -> Tuple[str, Union[bool, float]]:
 
     return ("incorrect", True)
 
-  
+
 EnumT = TypeVar("EnumT", bound=Enum)
 
 

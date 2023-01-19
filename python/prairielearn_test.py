@@ -1,7 +1,7 @@
 import json
 import math
 from enum import Enum
-from typing import Any, Callable, cast, Dict, Optional, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple, cast
 
 import lxml.html
 import pandas as pd
