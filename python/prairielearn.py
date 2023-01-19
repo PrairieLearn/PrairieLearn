@@ -15,9 +15,8 @@ import importlib
 import importlib.util
 import os
 import collections
-from typing import Dict, Any, TypedDict, Literal, Optional, TypeVar, Type
+from typing import Dict, Any, TypedDict, Literal, Optional
 from typing_extensions import NotRequired
-from enum import Enum
 
 class PartialScore(TypedDict):
     "A class with type signatures for the partial scores dict"
@@ -167,41 +166,6 @@ def from_json(v):
                 raise Exception('variable has unknown type {:s}'.format(v['_type']))
     return v
 
-EnumT = TypeVar("EnumT", bound=Enum)
-
-def get_enum_attrib(
-    enum_type: Type[EnumT],
-    element: lxml.html.HtmlElement,
-    name: str,
-    default: Optional[EnumT] = None,
-) -> EnumT:
-    """value = get_enum_attrib(enum_type, element, name, default)
-    Returns the named attribute for the element parsed as an enum,
-    or the (optional) default value. If the default value is not provided
-    and the attribute is missing then an exception is thrown. An exception
-    is also thrown if the value for the enum provided is invalid.
-    Also, alters the enum names to comply with PL naming convention automatically
-    (replacing underscores with dashes and uppercasing). If default value is
-    provided, must be a member of the given enum.
-    """
-
-    enum_val, is_default = (
-        _get_attrib(element, name)
-        if default is None
-        else _get_attrib(element, name, default)
-    )
-
-    # Default doesn't need to be converted, already a value of the enum
-    if is_default:
-        return enum_val
-
-    upper_enum_str = enum_val.upper()
-    accepted_names = {member.name.replace("_", "-") for member in enum_type}
-
-    if upper_enum_str not in accepted_names:
-        raise ValueError(f"{enum_val} is not a valid type")
-
-    return enum_type[upper_enum_str.replace("-", "_")]
 
 def inner_html(element):
     inner = element.text

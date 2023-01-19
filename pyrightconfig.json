@@ -3,7 +3,6 @@
       "./elements/pl-hidden-hints",
       "./elements/pl-order-blocks",
       "./elements/pl-symbolic-input",
-      "./elements/pl-template",
       "python/python_helper_sympy_test.py"
     ],
     "extraPaths": ["./python"],
