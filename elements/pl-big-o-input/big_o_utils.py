@@ -1,8 +1,7 @@
 import math
 from enum import Enum
-from typing import Any, Callable, List, Optional, Tuple, Type, TypeVar, Union
+from typing import Any, Callable, List, Optional, Tuple, Union
 
-import lxml
 import prairielearn as pl
 import python_helper_sympy as phs
 import sympy
@@ -210,42 +209,3 @@ def determine_score_params(score: float) -> Tuple[str, Union[bool, float]]:
         return ("partial", math.floor(score * 100))
 
     return ("incorrect", True)
-
-
-EnumT = TypeVar("EnumT", bound=Enum)
-
-
-def get_enum_attrib(
-    element: lxml.html.HtmlElement,
-    name: str,
-    enum_type: Type[EnumT],
-    default: Optional[EnumT] = None,
-) -> EnumT:
-    """
-    Returns the named attribute for the element parsed as an enum,
-    or the (optional) default value. If the default value is not provided
-    and the attribute is missing then an exception is thrown. An exception
-    is also thrown if the value for the enum provided is invalid.
-
-    Also, alters the enum names to comply with PL naming convention automatically
-    (replacing underscores with dashes and uppercasing). If default value is
-    provided, must be a member of the given enum.
-    """
-
-    enum_val, is_default = (
-        pl._get_attrib(element, name)
-        if default is None
-        else pl._get_attrib(element, name, default)
-    )
-
-    # Default doesn't need to be converted, already a value of the enum
-    if is_default:
-        return enum_val
-
-    upper_enum_str = enum_val.upper()
-    accepted_names = {member.name.replace("_", "-") for member in enum_type}
-
-    if upper_enum_str not in accepted_names:
-        raise ValueError(f"{enum_val} is not a valid type")
-
-    return enum_type[upper_enum_str.replace("-", "_")]
