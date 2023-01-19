@@ -2,12 +2,6 @@
 const { experimentAsync } = require('tzientist');
 const _ = require('lodash');
 const { trace, context, SpanStatusCode } = require('@opentelemetry/api');
-const error = require('../prairielib/lib/error');
-const ERR = require('async-stacktrace');
-
-const chunks = require('../lib/chunks');
-const { withCodeCaller } = require('../lib/code-caller');
-const filePaths = require('../lib/file-paths');
 
 const calculationInprocess = require('./calculation-inprocess');
 const calculationSubprocess = require('./calculation-subprocess');
@@ -164,64 +158,11 @@ function questionFunctionExperiment(name, control, candidate) {
   };
 }
 
-async function callFunction(func, course, question, inputData) {
-  const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-  const { fullPath: questionServerPath } = await filePaths.questionFilePathAsync(
-    'server.js',
-    question.directory,
-    coursePath,
-    question
-  );
-  try {
-    return withCodeCaller(coursePath, async (codeCaller) => {
-      const res = await codeCaller.call('v2-question', null, questionServerPath, null, [
-        {
-          questionServerPath,
-          func: func,
-          coursePath,
-          question,
-          ...inputData,
-        },
-      ]);
-      return { data: res.result, courseIssues: [] };
-    });
-  } catch (err) {
-    err.fatal = true;
-    return { data: {}, courseIssues: [err] };
-  }
-}
-
-module.exports.generate = (question, course, variant_seed, callback) => {
-  callFunction('generate', course, question, { variant_seed }).then(
-    ({ data, courseIssues }) => callback(null, courseIssues, data),
-    (err) => callback(err)
-  );
-};
-
-module.exports.grade = (submission, variant, question, course, callback) => {
-  callFunction('grade', course, question, { submission, variant }).then(
-    ({ data, courseIssues }) => callback(null, courseIssues, data),
-    (err) => console.log(err)
-  );
-};
-
-module.exports.getFile = (filename, variant, question, course, callback) => {
-  callFunction('getFile', course, question, { filename, variant }).then(
-    ({ data, courseIssues }) => {
-      // We need to "unwrap" buffers if needed
-      const isBuffer = data.type === 'buffer';
-      const unwrappedData = isBuffer ? Buffer.from(data.data, 'base64') : data.data;
-      callback(null, courseIssues, unwrappedData);
-    },
-    (err) => callback(err)
-  );
-};
-
-// module.exports.generate = questionFunctionExperiment(
-//   'calculation-question-generate',
-//   calculationInprocess.generate,
-//   calculationSubprocess.generate
-// );
+module.exports.generate = questionFunctionExperiment(
+  'calculation-question-generate',
+  calculationInprocess.generate,
+  calculationSubprocess.generate
+);
 
 module.exports.prepare = questionFunctionExperiment(
   'calculation-question-prepare',
@@ -235,11 +176,11 @@ module.exports.render = questionFunctionExperiment(
   calculationSubprocess.render
 );
 
-// module.exports.getFile = questionFunctionExperiment(
-//   'calculation-question-getFile',
-//   calculationInprocess.getFile,
-//   calculationSubprocess.getFile
-// );
+module.exports.getFile = questionFunctionExperiment(
+  'calculation-question-getFile',
+  calculationInprocess.getFile,
+  calculationSubprocess.getFile
+);
 
 module.exports.parse = questionFunctionExperiment(
   'calculation-question-parse',
@@ -247,8 +188,8 @@ module.exports.parse = questionFunctionExperiment(
   calculationSubprocess.parse
 );
 
-// module.exports.grade = questionFunctionExperiment(
-//   'calculation-question-grade',
-//   calculationInprocess.grade,
-//   calculationSubprocess.grade
-// );
+module.exports.grade = questionFunctionExperiment(
+  'calculation-question-grade',
+  calculationInprocess.grade,
+  calculationSubprocess.grade
+);
