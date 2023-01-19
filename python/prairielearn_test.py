@@ -111,7 +111,7 @@ def test_grade_answer_parametrized_correct(
     question_data["submitted_answers"] = {question_name: student_answer}
 
     good_feedback = "you did good"
-    bad_feedback = "thats terrible"
+    bad_feedback = "that's terrible"
 
     def grading_function(submitted_answer: str) -> Tuple[bool, Optional[str]]:
         if submitted_answer in {"a", "b", "c", "d", "<>"}:
@@ -173,7 +173,7 @@ def test_grade_answer_parametrized_key_error_blank(
 
     assert question_data["format_errors"][question_name] == "No answer was submitted"
 
-    
+
 class TestEnum(Enum):
     DEFAULT = 0
     TEST_CHOICE_1 = 1
@@ -212,4 +212,3 @@ def test_get_enum_attrib_exceptions(html_str: str) -> None:
 
     with pytest.raises(Exception):
         pl.get_enum_attrib(element, "test-choice", TestEnum)
-
