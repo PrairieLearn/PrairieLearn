@@ -59,9 +59,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 )
 
                 variable_parent_directory_choice = pl.get_enum_attrib(
-                    ParentDirectoryEnum,
                     child,
                     "parent-directory",
+                    ParentDirectoryEnum,
                     PARENT_DIRECTORY_CHOICE_DEFAULT,
                 )
 
@@ -88,9 +88,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             )
 
     parent_directory_choice = pl.get_enum_attrib(
-        ParentDirectoryEnum,
         element,
         "parent-directory",
+        ParentDirectoryEnum,
         PARENT_DIRECTORY_CHOICE_DEFAULT,
     )
     parent_directory = options_dict[parent_directory_choice.value]
