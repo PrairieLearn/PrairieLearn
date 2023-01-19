@@ -114,8 +114,14 @@ def grade_answer_parameterized(
         data["partial_scores"][question_name]["feedback"] = feedback_content
 
 
-def determine_score_params(score: float) -> Tuple[str, Union[bool, float]]:
-    """Determine score params taken from data dict"""
+def determine_score_params(
+    score: float,
+) -> Tuple[Literal["correct", "partial", "incorrect"], Union[bool, float]]:
+    """
+    Determine appropriate key and value for display on the frontend given the
+    score for a particular question. Setting the given key-value pair in a
+    dict passed to a mustache template will make the score badge appear.
+    """
 
     if score >= 1:
         return ("correct", True)
