@@ -54,9 +54,16 @@ jobs:
     - name: Build the workspace-xtermjs docker image if needed
       run: sh ./tools/build-image-if-needed.sh workspaces/xtermjs prairielearn/workspace-xtermjs:latest
     - name: Build the prairielearn docker image
-      # IMPORTANT: this image must be named `prairielearn/prairielearn` for the
-      # `prairielearn/executor` image to build correctly.
-      run: docker build -t prairielearn/prairielearn:latest .
+      uses: docker/build-push-action@v3
+      with:
+        context: .
+        push: false
+        # IMPORTANT: this image must be named `prairielearn/prairielearn` for the
+        # `prairielearn/executor` image to build correctly.
+        tags: prairielearn/prairielearn:latest
+        # TODO: change these to only export the cache when we build on master
+        cache-from: type=gha,mode=max,scope=prairielearn/prairielearn
+        cache-to: type=gha,mode=max,scope=prairielearn/prairielearn
     - name: Create a temporary directory for host files
       run: mkdir -p /tmp/prairielearn
     - name: Start the container
