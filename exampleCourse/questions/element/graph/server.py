@@ -4,6 +4,7 @@ import numpy.linalg as la
 import prairielearn as pl
 import networkx as nx
 import string
+import itertools
 
 def generate(data):
     data['params']['weight1'] = random.randint(1, 10)
@@ -46,3 +47,28 @@ def generate(data):
     ])
 
     data['params']['multigraph'] = pl.to_json(multigraph)
+
+    # Generation code for color graph
+    subset_sizes = [5, 5, 4, 3, 2, 4, 4, 3]
+    subset_color = [
+        'gold',
+        'violet',
+        'violet',
+        'violet',
+        'violet',
+        'limegreen',
+        'limegreen',
+        'darkorange',
+    ]
+
+
+    extents = nx.utils.pairwise(itertools.accumulate((0,) + tuple(subset_sizes)))
+    layers = [range(start, end) for start, end in extents]
+    layered_graph = nx.Graph()
+    for i, (layer, color) in enumerate(zip(layers, subset_color)):
+        layered_graph.add_nodes_from(layer, layer=i, color=color)
+
+    for layer1, layer2 in nx.utils.pairwise(layers):
+        layered_graph.add_edges_from(itertools.product(layer1, layer2), color="blue")
+
+    data['params']['color-graph'] = pl.to_json(layered_graph)

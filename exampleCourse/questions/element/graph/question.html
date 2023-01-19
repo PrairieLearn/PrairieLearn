@@ -184,3 +184,15 @@ data['params']['random-graph'] = pl.to_json(random_graph)
         <pl-graph params-type="networkx" params-name-networkx="multigraph"></pl-graph>
     </div>
 </div>
+
+<div class="card my-2">
+    <div class="card-body" >
+        <pl-question-panel>
+            <p>The color of each node or edge in a networkx graph can be set by assigning the <code>'color'</code> attribute in the
+                associated data dictionary for each object. In the example below, we've set the color of each edge to <code>'blue'</code>
+                and used different colors for nodes in different layers.
+            </p>
+        </pl-question-panel>
+        <pl-graph params-type="networkx" params-name-networkx="color-graph"></pl-graph>
+    </div>
+</div>
