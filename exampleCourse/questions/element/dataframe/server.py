@@ -36,21 +36,15 @@ def generate(data):
             "numeric": 3.14,
             "logical": False,
             "character": "foo",
-            # TODO adding in complex numbers won't deserialize correctly, fix this (somehow?)
-            # "complex": complex(1, 2),
             # Series
             "numeric-list": pd.Series([1.0] * 3).astype("float32"),
             "integer-list": pd.Series([1] * 3, dtype="int8"),
-            # "complex-list": pd.Series(np.array([1, 2, 3]) + np.array([4, 5, 6]) *1j).astype("complex128"),
             "character-list": pd.Series(["hello", "world", "stat"]),
             "logical-list": pd.Series([True, False, True]),
             "character-string-list": pd.Series(["a", "b", "c"], dtype="string"),
             # Time Dependency: https://pandas.pydata.org/docs/user_guide/timeseries.html
             "POSIXct-POSIXt-timestamp": pd.Timestamp("20230102"),
             "POSIXct-POSIXt-date_range": pd.date_range("2023", freq="D", periods=3),
-            # The below types can't currently be deserialized  by Pandas
-            # "POSIXct-POSIXt-period": pd.period_range("1/1/2011", freq="M", periods=3), # Not supported in rpy2
-            # "POSIXct-POSIXt-timedelta": pd.to_timedelta(np.arange(3), unit="s"), # Not supported in rpy2
             # Categorical: https://pandas.pydata.org/docs/user_guide/categorical.html
             "factor": pd.Categorical(["a", "b", "c"], ordered=False),
             "ordered-factor": pd.Categorical(

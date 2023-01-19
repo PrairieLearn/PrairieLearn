@@ -17,6 +17,7 @@ SHOW_HEADER_DEFAULT = True
 SHOW_INDEX_DEFAULT = True
 SHOW_DIMENSIONS_DEFAULT = True
 DISPLAY_LANGUAGE_DEFAULT = DisplayLanguage.PYTHON
+DISPLAY_VARIABLE_NAME_DEFAULT = "df"
 SHOW_DTYPE_DEFAULT = False
 NUM_DIGITS_DEFAULT = None
 SHOW_PYTHON_DEFAULT = True
@@ -53,6 +54,10 @@ def get_pandas_dtype(s: pd.Series) -> str:
     return str(s.dtype)
 
 
+def using_default_index(df: pd.DataFrame) -> bool:
+    return df.index.is_integer() and pd.Index(range(len(df))).equals(df.index)
+
+
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(
@@ -65,6 +70,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             "show-dtype",
             "show-python",
             "display-language",
+            "display-variable-name",
             "digits",
         ],
     )
@@ -84,6 +90,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     display_language = pl.get_enum_attrib(
         element, "display-language", DisplayLanguage, DISPLAY_LANGUAGE_DEFAULT
+    )
+    display_variable_name = pl.get_string_attrib(
+        element, "display-variable-name", DISPLAY_VARIABLE_NAME_DEFAULT
     )
 
     num_digits = pl.get_integer_attrib(element, "digits", NUM_DIGITS_DEFAULT)
@@ -123,7 +132,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else:
             assert_never(display_language)
 
-        # old agg function:
         descriptors = frame.agg([get_dtype_function]).set_axis(
             ["dtype"], axis="index", copy=False
         )
@@ -137,11 +145,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         frame_style.hide(axis="columns")
 
     if show_index:
-        # Switch row indices to being 1-based if supplied indices are integer. Otherwise, leave untouched.
-        # TODO double check if this will cause unexpected behavior if these aren't just indices.
-        if display_language is DisplayLanguage.R and pd.api.types.is_integer_dtype(
-            frame.index
-        ):
+        # Switch row indices to being 1-based if index is default. Ignore otherwise.
+        if display_language is DisplayLanguage.R and using_default_index(frame):
             frame_style.format_index(lambda x: x + 1)  # type: ignore
     else:
         frame_style.hide()
@@ -152,7 +157,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     html_params = {
         "uuid": pl.get_uuid(),
         "frame_html": frame_style.to_html(),
-        "varname": varname,
+        "varname": display_variable_name,
         "code_string": repr(frame.to_dict("split")),
         "show_python": show_python,
     }
