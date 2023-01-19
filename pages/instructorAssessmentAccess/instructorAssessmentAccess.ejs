@@ -6,8 +6,7 @@
   <body>
     <script>
       $(function () {
-          $('[data-toggle="popover"]').popover({sanitize: false})
-          $('[data-toggle="tooltip"]').tooltip()
+        $('[data-toggle="tooltip"]').tooltip({boundary: 'window'})
       });
     </script>
     <%- include('../partials/navbar'); %>
@@ -48,6 +47,8 @@
                 </td>
                 <td><%= access_rule.mode %></td>
                 <td>
+                  <% if (access_rule.uids === '') { %>
+                  <span class="text-danger">No UIDs</span>
                   <%
                     // Only users with permission to view student data are allowed
                     // to see the list of uids associated with an access rule. Note,
@@ -57,10 +58,10 @@
                     // in course code. This should be changed in future, to protect
                     // student data. See https://github.com/PrairieLearn/PrairieLearn/issues/3342
 
-                    if ((access_rule.uids == '—') || authz_data.has_course_instance_permission_view) { %>
+                    } else if (access_rule.uids === '—' || authz_data.has_course_instance_permission_view) { %>
                     <%= access_rule.uids %>
-                  <% } else { %>
-                    <a role="button" class="btn btn-xs btn-warning" tabindex="0" data-toggle="popover" data-trigger="focus" data-container="body" data-placement="auto" title="Hidden UIDs" data-content="This access rule is specific to individual students. You need permission to view student data in order to see which ones.">Hidden</a>
+                    <% } else { %>
+                    <span data-toggle="tooltip" title="This access rule is specific to individual students. You need permission to view student data in order to see which ones.">Hidden</span>
                   <% } %>
                 </td>
                 <td><%= access_rule.start_date %></td>
@@ -93,23 +94,28 @@
           <small>Instructions on how to change the access rules can be found in the <a href="https://prairielearn.readthedocs.io/en/latest/accessControl/" target="_blank">PrairieLearn documentation</a>. Note that changing time limit rules does not affect assessments in progress; to change the time limit for these exams please visit the <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/instances">Students tab</a>.</small>
         </div>
       </div>
+
+      <% [[general_rules], exception_sets].forEach((sets, set_partition_index) => { %>
       
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
-          <%= assessment_set.name %> <%= assessment.number %>: Interpreted access rules
+          <%= assessment_set.name %> <%= assessment.number %>: Interpreted <%= set_partition_index ? 'exception' : 'general' %> access rules
         </div>
-        
+
+        <% if (!sets.length) { %>
+        <div class="card-body">There are no <%= set_partition_index ? 'exception' : 'general' %> access rules</div>
+        <% } else { %>
         <div class="table-responsive">
           <table class="table table-sm table-hover">
             <thead>
               <tr>
-                <th colspan="3">Filters</th>
+                <th colspan="3"></th>
                 <th>Starting the Assessment</th>
                 <th colspan="3">While Assessment is Open</th>
                 <th>After Assessment is Closed</th>
               </tr>
               <tr>
-                <th></th>
+                <th><%= set_partition_index ? 'Students' : '' %></th>
                 <th>Mode / Exam</th>
                 <th>When</th>
                 <th></th>
@@ -120,18 +126,18 @@
               </tr>
             </thead>
             <tbody>
-              <% explained_sets.forEach(function(set) { %>
+              <% sets.forEach(function(set) { %>
+              <% if (!set.general_rules) { %>
               <tr>
                 <th colspan="8">
-                  <% if (set.other_uids) { %>
-                  Students in general
-                  <% } else if (authz_data.has_course_instance_permission_view) { %>
+                  <% if (authz_data.has_course_instance_permission_view) { %>
                   <%= set.uids.map(uid => set.names[uid] ?? uid).join(', ') %>
                   <% } else { %>
-                  <a role="button" class="btn btn-xs btn-warning" tabindex="0" data-toggle="popover" data-trigger="focus" data-container="body" data-placement="auto" title="Hidden UIDs" data-content="This access rule is specific to individual students. You need permission to view student data in order to see which ones.">Hidden</a>
+                  <span data-toggle="tooltip" title="This access rule is specific to individual students. You need permission to view student data in order to see which ones.">Hidden</span>
                   <% } %>
                 </th>
               </tr>
+              <% } %>
               <% set.rules.forEach(function(access_rule) { %>
               <tr>
                 <td>
@@ -187,7 +193,9 @@
             </tbody>
           </table>
         </div>
+        <% } %>
       </div>
+      <% }); %>
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">

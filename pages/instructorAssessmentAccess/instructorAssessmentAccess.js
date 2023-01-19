@@ -19,11 +19,12 @@ let compareDate = function (oldDate, newDate, oldIsNull, newIsNull, bothAreNull)
 
 let applyRule = function (list, originalRule) {
   let new_rule = { ...originalRule };
-  let valid = true;
+  let rule_still_applies = true;
+  new_rule.valid_now = new_rule.valid_now_on_start && new_rule.valid_now_on_end;
   new_rule.valid_now_public = new_rule.valid_now && (new_rule.mode_raw ?? 'Public') === 'Public';
   new_rule.valid_now_exam = new_rule.valid_now && (new_rule.mode_raw ?? 'Exam') === 'Exam';
   list.forEach((old_rule) => {
-    if (!valid) return;
+    if (!rule_still_applies) return;
 
     if (old_rule.mode_raw !== null && old_rule.mode_raw !== new_rule.mode_raw) {
       if (new_rule.mode_raw === null) {
@@ -36,7 +37,7 @@ let applyRule = function (list, originalRule) {
         new_rule_exam.mode_raw = 'Exam';
         new_rule_exam.mode = 'Exam';
         applyRule(list, new_rule_exam);
-        valid = false;
+        rule_still_applies = false;
       }
       return;
     }
@@ -57,33 +58,44 @@ let applyRule = function (list, originalRule) {
       compareDate(new_rule.start_date_raw, old_rule.start_date_raw, -1, +1, 0) >= 0 &&
       compareDate(new_rule.end_date_raw, old_rule.end_date_raw, +1, -1, 0) <= 0
     ) {
-      valid = false;
+      // Old rule completely encompasses new rule, this rule does not apply
+      rule_still_applies = false;
     } else if (
       compareDate(new_rule.start_date_raw, old_rule.start_date_raw, -1, +1, 0) >= 0 &&
       compareDate(new_rule.start_date_raw, old_rule.end_date_raw, -1, -1, -1) <= 0
     ) {
+      // Old rule ends after the new one starts, so in effect the new rule starts after the old rule
       new_rule.start_date_raw = old_rule.end_date_plus_one_raw;
       new_rule.start_date = old_rule.end_date_plus_one;
     } else if (
       compareDate(new_rule.end_date_raw, old_rule.start_date_raw, +1, +1, +1) >= 0 &&
       compareDate(new_rule.end_date_raw, old_rule.end_date_raw, +1, -1, 0) <= 0
     ) {
+      // Old rule starts before the new one ends, so in effect the new rule ends before the old rule
       new_rule.end_date_raw = old_rule.start_date_minus_one_raw;
       new_rule.end_date = old_rule.start_date_minus_one;
     } else if (
       compareDate(new_rule.start_date_raw, old_rule.start_date_raw, -1, +1, 0) < 0 &&
       compareDate(new_rule.end_date_raw, old_rule.end_date_raw, +1, -1, 0) > 0
     ) {
+      // Old rule has dates completely within the new one, so create two effective rules, one ending before the old one...
       let rule_before = { ...new_rule };
       rule_before.end_date_raw = old_rule.start_date_minus_one_raw;
       rule_before.end_date = old_rule.start_date_minus_one;
+      rule_before.valid_now_on_end = old_rule.valid_now_on_end;
       applyRule(list, rule_before);
 
-      new_rule.start_date_raw = old_rule.end_date_plus_one_raw;
-      new_rule.start_date = old_rule.end_date_plus_one;
+      // ... and one starting after the old one
+      let rule_after = { ...new_rule };
+      rule_after.start_date_raw = old_rule.end_date_plus_one_raw;
+      rule_after.start_date = old_rule.end_date_plus_one;
+      rule_after.valid_now_on_start = old_rule.valid_now_on_start;
+      applyRule(list, rule_after);
+
+      rule_still_applies = false;
     }
   });
-  if (valid) {
+  if (rule_still_applies) {
     list.push(new_rule);
   }
 };
@@ -100,31 +112,35 @@ router.get(
     ).rows;
 
     debug('building user-friendly description');
-    let student_rules = [];
+    let general_rules = [];
     let user_spec_rules = [];
 
     // Creates sets of unique user lists
-    res.locals.access_rules.forEach((db_rule) => {
-      if (db_rule.uids_raw) {
+    res.locals.access_rules
+      .filter((db_rule) => db_rule.uids_raw !== null)
+      .forEach((db_rule) => {
         let uids = db_rule.uids_raw;
         // Check if any existing user list has an intersection with current list.
         user_spec_rules.forEach((old) => {
           let inter = _.intersection(old.uids, uids);
+          // If there is an intersection, create three lists...
           if (inter.length) {
+            // ...the intersection list, where both rules apply
             user_spec_rules.push({ uids: inter, names: db_rule.uids_names, rules: [] });
+            // ...the old list without the intersection, where the previous rules apply
             old.uids = _.difference(old.uids, inter);
+            // ...the new list without the intersection, where the new rules apply
             uids = _.difference(uids, inter);
           }
         });
         if (uids) user_spec_rules.push({ uids, names: db_rule.uids_names, rules: [] });
-      }
-    });
+      });
     // Remove lists without UIDs remaining
     user_spec_rules = user_spec_rules.filter((set) => set.uids.length);
 
     res.locals.access_rules.forEach((db_rule) => {
       if (db_rule.uids_raw === null) {
-        applyRule(student_rules, db_rule);
+        applyRule(general_rules, db_rule);
       }
 
       user_spec_rules.forEach((set) => {
@@ -137,28 +153,33 @@ router.get(
       });
     });
 
-    res.locals.explained_sets = [];
+    res.locals.exception_sets = [];
     user_spec_rules.forEach((new_set) => {
-      // If a student has the same rules as the default, list only the default rule
-      if (!new_set.rules || _.isEqual(student_rules, new_set.rules)) return;
+      // If a student has no rules or the same rules as the default, list only the default rule
+      if (!new_set.rules || _.isEqual(general_rules, new_set.rules)) return;
       // If two or more student lists have the same rules, combine them into a single set of rules
-      res.locals.explained_sets
+      res.locals.exception_sets
         .filter((old_set) => _.isEqual(old_set.rules, new_set.rules))
         .forEach((old_set) => {
           old_set.uids = _.union(old_set.uids, new_set.uids);
           new_set.uids = [];
         });
-      if (new_set.uids.length) res.locals.explained_sets.push(new_set);
+      if (new_set.uids.length) res.locals.exception_sets.push(new_set);
     });
 
-    if (student_rules && student_rules.length) {
-      res.locals.explained_sets.push({ other_uids: true, rules: student_rules });
-    }
+    res.locals.exception_sets.forEach((set) => {
+      set.rules.sort((rule1, rule2) => rule1.start_date_raw - rule2.start_date_raw);
+    });
+    general_rules.sort((rule1, rule2) => rule1.start_date_raw - rule2.start_date_raw);
+
+    res.locals.general_rules = { general_rules: true, rules: general_rules };
 
     res.locals.access_rules.forEach((db_rule) => {
-      db_rule.has_application = res.locals.explained_sets.some((set) =>
-        set.rules.some((applied) => applied.id === db_rule.id)
-      );
+      db_rule.has_application =
+        general_rules.some((applied) => applied.id === db_rule.id) ||
+        res.locals.exception_sets.some((set) =>
+          set.rules.some((applied) => applied.id === db_rule.id)
+        );
     });
 
     debug('render page');
