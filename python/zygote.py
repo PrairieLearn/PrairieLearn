@@ -141,8 +141,6 @@ def worker_loop():
                     ],
                     cwd=cwd,
                     capture_output=True,
-                    # TODO: consider manual check of `result.returncode != 0` instead
-                    # check=True,
                     # By convention, the first argument is an object that contains all
                     # the call information.
                     input=json.dumps(args[0]),
