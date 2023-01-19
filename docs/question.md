@@ -219,6 +219,29 @@ def grade(data):
         data["feedback"]["y"] = "Your value for $y$ is larger than $x$, but incorrect."
 ```
 
+## Question Data Storage
+
+All persistent related to a question is stored under different entries in the `data` dictionary. This dictionary is stored in JSON format by PrairieLearn, and as a result, everything in `data` must be JSON serializable. Some types in Python are natively JSON serializable, such as strings, lists, and dicts, while others are not, such as complex numbers, numpy ndarrays, and pandas DataFrames.
+
+To account for this, the `prairielearn` Python library from [`prairielearn.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/python/prairielearn.py) provides the functions `to_json` and `from_json`, which can respectively serialize and deserialize various objects for storage as part of question data. Please refer to the docstrings on those functions for more information. Here is a simple example:
+
+```python
+# server.py
+
+import numpy as np
+import prairielearn as pl
+
+def generate(data):
+    data["params"]["numpy_array"] = pl.to_json(np.array([1.2, 3.5, 5.1]))
+
+def grade(data):
+    pl.from_json(data["params"]["numpy_array"])
+```
+
+In particular, in the `to_json` function, there are keyword-only options for different types of encodings. Encoding a DataFrame `df` by setting `to_json(df, df_encoding_version=2)` allows for missing and date time values whereas `pl.to_json(df, df_encoding_version=1)` (default) does not. However, `df_encoding_version=1` has support for complex numbers, while `df_encoding_version=2` does not.
+
+Similarly, if encoding numpy scalars by setting `np_encoding_version=1`, then only `np.float64` and `np.complex128` can be serialized by `to_json`, and their types will be erased after deserialization (will beccome native Python `float` and `complex` respectively). It is recommended to set `np_encoding_version=2`, which supports serialization for all numpy scalars and does not result in type erasure on deserialization.
+
 ## Accessing files on disk
 
 From within `server.py` functions, directories can be accessed as:

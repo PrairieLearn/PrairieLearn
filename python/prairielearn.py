@@ -147,7 +147,7 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
     If v has a standard type that cannot be json serialized, it is replaced with
     a {'_type':..., '_value':...} pair that can be json serialized:
 
-        If np_encoding is set to 2, will serialize numpy scalars as follows:
+        If np_encoding_version is set to 2, will serialize numpy scalars as follows:
 
         numpy scalar -> '_type': 'np_scalar'
 
