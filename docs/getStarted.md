@@ -153,19 +153,19 @@ We will add randomization to the previous question, using the file [server.py](q
 ```python
 import random
 def generate(data):
-  # define the sides of the rectangle as random integers
-  a = random.randint(2,5)
-  b = random.randint(11,19)
-  # store the sides in the dictionary "params"
-  data["params"]["a"] = a
-  data["params"]["b"] = b
-  # define some typical distractors
-  data["params"]["distractor1"] = (a*b)/2
-  data["params"]["distractor2"] = 2*(a*b)
-  data["params"]["distractor3"] = 2*(a+b)
-  data["params"]["distractor4"] = (a+b)
-  # define the correct answer
-  data["params"]["truearea"] = a*b
+    # define the sides of the rectangle as random integers
+    a = random.randint(2,5)
+    b = random.randint(11,19)
+    # store the sides in the dictionary "params"
+    data["params"]["a"] = a
+    data["params"]["b"] = b
+    # define some typical distractors
+    data["params"]["distractor1"] = (a*b)/2
+    data["params"]["distractor2"] = 2*(a*b)
+    data["params"]["distractor3"] = 2*(a+b)
+    data["params"]["distractor4"] = (a+b)
+    # define the correct answer
+    data["params"]["truearea"] = a*b
 ```
 
 - click `Save and sync`.

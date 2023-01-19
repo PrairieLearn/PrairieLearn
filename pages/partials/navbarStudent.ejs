@@ -9,9 +9,3 @@
       <% if (typeof assessment_instance_label != 'undefined' && typeof assessment_instance != 'undefined') { %>
       <li class="nav item <% if (navPage == "assessment_instance") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>"><%= assessment_instance_label %></a></li>
       <% } %>
-
-      <% if (typeof authz_data != 'undefined') { %>
-      <% if (authz_data.mode == 'Exam') { %>
-      <li class="nav item <% if (navPage == "report_cheating") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/report_cheating">Report cheating</a></li>
-      <% } %>
-      <% } %>

@@ -65,16 +65,19 @@ jobs:
       # environment variable. See the docs for more details:
       # https://prairielearn.readthedocs.io/en/latest/externalGrading/#running-locally-for-development
       run: docker run -td -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/prairielearn:/jobs -e HOST_JOBS_DIR=/tmp/prairielearn --name=test_container prairielearn/prairielearn /bin/bash
+    - name: Run the Python linter
+      run: docker exec test_container /PrairieLearn/docker/lint_python.sh
     - name: Run the JavaScript linter
       run: docker exec test_container /PrairieLearn/docker/lint_js.sh
     - name: Run the HTML linter
       run: docker exec test_container /PrairieLearn/docker/lint_html.sh
-    - name: Run the Python linter
-      run: docker exec test_container /PrairieLearn/docker/lint_python.sh
-    - name: Run the JavaScript typechecker
-      run: docker exec test_container /PrairieLearn/docker/typecheck_js.sh
     - name: Run the Python typechecker
       run: docker exec test_container /PrairieLearn/docker/typecheck_python.sh
+    - name: Run the JavaScript typechecker
+      run: docker exec test_container /PrairieLearn/docker/typecheck_js.sh
+    - name: Run the Python tests
+      run: docker exec test_container /PrairieLearn/docker/test_python.sh
+      timeout-minutes: 5
     - name: Run the JavaScript tests
       run: docker exec test_container /PrairieLearn/docker/test_js.sh
       # The JS tests hang relatively often when someone makes a mistake in a PR,
@@ -82,11 +85,8 @@ jobs:
       # spinning until it eventually times out. This shorter timeout helps
       # ensure that the tests fail more quickly so that people can fix them.
       timeout-minutes: 30
-    - name: Run the Python tests
-      run: docker exec test_container /PrairieLearn/docker/test_python.sh
-      timeout-minutes: 5
     - name: Install dependencies on host
-      run: yarn install --frozen-lockfile
+      run: yarn install --immutable
     - name: Build executor image
       run: ./tools/executor/build.js
 
@@ -96,11 +96,11 @@ jobs:
     # here, so we copy them to an environment variable at the start of the job
     # and then check that here.
     - name: Login to DockerHub
-      uses: docker/login-action@v2 
+      uses: docker/login-action@v2
       if: ${{ env.DOCKERHUB_USERNAME_SECRET != '' }}
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
-    - name: Push executor image to Docker registry 
+    - name: Push executor image to Docker registry
       if: ${{ env.DOCKERHUB_USERNAME_SECRET != '' }}
       run: ./tools/executor/release.js
