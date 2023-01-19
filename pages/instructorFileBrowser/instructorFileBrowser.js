@@ -16,7 +16,7 @@ const { encodePath } = require('../../lib/uri-util');
 const editorUtil = require('../../lib/editorUtil');
 const { default: AnsiUp } = require('ansi_up');
 const { getCourseOwners } = require('../../lib/course');
-const { contains, getPaths } = require('../../lib/instructorFileBrowser');
+const { contains, getPaths } = require('../../lib/instructorFiles');
 
 function isHidden(item) {
   return item[0] === '.';

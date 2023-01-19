@@ -27,7 +27,7 @@ const modelist = require('ace-code/src/ext/modelist');
 const { decodePath } = require('../../lib/uri-util');
 const chunks = require('../../lib/chunks');
 const { idsEqual } = require('../../lib/id');
-const { getPaths } = require('../../lib/instructorFileBrowser');
+const { getPaths } = require('../../lib/instructorFiles');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
