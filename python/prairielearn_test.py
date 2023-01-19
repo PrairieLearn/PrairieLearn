@@ -136,7 +136,7 @@ def test_legacy_serialization(object_to_encode: Any, expected_result: Any) -> No
     assert decoded_json_object == expected_result
 
 
-class TestEnum(Enum):
+class DummyEnum(Enum):
     DEFAULT = 0
     TEST_CHOICE_1 = 1
     TEST_CHOICE_2 = 2
@@ -146,16 +146,16 @@ class TestEnum(Enum):
 @pytest.mark.parametrize(
     "html_str, expected_result",
     [
-        ("<pl-thing></pl-thing>", TestEnum.DEFAULT),
-        ('<pl-thing test-choice="default"></pl-thing>', TestEnum.DEFAULT),
-        ('<pl-thing test-choice="test-choice-1"></pl-thing>', TestEnum.TEST_CHOICE_1),
-        ('<pl-thing test-choice="test-choice-2"></pl-thing>', TestEnum.TEST_CHOICE_2),
-        ('<pl-thing test-choice="test-choice-3"></pl-thing>', TestEnum.TEST_CHOICE_3),
+        ("<pl-thing></pl-thing>", DummyEnum.DEFAULT),
+        ('<pl-thing test-choice="default"></pl-thing>', DummyEnum.DEFAULT),
+        ('<pl-thing test-choice="test-choice-1"></pl-thing>', DummyEnum.TEST_CHOICE_1),
+        ('<pl-thing test-choice="test-choice-2"></pl-thing>', DummyEnum.TEST_CHOICE_2),
+        ('<pl-thing test-choice="test-choice-3"></pl-thing>', DummyEnum.TEST_CHOICE_3),
     ],
 )
-def test_get_enum_attrib(html_str: str, expected_result: TestEnum) -> None:
+def test_get_enum_attrib(html_str: str, expected_result: DummyEnum) -> None:
     element = lxml.html.fragment_fromstring(html_str)
-    result = pl.get_enum_attrib(element, "test-choice", TestEnum, TestEnum.DEFAULT)
+    result = pl.get_enum_attrib(element, "test-choice", DummyEnum, DummyEnum.DEFAULT)
 
     assert result is expected_result
 
@@ -173,4 +173,4 @@ def test_get_enum_attrib_exceptions(html_str: str) -> None:
     element = lxml.html.fragment_fromstring(html_str)
 
     with pytest.raises(Exception):
-        pl.get_enum_attrib(element, "test-choice", TestEnum)
+        pl.get_enum_attrib(element, "test-choice", DummyEnum)
