@@ -172,39 +172,48 @@ async function callFunction(func, course, question, inputData) {
     coursePath,
     question
   );
-  return withCodeCaller(coursePath, async (codeCaller) => {
-    const res = await codeCaller.call('v2-question', null, questionServerPath, 'generate', [
-      {
-        questionServerPath,
-        func: 'generate',
-        coursePath,
-        question,
-        ...inputData,
-      },
-    ]);
-    return res.result;
-  });
+  try {
+    return withCodeCaller(coursePath, async (codeCaller) => {
+      const res = await codeCaller.call('v2-question', null, questionServerPath, null, [
+        {
+          questionServerPath,
+          func: func,
+          coursePath,
+          question,
+          ...inputData,
+        },
+      ]);
+      return { data: res.result, courseIssues: [] };
+    });
+  } catch (err) {
+    err.fatal = true;
+    return { data: {}, courseIssues: [err] };
+  }
 }
 
 module.exports.generate = (question, course, variant_seed, callback) => {
   callFunction('generate', course, question, { variant_seed }).then(
-    (questionData) => {
-      let data = {
-        params: questionData.params,
-        true_answer: questionData.trueAnswer,
-        options: questionData.options || question.options || {},
-      };
-      callback(null, [], data);
+    ({ data, courseIssues }) => callback(null, courseIssues, data),
+    (err) => callback(err)
+  );
+};
+
+module.exports.grade = (submission, variant, question, course, callback) => {
+  callFunction('grade', course, question, { submission, variant }).then(
+    ({ data, courseIssues }) => callback(null, courseIssues, data),
+    (err) => console.log(err)
+  );
+};
+
+module.exports.getFile = (filename, variant, question, course, callback) => {
+  callFunction('getFile', course, question, { filename, variant }).then(
+    ({ data, courseIssues }) => {
+      // We need to "unwrap" buffers if needed
+      const isBuffer = data.type === 'buffer';
+      const unwrappedData = isBuffer ? Buffer.from(data.data, 'base64') : data.data;
+      callback(null, courseIssues, unwrappedData);
     },
-    (err) => {
-      let data = {
-        variant_seed: variant_seed,
-        question: question,
-        course: course,
-      };
-      err.status = 500;
-      return ERR(error.addData(err, data), callback);
-    }
+    (err) => callback(err)
   );
 };
 
@@ -226,11 +235,11 @@ module.exports.render = questionFunctionExperiment(
   calculationSubprocess.render
 );
 
-module.exports.getFile = questionFunctionExperiment(
-  'calculation-question-getFile',
-  calculationInprocess.getFile,
-  calculationSubprocess.getFile
-);
+// module.exports.getFile = questionFunctionExperiment(
+//   'calculation-question-getFile',
+//   calculationInprocess.getFile,
+//   calculationSubprocess.getFile
+// );
 
 module.exports.parse = questionFunctionExperiment(
   'calculation-question-parse',
@@ -238,8 +247,8 @@ module.exports.parse = questionFunctionExperiment(
   calculationSubprocess.parse
 );
 
-module.exports.grade = questionFunctionExperiment(
-  'calculation-question-grade',
-  calculationInprocess.grade,
-  calculationSubprocess.grade
-);
+// module.exports.grade = questionFunctionExperiment(
+//   'calculation-question-grade',
+//   calculationInprocess.grade,
+//   calculationSubprocess.grade
+// );

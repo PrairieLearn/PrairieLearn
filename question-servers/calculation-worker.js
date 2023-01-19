@@ -78,7 +78,7 @@ function getFile(server, coursePath, filename, variant, question) {
   };
 }
 
-async function grade(server, coursePath, submission, variant, question) {
+function grade(server, coursePath, submission, variant, question) {
   const vid = variant.variant_seed;
   const params = variant.params;
   const trueAnswer = variant.true_answer;
