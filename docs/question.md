@@ -223,7 +223,7 @@ def grade(data):
 
 All persistent data related to a question variant is stored under different entries in the `data` dictionary. This dictionary is stored in JSON format by PrairieLearn, and as a result, everything in `data` must be JSON serializable. Some types in Python are natively JSON serializable, such as strings, lists, and dicts, while others are not, such as complex numbers, numpy ndarrays, and pandas DataFrames.
 
-To account for this, the `prairielearn` Python library from [`prairielearn.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/python/prairielearn.py) provides the functions `to_json` and `from_json`, which can respectively serialize and deserialize various objects for storage as part of question data. Please refer to the docstrings on those functions for more information. Here is a simple example:
+To account for this, the `prairielearn` Python library from [`prairielearn.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/python/prairielearn.py), usually aliased and used as `pl`, provides the functions `to_json` and `from_json`, which can respectively serialize and deserialize various objects for storage as part of question data. Please refer to the docstrings on those functions for more information. Here is a simple example:
 
 ```python
 # server.py
@@ -238,11 +238,11 @@ def grade(data):
     pl.from_json(data["params"]["numpy_array"])
 ```
 
-The `to_json` function supports keyword-only options for different types of encodings (e.g. `to_json(var, df_encoding_version=2)`). These options have been added to allow for new encoding behavior while still retaining backwards compatibility with existing usage.
+The `pl.to_json` function supports keyword-only options for different types of encodings (e.g. `pl.to_json(var, df_encoding_version=2)`). These options have been added to allow for new encoding behavior while still retaining backwards compatibility with existing usage.
 
-- `df_encoding_version` controls the encoding of Pandas DataFrames. Encoding a DataFrame `df` by setting `to_json(df, df_encoding_version=2)` allows for missing and date time values whereas `pl.to_json(df, df_encoding_version=1)` (default) does not. However, `df_encoding_version=1` has support for complex numbers, while `df_encoding_version=2` does not.
+- `df_encoding_version` controls the encoding of Pandas DataFrames. Encoding a DataFrame `df` by setting `pl.to_json(df, df_encoding_version=2)` allows for missing and date time values whereas `pl.to_json(df, df_encoding_version=1)` (default) does not. However, `df_encoding_version=1` has support for complex numbers, while `df_encoding_version=2` does not.
 
-- `np_encoding_version` controls the encoding of Numpy values. When using `np_encoding_version=1`, then only `np.float64` and `np.complex128` can be serialized by `to_json`, and their types will be erased after deserialization (will become native Python `float` and `complex` respectively). It is recommended to set `np_encoding_version=2`, which supports serialization for all numpy scalars and does not result in type erasure on deserialization.
+- `np_encoding_version` controls the encoding of Numpy values. When using `np_encoding_version=1`, then only `np.float64` and `np.complex128` can be serialized by `pl.to_json`, and their types will be erased after deserialization (will become native Python `float` and `complex` respectively). It is recommended to set `np_encoding_version=2`, which supports serialization for all numpy scalars and does not result in type erasure on deserialization.
 
 ## Accessing files on disk
 
