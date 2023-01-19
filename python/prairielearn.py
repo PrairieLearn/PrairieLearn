@@ -218,8 +218,7 @@ def to_json(v, *, df_encoding_version=1):
             # only numeric values (c.f. pandas-dev/pandas#46392)
             df_modified_names = v.copy()
 
-            indexing_dtype = df_modified_names.columns.dtype
-            if indexing_dtype == np.float64 or indexing_dtype == np.int64:
+            if df_modified_names.columns.dtype in (np.float64, np.int64):
                 df_modified_names.columns = df_modified_names.columns.astype("string")
 
             # For version 2 storing a data frame, we use the table orientation alongside of
