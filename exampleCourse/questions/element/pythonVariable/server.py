@@ -17,3 +17,5 @@ def generate(data):
         {'c': 3, 'cc': 3},
         {'d': 4, 'dd': 4}
     ]
+
+    data["params"]["my_string"] = "a string"
