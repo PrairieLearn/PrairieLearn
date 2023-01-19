@@ -1,9 +1,6 @@
 // @ts-check
 const { assert } = require('chai');
 const cheerio = require('cheerio');
-const fs = require('fs-extra');
-const path = require('path');
-const _ = require('lodash');
 const fetch = require('node-fetch').default;
 
 const config = require('../lib/config');
