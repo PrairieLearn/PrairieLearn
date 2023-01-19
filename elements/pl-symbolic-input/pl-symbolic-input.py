@@ -1,4 +1,5 @@
 import random
+from enum import Enum
 from html import escape
 from typing import Tuple, Union
 
@@ -9,11 +10,17 @@ import python_helper_sympy as phs
 import sympy
 from typing_extensions import assert_never
 
+
+class DisplayType(Enum):
+    INLINE = "inline"
+    BLOCK = "block"
+
+
 WEIGHT_DEFAULT = 1
 CORRECT_ANSWER_DEFAULT = None
 VARIABLES_DEFAULT = None
 LABEL_DEFAULT = None
-DISPLAY_DEFAULT = pl.DisplayType.INLINE
+DISPLAY_DEFAULT = DisplayType.INLINE
 ALLOW_COMPLEX_DEFAULT = False
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = "i"
 SIZE_DEFAULT = 35
@@ -63,7 +70,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
     variables_string = pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     variables = phs.get_variables_list(variables_string)
-    display = pl.get_enum_attrib(element, "display", pl.DisplayType, DISPLAY_DEFAULT)
+    display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
     allow_complex = pl.get_boolean_attrib(
         element, "allow-complex", ALLOW_COMPLEX_DEFAULT
     )

@@ -69,11 +69,6 @@ class ElementTestData(QuestionData):
     test_type: Literal["correct", "incorrect", "invalid"]
 
 
-class DisplayType(Enum):
-    INLINE = "inline"
-    BLOCK = "block"
-
-
 def grade_answer_parameterized(
     data: QuestionData,
     question_name: str,

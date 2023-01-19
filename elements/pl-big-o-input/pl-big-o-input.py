@@ -20,6 +20,11 @@ class BigOType(Enum):
     LITTLE_OMEGA = r"\omega"
 
 
+class DisplayType(Enum):
+    INLINE = "inline"
+    BLOCK = "block"
+
+
 GRADE_FUNCTION_DICT: Dict[BigOType, bou.BigOGradingFunctionT] = {
     BigOType.BIG_O: bou.grade_o_expression,
     BigOType.THETA: bou.grade_theta_expression,
@@ -33,7 +38,7 @@ SIZE_DEFAULT = 35
 PLACEHOLDER_TEXT_THRESHOLD = 20
 SHOW_HELP_TEXT_DEFAULT = True
 WEIGHT_DEFAULT = 1
-DISPLAY_DEFAULT = pl.DisplayType.INLINE
+DISPLAY_DEFAULT = DisplayType.INLINE
 BIG_O_TYPE_DEFAULT = BigOType.BIG_O
 
 
@@ -81,7 +86,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     variables = phs.get_variables_list(
         pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
-    display = pl.get_enum_attrib(element, "display", pl.DisplayType, DISPLAY_DEFAULT)
+    display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
 
     bigo_type = pl.get_enum_attrib(element, "type", BigOType, BIG_O_TYPE_DEFAULT).value
