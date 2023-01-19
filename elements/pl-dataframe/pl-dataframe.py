@@ -78,7 +78,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
-    # TODO should there be a different display varname?
+
     varname = pl.get_string_attrib(element, "params-name")
     show_index = pl.get_boolean_attrib(element, "show-index", SHOW_INDEX_DEFAULT)
     show_header = pl.get_boolean_attrib(element, "show-header", SHOW_HEADER_DEFAULT)
