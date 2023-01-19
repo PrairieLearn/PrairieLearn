@@ -138,9 +138,9 @@ def test_legacy_serialization(object_to_encode: Any, expected_result: Any) -> No
 
 class DummyEnum(Enum):
     DEFAULT = 0
-    TEST_CHOICE_1 = 1
-    TEST_CHOICE_2 = 2
-    TEST_CHOICE_3 = 3
+    DUMMY_CHOICE_1 = 1
+    DUMMY_CHOICE_2 = 2
+    DUMMY_CHOICE_3 = 3
 
 
 @pytest.mark.parametrize(
@@ -148,9 +148,18 @@ class DummyEnum(Enum):
     [
         ("<pl-thing></pl-thing>", DummyEnum.DEFAULT),
         ('<pl-thing test-choice="default"></pl-thing>', DummyEnum.DEFAULT),
-        ('<pl-thing test-choice="test-choice-1"></pl-thing>', DummyEnum.TEST_CHOICE_1),
-        ('<pl-thing test-choice="test-choice-2"></pl-thing>', DummyEnum.TEST_CHOICE_2),
-        ('<pl-thing test-choice="test-choice-3"></pl-thing>', DummyEnum.TEST_CHOICE_3),
+        (
+            '<pl-thing test-choice="dummy-choice-1"></pl-thing>',
+            DummyEnum.DUMMY_CHOICE_1,
+        ),
+        (
+            '<pl-thing test-choice="dummy-choice-2"></pl-thing>',
+            DummyEnum.DUMMY_CHOICE_2,
+        ),
+        (
+            '<pl-thing test-choice="dummy-choice-3"></pl-thing>',
+            DummyEnum.DUMMY_CHOICE_3,
+        ),
     ],
 )
 def test_get_enum_attrib(html_str: str, expected_result: DummyEnum) -> None:
@@ -166,7 +175,7 @@ def test_get_enum_attrib(html_str: str, expected_result: DummyEnum) -> None:
         "<pl-thing></pl-thing>",
         '<pl-thing test-choice="DEFAULT"></pl-thing>',
         '<pl-thing test-choice="Default"></pl-thing>',
-        '<pl-thing test-choice="test_choice_1"></pl-thing>',
+        '<pl-thing test-choice="dummy_choice_1"></pl-thing>',
     ],
 )
 def test_get_enum_attrib_exceptions(html_str: str) -> None:
