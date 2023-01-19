@@ -24,6 +24,8 @@ PrairieLearn presently provides the following templated **input field** elements
   such as -71, 0, 5, 21, and so on.
 - [`pl-symbolic-input`](#pl-symbolic-input-element): Fill in a **symbolic** value
   such as `x^2`, `sin(z)`, `mc^2`, and so on.
+- [`pl-big-o-input`](#pl-big-o-input-element): Fill in a **symbolic** value
+  representing asymptotic input.
 - [`pl-string-input`](#pl-string-input-element): Fill in a **string** value
   such as "Illinois", "GATTACA", "computer", and so on.
 - [`pl-matching`](#pl-matching-element): Select a matching option for each entry in
@@ -275,11 +277,11 @@ import random
 
 def generate(data):
 
-  # Generate a random value
-  x = random.uniform(1, 2)
+    # Generate a random value
+    x = random.uniform(1, 2)
 
-  # Answer to fill in the blank input
-  data["correct_answers"]["ans_rtol"] = x
+    # Answer to fill in the blank input
+    data["correct_answers"]["ans_rtol"] = x
 ```
 
 ---
@@ -300,11 +302,11 @@ import random
 
 def generate(data):
 
-  # Generate a random value
-  x = random.uniform(1, 2)
+    # Generate a random value
+    x = random.uniform(1, 2)
 
-  # Answer to fill in the blank input
-  data["correct_answers"]["ans_sig"] = round(x, 2)
+    # Answer to fill in the blank input
+    data["correct_answers"]["ans_sig"] = round(x, 2)
 ```
 
 #### Customizations
@@ -321,7 +323,7 @@ def generate(data):
 | `rtol`                | number                          | 1e-2     | Relative tolerance for `comparison="relabs"`.                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `atol`                | number                          | 1e-8     | Absolute tolerance for `comparison="relabs"`.                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 | `digits`              | integer                         | 2        | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.                                                                                                                                                                                                                                                                                                                                                                                               |
-| `allow-complex`       | boolean                         | false    | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answers'][answers-name] = pl.to_json(ans)`.                                                                                                                                                                                                                                                                          |
+| `allow-complex`       | boolean                         | false    | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data["correct_answers"][answers-name] = pl.to_json(ans)`.                                                                                                                                                                                                                                                                          |
 | `allow-blank`         | boolean                         | false    | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                                                                                                                                                                                                                                                                                                                                        |
 | `blank-value`         | string                          | 0 (zero) | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., fractions if allowed, complex numbers if allowed, etc.).                                                                                                                                                                                                                                                                  |
 | `show-help-text`      | boolean                         | true     | Show the question mark at the end of the input displaying required input parameters.                                                                                                                                                                                                                                                                                                                                                                                                    |
@@ -380,15 +382,15 @@ man proportions his belief to the evidence.
 ```python
 def generate(data):
 
-  QUESTION1 = 'aristotle'
+    QUESTION1 = "aristotle"
 
-  data['params'][QUESTION1] = [
-    {'tag': 'true', 'ans': 'whole'},
-    {'tag': 'false', 'ans': 'part'},
-    {'tag': 'false', 'ans': 'inverse'}
-  ]
+    data["params"][QUESTION1] = [
+        {"tag": "true", "ans": "whole"},
+        {"tag": "false", "ans": "part"},
+        {"tag": "false", "ans": "inverse"}
+    ]
 
-  return data
+    return data
 ```
 
 #### Customizations
@@ -503,11 +505,11 @@ import random
 
 def generate(data):
 
-  # Generate a random whole number
-  x = random.randint(1, 10)
+    # Generate a random whole number
+    x = random.randint(1, 10)
 
-  # Answer to fill in the blank input
-  data["correct_answers"]["int_value"] = x
+    # Answer to fill in the blank input
+    data["correct_answers"]["int_value"] = x
 ```
 
 #### Customizations
@@ -574,21 +576,21 @@ import sympy
 
 def generate(data):
 
-  # Declare math symbols
-  x, y = sympy.symbols('x y')
+    # Declare math symbols
+    x, y = sympy.symbols("x y")
 
-  # Describe the equation
-  z = x + y + 1
+    # Describe the equation
+    z = x + y + 1
 
-  # Answer to fill in the blank input stored as JSON.
-  data['correct_answers']['symbolic_math'] = pl.to_json(z)
+    # Answer to fill in the blank input stored as JSON.
+    data["correct_answers"]["symbolic_math"] = pl.to_json(z)
 ```
 
 #### Customizations
 
 | Attribute                    | Type                | Default  | Description                                                                                                                                                                                                       |
 | ---------------------------- | ------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`               | string              | —        | Variable name to store data in. If the correct answer `ans` is a `sympy` object, you should use `import prairielearn as pl` and `data['correct_answers'][answers-name] = pl.to_json(ans)`.                        |
+| `answers-name`               | string              | —        | Variable name to store data in. If the correct answer `ans` is a `sympy` object, you should use `import prairielearn as pl` and `data["correct_answers"][answers-name] = pl.to_json(ans)`.                        |
 | `weight`                     | integer             | 1        | Weight to use when computing a weighted average score over elements.                                                                                                                                              |
 | `correct-answer`             | float               | special  | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                                                                  |
 | `label`                      | text                | —        | A prefix to display before the input box (e.g., `label="$F =$"`).                                                                                                                                                 |
@@ -621,6 +623,48 @@ Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. 
 
 ---
 
+### `pl-big-o-input` element
+
+Fill in the blank field that allows for asymptotic mathematical input (i.e. big O, big Theta, etc.).
+Gives automated feedback in the case of improper asymptotic input.
+
+**question.html**
+
+```html
+<pl-big-o-input answers-name="ans" variable="n" correct-answer="n**2" size="10"></pl-big-o-input>
+```
+
+#### Customizations
+
+| Attribute        | Type                                                  | Default  | Description                                                                          |
+| ---------------- | ----------------------------------------------------- | -------- | ------------------------------------------------------------------------------------ |
+| `answers-name`   | string                                                | —        | Variable name to store data in.                                                      |
+| `type`           | "big-o", "theta", "omega", "little-o", "little-omega" | "big-o"  | Type of asymptotic answer required.                                                  |
+| `weight`         | integer                                               | 1        | Weight to use when computing a weighted average score over elements.                 |
+| `correct-answer` | string                                                | -        | Correct answer for grading.                                                          |
+| `display`        | "block" or "inline"                                   | "inline" | How to display the input field.                                                      |
+| `variable`       | string                                                | —        | A symbol for use in the symbolic expression. Only one variable supported.            |
+| `size`           | integer                                               | 35       | Size of the input box.                                                               |
+| `show-help-text` | boolean                                               | true     | Show the question mark at the end of the input displaying required input parameters. |
+
+#### Details
+
+Correct answers must be specified as strings with Python syntax (e.g., `n**2`, `2**n`, `n * log(n)`), with
+the same syntax as [`pl-symbolic-input`](#pl-symbolic-input-element). Only one variable is supported.
+
+#### Example implementations
+
+- [element/bigOInput]
+
+#### See also
+
+- [`pl-number-input` for numeric input](#pl-number-input-element)
+- [`pl-integer-input` for integer input](#pl-integer-input-element)
+- [`pl-string-input` for string input](#pl-string-input-element)
+- [`pl-symbolic-input` for mathematical expression input](#pl-symbolic-input-element)
+
+---
+
 ### `pl-string-input` element
 
 Fill in the blank field that allows for **string** value input.
@@ -640,8 +684,8 @@ Fill in the blank field that allows for **string** value input.
 ```python
 def generate(data):
 
-  # Answer to fill in the blank input
-  data["correct_answers"]["string_value"] = "Learn"
+    # Answer to fill in the blank input
+    data["correct_answers"]["string_value"] = "Learn"
 ```
 
 #### Customizations
@@ -765,11 +809,11 @@ import numpy as np
 
 def generate(data):
 
-  # Generate a random 3x3 matrix
-  mat = np.random.random((3, 3))
+    # Generate a random 3x3 matrix
+    mat = np.random.random((3, 3))
 
-  # Answer to each matrix entry converted to JSON
-  data['correct_answers']['matrixA'] = pl.to_json(mat)
+    # Answer to each matrix entry converted to JSON
+    data["correct_answers"]["matrixA"] = pl.to_json(mat)
 ```
 
 #### Customizations
@@ -828,11 +872,11 @@ import prairielearn as pl
 import numpy as np
 
 def generate(data):
-  # Randomly generate a 2x2 matrix
-  matrixB = np.random.random((2, 2))
+    # Randomly generate a 2x2 matrix
+    matrixB = np.random.random((2, 2))
 
-  # Answer exported to question.
-  data['correct_answers']['matrixB'] = pl.to_json(matrixB)
+    # Answer exported to question.
+    data["correct_answers"]["matrixB"] = pl.to_json(matrixB)
 ```
 
 #### Customizations
@@ -846,7 +890,7 @@ def generate(data):
 | `rtol`           | number                          | 1e-2     | Relative tolerance for `comparison="relabs"`.                                                                                                                                                                  |
 | `atol`           | number                          | 1e-8     | Absolute tolerance for `comparison="relabs"`.                                                                                                                                                                  |
 | `digits`         | integer                         | 2        | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.                                                                                                                      |
-| `allow-complex`  | boolean                         | false    | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answers'][answers-name] = pl.to_json(ans)`. |
+| `allow-complex`  | boolean                         | false    | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data["correct_answers"][answers-name] = pl.to_json(ans)`. |
 | `show-help-text` | boolean                         | true     | Show the question mark at the end of the input displaying required input parameters.                                                                                                                           |
 
 #### Details
@@ -1074,7 +1118,7 @@ This element displays a 3D scene with objects that the student can (optionally) 
 | `body-canrotate`                | boolean | true      | If you can rotate the body in the UI.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | `camera-canmove`                | boolean | true      | If you can move the camera (i.e., change the view) in the UI.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | `body-pose-format`              | string  | rpy       | Determines how `body-orientation` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.                                                                                                                                                                                                                                                                                                                                                            |
-| `answer-pose-format`            | string  | rpy       | Determines how the answer `data['correct_answers'][answer-name]` is interpreted. If `homogeneous`, then the answer must be a 4x4 homogeneous transformation matrix `[[...], [...], [...], [...]]`. Otherwise, the answer must be a list with two elements. The first element must describe position as `[x, y, z]`. The second element must describe orientation, interpreted based on `answer-pose-format`. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle. |
+| `answer-pose-format`            | string  | rpy       | Determines how the answer `data["correct_answers"][answer-name]` is interpreted. If `homogeneous`, then the answer must be a 4x4 homogeneous transformation matrix `[[...], [...], [...], [...]]`. Otherwise, the answer must be a list with two elements. The first element must describe position as `[x, y, z]`. The second element must describe orientation, interpreted based on `answer-pose-format`. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle. |
 | `text-pose-format`              | string  | matrix    | Determines how the pose of the body is displayed as text. If `matrix` then position is `[x, y, z]` and orientation is a 3x3 rotation matrix. If `quaternion` then position is `[x, y, z]` and orientation is `[x, y, z, w]`. If `homogeneous` then pose is a 4x4 homogeneous transformation matrix.                                                                                                                                                                                                                                                                                                                                                      |
 | `show-pose-in-question`         | boolean | true      | If the current pose of the body is displayed in the question panel.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `show-pose-in-correct-answer`   | boolean | true      | If the current pose of the body is displayed in the correct answer panel.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
@@ -1189,8 +1233,8 @@ Displays the value of a Python variable. Uses options similar to the [pprint](ht
 import prairielearn as pl
 
 def generate(data):
-  data_dictionary = { 'a': 1, 'b': 2, 'c': 3 }
-  data['params']['variable'] = pl.to_json(data_dictionary)
+    data_dictionary = { "a": 1, "b": 2, "c": 3 }
+    data["params"]["variable"] = pl.to_json(data_dictionary)
 ```
 
 #### Customizations
@@ -1222,6 +1266,57 @@ As of right now, the element supports displaying Python objects via `repr()`.
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 - [`pl-variable-output` for displaying a matrix or element in code form.](#pl-variable-output-element)
 
+### `pl-dataframe` element
+
+Displays a formatted display of Pandas DataFrames, with various options for displaying types of columns and code for reproducing the DataFrame.
+
+#### Sample elements
+
+**question.html**
+
+```html
+<pl-dataframe params-name="df" show-index="false" show-dimensions="false" digits="4"></pl-dataframe>
+```
+
+**server.py**
+
+```python
+import prairielearn as pl
+import pandas as pd
+
+def generate(data):
+    df = pd.read_csv("breast-cancer-train.dat", header=None)
+    data["params"]["df"] = pl.to_json(df.head(15))
+```
+
+#### Customizations
+
+| Attribute               | Type          | Default  | Description                                                                                                                                            |
+| ----------------------- | ------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `params-name`           | string        | —        | The name of the key in `data['params']` to get a value from.                                                                                           |
+| `show-header`           | boolean       | true     | Show the header row of a DataFrame.                                                                                                                    |
+| `show-index`            | boolean       | true     | Show the index column of a DataFrame. Will switch to 1-indexing if using the default index and `display-language` is "r".                              |
+| `show-dimensions`       | boolean       | true     | Show a footer with the dimensions of a DataFrame.                                                                                                      |
+| `show-dtype`            | boolean       | false    | Show the data types contained in each column of the DataFrame at the bottom of each column. Types used correspond to the `display-language` parameter. |
+| `display-language`      | "python", "r" | "python" | Language to use for displaying data types and indices.                                                                                                 |
+| `display-variable-name` | string        | "df"     | Variable name to display in code to recreate DataFrame.                                                                                                |
+| `show-python`           | boolean       | true     | Show code that can be used to recreate the DataFrame in Python in a separate tab.                                                                      |
+| `digits`                | integer       | -        | Number of digits to display for floating point entries.                                                                                                |
+
+#### Details
+
+When setting a parameter, use PrairieLearn's built in `pl.to_json()` on the DataFrame to display. Note that there are multiple serialization options for Pandas DataFrames. Encoding a DataFrame `df` by setting `pl.to_json(df, df_encoding_version=2)` allows for missing and date time values whereas `pl.to_json(df, df_encoding_version=1)` (default) does not. However, `df_encoding_version=1` has support for complex numbers, while `df_encoding_version=2` does not.
+
+#### Example implementations
+
+- [element/dataframe]
+
+#### See also
+
+- [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
+- [`pl-variable-output` for displaying a matrix or element in code form.](#pl-variable-output-element)
+- [`pl-python-variable` for displaying a formatted output of Python variables.](#pl-python-variable-element)
+
 ### `pl-figure` element
 
 Display a statically or dynamically generated image.
@@ -1251,14 +1346,14 @@ Display a statically or dynamically generated image.
 
 #### Dynamically generated figures
 
-If `type="dynamic"`, then the contents of the image file must be returned by a function `file()` that is located either in element code or in `server.py`. The contents must be a string (with utf-8 encoding), a bytes-like object, or a file-like object. The filename will be available to this function as `data['filename']`. For example, to generate the `figure.png` for the dynamic `pl-figure` above, this code might appear in `server.py` to generate a "fake" `figure.png`:
+If `type="dynamic"`, then the contents of the image file must be returned by a function `file()` that is located either in element code or in `server.py`. The contents must be a string (with utf-8 encoding), a bytes-like object, or a file-like object. The filename will be available to this function as `data["filename"]`. For example, to generate the `figure.png` for the dynamic `pl-figure` above, this code might appear in `server.py` to generate a "fake" `figure.png`:
 
 ```python
 def file(data):
-    if data['filename']=='figure.png':
+    if data["filename"]=="figure.png":
         plt.plot([1,2,3],[3,4,-2])
         buf = io.BytesIO()
-        plt.savefig(buf,format='png')
+        plt.savefig(buf,format="png")
         return buf
 ```
 
@@ -1312,12 +1407,12 @@ Provide a download link to a static or dynamically generated file.
 
 #### Details
 
-If `type="dynamic"`, then the contents of the file must be returned by a function `file()` that is located either in element code or in `server.py`. The contents must be a string (with utf-8 encoding), a bytes-like object, or a file-like object. The filename will be available to this function as `data['filename']`. For example, this code might appear in `server.py` to generate a file called `data.txt`:
+If `type="dynamic"`, then the contents of the file must be returned by a function `file()` that is located either in element code or in `server.py`. The contents must be a string (with utf-8 encoding), a bytes-like object, or a file-like object. The filename will be available to this function as `data["filename"]`. For example, this code might appear in `server.py` to generate a file called `data.txt`:
 
 ```python
 def file(data):
-    if data['filename']=='data.txt':
-        return 'This data is generated by code.'
+    if data["filename"]=="data.txt":
+        return "This data is generated by code."
 ```
 
 If `file()` does not return anything, it will be treated as if `file()` returned the empty string.
@@ -1359,15 +1454,15 @@ import numpy as np
 
 def generate(data):
 
-  # Create fixed matrix
-  matrixC = np.matrix('5 6; 7 8')
-  matrixD = np.matrix('-1 4; 3 2')
-  # Random matrices can be generated with:
-  # mat = np.random.random((2, 2))
+    # Create fixed matrix
+    matrixC = np.matrix("5 6; 7 8")
+    matrixD = np.matrix("-1 4; 3 2")
+    # Random matrices can be generated with:
+    # mat = np.random.random((2, 2))
 
-  # Export each matrix as a JSON object for the question view.
-  data['params']['matrixC'] = pl.to_json(matrixC)
-  data['params']['matrixD'] = pl.to_json(matrixD)
+    # Export each matrix as a JSON object for the question view.
+    data["params"]["matrixC"] = pl.to_json(matrixC)
+    data["params"]["matrixD"] = pl.to_json(matrixD)
 ```
 
 #### Customizations
@@ -1387,7 +1482,7 @@ Attributes for `<variable>` (one of these for each variable to display):
 
 | Attribute     | Type    | Default | Description                                                     |
 | ------------- | ------- | ------- | --------------------------------------------------------------- |
-| `params-name` | string  | —       | Name of variable in `data['params']` to display.                |
+| `params-name` | string  | —       | Name of variable in `data["params"]` to display.                |
 | `comment`     | string  | —       | Comment to add after the displayed variable.                    |
 | `digits`      | integer | —       | Number of digits to display after the decimal for the variable. |
 
@@ -1426,7 +1521,7 @@ A = c(1.23, 4.56) # vector
 A = matrix(c(1.23, 4.56, 8.90, 1.23), nrow = 2, ncol = 2, byrow = TRUE) # matrix
 ```
 
-If a variable `v` is a complex object, you should use `import prairielearn as pl` and `data['params'][params-name] = pl.to_json(v)`.
+If a variable `v` is a complex object, you should use `import prairielearn as pl` and `data["params"][params-name] = pl.to_json(v)`.
 
 #### Example implementations
 
@@ -1464,24 +1559,24 @@ import numpy as np
 
 def generate(data):
 
-  # Construct a matrix
-  mat = np.matrix('1 2; 3 4')
+    # Construct a matrix
+    mat = np.matrix("1 2; 3 4")
 
-  # Export matrix to be displayed in question.html
-  data['params']['matrixC'] = pl.to_json(mat)
+    # Export matrix to be displayed in question.html
+    data["params"]["matrixC"] = pl.to_json(mat)
 ```
 
 #### Customizations
 
 | Attribute           | Type    | Default | Description                                                                                                                                                                                                                        |
 | ------------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `params-name`       | string  | —       | Name of variable in `data['params']` to display.                                                                                                                                                                                   |
+| `params-name`       | string  | —       | Name of variable in `data["params"]` to display.                                                                                                                                                                                   |
 | `presentation-type` | string  | `'f'`   | Number display format. If `presentation-type` is `'sigfig'`, each number is formatted using the `to_precision` module to `digits` significant figures. Otherwise, each number is formatted as `'{:.{digits}{presentation-type}}'`. |
 | `digits`            | integer | `"2"`   | Number of digits to display according to the choice of `presentation-type`                                                                                                                                                         |
 
 #### Details
 
-Depending on whether `data['params']` contains either a scalar or 2D numpy array of numbers,
+Depending on whether `data["params"]` contains either a scalar or 2D numpy array of numbers,
 one of the following will be returned.
 
 - **scalar**
@@ -1554,10 +1649,10 @@ import prairielearn as pl
 import numpy as np
 
 def generate(data):
-  mat = np.random.random((3, 3))
-  mat = mat / np.linalg.norm(mat, 1, axis=0)
-  data['params']['labels'] = pl.to_json(['A', 'B', 'C'])
-  data['params']['matrix'] = pl.to_json(mat)
+    mat = np.random.random((3, 3))
+    mat = mat / np.linalg.norm(mat, 1, axis=0)
+    data["params"]["labels"] = pl.to_json(["A", "B", "C"])
+    data["params"]["matrix"] = pl.to_json(mat)
 ```
 
 #### Customizations
@@ -1570,6 +1665,8 @@ def generate(data):
 | `params-type`               | string  | `adjacency-matrix` | How to interpret the input data in `params-name-matrix`. By default, only `adjacency-matrix` exists but custom types can be added through extensions.                                                                                                                   |
 | `weights`                   | boolean | `None`             | When using an adjacency matrix, whether or not to show the edge weights. By default will automatically show weights for stochastic matrices (when they are not binary `0`/`1`).                                                                                         |
 | `weights-digits`            | integer | `"2"`              | When using an adjacency matrix, how many digits to show for the weights.                                                                                                                                                                                                |
+| `negative-weights`          | boolean | false              | Whether to recognize negative weights in an adjacency matrix. If set to false, then all weights at most 0 are ignored (not counted as an edge). If set to true, then all weights that are not `None` are recognized.                                                    |
+| `directed`                  | boolean | true               | Whether to treat edges in an adjacency matrix as directed or undirected. If set to false, then edges will be rendered as undirected. _The input adjacency matrix must be symmetric if this is set to false._                                                            |
 | `weights-presentation-type` | string  | `'f'`              | Number display format for the weights when using an adjacency matrix. If presentation-type is 'sigfig', each number is formatted using the to_precision module to digits significant figures. Otherwise, each number is formatted as `{:.{digits}{presentation-type}}`. |
 
 #### Example implementations
@@ -1681,7 +1778,7 @@ An overlay is pre-defined as a "overlay area" with a static size. By default, el
 
 ### `pl-external-grader-variables` element
 
-Displays variables that are given to the student, or expected for the student to define in externally-graded questions. The list of variables should be stored in `data['params']` and has the following format:
+Displays variables that are given to the student, or expected for the student to define in externally-graded questions. The list of variables should be stored in `data["params"]` and has the following format:
 
 ```python
 data["params"]["names_for_user"] = [
@@ -1725,7 +1822,7 @@ def generate(data):
 
 | Attribute     | Type   | Default | Description                                                                                         |
 | ------------- | ------ | ------- | --------------------------------------------------------------------------------------------------- |
-| `params-name` | string | `None`  | Name of variable specification in `data['params']` to display, the format for which is given above. |
+| `params-name` | string | `None`  | Name of variable specification in `data["params"]` to display, the format for which is given above. |
 
 #### Example implementations
 
@@ -2150,6 +2247,8 @@ The provided `script-name` corresponds to a file located within the director for
 <!-- Element option overview questions -->
 
 [element/checkbox]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/checkbox
+[element/bigoinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/bigOInput
+[element/hiddenhints]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/hiddenHints
 [element/code]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/code
 [element/drawinggallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingGallery
 [element/codedocumentation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/codeDocumentation
@@ -2170,6 +2269,7 @@ The provided `script-name` corresponds to a file located within the director for
 [element/panels]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/panels
 [element/prairiedrawfigure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/testCourse/questions/prairieDrawFigure
 [element/pythonvariable]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/pythonVariable
+[element/dataframe]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/dataframe
 [element/stringinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/stringInput
 [element/symbolicinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/symbolicInput
 [element/threejs]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/threeJS
