@@ -19,7 +19,7 @@
         </div>
 
         <div class="table-responsive">
-          <table class="table table-sm table-hover">
+          <table class="table table-sm table-hover" data-testid="table-defined-access-rules">
             <thead>
               <tr>
                 <th></th>
@@ -106,7 +106,7 @@
         <div class="card-body">There are no <%= set_partition_index ? 'exception' : 'general' %> access rules</div>
         <% } else { %>
         <div class="table-responsive">
-          <table class="table table-sm table-hover">
+          <table class="table table-sm table-hover" data-testid="table-interpreted-<%= set_partition_index ? 'exception' : 'general' %>">
             <thead>
               <tr>
                 <th colspan="3"></th>
@@ -143,7 +143,7 @@
                 <td>
                   <% if (access_rule.valid_now_public) { %>
                   <span data-toggle="tooltip" title="This rule currently applies in public mode">
-                    <span class="badge badge-success badge-pill">Active</span>
+                    <span class="badge badge-success badge-pill" data-testid="active-rule-badge">Active</span>
                   </span>
                   <% } %>
                 </td>

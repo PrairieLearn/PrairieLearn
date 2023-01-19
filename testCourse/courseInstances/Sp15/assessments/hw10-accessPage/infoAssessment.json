@@ -1,0 +1,72 @@
+{
+  "uuid": "02a973ca-bc8d-4360-b5e0-a22abacb401c",
+  "type": "Homework",
+  "title": "Homework for access page test",
+  "set": "Homework",
+  "number": "10",
+  "allowAccess": [
+    {
+      "uids": ["student1@illinois.edu", "student2@illinois.edu"],
+      "startDate": "2023-04-15T12:00:01Z",
+      "endDate": "2023-08-05T11:59:59Z",
+      "credit": 110
+    },
+    {
+      "uids": [],
+      "startDate": "2023-05-15T12:00:01Z",
+      "endDate": "2023-07-05T11:59:59Z",
+      "credit": 120
+    },
+    {
+      "startDate": "2023-04-10T12:00:01Z",
+      "endDate": "2023-08-10T11:59:59Z",
+      "credit": 100
+    },
+    {
+      "startDate": "2023-06-10T12:00:01Z",
+      "endDate": "2023-10-10T11:59:59Z",
+      "credit": 90,
+      "password": "part2"
+    },
+    {
+      "startDate": "2023-03-10T12:00:01Z",
+      "endDate": "2023-07-10T11:59:59Z",
+      "credit": 80,
+      "timeLimitMin": 120,
+      "password": "part3"
+    },
+    {
+      "startDate": "2023-05-10T12:00:01Z",
+      "endDate": "2023-09-10T11:59:59Z",
+      "credit": 70,
+      "password": "part4"
+    },
+    {
+      "startDate": "2023-02-10T12:00:01Z",
+      "endDate": "2023-11-10T11:59:59Z",
+      "credit": 60,
+      "password": "part5",
+      "showClosedAssessment": false
+    },
+    {
+      "endDate": "2023-12-10T11:59:59Z",
+      "credit": 50,
+      "password": "part6",
+      "showClosedAssessment": false,
+      "showClosedAssessmentScore": false
+    },
+    {
+      "uids": ["student2@illinois.edu"],
+      "startDate": "2023-07-15T12:00:01Z",
+      "endDate": "2023-11-05T11:59:59Z",
+      "credit": 40
+    },
+    {
+      "startDate": "2023-01-10T12:00:01Z",
+      "active": false
+    }
+  ],
+  "zones": [{
+    "questions": [ {"id": "partialCredit1", "points": 10} ]
+  }]
+}

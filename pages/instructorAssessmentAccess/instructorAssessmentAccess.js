@@ -108,6 +108,7 @@ router.get(
       await sqldb.queryAsync(sql.assessment_access_rules, {
         assessment_id: res.locals.assessment.id,
         link_exam_id: config.syncExamIdAccessRules,
+        req_date: res.locals.req_date,
       })
     ).rows;
 
