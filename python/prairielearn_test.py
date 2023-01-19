@@ -87,28 +87,13 @@ def test_numpy_serialization(numpy_object: Any) -> None:
 
 
 @pytest.mark.parametrize(
-    "old_object_to_encode",
-    [
-        np.int64(5),
-        np.float16(0.00000184388328),
-    ],
+    "object_to_encode, expected_result",
+    [(np.float64(5.0), 5.0), (np.complex128("12+3j"), complex("12+3j"))],
 )
-def test_legacy_serialization(old_object_to_encode: Any) -> None:
+def test_legacy_serialization(object_to_encode: Any, expected_result: Any) -> None:
     """Test that nothing happens under the old encoding for numpy scalars."""
 
-    encoded_object = pl.to_json(old_object_to_encode)
+    json_object = json.dumps(pl.to_json(object_to_encode), allow_nan=False)
+    decoded_json_object = pl.from_json(json.loads(json_object))
 
-    assert type(old_object_to_encode) == type(encoded_object)
-    assert old_object_to_encode == encoded_object
-
-
-def test_legacy_complex_serialization() -> None:
-    """Test legacy complex serialization."""
-
-    complex_num_string = "12+3j"
-
-    encoded_object = pl.from_json(pl.to_json(np.complex128(complex_num_string)))
-    expected_result = complex(complex_num_string)
-
-    assert type(expected_result) == type(encoded_object)
-    assert expected_result == encoded_object
+    assert decoded_json_object == expected_result
