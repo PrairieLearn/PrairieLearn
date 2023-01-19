@@ -134,7 +134,6 @@ def worker_loop():
                 # Node doesn't support POSIX-style forks, so we can't use a zygote
                 # process like we do with Python. Instead, we'll exec a Node subprocess.
                 # Node generally boots up very quickly, so this should be fine.
-                print(cwd)
                 result = subprocess.run(
                     [
                         "node",
@@ -150,11 +149,16 @@ def worker_loop():
                     encoding="utf-8",
                 )
 
+                # Proxy any output from the subprocess back to the caller.
+                # Note that we only deal with stderr, as the Node process rewrote
+                # the output streams so that writes to stdout actually go to stderr.
+                # This allows us to use stdout for the actual return value.
                 if result.stderr:
                     print(result.stderr, file=sys.stderr)
                     sys.stderr.flush()
-                    print(result)
-                    sys.stdout.flush()
+
+                # If the subprocess exited with a non-zero exit code, raise an exception.
+                result.check_returncode()
 
                 outf.write(result.stdout)
                 outf.write("\n")
