@@ -1,6 +1,13 @@
+// @ts-check
 const { experimentAsync } = require('tzientist');
 const _ = require('lodash');
 const { trace, context, SpanStatusCode } = require('@opentelemetry/api');
+const error = require('../prairielib/lib/error');
+const ERR = require('async-stacktrace');
+
+const chunks = require('../lib/chunks');
+const { withCodeCaller } = require('../lib/code-caller');
+const filePaths = require('../lib/file-paths');
 
 const calculationInprocess = require('./calculation-inprocess');
 const calculationSubprocess = require('./calculation-subprocess');
@@ -157,11 +164,53 @@ function questionFunctionExperiment(name, control, candidate) {
   };
 }
 
-module.exports.generate = questionFunctionExperiment(
-  'calculation-question-generate',
-  calculationInprocess.generate,
-  calculationSubprocess.generate
-);
+module.exports.generate = (question, course, variant_seed, callback) => {
+  const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+  filePaths.questionFilePath(
+    'server.js',
+    question.directory,
+    coursePath,
+    question,
+    (err, questionServerPath) => {
+      if (ERR(err, callback)) return;
+      withCodeCaller(coursePath, async (codeCaller) => {
+        const res = await codeCaller.call('v2-question', null, questionServerPath, 'generate', [
+          {
+            questionServerPath,
+            func: 'generate',
+            coursePath,
+            question,
+          },
+        ]);
+        return res.result;
+      }).then(
+        (questionData) => {
+          let data = {
+            params: questionData.params,
+            true_answer: questionData.trueAnswer,
+            options: questionData.options || question.options || {},
+          };
+          callback(null, [], data);
+        },
+        (err) => {
+          let data = {
+            variant_seed: variant_seed,
+            question: question,
+            course: course,
+          };
+          err.status = 500;
+          return ERR(error.addData(err, data), callback);
+        }
+      );
+    }
+  );
+};
+
+// module.exports.generate = questionFunctionExperiment(
+//   'calculation-question-generate',
+//   calculationInprocess.generate,
+//   calculationSubprocess.generate
+// );
 
 module.exports.prepare = questionFunctionExperiment(
   'calculation-question-prepare',

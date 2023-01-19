@@ -1,6 +1,7 @@
 // @ts-check
 const _ = require('lodash');
 const cp = require('child_process');
+const readline = require('readline');
 
 const chunks = require('../lib/chunks');
 const config = require('../lib/config');
@@ -65,7 +66,7 @@ module.exports = {
 
     const workerPath = require.resolve('./calculation-worker');
     const child = cp.spawn('node', [workerPath], {
-      // Unline with Python questions, calculation questions are executed
+      // Unlike with Python questions, calculation questions are executed
       // in the context of the PrairieLearn root directory. This is
       // necessary for the `config.questionDefaultsDir` value to work
       // correctly in the subprocess.

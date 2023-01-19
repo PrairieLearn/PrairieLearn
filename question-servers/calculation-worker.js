@@ -3,7 +3,6 @@
 // serves to isolate code from the main process that's handling requests.
 
 const path = require('path');
-const fs = require('fs');
 const readline = require('readline');
 
 const error = require('../prairielib/lib/error');
@@ -137,6 +136,12 @@ function getLineOnce(rl) {
 }
 
 if (require.main === module) {
+  // Redirect `stdout` to `stderr` so that we can ensure that no
+  // user code can write to `stdout`; we need to use `stdout` to send results
+  // instead.
+  const stdoutWrite = process.stdout.write.bind(process.stdout);
+  process.stdout.write = process.stderr.write.bind(process.stderr);
+
   (async () => {
     const rl = readline.createInterface({
       input: process.stdin,
@@ -183,8 +188,8 @@ if (require.main === module) {
     }
 
     // Write data back to invoking process.
-    fs.writeFileSync(3, JSON.stringify({ data }), { encoding: 'utf-8' });
-    fs.writeFileSync(3, '\n');
+    stdoutWrite(JSON.stringify({ val: data, present: true }), 'utf-8');
+    stdoutWrite('\n');
 
     // If we get here, everything went well - exit cleanly.
     process.exit(0);
