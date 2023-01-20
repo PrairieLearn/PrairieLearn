@@ -1,7 +1,7 @@
 import json
 import math
 from enum import Enum
-from typing import Any, Callable, cast
+from typing import Any, Callable, Dict, Optional, Tuple, cast
 
 import lxml.html
 import numpy as np
@@ -183,3 +183,89 @@ def test_get_enum_attrib_exceptions(html_str: str) -> None:
 
     with pytest.raises(Exception):
         pl.get_enum_attrib(element, "test-choice", DummyEnum)
+
+
+@pytest.mark.parametrize(
+    "question_name, student_answer, weight, expected_grade",
+    [
+        ("base", "a", 1, True),
+        ("base", "a, b", 1, False),
+        ("base", "", 2, False),
+        ("home", "b", 2, True),
+        ("base", "c", 3, True),
+        ("base", "<>", 3, True),
+        ("base", "><", 3, False),
+    ],
+)
+def test_grade_answer_parametrized_correct(
+    question_data: pl.QuestionData,
+    question_name: str,
+    student_answer: str,
+    weight: int,
+    expected_grade: bool,
+) -> None:
+
+    question_data["submitted_answers"] = {question_name: student_answer}
+
+    good_feedback = "you did good"
+    bad_feedback = "that's terrible"
+
+    def grading_function(submitted_answer: str) -> Tuple[bool, Optional[str]]:
+        if submitted_answer in {"a", "b", "c", "d", "<>"}:
+            return True, good_feedback
+        return False, bad_feedback
+
+    pl.grade_answer_parameterized(
+        question_data, question_name, grading_function, weight
+    )
+
+    expected_score = 1.0 if expected_grade else 0.0
+    assert question_data["partial_scores"][question_name]["score"] == expected_score
+    assert type(question_data["partial_scores"][question_name]["score"]) == float
+
+    assert "weight" in question_data["partial_scores"][question_name]
+    assert question_data["partial_scores"][question_name].get("weight") == weight
+
+    expected_feedback = good_feedback if expected_grade else bad_feedback
+
+    assert (
+        question_data["partial_scores"][question_name].get("feedback")
+        == expected_feedback
+    )
+
+
+def test_grade_answer_parametrized_bad_grade_function(
+    question_data: pl.QuestionData,
+) -> None:
+    question_name = "name"
+
+    question_data["submitted_answers"] = {question_name: "True"}
+
+    def grading_function(ans: str) -> Any:
+        return "True", f"The answer {ans} is right"
+
+    with pytest.raises(AssertionError):
+        pl.grade_answer_parameterized(question_data, question_name, grading_function)
+
+
+def test_grade_answer_parametrized_key_error_blank(
+    question_data: pl.QuestionData,
+) -> None:
+    question_name = "name"
+
+    question_data["submitted_answers"] = {question_name: "True"}
+
+    def grading_function(_: str) -> Tuple[bool, Optional[str]]:
+        decoy_dict: Dict[str, str] = dict()
+        decoy_dict["junk"]  # This is to throw a key error
+        return (True, None)
+
+    with pytest.raises(KeyError):
+        pl.grade_answer_parameterized(question_data, question_name, grading_function)
+
+    # Empty out submitted answers
+    question_data["submitted_answers"] = dict()
+    question_data["format_errors"] = dict()
+    pl.grade_answer_parameterized(question_data, question_name, grading_function)
+
+    assert question_data["format_errors"][question_name] == "No answer was submitted"
