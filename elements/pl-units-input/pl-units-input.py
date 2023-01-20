@@ -77,7 +77,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         )
 
     grading_mode = pl.get_enum_attrib(
-        GradingMode, element, "grading-mode", GRADING_MODE_DEFAULT
+        element, "grading-mode", GradingMode, GRADING_MODE_DEFAULT
     )
 
     ureg = UnitRegistry(cache_folder=":auto:")
@@ -117,16 +117,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
     suffix = pl.get_string_attrib(element, "suffix", SUFFIX_DEFAULT)
-    display = pl.get_enum_attrib(DisplayType, element, "display", DISPLAY_DEFAULT)
+    display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
     comparison = pl.get_enum_attrib(
-        uu.ComparisonType, element, "comparison", COMPARISON_DEFAULT
+        element, "comparison", uu.ComparisonType, COMPARISON_DEFAULT
     )
     show_placeholder = pl.get_boolean_attrib(
         element, "show-placeholder", SHOW_PLACEHOLDER_DEFAULT
     )
     grading_mode = pl.get_enum_attrib(
-        GradingMode, element, "grading-mode", GRADING_MODE_DEFAULT
+        element, "grading-mode", GradingMode, GRADING_MODE_DEFAULT
     )
 
     partial_scores = data["partial_scores"].get(name, {})
@@ -264,7 +264,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
 
     units_only = (
-        pl.get_enum_attrib(GradingMode, element, "grading-mode", GRADING_MODE_DEFAULT)
+        pl.get_enum_attrib(element, "grading-mode", GradingMode, GRADING_MODE_DEFAULT)
         is GradingMode.UNITS_ONLY
     )
 
@@ -329,7 +329,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
     grading_mode = pl.get_enum_attrib(
-        GradingMode, element, "grading-mode", GRADING_MODE_DEFAULT
+        element, "grading-mode", GradingMode, GRADING_MODE_DEFAULT
     )
 
     a_tru = data["correct_answers"].get(name, None)
@@ -347,7 +347,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             ureg=ureg,
             correct_ans=a_tru,
             comparison=pl.get_enum_attrib(
-                uu.ComparisonType, element, "comparison", COMPARISON_DEFAULT
+                element, "comparison", uu.ComparisonType, COMPARISON_DEFAULT
             ),
             digits=pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT),
             rtol=pl.get_float_attrib(element, "rtol", RTOL_DEFAULT),
@@ -363,7 +363,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     else:
         assert_never(grading_mode)
 
-    pl.grade_question_parameterized(data, name, grading_fn, weight)
+    pl.grade_answer_parameterized(data, name, grading_fn, weight)
 
 
 def test(element_html: str, data: pl.ElementTestData) -> None:
@@ -373,7 +373,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
     a_tru = data["correct_answers"][name]
     grading_mode = pl.get_enum_attrib(
-        GradingMode, element, "grading-mode", GRADING_MODE_DEFAULT
+        element, "grading-mode", GradingMode, GRADING_MODE_DEFAULT
     )
 
     result = data["test_type"]
