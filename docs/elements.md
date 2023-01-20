@@ -588,20 +588,21 @@ def generate(data):
 
 #### Customizations
 
-| Attribute                    | Type                | Default  | Description                                                                                                                                                                                                       |
-| ---------------------------- | ------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`               | string              | —        | Variable name to store data in. If the correct answer `ans` is a `sympy` object, you should use `import prairielearn as pl` and `data["correct_answers"][answers-name] = pl.to_json(ans)`.                        |
-| `weight`                     | integer             | 1        | Weight to use when computing a weighted average score over elements.                                                                                                                                              |
-| `correct-answer`             | float               | special  | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                                                                  |
-| `label`                      | text                | —        | A prefix to display before the input box (e.g., `label="$F =$"`).                                                                                                                                                 |
-| `display`                    | "block" or "inline" | "inline" | How to display the input field.                                                                                                                                                                                   |
-| `variables`                  | string              | —        | A comma-delimited list of symbols that can be used in the symbolic expression.                                                                                                                                    |
-| `allow-complex`              | boolean             | false    | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.                                                                                                                          |
-| `imaginary-unit-for-display` | string              | `i`      | The imaginary unit that is used for display. It must be either `i` or `j`. Again, this is _only_ for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`. |
-| `allow-blank`                | boolean             | false    | Whether or not an empty input box is allowed. By default, an empty input box will not be graded (invalid format).                                                                                                 |
-| `blank-value`                | string              | 0 (zero) | Expression to be used as an answer if the answer is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., same variables, etc.).                      |
-| `size`                       | integer             | 35       | Size of the input box.                                                                                                                                                                                            |
-| `show-help-text`             | boolean             | true     | Show the question mark at the end of the input displaying required input parameters.                                                                                                                              |
+| Attribute                    | Type                | Default               | Description                                                                                                                                                                                                       |
+| ---------------------------- | ------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name`               | string              | —                     | Variable name to store data in. If the correct answer `ans` is a `sympy` object, you should use `import prairielearn as pl` and `data["correct_answers"][answers-name] = pl.to_json(ans)`.                        |
+| `weight`                     | integer             | 1                     | Weight to use when computing a weighted average score over elements.                                                                                                                                              |
+| `correct-answer`             | float               | special               | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                                                                  |
+| `label`                      | text                | —                     | A prefix to display before the input box (e.g., `label="$F =$"`).                                                                                                                                                 |
+| `display`                    | "block" or "inline" | "inline"              | How to display the input field.                                                                                                                                                                                   |
+| `variables`                  | string              | —                     | A comma-delimited list of symbols that can be used in the symbolic expression.                                                                                                                                    |
+| `allow-complex`              | boolean             | false                 | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.                                                                                                                          |
+| `imaginary-unit-for-display` | string              | `i`                   | The imaginary unit that is used for display. It must be either `i` or `j`. Again, this is _only_ for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`. |
+| `allow-blank`                | boolean             | false                 | Whether or not an empty input box is allowed. By default, an empty input box will not be graded (invalid format).                                                                                                 |
+| `blank-value`                | string              | 0 (zero)              | Expression to be used as an answer if the answer is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., same variables, etc.).                      |
+| `size`                       | integer             | 35                    | Size of the input box.                                                                                                                                                                                            |
+| `show-help-text`             | boolean             | true                  | Show the question mark at the end of the input displaying required input parameters.                                                                                                                              |
+| `placeholder`                | string              | "symbolic expression" | Hint displayed inside the input box describing the expected type of input.                                                                                                                                        |
 
 #### Details
 
@@ -636,16 +637,17 @@ Gives automated feedback in the case of improper asymptotic input.
 
 #### Customizations
 
-| Attribute        | Type                                                  | Default  | Description                                                                          |
-| ---------------- | ----------------------------------------------------- | -------- | ------------------------------------------------------------------------------------ |
-| `answers-name`   | string                                                | —        | Variable name to store data in.                                                      |
-| `type`           | "big-o", "theta", "omega", "little-o", "little-omega" | "big-o"  | Type of asymptotic answer required.                                                  |
-| `weight`         | integer                                               | 1        | Weight to use when computing a weighted average score over elements.                 |
-| `correct-answer` | string                                                | -        | Correct answer for grading.                                                          |
-| `display`        | "block" or "inline"                                   | "inline" | How to display the input field.                                                      |
-| `variable`       | string                                                | —        | A symbol for use in the symbolic expression. Only one variable supported.            |
-| `size`           | integer                                               | 35       | Size of the input box.                                                               |
-| `show-help-text` | boolean                                               | true     | Show the question mark at the end of the input displaying required input parameters. |
+| Attribute        | Type                                                  | Default                 | Description                                                                          |
+| ---------------- | ----------------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------ |
+| `answers-name`   | string                                                | —                       | Variable name to store data in.                                                      |
+| `type`           | "big-o", "theta", "omega", "little-o", "little-omega" | "big-o"                 | Type of asymptotic answer required.                                                  |
+| `weight`         | integer                                               | 1                       | Weight to use when computing a weighted average score over elements.                 |
+| `correct-answer` | string                                                | -                       | Correct answer for grading.                                                          |
+| `display`        | "block" or "inline"                                   | "inline"                | How to display the input field.                                                      |
+| `variable`       | string                                                | —                       | A symbol for use in the symbolic expression. Only one variable supported.            |
+| `size`           | integer                                               | 35                      | Size of the input box.                                                               |
+| `show-help-text` | boolean                                               | true                    | Show the question mark at the end of the input displaying required input parameters. |
+| `placeholder`    | string                                                | "asymptotic expression" | Hint displayed inside the input box describing the expected type of input.           |
 
 #### Details
 
