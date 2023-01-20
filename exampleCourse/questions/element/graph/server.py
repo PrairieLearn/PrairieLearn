@@ -44,7 +44,7 @@ def generate(data):
         (1,3),
         (3,2),
         (2,3)
-    ])
+    ], rankdir='LR')
 
     data['params']['multigraph'] = pl.to_json(multigraph)
 

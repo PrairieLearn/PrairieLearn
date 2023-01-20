@@ -179,6 +179,7 @@ data['params']['random-graph'] = pl.to_json(random_graph)
     <div class="card-body" >
         <pl-question-panel>
             <p>Rendering directed graphs and multigraphs is supported natively with networkx.
+                Here, we also set <code>rankdir="LR"</code> in the constructor for the graph.
             </p>
         </pl-question-panel>
         <pl-graph params-type="networkx" params-name-networkx="multigraph"></pl-graph>
