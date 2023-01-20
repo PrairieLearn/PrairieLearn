@@ -119,8 +119,9 @@ def determine_score_params(
 ) -> Tuple[Literal["correct", "partial", "incorrect"], Union[bool, float]]:
     """
     Determine appropriate key and value for display on the frontend given the
-    score for a particular question. Setting the given key-value pair in a
-    dict passed to a mustache template will make the score badge appear.
+    score for a particular question. For elements following PrairieLearn
+    conventions, the return value can be used as a key/value pair in the
+    dictionary passed to an element's Mustache template to display a score badge.
     """
 
     if score >= 1:
