@@ -238,6 +238,7 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
         sympy.Expr (i.e., any scalar sympy expression) -> '_type': 'sympy'
         sympy.Matrix -> '_type': 'sympy_matrix'
         pandas.DataFrame -> '_type': 'dataframe'
+        any networkx graph type -> '_type': 'networkx_graph'
 
     Note that the 'dataframe_v2' encoding allows for missing and date time values whereas
     the 'dataframe' (default) does not. However, the 'dataframe' encoding allows for complex
@@ -346,6 +347,7 @@ def from_json(v):
         '_type': 'sympy_matrix' -> sympy.Matrix
         '_type': 'dataframe' -> pandas.DataFrame
         '_type': 'dataframe_v2' -> pandas.DataFrame
+        '_type': 'networkx_graph' -> corresponding networkx graph
 
     If v encodes an ndarray and has the field '_dtype', this function recovers
     its dtype.
