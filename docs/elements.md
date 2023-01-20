@@ -66,6 +66,7 @@ images, files, and code display. The following **decorative** elements are avail
 - [`pl-overlay`](#pl-overlay-element): Allows layering existing elements on top of one another in specified positions.
 - [`pl-external-grader-variables`](#pl-external-grader-variables-element): Displays expected and given variables for externally graded questions.
 - [`pl-xss-safe`](#pl-xss-safe-element): Removes potentially unsafe code from HTML code.
+- [`pl-file-preview`](#pl-file-preview-element): Displays a preview of submitted files.
 
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
@@ -82,8 +83,7 @@ The following **Conditional** elements are available:
 - [`pl-manual-grading-only`](#pl-manual-grading-only-element): Shows content only in manual grading.
 - [`pl-external-grader-results`](#pl-external-grader-results-element):
   Displays results from questions that are externally graded.
-- [`pl-hidden-hints`](#pl-hidden-hints): Displays hints as a student submits more on the current variant.
-- [`pl-file-preview`](#pl-file-preview): Displays a preview of submitted files.
+- [`pl-hidden-hints`](#pl-hidden-hints-element): Displays hints as a student submits more on the current variant.
 
 Note: PrairieLearn Elements listed next have been
 **deprecated**. These elements are still supported for backwards
@@ -589,20 +589,21 @@ def generate(data):
 
 #### Customizations
 
-| Attribute                    | Type                | Default  | Description                                                                                                                                                                                                       |
-| ---------------------------- | ------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`               | string              | —        | Variable name to store data in. If the correct answer `ans` is a `sympy` object, you should use `import prairielearn as pl` and `data["correct_answers"][answers-name] = pl.to_json(ans)`.                        |
-| `weight`                     | integer             | 1        | Weight to use when computing a weighted average score over elements.                                                                                                                                              |
-| `correct-answer`             | float               | special  | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                                                                  |
-| `label`                      | text                | —        | A prefix to display before the input box (e.g., `label="$F =$"`).                                                                                                                                                 |
-| `display`                    | "block" or "inline" | "inline" | How to display the input field.                                                                                                                                                                                   |
-| `variables`                  | string              | —        | A comma-delimited list of symbols that can be used in the symbolic expression.                                                                                                                                    |
-| `allow-complex`              | boolean             | false    | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.                                                                                                                          |
-| `imaginary-unit-for-display` | string              | `i`      | The imaginary unit that is used for display. It must be either `i` or `j`. Again, this is _only_ for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`. |
-| `allow-blank`                | boolean             | false    | Whether or not an empty input box is allowed. By default, an empty input box will not be graded (invalid format).                                                                                                 |
-| `blank-value`                | string              | 0 (zero) | Expression to be used as an answer if the answer is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., same variables, etc.).                      |
-| `size`                       | integer             | 35       | Size of the input box.                                                                                                                                                                                            |
-| `show-help-text`             | boolean             | true     | Show the question mark at the end of the input displaying required input parameters.                                                                                                                              |
+| Attribute                    | Type                | Default               | Description                                                                                                                                                                                                       |
+| ---------------------------- | ------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name`               | string              | —                     | Variable name to store data in. If the correct answer `ans` is a `sympy` object, you should use `import prairielearn as pl` and `data["correct_answers"][answers-name] = pl.to_json(ans)`.                        |
+| `weight`                     | integer             | 1                     | Weight to use when computing a weighted average score over elements.                                                                                                                                              |
+| `correct-answer`             | float               | special               | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                                                                  |
+| `label`                      | text                | —                     | A prefix to display before the input box (e.g., `label="$F =$"`).                                                                                                                                                 |
+| `display`                    | "block" or "inline" | "inline"              | How to display the input field.                                                                                                                                                                                   |
+| `variables`                  | string              | —                     | A comma-delimited list of symbols that can be used in the symbolic expression.                                                                                                                                    |
+| `allow-complex`              | boolean             | false                 | Whether complex numbers (expressions with `i` or `j` as the imaginary unit) are allowed.                                                                                                                          |
+| `imaginary-unit-for-display` | string              | `i`                   | The imaginary unit that is used for display. It must be either `i` or `j`. Again, this is _only_ for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`. |
+| `allow-blank`                | boolean             | false                 | Whether or not an empty input box is allowed. By default, an empty input box will not be graded (invalid format).                                                                                                 |
+| `blank-value`                | string              | 0 (zero)              | Expression to be used as an answer if the answer is left blank. Only applied if `allow-blank` is `true`. Must follow the same format as an expected user input (e.g., same variables, etc.).                      |
+| `size`                       | integer             | 35                    | Size of the input box.                                                                                                                                                                                            |
+| `show-help-text`             | boolean             | true                  | Show the question mark at the end of the input displaying required input parameters.                                                                                                                              |
+| `placeholder`                | string              | "symbolic expression" | Hint displayed inside the input box describing the expected type of input.                                                                                                                                        |
 
 #### Details
 
@@ -637,16 +638,17 @@ Gives automated feedback in the case of improper asymptotic input.
 
 #### Customizations
 
-| Attribute        | Type                                                  | Default  | Description                                                                          |
-| ---------------- | ----------------------------------------------------- | -------- | ------------------------------------------------------------------------------------ |
-| `answers-name`   | string                                                | —        | Variable name to store data in.                                                      |
-| `type`           | "big-o", "theta", "omega", "little-o", "little-omega" | "big-o"  | Type of asymptotic answer required.                                                  |
-| `weight`         | integer                                               | 1        | Weight to use when computing a weighted average score over elements.                 |
-| `correct-answer` | string                                                | -        | Correct answer for grading.                                                          |
-| `display`        | "block" or "inline"                                   | "inline" | How to display the input field.                                                      |
-| `variable`       | string                                                | —        | A symbol for use in the symbolic expression. Only one variable supported.            |
-| `size`           | integer                                               | 35       | Size of the input box.                                                               |
-| `show-help-text` | boolean                                               | true     | Show the question mark at the end of the input displaying required input parameters. |
+| Attribute        | Type                                                  | Default                 | Description                                                                          |
+| ---------------- | ----------------------------------------------------- | ----------------------- | ------------------------------------------------------------------------------------ |
+| `answers-name`   | string                                                | —                       | Variable name to store data in.                                                      |
+| `type`           | "big-o", "theta", "omega", "little-o", "little-omega" | "big-o"                 | Type of asymptotic answer required.                                                  |
+| `weight`         | integer                                               | 1                       | Weight to use when computing a weighted average score over elements.                 |
+| `correct-answer` | string                                                | -                       | Correct answer for grading.                                                          |
+| `display`        | "block" or "inline"                                   | "inline"                | How to display the input field.                                                      |
+| `variable`       | string                                                | —                       | A symbol for use in the symbolic expression. Only one variable supported.            |
+| `size`           | integer                                               | 35                      | Size of the input box.                                                               |
+| `show-help-text` | boolean                                               | true                    | Show the question mark at the end of the input displaying required input parameters. |
+| `placeholder`    | string                                                | "asymptotic expression" | Hint displayed inside the input box describing the expected type of input.           |
 
 #### Details
 
@@ -1018,37 +1020,10 @@ The `focus` attribute defaults to `"false"`. Setting this to true will cause the
 #### See also
 
 - [`pl-file-upload` to receive files as a submission](#pl-file-upload-element)
-- [`pl-file-preview` to display previously submitted files](#pl-file-preview)
+- [`pl-file-preview` to display previously submitted files](#pl-file-preview-element)
 - [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results)
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 - [`pl-string-input` for receiving a single string value](#pl-string-input-element)
-
----
-
-### `pl-file-preview` element
-
-Provides an in-browser preview of pure-text or image files submitted by a student as part of an external grading system.
-Does not support other file types (e.g., PDF). Shows the submitted file in the corresponding submission panel.
-Used in conjunction with submission elements like `pl-file-editor`, `pl-file-upload`, and `pl-rich-text-editor`.
-Commonly appears in the submission panel with companion `pl-external-grader-results` element.
-
-#### Sample element
-
-```html
-<pl-file-preview></pl-file-preview>
-```
-
-#### Example implementations
-
-- [element/fileEditor]
-- [demo/autograder/codeEditor]
-
-#### See also
-
-- [`pl-file-editor` to provide an in-browser code environment](#pl-file-editor-element)
-- [`pl-file-upload` to receive files as a submission](#pl-file-upload-element)
-- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results)
-- [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 
 ---
 
@@ -1875,6 +1850,33 @@ Note that only one of the attributes `source-file-name`, `submitted-file-name` o
 
 ---
 
+### `pl-file-preview` element
+
+Provides an in-browser preview of pure-text or image files submitted by a student as part of an external grading system.
+Does not support other file types (e.g., PDF). Shows the submitted file in the corresponding submission panel.
+Used in conjunction with submission elements like `pl-file-editor`, `pl-file-upload`, and `pl-rich-text-editor`.
+Commonly appears in the submission panel with companion `pl-external-grader-results` element.
+
+#### Sample element
+
+```html
+<pl-file-preview></pl-file-preview>
+```
+
+#### Example implementations
+
+- [element/fileEditor]
+- [demo/autograder/codeEditor]
+
+#### See also
+
+- [`pl-file-editor` to provide an in-browser code environment](#pl-file-editor-element)
+- [`pl-file-upload` to receive files as a submission](#pl-file-upload-element)
+- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results)
+- [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
+
+---
+
 ## Conditional Elements
 
 ### `pl-question-panel` element
@@ -2011,59 +2013,6 @@ element contents only in a specific panel.
 
 ---
 
-### `pl-hidden-hints` element
-
-Display progressive hints that become accessible as the number of student submissions increases for the current variant.
-Hints are only open on page load when they are first revealed (when first reaching the desired submission count).
-Otherwise hints start closed and must be opened by the user. The submission counter is reset when new variants are
-generated. Note that **this element does not reveal new hints across variants.**
-
-Best used in situations where there is a penalty for more submissions to a given variant. This prevents students from
-spamming incorrect submissions to reveal all hints right away.
-
-#### Sample element
-
-```html
-<pl-hidden-hints>
-  <pl-hint> This is a hint that will be accessible immediately. </pl-hint>
-
-  <pl-hint show-after-submission="3">
-    This is a hint that will be accessible after three incorrect submissions for the current
-    variant.
-  </pl-hint>
-
-  <pl-hint show-after-submission="5">
-    This is a hint that will be accessible after five incorrect submissions for the current variant.
-  </pl-hint>
-</pl-hidden-hints>
-```
-
-#### Customizations
-
-For the inner `pl-hint` element:
-
-| Attribute               | Type | Default | Description                                                                                                                                                                                                 |
-| ----------------------- | ---- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `show-after-submission` | int  | -       | Number of submissions on the current variant needed before the hint is accessible. If not set, hint is always accessible. **Should only be set for questions that allow multiple submissions per variant.** |
-
-#### Details
-
-Add hints to a variant that are revealed with more submissions using the `show-after-submission` attribute. By default, hints without
-`show-after-submission` set are always shown. Hints with the same `show-after-submission` appear in the order they're written in the
-question HTML.
-
-#### Example implementations
-
-- [element/hiddenHints]
-
-#### See also
-
-- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
-- [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
-- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
-
----
-
 ### `pl-hide-in-manual-grading` element
 
 Hide the contents so that it is **not** displayed to graders in the manual grading page.
@@ -2146,6 +2095,59 @@ It expects results to follow [the reference schema for external grading results]
 #### See also
 
 - [External Grading Reference Schema](externalGrading.md#grading-result)
+
+---
+
+### `pl-hidden-hints` element
+
+Display progressive hints that become accessible as the number of student submissions increases for the current variant.
+Hints are only open on page load when they are first revealed (when first reaching the desired submission count).
+Otherwise hints start closed and must be opened by the user. The submission counter is reset when new variants are
+generated. Note that **this element does not reveal new hints across variants.**
+
+Best used in situations where there is a penalty for more submissions to a given variant. This prevents students from
+spamming incorrect submissions to reveal all hints right away.
+
+#### Sample element
+
+```html
+<pl-hidden-hints>
+  <pl-hint> This is a hint that will be accessible immediately. </pl-hint>
+
+  <pl-hint show-after-submission="3">
+    This is a hint that will be accessible after three incorrect submissions for the current
+    variant.
+  </pl-hint>
+
+  <pl-hint show-after-submission="5">
+    This is a hint that will be accessible after five incorrect submissions for the current variant.
+  </pl-hint>
+</pl-hidden-hints>
+```
+
+#### Customizations
+
+For the inner `pl-hint` element:
+
+| Attribute               | Type | Default | Description                                                                                                                                                                                                 |
+| ----------------------- | ---- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `show-after-submission` | int  | -       | Number of submissions on the current variant needed before the hint is accessible. If not set, hint is always accessible. **Should only be set for questions that allow multiple submissions per variant.** |
+
+#### Details
+
+Add hints to a variant that are revealed with more submissions using the `show-after-submission` attribute. By default, hints without
+`show-after-submission` set are always shown. Hints with the same `show-after-submission` appear in the order they're written in the
+question HTML.
+
+#### Example implementations
+
+- [element/hiddenHints]
+
+#### See also
+
+- [`pl-question-panel` for displaying the question prompt.](#pl-question-panel-element)
+- [`pl-submission-panel` for changing how a submitted answer is displayed.](#pl-submission-panel-element)
+- [`pl-hide-in-panel` to hide contents in one or more display panels.](#pl-hide-in-panel-element)
 
 ---
 
