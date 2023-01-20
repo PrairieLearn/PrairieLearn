@@ -1714,7 +1714,7 @@ def generate(data):
 | `directed`                  | boolean | true               | Whether to treat edges in an adjacency matrix as directed or undirected. If set to false, then edges will be rendered as undirected. _The input adjacency matrix must be symmetric if this is set to false._                                                            |
 | `weights-presentation-type` | string  | `'f'`              | Number display format for the weights when using an adjacency matrix. If presentation-type is 'sigfig', each number is formatted using the to_precision module to digits significant figures. Otherwise, each number is formatted as `{:.{digits}{presentation-type}}`. |
 | `params-name-networkx`      | string  | `None`             | The name of a parameter containing a networkx graph to use as input for the graph.                                                                                                                                                                                      |
-| `networkx-edge-label`       | string  | `label`            | The key from the edge data dictionary to render when using a networkx graph.                                                                                                                                                                                            |
+| `networkx-edge-label`       | string  | `None`             | The key from the edge data dictionary to set to the `"label"` entry for display. By default, the entry stored in `"label"` will be displayed.                                                                                                                           |
 
 #### Example implementations
 
