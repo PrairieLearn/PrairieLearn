@@ -8,13 +8,10 @@ This is a view of your course home page (or a similar variation, depending on wh
 
 This tutorial will show you how to create:
 
-- [Create content in the browser](#create-content-in-the-browser)
-    - [Creating a course instance](#creating-a-course-instance)
-    - [Creating questions from scratch](#creating-questions-from-scratch)
-        - [Add a new question](#add-a-new-question)
-        - [Start a new question from an existing one](#start-a-new-question-from-an-existing-one)
-    - [Creating questions from the example course](#creating-questions-from-the-example-course)
-    - [Creating a new assessment](#creating-a-new-assessment)
+- [a course instance](#creating-a-course-instance)
+- [simple questions from scratch](#creating-questions-from-scratch)
+- [questions starting from provided examples](#creating-questions-from-the-example-course)
+- [assessments](#creating-a-new-assessment)
 
 ### Creating a course instance
 
