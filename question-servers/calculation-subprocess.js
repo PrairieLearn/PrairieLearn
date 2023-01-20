@@ -54,6 +54,10 @@ async function callFunction(func, course, question, inputData) {
           ...inputData,
         },
       ]);
+      // Note that `res` also contains an `output` property. For v3 questions,
+      // we'd create a course issue if `output` is non-empty. However, we didn't
+      // historically have a restriction where v2 questions couldn't write logs,
+      // so we won't impose the same restriction here.
       return { data: res.result, courseIssues: [] };
     });
   } catch (err) {

@@ -1,8 +1,9 @@
 // @ts-check
 const { experimentAsync } = require('tzientist');
 const _ = require('lodash');
-const { trace, context, SpanStatusCode } = require('@prairielearn/opentelemetry');
+const Sentry = require('@prairielearn/sentry');
 
+const config = require('../lib/config');
 const calculationInprocess = require('./calculation-inprocess');
 const calculationSubprocess = require('./calculation-subprocess');
 
@@ -18,25 +19,13 @@ const calculationSubprocess = require('./calculation-subprocess');
  */
 function promisifyQuestionFunction(spanName, func) {
   return async (...args) => {
-    const tracer = trace.getTracer('experiments');
-    return tracer.startActiveSpan(spanName, async (span) => {
-      return new Promise((resolve, reject) => {
-        func(...args, (err, courseIssues, val) => {
-          if (err) {
-            span.setStatus({
-              code: SpanStatusCode.ERROR,
-              message: err.message,
-            });
-            span.end();
-            reject(err);
-          } else {
-            span.setStatus({
-              code: SpanStatusCode.OK,
-            });
-            span.end();
-            resolve([courseIssues, val]);
-          }
-        });
+    return new Promise((resolve, reject) => {
+      func(...args, (err, courseIssues, val) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve([courseIssues, val]);
+        }
       });
     });
   };
@@ -44,7 +33,7 @@ function promisifyQuestionFunction(spanName, func) {
 
 /**
  * Turns the error or result of an experiment observation into a JSON string
- * suitable for using as an OpenTelemetry attribute value.
+ * suitable for reporting to Sentry.
  *
  * @param {Error} error
  * @param {any} result
@@ -53,12 +42,18 @@ function promisifyQuestionFunction(spanName, func) {
 function observationPayload(error, result) {
   if (error) {
     return JSON.stringify({
-      message: error.message,
-      stack: error.stack,
+      type: 'error',
+      result: {
+        message: error.message,
+        stack: error.stack,
+      },
     });
   }
 
-  return JSON.stringify(result);
+  return JSON.stringify({
+    type: 'success',
+    result,
+  });
 }
 
 /**
@@ -78,10 +73,6 @@ function questionFunctionExperiment(name, control, candidate) {
     candidate: promisifyQuestionFunction('candidate', candidate),
     options: {
       publish: ({ controlResult, controlError, candidateResult, candidateError }) => {
-        // Grab the current span from context - this is the span created with
-        // `startActiveSpan` below.
-        const span = trace.getSpan(context.active());
-
         // The control implementation does not utilize course issues.
         const controlHasError = !!controlError;
 
@@ -113,19 +104,13 @@ function questionFunctionExperiment(name, control, candidate) {
           controlHasData && candidateHasData && !_.isEqual(controlData, candidateData);
 
         if (errorsMismatched || dataMismatched) {
-          span.setAttributes({
-            'experiment.result': 'mismatched',
-            'experiment.control': observationPayload(controlError, controlResult),
-            'experiment.candidate': observationPayload(candidateError, candidateResult),
-          });
-          span.setStatus({
-            code: SpanStatusCode.ERROR,
-            message: 'Experiment results did not match',
-          });
-        } else {
-          span.setAttribute('experiment.result', 'matched');
-          span.setStatus({
-            code: SpanStatusCode.OK,
+          Sentry.captureException(new Error('Experiment results did not match'), {
+            contexts: {
+              experiment: {
+                control: observationPayload(controlError, controlResult),
+                candidate: observationPayload(candidateError, candidateResult),
+              },
+            },
           });
         }
       },
@@ -133,22 +118,16 @@ function questionFunctionExperiment(name, control, candidate) {
   });
 
   return (...args) => {
-    const tracer = trace.getTracer('experiments');
+    if (config.legacyQuestionExecutionMode === 'inprocess') {
+      control(...args);
+      return;
+    } else if (config.legacyQuestionExecutionMode === 'subprocess') {
+      candidate(...args);
+      return;
+    }
+
     const callback = args.pop();
-    tracer
-      .startActiveSpan(`experiment:${name}`, async (span) => {
-        span.setAttribute('experiment.name', name);
-        try {
-          // Important: must await promise here so that span timing information
-          // is derived correctly.
-          return await experiment(...args);
-        } catch (err) {
-          span.recordException(err);
-          throw err;
-        } finally {
-          span.end();
-        }
-      })
+    experiment(...args)
       .then(([courseIssues, data]) => {
         callback(null, courseIssues, data);
       })
