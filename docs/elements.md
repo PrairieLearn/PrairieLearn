@@ -58,8 +58,7 @@ images, files, and code display. The following **decorative** elements are avail
   appropriate LaTeX commands for use in a mathematical expression.
 - [`pl-python-variable`](#pl-python-variable-element): Display formatted output of Python
   variables and pandas data frames.
-- [`pl-graph`](#pl-graph-element): Displays graphs, either using GraphViz DOT notation
-  or with an adjacency matrix.
+- [`pl-graph`](#pl-graph-element): Displays graphs, using GraphViz DOT notation, an adjacency matrix, or a networkx graph.
 - [`pl-drawing`](#pl-drawing-element): Creates an image from pre-defined
   collection of graphic objects
 - [`pl-overlay`](#pl-overlay-element): Allows layering existing elements on top of one another in specified positions.
@@ -1675,6 +1674,30 @@ def generate(data):
     mat = mat / np.linalg.norm(mat, 1, axis=0)
     data["params"]["labels"] = pl.to_json(["A", "B", "C"])
     data["params"]["matrix"] = pl.to_json(mat)
+```
+
+---
+
+**question.html**
+
+```html
+<pl-graph params-name-networkx="random-graph"></pl-graph>
+```
+
+**server.py**
+
+```python
+import prairielearn as pl
+import networkx as nx
+
+def generate(data):
+    random_graph = nx.gnm_random_graph(5, 6)
+
+    for in_node, out_node, edge_data in random_graph.edges(data=True):
+        edge_data["label"] = random.choice(string.ascii_lowercase)
+        edge_data["weight"] = random.randint(1, 10)
+
+    data["params"]["random-graph"] = pl.to_json(random_graph)
 ```
 
 #### Customizations
