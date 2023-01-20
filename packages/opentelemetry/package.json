@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/opentelemetry",
-  "version": "1.4.1",
+  "version": "1.5.1",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -8,28 +8,29 @@
     "test": "mocha --no-config --require ts-node/register src/index.test.ts"
   },
   "dependencies": {
-    "@grpc/grpc-js": "^1.6.12",
-    "@opentelemetry/api": "^1.2.0",
-    "@opentelemetry/core": "^1.6.0",
-    "@opentelemetry/exporter-otlp-grpc": "^0.26.0",
-    "@opentelemetry/instrumentation-aws-sdk": "^0.9.0",
-    "@opentelemetry/instrumentation-connect": "^0.30.0",
-    "@opentelemetry/instrumentation-dns": "^0.30.0",
-    "@opentelemetry/instrumentation-express": "^0.31.0",
-    "@opentelemetry/instrumentation-http": "^0.32.0",
-    "@opentelemetry/instrumentation-pg": "^0.31.0",
-    "@opentelemetry/instrumentation-redis": "^0.33.0",
-    "@opentelemetry/resource-detector-aws": "^1.1.2",
-    "@opentelemetry/resources": "^1.6.0",
-    "@opentelemetry/sdk-node": "^0.32.0",
-    "@opentelemetry/sdk-trace-base": "^1.6.0",
-    "@opentelemetry/sdk-trace-node": "^1.6.0",
-    "@opentelemetry/semantic-conventions": "^1.6.0"
+    "@grpc/grpc-js": "^1.8.3",
+    "@opentelemetry/api": "^1.4.0",
+    "@opentelemetry/core": "^1.9.0",
+    "@opentelemetry/exporter-jaeger": "^1.9.0",
+    "@opentelemetry/exporter-trace-otlp-grpc": "^0.35.0",
+    "@opentelemetry/instrumentation-aws-sdk": "^0.33.0",
+    "@opentelemetry/instrumentation-connect": "^0.31.0",
+    "@opentelemetry/instrumentation-dns": "^0.31.0",
+    "@opentelemetry/instrumentation-express": "^0.32.0",
+    "@opentelemetry/instrumentation-http": "^0.35.0",
+    "@opentelemetry/instrumentation-pg": "^0.34.0",
+    "@opentelemetry/instrumentation-redis": "^0.34.1",
+    "@opentelemetry/resource-detector-aws": "^1.2.1",
+    "@opentelemetry/resources": "^1.9.0",
+    "@opentelemetry/sdk-node": "^0.35.0",
+    "@opentelemetry/sdk-trace-base": "^1.9.0",
+    "@opentelemetry/sdk-trace-node": "^1.9.0",
+    "@opentelemetry/semantic-conventions": "^1.9.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "*",
-    "mocha": "^10.0.0",
+    "@types/node": "^18.11.18",
     "ts-node": "^10.9.1",
-    "typescript": "^4.8.2"
+    "typescript": "^4.9.4"
   }
 }

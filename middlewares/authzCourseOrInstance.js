@@ -53,6 +53,7 @@ module.exports = function (req, res, next) {
 
           // Now that we know the user has access, parse the authz data
           res.locals.course = result.rows[0].course;
+          res.locals.institution = result.rows[0].institution;
           const authn_courses = result.rows[0].courses || [];
           const authn_course_instances = result.rows[0].course_instances || [];
           const permissions_course = result.rows[0].permissions_course;

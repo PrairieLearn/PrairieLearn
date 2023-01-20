@@ -77,7 +77,7 @@ This section describes common applications for [Docker Compose](https://github.c
 
 ### Basics
 
-A docker-compose file describes the services an application needs to run. In our case, we use `docker compose` to configure and run the PrairieLearn docker container locally.
+A `docker-compose.yml` file describes the services an application needs to run. In our case, we use `docker compose` to configure and run the PrairieLearn docker container locally.
 
 To run PrairieLearn with `docker compose`, run `docker compose up`.
 
@@ -88,15 +88,3 @@ By default, `docker-compose.yml` won't see any local modifications you've made t
 To remove all containers and clean up compose artifacts, run `docker-compose down`.
 
 Most `docker` commands map directly to `docker-compose` commands. You can use `docker-compose run pl ...` to run the container as if you were typing `docker run ...`, or `docker-compose exec pl ...` to execute a command on the running container.
-
-### Multiple Compose Files
-
-If you're developing locally and want to override parts of the config, you can create your own compose file (perhaps `docker-compose.local.yml`). Then, if you type:
-
-```sh
-docker-compose -f docker-compose.yml -f docker-compose.local.yml ...
-```
-
-compose will use values from `docker-compose.local.yml` to override those from `docker-compose.yml`.
-
-If a file `docker-compose.override.yml` exists, Docker Compose will override all configurations with that file, even if it isn't specified in the invoking command.

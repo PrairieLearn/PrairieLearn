@@ -36,10 +36,11 @@ router.get('/', function (req, res, next) {
     ],
     function (err) {
       if (ERR(err, next)) return;
-      debug('render page');
-      let host = config.serverCanonicalHost || 'https://' + req.headers.host;
-      res.locals.studentLink =
-        host + res.locals.plainUrlPrefix + '/course_instance/' + res.locals.course_instance.id;
+      const host = config.serverCanonicalHost || `${req.protocol}://${req.headers.host}`;
+      res.locals.studentLink = new URL(
+        res.locals.plainUrlPrefix + '/course_instance/' + res.locals.course_instance.id,
+        host
+      ).href;
       res.locals.studentLinkQRCode = new QR({
         content: res.locals.studentLink,
         width: 512,

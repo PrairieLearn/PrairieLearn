@@ -11,6 +11,9 @@ const error = require('./error');
 
 const SEARCH_SCHEMA = Symbol('SEARCH_SCHEMA');
 
+/** @type {WeakMap<import("pg").PoolClient, string>} */
+const lastQueryMap = new WeakMap();
+
 /** @typedef {{[key: string]: any} | any[]} Params */
 /** @typedef {import("pg").QueryResult} QueryResult */
 /** @typedef {(error: Error | null, result?: QueryResult) => void} ResultsCallback */
@@ -146,11 +149,13 @@ class PostgresPool {
   async initAsync(pgConfig, idleErrorHandler) {
     this.pool = new pg.Pool(pgConfig);
     this.pool.on('error', function (err, client) {
-      idleErrorHandler(err, client);
+      const lastQuery = lastQueryMap.get(client);
+      idleErrorHandler(error.addData(err, { lastQuery }), client);
     });
     this.pool.on('connect', (client) => {
       client.on('error', (err) => {
-        idleErrorHandler(err, client);
+        const lastQuery = lastQueryMap.get(client);
+        idleErrorHandler(error.addData(err, { lastQuery }), client);
       });
     });
     this.pool.on('remove', (client) => {
@@ -288,6 +293,7 @@ class PostgresPool {
     debug('queryWithClient()', 'params:', debugParams(params));
     const { processedSql, paramsArray } = paramsToArray(sql, params);
     try {
+      lastQueryMap.set(client, processedSql);
       const result = await client.query(processedSql, paramsArray);
       debug('queryWithClient() success', 'rowCount:', result.rowCount);
       return result;

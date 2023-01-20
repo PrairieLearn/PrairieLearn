@@ -16,24 +16,27 @@
           <button type="button" class="close" data-dismiss="modal" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>
-        </div><!-- .modal-header -->
+        </div>
         <div class="modal-body">
-          <p>Are you sure you want to reboot the virtual machine?<p>
+          <p>Are you sure you want to reboot the virtual machine?</p>
           <ul class="fa-ul">
             <li><span class="fa-li"><i class="fas fa-save" aria-hidden="true"></i></span>Your files will remain intact through the reboot.</li>
             <li><span class="fa-li"><i class="fas fa-window-restore" aria-hidden="true"></i></span>Your workspace will reboot into this same tab.</li>
           </ul>
-        </div><!-- .modal-body -->
+        </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-          <a class="btn btn-info" href="/pl/workspace/<%= workspace_id %>/reboot">
-            <i class="fas fa-sync text-white" aria-hidden="true"></i>
-            Reboot
-          </a>
-        </div><!-- .modal-footer -->
+          <form method="POST">
+            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+            <button name="__action" value="reboot" class="btn btn-info">
+              <i class="fas fa-sync text-white" aria-hidden="true"></i>
+              Reboot
+            </button>
+          </form>
+        </div>
       </div>
     </div>
-  </div><!-- #rebootModal -->
+  </div>
 
   <div class="modal fade" id="resetModal" tabindex="-1" aria-labelledby="resetModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -43,28 +46,31 @@
           <button type="button" class="close" data-dismiss="modal" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>
-        </div><!-- .modal-header -->
+        </div>
         <div class="modal-body">
-          <p>Are you sure you want to reset the virtual machine?<p>
+          <p>Are you sure you want to reset the virtual machine?</p>
           <ul class="fa-ul">
             <li><span class="fa-li"><i class="fas fa-exclamation-triangle text-danger" aria-hidden="true"></i></span><strong class="text-danger">Your file changes will be lost!</strong> The workspace will return to its original state upon reset.</li>
             <li><span class="fa-li"><i class="fas fa-window-restore" aria-hidden="true"></i></span>Your workspace will reset into this same tab.</li>
           </ul>
-        </div><!-- .modal-body -->
+        </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-          <a class="btn btn-danger" href="/pl/workspace/<%= workspace_id %>/reset">
-            <i class="fas fa-trash text-white" aria-hidden="true"></i>
-            Reset
-          </a>
-        </div><!-- .modal-footer -->
+          <form method="POST">
+            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+            <button name="__action" value="reset" class="btn btn-danger">
+              <i class="fas fa-trash text-white" aria-hidden="true"></i>
+              Reset
+            </button>
+          </form>
+        </div>
       </div>
     </div>
-  </div><!-- #resetModal -->
+  </div>
 
   <nav class="navbar navbar-expand-md navbar-dark bg-info align-items-center" style="height:55px">
     <div class="navbar-brand">
-      PL Workspace<span class="d-none d-sm-inline-block small">: <%= navTitle %><span>
+      PL Workspace<span class="d-none d-sm-inline-block small">: <%= navTitle %></span>
     </div>
 
     <div class="d-flex flex-row ml-auto align-items-center">
@@ -84,17 +90,25 @@
           <span class="nav-item badge badge-light"><%= navTitle %></span>
         </li>
         <li class="nav-item ml-2 my-1">
-          <a id="reboot" class="nav-item btn btn-light" data-toggle="modal" data-target="#rebootModal">
+          <button id="reboot" class="nav-item btn btn-light" data-toggle="modal" data-target="#rebootModal">
             <i class="fas fa-sync text-info" aria-hidden="true"></i>
             Reboot
-          </a>
+          </button>
         </li>
         <li class="nav-item ml-2 my-1">
-          <a id="reset" class="nav-item btn btn-light" data-toggle="modal" data-target="#resetModal">
+          <button id="reset" class="nav-item btn btn-light" data-toggle="modal" data-target="#resetModal">
             <i class="fas fa-trash text-danger" aria-hidden="true"></i>
             Reset
-          </a>
+          </button>
         </li>
+        <% if (showLogs) { %>
+          <li class="nav-item ml-2 my-1">
+            <a class="nav-item btn btn-light" href="<%= urlPrefix %>/workspace/<%= workspace_id %>/logs" target="_blank">
+              <i class="fas fa-bars-staggered" aria-hidden="true"></i>
+              Logs
+            </a>
+          </li>
+        <% } %>
         <li class="nav-item ml-2 ml-md-3 my-1">
           <a tabindex="0" type="button" class="nav-item btn btn-light" data-container="body" data-toggle="popover" data-placement="bottom" data-html="true"
               data-content='<ul class="list-group list-group-flush">

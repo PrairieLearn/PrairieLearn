@@ -270,6 +270,12 @@ function detailsLinkSorter(valueA, valueB, rowA, rowB) {
     return compare;
 }
 
+function timeRemainingLimitSorter(valueA, valueB, rowA, rowB) {
+    // Closed assessments are listed first, followed by time limits
+    // ascending, followed by open without a time limit
+    return (Number(rowA.open) - Number(rowB.open)) || ((valueA ?? Infinity) - (valueB ?? Infinity));
+}
+
 function actionButtonFormatter(_value, row, index) {
     const ai_id = row.assessment_instance_id;
     var container = $('<div>');

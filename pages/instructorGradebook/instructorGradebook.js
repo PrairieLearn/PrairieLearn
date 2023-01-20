@@ -108,7 +108,7 @@ router.get('/:filename', function (req, res, next) {
       });
     });
   } else {
-    next(new Error('Unknown filename: ' + req.params.filename));
+    next(error.make(404, 'Unknown filename: ' + req.params.filename));
   }
 });
 

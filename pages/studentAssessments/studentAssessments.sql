@@ -144,7 +144,10 @@ SELECT
         LAG (CASE WHEN $assessments_group_by = 'Set' THEN assessment_set_id ELSE assessment_module_id END) 
         OVER (
             PARTITION BY (CASE WHEN $assessments_group_by = 'Set' THEN assessment_set_id ELSE assessment_module_id END) 
-            ORDER BY assessment_set_number, assessment_order_by, assessment_id, assessment_instance_number
+            -- Note that we set `NULLS FIRST` to ensure that the rows from
+            -- `multiple_instance_assessments` are always first, as they have a
+            -- null `assessment_instance_number`.
+            ORDER BY assessment_set_number, assessment_order_by, assessment_id, assessment_instance_number NULLS FIRST
         ) IS NULL
     ) AS start_new_assessment_group,
     (CASE WHEN $assessments_group_by = 'Set' THEN assessment_set_heading ELSE assessment_module_heading END) AS assessment_group_heading
@@ -155,4 +158,10 @@ WHERE
 ORDER BY 
     CASE WHEN $assessments_group_by = 'Module' THEN assessment_module_number END, 
     CASE WHEN $assessments_group_by = 'Module' THEN assessment_module_id END,
-    assessment_set_number, assessment_order_by, assessment_id, assessment_instance_number;
+    assessment_set_number,
+    assessment_order_by,
+    assessment_id,
+    assessment_instance_number
+    -- As with the `PARTITION` above, we deliberately set `NULLS FIRST` to
+    -- ensure the correct ordering of rows from `multiple_instance_assessments`.
+    NULLS FIRST;

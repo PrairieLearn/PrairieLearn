@@ -1,14 +1,17 @@
+// @ts-check
 var _ = require('lodash');
 var path = require('path');
 var jsonStringifySafe = require('json-stringify-safe');
 
 var logger = require('../../lib/logger');
 
+/** @type {import('express').ErrorRequestHandler} */
 module.exports = function (err, req, res, _next) {
   const errorId = res.locals.error_id;
 
-  err.status = err.status || 500;
+  err.status = err.status ?? 500;
   res.status(err.status);
+
   var referrer = req.get('Referrer') || null;
   logger.log(err.status >= 500 ? 'error' : 'verbose', 'Error page', {
     msg: err.message,

@@ -1,16 +1,14 @@
-const ERR = require('async-stacktrace');
 const _ = require('lodash');
-const async = require('async');
-const csvStringify = require('../../lib/nonblocking-csv-stringify');
+const asyncHandler = require('express-async-handler');
 const express = require('express');
 const router = express.Router();
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const { nonblockingStringifyAsync } = require('../../lib/nonblocking-csv-stringify');
 
 const error = require('../../prairielib/lib/error');
 const sanitizeName = require('../../lib/sanitize-name');
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
+const assessment = require('../../lib/assessment');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -24,61 +22,53 @@ const setFilenames = function (locals) {
   locals.questionStatsCsvFilename = prefix + 'question_stats.csv';
 };
 
-router.get('/', function (req, res, next) {
-  debug('GET /');
-  setFilenames(res.locals);
-  async.series(
-    [
-      function (callback) {
-        var params = { assessment_id: res.locals.assessment.id };
-        sqldb.queryOneRow(sql.assessment_stats_last_updated, params, function (err, result) {
-          if (ERR(err, callback)) return;
-          res.locals.stats_last_updated = result.rows[0].stats_last_updated;
-          callback(null);
-        });
-      },
-      function (callback) {
-        debug('query assessment_stats');
-        var params = { assessment_id: res.locals.assessment.id };
-        sqldb.queryOneRow(sql.assessment_stats, params, function (err, result) {
-          if (ERR(err, callback)) return;
-          res.locals.assessment_stat = result.rows[0];
-          callback(null);
-        });
-      },
-      function (callback) {
-        debug('query questions');
-        var params = {
-          assessment_id: res.locals.assessment.id,
-          course_id: res.locals.course.id,
-        };
-        sqldb.query(sql.questions, params, function (err, result) {
-          if (ERR(err, callback)) return;
-          res.locals.questions = result.rows;
-          callback(null);
-        });
-      },
-    ],
-    function (err) {
-      if (ERR(err, next)) return;
-      debug('render page');
-      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    }
-  );
-});
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    setFilenames(res.locals);
 
-router.get('/:filename', function (req, res, next) {
-  setFilenames(res.locals);
-  if (req.params.filename === res.locals.questionStatsCsvFilename) {
-    var params = {
+    // make sure statistics are up to date
+    await assessment.updateAssessmentStatistics(res.locals.assessment.id);
+
+    // re-fetch assessment to get updated statistics
+    const assessmentResult = await sqldb.queryOneRowAsync(sql.select_assessment, {
+      assessment_id: res.locals.assessment.id,
+    });
+    res.locals.assessment = assessmentResult.rows[0].assessment;
+
+    // Fetch assessments.stats_last_updated (the time when we last updated
+    // the _question_ statistics for this assessment). Note that this is
+    // different to assessments.statistics_last_updated_at (the time we last
+    // updated the assessment instance statistics stored in the assessments
+    // row itself).
+    const lastUpdateResult = await sqldb.queryOneRowAsync(sql.assessment_stats_last_updated, {
+      assessment_id: res.locals.assessment.id,
+    });
+    res.locals.stats_last_updated = lastUpdateResult.rows[0].stats_last_updated;
+
+    const questionResult = await sqldb.queryAsync(sql.questions, {
       assessment_id: res.locals.assessment.id,
       course_id: res.locals.course.id,
-    };
-    sqldb.query(sql.questions, params, function (err, result) {
-      if (ERR(err, next)) return;
-      var questionStatsList = result.rows;
-      var csvData = [];
-      var csvHeaders = [
+    });
+    res.locals.questions = questionResult.rows;
+
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  })
+);
+
+router.get(
+  '/:filename',
+  asyncHandler(async (req, res) => {
+    setFilenames(res.locals);
+    if (req.params.filename === res.locals.questionStatsCsvFilename) {
+      const questionStatsList = (
+        await sqldb.queryAsync(sql.questions, {
+          assessment_id: res.locals.assessment.id,
+          course_id: res.locals.course.id,
+        })
+      ).rows;
+      const csvData = [];
+      const csvHeaders = [
         'Course',
         'Instance',
         'Assessment',
@@ -132,37 +122,35 @@ router.get('/:filename', function (req, res, next) {
 
         csvData.push(questionStatsData);
       });
+      const csv = await nonblockingStringifyAsync(csvData);
 
-      csvStringify(csvData, function (err, csv) {
-        if (ERR(err, next)) return;
-        res.attachment(req.params.filename);
-        res.send(csv);
-      });
-    });
-  } else {
-    next(new Error('Unknown filename: ' + req.params.filename));
-  }
-});
+      res.attachment(req.params.filename);
+      res.send(csv);
+    } else {
+      throw error.make(404, 'Unknown filename: ' + req.params.filename);
+    }
+  })
+);
 
-router.post('/', function (req, res, next) {
-  // The action "refresh_stats" (from the button "Recalculate statistics") does
-  // not change student data. Statistics *should* be recalculated automatically,
-  // e.g., every time this page is loaded, but until then we will let anyone who
-  // can view the page post this action and trigger a recalculation.
-  if (req.body.__action === 'refresh_stats') {
-    var params = [res.locals.assessment.id];
-    sqldb.call('assessment_questions_calculate_stats_for_assessment', params, function (err) {
-      if (ERR(err, next)) return;
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    // The action "refresh_stats" (from the button "Recalculate statistics") does
+    // not change student data. Statistics *should* be recalculated automatically,
+    // e.g., every time this page is loaded, but until then we will let anyone who
+    // can view the page post this action and trigger a recalculation.
+    if (req.body.__action === 'refresh_stats') {
+      await sqldb.callAsync('assessment_questions_calculate_stats_for_assessment', [
+        res.locals.assessment.id,
+      ]);
       res.redirect(req.originalUrl);
-    });
-  } else {
-    return next(
-      error.make(400, 'unknown __action', {
+    } else {
+      throw error.make(400, 'unknown __action', {
         locals: res.locals,
         body: req.body,
-      })
-    );
-  }
-});
+      });
+    }
+  })
+);
 
 module.exports = router;

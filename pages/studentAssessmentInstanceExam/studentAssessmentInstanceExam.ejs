@@ -166,32 +166,42 @@
 
         <table class="table table-sm table-hover" data-testid="assessment-questions">
           <thead>
+            <% if (has_auto_grading_question && has_manual_grading_question) { %>
+            <tr>
+              <th rowspan="2">Question</th>
+              <th class="text-center" colspan="<%= assessment.allow_real_time_grading ? 3 : 2 %>">Auto-grading</th>
+              <th class="text-center" rowspan="2">Manual grading points</th>
+              <th class="text-center" rowspan="2">Total points</th>
+            </tr>
+            <tr>
+            <% } else { %>
             <tr>
               <th>Question</th>
-              <% if (assessment.allow_real_time_grading) { %>
-                <th class="text-center">
-                  Best submission
-                  <%- include('../partials/examQuestionHelpBestSubmission'); %>
-                </th>
-                <th class="text-center">
-                  Available points
-                  <%- include('../partials/examQuestionHelpAvailablePoints'); %>
-                </th>
-                <th class="text-center">
-                  Awarded points
-                  <%- include('../partials/examQuestionHelpAwardedPoints'); %>
-                </th>
-              <% } else { %>
-                <th class="text-center">Submission status</th>
-                <th class="text-center">Points</th>
-              <% } %>
+            <% } %>
+            <% if (has_auto_grading_question && assessment.allow_real_time_grading) { %>
+              <th class="text-center">
+                Best submission
+                <%- include('../partials/examQuestionHelpBestSubmission'); %>
+              </th>
+              <th class="text-center">
+                Available points
+                <%- include('../partials/examQuestionHelpAvailablePoints'); %>
+              </th>
+              <th class="text-center">
+                Awarded points
+                <%- include('../partials/examQuestionHelpAwardedPoints'); %>
+              </th>
+            <% } else { %>
+              <th class="text-center">Submission status</th>
+              <th class="text-center">Points</th>
+            <% } %>
             </tr>
           </thead>
           <tbody>
           <% instance_questions.forEach(function(instance_question, iq_index) { %>
             <% if (instance_question.start_new_zone && instance_question.zone_title) { %>
             <tr>
-              <th colspan="5">
+              <th colspan="<%= has_auto_grading_question ? (has_manual_grading_question ? 2 : 0) + (assessment.allow_real_time_grading ? 4 : 3) : 3 %>">
                 <span class="mr-1">
                   <%= instance_question.zone_title %>
                 </span>
@@ -218,18 +228,22 @@
                 }); %>
               </td>
               <td class="text-center"><%- include('../partials/examQuestionScore', {instance_question}); %></td>
-              <% if (assessment.allow_real_time_grading) { %>
-                <td class="text-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, currentWeight: instance_question.points_list_original[instance_question.number_attempts], points_list: instance_question.points_list, highest_submission_score: instance_question.highest_submission_score}); %></td>
-                <td class="text-center"><%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %></td>
+              <% if (has_auto_grading_question && assessment.allow_real_time_grading) { %>
+                <td class="text-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, currentWeight: instance_question.points_list_original[instance_question.number_attempts] - instance_question.max_manual_points, points_list: instance_question.points_list.map((p) => (p - instance_question.max_manual_points)), highest_submission_score: instance_question.highest_submission_score}); %></td>
+              <% } %>
+              <% if (assessment.allow_real_time_grading || !assessment_instance.open) { %>
+                <% if (has_auto_grading_question && has_manual_grading_question) { %>
+                  <td class="text-center"><%- include('../partials/instanceQuestionPoints', {instance_question, component: 'auto'}); %></td>
+                  <td class="text-center"><%- include('../partials/instanceQuestionPoints', {instance_question, component: 'manual'}); %></td>
+                <% } %>
+                <td class="text-center"><%- include('../partials/instanceQuestionPoints', {instance_question, component: 'total'}); %></td>
               <% } else { %>
-                <td class="text-center">
-                  <% include('../partials/pointsFormatter'); %>
-                  <% if (assessment_instance.open) { %>
-                    <%= getStringFromFloat(instance_question.max_points) %>
-                  <% } else { %>
-                    <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %>
-                  <% } %>
-                </td>
+              <% include('../partials/pointsFormatter'); %>
+                <% if (has_auto_grading_question && has_manual_grading_question) { %>
+                  <td class="text-center"><%= getStringFromFloat(instance_question.max_auto_points) %></td>
+                  <td class="text-center"><%= getStringFromFloat(instance_question.max_manual_points) %></td>
+                <% } %>
+                <td class="text-center"><%= getStringFromFloat(instance_question.max_points) %></td>
               <% } %>
             </tr>
           <% }); %>

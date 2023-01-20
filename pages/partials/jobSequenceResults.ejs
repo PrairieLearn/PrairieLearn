@@ -23,24 +23,36 @@
     $(function() {
         var socket = io();
 
-        socket.on('update', function() {window.location.reload(true);});
-        socket.on('change:output', function(msg) {$("#output-" + msg.job_id).html(msg.output);});
+        socket.on('update', function() {
+            window.location.reload(true);
+        });
+        socket.on('change:output', function(msg) {
+            $('#output-' + msg.job_id).html(msg.output);
+        });
 
         // Join the rooms for the job_sequence and for each individual job.
         // Check return values for a change that happened since we rendered the page
         // and reload if anything changed. This avoids the race condition where
         // jobs change between page render and socket activation.
 
-        socket.emit('joinJobSequence', {job_sequence_id: <%= job_sequence.id %>}, function(msg) {
-            if (msg.job_count != '<%= job_sequence.job_count %>') {window.location.reload(true);}
+        socket.emit('joinJobSequence', {
+            job_sequence_id: '<%= job_sequence.id %>',
+            token: '<%= job_sequence.token %>',
+        }, function(msg) {
+            if (msg.job_count != '<%= job_sequence.job_count %>') {
+                window.location.reload(true);
+            }
         });
 
         <% job_sequence.jobs.forEach(function(job) { %>
-        socket.emit('joinJob', {job_id: <%= job.id %>}, function(msg) {
+        socket.emit('joinJob', {
+            job_id: '<%= job.id %>',
+            token: '<%= job.token %>',
+        }, function(msg) {
             if (msg.status != '<%= job.status %>') {
-                window.location.reload(true)
+                window.location.reload(true);
             }
-            $("#output-" + <%= job.id %>).html(msg.output);
+            $('#output-<%= job.id %>').html(msg.output);
         });
         <% }); %>
 

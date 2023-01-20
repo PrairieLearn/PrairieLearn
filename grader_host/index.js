@@ -480,17 +480,22 @@ function runJob(info, callback) {
           callback(null, container);
         });
       },
-      (container, callback) => {
+      async (container) => {
         const timeoutId = setTimeout(() => {
           results.timedOut = true;
-          container.kill();
+          container.kill().catch((err) => {
+            globalLogger.error('Error killing container', err);
+          });
         }, jobTimeout * 1000);
+
         logger.info('Waiting for container to complete');
-        container.wait((err) => {
+        try {
+          await container.wait();
+        } finally {
           clearTimeout(timeoutId);
-          if (ERR(err, callback)) return;
-          callback(null, container);
-        });
+        }
+
+        return container;
       },
       (container, callback) => {
         timeReporter.reportEndTime(jobId, (err, time) => {
@@ -617,7 +622,7 @@ function uploadResults(info, callback) {
         const params = {
           Bucket: s3Bucket,
           Key: `${s3RootKey}/results.json`,
-          Body: Buffer.from(JSON.stringify(results, null, '  '), 'binary'),
+          Body: Buffer.from(JSON.stringify(results, null, 2)),
         };
         s3.putObject(params, (err) => {
           if (ERR(err, callback)) return;

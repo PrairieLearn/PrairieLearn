@@ -1,7 +1,7 @@
 import { tracing } from '@opentelemetry/sdk-node';
 import { assert } from 'chai';
 
-import { context, init, instrumented, shutdown, trace, SpanStatusCode } from './index';
+import { context, init, instrumented, trace, SpanStatusCode } from './index';
 import { AsyncHooksContextManager } from '@opentelemetry/context-async-hooks';
 
 describe('instrumented', () => {
@@ -42,16 +42,18 @@ describe('instrumented', () => {
   });
 
   it('records a span on failure', async () => {
-    let maybeError = null;
-    await instrumented('test-failure', () => {
-      throw new Error('foo');
-    }).catch((err) => {
+    let maybeError: Error | null = null;
+
+    try {
+      await instrumented('test-failure', () => {
+        throw new Error('foo');
+      });
+    } catch (err: any) {
       maybeError = err;
-    });
+    }
 
     // Ensure the error was propagated back to the caller.
-    assert.isOk(maybeError);
-    assert.equal(maybeError.message, 'foo');
+    assert.equal(maybeError?.message, 'foo');
 
     // Ensure the correct span was recorded.
     const spans = exporter.getFinishedSpans();

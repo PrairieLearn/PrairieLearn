@@ -40,8 +40,7 @@ Sometimes exams in the CBTF ([see above](#exams-in-the-computer-based-testing-fa
         "credit": 100,
         "startDate": "2020-04-20T11:00:00",
         "endDate": "2020-04-20T12:40:00",
-        "timeLimitMin": 90,
-        "showClosedAssessment": false
+        "timeLimitMin": 90
     }
 ],
 ```
@@ -54,7 +53,7 @@ Some notes about this configuration:
 
 ## Synchronous, timed exams
 
-**We recommend exams to be run using a synchronous, timed configuration.** Below is an example of an assessment configured to have students taking the exam at the same time with a time limit.
+**We recommend that non-CBTF exams should be run using a synchronous, timed configuration.** Below is an example of an assessment configured to have students taking the exam at the same time with a time limit.
 
 This configuration is good when:
 
@@ -74,6 +73,15 @@ This configuration is good when:
         "showClosedAssessment": false
     },
     {
+        "uids": ["student3@illinois.edu", "student4@illinois.edu"],
+        "mode": "Public",
+        "credit": 100,
+        "startDate": "2020-04-20T23:00:00",
+        "endDate": "2020-04-21T00:05:00",
+        "timeLimitMin": 60,
+        "showClosedAssessment": false
+    },
+    {
         "mode": "Public",
         "credit": 100,
         "startDate": "2020-04-20T11:00:00",
@@ -82,12 +90,7 @@ This configuration is good when:
         "showClosedAssessment": false
     },
     {
-        "uids": ["student3@illinois.edu", "student4@illinois.edu"],
-        "mode": "Public",
-        "credit": 100,
-        "startDate": "2020-04-20T23:00:00",
-        "endDate": "2020-04-21T00:05:00",
-        "timeLimitMin": 60,
+        "active": false,
         "showClosedAssessment": false
     }
 ],
@@ -98,14 +101,15 @@ Some notes about this configuration:
 - The exam window (65 minutes, `startDate` to `endDate`) has been set to be 5 minutes longer than the exam time limit (60 minutes). However, students will not be able to access the exam past the `endDate` time under any circumstances. If a student starts this exam more than 5 minutes late, then the countdown timer on their exam will reflect the time remaining until `endDate`.
 - If a student closes their web browser accidentally during an exam, they can just re-open it and continue taking the exam where they left off. They can even switch computers and just login to PrairieLearn again, and continuing taking their exam on the new computer. The timer does not pause when the web browser is closed. The timer is always in "wall time", meaning the same as a physical clock on the wall.
 - Remember to extend both `endDate` _and_ `timeLimitMin` for students with extra-time accommodations.
-- Students who are scheduled for a conflict exam will be able to access the exam during the primary time slot. However, if they do so, they will be blocked from the exam during the conflict timeslot.
+- Students who are scheduled for a conflict exam will also be able to access the exam during the primary time slot. However, if they do so, they will be blocked from the exam during the conflict time slot.
 - After the timer expires the exam will auto-close and grade any saved but ungraded questions and show students their final score. After this time students will be unable to see any of the questions.
 - If a student closes their web browser before the exam is complete, their exam will be automatically closed and graded within 12 minutes after their timer expires. If they try and access their exam during this time it will immediately close and grade.
 - Before downloading final scores, wait at least 12 minutes after the last student would have finished to ensure all exams are closed. You can also check (and manually close exams) on the "Students" page under the assessment in PrairieLearn.
+- This configuration sets `"showClosedAssessment": false` to prevent students from seeing the details of their exam after it is over. This can help to mitigate cheating with students taking conflict exams. The final access rule containing only `"showClosedAssessment": false` is necessary because the earlier rules will only apply up until their `endDate` times. The additional `"active": false` restriction here prevents students from starting the exam after the `endDate`.
 
 ## Asynchronous, timed exams
 
-We do **NOT** recommend exams to be run using an asynchronous, timed configuration. While giving exams asynchronously will simplify exam administration and provide students with more flexibility, it comes at the expense of making it easier to cheat. We recommend [synchronous, timed exams](#synchronous-timed-exams).
+We do **NOT** recommend exams to be run using this configuration (asynchronous with time limit) for high-stakes exams. While giving exams asynchronously will simplify exam administration and provide students with more flexibility, it comes at the expense of making it easier to cheat. We recommend [synchronous, timed exams](#synchronous-timed-exams).
 
 This configuration is good when:
 
@@ -132,6 +136,10 @@ This configuration is good when:
         "endDate": "2020-04-21T06:00:00",
         "timeLimitMin": 60,
         "showClosedAssessment": false
+    },
+    {
+        "active": false,
+        "showClosedAssessment": false
     }
 ],
 ```
@@ -143,7 +151,7 @@ Some notes about this configuration:
 
 ## Post-graded exams
 
-We do **NOT** recommend exams to be run using a post-graded configuration. Exams run in this manner forfeit the ability to provide immediate feedback as well as partial credit to students, but it's good for mimicking traditional pen-and-paper exams.
+This post-graded configuration is **NOT** our recommended approach, but it is good for mimicking traditional pen-and-paper exams. Exams run in this manner forfeit the ability to provide immediate feedback as well as partial credit to students. Instead, we recommend [synchronous, timed exams](#synchronous-timed-exams).
 
 This configuration is good when:
 
@@ -179,6 +187,10 @@ This configuration is good when:
         "startDate": "2020-04-20T23:00:00",
         "endDate": "2020-04-21T00:10:00",
         "timeLimitMin": 60,
+        "showClosedAssessment": false
+    },
+    {
+        "active": false,
         "showClosedAssessment": false
     }
 ],

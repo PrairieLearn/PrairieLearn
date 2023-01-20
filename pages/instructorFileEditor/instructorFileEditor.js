@@ -22,10 +22,12 @@ const { default: AnsiUp } = require('ansi_up');
 const sha256 = require('crypto-js/sha256');
 const b64Util = require('../../lib/base64-util');
 const fileStore = require('../../lib/file-store');
-const isBinaryFile = require('isbinaryfile').isBinaryFile;
+const { isBinaryFile } = require('isbinaryfile');
+const modelist = require('ace-code/src/ext/modelist');
 const { decodePath } = require('../../lib/uri-util');
 const chunks = require('../../lib/chunks');
 const { idsEqual } = require('../../lib/id');
+const { getPaths } = require('../../lib/instructorFiles');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -67,31 +69,8 @@ router.get('/*', (req, res, next) => {
     dirName: path.dirname(workingPath),
     fileName: path.basename(workingPath),
     fileNameForDisplay: path.normalize(workingPath),
+    aceMode: modelist.getModeForPath(workingPath).mode,
   };
-
-  const ext = path.extname(workingPath);
-  // If you add to this list, make sure the corresponding list in instructorFileBrowser.js is consistent.
-  const extensionModeMap = {
-    '.json': 'json',
-    '.html': 'html',
-    '.py': 'python',
-    '.txt': 'text',
-    '.md': 'markdown',
-    '.mustache': 'text',
-    '.css': 'css',
-    '.csv': 'text',
-    '.js': 'javascript',
-    '.m': 'matlab',
-    '.c': 'c_cpp',
-    '.cpp': 'c_cpp',
-    '.h': 'c_cpp',
-  };
-  const fileEditMode = extensionModeMap[ext];
-  if (fileEditMode) {
-    fileEdit.aceMode = fileEditMode;
-  } else {
-    debug(`Could not find an ace mode to match extension: ${ext}`);
-  }
 
   // Do not allow users to edit the exampleCourse
   if (res.locals.course.example_course) {
@@ -219,9 +198,12 @@ router.get('/*', (req, res, next) => {
         fileEdit.origHash = fileEdit.diskHash;
       }
 
-      debug('Render');
-      res.locals.fileEdit = fileEdit;
-      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      getPaths(req, res, (err, paths) => {
+        if (ERR(err, next)) return;
+        res.locals.fileEdit = fileEdit;
+        res.locals.fileEdit.paths = paths;
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      });
     }
   );
 });

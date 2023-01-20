@@ -117,8 +117,6 @@
         </div><!-- card -->
         <% } %> <!-- devMode -->
 
-        <%- include('../partials/advertisement'); %>
-
         <% if (locals.instructor_courses && instructor_courses.length > 0) { %>
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">Courses with instructor access</div>
@@ -495,7 +493,7 @@
       <% } %>
       <div class="<%= isAuthenticated ? 'bg-secondary p-1' : 'container' %>">
         <% if (config.homepageFooterText) { %>
-          <a class="text-light" href="<%= config.homepageFooterTextLink %>"><%= config.homepageFooterText %></a>
+          <a class="text-light" href="<%= config.homepageFooterTextHref %>"><%= config.homepageFooterText %></a>
           &middot;
         <% } %>
         &copy; 2021 <a class="text-nowrap text-light" href="https://illinois.edu">University of Illinois at Urbana-Champaign</a>

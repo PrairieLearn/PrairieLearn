@@ -302,7 +302,7 @@ describe('Course instance syncing', () => {
       (ci) => ci.short_name === 'repeatedCourseInstance' && ci.deleted_at == null
     );
     assert.equal(syncedCourseInstance.uuid, newCourseInstance.courseInstance.uuid);
-    assert.match(syncedCourseInstance.sync_errors, /should have required property 'longName'/);
+    assert.match(syncedCourseInstance.sync_errors, /must have required property 'longName'/);
 
     // check that the old deleted course instance does not have any errors
     const deletedCourseInstance = syncedCourseInstances.find(
@@ -310,5 +310,54 @@ describe('Course instance syncing', () => {
     );
     assert.equal(deletedCourseInstance.uuid, originalCourseInstance.courseInstance.uuid);
     assert.equal(deletedCourseInstance.sync_errors, null);
+  });
+
+  // https://github.com/PrairieLearn/PrairieLearn/issues/6539
+  it('handles unique sequence of renames and duplicate UUIDs', async () => {
+    const courseData = util.getCourseData();
+
+    // Start with a clean slate.
+    courseData.courseInstances = {};
+
+    // Write and sync a single course instance.
+    const originalCourseInstance = makeCourseInstance();
+    originalCourseInstance.courseInstance.uuid = '0e8097aa-b554-4908-9eac-d46a78d6c249';
+    courseData.courseInstances['a'] = originalCourseInstance;
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+
+    // Now "move" the above course instance to a new directory AND add another with the
+    // same UUID.
+    delete courseData.courseInstances['a'];
+    courseData.courseInstances['b'] = originalCourseInstance;
+    courseData.courseInstances['c'] = originalCourseInstance;
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+    // Now "fix" the duplicate UUID.
+    courseData.courseInstances['c'] = {
+      ...originalCourseInstance,
+      courseInstance: {
+        ...originalCourseInstance.courseInstance,
+        uuid: '0e3097ba-b554-4908-9eac-d46a78d6c249',
+      },
+    };
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+    const courseInstances = await util.dumpTable('course_instances');
+
+    // Original course instance should not exist.
+    const originalCourseInstanceRow = courseInstances.find((ci) => ci.short_name === 'a');
+    assert.isUndefined(originalCourseInstanceRow);
+
+    // New course instances should exist and have the correct UUIDs.
+    const newCourseInstanceRow1 = courseInstances.find(
+      (ci) => ci.short_name === 'b' && ci.deleted_at === null
+    );
+    assert.isNull(newCourseInstanceRow1.deleted_at);
+    assert.equal(newCourseInstanceRow1.uuid, '0e8097aa-b554-4908-9eac-d46a78d6c249');
+    const newCourseInstanceRow2 = courseInstances.find(
+      (q) => q.short_name === 'c' && q.deleted_at === null
+    );
+    assert.isNull(newCourseInstanceRow2.deleted_at);
+    assert.equal(newCourseInstanceRow2.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
   });
 });
