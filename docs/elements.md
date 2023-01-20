@@ -1024,33 +1024,6 @@ The `focus` attribute defaults to `"false"`. Setting this to true will cause the
 
 ---
 
-### `pl-file-preview` element
-
-Provides an in-browser preview of pure-text or image files submitted by a student as part of an external grading system.
-Does not support other file types (e.g., PDF). Shows the submitted file in the corresponding submission panel.
-Used in conjunction with submission elements like `pl-file-editor`, `pl-file-upload`, and `pl-rich-text-editor`.
-Commonly appears in the submission panel with companion `pl-external-grader-results` element.
-
-#### Sample element
-
-```html
-<pl-file-preview></pl-file-preview>
-```
-
-#### Example implementations
-
-- [element/fileEditor]
-- [demo/autograder/codeEditor]
-
-#### See also
-
-- [`pl-file-editor` to provide an in-browser code environment](#pl-file-editor-element)
-- [`pl-file-upload` to receive files as a submission](#pl-file-upload-element)
-- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results)
-- [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
-
----
-
 ### `pl-file-upload` element
 
 Provides a way to accept file uploads as part of an answer. They will be stored
@@ -1893,6 +1866,33 @@ Note that only one of the attributes `source-file-name`, `submitted-file-name` o
 ---
 
 ## Conditional Elements
+
+### `pl-file-preview` element
+
+Provides an in-browser preview of pure-text or image files submitted by a student as part of an external grading system.
+Does not support other file types (e.g., PDF). Shows the submitted file in the corresponding submission panel.
+Used in conjunction with submission elements like `pl-file-editor`, `pl-file-upload`, and `pl-rich-text-editor`.
+Commonly appears in the submission panel with companion `pl-external-grader-results` element.
+
+#### Sample element
+
+```html
+<pl-file-preview></pl-file-preview>
+```
+
+#### Example implementations
+
+- [element/fileEditor]
+- [demo/autograder/codeEditor]
+
+#### See also
+
+- [`pl-file-editor` to provide an in-browser code environment](#pl-file-editor-element)
+- [`pl-file-upload` to receive files as a submission](#pl-file-upload-element)
+- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results)
+- [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
+
+---
 
 ### `pl-question-panel` element
 
