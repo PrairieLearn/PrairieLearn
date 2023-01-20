@@ -9,7 +9,18 @@ import re
 import unicodedata
 import uuid
 from enum import Enum
-from typing import Any, Dict, Literal, Optional, Type, TypedDict, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Literal,
+    Optional,
+    Tuple,
+    Type,
+    TypedDict,
+    TypeVar,
+    Union,
+)
 
 import colors
 import lxml.html
@@ -18,7 +29,7 @@ import pandas
 import sympy
 import to_precision
 from python_helper_sympy import convert_string_to_sympy, json_to_sympy, sympy_to_json
-from typing_extensions import NotRequired
+from typing_extensions import NotRequired, assert_never
 
 
 class PartialScore(TypedDict):
@@ -56,6 +67,69 @@ class QuestionData(TypedDict):
 
 class ElementTestData(QuestionData):
     test_type: Literal["correct", "incorrect", "invalid"]
+
+
+def grade_answer_parameterized(
+    data: QuestionData,
+    question_name: str,
+    grade_function: Callable[[Any], Tuple[Union[bool, float], Optional[str]]],
+    weight: int = 1,
+) -> None:
+    """
+    Grade question question_name. grade_function should take in a single parameter
+    (which will be the submitted answer) and return a 2-tuple:
+        - The first element of the 2-tuple should either be:
+            - a boolean indicating whether the question should be marked correct
+            - a partial score between 0 and 1, inclusive
+        - The second element of the 2-tuple should either be:
+            - a string containing feedback
+            - None, if there is no feedback (usually this should only occur if the answer is correct)
+    """
+
+    # Create the data dictionary at first
+    data["partial_scores"][question_name] = {"score": 0.0, "weight": weight}
+
+    if question_name not in data["submitted_answers"]:
+        data["format_errors"][question_name] = "No answer was submitted"
+        return
+
+    submitted_answer = data["submitted_answers"][question_name]
+
+    # Run passed-in grading function
+    result, feedback_content = grade_function(submitted_answer)
+
+    # Try converting partial score
+    if isinstance(result, bool):
+        partial_score = 1.0 if result else 0.0
+    elif isinstance(result, (float, int)):
+        assert 0.0 <= result <= 1.0
+        partial_score = result
+    else:
+        assert_never(result)
+
+    # Set corresponding partial score and feedback
+    data["partial_scores"][question_name]["score"] = partial_score
+
+    if feedback_content:
+        data["partial_scores"][question_name]["feedback"] = feedback_content
+
+
+def determine_score_params(
+    score: float,
+) -> Tuple[Literal["correct", "partial", "incorrect"], Union[bool, float]]:
+    """
+    Determine appropriate key and value for display on the frontend given the
+    score for a particular question. For elements following PrairieLearn
+    conventions, the return value can be used as a key/value pair in the
+    dictionary passed to an element's Mustache template to display a score badge.
+    """
+
+    if score >= 1:
+        return ("correct", True)
+    elif score > 0:
+        return ("partial", math.floor(score * 100))
+
+    return ("incorrect", True)
 
 
 EnumT = TypeVar("EnumT", bound=Enum)

@@ -20,6 +20,11 @@ class BigOType(Enum):
     LITTLE_OMEGA = r"\omega"
 
 
+class DisplayType(Enum):
+    INLINE = "inline"
+    BLOCK = "block"
+
+
 GRADE_FUNCTION_DICT: Dict[BigOType, bou.BigOGradingFunctionT] = {
     BigOType.BIG_O: bou.grade_o_expression,
     BigOType.THETA: bou.grade_theta_expression,
@@ -33,7 +38,7 @@ SIZE_DEFAULT = 35
 PLACEHOLDER_TEXT_THRESHOLD = 20
 SHOW_HELP_TEXT_DEFAULT = True
 WEIGHT_DEFAULT = 1
-DISPLAY_DEFAULT = bou.DisplayType.INLINE
+DISPLAY_DEFAULT = DisplayType.INLINE
 BIG_O_TYPE_DEFAULT = BigOType.BIG_O
 
 
@@ -81,7 +86,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     variables = phs.get_variables_list(
         pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
-    display = pl.get_enum_attrib(element, "display", bou.DisplayType, DISPLAY_DEFAULT)
+    display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
 
     bigo_type = pl.get_enum_attrib(element, "type", BigOType, BIG_O_TYPE_DEFAULT).value
@@ -130,7 +135,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         }
 
         if score is not None:
-            score_type, score_value = bou.determine_score_params(score)
+            score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
         with open("pl-big-o-input.mustache", "r", encoding="utf-8") as f:
@@ -181,7 +186,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         }
 
         if score is not None:
-            score_type, score_value = bou.determine_score_params(score)
+            score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
         with open("pl-big-o-input.mustache", "r", encoding="utf-8") as f:
@@ -247,7 +252,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     big_o_type = pl.get_enum_attrib(element, "type", BigOType, BIG_O_TYPE_DEFAULT)
 
-    bou.grade_answer_parameterized(
+    pl.grade_answer_parameterized(
         data,
         name,
         lambda a_sub: GRADE_FUNCTION_DICT[big_o_type](a_tru, a_sub, variables),
