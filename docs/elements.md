@@ -1288,6 +1288,57 @@ As of right now, the element supports displaying either Pandas DataFrames as an 
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 - [`pl-variable-output` for displaying a matrix or element in code form.](#pl-variable-output-element)
 
+### `pl-dataframe` element
+
+Displays a formatted display of Pandas DataFrames, with various options for displaying types of columns and code for reproducing the DataFrame.
+
+#### Sample elements
+
+**question.html**
+
+```html
+<pl-dataframe params-name="df" show-index="false" show-dimensions="false" digits="4"></pl-dataframe>
+```
+
+**server.py**
+
+```python
+import prairielearn as pl
+import pandas as pd
+
+def generate(data):
+    df = pd.read_csv("breast-cancer-train.dat", header=None)
+    data["params"]["df"] = pl.to_json(df.head(15))
+```
+
+#### Customizations
+
+| Attribute               | Type          | Default  | Description                                                                                                                                            |
+| ----------------------- | ------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `params-name`           | string        | —        | The name of the key in `data['params']` to get a value from.                                                                                           |
+| `show-header`           | boolean       | true     | Show the header row of a DataFrame.                                                                                                                    |
+| `show-index`            | boolean       | true     | Show the index column of a DataFrame. Will switch to 1-indexing if using the default index and `display-language` is "r".                              |
+| `show-dimensions`       | boolean       | true     | Show a footer with the dimensions of a DataFrame.                                                                                                      |
+| `show-dtype`            | boolean       | false    | Show the data types contained in each column of the DataFrame at the bottom of each column. Types used correspond to the `display-language` parameter. |
+| `display-language`      | "python", "r" | "python" | Language to use for displaying data types and indices.                                                                                                 |
+| `display-variable-name` | string        | "df"     | Variable name to display in code to recreate DataFrame.                                                                                                |
+| `show-python`           | boolean       | true     | Show code that can be used to recreate the DataFrame in Python in a separate tab.                                                                      |
+| `digits`                | integer       | -        | Number of digits to display for floating point entries.                                                                                                |
+
+#### Details
+
+When setting a parameter, use PrairieLearn's built in `pl.to_json()` on the DataFrame to display. Note that there are multiple serialization options for Pandas DataFrames. Encoding a DataFrame `df` by setting `pl.to_json(df, df_encoding_version=2)` allows for missing and date time values whereas `pl.to_json(df, df_encoding_version=1)` (default) does not. However, `df_encoding_version=1` has support for complex numbers, while `df_encoding_version=2` does not.
+
+#### Example implementations
+
+- [element/dataframe]
+
+#### See also
+
+- [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
+- [`pl-variable-output` for displaying a matrix or element in code form.](#pl-variable-output-element)
+- [`pl-python-variable` for displaying a formatted output of Python variables.](#pl-python-variable-element)
+
 ### `pl-figure` element
 
 Display a statically or dynamically generated image.
@@ -2240,6 +2291,7 @@ The provided `script-name` corresponds to a file located within the director for
 [element/panels]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/panels
 [element/prairiedrawfigure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/testCourse/questions/prairieDrawFigure
 [element/pythonvariable]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/pythonVariable
+[element/dataframe]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/dataframe
 [element/stringinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/stringInput
 [element/symbolicinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/symbolicInput
 [element/threejs]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/threeJS
