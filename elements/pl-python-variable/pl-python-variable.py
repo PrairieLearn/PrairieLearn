@@ -35,17 +35,17 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             "suffix",
             "prefix-newline",
             "suffix-newline",
-            # Legacy dataframe parameters
-            "text",
-            "show-header",
-            "show-index",
-            "show-dimensions",
             # Pretty print parameters
             "indent",
             "depth",
             "width",
             "compact",
             "sort-dicts",
+            # Legacy dataframe parameters
+            "text",
+            "show-header",
+            "show-index",
+            "show-dimensions",
         ],
     )
 
@@ -80,25 +80,25 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     var_out = pl.from_json(data["params"][varname])
 
-
     # Passthrough legacy support for pl-dataframe
     if isinstance(var_out, pandas.DataFrame) and not force_text:
         return (
             f'<pl-dataframe params-name="{varname}" show-header="{show_header}" show-index="{show_index}" '
             f'show-dimensions="{show_dimensions}" show-python="false"></pl-dataframe>'
         )
+    # Support pprint for complex data types
     elif isinstance(var_out, (dict, list)):
         var_string = pprint.pformat(
-                var_out,
-                indent=indent,
-                width=width,
-                depth=depth,
-                compact=compact,
-                sort_dicts=sort_dicts,
-            )
+            var_out,
+            indent=indent,
+            width=width,
+            depth=depth,
+            compact=compact,
+            sort_dicts=sort_dicts,
+        )
+    # Otherwise, just use repr
     else:
         var_string = repr(var_out)
-
 
     prefix_newline = pl.get_boolean_attrib(
         element, "prefix-newline", PREFIX_NEWLINE_DEFAULT
