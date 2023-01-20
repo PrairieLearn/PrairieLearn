@@ -9,16 +9,19 @@ PREFIX_DEFAULT = ""
 SUFFIX_DEFAULT = ""
 PREFIX_NEWLINE_DEFAULT = False
 SUFFIX_NEWLINE_DEFAULT = False
-TEXT_DEFAULT = False
-SHOW_HEADER_DEFAULT = True
-SHOW_INDEX_DEFAULT = True
-SHOW_DIMENSIONS_DEFAULT = True
+
+# Pretty print parameters
 INDENT_DEFAULT = 1
 DEPTH_DEFAULT = None
 WIDTH_DEFAULT = 80
 COMPACT_DEFAULT = False
 SORT_DICTS_DEFAULT = False
-UNDERSCORE_NUMBERS_DEFAULT = False
+
+# Legacy dataframe parameters
+TEXT_DEFAULT = False
+SHOW_HEADER_DEFAULT = True
+SHOW_INDEX_DEFAULT = True
+SHOW_DIMENSIONS_DEFAULT = True
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -42,7 +45,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             "depth",
             "width",
             "compact",
-            "depth",
             "sort-dicts",
         ],
     )
@@ -51,6 +53,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
 
+    varname = pl.get_string_attrib(element, "params-name")
+    no_highlight = pl.get_boolean_attrib(element, "no-highlight", NO_HIGHLIGHT_DEFAULT)
+    prefix = pl.get_string_attrib(element, "prefix", PREFIX_DEFAULT)
+    suffix = pl.get_string_attrib(element, "suffix", SUFFIX_DEFAULT)
+
     # Legacy dataframe parameters
     force_text = pl.get_boolean_attrib(element, "text", TEXT_DEFAULT)
     show_header = pl.get_boolean_attrib(element, "show-header", SHOW_HEADER_DEFAULT)
@@ -58,16 +65,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     show_dimensions = pl.get_boolean_attrib(
         element, "show-dimensions", SHOW_DIMENSIONS_DEFAULT
     )
-    varname = pl.get_string_attrib(element, "params-name")
+
+    # Pretty print parameters
     indent = pl.get_integer_attrib(element, "indent", INDENT_DEFAULT)
     depth = pl.get_integer_attrib(element, "depth", DEPTH_DEFAULT)
     width = pl.get_integer_attrib(element, "width", WIDTH_DEFAULT)
     compact = pl.get_boolean_attrib(element, "compact", COMPACT_DEFAULT)
     sort_dicts = pl.get_boolean_attrib(element, "sort-dicts", SORT_DICTS_DEFAULT)
-    # TODO this is a python 3.10-only addition, hold off on adding this till non-US servers are upgraded.
-    # underscore_numbers = pl.get_boolean_attrib(
-    #    element, "underscore-numbers", UNDERSCORE_NUMBERS_DEFAULT
-    # )
 
     if varname not in data["params"]:
         raise KeyError(
@@ -102,10 +106,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 compact=compact,
                 sort_dicts=sort_dicts,
             )
-
-    no_highlight = pl.get_boolean_attrib(element, "no-highlight", NO_HIGHLIGHT_DEFAULT)
-    prefix = pl.get_string_attrib(element, "prefix", PREFIX_DEFAULT)
-    suffix = pl.get_string_attrib(element, "suffix", SUFFIX_DEFAULT)
 
     prefix_newline = pl.get_boolean_attrib(
         element, "prefix-newline", PREFIX_NEWLINE_DEFAULT

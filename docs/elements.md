@@ -58,6 +58,7 @@ images, files, and code display. The following **decorative** elements are avail
   appropriate LaTeX commands for use in a mathematical expression.
 - [`pl-python-variable`](#pl-python-variable-element): Display formatted output of Python
   variables.
+- [`pl-dataframe`](#pl-dataframe-element): Display DataFrames with various options.
 - [`pl-graph`](#pl-graph-element): Displays graphs, either using GraphViz DOT notation
   or with an adjacency matrix.
 - [`pl-drawing`](#pl-drawing-element): Creates an image from pre-defined
@@ -1255,17 +1256,19 @@ def generate(data):
 
 #### Details
 
-The element supports displaying Python objects via `repr()`.
+The element supports displaying Python objects via `repr()`, with support for more complex display options similar to the built-in pprint library. Objects to be displayed must be JSON serialized.
+
+Printing Pandas DataFrames with this element is deprecated. Please use the new [`pl-dataframe`](#pl-dataframe-element) element for this purpose.
 
 #### Example implementations
 
 - [element/pythonVariable]
-- [demo/randomDataFrame]
 
 #### See also
 
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 - [`pl-variable-output` for displaying a matrix or element in code form.](#pl-variable-output-element)
+- [`pl-dataframe` for displaying dataframes.](#pl-dataframe-element)
 
 ### `pl-dataframe` element
 
@@ -1311,6 +1314,7 @@ When setting a parameter, use PrairieLearn's built in `pl.to_json()` on the Data
 #### Example implementations
 
 - [element/dataframe]
+- [demo/randomDataFrame]
 
 #### See also
 
