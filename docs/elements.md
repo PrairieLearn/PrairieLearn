@@ -1691,6 +1691,10 @@ def generate(data):
 | `params-name-networkx`      | string  | `None`             | The name of a parameter containing a networkx graph to use as input for the graph.                                                                                                                                                                                      |
 | `networkx-edge-label`       | string  | `None`             | The key from the edge data dictionary to set to the `"label"` entry for display. By default, the entry stored in `"label"` will be displayed.                                                                                                                           |
 
+#### Details
+
+Note that using networkx for rendering, attributes from the input networkx graph are retained when creating a Graphviz DOT visualization. As a result, it is possible to set node and edge properties such as color, line weight, as part of the input graph and have these reflected in the rendering. These include global properties of the graph, such as the `rankdir` used in rendering. See the [Graphviz documentation on attributes](https://graphviz.org/doc/info/attrs.html) for more information on what attributes are supported.
+
 #### Example implementations
 
 - [element/graph]
