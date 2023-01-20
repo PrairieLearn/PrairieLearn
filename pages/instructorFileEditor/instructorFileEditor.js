@@ -22,11 +22,12 @@ const { default: AnsiUp } = require('ansi_up');
 const sha256 = require('crypto-js/sha256');
 const b64Util = require('../../lib/base64-util');
 const fileStore = require('../../lib/file-store');
-const isBinaryFile = require('isbinaryfile').isBinaryFile;
+const { isBinaryFile } = require('isbinaryfile');
 const modelist = require('ace-code/src/ext/modelist');
 const { decodePath } = require('../../lib/uri-util');
 const chunks = require('../../lib/chunks');
 const { idsEqual } = require('../../lib/id');
+const { getPaths } = require('../../lib/instructorFiles');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -197,9 +198,12 @@ router.get('/*', (req, res, next) => {
         fileEdit.origHash = fileEdit.diskHash;
       }
 
-      debug('Render');
-      res.locals.fileEdit = fileEdit;
-      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      getPaths(req, res, (err, paths) => {
+        if (ERR(err, next)) return;
+        res.locals.fileEdit = fileEdit;
+        res.locals.fileEdit.paths = paths;
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      });
     }
   );
 });

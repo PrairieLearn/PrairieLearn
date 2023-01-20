@@ -24,12 +24,10 @@ columns
     open: boolean default true
     order_by: integer default floor((random() * (1000000)::double precision))
     points: double precision default 0
-    points_in_grading: double precision default 0
     points_list: double precision[]
     points_list_original: double precision[]
     requires_manual_grading: boolean not null default false
     score_perc: double precision default 0
-    score_perc_in_grading: double precision default 0
     some_nonzero_submission: boolean
     some_perfect_submission: boolean
     some_submission: boolean
