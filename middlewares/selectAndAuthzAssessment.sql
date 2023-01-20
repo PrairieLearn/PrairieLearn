@@ -8,7 +8,7 @@ SELECT
 FROM
     assessments AS a
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-    JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
+    LEFT JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     JOIN LATERAL authz_assessment(a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
 WHERE

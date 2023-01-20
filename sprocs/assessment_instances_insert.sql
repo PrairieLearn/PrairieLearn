@@ -25,7 +25,7 @@ BEGIN
     SELECT * INTO assessment FROM assessments where id = assessment_id;
 
     -- ######################################################################
-    -- determine the "number" of the new assessment instance
+    -- determine the "group_id" of the new assessment instance
     IF group_work THEN
         SELECT
             gu.group_id
@@ -46,6 +46,8 @@ BEGIN
         END IF;
     END IF;
 
+    -- ######################################################################
+    -- determine the "number" of the new assessment instance
     IF assessment.multiple_instance THEN
         SELECT coalesce(max(ai.number), 0) + 1
         INTO number
@@ -94,6 +96,11 @@ BEGIN
     IF assessment_instance_id IS NULL THEN
         RETURN;
     END IF;
+
+    -- ######################################################################
+    -- Add a log entry for the original time limit of the assessment instance
+    INSERT INTO assessment_state_logs (open, assessment_instance_id, date_limit, auth_user_id)
+    VALUES (true, assessment_instance_id, date_limit, authn_user_id);
 
     -- ######################################################################
     -- start a record of the last access time

@@ -9,13 +9,6 @@ coverage/
 # Transpiled files
 packages/*/dist
 
-# `changesets` ships with an outdated version of Prettier that fights with our
-# own version. Until they update their Prettier version or switch to loading
-# the version of Prettier that consumers have installed, we'll exclude the
-# changesets-managed changelogs from our Prettier formatting/checking.
-# See https://github.com/changesets/changesets/issues/616
-packages/*/CHANGELOG.md
-
 # The `public/localscripts/calculationQuestion` directory unfortunately
 # contains a mixture of first-party and vendored third-party scripts. We want
 # to format our own scripts, but we should avoid formatting anything that was

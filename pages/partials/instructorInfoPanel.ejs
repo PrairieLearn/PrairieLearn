@@ -16,20 +16,24 @@
   </div>
 
   <% if (locals.authz_result && (!authz_result.authorized_edit)) { %>
-    <hr>
-    <% if (instance_group) { %>
-    <h5 class="card-title">Group:</h5>
-    <div class="d-flex flex-wrap pb-2">
-      <div class="pr-1"><%= instance_group.name %></div>
-      <div class="pr-1">(<%= instance_group_uid_list.join(', ') %>)</div>
-    </div>
-    <% } else if (instance_user) { %>
-    <h5 class="card-title">Student:</h5>
-    <div class="d-flex flex-wrap pb-2">
-      <div class="pr-1"><%= instance_user.name %></div>
-      <div class="pr-1"><%= instance_user.uid %></div>
-    </div>
-    <% } %>
+  <hr>
+  <div>
+    <details>
+      <% if (instance_group) { %>
+      <summary><h5 class="card-title">Group details</h5></summary>
+      <div class="d-flex flex-wrap pb-2">
+        <div class="pr-1"><%= instance_group.name %></div>
+        <div class="pr-1">(<%= instance_group_uid_list.join(', ') %>)</div>
+      </div>
+      <% } else if (instance_user) { %>
+      <summary><h5 class="card-title d-inline-block">Student details</h5></summary>
+      <div class="d-flex flex-wrap pb-2">
+        <div class="pr-1"><%= instance_user.name %></div>
+        <div class="pr-1"><%= instance_user.uid %></div>
+      </div>
+      <% } %>
+    </details>
+  </div>
   <% } %>
 
   <% if (typeof question !== "undefined") { %>
@@ -131,7 +135,7 @@
           <a href="<%= instructorUrlPrefix %>/assessment_instance/<%= ip_assessment_instance.id %>">View log</a>
       </div>
 
-      <% if (ip_instance_question && course.manual_grading_visible) { %>
+      <% if (ip_instance_question) { %>
       <hr>
       <h5 class="card-title">Manual Grading:</h5>
 

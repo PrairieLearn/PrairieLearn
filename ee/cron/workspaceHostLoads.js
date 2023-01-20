@@ -47,10 +47,6 @@ const cloudwatch_definitions = {
     name: 'HostsTerminating',
     unit: 'Count',
   },
-  workspace_hosts_terminated_count: {
-    name: 'HostsTerminated',
-    unit: 'Count',
-  },
   workspace_hosts_active_count: {
     name: 'HostsActive',
     unit: 'Count',
@@ -77,10 +73,6 @@ const cloudwatch_definitions = {
   },
   workspace_uninitialized_count: {
     name: 'WorkspacesUninitialized',
-    unit: 'Count',
-  },
-  workspace_stopped_count: {
-    name: 'WorkspacesStopped',
     unit: 'Count',
   },
   workspace_launching_count: {

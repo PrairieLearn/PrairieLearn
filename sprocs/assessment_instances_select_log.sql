@@ -124,6 +124,9 @@ BEGIN
                     s.id AS log_id,
                     jsonb_build_object(
                       'submitted_answer', CASE WHEN include_files THEN s.submitted_answer ELSE (s.submitted_answer - '_files') END,
+                      'raw_submitted_answer', CASE WHEN include_files THEN s.raw_submitted_answer
+                      -- Elements that produce files (upload, editor, etc.) will use keys like '_file_upload_XXX' or equivalent
+                      ELSE (SELECT JSONB_OBJECT_AGG(key, value) FROM JSONB_EACH(s.raw_submitted_answer) WHERE NOT STARTS_WITH(key, '_')) END,
                       'correct', s.correct
                     ) AS data
                 FROM
@@ -185,6 +188,8 @@ BEGIN
                     jsonb_build_object(
                         'correct', gj.correct,
                         'score', gj.score,
+                        'manual_points', gj.manual_points,
+                        'auto_points', gj.auto_points,
                         'feedback', gj.feedback,
                         'submitted_answer', CASE WHEN include_files THEN s.submitted_answer ELSE (s.submitted_answer - '_files') END,
                         'submission_id', s.id
@@ -340,6 +345,44 @@ BEGIN
                     LEFT JOIN users AS u ON (u.user_id = asl.auth_user_id)
                 WHERE
                     asl.assessment_instance_id = ai_id
+            )
+            UNION
+            (
+                SELECT
+                    7.5 AS event_order,
+                    'Time limit expiry'::TEXT AS event_name,
+                    'red2'::TEXT AS event_color,
+                    asl.date_limit AS date,
+                    u.user_id AS auth_user_id,
+                    u.uid AS auth_user_uid,
+                    NULL::TEXT AS qid,
+                    NULL::INTEGER AS question_id,
+                    NULL::INTEGER AS instance_question_id,
+                    NULL::INTEGER AS variant_id,
+                    NULL::INTEGER AS variant_number,
+                    NULL::INTEGER AS submission_id,
+                    asl.id AS log_id,
+                    jsonb_build_object(
+                         'time_limit', format_interval(asl.date_limit - ai.date)
+                    ) AS data
+                FROM
+                    assessment_state_logs AS asl
+                    JOIN assessment_instances AS ai ON (ai.id = ai_id)
+                    LEFT JOIN users AS u ON (u.user_id = asl.auth_user_id)
+                WHERE
+                    asl.assessment_instance_id = ai_id
+                    AND asl.open
+                    AND asl.date_limit IS NOT NULL
+                    -- Only list as expired if it already happened
+                    AND asl.date_limit < CURRENT_TIMESTAMP
+                    -- Only list the expiry date if the assessment was
+                    -- not closed or extended after this time limit
+                    -- was set but before it expired
+                    AND NOT EXISTS (SELECT 1
+                                    FROM assessment_state_logs aslc
+                                    WHERE aslc.assessment_instance_id = ai_id
+                                          AND aslc.date > asl.date
+                                          AND aslc.date <= asl.date_limit)
             )
             UNION
             (

@@ -320,7 +320,9 @@ describe('Exam assessment', function () {
           submission_score: null,
           submission_correct: null,
           instance_question_points: 0,
-          instance_question_score_perc: (0 / 11) * 100,
+          instance_question_score_perc: (0 / 21) * 100,
+          instance_question_auto_points: 0,
+          instance_question_manual_points: 0,
           assessment_instance_points: 0,
           assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
         };
@@ -348,7 +350,9 @@ describe('Exam assessment', function () {
           submission_score: 0,
           submission_correct: false,
           instance_question_points: 0,
-          instance_question_score_perc: (0 / 11) * 100,
+          instance_question_score_perc: (0 / 21) * 100,
+          instance_question_auto_points: 0,
+          instance_question_manual_points: 0,
           assessment_instance_points: 0,
           assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
         };
@@ -377,6 +381,8 @@ describe('Exam assessment', function () {
           submission_correct: false,
           instance_question_points: 0,
           instance_question_score_perc: (0 / 5) * 100,
+          instance_question_auto_points: 0,
+          instance_question_manual_points: 0,
           assessment_instance_points: 0,
           assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
         };
@@ -404,6 +410,8 @@ describe('Exam assessment', function () {
           submission_correct: false,
           instance_question_points: 0,
           instance_question_score_perc: (0 / 17) * 100,
+          instance_question_auto_points: 0,
+          instance_question_manual_points: 0,
           assessment_instance_points: 0,
           assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
         };
@@ -431,6 +439,8 @@ describe('Exam assessment', function () {
           submission_correct: null,
           instance_question_points: 0,
           instance_question_score_perc: (0 / 17) * 100,
+          instance_question_auto_points: 0,
+          instance_question_manual_points: 0,
           assessment_instance_points: 0,
           assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
         };
@@ -572,6 +582,8 @@ describe('Exam assessment', function () {
           submission_correct: true,
           instance_question_points: 3,
           instance_question_score_perc: (3 / 5) * 100,
+          instance_question_auto_points: 3,
+          instance_question_manual_points: 0,
           assessment_instance_points: 3,
           assessment_instance_score_perc: (3 / helperExam.assessmentMaxPoints) * 100,
         };
@@ -620,6 +632,8 @@ describe('Exam assessment', function () {
           submission_correct: null,
           instance_question_points: 0,
           instance_question_score_perc: (0 / 17) * 100,
+          instance_question_auto_points: 0,
+          instance_question_manual_points: 0,
           assessment_instance_points: 3,
           assessment_instance_score_perc: (3 / helperExam.assessmentMaxPoints) * 100,
         };
@@ -663,6 +677,8 @@ describe('Exam assessment', function () {
           submission_correct: false,
           instance_question_points: 0,
           instance_question_score_perc: (0 / 11) * 100,
+          instance_question_auto_points: 0,
+          instance_question_manual_points: 0,
           assessment_instance_points: 3,
           assessment_instance_score_perc: (3 / helperExam.assessmentMaxPoints) * 100,
         };
@@ -767,6 +783,8 @@ describe('Exam assessment', function () {
             submission_correct: true,
             instance_question_points: 3,
             instance_question_score_perc: (3 / 5) * 100,
+            instance_question_auto_points: 3,
+            instance_question_manual_points: 0,
           };
         });
       });
@@ -777,8 +795,10 @@ describe('Exam assessment', function () {
           locals.expectedResult = {
             submission_score: 0,
             submission_correct: false,
-            instance_question_points: 11,
-            instance_question_score_perc: (11 / 11) * 100,
+            instance_question_points: 21,
+            instance_question_score_perc: (21 / 21) * 100,
+            instance_question_auto_points: 11,
+            instance_question_manual_points: 10,
           };
         });
       });
@@ -791,6 +811,8 @@ describe('Exam assessment', function () {
             submission_correct: null,
             instance_question_points: 0,
             instance_question_score_perc: (0 / 17) * 100,
+            instance_question_auto_points: 0,
+            instance_question_manual_points: 0,
           };
         });
       });
@@ -798,8 +820,8 @@ describe('Exam assessment', function () {
       describe('setting up the expected assessment results', function () {
         it('should succeed', function () {
           locals.expectedResult = {
-            assessment_instance_points: 14,
-            assessment_instance_score_perc: (14 / helperExam.assessmentMaxPoints) * 100,
+            assessment_instance_points: 24,
+            assessment_instance_score_perc: (24 / helperExam.assessmentMaxPoints) * 100,
           };
         });
       });
@@ -824,6 +846,8 @@ describe('Exam assessment', function () {
           locals.expectedResult = {
             instance_question_points: 2,
             instance_question_score_perc: (2 / 5) * 100,
+            instance_question_auto_points: 3,
+            instance_question_manual_points: -1,
           };
         });
       });
@@ -832,8 +856,10 @@ describe('Exam assessment', function () {
         it('should succeed', function () {
           locals.question = helperExam.questions.addVectors;
           locals.expectedResult = {
-            instance_question_points: 5.5,
-            instance_question_score_perc: (5.5 / 11) * 100,
+            instance_question_points: 10.5,
+            instance_question_score_perc: (10.5 / 21) * 100,
+            instance_question_auto_points: 11,
+            instance_question_manual_points: -0.5,
           };
         });
       });
@@ -844,6 +870,8 @@ describe('Exam assessment', function () {
           locals.expectedResult = {
             instance_question_points: 0,
             instance_question_score_perc: (0 / 17) * 100,
+            instance_question_auto_points: 0,
+            instance_question_manual_points: 0,
           };
         });
       });
@@ -851,8 +879,8 @@ describe('Exam assessment', function () {
       describe('setting up the expected assessment results', function () {
         it('should succeed', function () {
           locals.expectedResult = {
-            assessment_instance_points: 7.5,
-            assessment_instance_score_perc: (7.5 / helperExam.assessmentMaxPoints) * 100,
+            assessment_instance_points: 12.5,
+            assessment_instance_score_perc: (12.5 / helperExam.assessmentMaxPoints) * 100,
           };
         });
       });
@@ -923,6 +951,8 @@ describe('Exam assessment', function () {
           locals.expectedResult = {
             instance_question_points: 4.7,
             instance_question_score_perc: (4.7 / 5) * 100,
+            instance_question_auto_points: 3,
+            instance_question_manual_points: 1.7,
           };
         });
       });
@@ -932,7 +962,9 @@ describe('Exam assessment', function () {
           locals.question = helperExam.questions.addVectors;
           locals.expectedResult = {
             instance_question_points: 1.2,
-            instance_question_score_perc: (1.2 / 11) * 100,
+            instance_question_score_perc: (1.2 / 21) * 100,
+            instance_question_auto_points: 11,
+            instance_question_manual_points: -9.8,
           };
         });
       });
@@ -943,6 +975,8 @@ describe('Exam assessment', function () {
           locals.expectedResult = {
             instance_question_points: 0,
             instance_question_score_perc: (0 / 17) * 100,
+            instance_question_auto_points: 0,
+            instance_question_manual_points: 0,
           };
         });
       });
@@ -1033,6 +1067,8 @@ describe('Exam assessment', function () {
           locals.expectedResult = {
             instance_question_points: 4.7,
             instance_question_score_perc: (4.7 / 5) * 100,
+            instance_question_auto_points: 3,
+            instance_question_manual_points: 1.7,
           };
         });
       });
@@ -1042,7 +1078,9 @@ describe('Exam assessment', function () {
           locals.question = helperExam.questions.addVectors;
           locals.expectedResult = {
             instance_question_points: 1.2,
-            instance_question_score_perc: (1.2 / 11) * 100,
+            instance_question_score_perc: (1.2 / 21) * 100,
+            instance_question_auto_points: 11,
+            instance_question_manual_points: -9.8,
           };
         });
       });
@@ -1053,6 +1091,8 @@ describe('Exam assessment', function () {
           locals.expectedResult = {
             instance_question_points: 0,
             instance_question_score_perc: (0 / 17) * 100,
+            instance_question_auto_points: 0,
+            instance_question_manual_points: 0,
           };
         });
       });
@@ -1083,6 +1123,8 @@ describe('Exam assessment', function () {
           locals.expectedResult = {
             instance_question_points: 4.7,
             instance_question_score_perc: (4.7 / 5) * 100,
+            instance_question_auto_points: 3,
+            instance_question_manual_points: 1.7,
           };
         });
       });
@@ -1092,7 +1134,9 @@ describe('Exam assessment', function () {
           locals.question = helperExam.questions.addVectors;
           locals.expectedResult = {
             instance_question_points: 1.2,
-            instance_question_score_perc: (1.2 / 11) * 100,
+            instance_question_score_perc: (1.2 / 21) * 100,
+            instance_question_auto_points: 11,
+            instance_question_manual_points: -9.8,
           };
         });
       });
@@ -1103,6 +1147,8 @@ describe('Exam assessment', function () {
           locals.expectedResult = {
             instance_question_points: 0,
             instance_question_score_perc: (0 / 17) * 100,
+            instance_question_auto_points: 0,
+            instance_question_manual_points: 0,
           };
         });
       });
@@ -1116,6 +1162,278 @@ describe('Exam assessment', function () {
         });
       });
       helperQuestion.checkAssessmentScore(locals);
+    });
+  });
+
+  describe('38. instance question split points uploads', function () {
+    describe('prepare the CSV upload data', function () {
+      it('should get the submission_ids for addNumbers', async () => {
+        const params = {
+          qid: helperExam.questions.addNumbers.qid,
+        };
+        const result = await sqldb.queryAsync(sql.select_submissions_by_qid, params);
+        // make sure we've got lots of submissions to make the later checks work
+        assert.isAtLeast(result.rowCount, 4);
+        // we are going to add feedback to one of the submissions
+        locals.submission_id_for_feedback = result.rows[2].id;
+        // all the the other submissions should not be modified
+        locals.submission_id_preserve0 = result.rows[0].id;
+        locals.submission_id_preserve1 = result.rows[1].id;
+        locals.submission_id_preserveN = result.rows[result.rowCount - 1].id;
+      });
+      it('should succeed', function () {
+        locals.csvData =
+          'uid,instance,qid,manual_points,auto_points,submission_id,feedback_json\n' +
+          'dev@illinois.edu,1,addNumbers,1.3,2.2,' +
+          locals.submission_id_for_feedback +
+          ',"{""msg"":""feedback numbers 2""}"\n' +
+          'dev@illinois.edu,1,addVectors,,10.7,,\n' +
+          'dev@illinois.edu,1,fossilFuelsRadio,2.9,,,\n';
+      });
+    });
+    helperQuestion.uploadInstanceQuestionScores(locals);
+    describe('check the instance question score upload succeeded', function () {
+      describe('setting up the expected question addNumbers results', function () {
+        it('should succeed', function () {
+          locals.question = helperExam.questions.addNumbers;
+          locals.expectedResult = {
+            instance_question_points: 3.5,
+            instance_question_score_perc: (3.5 / 5) * 100,
+            instance_question_auto_points: 2.2,
+            instance_question_manual_points: 1.3,
+          };
+        });
+      });
+      helperQuestion.checkQuestionScore(locals);
+      describe('setting up the expected question addVectors results', function () {
+        it('should succeed', function () {
+          locals.question = helperExam.questions.addVectors;
+          locals.expectedResult = {
+            instance_question_points: 0.9,
+            instance_question_score_perc: (0.9 / 21) * 100,
+            instance_question_auto_points: 10.7,
+            instance_question_manual_points: -9.8,
+          };
+        });
+      });
+      helperQuestion.checkQuestionScore(locals);
+      describe('setting up the expected question fossilFuelsRadio results', function () {
+        it('should succeed', function () {
+          locals.question = helperExam.questions.fossilFuelsRadio;
+          locals.expectedResult = {
+            instance_question_points: 2.9,
+            instance_question_score_perc: (2.9 / 17) * 100,
+            instance_question_auto_points: 0,
+            instance_question_manual_points: 2.9,
+          };
+        });
+      });
+      helperQuestion.checkQuestionScore(locals);
+      describe('setting up the expected assessment results', function () {
+        it('should succeed', function () {
+          locals.expectedResult = {
+            assessment_instance_points: 7.3,
+            assessment_instance_score_perc: (7.3 / helperExam.assessmentMaxPoints) * 100,
+          };
+        });
+      });
+      helperQuestion.checkAssessmentScore(locals);
+      describe('setting up the expected feedback for addNumbers, submission with new feedback', function () {
+        it('should succeed', function () {
+          locals.expectedFeedback = {
+            submission_id: locals.submission_id_for_feedback,
+            qid: helperExam.questions.addNumbers.qid,
+            feedback: { msg: 'feedback numbers 2' },
+          };
+        });
+      });
+      helperQuestion.checkQuestionFeedback(locals);
+      describe('setting up the expected feedback for addNumbers, submission with preserved feedback 0', function () {
+        it('should succeed', function () {
+          locals.expectedFeedback = {
+            submission_id: locals.submission_id_preserve0,
+            qid: helperExam.questions.addNumbers.qid,
+            feedback: {},
+          };
+        });
+      });
+      helperQuestion.checkQuestionFeedback(locals);
+      describe('setting up the expected feedback for addNumbers, submission with preserved feedback 1', function () {
+        it('should succeed', function () {
+          locals.expectedFeedback = {
+            submission_id: locals.submission_id_preserve1,
+            qid: helperExam.questions.addNumbers.qid,
+            feedback: null,
+          };
+        });
+      });
+      helperQuestion.checkQuestionFeedback(locals);
+      describe('setting up the expected feedback for addNumbers, submission with preserved feedback N', function () {
+        it('should succeed', function () {
+          locals.expectedFeedback = {
+            submission_id: locals.submission_id_preserveN,
+            qid: helperExam.questions.addNumbers.qid,
+            feedback: { manual: 'feedback numbers' },
+          };
+        });
+      });
+      helperQuestion.checkQuestionFeedback(locals);
+      describe('setting up the expected feedback for addVectors', function () {
+        it('should succeed', function () {
+          locals.expectedFeedback = {
+            submission_id: null,
+            qid: helperExam.questions.addVectors.qid,
+            feedback: { manual: 'feedback vectors' },
+          };
+        });
+      });
+      helperQuestion.checkQuestionFeedback(locals);
+      describe('setting up the expected feedback for fossilFuelsRadio', function () {
+        it('should succeed', function () {
+          locals.expectedFeedback = {
+            submission_id: null,
+            qid: helperExam.questions.fossilFuelsRadio.qid,
+            feedback: null,
+          };
+        });
+      });
+      helperQuestion.checkQuestionFeedback(locals);
+    });
+  });
+
+  describe('39. instance question split score_perc uploads', function () {
+    describe('prepare the CSV upload data', function () {
+      it('should get the submission_ids for addNumbers', async () => {
+        const params = {
+          qid: helperExam.questions.addNumbers.qid,
+        };
+        const result = await sqldb.queryAsync(sql.select_submissions_by_qid, params);
+        // make sure we've got lots of submissions to make the later checks work
+        assert.isAtLeast(result.rowCount, 4);
+        // we are going to add feedback to one of the submissions
+        locals.submission_id_for_feedback = result.rows[2].id;
+        // all the the other submissions should not be modified
+        locals.submission_id_preserve0 = result.rows[0].id;
+        locals.submission_id_preserve1 = result.rows[1].id;
+        locals.submission_id_preserveN = result.rows[result.rowCount - 1].id;
+      });
+      it('should succeed', function () {
+        locals.csvData =
+          'uid,instance,qid,manual_score_perc,auto_score_perc,submission_id,feedback_json\n' +
+          'dev@illinois.edu,1,addNumbers,60,44,' +
+          locals.submission_id_for_feedback +
+          ',"{""msg"":""feedback numbers 2""}"\n' +
+          'dev@illinois.edu,1,addVectors,20,,,\n' +
+          'dev@illinois.edu,1,fossilFuelsRadio,,30,,\n';
+      });
+    });
+    helperQuestion.uploadInstanceQuestionScores(locals);
+    describe('check the instance question score upload succeeded', function () {
+      describe('setting up the expected question addNumbers results', function () {
+        it('should succeed', function () {
+          locals.question = helperExam.questions.addNumbers;
+          locals.expectedResult = {
+            instance_question_points: 2.2,
+            instance_question_score_perc: (2.2 / 5) * 100,
+            instance_question_auto_points: 2.2,
+            instance_question_manual_points: 0, // no max manual points
+          };
+        });
+      });
+      helperQuestion.checkQuestionScore(locals);
+      describe('setting up the expected question addVectors results', function () {
+        it('should succeed', function () {
+          locals.question = helperExam.questions.addVectors;
+          locals.expectedResult = {
+            instance_question_points: 12.7,
+            instance_question_score_perc: (12.7 / 21) * 100,
+            instance_question_auto_points: 10.7,
+            instance_question_manual_points: 2,
+          };
+        });
+      });
+      helperQuestion.checkQuestionScore(locals);
+      describe('setting up the expected question fossilFuelsRadio results', function () {
+        it('should succeed', function () {
+          locals.question = helperExam.questions.fossilFuelsRadio;
+          locals.expectedResult = {
+            instance_question_points: 8,
+            instance_question_score_perc: (8 / 17) * 100,
+            instance_question_auto_points: 5.1,
+            instance_question_manual_points: 2.9,
+          };
+        });
+      });
+      helperQuestion.checkQuestionScore(locals);
+      describe('setting up the expected assessment results', function () {
+        it('should succeed', function () {
+          locals.expectedResult = {
+            assessment_instance_points: 22.9,
+            assessment_instance_score_perc: (22.9 / helperExam.assessmentMaxPoints) * 100,
+          };
+        });
+      });
+      helperQuestion.checkAssessmentScore(locals);
+      describe('setting up the expected feedback for addNumbers, submission with new feedback', function () {
+        it('should succeed', function () {
+          locals.expectedFeedback = {
+            submission_id: locals.submission_id_for_feedback,
+            qid: helperExam.questions.addNumbers.qid,
+            feedback: { msg: 'feedback numbers 2' },
+          };
+        });
+      });
+      helperQuestion.checkQuestionFeedback(locals);
+      describe('setting up the expected feedback for addNumbers, submission with preserved feedback 0', function () {
+        it('should succeed', function () {
+          locals.expectedFeedback = {
+            submission_id: locals.submission_id_preserve0,
+            qid: helperExam.questions.addNumbers.qid,
+            feedback: {},
+          };
+        });
+      });
+      helperQuestion.checkQuestionFeedback(locals);
+      describe('setting up the expected feedback for addNumbers, submission with preserved feedback 1', function () {
+        it('should succeed', function () {
+          locals.expectedFeedback = {
+            submission_id: locals.submission_id_preserve1,
+            qid: helperExam.questions.addNumbers.qid,
+            feedback: null,
+          };
+        });
+      });
+      helperQuestion.checkQuestionFeedback(locals);
+      describe('setting up the expected feedback for addNumbers, submission with preserved feedback N', function () {
+        it('should succeed', function () {
+          locals.expectedFeedback = {
+            submission_id: locals.submission_id_preserveN,
+            qid: helperExam.questions.addNumbers.qid,
+            feedback: { manual: 'feedback numbers' },
+          };
+        });
+      });
+      helperQuestion.checkQuestionFeedback(locals);
+      describe('setting up the expected feedback for addVectors', function () {
+        it('should succeed', function () {
+          locals.expectedFeedback = {
+            submission_id: null,
+            qid: helperExam.questions.addVectors.qid,
+            feedback: { manual: 'feedback vectors' },
+          };
+        });
+      });
+      helperQuestion.checkQuestionFeedback(locals);
+      describe('setting up the expected feedback for fossilFuelsRadio', function () {
+        it('should succeed', function () {
+          locals.expectedFeedback = {
+            submission_id: null,
+            qid: helperExam.questions.fossilFuelsRadio.qid,
+            feedback: null,
+          };
+        });
+      });
+      helperQuestion.checkQuestionFeedback(locals);
     });
   });
 
@@ -1168,6 +1486,8 @@ describe('Exam assessment', function () {
                 instance_question_points: locals.question.points,
                 instance_question_score_perc:
                   (locals.question.points / locals.question.maxPoints) * 100,
+                instance_question_auto_points: locals.question.points,
+                instance_question_manual_points: 0,
                 assessment_instance_points: locals.totalPoints,
                 assessment_instance_score_perc:
                   (locals.totalPoints / helperExam.assessmentMaxPoints) * 100,

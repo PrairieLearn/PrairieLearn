@@ -2,6 +2,7 @@ const util = require('util');
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
+const _ = require('lodash');
 
 const error = require('../../prairielib/lib/error');
 const assessment = require('../../lib/assessment');
@@ -110,6 +111,15 @@ router.get('/', function (req, res, next) {
   sqldb.query(sql.select_instance_questions, params, function (err, result) {
     if (ERR(err, next)) return;
     res.locals.instance_questions = result.rows;
+
+    res.locals.has_manual_grading_question = _.some(
+      res.locals.instance_questions,
+      (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading
+    );
+    res.locals.has_auto_grading_question = _.some(
+      res.locals.instance_questions,
+      (q) => q.max_auto_points || q.auto_points || !q.max_points
+    );
 
     assessment.renderText(
       res.locals.assessment,

@@ -3,7 +3,7 @@
 
 const async = require('async');
 const ERR = require('async-stacktrace');
-const chalk = require('chalk').default;
+const chalk = require('chalk');
 const fs = require('fs-extra');
 const _ = require('lodash');
 const path = require('path');
@@ -31,12 +31,14 @@ const yargs = require('yargs')
   )
   .strict();
 
-if (yargs.argv._.length !== 1) {
+// TODO: remove cast once `@types/yargs` is fixed
+// https://github.com/yargs/yargs/issues/2175
+const argv = /** @type {Record<string, any>} */ (yargs.argv);
+
+if (argv._.length !== 1) {
   yargs.showHelp();
   process.exit(1);
 }
-
-const argv = yargs.argv;
 
 // Disable color if we're not attached to a tty
 const coloredOutput = !argv.o && process.stdout.isTTY;

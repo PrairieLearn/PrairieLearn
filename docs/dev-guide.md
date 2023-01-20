@@ -31,8 +31,7 @@ PrairieLearn
 +-- lib                # miscellaneous helper code
 +-- middlewares        # Express.js middleware, one per file
 +-- migrations         # DB migrations
-|   +-- index.js       # entry point for migrations
-|   `-- ...            # one PGSQL file per migration, executed in order by index.js
+|   +-- ...            # one PGSQL file per migration, executed in order of their timestamp
 +-- package.json       # JavaScript package manifest
 +-- pages              # one sub-dir per web page
 |   +-- partials       # EJS helper sub-templates
@@ -345,34 +344,7 @@ WHERE
 
 ## DB schema modification
 
-- The database is built with a series of consecutive "migrations". A migration is a modification to table schema and is represented as a file in `migrations/`.
-
-- The filenames in `migrations/` are of the form `<nnn>_<description>.sql` where `<nnn>` is a number to ensure ordering. The leading number must be unique among all migrations. A suggested form for the `<description>` is `<table name>__<column name>__<operation>` if only a single column is being changed.
-
-- It's fine to put multiple logically-related migration statements in the same file.
-
-- The database has a special `migrations` table that tracks which migrations have already been applied. This ensures that migrations are always applied exactly once.
-
-- The current state of the DB schema is stored in a human-readable form in the `database/` directory. This is checked automatically by the unit tests and needs to be manually updated after migrations and the updates should be committed to git along with the migrations.
-
-- _Historical node_: Migration statements started with PrairieLearn version 2.0.0. Starting with 2.0.0, the schema was maintained with separate `models` and `migrations` directories, which had to be kept in sync. In version 2.0.10, that was switched to solely `migrations`, and the state of `models` as of 2.0.0 was captured in `migrations/000_initial_state.sql`. All future migrations are applied on top of that.
-
-- Some useful migration statements follow.
-
-```sql
--- add a column to a table
-ALTER TABLE assessments ADD COLUMN auto_close boolean DEFAULT true;
-
--- add a foreign key to a table
-ALTER TABLE variants ADD COLUMN authn_user_id bigint;
-ALTER TABLE variants ADD FOREIGN KEY (authn_user_id) REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE;
-
--- remove a constraint
-ALTER TABLE alternative_groups DROP CONSTRAINT alternative_groups_number_assessment_id_key;
-
--- add a constraint
-ALTER TABLE alternative_groups ADD UNIQUE (assessment_id, number);
-```
+See [`migrations/README.md`](https://github.com/PrairieLearn/PrairieLearn/blob/master/migrations/README.md)
 
 ## JSON syncing
 
@@ -881,6 +853,8 @@ router.post('/', function (req, res, next) {
 ## Coding style
 
 [ESLint](http://eslint.org/) and [Prettier](https://prettier.io/) are used to enforce consistent code conventions and formatting throughout the codebase. See `.eslintrc.js` and `.prettierrc.json` in the root of the PrairieLearn repository to view our specific configuration. The repo includes an [`.editorconfig`](https://editorconfig.org/) file that most editors will detect and use to automatically configure things like indentation. If your editor doesn't natively support an EditorConfig file, there are [plugins](https://editorconfig.org/#download) available for most other editors.
+
+For Python files, [Black](https://black.readthedocs.io/en/stable/), [isort](https://pycqa.github.io/isort/), and [flake8](https://flake8.pycqa.org/en/latest/) are used to enforce code conventions, and [Pyright](https://github.com/microsoft/pyright) is used for static typechecking. See `pyproject.toml` in the root of the PrairieLearn repository to view our specific configuration. We encourage all new Python code to include type hints for use with the static typechecker, as this makes it easier to read, review, and verify contributions.
 
 To lint the code, use `make lint`. This is also run by the CI tests.
 

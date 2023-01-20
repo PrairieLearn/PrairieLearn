@@ -9,6 +9,12 @@
   <span id="test_csrf_token" hidden><%= __csrf_token %></span>
 <% } %>
 
+<% if (config.announcementHtml) { %>
+  <div class="alert alert-<%= config.announcementColor ?? 'primary' %> mb-0 rounded-0 text-center">
+    <%- config.announcementHtml %>
+  </div>
+<% } %>
+
 <div class="mb-4">
 <nav class="navbar navbar-dark bg-dark navbar-expand-md">
   <a class="navbar-brand" href="<%= homeUrl %>">
@@ -26,6 +32,8 @@
         <%- include('navbarStudent'); %>
       <% } else if (navbarType == 'instructor') { %>
         <%- include('navbarInstructor'); %>
+      <% } else if (navbarType == 'institution') { %>
+        <%- include('navbarInstitution'); %>
       <% } else { %>
         <% throw new Error('Unknown navbarType: ' + navbarType); %>
       <% } %>
@@ -89,7 +97,7 @@
 
           <% } %>
 
-          <% if (locals.course_instance && (authz_data.authn_has_course_permission_preview || authz_data.authn_has_course_instance_permission_view)) {
+          <% if (typeof viewType !== 'undefined' && locals.course_instance && (authz_data.authn_has_course_permission_preview || authz_data.authn_has_course_instance_permission_view)) {
             // Only show "View type" menu(s) if the following two things are true:
             // - The authn user was given access to a course instance (so, both viewType and authz_data also exist).
             // - In particular, the authn user has instructor access to this course instance.
@@ -338,7 +346,7 @@
 
     <% } %>
 
-    <% if (locals.course_instance && (authz_data.authn_has_course_permission_preview || authz_data.authn_has_course_instance_permission_view)) { %>
+    <% if (typeof viewType !== 'undefined' && locals.course_instance && (authz_data.authn_has_course_permission_preview || authz_data.authn_has_course_instance_permission_view)) { %>
 
       $(function() {
         const expires = 30; // in units of days
@@ -495,7 +503,8 @@ const navPagesTabs = {
     instance_admin: 'navTabs/instructorInstanceAdmin',
     course_admin: 'navTabs/instructorCourseAdmin',
     assessment: 'navTabs/instructorAssessment',
-    question: 'navTabs/instructorQuestion'
+    question: 'navTabs/instructorQuestion',
+    institution_admin: 'navTabs/institutionAdmin',
 };
 // If navPage matches any of the keys in navPagesTabs, include the page given by its value
 if (typeof navPage != 'undefined' && navPagesTabs.hasOwnProperty(navPage)) { %>

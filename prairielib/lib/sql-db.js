@@ -11,6 +11,9 @@ const error = require('./error');
 
 const SEARCH_SCHEMA = Symbol('SEARCH_SCHEMA');
 
+/** @type {WeakMap<import("pg").PoolClient, string>} */
+const lastQueryMap = new WeakMap();
+
 /** @typedef {{[key: string]: any} | any[]} Params */
 /** @typedef {import("pg").QueryResult} QueryResult */
 /** @typedef {(error: Error | null, result?: QueryResult) => void} ResultsCallback */
@@ -146,11 +149,13 @@ class PostgresPool {
   async initAsync(pgConfig, idleErrorHandler) {
     this.pool = new pg.Pool(pgConfig);
     this.pool.on('error', function (err, client) {
-      idleErrorHandler(err, client);
+      const lastQuery = lastQueryMap.get(client);
+      idleErrorHandler(error.addData(err, { lastQuery }), client);
     });
     this.pool.on('connect', (client) => {
       client.on('error', (err) => {
-        idleErrorHandler(err, client);
+        const lastQuery = lastQueryMap.get(client);
+        idleErrorHandler(error.addData(err, { lastQuery }), client);
       });
     });
     this.pool.on('remove', (client) => {
@@ -288,6 +293,7 @@ class PostgresPool {
     debug('queryWithClient()', 'params:', debugParams(params));
     const { processedSql, paramsArray } = paramsToArray(sql, params);
     try {
+      lastQueryMap.set(client, processedSql);
       const result = await client.query(processedSql, paramsArray);
       debug('queryWithClient() success', 'rowCount:', result.rowCount);
       return result;
@@ -889,57 +895,56 @@ class PostgresPool {
 
 const defaultPool = new PostgresPool();
 
-module.exports = {
-  // We re-expose all functions from the default pool here to account for the
-  // default case of a shared global pool of clients. If someone want to create
-  // their own pool, we expose the `PostgresPool` class.
-  //
-  // Note that we explicitly bind all functions to `defaultPool`. This ensures
-  // that they'll be invoked with the correct `this` context, specifically when
-  // this module is imported as `import * as db from '...'` and that import is
-  // subsequently transformed by Babel to `interopRequireWildcard(...)`.
-  init: defaultPool.init.bind(defaultPool),
-  initAsync: defaultPool.initAsync.bind(defaultPool),
-  close: defaultPool.close.bind(defaultPool),
-  closeAsync: defaultPool.closeAsync.bind(defaultPool),
-  getClientAsync: defaultPool.getClientAsync.bind(defaultPool),
-  getClient: defaultPool.getClient.bind(defaultPool),
-  queryWithClient: defaultPool.queryWithClient.bind(defaultPool),
-  queryWithClientAsync: defaultPool.queryWithClientAsync.bind(defaultPool),
-  queryWithClientOneRow: defaultPool.queryWithClientOneRow.bind(defaultPool),
-  queryWithClientOneRowAsync: defaultPool.queryWithClientOneRowAsync.bind(defaultPool),
-  queryWithClientZeroOrOneRow: defaultPool.queryWithClientZeroOrOneRow.bind(defaultPool),
-  queryWithClientZeroOrOneRowAsync: defaultPool.queryWithClientZeroOrOneRowAsync.bind(defaultPool),
-  rollbackWithClientAsync: defaultPool.rollbackWithClientAsync.bind(defaultPool),
-  rollbackWithClient: defaultPool.rollbackWithClient.bind(defaultPool),
-  beginTransactionAsync: defaultPool.beginTransactionAsync.bind(defaultPool),
-  beginTransaction: defaultPool.beginTransaction.bind(defaultPool),
-  endTransactionAsync: defaultPool.endTransactionAsync.bind(defaultPool),
-  endTransaction: defaultPool.endTransaction.bind(defaultPool),
-  runInTransactionAsync: defaultPool.runInTransactionAsync.bind(defaultPool),
-  runInTransaction: defaultPool.runInTransaction.bind(defaultPool),
-  query: defaultPool.query.bind(defaultPool),
-  queryAsync: defaultPool.queryAsync.bind(defaultPool),
-  queryOneRow: defaultPool.queryOneRow.bind(defaultPool),
-  queryOneRowAsync: defaultPool.queryOneRowAsync.bind(defaultPool),
-  queryZeroOrOneRow: defaultPool.queryZeroOrOneRow.bind(defaultPool),
-  queryZeroOrOneRowAsync: defaultPool.queryZeroOrOneRowAsync.bind(defaultPool),
-  call: defaultPool.call.bind(defaultPool),
-  callAsync: defaultPool.callAsync.bind(defaultPool),
-  callOneRow: defaultPool.callOneRow.bind(defaultPool),
-  callOneRowAsync: defaultPool.callOneRowAsync.bind(defaultPool),
-  callZeroOrOneRow: defaultPool.callZeroOrOneRow.bind(defaultPool),
-  callZeroOrOneRowAsync: defaultPool.callZeroOrOneRowAsync.bind(defaultPool),
-  callWithClient: defaultPool.callWithClient.bind(defaultPool),
-  callWithClientAsync: defaultPool.callWithClientAsync.bind(defaultPool),
-  callWithClientOneRow: defaultPool.callWithClientOneRow.bind(defaultPool),
-  callWithClientOneRowAsync: defaultPool.callWithClientOneRowAsync.bind(defaultPool),
-  callWithClientZeroOrOneRow: defaultPool.callWithClientZeroOrOneRow.bind(defaultPool),
-  callWithClientZeroOrOneRowAsync: defaultPool.callWithClientZeroOrOneRowAsync.bind(defaultPool),
-  setSearchSchema: defaultPool.setSearchSchema.bind(defaultPool),
-  getSearchSchema: defaultPool.getSearchSchema.bind(defaultPool),
-  setRandomSearchSchema: defaultPool.setRandomSearchSchema.bind(defaultPool),
-  setRandomSearchSchemaAsync: defaultPool.setRandomSearchSchemaAsync.bind(defaultPool),
-};
-
-module.exports.PostgresPool = PostgresPool;
+// We re-expose all functions from the default pool here to account for the
+// default case of a shared global pool of clients. If someone want to create
+// their own pool, we expose the `PostgresPool` class.
+//
+// Note that we explicitly bind all functions to `defaultPool`. This ensures
+// that they'll be invoked with the correct `this` context, specifically when
+// this module is imported as `import * as db from '...'` and that import is
+// subsequently transformed by Babel to `interopRequireWildcard(...)`.
+exports.init = defaultPool.init.bind(defaultPool);
+exports.initAsync = defaultPool.initAsync.bind(defaultPool);
+exports.close = defaultPool.close.bind(defaultPool);
+exports.closeAsync = defaultPool.closeAsync.bind(defaultPool);
+exports.getClientAsync = defaultPool.getClientAsync.bind(defaultPool);
+exports.getClient = defaultPool.getClient.bind(defaultPool);
+exports.queryWithClient = defaultPool.queryWithClient.bind(defaultPool);
+exports.queryWithClientAsync = defaultPool.queryWithClientAsync.bind(defaultPool);
+exports.queryWithClientOneRow = defaultPool.queryWithClientOneRow.bind(defaultPool);
+exports.queryWithClientOneRowAsync = defaultPool.queryWithClientOneRowAsync.bind(defaultPool);
+exports.queryWithClientZeroOrOneRow = defaultPool.queryWithClientZeroOrOneRow.bind(defaultPool);
+exports.queryWithClientZeroOrOneRowAsync =
+  defaultPool.queryWithClientZeroOrOneRowAsync.bind(defaultPool);
+exports.rollbackWithClientAsync = defaultPool.rollbackWithClientAsync.bind(defaultPool);
+exports.rollbackWithClient = defaultPool.rollbackWithClient.bind(defaultPool);
+exports.beginTransactionAsync = defaultPool.beginTransactionAsync.bind(defaultPool);
+exports.beginTransaction = defaultPool.beginTransaction.bind(defaultPool);
+exports.endTransactionAsync = defaultPool.endTransactionAsync.bind(defaultPool);
+exports.endTransaction = defaultPool.endTransaction.bind(defaultPool);
+exports.runInTransactionAsync = defaultPool.runInTransactionAsync.bind(defaultPool);
+exports.runInTransaction = defaultPool.runInTransaction.bind(defaultPool);
+exports.query = defaultPool.query.bind(defaultPool);
+exports.queryAsync = defaultPool.queryAsync.bind(defaultPool);
+exports.queryOneRow = defaultPool.queryOneRow.bind(defaultPool);
+exports.queryOneRowAsync = defaultPool.queryOneRowAsync.bind(defaultPool);
+exports.queryZeroOrOneRow = defaultPool.queryZeroOrOneRow.bind(defaultPool);
+exports.queryZeroOrOneRowAsync = defaultPool.queryZeroOrOneRowAsync.bind(defaultPool);
+exports.call = defaultPool.call.bind(defaultPool);
+exports.callAsync = defaultPool.callAsync.bind(defaultPool);
+exports.callOneRow = defaultPool.callOneRow.bind(defaultPool);
+exports.callOneRowAsync = defaultPool.callOneRowAsync.bind(defaultPool);
+exports.callZeroOrOneRow = defaultPool.callZeroOrOneRow.bind(defaultPool);
+exports.callZeroOrOneRowAsync = defaultPool.callZeroOrOneRowAsync.bind(defaultPool);
+exports.callWithClient = defaultPool.callWithClient.bind(defaultPool);
+exports.callWithClientAsync = defaultPool.callWithClientAsync.bind(defaultPool);
+exports.callWithClientOneRow = defaultPool.callWithClientOneRow.bind(defaultPool);
+exports.callWithClientOneRowAsync = defaultPool.callWithClientOneRowAsync.bind(defaultPool);
+exports.callWithClientZeroOrOneRow = defaultPool.callWithClientZeroOrOneRow.bind(defaultPool);
+exports.callWithClientZeroOrOneRowAsync =
+  defaultPool.callWithClientZeroOrOneRowAsync.bind(defaultPool);
+exports.setSearchSchema = defaultPool.setSearchSchema.bind(defaultPool);
+exports.getSearchSchema = defaultPool.getSearchSchema.bind(defaultPool);
+exports.setRandomSearchSchema = defaultPool.setRandomSearchSchema.bind(defaultPool);
+exports.setRandomSearchSchemaAsync = defaultPool.setRandomSearchSchemaAsync.bind(defaultPool);
+exports.PostgresPool = PostgresPool;

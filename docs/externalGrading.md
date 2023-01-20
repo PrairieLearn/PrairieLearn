@@ -250,7 +250,7 @@ For a working example of this, see `PrairieLearn/elements/pl_file_upload/pl_file
 
 ## Running locally for development
 
-In production, PrairieLearn runs external grading jobs on a distributed system called [https://github.com/PrairieLearn/PrairieGrader](PrairieGrader). This system uses a variety of AWS services to efficiently run many jobs in parallel. When developing questions locally, you won't have access to this infrastructure, but PrairieLearn allows you to still run external grading jobs locally with a few workarounds.
+In production, PrairieLearn runs external grading jobs on a distributed system that uses a variety of AWS services to efficiently run many jobs in parallel. When developing questions locally, you won't have access to this infrastructure, but PrairieLearn allows you to still run external grading jobs locally with a few workarounds.
 
 - Instead of running jobs on an EC2 instance, they will be run locally and directly with Docker on the host machine.
 - Instead of sending jobs to the grading containers with S3, we write them to a directory on the host machine and then mount that directory directly into the grading container as `/grade`.

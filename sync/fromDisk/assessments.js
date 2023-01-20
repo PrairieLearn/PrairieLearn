@@ -123,7 +123,7 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
       ? zone.gradeRateMinutes
       : assessment.gradeRateMinutes || 0;
     return zone.questions.map((question) => {
-      /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number, canView: string[], canSubmit: string[], advanceScorePerc: number }[]} */
+      /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], maxAutoPoints: number | number[], autoPoints: number | number[], manualPoints: number, forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number, canView: string[], canSubmit: string[], advanceScorePerc: number }[]} */
       let alternatives;
       let questionGradeRateMinutes = _.has(question, 'gradeRateMinutes')
         ? question.gradeRateMinutes
@@ -132,8 +132,11 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
         alternatives = _.map(question.alternatives, function (alternative) {
           return {
             qid: alternative.id,
-            maxPoints: alternative.maxPoints || question.maxPoints,
-            points: alternative.points || question.points,
+            maxPoints: alternative.maxPoints ?? question.maxPoints ?? null,
+            points: alternative.points ?? question.points ?? null,
+            maxAutoPoints: alternative.maxAutoPoints ?? question.maxAutoPoints ?? null,
+            autoPoints: alternative.autoPoints ?? question.autoPoints ?? null,
+            manualPoints: alternative.manualPoints ?? question.manualPoints ?? null,
             forceMaxPoints: _.has(alternative, 'forceMaxPoints')
               ? alternative.forceMaxPoints
               : _.has(question, 'forceMaxPoints')
@@ -160,8 +163,11 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
         alternatives = [
           {
             qid: question.id,
-            maxPoints: question.maxPoints,
-            points: question.points,
+            maxPoints: question.maxPoints ?? null,
+            points: question.points ?? null,
+            autoPoints: question.autoPoints ?? null,
+            maxAutoPoints: question.maxAutoPoints ?? null,
+            manualPoints: question.manualPoints ?? null,
             forceMaxPoints: question.forceMaxPoints || false,
             triesPerVariant: question.triesPerVariant || 1,
             advanceScorePerc: question.advanceScorePerc,
@@ -173,25 +179,32 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
       }
 
       const normalizedAlternatives = alternatives.map((alternative) => {
+        const hasSplitPoints =
+          alternative.autoPoints !== null ||
+          alternative.maxAutoPoints !== null ||
+          alternative.manualPoints !== null;
+        const autoPoints = (hasSplitPoints ? alternative.autoPoints : alternative.points) ?? 0;
+        const manualPoints = (hasSplitPoints ? alternative.manualPoints : 0) ?? 0;
+
         if (assessment.type === 'Exam') {
-          const pointsList = Array.isArray(alternative.points)
-            ? alternative.points
-            : [alternative.points];
+          let pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
           const maxPoints = Math.max(...pointsList);
+
           return {
             ...alternative,
-            // Exlude 'points' prop
-            points: undefined,
+            hasSplitPoints,
             maxPoints,
-            pointsList,
             initPoints: undefined,
+            pointsList: hasSplitPoints ? pointsList.map((p) => p + manualPoints) : pointsList,
           };
-        }
-        if (assessment.type === 'Homework') {
-          const maxPoints = alternative.maxPoints || alternative.points;
-          const initPoints = alternative.points;
+        } else if (assessment.type === 'Homework') {
+          const initPoints =
+            (Array.isArray(autoPoints) ? autoPoints[0] : autoPoints) + manualPoints;
+          const maxPoints = alternative.maxAutoPoints ?? alternative.maxPoints ?? autoPoints;
+
           return {
             ...alternative,
+            hasSplitPoints,
             maxPoints,
             initPoints,
             pointsList: undefined,
@@ -212,9 +225,11 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
           const questionId = questionIds[alternative.qid];
           return {
             number: assessmentQuestionNumber,
-            max_points: alternative.maxPoints,
+            has_split_points: alternative.hasSplitPoints,
             points_list: alternative.pointsList,
             init_points: alternative.initPoints,
+            max_points: alternative.maxPoints,
+            manual_points: alternative.manualPoints,
             force_max_points: alternative.forceMaxPoints,
             tries_per_variant: alternative.triesPerVariant,
             grade_rate_minutes: alternative.gradeRateMinutes,

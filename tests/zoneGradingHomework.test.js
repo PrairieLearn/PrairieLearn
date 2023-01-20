@@ -343,6 +343,8 @@ describe('Zone grading homework assessment', function () {
                 instance_question_points: locals.question.points,
                 instance_question_score_perc:
                   (locals.question.points / locals.question.maxPoints) * 100,
+                instance_question_auto_points: locals.question.points,
+                instance_question_manual_points: 0,
                 assessment_instance_points: locals.totalPoints,
                 assessment_instance_score_perc: (locals.totalPoints / assessmentMaxPoints) * 100,
               };

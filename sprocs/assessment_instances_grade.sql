@@ -17,20 +17,14 @@ DECLARE
     log_update boolean;
     use_credit integer;
     points DOUBLE PRECISION;
-    points_in_grading DOUBLE PRECISION;
     score_perc DOUBLE PRECISION;
-    score_perc_in_grading DOUBLE PRECISION;
     total_points DOUBLE PRECISION;
-    total_points_in_grading DOUBLE PRECISION;
     max_points DOUBLE PRECISION;
     max_bonus_points DOUBLE PRECISION;
     current_score_perc DOUBLE PRECISION;
-    max_possible_points DOUBLE PRECISION;
-    max_possible_score_perc DOUBLE PRECISION;
     instance_questions_used_for_grade BIGINT[];
 BEGIN
-    SELECT ai.points, ai.points_in_grading, ai.score_perc, ai.score_perc_in_grading
-    INTO old_values
+    SELECT ai.points, ai.score_perc INTO old_values
     FROM assessment_instances AS ai
     WHERE id = assessment_instance_id;
 
@@ -96,35 +90,8 @@ BEGIN
         score_perc := greatest(score_perc, current_score_perc);
     END IF;
 
-    -- #########################################################################
-    -- in_grading versions of points and score_perc
-    -- computed by finding max_possible points and score_perc
-    -- and then subtracting off the new values of each quantity
-
-    -- repeat calculation for points_in_grading
-    max_possible_points := least(points + total_points_in_grading, max_points);
-    total_points_in_grading := max_possible_points - points;
-
-    -- compute max achieveable score_perc if all grading points are awarded
-    max_possible_score_perc := max_possible_points
-        / (CASE WHEN max_points > 0 THEN max_points ELSE 1 END) * 100;
-    IF use_credit < 100 THEN
-        max_possible_score_perc := least(max_possible_score_perc, use_credit);
-    ELSIF (use_credit > 100) AND (max_possible_points = max_points) THEN
-        max_possible_score_perc := use_credit;
-    END IF;
-
-    IF NOT allow_decrease THEN
-        -- no matter what, don't decrease the achieveable score_perc below new score_perc
-        max_possible_score_perc := greatest(max_possible_score_perc, score_perc);
-    END IF;
-
-    -- compute score_perc_in_grading
-    score_perc_in_grading := max_possible_score_perc - score_perc;
-
     -- pack everything into new_values
-    SELECT points, points_in_grading, score_perc, score_perc_in_grading
-    INTO new_values;
+    SELECT points, score_perc INTO new_values;
 
     -- #########################################################################
     -- Update instance_questions (which questions were used for grading)
@@ -141,9 +108,7 @@ BEGIN
     UPDATE assessment_instances AS ai
     SET
         points = new_values.points,
-        points_in_grading = new_values.points_in_grading,
         score_perc = new_values.score_perc,
-        score_perc_in_grading = new_values.score_perc_in_grading,
         modified_at = now()
     WHERE ai.id = assessment_instance_id
     RETURNING ai.*
@@ -163,11 +128,10 @@ BEGIN
 
     IF log_update THEN
         INSERT INTO assessment_score_logs
-            (    assessment_instance_id, auth_user_id,                          max_points,
-                  points,                 points_in_grading,            score_perc,            score_perc_in_grading)
+            (assessment_instance_id, auth_user_id, max_points, points, score_perc)
         VALUES
-            (new_assessment_instance.id, authn_user_id, new_assessment_instance.max_points,
-            new_values.points, new_values.points_in_grading, new_values.score_perc, new_values.score_perc_in_grading);
+            (new_assessment_instance.id, authn_user_id,
+            new_assessment_instance.max_points, new_values.points, new_values.score_perc);
     END IF;
 
     new_points := new_values.points;

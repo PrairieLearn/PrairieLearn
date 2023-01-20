@@ -60,9 +60,13 @@
     }
 %>
 <title>
+  <% if (config.titleOverride) { %>
+    <%= config.titleOverride %>
+  <% } else { %>
     <% if (config.devMode) { %>[DEV]<% } %>    
     <% if (navTrace.length > 0) { %>
         <%= navTrace.join(" - ") + " | " %>
     <% } %>
     PrairieLearn
+  <% } %>
 </title>

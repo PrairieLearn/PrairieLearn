@@ -1,3 +1,8 @@
+-- BLOCK select_assessment
+SELECT to_jsonb(a) AS assessment
+FROM assessments AS a
+WHERE a.id = $assessment_id;
+
 -- BLOCK assessment_stats_last_updated
 SELECT
     CASE
@@ -9,9 +14,6 @@ FROM
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
 WHERE
     a.id = $assessment_id
-
--- BLOCK assessment_stats
-SELECT * FROM assessments_stats($assessment_id);
 
 -- BLOCK questions
 SELECT

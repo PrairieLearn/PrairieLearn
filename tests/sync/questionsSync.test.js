@@ -86,10 +86,7 @@ describe('Question syncing', () => {
     let syncedTags = await util.dumpTable('tags');
     let syncedTag = syncedTags.find((tag) => tag.name === missingTagName);
     assert.isOk(syncedTag);
-    assert(
-      syncedTag.description && syncedTag.description.length > 0,
-      'tag should not have empty description'
-    );
+    assert.isNotEmpty(syncedTag.description, 'tag should not have empty description');
 
     // Subsequent syncs with the same data should succeed as well
     await util.overwriteAndSyncCourseData(courseData, courseDir);
@@ -116,10 +113,7 @@ describe('Question syncing', () => {
     let syncedTopics = await util.dumpTable('topics');
     let syncedTopic = syncedTopics.find((topic) => topic.name === missingTopicName);
     assert.isOk(syncedTopic);
-    assert(
-      syncedTopic.description && syncedTopic.description.length > 0,
-      'tag should not have empty description'
-    );
+    assert.isNotEmpty(syncedTopic.description, 'tag should not have empty description');
 
     // Subsequent syncs with the same data should succeed as well
     await util.overwriteAndSyncCourseData(courseData, courseDir);
@@ -236,10 +230,7 @@ describe('Question syncing', () => {
     await util.syncCourseData(courseDir);
     const syncedQuestions = await util.dumpTable('questions');
     const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
-    assert.match(
-      syncedQuestion.sync_errors,
-      /data should have required property 'incorrectAnswers'/
-    );
+    assert.match(syncedQuestion.sync_errors, /data must have required property 'incorrectAnswers'/);
   });
 
   it('records a warning if same UUID is used in multiple questions', async () => {
@@ -355,7 +346,7 @@ describe('Question syncing', () => {
       (q) => q.qid === 'repeatedQuestion' && q.deleted_at == null
     );
     assert.equal(syncedQuestion.uuid, newQuestion.uuid);
-    assert.match(syncedQuestion.sync_errors, /should have required property 'title'/);
+    assert.match(syncedQuestion.sync_errors, /must have required property 'title'/);
 
     // check that the old deleted question does not have any errors
     const deletedQuestion = syncedQuestions.find(
@@ -363,5 +354,47 @@ describe('Question syncing', () => {
     );
     assert.equal(deletedQuestion.uuid, originalQuestion.uuid);
     assert.equal(deletedQuestion.sync_errors, null);
+  });
+
+  // https://github.com/PrairieLearn/PrairieLearn/issues/6539
+  it('handles unique sequence of renames and duplicate UUIDs', async () => {
+    const courseData = util.getCourseData();
+
+    // Start with a clean slate.
+    courseData.questions = {};
+
+    // Write and sync a single question.
+    const originalQuestion = makeQuestion(courseData);
+    originalQuestion.uuid = '0e8097aa-b554-4908-9eac-d46a78d6c249';
+    courseData.questions['a'] = originalQuestion;
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+
+    // Now "move" the above question to a new directory AND add another with the
+    // same UUID.
+    delete courseData.questions['a'];
+    courseData.questions['b'] = originalQuestion;
+    courseData.questions['c'] = originalQuestion;
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+    // Now "fix" the duplicate UUID.
+    courseData.questions['c'] = {
+      ...originalQuestion,
+      uuid: '0e3097ba-b554-4908-9eac-d46a78d6c249',
+    };
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+    const questions = await util.dumpTable('questions');
+
+    // Original question should not exist.
+    const originalQuestionRow = questions.find((q) => q.qid === 'a');
+    assert.isUndefined(originalQuestionRow);
+
+    // New questions should exist and have the correct UUIDs.
+    const newQuestionRow1 = questions.find((q) => q.qid === 'b' && q.deleted_at === null);
+    assert.isNull(newQuestionRow1.deleted_at);
+    assert.equal(newQuestionRow1.uuid, '0e8097aa-b554-4908-9eac-d46a78d6c249');
+    const newQuestionRow2 = questions.find((q) => q.qid === 'c' && q.deleted_at === null);
+    assert.isNull(newQuestionRow2.deleted_at);
+    assert.equal(newQuestionRow2.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
   });
 });

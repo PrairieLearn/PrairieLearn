@@ -1,9 +1,7 @@
 const ERR = require('async-stacktrace');
 const async = require('async');
-const fs = require('fs-extra');
 const path = require('path');
 const AWS = require('aws-sdk');
-const os = require('os');
 const _ = require('lodash');
 const configLib = require('../../prairielib/lib/config');
 
@@ -31,47 +29,18 @@ config.loadConfig = function (callback) {
         });
       },
       (callback) => {
-        // Try to grab AWS config from a file; assume Metadata Service will
-        // provide credentials if the file is missing
-        fs.readFile('./aws-config.json', (err, awsConfig) => {
-          if (err) {
-            // we don't have the AWS config file, assume we are inside
-            // EC2 and that we can get all config info from the
-            // metadata service
-            logger.info(
-              'Missing aws-config.json; credentials should be supplied by EC2 Metadata Service'
-            );
-            MetadataService.request(
-              '/latest/dynamic/instance-identity/document',
-              (err, document) => {
-                if (ERR(err, callback)) return;
-                try {
-                  const data = JSON.parse(document);
-                  logger.info('instance-identity', data);
-                  AWS.config.update({ region: data.region });
-                  exportedConfig.instanceIdentity = data;
-                  exportedConfig.runningInEc2 = true;
-                  exportedConfig.instanceId = data.instanceId;
-                } catch (err) {
-                  return callback(err);
-                }
-                callback(null);
-              }
-            );
-          } else {
-            // we do have the config file, it should provide all our
-            // info and we assume we are not running inside EC2
-            logger.info('Loading AWS config from aws-config.json');
-            AWS.config.loadFromPath('./aws-config.json');
-            exportedConfig.awsConfig = JSON.parse(awsConfig);
-            exportedConfig.runningInEc2 = false;
-            if (process.env.INSTANCE_ID) {
-              exportedConfig.instanceId = process.env.INSTANCE_ID;
-            } else {
-              exportedConfig.instanceId = os.hostname();
-            }
-            callback(null);
+        MetadataService.request('/latest/dynamic/instance-identity/document', (err, document) => {
+          if (ERR(err, callback)) return;
+          try {
+            const data = JSON.parse(document);
+            logger.info('instance-identity', data);
+            AWS.config.update({ region: data.region });
+            exportedConfig.runningInEc2 = true;
+            exportedConfig.instanceId = data.instanceId;
+          } catch (err) {
+            return callback(err);
           }
+          callback(null);
         });
       },
       (callback) => {

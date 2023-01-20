@@ -1,5 +1,23 @@
 # @prairielearn/opentelemetry
 
+## 1.5.1
+
+### Patch Changes
+
+- 4622066e7: Upgrade all dependencies
+
+## 1.5.0
+
+### Minor Changes
+
+- 2ff1f1086: Add support for Jaeger exporter
+
+## 1.4.1
+
+### Patch Changes
+
+- dba390399: Upgrade dependencies to latest versions
+
 ## 1.4.0
 
 ### Minor Changes
