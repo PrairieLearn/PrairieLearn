@@ -158,10 +158,10 @@ const checkGradingResults = (assigned_grader, grader) => {
     assert.equal(instanceList[0].assigned_grader_name, assigned_grader.authName);
     assert.equal(instanceList[0].last_grader, grader.user_id);
     assert.equal(instanceList[0].last_grader_name, grader.authName);
-    assert.equal(instanceList[0].score_perc, score_percent);
-    assert.equal(instanceList[0].points, score_points);
-    assert.equal(instanceList[0].manual_points, score_points);
-    assert.equal(instanceList[0].auto_points, 0);
+    assert.closeTo(instanceList[0].score_perc, score_percent, 0.01);
+    assert.closeTo(instanceList[0].points, score_points, 0.01);
+    assert.closeTo(instanceList[0].manual_points, score_points, 0.01);
+    assert.closeTo(instanceList[0].auto_points, 0, 0.01);
   });
 
   step('manual grading page for assessment does NOT show graded instance for grading', async () => {
@@ -193,7 +193,10 @@ const checkGradingResults = (assigned_grader, grader) => {
     const $questionsPage = cheerio.load(questionsPage);
     const feedbackBlock = $questionsPage('[data-testid="submission-with-feedback"]').first();
 
-    assert.equal(getLatestSubmissionStatus($questionsPage), `manual grading: ${score_percent}%`);
+    assert.equal(
+      getLatestSubmissionStatus($questionsPage),
+      `manual grading: ${Math.floor(score_percent)}%`
+    );
     assert.equal(
       $questionsPage(
         '#question-score-panel tr:contains("Total points") [data-testid="awarded-points"]'
@@ -642,8 +645,8 @@ describe('Manual Grading', function () {
     describe('Submit a grade using points', () => {
       step('submit a grade using points', async () => {
         setUser(mockStaff[1]);
-        score_points = 4.5;
-        score_percent = (score_points / 6) * 100;
+        score_points = 4.25;
+        score_percent = Math.round((score_points / 6) * 10000) / 100;
         feedback_note = 'Test feedback note updated';
         await submitGradeForm('points');
       });

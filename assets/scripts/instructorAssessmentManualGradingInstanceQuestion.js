@@ -274,6 +274,10 @@ function updateQueryObjects(parent, query, values) {
   parent.querySelectorAll(query).forEach((input) => Object.assign(input, values));
 }
 
+function roundPoints(points) {
+  return Math.round(Number(points) * 100) / 100;
+}
+
 function updatePointsView() {
   document.querySelectorAll('form[name=manual-grading-form]').forEach((form) => {
     const max_auto_points = form.dataset.maxAutoPoints;
@@ -281,18 +285,21 @@ function updatePointsView() {
     const max_points = form.dataset.maxPoints;
 
     const auto_points =
-      this.name === 'score_auto_percent'
-        ? (this.value * max_auto_points) / 100
-        : form.querySelector('[name=score_auto_points]')?.value || 0;
+      roundPoints(
+        this.name === 'score_auto_percent'
+          ? (this.value * max_auto_points) / 100
+          : form.querySelector('[name=score_auto_points]')?.value
+      ) || 0;
     const manual_points =
-      this.name === 'score_manual_percent'
-        ? (this.value * max_manual_points) / 100
-        : form.querySelector('[name=score_manual_points]')?.value || 0;
-    const points = Math.round(100 * (Number(auto_points) + Number(manual_points))) / 100;
-    const auto_perc = Math.round((auto_points * 10000) / (max_auto_points || max_points)) / 100;
-    const manual_perc =
-      Math.round((manual_points * 10000) / (max_manual_points || max_points)) / 100;
-    const total_perc = Math.round((points * 10000) / max_points) / 100;
+      roundPoints(
+        this.name === 'score_manual_percent'
+          ? (this.value * max_manual_points) / 100
+          : form.querySelector('[name=score_manual_points]')?.value
+      ) || 0;
+    const points = roundPoints(auto_points + manual_points);
+    const auto_perc = roundPoints((auto_points * 100) / (max_auto_points || max_points));
+    const manual_perc = roundPoints((manual_points * 100) / (max_manual_points || max_points));
+    const total_perc = roundPoints((points * 100) / max_points);
 
     if (this.name !== 'score_auto_points') {
       updateQueryObjects(form, '[name=score_auto_points]', { value: auto_points });
