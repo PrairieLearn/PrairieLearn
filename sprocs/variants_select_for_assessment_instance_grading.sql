@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS variants_select_for_assessment_instance(bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     variants_select_for_assessment_instance_grading (
         IN assessment_instance_id bigint,
         OUT variant jsonb,
@@ -9,8 +7,6 @@ CREATE OR REPLACE FUNCTION
     ) RETURNS SETOF RECORD
 AS $$
 BEGIN
-    PERFORM assessment_instances_ensure_open(assessment_instance_id);
-
     -- most recent variant for each instance_question
     RETURN QUERY
     SELECT DISTINCT ON (iq.id)

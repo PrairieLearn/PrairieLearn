@@ -6,10 +6,24 @@ docs_dir: docs
 # Fix "Edit on GitHub" link: (defaults to edit/master/docs/, note the s)
 edit_uri: blob/master/docs/
 
-pages:
+markdown_extensions:
+  # Allows us to use 2-space indents on lists, which is compatible with how
+  # Prettier formats Markdown files.
+  # https://pypi.org/project/mdx-truly-sane-lists/
+  - mdx_truly_sane_lists
+
+extra_javascript:
+  - mathjax-config.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
+
+nav:
 - Main: 'index.md'
+- Getting Started:
+  - 'Requesting your course space': 'requestCourse.md'
+  - 'Creating content in the browser': 'getStarted.md'
+  - 'Workshop': 'workshop/index.md'
 - User Guide:
-  - 'Installing and running PrairieLearn': 'installing.md'
+  - 'Installing and running PL locally': 'installing.md'
   - 'Syncing course content': 'sync.md'
   - 'Course configuration': 'course.md'
   - 'Course instance configuration': 'courseInstance.md'
@@ -21,22 +35,31 @@ pages:
   - 'clientFiles and serverFiles': 'clientServerFiles.md'
   - 'UUIDs in JSON files': 'uuid.md'
   - 'Regrading assessments': 'regrading.md'
-  - 'PrairieDraw graphics': 'PrairieDraw.md'
   - 'Element for drawing': 'pl-drawing/index.md'
   - 'External grading': 'externalGrading.md'
+  - 'Python autograder': 'python-grader/index.md'
+  - 'C/C++ autograder': 'c-grader/index.md'
+  - 'Java autograder': 'java-grader/index.md'
+  - 'Workspaces': 'workspaces/index.md'
   - 'Manual grading': 'manualGrading.md'
   - 'What to tell students': 'whatToTellStudents.md'
-  - 'How to use PL to learn student names': 'howToLearnNames.md'
   - 'FAQ': 'faq.md'
-  - 'API': 'api.md'
+  - 'API': 'api.md'  
 - Developer Guide:
   - 'Developer guide': 'dev-guide.md'
   - 'Installing with local source': 'installingLocal.md'
   - 'Installing natively': 'installingNative.md'
   - 'Server configuration': 'configJson.md'
   - 'Question element writing': 'devElements.md'
+  - 'Element extensions': 'elementExtensions.md'
+  - 'Code execution': 'codeExecution.md'
   - 'Docker packaging': 'docker.md'
   - 'Contributing to PL development': 'contributing.md'
+- Running in Production:
+  - 'Setup': 'running-in-production/setup.md'
+  - 'Using Docker Compose': 'running-in-production/docker-compose.md'  
+  - 'User Authentication': 'running-in-production/authentication.md'
+  - 'Admin User': 'running-in-production/admin-user.md'
+- Deprecated Features:
   - 'Old v1/v2 question format': 'oldQuestion.md'
-- Admin Guide:
-  - 'Adding new courses': 'adminCourse.md'
+  - 'Old PrairieDraw graphics': 'PrairieDraw.md'

@@ -1,39 +1,41 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_questions_calculate_stats (
         assessment_question_id_param bigint
     ) RETURNS VOID
 AS $$
 WITH
 relevant_assessment_instances AS (
-    SELECT ai.*
+    SELECT DISTINCT ai.*
     FROM
         assessment_questions AS aq
         JOIN assessments AS a ON (a.id = aq.assessment_id)
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-        JOIN enrollments AS e ON (e.user_id = ai.user_id AND e.course_instance_id = a.course_instance_id)
+        LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.deleted_at IS NULL)
+        LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+        JOIN enrollments AS e ON ((e.user_id = ai.user_id OR e.user_id = gu.user_id) AND e.course_instance_id = a.course_instance_id)
     WHERE
         aq.id = assessment_question_id_param
-        AND e.role = 'Student'
+        AND NOT users_is_instructor_in_course_instance(e.user_id, e.course_instance_id)
 ),
 relevant_instance_questions AS (
-    SELECT
+    SELECT DISTINCT
         iq.*,
-        ai.user_id
+        (ai.user_id, ai.group_id) AS u_gr_id
     FROM
         instance_questions AS iq
         JOIN relevant_assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
     WHERE iq.assessment_question_id = assessment_question_id_param
 ),
-assessment_scores_by_user AS (
+assessment_scores_by_user_or_group AS (
     SELECT
-        ai.user_id,
+        (ai.user_id, ai.group_id) AS u_gr_id,
         max(ai.score_perc) AS score_perc
     FROM relevant_assessment_instances AS ai
-    GROUP BY ai.user_id
+    GROUP BY (ai.user_id, ai.group_id)
 ),
-question_stats_by_user AS (
+question_stats_by_user_or_group AS (
     SELECT
-        iq.user_id,
+        iq.u_gr_id,
         avg(iq.score_perc) AS score_perc,
         100 * count(iq.id) FILTER (WHERE iq.some_submission = TRUE) / count(iq.id)         AS some_submission_perc,
         100 * count(iq.id) FILTER (WHERE iq.some_perfect_submission = TRUE) / count(iq.id) AS some_perfect_submission_perc,
@@ -47,21 +49,21 @@ question_stats_by_user AS (
         array_avg(iq.incremental_submission_points_array)  AS incremental_submission_points_array,
         avg(iq.number_attempts)                            AS number_submissions
     FROM relevant_instance_questions AS iq
-    GROUP BY iq.user_id
+    GROUP BY iq.u_gr_id
 ),
 user_quintiles AS (
     SELECT
-        assessment_scores_by_user.user_id,
+        assessment_scores_by_user_or_group.u_gr_id,
         ntile(5) OVER (
-            ORDER BY assessment_scores_by_user.score_perc
+            ORDER BY assessment_scores_by_user_or_group.score_perc
         ) as quintile
-    FROM assessment_scores_by_user
+    FROM assessment_scores_by_user_or_group
 ),
 quintile_scores AS (
-    SELECT avg(question_stats_by_user.score_perc) AS quintile_score
+    SELECT avg(question_stats_by_user_or_group.score_perc) AS quintile_score
     FROM
-        question_stats_by_user
-        JOIN user_quintiles USING (user_id)
+        question_stats_by_user_or_group
+        JOIN user_quintiles USING (u_gr_id)
     GROUP BY user_quintiles.quintile
     ORDER BY user_quintiles.quintile
 ),
@@ -71,36 +73,36 @@ quintile_scores_as_array AS (
 ),
 aq_stats AS (
     SELECT
-        least(100, greatest(0, avg(question_stats_by_user.score_perc)))                     AS mean_question_score,
-        sqrt(var_pop(question_stats_by_user.score_perc))                                    AS question_score_variance,
-        corr(question_stats_by_user.score_perc, assessment_scores_by_user.score_perc) * 100 AS discrimination,
-        avg(question_stats_by_user.some_submission_perc)                                    AS some_submission_perc,
-        avg(question_stats_by_user.some_perfect_submission_perc)                            AS some_perfect_submission_perc,
-        avg(question_stats_by_user.some_nonzero_submission_perc)                            AS some_nonzero_submission_perc,
-        avg(question_stats_by_user.first_submission_score)                                  AS average_first_submission_score,
-        sqrt(var_pop(question_stats_by_user.first_submission_score))                        AS first_submission_score_variance,
-        histogram(question_stats_by_user.first_submission_score, 0, 1, 10)                  AS first_submission_score_hist,
-        avg(question_stats_by_user.last_submission_score)                                   AS average_last_submission_score,
-        sqrt(var_pop(question_stats_by_user.last_submission_score))                         AS last_submission_score_variance,
-        histogram(question_stats_by_user.last_submission_score, 0, 1, 10)                   AS last_submission_score_hist,
-        avg(question_stats_by_user.max_submission_score)                                    AS average_max_submission_score,
-        sqrt(var_pop(question_stats_by_user.max_submission_score))                          AS max_submission_score_variance,
-        histogram(question_stats_by_user.max_submission_score, 0, 1, 10)                    AS max_submission_score_hist,
-        avg(question_stats_by_user.average_submission_score)                                AS average_average_submission_score,
-        sqrt(var_pop(question_stats_by_user.average_submission_score))                      AS average_submission_score_variance,
-        histogram(question_stats_by_user.average_submission_score, 0, 1, 10)                AS average_submission_score_hist,
-        array_avg(question_stats_by_user.submission_score_array)                            AS submission_score_array_averages,
-        array_var(question_stats_by_user.submission_score_array)                            AS submission_score_array_variances,
-        array_avg(question_stats_by_user.incremental_submission_score_array)                AS incremental_submission_score_array_averages,
-        array_var(question_stats_by_user.incremental_submission_score_array)                AS incremental_submission_score_array_variances,
-        array_avg(question_stats_by_user.incremental_submission_points_array)               AS incremental_submission_points_array_averages,
-        array_var(question_stats_by_user.incremental_submission_points_array)               AS incremental_submission_points_array_variances,
-        avg(question_stats_by_user.number_submissions)                                      AS average_number_submissions,
-        var_pop(question_stats_by_user.number_submissions)                                  AS number_submissions_variance,
-        histogram(question_stats_by_user.number_submissions, 0, 10, 10)                     AS number_submissions_hist
+        least(100, greatest(0, avg(question_stats_by_user_or_group.score_perc)))                     AS mean_question_score,
+        sqrt(var_pop(question_stats_by_user_or_group.score_perc))                                    AS question_score_variance,
+        coalesce(corr(question_stats_by_user_or_group.score_perc, assessment_scores_by_user_or_group.score_perc) * 100, CASE WHEN count(question_stats_by_user_or_group.score_perc) > 0 THEN 0 ELSE NULL END) AS discrimination,
+        avg(question_stats_by_user_or_group.some_submission_perc)                                    AS some_submission_perc,
+        avg(question_stats_by_user_or_group.some_perfect_submission_perc)                            AS some_perfect_submission_perc,
+        avg(question_stats_by_user_or_group.some_nonzero_submission_perc)                            AS some_nonzero_submission_perc,
+        avg(question_stats_by_user_or_group.first_submission_score)                                  AS average_first_submission_score,
+        sqrt(var_pop(question_stats_by_user_or_group.first_submission_score))                        AS first_submission_score_variance,
+        histogram(question_stats_by_user_or_group.first_submission_score, 0, 1, 10)                  AS first_submission_score_hist,
+        avg(question_stats_by_user_or_group.last_submission_score)                                   AS average_last_submission_score,
+        sqrt(var_pop(question_stats_by_user_or_group.last_submission_score))                         AS last_submission_score_variance,
+        histogram(question_stats_by_user_or_group.last_submission_score, 0, 1, 10)                   AS last_submission_score_hist,
+        avg(question_stats_by_user_or_group.max_submission_score)                                    AS average_max_submission_score,
+        sqrt(var_pop(question_stats_by_user_or_group.max_submission_score))                          AS max_submission_score_variance,
+        histogram(question_stats_by_user_or_group.max_submission_score, 0, 1, 10)                    AS max_submission_score_hist,
+        avg(question_stats_by_user_or_group.average_submission_score)                                AS average_average_submission_score,
+        sqrt(var_pop(question_stats_by_user_or_group.average_submission_score))                      AS average_submission_score_variance,
+        histogram(question_stats_by_user_or_group.average_submission_score, 0, 1, 10)                AS average_submission_score_hist,
+        array_avg(question_stats_by_user_or_group.submission_score_array)                            AS submission_score_array_averages,
+        array_var(question_stats_by_user_or_group.submission_score_array)                            AS submission_score_array_variances,
+        array_avg(question_stats_by_user_or_group.incremental_submission_score_array)                AS incremental_submission_score_array_averages,
+        array_var(question_stats_by_user_or_group.incremental_submission_score_array)                AS incremental_submission_score_array_variances,
+        array_avg(question_stats_by_user_or_group.incremental_submission_points_array)               AS incremental_submission_points_array_averages,
+        array_var(question_stats_by_user_or_group.incremental_submission_points_array)               AS incremental_submission_points_array_variances,
+        avg(question_stats_by_user_or_group.number_submissions)                                      AS average_number_submissions,
+        var_pop(question_stats_by_user_or_group.number_submissions)                                  AS number_submissions_variance,
+        histogram(question_stats_by_user_or_group.number_submissions, 0, 10, 10)                     AS number_submissions_hist
     FROM
-        question_stats_by_user
-        JOIN assessment_scores_by_user USING (user_id)
+        question_stats_by_user_or_group
+        JOIN assessment_scores_by_user_or_group USING (u_gr_id)
 )
 UPDATE assessment_questions AS aq
 SET

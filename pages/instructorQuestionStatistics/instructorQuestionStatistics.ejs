@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head', {pageNote: question.qid}); %>
     <%- include('../partials/mathjax'); %>
-    <script src="/javascripts/socket.io.js"></script>
-    <script src="/javascripts/d3.min.js"></script>
-    <script src="/javascripts/lodash.min.js"></script>
-    <script src="/localscripts/stacked_histogram.js"></script>
-    <script src="/localscripts/histmini.js"></script>
+    <script src="<%= node_modules_asset_path('socket.io-client/dist/socket.io.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('d3/dist/d3.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
+    <script src="<%= asset_path('localscripts/stacked_histogram.js') %>"></script>
+    <script src="<%= asset_path('localscripts/histmini.js') %>"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
@@ -22,7 +22,7 @@
     </script>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
-      <%- include('../partials/navtabs'); %>
+      <%- include('../partials/questionSyncErrorsAndWarnings'); %>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           Detailed assessment statistics for question <%= question.qid %>

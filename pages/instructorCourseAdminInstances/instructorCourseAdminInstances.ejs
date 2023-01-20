@@ -1,10 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
     <head>
-        <%- include('../partials/head'); %>
-        <script src="/javascripts/lodash.min.js"></script>
-        <script src="/javascripts/d3.min.js"></script>
-        <script src="/localscripts/histmini.js"></script>
+        <%- include('../partials/head', {pageTitle: 'Course Instances'}); %>
     </head>
     <body>
         <script>
@@ -19,14 +16,14 @@
         </script>
         <%- include('../partials/navbar'); %>
         <div id="content" class="container-fluid">
-            <%- include('../partials/navtabs'); %>
+            <%- include('../partials/courseSyncErrorsAndWarnings'); %>
             <div class="card mb-4">
                 <div class="card-header bg-primary">
                     <div class="row align-items-center justify-content-between">
                         <div class="col-auto">
                             <span class="text-white">Course instances</span>
                         </div>
-                        <% if ((authz_data.has_course_permission_edit) && (! course.options.isExampleCourse) && (! locals.needToSync)) { %>
+                        <% if ((authz_data.has_course_permission_edit) && (! course.example_course) && (! locals.needToSync)) { %>
                         <div class="col-auto">
                             <form name="add-course-instance-form" method="POST">
                                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
@@ -62,15 +59,17 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <% rows.forEach(function(row) { %>
-                                <tr>
-                                    <td class="align-left"><a href="<%= plainUrlPrefix %>/course_instance/<%= row.id %>/instructor/instance_admin"><%= row.long_name %></a></td>
-                                    <td class="align-left"><%= row.short_name %></td>
-                                    <td class="align-left"><%= row.formatted_start_date %></td>
-                                    <td class="align-left"><%= row.formatted_end_date %></td>
-                                    <td class="align-middle"><%= row.number %></td>
-                                </tr>
-                            <% }); %>
+                            <% if (locals.authz_data && authz_data.course_instances) { %>
+                                <% authz_data.course_instances.forEach(function(row) { %>
+                                    <tr>
+                                        <td class="align-left"><a href="<%= plainUrlPrefix %>/course_instance/<%= row.id %>/instructor/instance_admin"><%= row.long_name %></a></td>
+                                        <td class="align-left"><%= row.short_name %></td>
+                                        <td class="align-left"><%= row.formatted_start_date %></td>
+                                        <td class="align-left"><%= row.formatted_end_date %></td>
+                                        <td class="align-middle"><%= row.number %></td>
+                                    </tr>
+                                <% }); %>
+                            <% } %>
                         </tbody>
                     </table>
                 </div>

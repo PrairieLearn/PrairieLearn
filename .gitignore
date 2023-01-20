@@ -1,57 +1,101 @@
-# JetBrains IDE files
+# Development
+
+## Custom scripts
+/start-custom.sh
+
+## s3rver S3 emulation data directory
+/s3rver
+
+### https://docs.docker.com/compose/reference/#specifying-multiple-compose-files
+docker-compose.override.yml
+
+## Editors
+
+### JetBrains
 /.idea/
 
-# OS X Finder files
-**/.DS_Store
+### VSCode
+.vscode/*
+!.vscode/extensions.json
 
-# Backend dependencies
-/v1/backend/node_modules/
-/v1/frontend-build/
-/node_modules/
+### tmux
+.tmux.conf
 
-# Custom startup script
-/start.sh
+## Backup files
 
-# Server log files
-/v1/backend/server.log
-/server.log
-
-# MkDocs generated HTML
-/site/
-
-# JSDoc generated HTML
-/docs/code-docs/
-
-# Config files
-/v1/backend/config.json
-/v1/backend/config.json.*
-/config.json
-/aws-config.json
-
-# Swap files
+### vi
 **/*.swp
 **/*.swo
-
-# Backup Files
 **/*~
 
-# NPM log file
-npm-debug.log
+### emacs
+**/[#]*[#]
 
-# Code coverage files
+### jupyter
+.ipynb_checkpoints
+
+# PrairieLearn
+
+## Compiled frontend assets
+public/build
+
+## Config
+/config.json
+
+## Generated HTML
+
+### mkdocs
+/site/
+
+### jsdoc
+/docs/code-docs/
+
+## Runtime artifacts
+
+### Logs
+/server.log
+
+### Code coverage
 /coverage/
 /.nyc_output/
 
-# Python
+### Tests
+/tests/testFileEditor/courseLive/
+/tests/testFileEditor/courseOrigin/
+/tests/testFileEditor/courseDev/
+
+## Yarn 
+node_modules
+yarn-error.log
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+
+## Programming languages
+
+### Python
 __pycache__/
 *.py[cod]
 *$py.class
 
-# R
+### R
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
 
-# VSCode files
-.vscode
+## macOS files
+.DS_Store
+
+## s3rver file store
+/s3rver
+
+## Turborepo caches
+.turbo
+
+## Compiled package files
+packages/*/dist

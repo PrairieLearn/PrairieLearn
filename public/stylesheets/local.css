@@ -57,6 +57,7 @@ line.axis {
 .statsPlot .label {
     font-size: 14px;
     font-weight: normal;
+    fill: black;
 }
 
 .statsPlot .fitLine {
@@ -116,6 +117,22 @@ pre {
 /**************
  * Submissions
  **************/
+
+/* General-purpose show/hide button with animation */
+.show-hide-btn {
+  cursor: pointer;
+}
+
+.show-hide-btn .expand-icon {
+  transition: transform 400ms;
+}
+
+.show-hide-btn.collapsed .expand-icon {
+  transform: rotateX(180deg);
+}
+
+/* Button in submission header context
+   prepends "hide" or "show" automatically */
 .submission-header {
   cursor: pointer;
 }
@@ -153,6 +170,17 @@ a.badge {
   text-decoration: none;
 }
 
+.navbar, #course-nav {
+    align-items: baseline;
+}
+
+.no-select {
+    user-select: none;
+}
+
+/*****************
+ * Brand label ("PrairieLearn" text)
+ *****************/
 .navbar-brand {
   position: relative;
 }
@@ -180,16 +208,29 @@ a.badge {
   transform: translate(0px, 0px);
 }
 
+/* Supports a color accent at the tops of nav tabs, github-style */
+.nav-tabs.pl-nav-tabs-bar .nav-link.active {
+    border-top-color: var(--primary);
+    border-top-width: 0.2rem;
+    padding-top: 0.4rem;
+}
+
 /* Used to help vertically center badges in table cells */
 table td > .badge {
   transform: translate(0, -12.5%);
 }
 
 /* Used to give table rows the same padding as Bootstrap card headers */
-.card table tr td:first-child, .card table tr th:first-child {
+.card > table tr td:first-child,
+.card > table tr th:first-child,
+.card > .table-responsive > table tr td:first-child,
+.card > .table-responsive > table tr th:first-child {
     padding-left: 1.25rem;
 }
-.card table tr td:last-child, .card table tr th:last-child {
+.card > table tr td:last-child,
+.card > table tr th:last-child,
+.card > .table-responsive > table tr td:last-child,
+.card > .table-responsive > table tr th:last-child {
     padding-right: 1.25rem;
 }
 

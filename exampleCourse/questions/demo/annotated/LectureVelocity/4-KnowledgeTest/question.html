@@ -1,0 +1,99 @@
+<pl-question-panel>
+
+<p>A cannon ball is fired from the top of a cliff and its trajectory is described by the following function:</p>
+
+$$ s(t) = - {{params.a}} t^2 + {{params.b}} t + 30 $$
+
+<h5> Part 1 </h5>
+
+<p> Compute the average rate of the change of the function $s(t)$ on the time interval $[ {{params.t0}}, {{params.t1}} ]$. </p>
+
+</pl-question-panel>
+
+<p>
+<pl-number-input answers-name="va" label="Average rate of change is " allow-blank="true"></pl-number-input>
+</p>
+
+<pl-question-panel>
+
+<p> Sketch the line that represents the graphical interpretation for your result above.</p>
+
+</pl-question-panel>
+
+<pl-overlay width="550" height="450"  clip="false">
+    <pl-background>
+      <pl-figure file-name="figure1.png" type="dynamic"></pl-figure>
+    </pl-background>
+
+    <pl-location left="20" top="0" valign="top" halign="left">
+        <pl-drawing  answers-name="lines" gradable=true width="500" height="400" grid-size=0 show-tolerance-hint="false" hide-answer-panel="false">
+            <pl-drawing-answer draw-error-box="true">
+                <pl-graph-line origin="{{params.V_origin}}" end-points="{{params.line}}" offset-tol-x="5" offset-tol-y="5"></pl-graph-line>
+            </pl-drawing-answer>
+            <pl-controls>
+                <pl-controls-group label="Add line:" >
+                    <pl-drawing-button type="pl-controlled-line"></pl-drawing-button>
+                </pl-controls-group>
+                <pl-controls-group label="Delete:">
+                    <pl-drawing-button type="delete"></pl-drawing-button>
+                </pl-controls-group>
+              </pl-controls>
+          </pl-drawing>
+
+    </pl-location>
+</pl-overlay>
+
+
+<pl-submission-panel>
+{{#partial_scores.lines.feedback}}
+<p>{{partial_scores.lines.feedback}}</p>
+{{/partial_scores.lines.feedback}}
+</pl-submission-panel>
+
+The <pl-dropdown answers-name="geo" weight="1">
+  <pl-answer correct="false">end-point</pl-answer>
+  <pl-answer correct="false">start-point</pl-answer>
+  <pl-answer correct="false">mid-point</pl-answer>
+  <pl-answer correct="false">length</pl-answer>
+  <pl-answer correct="true">slope</pl-answer>
+</pl-dropdown> of the
+<pl-dropdown answers-name="geo2" weight="1">
+  <pl-answer correct="false">tangent</pl-answer>
+  <pl-answer correct="false">quadratic</pl-answer>
+  <pl-answer correct="false">axis</pl-answer>
+  <pl-answer correct="true">secant</pl-answer>
+</pl-dropdown> line above provides the average rate of the change of the function $s(t)$ on the time interval $[ {{params.t0}}, {{params.t1}} ]$.
+
+<p></p>
+
+<pl-question-panel>
+
+<h5> Part 2 </h5>
+
+<p> Compute the instantaneous rate of the change of the function $s(t)$ at time ${{params.t2}}$. </p>
+
+</pl-question-panel>
+
+<p>
+<pl-number-input answers-name="vi" label="Instantaneuous rate of change is " allow-blank="true"></pl-number-input>
+</p>
+
+
+<p> For what values of time $t$ will $s'(t)$ be {{params.sign}}?</p>
+
+
+<pl-checkbox answers-name="ts" number-answers=7 fixed-order="true" partial-credit="true">
+    {{#params.t_options}}
+        <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
+    {{/params.t_options}}
+</pl-checkbox>
+
+
+<pl-question-panel>
+  <!-- This is not part of the question, and is included for documentation purposes-->
+  <p></p>
+  <div class="alert alert-info p-2" role="alert">
+      <small>Note: this example summarizes the concepts introduced in the previous questions. Read more  <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/lecture/selfGuided/__docs/docs.md" target="_blank">here</a>.</small>
+        <pl-github-link></pl-github-link>
+  </div>
+</pl-question-panel>

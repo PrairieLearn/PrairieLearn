@@ -1,13 +1,12 @@
-DROP FUNCTION IF EXISTS submissions_insert(jsonb,jsonb,jsonb,boolean,integer,enum_mode,bigint,bigint,bigint);
-DROP FUNCTION IF EXISTS submissions_insert(jsonb,jsonb,jsonb,boolean,boolean,integer,enum_mode,bigint,bigint,bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     submissions_insert(
         IN submitted_answer jsonb,
         IN raw_submitted_answer jsonb,
         IN format_errors jsonb,
         IN gradable boolean,
         IN broken boolean,
+        IN new_true_answer jsonb,
+        IN regradable boolean,
         IN credit integer,
         IN mode enum_mode,
         IN variant_id bigint,
@@ -21,8 +20,16 @@ DECLARE
     assessment_instance_id bigint;
     last_access timestamptz;
     delta interval;
+    new_status enum_instance_question_status;
+    aq_manual_points double precision;
 BEGIN
     PERFORM variants_lock(variant_id);
+
+    -- ######################################################################
+    -- update the variant's `correct_answer`, which is permitted to change
+    -- during the `parse` phase (which occurs before this submission is
+    -- inserted).
+    UPDATE variants SET true_answer = new_true_answer WHERE id = variant_id;
 
     -- ######################################################################
     -- get the variant
@@ -32,12 +39,19 @@ BEGIN
     IF NOT FOUND THEN RAISE EXCEPTION 'invalid variant_id = %', variant_id; END IF;
     
     -- we must have a variant, but we might not have an assessment_instance
-    SELECT              iq.id,                  ai.id
-    INTO instance_question_id, assessment_instance_id
+    SELECT
+        iq.id,
+        ai.id,
+        COALESCE(aq.max_manual_points, 0)
+    INTO
+        instance_question_id,
+        assessment_instance_id,
+        aq_manual_points
     FROM
         variants AS v
         LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+        LEFT JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
     WHERE v.id = variant_id;
 
     -- ######################################################################
@@ -63,7 +77,9 @@ BEGIN
     SELECT la.last_access
     INTO last_access
     FROM last_accesses AS la
-    WHERE la.user_id = variant.user_id;
+    WHERE (CASE WHEN variant.user_id IS NOT NULL THEN la.user_id = variant.user_id 
+                ELSE la.group_id = variant.group_id
+            END);
 
     delta := coalesce(now() - last_access, interval '0 seconds');
     IF delta > interval '1 hour' THEN
@@ -72,16 +88,18 @@ BEGIN
 
     UPDATE last_accesses AS la
     SET last_access = now()
-    WHERE la.user_id = variant.user_id;
+    WHERE (CASE WHEN variant.user_id IS NOT NULL THEN la.user_id = variant.user_id 
+                ELSE la.group_id = variant.group_id
+            END);
 
     -- ######################################################################
     -- actually insert the submission
 
     INSERT INTO submissions
-            (variant_id, auth_user_id,  raw_submitted_answer, submitted_answer, format_errors,
-            credit, mode, duration,         params,         true_answer, gradable, broken)
+            (variant_id, auth_user_id, raw_submitted_answer, submitted_answer, format_errors,
+            credit, mode, duration, params, true_answer, gradable, broken, regradable)
     VALUES  (variant_id, authn_user_id, raw_submitted_answer, submitted_answer, format_errors,
-            credit, mode, delta,    variant.params, variant.true_answer, gradable, broken)
+            credit, mode, delta, variant.params, variant.true_answer, gradable, broken, regradable)
     RETURNING id
     INTO submission_id;
 
@@ -94,13 +112,17 @@ BEGIN
         first_duration = coalesce(first_duration, delta)
     WHERE id = variant_id;
 
+    new_status := 'saved';
+    IF gradable = FALSE THEN new_status := 'invalid'; END IF;
+
     IF assessment_instance_id IS NOT NULL THEN
         UPDATE instance_questions
         SET
-            status = 'saved',
+            status = new_status,
             duration = duration + delta,
             first_duration = coalesce(first_duration, delta),
-            modified_at = now()
+            modified_at = now(),
+            requires_manual_grading = requires_manual_grading OR aq_manual_points > 0
         WHERE id = instance_question_id;
 
         UPDATE assessment_instances AS ai

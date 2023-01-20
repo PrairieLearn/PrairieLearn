@@ -1,0 +1,15 @@
+{
+    "uuid": "b0444a41-1472-4aa5-a024-de1091bdab8a",
+    "title": "External Grading: Fibonacci function, file upload",
+    "topic": "Autograder",
+    "tags": ["code", "v3"],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-python",
+        "entrypoint": "/python_autograder/run.sh",
+        "timeout": 20
+    }
+}

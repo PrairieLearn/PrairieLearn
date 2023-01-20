@@ -1,0 +1,23 @@
+{
+    "uuid": "97ba7431-ebb2-463c-990c-94e1fdabdd75",
+    "type": "Homework",
+    "title": "Bonus points",
+    "set": "Homework",
+    "number": "7",
+    "maxPoints": 10,
+    "maxBonusPoints": 2,
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 100
+        }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {"id": "partialCredit1", "points": 8},
+                {"id": "partialCredit2", "points": 8}
+            ]
+        }
+    ]
+}

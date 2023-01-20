@@ -6,9 +6,9 @@ The file is structured as a JSON dictionary with the following syntax:
 
 ```json
 {
-    "property1": "...",
-    "property2": "...",
-    "property3": "..."
+  "property1": "...",
+  "property2": "...",
+  "property3": "..."
 }
 ```
 
@@ -16,19 +16,15 @@ A full list of properties can be found in the [schema](https://github.com/Prairi
 
 ## Setting Course Directories
 
-The default course directories to be loaded by PrairieLearn can be overridden with the `"courseDirs"` setting.  This setting takes a list of paths to load that are located *in the Docker container*.
+The default course directories to be loaded by PrairieLearn can be overridden with the `"courseDirs"` setting. This setting takes a list of paths to load that are located _in the Docker container_.
 
 ```json
 {
-    "courseDirs": [
-        "exampleCourse",
-        "testCourse",
-        "/myCourse"
-    ]
+  "courseDirs": ["exampleCourse", "testCourse", "/myCourse"]
 }
 ```
 
-Note that these directories are paths in the container, not on your local computer.  To mount a directory on your computer so that it is accessible in the container, you can add the following to your Docker run command:
+Note that these directories are paths in the container, not on your local computer. To mount a directory on your computer so that it is accessible in the container, you can add the following to your Docker run command:
 
 ```sh
 -v /path/to/myCourse:/myCourse

@@ -22,7 +22,7 @@ course_scores AS (
         ai.max_points,
         ai.points,
         format_date_iso8601(ai.date, ci.display_timezone) AS start_date,
-        EXTRACT(EPOCH FROM ai.duration) AS duration_seconds,
+        DATE_PART('epoch', ai.duration) AS duration_seconds,
         ai.id AS assessment_instance_id
     FROM
         assessment_instances AS ai
@@ -43,11 +43,10 @@ course_users AS (
         u.user_id,
         u.uid,
         u.name,
-        coalesce(e.role, 'None'::enum_role) AS role
+        users_get_displayed_role(u.user_id, $course_instance_id) AS role
     FROM
         user_ids
         JOIN users AS u ON (u.user_id = user_ids.user_id)
-        LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = $course_instance_id)
 ),
 scores AS (
     SELECT

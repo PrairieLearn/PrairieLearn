@@ -1,14 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
-    <script src="/javascripts/lodash.min.js"></script>
-    <script src="/javascripts/d3.min.js"></script>
-    <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
-    <script src="/javascripts/jquery.tablesorter.min.js"></script>
-    <script src="/javascripts/jquery.tablesorter.widgets.js"></script>
-    <script src="/localscripts/histogram.js"></script>
-    <script src="/localscripts/scatter.js"></script>
+    <link href="<%= node_modules_asset_path('tablesorter/dist/css/theme.bootstrap.min.css') %>" rel="stylesheet" />
+    <script src="<%= node_modules_asset_path('tablesorter/dist/js/jquery.tablesorter.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('tablesorter/dist/js/jquery.tablesorter.widgets.min.js') %>"></script>
   </head>
   <body>
     <script>
@@ -18,22 +14,29 @@
     </script>
     <%- include('../partials/navbar', {navPage: ''}); %>
     <div id="content" class="container-fluid">
-
-      <!-- ###################################################################### -->
-      <!-- ###################################################################### -->
+      <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_instance_label %>
           Summary:
-          <%= instance_user.name %> (<%= instance_user.uid %>)
+          <% if (instance_group) { %>
+            <%= instance_group.name %> <i class="fas fa-users"></i>
+          <% } else if (instance_user) { %>
+            <%= instance_user.name %> (<%= instance_user.uid %>)
+          <% } %>
         </div>
 
         <table class="table table-sm table-hover two-column-description">
           <tbody>
-            <tr><th>UID</th><td colspan="2"><%= instance_user.uid %></td></tr>
-            <tr><th>Name</th><td colspan="2"><%= instance_user.name %></td></tr>
-            <tr><th>Role</th><td colspan="2"><%= instance_enrollment.role %></td></tr>
+            <% if (instance_group) { %>
+              <tr><th>Name</th><td colspan="2"><%= instance_group.name %></td></tr>
+              <tr><th>Group Members</th><td colspan="2"><%= instance_group_uid_list.join(', ') %></td></tr>
+            <% } else if (instance_user) { %>
+              <tr><th>UID</th><td colspan="2"><%= instance_user.uid %></td></tr>
+              <tr><th>Name</th><td colspan="2"><%= instance_user.name %></td></tr>
+              <tr><th>Role</th><td colspan="2"><%= instance_role %></td></tr>
+            <% } %>
             <tr><th>Instance</th><td colspan="2"><%= assessment_instance.number %>
                 (<a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/assessment_instance/<%= assessment_instance.id %>">student view</a>)
             </td></tr>
@@ -43,16 +46,16 @@
                 <% include('../partials/pointsFormatter'); %>
                 <span id="total-points"><%= getStringFromFloat(assessment_instance.points) %></span>
                 <small>/<span id="total-max-points" class="text-muted"><%= getStringFromFloat(assessment_instance.max_points) %></span></small>
-                <% if (authz_data.has_instructor_edit) { %>
+                <% if (authz_data.has_course_instance_permission_edit) { %>
                 <button type="button" class="btn btn-xs btn-secondary"
-                   id="editTotalPointsButton" tabindex="0"
+                   id="editTotalPointsButton"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change total points"
                    data-content="<%= include('editTotalPointsForm',
                                  {id: 'editTotalPointsButton'}); %>"
                    data-trigger="manual" onclick="$(this).popover('show')">
                   <i class="fa fa-edit" aria-hidden="true"></i>
-              </button>
+                </button>
                 <% } %>
               </td>
             </tr>
@@ -62,9 +65,9 @@
                 <%- include('../partials/scorebar', {score: assessment_instance.score_perc}); %>
               </td>
               <td class="align-middle" style="width: 100%;">
-                <% if (authz_data.has_instructor_edit) { %>
+                <% if (authz_data.has_course_instance_permission_edit) { %>
                 <button type="button" class="btn btn-xs btn-secondary"
-                   id="editTotalScorePercButton" tabindex="0"
+                   id="editTotalScorePercButton"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change total percentage score"
                    data-content="<%= include('editTotalScorePercForm',
@@ -75,19 +78,21 @@
                 <% } %>
               </td>
             </tr>
+            <tr><th>Date started</th><td colspan="2"><%= assessment_instance_date_formatted %></td></tr>
             <tr><th>Duration</th><td colspan="2"><%= assessment_instance_duration %></td></tr>
           </tbody>
         </table>
       </div>
 
-      <!-- ###################################################################### -->
-      <!-- ###################################################################### -->
-
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_instance_label %>
           Questions:
-          <%= instance_user.name %> (<%= instance_user.uid %>)
+          <% if (instance_group) { %>
+            <%= instance_group.name %> <i class="fas fa-users"></i>
+          <% } else if (instance_user) { %>
+            <%= instance_user.name %> (<%= instance_user.uid %>)
+          <% } %>
         </div>
 
         <table id="instanceQuestionList" class="table table-sm table-hover">
@@ -95,11 +100,13 @@
             <tr>
               <th>Student question</th>
               <th>Instructor question</th>
-              <th class="text-center">
-                Awarded points
-              </th>
+              <th class="text-center">Auto-grading points</th>
+              <th class="text-center">Manual grading points</th>
+              <th class="text-center">Awarded points</th>
               <th class="text-center" colspan="2">
                 Percentage score
+              </th>
+              <th>
               </th>
             </tr>
           </thead>
@@ -107,7 +114,7 @@
             <% instance_questions.forEach(function(instance_question, i_instance_question) { %>
             <% if (instance_question.start_new_zone && instance_question.zone_title) { %>
             <tr>
-                <th colspan="4">
+                <th colspan="6">
                   <%= instance_question.zone_title %>
                   <% if (instance_question.zone_has_max_points) { %>
                       (maximum <%= instance_question.zone_max_points %> points)
@@ -129,13 +136,45 @@
                 (<a href="<%= urlPrefix %>/question/<%= instance_question.question_id %>/">instructor view</a>)
               </td>
               <td class="text-center">
-                <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %>
-                <% if (authz_data.has_instructor_edit) { %>
-                <button type="button" class="btn btn-xs btn-secondary editQuestionPointsButton"
-                   id="editQuestionPoints<%= i_instance_question %>" tabindex="0"
+                <%- include('../partials/instanceQuestionPoints', {instance_question, component: 'auto'}); %>
+                <% if (authz_data.has_course_instance_permission_edit) { %>
+                <button type="button" class="btn btn-xs btn-secondary editQuestionAutoPointsButton"
+                   id="editQuestionPointsAuto<%= i_instance_question %>"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> points"
-                   data-content="<%= include('editQuestionPointsForm',
+                   data-content="<%= include('../partials/editQuestionPointsForm',
+                                 {id: 'editQuestionPointsAuto' + i_instance_question,
+                                 field: 'auto_points',
+                                 instance_question: {...instance_question, points: instance_question.auto_points, max_points: instance_question.max_auto_points}}); %>"
+                   data-trigger="manual" onclick="$(this).popover('show')">
+                  <i class="fa fa-edit" aria-hidden="true"></i>
+                </button>
+                <% } %>
+              </td>
+              <td class="text-center">
+                <%- include('../partials/instanceQuestionPoints', {instance_question, component: 'manual'}); %>
+                <% if (authz_data.has_course_instance_permission_edit) { %>
+                <button type="button" class="btn btn-xs btn-secondary editQuestionManualPointsButton"
+                   id="editQuestionPointsManual<%= i_instance_question %>"
+                   data-toggle="popover" data-container="body"
+                   data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> points"
+                   data-content="<%= include('../partials/editQuestionPointsForm',
+                                 {id: 'editQuestionPointsManual' + i_instance_question,
+                                 field: 'manual_points',
+                                 instance_question: {...instance_question, points: instance_question.manual_points, max_points: instance_question.max_manual_points}}); %>"
+                   data-trigger="manual" onclick="$(this).popover('show')">
+                  <i class="fa fa-edit" aria-hidden="true"></i>
+                </button>
+                <% } %>
+              </td>
+              <td class="text-center">
+                <%- include('../partials/instanceQuestionPoints', {instance_question, component: 'total'}); %>
+                <% if (authz_data.has_course_instance_permission_edit) { %>
+                <button type="button" class="btn btn-xs btn-secondary editQuestionPointsButton"
+                   id="editQuestionPoints<%= i_instance_question %>"
+                   data-toggle="popover" data-container="body"
+                   data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> points"
+                   data-content="<%= include('../partials/editQuestionPointsForm',
                                  {id: 'editQuestionPoints' + i_instance_question,
                                  instance_question: instance_question}); %>"
                    data-trigger="manual" onclick="$(this).popover('show')">
@@ -143,21 +182,26 @@
                 </button>
                 <% } %>
               </td>
-              <td class="align-middle text-center">
+              <td class="align-middle text-center text-nowrap">
                 <%- include('../partials/scorebar', {score: instance_question.score_perc}); %>
               </td>
               <td class="align-middle" style="width: 1em;">
-                <% if (authz_data.has_instructor_edit) { %>
+                <% if (authz_data.has_course_instance_permission_edit) { %>
                 <button type="button" class="btn btn-xs btn-secondary editQuestionScorePercButton"
-                   id="editQuestionScorePerc<%= i_instance_question %>" tabindex="0"
+                   id="editQuestionScorePerc<%= i_instance_question %>"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> percentage score"
-                   data-content="<%= include('editQuestionScorePercForm',
+                   data-content="<%= include('../partials/editQuestionScorePercForm',
                                  {id: 'editQuestionScorePerc' + i_instance_question,
                                  instance_question: instance_question}); %>"
                    data-trigger="manual" onclick="$(this).popover('show')">
                   <i class="fa fa-edit" aria-hidden="true"></i>
                 </button>
+                <% } %>
+              </td>
+              <td class="align-middle text-nowrap" style="width: 1em;">
+                <% if (authz_data.has_course_instance_permission_edit && instance_question.status !== 'unanswered') { %>
+                <a class="btn btn-xs btn-secondary" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/instance_question/<%= instance_question.id %>">Manual grading</a>
                 <% } %>
               </td>
             </tr>
@@ -166,14 +210,15 @@
         </table>
       </div>
 
-      <!-- ###################################################################### -->
-      <!-- ###################################################################### -->
-
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_instance_label %>
           Statistics:
-          <%= instance_user.name %> (<%= instance_user.uid %>)
+          <% if (instance_group) { %>
+            <%= instance_group.name %> <i class="fas fa-users"></i>
+          <% } else if (instance_user) { %>
+            <%= instance_user.name %> (<%= instance_user.uid %>)
+          <% } %>
         </div>
         <table id="instanceQuestionStatsTable" class="table table-sm table-hover tablesorter">
           <thead>
@@ -218,20 +263,22 @@
         </script>
       </div>
 
-      <!-- ###################################################################### -->
-      <!-- ###################################################################### -->
-
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_instance_label %>
           Log:
-          <%= instance_user.name %> (<%= instance_user.uid %>)
+          <% if (instance_group) { %>
+            <%= instance_group.name %> <i class="fas fa-users"></i>
+          <% } else if (instance_user) { %>
+            <%= instance_user.name %> (<%= instance_user.uid %>)
+          <% } %>
         </div>
         <div class="card-body">
           <small>
-            Download <a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/<%= logCsvFilename %>"><%= logCsvFilename %></a>.
-
             Click on a column header to sort. Shift-click on a second header to sub-sort.
+            Download <a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/<%= logCsvFilename %>"><%= logCsvFilename %></a>.
+            Uploaded student files are not shown above or in the CSV file.
+            Student files can be downloaded on the <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads">Downloads</a> tab.
           </small>
         </div>
 
@@ -292,12 +339,11 @@
         <div class="card-footer">
           <small>
             Download <a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/<%= logCsvFilename %>"><%= logCsvFilename %></a>.
+            Uploaded student files are not shown above or in the CSV file.
+            Student files can be downloaded on the <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/downloads">Downloads</a> tab.
           </small>
         </div>
       </div>
-
-      <!-- ###################################################################### -->
-      <!-- ###################################################################### -->
 
     </div>
   </body>

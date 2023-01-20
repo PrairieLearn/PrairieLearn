@@ -1,109 +1,165 @@
+// @ts-check
 const ERR = require('async-stacktrace');
-const async = require('async');
+const util = require('util');
 
 const namedLocks = require('../lib/named-locks');
-const courseDB = require('../lib/course-db');
-const sqldb = require('@prairielearn/prairielib/sql-db');
+const courseDB = require('./course-db');
+const sqldb = require('../prairielib/lib/sql-db');
+
+const config = require('../lib/config');
 
 const syncCourseInfo = require('./fromDisk/courseInfo');
 const syncCourseInstances = require('./fromDisk/courseInstances');
-const syncCourseStaff = require('./fromDisk/courseStaff');
 const syncTopics = require('./fromDisk/topics');
 const syncQuestions = require('./fromDisk/questions');
 const syncTags = require('./fromDisk/tags');
 const syncAssessmentSets = require('./fromDisk/assessmentSets');
+const syncAssessmentModules = require('./fromDisk/assessmentModules');
 const syncAssessments = require('./fromDisk/assessments');
 const freeformServer = require('../question-servers/freeform');
 const perf = require('./performance')('sync');
+const { chalk, chalkDim } = require('../lib/chalk');
+
+const { promisify } = require('util');
 
 // Performance data can be logged by setting the `PROFILE_SYNC` environment variable
 
-module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, callback) {
-    logger.info('Starting sync of git repository to database for ' + courseDir);
-    logger.info('Loading info.json files from git repository...');
-    perf.start('sync');
-    perf.start('loadFullCourse');
-    courseDB.loadFullCourse(courseDir, logger, function(err, course) {
-        perf.end('loadFullCourse');
-        if (ERR(err, callback)) return;
-        logger.info('Successfully loaded all info.json files');
-        async.series([
-            function(callback) {logger.info('Syncing courseInfo from git repository to database...'); callback(null);},
-            perf.timedFunc.bind(null, 'syncCourseInfo', syncCourseInfo.sync.bind(null, course.courseInfo, course_id)),
-            function(callback) {logger.info('Syncing courseInstances from git repository to database...'); callback(null);},
-            perf.timedFunc.bind(null, 'syncCourseInstances', syncCourseInstances.sync.bind(null, course.courseInfo, course.courseInstanceDB)),
-            function(callback) {logger.info('Syncing topics from git repository to database...'); callback(null);},
-            perf.timedFunc.bind(null, 'syncTopics', syncTopics.sync.bind(null, course.courseInfo, course.questionDB)),
-            function(callback) {logger.info('Syncing questions from git repository to database...'); callback(null);},
-            perf.timedFunc.bind(null, 'syncQuestions', syncQuestions.sync.bind(null, course.courseInfo, course.questionDB, logger)),
-            function(callback) {logger.info('Syncing tags from git repository to database...'); callback(null);},
-            perf.timedFunc.bind(null, 'syncTags', syncTags.sync.bind(null, course.courseInfo, course.questionDB)),
-            function(callback) {logger.info('Syncing assessment sets from git repository to database...'); callback(null);},
-            perf.timedFunc.bind(null, 'syncAssessmentSets', syncAssessmentSets.sync.bind(null, course.courseInfo)),
-            (callback) => {
-                perf.start('syncCourseInstaces');
-                // TODO: is running these in parallel safe? Everything should be isolated by course instance.
-                async.forEachOf(course.courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
-                    perf.start(`syncCourseInstance${courseInstanceShortName}`);
-                    async.series([
-                        function(callback) {logger.info('Syncing ' + courseInstanceShortName
-                                                        + ' courseInstance from git repository to database...'); callback(null);},
-                        perf.timedFunc.bind(null, `syncCourseInstance${courseInstanceShortName}Staff`, syncCourseStaff.sync.bind(null, courseInstance)),
-                        function(callback) {logger.info('Syncing ' + courseInstanceShortName
-                                                        + ' assessments from git repository to database...'); callback(null);},
-                        perf.timedFunc.bind(null, `syncCourseInstance${courseInstanceShortName}Assessments`, syncAssessments.sync.bind(null, course.courseInfo, courseInstance, course.questionDB)),
-                    ], function(err) {
-                    perf.end(`syncCourseInstance${courseInstanceShortName}`);
-                        if (ERR(err, callback)) return;
-                        callback(null);
-                    });
-                }, function(err) {
-                    perf.end('syncCourseInstances');
-                    if (ERR(err, callback)) return;
-                    logger.info('Completed sync of git repository to database');
-                    callback(null);
-                });
-            },
-            function(callback) {logger.info('Reloading course elements...'); callback(null);},
-            freeformServer.reloadElementsForCourse.bind(null, course.courseInfo),
-        ], function(err) {
-            perf.end('sync');
-            if (ERR(err, callback)) return;
-            logger.info('Completed sync of git repository to database');
-            callback(null);
-        });
-    });
+/**
+ * @typedef {Object} SyncResults
+ * @property {boolean} hadJsonErrors
+ * @property {string} courseId
+ * @property {import('./course-db').CourseData} courseData
+ */
+
+/**
+ *
+ * @param {string} courseDir
+ * @param {any} courseId
+ * @param {any} logger
+ * @returns Promise<SyncResults>
+ */
+async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
+  logger.info('Loading info.json files from course repository');
+  perf.start('sync');
+
+  const courseData = await perf.timedAsync('loadCourseData', () =>
+    courseDB.loadFullCourse(courseDir)
+  );
+  logger.info('Syncing info to database');
+  await perf.timedAsync('syncCourseInfo', () => syncCourseInfo.sync(courseData, courseId));
+  const courseInstanceIds = await perf.timedAsync('syncCourseInstances', () =>
+    syncCourseInstances.sync(courseId, courseData)
+  );
+  await perf.timedAsync('syncTopics', () => syncTopics.sync(courseId, courseData));
+  const questionIds = await perf.timedAsync('syncQuestions', () =>
+    syncQuestions.sync(courseId, courseData)
+  );
+  await perf.timedAsync('syncTags', () => syncTags.sync(courseId, courseData, questionIds));
+  await perf.timedAsync('syncAssessmentSets', () => syncAssessmentSets.sync(courseId, courseData));
+  await perf.timedAsync('syncAssessmentModules', () =>
+    syncAssessmentModules.sync(courseId, courseData)
+  );
+  perf.start('syncAssessments');
+  await Promise.all(
+    Object.entries(courseData.courseInstances).map(async ([ciid, courseInstanceData]) => {
+      const courseInstanceId = courseInstanceIds[ciid];
+      await perf.timedAsync(`syncAssessments${ciid}`, () =>
+        syncAssessments.sync(
+          courseId,
+          courseInstanceId,
+          courseInstanceData.assessments,
+          questionIds
+        )
+      );
+    })
+  );
+  perf.end('syncAssessments');
+  if (config.devMode) {
+    logger.info('Flushing course element and extensions cache...');
+    freeformServer.flushElementCache();
+  }
+  const courseDataHasErrors = courseDB.courseDataHasErrors(courseData);
+  const courseDataHasErrorsOrWarnings = courseDB.courseDataHasErrorsOrWarnings(courseData);
+  if (courseDataHasErrors) {
+    logger.info(chalk.red('✖ Some JSON files contained errors and were unable to be synced'));
+  } else if (courseDataHasErrorsOrWarnings) {
+    logger.info(
+      chalk.yellow('⚠ Some JSON files contained warnings but all were successfully synced')
+    );
+  } else {
+    logger.info(chalk.green('✓ Course sync successful'));
+  }
+
+  // Note that we deliberately log warnings/errors after syncing to the database
+  // since in some cases we actually discover new warnings/errors during the
+  // sync process. For instance, we don't actually validate exam UUIDs until
+  // the database sync step.
+  courseDB.writeErrorsAndWarningsForCourseData(courseId, courseData, (line) =>
+    logger.info(line || '')
+  );
+
+  perf.end('sync');
+  return {
+    hadJsonErrors: courseDataHasErrors,
+    hadJsonErrorsOrWarnings: courseDataHasErrorsOrWarnings,
+    courseId,
+    courseData,
+  };
+}
+
+/**
+ * @param {string} courseDir
+ * @param {any} course_id
+ * @param {any} logger
+ * @param {(err: Error | null, result: SyncResults) => void} callback
+ */
+module.exports._syncDiskToSqlWithLock = function (courseDir, course_id, logger, callback) {
+  util.callbackify(async () => {
+    return await syncDiskToSqlWithLock(courseDir, course_id, logger);
+  })(callback);
 };
 
-module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) {
-    const lockName = 'coursedir:' + courseDir;
-    logger.verbose(`Trying lock ${lockName}`);
-    namedLocks.tryLock(lockName, (err, lock) => {
-        if (ERR(err, callback)) return;
-        if (lock == null) {
-            logger.verbose(`Did not acquire lock ${lockName}`);
-            callback(new Error(`Another user is already syncing or modifying the course: ${courseDir}`));
-        } else {
-            logger.verbose(`Acquired lock ${lockName}`);
-            this._syncDiskToSqlWithLock(courseDir, course_id, logger, (err) => {
-                namedLocks.releaseLock(lock, (lockErr) => {
-                    if (ERR(lockErr, callback)) return;
-                    if (ERR(err, callback)) return;
-                    logger.verbose(`Released lock ${lockName}`);
-                    callback(null);
-                });
-            });
-        }
-    });
-};
-
-module.exports.syncOrCreateDiskToSql = function(courseDir, logger, callback) {
-    sqldb.callOneRow('select_or_insert_course_by_path', [courseDir], function(err, result) {
-        if (ERR(err, callback)) return;
-        const course_id = result.rows[0].course_id;
-        module.exports.syncDiskToSql(courseDir, course_id, logger, function(err) {
-            if (ERR(err, callback)) return;
-            callback(null);
+/**
+ * @param {string} courseDir
+ * @param {string} course_id
+ * @param {any} logger
+ * @param {(err: Error | null, result?: SyncResults) => void} callback
+ */
+module.exports.syncDiskToSql = function (courseDir, course_id, logger, callback) {
+  const lockName = 'coursedir:' + courseDir;
+  logger.verbose(chalkDim(`Trying lock ${lockName}`));
+  namedLocks.tryLock(lockName, (err, lock) => {
+    if (ERR(err, callback)) return;
+    if (lock == null) {
+      logger.verbose(chalk.red(`Did not acquire lock ${lockName}`));
+      callback(new Error(`Another user is already syncing or modifying the course: ${courseDir}`));
+    } else {
+      logger.verbose(chalkDim(`Acquired lock ${lockName}`));
+      module.exports._syncDiskToSqlWithLock(courseDir, course_id, logger, (err, result) => {
+        namedLocks.releaseLock(lock, (lockErr) => {
+          if (ERR(lockErr, callback)) return;
+          if (ERR(err, callback)) return;
+          logger.verbose(chalkDim(`Released lock ${lockName}`));
+          callback(null, result);
         });
+      });
+    }
+  });
+};
+module.exports.syncDiskToSqlAsync = promisify(module.exports.syncDiskToSql);
+
+/**
+ * @param {string} courseDir
+ * @param {any} logger
+ * @param {(err: Error | null, result?: SyncResults) => void} callback
+ */
+module.exports.syncOrCreateDiskToSql = function (courseDir, logger, callback) {
+  sqldb.callOneRow('select_or_insert_course_by_path', [courseDir], function (err, result) {
+    if (ERR(err, callback)) return;
+    const course_id = result.rows[0].course_id;
+    module.exports.syncDiskToSql(courseDir, course_id, logger, function (err, result) {
+      if (ERR(err, callback)) return;
+      callback(null, result);
     });
+  });
 };

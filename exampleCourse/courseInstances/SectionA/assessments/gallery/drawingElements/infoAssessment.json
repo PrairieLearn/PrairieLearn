@@ -1,0 +1,28 @@
+{
+    "uuid": "6338DE4E-7E66-4B58-8CB4-1E126FB9AF9C",
+    "type": "Homework",
+    "title": "Question gallery for PL drawing elements",
+    "set": "Collection",
+    "number": "5",
+    "zones": [
+        {
+            "questions": [
+                {"id": "demo/drawing/simpleTutorial",             "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/gradeVector",                "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/liftingMechanism",           "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/frame-exploded",             "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/centroid",                   "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/collarRod",                  "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/pulley",                     "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/graphs",                     "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/inclinedPlane",              "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/inclinedPlane-reaction",     "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/vmDiagrams",                 "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/buttons",                    "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/customizedButtons",          "points": 2, "maxPoints": 6},
+                {"id": "demo/drawing/extensions",                 "points": 2, "maxPoints": 6},
+                {"id": "element/drawingGallery",                  "points": 2, "maxPoints": 6}
+            ]
+        }
+    ]
+}

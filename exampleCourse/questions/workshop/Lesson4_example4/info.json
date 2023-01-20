@@ -1,0 +1,18 @@
+{
+    "uuid": "BD8D4209-5A16-4FED-AEBB-9E32643C1FF7",
+    "title": "Write a simple code using numpy",
+    "topic": "Workshop Demo",
+    "tags": [
+        "mfsilva",
+        "nnytko2"
+    ],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-python",
+        "entrypoint": "/python_autograder/run.sh",
+        "timeout": 60
+    }
+}

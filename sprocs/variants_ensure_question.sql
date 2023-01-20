@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     variants_ensure_question(
         IN variant_id bigint,
         IN question_id bigint,

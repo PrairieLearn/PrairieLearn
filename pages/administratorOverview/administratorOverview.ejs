@@ -1,11 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
-    <script src="/javascripts/lodash.min.js"></script>
-    <script src="/javascripts/d3.min.js"></script>
-    <script src="/localscripts/histmini.js"></script>
-    <script src="/node_modules/chart.js/dist/Chart.min.js"></script>
+    <script src="<%= node_modules_asset_path('chart.js/dist/chart.umd.js') %>"></script>
     <style>
     canvas {
       border: none;
@@ -38,11 +35,7 @@
     <%- include('../partials/navbar', {navPage: 'admin'}); %>
     <div id="content" class="container-fluid">
 
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-- Config ---------------------------------------------------------------------->
-
+      <%# Config %> 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">Server configuration</div>
         <div class="table-responsive">
@@ -70,11 +63,7 @@
         </div>
       </div>
 
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-- Administrators -------------------------------------------------------------->
-
+      <%# Administrators %> 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           Administrators
@@ -89,7 +78,6 @@
             <span class="d-none d-sm-inline">Add administrator</span>
         </button>
         </div>
-
         <div class="table-responsive">
           <table class="table table-sm table-hover table-striped">
             <thead>
@@ -120,22 +108,16 @@
             </tbody>
           </table>
         </div>
-
         <div class="card-footer">
           <small>
             Administrators have full access to every course and course
-            instance. They are automatically Owners of every course
-            and Instructors of every course instance. They can add and
-            remove other administrators.
+            instance. They are automatically Owners of every
+            course. They can add and remove other administrators.
           </small>
         </div>
       </div>
 
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-- Exam mode networks ---------------------------------------------------------->
-
+      <%# Exam mode networks %> 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">Exam-mode networks</div>
         <div class="table-responsive">
@@ -161,7 +143,6 @@
             </tbody>
           </table>
         </div>
-
         <div class="card-footer">
           <small>
             To add new networks for exam-mode access, insert directly
@@ -170,11 +151,7 @@
         </div>
       </div>
 
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-- Institutions ---------------------------------------------------------------->
-
+      <%# Institutions %>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           Institutions
@@ -191,7 +168,7 @@
             <tbody>
               <% institutions.forEach(function(inst, i) { %>
               <tr>
-                 <td><%= inst.short_name %></td>
+                 <td><a href="/pl/institution/<%= inst.id %>/admin"><%= inst.short_name %></a></td>
                  <td><%= inst.long_name %></td>
                  <td><code><%= inst.uid_regexp %></code></td>
                  <td><%= inst.authn_providers.join(', ') %></td>
@@ -200,7 +177,6 @@
             </tbody>
           </table>
         </div>
-
         <div class="card-footer">
           <small>
             To change institutions, edit the <strong><tt>institutions</tt></strong> table.
@@ -209,11 +185,28 @@
         </div>
       </div>
 
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-- Courses --------------------------------------------------------------------->
+      <%# Chunk generation %> 
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          Chunk generation
+        </div>
+        <div class="card-body">
+          <form name="generate_chunks_form" method="POST">
+            <input type="hidden" name="__action" value="generate_chunks">
+            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+            <div class="form-group">
+              <label for="generateChunksCourseIds">Course IDs:</label>
+              <input type="text" class="form-control" id="generateChunksCourseIds" name="course_ids" placeholder="1,2,3">
+            </div>
+            <button type="submit" class="btn btn-primary">Generate</button>
+          </form>
+        </div>
+      </div>
 
+      <%# Course requests %> 
+      <%- include('../administratorCourseRequests/courseRequestsTable', {'show_all': false}) %>
+
+      <%# Courses %> 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           Courses
@@ -237,17 +230,19 @@
                 <th>Timezone</th>
                 <th>Path</th>
                 <th>Repository</th>
+                <th>Branch</th>
                 <th></th>
             </thead>
             <tbody>
               <% courses.forEach(function(course, i) { %>
               <tr>
-                <td><%= course.institution.short_name %></td>
+                <%- include('courseUpdateInstitutionColumn', {course: course, i: i}) %>
                 <%- include('courseUpdateColumn', {column_name: 'short_name',       label: 'short name', course: course, i: i}) %>
                 <%- include('courseUpdateColumn', {column_name: 'title',            label: 'title',      course: course, i: i}) %>
                 <%- include('courseUpdateColumn', {column_name: 'display_timezone', label: 'timezone',   course: course, i: i}) %>
                 <%- include('courseUpdateColumn', {column_name: 'path',             label: 'path',       course: course, i: i}) %>
                 <%- include('courseUpdateColumn', {column_name: 'repository',       label: 'repository', course: course, i: i}) %>
+                <%- include('courseUpdateColumn', {column_name: 'branch',           label: 'branch',     course: course, i: i}) %>
                 <td class="align-middle">
                   <button type="button" class="btn btn-sm btn-danger float-right"
                      id="courseDeleteButton<%= i %>" tabindex="0"
@@ -264,7 +259,6 @@
             </tbody>
           </table>
         </div>
-
         <div class="card-footer">
           <small>
             When a course is synced, if the <strong>path</strong> does
@@ -279,11 +273,7 @@
         </div>
       </div>
 
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-- Question render cache ------------------------------------------------------->
-
+      <%# Question render cache %> 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           Question render cache
@@ -331,11 +321,10 @@
             var questionCacheHitRate = <%= question_render_cache_stats.question_cache_hit_rate ? question_render_cache_stats.question_cache_hit_rate : 0 %>;
             var panelCacheHitRate = <%= question_render_cache_stats.panel_cache_hit_rate ? question_render_cache_stats.panel_cache_hit_rate : 0 %>;
             // This draws the percentage in the middle of the pie
-            Chart.pluginService.register({
+            Chart.register({
+              id: 'draw-percentage',
               beforeDraw: function(chart) {
-                var width = chart.chart.width,
-                height = chart.chart.height,
-                ctx = chart.chart.ctx;
+                var { width, height, ctx } = chart;
                 ctx.restore();
                 var fontSize = (height / 160).toFixed(2);
                 ctx.font = fontSize + "em sans-serif";
@@ -350,7 +339,7 @@
             function buildChart(ctx, hitRate) {
               var roundedHitRate = Math.round(hitRate * 10000) / 100;
               return new Chart(ctx, {
-                type: 'pie',
+                type: 'doughnut',
                 data: {
                   datasets: [{
                     data: [roundedHitRate, 100 - roundedHitRate],
@@ -359,10 +348,10 @@
                   labels: ['Cache hit %', 'Cache miss %'],
                 },
                 options: {
+                  cutout: '70%',
                   legend: {
                     display: false,
                   },
-                  cutoutPercentage: 70,
                 }
               });
             };
@@ -372,11 +361,6 @@
           </script>
         </div>
       </div>
-
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
-      <!-------------------------------------------------------------------------------->
 
     </div>
   </body>

@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_instances_regrade(
         IN assessment_instance_id bigint,
         IN authn_user_id bigint,
@@ -15,7 +15,6 @@ DECLARE
     new_points DOUBLE PRECISION;
     course_id bigint;
     course_instance_id bigint;
-    user_id bigint;
     assessment_instance_updated boolean;
     new_instance_question_ids bigint[];
 BEGIN
@@ -38,14 +37,13 @@ BEGIN
     END IF;
 
     -- store old points/score_perc
-    SELECT ai.points,  ai.score_perc,      c.id,              ci.id, u.user_id
-    INTO  old_points, old_score_perc, course_id, course_instance_id,   user_id
+    SELECT ai.points,  ai.score_perc,      c.id,              ci.id
+    INTO  old_points, old_score_perc, course_id, course_instance_id
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
         JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
         JOIN pl_courses AS c ON (c.id = ci.course_id)
-        JOIN users AS u USING (user_id)
     WHERE ai.id = assessment_instance_id;
 
     -- regrade questions, log it, and store the list of updated questions
@@ -53,13 +51,12 @@ BEGIN
         UPDATE instance_questions AS iq
         SET
             points = aq.max_points,
+            auto_points = aq.max_auto_points,
+            manual_points = aq.max_manual_points,
             score_perc = 100,
-            points_in_grading = 0,
-            score_perc_in_grading = 0,
             modified_at = now()
         FROM
             assessment_questions AS aq
-            JOIN questions AS q ON (q.id = aq.question_id)
         WHERE
             aq.id = iq.assessment_question_id
             AND iq.assessment_instance_id = assessment_instances_regrade.assessment_instance_id
@@ -67,16 +64,20 @@ BEGIN
             AND iq.points < aq.max_points
         RETURNING
             iq.*,
-            aq.max_points
+            aq.max_points,
+            aq.max_auto_points,
+            aq.max_manual_points
     ),
     log_result AS (
         INSERT INTO question_score_logs
             (instance_question_id, auth_user_id,
-                points, max_points, score_perc)
+                points, auto_points, manual_points, max_points, max_auto_points, max_manual_points,
+                score_perc)
         (
             SELECT
-                id,                assessment_instances_regrade.authn_user_id,
-                points, max_points, score_perc
+                id, assessment_instances_regrade.authn_user_id,
+                points, auto_points, manual_points, max_points, max_auto_points, max_manual_points,
+                score_perc
             FROM updated_instance_questions
         )
     )

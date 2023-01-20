@@ -1,0 +1,33 @@
+<pl-question-panel>
+<p>
+  A cannon ball with mass $m ={{params.m}}\rm\ kg$ is fired downward from a cliff at a height 
+  $h = {{params.h}}\rm\ m$, at an angle  $\theta = {{params.theta}}^o$ with respect to the horizontal, and
+  an initial velocity $v_0 = {{params.v0}} \rm\ m/s$, as illustrated in the figure below.
+</p>
+
+<p>
+  <pl-drawing gradable="false" grid-size="0"  width="300" height=300>
+      <pl-drawing-initial>
+          <pl-rectangle x1=20 y1=180 width="40" height="240" color="brown"></pl-rectangle>
+          <pl-circle x1=40 y1=50 radius="10" color="blue"></pl-circle>
+          <pl-vector x1=40 y1=50 angle={{params.theta}} width="80" label="v_0"></pl-vector>
+          <pl-arc-dimensions x1=40 y1=50 radius="40" start-angle="0" end-angle={{params.theta}} label="\\theta" offsetx="10" offsety="5" start-support-line="true"></pl-arc-dimensions>
+          <pl-dimensions x1="40" y1="300" x2="40"  y2="50" dim-offset="200" end-support-line="true" label="h" ></pl-dimensions>
+          <pl-dimensions x1="40" y1="200" x2="100"  y2="200"  label="d" ></pl-dimensions>
+      </pl-drawing-initial>
+  </pl-drawing>
+</p>
+
+<p>
+ {{params.question_text}} Assume the acceleration due to gravity is $g=9.8 \rm\ m/s^2$.
+</p>
+
+</pl-question-panel>
+
+<pl-multiple-choice answers-name="t" none-of-the-above={{params.none}}>
+  <pl-answer correct="true" >{{params.t_c}}</pl-answer>
+  <pl-answer correct="false">{{params.t_x1}}</pl-answer>
+  <pl-answer correct="false">{{params.t_x2}}</pl-answer>
+  <pl-answer correct="false">{{params.t_x3}}</pl-answer>
+  <pl-answer correct="false">{{params.t_x4}}</pl-answer>
+</pl-multiple-choice>

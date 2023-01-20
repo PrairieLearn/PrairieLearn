@@ -1,5 +1,5 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "News Item Info",
     "description": "Info files for news items.",
     "type": "object",
@@ -10,6 +10,10 @@
         "visible_to_students"
     ],
     "properties": {
+        "comment": {
+            "description": "Arbitrary comment for reference purposes.",
+            "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+        },
         "uuid": {
             "description": "Unique identifier (UUID v4).",
             "type": "string",

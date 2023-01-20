@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <%- include('../partials/head'); %>
-    <script src="/javascripts/lodash.min.js"></script>
-    <script src="/javascripts/d3.min.js"></script>
-    <script src="/localscripts/histogram.js"></script>
-    <script src="/localscripts/scatter.js"></script>
-    <script src="/localscripts/parallel_histograms.js"></script>
+    <%- include('../partials/head', {pageTitle: 'Statistics'}); %>
+    <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('d3/dist/d3.min.js') %>"></script>
+    <script src="<%= asset_path('localscripts/histogram.js') %>"></script>
+    <script src="<%= asset_path('localscripts/scatter.js') %>"></script>
+    <script src="<%= asset_path('localscripts/parallel_histograms.js') %>"></script>
   </head>
   <body>
     <script>
@@ -16,21 +16,18 @@
     </script>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
-      <%- include('../partials/instructorAssessmentTabs'); %>
-
-      <!-- ###################################################################### -->
-      <!-- ###################################################################### -->
+      <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_set.name %> <%= assessment.number %>: Score statistics
         </div>
-        <% if (assessment_stat.number > 0) { %>
+        <% if (assessment.score_stat_number > 0) { %>
         <div class="card-body">
           <div id="scoreHist" class="scoreHistogram"></div>
           <script>
             $(function() {
-                var data = [<%= assessment_stat.score_hist %>];
+                var data = [<%= assessment.score_stat_hist %>];
                 var xgrid = _.range(0, 110, 10);
                 var options = {
                     ymin: 0,
@@ -45,14 +42,14 @@
         <div class="table-responsive">
           <table class="table table-sm table-hover">
             <tbody>
-              <tr><td>Number of students</td><td><%= assessment_stat.number %></td></tr>
-              <tr><td>Mean score</td><td><%= Math.round(assessment_stat.mean) %>%</td></tr>
-              <tr><td>Standard deviation</td><td><%= Math.round(assessment_stat.std) %>%</td></tr>
-              <tr><td>Median score</td><td><%= Math.round(assessment_stat.median) %>%</td></tr>
-              <tr><td>Minimum score</td><td><%= Math.round(assessment_stat.min) %>%</td></tr>
-              <tr><td>Maximum score</td><td><%= Math.round(assessment_stat.max) %>%</td></tr>
-              <tr><td>Number of 0%</td><td><%= assessment_stat.n_zero %> (<%= Math.round(assessment_stat.n_zero_perc) %>% of class)</td></tr>
-              <tr><td>Number of 100%</td><td><%= assessment_stat.n_hundred %> (<%= Math.round(assessment_stat.n_hundred_perc) %>% of class)</td></tr>
+              <tr><td>Number of students</td><td><%= assessment.score_stat_number %></td></tr>
+              <tr><td>Mean score</td><td><%= Math.round(assessment.score_stat_mean) %>%</td></tr>
+              <tr><td>Standard deviation</td><td><%= Math.round(assessment.score_stat_std) %>%</td></tr>
+              <tr><td>Median score</td><td><%= Math.round(assessment.score_stat_median) %>%</td></tr>
+              <tr><td>Minimum score</td><td><%= Math.round(assessment.score_stat_min) %>%</td></tr>
+              <tr><td>Maximum score</td><td><%= Math.round(assessment.score_stat_max) %>%</td></tr>
+              <tr><td>Number of 0%</td><td><%= assessment.score_stat_n_zero %> (<%= Math.round(assessment.score_stat_n_zero_perc) %>% of class)</td></tr>
+              <tr><td>Number of 100%</td><td><%= assessment.score_stat_n_hundred %> (<%= Math.round(assessment.score_stat_n_hundred_perc) %>% of class)</td></tr>
             </tbody>
           </table>
         </div>
@@ -71,15 +68,12 @@
         <% }%>
       </div>
 
-      <!-- ###################################################################### -->
-      <!-- ###################################################################### -->
-
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_set.name %> <%= assessment.number %>: Duration statistics
         </div>
 
-        <% if (assessment_stat.number > 0) { %>
+        <% if (assessment.score_stat_number > 0) { %>
         <div class="card-body">
           <div id="durationHist" class="histogram"></div>
           <script>
@@ -122,15 +116,12 @@
         <% }%>
       </div>
 
-      <!-- ###################################################################### -->
-      <!-- ###################################################################### -->
-
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_set.name %> <%= assessment.number %>: Duration versus score
         </div>
 
-        <% if (assessment_stat.number > 0) { %>
+        <% if (assessment.score_stat_number > 0) { %>
         <div class="card-body">
           <div id="durationScoreScatter" class="scatter"></div>
           <script>
@@ -164,15 +155,12 @@
         <% }%>
       </div>
 
-      <!-- ###################################################################### -->
-      <!-- ###################################################################### -->
-
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_set.name %> <%= assessment.number %>: Score statistics by date
         </div>
 
-        <% if (assessment_stat.number > 0) { %>
+        <% if (assessment.score_stat_number > 0) { %>
         <div class="card-body">
           <div id="scoreHistsByDateDiv" style="overflow-x: scroll; overflow-y: hidden;"></div>
           <script>

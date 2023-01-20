@@ -1,0 +1,32 @@
+{
+    "uuid": "13D012E5-9C66-4092-BA1A-0445919CB0C3",
+    "type": "Homework",
+    "title": "Questions from the gallery at https://www.prairielearn.com",
+    "set": "Collection",
+    "number": "1",
+    "zones": [
+        {
+            "title": "Checkbox Input",
+            "questions": [
+                {"id": "gallery/checkbox/simple","points": 1},
+                {"id": "gallery/checkbox/complex","points": 1}
+            ]
+        },
+        {
+            "title": "Include Figure",
+            "questions": [
+                {"id": "gallery/includeFigure/simple","points": 1},
+                {"id": "gallery/includeFigure/complex","points": 1}
+            ]
+        },
+        {
+            "title": "Multiple-choice Input",
+            "questions": [
+                {"id": "gallery/multipleChoice/simple","points": 1},
+                {"id": "gallery/multipleChoice/complex","points": 1},
+                {"id": "gallery/multipleChoice/advanced","points": 1}
+            ]
+        }
+    ],
+    "text": "<p><strong>Comments about this assessment:</strong> </p><p> This assessment includes examples from the question gallery at <a href=https://www.prairielearn.com/gallery>https://www.prairielearn.com</a>.</p>."
+}

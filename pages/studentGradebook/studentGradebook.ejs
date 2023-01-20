@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
   </head>
@@ -12,8 +12,6 @@
     <%- include('../partials/navbar', {navPage: 'gradebook'}); %>
     <div id="content" class="container">
 
-      <%- include('../partials/advertisement'); %>
-      
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">Gradebook</div>
 
@@ -44,10 +42,17 @@
               </td>
               <td class="align-middle">
                 <%= row.title %>
+                <% if (row.assessment_group_work) { %>
+                  <i class="fas fa-users" aria-label="Group work"></i>
+                <% } %>
               </td>
               <td class="text-center align-middle">
                 <% if (!row.multiple_instance_header) { %>
+                <% if(!row.show_closed_assessment_score) { %>
+                Score not shown
+                <% } else { %>
                 <%- include('../partials/scorebar', {score: row.assessment_instance_score_perc}) %>
+                <% } %>
                 <% } %>
               </td>
             </tr>

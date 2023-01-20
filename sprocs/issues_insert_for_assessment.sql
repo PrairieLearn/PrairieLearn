@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS issues_insert_for_assessment(bigint,text,text,boolean,jsonb,jsonb,bigint,bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     issues_insert_for_assessment(
         assessment_id bigint,
         student_message text,

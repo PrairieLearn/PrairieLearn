@@ -1,5 +1,5 @@
 {
-    "$schema": "http://json-schema.org/draft-04/schema#",
+    "$schema": "http://json-schema.org/draft-07/schema#",
     "title": "Course instance information",
     "description": "The specification file for a course instance.",
     "type": "object",
@@ -8,6 +8,10 @@
         "longName"
     ],
     "properties": {
+        "comment": {
+            "description": "Arbitrary comment for reference purposes.",
+            "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+        },
         "uuid": {
             "description": "Unique identifier (UUID v4).",
             "type": "string",
@@ -27,8 +31,14 @@
             "type": "boolean",
             "default": true
         },
+        "hideInEnrollPage": {
+            "description": "If set to true, hides the course instance in the enrollment page, so that only direct links to the course can be used for enrollment.",
+            "type": "boolean",
+            "default": false
+        },
         "userRoles": {
-            "description": "Special roles for specific users (anyone not listed is assumed to be a 'Student').",
+            "description": "DEPRECATED -- do not use.",
+            "deprecated": true,
             "type": "object",
             "patternProperties": {
                 ".+": {
@@ -48,8 +58,13 @@
                 "description": "An access rule that permits people to access this course instance. All restrictions present in the rule must be satisfied for the rule to allow access.",
                 "type": "object",
                 "properties": {
+                    "comment": {
+                        "description": "Arbitrary comment for reference purposes.",
+                        "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
+                    },
                     "role": {
-                        "description": "The minimum user role required for access.",
+                        "description": "DEPRECATED -- do not use.",
+                        "deprecated": true,
                         "enum": [
                             "Student",
                             "TA",
@@ -78,6 +93,15 @@
                     }
                 }
             }
+        },
+        "groupAssessmentsBy": {
+            "description": "Determines which assessment category will be used to group assessments on the student assessments page.",
+            "type": "string",
+            "default": "Set",
+            "enum": [
+                "Set",
+                "Module"
+            ]
         }
     }
 }

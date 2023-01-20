@@ -1,17 +1,21 @@
 -- BLOCK select
 SELECT
     to_jsonb(enum_range(
-        enum_first(null::enum_role),
-        $authn_role
-    )) AS available_roles,
+        enum_first(null::enum_course_role),
+        $authn_course_role
+    )) AS available_course_roles,
+    to_jsonb(enum_range(
+        enum_first(null::enum_course_instance_role),
+        $authn_course_instance_role
+    )) AS available_course_instance_roles,
     (
         SELECT
             jsonb_agg(u.uid ORDER BY u.uid)
         FROM
             users AS u
-            JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = $course_instance_id)
+            JOIN course_permissions AS cp ON (cp.user_id = u.user_id) AND (cp.course_id = $course_id)
         WHERE
-            e.role <= $authn_role
+            cp.course_role <= $authn_course_role
     ) AS available_uids;
 
 -- BLOCK enroll

@@ -1,0 +1,24 @@
+<pl-question-panel>
+<p>
+  A cannon ball with mass $m ={{params.m}}\rm\ kg$ is fired downward from a cliff at a height 
+  $h = {{params.h}}\rm\ m$, at an angle  $\theta = {{params.theta}}^o$ with respect to the horizontal, and
+  an initial velocity $v_0 = {{params.v0}} \rm\ m/s$, as illustrated in the figure below.
+</p>
+
+<p><pl-figure file-name="image.png" directory="clientFilesQuestion" width="300"></pl-figure></p>
+
+<p>
+  Suppose the ball hits the ground a distance $d = {{params.d}} \rm\ m$ from the base of the cliff. 
+  How long is the ball in the air?
+  Assume the acceleration due to gravity is $g=9.8 \rm\ m/s^2$.
+</p>
+
+</pl-question-panel>
+
+<pl-multiple-choice answers-name="t" none-of-the-above={{params.none}}>
+  <pl-answer correct="true" >$t = {{params.t_c}}\rm\  s$</pl-answer>
+  <pl-answer correct="false">$t = {{params.t_x1}}\rm\ s$</pl-answer>
+  <pl-answer correct="false">$t = {{params.t_x2}}\rm\ s$</pl-answer>
+  <pl-answer correct="false">$t = {{params.t_x3}}\rm\ s$</pl-answer>
+  <pl-answer correct="false">$t = {{params.t_x4}}\rm\ s$</pl-answer>
+</pl-multiple-choice>

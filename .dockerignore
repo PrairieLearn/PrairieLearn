@@ -1,34 +1,53 @@
-# blacklist all
+# denylist all
 *
 
-# whitelist things to copy
+# allowlist things to copy
+!.editorconfig
 !.eslintignore
-!.eslintrc.json
+!.eslintrc.js
+!.htmlhintrc
+!.mocharc.js
+!.prettierignore
+!.prettierrc.json
+!.yarnrc.yml
+!tsconfig.json
+!turbo.json
+!.yarn/
+.yarn/cache
+.yarn/install-state.gz
+!pyproject.toml
 !admin_queries/
 !api/
 !cron/
 !database/
 !docs/
 !docker/
+!ee/
 !elements/
 !exampleCourse/
-!testCourse/
+!executor.js
+!grader_host/
 !lib/
+!Makefile
 !middlewares/
 !migrations/
 !models/
 !news_items/
 !package.json
-!package-lock.json
+!yarn.lock
 !pages/
+!packages/
+!prairielib/
 !public/
+!python/
 !question-servers/
 !requirements.txt
 !server.js
-!setup.cfg
 !schemas/
 !sprocs/
 !sync/
+!testCourse/
 !tests/
 !tools/
 !webhooks/
+!workspace_host/

@@ -1,0 +1,17 @@
+{
+    "uuid": "ad089d0e-44b8-4ae7-add4-26bcd1474015",
+    "type": "v3",
+    "title": "Autograder demo: Hello World in Java",
+    "topic": "Autograder",
+    "tags": [
+        "burcu", "code"
+    ],
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-java",
+        "timeout": 100,
+        "entrypoint": "autograder.sh"
+    }
+}

@@ -13,10 +13,10 @@
     <span id="pl-number-input-{{uuid}}" class="input-group pl-number-input">
         {{#label}}
         <span class="input-group-prepend">
-            <span class="input-group-text">{{label}}</span>
+            <span class="input-group-text">{{{label}}}</span>
         </span>
         {{/label}}
-        <input name="{{name}}" type="text" class="form-control {{^display_append_span}}rounded-right{{/display_append_span}} pl-number-input-input" size="{{size}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
+        <input name="{{name}}" autocomplete="off" type="text" class="form-control {{^display_append_span}}rounded-right{{/display_append_span}} pl-number-input-input" size="{{size}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
 
           <span class="input-group-append">
             {{#suffix}}<span class="input-group-text {{^show_info}}rounded-right{{/show_info}}">{{suffix}}</span>{{/suffix}}
@@ -61,7 +61,7 @@
 <span id="pl-number-input-submission-{{uuid}}">
 
 {{#parse_error}}
-    {{#label}}<span>{{label}}</span>{{/label}}
+    {{#label}}<span>{{{label}}}</span>{{/label}}
     {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
 
     <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
@@ -70,7 +70,7 @@
     </a>
 {{/parse_error}}
 {{#missing_input}}
-    {{#label}}<span>{{label}}</span>{{/label}}
+    {{#label}}<span>{{{label}}}</span>{{/label}}
 
     <span class="badge text-dark badge-missing-input"><i class="fa fa-question-circle" aria-hidden="true"></i> Missing Input</span>
 
@@ -83,7 +83,7 @@
 {{/error}}
 {{^error}}
 
-{{#label}}<span>{{label}}</span>{{/label}}
+{{#label}}<span>{{{label}}}</span>{{/label}}
 <samp>{{a_sub}}</samp>
 {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{#correct}}
@@ -116,7 +116,7 @@
 {{/submission}}
 
 {{#answer}}
-{{#label}}<span>{{label}}</span>{{/label}}
+{{#label}}<span>{{{label}}}</span>{{/label}}
 <samp>{{a_tru}}</samp>
 {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/answer}}
@@ -130,7 +130,7 @@ Your answer must be either a real number between <code>-1e308</code> and <code>1
 {{^allow_complex}}
 Your answer must be a real number between <code>-1e308</code> and <code>1e308</code> (i.e., it must be interpretable as a double-precision floating-point number).
 {{/allow_complex}}
-No symbolic expressions (those that involve{{^allow_fractions}} fractions,{{/allow_fractions}} square roots, variables, etc.) will be accepted. Scientific notation is accepted (e.g., <code>1.2e03</code>). {{#allow_fractions}} You may express your answer as a fraction of two numbers. {{/allow_fractions}} {{#relabs}}<p>Your answer must be accurate to within relative tolerance <code>{{rtol}}</code> and absolute tolerance <code>{{atol}}</code>.</p>{{/relabs}}{{#sigfig}}<p>Your answer must be accurate to {{digits}} significant figures. This means (for example) that if the true answer is <code>1.234</code>, then the submitted answer must be between <code>1.234 - {{comparison_eps}}</code> and <code>1.234 + {{comparison_eps}}</code> to be counted correct.</p>{{/sigfig}}{{#decdig}}<p>Your answer must be accurate to {{digits}} digits after the decimal. This means (for example) that if the true answer is <code>1.234</code>, then the submitted answer must be between <code>1.234 - {{comparison_eps}}</code> and <code>1.234 + {{comparison_eps}}</code> to be counted correct.</p>{{/decdig}}
+No symbolic expressions (those that involve{{^allow_fractions}} fractions,{{/allow_fractions}} square roots, variables, etc.) will be accepted. Scientific notation is accepted (e.g., <code>1.2e03</code>). {{#allow_fractions}} You may express your answer as a fraction of two numbers. {{/allow_fractions}} {{#relabs}}<p>Your answer must be accurate to within relative tolerance <code>{{rtol}}</code> and absolute tolerance <code>{{atol}}</code>.</p>{{/relabs}}{{#sigfig}}<p>Your answer must be accurate to {{digits}} significant figure{{#digits_plural}}s{{/digits_plural}}. This means (for example) that if the true answer is <code>1.234</code>, then the submitted answer must be between <code>1.234 - {{comparison_eps}}</code> and <code>1.234 + {{comparison_eps}}</code> to be counted correct.</p>{{/sigfig}}{{#decdig}}<p>Your answer must be accurate to {{digits}} digit{{#digits_plural}}s{{/digits_plural}} after the decimal. This means (for example) that if the true answer is <code>1.234</code>, then the submitted answer must be between <code>1.234 - {{comparison_eps}}</code> and <code>1.234 + {{comparison_eps}}</code> to be counted correct.</p>{{/decdig}}
 {{/show_info}}
 {{#show_correct}}
 The correct answer used for grading is <samp>{{a_tru}}</samp>
@@ -138,7 +138,7 @@ The correct answer used for grading is <samp>{{a_tru}}</samp>
 {{/format}}
 
 {{#shortformat}}
-number {{#relabs}}(rtol={{rtol}}, atol={{atol}}){{/relabs}}{{#sigfig}}({{digits}} significant figures){{/sigfig}}{{#decdig}}({{digits}} digits after decimal){{/decdig}}
+number {{#relabs}}(rtol={{rtol}}, atol={{atol}}){{/relabs}}{{#sigfig}}({{digits}} significant figure{{#digits_plural}}s{{/digits_plural}}){{/sigfig}}{{#decdig}}({{digits}} digit{{#digits_plural}}s{{/digits_plural}} after decimal){{/decdig}}
 {{/shortformat}}
 
 {{#format_error}}

@@ -3,7 +3,7 @@
   <div class="alert alert-danger"><strong>Error:</strong> {{.}}</div>
   {{/errors}}
   <div class="file-upload-status">
-    <div class="card">
+    <div class="card mb-2">
       <div class="card-header">Files</div>
       {{#has_files}}
       <ul class="list-group list-group-flush">
@@ -16,13 +16,18 @@
               <p class="file-status">uploaded</p>
             </div>
             <div class="file-status-container-right">
+              <a download="{{name}}" class="btn btn-outline-secondary btn-sm"
+                 onclick="event.stopPropagation();"
+                 href="data:application/octet-stream;base64,{{contentsb64}}">
+                 Download
+              </a>
               <button type="button" class="btn btn-outline-secondary btn-sm file-preview-button">
                 <i class="file-preview-icon fa fa-angle-down"></i>
               </button>
             </div>
           </div>
           <div class="file-preview collapse" id="file-preview-contents-{{uuid}}-{{index}}">
-            <pre class="bg-dark text-white rounded p-3 mb-0"><code>{{contents}}</code></pre>
+            <pre class="bg-dark text-white rounded p-3 mb-0"><img class="w-100" src="data:application/octet-stream;base64,{{contentsb64}}" onerror="$(this).hide();$(this).parent().find('code').removeClass('d-none');"><code class="d-none">{{contents}}</code></pre>
           </div>
         </li>
         {{/files}}

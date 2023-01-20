@@ -5,6 +5,7 @@ columns
     date: timestamp with time zone default CURRENT_TIMESTAMP
     duration: interval default '00:00:00'::interval
     first_duration: interval
+    group_id: bigint
     id: bigint not null default nextval('variants_id_seq'::regclass)
     instance_question_id: bigint
     num_tries: integer not null default 0
@@ -15,20 +16,24 @@ columns
     qiid: text
     question_id: bigint not null
     true_answer: jsonb
-    user_id: bigint not null
+    user_id: bigint
     variant_seed: text
+    workspace_id: bigint
 
 indexes
     variants_pkey: PRIMARY KEY (id) USING btree (id)
     variants_instance_question_id_number_key: UNIQUE (instance_question_id, number) USING btree (instance_question_id, number)
     variants_qiid_key: UNIQUE (qiid) USING btree (qiid)
+    variants_workspace_id_key: USING btree (workspace_id)
 
 foreign-key constraints
     variants_authn_user_id_fkey: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     variants_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    variants_group_id_fkey: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants_instance_question_id_fkey: FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    variants_workspace_id_fkey: FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
     current_pages: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE

@@ -1,0 +1,99 @@
+<pl-question-panel>
+<markdown>
+
+In this question, we'll assume that there's a graphics library available that will allow us to draw lines on the screen. Such a library is not available with the system that we’re using but similar libraries are available on other systems, so the problems posed here are not unreasonable.
+
+Assume the graphics library function is available to you:
+
+```c
+/* draws a line from (x_start, y_start) to (x_end, y_end) */
+void drawLine(int x_start, int y_start, int x_end, int y_end);
+```
+
+Your task is to write a function `drawTri` that draws right-angled, isosceles triangle on the screen where the parameters are:
+
+- `side_length`: the equal length of the two shorter sides,
+- `x` and `y`: the (coordinate) location of the upper vertex
+
+Sample output are as follows (in red only):
+
+</markdown>
+
+<blockquote>
+<markdown>
+**Sample Output**
+
+Function call: `drawTri(2, 0, 4);`
+
+<pl-drawing grid-size="0" width=400 height=400>
+  <pl-drawing-initial>
+    <pl-axes origin='{"x": 200, "y": 200}'
+             supporting-lines='[{"y":120}]'
+             grid-label='[ {"axis": "x", "pos": 60,  "lab": "2" },
+                       {"axis": "y", "pos": 120, "lab": "4" },
+                       {"axis": "y", "pos": 60, "lab": "2" } ]' >
+    </pl-axes>
+    <pl-line x1="200" y1="80" x2="200" y2="140" stroke-color="#f00" stroke-width="5"></pl-line>
+    <pl-line x1="200" y1="140" x2="260" y2="140" stroke-color="#f00" stroke-width="5"></pl-line>
+    <pl-line x1="260" y1="140" x2="200" y2="80" stroke-color="#f00" stroke-width="5"></pl-line>
+  </pl-drawing-initial>
+</pl-drawing>
+
+---
+
+Function call: `drawTri(3, 0, 0);`
+
+<pl-drawing grid-size="0" width=400 height=400>
+  <pl-drawing-initial>
+    <pl-axes origin='{"x": 200, "y": 200}'
+             grid-label='[ {"axis": "x", "pos": 90,  "lab": "3" },
+                       {"axis": "y", "pos": -90, "lab": "-3" } ]' >
+    </pl-axes>
+    <pl-line x1="200" y1="200" x2="200" y2="290" stroke-color="#f00" stroke-width="5"></pl-line>
+    <pl-line x1="200" y1="290" x2="290" y2="290" stroke-color="#f00" stroke-width="5"></pl-line>
+    <pl-line x1="290" y1="290" x2="200" y2="200" stroke-color="#f00" stroke-width="5"></pl-line>
+  </pl-drawing-initial>
+</pl-drawing>
+
+---
+
+Function call: `drawTri(1, 1, 1);`
+
+<pl-drawing grid-size="0" width=400 height=400>
+  <pl-drawing-initial>
+    <pl-axes origin='{"x": 200, "y": 200}'
+             supporting-lines='[{"x":30},{"y":30}]'
+             grid-label='[ {"axis": "x", "pos": 30,  "lab": "1" },
+                          {"axis": "x", "pos": 60,  "lab": "2" },
+                       {"axis": "y", "pos": 30, "lab": "1" } ]' >
+    </pl-axes>
+    <pl-line x1="230" y1="200" x2="260" y2="200" stroke-color="#f00" stroke-width="5"></pl-line>
+    <pl-line x1="260" y1="200" x2="230" y2="170" stroke-color="#f00" stroke-width="5"></pl-line>
+    <pl-line x1="230" y1="170" x2="230" y2="200" stroke-color="#f00" stroke-width="5"></pl-line>
+  </pl-drawing-initial>
+</pl-drawing>
+
+
+</markdown>
+</blockquote>
+
+<markdown>
+**Note**: Your function is not expected to draw the axes and the dashed supporting-lines!
+</markdown>
+
+<pl-file-editor source-file-name="start.c" file-name="drawTri.c" ace-mode="ace/mode/c_cpp">
+</pl-file-editor>
+
+</pl-question-panel>
+
+<pl-answer-panel>
+<details class="card">
+<summary class="card-header">Click to reveal</summary>
+<pl-code language="c" source-file-name="solution.c"></pl-code>
+</details>
+</pl-answer-panel>
+
+<pl-submission-panel>
+  <pl-external-grader-results></pl-external-grader-results>
+  <pl-file-preview></pl-file-preview>
+</pl-submission-panel>

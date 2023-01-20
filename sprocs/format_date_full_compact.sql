@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS format_date_full_compact(timestamp with time zone);
-DROP FUNCTION IF EXISTS format_date_full_compact(timestamp with time zone,text);
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     format_date_full_compact (
         d timestamp with time zone,
         display_timezone text
