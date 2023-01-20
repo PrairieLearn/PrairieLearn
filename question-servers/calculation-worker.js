@@ -1,6 +1,12 @@
 // @ts-check
-// This is meant to be invoked from `./question-servers/calculation.js`. It
-// serves to isolate code from the main process that's handling requests.
+
+// This is meant to be invoked from a Python code caller via `lib/code-caller`.
+// This allows us to isolate code from the main process that's handling requests,
+// and to execute code inside Docker containers in environments where
+// containerized code execution is enabled.
+//
+// It's important that nothing in this file relies on config or other global
+// server state, as this won't be executed in the main process.
 
 const path = require('path');
 const readline = require('readline');
@@ -33,8 +39,7 @@ async function loadServer(questionServerPath, coursePath) {
         if (server === undefined) {
           reject(new Error(`Could not load ${path.basename(questionServerPath)}`));
         }
-        // Apparently we need to use `setTimeout` to "get out of requireJS error handling".
-        // TODO: is this actually necessary?
+        // This was added as a workaround for requireJS error handling weirdness.
         setTimeout(() => resolve(server), 0);
       },
       (err) => {
