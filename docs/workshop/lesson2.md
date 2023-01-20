@@ -129,7 +129,7 @@ Before you start creating your assessments, make sure you have at least 4 questi
 
 ### Configuration 4: Synchronous exam using PrairieTest
 
-When using [PrairieTest](https://www.prairietest.org/pt/docs/staff) to schedule and deliver PrairieLearn exams, you need to using the following configuration:
+When using [PrairieTest](https://us.prairietest.com/pt/docs/staff) to schedule and deliver PrairieLearn exams, you need to using the following configuration:
 
 - Start from `Configuration 2`
 - Remove `startDate` and `endDate` from `allowAccess`. Instead use:
