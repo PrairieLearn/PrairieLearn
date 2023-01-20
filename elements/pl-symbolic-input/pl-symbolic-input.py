@@ -25,7 +25,6 @@ ALLOW_COMPLEX_DEFAULT = False
 IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT = "i"
 SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
-PLACEHOLDER_TEXT_THRESHOLD = 15  # Minimum size to show the placeholder text
 ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = "0"
 PLACEHOLDER_DEFAULT = "symbolic expression"
@@ -118,7 +117,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             ),
             "uuid": pl.get_uuid(),
             "allow_complex": allow_complex,
-            "show_placeholder": size >= PLACEHOLDER_TEXT_THRESHOLD,
         }
 
         score = data["partial_scores"].get(name, {"score": None}).get("score", None)

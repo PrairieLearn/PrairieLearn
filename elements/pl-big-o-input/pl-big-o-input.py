@@ -35,7 +35,6 @@ GRADE_FUNCTION_DICT: Dict[BigOType, bou.BigOGradingFunctionT] = {
 
 VARIABLES_DEFAULT = ""
 SIZE_DEFAULT = 35
-PLACEHOLDER_TEXT_THRESHOLD = 20
 SHOW_HELP_TEXT_DEFAULT = True
 WEIGHT_DEFAULT = 1
 DISPLAY_DEFAULT = DisplayType.INLINE
@@ -133,7 +132,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             ),
             "uuid": pl.get_uuid(),
             display.value: True,
-            "show_placeholder": size >= PLACEHOLDER_TEXT_THRESHOLD,
             "placeholder": placeholder,
             "raw_submitted_answer": raw_submitted_answer,
             "type": bigo_type,

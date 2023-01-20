@@ -58,12 +58,13 @@
     <div class="card-body">
         <pl-question-panel>
             <p>The size of the input box can be set with the attribute <code>size</code>, and the attribute
-                <code>show-help-text="false"</code> removes the button for the help popup. This box below has
+                <code>show-help-text="false"</code> removes the button for the help popup.
+                The attribute <code>placeholder</code> can be used to set the placeholder text. This box below has
                 <code>size=5</code> instead of the default <code>size=35</code>.
             </p>
             <p>Write an expression for the first derivative of $\frac{1}{2} x^2$.</p>
         </pl-question-panel>
-        <pl-symbolic-input answers-name="dx" variables="x" size="5" show-help-text="false"
+        <pl-symbolic-input answers-name="dx" variables="x" size="5" show-help-text="false" placeholder=""
             label="$\dfrac{d}{dx} \frac{1}{2}x^2 =$"></pl-symbolic-input>
     </div>
 </div>
