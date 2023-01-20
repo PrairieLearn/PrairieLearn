@@ -1,10 +1,10 @@
 chevron==0.14.0
 flake8==5.0.4
+flake8-quotes==3.3.1
 lxml==4.9.1
 matplotlib==3.6.2
 networkx==2.8.8
 numpy==1.23.5
-Pint==0.4.1
 pandas==1.5.2
 pycryptodome==3.16.0
 pyquaternion==0.9.9
