@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Any, Callable, Dict, Optional, Tuple, cast
 
 import lxml.html
+import networkx as nx
 import numpy as np
 import pandas as pd
 import prairielearn as pl
@@ -44,6 +45,7 @@ def test_encoding_legacy(df: pd.DataFrame) -> None:
     reserialized_dataframe = cast(pd.DataFrame, pl.from_json(pl.to_json(df)))
     pd.testing.assert_frame_equal(df, reserialized_dataframe)
 
+
 @pytest.mark.parametrize(
     "networkx_graph",
     [
@@ -69,6 +71,7 @@ def test_networkx_serialization(networkx_graph: Any) -> None:
 
     assert nx.utils.nodes_equal(networkx_graph.nodes(), decoded_json_object.nodes())
     assert nx.utils.edges_equal(networkx_graph.edges(), decoded_json_object.edges())
+
 
 def test_inner_html() -> None:
     e = lxml.html.fragment_fromstring("<div>test</div>")
