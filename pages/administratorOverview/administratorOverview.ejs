@@ -2,29 +2,6 @@
 <html lang="en">
   <head>
     <%- include('../partials/head'); %>
-    <script src="<%= node_modules_asset_path('chart.js/dist/chart.umd.js') %>"></script>
-    <style>
-    canvas {
-      border: none;
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-    .chart-container {
-      width: 100%;
-    }
-    .chart-container:not(:last-child) {
-      margin-bottom: 2rem;
-    }
-    @media (min-width: 768px) {
-      .chart-container {
-        width: 50%;
-      }
-      .chart-container:not(:last-child) {
-        margin-bottom: 0;
-      }
-    }
-    </style>
   </head>
   <body>
     <script>
@@ -44,6 +21,7 @@
               <tr>
                 <th>Key</th>
                 <th>Value</th>
+              </tr>
             </thead>
             <tbody>
               <% configs.forEach(function(config, i) { %>
@@ -85,6 +63,7 @@
                 <th>UID</th>
                 <th>Name</th>
                 <th></th>
+              </tr>
             </thead>
             <tbody>
               <% administrator_users.forEach(function(administrator_user, i) { %>
@@ -129,6 +108,7 @@
                 <th>End date</th>
                 <th>Location</th>
                 <th>Purpose</th>
+              </tr>
             </thead>
             <tbody>
               <% networks.forEach(function(network, i) { %>
@@ -164,6 +144,7 @@
                 <th>Long name</th>
                 <th>UID regexp</th>
                 <th>Authn providers</th>
+              </tr>
             </thead>
             <tbody>
               <% institutions.forEach(function(inst, i) { %>
@@ -232,6 +213,7 @@
                 <th>Repository</th>
                 <th>Branch</th>
                 <th></th>
+              </tr>
             </thead>
             <tbody>
               <% courses.forEach(function(course, i) { %>
@@ -279,18 +261,6 @@
           Question render cache
         </div>
         <div class="card-body">
-          <div class="h4 mb-0">Cache hit rates</div>
-          <div class="small text-muted">For last 24 hours</div>
-          <div class="charts mt-2">
-            <div class="chart-container d-inline-flex flex-column align-items-center">
-              <canvas id="question-cache-hit-rate-chart"></canvas>
-              <span class="mt-2">Average hit rate per question<span>
-            </div><div class="chart-container d-inline-flex flex-column align-items-center">
-              <canvas id="panel-cache-hit-rate-chart"></canvas>
-              <span class="mt-2">Total panel hit rate</span>
-            </div>
-          </div>
-          <hr>
           <p>
             Each panel rendered for a question is cached by default.
             This button will invalidate all entries in the cache.
@@ -305,63 +275,8 @@
               <button id="cancel-invalidate-render-cache" type="button" class="btn btn-secondary">Cancel</button>
             </div>
           </form>
-          <script>
-          $(function() {
-            var invalidateButton = $('#invalidate-render-cache');
-            var confirmInvalidateContainer = $('#confirm-invalidate-cache-container');
-            var cancelInvalidateButton = $('#cancel-invalidate-render-cache');
-            invalidateButton.click(function() {
-              confirmInvalidateContainer.show();
-              invalidateButton.hide();
-            });
-            cancelInvalidateButton.click(function() {
-              invalidateButton.show();
-              confirmInvalidateContainer.hide();
-            });
-            var questionCacheHitRate = <%= question_render_cache_stats.question_cache_hit_rate ? question_render_cache_stats.question_cache_hit_rate : 0 %>;
-            var panelCacheHitRate = <%= question_render_cache_stats.panel_cache_hit_rate ? question_render_cache_stats.panel_cache_hit_rate : 0 %>;
-            // This draws the percentage in the middle of the pie
-            Chart.register({
-              id: 'draw-percentage',
-              beforeDraw: function(chart) {
-                var { width, height, ctx } = chart;
-                ctx.restore();
-                var fontSize = (height / 160).toFixed(2);
-                ctx.font = fontSize + "em sans-serif";
-                ctx.textBaseline = "middle";
-                var text = Number(chart.config.data.datasets[0].data[0]).toFixed(2) + '%',
-                textX = Math.round((width - ctx.measureText(text).width) / 2),
-                textY = height / 2;
-                ctx.fillText(text, textX, textY);
-                ctx.save();
-              }
-            });
-            function buildChart(ctx, hitRate) {
-              var roundedHitRate = Math.round(hitRate * 10000) / 100;
-              return new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                  datasets: [{
-                    data: [roundedHitRate, 100 - roundedHitRate],
-                    backgroundColor: ['green', 'red'],
-                  }],
-                  labels: ['Cache hit %', 'Cache miss %'],
-                },
-                options: {
-                  cutout: '70%',
-                  legend: {
-                    display: false,
-                  },
-                }
-              });
-            };
-            buildChart($("#question-cache-hit-rate-chart"), questionCacheHitRate);
-            buildChart($("#panel-cache-hit-rate-chart"), panelCacheHitRate);
-          });
-          </script>
         </div>
       </div>
-
     </div>
   </body>
 </html>
