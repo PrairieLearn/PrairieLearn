@@ -17,8 +17,3 @@ SELECT
         WHERE
             cp.course_role <= $authn_course_role
     ) AS available_uids;
-
--- BLOCK enroll
-INSERT INTO enrollments (user_id, course_instance_id, role)
-VALUES ($user_id, $course_instance_id, 'Student')
-ON CONFLICT DO NOTHING;
