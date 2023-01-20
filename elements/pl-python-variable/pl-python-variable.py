@@ -84,7 +84,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if isinstance(var_out, pandas.DataFrame) and not force_text:
             return (
                 f'<pl-dataframe params-name="{varname}" show-header="{show_header}" show-index="{show_index}" '
-                f'show-dimensions="{show_dimensions}" show-python="False"></pl-dataframe>'
+                f'show-dimensions="{show_dimensions}" show-python="false"></pl-dataframe>'
             )
         else:
             var_string = repr(var_out)
