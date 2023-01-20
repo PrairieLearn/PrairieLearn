@@ -58,6 +58,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     prefix = pl.get_string_attrib(element, "prefix", PREFIX_DEFAULT)
     suffix = pl.get_string_attrib(element, "suffix", SUFFIX_DEFAULT)
 
+    # Pretty print parameters
+    indent = pl.get_integer_attrib(element, "indent", INDENT_DEFAULT)
+    depth = pl.get_integer_attrib(element, "depth", DEPTH_DEFAULT)
+    width = pl.get_integer_attrib(element, "width", WIDTH_DEFAULT)
+    compact = pl.get_boolean_attrib(element, "compact", COMPACT_DEFAULT)
+    sort_dicts = pl.get_boolean_attrib(element, "sort-dicts", SORT_DICTS_DEFAULT)
+
     # Legacy dataframe parameters
     force_text = pl.get_boolean_attrib(element, "text", TEXT_DEFAULT)
     show_header = pl.get_boolean_attrib(element, "show-header", SHOW_HEADER_DEFAULT)
@@ -65,13 +72,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     show_dimensions = pl.get_boolean_attrib(
         element, "show-dimensions", SHOW_DIMENSIONS_DEFAULT
     )
-
-    # Pretty print parameters
-    indent = pl.get_integer_attrib(element, "indent", INDENT_DEFAULT)
-    depth = pl.get_integer_attrib(element, "depth", DEPTH_DEFAULT)
-    width = pl.get_integer_attrib(element, "width", WIDTH_DEFAULT)
-    compact = pl.get_boolean_attrib(element, "compact", COMPACT_DEFAULT)
-    sort_dicts = pl.get_boolean_attrib(element, "sort-dicts", SORT_DICTS_DEFAULT)
 
     if varname not in data["params"]:
         raise KeyError(
