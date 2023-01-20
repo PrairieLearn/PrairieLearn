@@ -1,9 +1,9 @@
-__author__ = 'William Rusnack github.com/BebeSparkelSparkel linkedin.com/in/williamrusnack williamrusnack@gmail.com'
+__author__ = "William Rusnack github.com/BebeSparkelSparkel linkedin.com/in/williamrusnack williamrusnack@gmail.com"
 
 import math
 
 
-def to_precision(value, precision, notation='auto', filler='e'):
+def to_precision(value, precision, notation="auto", filler="e"):
     """
     converts a value to the specified notation and precision
     value - any type that can be converted to a float
@@ -19,23 +19,23 @@ def to_precision(value, precision, notation='auto', filler='e'):
     """
     value = float(value)
 
-    if notation == 'auto':
+    if notation == "auto":
         if -1000 < value < 1000:
             converter = std_notation
         else:
             converter = sci_notation
 
-    elif notation in ('sci', 'scientific'):
+    elif notation in ("sci", "scientific"):
         converter = sci_notation
 
-    elif notation in ('eng', 'engineering'):
+    elif notation in ("eng", "engineering"):
         converter = eng_notation
 
-    elif notation in ('std', 'standard'):
+    elif notation in ("std", "standard"):
         converter = std_notation
 
     else:
-        raise ValueError('Unknown notation: ' + str(notation))
+        raise ValueError("Unknown notation: " + str(notation))
 
     return converter(value, precision, filler)
 
@@ -60,7 +60,7 @@ def std_notation(value, precision, extra=None):
     """
     sig_digits, power, is_neg = _number_profile(value, precision)
 
-    return ('-' if is_neg else '') + _place_dot(sig_digits, power)
+    return ("-" if is_neg else "") + _place_dot(sig_digits, power)
 
 
 def sci_notation(value, precision, filler):
@@ -83,7 +83,12 @@ def sci_notation(value, precision, filler):
     """
     is_neg, sig_digits, dot_power, ten_power = _sci_notation(value, precision)
 
-    return ('-' if is_neg else '') + _place_dot(sig_digits, dot_power) + filler + str(ten_power)
+    return (
+        ("-" if is_neg else "")
+        + _place_dot(sig_digits, dot_power)
+        + filler
+        + str(ten_power)
+    )
 
 
 def eng_notation(value, precision, filler):
@@ -109,7 +114,12 @@ def eng_notation(value, precision, filler):
     eng_power = int(3 * math.floor(sci_power / 3))
     eng_dot = sci_dot + sci_power - eng_power
 
-    return ('-' if is_neg else '') + _place_dot(sig_digits, eng_dot) + filler + str(eng_power)
+    return (
+        ("-" if is_neg else "")
+        + _place_dot(sig_digits, eng_dot)
+        + filler
+        + str(eng_power)
+    )
 
 
 def _sci_notation(value, precision):
@@ -147,20 +157,20 @@ def _place_dot(digits, power):
             williamrusnack@gmail.com
     """
     if power > 0:
-        out = digits + '0' * power
+        out = digits + "0" * power
 
     elif power < 0:
         power = abs(power)
         precision = len(digits)
 
         if power < precision:
-            out = digits[:-power] + '.' + digits[-power:]
+            out = digits[:-power] + "." + digits[-power:]
 
         else:
-            out = '0.' + '0' * (power - precision) + digits
+            out = "0." + "0" * (power - precision) + digits
 
     else:
-        out = digits + ('.' if digits[-1] == '0' else '')
+        out = digits + ("." if digits[-1] == "0" else "")
 
     return out
 
@@ -178,7 +188,7 @@ def _number_profile(value, precision):
             williamrusnack@gmail.com
     """
     if value == 0:
-        sig_digits = '0' * precision
+        sig_digits = "0" * precision
         power = -(1 - precision)
         is_neg = False
 

@@ -3,7 +3,7 @@
 
 const async = require('async');
 const ERR = require('async-stacktrace');
-const chalk = require('chalk').default;
+const chalk = require('chalk');
 const fs = require('fs-extra');
 const _ = require('lodash');
 const path = require('path');

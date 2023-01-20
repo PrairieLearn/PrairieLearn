@@ -9,13 +9,17 @@ ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
 # can resolve the workspaces inside it and set up symlinks correctly.
 # This is suboptimal, as a change to any file under `package/` will
 # invalidate this layer's cache, but it's unavoidable.
+#
+# We also need to copy both the `.yarn` directory and the `.yarnrc.yml` file,
+# both of which are necessary for Yarn to correctly install dependencies.
 COPY packages/ /PrairieLearn/packages/
-COPY package.json yarn.lock /PrairieLearn/
+COPY .yarn/ /PrairieLearn/.yarn/
+COPY package.json yarn.lock .yarnrc.yml /PrairieLearn/
 RUN cd /PrairieLearn \
-    && yarn install --frozen-lockfile \
+    && yarn install --immutable \
     && yarn cache clean
 
-# NOTE: Modify .dockerignore to whitelist files/directories to copy.
+# NOTE: Modify .dockerignore to allowlist files/directories to copy.
 COPY . /PrairieLearn/
 
 # set up PrairieLearn and run migrations to initialize the DB
