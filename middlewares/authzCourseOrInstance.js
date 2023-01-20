@@ -252,14 +252,16 @@ module.exports = function (req, res, next) {
                   `All requested changes to the effective user have been removed.</p>`;
 
                 if (config.devMode && is_administrator) {
-                  err.info += `<div class="alert alert-warning" role="alert"><p>In Development Mode, ` +
-                  `<a href="/pl/administrator/query/select_or_insert_user">go here to add the user</a> ` +
-                  ` first and then try the emulation again.</p>`;
+                  err.info +=
+                    `<div class="alert alert-warning" role="alert"><p>In Development Mode, ` +
+                    `<a href="/pl/administrator/query/select_or_insert_user">go here to add the user</a> ` +
+                    ` first and then try the emulation again.</p>`;
                   if (isCourseInstance) {
-                    err.info += `<p>To auto-generate many users for testing, see ` +
-                    `<a href="/pl/administrator/query/generate_and_enroll_users">Generate random users ` +
-                    `and enroll them in a course instance<a> <br>` +
-                    `(Hint your course_instance_id is <strong>${res.locals.course_instance.id}</strong>)</p>`;
+                    err.info +=
+                      `<p>To auto-generate many users for testing, see ` +
+                      `<a href="/pl/administrator/query/generate_and_enroll_users">Generate random users ` +
+                      `and enroll them in a course instance<a> <br>` +
+                      `(Hint your course_instance_id is <strong>${res.locals.course_instance.id}</strong>)</p>`;
                   }
                   err.info += `</div>`;
                 }
