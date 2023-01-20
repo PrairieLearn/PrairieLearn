@@ -16,7 +16,8 @@
     </div>
     <div class="card-body">
         <pl-question-panel>
-            <p>Write an expression for the complex number $z$ whose argument is $a$ (in radians) and whose modulus is $m$.</p>
+            <p>Write an expression for the complex number $z$ whose argument is $a$ (in radians) and whose modulus is
+                $m$.</p>
         </pl-question-panel>
         <pl-symbolic-input answers-name="z" variables="a, m" allow-complex="true" label="$z=$"></pl-symbolic-input>
     </div>
@@ -28,7 +29,8 @@
     </div>
     <div class="card-body">
         <pl-question-panel>
-            <p>Write an expression for the current $I$ in a resistor if the voltage is $V$ and the resistance is $R$.</p>
+            <p>Write an expression for the current $I$ in a resistor if the voltage is $V$ and the resistance is $R$.
+            </p>
         </pl-question-panel>
         <pl-symbolic-input answers-name="I" variables="V, R" label="$I=$"></pl-symbolic-input>
     </div>
@@ -36,13 +38,16 @@
 
 <div class="card my-2">
     <div class="card-header">
-        An example in which we specify a different imaginary unit for display (<code>imaginary-unit-for-display="j"</code>)
+        An example in which we specify a different imaginary unit for display
+        (<code>imaginary-unit-for-display="j"</code>)
     </div>
     <div class="card-body">
         <pl-question-panel>
-            <p>Write an expression for the complex number $c$ whose real part is $a$ and whose imaginary part is $b$.</p>
+            <p>Write an expression for the complex number $c$ whose real part is $a$ and whose imaginary part is $b$.
+            </p>
         </pl-question-panel>
-        <pl-symbolic-input answers-name="c" variables="a, b" allow-complex="true" imaginary-unit-for-display="j" label="$c=$"></pl-symbolic-input>
+        <pl-symbolic-input answers-name="c" variables="a, b" allow-complex="true" imaginary-unit-for-display="j"
+            label="$c=$"></pl-symbolic-input>
     </div>
 </div>
 
@@ -52,10 +57,14 @@
     </div>
     <div class="card-body">
         <pl-question-panel>
-            <p>The size of the input box can be set with the attribute <code>size</code>, and the attribute <code>show-help-text="false"</code> removes the button for the help popup.  This box below has <code>size=5</code> instead of the default <code>size=35</code>.</p>
+            <p>The size of the input box can be set with the attribute <code>size</code>, and the attribute
+                <code>show-help-text="false"</code> removes the button for the help popup. This box below has
+                <code>size=5</code> instead of the default <code>size=35</code>.
+            </p>
             <p>Write an expression for the first derivative of $\frac{1}{2} x^2$.</p>
         </pl-question-panel>
-        <pl-symbolic-input answers-name="dx" variables="x" size="5" show-help-text="false" label="$\dfrac{d}{dx} \frac{1}{2}x^2 =$"></pl-symbolic-input>
+        <pl-symbolic-input answers-name="dx" variables="x" size="5" show-help-text="false"
+            label="$\dfrac{d}{dx} \frac{1}{2}x^2 =$"></pl-symbolic-input>
     </div>
 </div>
 
@@ -64,10 +73,14 @@
         An example in which we allow a blank answer.
     </div>
     <div class="card-body">
-      <pl-question-panel>
-        <p>The <code>allow-blank</code> attribute allows an expression to be left blank by the user and still be considered valid. By default a blank expression is equivalent to the expression <code>0</code>, unless the <code>blank-value</code> is used.</p>
-        <p>Simplify the expression $x^2+x+1$, or leave it blank if the expression cannot be simplified further.</p>
-      </pl-question-panel>
-      <pl-symbolic-input answers-name="simplify" variables="x" allow-blank="true" blank-value="x^2+x+1"></pl-symbolic-input>
+        <pl-question-panel>
+            <p>The <code>allow-blank</code> attribute allows an expression to be left blank by the user and still be
+                considered valid. By default a blank expression is equivalent to the expression <code>0</code>, unless
+                the <code>blank-value</code> is used. The <code>placeholder</code> attribute allows setting custom
+                placeholder text.</p>
+            <p>Simplify the expression $x^2+x+1$, or leave it blank if the expression cannot be simplified further.</p>
+        </pl-question-panel>
+        <pl-symbolic-input answers-name="simplify" variables="x" allow-blank="true" blank-value="x^2+x+1"
+            placeholder="symbolic expression (blank is allowed)"></pl-symbolic-input>
     </div>
 </div>

@@ -28,6 +28,8 @@ SHOW_HELP_TEXT_DEFAULT = True
 PLACEHOLDER_TEXT_THRESHOLD = 15  # Minimum size to show the placeholder text
 ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = "0"
+PLACEHOLDER_DEFAULT = "symbolic expression"
+SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-symbolic-input.mustache"
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -45,6 +47,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "show-help-text",
         "allow-blank",
         "blank-value",
+        "placeholder",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
@@ -78,6 +81,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
     )
     size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
+    placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
 
     constants_class = phs._Constants()
     operators = ["( )", "+", "-", "*", "/", "^", "**"]
@@ -98,12 +102,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "constants": constants,
             "allow_complex": allow_complex,
         }
-        with open("pl-symbolic-input.mustache", "r", encoding="utf-8") as f:
+        with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
-        with open("pl-symbolic-input.mustache", "r", encoding="utf-8") as f:
-            info_params.pop("format", None)
-            info_params["shortformat"] = True
-            shortinfo = chevron.render(f, info_params).strip()
 
         html_params = {
             "question": True,
@@ -111,7 +111,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "label": label,
             "editable": editable,
             "info": info,
-            "shortinfo": shortinfo,
+            "placeholder": placeholder,
             "size": size,
             "show_info": pl.get_boolean_attrib(
                 element, "show-help-text", SHOW_HELP_TEXT_DEFAULT
@@ -132,7 +132,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if raw_submitted_answer is not None:
             html_params["raw_submitted_answer"] = escape(raw_submitted_answer)
 
-        with open("pl-symbolic-input.mustache", "r", encoding="utf-8") as f:
+        with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
@@ -168,12 +168,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "constants": constants,
                 "allow_complex": allow_complex,
             }
-            with open("pl-symbolic-input.mustache", "r", encoding="utf-8") as f:
+            with open(
+                SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8"
+            ) as f:
                 info = chevron.render(f, info_params).strip()
 
             # Render invalid popup
             raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
-            with open("pl-symbolic-input.mustache", "r", encoding="utf-8") as f:
+            with open(
+                SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8"
+            ) as f:
                 parse_error += chevron.render(
                     f, {"format_error": True, "format_string": info}
                 ).strip()
@@ -196,7 +200,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "missing_input", False
         )
 
-        with open("pl-symbolic-input.mustache", "r", encoding="utf-8") as f:
+        with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
@@ -211,7 +215,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 a_tru = phs.json_to_sympy(a_tru, allow_complex=allow_complex)
             a_tru = a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit))
             html_params = {"answer": True, "label": label, "a_tru": sympy.latex(a_tru)}
-            with open("pl-symbolic-input.mustache", "r", encoding="utf-8") as f:
+            with open(
+                SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8"
+            ) as f:
                 return chevron.render(f, html_params).strip()
         else:
             return ""
