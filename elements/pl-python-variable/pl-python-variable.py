@@ -78,34 +78,27 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             f'Could not find {varname} in params. Please make sure to set params-name="{varname}" in the element.'
         )
 
-    json_object = data["params"][varname]
+    var_out = pl.from_json(data["params"][varname])
 
-    if isinstance(json_object, dict) and "_value" in json_object:
-        # Note this will always work, since if from_json can't convert the object, it does nothing.
-        var_out = pl.from_json(json_object)
 
-        # Passthrough legacy support for pl-dataframe
-        if isinstance(var_out, pandas.DataFrame) and not force_text:
-            return (
-                f'<pl-dataframe params-name="{varname}" show-header="{show_header}" show-index="{show_index}" '
-                f'show-dimensions="{show_dimensions}" show-python="false"></pl-dataframe>'
-            )
-        else:
-            var_string = repr(var_out)
-
-    else:
-        if isinstance(json_object, str):
-            var_string = repr(json_object)
-
-        else:
-            var_string = pprint.pformat(
-                json_object,
+    # Passthrough legacy support for pl-dataframe
+    if isinstance(var_out, pandas.DataFrame) and not force_text:
+        return (
+            f'<pl-dataframe params-name="{varname}" show-header="{show_header}" show-index="{show_index}" '
+            f'show-dimensions="{show_dimensions}" show-python="false"></pl-dataframe>'
+        )
+    elif isinstance(var_out, (dict, list)):
+        var_string = pprint.pformat(
+                var_out,
                 indent=indent,
                 width=width,
                 depth=depth,
                 compact=compact,
                 sort_dicts=sort_dicts,
             )
+    else:
+        var_string = repr(var_out)
+
 
     prefix_newline = pl.get_boolean_attrib(
         element, "prefix-newline", PREFIX_NEWLINE_DEFAULT
