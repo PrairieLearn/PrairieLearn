@@ -141,19 +141,23 @@ def all_partial_scores_correct(data: QuestionData) -> bool:
     )
 
 
-def to_json(v, *, df_encoding_version=1):
+def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
     """to_json(v)
 
     If v has a standard type that cannot be json serialized, it is replaced with
     a {'_type':..., '_value':...} pair that can be json serialized:
 
-        If df_encoding_version is set to 2, then the following mapping is used:
+        If np_encoding_version is set to 2, will serialize numpy scalars as follows:
+
+        numpy scalar -> '_type': 'np_scalar'
+
+        If df_encoding_version is set to 2, will serialize pandas DataFrames as follows:
 
         pandas.DataFrame -> '_type': 'dataframe_v2'
 
         Otherwise, the following mappings are used:
 
-        complex -> '_type': 'complex'
+        any complex scalar (including numpy) -> '_type': 'complex'
         non-complex ndarray (assumes each element can be json serialized) -> '_type': 'ndarray'
         complex ndarray -> '_type': 'complex_ndarray'
         sympy.Expr (i.e., any scalar sympy expression) -> '_type': 'sympy'
@@ -173,6 +177,16 @@ def to_json(v, *, df_encoding_version=1):
     If v can be json serialized or does not have a standard type, then it is
     returned without change.
     """
+    if np_encoding_version not in {1, 2}:
+        raise ValueError(f"Invaild np_encoding {np_encoding_version}, must be 1 or 2.")
+
+    if np_encoding_version == 2 and isinstance(v, np.number):
+        return {
+            "_type": "np_scalar",
+            "_concrete_type": type(v).__name__,
+            "_value": str(v),
+        }
+
     if np.isscalar(v) and np.iscomplexobj(v):
         return {"_type": "complex", "_value": {"real": v.real, "imag": v.imag}}
     elif isinstance(v, np.ndarray):
@@ -248,6 +262,7 @@ def from_json(v):
     using to_json(...), then it is replaced:
 
         '_type': 'complex' -> complex
+        '_type': 'np_scalar' -> numpy scalar defined by '_concrete_type'
         '_type': 'ndarray' -> non-complex ndarray
         '_type': 'complex_ndarray' -> complex ndarray
         '_type': 'sympy' -> sympy.Expr
@@ -276,6 +291,13 @@ def from_json(v):
                 else:
                     raise Exception(
                         "variable of type complex should have value with real and imaginary pair"
+                    )
+            elif v["_type"] == "np_scalar":
+                if "_concrete_type" in v and "_value" in v:
+                    return getattr(np, v["_concrete_type"])(v["_value"])
+                else:
+                    raise Exception(
+                        f"variable of type {v['_type']} needs both concrete type and value information"
                     )
             elif v["_type"] == "ndarray":
                 if "_value" in v:

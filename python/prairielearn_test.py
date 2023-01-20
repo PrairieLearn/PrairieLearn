@@ -1,9 +1,10 @@
 import json
 import math
 from enum import Enum
-from typing import Callable, cast
+from typing import Any, Callable, cast
 
 import lxml.html
+import numpy as np
 import pandas as pd
 import prairielearn as pl
 import pytest
@@ -88,26 +89,82 @@ def test_set_score_data(
     assert math.isclose(question_data["score"], expected_score)
 
 
-class TestEnum(Enum):
+@pytest.mark.parametrize(
+    "numpy_object",
+    [
+        np.int64(5),
+        np.int32(-12),
+        np.uint8(55),
+        np.byte(3),
+        np.float128(-1100204.04010340),
+        np.float32(2.1100044587483),
+        np.float16(0.00000184388328),
+        np.int64((2**53) + 5),
+        np.complex128("12+3j"),
+        np.complex256("12+3j"),
+        np.arange(15),
+        np.array([1.2, 3.5, 5.1]),
+        np.array([1, 2, 3, 4]),
+        np.array([(1.5, 2, 3), (4, 5, 6)]),
+        np.array([[1, 2], [3, 4]], dtype=complex),
+        np.array([[1, "stuff"], [3, None]], dtype=object),
+        np.ones((2, 3, 4), dtype=np.int16),
+    ],
+)
+def test_numpy_serialization(numpy_object: Any) -> None:
+    """Test equality after conversion of various numpy objects."""
+
+    json_object = json.dumps(
+        pl.to_json(numpy_object, np_encoding_version=2), allow_nan=False
+    )
+    decoded_json_object = pl.from_json(json.loads(json_object))
+
+    assert type(numpy_object) == type(decoded_json_object)
+    np.testing.assert_array_equal(numpy_object, decoded_json_object, strict=True)
+
+
+@pytest.mark.parametrize(
+    "object_to_encode, expected_result",
+    [(np.float64(5.0), 5.0), (np.complex128("12+3j"), complex("12+3j"))],
+)
+def test_legacy_serialization(object_to_encode: Any, expected_result: Any) -> None:
+    """Test that nothing happens under the old encoding for numpy scalars."""
+
+    json_object = json.dumps(pl.to_json(object_to_encode), allow_nan=False)
+    decoded_json_object = pl.from_json(json.loads(json_object))
+
+    assert decoded_json_object == expected_result
+
+
+class DummyEnum(Enum):
     DEFAULT = 0
-    TEST_CHOICE_1 = 1
-    TEST_CHOICE_2 = 2
-    TEST_CHOICE_3 = 3
+    DUMMY_CHOICE_1 = 1
+    DUMMY_CHOICE_2 = 2
+    DUMMY_CHOICE_3 = 3
 
 
 @pytest.mark.parametrize(
     "html_str, expected_result",
     [
-        ("<pl-thing></pl-thing>", TestEnum.DEFAULT),
-        ('<pl-thing test-choice="default"></pl-thing>', TestEnum.DEFAULT),
-        ('<pl-thing test-choice="test-choice-1"></pl-thing>', TestEnum.TEST_CHOICE_1),
-        ('<pl-thing test-choice="test-choice-2"></pl-thing>', TestEnum.TEST_CHOICE_2),
-        ('<pl-thing test-choice="test-choice-3"></pl-thing>', TestEnum.TEST_CHOICE_3),
+        ("<pl-thing></pl-thing>", DummyEnum.DEFAULT),
+        ('<pl-thing test-choice="default"></pl-thing>', DummyEnum.DEFAULT),
+        (
+            '<pl-thing test-choice="dummy-choice-1"></pl-thing>',
+            DummyEnum.DUMMY_CHOICE_1,
+        ),
+        (
+            '<pl-thing test-choice="dummy-choice-2"></pl-thing>',
+            DummyEnum.DUMMY_CHOICE_2,
+        ),
+        (
+            '<pl-thing test-choice="dummy-choice-3"></pl-thing>',
+            DummyEnum.DUMMY_CHOICE_3,
+        ),
     ],
 )
-def test_get_enum_attrib(html_str: str, expected_result: TestEnum) -> None:
+def test_get_enum_attrib(html_str: str, expected_result: DummyEnum) -> None:
     element = lxml.html.fragment_fromstring(html_str)
-    result = pl.get_enum_attrib(element, "test-choice", TestEnum, TestEnum.DEFAULT)
+    result = pl.get_enum_attrib(element, "test-choice", DummyEnum, DummyEnum.DEFAULT)
 
     assert result is expected_result
 
@@ -118,11 +175,11 @@ def test_get_enum_attrib(html_str: str, expected_result: TestEnum) -> None:
         "<pl-thing></pl-thing>",
         '<pl-thing test-choice="DEFAULT"></pl-thing>',
         '<pl-thing test-choice="Default"></pl-thing>',
-        '<pl-thing test-choice="test_choice_1"></pl-thing>',
+        '<pl-thing test-choice="dummy_choice_1"></pl-thing>',
     ],
 )
 def test_get_enum_attrib_exceptions(html_str: str) -> None:
     element = lxml.html.fragment_fromstring(html_str)
 
     with pytest.raises(Exception):
-        pl.get_enum_attrib(element, "test-choice", TestEnum)
+        pl.get_enum_attrib(element, "test-choice", DummyEnum)
