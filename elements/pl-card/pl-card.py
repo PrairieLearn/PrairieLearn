@@ -2,7 +2,6 @@ import chevron
 import lxml.html
 import prairielearn as pl
 
-
 HEADER_DEFAULT = ""
 TITLE_DEFAULT = ""
 SUBTITLE_DEFAULT = ""
@@ -35,7 +34,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     subtitle = pl.get_string_attrib(element, "subtitle", SUBTITLE_DEFAULT)
     footer = pl.get_string_attrib(element, "footer", FOOTER_DEFAULT)
     img_top_src = pl.get_string_attrib(element, "img-top-src", IMG_TOP_SRC_DEFAULT)
-    img_bottom_src = pl.get_string_attrib(element, "img-bottom-src", IMG_BOTTOM_SRC_DEFAULT)
+    img_bottom_src = pl.get_string_attrib(
+        element, "img-bottom-src", IMG_BOTTOM_SRC_DEFAULT
+    )
     width = pl.get_string_attrib(element, "width", WIDTH_DEFAULT)
 
     content = pl.inner_html(element)
