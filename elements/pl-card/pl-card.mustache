@@ -1,0 +1,31 @@
+<div class="card w-{{width}} my-4">
+  {{#img-top-src}}
+  <img src="{{img-top-src}}" class="card-img-top">
+  {{/img-top-src}}
+  {{#header}}
+  <div class="card-header">
+    {{header}}
+  </div>
+  {{/header}}
+  <div class="card-body">
+    {{#title}}
+    <p class="h5 card-title">
+      {{title}}
+    </p>
+    {{/title}}
+    {{#subtitle}}
+    <p class="h6 card-subtitle mb-2 text-muted">{{subtitle}}</h6>
+    {{/subtitle}}
+    <div class="card-text">
+      {{{content}}}
+    </div>
+  </div>
+  {{#img-bottom-src}}
+  <img src="{{img-bottom-src}}" class="card-img-bottom">
+  {{/img-bottom-src}}
+  {{#footer}}
+  <div class="card-footer">
+    {{footer}}
+  </div>
+  {{/footer}}
+</div>
