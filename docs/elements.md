@@ -66,7 +66,7 @@ images, files, and code display. The following **decorative** elements are avail
 - [`pl-external-grader-variables`](#pl-external-grader-variables-element): Displays expected and given variables for externally graded questions.
 - [`pl-xss-safe`](#pl-xss-safe-element): Removes potentially unsafe code from HTML code.
 - [`pl-file-preview`](#pl-file-preview-element): Displays a preview of submitted files.
-- [`pl-card`](#pl-card): Displays content within a card container.
+- [`pl-card`](#pl-card): Displays content within a card-styled component.
 
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
@@ -1890,6 +1890,8 @@ Displays question content inside a card component. Optionally displays content i
 | `img-top-src`    | string | -       | Source URL for the top image cap        |
 | `img-bottom-src` | string | -       | Source URL for the bottom image cap     |
 | `width`          | string | auto    | Width of the card (25%, 50%, 75%, auto) |
+
+#### Details
 
 These `pl-card` attributes mirror the options of [Bootstrap 4 cards](https://getbootstrap.com/docs/4.6/components/card/).
 
