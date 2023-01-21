@@ -1868,7 +1868,7 @@ Note that only one of the attributes `source-file-name`, `submitted-file-name` o
 
 ### `pl-card` element
 
-Displays question content inside a card component. Optionally displays content in a header, footer, or image caps via tag attributes.
+Displays question content within a card-styled component. Optionally displays content in a header, footer, or image caps via tag attributes.
 
 #### Sample element
 
@@ -1893,7 +1893,7 @@ Displays question content inside a card component. Optionally displays content i
 
 #### Details
 
-These `pl-card` attributes mirror the options of [Bootstrap 4 cards](https://getbootstrap.com/docs/4.6/components/card/).
+The `pl-card` attributes mirror the options of [Bootstrap 4 cards](https://getbootstrap.com/docs/4.6/components/card/).
 
 #### Example implementations
 
