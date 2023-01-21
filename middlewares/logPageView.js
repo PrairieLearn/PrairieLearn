@@ -15,10 +15,6 @@ module.exports = function (pageType) {
 
     const user_id = res.locals.user ? res.locals.user.user_id : res.locals.authn_user.user_id;
 
-    // If this page view required a v3 question render, these properties
-    // will be defined
-    const { panel_render_count = null, panel_render_cache_hit_count = null } = res.locals;
-
     // Originally, we opted to only record page views for assessments if
     // the authn'ed user is also the owner of the assessment instance.
     // However, we now track all page views, so be sure to filter by
@@ -37,8 +33,6 @@ module.exports = function (pageType) {
       variant_id: res.locals.variant ? res.locals.variant.id : null,
       page_type: pageType,
       path: req.originalUrl,
-      panel_render_count,
-      panel_render_cache_hit_count,
     };
 
     sqldb.queryOneRow(sql.log_page_view, params, function (err, result) {

@@ -124,6 +124,7 @@ def prepare(element_html, data):
         "blank",
         "counter-type",
         "fixed-options-order",
+        "hide-score-badge",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
