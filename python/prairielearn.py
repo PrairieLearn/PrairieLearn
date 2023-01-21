@@ -2,12 +2,25 @@ import collections
 import html
 import importlib
 import importlib.util
+import json
 import math
 import os
 import re
 import unicodedata
 import uuid
-from typing import Any, Dict, Literal, Optional, TypedDict
+from enum import Enum
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Literal,
+    Optional,
+    Tuple,
+    Type,
+    TypedDict,
+    TypeVar,
+    Union,
+)
 
 import colors
 import lxml.html
@@ -16,7 +29,7 @@ import pandas
 import sympy
 import to_precision
 from python_helper_sympy import convert_string_to_sympy, json_to_sympy, sympy_to_json
-from typing_extensions import NotRequired
+from typing_extensions import NotRequired, assert_never
 
 
 class PartialScore(TypedDict):
@@ -54,6 +67,112 @@ class QuestionData(TypedDict):
 
 class ElementTestData(QuestionData):
     test_type: Literal["correct", "incorrect", "invalid"]
+
+
+def grade_answer_parameterized(
+    data: QuestionData,
+    question_name: str,
+    grade_function: Callable[[Any], Tuple[Union[bool, float], Optional[str]]],
+    weight: int = 1,
+) -> None:
+    """
+    Grade question question_name. grade_function should take in a single parameter
+    (which will be the submitted answer) and return a 2-tuple:
+        - The first element of the 2-tuple should either be:
+            - a boolean indicating whether the question should be marked correct
+            - a partial score between 0 and 1, inclusive
+        - The second element of the 2-tuple should either be:
+            - a string containing feedback
+            - None, if there is no feedback (usually this should only occur if the answer is correct)
+    """
+
+    # Create the data dictionary at first
+    data["partial_scores"][question_name] = {"score": 0.0, "weight": weight}
+
+    if question_name not in data["submitted_answers"]:
+        data["format_errors"][question_name] = "No answer was submitted"
+        return
+
+    submitted_answer = data["submitted_answers"][question_name]
+
+    # Run passed-in grading function
+    result, feedback_content = grade_function(submitted_answer)
+
+    # Try converting partial score
+    if isinstance(result, bool):
+        partial_score = 1.0 if result else 0.0
+    elif isinstance(result, (float, int)):
+        assert 0.0 <= result <= 1.0
+        partial_score = result
+    else:
+        assert_never(result)
+
+    # Set corresponding partial score and feedback
+    data["partial_scores"][question_name]["score"] = partial_score
+
+    if feedback_content:
+        data["partial_scores"][question_name]["feedback"] = feedback_content
+
+
+def determine_score_params(
+    score: float,
+) -> Tuple[Literal["correct", "partial", "incorrect"], Union[bool, float]]:
+    """
+    Determine appropriate key and value for display on the frontend given the
+    score for a particular question. For elements following PrairieLearn
+    conventions, the return value can be used as a key/value pair in the
+    dictionary passed to an element's Mustache template to display a score badge.
+    """
+
+    if score >= 1:
+        return ("correct", True)
+    elif score > 0:
+        return ("partial", math.floor(score * 100))
+
+    return ("incorrect", True)
+
+
+EnumT = TypeVar("EnumT", bound=Enum)
+
+
+def get_enum_attrib(
+    element: lxml.html.HtmlElement,
+    name: str,
+    enum_type: Type[EnumT],
+    default: Optional[EnumT] = None,
+) -> EnumT:
+    """
+    Returns the named attribute for the element parsed as an enum,
+    or the (optional) default value. If the default value is not provided
+    and the attribute is missing then an exception is thrown. An exception
+    is also thrown if the value for the enum provided is invalid.
+    Also, alters the enum names to comply with PL naming convention automatically
+    (replacing underscores with dashes and uppercasing). If default value is
+    provided, must be a member of the given enum.
+    """
+
+    enum_val, is_default = (
+        _get_attrib(element, name)
+        if default is None
+        else _get_attrib(element, name, default)
+    )
+
+    # Default doesn't need to be converted, already a value of the enum
+    if is_default:
+        return enum_val
+
+    if enum_val != enum_val.lower():
+        raise ValueError(
+            f'Value "{enum_val}" assigned to "{name}" cannot have uppercase characters.'
+        )
+
+    upper_enum_str = enum_val.upper()
+    accepted_names = {member.name.replace("_", "-") for member in enum_type}
+
+    if upper_enum_str not in accepted_names:
+        raise ValueError(f"{enum_val} is not a valid type")
+
+    return enum_type[upper_enum_str.replace("-", "_")]
 
 
 def set_weighted_score_data(data: QuestionData, weight_default: int = 1) -> None:
@@ -96,17 +215,32 @@ def all_partial_scores_correct(data: QuestionData) -> bool:
     )
 
 
-def to_json(v):
+def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
     """to_json(v)
 
     If v has a standard type that cannot be json serialized, it is replaced with
     a {'_type':..., '_value':...} pair that can be json serialized:
 
-        complex -> '_type': 'complex'
+        If np_encoding_version is set to 2, will serialize numpy scalars as follows:
+
+        numpy scalar -> '_type': 'np_scalar'
+
+        If df_encoding_version is set to 2, will serialize pandas DataFrames as follows:
+
+        pandas.DataFrame -> '_type': 'dataframe_v2'
+
+        Otherwise, the following mappings are used:
+
+        any complex scalar (including numpy) -> '_type': 'complex'
         non-complex ndarray (assumes each element can be json serialized) -> '_type': 'ndarray'
         complex ndarray -> '_type': 'complex_ndarray'
         sympy.Expr (i.e., any scalar sympy expression) -> '_type': 'sympy'
         sympy.Matrix -> '_type': 'sympy_matrix'
+        pandas.DataFrame -> '_type': 'dataframe'
+
+    Note that the 'dataframe_v2' encoding allows for missing and date time values whereas
+    the 'dataframe' (default) does not. However, the 'dataframe' encoding allows for complex
+    numbers while 'dataframe_v2' does not.
 
     If v is an ndarray, this function preserves its dtype (by adding '_dtype' as
     a third field in the dictionary).
@@ -117,6 +251,16 @@ def to_json(v):
     If v can be json serialized or does not have a standard type, then it is
     returned without change.
     """
+    if np_encoding_version not in {1, 2}:
+        raise ValueError(f"Invaild np_encoding {np_encoding_version}, must be 1 or 2.")
+
+    if np_encoding_version == 2 and isinstance(v, np.number):
+        return {
+            "_type": "np_scalar",
+            "_concrete_type": type(v).__name__,
+            "_value": str(v),
+        }
+
     if np.isscalar(v) and np.iscomplexobj(v):
         return {"_type": "complex", "_value": {"real": v.real, "imag": v.imag}}
     elif isinstance(v, np.ndarray):
@@ -146,14 +290,41 @@ def to_json(v):
             "_shape": [num_rows, num_cols],
         }
     elif isinstance(v, pandas.DataFrame):
-        return {
-            "_type": "dataframe",
-            "_value": {
-                "index": list(v.index),
-                "columns": list(v.columns),
-                "data": v.values.tolist(),
-            },
-        }
+        if df_encoding_version == 1:
+            return {
+                "_type": "dataframe",
+                "_value": {
+                    "index": list(v.index),
+                    "columns": list(v.columns),
+                    "data": v.values.tolist(),
+                },
+            }
+
+        elif df_encoding_version == 2:
+            # The next lines of code are required to address the JSON table-orient
+            # generating numeric keys instead of strings for an index sequence with
+            # only numeric values (c.f. pandas-dev/pandas#46392)
+            df_modified_names = v.copy()
+
+            if df_modified_names.columns.dtype in (np.float64, np.int64):
+                df_modified_names.columns = df_modified_names.columns.astype("string")
+
+            # For version 2 storing a data frame, we use the table orientation alongside of
+            # enforcing a date format to allow for passing datetime and missing (`pd.NA`/`np.nan`) values
+            # Details: https://pandas.pydata.org/docs/reference/api/pandas.read_json.html
+            # Convert to JSON string with escape characters
+            encoded_json_str_df = df_modified_names.to_json(
+                orient="table", date_format="iso"
+            )
+            # Export to native JSON structure
+            pure_json_df = json.loads(encoded_json_str_df)
+
+            return {"_type": "dataframe_v2", "_value": pure_json_df}
+
+        else:
+            raise ValueError(
+                f"Invalid df_encoding_version: {df_encoding_version}. Must be 1 or 2"
+            )
     else:
         return v
 
@@ -165,10 +336,13 @@ def from_json(v):
     using to_json(...), then it is replaced:
 
         '_type': 'complex' -> complex
+        '_type': 'np_scalar' -> numpy scalar defined by '_concrete_type'
         '_type': 'ndarray' -> non-complex ndarray
         '_type': 'complex_ndarray' -> complex ndarray
         '_type': 'sympy' -> sympy.Expr
         '_type': 'sympy_matrix' -> sympy.Matrix
+        '_type': 'dataframe' -> pandas.DataFrame
+        '_type': 'dataframe_v2' -> pandas.DataFrame
 
     If v encodes an ndarray and has the field '_dtype', this function recovers
     its dtype.
@@ -191,6 +365,13 @@ def from_json(v):
                 else:
                     raise Exception(
                         "variable of type complex should have value with real and imaginary pair"
+                    )
+            elif v["_type"] == "np_scalar":
+                if "_concrete_type" in v and "_value" in v:
+                    return getattr(np, v["_concrete_type"])(v["_value"])
+                else:
+                    raise Exception(
+                        f"variable of type {v['_type']} needs both concrete type and value information"
                     )
             elif v["_type"] == "ndarray":
                 if "_value" in v:
@@ -251,6 +432,11 @@ def from_json(v):
                     raise Exception(
                         "variable of type dataframe should have value with index, columns, and data"
                     )
+            elif v["_type"] == "dataframe_v2":
+                # Convert native JSON back to a string representation so that
+                # pandas read_json() can process it.
+                value_str = json.dumps(v["_value"])
+                return pandas.read_json(value_str, orient="table")
             else:
                 raise Exception("variable has unknown type {:s}".format(v["_type"]))
     return v
