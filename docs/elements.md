@@ -1832,7 +1832,6 @@ def generate(data):
 
 #### Customizations
 
-
 | Attribute     | Type    | Default | Description                                                                                                                                 |
 | ------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | `params-name` | string  | -       | Name of variable specification in `data["params"]` to display, the format for which is given above.                                         |
