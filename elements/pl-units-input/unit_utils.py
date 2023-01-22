@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Callable, Optional, Tuple
 
+import numpy as np
 import prairielearn as pl
 from pint import Quantity, UnitRegistry
 from typing_extensions import assert_never
@@ -56,21 +57,29 @@ def get_units_fixed_grading_fn(
     def magnitude_comparison_fn(
         submitted_magnitude: float, correct_magnitude: float
     ) -> bool:
+
+        submitted_magnitude_parsed = np.float64(submitted_magnitude)
+        correct_magnitude_parsed = np.float64(correct_magnitude)
+
         """Returns true if submitted_magnitude is close enough to correct_magnitude based on comparison algorithm"""
         if comparison is ComparisonType.EXACT:
-            return submitted_magnitude == correct_magnitude
+            return submitted_magnitude_parsed == correct_magnitude_parsed
         elif comparison is ComparisonType.SIGFIG:
             return pl.is_correct_scalar_sf(
-                a_sub=submitted_magnitude, a_tru=correct_magnitude, digits=digits
+                a_sub=submitted_magnitude_parsed,
+                a_tru=correct_magnitude_parsed,
+                digits=digits,
             )
         elif comparison is ComparisonType.DECDIG:
             return pl.is_correct_scalar_dd(
-                a_sub=submitted_magnitude, a_tru=correct_magnitude, digits=digits
+                a_sub=submitted_magnitude_parsed,
+                a_tru=correct_magnitude_parsed,
+                digits=digits,
             )
         elif comparison is ComparisonType.RELABS:
             return pl.is_correct_scalar_ra(
-                a_sub=submitted_magnitude,
-                a_tru=correct_magnitude,
+                a_sub=submitted_magnitude_parsed,
+                a_tru=correct_magnitude_parsed,
                 rtol=rtol,
                 atol=parsed_atol.magnitude,
             )
@@ -115,8 +124,8 @@ def get_units_agnostic_grading_fn(
             )
 
         magnitudes_match = pl.is_correct_scalar_ra(
-            a_sub=parsed_sub_base_unit.magnitude,
-            a_tru=correct_ans_base_unit.magnitude,
+            a_sub=np.float64(parsed_sub_base_unit.magnitude),
+            a_tru=np.float64(correct_ans_base_unit.magnitude),
             rtol=0.0,
             atol=parsed_atol.magnitude,
         )

@@ -91,7 +91,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         if parsed_atol.dimensionless:
             raise ValueError(
-                f"atol parameter '{atol}' must have units in unit agnostic grading."
+                f'atol parameter "{atol}" must have units in unit agnostic grading.'
             )
 
         if pl.has_attrib(element, "comparison"):
@@ -113,7 +113,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     else:
         if not parsed_atol.dimensionless:
             raise ValueError(
-                f"atol parameter {atol} may only have units in units agnostic grading."
+                f'atol parameter "{atol}" may only have units in units agnostic grading.'
             )
 
 
