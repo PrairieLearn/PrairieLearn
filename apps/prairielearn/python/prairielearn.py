@@ -1053,7 +1053,7 @@ def string_partition_outer_interval(s, left="[", right="]"):
     return s_before_left, s, s_after_right
 
 
-def string_to_integer(s: str, base: int=10) -> Optional[int]:
+def string_to_integer(s: str, base: int = 10) -> Optional[int]:
     """string_to_integer(s, base=10)
 
     Parses a string that is an integer.

@@ -16,7 +16,7 @@
             <span class="input-group-text" id="pl-integer-input-{{uuid}}-label">{{{label}}}</span>
         </span>
         {{/label}}
-        <input name="{{name}}" type="text" class="form-control pl-integer-input-input {{^display_append_span}}rounded-right{{/display_append_span}}" size="{{size}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="pl-integer-input-{{uuid}}-label pl-integer-input-{{uuid}}-suffix" {{#show_placeholder}}placeholder="{{shortinfo}}"{{/show_placeholder}} />
+        <input name="{{name}}" type="text" class="form-control pl-integer-input-input {{^display_append_span}}rounded-right{{/display_append_span}}" size="{{size}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="pl-integer-input-{{uuid}}-label pl-integer-input-{{uuid}}-suffix" placeholder="{{placeholder}}"/>
         <span class="input-group-append">
             {{#suffix}}
             <span class="input-group-text {{^show_info}}rounded-right{{/show_info}}" id="pl-integer-input-{{uuid}}-suffix">{{suffix}}</span>
@@ -29,7 +29,7 @@
             {{^show_info}}
             <span class="d-flex align-items-center">
             {{/show_info}}
-            
+
             {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
             {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
             {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
@@ -49,7 +49,7 @@
 {{#submission}}
 {{#inline}}<span class="d-inline-block">{{/inline}}
 {{#error}}
-        
+
 <script>
     $(function(){
         $('#pl-integer-input-submission-{{uuid}} [data-toggle="popover"]').popover({
@@ -66,18 +66,18 @@
     {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
 
     <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
-    
+
     <a href="javascript:void(0);" role="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Format Error" tabindex="0" data-content="{{parse_error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></a>
 {{/parse_error}}
 {{#missing_input}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
 
     <span class="badge text-dark badge-missing-input"><i class="fa fa-question-circle" aria-hidden="true"></i> Missing Input</span>
-    
+
     <a href="javascript:void(0);" role="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Missing Input" tabindex="0" data-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."> Why <i class="fa fa-question-circle" aria-hidden="true"></i>
     </a>
 {{/missing_input}}
-    
+
 </span>
 
 {{/error}}
@@ -104,13 +104,8 @@ Your answer must be an integer{{^default_base}} in base {{base}}{{/default_base}
 It must not contain a decimal.
 No symbolic expressions (those that involve fractions, square roots, variables, etc.) will be accepted.
 Scientific notation is not accepted.
-Answer must be between -9007199254740991 and +9007199254740991(-2^53 - 1 and 2^53 - 1)
 </p>
 {{/format}}
-
-{{#shortformat}}
-integer{{^default_base}} in base {{base}}{{/default_base}}
-{{/shortformat}}
 
 {{#format_error}}
     <p> Invalid format:

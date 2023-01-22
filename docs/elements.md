@@ -531,6 +531,7 @@ def generate(data):
 | `display`        | "block" or "inline" | "inline" | How to display the input field.                                                                                                                              |
 | `size`           | integer             | 35       | Size of the input box.                                                                                                                                       |
 | `show-help-text` | boolean             | true     | Show the question mark at the end of the input displaying required input parameters.                                                                         |
+| `placeholder`                | string              | None | Custom placeholder text. If not set, defaults to "integer" if `base` is 10, otherwise "integer in base <base>".                                                                        |
 
 #### Specifying a non-trivial base
 
@@ -544,7 +545,7 @@ The `base` argument can also accept a special value of 0. In this case, the valu
 
 #### Integer range
 
-The valid range of values accepted by pl-integer-input is between -9007199254740991 and +9007199254740991 (between -(2^53 - 1) and +(2^53 - 1)). If you need a larger input, one option you can consider is a [`pl-string-input`](#pl-string-input-element) with a [custom grade function](question.md#question-serverpy).
+pl-integer-input can accept integers of unbounded size, however the correct answer will only be stored as the Python `int` if it is between -9007199254740991 and +9007199254740991 (between -(2^53 - 1) and +(2^53 - 1)). Otherwise, the correct answer will be stored as a string.
 
 #### Example implementations
 
