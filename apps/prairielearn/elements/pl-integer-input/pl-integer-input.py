@@ -222,6 +222,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
         return
 
+    a_sub = str(a_sub)
+
     if a_sub.strip() == "":
         if pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT):
             a_sub = pl.get_integer_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
@@ -240,7 +242,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             return
 
     # Convert to integer
-    a_sub_parsed = pl.string_to_integer(str(a_sub), base)
+    a_sub_parsed = pl.string_to_integer(a_sub, base)
     if a_sub_parsed is None:
         with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             format_str = chevron.render(
@@ -255,7 +257,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["format_errors"][name] = format_str
         data["submitted_answers"][name] = None
     elif is_not_within_limits(a_sub_parsed):
-        data["submitted_answers"][name] = str(a_sub)
+        data["submitted_answers"][name] = a_sub
     else:
         data["submitted_answers"][name] = pl.to_json(a_sub_parsed)
 
