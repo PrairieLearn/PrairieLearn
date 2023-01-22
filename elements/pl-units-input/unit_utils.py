@@ -61,15 +61,18 @@ def get_units_fixed_grading_fn(
             return submitted_magnitude == correct_magnitude
         elif comparison is ComparisonType.SIGFIG:
             return pl.is_correct_scalar_sf(
-                submitted_magnitude, correct_magnitude, digits
+                a_sub=submitted_magnitude, a_tru=correct_magnitude, digits=digits
             )
         elif comparison is ComparisonType.DECDIG:
             return pl.is_correct_scalar_dd(
-                submitted_magnitude, correct_magnitude, digits
+                a_sub=submitted_magnitude, a_tru=correct_magnitude, digits=digits
             )
         elif comparison is ComparisonType.RELABS:
             return pl.is_correct_scalar_ra(
-                submitted_magnitude, correct_magnitude, rtol, parsed_atol.magnitude
+                a_sub=submitted_magnitude,
+                a_tru=correct_magnitude,
+                rtol=rtol,
+                atol=parsed_atol.magnitude,
             )
 
         assert_never(comparison)
@@ -95,7 +98,7 @@ def get_units_fixed_grading_fn(
 
 
 def get_units_agnostic_grading_fn(
-    *, ureg: UnitRegistry, correct_ans: str, rtol: float, atol: str
+    *, ureg: UnitRegistry, correct_ans: str, atol: str
 ) -> Callable[[str], Tuple[float, Optional[str]]]:
     # Assume atol and correct answer have same dimensionality, checked in prepare method
     correct_ans_base_unit = ureg.Quantity(correct_ans).to_base_units()
@@ -112,16 +115,16 @@ def get_units_agnostic_grading_fn(
             )
 
         magnitudes_match = pl.is_correct_scalar_ra(
-            parsed_sub_base_unit.magnitude,
-            correct_ans_base_unit.magnitude,
-            rtol,
-            parsed_atol.magnitude,
+            a_sub=parsed_sub_base_unit.magnitude,
+            a_tru=correct_ans_base_unit.magnitude,
+            rtol=0.0,
+            atol=parsed_atol.magnitude,
         )
 
-        if not magnitudes_match:
-            return 0.0, INCORRECT_FEEDBACK
+        if magnitudes_match:
+            return 1.0, None
 
-        return 1.0, None
+        return 0.0, INCORRECT_FEEDBACK
 
     return grade_units_fixed
 

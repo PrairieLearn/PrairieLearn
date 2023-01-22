@@ -35,8 +35,9 @@
                 <code>1e-8</code>) underneath <a
                     href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-units-input-element"><code>pl-units-input</code></a>
                 element. Furthermore, we add a label to the front of the input field to specify what the field should
-                receive. </p>
-                <p> Let $c$ be the length of a meter stick. What is the value of $c$?</p>
+                receive.
+            </p>
+            <p> Let $c$ be the length of a meter stick. What is the value of $c$?</p>
         </pl-question-panel>
         <pl-units-input answers-name="c_2" label="$c = $" rtol="1e-3" atol="1e-10" correct-answer="1m"></pl-units-input>
     </div>
@@ -48,13 +49,15 @@
             <p>In this question, we opt to change the default comparison of <a
                     href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-units-input-element"><code>pl-units-input</code></a>
                 from relative and absolute tolerances (<code>comparison="relabs"</code>) to significant digits
-                (<code>comparison="sigfigs"</code>), which has a default of two digits. In additon, this question showcases
+                (<code>comparison="sigfigs"</code>), which has a default of two digits. In additon, this question
+                showcases
                 some of the more complex units that this element can handle.
                 We also remove the help popup box found in by setting <code>show-help-text="false"</code>.
             </p>
-                <p> Let $g$ be the acceleration due to gravity at Earth's surface. What is the value of $g$?</p>
+            <p> Let $g$ be the acceleration due to gravity at Earth's surface. What is the value of $g$?</p>
         </pl-question-panel>
-        <pl-units-input answers-name="c_3" label="$g = $" comparison="sigfig" correct-answer="9.8 m/s**2" show-help-text="false"></pl-units-input>
+        <pl-units-input answers-name="c_3" label="$g = $" comparison="sigfig" correct-answer="9.8 m/s**2"
+            show-help-text="false"></pl-units-input>
     </div>
 </div>
 
@@ -65,7 +68,8 @@
             </p>
             <p> What is the acceleration due to gravity at Earth's surface? </p>
         </pl-question-panel>
-        <pl-units-input answers-name="c_5" label="$9.8$" grading-mode="units-only" correct-answer="m/s^2"></pl-units-input>
+        <pl-units-input answers-name="c_5" label="$9.8$" grading-mode="units-only"
+            correct-answer="m/s^2"></pl-units-input>
     </div>
 </div>
 
@@ -73,11 +77,12 @@
     <div class="card-body">
         <pl-question-panel>
             <p>This example shows the use of the attribute <code>size</code> to control the width of the input box.
-                We also use <code>show-placeholder="false"</code> and <code>show-help-text="false"</code></p>
+                We also use <code>placeholder=""</code> and <code>show-help-text="false"</code></p>
             <p>Express the distance of one mile in feet (include unit).</p>
         </pl-question-panel>
         Distance of 1 mile =
-        <pl-units-input answers-name="c_6" show-placeholder="false" show-help-text="false" size="10" comparison="exact" correct-answer="5280ft"></pl-units-input>
+        <pl-units-input answers-name="c_6" placeholder="" show-help-text="false" size="10" comparison="exact"
+            correct-answer="5280ft"></pl-units-input>
     </div>
 </div>
 
@@ -85,12 +90,15 @@
 <div class="card my-2">
     <div class="card-body">
         <pl-question-panel>
-            <p> This is an example of the units agnostic grading mode. The submitted answer and reference solutions will be
-                first be converted to base units and then compared. This is done by setting <code>grading-mode="units-agnostic"</code>.
+            <p> This is an example of the units agnostic grading mode. The submitted answer and reference solutions will
+                be
+                first be converted to base units and then compared. This is done by setting
+                <code>grading-mode="units-agnostic"</code>.
                 We must also supply an absolute tolerance with an included unit, so we set <code>atol="1cm"</code>.
             </p>
             <p> What is the length of a meter stick? </p>
         </pl-question-panel>
-        <pl-units-input answers-name="c_7" grading-mode="units-agnostic" correct-answer="1m" atol="1cm" rtol="0.0"></pl-units-input>
+        <pl-units-input answers-name="c_7" grading-mode="units-agnostic" correct-answer="1m"
+            atol="1cm"></pl-units-input>
     </div>
 </div>
