@@ -70,10 +70,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if correct_answer is not None:
         try:
             if not isinstance(correct_answer, int):
-                correct_answer = int(correct_answer, base)
+                correct_answer = int(str(correct_answer), base)
         except Exception:
             raise ValueError(
-                f"Correct answer is not a valid base {base} integer: {name}"
+                f"Correct answer is not a valid base {base} integer: {correct_answer}"
             )
 
 
