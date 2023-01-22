@@ -162,7 +162,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params["a_sub"] = (
                 numpy.base_repr(a_sub_parsed, base)
                 if base > 0
-                else data["raw_submitted_answers"].get(name, a_sub_parsed)
+                else data["raw_submitted_answers"].get(name, str(a_sub_parsed))
             )
 
         elif name not in data["submitted_answers"]:
