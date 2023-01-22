@@ -16,6 +16,7 @@
                 {"id": "element/integerInput",             "points": 2, "maxPoints": 10},
                 {"id": "element/symbolicInput",            "points": 2, "maxPoints": 10},
                 {"id": "element/bigOInput",                "points": 2, "maxPoints": 10},
+                {"id": "element/unitsInput",               "points": 2, "maxPoints": 10},
                 {"id": "element/stringInput",              "points": 2, "maxPoints": 10},
                 {"id": "element/matching",                 "points": 2, "maxPoints": 10},
                 {"id": "element/matrixComponentInput",     "points": 2, "maxPoints": 10},
