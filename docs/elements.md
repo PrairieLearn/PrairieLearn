@@ -730,8 +730,6 @@ that allows for **numeric** input and **units**.
 
 #### Sample element
 
-![](elements/pl-units-input)
-
 **question.html**
 
 ```html
