@@ -6,21 +6,28 @@ import chevron
 import lxml.html
 import numpy
 import prairielearn as pl
+from typing_extensions import assert_never
+from enum import Enum
+
+class DisplayType(Enum):
+    INLINE = "inline"
+    BLOCK = "block"
 
 WEIGHT_DEFAULT = 1
 CORRECT_ANSWER_DEFAULT = None
 LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
-DISPLAY_DEFAULT = "inline"
+DISPLAY_DEFAULT = DisplayType.INLINE
 SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
 PLACEHOLDER_TEXT_THRESHOLD = 4  # Minimum size to show the placeholder text
 ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = 0
 BASE_DEFAULT = 10
+INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-integer-input.mustache"
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["answers-name"]
     optional_attribs = [
@@ -66,12 +73,12 @@ def prepare(element_html, data):
             )
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
     suffix = pl.get_string_attrib(element, "suffix", SUFFIX_DEFAULT)
-    display = pl.get_string_attrib(element, "display", DISPLAY_DEFAULT)
+    display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
     base = pl.get_integer_attrib(element, "base", BASE_DEFAULT)
 
@@ -86,9 +93,9 @@ def render(element_html, data):
             "default_base": base == BASE_DEFAULT or base == 0,
             "zero_base": base == 0,
         }
-        with open("pl-integer-input.mustache", "r", encoding="utf-8") as f:
+        with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
-        with open("pl-integer-input.mustache", "r", encoding="utf-8") as f:
+        with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             info_params.pop("format", None)
             info_params["shortformat"] = True
             shortinfo = chevron.render(f, info_params).strip()
@@ -110,6 +117,13 @@ def render(element_html, data):
             "uuid": pl.get_uuid(),
         }
 
+        score = data["partial_scores"].get(name, {"score": None}).get("score", None)
+
+        if score is not None:
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
+
+        '''
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)
         if score is not None:
@@ -123,22 +137,24 @@ def render(element_html, data):
                     html_params["incorrect"] = True
             except Exception:
                 raise ValueError("invalid score" + score)
+        '''
 
         html_params["display_append_span"] = html_params["show_info"] or suffix
 
-        if display == "inline":
-            html_params["inline"] = True
-        elif display == "block":
-            html_params["block"] = True
-        else:
-            raise ValueError(
-                'method of display "%s" is not valid (must be "inline" or "block")'
-                % display
-            )
+        html_params[display.value] = True
+        #if display == "inline":
+        #    html_params["inline"] = True
+        #elif display == "block":
+        #    html_params["block"] = True
+        #else:
+        #    raise ValueError(
+        #        'method of display "%s" is not valid (must be "inline" or "block")'
+        #        % display
+        #    )
         if raw_submitted_answer is not None:
             html_params["raw_submitted_answer"] = escape(raw_submitted_answer)
-        with open("pl-integer-input.mustache", "r", encoding="utf-8") as f:
-            html = chevron.render(f, html_params).strip()
+        with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+            return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
@@ -178,6 +194,13 @@ def render(element_html, data):
                     raw_submitted_answer
                 )
 
+        score = data["partial_scores"].get(name, {"score": None}).get("score", None)
+
+        if score is not None:
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
+
+        '''
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)
         if score is not None:
@@ -191,38 +214,40 @@ def render(element_html, data):
                     html_params["incorrect"] = True
             except Exception:
                 raise ValueError("invalid score" + score)
+        '''
 
         html_params["error"] = html_params["parse_error"] or html_params.get(
             "missing_input", False
         )
 
-        with open("pl-integer-input.mustache", "r", encoding="utf-8") as f:
-            html = chevron.render(f, html_params).strip()
+        with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+            return chevron.render(f, html_params).strip()
+
     elif data["panel"] == "answer":
         a_tru = pl.from_json(data["correct_answers"].get(name, None))
-        if a_tru is not None:
-            if isinstance(a_tru, str):
-                a_tru_str = a_tru
-                a_tru = pl.string_to_integer(a_tru_str, base)
-            else:
-                a_tru_str = numpy.base_repr(a_tru, base if base > 0 else 10)
-            html_params = {
-                "answer": True,
-                "label": label,
-                "a_tru": a_tru_str,
-                "suffix": suffix,
-            }
-            with open("pl-integer-input.mustache", "r", encoding="utf-8") as f:
-                html = chevron.render(f, html_params).strip()
+        if a_tru is None:
+            return ""
+
+        print(a_tru, type(a_tru))
+
+        if isinstance(a_tru, str):
+            a_tru_str = a_tru
         else:
-            html = ""
-    else:
-        raise Exception("Invalid panel type: %s" % data["panel"])
+            a_tru_str = numpy.base_repr(a_tru, base if base > 0 else 10)
+        html_params = {
+            "answer": True,
+            "label": label,
+            "a_tru": a_tru_str,
+            "suffix": suffix,
+        }
+        with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+            return chevron.render(f, html_params).strip()
 
-    return html
+    assert_never(data["panel"])
 
 
-def parse(element_html, data):
+
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     base = pl.get_integer_attrib(element, "base", BASE_DEFAULT)
@@ -245,7 +270,7 @@ def parse(element_html, data):
                 "default_base": base == BASE_DEFAULT or base == 0,
                 "zero_base": base == 0,
             }
-            with open("pl-integer-input.mustache", "r", encoding="utf-8") as f:
+            with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
                 format_str = chevron.render(f, opts).strip()
                 data["format_errors"][name] = format_str
                 data["submitted_answers"][name] = None
@@ -262,7 +287,7 @@ def parse(element_html, data):
             ] = "correct answer must be between -9007199254740991 and +9007199254740991 (that is, between -(2^53 - 1) and +(2^53 - 1))."
         data["submitted_answers"][name] = pl.to_json(a_sub_parsed)
     except Exception:
-        with open("pl-integer-input.mustache", "r", encoding="utf-8") as f:
+        with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             format_str = chevron.render(
                 f,
                 {
@@ -276,7 +301,7 @@ def parse(element_html, data):
         data["submitted_answers"][name] = None
 
 
-def grade(element_html, data):
+def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     base = pl.get_integer_attrib(element, "base", BASE_DEFAULT)
@@ -309,7 +334,7 @@ def grade(element_html, data):
         data["partial_scores"][name] = {"score": 0, "weight": weight}
 
 
-def test(element_html, data):
+def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
@@ -349,4 +374,4 @@ def test(element_html, data):
             data["raw_submitted_answers"][name] = "3.4"
         data["format_errors"][name] = "invalid"
     else:
-        raise Exception("invalid result: %s" % result)
+        assert_never(result)
