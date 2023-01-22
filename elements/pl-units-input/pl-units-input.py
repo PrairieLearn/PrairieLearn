@@ -223,7 +223,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params["parse_error"] = None
 
         else:
-            raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
+            # TODO maybe keep doing this? Good idea to show the student what their answer parsed as in full text
+            raw_submitted_answer = data["submitted_answers"].get(name, None)
             if raw_submitted_answer is not None:
                 html_params["raw_submitted_answer"] = pl.escape_unicode_string(
                     raw_submitted_answer
@@ -323,6 +324,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
         return
 
+    #TODO extract just unit when in units grading mode
+    data["submitted_answers"][name] = str(a_sub_parsed)
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
