@@ -1,7 +1,7 @@
 <pl-question-panel>
   <p>
-    Questions below were designed to showcase the different features of 
-    <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"><code>pl-integer-input</code></a>. 
+    Questions below were designed to showcase the different features of
+    <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"><code>pl-integer-input</code></a>.
     The goal of <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-integer-input-element"><code>pl-integer-input</code></a>
     is to allow users to enter only <b>integer values</b>. That is, users are only able to enter whole numbers like -10, 0, 3, 44, and so on. The correct value of $c$ in all questions below is <samp>{{correct_answers.c_1}}</samp>.
   </p>
@@ -74,5 +74,15 @@
       <p> Solve for the value of $c$ given $c = {{params.a16}}_{16} + {{params.b16}}_{16}$ (provide your answer in base $16$). </p>
     </pl-question-panel>
     <pl-integer-input answers-name="c_7" base="16"></pl-integer-input>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-body">
+    <pl-question-panel>
+      <p>The integer can also be very large.</p>
+      <p>Submit <code>9007199254740991999</code>. </p>
+    </pl-question-panel>
+    <pl-integer-input answers-name="c_8" correct-answer="9007199254740991999"></pl-integer-input>
   </div>
 </div>
