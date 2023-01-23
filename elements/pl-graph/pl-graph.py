@@ -28,21 +28,8 @@ def graphviz_from_networkx(
     input_param_graph = pl.get_string_attrib(
         element, "params-name-networkx", PARAMS_NAME_GRAPH_DEFAULT
     )
-    graph_edge_label = pl.get_string_attrib(
-        element, "networkx-edge-label", NETWORKX_EDGE_LABEL_DEFAULT
-    )
 
     networkx_graph = pl.from_json(data["params"][input_param_graph])
-
-    # Show the data according to the given input parameter
-    if graph_edge_label is not None:
-        for in_node, out_node, edge_data in networkx_graph.edges(data=True):
-            if graph_edge_label in edge_data:
-                edge_data["label"] = edge_data[graph_edge_label]
-            else:
-                raise KeyError(
-                    f"Edge data for edge from {in_node} to {out_node} doesn't have key {graph_edge_label}"
-                )
 
     G = nx.nx_agraph.to_agraph(networkx_graph)
     G.layout(engine)
@@ -142,7 +129,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "engine",
         "params-name-matrix",
         "params-name-networkx",
-        "networkx-edge-label",
         "weights",
         "weights-digits",
         "weights-presentation-type",

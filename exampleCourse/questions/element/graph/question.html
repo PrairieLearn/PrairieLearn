@@ -151,7 +151,6 @@ random_graph = nx.gnm_random_graph(5, 6)
 
 for in_node, out_node, edge_data in random_graph.edges(data=True):
     edge_data['label'] = random.choice(string.ascii_lowercase)
-    edge_data['weight'] = random.randint(1, 10)
 
 data['params']['random-graph'] = pl.to_json(random_graph)
 </pl-code>
@@ -160,18 +159,6 @@ data['params']['random-graph'] = pl.to_json(random_graph)
 </pl-code>
         </pl-question-panel>
         <pl-graph params-type="networkx" params-name-networkx="random-graph"></pl-graph>
-    </div>
-</div>
-
-<div class="card my-2">
-    <div class="card-body" >
-        <pl-question-panel>
-            <p>For a networkx graph, for each edge, the data in the <code>'label'</code> key is rendered on the
-                frontend by default. To change the data on each edge that is rendered, set <code>networkx-edge-label</code>.
-                With the same graph as above, we've set <code>networkx-edge-label="weight"</code>.
-            </p>
-        </pl-question-panel>
-        <pl-graph params-type="networkx" params-name-networkx="random-graph" networkx-edge-label="weight"></pl-graph>
     </div>
 </div>
 

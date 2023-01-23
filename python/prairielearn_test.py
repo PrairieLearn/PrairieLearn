@@ -59,6 +59,8 @@ def test_encoding_legacy(df: pd.DataFrame) -> None:
 def test_networkx_serialization(networkx_graph: Any) -> None:
     """Test equality after conversion of various numpy objects."""
 
+    networkx_graph.graph["rankdir"] = "TB"
+
     # Add some data to test that it's retained
     for i, (in_node, out_node, edge_data) in enumerate(networkx_graph.edges(data=True)):
         edge_data["weight"] = i
