@@ -346,18 +346,14 @@ async function _getDockerContainerByLaunchUuid(launch_uuid) {
  * @param {import('dockerode').Container} input
  */
 async function dockerAttemptKillAndRemove(container) {
-  let containerInfo = null;
   try {
-    containerInfo = await container.inspect();
+    await container.inspect();
   } catch (err) {
     // This container doesn't exist on this machine.
     logger.error('Could not inspect container', err);
     Sentry.captureException(err);
     return;
   }
-
-  // Strip off the leading forward slash
-  const name = containerInfo.Name.substring(1);
 
   try {
     await container.kill();
