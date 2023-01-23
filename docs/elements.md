@@ -1656,7 +1656,7 @@ def generate(data):
 **question.html**
 
 ```html
-<pl-graph params-name="random-graph"></pl-graph>
+<pl-graph params-type="networkx" params-name="random-graph"></pl-graph>
 ```
 
 **server.py**
