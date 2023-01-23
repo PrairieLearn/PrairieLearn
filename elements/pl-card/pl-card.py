@@ -43,7 +43,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     html_params = {
         "header": header,
-        "title": lambda x, render: render(x, {"title": title}),
+        "title": {"title": title},  # https://github.com/noahmorrison/chevron/issues/117
         "subtitle": subtitle,
         "footer": footer,
         "img-top-src": img_top_src,
