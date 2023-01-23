@@ -1398,15 +1398,22 @@ async function sendGradedFilesArchive(workspace_id, res) {
     workspaceDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
   }
 
-  // Stream the archive back to the client as it's generated.
-  res.attachment(zipName).status(200);
-  const archive = archiver('zip');
-  archive.pipe(res);
-
   const gradedFiles = await fg(workspaceSettings.workspace_graded_files, {
     cwd: workspaceDir,
     stats: true,
   });
+
+  if (gradedFiles.length > config.workspaceMaxGradedFilesCount) {
+    return res.status(500).send({ message: 'Too many files submitted in workspace.' });
+  }
+  if (_.sumBy(gradedFiles, (file) => file.stats.size) > config.workspaceMaxGradedFilesSize) {
+    return res.status(500).send({ message: 'Workspace files are larger than allowed.' });
+  }
+
+  // Stream the archive back to the client as it's generated.
+  res.attachment(zipName).status(200);
+  const archive = archiver('zip');
+  archive.pipe(res);
 
   for (const file of gradedFiles) {
     try {
