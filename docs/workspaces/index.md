@@ -248,7 +248,6 @@ For development it is helpful to run the above two commands in separate `tmux` w
 
 Set these variables in your `config.json`:
 
-- `workspaceMainZipsDirectory`
 - `workspaceHostZipsDirectory`
 
 ## Permissions in production
