@@ -87,7 +87,6 @@
         "mathjax": "^3.2.2",
         "memorystream": "^0.3.1",
         "mersenne": "0.0.4",
-        "micromatch": "^4.0.5",
         "moment": "^2.29.4",
         "multer": "^1.4.5-lts.1",
         "mustache": "^4.2.0",

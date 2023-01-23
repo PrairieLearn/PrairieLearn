@@ -21,6 +21,7 @@ const stream = require('stream');
 const asyncHandler = require('express-async-handler');
 const bodyParser = require('body-parser');
 const Sentry = require('@prairielearn/sentry');
+const fg = require('fast-glob');
 
 const dockerUtil = require('../lib/dockerUtil');
 const awsHelper = require('../lib/aws');
@@ -1402,14 +1403,19 @@ async function sendGradedFilesArchive(workspace_id, res) {
   const archive = archiver('zip');
   archive.pipe(res);
 
-  for (const file of workspaceSettings.workspace_graded_files) {
+  const gradedFiles = await fg(workspaceSettings.workspace_graded_files, {
+    cwd: workspaceDir,
+    stats: true,
+  });
+
+  for (const file of gradedFiles) {
     try {
-      const filePath = path.join(workspaceDir, file);
+      const filePath = path.join(workspaceDir, file.path);
       await fsPromises.lstat(filePath);
-      archive.file(filePath, { name: file });
-      debug(`Sending ${file}`);
+      archive.file(filePath, { name: file.path });
+      debug(`Sending ${file.path}`);
     } catch (err) {
-      logger.warn(`Graded file ${file} does not exist.`);
+      logger.warn(`Graded file ${file.path} does not exist.`);
       continue;
     }
   }
