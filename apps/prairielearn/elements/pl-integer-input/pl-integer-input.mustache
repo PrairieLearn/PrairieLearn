@@ -16,7 +16,7 @@
             <span class="input-group-text" id="pl-integer-input-{{uuid}}-label">{{{label}}}</span>
         </span>
         {{/label}}
-        <input name="{{name}}" type="text" class="form-control pl-integer-input-input {{^display_append_span}}rounded-right{{/display_append_span}}" size="{{size}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="pl-integer-input-{{uuid}}-label pl-integer-input-{{uuid}}-suffix" placeholder="{{placeholder}}"/>
+        <input name="{{name}}" type="text" autocomplete="off"   class="form-control pl-integer-input-input {{^display_append_span}}rounded-right{{/display_append_span}}" size="{{size}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="pl-integer-input-{{uuid}}-label pl-integer-input-{{uuid}}-suffix" placeholder="{{placeholder}}"/>
         <span class="input-group-append">
             {{#suffix}}
             <span class="input-group-text {{^show_info}}rounded-right{{/show_info}}" id="pl-integer-input-{{uuid}}-suffix">{{suffix}}</span>
