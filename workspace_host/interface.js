@@ -540,7 +540,6 @@ async function _getWorkspaceSettingsAsync(workspace_id) {
     workspace_home: result.rows[0].workspace_home,
     workspace_graded_files: result.rows[0].workspace_graded_files,
     workspace_args: result.rows[0].workspace_args || '',
-    workspace_sync_ignore: result.rows[0].workspace_sync_ignore || [],
     workspace_enable_networking: !!result.rows[0].workspace_enable_networking,
     // Convert {key: 'value'} to ['key=value'] and {key: null} to ['key'] for Docker API
     workspace_environment: Object.entries(workspace_environment).map(([k, v]) =>

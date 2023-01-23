@@ -62,7 +62,6 @@ The question's `info.json` should set the `singleVariant` and `workspaceOptions`
   - `home`: home directory inside the Docker image -- this should match the running user's home directory specified by the image maintainer and can't be used (for example) to switch the running user or their home directory
   - `gradedFiles` (optional, default none): list of file paths (relative to the `home` path) that will be copied out of the workspace container for grading. Files can be in subdirectories, but the files must be explicitly listed (e.g. listing `dir/file.txt` is okay, but specifying `dir` alone is not). If a file is in a subdirectory, the relative path to the file will be reconstructed inside the autograder.
   - `args` (optional, default none): command line arguments to pass to the Docker image
-  - `syncIgnore` (optional, default none): list of files or directories that will be excluded from sync
   - `rewriteUrl` (optional, default true): if true, the URL will be rewritten such that the workspace container will see all requests as originating from /
   - `enableNetworking` (optional, default false): whether the workspace should be allowed to connect to the public internet. This is disabled by default to make secure, isolated execution the default behavior. This restriction is not enforced when running PrairieLearn in local development mode. It is strongly recommended to use the default (no networking) for exam questions, because network access can be used to enable cheating. Only enable networking for homework questions, and only if it is strictly required, for example for downloading data from the internet.
   - `environment` (optional, default `{}`): environment variables to set inside the workspace container. Set variables using `{"VAR": "value", ...}`, and unset variables using `{"VAR": null}` (no quotes around `null`).
@@ -83,10 +82,7 @@ For an ungraded workspace, a full `info.json` file should look something like:
         "image": "codercom/code-server",
         "port": 8080,
         "home": "/home/coder",
-        "args": "--auth none",
-        "syncIgnore": [
-            ".local/share/code-server/"
-        ]
+        "args": "--auth none"
     }
 }
 ```
@@ -112,9 +108,6 @@ For an externally graded workspace, a full `info.json` file should look somethin
             "starter_code.h",
             "starter_code.c",
             "docs/writeup.txt"
-        ],
-        "syncIgnore": [
-            ".local/share/code-server/"
         ]
     },
     "gradingMethod": "External",

@@ -375,7 +375,6 @@ const FILE_UUID_REGEX =
  * @property {string} home
  * @property {string} args
  * @property {string[]} gradedFiles
- * @property {string[]} syncIgnore
  * @property {string} rewriteUrl
  * @property {boolean} enableNetworking
  * @property {Record<string, string | null>} environment
