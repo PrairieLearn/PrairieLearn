@@ -63,7 +63,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # due to linked workaround, empty titles will still trigger {{#title}},
     # so keep empty titles out of params entirely
     if title:
-        html_params["title"] = {"title": title} # https://github.com/noahmorrison/chevron/issues/117
+        html_params["title"] = {
+            "title": title  # https://github.com/noahmorrison/chevron/issues/117
+        }
 
     with open("pl-card.mustache", "r", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()
