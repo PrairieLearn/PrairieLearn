@@ -8,9 +8,10 @@ import prairielearn as pl
 import pygraphviz
 
 ENGINE_DEFAULT = "dot"
+# Legacy default
 PARAMS_NAME_MATRIX_DEFAULT = None
+PARAMS_NAME_DEFAULT = None
 PARAMS_NAME_LABELS_DEFAULT = None
-PARAMS_NAME_GRAPH_DEFAULT = None
 PARAMS_TYPE_DEFAULT = "adjacency-matrix"
 WEIGHTS_DEFAULT = None
 WEIGHTS_DIGITS_DEFAULT = 2
@@ -24,11 +25,9 @@ def graphviz_from_networkx(
 ) -> str:
 
     engine = pl.get_string_attrib(element, "engine", ENGINE_DEFAULT)
-    input_param_graph = pl.get_string_attrib(
-        element, "params-name-networkx", PARAMS_NAME_GRAPH_DEFAULT
-    )
+    input_param_name = pl.get_string_attrib(element, "params-name")
 
-    networkx_graph = pl.from_json(data["params"][input_param_graph])
+    networkx_graph = pl.from_json(data["params"][input_param_name])
 
     G = nx.nx_agraph.to_agraph(networkx_graph)
     G.layout(engine)
@@ -42,9 +41,13 @@ def graphviz_from_adj_matrix(
     # Get matrix attributes
 
     engine = pl.get_string_attrib(element, "engine", ENGINE_DEFAULT)
+
+    # Legacy input with passthrough
     input_param_matrix = pl.get_string_attrib(
-        element, "params-name-matrix", PARAMS_NAME_MATRIX_DEFAULT
+        element, "params-name-matrix", PARAMS_NAME_DEFAULT
     )
+    input_param_name = pl.get_string_attrib(element, "params-name", input_param_matrix)
+
     input_label = pl.get_string_attrib(
         element, "params-name-labels", PARAMS_NAME_LABELS_DEFAULT
     )
@@ -52,7 +55,7 @@ def graphviz_from_adj_matrix(
         element, "negative-weights", NEGATIVE_WEIGHTS_DEFAULT
     )
 
-    mat = np.array(pl.from_json(data["params"][input_param_matrix]))
+    mat = np.array(pl.from_json(data["params"][input_param_name]))
     show_weights = pl.get_boolean_attrib(
         element, "weights", WEIGHTS_DEFAULT
     )  # by default display weights for stochastic matrices
@@ -72,7 +75,7 @@ def graphviz_from_adj_matrix(
 
     if mat.shape[0] != mat.shape[1]:
         raise ValueError(
-            f'Non-square adjacency matrix "{input_param_matrix}" of size ({mat.shape[0]}, {mat.shape[1]}) given as input.'
+            f'Non-square adjacency matrix "{input_param_name}" of size ({mat.shape[0]}, {mat.shape[1]}) given as input.'
         )
 
     if label is not None:
@@ -80,14 +83,14 @@ def graphviz_from_adj_matrix(
         if mat_label.shape[0] != mat.shape[0]:
             raise ValueError(
                 f'Dimension {mat_label.shape[0]} of the label "{input_label}"'
-                f'is not consistent with the dimension {mat.shape[0]} of the matrix "{input_param_matrix}".'
+                f'is not consistent with the dimension {mat.shape[0]} of the matrix "{input_param_name}".'
             )
     else:
         mat_label = range(mat.shape[1])
 
     if not directed and not np.allclose(mat, mat.T):
         raise ValueError(
-            f'Input matrix "{input_param_matrix}" must be symmetric if rendering is set to be undirected.'
+            f'Input matrix "{input_param_name}" must be symmetric if rendering is set to be undirected.'
         )
 
     # Auto detect showing weights if any of the weights are not 1 or 0
@@ -127,7 +130,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "directed",
         "engine",
         "params-name-matrix",
-        "params-name-networkx",
+        "params-name",
         "weights",
         "weights-digits",
         "weights-presentation-type",
@@ -161,26 +164,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     engine = pl.get_string_attrib(element, "engine", ENGINE_DEFAULT)
 
+    # Legacy input with passthrough
     input_param_matrix = pl.get_string_attrib(
-        element, "params-name-matrix", PARAMS_NAME_MATRIX_DEFAULT
+        element, "params-name-matrix", PARAMS_NAME_DEFAULT
     )
-
-    input_param_graph = pl.get_string_attrib(
-        element, "params-name-networkx", PARAMS_NAME_GRAPH_DEFAULT
-    )
+    input_param_name = pl.get_string_attrib(element, "params-name", input_param_matrix)
 
     input_type = pl.get_string_attrib(element, "params-type", PARAMS_TYPE_DEFAULT)
 
-    if (
-        len(str(element.text)) == 0
-        and input_param_matrix is None
-        and input_param_graph is None
-    ):
+    if len(str(element.text)) == 0 and input_param_name is None:
         raise ValueError(
             "No graph source given! Must either define graph in HTML or provide source in params."
         )
 
-    if input_param_matrix is not None or input_param_graph is not None:
+    if input_param_name is not None:
         if input_type in matrix_backends:
             graphviz_data = json.dumps(matrix_backends[input_type](element, data))
         else:

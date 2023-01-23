@@ -1635,7 +1635,7 @@ Graphviz DOT visualizations.
 **question.html**
 
 ```html
-<pl-graph params-name-matrix="matrix" params-name-labels="labels"></pl-graph>
+<pl-graph params-name="matrix" params-name-labels="labels"></pl-graph>
 ```
 
 **server.py**
@@ -1656,7 +1656,7 @@ def generate(data):
 **question.html**
 
 ```html
-<pl-graph params-name-networkx="random-graph"></pl-graph>
+<pl-graph params-name="random-graph"></pl-graph>
 ```
 
 **server.py**
@@ -1679,7 +1679,7 @@ def generate(data):
 | Attribute                   | Type    | Default            | Description                                                                                                                                                                                                                                                             |
 | --------------------------- | ------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `engine`                    | string  | dot                | The rendering engine to use; supports `circo`, `dot`, `fdp`, `neato`, `osage`, and `twopi`.                                                                                                                                                                             |
-| `params-name-matrix`        | string  | `None`             | The the name of a parameter containing the adjacency matrix to use as input if `params-type` is set to `adjacency-matrix`.                                                                                                                                              |
+| `params-name`               | string  | `None`             | The the name of a parameter containing the data to use as input. Data type to use depends on `params-type` attribute.                                                                                                                                                   |
 | `params-name-labels`        | string  | `None`             | When using an adjacency matrix, the parameter that contains the labels for each node.                                                                                                                                                                                   |
 | `params-type`               | string  | `adjacency-matrix` | Which backend to use for rendering a graph from data. By default, only `adjacency-matrix` and `networkx` exist, but custom types can be added through extensions.                                                                                                       |
 | `weights`                   | boolean | `None`             | When using an adjacency matrix, whether or not to show the edge weights. By default will automatically show weights for stochastic matrices (when they are not binary `0`/`1`).                                                                                         |
@@ -1687,7 +1687,6 @@ def generate(data):
 | `negative-weights`          | boolean | false              | Whether to recognize negative weights in an adjacency matrix. If set to false, then all weights at most 0 are ignored (not counted as an edge). If set to true, then all weights that are not `None` are recognized.                                                    |
 | `directed`                  | boolean | true               | Whether to treat edges in an adjacency matrix as directed or undirected. If set to false, then edges will be rendered as undirected. _The input adjacency matrix must be symmetric if this is set to false._                                                            |
 | `weights-presentation-type` | string  | `'f'`              | Number display format for the weights when using an adjacency matrix. If presentation-type is 'sigfig', each number is formatted using the to_precision module to digits significant figures. Otherwise, each number is formatted as `{:.{digits}{presentation-type}}`. |
-| `params-name-networkx`      | string  | `None`             | The name of a parameter containing a networkx graph to use as input if `params-type` is set to `networkx`.                                                                                                                                                              |
 
 #### Details
 
