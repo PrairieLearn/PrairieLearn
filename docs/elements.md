@@ -1873,7 +1873,12 @@ Displays question content within a card-styled component. Optionally displays co
 #### Sample element
 
 ```html
-<pl-card header="Header" title="Title" width="50%" img-bottom-src="https://picsum.photos/536/354">
+<pl-card
+  header="Header"
+  title="Title"
+  width="50%"
+  img-bottom-src="https://via.placeholder.com/720x480"
+>
   <pl-question-panel> This card is 50% width and has a bottom image cap. </pl-question-panel>
 </pl-card>
 ```
