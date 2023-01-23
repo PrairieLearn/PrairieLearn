@@ -244,12 +244,6 @@ make start
 
 For development it is helpful to run the above two commands in separate `tmux` windows. There is a `tmux` script in the container at `/PrairieLearn/tools/start_workspace_tmux.sh` that you might find useful.
 
-## Running locally (natively, not on Docker)
-
-Set these variables in your `config.json`:
-
-- `workspaceHostZipsDirectory`
-
 ## Permissions in production
 
 When running a workspace container locally the user/group is the default setting for docker, which is typically root. In production, workspaces are run with user:group set to 1001:1001. If the workspace relies on root permissions (e.g., uses a port number below 1024) then it may work locally and fail in production. To test a workspace locally, run it like this:
