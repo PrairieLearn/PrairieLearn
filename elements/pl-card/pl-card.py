@@ -51,7 +51,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     html_params = {
         "header": header,
-        "title": {"title": title},  # https://github.com/noahmorrison/chevron/issues/117
         "subtitle": subtitle,
         "footer": footer,
         "img-top-src": img_top_src,
@@ -61,5 +60,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "width": width.strip("%"),
         "content": content,
     }
+    # due to linked workaround, empty titles will still trigger {{#title}},
+    # so keep empty titles out of params entirely
+    if title:
+        html_params["title"] = {"title": title} # https://github.com/noahmorrison/chevron/issues/117
+
     with open("pl-card.mustache", "r", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()
