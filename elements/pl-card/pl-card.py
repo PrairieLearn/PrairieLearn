@@ -52,6 +52,4 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "content": content,
     }
     with open("pl-card.mustache", "r", encoding="utf-8") as f:
-        html = chevron.render(f, html_params).strip()
-
-    return html
+        return chevron.render(f, html_params).strip()
