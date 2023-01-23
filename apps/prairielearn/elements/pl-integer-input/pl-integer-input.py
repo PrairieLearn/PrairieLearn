@@ -85,6 +85,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
     size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
     base = pl.get_integer_attrib(element, "base", BASE_DEFAULT)
+    show_info = pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT)
 
     if data["panel"] == "question":
         editable = data["editable"]
@@ -117,10 +118,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "placeholder": placeholder,
             "size": size,
             "base": base,
-            "show_info": pl.get_boolean_attrib(
-                element, "show-help-text", SHOW_HELP_TEXT_DEFAULT
-            ),
+            "show_info": show_info,
             "uuid": pl.get_uuid(),
+            display.value: True,
+            "display_append_span": show_info or suffix,
         }
 
         score = data["partial_scores"].get(name, {"score": None}).get("score", None)
@@ -128,9 +129,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
-
-        html_params["display_append_span"] = html_params["show_info"] or suffix
-        html_params[display.value] = True
 
         if raw_submitted_answer is not None:
             html_params["raw_submitted_answer"] = escape(raw_submitted_answer)
