@@ -7,7 +7,9 @@ TITLE_DEFAULT = ""
 SUBTITLE_DEFAULT = ""
 FOOTER_DEFAULT = ""
 IMG_TOP_SRC_DEFAULT = ""
+IMG_TOP_ALT_DEFAULT = ""
 IMG_BOTTOM_SRC_DEFAULT = ""
+IMG_BOTTOM_ALT_DEFAULT = ""
 WIDTH_DEFAULT = "auto"
 
 
@@ -20,7 +22,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "subtitle",
         "footer",
         "img-top-src",
+        "img-top-alt",
         "img-bottom-src",
+        "img-bottom-alt",
         "width",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
@@ -34,8 +38,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     subtitle = pl.get_string_attrib(element, "subtitle", SUBTITLE_DEFAULT)
     footer = pl.get_string_attrib(element, "footer", FOOTER_DEFAULT)
     img_top_src = pl.get_string_attrib(element, "img-top-src", IMG_TOP_SRC_DEFAULT)
+    img_top_alt = pl.get_string_attrib(element, "img-top-alt", IMG_TOP_ALT_DEFAULT)
     img_bottom_src = pl.get_string_attrib(
         element, "img-bottom-src", IMG_BOTTOM_SRC_DEFAULT
+    )
+    img_bottom_alt = pl.get_string_attrib(
+        element, "img-bottom-alt", IMG_BOTTOM_ALT_DEFAULT
     )
     width = pl.get_string_attrib(element, "width", WIDTH_DEFAULT)
 
@@ -47,7 +55,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "subtitle": subtitle,
         "footer": footer,
         "img-top-src": img_top_src,
+        "img-top-alt": img_top_alt,
         "img-bottom-src": img_bottom_src,
+        "img-bottom-alt": img_bottom_alt,
         "width": width.strip("%"),
         "content": content,
     }

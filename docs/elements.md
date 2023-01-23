@@ -1880,16 +1880,18 @@ Displays question content within a card-styled component. Optionally displays co
 
 #### Customizations
 
-| Attribute        | Type   | Default | Description                             |
-| ---------------- | ------ | ------- | --------------------------------------- |
-| `header`         | string | -       | Contents of the card header             |
-| `title`          | string | -       | Contents of the card title              |
-| `subtitle`       | string | -       | Contents of the card subtitle           |
-| `contents`       | string | -       | Raw contents of the card body           |
-| `footer`         | string | -       | Contents of the card footer             |
-| `img-top-src`    | string | -       | Source URL for the top image cap        |
-| `img-bottom-src` | string | -       | Source URL for the bottom image cap     |
-| `width`          | string | auto    | Width of the card (25%, 50%, 75%, auto) |
+| Attribute        | Type   | Default | Description                                |
+| ---------------- | ------ | ------- | ------------------------------------------ |
+| `header`         | string | -       | Contents of the card header                |
+| `title`          | string | -       | Contents of the card title                 |
+| `subtitle`       | string | -       | Contents of the card subtitle              |
+| `contents`       | string | -       | Raw contents of the card body              |
+| `footer`         | string | -       | Contents of the card footer                |
+| `img-top-src`    | string | -       | Source URL for the top image cap           |
+| `img-top-alt`    | string | -       | Alternative text for the top image cap     |
+| `img-bottom-src` | string | -       | Source URL for the bottom image cap        |
+| `img-bottom-alt` | string | -       | Alternative text for the bottom image cap  |
+| `width`          | string | auto    | Width of the card (25%, 50%, 75%, auto)    |
 
 #### Details
 
