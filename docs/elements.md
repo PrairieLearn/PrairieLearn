@@ -1868,7 +1868,7 @@ Note that only one of the attributes `source-file-name`, `submitted-file-name` o
 
 ### `pl-card` element
 
-Displays question content within a card-styled component. Optionally displays content in a header, footer, or image caps via tag attributes.
+Displays question content within a card-styled component. Optionally displays a header, footer, and/or image via tag attributes.
 
 #### Sample element
 
@@ -1879,24 +1879,24 @@ Displays question content within a card-styled component. Optionally displays co
   width="50%"
   img-bottom-src="https://via.placeholder.com/720x480"
 >
-  <pl-question-panel> This card is 50% width and has a bottom image cap. </pl-question-panel>
+  <pl-question-panel> This card is 50% width and has a bottom image. </pl-question-panel>
 </pl-card>
 ```
 
 #### Customizations
 
-| Attribute        | Type   | Default | Description                               |
-| ---------------- | ------ | ------- | ----------------------------------------- |
-| `header`         | string | -       | Contents of the card header               |
-| `title`          | string | -       | Contents of the card title                |
-| `subtitle`       | string | -       | Contents of the card subtitle             |
-| `contents`       | string | -       | Raw contents of the card body             |
-| `footer`         | string | -       | Contents of the card footer               |
-| `img-top-src`    | string | -       | Source URL for the top image cap          |
-| `img-top-alt`    | string | -       | Alternative text for the top image cap    |
-| `img-bottom-src` | string | -       | Source URL for the bottom image cap       |
-| `img-bottom-alt` | string | -       | Alternative text for the bottom image cap |
-| `width`          | string | auto    | Width of the card (25%, 50%, 75%, auto)   |
+| Attribute        | Type   | Default | Description                             |
+| ---------------- | ------ | ------- | --------------------------------------- |
+| `header`         | string | -       | Contents of the card header             |
+| `title`          | string | -       | Contents of the card title              |
+| `subtitle`       | string | -       | Contents of the card subtitle           |
+| `contents`       | string | -       | Raw contents of the card body           |
+| `footer`         | string | -       | Contents of the card footer             |
+| `img-top-src`    | string | -       | Source URL for the top image            |
+| `img-top-alt`    | string | -       | Alternative text for the top image      |
+| `img-bottom-src` | string | -       | Source URL for the bottom image         |
+| `img-bottom-alt` | string | -       | Alternative text for the bottom image   |
+| `width`          | string | auto    | Width of the card (25%, 50%, 75%, auto) |
 
 #### Details
 
