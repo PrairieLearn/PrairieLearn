@@ -3,7 +3,7 @@
 /elements/pl-order-blocks @SethPoulsen
 /elements/pl-rich-text-editor @jonatanschroeder
 /elements/pl-dataframe @coatless @eliotwrobson
-/elements/pl-card @tdy @coatless
+/elements/pl-card @coatless @tdy
 
 /graders/c @jonatanschroeder
 /graders/java @jonatanschroeder
