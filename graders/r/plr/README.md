@@ -7,10 +7,12 @@ Helper functions for [PrairieLearn](https://github.com/PrairieLearn/PrairieLearn
 with [STAT385](https://stat385.org).
 
 
-### Example Workflow
+### Example Workflow Within the PrairieLearn External Autograder
 
 Here we assume the instructor has created a file called `solution.R` in the `tests` directory
 containing the reference answer and that the student has submitted a file called `submission.R`.
+See [the PrairieLearn docs](https://prairielearn.readthedocs.io/en/latest/) for more details 
+on the external autograder.
 
 For a question that test the creation of objects, a test file might look like:
 
