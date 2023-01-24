@@ -12,11 +12,13 @@ get_question_details(dir, pattern = "^test.*\\\\.[rR]$")
 \item{pattern}{A regular expression identifying test files in the directory}
 }
 \value{
-A data.frame object with colums name, file, and max_points
+A data.frame object with columns name, file, and max_points
 }
 \description{
 This function is inspired by the roxygen2 decoration of source files with content
 used to create the manual and help files. Here we expect two tags \code{@title}
 with the displayed title of the question, and \code{@score} with the number of
-available points.
+available points. There must be an equal number of both \code{@title} and \code{@score}
+tags in each file that is parsed, furthermore the test tags are matched sequentially,
+i.e. the \code{n}'th \code{@score} tag corresponds to the \code{n}'th \code{@title} tag.
 }

@@ -4,8 +4,7 @@
 \alias{test_question}
 \title{Run a whole question and report aggregate results}
 \usage{
-test_question(tests_dir = "/grade/tests/tests",
-  results_file = "results.json")
+test_question(tests_dir = "/grade/tests/tests", results_file = "results.json")
 }
 \arguments{
 \item{tests_dir}{Directory containing the test files for a question}

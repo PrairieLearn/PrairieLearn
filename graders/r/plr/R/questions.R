@@ -3,11 +3,13 @@
 #' This function is inspired by the roxygen2 decoration of source files with content
 #' used to create the manual and help files. Here we expect two tags \code{@title}
 #' with the displayed title of the question, and \code{@score} with the number of
-#' available points.
+#' available points. There must be an equal number of both \code{@title} and \code{@score}
+#' tags in each file that is parsed, furthermore the test tags are matched sequentially,
+#' i.e. the \code{n}'th \code{@score} tag corresponds to the \code{n}'th \code{@title} tag.
 #'
 #' @param dir Directory containing the test files for a question
 #' @param pattern A regular expression identifying test files in the directory
-#' @return A data.frame object with colums name, file, and max_points
+#' @return A data.frame object with columns name, file, and max_points
 get_question_details <- function(dir, pattern = "^test.*\\.[rR]$") {
     files <- list.files(path = dir,
                         pattern = pattern,
@@ -30,8 +32,11 @@ get_question_details <- function(dir, pattern = "^test.*\\.[rR]$") {
 
 #' Helper function to format result object returned to PL
 #'
+#' If there is an error, format the error message so that it can be displayed in
+#' the PL question details.
+#'
 #' @param msg Character variable with the error or warning received
-#' @param max_pts Optional numeric variable with maximal attainable points, usuall 100
+#' @param max_pts Optional numeric variable with maximal attainable points, usual 100
 #'
 #' @return A data.frame object with four elements as expected by PL
 message_to_test_result <- function(msg, max_pts=100) {

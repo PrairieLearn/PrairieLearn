@@ -9,11 +9,12 @@ message_to_test_result(msg, max_pts = 100)
 \arguments{
 \item{msg}{Character variable with the error or warning received}
 
-\item{max_pts}{Optional numeric variable with maximal attainable points, usuall 100}
+\item{max_pts}{Optional numeric variable with maximal attainable points, usual 100}
 }
 \value{
 A data.frame object with four elements as expected by PL
 }
 \description{
-Helper function to format result object returned to PL
+If there is an error, format the error message so that it can be displayed in
+the PL question details.
 }
