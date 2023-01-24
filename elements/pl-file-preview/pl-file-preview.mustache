@@ -58,10 +58,10 @@ $(() => {
       const hasDecodeError = li.getAttribute('data-decode-error') === 'true';
 
       const downloadButton = li.querySelector('a.file-preview-download');
-      downloadButton.setAttribute('href', `data:application/octet-stream;base64,${contents}`);
+      downloadButton.setAttribute('href', 'data:application/octet-stream;base64,' + contents);
 
       const image = li.querySelector('img');
-      image.setAttribute('src', `data:application/octet-stream;base64,${contents}`);
+      image.setAttribute('src', 'data:application/octet-stream;base64,' + contents);
 
       const code = li.querySelector('code');
       if (!hasDecodeError) {
