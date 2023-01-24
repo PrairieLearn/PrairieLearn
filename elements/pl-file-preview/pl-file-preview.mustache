@@ -8,7 +8,7 @@
       {{#has_files}}
       <ul class="list-group list-group-flush">
         {{#files}}
-        <li class="list-group-item" data-file="{{name}}" data-contents="{{contentsb64}}" data-decode-error="{{decode_error}}">
+        <li class="list-group-item" data-name="{{name}}" data-contents="{{contentsb64}}" data-decode-error="{{decode_error}}">
           <div class="file-status-container has-preview collapsed" data-toggle="collapse" data-target="#file-preview-contents-{{uuid}}-{{index}}">
             <div class="file-status-container-left">
               <i class="file-status-icon fa fa-check-circle" style="color: #4CAF50;" aria-hidden="true"></i>
@@ -16,14 +16,10 @@
               <p class="file-status">uploaded</p>
             </div>
             <div class="file-status-container-right">
-              <a
-                download="{{name}}"
-                class="btn btn-outline-secondary btn-sm file-preview-download"
-                onclick="event.stopPropagation();"
-              >
+              <button type="button" class="btn btn-outline-secondary btn-sm file-preview-download" disabled>
                 Download
-              </a>
-              <button type="button" class="btn btn-outline-secondary btn-sm file-preview-button" aria-expanded="false" aria-controls="file-preview-contents-{{uuid}}-{{index}}">
+              </button>
+              <button type="button" class="btn btn-outline-secondary btn-sm file-preview-button" aria-expanded="false" aria-controls="file-preview-contents-{{uuid}}-{{index}}" disabled>
                 <i class="file-preview-icon fa fa-angle-down"></i>
               </button>
             </div>
@@ -47,18 +43,31 @@
 <script>
 $(() => {
   function decodeBase64(str) {
-    return decodeURIComponent(Array.prototype.map.call(atob(str), c => {
+    return decodeURIComponent(Array.prototype.map.call(atob(str), (c) => {
       return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
     }).join(''));
   }
 
+  function downloadFile(name, contents) {
+    const aElement = document.createElement('a');
+    aElement.setAttribute('href', 'data:application/octet-stream;base64,' + contents);
+    aElement.setAttribute('download', name);
+    aElement.setAttribute('target', '_blank');
+    aElement.click();
+  }
+
   document.querySelectorAll('#file-preview-{{uuid}}').forEach((el) => {
     el.querySelectorAll('.list-group-item').forEach((li) => {
+      const name = li.getAttribute('data-name');
       const contents = li.getAttribute('data-contents')
       const hasDecodeError = li.getAttribute('data-decode-error') === 'true';
 
-      const downloadButton = li.querySelector('a.file-preview-download');
-      downloadButton.setAttribute('href', 'data:application/octet-stream;base64,' + contents);
+      const downloadButton = li.querySelector('button.file-preview-download');
+      downloadButton.addEventListener('click', (e) => {
+        e.stopPropagation();
+        downloadFile(name, contents);
+      });
+      downloadButton.removeAttribute('disabled');
 
       const image = li.querySelector('img');
       image.setAttribute('src', 'data:application/octet-stream;base64,' + contents);
@@ -69,6 +78,9 @@ $(() => {
       } else {
         code.innerText = 'Content preview is not available for this type of file.';
       }
+
+      const collapseButton = li.querySelector('button.file-preview-button');
+      collapseButton.removeAttribute('disabled');
     })
   })
 });
