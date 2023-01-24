@@ -43,9 +43,6 @@ if (argv._.length !== 1) {
 const coloredOutput = !argv.o && process.stdout.isTTY;
 
 const options = {
-  databaseName: argv._[0],
-  outputFormat: 'string',
-  coloredOutput: coloredOutput,
   ignoreTables: argv['ignore-tables'] || [],
   ignoreEnums: argv['ignore-enums'] || [],
   ignoreColumns: argv['ignore-columns'] || [],
@@ -85,18 +82,17 @@ function printDescription(description) {
     process.stdout.write(description.enums[enumName]);
     process.stdout.write('\n\n');
   });
-
-  process.exit(0);
 }
 
-async function writeDescriptionToDisk(description, dir) {
+async function writeDescriptionToDisk(description, dir, coloredOutput) {
+  const formattedDescription = databaseDescribe.formatDescription(description, { coloredOutput });
   await fs.emptyDir(dir);
   await fs.mkdir(path.join(dir, 'tables'));
   await fs.mkdir(path.join(dir, 'enums'));
-  await async.eachOf(description.tables, async (value, key) => {
+  await async.eachOf(formattedDescription.tables, async (value, key) => {
     await fs.writeFile(path.join(dir, 'tables', `${key}.pg`), value);
   });
-  await async.eachOf(description.enums, async (value, key) => {
+  await async.eachOf(formattedDescription.enums, async (value, key) => {
     await fs.writeFile(path.join(dir, 'enums', `${key}.pg`), value);
   });
 }
