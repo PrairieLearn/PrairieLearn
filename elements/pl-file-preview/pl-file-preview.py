@@ -34,14 +34,15 @@ def render(element_html, data):
         for idx, file in enumerate(submitted_files):
             b64contents = file["contents"] or ""
             try:
-                contents = base64.b64decode(b64contents).decode()
+                base64.b64decode(b64contents).decode()
+                decode_error = False
             except UnicodeDecodeError:
-                contents = "Content preview is not available for this type of file."
+                decode_error = True
             files.append(
                 {
                     "name": file["name"],
-                    "contents": contents,
                     "contentsb64": b64contents,
+                    "decode_error": "true" if decode_error else "false",
                     "index": idx,
                 }
             )

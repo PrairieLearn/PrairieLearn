@@ -8,7 +8,7 @@
       {{#has_files}}
       <ul class="list-group list-group-flush">
         {{#files}}
-        <li class="list-group-item" data-file="{{name}}">
+        <li class="list-group-item" data-file="{{name}}" data-contents="{{contentsb64}}" data-decode-error="{{decode_error}}">
           <div class="file-status-container has-preview collapsed" data-toggle="collapse" data-target="#file-preview-contents-{{uuid}}-{{index}}">
             <div class="file-status-container-left">
               <i class="file-status-icon fa fa-check-circle" style="color: #4CAF50;" aria-hidden="true"></i>
@@ -16,18 +16,20 @@
               <p class="file-status">uploaded</p>
             </div>
             <div class="file-status-container-right">
-              <a download="{{name}}" class="btn btn-outline-secondary btn-sm"
-                 onclick="event.stopPropagation();"
-                 href="data:application/octet-stream;base64,{{contentsb64}}">
-                 Download
+              <a
+                download="{{name}}"
+                class="btn btn-outline-secondary btn-sm file-preview-download"
+                onclick="event.stopPropagation();"
+              >
+                Download
               </a>
-              <button type="button" class="btn btn-outline-secondary btn-sm file-preview-button">
+              <button type="button" class="btn btn-outline-secondary btn-sm file-preview-button" aria-expanded="false" aria-controls="file-preview-contents-{{uuid}}-{{index}}">
                 <i class="file-preview-icon fa fa-angle-down"></i>
               </button>
             </div>
           </div>
           <div class="file-preview collapse" id="file-preview-contents-{{uuid}}-{{index}}">
-            <pre class="bg-dark text-white rounded p-3 mb-0"><img class="w-100" src="data:application/octet-stream;base64,{{contentsb64}}" onerror="$(this).hide();$(this).parent().find('code').removeClass('d-none');"><code class="d-none">{{contents}}</code></pre>
+            <pre class="bg-dark text-white rounded p-3 mb-0"><img class="w-100" onerror="$(this).hide();$(this).parent().find('code').removeClass('d-none');"><code class="d-none"></code></pre>
           </div>
         </li>
         {{/files}}
@@ -41,3 +43,33 @@
     </div>
   </div>
 </div>
+
+<script>
+$(() => {
+  function decodeBase64(str) {
+    return decodeURIComponent(Array.prototype.map.call(atob(str), c => {
+      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+    }).join(''));
+  }
+
+  document.querySelectorAll('#file-preview-{{uuid}}').forEach((el) => {
+    el.querySelectorAll('.list-group-item').forEach((li) => {
+      const contents = li.getAttribute('data-contents')
+      const hasDecodeError = li.getAttribute('data-decode-error') === 'true';
+
+      const downloadButton = li.querySelector('a.file-preview-download');
+      downloadButton.setAttribute('href', `data:application/octet-stream;base64,${contents}`);
+
+      const image = li.querySelector('img');
+      image.setAttribute('src', `data:application/octet-stream;base64,${contents}`);
+
+      const code = li.querySelector('code');
+      if (!hasDecodeError) {
+        code.innerText = decodeBase64(contents);
+      } else {
+        code.innerText = 'Content preview is not available for this type of file.';
+      }
+    })
+  })
+});
+</script>
