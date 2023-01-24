@@ -45,11 +45,7 @@ describe('database', function () {
      * See https://github.com/PrairieLearn/PrairieLearn/issues/2256 for a bug caused by this problem.
      */
     const dbName = helperDb.getDatabaseNameForCurrentWorker();
-    const options = {
-      databaseName: dbName,
-      outputFormat: 'object',
-    };
-    const data = await databaseDescribe.describe(options);
+    const data = await databaseDescribe.describe(dbName);
 
     const tableHasDeletedAtColumn = (table) =>
       _.some(data.tables[table].columns, { name: 'deleted_at' });
