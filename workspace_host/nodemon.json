@@ -1,0 +1,15 @@
+{
+  "ignore": [
+    "public/*",
+    "exampleCourse/*",
+    "testCourse/*",
+    "s3rver/*",
+    "tests/*",
+    "pages/*",
+    "assets/*",
+    "api/*",
+    "admin_queries/*",
+    "server.js"
+  ],
+  "ext": "js,json,sql"
+}
