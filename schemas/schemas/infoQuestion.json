@@ -228,12 +228,14 @@
             "description": "Options for workspace questions.",
             "type": "object",
             "additionalProperties": {
-                "syncIgnore": {
-                    "description": "(deprecated) The list of files or directories that will be excluded from sync.",
-                    "type": "array",
-                    "items": {
-                        "description": "A single file or directory that will be excluded from sync.",
-                        "type": "string"
+                "properties": {
+                    "syncIgnore": {
+                        "description": "(deprecated) The list of files or directories that will be excluded from sync.",
+                        "type": "array",
+                        "items": {
+                            "description": "A single file or directory that will be excluded from sync.",
+                            "type": "string"
+                        }
                     }
                 }
             },
