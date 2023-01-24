@@ -4,6 +4,7 @@ from enum import Enum
 from typing import Any, Callable, Dict, Optional, Tuple, cast
 
 import lxml.html
+import networkx as nx
 import numpy as np
 import pandas as pd
 import prairielearn as pl
@@ -43,6 +44,35 @@ def test_encoding_legacy(df: pd.DataFrame) -> None:
     """Add compatibility test for legacy encoding"""
     reserialized_dataframe = cast(pd.DataFrame, pl.from_json(pl.to_json(df)))
     pd.testing.assert_frame_equal(df, reserialized_dataframe)
+
+
+@pytest.mark.parametrize(
+    "networkx_graph",
+    [
+        nx.cycle_graph(20),
+        nx.ladder_graph(20),
+        nx.lollipop_graph(20, 20),
+        nx.gn_graph(20),
+        nx.gnc_graph(20),
+    ],
+)
+def test_networkx_serialization(networkx_graph: Any) -> None:
+    """Test equality after conversion of various numpy objects."""
+
+    networkx_graph.graph["rankdir"] = "TB"
+
+    # Add some data to test that it's retained
+    for i, (in_node, out_node, edge_data) in enumerate(networkx_graph.edges(data=True)):
+        edge_data["weight"] = i
+        edge_data["label"] = chr(ord("a") + i)
+
+    json_object = json.dumps(pl.to_json(networkx_graph), allow_nan=False)
+    decoded_json_object = pl.from_json(json.loads(json_object))
+
+    assert type(networkx_graph) == type(decoded_json_object)
+
+    assert nx.utils.nodes_equal(networkx_graph.nodes(), decoded_json_object.nodes())
+    assert nx.utils.edges_equal(networkx_graph.edges(), decoded_json_object.edges())
 
 
 def test_inner_html() -> None:
