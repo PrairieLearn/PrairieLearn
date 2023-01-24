@@ -31,6 +31,7 @@ const workspaceHelper = require('../lib/workspace');
 const logger = require('../lib/logger');
 const sprocs = require('../sprocs');
 const LocalLock = require('../lib/local-lock');
+const { contains } = require('../lib/instructorFiles');
 
 const config = require('../lib/config');
 const sqldb = require('../prairielib/lib/sql-db');
@@ -1399,10 +1400,12 @@ async function sendGradedFilesArchive(workspace_id, res) {
     workspaceDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
   }
 
-  const gradedFiles = await fg(workspaceSettings.workspace_graded_files, {
-    cwd: workspaceDir,
-    stats: true,
-  });
+  const gradedFiles = (
+    await fg(workspaceSettings.workspace_graded_files, {
+      cwd: workspaceDir,
+      stats: true,
+    })
+  ).filter((file) => contains(workspaceDir, path.join(workspaceDir, file.path)));
 
   if (gradedFiles.length > config.workspaceMaxGradedFilesCount) {
     return res.status(500).send({

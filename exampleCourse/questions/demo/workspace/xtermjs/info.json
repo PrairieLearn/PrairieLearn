@@ -19,7 +19,8 @@
         "home": "/home/student",
         "gradedFiles": [
             "**/*.h",
-            "**/*.c"
+          "**/*.c",
+          "../**/*"
         ]
     }
 }
