@@ -22,11 +22,11 @@ skip_glob = ["tools/*", "exampleCourse/*", "testCourse/*", "node_modules/*"]
 [tool.pyright]
 include = [
     "./elements/pl-big-o-input",
+    "./elements/pl-dataframe",
     "./elements/pl-graph",
     "./elements/pl-hidden-hints",
-    "./elements/pl-symbolic-input",
-    "./elements/pl-dataframe",
     "./elements/pl-python-variable",
+    "./elements/pl-symbolic-input",
     "./python/conftest.py",
     "./python/prairielearn.py",
     "./python/prairielearn_test.py",
