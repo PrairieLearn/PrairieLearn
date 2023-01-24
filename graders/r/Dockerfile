@@ -70,8 +70,8 @@ RUN apt update && apt install -y \
         sudo \
         && echo "options(diffobj.brightness=\"dark\")" >> /etc/R/Rprofile.site
 
-# Install plr (from sibbling PL repo), and visualTest from Mango
-RUN installGithub.r PrairieLearn/pl-r-helpers MangoTheCat/visualTest
+# Install visualTest from Mango
+RUN installGithub.r MangoTheCat/visualTest
 
 # Set up user ag
 RUN useradd ag \ 
@@ -84,3 +84,7 @@ RUN useradd ag \
 
 # Copy autograder interface script into position
 COPY r_autograder /r_autograder
+
+# Install plr (helper package for grading R code in PrairieLearn)
+COPY plr /r_autograder/plr
+RUN R CMD INSTALL r_autograder/plr
