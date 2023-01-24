@@ -24,6 +24,7 @@ from typing import (
 
 import colors
 import lxml.html
+import networkx as nx
 import numpy as np
 import pandas
 import sympy
@@ -237,6 +238,7 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
         sympy.Expr (i.e., any scalar sympy expression) -> '_type': 'sympy'
         sympy.Matrix -> '_type': 'sympy_matrix'
         pandas.DataFrame -> '_type': 'dataframe'
+        any networkx graph type -> '_type': 'networkx_graph'
 
     Note that the 'dataframe_v2' encoding allows for missing and date time values whereas
     the 'dataframe' (default) does not. However, the 'dataframe' encoding allows for complex
@@ -325,6 +327,8 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
             raise ValueError(
                 f"Invalid df_encoding_version: {df_encoding_version}. Must be 1 or 2"
             )
+    elif isinstance(v, (nx.Graph, nx.DiGraph, nx.MultiGraph, nx.MultiDiGraph)):
+        return {"_type": "networkx_graph", "_value": nx.adjacency_data(v)}
     else:
         return v
 
@@ -343,6 +347,7 @@ def from_json(v):
         '_type': 'sympy_matrix' -> sympy.Matrix
         '_type': 'dataframe' -> pandas.DataFrame
         '_type': 'dataframe_v2' -> pandas.DataFrame
+        '_type': 'networkx_graph' -> corresponding networkx graph
 
     If v encodes an ndarray and has the field '_dtype', this function recovers
     its dtype.
@@ -437,6 +442,8 @@ def from_json(v):
                 # pandas read_json() can process it.
                 value_str = json.dumps(v["_value"])
                 return pandas.read_json(value_str, orient="table")
+            elif v["_type"] == "networkx_graph":
+                return nx.adjacency_graph(v["_value"])
             else:
                 raise Exception("variable has unknown type {:s}".format(v["_type"]))
     return v
