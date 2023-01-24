@@ -33,21 +33,29 @@ const options = {
 if (argv.db && !Array.isArray(argv.db) && argv.dir && !Array.isArray(argv.dir)) {
   // Ensure correct ordering for the sake of diffs
   if (process.argv.indexOf('--db') < process.argv.indexOf('--dir')) {
-    databaseDiff.diffDatabaseAndDirectory(argv.db, argv.dir, options, handleResults);
+    databaseDiff
+      .diffDatabaseAndDirectory(argv.db, argv.dir, options)
+      .then(handleResults, handleError);
   } else {
-    databaseDiff.diffDirectoryAndDatabase(argv.dir, argv.db, options, handleResults);
+    databaseDiff
+      .diffDirectoryAndDatabase(argv.dir, argv.db, options)
+      .then(handleResults, handleError);
   }
 } else if (argv.db && Array.isArray(argv.db) && argv.db.length === 2 && !argv.dir) {
-  databaseDiff.diffDatabases(argv.db[0], argv.db[1], options, handleResults);
+  databaseDiff.diffDatabases(argv.db[0], argv.db[1], options).then(handleResults, handleError);
 } else if (argv.dir && Array.isArray(argv.dir) && argv.dir.length === 2 && !argv.db) {
-  databaseDiff.diffDirectories(argv.dir[0], argv.dir[1], options, handleResults);
+  databaseDiff.diffDirectories(argv.dir[0], argv.dir[1], options).then(handleResults, handleError);
 } else {
   yargs.showHelp();
   process.exit(1);
 }
 
-function handleResults(err, results) {
-  if (ERR(err, (err) => console.log(err))) process.exit(1);
+function handleResults(results) {
   process.stdout.write(results);
   process.exit(0);
+}
+
+function handleError(err) {
+  console.error(err);
+  process.exit(1);
 }
