@@ -22,6 +22,7 @@ const asyncHandler = require('express-async-handler');
 const bodyParser = require('body-parser');
 const Sentry = require('@prairielearn/sentry');
 const fg = require('fast-glob');
+const { filesize } = require('filesize');
 
 const dockerUtil = require('../lib/dockerUtil');
 const awsHelper = require('../lib/aws');
@@ -1404,10 +1405,16 @@ async function sendGradedFilesArchive(workspace_id, res) {
   });
 
   if (gradedFiles.length > config.workspaceMaxGradedFilesCount) {
-    return res.status(500).send({ message: 'Too many files submitted in workspace.' });
+    return res.status(500).send({
+      message: `Cannot submit more than ${config.workspaceMaxGradedFilesCount} files from the workspace.`,
+    });
   }
   if (_.sumBy(gradedFiles, (file) => file.stats.size) > config.workspaceMaxGradedFilesSize) {
-    return res.status(500).send({ message: 'Workspace files are larger than allowed.' });
+    return res.status(500).send({
+      message: `Workspace files exceed limit of ${filesize(config.workspaceMaxGradedFilesSize, {
+        base: 2,
+      })}.`,
+    });
   }
 
   // Stream the archive back to the client as it's generated.
