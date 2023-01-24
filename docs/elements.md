@@ -56,11 +56,9 @@ images, files, and code display. The following **decorative** elements are avail
   code form for supported programming languages.
 - [`pl-matrix-latex`](#pl-matrix-latex-element): Displays matrices using
   appropriate LaTeX commands for use in a mathematical expression.
-- [`pl-python-variable`](#pl-python-variable-element): Display formatted output of Python
-  variables.
+- [`pl-python-variable`](#pl-python-variable-element): Display formatted output of Python variables.
 - [`pl-dataframe`](#pl-dataframe-element): Display DataFrames with various options.
-- [`pl-graph`](#pl-graph-element): Displays graphs, either using GraphViz DOT notation
-  or with an adjacency matrix.
+- [`pl-graph`](#pl-graph-element): Displays graphs, using GraphViz DOT notation, an adjacency matrix, or a networkx graph.
 - [`pl-drawing`](#pl-drawing-element): Creates an image from pre-defined
   collection of graphic objects
 - [`pl-overlay`](#pl-overlay-element): Allows layering existing elements on top of one another in specified positions.
@@ -1619,7 +1617,7 @@ Graphviz DOT visualizations.
 **question.html**
 
 ```html
-<pl-graph params-name-matrix="matrix" params-name-labels="labels"></pl-graph>
+<pl-graph params-name="matrix" params-name-labels="labels"></pl-graph>
 ```
 
 **server.py**
@@ -1635,19 +1633,46 @@ def generate(data):
     data["params"]["matrix"] = pl.to_json(mat)
 ```
 
+---
+
+**question.html**
+
+```html
+<pl-graph params-type="networkx" params-name="random-graph"></pl-graph>
+```
+
+**server.py**
+
+```python
+import prairielearn as pl
+import networkx as nx
+
+def generate(data):
+    random_graph = nx.gnm_random_graph(5, 6)
+
+    for in_node, out_node, edge_data in random_graph.edges(data=True):
+        edge_data["label"] = random.choice(string.ascii_lowercase)
+
+    data["params"]["random-graph"] = pl.to_json(random_graph)
+```
+
 #### Customizations
 
 | Attribute                   | Type    | Default            | Description                                                                                                                                                                                                                                                             |
 | --------------------------- | ------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `engine`                    | string  | dot                | The rendering engine to use; supports `circo`, `dot`, `fdp`, `neato`, `osage`, and `twopi`.                                                                                                                                                                             |
-| `params-name-matrix`        | string  | `None`             | The the name of a parameter containing the adjacency matrix to use as input for the graph.                                                                                                                                                                              |
+| `params-name`               | string  | `None`             | The the name of a parameter containing the data to use as input. Data type to use depends on `params-type` attribute.                                                                                                                                                   |
 | `params-name-labels`        | string  | `None`             | When using an adjacency matrix, the parameter that contains the labels for each node.                                                                                                                                                                                   |
-| `params-type`               | string  | `adjacency-matrix` | How to interpret the input data in `params-name-matrix`. By default, only `adjacency-matrix` exists but custom types can be added through extensions.                                                                                                                   |
+| `params-type`               | string  | `adjacency-matrix` | Which backend to use for rendering a graph from data. By default, only `adjacency-matrix` and `networkx` exist, but custom types can be added through extensions.                                                                                                       |
 | `weights`                   | boolean | `None`             | When using an adjacency matrix, whether or not to show the edge weights. By default will automatically show weights for stochastic matrices (when they are not binary `0`/`1`).                                                                                         |
 | `weights-digits`            | integer | `"2"`              | When using an adjacency matrix, how many digits to show for the weights.                                                                                                                                                                                                |
 | `negative-weights`          | boolean | false              | Whether to recognize negative weights in an adjacency matrix. If set to false, then all weights at most 0 are ignored (not counted as an edge). If set to true, then all weights that are not `None` are recognized.                                                    |
 | `directed`                  | boolean | true               | Whether to treat edges in an adjacency matrix as directed or undirected. If set to false, then edges will be rendered as undirected. _The input adjacency matrix must be symmetric if this is set to false._                                                            |
 | `weights-presentation-type` | string  | `'f'`              | Number display format for the weights when using an adjacency matrix. If presentation-type is 'sigfig', each number is formatted using the to_precision module to digits significant figures. Otherwise, each number is formatted as `{:.{digits}{presentation-type}}`. |
+
+#### Details
+
+Note that using networkx for rendering, attributes from the input networkx graph are retained when creating a Graphviz DOT visualization. As a result, it is possible to set node and edge properties such as color, line weight, as part of the input graph and have these reflected in the rendering. These include global properties of the graph, such as the `rankdir` used in rendering. See the [Graphviz documentation on attributes](https://graphviz.org/doc/info/attrs.html) for more information on what attributes are supported.
 
 #### Example implementations
 
