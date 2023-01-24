@@ -1,8 +1,6 @@
 #!/usr/bin/env node
 // @ts-check
 
-const ERR = require('async-stacktrace');
-
 const databaseDiff = require('../lib/databaseDiff');
 
 const yargs = require('yargs')
