@@ -35,11 +35,12 @@ GRADE_FUNCTION_DICT: Dict[BigOType, bou.BigOGradingFunctionT] = {
 
 VARIABLES_DEFAULT = ""
 SIZE_DEFAULT = 35
-PLACEHOLDER_TEXT_THRESHOLD = 20
 SHOW_HELP_TEXT_DEFAULT = True
 WEIGHT_DEFAULT = 1
 DISPLAY_DEFAULT = DisplayType.INLINE
 BIG_O_TYPE_DEFAULT = BigOType.BIG_O
+PLACEHOLDER_DEFAULT = "asymptotic expression"
+BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-big-o-input.mustache"
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -53,6 +54,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "display",
         "show-help-text",
         "type",
+        "placeholder",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -90,6 +92,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
 
     bigo_type = pl.get_enum_attrib(element, "type", BigOType, BIG_O_TYPE_DEFAULT).value
+    placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
 
     constants_class = phs._Constants()
 
@@ -112,7 +115,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         editable = data["editable"]
         raw_submitted_answer = data["raw_submitted_answers"].get(name)
 
-        with open("pl-big-o-input.mustache", "r", encoding="utf-8") as f:
+        with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
 
         if raw_submitted_answer is not None:
@@ -129,7 +132,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             ),
             "uuid": pl.get_uuid(),
             display.value: True,
-            "show_placeholder": size >= PLACEHOLDER_TEXT_THRESHOLD,
+            "placeholder": placeholder,
             "raw_submitted_answer": raw_submitted_answer,
             "type": bigo_type,
         }
@@ -138,7 +141,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
-        with open("pl-big-o-input.mustache", "r", encoding="utf-8") as f:
+        with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
@@ -160,13 +163,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else:
 
             # Use the existing format text in the invalid popup.
-            with open("pl-big-o-input.mustache", "r", encoding="utf-8") as f:
+            with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
                 info = chevron.render(f, info_params).strip()
 
             # Render invalid popup
             raw_submitted_answer = data["raw_submitted_answers"].get(name)
             if isinstance(parse_error, str):
-                with open("pl-big-o-input.mustache", "r", encoding="utf-8") as f:
+                with open(
+                    BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8"
+                ) as f:
                     parse_error += chevron.render(
                         f, {"format_error": True, "format_string": info}
                     ).strip()
@@ -189,7 +194,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
-        with open("pl-big-o-input.mustache", "r", encoding="utf-8") as f:
+        with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
 
     # Display the correct answer.
@@ -205,7 +210,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "a_tru": sympy.latex(a_tru),
             "type": bigo_type,
         }
-        with open("pl-big-o-input.mustache", "r", encoding="utf-8") as f:
+        with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
 
     assert_never(data["panel"])
