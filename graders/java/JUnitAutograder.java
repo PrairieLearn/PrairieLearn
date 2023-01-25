@@ -86,7 +86,7 @@ public class JUnitAutograder implements TestExecutionListener {
         } catch (UngradableException e) {
             autograder.gradable = false;
         } finally {
-            autograder.saveResults();
+            autograder.saveResults((String) paramsObject.get("signature"));
             // Force exit to ensure any pending threads don't cause the autograder to hang
             System.exit(0);
         }
@@ -182,7 +182,7 @@ public class JUnitAutograder implements TestExecutionListener {
         this.points += autograderTest.points;
     }
 
-    private void saveResults() {
+    private void saveResults(String signature) {
 
         double maxPoints = this.classTotals.entrySet().stream().mapToDouble(e -> {
                 if (e.getKey() != null) {
@@ -221,6 +221,7 @@ public class JUnitAutograder implements TestExecutionListener {
         results.put("message", this.message);
         results.put("gradable", this.gradable);
         results.put("tests", resultsTests);
+        results.put("signature", signature);
 
         try (FileWriter writer = new FileWriter(this.resultsFile)) {
             writer.write(results.toString());

@@ -43,11 +43,13 @@ fi
 
 RESULTS_TEMP_DIR=$(mktemp -d -p /grade/results)
 RESULTS_TEMP_FILE="$RESULTS_TEMP_DIR/$RANDOM.json"
+SIGNATURE=$(head -c 32 /dev/random | base64)
 
 jq -n --arg results_file "$RESULTS_TEMP_FILE" \
    --arg compile_output "$STUDENT_COMPILE_OUT" \
    --arg test_files "$TEST_FILES" \
-   '{results_file: $results_file, compile_output: $compile_output, test_files: $test_files}' > /grade/params/params.json
+   --arg signature "$SIGNATURE" \
+   '{results_file: $results_file, compile_output: $compile_output, test_files: $test_files, signature: $signature}' > /grade/params/params.json
 
 chmod 700 /javagrader
 chmod 711 /grade
@@ -63,7 +65,14 @@ java -cp "$CLASSPATH" JUnitAutograder
 EOF
 
 if [ -f $RESULTS_TEMP_FILE ] ; then
-    mv $RESULTS_TEMP_FILE $RESULTS_FILE
+    RESULT_SIGNATURE=$(jq -r '.signature' $RESULTS_TEMP_FILE)
+    if [ "$RESULT_SIGNATURE" != "$SIGNATURE" ] ; then
+        echo Expected signature: $SIGNATURE
+        echo Provided signature: $RESULT_SIGNATURE
+        exception "Results did not contain correct signature. Exploit suspected. Please contact the instructor."
+    else
+        mv $RESULTS_TEMP_FILE $RESULTS_FILE
+    fi
 else
     exception "No grading results could be retrieved.
 This usually means your program crashed before results could be saved.
