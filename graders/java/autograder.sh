@@ -17,6 +17,7 @@ exception() {
 
 mkdir -p /grade/results
 mkdir -p /grade/classpath
+mkdir -p /grade/params
 
 cp -r /javagrader/*.class /javagrader/org /javagrader/libs/* /grade/classpath
 cp -r /grade/tests/libs/*                                    /grade/classpath 2> /dev/null
@@ -43,15 +44,22 @@ fi
 RESULTS_TEMP_DIR=$(mktemp -d -p /grade/results)
 RESULTS_TEMP_FILE="$RESULTS_TEMP_DIR/$RANDOM.json"
 
+jq -n --arg results_file "$RESULTS_TEMP_FILE" \
+   --arg compile_output "$STUDENT_COMPILE_OUT" \
+   --arg test_files "$TEST_FILES" \
+   '{results_file: $results_file, compile_output: $compile_output, test_files: $test_files}' > /grade/params/params.json
+
 chmod 700 /javagrader
 chmod 711 /grade
 chmod 700 /grade/*
 chmod 711 /grade/results
 chmod -R a+rX /grade/classpath
 chmod 777 $RESULTS_TEMP_DIR
+chmod 777 /grade/params
+chmod 777 /grade/params/params.json
 
 su - sbuser <<EOF
-java -cp "$CLASSPATH" JUnitAutograder "$RESULTS_TEMP_FILE" "$TEST_FILES" "$STUDENT_COMPILE_OUT"
+java -cp "$CLASSPATH" JUnitAutograder
 EOF
 
 if [ -f $RESULTS_TEMP_FILE ] ; then

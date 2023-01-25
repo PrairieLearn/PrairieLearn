@@ -1,5 +1,6 @@
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import org.junit.platform.engine.DiscoverySelector;
 import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.engine.TestTag;
@@ -20,7 +21,9 @@ import javax.tools.StandardJavaFileManager;
 import javax.tools.ToolProvider;
 import java.io.File;
 import java.io.FileWriter;
+import java.io.FileReader;
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringWriter;
 import java.util.*;
 
@@ -52,11 +55,31 @@ public class JUnitAutograder implements TestExecutionListener {
 
     public static void main(String args[]) {
 
+        File paramsFile = new File("/grade/params/params.json");
+        JSONObject paramsObject = null;
+        try (Reader reader = new FileReader(paramsFile)) {
+            JSONParser paramsParser = new JSONParser();
+            paramsObject = (JSONObject) paramsParser.parse(reader);
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            paramsFile.delete();
+        }
+        if (paramsObject == null) {
+            System.err.println("Error parsing the parameter object.");
+            System.exit(0);
+        }
+        if (paramsFile.exists()) {
+            System.err.println("Error deleting the parameter file.");
+            System.exit(0);
+        }
+
         JUnitAutograder autograder = new JUnitAutograder();
-        autograder.resultsFile = args[0];
-        autograder.testClasses = args[1].split("\\s");
-        if (!"".equals(args[2]))
-            autograder.message = "Compilation warnings:\n\n" + args[2];
+        autograder.resultsFile = (String) paramsObject.get("results_file");
+        autograder.testClasses = ((String) paramsObject.get("test_files")).split("\\s");
+        String compilationWarnings = (String) paramsObject.get("compile_output");
+        if (compilationWarnings != null && !"".equals(compilationWarnings))
+            autograder.message = "Compilation warnings:\n\n" + compilationWarnings;
 
         try {
             autograder.runTests();
