@@ -78,3 +78,15 @@ has become increasingly complex, with many different possible combinations of op
   </pl-block-group>
   <pl-answer correct="true" tag="11" depends="g1,g2,g3">11</pl-answer>
 </pl-order-blocks>
+
+
+<pl-order-blocks answers-name="test-duplicate-tags"
+  grading-method="dag"
+  indentation="true"
+  partial-credit="none"
+  feedback="none">
+  <pl-answer correct="true"  tag="1" indent="0">def my_sum(first, second):</pl-answer>
+  <pl-answer correct="false" tag="1" indent="1">return first + second</pl-answer>
+  <pl-answer correct="false" tag="" indent="1">return first + second</pl-answer>
+  <pl-answer correct="false" tag="" indent="1">return first + second</pl-answer>
+</pl-order-blocks>
