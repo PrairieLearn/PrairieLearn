@@ -88,6 +88,10 @@ def worker_loop():
 
             # wait for a single line of input
             json_inp = sys.stdin.readline()
+
+            import time
+            start = time.time()
+
             # unpack the input line as JSON
             inp = json.loads(json_inp)
 
@@ -236,6 +240,9 @@ def worker_loop():
             outf.write(json_outp)
             outf.write("\n")
             outf.flush()
+
+            end = time.time()
+            print(f"time to json dump {file} ({fcn}): {end - start}s")
 
 
 worker_pid = 0

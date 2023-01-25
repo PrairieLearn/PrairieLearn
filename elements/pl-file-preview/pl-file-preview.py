@@ -3,6 +3,7 @@ import base64
 import chevron
 import lxml.html
 import prairielearn as pl
+import time
 
 
 def prepare(element_html, data):
@@ -15,6 +16,8 @@ def prepare(element_html, data):
 def render(element_html, data):
     if data["panel"] != "submission":
         return ""
+
+    start = time.time()
 
     html_params = {"uuid": pl.get_uuid()}
 
@@ -50,7 +53,11 @@ def render(element_html, data):
     else:
         html_params["has_files"] = False
 
+
     with open("pl-file-preview.mustache", "r", encoding="utf-8") as f:
         html = chevron.render(f, html_params).strip()
+
+    end = time.time()
+    print(f"Rendering took {end - start}s")
 
     return html

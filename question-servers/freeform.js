@@ -343,7 +343,7 @@ module.exports = {
     const directory = resolvedElementName;
 
     try {
-      return instrumented(`elementFunction:${fcn}:${elementName}`, () =>
+      return await instrumented(`elementFunction:${fcn}:${elementName}`, () =>
         codeCaller.call(type, directory, pythonFile, fcn, pythonArgs)
       );
     } catch (err) {
@@ -604,7 +604,6 @@ module.exports = {
               { data: ret_val, fatal: true }
             );
           }
-          console.log('parsing', ret_val);
           node = await instrumented('parse', () => parse5.parseFragment(ret_val));
         } else if (phase === 'file') {
           // Convert ret_val from base64 back to buffer (this always works,
