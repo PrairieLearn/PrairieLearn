@@ -343,7 +343,9 @@ module.exports = {
     const directory = resolvedElementName;
 
     try {
-      return await codeCaller.call(type, directory, pythonFile, fcn, pythonArgs);
+      return instrumented(`elementFunction:${fcn}:${elementName}`, () =>
+        codeCaller.call(type, directory, pythonFile, fcn, pythonArgs)
+      );
     } catch (err) {
       if (err instanceof FunctionMissingError) {
         // function wasn't present in server
@@ -560,9 +562,11 @@ module.exports = {
         }
         // We need to wrap it in another node, since only child nodes
         // are serialized
-        const serializedNode = parse5.serialize({
-          childNodes: [node],
-        });
+        const serializedNode = await instrumented('serialize', () =>
+          parse5.serialize({
+            childNodes: [node],
+          })
+        );
         let ret_val, consoleLog;
         try {
           ({ result: ret_val, output: consoleLog } = await module.exports.elementFunction(
@@ -600,7 +604,8 @@ module.exports = {
               { data: ret_val, fatal: true }
             );
           }
-          node = parse5.parseFragment(ret_val);
+          console.log('parsing', ret_val);
+          node = await instrumented('parse', () => parse5.parseFragment(ret_val));
         } else if (phase === 'file') {
           // Convert ret_val from base64 back to buffer (this always works,
           // whether or not ret_val is valid base64)
@@ -648,7 +653,7 @@ module.exports = {
     let questionHtml = '';
     try {
       const res = await visitNode(parse5.parseFragment(html));
-      questionHtml = parse5.serialize(res);
+      questionHtml = await instrumented('serialize', () => parse5.serialize(res));
     } catch (e) {
       courseIssues.push(e);
     }
@@ -833,7 +838,7 @@ module.exports = {
       html: processedHtml,
       fileData,
       renderedElementNames,
-    } = await processFunction(...args);
+    } = await instrumented('processFunction', () => processFunction(...args));
 
     if (phase === 'grade' || phase === 'test') {
       if (context.question.partial_credit) {
@@ -972,7 +977,9 @@ module.exports = {
         html,
         fileData,
         renderedElementNames,
-      } = await module.exports.processQuestionHtml(phase, codeCaller, data, context);
+      } = await instrumented('processQuestionHtml', () =>
+        module.exports.processQuestionHtml(phase, codeCaller, data, context)
+      );
       const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
       if (hasFatalError) {
         return {
@@ -988,13 +995,8 @@ module.exports = {
         data: serverData,
         html: serverHtml,
         fileData: serverFileData,
-      } = await module.exports.processQuestionServer(
-        phase,
-        codeCaller,
-        htmlData,
-        html,
-        fileData,
-        context
+      } = await instrumented('processQuestionServer', () =>
+        module.exports.processQuestionServer(phase, codeCaller, htmlData, html, fileData, context)
       );
       courseIssues.push(...serverCourseIssues);
       return {
