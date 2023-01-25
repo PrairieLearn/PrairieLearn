@@ -1,5 +1,3 @@
-import base64
-
 import chevron
 import lxml.html
 import prairielearn as pl
@@ -31,20 +29,13 @@ def render(element_html, data):
     # Pass through format errors from the file input elements
     html_params["errors"] = data["format_errors"].get("_files", [])
 
-    # Decode and reshape files into a useful form
+    # Reshape files into a useful form
     if len(submitted_files) > 0:
         files = []
         for idx, file in enumerate(submitted_files):
-            b64contents = file["contents"] or ""
-            try:
-                contents = base64.b64decode(b64contents).decode()
-            except UnicodeDecodeError:
-                contents = "Content preview is not available for this type of file."
             files.append(
                 {
                     "name": file["name"],
-                    "contents": contents,
-                    "contentsb64": b64contents,
                     "index": idx,
                 }
             )
