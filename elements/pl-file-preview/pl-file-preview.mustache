@@ -1,4 +1,4 @@
-<div id="file-preview-{{uuid}}">
+<div id="file-preview-{{uuid}}" data-submission-files-url="{{submission_files_url}}">
   {{#errors}}
   <div class="alert alert-danger"><strong>Error:</strong> {{.}}</div>
   {{/errors}}
@@ -16,19 +16,19 @@
               <p class="file-status">uploaded</p>
             </div>
             <div class="file-status-container-right">
-              <a download="{{name}}" class="btn btn-outline-secondary btn-sm"
-                 onclick="event.stopPropagation();"
-                 href="data:application/octet-stream;base64,{{contentsb64}}">
-                 Download
-              </a>
+              <button class="btn btn-outline-secondary btn-sm file-preview-download-file" disabled>
+                Download
+              </button>
               <button type="button" class="btn btn-outline-secondary btn-sm file-preview-button">
                 <i class="file-preview-icon fa fa-angle-down"></i>
               </button>
             </div>
           </div>
           <div class="file-preview collapse" id="file-preview-contents-{{uuid}}-{{index}}">
-            <pre class="bg-dark text-white rounded p-3 mb-0"><img class="w-100" src="data:application/octet-stream;base64,{{contentsb64}}" onerror="$(this).hide();$(this).parent().find('code').removeClass('d-none');"><code class="d-none">{{contents}}</code></pre>
+            <img class="w-100 d-none">
+            <pre class="bg-dark text-white rounded p-3 mb-0 d-none"><code></code></pre>
           </div>
+          <div>{{submission_files_url}}</div>
         </li>
         {{/files}}
       </ul>
@@ -41,3 +41,86 @@
     </div>
   </div>
 </div>
+
+<script>
+$(() => {
+  async function downloadFile(path, name) {
+    const result = await fetch(href, { method: 'GET' });
+    const blob = await result.blob();
+    const aElement = document.createElement('a');
+    aElement.setAttribute('download', name);
+    const href = URL.createObjectURL(blob);
+    aElement.href = href;
+    aElement.setAttribute('target', '_blank');
+    aElement.click();
+    URL.revokeObjectURL(href);
+  }
+
+  function escapePath(path) {
+    return path
+      .replace(/^\//, '')
+      .split('/')
+      .map((part) => encodeURIComponent(part))
+      .join('/');
+  }
+
+  function isBinary(decodedFileContents) {
+    const nulIdx = decodedFileContents.indexOf('\0');
+    const fileLength = decodedFileContents.length;
+    return nulIdx !== -1 && nulIdx <= Math.min(fileLength, 8000);
+  };
+
+  const filePreview = document.querySelector('#file-preview-{{uuid}}');
+  const submissionFilesUrl = filePreview.dataset.submissionFilesUrl;
+
+  filePreview.querySelectorAll('li').forEach((li) => {
+    const file = li.dataset.file;
+    const escapedFileName = escapePath(file);
+    const path = `${submissionFilesUrl}/${file}`;
+
+    const downloadButton = li.querySelector('.file-preview-download-file');
+    downloadButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      downloadFile(escapePath(), file).catch(err => {
+        // TODO: handle error
+        console.error(err);
+      });
+    });
+
+    let wasOpened = false;
+    const preview = li.querySelector('.file-preview')
+    $(preview).on('show.bs.collapse', () => {
+      if (wasOpened) return;
+      wasOpened = true;
+      const pre = preview.querySelector('pre');
+      const code = preview.querySelector('code');
+      const img = preview.querySelector('img');
+
+      fetch(path, { method: 'GET' })
+        .then(result => result.blob())
+        .then(async (blob) => {
+          const type = blob.type;
+          if (type === 'text/plain') {
+            const text = await blob.text();
+            code.textContent = text;
+            pre.classList.remove('d-none');
+          } else if (type.startsWith('image/')) {
+            const url = URL.createObjectURL(blob);
+            img.src = url;
+            img.onload = () => {
+              URL.revokeObjectURL(url);
+            };
+            img.classList.remove('d-none');
+          } else {
+            // We can't preview this file.
+            code.textContent = 'Content preview is not available for this type of file.';
+            pre.classList.remove('d-none');
+          }
+        }).catch(err => {
+          // TODO: handle error
+          console.error(err);
+        })
+    });
+  });
+});
+</script>

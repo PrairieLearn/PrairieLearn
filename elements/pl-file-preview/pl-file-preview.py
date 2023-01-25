@@ -16,7 +16,10 @@ def render(element_html, data):
     if data["panel"] != "submission":
         return ""
 
-    html_params = {"uuid": pl.get_uuid()}
+    html_params = {
+        "uuid": pl.get_uuid(),
+        "submission_files_url": data["options"]["submission_files_url"],
+    }
 
     # Fetch the list of required files for this question
     required_file_names = data["params"].get("_required_file_names", [])
