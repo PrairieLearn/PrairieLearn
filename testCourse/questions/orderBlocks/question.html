@@ -82,11 +82,11 @@ has become increasingly complex, with many different possible combinations of op
 
 <pl-order-blocks answers-name="test-duplicate-tags"
   grading-method="dag"
-  indentation="true"
   partial-credit="none"
   feedback="none">
-  <pl-answer correct="true"  tag="1" indent="0">def my_sum(first, second):</pl-answer>
-  <pl-answer correct="false" tag="1" indent="1">return first + second</pl-answer>
-  <pl-answer correct="false" tag="" indent="1">return first + second</pl-answer>
-  <pl-answer correct="false" tag="" indent="1">return first + second</pl-answer>
+  <pl-answer correct="true"  tag="1" >A</pl-answer>
+  <pl-answer correct="true"  tag="2" depends="1">AA</pl-answer>
+  <pl-answer correct="false" tag="1" >B</pl-answer>
+  <pl-answer correct="false" tag="" >C</pl-answer>
+  <pl-answer correct="false" tag="" >D</pl-answer>
 </pl-order-blocks>
