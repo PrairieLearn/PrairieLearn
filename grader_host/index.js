@@ -396,8 +396,9 @@ function runJob(info, callback) {
   } = info;
 
   let results = {};
-  let jobTimeout = timeout || 30;
-  let globalJobTimeout = jobTimeout * 2;
+  let runTimeout = timeout || 30;
+  // For jobs with a really short timeout, we want to make sure that
+  let jobTimeout = Math.max(config.externalGradingMinimumJobTimeout, runTimeout * 2);
   let jobEnableNetworking = enableNetworking || false;
   let jobEnvironment = environment || {};
 
@@ -406,8 +407,8 @@ function runJob(info, callback) {
   const globalJobTimeoutId = setTimeout(() => {
     jobFailed = true;
     healthCheck.flagUnhealthy('Job timeout exceeded; Docker presumed dead.');
-    return callback(new Error(`Job timeout of ${globalJobTimeout}s exceeded.`));
-  }, globalJobTimeout * 1000);
+    return callback(new Error(`Job timeout of ${jobTimeout}s exceeded.`));
+  }, jobTimeout * 1000);
 
   logger.info('Launching Docker container to run grading job');
 
@@ -486,7 +487,7 @@ function runJob(info, callback) {
           container.kill().catch((err) => {
             globalLogger.error('Error killing container', err);
           });
-        }, jobTimeout * 1000);
+        }, runTimeout * 1000);
 
         logger.info('Waiting for container to complete');
         try {
