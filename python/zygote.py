@@ -242,7 +242,7 @@ def worker_loop():
             outf.flush()
 
             end = time.time()
-            print(f"time to json dump {file} ({fcn}): {end - start}s")
+            # print(f"time to json dump {file} ({fcn}): {end - start}s")
 
 
 worker_pid = 0

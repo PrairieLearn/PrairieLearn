@@ -58,6 +58,6 @@ def render(element_html, data):
         html = chevron.render(f, html_params).strip()
 
     end = time.time()
-    print(f"Rendering took {end - start}s")
+    # print(f"Rendering took {end - start}s")
 
     return html
