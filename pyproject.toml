@@ -22,6 +22,8 @@ skip_glob = ["tools/*", "exampleCourse/*", "testCourse/*", "node_modules/*"]
 [tool.pyright]
 include = [
     "./elements/pl-big-o-input",
+    "./elements/pl-file-preview",
+    "./elements/pl-file-upload",
     "./elements/pl-graph",
     "./elements/pl-hidden-hints",
     "./elements/pl-symbolic-input",
