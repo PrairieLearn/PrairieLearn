@@ -100,7 +100,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     try:
         parsed_files = json.loads(files)
-    except ValueError:
+    except Exception:
         add_format_error(data, "Could not parse submitted files.")
         parsed_files = []
 
