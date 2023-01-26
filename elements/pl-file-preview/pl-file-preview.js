@@ -1,8 +1,29 @@
 /* eslint-env browser,jquery */
 
 (() => {
+  /**
+   * A wrapper around fetch that return null on any error. This can simplify
+   * error handling for callers.
+   * @param {RequestInfo | URL} input
+   * @param {RequestInit} init
+   * @returns {Promise<Response | null>}
+   */
+  async function safeFetch(input, init) {
+    try {
+      const res = await fetch(input, init);
+      if (!res.ok) return null;
+      return res;
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
+  }
+
   async function downloadFile(path, name) {
     const result = await fetch(path, { method: 'GET' });
+    if (!result.ok) {
+      throw new Error(`Failed to download file: ${result.status}`);
+    }
     const blob = await result.blob();
     const aElement = document.createElement('a');
     aElement.setAttribute('download', name);
@@ -31,26 +52,44 @@
         const escapedFileName = escapePath(file);
         const path = `${submissionFilesUrl}/${escapedFileName}`;
 
+        const errorMessage = li.querySelector('.alert.error');
+
+        function showErrorMessage() {
+          errorMessage.classList.remove('d-none');
+        }
+
+        function hideErrorMessage() {
+          errorMessage.classList.add('d-none');
+        }
+
         const downloadButton = li.querySelector('.file-preview-download-file');
         downloadButton.addEventListener('click', (event) => {
           event.stopPropagation();
-          downloadFile(path, file).catch((err) => {
-            // TODO: handle error
-            console.error(err);
-          });
+          downloadFile(path, file)
+            .then(() => {
+              hideErrorMessage();
+            })
+            .catch((err) => {
+              console.error(err);
+              showErrorMessage();
+            });
         });
 
         let wasOpened = false;
         const preview = li.querySelector('.file-preview');
         $(preview).on('show.bs.collapse', () => {
           if (wasOpened) return;
-          wasOpened = true;
           const pre = preview.querySelector('pre');
           const code = preview.querySelector('code');
           const img = preview.querySelector('img');
 
           fetch(path, { method: 'GET' })
-            .then((result) => result.blob())
+            .then((result) => {
+              if (!result.ok) {
+                throw new Error(`Failed to download file: ${result.status}`);
+              }
+              return result.blob();
+            })
             .then(async (blob) => {
               const type = blob.type;
               if (type === 'text/plain') {
@@ -69,10 +108,12 @@
                 code.textContent = 'Content preview is not available for this type of file.';
                 pre.classList.remove('d-none');
               }
+              wasOpened = true;
+              hideErrorMessage();
             })
             .catch((err) => {
-              // TODO: handle error
               console.error(err);
+              showErrorMessage('An error occurred while downloading the file.');
             });
         });
       });

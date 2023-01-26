@@ -64,7 +64,7 @@ router.get(
     // return;
 
     // Artificial delay for testing.
-    // await new Promise((resolve) => setTimeout(resolve, 5000));
+    // await new Promise((resolve) => setTimeout(resolve, 3000));
 
     // To avoid having to do expensive content checks on the client, we'll do
     // our best to guess a mime type for the file.
