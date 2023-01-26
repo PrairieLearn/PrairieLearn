@@ -72,7 +72,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # Only send the file names to the client. We don't include the contents
     # to avoid bloating the HTML. The client will fetch any submitted files
     # asynchronously once the page loads.
-    submitted_file_names = [x.get("name") for x in filtered_files]
+    submitted_file_names = list({x.get("name") for x in files} & set(file_names))
     html_params["submitted_file_names"] = json.dumps(
         submitted_file_names, allow_nan=False
     )
