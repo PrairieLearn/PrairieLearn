@@ -29,13 +29,13 @@ def get_answer_name(file_names: str) -> str:
     )
 
 
-def add_format_error(data: pl.QuestionData, error_string: str):
+def add_format_error(data: pl.QuestionData, error_string: str) -> None:
     if "_files" not in data["format_errors"]:
         data["format_errors"]["_files"] = []
     data["format_errors"]["_files"].append(error_string)
 
 
-def prepare(element_html: str, data: pl.QuestionData):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["file-names"]
     optional_attribs = []
@@ -47,7 +47,7 @@ def prepare(element_html: str, data: pl.QuestionData):
     data["params"]["_required_file_names"].extend(file_names)
 
 
-def render(element_html: str, data: pl.QuestionData):
+def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] != "question":
         return ""
 
@@ -81,7 +81,7 @@ def render(element_html: str, data: pl.QuestionData):
         return chevron.render(f, html_params).strip()
 
 
-def parse(element_html: str, data: pl.QuestionData):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     raw_file_names = pl.get_string_attrib(element, "file-names", "")
     required_file_names = get_file_names_as_array(raw_file_names)

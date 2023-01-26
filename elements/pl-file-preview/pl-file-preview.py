@@ -2,7 +2,7 @@ import chevron
 import prairielearn as pl
 
 
-def render(element_html: str, data: pl.QuestionData):
+def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] != "submission":
         return ""
 
