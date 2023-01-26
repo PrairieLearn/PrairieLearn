@@ -1,5 +1,4 @@
 /* eslint-env browser,jquery */
-/* global _ */
 $(function () {
   if (!window.File || !window.FileReader || !window.FileList || !window.Blob) {
     alert(
@@ -37,9 +36,9 @@ window.PLFileUpload.prototype.initializeTemplate = function () {
     url: '/none',
     autoProcessQueue: false,
     accept: function (file, done) {
-      // fuzzy case:
+      // fuzzy case match
       const fileNameLowerCase = file.name.toLowerCase();
-      if (_.includes(that.acceptedFilesLowerCase, fileNameLowerCase)) {
+      if (that.acceptedFilesLowerCase.includes(fileNameLowerCase)) {
         return done();
       }
       return done('invalid file');
@@ -47,7 +46,7 @@ window.PLFileUpload.prototype.initializeTemplate = function () {
     addedfile: function (file) {
       // fuzzy case match
       const fileNameLowerCase = file.name.toLowerCase();
-      if (!_.includes(that.acceptedFilesLowerCase, fileNameLowerCase)) {
+      if (that.acceptedFilesLowerCase.includes(fileNameLowerCase)) {
         that.addWarningMessage(
           '<strong>' +
             file.name +
@@ -99,11 +98,7 @@ window.PLFileUpload.prototype.syncFilesToHiddenInput = function () {
  * @param  {String} contents The file's base64-encoded contents
  */
 window.PLFileUpload.prototype.saveSubmittedFile = function (name, contents) {
-  var idx = _.findIndex(this.files, function (file) {
-    if (file.name === name) {
-      return true;
-    }
-  });
+  var idx = this.files.findIndex((file) => file.name === name);
   if (idx === -1) {
     this.files.push({
       name: name,
@@ -122,13 +117,8 @@ window.PLFileUpload.prototype.saveSubmittedFile = function (name, contents) {
  * @return {String}      The file's contents, or null if the file was not found
  */
 window.PLFileUpload.prototype.getSubmittedFileContents = function (name) {
-  var contents = null;
-  _.each(this.files, function (file) {
-    if (file.name === name) {
-      contents = file.contents;
-    }
-  });
-  return contents;
+  const file = this.files.find((file) => file.name === name);
+  return file ? file.contents : null;
 };
 
 /**
@@ -154,8 +144,8 @@ window.PLFileUpload.prototype.renderFileList = function () {
   var uuid = this.uuid;
   var that = this;
 
-  _.each(this.acceptedFiles, function (fileName, index) {
-    var isExpanded = _.includes(expandedFiles, fileName);
+  this.acceptedFiles.forEach((fileName, index) => {
+    var isExpanded = expandedFiles.includes(fileName);
     var fileData = that.getSubmittedFileContents(fileName);
 
     var $file = $('<li class="list-group-item" data-file="' + fileName + '"></li>');
