@@ -275,7 +275,7 @@
               uuid +
               '-' +
               index +
-              '"><pre class="bg-dark text-white rounded p-3 mb-0"><code></code></pre></div>'
+              '"><pre class="bg-dark text-white rounded p-3 mt-2 mb-0"><code></code></pre></div>'
           );
           if (isExpanded) {
             $preview.addClass('show');
@@ -288,14 +288,14 @@
               $preview.find('code').text('Binary file not previewed.');
             }
           } catch (e) {
-            var img = $('<img style="max-width: 100%"/>')
-              .on('load', () => $preview.find('code').html(img))
+            var img = $('<img class="mw-100 mt-2"/>')
+              .on('load', () => $preview.html(img))
               .on('error', () =>
                 $preview
                   .find('code')
                   .text('Content preview is not available for this type of file.')
               )
-              .attr('src', 'data:application/octet-stream; base64, ' + fileData);
+              .attr('src', 'data:application/octet-stream;base64,' + fileData);
           }
           $file.append($preview);
           $fileStatusContainer.append(

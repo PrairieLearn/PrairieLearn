@@ -31,6 +31,5 @@
 }
 
 [id^=file-preview] .file-preview pre {
-  margin-top: 10px;
   max-height: 200px;
 }

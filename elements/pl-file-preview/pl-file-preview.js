@@ -33,7 +33,7 @@
 
         const downloadButton = li.querySelector('.file-preview-download-file');
         downloadButton.addEventListener('click', (event) => {
-          event.preventDefault();
+          event.stopPropagation();
           downloadFile(path, file).catch((err) => {
             // TODO: handle error
             console.error(err);
