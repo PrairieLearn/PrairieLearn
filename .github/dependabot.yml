@@ -7,6 +7,7 @@ updates:
     time: "06:00"
     timezone: America/Chicago
   open-pull-requests-limit: 99
+  rebase-strategy: disabled
 - package-ecosystem: github-actions
   directory: "/"
   schedule:
@@ -14,6 +15,7 @@ updates:
     time: "06:00"
     timezone: America/Chicago
   open-pull-requests-limit: 99
+  rebase-strategy: disabled
 - package-ecosystem: docker
   directory: "/"
   schedule:
@@ -21,6 +23,7 @@ updates:
     time: "06:00"
     timezone: America/Chicago
   open-pull-requests-limit: 99
+  rebase-strategy: disabled
 - package-ecosystem: pip
   directory: "/graders/python"
   schedule:
@@ -28,6 +31,7 @@ updates:
     time: "06:00"
     timezone: America/Chicago
   open-pull-requests-limit: 99
+  rebase-strategy: disabled
 - package-ecosystem: docker
   directory: "/graders/python"
   schedule:
@@ -35,6 +39,7 @@ updates:
     time: "06:00"
     timezone: America/Chicago
   open-pull-requests-limit: 99
+  rebase-strategy: disabled
 - package-ecosystem: npm
   directory: "/grader_host"
   schedule:
@@ -42,13 +47,7 @@ updates:
     time: "06:00"
     timezone: America/Chicago
   open-pull-requests-limit: 99
-- package-ecosystem: npm
-  directory: "/prairielib"
-  schedule:
-    interval: monthly
-    time: "06:00"
-    timezone: America/Chicago
-  open-pull-requests-limit: 99
+  rebase-strategy: disabled
 - package-ecosystem: docker
   directory: "/images/plbase"
   schedule:
@@ -56,6 +55,7 @@ updates:
     time: "06:00"
     timezone: America/Chicago
   open-pull-requests-limit: 99
+  rebase-strategy: disabled
 - package-ecosystem: pip
   directory: "/images/plbase"
   schedule:
@@ -63,6 +63,7 @@ updates:
     time: "06:00"
     timezone: America/Chicago
   open-pull-requests-limit: 99
+  rebase-strategy: disabled
 - package-ecosystem: docker
   directory: "/workspaces/jupyterlab"
   schedule:
@@ -70,6 +71,7 @@ updates:
     time: "06:00"
     timezone: America/Chicago
   open-pull-requests-limit: 99
+  rebase-strategy: disabled
 - package-ecosystem: docker
   directory: "/workspaces/xtermjs"
   schedule:
@@ -77,3 +79,4 @@ updates:
     time: "06:00"
     timezone: America/Chicago
   open-pull-requests-limit: 99
+  rebase-strategy: disabled

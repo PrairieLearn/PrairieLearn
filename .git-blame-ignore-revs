@@ -4,3 +4,6 @@
 
 # Format all files with Prettier
 2f3b359987bebf00d45a8c32d58e3b302d117c4a
+
+# Format Python files with black + isort
+b5ee36cebacd8c3192dd0e2457ab472cc185a055

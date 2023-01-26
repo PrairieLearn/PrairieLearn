@@ -9,6 +9,12 @@
   <span id="test_csrf_token" hidden><%= __csrf_token %></span>
 <% } %>
 
+<% if (config.announcementHtml) { %>
+  <div class="alert alert-<%= config.announcementColor ?? 'primary' %> mb-0 rounded-0 text-center">
+    <%- config.announcementHtml %>
+  </div>
+<% } %>
+
 <div class="mb-4">
 <nav class="navbar navbar-dark bg-dark navbar-expand-md">
   <a class="navbar-brand" href="<%= homeUrl %>">

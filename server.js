@@ -21,7 +21,7 @@ const onFinished = require('on-finished');
 const { v4: uuidv4 } = require('uuid');
 const argv = require('yargs-parser')(process.argv.slice(2));
 const multer = require('multer');
-const filesize = require('filesize');
+const { filesize } = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const Sentry = require('@prairielearn/sentry');
@@ -1305,13 +1305,6 @@ module.exports.initExpress = function () {
     require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
     require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
-  ]);
-  app.use('/pl/course_instance/:course_instance_id/report_cheating', [
-    function (req, res, next) {
-      res.locals.navSubPage = 'report_cheating';
-      next();
-    },
-    require('./pages/studentReportCheating/studentReportCheating'),
   ]);
   if (config.devMode) {
     app.use(

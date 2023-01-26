@@ -1607,7 +1607,7 @@ describe('Assessment syncing', () => {
       (a) => a.tid === 'repeatedAssessment' && a.deleted_at == null
     );
     assert.equal(syncedAssessment.uuid, newAssessment.uuid);
-    assert.match(syncedAssessment.sync_errors, /should have required property 'title'/);
+    assert.match(syncedAssessment.sync_errors, /must have required property 'title'/);
 
     // check that the old deleted assessment does not have any errors
     const deletedAssessment = syncedAssessments.find(
