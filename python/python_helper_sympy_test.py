@@ -28,6 +28,13 @@ class TestSympy:
         "atan(m)",
         "arctan2(m, n)",
         "atan2(m, n)",
+        "csc(m)",
+        "sec(m)",
+        "cot(m)",
+        "ln(m)",
+        "atanh(m)",
+        "asinh(m)",
+        "acosh(m)",
     ]
 
     EXPR_LIST: List = [
@@ -49,6 +56,13 @@ class TestSympy:
         sympy.atan(M),
         sympy.atan2(M, N),
         sympy.atan2(M, N),
+        sympy.csc(M),
+        sympy.sec(M),
+        sympy.cot(M),
+        sympy.log(M),
+        sympy.atanh(M),
+        sympy.asinh(M),
+        sympy.acosh(M),
     ]
 
     @pytest.mark.parametrize("a_sub, sympy_ref", zip(EXPR_STRINGS, EXPR_LIST))

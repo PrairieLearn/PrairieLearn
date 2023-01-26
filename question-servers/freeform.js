@@ -1237,7 +1237,7 @@ module.exports = {
     course_instance,
     locals
   ) {
-    return instrumented('freeform.render', async (span) => {
+    return instrumented('freeform.render', async () => {
       debug('render()');
       const htmls = {
         extraHeadersHtml: '',
@@ -1247,8 +1247,6 @@ module.exports = {
       };
       let allRenderedElementNames = [];
       const courseIssues = [];
-      let panelCount = 0,
-        cacheHitCount = 0;
       const context = await module.exports.getContext(question, course);
 
       return withCodeCaller(context.course_dir_host, async (codeCaller) => {
@@ -1261,7 +1259,6 @@ module.exports = {
               courseIssues: newCourseIssues,
               html,
               renderedElementNames,
-              cacheHit,
             } = await module.exports.renderPanelInstrumented(
               'question',
               codeCaller,
@@ -1275,8 +1272,6 @@ module.exports = {
 
             courseIssues.push(...newCourseIssues);
             htmls.questionHtml = html;
-            panelCount++;
-            if (cacheHit) cacheHitCount++;
             allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
           },
           async () => {
@@ -1287,7 +1282,6 @@ module.exports = {
                 courseIssues: newCourseIssues,
                 html,
                 renderedElementNames,
-                cacheHit,
               } = await module.exports.renderPanelInstrumented(
                 'submission',
                 codeCaller,
@@ -1300,8 +1294,6 @@ module.exports = {
               );
 
               courseIssues.push(...newCourseIssues);
-              panelCount++;
-              if (cacheHit) cacheHitCount++;
               allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
               return html;
             });
@@ -1313,7 +1305,6 @@ module.exports = {
               courseIssues: newCourseIssues,
               html,
               renderedElementNames,
-              cacheHit,
             } = await module.exports.renderPanelInstrumented(
               'answer',
               codeCaller,
@@ -1327,19 +1318,9 @@ module.exports = {
 
             courseIssues.push(...newCourseIssues);
             htmls.answerHtml = html;
-            panelCount++;
-            if (cacheHit) cacheHitCount++;
             allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
           },
           async () => {
-            // The logPageView middleware knows to write this to the DB
-            // when we log the page view - sorry for mutable object hell
-            locals.panel_render_count = panelCount;
-            locals.panel_render_cache_hit_count = cacheHitCount;
-
-            span.setAttribute('panel_count', panelCount);
-            span.setAttribute('cache_hit_count', cacheHitCount);
-
             const extensions = context.course_element_extensions;
             const dependencies = {
               coreStyles: [],
