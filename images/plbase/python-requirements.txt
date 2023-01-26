@@ -14,7 +14,7 @@ pyquaternion==0.9.9
 regex==2022.10.31
 scipy==1.10.0
 sympy==1.11.1
-# rpy2==3.5.7
+rpy2==3.5.7
 pygraphviz==1.6
 ansi2html==1.8.0
 scikit-learn==1.2.0

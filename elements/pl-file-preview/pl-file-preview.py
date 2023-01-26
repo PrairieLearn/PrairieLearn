@@ -15,13 +15,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # Pass through format errors from the file input elements
         "errors": data["format_errors"].get("_files", []),
         "has_files": len(submitted_files) > 0,
-        "files" : [
+        "files": [
             {
                 "name": file["name"],
                 "index": idx,
             }
             for idx, file in enumerate(submitted_files)
-        ]
+        ],
     }
 
     with open("pl-file-preview.mustache", "r", encoding="utf-8") as f:
