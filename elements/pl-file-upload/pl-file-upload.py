@@ -72,7 +72,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # asynchronously once the page loads.
     #
     # We filter out any files that weren't specified in the file names for this element.
-    submitted_file_names = list({x.get("name") for x in files} & set(file_names)]
+    submitted_file_names = list({x.get("name") for x in files} & set(file_names))
     html_params["submitted_file_names"] = json.dumps(
         submitted_file_names, allow_nan=False
     )
