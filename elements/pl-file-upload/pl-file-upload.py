@@ -68,18 +68,14 @@ def render(element_html, data):
         "submission_files_url": data["options"].get("submission_files_url", None),
     }
 
-    files = data["submitted_answers"].get("_files", None)
-    if files is not None:
-        # Filter out any files not part of this element's file_names
-        filtered_files = [x for x in files if x.get("name", "") in file_names]
-        # Only send the file names to the client. We don't include the contents
-        # to avoid bloating the HTML. The client will fetch any submitted files
-        # asynchronously once the page loads.
-        submitted_file_names = [x.get("name") for x in filtered_files]
-        html_params["has_submitted_files"] = True
-        html_params["submitted_file_names"] = json.dumps(submitted_file_names, allow_nan=False)
-    else:
-        html_params["has_submitted_files"] = False
+    files = data["submitted_answers"].get("_files", [])
+    # Filter out any files not part of this element's file_names
+    filtered_files = [x for x in files if x.get("name", "") in file_names]
+    # Only send the file names to the client. We don't include the contents
+    # to avoid bloating the HTML. The client will fetch any submitted files
+    # asynchronously once the page loads.
+    submitted_file_names = [x.get("name") for x in filtered_files]
+    html_params["submitted_file_names"] = json.dumps(submitted_file_names, allow_nan=False)
 
     with open("pl-file-upload.mustache", "r", encoding="utf-8") as f:
         html = chevron.render(f, html_params).strip()

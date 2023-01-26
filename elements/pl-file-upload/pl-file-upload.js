@@ -53,7 +53,7 @@
           // removed from the list of pending downloads, so we can just ignore
           // the result.
           if (this.pendingFileDownloads.has(file)) {
-            this.addFileFromUrl(file, await res.blob());
+            this.addFileFromBlob(file, await res.blob(), false);
           }
         })
       );
@@ -90,7 +90,7 @@
           }
           const acceptedFilesIdx = this.acceptedFilesLowerCase.indexOf(fileNameLowerCase);
           const acceptedName = this.acceptedFiles[acceptedFilesIdx];
-          this.addFileFromUrl(acceptedName, file);
+          this.addFileFromBlob(acceptedName, file, true);
         },
       });
 
@@ -105,7 +105,7 @@
       this.element.find('input').val(JSON.stringify(this.files));
     }
 
-    addFileFromUrl(name, url) {
+    addFileFromBlob(name, blob, expandPreview) {
       this.pendingFileDownloads.delete(name);
 
       var reader = new FileReader();
@@ -122,11 +122,14 @@
         var base64FileData = dataUrl.substring(commaSplitIdx + 1);
         this.saveSubmittedFile(name, base64FileData);
         this.renderFileList();
-        // Show the preview for the newly-uploaded file
-        this.element.find(`li[data-file="${name}"] .file-preview`).addClass('in');
+
+        if (expandPreview) {
+          // Show the preview for the newly-uploaded file
+          this.element.find(`li[data-file="${name}"] .file-preview`).addClass('show');
+        }
       };
 
-      reader.readAsDataURL(url);
+      reader.readAsDataURL(blob);
     }
 
     /**
@@ -161,8 +164,6 @@
     /**
      * Generates markup to show the status of the uploaded files, including
      * previews of files as appropriate.
-     *
-     * Imperative DOM manipulations can rot in hell.
      */
     renderFileList() {
       var $fileList = this.element.find('.file-upload-status .card ul.list-group');
@@ -171,7 +172,7 @@
       var expandedFiles = [];
       $fileList.children().each(function () {
         var fileName = $(this).attr('data-file');
-        if (fileName && $(this).find('.file-preview').hasClass('in')) {
+        if (fileName && $(this).find('.file-preview').hasClass('show')) {
           expandedFiles.push(fileName);
         }
       });
@@ -242,7 +243,7 @@
               '"><pre class="bg-dark text-white rounded p-3 mb-0"><code></code></pre></div>'
           );
           if (isExpanded) {
-            $preview.addClass('in');
+            $preview.addClass('show');
           }
           try {
             var fileContents = that.b64DecodeUnicode(fileData);

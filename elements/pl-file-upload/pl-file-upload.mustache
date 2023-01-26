@@ -2,7 +2,7 @@
 $(() => {
   new window.PLFileUpload("{{uuid}}", {
     acceptedFiles: {{&file_names}},
-    {{#has_submitted_files}}submittedFileNames: {{&submitted_file_names}},{{/has_submitted_files}}
+    submittedFileNames: {{&submitted_file_names}},
   });
 });
 </script>
