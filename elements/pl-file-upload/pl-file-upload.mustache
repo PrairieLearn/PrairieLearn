@@ -8,10 +8,10 @@ $(() => {
 </script>
 
 <div id="file-upload-{{uuid}}" {{#submission_files_url}}data-submission-files-url="{{submission_files_url}}"{{/submission_files_url}}>
-  <input type="hidden" name="{{name}}">
+  <input type="hidden" name="{{name}}" data-skip-unload-check="true">
   {{#editable}}
-  <div class="upload-dropzone">
-    <div class="dz-message">
+  <div class="upload-dropzone d-flex align-items-center justify-content-center p-3 mb-3 rounded">
+    <div class="text-center">
       Drop files here or click to upload.
       <br/>
       <small>Only the files listed below will be accepted&mdash;others will be ignored.</small>

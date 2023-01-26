@@ -60,6 +60,9 @@ router.get(
 
     const buffer = Buffer.from(contents, 'base64');
 
+    // res.sendStatus(404);
+    // return;
+
     // Artificial delay for testing.
     // await new Promise((resolve) => setTimeout(resolve, 5000));
 

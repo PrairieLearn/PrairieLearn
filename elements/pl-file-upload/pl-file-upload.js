@@ -9,6 +9,24 @@
       .join('/');
   }
 
+  /**
+   * A wrapper around fetch that return null on any error. This can simplify
+   * error handling for callers.
+   * @param {RequestInfo | URL} input
+   * @param {RequestInit} init
+   * @returns {Promise<Response | null>}
+   */
+  async function safeFetch(input, init) {
+    try {
+      const res = await fetch(input, init);
+      if (!res.ok) return null;
+      return res;
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
+  }
+
   class PLFileUpload {
     constructor(uuid, options) {
       this.uuid = uuid;
@@ -16,6 +34,7 @@
       this.acceptedFiles = options.acceptedFiles || [];
       this.acceptedFilesLowerCase = this.acceptedFiles.map((f) => f.toLowerCase());
       this.pendingFileDownloads = new Set();
+      this.failedFileDownloads = new Set();
 
       const elementId = '#file-upload-' + uuid;
       this.element = $(elementId);
@@ -42,10 +61,12 @@
         fileNames.map(async (file) => {
           const escapedFileName = escapePath(file);
           const path = `${submissionFilesUrl}/${escapedFileName}`;
-          const res = await fetch(path, { method: 'GET' });
-          if (!res.ok) {
-            // TODO: better error handling
-            throw new Error(`Could not download file ${file}`);
+          const res = await safeFetch(path, { method: 'GET' });
+          if (!res) {
+            this.pendingFileDownloads.delete(file);
+            this.failedFileDownloads.add(file);
+            this.renderFileList();
+            return;
           }
 
           // Avoid race condition with student initiated upload. If the student
@@ -53,7 +74,7 @@
           // removed from the list of pending downloads, so we can just ignore
           // the result.
           if (this.pendingFileDownloads.has(file)) {
-            this.addFileFromBlob(file, await res.blob(), false);
+            this.addFileFromBlob(file, await res.blob(), true);
           }
         })
       );
@@ -90,7 +111,7 @@
           }
           const acceptedFilesIdx = this.acceptedFilesLowerCase.indexOf(fileNameLowerCase);
           const acceptedName = this.acceptedFiles[acceptedFilesIdx];
-          this.addFileFromBlob(acceptedName, file, true);
+          this.addFileFromBlob(acceptedName, file, false);
         },
       });
 
@@ -105,8 +126,9 @@
       this.element.find('input').val(JSON.stringify(this.files));
     }
 
-    addFileFromBlob(name, blob, expandPreview) {
+    addFileFromBlob(name, blob, isFromDownload) {
       this.pendingFileDownloads.delete(name);
+      this.failedFileDownloads.delete(name);
 
       var reader = new FileReader();
       reader.onload = (e) => {
@@ -123,9 +145,15 @@
         this.saveSubmittedFile(name, base64FileData);
         this.renderFileList();
 
-        if (expandPreview) {
+        if (!isFromDownload) {
           // Show the preview for the newly-uploaded file
           this.element.find(`li[data-file="${name}"] .file-preview`).addClass('show');
+
+          // Ensure that students see a prompt if they try to navigate away
+          // from the page without saving the form. This check is initially
+          // disabled because we don't want students to see the prompt if they
+          // haven't actually made any changes.
+          this.element.find('input').removeAttr('data-disable-unload-check');
         }
       };
 
@@ -188,7 +216,7 @@
 
         var $file = $('<li class="list-group-item" data-file="' + fileName + '"></li>');
         var $fileStatusContainer = $(
-          '<div class="file-status-container collapsed" data-toggle="collapse" data-target="#file-preview-' +
+          '<div class="file-status-container collapsed d-flex flex-row" data-toggle="collapse" data-target="#file-preview-' +
             uuid +
             '-' +
             index +
@@ -201,15 +229,19 @@
           $fileStatusContainer.addClass('has-preview');
         }
         $file.append($fileStatusContainer);
-        var $fileStatusContainerLeft = $('<div class="file-status-container-left"></div>');
+        var $fileStatusContainerLeft = $('<div class="flex-grow-1"></div>');
         $fileStatusContainer.append($fileStatusContainerLeft);
         if (this.pendingFileDownloads.has(fileName)) {
           $fileStatusContainerLeft.append(
             '<i class="file-status-icon fas fa-spinner fa-spin" aria-hidden="true"></i>'
           );
+        } else if (this.failedFileDownloads.has(fileName)) {
+          $fileStatusContainerLeft.append(
+            '<i class="file-status-icon fas fa-circle-exclamation text-danger" aria-hidden="true"></i>'
+          );
         } else if (fileData) {
           $fileStatusContainerLeft.append(
-            '<i class="file-status-icon fa fa-check-circle" style="color: #4CAF50;" aria-hidden="true"></i>'
+            '<i class="file-status-icon fa fa-check-circle text-success" aria-hidden="true"></i>'
           );
         } else {
           $fileStatusContainerLeft.append(
@@ -218,10 +250,13 @@
         }
         $fileStatusContainerLeft.append(fileName);
         if (this.pendingFileDownloads.has(fileName)) {
-          // Even though we're *technically* in the middle of a download, we'll
-          // present it as "uploading" to the user, since that's what they're
-          // expecting.
-          $fileStatusContainerLeft.append('<p class="file-status">uploading...</p>');
+          $fileStatusContainerLeft.append(
+            '<p class="file-status">fetching previous submission...</p>'
+          );
+        } else if (this.failedFileDownloads.has(fileName)) {
+          $fileStatusContainerLeft.append(
+            '<p class="file-status">failed to fetch previous submission; upload this file again</p>'
+          );
         } else if (!fileData) {
           $fileStatusContainerLeft.append('<p class="file-status">not uploaded</p>');
         } else {
@@ -264,7 +299,7 @@
           }
           $file.append($preview);
           $fileStatusContainer.append(
-            '<div class="file-status-container-right">' +
+            '<div class="align-self-center">' +
               download +
               '<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button"><span class="file-preview-icon fa fa-angle-down"></span></button></div>'
           );
