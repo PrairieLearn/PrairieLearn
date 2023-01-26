@@ -1,15 +1,13 @@
 <script>
-$(function() {
-  var UUID = "{{uuid}}";
-
-  new window.PLFileUpload(UUID, {
-    acceptedFiles: {{&file_names}}
-    {{#has_files}}, files: {{&files}}{{/has_files}}
+$(() => {
+  new window.PLFileUpload("{{uuid}}", {
+    acceptedFiles: {{&file_names}},
+    {{#has_submitted_files}}submittedFileNames: {{&submitted_file_names}},{{/has_submitted_files}}
   });
 });
 </script>
 
-<div id="file-upload-{{uuid}}">
+<div id="file-upload-{{uuid}}" {{#submission_files_url}}data-submission-files-url="{{submission_files_url}}"{{/submission_files_url}}>
   <input type="hidden" name="{{name}}">
   {{#editable}}
   <div class="upload-dropzone">

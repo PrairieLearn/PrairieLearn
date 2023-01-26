@@ -67,7 +67,7 @@ $(() => {
   filePreview.querySelectorAll('li').forEach((li) => {
     const file = li.dataset.file;
     const escapedFileName = escapePath(file);
-    const path = `${submissionFilesUrl}/${file}`;
+    const path = `${submissionFilesUrl}/${escapedFileName}`;
 
     const downloadButton = li.querySelector('.file-preview-download-file');
     downloadButton.addEventListener('click', (event) => {

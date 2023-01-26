@@ -62,6 +62,9 @@ router.get(
 
     const buffer = Buffer.from(contents, 'base64');
 
+    // Artificial delay for testing.
+    await new Promise((resolve) => setTimeout(resolve, 5000));
+
     // To avoid having to do expensive content checks on the client, we'll do
     // our best to guess a mime type for the file.
     const mimeType = await guessMimeType(fileName, buffer);
