@@ -1,24 +1,6 @@
 /* eslint-env browser,jquery */
 
 (() => {
-  /**
-   * A wrapper around fetch that return null on any error. This can simplify
-   * error handling for callers.
-   * @param {RequestInfo | URL} input
-   * @param {RequestInit} init
-   * @returns {Promise<Response | null>}
-   */
-  async function safeFetch(input, init) {
-    try {
-      const res = await fetch(input, init);
-      if (!res.ok) return null;
-      return res;
-    } catch (e) {
-      console.error(e);
-      return null;
-    }
-  }
-
   async function downloadFile(path, name) {
     const result = await fetch(path, { method: 'GET' });
     if (!result.ok) {

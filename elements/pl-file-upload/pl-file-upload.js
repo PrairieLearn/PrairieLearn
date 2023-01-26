@@ -9,24 +9,6 @@
       .join('/');
   }
 
-  /**
-   * A wrapper around fetch that return null on any error. This can simplify
-   * error handling for callers.
-   * @param {RequestInfo | URL} input
-   * @param {RequestInit} init
-   * @returns {Promise<Response | null>}
-   */
-  async function safeFetch(input, init) {
-    try {
-      const res = await fetch(input, init);
-      if (!res.ok) return null;
-      return res;
-    } catch (e) {
-      console.error(e);
-      return null;
-    }
-  }
-
   class PLFileUpload {
     constructor(uuid, options) {
       this.uuid = uuid;
@@ -61,20 +43,27 @@
         fileNames.map(async (file) => {
           const escapedFileName = escapePath(file);
           const path = `${submissionFilesUrl}/${escapedFileName}`;
-          const res = await safeFetch(path, { method: 'GET' });
-          if (!res) {
-            this.pendingFileDownloads.delete(file);
-            this.failedFileDownloads.add(file);
-            this.renderFileList();
-            return;
-          }
+          try {
+            const res = await fetch(path, { method: 'GET' });
+            if (!res.ok) {
+              throw new Error(`Failed to download file: ${res.status}`);
+            }
+            if (!res) {
+              this.pendingFileDownloads.delete(file);
+              this.failedFileDownloads.add(file);
+              this.renderFileList();
+              return;
+            }
 
-          // Avoid race condition with student initiated upload. If the student
-          // added a file while this was loading, the file name would have been
-          // removed from the list of pending downloads, so we can just ignore
-          // the result.
-          if (this.pendingFileDownloads.has(file)) {
-            this.addFileFromBlob(file, await res.blob(), true);
+            // Avoid race condition with student initiated upload. If the student
+            // added a file while this was loading, the file name would have been
+            // removed from the list of pending downloads, so we can just ignore
+            // the result.
+            if (this.pendingFileDownloads.has(file)) {
+              this.addFileFromBlob(file, await res.blob(), true);
+            }
+          } catch (e) {
+            console.error(e);
           }
         })
       );
