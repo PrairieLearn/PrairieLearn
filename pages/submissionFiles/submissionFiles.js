@@ -39,12 +39,10 @@ router.get(
   asyncHandler(async (req, res) => {
     const submissionId = req.params.submission_id;
     const fileName = req.params[0];
-    console.log(submissionId, fileName);
 
     const fileRes = await sqldb.queryZeroOrOneRowAsync(sql.select_submission_file, {
       question_id: res.locals.question.id,
-      instance_question_id: res.locals.instance_question?.id,
-      has_instance_question: !!res.locals.instance_question,
+      instance_question_id: res.locals.instance_question?.id ?? null,
       submission_id: submissionId,
       file_name: fileName,
     });
