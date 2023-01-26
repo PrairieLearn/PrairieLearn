@@ -69,7 +69,7 @@ if [ -f $RESULTS_TEMP_FILE ] ; then
     if [ "$RESULT_SIGNATURE" != "$SIGNATURE" ] ; then
         echo Expected signature: $SIGNATURE
         echo Provided signature: $RESULT_SIGNATURE
-        exception "Results did not contain correct signature. Exploit suspected. Please contact the instructor."
+        exception "Results did not contain correct signature. Please contact the instructor."
     else
         mv $RESULTS_TEMP_FILE $RESULTS_FILE
     fi
