@@ -36,7 +36,7 @@
 
 [id^=file-upload] .file-preview-icon {
   margin-left: 10px;
-  transition: all 400ms;
+  transition: transform 400ms;
 }
 
 [id^=file-upload] .file-status-container:not(.collapsed) .file-preview-icon {
