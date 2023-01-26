@@ -45,6 +45,4 @@ def render(element_html, data):
         html_params["has_files"] = False
 
     with open("pl-file-preview.mustache", "r", encoding="utf-8") as f:
-        html = chevron.render(f, html_params).strip()
-
-    return html
+        return chevron.render(f, html_params).strip()
