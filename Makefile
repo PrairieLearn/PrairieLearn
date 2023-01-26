@@ -11,6 +11,8 @@ start-nodemon: start-support
 	@yarn nodemon server.js
 start-workspace-host: start-support kill-running-workspaces
 	@node workspace_host/interface.js
+start-workspace-host-nodemon: start-support kill-running-workspaces
+	@yarn nodemon --config workspace_host/nodemon.json workspace_host/interface.js
 start-executor:
 	@node executor.js
 
