@@ -149,7 +149,7 @@ var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var express = require('express');
 var router = express.Router();
-var sqldb = require('@prairielearn/postgres') // adjust path as needed
+var sqldb = require('@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
