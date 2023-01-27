@@ -13,11 +13,11 @@ max-line-length = 88
 extend-ignore = ["E203", "W503"]
 
 [tool.black]
-exclude = '^\/tools\/|^\/exampleCourse\/|^\/testCourse\/|\/node_modules\/$'
+exclude = '^\/tools\/|\/node_modules\/$'
 
 [tool.isort]
 profile = "black"
-skip_glob = ["tools/*", "exampleCourse/*", "testCourse/*", "node_modules/*"]
+skip_glob = ["tools/*", "node_modules/*"]
 
 [tool.pyright]
 include = [
