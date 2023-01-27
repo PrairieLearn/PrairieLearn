@@ -397,8 +397,9 @@ function runJob(info, callback) {
 
   let results = {};
   let runTimeout = timeout || 30;
-  // For jobs with a really short timeout, we want to make sure that
-  let jobTimeout = Math.max(config.externalGradingMinimumJobTimeout, runTimeout * 2);
+  // Even if instructors specify a really short timeout for the execution of
+  // the grading job, there's a certain amount of overhead
+  let jobTimeout = config.timeoutOverhead + runTimeout;
   let jobEnableNetworking = enableNetworking || false;
   let jobEnvironment = environment || {};
 

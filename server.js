@@ -1223,8 +1223,6 @@ module.exports.initExpress = function () {
     ]
   );
 
-  // /pl/course_instance/:course_instance_id/instructor/question/:question_id/submission/:submission_id/file/:name
-
   // legacy client file paths
   // handle routes with and without /preview/ in them to handle URLs with and without trailing slashes
   app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file', [
