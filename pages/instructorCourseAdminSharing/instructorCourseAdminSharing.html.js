@@ -35,7 +35,7 @@ const chooseSharingNamePopover = (resLocals) => {
         </p>
         <p><strong>Once you choose your course's sharing name, you will not be able to change it</strong>,
           because doing so would break the assessments of other courses that have imported your questions.
-          It is reccomended that you choose something short but descriptive. For example, if you teaching
+          It is recommended that you choose something short but descriptive. For example, if you're teaching
           a calculus course at a university that goes by the abbreviation 'XYZ', then you could choose the sharing
           name 'xyz-calculus'. Then other courses will import questions from your course with the syntax '@xyz-calculus/qid'.
         </p>
@@ -92,38 +92,43 @@ const InstructorSharing = ({ sharing_name, sharing_id, sharing_sets, resLocals }
       </head>
       <body>
         <script>
-            $(function() {
-                $('[data-toggle="popover"]').popover({
-                  sanitize: false
-                })
+          $(function () {
+            $('[data-toggle="popover"]').popover({
+              sanitize: false,
             });
+          });
         </script>
         ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
         <div id="content" class="container-fluid">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex">
-                Course Sharing Info
-            </div>
+            <div class="card-header bg-primary text-white d-flex">Course Sharing Info</div>
             <table class="table table-sm table-hover two-column-description">
               <tbody>
-                <tr><th>Sharing Name</th><td>${
-                  sharing_name === null ? chooseSharingNameButton(resLocals) : sharing_name
-                }</td></tr>
-                <tr><th>Sharing ID</th>
+                <tr>
+                  <th>Sharing Name</th>
                   <td>
-                  ${sharing_id}
-                  <button class="btn btn-xs btn-secondary mx-2" onclick="navigator.clipboard.writeText('${sharing_id}');">
-                    <i class="fa fa-copy"></i>
-                    <span>Copy</span>
-                  </button>
-                  <form name="sharing-id-regenerate" method="POST" class="d-inline">
-                    <input type="hidden" name="__action" value="sharing_id_regenerate">
-                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
-                    <button role="button" type="submit" class="btn btn-xs btn-secondary">
-                      <i class="fa fa-rotate"></i>
-                      <span>Regenerate</span>
+                    ${sharing_name === null ? chooseSharingNameButton(resLocals) : sharing_name}
+                  </td>
+                </tr>
+                <tr>
+                  <th>Sharing ID</th>
+                  <td>
+                    ${sharing_id}
+                    <button
+                      class="btn btn-xs btn-secondary mx-2"
+                      onclick="navigator.clipboard.writeText('${sharing_id}');"
+                    >
+                      <i class="fa fa-copy"></i>
+                      <span>Copy</span>
                     </button>
-                  </form>
+                    <form name="sharing-id-regenerate" method="POST" class="d-inline">
+                      <input type="hidden" name="__action" value="sharing_id_regenerate" />
+                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                      <button role="button" type="submit" class="btn btn-xs btn-secondary">
+                        <i class="fa fa-rotate"></i>
+                        <span>Regenerate</span>
+                      </button>
+                    </form>
                   </td>
                 </tr>
               </tbody>
@@ -131,123 +136,137 @@ const InstructorSharing = ({ sharing_name, sharing_id, sharing_sets, resLocals }
           </div>
 
           <div class="card mb-4">
-          <div class="card-header bg-primary">
-            <div class="row align-items-center justify-content-between">
-              <div class="col-auto">
-                <span class="text-white">Sharing Sets</span>
-              </div>
-              <div class="col-auto">
-                <button type="button" class="btn btn-light btn-sm ml-auto" id="courseSharingSetAdd" tabindex="0"
-                  data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Create Sharing Set"
-                  data-content="${addSharingSetPopover(resLocals)}"
-                  data-trigger="manual" onclick="$(this).popover('show')"
-                >
-                  <i class="fas fa-plus" aria-hidden="true"></i>
-                  <span class="d-none d-sm-inline">Create Sharing Set</span>
-                </button>
+            <div class="card-header bg-primary">
+              <div class="row align-items-center justify-content-between">
+                <div class="col-auto">
+                  <span class="text-white">Sharing Sets</span>
+                </div>
+                <div class="col-auto">
+                  <button
+                    type="button"
+                    class="btn btn-light btn-sm ml-auto"
+                    id="courseSharingSetAdd"
+                    tabindex="0"
+                    data-toggle="popover"
+                    data-container="body"
+                    data-html="true"
+                    data-placement="auto"
+                    title="Create Sharing Set"
+                    data-content="${addSharingSetPopover(resLocals)}"
+                    data-trigger="manual"
+                    onclick="$(this).popover('show')"
+                  >
+                    <i class="fas fa-plus" aria-hidden="true"></i>
+                    <span class="d-none d-sm-inline">Create Sharing Set</span>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-          <table class="table table-sm table-hover table-striped">
-            <thead>
-              <th>Sharing Set Name</th>
-              <th>Shared With</th>
-            </thead>
-            <tbody>
-              ${sharing_sets.map(
-                (sharing_set) => html`
-                  <tr>
-                    <td class="align-middle">${sharing_set.name}</td>
-                    <td class="align-middle">
-                      ${sharing_set.shared_with.map((course_shared_with) =>
-                        course_shared_with.course_id === null
-                          ? ''
-                          : html`
-                              <form
-                                name="sharing-set-access-change-${sharing_set.id}-${course_shared_with.course_id}"
-                                method="POST"
-                                class="d-inline"
-                              >
-                                <input
-                                  type="hidden"
-                                  name="__action"
-                                  value="course_sharing_set_delete"
-                                />
-                                <input
-                                  type="hidden"
-                                  name="__csrf_token"
-                                  value="${resLocals.__csrf_token}"
-                                />
-                                <input
-                                  type="hidden"
-                                  name="course_id"
-                                  value="${course_shared_with.course_id}"
-                                />
-                                <div
-                                  class="btn-group btn-group-sm"
-                                  role="group"
-                                  aria-label="Button group with nested dropdown"
+            <table class="table table-sm table-hover table-striped">
+              <thead>
+                <th>Sharing Set Name</th>
+                <th>Shared With</th>
+              </thead>
+              <tbody>
+                ${sharing_sets.map(
+                  (sharing_set) => html`
+                    <tr>
+                      <td class="align-middle">${sharing_set.name}</td>
+                      <td class="align-middle">
+                        ${sharing_set.shared_with.map((course_shared_with) =>
+                          course_shared_with.course_id === null
+                            ? ''
+                            : html`
+                                <form
+                                  name="sharing-set-access-change-${sharing_set.id}-${course_shared_with.course_id}"
+                                  method="POST"
+                                  class="d-inline"
                                 >
-                                  <!-- TODO we don't actually want the main part to be a button! -->
-                                  <div class="btn-group btn-group-sm" role="group">
-                                    <div class="btn btn-sm btn-outline-primary">
-                                      ${course_shared_with.short_name}
+                                  <input
+                                    type="hidden"
+                                    name="__action"
+                                    value="course_sharing_set_delete"
+                                  />
+                                  <input
+                                    type="hidden"
+                                    name="__csrf_token"
+                                    value="${resLocals.__csrf_token}"
+                                  />
+                                  <input
+                                    type="hidden"
+                                    name="course_id"
+                                    value="${course_shared_with.course_id}"
+                                  />
+                                  <div
+                                    class="btn-group btn-group-sm"
+                                    role="group"
+                                    aria-label="Button group with nested dropdown"
+                                  >
+                                    <!-- TODO we don't actually want the main part to be a button! -->
+                                    <div class="btn-group btn-group-sm" role="group">
+                                      <div class="btn btn-sm btn-outline-primary">
+                                        ${course_shared_with.short_name}
+                                      </div>
                                     </div>
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                                      <i class="fa fa-times"></i>
+                                    </button>
                                   </div>
-                                  <button type="submit" class="btn btn-sm btn-outline-primary">
-                                    <i class="fa fa-times"></i>
-                                  </button>
-                                </div>
-                              </form>
-                            `
-                      )}
-                      <form
-                        name="sharing-set-access-add-${sharing_set.id}"
-                        method="POST"
-                        class="d-inline"
-                      >
-                        <input type="hidden" name="__action" value="course_sharing_set_add" />
-                        <input
-                          type="hidden"
-                          name="__csrf_token"
-                          value="${resLocals.__csrf_token}"
-                        />
-                        <input type="hidden" name="sharing_set_id" value="${sharing_set.id}" />
-                        <div class="btn-group btn-group-sm" role="group">
-                          <button
-                            id="addSSPDrop-${sharing_set.id}"
-                            type="button"
-                            class="btn btn-sm btn-outline-dark dropdown-toggle"
-                            data-toggle="dropdown"
-                            aria-haspopup="true"
-                            aria-expanded="false"
-                          >
-                            Add...
-                          </button>
-                          <div class="dropdown-menu" aria-labelledby="addSSPDrop-${sharing_set.id}">
-                            <div class="dropdown-header text-wrap">
-                              <p>
-                                To allow another course to access questions in the sharing set
-                                "${sharing_set.name}", enter their course sharing id below.
-                              </p>
-                            </div>
-                            <div class="" style="padding:1em;">
-                              <input
-                                class="form-control form-control-sm"
-                                type="text"
-                                name="course_sharing_id"
-                                required
-                              />
-                              <button class="btn-sm btn-primary" type="Submit">Add Course</button>
+                                </form>
+                              `
+                        )}
+                        <form
+                          name="sharing-set-access-add-${sharing_set.id}"
+                          method="POST"
+                          class="d-inline"
+                        >
+                          <input type="hidden" name="__action" value="course_sharing_set_add" />
+                          <input
+                            type="hidden"
+                            name="__csrf_token"
+                            value="${resLocals.__csrf_token}"
+                          />
+                          <input type="hidden" name="sharing_set_id" value="${sharing_set.id}" />
+                          <div class="btn-group btn-group-sm" role="group">
+                            <button
+                              id="addSSPDrop-${sharing_set.id}"
+                              type="button"
+                              class="btn btn-sm btn-outline-dark dropdown-toggle"
+                              data-toggle="dropdown"
+                              aria-haspopup="true"
+                              aria-expanded="false"
+                            >
+                              Add...
+                            </button>
+                            <div
+                              class="dropdown-menu"
+                              aria-labelledby="addSSPDrop-${sharing_set.id}"
+                            >
+                              <div class="dropdown-header text-wrap">
+                                <p>
+                                  To allow another course to access questions in the sharing set
+                                  "${sharing_set.name}", enter their course sharing id below.
+                                </p>
+                              </div>
+                              <div class="" style="padding:1em;">
+                                <input
+                                  class="form-control form-control-sm"
+                                  type="text"
+                                  name="course_sharing_id"
+                                  required
+                                />
+                                <button class="btn-sm btn-primary" type="Submit">Add Course</button>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </form>
-                    </td>
-                  </tr>
-                `
-              )}
-            </tbody>
+                        </form>
+                      </td>
+                    </tr>
+                  `
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </body>
     </html>

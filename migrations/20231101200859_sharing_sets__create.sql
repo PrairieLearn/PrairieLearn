@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS sharing_sets (
     id BIGSERIAL PRIMARY KEY,
     course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,
     name text,
-    description text, 
+    description text,
     UNIQUE (name, course_id)
 );
 
@@ -12,11 +12,11 @@ CREATE TABLE IF NOT EXISTS question_sharing_sets (
     sharing_set_id BIGINT NOT NULL
 );
 
-ALTER TABLE question_sharing_sets 
-ADD CONSTRAINT question_sharing_sets_question_id_fkey 
+ALTER TABLE question_sharing_sets
+ADD CONSTRAINT question_sharing_sets_question_id_fkey
 FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE question_sharing_sets 
+ALTER TABLE question_sharing_sets
 ADD CONSTRAINT question_sharing_sets_sharing_set_id_fkey
 FOREIGN KEY (sharing_set_id) REFERENCES sharing_sets(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
@@ -34,6 +34,7 @@ ALTER TABLE pl_courses ADD COLUMN IF NOT EXISTS sharing_id text;
 ALTER TABLE pl_courses ADD COLUMN IF NOT EXISTS question_sharing_enabled boolean default false;
 
 
+-- TODO: remove everything below here before merging
 -- Need to run (or re-run) after the test course is synced
 -- Run with command:
 -- docker exec -it mypl psql postgres -f PrairieLearn/migrations/20231101200859_sharing_sets__create.sql

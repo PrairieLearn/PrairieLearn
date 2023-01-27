@@ -4,6 +4,8 @@ On the 'sharing' page:
 - [x] access your code to let someone else share their questions with you
 - [x] create a new 'sharing set'
 - [x] share a 'sharing set' to a particular course
+- [] auto generate sharing UUID the first time this page is visited
+- [] disallow changing the sharing id once set
 
 On the settings page for each question:
 
