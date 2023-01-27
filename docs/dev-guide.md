@@ -150,7 +150,6 @@ var _ = require('lodash');
 var express = require('express');
 var router = express.Router();
 var sqldb = require('@prairielearn/postgres') // adjust path as needed
-var sqlLoader = require('../prairielib/sql-loader'); // adjust path as needed
 var sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
@@ -217,7 +216,7 @@ INSERT INTO submissions (submitted_answer) VALUES ($submitted_answer) RETURNING 
 From JavaScript you can then do:
 
 ```javascript
-var sqlLoader = require('../prairielib/sql-loader'); // adjust path as needed
+var sqldb = require('@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename); // from filename.js will load filename.sql
 
 // run the entire contents of the SQL file
