@@ -2,4 +2,4 @@ import random
 
 
 def grade(data):
-    data['score'] = 1
+    data["score"] = 1

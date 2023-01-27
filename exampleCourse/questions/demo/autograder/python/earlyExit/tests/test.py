@@ -1,7 +1,8 @@
-from pl_helpers import name, points, not_repeated
-from pl_unit_test import PLTestCase
-from code_feedback import Feedback
 import traceback
+
+from code_feedback import Feedback
+from pl_helpers import name, not_repeated, points
+from pl_unit_test import PLTestCase
 
 
 class Test(PLTestCase):
