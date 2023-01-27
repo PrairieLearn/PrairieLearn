@@ -4,6 +4,7 @@
 /elements/pl-graph @nicknytko @eliotwrobson
 /elements/pl-hidden-hints @eliotwrobson
 /elements/pl-order-blocks @SethPoulsen
+/elements/pl-python-variable @nicknytko @eliotwrobson
 /elements/pl-rich-text-editor @jonatanschroeder
 
 /graders/c @jonatanschroeder
