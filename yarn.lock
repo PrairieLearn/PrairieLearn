@@ -2856,6 +2856,8 @@ __metadata:
   resolution: "@prairielearn/postgres@workspace:packages/postgres"
   dependencies:
     "@prairielearn/tsconfig": "*"
+    "@types/debug": ^4.1.7
+    "@types/lodash": ^4.14.191
     "@types/node": ^18.11.18
     ts-node: ^10.9.1
     typescript: ^4.9.4
@@ -3222,6 +3224,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/debug@npm:^4.1.7":
+  version: 4.1.7
+  resolution: "@types/debug@npm:4.1.7"
+  dependencies:
+    "@types/ms": "*"
+  checksum: 0a7b89d8ed72526858f0b61c6fd81f477853e8c4415bb97f48b1b5545248d2ae389931680b94b393b993a7cfe893537a200647d93defe6d87159b96812305adc
+  languageName: node
+  linkType: hard
+
 "@types/docker-modem@npm:*":
   version: 3.0.2
   resolution: "@types/docker-modem@npm:3.0.2"
@@ -3395,6 +3406,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/lodash@npm:^4.14.191":
+  version: 4.14.191
+  resolution: "@types/lodash@npm:4.14.191"
+  checksum: ba0d5434e10690869f32d5ea49095250157cae502f10d57de0a723fd72229ce6c6a4979576f0f13e0aa9fbe3ce2457bfb9fa7d4ec3d6daba56730a51906d1491
+  languageName: node
+  linkType: hard
+
 "@types/long@npm:^4.0.1":
   version: 4.0.2
   resolution: "@types/long@npm:4.0.2"
@@ -3455,6 +3473,13 @@ __metadata:
   version: 10.0.1
   resolution: "@types/mocha@npm:10.0.1"
   checksum: 224ea9fce7b1734ccdb9aa99a622d902a538ce1847bca7fd22c5fb38adcf3ed536f50f48f587085db988a4bb3c2eb68f4b98e1cd6a38bc5547bd3bbbedc54495
+  languageName: node
+  linkType: hard
+
+"@types/ms@npm:*":
+  version: 0.7.31
+  resolution: "@types/ms@npm:0.7.31"
+  checksum: daadd354aedde024cce6f5aa873fefe7b71b22cd0e28632a69e8b677aeb48ae8caa1c60e5919bb781df040d116b01cb4316335167a3fc0ef6a63fa3614c0f6da
   languageName: node
   linkType: hard
 
