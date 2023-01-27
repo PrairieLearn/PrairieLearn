@@ -532,10 +532,6 @@ export class PostgresPool {
   /**
    * Executes a query with the specified parameters. Errors if the query does
    * not return exactly one row.
-   *
-   * @param {string} sql - The SQL query to execute
-   * @param {Params} params - The params for the query
-   * @returns {Promise<QueryResult>}
    */
   async queryOneRowAsync(sql: string, params: Params): Promise<pg.QueryResult> {
     debug('queryOneRow()', 'sql:', debugString(sql));
@@ -554,10 +550,6 @@ export class PostgresPool {
   /**
    * Executes a query with the specified parameters. Errors if the query does
    * not return exactly one row.
-   *
-   * @param {string} sql - The SQL query to execute
-   * @param {Params} params - The params for the query
-   * @param {ResultsCallback} callback
    */
   queryOneRow = callbackify(this.queryOneRowAsync);
 
@@ -795,48 +787,48 @@ const defaultPool = new PostgresPool();
 // that they'll be invoked with the correct `this` context, specifically when
 // this module is imported as `import * as db from '...'` and that import is
 // subsequently transformed by Babel to `interopRequireWildcard(...)`.
-exports.init = defaultPool.init.bind(defaultPool);
-exports.initAsync = defaultPool.initAsync.bind(defaultPool);
-exports.close = defaultPool.close.bind(defaultPool);
-exports.closeAsync = defaultPool.closeAsync.bind(defaultPool);
-exports.getClientAsync = defaultPool.getClientAsync.bind(defaultPool);
-exports.getClient = defaultPool.getClient.bind(defaultPool);
-exports.queryWithClient = defaultPool.queryWithClient.bind(defaultPool);
-exports.queryWithClientAsync = defaultPool.queryWithClientAsync.bind(defaultPool);
-exports.queryWithClientOneRow = defaultPool.queryWithClientOneRow.bind(defaultPool);
-exports.queryWithClientOneRowAsync = defaultPool.queryWithClientOneRowAsync.bind(defaultPool);
-exports.queryWithClientZeroOrOneRow = defaultPool.queryWithClientZeroOrOneRow.bind(defaultPool);
-exports.queryWithClientZeroOrOneRowAsync =
+export const init = defaultPool.init.bind(defaultPool);
+export const initAsync = defaultPool.initAsync.bind(defaultPool);
+export const close = defaultPool.close.bind(defaultPool);
+export const closeAsync = defaultPool.closeAsync.bind(defaultPool);
+export const getClientAsync = defaultPool.getClientAsync.bind(defaultPool);
+export const getClient = defaultPool.getClient.bind(defaultPool);
+export const queryWithClient = defaultPool.queryWithClient.bind(defaultPool);
+export const queryWithClientAsync = defaultPool.queryWithClientAsync.bind(defaultPool);
+export const queryWithClientOneRow = defaultPool.queryWithClientOneRow.bind(defaultPool);
+export const queryWithClientOneRowAsync = defaultPool.queryWithClientOneRowAsync.bind(defaultPool);
+export const queryWithClientZeroOrOneRow =
+  defaultPool.queryWithClientZeroOrOneRow.bind(defaultPool);
+export const queryWithClientZeroOrOneRowAsync =
   defaultPool.queryWithClientZeroOrOneRowAsync.bind(defaultPool);
-exports.rollbackWithClientAsync = defaultPool.rollbackWithClientAsync.bind(defaultPool);
-exports.rollbackWithClient = defaultPool.rollbackWithClient.bind(defaultPool);
-exports.beginTransactionAsync = defaultPool.beginTransactionAsync.bind(defaultPool);
-exports.beginTransaction = defaultPool.beginTransaction.bind(defaultPool);
-exports.endTransactionAsync = defaultPool.endTransactionAsync.bind(defaultPool);
-exports.endTransaction = defaultPool.endTransaction.bind(defaultPool);
-exports.runInTransactionAsync = defaultPool.runInTransactionAsync.bind(defaultPool);
-exports.runInTransaction = defaultPool.runInTransaction.bind(defaultPool);
-exports.query = defaultPool.query.bind(defaultPool);
-exports.queryAsync = defaultPool.queryAsync.bind(defaultPool);
-exports.queryOneRow = defaultPool.queryOneRow.bind(defaultPool);
-exports.queryOneRowAsync = defaultPool.queryOneRowAsync.bind(defaultPool);
-exports.queryZeroOrOneRow = defaultPool.queryZeroOrOneRow.bind(defaultPool);
-exports.queryZeroOrOneRowAsync = defaultPool.queryZeroOrOneRowAsync.bind(defaultPool);
-exports.call = defaultPool.call.bind(defaultPool);
-exports.callAsync = defaultPool.callAsync.bind(defaultPool);
-exports.callOneRow = defaultPool.callOneRow.bind(defaultPool);
-exports.callOneRowAsync = defaultPool.callOneRowAsync.bind(defaultPool);
-exports.callZeroOrOneRow = defaultPool.callZeroOrOneRow.bind(defaultPool);
-exports.callZeroOrOneRowAsync = defaultPool.callZeroOrOneRowAsync.bind(defaultPool);
-exports.callWithClient = defaultPool.callWithClient.bind(defaultPool);
-exports.callWithClientAsync = defaultPool.callWithClientAsync.bind(defaultPool);
-exports.callWithClientOneRow = defaultPool.callWithClientOneRow.bind(defaultPool);
-exports.callWithClientOneRowAsync = defaultPool.callWithClientOneRowAsync.bind(defaultPool);
-exports.callWithClientZeroOrOneRow = defaultPool.callWithClientZeroOrOneRow.bind(defaultPool);
-exports.callWithClientZeroOrOneRowAsync =
+export const rollbackWithClientAsync = defaultPool.rollbackWithClientAsync.bind(defaultPool);
+export const rollbackWithClient = defaultPool.rollbackWithClient.bind(defaultPool);
+export const beginTransactionAsync = defaultPool.beginTransactionAsync.bind(defaultPool);
+export const beginTransaction = defaultPool.beginTransaction.bind(defaultPool);
+export const endTransactionAsync = defaultPool.endTransactionAsync.bind(defaultPool);
+export const endTransaction = defaultPool.endTransaction.bind(defaultPool);
+export const runInTransactionAsync = defaultPool.runInTransactionAsync.bind(defaultPool);
+export const runInTransaction = defaultPool.runInTransaction.bind(defaultPool);
+export const query = defaultPool.query.bind(defaultPool);
+export const queryAsync = defaultPool.queryAsync.bind(defaultPool);
+export const queryOneRow = defaultPool.queryOneRow.bind(defaultPool);
+export const queryOneRowAsync = defaultPool.queryOneRowAsync.bind(defaultPool);
+export const queryZeroOrOneRow = defaultPool.queryZeroOrOneRow.bind(defaultPool);
+export const queryZeroOrOneRowAsync = defaultPool.queryZeroOrOneRowAsync.bind(defaultPool);
+export const call = defaultPool.call.bind(defaultPool);
+export const callAsync = defaultPool.callAsync.bind(defaultPool);
+export const callOneRow = defaultPool.callOneRow.bind(defaultPool);
+export const callOneRowAsync = defaultPool.callOneRowAsync.bind(defaultPool);
+export const callZeroOrOneRow = defaultPool.callZeroOrOneRow.bind(defaultPool);
+export const callZeroOrOneRowAsync = defaultPool.callZeroOrOneRowAsync.bind(defaultPool);
+export const callWithClient = defaultPool.callWithClient.bind(defaultPool);
+export const callWithClientAsync = defaultPool.callWithClientAsync.bind(defaultPool);
+export const callWithClientOneRow = defaultPool.callWithClientOneRow.bind(defaultPool);
+export const callWithClientOneRowAsync = defaultPool.callWithClientOneRowAsync.bind(defaultPool);
+export const callWithClientZeroOrOneRow = defaultPool.callWithClientZeroOrOneRow.bind(defaultPool);
+export const callWithClientZeroOrOneRowAsync =
   defaultPool.callWithClientZeroOrOneRowAsync.bind(defaultPool);
-exports.setSearchSchema = defaultPool.setSearchSchema.bind(defaultPool);
-exports.getSearchSchema = defaultPool.getSearchSchema.bind(defaultPool);
-exports.setRandomSearchSchema = defaultPool.setRandomSearchSchema.bind(defaultPool);
-exports.setRandomSearchSchemaAsync = defaultPool.setRandomSearchSchemaAsync.bind(defaultPool);
-exports.PostgresPool = PostgresPool;
+export const setSearchSchema = defaultPool.setSearchSchema.bind(defaultPool);
+export const getSearchSchema = defaultPool.getSearchSchema.bind(defaultPool);
+export const setRandomSearchSchema = defaultPool.setRandomSearchSchema.bind(defaultPool);
+export const setRandomSearchSchemaAsync = defaultPool.setRandomSearchSchemaAsync.bind(defaultPool);
