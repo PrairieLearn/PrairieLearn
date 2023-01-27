@@ -3,13 +3,12 @@ import os
 import unittest
 from collections import namedtuple
 from os.path import join
-from types import FunctionType
 
 # Needed to ensure matplotlib runs on Docker
 import matplotlib
 from code_feedback import Feedback
 from pl_execute import execute_code
-from pl_helpers import GradingSkipped, name, not_repeated, points, save_plot
+from pl_helpers import GradingSkipped, name, save_plot
 
 matplotlib.use("Agg")
 
@@ -35,7 +34,6 @@ class PLTestCase(unittest.TestCase):
         """
         Feedback.set_test(self)
         base_dir = os.environ.get("MERGE_DIR")
-        job_dir = os.environ.get("JOB_DIR")
         filenames_dir = os.environ.get("FILENAMES_DIR")
         self.student_code_abs_path = join(base_dir, self.student_code_file)
 
@@ -124,7 +122,6 @@ class PLTestCase(unittest.TestCase):
         Run the actual test suite, saving the results in 'result'.
         """
 
-        test_id = self.id().split(".")[-1]
         if not result.done_grading and not result.skip_grading:
             super(PLTestCase, self).run(result)
         elif result.skip_grading:

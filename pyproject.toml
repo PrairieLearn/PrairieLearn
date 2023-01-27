@@ -1,5 +1,5 @@
 [tool.flake8]
-filename = ["./elements/**/*.py", "./python/*.py"]
+filename = ["./elements/**/*.py", "./graders/**/*.py", "./python/*.py"]
 ignore = ["E501"]
 
 # For zygote, allow imports in different places
@@ -22,10 +22,11 @@ skip_glob = ["tools/*", "exampleCourse/*", "testCourse/*", "node_modules/*"]
 [tool.pyright]
 include = [
     "./elements/pl-big-o-input",
+    "./elements/pl-dataframe",
     "./elements/pl-graph",
     "./elements/pl-hidden-hints",
+    "./elements/pl-python-variable",
     "./elements/pl-symbolic-input",
-    "./elements/pl-dataframe",
     "./python/conftest.py",
     "./python/prairielearn.py",
     "./python/prairielearn_test.py",
