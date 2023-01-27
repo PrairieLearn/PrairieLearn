@@ -73,6 +73,10 @@ RUN apt update && apt install -y \
 # Install visualTest from Mango
 RUN installGithub.r MangoTheCat/visualTest
 
+# Install plr (helper package for grading R code in PrairieLearn)
+COPY plr /r_autograder/plr
+RUN install2.r --repos=NULL r_autograder/plr
+
 # Set up user ag
 RUN useradd ag \ 
 	&& mkdir /home/ag \
@@ -84,7 +88,3 @@ RUN useradd ag \
 
 # Copy autograder interface script into position
 COPY r_autograder /r_autograder
-
-# Install plr (helper package for grading R code in PrairieLearn)
-COPY plr /r_autograder/plr
-RUN R CMD INSTALL r_autograder/plr
