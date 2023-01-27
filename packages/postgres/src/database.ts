@@ -117,7 +117,7 @@ function escapeIdentifier(identifier: string): string {
   return pg.Client.prototype.escapeIdentifier(identifier);
 }
 
-class PostgresPool {
+export class PostgresPool {
   /** The pool from which clients will be acquired. */
   private pool: pg.Pool | null = null;
   /**
