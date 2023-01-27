@@ -13,6 +13,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    List,
     Literal,
     Optional,
     Tuple,
@@ -20,6 +21,7 @@ from typing import (
     TypedDict,
     TypeVar,
     Union,
+    overload,
 )
 
 import colors
@@ -451,22 +453,16 @@ def from_json(v):
 
 def inner_html(element: lxml.html.HtmlElement) -> str:
     """
-    Gets the inner HTML of an element. A bit ugly, but hacked together to be as fast as possible
-    (since this is a function that gets used in a ton of places). The performance increase from
-    the old version of this function could have a substantial impact on question render times.
+    Gets the inner HTML of an element.
     """
 
-    inner = "" if element.text is None else html.escape(element.text)
-
-    return "".join(
-        chain(
-            repeat(inner, 1),
-            (
-                lxml.html.tostring(child, method="html").decode("utf-8")
-                for child in element
-            ),
-        )
-    )
+    inner = element.text
+    if inner is None:
+        inner = ""
+    inner = html.escape(str(inner))
+    for child in element:
+        inner += lxml.html.tostring(child, method="html").decode("utf-8")
+    return inner
 
 
 def compat_get(object, attrib, default):
