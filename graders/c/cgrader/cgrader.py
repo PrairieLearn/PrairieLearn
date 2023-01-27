@@ -5,9 +5,7 @@ import os
 import re
 import shlex
 import subprocess
-import sys
 import tempfile
-import threading
 
 import lxml.etree as ET
 
@@ -15,13 +13,14 @@ CODEBASE = "/grade/student"
 DATAFILE = "/grade/data/data.json"
 SB_USER = "sbuser"
 
-TIMEOUT_MESSAGE = (
-    "\n\nTIMEOUT! Typically this means the program took too long,"
-    + "\nrequested more inputs than provided, or an infinite loop was found."
-    + "\nIf your program is reading data using scanf inside a loop, this "
-    + "\ncould also mean that scanf does not support the input provided "
-    + "\n(e.g., reading an int if the input is a double).\n"
-)
+TIMEOUT_MESSAGE = """
+
+TIMEOUT! Typically this means the program took too long,
+requested more inputs than provided, or an infinite loop was found.
+If your program is reading data using scanf inside a loop, this
+could also mean that scanf does not support the input provided
+(e.g., reading an int if the input is a double).
+"""
 
 
 class UngradableException(Exception):
@@ -115,7 +114,7 @@ class CGrader:
         std_obj_files = []
         objs = []
         for std_c_file in c_file if isinstance(c_file, list) else [c_file]:
-            obj_file = re.sub("\.[^.]*$", "", std_c_file) + ".o"
+            obj_file = re.sub(r"\.[^.]*$", "", std_c_file) + ".o"
             out += self.run_command(
                 [compiler, "-c", std_c_file, "-o", obj_file] + cflags, sandboxed=False
             )
@@ -124,7 +123,7 @@ class CGrader:
         if all(os.path.isfile(obj) for obj in std_obj_files):
             # Add new C files that maybe overwrite some existing functions.
             for added_c_file in add_c_file:
-                obj_file = re.sub("\.[^.]*$", "", added_c_file) + ".o"
+                obj_file = re.sub(r"\.[^.]*$", "", added_c_file) + ".o"
                 out += self.run_command(
                     [compiler, "-c", added_c_file, "-o", obj_file] + cflags,
                     sandboxed=False,
@@ -497,10 +496,10 @@ class CGrader:
                         points=result == "success",
                         output=test.findtext("{*}message"),
                     )
-        except FileNotFoundError as e:
+        except FileNotFoundError:
             self.result[
                 "message"
-            ] += f"Test suite log file not found. Consult the instructor.\n"
+            ] += "Test suite log file not found. Consult the instructor.\n"
             raise UngradableException()
         except ET.ParseError as e:
             self.result["message"] += f"Error parsing test suite log.\n\n{e}\n"

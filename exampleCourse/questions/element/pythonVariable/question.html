@@ -1,40 +1,83 @@
 <pl-question-panel>
   <p>
-    The following examples below were created to show the capabilities of the <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-python-variable"><code>pl-python-variable</code></a> element, which allows formatting and rendering various Python variables defined in the <code>server.py</code> on a question page.  For example, Pandas DataFrames can be set to a parameter and then rendered on the page a la Jupyter Notebook, or ordinary Python variables can be displayed in text format.
+    The following examples below were created to show the capabilities of the <a
+      href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-python-variable"><code>pl-python-variable</code></a>
+    element, which allows formatting and rendering various Python variables defined in the <code>server.py</code> on a
+    question page. The semantics of this element are very similar to those of the Python <a
+      href="https://docs.python.org/3/library/pprint.html"><code>pprint</code></a> library, and we encourage reviewing
+    documentation for that library for more detailed examples.</p>
+  <p>
+    These examples are drawn from the <a href="https://docs.python.org/3/library/pprint.html"><code>pprint</code></a>
+    library documentation and a
+    <a href="https://realpython.com/python-pretty-print/">tutorial for using this library</a>.
   </p>
 </pl-question-panel>
 
 <div class="card my-2">
   <div class="card-body">
-  <p>
-    Here is an example with a Pandas DataFrame input.  Note that if you are setting a value in <code>data['params']</code> to a DataFrame, you can use PrairieLearn's built-in <code>pl.to_json()</code> function.
-  </p>
-  <pl-code source-file-name="test.py"></pl-code>
-  <pl-python-variable params-name="df"></pl-python-variable>
-  <p>
-    By default, a Pandas DataFrame will display its index column and header row, as well as a postscript label with the table dimensions. You can toggle these with attributes on the <code>pl-python-variable</code> tag. Here, we've added <code>show-header="false" show-index="false" show-dimensions="false"</code>:
-  </p>
-  <pl-python-variable params-name="df" show-header="false" show-index="false" show-dimensions="false"></pl-python-variable>
-  <p>
-    Here is the same example with <code>text="true"</code>, forcing the variable to be rendered in its textual representation. The <code>show-header</code>, <code>show-index</code>, and <code>show-dimensions</code> attributes don't affect this.
-  </p>
-  <pl-python-variable params-name="df" text="true"></pl-python-variable>
-  </div>
-</div>
-
-
-<div class="card my-2">
-  <div class="card-body">
-  <p>
-    Here is a randomly generated matrix created by calling <code>np.random.random((3, 3))</code>.  Any variables will be converted using <code>repr()</code> if they are being shown as <code>text</code>.
-  </p>
-  <pl-python-variable params-name="matrix"></pl-python-variable>
+    <p>
+      Here is a randomly generated matrix created by calling <code>np.random.random((3, 3))</code>. Any variables will
+      be converted using <code>repr()</code> if they are being shown as <code>text</code>.
+    </p>
+    <pl-python-variable params-name="matrix"></pl-python-variable>
   </div>
 </div>
 
 <div class="card my-2">
   <div class="card-body">
-  <p>Here is an example displaying a dictionary.  You can add additional text to the output by using the <code>prefix</code> and <code>suffix</code> attributes.</p>
-  <pl-python-variable params-name="my_dictionary" prefix="my_dictionary = "></pl-python-variable>
+    <p>Here is an example displaying a dictionary. You can add additional text to the output by using the
+      <code>prefix</code> and <code>suffix</code> attributes.
+    </p>
+    <pl-python-variable params-name="my_dictionary" prefix="my_dictionary = "></pl-python-variable>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-body">
+    <p>Here is an example displaying a string.</p>
+    <pl-python-variable params-name="my_string" prefix="my_string = "></pl-python-variable>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-body">
+    <p>Here is an example displaying a dictionary with line breaks. We've set <code>width="1"</code> to
+      force printing each element on a new line and set <code>prefix-newline="true"</code> to insert a line
+      break between the prefix and the printed dictionary.</p>
+    <pl-python-variable params-name="my_dictionary" prefix="my_dictionary = \" prefix-newline="true"
+      width="1"></pl-python-variable>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-body">
+    <p>Here is an example displaying a list with line breaks and a comment on the next line using the
+      <code>suffix</code> and <code>suffix-newline</code> attributes.
+    </p>
+    <pl-python-variable params-name="my_list" prefix="my_list = \" prefix-newline="true" width="1"
+      suffix="# This is a cool list" suffix-newline="true"></pl-python-variable>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-body">
+    <p>Here is an example displaying a more complex list.</p>
+    <pl-python-variable params-name="another_list" width="1"></pl-python-variable>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-body">
+    <p>Here is an example displaying a list with <code>indent="4"</code>.</p>
+    <pl-python-variable params-name="monty_python_stuff" indent="4"></pl-python-variable>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-body">
+    <p>Here is an example displaying a complex dictionary with <code>depth="3"</code>, to limit the depth of the data
+      structures that are displayed,
+      and <code>indent="4"</code>, to provide some space between levels .</p>
+    <pl-python-variable params-name="users" indent="4" depth="3"></pl-python-variable>
   </div>
 </div>
