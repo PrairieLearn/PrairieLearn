@@ -540,6 +540,22 @@ def has_attrib(element: lxml.html.HtmlElement, name: str) -> bool:
     old_name = name.replace("-", "_")
     return name in element.attrib or old_name in element.attrib
 
+# TODO fix this annotation
+@overload
+def get_string_attrib(
+    element: lxml.html.HtmlElement, name: str, *args: None
+) -> Optional[str]:
+    ...
+
+
+@overload
+def get_string_attrib(element: lxml.html.HtmlElement, name: str, *args: str) -> str:
+    ...
+
+
+@overload
+def get_string_attrib(element: lxml.html.HtmlElement, name: str) -> str:
+    ...
 
 def get_string_attrib(element, name, *args):
     """value = get_string_attrib(element, name, default)
