@@ -882,7 +882,6 @@ exports.queryWithClientZeroOrOneRowAsync =
 exports.rollbackWithClientAsync = defaultPool.rollbackWithClientAsync.bind(defaultPool);
 exports.rollbackWithClient = defaultPool.rollbackWithClient.bind(defaultPool);
 exports.beginTransactionAsync = defaultPool.beginTransactionAsync.bind(defaultPool);
-exports.beginTransaction = defaultPool.beginTransaction.bind(defaultPool);
 exports.endTransactionAsync = defaultPool.endTransactionAsync.bind(defaultPool);
 exports.endTransaction = defaultPool.endTransaction.bind(defaultPool);
 exports.runInTransactionAsync = defaultPool.runInTransactionAsync.bind(defaultPool);
