@@ -11,7 +11,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     params_name = pl.get_string_attrib(element, "params-name")
 
-    # Get frontend variables
+    # Get any variables defined in HTML
     html_variables = []
 
     for child in element:
@@ -21,13 +21,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             var_dict = {
                 "name": pl.get_string_attrib(child, "name"),
                 "type": pl.get_string_attrib(child, "type"),
+                # Handle empty string, inner_html doesn't return None
+                "description": pl.inner_html(child) or None,
             }
-
-            description_html = pl.inner_html(child)
-
-            # Check for empty string, inner_html doesn't return None
-            if description_html:
-                var_dict["description"] = description_html
 
             html_variables.append(var_dict)
 
@@ -78,7 +74,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     # Show descriptions if any variable has them set
     has_descriptions = any(
-        "description" in var_description for var_description in names_user_description
+        d.get("description", None) for d in names_user_description
     )
 
     html_params = {
