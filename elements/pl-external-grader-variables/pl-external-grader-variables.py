@@ -73,9 +73,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     has_names_user_description = len(names_user_description) > 0
 
     # Show descriptions if any variable has them set
-    has_descriptions = any(
-        d.get("description", None) for d in names_user_description
-    )
+    has_descriptions = any(d.get("description", None) for d in names_user_description)
 
     html_params = {
         "has_descriptions": has_descriptions,
