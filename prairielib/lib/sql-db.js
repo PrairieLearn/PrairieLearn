@@ -1,5 +1,4 @@
 // @ts-check
-const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const pg = require('pg');
 const path = require('path');
