@@ -1,15 +1,18 @@
 // @ts-expect-error - no types
 import ERR from 'async-stacktrace';
 import _ from 'lodash';
-import pg from 'pg';
+import pg, { QueryResult } from 'pg';
 import path from 'node:path';
 import debugFactory from 'debug';
 import { callbackify } from 'node:util';
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { OutgoingHttpHeader } from 'node:http';
 
 type Params = Record<string, any> | any[];
-type ResultsCallback = (error: Error | null, result?: pg.QueryResult) => void;
+type BeginTransactionCallback = (
+  err: any | undefined | null,
+  client: pg.PoolClient,
+  done: (release?: any) => void
+) => void;
 
 const debug = debugFactory('prairielib:' + path.basename(__filename, '.js'));
 const SEARCH_SCHEMA = Symbol('SEARCH_SCHEMA');
@@ -164,10 +167,10 @@ export class PostgresPool {
         const client = await this.pool.connect();
         client.release();
         return;
-      } catch (err) {
+      } catch (err: any) {
         if (retryCount === retryTimeouts.length) {
           throw new Error(
-            `Cound not connect to Postgres after ${retryTimeouts.length} attempts: ${err.message}`
+            `Could not connect to Postgres after ${retryTimeouts.length} attempts: ${err.message}`
           );
         }
 
@@ -315,24 +318,18 @@ export class PostgresPool {
   /**
    * Performs a query with the given client. Errors if the query returns more
    * than one row.
-   *
-   * @param {import("pg").PoolClient} client - The client with which to execute the query
-   * @param {String} sql - The SQL query to execute
-   * @param {Params} params
-   * @param {ResultsCallback} callback
    */
   queryWithClientOneRow = callbackify(this.queryWithClientOneRowAsync);
 
   /**
    * Performs a query with the given client. Errors if the query returns more
    * than one row.
-   *
-   * @param {import("pg").PoolClient} client - The client with which to execute the query
-   * @param {String} sql - The SQL query to execute
-   * @param {Params} params
-   * @returns {Promise<QueryResult>}
    */
-  async queryWithClientZeroOrOneRowAsync(client, sql, params) {
+  async queryWithClientZeroOrOneRowAsync(
+    client: pg.PoolClient,
+    sql: string,
+    params: Params
+  ): Promise<QueryResult> {
     debug('queryWithClientZeroOrOneRow()', 'sql:', debugString(sql));
     debug('queryWithClientZeroOrOneRow()', 'params:', debugParams(params));
     const result = await this.queryWithClientAsync(client, sql, params);
@@ -350,20 +347,13 @@ export class PostgresPool {
   /**
    * Performs a query with the given client. Errors if the query returns more
    * than one row.
-   *
-   * @param {import("pg").PoolClient} client - The client with which to execute the query
-   * @param {String} sql - The SQL query to execute
-   * @param {Params} params
-   * @param {ResultsCallback} callback
    */
   queryWithClientZeroOrOneRow = callbackify(this.queryWithClientZeroOrOneRowAsync);
 
   /**
    * Rolls back the current transaction for the given client.
-   *
-   * @param {import("pg").PoolClient} client
    */
-  async rollbackWithClientAsync(client) {
+  async rollbackWithClientAsync(client: pg.PoolClient) {
     debug('rollbackWithClient()');
     // From https://node-postgres.com/features/transactions
     try {
@@ -372,7 +362,7 @@ export class PostgresPool {
       if (this.alsClient.getStore() === undefined) {
         client.release();
       }
-    } catch (err) {
+    } catch (err: any) {
       // If there was a problem rolling back the query, something is
       // seriously messed up. Return the error to the release() function to
       // close & remove this client from the pool. If you leave a client in
@@ -384,12 +374,12 @@ export class PostgresPool {
 
   /**
    * Rolls back the current transaction for the given client.
-   *
-   * @param {import("pg").PoolClient} client
-   * @param {(release?: any) => void} done
-   * @param {(err: Error | null) => void} callback
    */
-  rollbackWithClient(client, done, callback) {
+  rollbackWithClient(
+    client: pg.PoolClient,
+    _done: (release?: any) => void,
+    callback: (err: Error | null) => void
+  ) {
     // Note that we can't use `util.callbackify` here because this function
     // has an additional unused `done` parameter for backwards compatibility.
     this.rollbackWithClientAsync(client)
@@ -399,10 +389,8 @@ export class PostgresPool {
 
   /**
    * Begins a new transaction.
-   *
-   * @returns {Promise<import('pg').PoolClient>}
    */
-  async beginTransactionAsync() {
+  async beginTransactionAsync(): Promise<pg.PoolClient> {
     debug('beginTransaction()');
     const client = await this.getClientAsync();
     try {
@@ -415,24 +403,22 @@ export class PostgresPool {
   }
 
   /**
-   * Begins a new transation.
+   * Begins a new transaction.
    *
-   * @param {(err: Error | null, client?: import("pg").PoolClient, done?: (release?: any) => void) => void} callback
+   * TODO: remove this function? It appears to be unused.
    */
-  beginTransaction(callback) {
+  beginTransaction(callback: BeginTransactionCallback) {
     this.beginTransactionAsync()
       .then((client) => callback(null, client, client.release))
+      // @ts-expect-error It's hard to properly express error-first callbacks in TypeScript
       .catch((err) => callback(err));
   }
 
   /**
    * Commits the transaction if err is null, otherwise rollbacks the transaction.
    * Also releases the client.
-   *
-   * @param {import('pg').PoolClient} client
-   * @param {Error | null} err
    */
-  async endTransactionAsync(client: pg.PoolClient, err: Error | null) {
+  async endTransactionAsync(client: pg.PoolClient, err: Error | null | undefined) {
     debug('endTransaction()');
     if (err) {
       try {
@@ -458,15 +444,15 @@ export class PostgresPool {
   }
 
   /**
-   * Commits the transaction if err is null, otherwize rollbacks the transaction.
-   * Also releasese the client.
-   *
-   * @param {import("pg").PoolClient} client
-   * @param {(rollback?: any) => void} done
-   * @param {Error | null} err
-   * @param {(error: Error | null) => void} callback
+   * Commits the transaction if err is null, otherwise rollbacks the transaction.
+   * Also releases the client.
    */
-  endTransaction(client, done, err, callback) {
+  endTransaction(
+    client: pg.PoolClient,
+    _done: (rollback?: any) => void,
+    err: Error | null | undefined,
+    callback: (error: Error | null) => void
+  ): void {
     this.endTransactionAsync(client, err)
       .then(() => callback(null))
       .catch((error) => callback(error));
@@ -479,14 +465,12 @@ export class PostgresPool {
    *
    * The transaction will be rolled back if the function throws an error, and
    * will be committed otherwise.
-   *
-   * @param {(client: import('pg').PoolClient) => Promise<void>} fn
    */
-  async runInTransactionAsync(fn) {
+  async runInTransactionAsync(fn: (client: pg.PoolClient) => Promise<void>): Promise<void> {
     const client = await this.beginTransactionAsync();
     try {
       await this.alsClient.run(client, () => fn(client));
-    } catch (err) {
+    } catch (err: any) {
       await this.endTransactionAsync(client, err);
       throw err;
     }
@@ -499,11 +483,11 @@ export class PostgresPool {
 
   /**
    * Like `runInTransactionAsync`, but with callbacks.
-   *
-   * @param {(client: import('pg').PoolClient, done: (err?: Error) => void) => void} fn
-   * @param {(err?: Error) => void} callback
    */
-  runInTransaction(fn, callback) {
+  runInTransaction(
+    fn: (client: pg.PoolClient, done: (release?: any) => void) => void,
+    callback: (err?: Error | null) => void
+  ) {
     const alreadyInTransaction = this.alsClient.getStore() !== undefined;
     this.beginTransaction((err, client, done) => {
       if (ERR(err, callback)) return;
@@ -525,12 +509,8 @@ export class PostgresPool {
 
   /**
    * Executes a query with the specified parameters.
-   *
-   * @param {string} sql - The SQL query to execute
-   * @param {Params} params - The params for the query
-   * @returns {Promise<QueryResult>}
    */
-  async queryAsync(sql, params) {
+  async queryAsync(sql: string, params: Params): Promise<QueryResult> {
     debug('query()', 'sql:', debugString(sql));
     debug('query()', 'params:', debugParams(params));
     const client = await this.getClientAsync();
@@ -546,10 +526,6 @@ export class PostgresPool {
 
   /**
    * Executes a query with the specified parameters.
-   *
-   * @param {string} sql - The SQL query to execute
-   * @param {Params} params - The params for the query
-   * @param {ResultsCallback} callback
    */
   query = callbackify(this.queryAsync);
 
@@ -678,12 +654,16 @@ export class PostgresPool {
   /**
    * Calls a function with the specified parameters using a specific client.
    */
-  async callWithClientAsync(client: pg.PoolClient, functionName: string, params: any[]): Promise<pg.QueryResult> {
+  async callWithClientAsync(
+    client: pg.PoolClient,
+    functionName: string,
+    params: any[]
+  ): Promise<pg.QueryResult> {
     debug('callWithClient()', 'function:', functionName);
     debug('callWithClient()', 'params:', debugParams(params));
     const placeholders = _.map(_.range(1, params.length + 1), (v) => '$' + v).join();
     const sql = `SELECT * FROM ${escapeIdentifier(functionName)}(${placeholders})`;
-    const result = await this.(client, sql, params);
+    const result = await this.queryWithClientAsync(client, sql, params);
     debug('callWithClient() success', 'rowCount:', result.rowCount);
     return result;
   }
@@ -697,7 +677,11 @@ export class PostgresPool {
    * Calls a function with the specified parameters using a specific client.
    * Errors if the function does not return exactly one row.
    */
-  async callWithClientOneRowAsync(client: pg.PoolClient, functionName: string, params: any[]): Promise<pg.QueryResult> {
+  async callWithClientOneRowAsync(
+    client: pg.PoolClient,
+    functionName: string,
+    params: any[]
+  ): Promise<pg.QueryResult> {
     debug('callWithClientOneRow()', 'function:', functionName);
     debug('callWithClientOneRow()', 'params:', debugParams(params));
     const result = await this.callWithClientAsync(client, functionName, params);
@@ -721,7 +705,11 @@ export class PostgresPool {
    * Calls a function with the specified parameters using a specific client.
    * Errors if the function returns more than one row.
    */
-  async callWithClientZeroOrOneRowAsync(client: pg.PoolClient, functionName: string, params: any[]): Promise<pg.QueryResult> {
+  async callWithClientZeroOrOneRowAsync(
+    client: pg.PoolClient,
+    functionName: string,
+    params: any[]
+  ): Promise<pg.QueryResult> {
     debug('callWithClientZeroOrOneRow()', 'function:', functionName);
     debug('callWithClientZeroOrOneRow()', 'params:', debugParams(params));
     const result = await this.callWithClientAsync(client, functionName, params);
