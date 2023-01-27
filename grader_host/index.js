@@ -396,7 +396,7 @@ function runJob(info, callback) {
   } = info;
 
   let results = {};
-  let runTimeout = timeout || 30;
+  let runTimeout = timeout || config.defaultTimeout;
   // Even if instructors specify a really short timeout for the execution of
   // the grading job, there's a certain amount of overhead associated with
   // running the job (pulling an image, uploading results, etc.). We add a
