@@ -1,8 +1,3 @@
 {
-    "controller": "pl-python-variable.py",
-    "dependencies": {
-        "elementStyles": [
-            "pl-python-variable.css"
-        ]
-    }
+    "controller": "pl-python-variable.py"
 }
