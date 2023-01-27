@@ -23,6 +23,7 @@ skip_glob = ["tools/*", "exampleCourse/*", "testCourse/*", "node_modules/*"]
 include = [
     "./elements/pl-big-o-input",
     "./elements/pl-dataframe",
+    "./elements/pl-external-grader-variables",
     "./elements/pl-graph",
     "./elements/pl-hidden-hints",
     "./elements/pl-python-variable",
