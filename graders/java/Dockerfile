@@ -15,6 +15,9 @@ RUN mkdir /javagrader
 COPY libs /javagrader/libs
 COPY JUnitAutograder.java AutograderInfo.java /javagrader/
 
+# Disable ptrace mechanism to avoid heap dumping from other processes
+RUN echo "kernel.yama.ptrace_scope = 3" > cat /etc/sysctl.d/10-ptrace.conf
+
 RUN javac -cp '/javagrader:/javagrader/libs:/javagrader/libs/*' -d /javagrader /javagrader/JUnitAutograder.java /javagrader/AutograderInfo.java
 
 COPY autograder.sh /bin
