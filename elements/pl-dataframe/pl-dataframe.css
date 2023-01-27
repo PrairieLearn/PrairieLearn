@@ -1,4 +1,4 @@
-.pl-python-variable-table {
+.pl-dataframe-table {
     display: block;
     overflow-x: scroll;
     line-height: 20px;
@@ -9,7 +9,7 @@
     margin-bottom: 1rem;
 }
 
-.pl-python-variable-table thead {
+.pl-dataframe-table thead {
     border-bottom-color: black;
     border-bottom-style: solid;
     border-bottom-width: 0.55px;
@@ -19,14 +19,14 @@
     vertical-align: bottom;
 }
 
-.pl-python-variable-table th,
-.pl-python-variable-table tr,
-.pl-python-variable-table td {
+.pl-dataframe-table th,
+.pl-dataframe-table tr,
+.pl-dataframe-table td {
     border: none;
 }
 
-.pl-python-variable-table td,
-.pl-python-variable-table tbody th {
+.pl-dataframe-table td,
+.pl-dataframe-table tbody th {
     padding: 0.5em 0.5em;
     text-align: right;
     vertical-align: middle;
@@ -37,15 +37,15 @@
 }
 
 
-.pl-python-variable-table tbody tr:nth-child(2n+1) {
+.pl-dataframe-table tbody tr:nth-child(2n+1) {
     background: #f5f5f5;
 }
 
-.pl-python-variable-table tbody tr:hover {
+.pl-dataframe-table tbody tr:hover {
     background: rgba(66, 165, 245, 0.2)
 }
 
-.pl-python-variable-table-dimensions {
+.pl-dataframe-table-dimensions {
     box-sizing: border-box;
     color: rgb(0, 0, 0);
     font-size: 14px;
