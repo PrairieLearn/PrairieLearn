@@ -1,5 +1,5 @@
 [tool.flake8]
-filename = ["./elements/**/*.py", "./python/*.py"]
+filename = ["./elements/**/*.py", "./graders/**/*.py", "./python/*.py"]
 ignore = ["E501"]
 
 # For zygote, allow imports in different places
