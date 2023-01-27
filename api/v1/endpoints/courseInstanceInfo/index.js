@@ -2,9 +2,7 @@
 const asyncHandler = require('express-async-handler');
 const path = require('path');
 const express = require('express');
-const router = express.Router({
-  mergeParams: true,
-});
+const router = express.Router({ mergeParams: true });
 
 const sqldb = require('../../../../prairielib/lib/sql-db');
 const sqlLoader = require('../../../../prairielib/lib/sql-loader');
