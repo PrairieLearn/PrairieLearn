@@ -1215,7 +1215,7 @@ def generate(data):
 
 | Attribute        | Type    | Default | Description                                                                                                                                                                                                                                                                 |
 | ---------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `params-name`    | string  | —       | The name of the key in `data['params']` to get a value from                                                                                                                                                                                                                 |
+| `params-name`    | string  | —       | The name of the key in `data['params']` to get a value from.                                                                                                                                                                                                                 |
 | `prefix`         | string  | (empty) | Any prefix to append to the output in `text` mode.                                                                                                                                                                                                                          |
 | `prefix-newline` | boolean | false   | Add newline to the end of `prefix`.                                                                                                                                                                                                                                         |
 | `suffix`         | string  | (empty) | Any suffix to append to the output in `text` mode.                                                                                                                                                                                                                          |
@@ -1229,7 +1229,7 @@ def generate(data):
 
 #### Details
 
-The element supports displaying Python objects via `repr()`, with support for more complex display options similar to the built-in pprint library. Objects to be displayed must be JSON serialized.
+The element supports displaying Python objects via `repr()`, with support for more complex display options similar to the built-in pprint library. Objects to be displayed must be JSON serialized. For details about what objects can be serialized and how to do this with the provided `to_json` and `from_json` functions, see the [Question Writing documentation](question.md#question-data-storage).
 
 Printing Pandas DataFrames with this element is deprecated. Please use the new [`pl-dataframe`](#pl-dataframe-element) element for this purpose.
 
