@@ -446,17 +446,6 @@ class PostgresPool {
   }
 
   /**
-   * Begins a new transation.
-   *
-   * @param {(err: Error | null, client?: import("pg").PoolClient, done?: (release?: any) => void) => void} callback
-   */
-  beginTransaction(callback) {
-    this.beginTransactionAsync()
-      .then((client) => callback(null, client, client.release))
-      .catch((err) => callback(err));
-  }
-
-  /**
    * Commits the transaction if err is null, otherwize rollbacks the transaction.
    * Also releasese the client.
    *
@@ -526,32 +515,6 @@ class PostgresPool {
     // because we don't want an error thrown by it to trigger *another* call
     // to `endTransactionAsync` in the `catch` block.
     await this.endTransactionAsync(client, null);
-  }
-
-  /**
-   * Like `runInTransactionAsync`, but with callbacks.
-   *
-   * @param {(client: import('pg').PoolClient, done: (err?: Error) => void) => void} fn
-   * @param {(err?: Error) => void} callback
-   */
-  runInTransaction(fn, callback) {
-    const alreadyInTransaction = this.alsClient.getStore() !== undefined;
-    this.beginTransaction((err, client, done) => {
-      if (ERR(err, callback)) return;
-
-      this.alsClient.run(client, () => {
-        fn(client, (err) => {
-          if (alreadyInTransaction) {
-            this.endTransaction(client, done, err, callback);
-          } else {
-            // If this wasn't invoked inside an existing transaction, "exit"
-            // from the current execution context so that any code downstream
-            // of the callback isn't executed with this client.
-            this.alsClient.exit(() => this.endTransaction(client, done, err, callback));
-          }
-        });
-      });
-    });
   }
 
   /**
@@ -923,7 +886,6 @@ exports.beginTransaction = defaultPool.beginTransaction.bind(defaultPool);
 exports.endTransactionAsync = defaultPool.endTransactionAsync.bind(defaultPool);
 exports.endTransaction = defaultPool.endTransaction.bind(defaultPool);
 exports.runInTransactionAsync = defaultPool.runInTransactionAsync.bind(defaultPool);
-exports.runInTransaction = defaultPool.runInTransaction.bind(defaultPool);
 exports.query = defaultPool.query.bind(defaultPool);
 exports.queryAsync = defaultPool.queryAsync.bind(defaultPool);
 exports.queryOneRow = defaultPool.queryOneRow.bind(defaultPool);
