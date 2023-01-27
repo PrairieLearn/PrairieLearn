@@ -398,7 +398,10 @@ function runJob(info, callback) {
   let results = {};
   let runTimeout = timeout || 30;
   // Even if instructors specify a really short timeout for the execution of
-  // the grading job, there's a certain amount of overhead
+  // the grading job, there's a certain amount of overhead associated with
+  // running the job (pulling an image, uploading results, etc.). We add a
+  // fixed amount of time to the instructor-specified timeout to account for
+  // this.
   let jobTimeout = config.timeoutOverhead + runTimeout;
   let jobEnableNetworking = enableNetworking || false;
   let jobEnvironment = environment || {};
