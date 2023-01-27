@@ -1,10 +1,7 @@
 {
   "name": "@prairielearn/postgres",
   "version": "1.0.0",
-  "exports": {
-    "./package.json": "./package.json",
-    ".": "./dist/index.js"
-  },
+  "main": "./dist/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",

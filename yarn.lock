@@ -2851,7 +2851,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/postgres@workspace:packages/postgres":
+"@prairielearn/postgres@^1.0.0, @prairielearn/postgres@workspace:packages/postgres":
   version: 0.0.0-use.local
   resolution: "@prairielearn/postgres@workspace:packages/postgres"
   dependencies:
@@ -3701,6 +3701,7 @@ __metadata:
     "@prairielearn/compiled-assets": ^1.0.0
     "@prairielearn/html": ^2.0.0
     "@prairielearn/opentelemetry": ^1.0.0
+    "@prairielearn/postgres": ^1.0.0
     "@prairielearn/sentry": ^1.0.0
     "@types/async": ^3.2.16
     "@types/body-parser": ^1.19.2

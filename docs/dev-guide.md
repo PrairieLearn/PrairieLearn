@@ -149,9 +149,9 @@ var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var express = require('express');
 var router = express.Router();
-var sqldb = require('../prairielib/sql-db'); // adjust path as needed
+var sqldb = require('@prairielearn/postgres') // adjust path as needed
 var sqlLoader = require('../prairielib/sql-loader'); // adjust path as needed
-var sql = sqlLoader.loadSqlEquiv(__filename);
+var sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
   var params = { course_instance_id: res.params.courseInstanceId };
@@ -218,7 +218,7 @@ From JavaScript you can then do:
 
 ```javascript
 var sqlLoader = require('../prairielib/sql-loader'); // adjust path as needed
-var sql = sqlLoader.loadSqlEquiv(__filename); // from filename.js will load filename.sql
+var sql = sqldb.loadSqlEquiv(__filename); // from filename.js will load filename.sql
 
 // run the entire contents of the SQL file
 sqldb.query(sql.all, params, ...);

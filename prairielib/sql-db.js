@@ -1,1 +1,1 @@
-module.exports = require('./lib/sql-db');
+module.exports = require('@prairielearn/postgres');

@@ -6,7 +6,7 @@ const router = express.Router();
 const logger = require('../../lib/logger');
 const config = require('../../lib/config');
 const csrf = require('../../lib/csrf');
-const sqldb = require('../../prairielib/lib/sql-db');
+const sqldb = require('@prairielearn/postgres');
 
 const { google } = require('googleapis');
 const OAuth2 = google.auth.OAuth2;

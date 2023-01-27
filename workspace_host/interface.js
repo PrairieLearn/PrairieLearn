@@ -31,10 +31,9 @@ const sprocs = require('../sprocs');
 const LocalLock = require('../lib/local-lock');
 
 const config = require('../lib/config');
-const sqldb = require('../prairielib/lib/sql-db');
-const sqlLoader = require('../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 const { parseDockerLogs } = require('./lib/docker');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 let lastAutoUpdateTime = Date.now();
 let lastPushAllTime = Date.now();

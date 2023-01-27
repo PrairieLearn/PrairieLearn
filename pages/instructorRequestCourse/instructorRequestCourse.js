@@ -7,9 +7,8 @@ const logger = require('../../lib/logger');
 const config = require('../../lib/config.js');
 const path = require('path');
 
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sqldb = require('@prairielearn/postgres');
+const sql = sqldb.loadSqlEquiv(__filename);
 
 function get(req, res, next) {
   sqldb.query(sql.get_requests, { user_id: res.locals.authn_user.user_id }, (err, result) => {

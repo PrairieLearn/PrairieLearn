@@ -5,10 +5,9 @@ const router = express.Router({
   mergeParams: true,
 });
 
-const sqldb = require('../../../../prairielib/lib/sql-db');
-const sqlLoader = require('../../../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
-const sql = sqlLoader.load(path.join(__dirname, '..', 'queries.sql'));
+const sql = sqldb.loadSql(path.join(__dirname, '..', 'queries.sql'));
 
 router.get('/:unsafe_submission_id', (req, res, next) => {
   const params = {

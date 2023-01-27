@@ -1,5 +1,5 @@
 /* eslint-env jest */
-const sqldb = require('./sql-db');
+const sqldb = require('@prairielearn/postgres');
 
 /**
  * Returns true if the property on `PostgresPool` should be considered
