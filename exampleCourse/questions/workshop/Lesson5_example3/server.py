@@ -1,13 +1,9 @@
-import math
 import random
 
 import numpy as np
 
 
 def generate(data):
-
-    canvas_width = 300
-    canvas_height = 300
 
     # ------------------------------------------
     # point

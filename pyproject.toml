@@ -9,13 +9,24 @@ filename = [
 exclude = [
     "./exampleCourse/questions/demo/autograder/codeUpload/submitted_code_samples/invalid/**/*.py"
 ]
+per-file-ignores = [
+    # Files related to the Python autograder will often intentionally appear
+    # broken in isolation. We'll allow specific errors in these files to
+    # account for that.
+    "exampleCourse/questions/**/tests/setup_code.py: F401, F821",
+    "exampleCourse/questions/**/tests/initial_code.py: F401, F821, E999",
+    "exampleCourse/questions/**/tests/leading_code.py: F401, F821, F841",
+    "exampleCourse/questions/**/tests/trailing_code.py: F821, E999",
+    "exampleCourse/questions/**/tests/ans.py: F821",
+    # Questions commonly use "ambiguous variable names" to represent specific
+    # concepts, e.g. I for an identity matrix. We'll allow these to be used in
+    # questions.
+    "exampleCourse/questions/**/*.py: E741",
+    # The zygote specifically uses imports in strange places to facilitate the
+    # preloading of commonly-used modules.
+    "zygote.py: E402, F401"
+]
 ignore = ["E501"]
-
-# For zygote, allow imports in different places
-per-file-ignores = """
-    zygote.py: E402, F401
-"""
-
 
 # Black compatibility
 max-line-length = 88

@@ -1,10 +1,5 @@
-import math
-import random
-
 import numpy as np
 import prairielearn as pl
-import scipy.linalg as sla
-import to_precision
 
 
 def generate(data):
@@ -16,7 +11,7 @@ def generate(data):
     x = np.array([[1, 2, 3, 4]])
     long_matrix = np.arange(1, 21).reshape((1, 20))
     y = (2.0 ** -np.arange(1, 5)).reshape((1, 4))
-    I = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+    I = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1]])  # noqa: E741
 
     data["params"]["sf"] = sf
     data["params"]["in"] = pl.to_json(B)

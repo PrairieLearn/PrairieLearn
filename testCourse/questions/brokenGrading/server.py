@@ -1,7 +1,3 @@
-import copy
-import random
-
-
 def generate(data):
     data["correct_answers"]["x"] = 3
 

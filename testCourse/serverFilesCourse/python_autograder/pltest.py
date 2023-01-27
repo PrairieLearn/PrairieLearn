@@ -91,7 +91,7 @@ if __name__ == "__main__":
 
         with open("results.json", mode="w") as out:
             json.dump(grading_result, out)
-    except:
+    except:  # noqa E722
         # Last-ditch effort to capture meaningful error information
         grading_result = {}
         grading_result["score"] = 0.0

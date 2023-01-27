@@ -1,7 +1,4 @@
-import json
-
 import numpy as np
-import prairielearn as pl
 
 
 def generate(data):

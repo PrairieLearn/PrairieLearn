@@ -1,7 +1,4 @@
-import random
-
 import numpy as np
-import numpy.random
 
 N = 100
 num_pts = 0

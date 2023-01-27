@@ -1,7 +1,3 @@
-import math
-import random
-
-
 def generate(data):
 
     height_canvas = 400
