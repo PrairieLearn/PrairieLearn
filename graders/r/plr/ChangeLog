@@ -1,3 +1,13 @@
+2023-01-24  Alton Barbehenn    <barbehe2@illinois.edu>
+
+	* DESCRIPTION: Version bump and adding David Dalpiaz as author
+	* README.md: Adding usage examples
+	* R/questions.R: Typo fixes
+
+2023-01-16  David Dalpiaz      <dalpiaz2@illinois.edu>
+
+	* R/source.R: Adding functions to source files as a specific user
+
 2021-08-31  Dirk Eddelbuettel  <edd@debian.org>
 
 	* NAMESPACE: Also export message_to_test_result
