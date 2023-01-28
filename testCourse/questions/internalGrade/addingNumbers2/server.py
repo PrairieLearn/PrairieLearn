@@ -1,4 +1,6 @@
-import random, copy
+import copy
+import random
+
 
 def generate(data):
 
@@ -7,11 +9,11 @@ def generate(data):
     b = random.randint(5, 10)
 
     # Put these two integers into data['params']
-    data['params']['a'] = a
-    data['params']['b'] = b
+    data["params"]["a"] = a
+    data["params"]["b"] = b
 
     # Compute the sum of these two integers
     c = a + b
 
     # Put the sum into data['correct_answers']
-    data['correct_answers']['c'] = c
+    data["correct_answers"]["c"] = c
