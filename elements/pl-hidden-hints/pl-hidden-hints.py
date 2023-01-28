@@ -53,14 +53,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "hint": hint,
                 "index": idx,
                 "is_open": not all_correct and priority == submission_count,
+                "hint_name": hint_name if hint_name is not None else f"Hint #{idx}",
             }
-
-            if hint_name is not None:
-                hint_dict["hint_name"] = hint_name
 
             hints_to_display.append(hint_dict)
 
     with open("pl-hidden-hints.mustache", "r") as f:
-        return chevron.render(
-            f, {"hints": hints_to_display, "is_plural": len(hints_to_display) > 1}
-        ).strip()
+        return chevron.render(f, {"hints": hints_to_display}).strip()

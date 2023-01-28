@@ -1,10 +1,7 @@
 <div>
 {{#hints}}
     <details class="pl-hidden-hint rounded" {{#is_open}} open {{/is_open}}>
-        <summary>
-            {{#hint_name}}{{{.}}}{{/hint_name}}
-            {{^hint_name}}Hint {{#is_plural}} #{{index}} {{/is_plural}}{{/hint_name}}
-        </summary>
+        <summary>{{hint_name}}</summary>
         {{{hint}}}
     </details>
 {{/hints}}
