@@ -262,6 +262,9 @@ describe('chunks', () => {
       // We add one here for the sake of testing.
       await fs.ensureDir(path.join(tempTestCourseDir.path, 'elementExtensions'));
 
+      // We'll add a `serverFilesCourse` directory too.
+      await fs.ensureDir(path.join(tempTestCourseDir.path, 'serverFilesCourse'));
+
       // We need to override the chunks directory too.
       tempChunksDir = await tmp.dir({ unsafeCleanup: true });
 
