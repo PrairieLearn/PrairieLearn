@@ -1,11 +1,34 @@
 [tool.flake8]
-filename = ["./elements/**/*.py", "./graders/**/*.py", "./python/*.py"]
+filename = [
+    "./elements/**/*.py",
+    "./graders/**/*.py",
+    "./python/*.py",
+    "./exampleCourse/**/*.py",
+    "./testCourse/**/*.py"
+]
+exclude = [
+    # These files are intentionally not parseable as Python.
+    "./exampleCourse/questions/demo/autograder/codeUpload/submitted_code_samples/fib_error_binary_file/fib.py",
+    "./exampleCourse/questions/demo/autograder/codeUpload/submitted_code_samples/fib_error_large_text_file/fib.py",
+]
+per-file-ignores = [
+    # Files related to the Python autograder will often intentionally appear
+    # broken in isolation. We'll allow specific errors in these files to
+    # account for that.
+    "exampleCourse/questions/**/tests/setup_code.py: F401, F821",
+    "exampleCourse/questions/**/tests/initial_code.py: F401, F821, E999",
+    "exampleCourse/questions/**/tests/leading_code.py: F401, F821, F841",
+    "exampleCourse/questions/**/tests/trailing_code.py: F821, E999",
+    "exampleCourse/questions/**/tests/ans.py: F821",
+    # Questions commonly use "ambiguous variable names" to represent specific
+    # concepts, e.g. I for an identity matrix. We'll allow these to be used in
+    # questions.
+    "exampleCourse/questions/**/*.py: E741",
+    # The zygote specifically uses imports in strange places to facilitate the
+    # preloading of commonly-used modules.
+    "zygote.py: E402, F401"
+]
 ignore = ["E501"]
-
-# For zygote, allow imports in different places
-per-file-ignores = """
-    zygote.py: E402, F401
-"""
 
 
 # Black compatibility
@@ -13,7 +36,16 @@ max-line-length = 88
 extend-ignore = ["E203", "W503"]
 
 [tool.black]
-exclude = '^\/tools\/|\/node_modules\/$'
+extend-exclude = '''
+(
+    ^\/tools\/|\/node_modules\/
+    # The following Python files are intentionally invalid
+    | ^\/exampleCourse\/questions\/demo\/autograder\/codeUpload\/submitted_code_samples\/fib_error_binary_file\/fib.py
+    | ^\/exampleCourse\/questions\/demo\/autograder\/codeUpload\/submitted_code_samples\/fib_error_large_text_file\/fib.py
+    | ^\/exampleCourse\/questions\/demo\/autograder\/python\/leadingTrailing\/tests\/trailing_code.py
+    | ^\/exampleCourse\/questions\/demo\/autograder\/python\/square\/tests\/initial_code.py
+)
+'''
 
 [tool.isort]
 profile = "black"
