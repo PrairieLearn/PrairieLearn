@@ -1,10 +1,12 @@
-import matplotlib.pyplot as plt
-import numpy as np
 import io
 import random
 
+import matplotlib.pyplot as plt
+import numpy as np
+
+
 def file(data):
-    if data['filename'] == 'cos-x.png':
+    if data["filename"] == "cos-x.png":
         # data points
         # coeff cos(x) from -5 * pi 5 * pi, stepping 0.01
         coeff = random.randint(1, 5)
@@ -20,5 +22,5 @@ def file(data):
 
         # save plot as utf-8 bytes
         f = io.BytesIO()
-        plt.savefig(f, format='png')
+        plt.savefig(f, format="png")
         return f

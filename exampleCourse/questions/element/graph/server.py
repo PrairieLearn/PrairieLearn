@@ -1,10 +1,11 @@
+import itertools
 import random
+import string
+
+import networkx as nx
 import numpy as np
 import numpy.linalg as la
 import prairielearn as pl
-import networkx as nx
-import string
-import itertools
 
 
 def generate(data):
