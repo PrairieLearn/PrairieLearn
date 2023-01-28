@@ -631,7 +631,7 @@ class Feedback:
             data = data[subset_columns]
 
         if check_values:
-            from pandas.util.testing import assert_frame_equal
+            from pandas.testing import assert_frame_equal
 
             try:
                 assert_frame_equal(ref, data, check_like=allow_order_variance)

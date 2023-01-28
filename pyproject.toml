@@ -28,6 +28,7 @@ include = [
     "./elements/pl-hidden-hints",
     "./elements/pl-python-variable",
     "./elements/pl-symbolic-input",
+    "./graders",
     "./python/conftest.py",
     "./python/prairielearn.py",
     "./python/prairielearn_test.py",

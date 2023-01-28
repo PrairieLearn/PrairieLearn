@@ -6,6 +6,8 @@ from os.path import join
 from unittest import TestLoader
 
 from pl_result import PLTestResult
+from typing import List, TypedDict
+from typing_extensions import NotRequired
 
 """
 The main python entrypoint for the autograder framework.
@@ -14,9 +16,19 @@ Loads and executes test cases.
 
 OUTPUT_FILE = "output-fname.txt"
 
+class ExternalGraderResults(TypedDict):
+    """A class with type signatures for the external grader results dict"""
+    name: str
+    filename: str
+    files: NotRequired[List[str]]
+    images: NotRequired[List[str]]
+    message: NotRequired[str]
 
-def add_files(results):
+def add_files(results: List[ExternalGraderResults]) -> None:
     base_dir = os.environ.get("MERGE_DIR")
+
+    if base_dir is None:
+        raise FileNotFoundError('"base_dir" not found.')
 
     for test in results:
         test["files"] = test.get("files", [])
@@ -36,12 +48,15 @@ def add_files(results):
             os.remove(feedback_fname)
 
 
-if __name__ == "__main__":
+def main() -> None:
     try:
-        from filenames.test import Test as test_case
+        from filenames.test import Test as test_case # type: ignore
 
         filenames_dir = os.environ.get("FILENAMES_DIR")
         base_dir = os.environ.get("MERGE_DIR")
+
+        if filenames_dir is None or base_dir is None:
+            raise FileNotFoundError('"filenames_dir" or "base_dir" not found.')
 
         # Read the output filename from a file, and then delete it
         # We could do this via command-line arg but there's a chance of
@@ -104,12 +119,14 @@ if __name__ == "__main__":
             os.remove(join(base_dir, "output.txt"))
 
         # Assemble final grading results
-        grading_result = {}
-        grading_result["tests"] = results
-        grading_result["score"] = float(earned_points) / float(max_points)
-        grading_result["succeeded"] = True
-        grading_result["gradable"] = gradable
-        grading_result["max_points"] = max_points
+        grading_result = {
+            "tests": results,
+            "score": float(earned_points) / float(max_points),
+            "succeeded": True,
+            "gradable": gradable,
+            "max_points": max_points,
+        }
+
         if text_output:
             grading_result["output"] = text_output
         if len(format_errors) > 0:
@@ -136,10 +153,15 @@ if __name__ == "__main__":
             json.dump(grading_result, out)
     except:  # noqa: E722
         # Last-ditch effort to capture meaningful error information
-        grading_result = {}
-        grading_result["score"] = 0.0
-        grading_result["succeeded"] = False
-        grading_result["output"] = traceback.format_exc()
+        grading_result = {
+            "score": 0.0,
+            "succeeded": False,
+            "output": traceback.format_exc(),
+        }
 
-        with open(output_fname, mode="w") as out:
+        with open(output_fname, mode="w") as out: # type: ignore
             json.dump(grading_result, out)
+
+
+if __name__ == "__main__":
+    main()
