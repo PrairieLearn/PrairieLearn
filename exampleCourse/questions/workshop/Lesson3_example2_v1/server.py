@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import prairielearn as pl
 
 
 def generate(data):

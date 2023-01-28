@@ -1,10 +1,5 @@
-import math
-import random
-
 import numpy as np
 import prairielearn as pl
-import scipy.linalg as sla
-import to_precision
 
 
 def generate(data):
