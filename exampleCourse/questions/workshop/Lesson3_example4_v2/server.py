@@ -1,10 +1,11 @@
 import random
 
+
 def generate(data):
 
-    x = random.choice([0,1])
-    y = random.choice([0,1])
-    z = random.choice([0,1])
+    x = random.choice([0, 1])
+    y = random.choice([0, 1])
+    z = random.choice([0, 1])
 
     data["params"]["x"] = x
     data["params"]["y"] = y

@@ -187,12 +187,13 @@ def prepare(element_html, data):
         if grading_method == "ranking":
             tag = str(index)
 
-        if tag in used_tags:
-            raise Exception(
-                f'Tag "{tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.'
-            )
-        else:
-            used_tags.add(tag)
+        if is_correct:
+            if tag in used_tags:
+                raise Exception(
+                    f'Tag "{tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.'
+                )
+            else:
+                used_tags.add(tag)
 
         if check_indentation is False and answer_indent is not None:
             raise Exception(
