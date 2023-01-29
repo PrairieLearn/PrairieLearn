@@ -98,7 +98,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     subdirectory = pl.get_string_attrib(element, "subdirectory", SUBDIRECTORY_DEFAULT)
 
     file_name = pl.get_string_attrib(element, "file-name")
-    warn_undefined = pl.get_string_attrib(
+    warn_undefined = pl.get_boolean_attrib(
         element, "warn-undefined", WARN_UNDEFINED_DEFAULT
     )
 
