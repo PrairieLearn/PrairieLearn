@@ -19,6 +19,7 @@ class ParentDirectoryEnum(Enum):
 PARENT_DIRECTORY_CHOICE_DEFAULT = ParentDirectoryEnum.SERVER_FILES_COURSE
 SUBDIRECTORY_DEFAULT = ""
 WARN_UNDEFINED_DEFAULT = True
+TRIM_WHITESPACE_DEFAULT = True
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -34,7 +35,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     for child in element:
         if child.tag == "pl-variable":
             pl.check_attribs(
-                child, ["name"], ["file-name", "subdirectory", "parent-directory"]
+                child,
+                ["name"],
+                ["file-name", "subdirectory", "parent-directory", "trim-whitespace"],
             )
 
             name = pl.get_string_attrib(child, "name")
@@ -78,6 +81,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             else:
                 variable_dict[name] = inner_html
+
+            if pl.get_boolean_attrib(child, "trim-whitespace", TRIM_WHITESPACE_DEFAULT):
+                variable_dict[name] = variable_dict[name].strip()
 
         elif child.tag is lxml.etree.Comment:
             continue
