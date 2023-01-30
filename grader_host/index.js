@@ -284,10 +284,10 @@ function initDocker(info, callback) {
             stream,
             (err) => {
               if (err) {
-                globalLogger.error('Error pulling "${image}" image:', err);
+                globalLogger.error(`Error pulling "${image}" image:`, err);
                 reject(err);
               } else {
-                globalLogger.info('Successfully pulled "${image}" image');
+                globalLogger.info(`Successfully pulled "${image}" image`);
                 resolve();
               }
             },
