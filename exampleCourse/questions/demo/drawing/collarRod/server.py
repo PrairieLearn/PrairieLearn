@@ -1,7 +1,4 @@
-import math
 import random
-
-import numpy as np
 
 
 def generate(data):

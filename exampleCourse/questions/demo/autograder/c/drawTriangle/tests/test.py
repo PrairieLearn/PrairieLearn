@@ -3,12 +3,9 @@ import base64
 import io
 import itertools
 import json
-import math
-import sys
 
 import cgrader
 import matplotlib.pyplot as plt
-import sympy
 
 
 class TestGrader(cgrader.CGrader):
@@ -50,7 +47,7 @@ class TestGrader(cgrader.CGrader):
                         buf.getvalue()
                     ).decode("ascii")
                     test["images"] = {"label": "Result", "url": url}
-            except:
+            except Exception:
                 pass
 
 
