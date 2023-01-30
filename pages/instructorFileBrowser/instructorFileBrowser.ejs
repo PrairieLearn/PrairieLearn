@@ -53,7 +53,7 @@
         <div class="card mb-4">
           <div class="card-header bg-primary text-white">
             <div class="row align-items-center justify-content-between">
-              <div class="col-auto">
+              <div class="col-auto text-monospace d-flex">
                 <% file_browser.paths.branch.forEach((dir, key, arr) => { %>
                   <% if (dir.canView) { %>
                     <a class="text-white" href="<%= file_browser.paths.urlPrefix %>/file_view/<%= dir.encodedPath %>"><%= dir.name %></a>
@@ -61,7 +61,7 @@
                     <span><%= dir.name %></span>
                   <% } %>
                   <% if (!(Object.is(arr.length - 1, key) && file_browser.isFile)) { %>
-                  <span class="px-2"> / </span>
+                  <span class="mx-2">/</span>
                   <% } %>
                 <% }); %>
               </div>

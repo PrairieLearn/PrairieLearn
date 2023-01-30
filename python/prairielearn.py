@@ -9,16 +9,28 @@ import re
 import unicodedata
 import uuid
 from enum import Enum
-from typing import Any, Dict, Literal, Optional, Type, TypedDict, TypeVar
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Literal,
+    Optional,
+    Tuple,
+    Type,
+    TypedDict,
+    TypeVar,
+    Union,
+)
 
 import colors
 import lxml.html
+import networkx as nx
 import numpy as np
 import pandas
 import sympy
 import to_precision
 from python_helper_sympy import convert_string_to_sympy, json_to_sympy, sympy_to_json
-from typing_extensions import NotRequired
+from typing_extensions import NotRequired, assert_never
 
 
 class PartialScore(TypedDict):
@@ -56,6 +68,69 @@ class QuestionData(TypedDict):
 
 class ElementTestData(QuestionData):
     test_type: Literal["correct", "incorrect", "invalid"]
+
+
+def grade_answer_parameterized(
+    data: QuestionData,
+    question_name: str,
+    grade_function: Callable[[Any], Tuple[Union[bool, float], Optional[str]]],
+    weight: int = 1,
+) -> None:
+    """
+    Grade question question_name. grade_function should take in a single parameter
+    (which will be the submitted answer) and return a 2-tuple:
+        - The first element of the 2-tuple should either be:
+            - a boolean indicating whether the question should be marked correct
+            - a partial score between 0 and 1, inclusive
+        - The second element of the 2-tuple should either be:
+            - a string containing feedback
+            - None, if there is no feedback (usually this should only occur if the answer is correct)
+    """
+
+    # Create the data dictionary at first
+    data["partial_scores"][question_name] = {"score": 0.0, "weight": weight}
+
+    if question_name not in data["submitted_answers"]:
+        data["format_errors"][question_name] = "No answer was submitted"
+        return
+
+    submitted_answer = data["submitted_answers"][question_name]
+
+    # Run passed-in grading function
+    result, feedback_content = grade_function(submitted_answer)
+
+    # Try converting partial score
+    if isinstance(result, bool):
+        partial_score = 1.0 if result else 0.0
+    elif isinstance(result, (float, int)):
+        assert 0.0 <= result <= 1.0
+        partial_score = result
+    else:
+        assert_never(result)
+
+    # Set corresponding partial score and feedback
+    data["partial_scores"][question_name]["score"] = partial_score
+
+    if feedback_content:
+        data["partial_scores"][question_name]["feedback"] = feedback_content
+
+
+def determine_score_params(
+    score: float,
+) -> Tuple[Literal["correct", "partial", "incorrect"], Union[bool, float]]:
+    """
+    Determine appropriate key and value for display on the frontend given the
+    score for a particular question. For elements following PrairieLearn
+    conventions, the return value can be used as a key/value pair in the
+    dictionary passed to an element's Mustache template to display a score badge.
+    """
+
+    if score >= 1:
+        return ("correct", True)
+    elif score > 0:
+        return ("partial", math.floor(score * 100))
+
+    return ("incorrect", True)
 
 
 EnumT = TypeVar("EnumT", bound=Enum)
@@ -141,24 +216,29 @@ def all_partial_scores_correct(data: QuestionData) -> bool:
     )
 
 
-def to_json(v, *, df_encoding_version=1):
+def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
     """to_json(v)
 
     If v has a standard type that cannot be json serialized, it is replaced with
     a {'_type':..., '_value':...} pair that can be json serialized:
 
-        If df_encoding_version is set to 2, then the following mapping is used:
+        If np_encoding_version is set to 2, will serialize numpy scalars as follows:
+
+        numpy scalar -> '_type': 'np_scalar'
+
+        If df_encoding_version is set to 2, will serialize pandas DataFrames as follows:
 
         pandas.DataFrame -> '_type': 'dataframe_v2'
 
         Otherwise, the following mappings are used:
 
-        complex -> '_type': 'complex'
+        any complex scalar (including numpy) -> '_type': 'complex'
         non-complex ndarray (assumes each element can be json serialized) -> '_type': 'ndarray'
         complex ndarray -> '_type': 'complex_ndarray'
         sympy.Expr (i.e., any scalar sympy expression) -> '_type': 'sympy'
         sympy.Matrix -> '_type': 'sympy_matrix'
         pandas.DataFrame -> '_type': 'dataframe'
+        any networkx graph type -> '_type': 'networkx_graph'
 
     Note that the 'dataframe_v2' encoding allows for missing and date time values whereas
     the 'dataframe' (default) does not. However, the 'dataframe' encoding allows for complex
@@ -173,6 +253,16 @@ def to_json(v, *, df_encoding_version=1):
     If v can be json serialized or does not have a standard type, then it is
     returned without change.
     """
+    if np_encoding_version not in {1, 2}:
+        raise ValueError(f"Invaild np_encoding {np_encoding_version}, must be 1 or 2.")
+
+    if np_encoding_version == 2 and isinstance(v, np.number):
+        return {
+            "_type": "np_scalar",
+            "_concrete_type": type(v).__name__,
+            "_value": str(v),
+        }
+
     if np.isscalar(v) and np.iscomplexobj(v):
         return {"_type": "complex", "_value": {"real": v.real, "imag": v.imag}}
     elif isinstance(v, np.ndarray):
@@ -237,6 +327,8 @@ def to_json(v, *, df_encoding_version=1):
             raise ValueError(
                 f"Invalid df_encoding_version: {df_encoding_version}. Must be 1 or 2"
             )
+    elif isinstance(v, (nx.Graph, nx.DiGraph, nx.MultiGraph, nx.MultiDiGraph)):
+        return {"_type": "networkx_graph", "_value": nx.adjacency_data(v)}
     else:
         return v
 
@@ -248,12 +340,14 @@ def from_json(v):
     using to_json(...), then it is replaced:
 
         '_type': 'complex' -> complex
+        '_type': 'np_scalar' -> numpy scalar defined by '_concrete_type'
         '_type': 'ndarray' -> non-complex ndarray
         '_type': 'complex_ndarray' -> complex ndarray
         '_type': 'sympy' -> sympy.Expr
         '_type': 'sympy_matrix' -> sympy.Matrix
         '_type': 'dataframe' -> pandas.DataFrame
         '_type': 'dataframe_v2' -> pandas.DataFrame
+        '_type': 'networkx_graph' -> corresponding networkx graph
 
     If v encodes an ndarray and has the field '_dtype', this function recovers
     its dtype.
@@ -276,6 +370,13 @@ def from_json(v):
                 else:
                     raise Exception(
                         "variable of type complex should have value with real and imaginary pair"
+                    )
+            elif v["_type"] == "np_scalar":
+                if "_concrete_type" in v and "_value" in v:
+                    return getattr(np, v["_concrete_type"])(v["_value"])
+                else:
+                    raise Exception(
+                        f"variable of type {v['_type']} needs both concrete type and value information"
                     )
             elif v["_type"] == "ndarray":
                 if "_value" in v:
@@ -341,6 +442,8 @@ def from_json(v):
                 # pandas read_json() can process it.
                 value_str = json.dumps(v["_value"])
                 return pandas.read_json(value_str, orient="table")
+            elif v["_type"] == "networkx_graph":
+                return nx.adjacency_graph(v["_value"])
             else:
                 raise Exception("variable has unknown type {:s}".format(v["_type"]))
     return v

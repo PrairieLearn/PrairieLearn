@@ -1,8 +1,11 @@
 /elements/pl-big-o-input @eliotwrobson
+/elements/pl-dataframe @coatless @eliotwrobson
+/elements/pl-external-grader-variables @nicknytko @eliotwrobson
+/elements/pl-graph @nicknytko @eliotwrobson
 /elements/pl-hidden-hints @eliotwrobson
 /elements/pl-order-blocks @SethPoulsen
+/elements/pl-python-variable @nicknytko @eliotwrobson
 /elements/pl-rich-text-editor @jonatanschroeder
-/elements/pl-dataframe @coatless @eliotwrobson
 
 /graders/c @jonatanschroeder
 /graders/java @jonatanschroeder

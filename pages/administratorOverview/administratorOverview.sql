@@ -88,17 +88,6 @@ select_config AS (
     FROM
         config AS c
 ),
-select_question_render_cache_stats AS (
-    SELECT
-        jsonb_build_object(
-            'question_cache_hit_rate', AVG(pvl.panel_render_cache_hit_count / pvl.panel_render_count),
-            'panel_cache_hit_rate', (CAST(SUM(pvl.panel_render_cache_hit_count) AS FLOAT) / SUM(pvl.panel_render_count))
-        ) AS question_render_cache_stats
-    FROM
-        page_view_logs AS pvl
-    WHERE
-        pvl.date > now() - interval '1 day'
-),
 select_institutions_with_authn_providers AS (
     SELECT
         i.*,
@@ -127,7 +116,6 @@ SELECT
     courses,
     networks,
     configs,
-    question_render_cache_stats,
     institutions
 FROM
     select_administrator_users,
@@ -135,7 +123,6 @@ FROM
     select_courses,
     select_networks,
     select_config,
-    select_question_render_cache_stats,
     select_institutions;
 
 -- BLOCK select_course

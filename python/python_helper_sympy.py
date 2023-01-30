@@ -73,6 +73,7 @@ class _Constants:
         self.functions = {
             "exp": sympy.exp,
             "log": sympy.log,
+            "ln": sympy.log,
             "sqrt": sympy.sqrt,
             "factorial": sympy.factorial,
         }
@@ -81,6 +82,9 @@ class _Constants:
             "cos": sympy.cos,
             "sin": sympy.sin,
             "tan": sympy.tan,
+            "sec": sympy.sec,
+            "cot": sympy.cot,
+            "csc": sympy.csc,
             "arccos": sympy.acos,
             "arcsin": sympy.asin,
             "arctan": sympy.atan,
@@ -89,6 +93,9 @@ class _Constants:
             "atan": sympy.atan,
             "arctan2": sympy.atan2,
             "atan2": sympy.atan2,
+            "atanh": sympy.atanh,
+            "acosh": sympy.acosh,
+            "asinh": sympy.asinh,
         }
 
 
@@ -447,11 +454,12 @@ def validate_string_as_sympy(
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
+    imaginary_unit: Optional[str] = None,
 ) -> Optional[str]:
     """Tries to parse expr as a sympy expression. If it fails, returns a string with an appropriate error message for display on the frontend."""
 
     try:
-        convert_string_to_sympy(
+        expr_parsed = convert_string_to_sympy(
             expr,
             variables,
             allow_hidden=allow_hidden,
@@ -463,6 +471,7 @@ def validate_string_as_sympy(
             f"Your answer contains the floating-point number {err.n}. "
             f"All numbers must be expressed as integers (or ratios of integers)"
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
         )
     except HasComplexError as err:
         err_string = [
@@ -477,39 +486,58 @@ def validate_string_as_sympy(
             )
 
         err_string.append(f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>")
+        err_string.append("Note that the location of the syntax error is approximate.")
         return "".join(err_string)
     except HasInvalidExpressionError as err:
         return (
             f"Your answer has an invalid expression. "
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
         )
     except HasInvalidFunctionError as err:
         return (
             f'Your answer calls an invalid function "{err.text}". '
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
         )
     except HasInvalidVariableError as err:
         return (
             f'Your answer refers to an invalid variable "{err.text}". '
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
         )
     except HasParseError as err:
         return (
             f"Your answer has a syntax error. "
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
         )
     except HasEscapeError as err:
         return (
             f'Your answer must not contain the character "\\". '
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
         )
     except HasCommentError as err:
         return (
             f'Your answer must not contain the character "#". '
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
         )
     except Exception:
         return "Invalid format."
+
+    # If complex numbers are not allowed, raise error if expression has the imaginary unit
+    if (
+        (not allow_complex)
+        and (imaginary_unit is not None)
+        and (expr_parsed.has(sympy.I))
+    ):
+        expr_parsed = expr_parsed.subs(sympy.I, sympy.Symbol(imaginary_unit))
+        return (
+            "Your answer was simplified to this, which contains a complex number"
+            f"(denoted ${imaginary_unit:s}$): $${sympy.latex(expr_parsed):s}$$"
+        )
 
     return None
 

@@ -1,9 +1,11 @@
 import json
 import math
 from enum import Enum
-from typing import Callable, cast
+from typing import Any, Callable, Dict, Optional, Tuple, cast
 
 import lxml.html
+import networkx as nx
+import numpy as np
 import pandas as pd
 import prairielearn as pl
 import pytest
@@ -42,6 +44,35 @@ def test_encoding_legacy(df: pd.DataFrame) -> None:
     """Add compatibility test for legacy encoding"""
     reserialized_dataframe = cast(pd.DataFrame, pl.from_json(pl.to_json(df)))
     pd.testing.assert_frame_equal(df, reserialized_dataframe)
+
+
+@pytest.mark.parametrize(
+    "networkx_graph",
+    [
+        nx.cycle_graph(20),
+        nx.ladder_graph(20),
+        nx.lollipop_graph(20, 20),
+        nx.gn_graph(20),
+        nx.gnc_graph(20),
+    ],
+)
+def test_networkx_serialization(networkx_graph: Any) -> None:
+    """Test equality after conversion of various numpy objects."""
+
+    networkx_graph.graph["rankdir"] = "TB"
+
+    # Add some data to test that it's retained
+    for i, (in_node, out_node, edge_data) in enumerate(networkx_graph.edges(data=True)):
+        edge_data["weight"] = i
+        edge_data["label"] = chr(ord("a") + i)
+
+    json_object = json.dumps(pl.to_json(networkx_graph), allow_nan=False)
+    decoded_json_object = pl.from_json(json.loads(json_object))
+
+    assert type(networkx_graph) == type(decoded_json_object)
+
+    assert nx.utils.nodes_equal(networkx_graph.nodes(), decoded_json_object.nodes())
+    assert nx.utils.edges_equal(networkx_graph.edges(), decoded_json_object.edges())
 
 
 def test_inner_html() -> None:
@@ -88,26 +119,82 @@ def test_set_score_data(
     assert math.isclose(question_data["score"], expected_score)
 
 
-class TestEnum(Enum):
+@pytest.mark.parametrize(
+    "numpy_object",
+    [
+        np.int64(5),
+        np.int32(-12),
+        np.uint8(55),
+        np.byte(3),
+        np.float128(-1100204.04010340),
+        np.float32(2.1100044587483),
+        np.float16(0.00000184388328),
+        np.int64((2**53) + 5),
+        np.complex128("12+3j"),
+        np.complex256("12+3j"),
+        np.arange(15),
+        np.array([1.2, 3.5, 5.1]),
+        np.array([1, 2, 3, 4]),
+        np.array([(1.5, 2, 3), (4, 5, 6)]),
+        np.array([[1, 2], [3, 4]], dtype=complex),
+        np.array([[1, "stuff"], [3, None]], dtype=object),
+        np.ones((2, 3, 4), dtype=np.int16),
+    ],
+)
+def test_numpy_serialization(numpy_object: Any) -> None:
+    """Test equality after conversion of various numpy objects."""
+
+    json_object = json.dumps(
+        pl.to_json(numpy_object, np_encoding_version=2), allow_nan=False
+    )
+    decoded_json_object = pl.from_json(json.loads(json_object))
+
+    assert type(numpy_object) == type(decoded_json_object)
+    np.testing.assert_array_equal(numpy_object, decoded_json_object, strict=True)
+
+
+@pytest.mark.parametrize(
+    "object_to_encode, expected_result",
+    [(np.float64(5.0), 5.0), (np.complex128("12+3j"), complex("12+3j"))],
+)
+def test_legacy_serialization(object_to_encode: Any, expected_result: Any) -> None:
+    """Test that nothing happens under the old encoding for numpy scalars."""
+
+    json_object = json.dumps(pl.to_json(object_to_encode), allow_nan=False)
+    decoded_json_object = pl.from_json(json.loads(json_object))
+
+    assert decoded_json_object == expected_result
+
+
+class DummyEnum(Enum):
     DEFAULT = 0
-    TEST_CHOICE_1 = 1
-    TEST_CHOICE_2 = 2
-    TEST_CHOICE_3 = 3
+    DUMMY_CHOICE_1 = 1
+    DUMMY_CHOICE_2 = 2
+    DUMMY_CHOICE_3 = 3
 
 
 @pytest.mark.parametrize(
     "html_str, expected_result",
     [
-        ("<pl-thing></pl-thing>", TestEnum.DEFAULT),
-        ('<pl-thing test-choice="default"></pl-thing>', TestEnum.DEFAULT),
-        ('<pl-thing test-choice="test-choice-1"></pl-thing>', TestEnum.TEST_CHOICE_1),
-        ('<pl-thing test-choice="test-choice-2"></pl-thing>', TestEnum.TEST_CHOICE_2),
-        ('<pl-thing test-choice="test-choice-3"></pl-thing>', TestEnum.TEST_CHOICE_3),
+        ("<pl-thing></pl-thing>", DummyEnum.DEFAULT),
+        ('<pl-thing test-choice="default"></pl-thing>', DummyEnum.DEFAULT),
+        (
+            '<pl-thing test-choice="dummy-choice-1"></pl-thing>',
+            DummyEnum.DUMMY_CHOICE_1,
+        ),
+        (
+            '<pl-thing test-choice="dummy-choice-2"></pl-thing>',
+            DummyEnum.DUMMY_CHOICE_2,
+        ),
+        (
+            '<pl-thing test-choice="dummy-choice-3"></pl-thing>',
+            DummyEnum.DUMMY_CHOICE_3,
+        ),
     ],
 )
-def test_get_enum_attrib(html_str: str, expected_result: TestEnum) -> None:
+def test_get_enum_attrib(html_str: str, expected_result: DummyEnum) -> None:
     element = lxml.html.fragment_fromstring(html_str)
-    result = pl.get_enum_attrib(element, "test-choice", TestEnum, TestEnum.DEFAULT)
+    result = pl.get_enum_attrib(element, "test-choice", DummyEnum, DummyEnum.DEFAULT)
 
     assert result is expected_result
 
@@ -118,11 +205,97 @@ def test_get_enum_attrib(html_str: str, expected_result: TestEnum) -> None:
         "<pl-thing></pl-thing>",
         '<pl-thing test-choice="DEFAULT"></pl-thing>',
         '<pl-thing test-choice="Default"></pl-thing>',
-        '<pl-thing test-choice="test_choice_1"></pl-thing>',
+        '<pl-thing test-choice="dummy_choice_1"></pl-thing>',
     ],
 )
 def test_get_enum_attrib_exceptions(html_str: str) -> None:
     element = lxml.html.fragment_fromstring(html_str)
 
     with pytest.raises(Exception):
-        pl.get_enum_attrib(element, "test-choice", TestEnum)
+        pl.get_enum_attrib(element, "test-choice", DummyEnum)
+
+
+@pytest.mark.parametrize(
+    "question_name, student_answer, weight, expected_grade",
+    [
+        ("base", "a", 1, True),
+        ("base", "a, b", 1, False),
+        ("base", "", 2, False),
+        ("home", "b", 2, True),
+        ("base", "c", 3, True),
+        ("base", "<>", 3, True),
+        ("base", "><", 3, False),
+    ],
+)
+def test_grade_answer_parametrized_correct(
+    question_data: pl.QuestionData,
+    question_name: str,
+    student_answer: str,
+    weight: int,
+    expected_grade: bool,
+) -> None:
+
+    question_data["submitted_answers"] = {question_name: student_answer}
+
+    good_feedback = "you did good"
+    bad_feedback = "that's terrible"
+
+    def grading_function(submitted_answer: str) -> Tuple[bool, Optional[str]]:
+        if submitted_answer in {"a", "b", "c", "d", "<>"}:
+            return True, good_feedback
+        return False, bad_feedback
+
+    pl.grade_answer_parameterized(
+        question_data, question_name, grading_function, weight
+    )
+
+    expected_score = 1.0 if expected_grade else 0.0
+    assert question_data["partial_scores"][question_name]["score"] == expected_score
+    assert type(question_data["partial_scores"][question_name]["score"]) == float
+
+    assert "weight" in question_data["partial_scores"][question_name]
+    assert question_data["partial_scores"][question_name].get("weight") == weight
+
+    expected_feedback = good_feedback if expected_grade else bad_feedback
+
+    assert (
+        question_data["partial_scores"][question_name].get("feedback")
+        == expected_feedback
+    )
+
+
+def test_grade_answer_parametrized_bad_grade_function(
+    question_data: pl.QuestionData,
+) -> None:
+    question_name = "name"
+
+    question_data["submitted_answers"] = {question_name: "True"}
+
+    def grading_function(ans: str) -> Any:
+        return "True", f"The answer {ans} is right"
+
+    with pytest.raises(AssertionError):
+        pl.grade_answer_parameterized(question_data, question_name, grading_function)
+
+
+def test_grade_answer_parametrized_key_error_blank(
+    question_data: pl.QuestionData,
+) -> None:
+    question_name = "name"
+
+    question_data["submitted_answers"] = {question_name: "True"}
+
+    def grading_function(_: str) -> Tuple[bool, Optional[str]]:
+        decoy_dict: Dict[str, str] = dict()
+        decoy_dict["junk"]  # This is to throw a key error
+        return (True, None)
+
+    with pytest.raises(KeyError):
+        pl.grade_answer_parameterized(question_data, question_name, grading_function)
+
+    # Empty out submitted answers
+    question_data["submitted_answers"] = dict()
+    question_data["format_errors"] = dict()
+    pl.grade_answer_parameterized(question_data, question_name, grading_function)
+
+    assert question_data["format_errors"][question_name] == "No answer was submitted"
