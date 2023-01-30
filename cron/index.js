@@ -154,7 +154,7 @@ module.exports = {
       const intervalSecNum = Number.parseInt(intervalSec);
       if (intervalSec === 'daily') {
         this.queueDailyJobs(jobsList);
-      } else if (Number.isNaN()) {
+      } else if (Number.isNaN(intervalSecNum)) {
         throw new Error(`Invalid cron interval: ${intervalSec}`);
       } else if (intervalSecNum > 0) {
         this.queueJobs(jobsList, intervalSec);
