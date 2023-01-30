@@ -1,4 +1,5 @@
-import random, math
+import random
+
 
 def generate(data):
 

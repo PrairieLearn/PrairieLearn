@@ -5,7 +5,9 @@
             <tr>
                 <th>Name</th>
                 <th>Type</th>
+                {{#has_descriptions}}
                 <th>Description</th>
+                {{/has_descriptions}}
             </tr>
         </thead>
         <tbody>
@@ -13,7 +15,9 @@
             <tr>
                 <td><code>{{name}}</code></td>
                 <td>{{type}}</td>
-                <td>{{description}}</td>
+                {{#has_descriptions}}
+                <td>{{{description}}}</td>
+                {{/has_descriptions}}
             </tr>
             {{/names_user_description}}
         </tbody>
