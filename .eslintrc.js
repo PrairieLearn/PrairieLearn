@@ -13,6 +13,7 @@ module.exports = {
     eqeqeq: ['error', 'smart'],
     'no-floating-promise/no-floating-promise': 'error',
     'handle-callback-err': 'error',
+    'no-template-curly-in-string': 'error',
     'no-restricted-syntax': [
       'error',
       {

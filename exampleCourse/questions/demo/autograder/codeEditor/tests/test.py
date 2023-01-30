@@ -1,14 +1,12 @@
-from pl_helpers import name, points, not_repeated
-from pl_unit_test import PLTestCaseWithPlot, PLTestCase
-from code_feedback import Feedback
-from functools import wraps
 import numpy as np
-import numpy.random
+from code_feedback import Feedback
+from pl_helpers import name, points
+from pl_unit_test import PLTestCase
 
 
 class Test(PLTestCase):
     @points(1)
-    @name('Check fib(1)')
+    @name("Check fib(1)")
     def test_1(self):
         user_val = Feedback.call_user(self.st.fib, 1)
         if Feedback.check_scalar("fib(1)", self.ref.fib(1), user_val):
@@ -17,7 +15,7 @@ class Test(PLTestCase):
             Feedback.set_score(0)
 
     @points(2)
-    @name('Check fib(7)')
+    @name("Check fib(7)")
     def test_2(self):
         user_val = Feedback.call_user(self.st.fib, 7)
         if Feedback.check_scalar("fib(7)", self.ref.fib(7), user_val):
@@ -26,7 +24,7 @@ class Test(PLTestCase):
             Feedback.set_score(0)
 
     @points(3)
-    @name('Check random values')
+    @name("Check random values")
     def test_3(self):
         points = 0
         num_tests = 10
