@@ -1,6 +1,3 @@
-import random
-
-
 def grade(data):
     submitted = data["submitted_answers"]["answer"]
     blue = "#0000FF"

@@ -1,8 +1,5 @@
-import sys
-
 import helper_function as hf
 import numpy as np
-import numpy.linalg as la
 
 G = np.array([[1, 0.5, 0, 0], [0, 0, 0.5, 0], [0, 0.5, 0, 0], [0, 0, 0.5, 1]])
 

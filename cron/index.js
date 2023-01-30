@@ -150,9 +150,12 @@ module.exports = {
 
     const jobsByPeriodSec = _.groupBy(module.exports.jobs, 'intervalSec');
     _.forEach(jobsByPeriodSec, (jobsList, intervalSec) => {
+      const intervalSecNum = Number.parseInt(intervalSec);
       if (intervalSec === 'daily') {
         this.queueDailyJobs(jobsList);
-      } else if (intervalSec > 0) {
+      } else if (Number.isNaN(intervalSecNum)) {
+        throw new Error(`Invalid cron interval: ${intervalSec}`);
+      } else if (intervalSecNum > 0) {
         this.queueJobs(jobsList, intervalSec);
       } // zero or negative intervalSec jobs are not run
     });

@@ -1,6 +1,3 @@
-import random
-
-
 def generate(data):
 
     a = "01011"
