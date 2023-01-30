@@ -3,7 +3,7 @@ import sympy
 
 
 def generate(data):
-    sympy.var("y b a m")
+    (y, b, a, m) = sympy.var("y b a m")
     x = (y - b) / a
     z = m * (sympy.cos(a) + sympy.I * sympy.sin(a))
     c = a + sympy.I * b

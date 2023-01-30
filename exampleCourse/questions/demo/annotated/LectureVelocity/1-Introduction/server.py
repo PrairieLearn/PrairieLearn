@@ -1,5 +1,4 @@
 import io
-import random
 
 import matplotlib as ml
 import matplotlib.pyplot as plt
@@ -7,7 +6,6 @@ import numpy as np
 
 ml.rcParams["text.usetex"] = True
 plt.rcParams.update({"font.size": 14})
-import os
 
 
 def f(x):
@@ -31,8 +29,8 @@ def generate(data):
     data["correct_answers"]["va"] = (f(b) - f(a)) / (b - a)
 
 
-## The function 'file(data)' is used to generate the figure dynamically,
-## given data defined in the 'generate' function
+# The function 'file(data)' is used to generate the figure dynamically,
+# given data defined in the 'generate' function
 def file(data):
 
     if data["filename"] == "figure1.png":
@@ -47,7 +45,7 @@ def file(data):
         b = data["params"]["b"]
 
         slope = (f(b) - f(a)) / (b - a)
-        fig = plt.figure()
+        plt.figure()
         plt.plot(x, f(x), linewidth=3.0)
         plt.plot(xmesh, f(a) + slope * (xmesh - a), linewidth=3.0)
         plt.plot(a, f(a), "or", markersize=10)

@@ -1,10 +1,7 @@
-from functools import wraps
-
 import numpy as np
-import numpy.random
 from code_feedback import Feedback
-from pl_helpers import name, not_repeated, points
-from pl_unit_test import PLTestCase, PLTestCaseWithPlot
+from pl_helpers import name, points
+from pl_unit_test import PLTestCase
 
 
 class Test(PLTestCase):

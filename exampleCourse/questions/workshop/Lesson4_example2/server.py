@@ -1,6 +1,3 @@
-import random
-
-
 def parse(data):
     variables = ["x", "y", "z", "F"]
     for name in variables:
