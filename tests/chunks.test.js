@@ -337,10 +337,6 @@ describe('chunks', () => {
       // Load the question's chunk.
       await chunksLib.ensureChunksForCourseAsync(courseId, chunksToLoad);
 
-      await import('execa').then(async ({ default: execa }) =>
-        console.log(await execa('ls', ['-la', courseRuntimeDir + '/questions']))
-      );
-
       // Move the question. We can't directly move a directory to a subdirectory
       // of itself, so we move it to a temporary location first.
       const oldPath = path.join(courseDir, 'questions', 'addNumbers');
@@ -348,9 +344,6 @@ describe('chunks', () => {
       const newPath = path.join(courseDir, 'questions', 'addNumbers', 'addNumbersNested');
       await fs.move(oldPath, tempPath);
       await fs.move(tempPath, newPath);
-      console.log(await fs.readdir(oldPath));
-      console.log(await fs.readdir(newPath));
-      console.log(await fs.readdir(path.join(courseDir, 'questions')));
 
       // Sync course to DB.
       await syncDiskToSqlAsync(courseDir, courseId, logger);
@@ -362,20 +355,10 @@ describe('chunks', () => {
         courseData: await courseDB.loadFullCourse(courseDir),
       });
 
-      console.log(await courseDB.loadFullCourse(courseDir));
-      console.log((await sqldb.queryAsync('SELECT * FROM questions;', {})).rows);
-
       // Reload chunks.
       await chunksLib.ensureChunksForCourseAsync(courseId, chunksToLoad);
 
       // Check that the chunk was written to the correct location.
-      // await import('execa').then(async ({ default: execa }) =>
-      //   console.log(await execa('ls', ['-la', courseRuntimeDir + '/questions']))
-      // );
-      // console.log(await fs.readdir(path.join(courseRuntimeDir, 'questions', 'addNumbers')));
-      // console.log(
-      //   await fs.readdir(path.join(courseRuntimeDir, 'questions', 'addNumbers', 'addNumbersNested'))
-      // );
       assert.isOk(
         await fs.pathExists(
           path.join(courseRuntimeDir, 'questions', 'addNumbers', 'addNumbersNested', 'info.json')
