@@ -468,7 +468,7 @@ Example of valid HTML:
 
 ## Options for grading student answers
 
-For most [elements] there are four different ways of auto-grading the student answer. This applies to elements like [`pl-number-input`](elements/#pl-number-input-element) and [`pl-string-input`](elements/#pl-string-input-element) that allow students to input an answer of their choosing, but not [`pl-multiple-choice`](elements/#pl-multiple-choice-element) or [`pl-checkbox`](elements/#pl-checkbox-element) that are much more constrained. The four ways are:
+For most elements, there are four different ways of auto-grading the student answer. This applies to elements like [`pl-number-input`](elements/#pl-number-input-element) and [`pl-string-input`](elements/#pl-string-input-element) that allow students to input an answer of their choosing, but not [`pl-multiple-choice`](elements/#pl-multiple-choice-element) or [`pl-checkbox`](elements/#pl-checkbox-element) that are much more constrained. The four ways are:
 
 1. Set the correct answer using the correct-answer attributes for each element in `question.html`. This will use the built-in grading methods for each element. Given that this option is typically used for answers with a hard-coded value, without randomization, it is not expected to be used frequently.
 
@@ -519,8 +519,8 @@ def generate(data):
 
 Similarly, for grading functions involving floating point numbers, _avoid exact comparisons with `==`._ Floating point calculations in Python introduce error, and comparisons with `==` might unexpectedly fail. Instead, the function [`math.isclose`](https://docs.python.org/3/library/math.html#math.isclose) can be used, as it performs comparisons within given tolerance values. The `prairielearn` Python library from [`prairielearn.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/python/prairielearn.py) also offers several functions to perform more specialized comparisons:
 
-- `is_correct_scalar_ra` compares floats using relative and absolute tolerances
-- `is_correct_scalar_sf` compares floats up to a specified number of significant figures
-- `is_correct_scalar_dd` compares floats up to a specified number of digits
+- `is_correct_scalar_ra` compares floats using relative and absolute tolerances.
+- `is_correct_scalar_sf` compares floats up to a specified number of significant figures.
+- `is_correct_scalar_dd` compares floats up to a specified number of digits.
 
 More detailed information can be found in the docstrings for these functions.
