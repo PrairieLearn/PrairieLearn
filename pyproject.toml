@@ -15,6 +15,11 @@ per-file-ignores = [
     # Files related to the Python autograder will often intentionally appear
     # broken in isolation. We'll allow specific errors in these files to
     # account for that.
+    #
+    # - F401: module imported but unused
+    # - F821: undefined name
+    # - F841: local variable name is assigned to but never used
+    # - E999: SyntaxError
     "exampleCourse/questions/**/tests/setup_code.py: F401, F821",
     "exampleCourse/questions/**/tests/initial_code.py: F401, F821, E999",
     "exampleCourse/questions/**/tests/leading_code.py: F401, F821, F841",
