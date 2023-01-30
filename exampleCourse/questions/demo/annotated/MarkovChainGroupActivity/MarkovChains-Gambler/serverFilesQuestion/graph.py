@@ -17,7 +17,6 @@ def _render_graph(graph, layout="dot"):
             return self.data
 
     graph.layout(layout)
-    graphviz_data = graph.string()
 
     buffer = TempFile()
     graph.draw(buffer, format="svg")

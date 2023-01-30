@@ -1,12 +1,11 @@
 from os import path
 
-import numpy as np
 import prairielearn as pl
-import pygraphviz
 
 # Import class definitions and default values from the drawing element
 defaults = pl.load_host_script("defaults.py")
 elements = pl.load_host_script("elements.py")
+
 
 # Elements
 class PrairieLearnLogo(elements.BaseElement):
