@@ -85,7 +85,8 @@ jobs:
       # spinning until it eventually times out. This shorter timeout helps
       # ensure that the tests fail more quickly so that people can fix them.
       timeout-minutes: 30
-    - name: Set up Node on the host
+
+    - name: Set up Node and install dependencies
       uses: actions/setup-node@v3
       with:
         node-version: '16'
