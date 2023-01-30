@@ -702,10 +702,10 @@ describe('Manual Grading', function () {
               rubric_type: form.find('input[name=rubric_type]').val(),
               modified_at: form.find('input[name=modified_at]').val(),
               use_rubrics: 'true',
-              starting_points: 0, // Positive grading
-              starting_points_custom: 4, // Custom starting points, should be ignored
-              min_points: -0.3,
-              max_points: 6.3,
+              starting_points: '0', // Positive grading
+              starting_points_custom: '4', // Custom starting points, should be ignored
+              min_points: '-0.3',
+              max_points: '6.3',
               ...buildRubricItemFields(rubric_items),
             }).toString(),
           });
@@ -746,10 +746,10 @@ describe('Manual Grading', function () {
               rubric_type: form.find('input[name=rubric_type]').val(),
               modified_at: form.find('input[name=modified_at]').val(),
               use_rubrics: 'true',
-              starting_points: 0, // Positive grading
-              starting_points_custom: 4, // Custom starting points, should be ignored
-              min_points: -0.3,
-              max_points: 6.3,
+              starting_points: '0', // Positive grading
+              starting_points_custom: '4', // Custom starting points, should be ignored
+              min_points: '-0.3',
+              max_points: '6.3',
               ...buildRubricItemFields(rubric_items),
             }).toString(),
           });
@@ -805,10 +805,10 @@ describe('Manual Grading', function () {
               rubric_type: form.find('input[name=rubric_type]').val(),
               modified_at: form.find('input[name=modified_at]').val(),
               use_rubrics: 'true',
-              starting_points: 0, // Positive grading
-              starting_points_custom: 4, // Custom starting points, should be ignored
-              min_points: -0.3,
-              max_points: 5.7,
+              starting_points: '0', // Positive grading
+              starting_points_custom: '4', // Custom starting points, should be ignored
+              min_points: '-0.3',
+              max_points: '5.7',
               ...buildRubricItemFields(rubric_items),
             }).toString(),
           });
@@ -880,10 +880,10 @@ describe('Manual Grading', function () {
               rubric_type: form.find('input[name=rubric_type]').val(),
               modified_at: form.find('input[name=modified_at]').val(),
               use_rubrics: 'true',
-              starting_points: 6, // Positive grading
-              starting_points_custom: 4, // Custom starting points, should be ignored
-              min_points: -0.6,
-              max_points: 6.6,
+              starting_points: '6', // Positive grading
+              starting_points_custom: '4', // Custom starting points, should be ignored
+              min_points: '-0.6',
+              max_points: '6.6',
               ...buildRubricItemFields(rubric_items),
             }).toString(),
           });
@@ -955,9 +955,9 @@ describe('Manual Grading', function () {
               modified_at: form.find('input[name=modified_at]').val(),
               use_rubrics: 'true',
               starting_points: 'CUSTOM',
-              starting_points_custom: 4,
-              min_points: -3,
-              max_points: 9,
+              starting_points_custom: '4',
+              min_points: '-3',
+              max_points: '9',
               ...buildRubricItemFields(rubric_items),
             }).toString(),
           });
