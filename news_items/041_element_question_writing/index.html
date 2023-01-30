@@ -25,16 +25,16 @@
   Various new features and quality of life improvements for question creation
   have been recently deployed. These include new elements, additional features for
   existing elements, and more utility code to improve the experience of
-  writing custom questions.
+  question writing.
 </p>
 <hr>
-<!--https://github.com/PrairieLearn/PrairieLearn/commits?author=eliotwrobson-->
+
 <h3>New Elements</h3>
 <br>
 <div>
-  <div class="card">
-    <h4 class="card-header">pl-hidden-hints</h4>
-    <div class="card-body">
+  <div>
+    <h4>pl-hidden-hints</h4>
+    <div>
       <p>The <code class="user-output">pl-hidden-hints</code> element allows course content
         developers to progressively reveal hints for a given question variant as more submissions
         are received. In the example below, the first two hints are available to the student
@@ -49,9 +49,9 @@
     </div>
   </div>
   <br>
-  <div class="card">
-    <h4 class="card-header">pl-big-o-input</h4>
-    <div class="card-body">
+  <div>
+    <h4>pl-big-o-input</h4>
+    <div>
       <p>The <code class="user-output">pl-big-o-input</code> element allows instructors to easily write
         questions asking for big-O family asymptotic notation. This is especially useful for asking
         students about algorithmic runtime. Of note is that this element gives partial credit for
@@ -68,9 +68,9 @@
     </div>
   </div>
   <br>
-  <div class="card">
-    <h4 class="card-header">pl-dataframe</h4>
-    <div class="card-body">
+  <div>
+    <h4>pl-dataframe</h4>
+    <div>
       <p>The <code class="user-output">pl-dataframe</code> element allows for displaying Pandas
         DataFrames using customizable display options. This functionality was previously included in the
         the <code class="user-output">pl-python-variable</code> element, but that has been deprecated
@@ -90,9 +90,9 @@
 <hr>
 <h3>New Element Features</h3>
 <br>
-<div class="card">
-  <h4 class="card-header">pl-python-variable</h4>
-  <div class="card-body">
+<div>
+  <h4>pl-python-variable</h4>
+  <div>
     <p>As mentioned above, the <code class="user-output">pl-python-variable</code> element
       has had DataFrame display functionality deprecated in favor of the
       <code class="user-output">pl-dataframe</code> element. However, the
@@ -111,9 +111,9 @@
   </div>
 </div>
 <br>
-<div class="card">
-  <h4 class="card-header">pl-external-grader-variables</h4>
-  <div class="card-body">
+<div>
+  <h4>pl-external-grader-variables</h4>
+  <div>
     <p> Previously, available variables for externally graded questions in Python had to be
       defined in a <code>server.py</code> file. Now, the
       <code class="user-output">pl-external-grader-variables</code> element has support
@@ -129,9 +129,9 @@
   </div>
 </div>
 <br>
-<div class="card">
-  <h4 class="card-header">pl-graph</h4>
-  <div class="card-body">
+<div>
+  <h4>pl-graph</h4>
+  <div>
     <p> The <code class="user-output">pl-graph</code> element has expanded functionality for displaying
       adjacency matrices (being able to handle negative weights and undirected graphs), and now has
       support for displaying <a href="https://networkx.org/">NetworkX</a> graphs.
@@ -149,10 +149,11 @@
 <p>
   There have been substantial improvements to utility code available to instructors in the
   <code>prairielearn.py</code> Python library, including greater support for JSON serialization
-  and more utility functions usable in custom questions. These changes have primarily been to facilitate writing
-  custom questions and support the new elements and features discussed above. This has all been detailed in
+  and more utility functions usable in writing questions. These changes have primarily been to facilitate writing
+  generation and grader code for questions and to support the new elements and features discussed above. This has all
+  been detailed in
   <a href="https://prairielearn.readthedocs.io/en/latest/question/#questions">updated and expanded documentation on
-    custom question writing</a>.
+    question writing</a>.
 </p>
 <hr>
 <p>
