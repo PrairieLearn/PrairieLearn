@@ -1,6 +1,3 @@
-import numpy as np
-
-
 def generate(data):
     data["params"]["names_for_user"] = [
         {

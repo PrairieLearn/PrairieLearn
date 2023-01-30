@@ -14,11 +14,11 @@ def generate(data):
     M[1, 0] = math.sin(math.pi / a)
     M[1, 1] = math.cos(math.pi / a)
     if a < 0:
-        data["params"]["a"] = "- \\frac{\pi}{" + str(-a) + "}"
-        data["params"]["b"] = "R_{-\\frac{\pi}{" + str(-a) + "}}"
+        data["params"]["a"] = "- \\frac{\\pi}{" + str(-a) + "}"
+        data["params"]["b"] = "R_{-\\frac{\\pi}{" + str(-a) + "}}"
     else:
-        data["params"]["a"] = "\\frac{\pi}{" + str(a) + "}"
-        data["params"]["b"] = "R_{\\frac{\pi}{" + str(a) + "}}"
+        data["params"]["a"] = "\\frac{\\pi}{" + str(a) + "}"
+        data["params"]["b"] = "R_{\\frac{\\pi}{" + str(a) + "}}"
     M = np.around(M, 5)
     data["correct_answers"]["M"] = pl.to_json(M)
     return data
