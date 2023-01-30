@@ -56,8 +56,8 @@ images, files, and code display. The following **decorative** elements are avail
   code form for supported programming languages.
 - [`pl-matrix-latex`](#pl-matrix-latex-element): Displays matrices using
   appropriate LaTeX commands for use in a mathematical expression.
-- [`pl-python-variable`](#pl-python-variable-element): Display formatted output of Python
-  variables and pandas data frames.
+- [`pl-python-variable`](#pl-python-variable-element): Display formatted output of Python variables.
+- [`pl-dataframe`](#pl-dataframe-element): Display DataFrames with various options.
 - [`pl-graph`](#pl-graph-element): Displays graphs, using GraphViz DOT notation, an adjacency matrix, or a networkx graph.
 - [`pl-drawing`](#pl-drawing-element): Creates an image from pre-defined
   collection of graphic objects
@@ -1187,7 +1187,7 @@ The HTML specification disallows inserting special characters onto the page (i.e
 
 ### `pl-python-variable` element
 
-Displays the value of a Python variable, with formatted display of Pandas DataFrames.
+Displays the value of a Python variable. Uses options similar to the [pprint](https://docs.python.org/3/library/pprint.html) module to format output data, and can recursively print nested data structures. As such, some of the customization text is taken directly from this documentation.
 
 #### Sample elements
 
@@ -1211,56 +1211,37 @@ def generate(data):
     data["params"]["variable"] = pl.to_json(data_dictionary)
 ```
 
----
-
-**Display of a Pandas DataFrame**
-
-![](elements/pl-python-variable2.png)
-
-**question.html**
-
-```html
-<pl-python-variable params-name="df" prefix="df = "></pl-python-variable>
-```
-
-**server.py**
-
-```python
-import prairielearn as pl
-import pandas as pd
-
-def generate(data):
-    d = {"col1": [1, 2], "col2": [3, 4]}
-    df = pd.DataFrame(data=d)
-    data["params"]["df"] = pl.to_json(df)
-```
-
 #### Customizations
 
-| Attribute         | Type    | Default | Description                                                                                                                                                 |
-| ----------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `params-name`     | string  | —       | The name of the key in `data["params"]` to get a value from                                                                                                 |
-| `text`            | boolean | false   | Force the variable to be displayed in a textual format, as given by `repr(var)`. By default, special types like DataFrames will be rendered as HTML tables. |
-| `prefix`          | string  | (empty) | Any prefix to append to the output in `text` mode.                                                                                                          |
-| `suffix`          | string  | (empty) | Any suffix to append to the output in `text` mode.                                                                                                          |
-| `no-highlight`    | boolean | false   | Disable syntax highlighting in `text` mode.                                                                                                                 |
-| `show-header`     | boolean | true    | Show the header row of a DataFrame in default mode. (No effect in `text` mode.)                                                                             |
-| `show-index`      | boolean | true    | Show the index column of a DataFrame in default mode. (No effect in `text` mode.)                                                                           |
-| `show-dimensions` | boolean | true    | Show a footer with the dimensions of a DataFrame in default mode. (No effect in `text` mode.)                                                               |
+| Attribute        | Type    | Default | Description                                                                                                                                                                                                                                                                 |
+| ---------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `params-name`    | string  | —       | The name of the key in `data['params']` to get a value from.                                                                                                                                                                                                                |
+| `prefix`         | string  | (empty) | Any prefix to append to the output in `text` mode.                                                                                                                                                                                                                          |
+| `prefix-newline` | boolean | false   | Add newline to the end of `prefix`.                                                                                                                                                                                                                                         |
+| `suffix`         | string  | (empty) | Any suffix to append to the output in `text` mode.                                                                                                                                                                                                                          |
+| `suffix-newline` | boolean | false   | Add newline before the start of `suffix`.                                                                                                                                                                                                                                   |
+| `indent`         | integer | 1       | Specifies the amount of indentation added for each nesting level when printing nested objects.                                                                                                                                                                              |
+| `depth`          | integer | -       | The number of nesting levels which may be printed; if the data structure being printed is too deep, the next contained level is replaced by ... By default, there is no constraint on the depth of the objects being formatted.                                             |
+| `width`          | integer | 80      | Specifies the desired maximum number of characters per line in the output. If a structure cannot be formatted within the width constraint, a best effort will be made.                                                                                                      |
+| `compact`        | boolean | false   | Impacts the way that long sequences (lists, tuples, sets, etc.) are formatted. If compact is false then each item of a sequence will be formatted on a separate line. If compact is true, as many items as will fit within the width will be formatted on each output line. |
+| `sort-dicts`     | boolean | true    | If true, dictionaries will be formatted with their keys sorted, otherwise they will display in insertion order.                                                                                                                                                             |
+| `no-highlight`   | boolean | false   | Disable syntax highlighting.                                                                                                                                                                                                                                                |
 
 #### Details
 
-As of right now, the element supports displaying either Pandas DataFrames as an HTML table or Python objects via `repr()`. When setting a parameter to a DataFrame, use PrairieLearn's built in `pl.to_json()`.
+The element supports displaying Python objects via `repr()`, with support for more complex display options similar to the built-in pprint library. Objects to be displayed must be JSON serialized. For details about what objects can be serialized and how to do this with the provided `to_json` and `from_json` functions, see the [Question Writing documentation](question.md#question-data-storage).
+
+Printing Pandas DataFrames with this element is deprecated. Please use the new [`pl-dataframe`](#pl-dataframe-element) element for this purpose.
 
 #### Example implementations
 
 - [element/pythonVariable]
-- [demo/randomDataFrame]
 
 #### See also
 
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 - [`pl-variable-output` for displaying a matrix or element in code form.](#pl-variable-output-element)
+- [`pl-dataframe` for displaying dataframes.](#pl-dataframe-element)
 
 ### `pl-dataframe` element
 
@@ -1306,6 +1287,7 @@ When setting a parameter, use PrairieLearn's built in `pl.to_json()` on the Data
 #### Example implementations
 
 - [element/dataframe]
+- [demo/randomDataFrame]
 
 #### See also
 
@@ -1801,7 +1783,15 @@ An overlay is pre-defined as a "overlay area" with a static size. By default, el
 
 ### `pl-external-grader-variables` element
 
-Displays variables that are given to the student, or expected for the student to define in externally-graded questions. The list of variables should be stored in `data["params"]` and has the following format:
+Displays variables that are given to the student, or expected for the student to define in externally-graded Python questions.
+
+**We advise against using this element for any question not using the `prairielearn/grader-python` Docker image**, as the way this element stores parameters is specifically for use with that autograder. If you want to display a table of variables for a question using a different autograder, consider using a standard HTML `<table>` instead.
+
+The list of variables can be defined in in `data["params"]` or the question HTML itself (but not both!). If defined in the
+question HTML itself, the variable information is added to `data["params"]` for use by the external grader. If no descriptions
+are present, this colmun is hidden in the table shown to the student.
+
+If stored in `data["params"]`, the variables list has the following format:
 
 ```python
 data["params"]["names_for_user"] = [
@@ -1824,7 +1814,18 @@ data["params"]["names_from_user"] = [
 <pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
 
 <p>Your code snippet should define the following variables:</p>
-<pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+<pl-external-grader-variables params-name="names_from_user">
+  <pl-variable name="x" type="numpy array (length $n$)"
+    >Solution to $\mathbf{Ax}=\mathbf{b}$.</pl-variable
+  >
+</pl-external-grader-variables>
+
+<!--
+  The following tag defines an empty list for the given params-name.
+  This is useful for some cases where a parameter must be set to empty to run the external grader.
+  Nothing will be displayed from this tag.
+-->
+<pl-external-grader-variables params-name="names_empty" empty="true"></pl-external-grader-variables>
 ```
 
 **server.py**
@@ -1836,16 +1837,21 @@ def generate(data):
         {"name": "A", "description": r"Matrix $\mathbf{A}$.", "type": "numpy array"},
         {"name": "b", "description": r"Vector $\mathbf{b}$.", "type": "numpy array"}
     ]
-    data["params"]["names_from_user"] = [
-        {"name": "x", "description": r"Solution to $\mathbf{Ax}=\mathbf{b}$.", "type": "numpy array"}
-    ]
 ```
 
 #### Customizations
 
-| Attribute     | Type   | Default | Description                                                                                         |
-| ------------- | ------ | ------- | --------------------------------------------------------------------------------------------------- |
-| `params-name` | string | `None`  | Name of variable specification in `data["params"]` to display, the format for which is given above. |
+| Attribute     | Type    | Default | Description                                                                                                                                 |
+| ------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `params-name` | string  | -       | Name of variable specification in `data["params"]` to display, the format for which is given above.                                         |
+| `empty`       | boolean | false   | Whether the entry for the given `params-name` should be set to empty. Will throw an error if variables are defined and this is set to true. |
+
+The HTML inside the inner `pl-variable` tag is used as the description. If the tag is empty, no description is used for the given variable. The inner `pl-variable` tag has the following attributes:
+
+| Attribute | Type   | Default | Description                                             |
+| --------- | ------ | ------- | ------------------------------------------------------- |
+| `name`    | string | -       | Name of the given variable. Required for all variables. |
+| `type`    | string | -       | Type of the given variable. Required for all variables. |
 
 #### Example implementations
 
@@ -2170,11 +2176,12 @@ spamming incorrect submissions to reveal all hints right away.
 
 #### Customizations
 
-For the inner `pl-hint` element:
+For the inner `pl-hint` tag:
 
-| Attribute               | Type | Default | Description                                                                                                                                                                                                 |
-| ----------------------- | ---- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `show-after-submission` | int  | -       | Number of submissions on the current variant needed before the hint is accessible. If not set, hint is always accessible. **Should only be set for questions that allow multiple submissions per variant.** |
+| Attribute               | Type   | Default | Description                                                                                                                                                                                                 |
+| ----------------------- | ------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `show-after-submission` | int    | -       | Number of submissions on the current variant needed before the hint is accessible. If not set, hint is always accessible. **Should only be set for questions that allow multiple submissions per variant.** |
+| `hint-name`             | string | -       | Custom heading to display for the given hint. If not set, then displays a default heading including the hint number.                                                                                        |
 
 #### Details
 
