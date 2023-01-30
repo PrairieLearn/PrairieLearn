@@ -11,7 +11,7 @@ SELECT
 FROM
     assessment_questions AS aq
     JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
-    JOIN LATERAL (SELECT count(*) FROM assessment_questions WHERE alternative_group_id = ag.id) AS questions_in_same_group ON TRUE
+    JOIN LATERAL (SELECT count(*) FROM assessment_questions WHERE alternative_group_id = ag.id AND deleted_at IS NULL) AS questions_in_same_group ON TRUE
 WHERE
     aq.id = assessment_question_id;
 $$ LANGUAGE SQL;
