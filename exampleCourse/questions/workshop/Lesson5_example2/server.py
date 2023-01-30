@@ -36,7 +36,6 @@ def generate(data):
     # Getting the eigenvector
     G = 0.85 * M + (0.15 / npages) * np.ones((npages, npages))
     xstar = power_iteration(G, 1e-8)
-    probs = np.sort(xstar)[::-1]
     x_index_sorted = np.argsort(xstar)[::-1]
     first = page_names[x_index_sorted[0]]
 
@@ -50,8 +49,8 @@ def generate(data):
     data["params"]["sites"] = dropdown_list
 
 
-## Helper functions
-## -----------------
+# Helper functions
+# -----------------
 def create_markov_matrix(website_list, npages, max_n_links, min_n_links=0):
 
     Nsite = len(website_list)

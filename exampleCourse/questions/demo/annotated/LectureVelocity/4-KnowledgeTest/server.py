@@ -1,5 +1,4 @@
 import io
-import math
 import random
 
 import matplotlib as ml
@@ -112,8 +111,8 @@ def grade(data):
     data["score"] = total_score / len(data["partial_scores"])
 
 
-## The function 'file(data)' is used to generate the figure dynamically,
-## given data defined in the 'generate' function
+# The function 'file(data)' is used to generate the figure dynamically,
+# given data defined in the 'generate' function
 def file(data):
 
     if data["filename"] == "figure1.png":

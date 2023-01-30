@@ -24,8 +24,8 @@ def generate(data):
     data["correct_answers"]["A"] = A
 
 
-## The function 'file(data)' is used to generate the figure dynamically,
-## given data defined in the 'generate' function
+# The function 'file(data)' is used to generate the figure dynamically,
+# given data defined in the 'generate' function
 def file(data):
 
     if data["filename"] == "figure0.png":
@@ -36,7 +36,7 @@ def file(data):
         xp = np.linspace(0, a ** (1 / b), 500)
         yp = a - xp**b
 
-        fig = plt.figure(figsize=(14, 14))
+        plt.figure(figsize=(14, 14))
         plt.plot(xp, yp, "o")
         plt.grid()
         plt.xlabel("x")

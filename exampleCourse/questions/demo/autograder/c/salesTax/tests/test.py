@@ -1,8 +1,5 @@
 #! /usr/bin/python3
 
-import math
-import sys
-
 import cgrader
 
 
