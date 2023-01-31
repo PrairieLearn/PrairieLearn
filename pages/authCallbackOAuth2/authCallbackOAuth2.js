@@ -1,5 +1,6 @@
 const ERR = require('async-stacktrace');
 const assert = require('assert');
+const Sentry = require('@prairielearn/sentry');
 const express = require('express');
 const router = express.Router();
 
@@ -31,6 +32,14 @@ router.get('/', function (req, res, next) {
   }
   logger.verbose('Got Google auth with code: ' + code);
   oauth2Client.getToken(code, function (err, tokens) {
+    if (err?.response) {
+      // This is probably a detailed error from the Google API client. We'll
+      // attach the full error object to the Sentry scope so that it will be
+      // included with the error event.
+      Sentry.configureScope((scope) => {
+        scope.setContext('oauth', { ...err });
+      });
+    }
     if (ERR(err, next)) return;
     try {
       logger.verbose('Got Google auth tokens: ' + JSON.stringify(tokens));
