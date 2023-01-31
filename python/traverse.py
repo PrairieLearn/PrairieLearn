@@ -1,5 +1,6 @@
-import lxml.html
 from typing import Callable, Union
+
+import lxml.html
 
 
 def traverse_and_replace(
@@ -20,12 +21,14 @@ def traverse_and_replace_impl(
     new_element = replace(element)
     if new_element is not None:
         if isinstance(new_element, str):
-            new_elements = lxml.html.fragments_fromstring(new_element)
+            new_element = lxml.html.fragments_fromstring(new_element)
+        elif not isinstance(new_element, list):
+            new_element = [new_element]
 
         parent = element.getparent()
         self_index = parent.index(element)
         parent.remove(element)
-        for index, element in enumerate(new_elements):
+        for index, element in enumerate(new_element):
             parent.insert(self_index + index, element)
 
     for child in element:
@@ -33,8 +36,7 @@ def traverse_and_replace_impl(
 
 
 if __name__ == "__main__":
-    fragments = lxml.html.fragments_fromstring(
-        """
+    html = """
     <pl-question-panel>
     <p> Consider two numbers $a = {{params.a}}$ and $b = {{params.b}}$.</p>
     <p> What is the sum $c = a + b$?</p>
@@ -42,13 +44,5 @@ if __name__ == "__main__":
 
     <pl-integer-input answers-name="c" label="$c=$"></pl-integer-input>
     """
-    )
 
-    print(fragments)
-
-    body = fragments[0].getparent()
-
-    for element in body:
-        traverse_and_replace(element)
-
-    print("".join(lxml.html.tostring(e, encoding="unicode") for e in body))
+    print(traverse_and_replace(html, lambda e: e))
