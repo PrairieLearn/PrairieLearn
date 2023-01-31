@@ -34,10 +34,13 @@ router.get('/', function (req, res, next) {
   oauth2Client.getToken(code, function (err, tokens) {
     if (err?.response) {
       // This is probably a detailed error from the Google API client. We'll
-      // attach the full error object to the Sentry scope so that it will be
-      // included with the error event.
+      // pick off the useful bits and attach them to the Sentry scope so that
+      // they'll be included with the error event.
       Sentry.configureScope((scope) => {
-        scope.setContext('oauth', { ...err });
+        scope.setContext('OAuth', {
+          code: err.code,
+          data: err.response.data,
+        });
       });
     }
     if (ERR(err, next)) return;
