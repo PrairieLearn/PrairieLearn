@@ -90,12 +90,28 @@ class TestSympy:
     def test_json_conversion(self, a_sub: str) -> None:
         sympy_expr = phs.convert_string_to_sympy(a_sub, ["n", "m"], allow_complex=True)
         # Check that json serialization works
-        json_expr = phs.sympy_to_json(sympy_expr)
-        assert type(json.dumps(json_expr)) == str
+        json_expr = json.dumps(phs.sympy_to_json(sympy_expr), allow_nan=False)
 
         # Check equivalence after converting back
-        json_converted_expr = phs.json_to_sympy(json_expr)
+        json_converted_expr = phs.json_to_sympy(json.loads(json_expr))
         assert sympy_expr == json_converted_expr
+
+    # TODO parameterize this with more extensive test cases
+    def test_assumption_conversion(self) -> None:
+        assumptions = {"x": {"positive": True}, "y": {}}
+        sympy_expr = phs.convert_string_to_sympy(
+            "(x**2)**(1/2) + y + z",
+            ["x", "y", "z"],
+            allow_complex=True,
+            assumptions=assumptions,
+        )
+
+        json_expr = json.dumps(phs.sympy_to_json(sympy_expr), allow_nan=False)
+
+        # Check equivalence after converting back
+        json_converted_expr = phs.json_to_sympy(json.loads(json_expr))
+        assert sympy_expr == json_converted_expr
+        assert sympy_expr.assumptions0 == json_converted_expr.assumptions0
 
 
 class TestExceptions:

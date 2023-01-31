@@ -3,9 +3,11 @@ from dataclasses import dataclass
 from typing import Any, Callable, Literal, Optional, Type, TypedDict, Union, cast
 
 import sympy
+from typing_extensions import NotRequired
 
 SympyMapT = dict[str, Union[Callable, sympy.Basic]]
 ASTWhitelistT = tuple[Type[ast.AST], ...]
+AssumptionsDictT = dict[str, dict[str, Any]]
 
 
 class SympyJson(TypedDict):
@@ -14,6 +16,7 @@ class SympyJson(TypedDict):
     _type: Literal["sympy"]
     _value: str
     _variables: list[str]
+    _assumptions: NotRequired[AssumptionsDictT]
 
 
 class LocalsForEval(TypedDict):
@@ -201,7 +204,7 @@ class CheckNumbers(ast.NodeTransformer):
 
 
 class CheckWhiteList(ast.NodeVisitor):
-    def __init__(self, whitelist: ASTWhitelistT) -> None:
+    def __init__(self, whitelist: ASTWhiteListT) -> None:
         self.whitelist = whitelist
 
     def visit(self, node: ast.AST) -> None:
@@ -288,7 +291,7 @@ def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
     # https://nedbatchelder.com/blog/201206/eval_really_is_dangerous.html
     # http://blog.delroth.net/2013/03/escaping-a-python-sandbox-ndh-2013-quals-writeup/
     #
-    whitelist: ASTWhitelistT = (
+    whitelist: ASTWhiteListT = (
         ast.Module,
         ast.Expr,
         ast.Load,
@@ -335,6 +338,7 @@ def convert_string_to_sympy(
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
+    assumptions: Optional[Dict[str, Dict[str, Any]]] = None,
 ) -> sympy.Expr:
     const = _Constants()
 
@@ -357,9 +361,16 @@ def convert_string_to_sympy(
 
     # If there is a list of variables, add each one to the whitelist
     if variables is not None:
-        locals_for_eval["variables"].update(
-            (variable, sympy.Symbol(variable)) for variable in variables
-        )
+        if assumptions is not None:
+            locals_for_eval["variables"].update(
+                (variable, sympy.Symbol(variable, **assumptions.get(variable, {})))
+                for variable in variables
+            )
+        # Add assumptions to each variable if they exist
+        else:
+            locals_for_eval["variables"].update(
+                (variable, sympy.Symbol(variable)) for variable in variables
+            )
 
     # Do the conversion
     return evaluate(expr, locals_for_eval)
@@ -410,27 +421,40 @@ def sympy_to_json(
             [(val, key) for key, val in const.hidden_complex_variables.items()]
         )
 
-    return {"_type": "sympy", "_value": str(a_sub), "_variables": variables}
+    assumptions_dict = {
+        str(variable): variable.assumptions0 for variable in a.free_symbols
+    }
+
+    return {
+        "_type": "sympy",
+        "_value": str(a_sub),
+        "_variables": variables,
+        "_assumptions": assumptions_dict,
+    }
 
 
 def json_to_sympy(
-    a: SympyJson, *, allow_complex: bool = True, allow_trig_functions: bool = True
+    sympy_expr_dict: SympyJson,
+    *,
+    allow_complex: bool = True,
+    allow_trig_functions: bool = True,
 ) -> sympy.Expr:
-    if "_type" not in a:
+    if "_type" not in sympy_expr_dict:
         raise ValueError("json must have key _type for conversion to sympy")
-    if a["_type"] != "sympy":
+    if sympy_expr_dict["_type"] != "sympy":
         raise ValueError('json must have _type == "sympy" for conversion to sympy')
-    if "_value" not in a:
+    if "_value" not in sympy_expr_dict:
         raise ValueError("json must have key _value for conversion to sympy")
-    if "_variables" not in a:
-        a["_variables"] = None
+    if "_variables" not in sympy_expr_dict:
+        sympy_expr_dict["_variables"] = None
 
     return convert_string_to_sympy(
-        a["_value"],
-        a["_variables"],
+        sympy_expr_dict["_value"],
+        sympy_expr_dict["_variables"],
         allow_hidden=True,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig_functions,
+        assumptions=sympy_expr_dict.get("_assumptions"),
     )
 
 
