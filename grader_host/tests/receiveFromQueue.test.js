@@ -1,4 +1,5 @@
 /* eslint-env jest */
+const config = require('../lib/config');
 const queueReceiver = require('../lib/receiveFromQueue');
 
 function randomString() {
@@ -49,7 +50,15 @@ function fakeSqs(options = {}) {
   };
 }
 
+const TIMEOUT_OVERHEAD = 300;
+
 describe('queueReceiver', () => {
+  beforeEach(() => {
+    // Our config-loading system chokes when it's not running in AWS. Instead
+    // of loading it, we'll just set the values we need for these tests.
+    config.config.timeoutOverhead = TIMEOUT_OVERHEAD;
+  });
+
   it('tries to receive a message from the correct queue url', (done) => {
     const sqs = fakeSqs();
 
@@ -134,7 +143,7 @@ describe('queueReceiver', () => {
         expect(err).toBeNull();
         expect(sqs.changeMessageVisibility.mock.calls.length).toBe(1);
         const params = sqs.changeMessageVisibility.mock.calls[0][0];
-        expect(params.VisibilityTimeout).toBeGreaterThan(10);
+        expect(params.VisibilityTimeout).toEqual(10 + TIMEOUT_OVERHEAD);
         done();
       }
     );
