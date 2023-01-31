@@ -155,7 +155,11 @@ def worker_loop():
                 data = args[0]
                 context = args[1]
 
-                val = render(data, context)
+                rendered_html, rendered_elements = render(data, context)
+                val = {
+                    "html": rendered_html,
+                    "rendered_elements": list(rendered_elements),
+                }
 
                 # make sure all output streams are flushed
                 sys.stderr.flush()

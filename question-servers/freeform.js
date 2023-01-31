@@ -536,24 +536,56 @@ module.exports = {
     return null;
   },
 
+  /**
+   *
+   * @param {string} phase
+   * @param {import('../lib/code-caller').CodeCaller} codeCaller
+   * @param {any} data
+   * @param {any} context
+   * @param {string} html
+   */
   async experimentalRender(phase, codeCaller, data, context, html) {
+    const start = Date.now();
+    console.log(context);
     const pythonContext = {
       html,
-      elements: { 'pl-question-panel': {} },
+      elements: {
+        ...coreElementsCache,
+        // Course elements should always take precedence over core elements.
+        ...context.course_elements,
+      },
+      // TODO: implement support for extensions in Python
+      element_extensions: context.course_element_extensions,
+      course_path:
+        config.workersExecutionMode === 'container' ? '/course' : context.course_dir_host,
     };
-    const res = await codeCaller.call(
-      'question',
-      context.question.directory,
-      'question.html',
-      'render',
-      [data, pythonContext]
-    );
-    console.log(res);
+    const courseIssues = [];
+    let result, output;
+
+    console.log(data);
+    try {
+      const res = await codeCaller.call(
+        'question',
+        context.question.directory,
+        'question.html',
+        'render',
+        [data, pythonContext]
+      );
+      console.log(res);
+      result = res.result;
+      output = res.output;
+    } catch (err) {
+      courseIssues.push(err);
+    }
+    console.log(`Render took ${Date.now() - start}ms`);
+    console.log(output);
+
     return {
-      courseIssues: [],
+      courseIssues,
       data,
-      html: res.result,
-      renderedElementNames: [],
+      html: result?.html,
+      fileData: null,
+      renderedElementNames: result?.rendered_elements,
     };
   },
 
@@ -845,6 +877,7 @@ module.exports = {
       processFunction = module.exports.experimentalRender;
       args = [phase, codeCaller, data, context, html];
     } else if (useNewQuestionRenderer) {
+      console.log('using new renderer');
       processFunction = module.exports.traverseQuestionAndExecuteFunctions;
       args = [phase, codeCaller, data, context, html];
     } else {
@@ -852,6 +885,7 @@ module.exports = {
       args = [phase, codeCaller, data, context, $];
     }
 
+    const start = Date.now();
     const {
       courseIssues,
       data: resultData,
@@ -859,6 +893,7 @@ module.exports = {
       fileData,
       renderedElementNames,
     } = await processFunction(...args);
+    console.log(`Processing question in ${phase} took ${Date.now() - start}ms`);
 
     if (phase === 'grade' || phase === 'test') {
       if (context.question.partial_credit) {
