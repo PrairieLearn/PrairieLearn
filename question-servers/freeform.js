@@ -536,6 +536,27 @@ module.exports = {
     return null;
   },
 
+  async experimentalRender(phase, codeCaller, data, context, html) {
+    const pythonContext = {
+      html,
+      elements: { 'pl-question-panel': {} },
+    };
+    const res = await codeCaller.call(
+      'question',
+      context.question.directory,
+      'question.html',
+      'render',
+      [data, pythonContext]
+    );
+    console.log(res);
+    return {
+      courseIssues: [],
+      data,
+      html: res.result,
+      renderedElementNames: [],
+    };
+  },
+
   async traverseQuestionAndExecuteFunctions(phase, codeCaller, data, context, html) {
     const origData = JSON.parse(JSON.stringify(data));
     const renderedElementNames = [];
@@ -819,7 +840,11 @@ module.exports = {
     const useNewQuestionRenderer = _.get(context, 'course.options.useNewQuestionRenderer', false);
     let processFunction;
     let args;
-    if (useNewQuestionRenderer) {
+    // eslint-disable-next-line no-constant-condition
+    if (phase === 'render') {
+      processFunction = module.exports.experimentalRender;
+      args = [phase, codeCaller, data, context, html];
+    } else if (useNewQuestionRenderer) {
       processFunction = module.exports.traverseQuestionAndExecuteFunctions;
       args = [phase, codeCaller, data, context, html];
     } else {

@@ -145,6 +145,29 @@ def worker_loop():
             # change to the desired working directory
             os.chdir(cwd)
 
+            if file == "question.html" and fcn == "render":
+                # This is an experimental implementation of question rendering
+                # that does all HTML parsing and rendering in Python. This should
+                # be much faster than the current implementation that does an IPC
+                # call for each element.
+                from phases import render
+
+                data = args[0]
+                context = args[1]
+
+                val = render(data, context)
+
+                # make sure all output streams are flushed
+                sys.stderr.flush()
+                sys.stdout.flush()
+
+                # write the return value (JSON on a single line)
+                outf.write(try_dumps({"present": True, "val": val}))
+                outf.write("\n")
+                outf.flush()
+
+                continue
+
             mod = {}
             file_path = os.path.join(cwd, file + ".py")
             with open(file_path, encoding="utf-8") as inf:

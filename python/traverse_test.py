@@ -1,5 +1,6 @@
-from traverse import traverse_and_execute, traverse_and_replace
 from typing import List
+
+from traverse import traverse_and_execute, traverse_and_replace
 
 
 def test_traverse_and_execute():
