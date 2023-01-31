@@ -1,4 +1,17 @@
-from traverse import traverse_and_replace
+from traverse import traverse_and_execute, traverse_and_replace
+from typing import List
+
+
+def test_traverse_and_execute():
+    text: List[str] = []
+
+    def capture_text(element):
+        if element.text:
+            text.append(element.text)
+
+    traverse_and_execute("<p><i>Hello</i> <strong>world</strong></p>", capture_text)
+
+    assert text == ["Hello", "world"]
 
 
 def test_traverse_and_replace_none():
