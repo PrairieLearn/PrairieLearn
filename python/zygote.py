@@ -57,6 +57,7 @@ import nltk
 import numpy
 import prairielearn
 import sklearn
+import phases
 
 matplotlib.use("PDF")
 
@@ -150,12 +151,11 @@ def worker_loop():
                 # that does all HTML parsing and rendering in Python. This should
                 # be much faster than the current implementation that does an IPC
                 # call for each element.
-                from phases import render
 
                 data = args[0]
                 context = args[1]
 
-                rendered_html, rendered_elements = render(data, context)
+                rendered_html, rendered_elements = phases.render(data, context)
                 val = {
                     "html": rendered_html,
                     "rendered_elements": list(rendered_elements),
