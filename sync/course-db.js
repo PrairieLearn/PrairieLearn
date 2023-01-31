@@ -286,7 +286,10 @@ const FILE_UUID_REGEX =
  * @property {string} id
  * @property {boolean} forceMaxPoints
  * @property {number} triesPerVariant
+ * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
+ * @property {string[]} canView
+ * @property {string[]} canSubmit
  */
 
 /**

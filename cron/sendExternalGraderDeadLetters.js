@@ -50,7 +50,7 @@ module.exports.run = (callback) => {
           if (ERR(err, callback)) return;
           if (res.statusCode !== 200) {
             logger.error(
-              'Error posting external grading dead letters to slack [status code ${res.statusCode}]',
+              `Error posting external grading dead letters to slack [status code ${res.statusCode}]`,
               body
             );
           }

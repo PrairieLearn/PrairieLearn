@@ -191,10 +191,11 @@ docker run -it --rm -p 3000:3000 \
   prairielearn/prairielearn
 ```
 
-In Windows 10 (PowerShell), `cd` to your course directory and copy the following command **but with your own username in `HOST_JOBS_DIR`**:
+In Windows 10/11 (PowerShell), `cd` to your course directory and copy the following command **but with your own username in `HOST_JOBS_DIR`**:
 
 ```powershell
 docker run -it --rm -p 3000:3000 `
+  -v "$PWD":/course `
   -v $HOME\pl_ag_jobs:/jobs `
   -e HOST_JOBS_DIR=/c/Users/Tim/pl_ag_jobs `
   -v /var/run/docker.sock:/var/run/docker.sock `
