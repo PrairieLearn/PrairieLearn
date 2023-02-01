@@ -3,12 +3,10 @@ const _ = require('lodash');
 const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
 const asyncHandler = require('express-async-handler');
-const archiver = require('archiver');
 const router = express.Router();
 const { default: AnsiUp } = require('ansi_up');
 const ansiUp = new AnsiUp();
 
-const { paginateQueryAsync } = require('../../lib/paginate');
 const sanitizeName = require('../../lib/sanitize-name');
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
@@ -28,20 +26,10 @@ const csvFilename = (locals) => {
   );
 };
 
-const fileSubmissionsName = (locals) => {
-  return (
-    sanitizeName.courseInstanceFilenamePrefix(locals.course_instance, locals.course) +
-    'file_submissions'
-  );
-};
-
-const fileSubmissionsFilename = (locals) => `${fileSubmissionsName(locals)}.zip`;
-
 router.get(
   '/',
   asyncHandler(async (req, res) => {
     res.locals.csvFilename = csvFilename(res.locals);
-    res.locals.fileSubmissionsFilename = fileSubmissionsFilename(res.locals);
 
     var params = {
       course_instance_id: res.locals.course_instance.id,
@@ -170,26 +158,6 @@ router.get(
         res.attachment(req.params.filename);
         res.send(csv);
       });
-    } else if (req.params.filename === fileSubmissionsFilename(res.locals)) {
-      if (!res.locals.authz_data.has_course_instance_permission_view) {
-        throw error.make(403, 'Access denied (must be a student data viewer)');
-      }
-
-      const params = {
-        course_instance_id: res.locals.course_instance.id,
-        limit: 100,
-      };
-
-      const archive = archiver('zip');
-      const dirname = fileSubmissionsName(res.locals);
-      const prefix = `${dirname}/`;
-      archive.append(null, { name: prefix });
-      res.attachment(req.params.filename);
-      archive.pipe(res);
-      for await (const row of paginateQueryAsync(sql.course_instance_files, params)) {
-        archive.append(row.contents, { name: prefix + row.filename });
-      }
-      archive.finalize();
     } else {
       throw error.make(404, 'Unknown filename: ' + req.params.filename);
     }
