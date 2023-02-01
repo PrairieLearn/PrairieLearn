@@ -546,7 +546,6 @@ module.exports = {
    */
   async experimentalRender(phase, codeCaller, data, context, html) {
     const start = Date.now();
-    console.log(context);
     const pythonContext = {
       html,
       elements: {
@@ -562,7 +561,6 @@ module.exports = {
     const courseIssues = [];
     let result, output;
 
-    console.log(data);
     try {
       const res = await codeCaller.call(
         'question',
@@ -571,7 +569,6 @@ module.exports = {
         'render',
         [data, pythonContext]
       );
-      console.log(res);
       result = res.result;
       output = res.output;
     } catch (err) {
@@ -893,7 +890,7 @@ module.exports = {
       fileData,
       renderedElementNames,
     } = await processFunction(...args);
-    console.log(`Processing question in ${phase} took ${Date.now() - start}ms`);
+    console.log(`Processing question in ${phase} (${data.panel}) took ${Date.now() - start}ms`);
 
     if (phase === 'grade' || phase === 'test') {
       if (context.question.partial_credit) {
