@@ -17,7 +17,7 @@ sympy==1.11.1
 rpy2==3.5.7
 pygraphviz==1.6
 ansi2html==1.8.0
-scikit-learn==1.2.0
+scikit-learn==1.2.1
 nltk==3.8.1
 Pygments==2.14.0
 tzlocal==4.2
