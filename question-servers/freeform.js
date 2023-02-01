@@ -1167,7 +1167,7 @@ module.exports = {
     // it won't be present in `locals`). This URL will only have meaning if
     // there's a submission, so it will be `null` otherwise.
     const submissionFilesUrl = submission
-      ? locals.questionUrl + `submission/${submission?.id}/files`
+      ? locals.questionUrl + `submission/${submission?.id}/file`
       : null;
 
     // Put base URLs in data.options for access by question code

@@ -931,7 +931,7 @@ module.exports.initExpress = function () {
 
   // Submission files
   app.use(
-    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/submission/:submission_id/files',
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/submission/:submission_id/file',
     [
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./pages/submissionFiles/submissionFiles'),
@@ -1235,7 +1235,7 @@ module.exports.initExpress = function () {
 
   // Submission files
   app.use(
-    '/pl/course_instance/:course_instance_id/instructor/question/:question_id/submission/:submission_id/files',
+    '/pl/course_instance/:course_instance_id/instructor/question/:question_id/submission/:submission_id/file',
     [
       require('./middlewares/selectAndAuthzInstructorQuestion'),
       require('./pages/submissionFiles/submissionFiles'),
@@ -1374,7 +1374,7 @@ module.exports.initExpress = function () {
 
   // Submission files
   app.use(
-    '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/submission/:submission_id/files',
+    '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/submission/:submission_id/file',
     [
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./middlewares/studentAssessmentAccess'),
@@ -1597,7 +1597,7 @@ module.exports.initExpress = function () {
   ]);
 
   // Submission files
-  app.use('/pl/course/:course_id/question/:question_id/submission/:submission_id/files', [
+  app.use('/pl/course/:course_id/question/:question_id/submission/:submission_id/file', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
     require('./pages/submissionFiles/submissionFiles'),
   ]);
