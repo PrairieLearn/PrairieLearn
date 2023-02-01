@@ -2,7 +2,6 @@ import numpy as np
 
 
 def generate(data):
-
     # Define the variables here
     names_for_user = [
         {"name": "a", "description": "Any array", "type": "2d numpy array"}

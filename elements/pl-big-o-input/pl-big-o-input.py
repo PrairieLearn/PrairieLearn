@@ -161,7 +161,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             missing_input = True
             parse_error = None
         else:
-
             # Use the existing format text in the invalid popup.
             with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
                 info = chevron.render(f, info_params).strip()

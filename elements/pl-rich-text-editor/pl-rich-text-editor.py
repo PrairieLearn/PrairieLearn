@@ -71,7 +71,6 @@ def prepare(element_html, data):
 
 
 def render(element_html, data):
-
     element = lxml.html.fragment_fromstring(element_html)
     file_name = pl.get_string_attrib(element, "file-name", "")
     answer_name = get_answer_name(file_name)
@@ -89,7 +88,6 @@ def render(element_html, data):
     element_text = element_inner_html(element)
 
     if data["panel"] == "question" or data["panel"] == "submission":
-
         html_params = {
             "name": answer_name,
             "file_name": file_name,

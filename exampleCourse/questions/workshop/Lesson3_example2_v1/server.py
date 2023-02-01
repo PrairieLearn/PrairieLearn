@@ -3,7 +3,6 @@ import pandas as pd
 
 
 def generate(data):
-
     df = pd.read_csv("clientFilesQuestion/properties.csv")
 
     m = len(df)
