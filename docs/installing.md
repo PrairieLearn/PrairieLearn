@@ -54,7 +54,11 @@ After this, run PrairieLearn using the same commands as above.
 
 ## Running a specific version of PrairieLearn
 
-The commands above will always run the very latest version of PrairieLearn, which might be an unreleased development version. If you would like to run the version that is currently deployed (or a specific older version), use a tag associated to the environment your course is running with. For PrairieLearn's main servers, the tags `us-prod-live` and `ca-live` match the deployed versions in the US and Canadian servers, respectively.
+The commands above will always run the very latest version of PrairieLearn, which might be an unreleased development version. If you would like to run the version that is currently deployed, use the appropriate tag for the server you're using:
+
+- For courses running under https://us.prairielearn.com/ use the tag `us-prod-live`;
+- For courses running under https://ca.prairielearn.com/ use the tag `ca-live`;
+- For institutions with local installations of PrairieLearn, consult your local IT department.
 
 ```sh
 docker run -it --rm -p 3000:3000 --pull=always [other args] prairielearn/prairielearn:us-prod-live
