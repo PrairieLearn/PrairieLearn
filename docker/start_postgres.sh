@@ -15,13 +15,12 @@ if [[ "$ACTION" == "start" ]]; then
     fi
 fi
 
-INIT_RESOLVE=0
 # Bootstrap the PGDATA folder
 if [[ "$ACTION" == "init" ]]; then
     mkdir -p $PGDATA
     chown -f postgres:postgres $PGDATA
     su postgres -c "initdb"
-    INIT_RESOLVE=1
+    INIT_RESOLVE=0
     ACTION=start
 fi
 
@@ -35,6 +34,6 @@ if [[ "$ACTION" == "start" ]]; then
     until pg_isready -q ; do sleep 1 ; done
 fi
 
-if [[ "$INIT_RESOLVE" ]]; then
+if [[ $INIT_RESOLVE ]]; then
     su postgres -c "createuser -s root"
 fi
