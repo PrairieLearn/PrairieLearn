@@ -13,7 +13,6 @@ def create_dict_labels(axis, loc, lab, offsetx=None, offsety=None):
 
 
 def generate(data):
-
     """
     Parameters of the question. These are usually randomized.
     """

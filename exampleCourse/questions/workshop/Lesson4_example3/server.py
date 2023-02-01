@@ -2,7 +2,6 @@ import math
 
 
 def generate(data):
-
     data["params"]["k"] = 20
     data["correct_answers"]["D"] = 0.01
     data["correct_answers"]["L"] = 0.3
@@ -12,7 +11,6 @@ def generate(data):
 
 
 def parse(data):
-
     variables = ["D", "L", "x1", "Tb", "T1", "qf"]
     for name in variables:
         var = data["submitted_answers"].get(name, None)
@@ -38,7 +36,6 @@ def parse(data):
 
 
 def grade(data):
-
     Ac = math.pi * data["submitted_answers"]["D"] ** 2 / 4
     qf = (
         -data["params"]["k"]

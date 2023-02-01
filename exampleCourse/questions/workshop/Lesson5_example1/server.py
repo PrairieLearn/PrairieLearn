@@ -1,5 +1,4 @@
 def generate(data):
-
     graph1 = "digraph G {"
     graph1 += '"Parents Visiting?" -> "Go to movie theater" [label=" YES"]'
     graph1 += '"Parents Visiting?" -> "Check the weather" [label=" NO"]'

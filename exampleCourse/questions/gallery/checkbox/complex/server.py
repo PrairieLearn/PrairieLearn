@@ -2,7 +2,6 @@ import random
 
 
 def generate(data):
-
     # List of animals in each group
     # More animals can be added here for increased variation
     animals = {

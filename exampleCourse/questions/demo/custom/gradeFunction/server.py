@@ -1,5 +1,4 @@
 def generate(data):
-
     a = "01011"
     b = "10010"
     data["params"]["a"] = a

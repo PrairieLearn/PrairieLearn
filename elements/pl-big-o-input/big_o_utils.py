@@ -30,7 +30,6 @@ THETA_LOWER_ORDER_TERMS_FEEDBACK = (
 def grade_o_expression(
     a_true: str, a_sub: str, variables: List[str]
 ) -> Tuple[float, str]:
-
     a_true = a_true.replace(" ", "")
     a_sub = a_sub.replace(" ", "")
 
@@ -69,7 +68,6 @@ def grade_o_expression(
 def grade_theta_expression(
     a_true: str, a_sub: str, variables: List[str]
 ) -> Tuple[float, str]:
-
     a_true = a_true.replace(" ", "")
     a_sub = a_sub.replace(" ", "")
 
@@ -107,7 +105,6 @@ def grade_theta_expression(
 def grade_omega_expression(
     a_true: str, a_sub: str, variables: List[str]
 ) -> Tuple[float, str]:
-
     a_true = a_true.replace(" ", "")
     a_sub = a_sub.replace(" ", "")
 

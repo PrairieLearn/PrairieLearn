@@ -4,7 +4,6 @@ import numpy as np
 
 
 def generate(data):
-
     canvas_width = 300
     canvas_height = 300
     data["params"]["canvas_width"] = canvas_width
