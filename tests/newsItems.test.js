@@ -29,7 +29,7 @@ describe('News items', function () {
       const cookies = requestp.jar();
       cookies.setCookie(requestp.cookie('pl_test_user=test_student'), locals.siteUrl);
       page = await requestp({ url: locals.baseUrl, jar: cookies });
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
     it('should succeed with notifications turned on', async () => {
       const notify_with_new_server = true;
@@ -76,7 +76,7 @@ describe('News items', function () {
   describe('News item notifications', () => {
     it('should permit page load', async () => {
       page = await requestp(locals.baseUrl);
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
     it('should show up in the top navbar', () => {
       elemList = locals.$('span.news-item-count');
@@ -91,7 +91,7 @@ describe('News items', function () {
   describe('News items page at root level', () => {
     it('should load', async () => {
       page = await requestp(locals.newsItemsUrl);
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
     it('should contain a link to the "New layout" news item', () => {
       elemList = locals.$('.news-items-table a:contains("New layout")');
@@ -106,7 +106,7 @@ describe('News items', function () {
   describe('Single news item page  at root level', () => {
     it('should load', async () => {
       page = await requestp(locals.newsItem1Url);
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
     it('should contain the "New layout" header', () => {
       elemList = locals.$('h1:contains("New layout")');
@@ -131,30 +131,30 @@ describe('News items', function () {
   describe('News items page', () => {
     it('should load in course instructor level', async () => {
       page = await requestp(locals.baseUrl + '/course/1/news_items');
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
     it('should load in course instance instructor level', async () => {
       page = await requestp(locals.baseUrl + '/course_instance/1/instructor/news_items');
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
     it('should load in course instance student level', async () => {
       page = await requestp(locals.baseUrl + '/course_instance/1/news_items');
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
   });
 
   describe('Single news item page', () => {
     it('should load in course instructor level', async () => {
       page = await requestp(locals.baseUrl + '/course/1/news_item/1/');
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
     it('should load in course instance instructor level', async () => {
       page = await requestp(locals.baseUrl + '/course_instance/1/instructor/news_item/1/');
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
     it('should load in course instance student level', async () => {
       page = await requestp(locals.baseUrl + '/course_instance/1/news_item/1/');
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
   });
 });

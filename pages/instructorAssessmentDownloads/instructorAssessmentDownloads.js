@@ -185,9 +185,10 @@ router.get('/:filename', function (req, res, next) {
       assessment_id: res.locals.assessment.id,
       group_work: res.locals.assessment.group_work,
     };
+
     sqldb.query(sql.select_instance_questions, params, function (err, result) {
       if (ERR(err, next)) return;
-      var columns = identityColumn.concat([
+      const columns = identityColumn.concat([
         ['Assessment', 'assessment_label'],
         ['Assessment instance', 'assessment_instance_number'],
         ['Question', 'qid'],
@@ -195,11 +196,17 @@ router.get('/:filename', function (req, res, next) {
         ['Question points', 'points'],
         ['Max points', 'max_points'],
         ['Question % score', 'score_perc'],
+        ['Auto points', 'auto_points'],
+        ['Max auto points', 'max_auto_points'],
+        ['Manual points', 'manual_points'],
+        ['Max manual points', 'max_manual_points'],
         ['Date', 'date_formatted'],
         ['Highest submission score', 'highest_submission_score'],
         ['Last submission score', 'last_submission_score'],
         ['Number attempts', 'number_attempts'],
         ['Duration seconds', 'duration_seconds'],
+        ['Assigned manual grader', 'assigned_grader'],
+        ['Last manual grader', 'last_grader'],
       ]);
       csvMaker.rowsToCsv(result.rows, columns, function (err, csv) {
         if (ERR(err, next)) return;
@@ -215,11 +222,15 @@ router.get('/:filename', function (req, res, next) {
     sqldb.query(sql.submissions_for_manual_grading, params, function (err, result) {
       if (ERR(err, next)) return;
       // Replace user-friendly column names with upload-friendly names
-      identityColumn = identityColumn.map((pair) => [pair[1], pair[1]]);
+      identityColumn = (res.locals.assessment.group_work ? groupNameColumn : studentColumn).map(
+        (pair) => [pair[1], pair[1]]
+      );
       const columns = identityColumn.concat([
         ['qid', 'qid'],
         ['old_score_perc', 'old_score_perc'],
         ['old_feedback', 'old_feedback'],
+        ['old_auto_points', 'old_auto_points'],
+        ['old_manual_points', 'old_manual_points'],
         ['submission_id', 'submission_id'],
         ['params', 'params'],
         ['true_answer', 'true_answer'],
@@ -256,7 +267,7 @@ router.get('/:filename', function (req, res, next) {
     }
     sqldb.query(sql.assessment_instance_submissions, params, function (err, result) {
       if (ERR(err, next)) return;
-      var columns = submissionColumn.concat([
+      const columns = submissionColumn.concat([
         ['Assessment', 'assessment_label'],
         ['Assessment instance', 'assessment_instance_number'],
         ['Question', 'qid'],
@@ -275,12 +286,18 @@ router.get('/:filename', function (req, res, next) {
         ['Mode', 'mode'],
         ['Grading requested date', 'grading_requested_at_formatted'],
         ['Grading date', 'graded_at_formatted'],
+        ['Assigned manual grader', 'assigned_grader'],
+        ['Last manual grader', 'last_grader'],
         ['Score', 'score'],
         ['Correct', 'correct'],
         ['Feedback', 'feedback'],
         ['Question points', 'points'],
         ['Max points', 'max_points'],
         ['Question % score', 'score_perc'],
+        ['Auto points', 'auto_points'],
+        ['Max auto points', 'max_auto_points'],
+        ['Manual points', 'manual_points'],
+        ['Max manual points', 'max_manual_points'],
       ]);
       csvMaker.rowsToCsv(result.rows, columns, function (err, csv) {
         if (ERR(err, next)) return;
@@ -413,7 +430,7 @@ router.get('/:filename', function (req, res, next) {
       }
     );
   } else {
-    next(new Error('Unknown filename: ' + req.params.filename));
+    next(error.make(404, 'Unknown filename: ' + req.params.filename));
   }
 });
 

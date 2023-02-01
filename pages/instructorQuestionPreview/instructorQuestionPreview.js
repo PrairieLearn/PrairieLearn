@@ -145,6 +145,24 @@ router.post('/', function (req, res, next) {
   }
 });
 
+router.get('/variant/:variant_id/submission/:submission_id', function (req, res, next) {
+  question.renderPanelsForSubmission(
+    req.params.submission_id,
+    res.locals.question.id,
+    null, // instance_question_id,
+    req.params.variant_id,
+    res.locals.urlPrefix,
+    null, // questionContext
+    null, // csrfToken
+    null, // authorizedEdit
+    false, // renderScorePanels
+    (err, results) => {
+      if (ERR(err, next)) return;
+      res.send({ submissionPanel: results.submissionPanel });
+    }
+  );
+});
+
 router.get('/', function (req, res, next) {
   var variant_seed = req.query.variant_seed ? req.query.variant_seed : null;
   debug(`variant_seed ${variant_seed}`);

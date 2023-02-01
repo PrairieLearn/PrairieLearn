@@ -1,7 +1,7 @@
 <pl-question-panel>
   <p>
-    Questions below were designed to showcase the different features of 
-    <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-number-input-element"><code>pl-number-input</code></a>. 
+    Questions below were designed to showcase the different features of
+    <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-number-input-element"><code>pl-number-input</code></a>.
     The goal of <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-number-input-element"><code>pl-number-input</code></a>
     is to allow users to enter <b>real or complex values</b> to be checked within a specific tolerance.  The correct value of $c$ in all questions below is <samp>{{correct_answers.c_1}}</samp>.
   </p>
@@ -31,7 +31,7 @@
 <div class="card my-2">
   <div class="card-body">
     <pl-question-panel>
-      <p>Under this variant, we opt to change the default comparison of <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-number-input-element"><code>pl-number-input</code></a>  from relative and absolute tolerances (<code>comparison="relabs"</code>) to significant digits (<code>comparison="sigfigs"</code>), which has a default of two digits. In addition, we've opted to add a suffix or a unit classification to the input via <code>suffix="units"</code>. </p>
+      <p>Under this variant, we opt to change the default comparison of <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-number-input-element"><code>pl-number-input</code></a>  from relative and absolute tolerances (<code>comparison="relabs"</code>) to significant digits (<code>comparison="sigfig"</code>), which has a default of two digits. In addition, we've opted to add a suffix or a unit classification to the input via <code>suffix="units"</code>. </p>
       <p> Solve for the value of $c$ given $c^2 = {{params.a}}^2 + {{params.b}}^2$ </p>
     </pl-question-panel>
     <pl-number-input answers-name="c_3" label="$c = $" comparison="sigfig" suffix="units"></pl-number-input>

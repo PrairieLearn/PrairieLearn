@@ -1,24 +1,24 @@
 CREATE FUNCTION
     grading_jobs_update_after_grading(
-        grading_job_id bigint,
-        received_time timestamptz,
-        start_time timestamptz,
-        finish_time timestamptz,
-        new_submitted_answer jsonb, -- NULL => no change
-        new_format_errors jsonb,
-        new_gradable boolean,
-        new_broken boolean,
-        new_params jsonb, -- NULL => no change
-        new_true_answer jsonb, -- NULL => no change
-        new_feedback jsonb,
-        new_partial_scores jsonb,
-        new_score double precision,
-        new_v2_score double precision
-    ) RETURNS void
+        IN grading_job_id bigint,
+        IN received_time timestamptz,
+        IN start_time timestamptz,
+        IN finish_time timestamptz,
+        IN new_submitted_answer jsonb, -- NULL => no change
+        IN new_format_errors jsonb,
+        IN new_gradable boolean,
+        IN new_broken boolean,
+        IN new_params jsonb, -- NULL => no change
+        IN new_true_answer jsonb, -- NULL => no change
+        IN new_feedback jsonb,
+        IN new_partial_scores jsonb,
+        IN new_score double precision,
+        IN new_v2_score double precision,
+        OUT grading_job grading_jobs
+    )
 AS $$
 <<main>>
 DECLARE
-    grading_job grading_jobs%rowtype;
     credit integer;
     submission_id bigint;
     submission_date timestamptz;
@@ -63,6 +63,10 @@ BEGIN
     WHERE gj.id = grading_job_id;
 
     IF NOT FOUND THEN RAISE EXCEPTION 'could not find variant for grading_job_id = %', grading_job_id; END IF;
+
+    -- This method is only called for manual grading questions if
+    -- auto_points > 0, in that case it is treated as internal.
+    IF grading_method = 'Manual' THEN grading_method := 'Internal'; END IF;
 
     -- ######################################################################
     -- check that everything is ok
@@ -138,6 +142,7 @@ BEGIN
         grading_finished_at = COALESCE(finish_time, now()),
         gradable = new_gradable,
         score = new_score,
+        -- manual_points and auto_points are not updated for internal/external grading jobs
         correct = new_correct,
         feedback = new_feedback
     WHERE id = grading_job_id

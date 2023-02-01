@@ -5,7 +5,7 @@ const express = require('express');
 const router = express.Router();
 
 const error = require('../../prairielib/lib/error');
-const sqlDb = require('../../prairielib/lib/sql-db');
+const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
 
 const chunks = require('../../lib/chunks');
@@ -19,7 +19,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', (req, res, next) => {
   res.locals.coursesRoot = config.coursesRoot;
-  sqlDb.queryOneRow(sql.select, [], (err, result) => {
+  sqldb.queryOneRow(sql.select, [], (err, result) => {
     if (ERR(err, next)) return;
 
     _.assign(res.locals, result.rows[0]);
@@ -31,13 +31,13 @@ router.post('/', (req, res, next) => {
   if (!res.locals.is_administrator) return next(new Error('Insufficient permissions'));
   if (req.body.__action === 'administrators_insert_by_user_uid') {
     let params = [req.body.uid, res.locals.authn_user.user_id];
-    sqlDb.call('administrators_insert_by_user_uid', params, (err, _result) => {
+    sqldb.call('administrators_insert_by_user_uid', params, (err, _result) => {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
   } else if (req.body.__action === 'administrators_delete_by_user_id') {
     let params = [req.body.user_id, res.locals.authn_user.user_id];
-    sqlDb.call('administrators_delete_by_user_id', params, (err, _result) => {
+    sqldb.call('administrators_delete_by_user_id', params, (err, _result) => {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
@@ -52,7 +52,7 @@ router.post('/', (req, res, next) => {
       req.body.branch,
       res.locals.authn_user.user_id,
     ];
-    sqlDb.call('courses_insert', params, (err, _result) => {
+    sqldb.call('courses_insert', params, (err, _result) => {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
@@ -63,7 +63,7 @@ router.post('/', (req, res, next) => {
       req.body.value,
       res.locals.authn_user.user_id,
     ];
-    sqlDb.call('courses_update_column', params, (err, _result) => {
+    sqldb.call('courses_update_column', params, (err, _result) => {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
@@ -71,7 +71,7 @@ router.post('/', (req, res, next) => {
     let params = {
       course_id: req.body.course_id,
     };
-    sqlDb.queryZeroOrOneRow(sql.select_course, params, (err, result) => {
+    sqldb.queryZeroOrOneRow(sql.select_course, params, (err, result) => {
       if (ERR(err, next)) return;
       if (result.rowCount !== 1) return next(new Error('course not found'));
 
@@ -89,7 +89,7 @@ router.post('/', (req, res, next) => {
       }
 
       var params = [req.body.course_id, res.locals.authn_user.user_id];
-      sqlDb.call('courses_delete', params, (err, _result) => {
+      sqldb.call('courses_delete', params, (err, _result) => {
         if (ERR(err, next)) return;
         res.redirect(req.originalUrl);
       });
@@ -114,7 +114,7 @@ router.post('/', (req, res, next) => {
       user_id,
       action,
     };
-    sqlDb.queryOneRow(sql.update_course_request, params, (err, _result) => {
+    sqldb.queryOneRow(sql.update_course_request, params, (err, _result) => {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
@@ -126,7 +126,7 @@ router.post('/', (req, res, next) => {
       user_id,
       action: 'creating',
     };
-    sqlDb.queryOneRow(sql.update_course_request, params, (err, _result) => {
+    sqldb.queryOneRow(sql.update_course_request, params, (err, _result) => {
       if (ERR(err, next)) return;
 
       // Create the course in the background

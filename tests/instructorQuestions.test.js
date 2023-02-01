@@ -21,7 +21,6 @@ locals.courseBaseUrl = locals.baseUrl + '/course/1';
 locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1/instructor';
 locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/question';
 locals.questionPreviewTabUrl = '/preview';
-locals.questionSettingsTabUrl = '/settings';
 locals.questionsUrl = locals.courseInstanceBaseUrl + '/course_admin/questions';
 locals.questionsUrlCourse = locals.courseBaseUrl + '/course_admin/questions';
 locals.isStudentPage = false;

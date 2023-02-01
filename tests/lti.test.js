@@ -1,14 +1,14 @@
-const request = require('request');
+const fetch = require('node-fetch');
 const oauthSignature = require('oauth-signature');
-const ERR = require('async-stacktrace');
+const { assert } = require('chai');
 
-var config = require('../lib/config');
-var helperServer = require('./helperServer');
+const config = require('../lib/config');
+const helperServer = require('./helperServer');
 const sqldb = require('../prairielib/lib/sql-db');
 const sqlLoader = require('../prairielib/lib/sql-loader');
 const locals = {};
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';
@@ -22,7 +22,7 @@ describe('LTI', function () {
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
-  var body = {
+  const body = {
     lti_message_type: 'basic-lti-launch-request',
     lti_version: 'LTI-1p0',
     resource_link_id: 'somethingsomething',
@@ -33,63 +33,34 @@ describe('LTI', function () {
     roles: 'Learner',
     context_id: 'testContext',
   };
-  var secret = 'sFDpR@RzLdDW';
-  var genSignature = oauthSignature.generate('POST', locals.ltiUrl, body, secret, null, {
+  const secret = 'sFDpR@RzLdDW';
+  const genSignature = oauthSignature.generate('POST', locals.ltiUrl, body, secret, null, {
     encodeSignature: false,
   });
 
   describe('test LTI callback', function () {
-    it('should throw 500 with an invalid consumer_key', function (callback) {
-      request.post(locals.ltiUrl, { form: body }, function (error, response) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 500) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        callback(null);
-      });
+    it('should throw 500 with an invalid consumer_key', async () => {
+      const res = await fetch(locals.ltiUrl, { method: 'POST', body: new URLSearchParams(body) });
+      assert.equal(res.status, 500);
     });
-    it('should throw 500 with an invalid secret', function (callback) {
-      sqldb.query(sql.invalid_secret, {}, function (err) {
-        if (ERR(err, callback)) return;
-        request.post(locals.ltiUrl, { form: body }, function (error, response) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 500) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          callback(null);
-        });
-      });
+    it('should throw 500 with an invalid secret', async () => {
+      await sqldb.queryAsync(sql.invalid_secret, {});
+      const res = await fetch(locals.ltiUrl, { method: 'POST', body: new URLSearchParams(body) });
+      assert.equal(res.status, 500);
     });
-    it('should throw 400 as a Learner with no LTI link defined', function (callback) {
+    it('should throw 400 as a Learner with no LTI link defined', async () => {
       body.oauth_signature = genSignature;
-      request.post(locals.ltiUrl, { form: body }, function (error, response) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 400) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        callback(null);
-      });
+      const res = await fetch(locals.ltiUrl, { method: 'POST', body: new URLSearchParams(body) });
+      assert.equal(res.status, 400);
     });
-    it('should throw 302 (redirect) as a Learner with an LTI link created', function (callback) {
-      sqldb.query(sql.lti_link, {}, function (err) {
-        if (ERR(err, callback)) return;
-
-        request.post(locals.ltiUrl, { form: body }, function (error, response) {
-          if (error) {
-            return callback(error);
-          }
-          if (response.statusCode !== 302) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          callback(null);
-        });
+    it('should 302 (redirect) as a Learner with an LTI link created', async () => {
+      await sqldb.queryAsync(sql.lti_link, {});
+      const res = await fetch(locals.ltiUrl, {
+        method: 'POST',
+        body: new URLSearchParams(body),
+        redirect: 'manual',
       });
+      assert.equal(res.status, 302);
     });
   });
 });

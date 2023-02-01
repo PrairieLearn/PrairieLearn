@@ -36,9 +36,9 @@ FROM
         AND ((chunks_arr->>'assessmentId' IS NULL) OR (chunks.assessment_id = (chunks_arr->>'assessmentId')::bigint))
         AND ((chunks_arr->>'questionId' IS NULL) OR (chunks.question_id = (chunks_arr->>'questionId')::bigint))
     )
-    LEFT JOIN assessments AS a ON (a.id = chunks.assessment_id)
-    LEFT JOIN course_instances AS ci ON (ci.id = chunks.course_instance_id OR ci.id = a.course_instance_id)
-    LEFT JOIN questions AS q ON (q.id = chunks.question_id);
+    LEFT JOIN assessments AS a ON (a.id = (chunks_arr->>'assessmentId')::bigint)
+    LEFT JOIN course_instances AS ci ON (ci.id = (chunks_arr->>'courseInstanceId')::bigint OR ci.id = a.course_instance_id)
+    LEFT JOIN questions AS q ON (q.id = (chunks_arr->>'questionId')::bigint);
 
 -- BLOCK select_course_dir
 SELECT c.path

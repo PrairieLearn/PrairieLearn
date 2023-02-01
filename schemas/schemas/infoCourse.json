@@ -84,6 +84,28 @@
                 }
             }
         },
+        "assessmentModules": {
+            "description": "Course modules.",
+            "type": "array",
+            "items": {
+                "description": "A single course module description.",
+                "type": "object",
+                "required": [
+                    "name",
+                    "heading"
+                ],
+                "properties": {
+                    "name": {
+                        "description": "Short name for a module (preferably 1 to 3 words), e.g., 'Introduction'.",
+                        "type": "string"
+                    },
+                    "heading": {
+                        "description": "Full name of the module (visible to students)",
+                        "type": "string"
+                    }
+                }
+            }
+        },
         "topics": {
             "description": "Question topics (visible to students).",
             "type": "array",

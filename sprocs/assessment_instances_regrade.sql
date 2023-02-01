@@ -51,13 +51,12 @@ BEGIN
         UPDATE instance_questions AS iq
         SET
             points = aq.max_points,
+            auto_points = aq.max_auto_points,
+            manual_points = aq.max_manual_points,
             score_perc = 100,
-            points_in_grading = 0,
-            score_perc_in_grading = 0,
             modified_at = now()
         FROM
             assessment_questions AS aq
-            JOIN questions AS q ON (q.id = aq.question_id)
         WHERE
             aq.id = iq.assessment_question_id
             AND iq.assessment_instance_id = assessment_instances_regrade.assessment_instance_id
@@ -65,16 +64,20 @@ BEGIN
             AND iq.points < aq.max_points
         RETURNING
             iq.*,
-            aq.max_points
+            aq.max_points,
+            aq.max_auto_points,
+            aq.max_manual_points
     ),
     log_result AS (
         INSERT INTO question_score_logs
             (instance_question_id, auth_user_id,
-                points, max_points, score_perc)
+                points, auto_points, manual_points, max_points, max_auto_points, max_manual_points,
+                score_perc)
         (
             SELECT
-                id,                assessment_instances_regrade.authn_user_id,
-                points, max_points, score_perc
+                id, assessment_instances_regrade.authn_user_id,
+                points, auto_points, manual_points, max_points, max_auto_points, max_manual_points,
+                score_perc
             FROM updated_instance_questions
         )
     )

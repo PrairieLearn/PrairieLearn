@@ -10,6 +10,12 @@ SELECT *
 FROM workspaces
 WHERE id = $workspace_id;
 
+-- BLOCK select_and_lock_workspace
+SELECT *
+FROM workspaces
+WHERE id = $workspace_id
+FOR UPDATE;
+
 -- BLOCK select_workspace_data
 SELECT
     to_jsonb(w.*) AS workspace,
@@ -56,6 +62,6 @@ RETURNING
 -- BLOCK update_workspace_homedir_location
 UPDATE workspaces AS W
 SET
-    homedir_Location = $homedir_location
+    homedir_location = $homedir_location
 WHERE
     w.id = $workspace_id;

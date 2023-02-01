@@ -1,7 +1,7 @@
-# blacklist all
+# denylist all
 *
 
-# whitelist things to copy
+# allowlist things to copy
 !.editorconfig
 !.eslintignore
 !.eslintrc.js
@@ -9,17 +9,23 @@
 !.mocharc.js
 !.prettierignore
 !.prettierrc.json
+!.yarnrc.yml
 !tsconfig.json
 !turbo.json
-!pyrightconfig.json
+!.yarn/
+.yarn/cache
+.yarn/install-state.gz
+!pyproject.toml
 !admin_queries/
 !api/
 !cron/
 !database/
 !docs/
 !docker/
+!ee/
 !elements/
 !exampleCourse/
+!executor.js
 !grader_host/
 !lib/
 !Makefile
@@ -33,10 +39,10 @@
 !packages/
 !prairielib/
 !public/
+!python/
 !question-servers/
 !requirements.txt
 !server.js
-!setup.cfg
 !schemas/
 !sprocs/
 !sync/

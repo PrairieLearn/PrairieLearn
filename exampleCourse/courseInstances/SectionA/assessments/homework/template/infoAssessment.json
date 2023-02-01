@@ -3,6 +3,7 @@
     "type": "Homework",
     "title": "Homework template",
     "set": "Homework",
+    "module": "IntroModule",
     "number": "1",
     "allowAccess": [
         {

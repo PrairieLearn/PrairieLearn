@@ -35,8 +35,21 @@ SET
     state_changed_at = EXCLUDED.state_changed_at;
 
 -- BLOCK set_terminated_hosts_if_not_launching
-UPDATE workspace_hosts AS wh
+WITH terminated_workspace_hosts AS (
+    UPDATE workspace_hosts AS wh
+    SET
+        state = 'terminated',
+        terminated_at = NOW()
+    WHERE wh.instance_id IN (SELECT UNNEST($instances)) AND wh.state != 'launching'
+    RETURNING wh.id
+)
+UPDATE workspaces AS w
 SET
-    state = 'terminated',
-    terminated_at = NOW()
-WHERE wh.instance_id IN (SELECT UNNEST($instances)) AND wh.state != 'launching';
+    state = 'stopped',
+    stopped_at = NOW(),
+    state_updated_at = NOW()
+FROM
+    terminated_workspace_hosts AS twh
+WHERE
+    twh.id = w.workspace_host_id
+    AND w.state != 'stopped';

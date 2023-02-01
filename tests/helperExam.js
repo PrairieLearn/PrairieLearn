@@ -22,7 +22,7 @@ const questionsArray = [
 
 const questions = _.keyBy(questionsArray, 'qid');
 
-const assessmentMaxPoints = 84; // must be the sum of maxPoints in questionsArray, but we hard-code it for reference
+const assessmentMaxPoints = 94; // must be the sum of maxPoints in questionsArray, but we hard-code it for reference
 
 let res, page, elemList;
 

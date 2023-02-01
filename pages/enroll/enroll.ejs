@@ -27,6 +27,11 @@
               <td class="align-middle">
                 <%= course_instance.label %>
               </td>
+              <% if (course_instance.instructor_access) { %>
+              <td class="align-middle text-center" colspan="2">
+                <span class="badge badge-info">instructor access</span>
+              </td>
+              <% } else { %>
               <td>
                 <% if (!course_instance.enrolled) { %>
                 <button type="button" class="btn btn-sm btn-info" data-toggle="modal" data-target="#addModal<%= modalIdx %>">
@@ -103,6 +108,7 @@
                 </div>
                 <% } %>
               </td>
+              <% } %>
             </tr>
             <%# incrementing modalIdx must be done before closing the forEach function block: %>
             <% ; modalIdx++; }); %>

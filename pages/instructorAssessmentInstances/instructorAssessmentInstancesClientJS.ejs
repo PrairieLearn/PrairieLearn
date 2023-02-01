@@ -14,7 +14,19 @@ $(function() {
                     table.data('filter-student-only', filterOn);
 
                     $('.columns button[name=studentsOnly]').toggleClass('active', filterOn);
-                    table.bootstrapTable('filterBy', filterOn ? { role: 'Student' } : {});
+                    <% if (assessment.group_work) { %>
+                        table.bootstrapTable('filterBy', { group_roles: "Student" }, { // the "filter" parameter has to be specified, hence we place a dummy placeholder here 
+                            'filterAlgorithm': (row, _) => {
+                                if (filterOn) {
+                                    return row.group_roles.includes('Student');
+                                } else {
+                                    return true;
+                                }
+                            }
+                        })
+                    <% } else { %>
+                        table.bootstrapTable('filterBy', filterOn ? { role: 'Student' } : {});
+                    <% } %>
                 },
             },
         },
@@ -66,6 +78,8 @@ $(function() {
         var uid = button.data('uid'); // Extract info from data-* attributes
         var name = button.data('name');
         var number = button.data('number');
+        var group_name = button.data('group-name');
+        var uid_list = button.data('uid-list');
         var date_formatted = button.data('date-formatted');
         var score_perc = button.data('score-perc');
         var assessment_instance_id = button.data('assessment-instance-id');
@@ -81,6 +95,8 @@ $(function() {
         
         modal.find('.modal-uid').text(uid);
         modal.find('.modal-name').text(name);
+        modal.find('.modal-group-name').text(group_name);
+        modal.find('.modal-uid-list').text(uid_list);
         modal.find('.modal-number').text(number);
         modal.find('.modal-date').text(date_formatted);
         modal.find('.modal-score-perc').text(score_perc);
@@ -207,12 +223,20 @@ function listFormatter(list, row) {
     return '<small>' + list.join(', ') + '</small>';
 }
 
+function uniqueListFormatter(list, row) {
+
+    if (!list || !list[0]) list = ['(empty)'];
+    uniq = [...new Set(list)];
+    return '<small>' + uniq.join(', ') + '</small>';
+}
+
 function timeRemainingLimitFormatter(value, row) {
     //<% if (authz_data.has_course_instance_permission_edit) { %>
     var container = $('<span>');
     var link = $('<a>')
         .addClass('btn btn-secondary btn-xs ml-1 time-limit-edit-button')
         .attr('role', 'button')
+        .attr('id', `row${row.assessment_instance_id}PopoverTimeLimit`)
         .attr('tabindex', 0)
         .attr('data-row', JSON.stringify(row))
         .append($('<i class="bi-pencil-square" aria-hidden="true">'))
@@ -244,6 +268,12 @@ function detailsLinkSorter(valueA, valueB, rowA, rowB) {
     if (!compare) compare = rowA.number - rowB.number;
     if (!compare) compare = valueA - valueB;
     return compare;
+}
+
+function timeRemainingLimitSorter(valueA, valueB, rowA, rowB) {
+    // Closed assessments are listed first, followed by time limits
+    // ascending, followed by open without a time limit
+    return (Number(rowA.open) - Number(rowB.open)) || ((valueA ?? Infinity) - (valueB ?? Infinity));
 }
 
 function actionButtonFormatter(_value, row, index) {
@@ -291,16 +321,16 @@ function actionButtonFormatter(_value, row, index) {
         .attr('onclick', 'window.event.preventDefault()')
         .appendTo(dropdown);
     //<% if (authz_data.has_course_instance_permission_edit) { %>
-    $('<a>')
+    $('<button>')
         .addClass('dropdown-item')
-        .attr('role', 'button')
-        .attr('tabindex', '0')
         .attr('data-toggle', 'modal')
         .attr('data-target', '#deleteAssessmentInstanceModal')
         .attr('data-uid', row.uid)
         .attr('data-name', row.name)
         .attr('data-number', row.number)
         .attr('data-date-formatted', row.date_formatted)
+        .attr('data-group-name', row.group_name)
+        .attr('data-uid-list', row.uid_list?.join(', ') || 'empty')
         .attr('data-score-perc', Math.floor(row.score_perc))
         .attr('data-assessment-instance-id', row.assessment_instance_id)
         .append($('<i>').addClass('fas fa-times mr-2')
@@ -308,20 +338,24 @@ function actionButtonFormatter(_value, row, index) {
         .append('Delete')
         .appendTo(menu);
 
-    $('<a>')
+    $('<button>')
         .addClass('dropdown-item' + (row.open ? '' : ' disabled'))
-        .attr('role', 'button')
-        .attr('tabindex', '0')
         .attr('onclick', `$("#row${ai_id}PopoverClose").popover("show")`)
         .append($('<i>').addClass('fas fa-ban mr-2')
                 .attr('aria-hidden', 'true'))
         .append('Grade &amp; Close')
         .appendTo(menu);
 
-    $('<a>')
+    $('<button>')
+        .addClass('dropdown-item' + (!row.open ? '' : ' disabled'))
+        .attr('onclick', `$("#row${ai_id}PopoverTimeLimit").popover("show")`)
+        .append($('<i>').addClass('fas fa-lock-open mr-2')
+                .attr('aria-hidden', 'true'))
+        .append('Re-open')
+        .appendTo(menu);
+
+    $('<button>')
         .addClass('dropdown-item')
-        .attr('role', 'button')
-        .attr('tabindex', '0')
         .attr('onclick', `$("#row${ai_id}PopoverRegrade").popover("show")`)
         .append($('<i>').addClass('fas fa-sync mr-2')
                 .attr('aria-hidden', 'true'))
@@ -329,10 +363,8 @@ function actionButtonFormatter(_value, row, index) {
         .appendTo(menu);
 
     //<% } else { %>
-    $('<a>')
+    $('<button>')
         .addClass('dropdown-item disabled')
-        .attr('role', 'button')
-        .attr('tabindex', '0')
         .append('Must have editor permission')
         .appendTo(menu);
 

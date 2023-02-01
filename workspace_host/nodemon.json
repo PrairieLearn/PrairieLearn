@@ -1,0 +1,9 @@
+{
+  "watch": [
+    "workspace_host",
+    "lib",
+    "sprocs",
+    "prairielib"
+  ],
+  "ext": "js,json,sql"
+}

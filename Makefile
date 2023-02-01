@@ -1,17 +1,20 @@
-export PATH := node_modules/.bin/:$(PATH)
-
 build:
-	@turbo run build
+	@yarn turbo run build
+	@node packages/compiled-assets/dist/cli.js build ./assets ./public/build
 
 dev:
-	@turbo run dev
+	@yarn turbo run dev
 
 start: start-support
 	@node server.js
 start-nodemon: start-support
-	@nodemon -L server.js
+	@yarn nodemon server.js
 start-workspace-host: start-support kill-running-workspaces
 	@node workspace_host/interface.js
+start-workspace-host-nodemon: start-support kill-running-workspaces
+	@yarn nodemon --config workspace_host/nodemon.json workspace_host/interface.js
+start-executor:
+	@node executor.js
 
 kill-running-workspaces:
 	@docker/kill_running_workspaces.sh
@@ -25,54 +28,49 @@ start-s3rver:
 	@docker/start_s3rver.sh
 
 test: test-js test-python
-test-js: test-prairielearn test-prairielib test-grader-host test-packages
+test-js: test-prairielearn test-prairielib test-grader-host test-workspace-host test-packages
 test-prairielearn: start-support
-	@mocha --parallel "tests/**/*.test.{js,mjs}"
+	@yarn mocha --parallel "tests/**/*.test.{js,mjs}"
 test-prairielearn-serial: start-support
-	@mocha "tests/**/*.test.{js,mjs}"
+	@yarn mocha "tests/**/*.test.{js,mjs}"
 test-prairielib:
-	@jest prairielib/
+	@yarn jest prairielib/
 test-grader-host:
-	@jest grader_host/
+	@yarn jest grader_host/
+test-workspace-host:
+	@yarn mocha "workspace_host/**/*.test.{js,mjs}"
 test-packages:
-	@turbo run test
+	@yarn turbo run test
 test-python:
 # `pl_unit_test.py` has an unfortunate file name - it matches the pattern that
 # pytest uses to discover tests, but it isn't actually a test file itself. We
 # explicitly exclude it here.
 	@python3 -m pytest --ignore graders/python/python_autograder/pl_unit_test.py
-	
+
 lint: lint-js lint-python lint-html lint-links
 lint-js:
-	@eslint --ext js "**/*.js"
-	@prettier --check "**/*.{js,ts,md}"
+	@yarn eslint --ext js --report-unused-disable-directives "**/*.js"
+	@yarn prettier --check "**/*.{js,ts,md}"
 lint-python:
 	@python3 -m flake8 ./
 lint-html:
-	@htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html"
+	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html"
 lint-links:
 	@node tools/validate-links.mjs
 
-format: format-js
+format: format-js format-python
 format-js:
-	@eslint --ext js --fix "**/*.js"
-	@prettier --write "**/*.{js,ts,md}"
+	@yarn eslint --ext js --fix "**/*.js"
+	@yarn prettier --write "**/*.{js,ts,md}"
+format-python:
+	@python3 -m isort ./
+	@python3 -m black ./
 
 typecheck: typecheck-js typecheck-python
 typecheck-js:
-	@tsc
+	@yarn tsc
 typecheck-python:
-	@pyright
-
-depcheck:
-	-depcheck --ignore-patterns=public/**
-	@echo WARNING:
-	@echo WARNING: Before removing an unused package, also check that it is not used
-	@echo WARNING: by client-side code. Do this by running '"git grep <packagename>"'
-	@echo WARNING:
-	@echo WARNING: Note that many devDependencies will show up as unused. This is not
-	@echo WARNING: a problem.
-	@echo WARNING:
+	@yarn pyright --skipunannotated
 
 changeset:
-	@changeset
+	@yarn changeset

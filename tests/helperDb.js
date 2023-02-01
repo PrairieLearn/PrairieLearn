@@ -100,7 +100,6 @@ async function closeSql() {
 
 async function dropDatabase(dbName, mochaThis, forceDrop = false) {
   if (_.has(process.env, 'PL_KEEP_TEST_DB') && !forceDrop) {
-    // eslint-disable-next-line no-console
     console.log(`PL_KEEP_TEST_DB enviroment variable set, not dropping database ${dbName}`);
     return;
   }

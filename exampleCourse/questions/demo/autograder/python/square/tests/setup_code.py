@@ -2,4 +2,5 @@
 # Use it to generate anything needed for the solution
 
 import random
+
 x = random.random()

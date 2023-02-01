@@ -117,10 +117,10 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsMultiInsertButton]'
+      'button[id=coursePermissionsInsertButton]'
     );
     const form = {
-      __action: 'course_permissions_insert_by_multi_user_uid',
+      __action: 'course_permissions_insert_by_user_uids',
       __csrf_token: context.__csrf_token,
       uid: ' staff03@illinois.edu ,   ,   staff04@illinois.edu',
       course_role: 'Owner',
@@ -142,10 +142,10 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsMultiInsertButton]'
+      'button[id=coursePermissionsInsertButton]'
     );
     const form = {
-      __action: 'course_permissions_insert_by_multi_user_uid',
+      __action: 'course_permissions_insert_by_user_uids',
       __csrf_token: context.__csrf_token,
       uid: ' staff03@illinois.edu ,   ,   staff04@illinois.edu',
       course_role: 'Viewer',
@@ -169,10 +169,10 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsMultiInsertButton]'
+      'button[id=coursePermissionsInsertButton]'
     );
     const form = {
-      __action: 'course_permissions_insert_by_multi_user_uid',
+      __action: 'course_permissions_insert_by_user_uids',
       __csrf_token: context.__csrf_token,
       uid: `staff03@illinois.edu, staff05@illinois.edu, ${new_user}`,
       course_role: 'None',
@@ -368,9 +368,10 @@ function runTest(context) {
       'button[id=coursePermissionsInsertButton]'
     );
     const form = {
-      __action: 'course_permissions_insert_by_user_uid',
+      __action: 'course_permissions_insert_by_user_uids',
       __csrf_token: context.__csrf_token,
       uid: 'staff03@illinois.edu',
+      course_role: 'None',
     };
     response = await helperClient.fetchCheerio(context.pageUrl, {
       method: 'POST',

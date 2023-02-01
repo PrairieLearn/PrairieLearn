@@ -1,7 +1,8 @@
-from pl_helpers import name, points, not_repeated
-from pl_unit_test import PLTestCase
-from code_feedback import Feedback
 import numpy as np
+from code_feedback import Feedback
+from pl_helpers import name, points
+from pl_unit_test import PLTestCase
+
 
 def convert_to_float_array(array):
     if type(array) is np.ndarray:
@@ -13,14 +14,13 @@ def convert_to_float_array(array):
 
 class Test(PLTestCase):
 
-    student_code_file = 'Markov-Chains-2.ipynb'
-
+    student_code_file = "Markov-Chains-2.ipynb"
 
     @points(1)
     @name("Testing Gambler Markov Matrix G")
     def test_1(self):
         points = 0
-        if Feedback.check_numpy_array_allclose('G', self.ref.G, self.st.G):
+        if Feedback.check_numpy_array_allclose("G", self.ref.G, self.st.G):
             points += 1
         Feedback.set_score(points)
 
@@ -29,6 +29,6 @@ class Test(PLTestCase):
     def test_2(self):
         points = 0
         xstar2 = convert_to_float_array(self.st.xstar2)
-        if Feedback.check_numpy_array_allclose('xstar2', self.ref.xstar2, xstar2):
+        if Feedback.check_numpy_array_allclose("xstar2", self.ref.xstar2, xstar2):
             points += 1
         Feedback.set_score(points)

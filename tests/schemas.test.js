@@ -34,11 +34,16 @@ const validateRequiredRecursive = (obj, path = '') => {
 for (const schemaName of Object.keys(schemas)) {
   describe(`${schemaName} schema`, () => {
     const schema = schemas[schemaName];
+    it('compiles', () => {
+      const ajv = new Ajv();
+      const validate = ajv.compile(schema);
+      assert.isFunction(validate);
+    });
+
     it('validates', () => {
       const ajv = new Ajv();
       const valid = ajv.validateSchema(schema);
       if (ajv.errors) {
-        // eslint-disable-next-line no-console
         console.error(ajv.errors);
       }
       assert.isTrue(valid);

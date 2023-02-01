@@ -7,3 +7,14 @@ FROM
 WHERE
     ai.id = $assessment_instance_id
     AND a.course_instance_id = $course_instance_id;
+
+-- BLOCK select_owners
+SELECT
+    u.uid,
+    u.name
+FROM
+    users AS u
+    JOIN course_permissions AS cp ON (cp.user_id = u.user_id)
+WHERE
+    cp.course_role = 'Owner'
+    AND cp.course_id = $course_id;

@@ -15,14 +15,25 @@ WHERE
     gj.id = $grading_job_id
     AND v.instance_question_id = $instance_question_id;
 
+-- BLOCK select_variant_with_last_submission
+SELECT
+    v.id AS variant_id
+FROM
+    variants AS v
+    JOIN submissions AS s ON (s.variant_id = v.id)
+WHERE
+    v.instance_question_id = $instance_question_id
+ORDER BY v.date DESC, s.date DESC
+LIMIT 1;
+
 -- BLOCK select_graders
 SELECT to_jsonb(course_instances_select_graders($course_instance_id)) AS graders;
 
 -- BLOCK update_assigned_grader
 UPDATE instance_questions AS iq
 SET
-    requires_manual_grading = CASE WHEN $assigned_grader::BIGINT IS NOT NULL THEN TRUE ELSE requires_manual_grading END,
-    assigned_grader = $assigned_grader
+    requires_manual_grading = $requires_manual_grading::BOOLEAN,
+    assigned_grader = CASE WHEN $requires_manual_grading::BOOLEAN THEN $assigned_grader::BIGINT ELSE assigned_grader END
 WHERE
     iq.id = $instance_question_id
     AND ($assigned_grader::BIGINT IS NULL

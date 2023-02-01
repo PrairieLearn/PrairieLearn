@@ -11,6 +11,10 @@ window.PLFileEditor = function (uuid, options) {
 
   this.inputElement = this.element.find('input');
   this.editorElement = this.element.find('.editor');
+  this.settingsButton = this.element.find('.settings-button');
+  this.modal = this.element.find('.modal');
+  this.saveSettingsButton = this.element.find('.save-settings-button');
+  this.closeSettingsButton = this.element.find('.close-settings-button');
   this.restoreOriginalButton = this.element.find('.restore-original');
   this.restoreOriginalConfirmContainer = this.element.find('.restore-original-confirm-container');
   this.restoreOriginalConfirm = this.element.find('.restore-original-confirm');
@@ -26,11 +30,23 @@ window.PLFileEditor = function (uuid, options) {
     this.editor.getSession().setMode(options.aceMode);
   }
 
-  if (options.aceTheme) {
+  if (localStorage.getItem('pl-file-editor-theme')) {
+    this.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
+  } else if (options.aceTheme) {
     this.editor.setTheme(options.aceTheme);
   } else {
     this.editor.setTheme('ace/theme/chrome');
   }
+
+  if (localStorage.getItem('pl-file-editor-fontsize')) {
+    this.editor.setFontSize(localStorage.getItem('pl-file-editor-fontsize'));
+  } else if (options.fontSize) {
+    this.editor.setFontSize(options.fontSize);
+  } else {
+    this.editor.setFontSize(12);
+  }
+
+  this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
 
   if (options.minLines) {
     this.editor.setOption('minLines', options.minLines);
@@ -73,7 +89,31 @@ window.PLFileEditor = function (uuid, options) {
   }
   this.setEditorContents(currentContents);
 
+  this.syncSettings();
+
+  this.initSettingsButton(uuid);
+
   this.initRestoreOriginalButton();
+};
+
+window.PLFileEditor.prototype.syncSettings = function () {
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'pl-file-editor-theme') {
+      this.editor.setTheme(event.newValue);
+    }
+    if (event.key === 'pl-file-editor-fontsize') {
+      this.editor.setFontSize(event.newValue);
+    }
+    if (event.key === 'pl-file-editor-keyboardHandler') {
+      this.editor.setKeyboardHandler(event.newValue);
+    }
+  });
+
+  window.addEventListener('pl-file-editor-settings-changed', () => {
+    this.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
+    this.editor.setFontSize(localStorage.getItem('pl-file-editor-fontsize'));
+    this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
+  });
 };
 
 window.PLFileEditor.prototype.updatePreview = function (html_contents) {
@@ -94,6 +134,111 @@ window.PLFileEditor.prototype.updatePreview = function (html_contents) {
       MathJax.typesetPromise();
     }
   }
+};
+
+window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
+  var that = this;
+
+  this.settingsButton.click(function () {
+    ace.require(['ace/ext/themelist'], function (themeList) {
+      var themeSelect = that.modal.find('#modal-' + uuid + '-themes');
+      themeSelect.empty();
+      for (const entries in themeList.themesByName) {
+        var caption = themeList.themesByName[entries].caption;
+        var theme = themeList.themesByName[entries].theme;
+
+        themeSelect.append(
+          $('<option>', {
+            value: theme,
+            text: caption,
+            selected: localStorage.getItem('pl-file-editor-theme') === theme,
+          })
+        );
+      }
+
+      var fontSizeList = ['12px', '14px', '16px', '18px', '20px', '22px', '24px'];
+      var fontSelect = that.modal.find('#modal-' + uuid + '-fontsize');
+      fontSelect.empty();
+      for (const entries in fontSizeList) {
+        fontSelect.append(
+          $('<option>', {
+            value: fontSizeList[entries],
+            text: fontSizeList[entries],
+            selected: localStorage.getItem('pl-file-editor-fontsize') === fontSizeList[entries],
+          })
+        );
+      }
+
+      var keyboardHandlerList = ['Default', 'Vim', 'Emacs', 'Sublime', 'VSCode'];
+      var keyboardHandlerSelect = that.modal.find('#modal-' + uuid + '-keyboardHandler');
+      keyboardHandlerSelect.empty();
+      for (const index in keyboardHandlerList) {
+        var keyboardHandler = 'ace/keyboard/' + keyboardHandlerList[index].toLowerCase();
+
+        keyboardHandlerSelect.append(
+          $('<option>', {
+            value: keyboardHandler,
+            text: keyboardHandlerList[index],
+            selected: localStorage.getItem('pl-file-editor-keyboardHandler') === keyboardHandler,
+          })
+        );
+      }
+    });
+    that.modal.modal('show');
+    sessionStorage.setItem('pl-file-editor-theme-current', that.editor.getTheme());
+    sessionStorage.setItem('pl-file-editor-fontsize-current', that.editor.getFontSize());
+    if (localStorage.getItem('pl-file-editor-keyboardHandler')) {
+      sessionStorage.setItem(
+        'pl-file-editor-keyboardHandler-current',
+        localStorage.getItem('pl-file-editor-keyboardHandler')
+      );
+    }
+
+    that.modal.find('#modal-' + uuid + '-themes').change(function () {
+      var theme = $(this).val();
+      that.editor.setTheme(theme);
+    });
+    that.modal.find('#modal-' + uuid + '-fontsize').change(function () {
+      var fontSize = $(this).val();
+      that.editor.setFontSize(fontSize);
+    });
+  });
+
+  this.saveSettingsButton.click(function () {
+    var theme = that.modal.find('#modal-' + uuid + '-themes').val();
+    var fontsize = that.modal.find('#modal-' + uuid + '-fontsize').val();
+    var keyboardHandler = that.modal.find('#modal-' + uuid + '-keyboardHandler').val();
+
+    localStorage.setItem('pl-file-editor-theme', theme);
+    localStorage.setItem('pl-file-editor-fontsize', fontsize);
+    localStorage.setItem('pl-file-editor-keyboardHandler', keyboardHandler);
+    if (keyboardHandler === 'ace/keyboard/default') {
+      localStorage.removeItem('pl-file-editor-keyboardHandler');
+    }
+
+    sessionStorage.removeItem('pl-file-editor-theme-current');
+    sessionStorage.removeItem('pl-file-editor-fontsize-current');
+    sessionStorage.removeItem('pl-file-editor-keyboardHandler-current');
+
+    that.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
+    that.editor.setFontSize(localStorage.getItem('pl-file-editor-fontsize'));
+    that.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
+
+    window.dispatchEvent(new Event('pl-file-editor-settings-changed'));
+    that.modal.modal('hide');
+  });
+
+  this.closeSettingsButton.click(function () {
+    that.editor.setTheme(sessionStorage.getItem('pl-file-editor-theme-current'));
+    that.editor.setFontSize(sessionStorage.getItem('pl-file-editor-fontsize-current'));
+    that.editor.setKeyboardHandler(
+      sessionStorage.getItem('pl-file-editor-keyboardHandler-current')
+    );
+
+    sessionStorage.removeItem('pl-file-editor-theme-current');
+    sessionStorage.removeItem('pl-file-editor-fontsize-current');
+    sessionStorage.removeItem('pl-file-editor-keyboardHandler-current');
+  });
 };
 
 window.PLFileEditor.prototype.initRestoreOriginalButton = function () {

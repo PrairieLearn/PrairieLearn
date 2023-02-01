@@ -15,7 +15,12 @@
               window.setTimeout(function () {
                   $(e.trigger).popover('hide');
               }, 1000);
-
+          });
+          $('.js-student-link-qrcode-button').popover({
+              content: $('#js-student-link-qrcode'),
+              html: true,
+              trigger: 'click',
+              container: 'body'
           });
       });
     </script>
@@ -77,10 +82,17 @@
                       <td class="form-inline align-middle">
                         <span class="input-group">
                           <span readonly class="form-control form-control-sm"><%= studentLink %></span>
-                          <button type="button" class="input-group-prepend btn btn-sm btn-outline-secondary btn-copy" data-clipboard-text="<%= studentLink %>">
-                            <i class="far fa-clipboard"></i>
-                          </button>
+                          <div class="input-group-append">
+                            <button type="button" class="btn btn-sm btn-outline-secondary btn-copy" data-clipboard-text="<%= studentLink %>">
+                              <i class="far fa-clipboard"></i>
+                            </button>
+                            <button type="button" title="Student Link QR Code"
+                                    class="btn btn-sm btn-outline-secondary js-student-link-qrcode-button">
+                              <i class="fas fa-qrcode"></i>
+                            </button>
+                          </div>
                         </span>
+                        <div class="d-none"><div id="js-student-link-qrcode"><center><%- studentLinkQRCode %></center></div></div>
                       </td>
                     </tr>
                 </tbody>

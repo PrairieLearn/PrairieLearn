@@ -1,11 +1,14 @@
--- BLOCK select_workspace_version
-SELECT w.version AS workspace_version
-FROM workspaces AS w
-WHERE w.id = $workspace_id;
-
--- BLOCK select_workspace_homedir_location
-SELECT w.homedir_location
-fROM workspaces AS W
+-- BLOCK select_workspace
+SELECT
+    w.version,
+    c.id AS course_id,
+    i.id AS institution_id
+FROM
+    workspaces AS w
+    JOIN variants AS v ON (v.workspace_id = w.id)
+    JOIN questions AS q ON (q.id = v.question_id)
+    JOIN pl_courses AS c ON (c.id = q.course_id)
+    JOIN institutions AS i ON (i.id = c.institution_id)
 WHERE w.id = $workspace_id;
 
 -- BLOCK select_workspace_settings

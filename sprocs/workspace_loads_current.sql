@@ -11,7 +11,6 @@ CREATE FUNCTION
         OUT workspace_hosts_draining_count integer,
         OUT workspace_hosts_unhealthy_count integer,
         OUT workspace_hosts_terminating_count integer,
-        OUT workspace_hosts_terminated_count integer,
         OUT workspace_hosts_active_count integer,
         -- max time in each host state
         OUT workspace_hosts_longest_launching_sec double precision,
@@ -21,7 +20,6 @@ CREATE FUNCTION
         OUT workspace_hosts_longest_terminating_sec double precision,
         -- workspaces in each state
         OUT workspace_uninitialized_count integer,
-        OUT workspace_stopped_count integer,
         OUT workspace_launching_count integer,
         OUT workspace_relaunching_count integer,
         OUT workspace_running_count integer,
@@ -34,51 +32,34 @@ CREATE FUNCTION
     )
 AS $$
 BEGIN
-    -- Current number of running workspaces
-    SELECT
-        count(*) FILTER (WHERE w.state = 'uninitialized'),
-        count(*) FILTER (WHERE w.state = 'stopped'),
-        count(*) FILTER (WHERE w.state = 'launching'),
-        count(*) FILTER (WHERE w.state = 'launching' AND num_nonnulls(w.rebooted_at, w.reset_at) > 0),
-        count(*) FILTER (WHERE w.state = 'running')
-    INTO
-        workspace_uninitialized_count,
-        workspace_stopped_count,
-        workspace_launching_count,
-        workspace_relaunching_count,
-        workspace_running_count
-    FROM
-        workspaces AS w;
+    -- Current number of running workspaces. We do this with separate queries
+    -- because it maximizes the likelihood that Postgres will use the index
+    -- instead of a sequential scan.
+    SELECT count(*) INTO workspace_uninitialized_count FROM workspaces AS w WHERE w.state = 'uninitialized';
+    SELECT count(*) INTO workspace_launching_count FROM workspaces AS w WHERE w.state = 'launching';
+    SELECT count(*) INTO workspace_relaunching_count FROM workspaces AS w WHERE w.state = 'launching' AND num_nonnulls(w.rebooted_at, w.reset_at) > 0;
+    SELECT count(*) INTO workspace_running_count FROM workspaces AS w WHERE w.state = 'running';
 
     workspace_active_count := workspace_running_count + workspace_launching_count;
 
-    -- Longest running workspace in launching and running state
-    SELECT
-        COALESCE(max(DATE_PART('epoch', now() - state_updated_at)) FILTER (WHERE w.state = 'launching'), 0),
-        COALESCE(max(DATE_PART('epoch', now() - state_updated_at)) FILTER (WHERE w.state = 'running'), 0)
-    INTO
-        workspace_longest_launching_sec,
-        workspace_longest_running_sec
-    FROM
-        workspaces AS w;
+    -- Longest running workspace in launching state.
+    SELECT COALESCE(max(DATE_PART('epoch', now() - state_updated_at)), 0)
+    INTO workspace_longest_launching_sec
+    FROM workspaces AS w
+    WHERE w.state = 'launching';
+
+    -- Longest running workspace in running state.
+    SELECT COALESCE(max(DATE_PART('epoch', now() - state_updated_at)), 0)
+    INTO workspace_longest_running_sec
+    FROM workspaces AS w
+    WHERE w.state = 'running';
 
     -- Current number of workspace hosts
-    SELECT
-        count(*) FILTER (WHERE wh.state = 'launching'),
-        count(*) FILTER (WHERE wh.state = 'ready'),
-        count(*) FILTER (WHERE wh.state = 'draining'),
-        count(*) FILTER (WHERE wh.state = 'unhealthy'),
-        count(*) FILTER (WHERE wh.state = 'terminating'),
-        count(*) FILTER (WHERE wh.state = 'terminated')
-    INTO
-        workspace_hosts_launching_count,
-        workspace_hosts_ready_count,
-        workspace_hosts_draining_count,
-        workspace_hosts_unhealthy_count,
-        workspace_hosts_terminating_count,
-        workspace_hosts_terminated_count
-    FROM
-        workspace_hosts AS wh;
+    SELECT COUNT(*) INTO workspace_hosts_launching_count FROM workspace_hosts AS h WHERE h.state = 'launching';
+    SELECT COUNT(*) INTO workspace_hosts_ready_count FROM workspace_hosts AS h WHERE h.state = 'ready';
+    SELECT COUNT(*) INTO workspace_hosts_draining_count FROM workspace_hosts AS h WHERE h.state = 'draining';
+    SELECT COUNT(*) INTO workspace_hosts_unhealthy_count FROM workspace_hosts AS h WHERE h.state = 'unhealthy';
+    SELECT COUNT(*) INTO workspace_hosts_terminating_count FROM workspace_hosts AS h WHERE h.state = 'terminating';
 
     workspace_hosts_active_count :=
         + workspace_hosts_launching_count
@@ -87,21 +68,35 @@ BEGIN
         + workspace_hosts_unhealthy_count
         + workspace_hosts_terminating_count;
 
-    -- Longest running workspace host in various states
-    SELECT
-        COALESCE(max(DATE_PART('epoch', now() - state_changed_at)) FILTER (WHERE wh.state = 'launching'), 0),
-        COALESCE(max(DATE_PART('epoch', now() - state_changed_at)) FILTER (WHERE wh.state = 'ready'), 0),
-        COALESCE(max(DATE_PART('epoch', now() - state_changed_at)) FILTER (WHERE wh.state = 'draining'), 0),
-        COALESCE(max(DATE_PART('epoch', now() - state_changed_at)) FILTER (WHERE wh.state = 'unhealthy'), 0),
-        COALESCE(max(DATE_PART('epoch', now() - state_changed_at)) FILTER (WHERE wh.state = 'terminating'), 0)
-    INTO
-        workspace_hosts_longest_launching_sec,
-        workspace_hosts_longest_ready_sec,
-        workspace_hosts_longest_draining_sec,
-        workspace_hosts_longest_unhealthy_sec,
-        workspace_hosts_longest_terminating_sec
-    FROM
-        workspace_hosts AS wh;
+    -- Longest running workspace host in launching state.
+    SELECT COALESCE(max(DATE_PART('epoch', now() - state_changed_at)), 0)
+    INTO workspace_hosts_longest_launching_sec
+    FROM workspace_hosts AS wh
+    WHERE wh.state = 'launching';
+
+    -- Longest running workspace host in ready state.
+    SELECT COALESCE(max(DATE_PART('epoch', now() - state_changed_at)), 0)
+    INTO workspace_hosts_longest_ready_sec
+    FROM workspace_hosts AS wh
+    WHERE wh.state = 'ready';
+
+    -- Longest running workspace host in draining state.
+    SELECT COALESCE(max(DATE_PART('epoch', now() - state_changed_at)), 0)
+    INTO workspace_hosts_longest_draining_sec
+    FROM workspace_hosts AS wh
+    WHERE wh.state = 'draining';
+
+    -- Longest running workspace host in unhealthy state.
+    SELECT COALESCE(max(DATE_PART('epoch', now() - state_changed_at)), 0)
+    INTO workspace_hosts_longest_unhealthy_sec
+    FROM workspace_hosts AS wh
+    WHERE wh.state = 'unhealthy';
+
+    -- Longest running workspace host in terminating state.
+    SELECT COALESCE(max(DATE_PART('epoch', now() - state_changed_at)), 0)
+    INTO workspace_hosts_longest_terminating_sec
+    FROM workspace_hosts AS wh
+    WHERE wh.state = 'terminating';
 
     -- Compute desired number of workspace hosts
     workspace_jobs_capacity_desired := workspace_active_count * workspace_capacity_factor;
@@ -120,7 +115,6 @@ BEGIN
         ('workspace_hosts_draining_count', workspace_hosts_draining_count),
         ('workspace_hosts_unhealthy_count', workspace_hosts_unhealthy_count),
         ('workspace_hosts_terminating_count', workspace_hosts_terminating_count),
-        ('workspace_hosts_terminated_count', workspace_hosts_terminated_count),
         ('workspace_hosts_active_count', workspace_hosts_active_count),
         ('workspace_hosts_longest_launching_sec', workspace_hosts_longest_launching_sec),
         ('workspace_hosts_longest_ready_sec', workspace_hosts_longest_ready_sec),
@@ -128,7 +122,6 @@ BEGIN
         ('workspace_hosts_longest_unhealthy_sec', workspace_hosts_longest_unhealthy_sec),
         ('workspace_hosts_longest_terminating_sec', workspace_hosts_longest_terminating_sec),
         ('workspace_uninitialized_count', workspace_uninitialized_count),
-        ('workspace_stopped_count', workspace_stopped_count),
         ('workspace_launching_count', workspace_launching_count),
         ('workspace_relaunching_count', workspace_relaunching_count),
         ('workspace_running_count', workspace_running_count),
