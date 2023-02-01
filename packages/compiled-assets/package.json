@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@prairielearn/html": "^2.1.1",
-    "commander": "^9.5.0",
+    "commander": "^10.0.0",
     "esbuild": "^0.16.17",
     "express": "^4.18.2",
     "express-static-gzip": "^2.1.7",
