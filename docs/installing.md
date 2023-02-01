@@ -66,7 +66,7 @@ Make sure to also upgrade the Docker version periodically. Updates in the produc
 docker pull prairielearn/prairielearn:us-prod-live
 ```
 
-Additional tags are available for older versions. The list of available versions is viewable on the [hub.docker build page](https://hub.docker.com/r/prairielearn/prairielearn/builds/).
+Additional tags are available for older versions. The list of available versions is viewable on the [Docker Hub build page](https://hub.docker.com/r/prairielearn/prairielearn/builds/).
 
 ## Running PrairieLearn from a WSL2 instance
 
