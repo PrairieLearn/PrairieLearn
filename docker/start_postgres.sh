@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Set a default for PGDATA if it's not already set
 export PGDATA=${PGDATA:=/var/postgres}
 
 if [[ -z "$1" ]]; then
@@ -16,9 +15,14 @@ if [[ "$ACTION" == "start" ]]; then
     fi
 fi
 
-# meet postgresql requirement that the folder must be owned by user postgres
+INIT_RESOLVE=0
+# Bootstrap the PGDATA folder
 if [[ "$ACTION" == "init" ]]; then
+    mkdir -p $PGDATA
     chown -f postgres:postgres $PGDATA
+    su postgres -c "initdb"
+    INIT_RESOLVE=1
+    ACTION=start
 fi
 
 # Only locally start postgres if we weren't given a PG_HOST environment variable
@@ -29,4 +33,8 @@ fi
 if [[ "$ACTION" == "start" ]]; then
     # wait for postgres to start (local or PG_HOST)
     until pg_isready -q ; do sleep 1 ; done
+fi
+
+if [[ "$INIT_RESOLVE" ]]; then
+    su postgres -c "createuser -s root"
 fi
