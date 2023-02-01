@@ -16,7 +16,7 @@ COPY packages/ /PrairieLearn/packages/
 COPY .yarn/ /PrairieLearn/.yarn/
 COPY package.json yarn.lock .yarnrc.yml /PrairieLearn/
 RUN cd /PrairieLearn \
-    && yarn install --frozen-lockfile \
+    && yarn install --immutable \
     && yarn cache clean
 
 # NOTE: Modify .dockerignore to allowlist files/directories to copy.

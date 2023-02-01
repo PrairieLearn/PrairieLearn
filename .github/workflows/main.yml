@@ -85,8 +85,14 @@ jobs:
       # spinning until it eventually times out. This shorter timeout helps
       # ensure that the tests fail more quickly so that people can fix them.
       timeout-minutes: 30
-    - name: Install dependencies on host
-      run: yarn install --frozen-lockfile
+
+    - name: Set up Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+        cache: 'yarn'
+    - name: Install dependencies
+      run: yarn install --immutable
     - name: Build executor image
       run: ./tools/executor/build.js
 

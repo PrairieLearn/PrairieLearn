@@ -286,7 +286,10 @@ const FILE_UUID_REGEX =
  * @property {string} id
  * @property {boolean} forceMaxPoints
  * @property {number} triesPerVariant
+ * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
+ * @property {string[]} canView
+ * @property {string[]} canSubmit
  */
 
 /**
@@ -624,8 +627,7 @@ module.exports.loadInfoFile = async function ({
     }
 
     // Validate file against schema
-    /** @type {import('ajv').ValidateFunction<T>} */
-    const validate = ajv.compile(schema);
+    const validate = /** @type {import('ajv').ValidateFunction<T>} */ (ajv.compile(schema));
     try {
       const valid = validate(json);
       if (!valid) {

@@ -137,12 +137,6 @@
             Download <a href="<%= urlPrefix %>/instance_admin/assessments/file/<%= csvFilename %>"><%= csvFilename %></a>
             (includes more statistics columns than displayed above)
           </p>
-          <% if (authz_data.has_course_instance_permission_view) { %>
-          <p class="mb-0">
-            Download <a href="<%= urlPrefix %>/instance_admin/assessments/file/<%= fileSubmissionsFilename %>"><%= fileSubmissionsFilename %></a>
-            (includes all files ever submitted for this course instance)
-          </p>
-          <% } %>
         </div>
 
       </div>

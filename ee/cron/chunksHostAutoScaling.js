@@ -36,7 +36,7 @@ module.exports.run = callbackify(async () => {
               MetricName: 'PageViewsPerSecond',
               Dimensions: [
                 {
-                  Name: 'ServerGroup',
+                  Name: 'Server Group',
                   Value: config.groupName,
                 },
               ],
@@ -52,6 +52,10 @@ module.exports.run = callbackify(async () => {
               Namespace: 'PrairieLearn',
               MetricName: 'CurrentJobs',
               Dimensions: [
+                {
+                  Name: 'Server Group',
+                  Value: config.groupName,
+                },
                 {
                   Name: 'Job Type',
                   Value: 'python_worker_active',
@@ -117,7 +121,7 @@ module.exports.run = callbackify(async () => {
   );
 
   /** @type {import('aws-sdk').CloudWatch.Dimensions} */
-  const dimensions = [{ Name: 'ServerGroup', Value: config.groupName }];
+  const dimensions = [{ Name: 'Server Group', Value: config.groupName }];
 
   await cloudwatch
     .putMetricData({

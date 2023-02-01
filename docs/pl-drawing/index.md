@@ -1555,7 +1555,7 @@ Custom elements for `pl-drawing` can be added with [element extensions](../eleme
 Each element is defined as a Python class, and inherits from `BaseElement`. You can import all relevant element functions and classes with the following:
 
 ```python
-elements = pl.load_host_script('elements.py')
+elements = pl.load_host_script("elements.py")
 ```
 
 This will load the `BaseElement` class, which contains the following method definitions:
@@ -1590,39 +1590,39 @@ Here is an example definition of the `pl-point` element:
 ```python
 class Point(BaseElement):
     def generate(el, data):
-        color = pl.get_color_attrib(el, 'color', 'black')
+        color = pl.get_color_attrib(el, "color", "black")
 
         return {
-            'left': pl.get_float_attrib(el, 'x1', 20),
-            'top': pl.get_float_attrib(el, 'y1', 20),
-            'radius': pl.get_float_attrib(el, 'radius', drawing_defaults['point-size']),
-            'originX': 'center',
-            'originY': 'center',
-            'fill': color,
-            'selectable': drawing_defaults['selectable'],
-            'evented': drawing_defaults['selectable']
+            "left": pl.get_float_attrib(el, "x1", 20),
+            "top": pl.get_float_attrib(el, "y1", 20),
+            "radius": pl.get_float_attrib(el, "radius", drawing_defaults["point-size"]),
+            "originX": "center",
+            "originY": "center",
+            "fill": color,
+            "selectable": drawing_defaults["selectable"],
+            "evented": drawing_defaults["selectable"]
         }
 
     def is_gradable():
         return True
 
     def grade(ref, st, tol, angtol):
-        epos = np.array([st['left'], st['top']]).astype(np.float64)
-        rpos = np.array([ref['left'], ref['top']])
+        epos = np.array([st["left"], st["top"]]).astype(np.float64)
+        rpos = np.array([ref["left"], ref["top"]])
         relx, rely = epos - rpos
-        if relx > tol or relx < -tol or rely > tol or rely < -tol:
+        if not (-tol <= relx <= tol) or not (-tol <= rely <= tol):
             return False
         return True
 
     def get_attributes():
-        return ['x1', 'y1', 'radius', 'label', 'offsetx', 'offsety', 'color']
+        return ["x1", "y1", "radius", "label", "offsetx", "offsety", "color"]
 ```
 
 Each of these classes should then be placed into a global `elements` dictionary, mapping the name of the element to its class. This `elements` dictionary will be automatically picked up by `pl-drawing` when the extension is loaded:
 
 ```python
 elements = {}
-elements['pl-point'] = Point
+elements["pl-point"] = Point
 ```
 
 ### JavaScript
