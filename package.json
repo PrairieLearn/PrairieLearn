@@ -100,7 +100,7 @@
         "passport-azure-ad": "^4.3.4",
         "passport-saml": "^3.2.4",
         "pem": "^1.14.6",
-        "pg": "^8.8.0",
+        "pg": "^8.9.0",
         "plist": "^3.0.6",
         "popper.js": "^1.16.1",
         "qrcode-svg": "^1.1.0",
