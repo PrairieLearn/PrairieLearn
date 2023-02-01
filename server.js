@@ -1237,7 +1237,7 @@ module.exports.initExpress = function () {
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id/submission/:submission_id/files',
     [
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./middlewares/selectAndAuthzInstructorQuestion'),
       require('./pages/submissionFiles/submissionFiles'),
     ]
   );
