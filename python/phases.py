@@ -3,6 +3,7 @@ import pathlib
 import os
 import copy
 import sys
+import time
 
 import lxml.html
 
@@ -32,10 +33,13 @@ def render(data: dict, context: dict) -> Tuple[str, Set[str]]:
     # This will track which elements have been rendered.
     rendered_elements: Set[str] = set()
 
+    total_time = 0
+
     def render_element(element: lxml.html.HtmlElement) -> Union[str, None]:
         if element.tag not in elements:
             return None
 
+        start = time.time()
         rendered_elements.add(element.tag)
 
         element_info = elements[element.tag]
@@ -54,8 +58,6 @@ def render(data: dict, context: dict) -> Tuple[str, Set[str]]:
                 0, str(pathlib.Path(context["course_path"]) / "serverFilesCourse")
             )
         sys.path.insert(0, str(element_path))
-
-        print(sys.path)
 
         mod = {}
         with open(element_controller_path, encoding="utf-8") as inf:
@@ -90,8 +92,16 @@ def render(data: dict, context: dict) -> Tuple[str, Set[str]]:
 
         del data["extensions"]
 
+        end = time.time()
+        delta = end - start
+        nonlocal total_time
+        total_time += delta
+        print(f"Rendered {element.tag} in {delta * 1000}ms")
+
         return element_rendered_html
 
     rendered_html = traverse_and_replace(html, render_element)
+
+    print(f"Total render time: {total_time * 1000}ms")
 
     return rendered_html, rendered_elements

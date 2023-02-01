@@ -16,8 +16,14 @@ def traverse_and_execute(
 def traverse_and_execute_impl(
     element: lxml.html.HtmlElement, fn: Callable[[lxml.html.HtmlElement], None]
 ) -> None:
-    fn(element)
-    for child in element:
+    new_element = fn(element)
+    has_new_element = (
+        new_element is not None
+        and new_element is not element
+        and (len(new_element) > 0 and new_element[0] is not element)
+    )
+    traverse_element = new_element if has_new_element else element
+    for child in traverse_element:
         traverse_and_execute_impl(child, fn)
 
 
@@ -37,6 +43,7 @@ def traverse_and_replace(
             parent.remove(element)
             for index, element in enumerate(new_element):
                 parent.insert(self_index + index, element)
+            return new_element
 
     elements = traverse_and_execute(html, handle_element)
 

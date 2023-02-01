@@ -31,12 +31,42 @@ def test_traverse_and_replace_identity():
 
 
 def test_traverse_and_replace_fragment():
-    html = traverse_and_replace("<p>Hello</p>", lambda e: "<p>Goodbye</p>")
-    assert html == "<p>Goodbye</p>"
+    def replace(e):
+        if e.tag == "p":
+            return "<strong>Goodbye</strong>"
+        return e
+
+    html = traverse_and_replace("<p>Hello</p>", replace)
+    assert html == "<strong>Goodbye</strong>"
 
 
 def test_traverse_and_replace_fragments():
-    html = traverse_and_replace(
-        "<p>Hello</p>", lambda e: "<p>Goodbye</p><p>Goodbye</p>"
-    )
-    assert html == "<p>Goodbye</p><p>Goodbye</p>"
+    def replace(e):
+        if e.tag == "p":
+            return "<strong>Goodbye</strong><strong>Goodbye</strong>"
+        return e
+
+    html = traverse_and_replace("<p>Hello</p>", replace)
+    assert html == "<strong>Goodbye</strong><strong>Goodbye</strong>"
+
+
+def traverse_and_replace_nested():
+    def replace(e):
+        if e.tag == "strong":
+            return "<em>Goodbye</em>"
+        return e
+
+    html = traverse_and_replace("<p><strong>Hello</strong></p>", replace)
+    assert html == "<p><em>Goodbye</em></p>"
+
+
+def test_traverse_and_replace_recursive():
+    def replace(e):
+        if e.tag == "p":
+            return "<strong>Goodbye</strong>"
+        elif e.tag == "strong":
+            return "<em>Goodbye</em>"
+        return e
+
+    html = traverse_and_replace("<p>Hello</p>", replace)
+    assert html == "<em>Goodbye</em>"

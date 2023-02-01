@@ -22,6 +22,7 @@ import os
 import signal
 import sys
 from inspect import signature
+import time
 
 saved_path = copy.copy(sys.path)
 
@@ -155,7 +156,10 @@ def worker_loop():
                 data = args[0]
                 context = args[1]
 
+                start = time.time()
                 rendered_html, rendered_elements = phases.render(data, context)
+                end = time.time()
+                print(f"rendered in {(end - start) * 1000}ms")
                 val = {
                     "html": rendered_html,
                     "rendered_elements": list(rendered_elements),
