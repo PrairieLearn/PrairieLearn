@@ -1,5 +1,3 @@
-// @ts-expect-error - no types
-import ERR from 'async-stacktrace';
 import _ from 'lodash';
 import pg, { QueryResult } from 'pg';
 import path from 'node:path';
@@ -8,11 +6,6 @@ import { callbackify } from 'node:util';
 import { AsyncLocalStorage } from 'node:async_hooks';
 
 type Params = Record<string, any> | any[];
-type BeginTransactionCallback = (
-  err: any | undefined | null,
-  client: pg.PoolClient,
-  done: (release?: any) => void
-) => void;
 
 const debug = debugFactory('prairielib:' + path.basename(__filename, '.js'));
 const SEARCH_SCHEMA = Symbol('SEARCH_SCHEMA');
@@ -403,18 +396,6 @@ export class PostgresPool {
   }
 
   /**
-   * Begins a new transaction.
-   *
-   * TODO: remove this function? It appears to be unused.
-   */
-  beginTransaction(callback: BeginTransactionCallback) {
-    this.beginTransactionAsync()
-      .then((client) => callback(null, client, client.release))
-      // @ts-expect-error It's hard to properly express error-first callbacks in TypeScript
-      .catch((err) => callback(err));
-  }
-
-  /**
    * Commits the transaction if err is null, otherwise rollbacks the transaction.
    * Also releases the client.
    */
@@ -479,32 +460,6 @@ export class PostgresPool {
     // because we don't want an error thrown by it to trigger *another* call
     // to `endTransactionAsync` in the `catch` block.
     await this.endTransactionAsync(client, null);
-  }
-
-  /**
-   * Like `runInTransactionAsync`, but with callbacks.
-   */
-  runInTransaction(
-    fn: (client: pg.PoolClient, done: (release?: any) => void) => void,
-    callback: (err?: Error | null) => void
-  ) {
-    const alreadyInTransaction = this.alsClient.getStore() !== undefined;
-    this.beginTransaction((err, client, done) => {
-      if (ERR(err, callback)) return;
-
-      this.alsClient.run(client, () => {
-        fn(client, (err) => {
-          if (alreadyInTransaction) {
-            this.endTransaction(client, done, err, callback);
-          } else {
-            // If this wasn't invoked inside an existing transaction, "exit"
-            // from the current execution context so that any code downstream
-            // of the callback isn't executed with this client.
-            this.alsClient.exit(() => this.endTransaction(client, done, err, callback));
-          }
-        });
-      });
-    });
   }
 
   /**
@@ -804,11 +759,9 @@ export const queryWithClientZeroOrOneRowAsync =
 export const rollbackWithClientAsync = defaultPool.rollbackWithClientAsync.bind(defaultPool);
 export const rollbackWithClient = defaultPool.rollbackWithClient.bind(defaultPool);
 export const beginTransactionAsync = defaultPool.beginTransactionAsync.bind(defaultPool);
-export const beginTransaction = defaultPool.beginTransaction.bind(defaultPool);
 export const endTransactionAsync = defaultPool.endTransactionAsync.bind(defaultPool);
 export const endTransaction = defaultPool.endTransaction.bind(defaultPool);
 export const runInTransactionAsync = defaultPool.runInTransactionAsync.bind(defaultPool);
-export const runInTransaction = defaultPool.runInTransaction.bind(defaultPool);
 export const query = defaultPool.query.bind(defaultPool);
 export const queryAsync = defaultPool.queryAsync.bind(defaultPool);
 export const queryOneRow = defaultPool.queryOneRow.bind(defaultPool);

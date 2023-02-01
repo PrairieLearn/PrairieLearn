@@ -62,6 +62,6 @@ RETURNING
 -- BLOCK update_workspace_homedir_location
 UPDATE workspaces AS W
 SET
-    homedir_Location = $homedir_location
+    homedir_location = $homedir_location
 WHERE
     w.id = $workspace_id;
