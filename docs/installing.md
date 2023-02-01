@@ -57,14 +57,10 @@ After this, run PrairieLearn using the same commands as above.
 The commands above will always run the very latest version of PrairieLearn, which might be an unreleased development version. If you would like to run the version that is currently deployed (or a specific older version), use a tag associated to the environment your course is running with. For PrairieLearn's main servers, the tags `us-prod-live` and `ca-live` match the deployed versions in the US and Canadian servers, respectively.
 
 ```sh
-docker run -it --rm -p 3000:3000 [other args] prairielearn/prairielearn:us-prod-live
+docker run -it --rm -p 3000:3000 --pull=always [other args] prairielearn/prairielearn:us-prod-live
 ```
 
-Make sure to also upgrade the Docker version periodically. Updates in the production servers are announced in the [PrairieLearn GitHub Discussions page](https://github.com/PrairieLearn/PrairieLearn/discussions/categories/announcements). When an announcement is made, you are encouraged to run:
-
-```sh
-docker pull prairielearn/prairielearn:us-prod-live
-```
+Note that the command above uses the `--pull=always` option, which will update the local version of the image every time the docker command is restarted. If you keep a long-running container locally, make sure to restart the container when updates in the production servers are announced in the [PrairieLearn GitHub Discussions page](https://github.com/PrairieLearn/PrairieLearn/discussions/categories/announcements).
 
 Additional tags are available for older versions. The list of available versions is viewable on the [Docker Hub build page](https://hub.docker.com/r/prairielearn/prairielearn/builds/).
 
