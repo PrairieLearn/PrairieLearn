@@ -33,5 +33,5 @@ pytest-lazy-fixture==0.6.3
 types-pytest-lazy-fixture==0.6.3.2
 typing-extensions==4.4.0
 psutil==5.9.4
-isort==5.11.4
+isort==5.12.0
 black==22.12.0
