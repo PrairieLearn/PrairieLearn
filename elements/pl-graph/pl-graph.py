@@ -23,7 +23,6 @@ DIRECTED_DEFAULT = True
 def graphviz_from_networkx(
     element: lxml.html.HtmlElement, data: pl.QuestionData
 ) -> str:
-
     engine = pl.get_string_attrib(element, "engine", ENGINE_DEFAULT)
     input_param_name = pl.get_string_attrib(element, "params-name")
 

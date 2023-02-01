@@ -284,10 +284,10 @@ function initDocker(info, callback) {
             stream,
             (err) => {
               if (err) {
-                globalLogger.error('Error pulling "${image}" image:', err);
+                globalLogger.error(`Error pulling "${image}" image:`, err);
                 reject(err);
               } else {
-                globalLogger.info('Successfully pulled "${image}" image');
+                globalLogger.info(`Successfully pulled "${image}" image`);
                 resolve();
               }
             },
@@ -396,18 +396,22 @@ function runJob(info, callback) {
   } = info;
 
   let results = {};
-  let jobTimeout = timeout || 30;
-  let globalJobTimeout = jobTimeout * 2;
+  let runTimeout = timeout || config.defaultTimeout;
+  // Even if instructors specify a really short timeout for the execution of
+  // the grading job, there's a certain amount of overhead associated with
+  // running the job (pulling an image, uploading results, etc.). We add a
+  // fixed amount of time to the instructor-specified timeout to account for
+  // this.
+  let jobTimeout = config.timeoutOverhead + runTimeout;
   let jobEnableNetworking = enableNetworking || false;
   let jobEnvironment = environment || {};
 
   let jobFailed = false;
-  let globalJobTimeoutCleared = false;
-  const globalJobTimeoutId = setTimeout(() => {
+  let jobTimeoutId = setTimeout(() => {
     jobFailed = true;
     healthCheck.flagUnhealthy('Job timeout exceeded; Docker presumed dead.');
-    return callback(new Error(`Job timeout of ${globalJobTimeout}s exceeded.`));
-  }, globalJobTimeout * 1000);
+    return callback(new Error(`Job timeout of ${jobTimeout}s exceeded.`));
+  }, jobTimeout * 1000);
 
   logger.info('Launching Docker container to run grading job');
 
@@ -486,7 +490,7 @@ function runJob(info, callback) {
           container.kill().catch((err) => {
             globalLogger.error('Error killing container', err);
           });
-        }, jobTimeout * 1000);
+        }, runTimeout * 1000);
 
         logger.info('Waiting for container to complete');
         try {
@@ -529,9 +533,9 @@ function runJob(info, callback) {
         );
       },
       (callback) => {
-        // We made it throught the Docker danger zone!
-        clearTimeout(globalJobTimeoutId);
-        globalJobTimeoutCleared = true;
+        // We made it through the Docker danger zone!
+        clearTimeout(jobTimeoutId);
+        jobTimeoutId = null;
         logger.info('Reading course results');
         // Now that the job has completed, let's extract the results
         // First up: results.json
@@ -580,11 +584,11 @@ function runJob(info, callback) {
       // It's possible that we get here with an error prior to the global job timeout exceeding.
       // If that happens, Docker is still alive, but it just errored. We'll cancel
       // the timeout here if needed.
-      if (!globalJobTimeoutCleared) {
-        clearTimeout(globalJobTimeoutId);
+      if (jobTimeoutId != null) {
+        clearTimeout(jobTimeoutId);
       }
 
-      // If we somehow eventually get here after exceeding the global tieout,
+      // If we somehow eventually get here after exceeding the global timeout,
       // we should avoid calling the callback again
       if (jobFailed) {
         return;
