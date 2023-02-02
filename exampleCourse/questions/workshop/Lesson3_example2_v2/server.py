@@ -4,7 +4,6 @@ import prairielearn as pl
 
 
 def generate(data):
-
     df = pd.read_csv("clientFilesQuestion/properties.csv")
     selected_columns = [
         "Designation",

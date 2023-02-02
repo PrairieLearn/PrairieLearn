@@ -11,7 +11,6 @@ def parse(data):
 
 
 def grade(data):
-
     x = data["submitted_answers"]["x"]
     y = data["submitted_answers"]["y"]
     z = data["submitted_answers"]["z"]

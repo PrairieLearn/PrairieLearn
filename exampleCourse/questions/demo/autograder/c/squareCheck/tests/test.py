@@ -5,7 +5,6 @@ import cgrader
 
 class DemoGrader(cgrader.CGrader):
     def tests(self):
-
         self.test_compile_file(
             "square.c",
             "main",

@@ -14,7 +14,6 @@ import sympy
 
 
 def generate(data):
-
     # Generate a random value
     x = random.uniform(1, 2)
 

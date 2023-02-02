@@ -5,7 +5,6 @@ import prairielearn as pl
 
 
 def generate(data):
-
     mu_o = random.choice([19.7, 19.8, 19.9, 20, 20.1, 20.2])
     std_gen = random.choice([1.3, 1.4, 1.5])
     sample_size = random.randint(8, 11)

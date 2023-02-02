@@ -5,7 +5,6 @@ import prairielearn as pl
 
 
 def generate(data):
-
     # Generates number of events.
     x_events = random.randint(4, 7)
 

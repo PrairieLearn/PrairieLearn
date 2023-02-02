@@ -210,7 +210,7 @@ def prepare(element_html, data):
     # Build the options to display to the student.
     chosen_option_names = []
     display_options = []
-    for (i, opt) in enumerate(options):
+    for i, opt in enumerate(options):
         keyed_option = {"key": opt["name"], "html": opt["html"]}
         display_options.append(keyed_option)
         chosen_option_names.append(opt["name"])
@@ -218,7 +218,7 @@ def prepare(element_html, data):
     # Build the statements to display to the student.
     display_statements = []
     correct_matches = []
-    for (i, statement) in enumerate(statements):
+    for i, statement in enumerate(statements):
         # Check if the matched option was removed from the display_options to make room for
         # none-of-the-above option.
         if nota and statement["match"] not in chosen_option_names:
