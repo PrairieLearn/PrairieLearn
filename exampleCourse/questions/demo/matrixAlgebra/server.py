@@ -3,7 +3,6 @@ import prairielearn as pl
 
 
 def generate(data):
-
     # Dimensions
     nInnerMin = 2
     nMax = 5

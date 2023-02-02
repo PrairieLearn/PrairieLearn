@@ -2,7 +2,6 @@ import numpy as np
 
 
 def generate(data):
-
     data["params"]["type"] = np.random.choice(["odd", "even"])
 
     a = np.random.choice([3, 5, 7])

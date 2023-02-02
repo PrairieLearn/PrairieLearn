@@ -2,7 +2,6 @@ import random
 
 
 def generate(data):
-
     a = random.randint(2, 4)
     stringname = "love"
 

@@ -2,7 +2,6 @@ import random
 
 
 def generate(data):
-
     # The title parameter won't change from variant to variant
     data["params"]["title"] = "PrairieDraw Figure"
 

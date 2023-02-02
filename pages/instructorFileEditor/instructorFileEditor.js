@@ -26,7 +26,7 @@ const modelist = require('ace-code/src/ext/modelist');
 const { decodePath } = require('../../lib/uri-util');
 const chunks = require('../../lib/chunks');
 const { idsEqual } = require('../../lib/id');
-const { getPaths } = require('../../lib/instructorFiles');
+const { contains, getPaths } = require('../../lib/instructorFiles');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -87,7 +87,7 @@ router.get('/*', (req, res, next) => {
   debug(
     `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`
   );
-  if (relPath.split(path.sep)[0] === '..' || path.isAbsolute(relPath)) {
+  if (!contains(fileEdit.coursePath, fullPath)) {
     return next(
       error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
         locals: res.locals,
@@ -252,7 +252,7 @@ router.post('/*', (req, res, next) => {
   debug(
     `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`
   );
-  if (relPath.split(path.sep)[0] === '..' || path.isAbsolute(relPath)) {
+  if (!contains(fileEdit.coursePath, fullPath)) {
     return next(
       error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
         locals: res.locals,

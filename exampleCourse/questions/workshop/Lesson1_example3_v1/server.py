@@ -2,7 +2,6 @@ import random
 
 
 def generate(data):
-
     Vt = random.randint(100, 200)
     data["params"]["Vt"] = Vt
 

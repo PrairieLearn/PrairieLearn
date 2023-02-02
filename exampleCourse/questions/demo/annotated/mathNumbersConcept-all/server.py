@@ -4,7 +4,6 @@ import numpy as np
 
 
 def generate(data):
-
     concept = random.choice(["prime", "even", "odd"])
     data["params"]["concept"] = concept
 
