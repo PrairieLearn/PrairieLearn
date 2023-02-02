@@ -3157,6 +3157,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/bootstrap@npm:^4.3.1":
+  version: 4.6.2
+  resolution: "@types/bootstrap@npm:4.6.2"
+  dependencies:
+    "@types/jquery": "*"
+    popper.js: ^1.14.1
+  checksum: d1a3d075622398f8ea9f08048d341500fd1592bd68829093c8a9ea795e3986f13fed7c3c09854a6263da5fa8310684e5af71dd994f279174298d28ec3c8ab828
+  languageName: node
+  linkType: hard
+
 "@types/chai-as-promised@npm:^7.1.5":
   version: 7.1.5
   resolution: "@types/chai-as-promised@npm:7.1.5"
@@ -3359,6 +3369,15 @@ __metadata:
     expect: ^29.0.0
     pretty-format: ^29.0.0
   checksum: 23760282362a252e6690314584d83a47512d4cd61663e957ed3398ecf98195fe931c45606ee2f9def12f8ed7d8aa102d492ec42d26facdaf8b78094a31e6568e
+  languageName: node
+  linkType: hard
+
+"@types/jquery@npm:*, @types/jquery@npm:^3.5.16":
+  version: 3.5.16
+  resolution: "@types/jquery@npm:3.5.16"
+  dependencies:
+    "@types/sizzle": "*"
+  checksum: 13c995f15d1c2f1d322103dc1cb0a22b95eecc3e7546f00279b8731aea21d7ec04550af40e609ee48e755d4e11bf61c25b4aa9f53df3bcbec4b8fe8e81471732
   languageName: node
   linkType: hard
 
@@ -3599,6 +3618,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/sizzle@npm:*":
+  version: 2.3.3
+  resolution: "@types/sizzle@npm:2.3.3"
+  checksum: 586a9fb1f6ff3e325e0f2cc1596a460615f0bc8a28f6e276ac9b509401039dd242fa8b34496d3a30c52f5b495873922d09a9e76c50c2ab2bcc70ba3fb9c4e160
+  languageName: node
+  linkType: hard
+
 "@types/ssh2@npm:*":
   version: 1.11.6
   resolution: "@types/ssh2@npm:1.11.6"
@@ -3674,6 +3700,7 @@ __metadata:
     "@prairielearn/sentry": ^1.0.0
     "@types/async": ^3.2.16
     "@types/body-parser": ^1.19.2
+    "@types/bootstrap": ^4.3.1
     "@types/chai": ^4.3.4
     "@types/chai-as-promised": ^7.1.5
     "@types/cheerio": ^0.22.31
@@ -3682,6 +3709,7 @@ __metadata:
     "@types/folder-hash": ^4.0.2
     "@types/fs-extra": ^11.0.1
     "@types/jest": ^29.4.0
+    "@types/jquery": ^3.5.16
     "@types/lodash": ^4.14.191
     "@types/loopbench": ^1.2.1
     "@types/mocha": ^10.0.1
@@ -12159,7 +12187,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"popper.js@npm:^1.16.1":
+"popper.js@npm:^1.14.1, popper.js@npm:^1.16.1":
   version: 1.16.1
   resolution: "popper.js@npm:1.16.1"
   checksum: c56ae5001ec50a77ee297a8061a0221d99d25c7348d2e6bcd3e45a0d0f32a1fd81bca29d46cb0d4bdf13efb77685bd6a0ce93f9eb3c608311a461f945fffedbe
