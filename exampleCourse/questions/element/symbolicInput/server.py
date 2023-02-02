@@ -14,3 +14,6 @@ def generate(data):
     data["correct_answers"]["dx"] = "x"
     x = sympy.var("x")
     data["correct_answers"]["simplify"] = pl.to_json(x**2 + x + 1)
+
+    B = sympy.symbols('B', positive = True)
+    data["correct_answers"]["assumptions"] = pl.to_json(sympy.sqrt(B ** 2))

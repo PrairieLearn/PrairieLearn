@@ -262,12 +262,19 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
         return
 
+    # TODO make this assumption retrieval code cleaner
+    assumptions_dict = None
+    a_tru = data["correct_answers"].get(name, {})
+    if isinstance(a_tru, dict):
+        assumptions_dict = a_tru.get("_assumptions")
+
     a_sub_parsed = phs.convert_string_to_sympy(
         a_proccessed,
         variables,
         allow_hidden=True,
         allow_complex=allow_complex,
         allow_trig_functions=True,
+        assumptions=assumptions_dict,
     )
 
     # Make sure we can parse the json again
@@ -316,8 +323,13 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         # Parse submitted answer
         if isinstance(a_sub, str):
             # this is for backward-compatibility
+            # TODO maybe get assumptions from somewhere else as well?
             a_sub_sympy = phs.convert_string_to_sympy(
-                a_sub, variables, allow_complex=allow_complex, allow_trig_functions=True
+                a_sub,
+                variables,
+                allow_complex=allow_complex,
+                allow_trig_functions=True,
+                assumptions=a_tru_sympy.assumptions0,
             )
         else:
             a_sub_sympy = phs.json_to_sympy(

@@ -85,3 +85,21 @@
             placeholder="symbolic expression (blank is allowed)"></pl-symbolic-input>
     </div>
 </div>
+
+<div class="card my-2">
+    <div class="card-header">
+        An example where we use assumptions.
+    </div>
+    <div class="card-body">
+        <pl-question-panel>
+            <p>Sometimes, certain expressions can only be treated as equivalent by sympy if additional assumptions are
+                made. For example, consider that $\sqrt{B^2} = B$ is only true if $B \geq 0$. To use these,
+                assumptions must be set in the <code>server.py</code> file when variables are declared.
+            </p>
+            <p>
+                Submit an expression equivalent to $\sqrt{B^2}$ when assuming $B > 0$.
+            </p>
+        </pl-question-panel>
+        <pl-symbolic-input answers-name="assumptions" variables="B"></pl-symbolic-input>
+    </div>
+</div>

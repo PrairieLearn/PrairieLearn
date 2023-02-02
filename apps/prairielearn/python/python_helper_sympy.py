@@ -338,7 +338,7 @@ def convert_string_to_sympy(
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    assumptions: Optional[Dict[str, Dict[str, Any]]] = None,
+    assumptions: Optional[AssumptionsDictT] = None,
 ) -> sympy.Expr:
     const = _Constants()
 
