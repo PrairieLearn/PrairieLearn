@@ -4,7 +4,6 @@ from pl_unit_test import PLTestCase
 
 
 class Test(PLTestCase):
-
     student_code_file = "Markov-Chains-3.ipynb"
 
     @points(1)

@@ -14,7 +14,6 @@ def func(x, a, b, c):
 
 
 def generate(data):
-
     # generating the coefficients for the function
     a = random.choice([-1, 0, 1])
     b = random.choice([-1, 1])
@@ -47,9 +46,7 @@ def generate(data):
 
 
 def file(data):
-
     if data["filename"] == "figure.png":
-
         # Generate data points for the plot
         xp = np.linspace(-6, 6, num=60)
         a = data["params"]["a"]

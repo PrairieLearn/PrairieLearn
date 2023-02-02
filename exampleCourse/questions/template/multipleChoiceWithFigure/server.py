@@ -2,7 +2,6 @@ import random
 
 
 def generate(data):
-
     # Create a list with the file name of UIUC figures
     UIUCfigures = [
         "fig1.jpeg",

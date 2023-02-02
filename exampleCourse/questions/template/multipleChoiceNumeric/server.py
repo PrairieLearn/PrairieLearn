@@ -2,7 +2,6 @@ import random
 
 
 def generate(data):
-
     # Sample a random decimal number in the tenths place between 1.1 and 5
     a = round(random.uniform(1.1, 5), 1)
 

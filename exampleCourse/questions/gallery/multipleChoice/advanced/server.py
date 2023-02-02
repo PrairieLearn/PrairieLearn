@@ -27,7 +27,6 @@ def generate(data):
     if random.choice(
         [0, 1]
     ):  # This variant provides the distance and asks for the time
-
         # horizontal distance (m)
         d = random.randint(4, 16)
         # time in the air (s)
@@ -52,7 +51,6 @@ def generate(data):
         data["params"]["t_x4"] = "$t = " + str(round(h / v0y, 3)) + "\\rm\\ s$"
 
     else:  # This variant provides the time and asks for the distance
-
         # time in the air (s)
         t = round(random.uniform(0.5, 0.8), 2)
         # horizontal distance (m)
