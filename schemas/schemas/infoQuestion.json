@@ -228,7 +228,7 @@
             "description": "Options for workspace questions.",
             "type": "object",
             "additionalProperties": {
-                "type": "object",
+                "type": ["object", "array"],
                 "properties": {
                     "syncIgnore": {
                         "description": "(deprecated) The list of files or directories that will be excluded from sync.",
