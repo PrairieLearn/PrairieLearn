@@ -9,5 +9,6 @@
 /workspaces/
 /site/
 
-# Transpiled code
-packages/*/dist/
+# Transpiled JavaScript code
+/packages/*/dist/
+/public/build/

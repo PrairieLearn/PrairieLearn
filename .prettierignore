@@ -6,8 +6,9 @@ coverage/
 # Code coverage reports
 coverage/
 
-# Transpiled files
-packages/*/dist
+# Transpiled JavaScript code
+/packages/*/dist
+/public/build/
 
 # The `public/localscripts/calculationQuestion` directory unfortunately
 # contains a mixture of first-party and vendored third-party scripts. We want
