@@ -1,9 +1,7 @@
-import math
 import random
 
 
 def generate(data):
-
     height_canvas = 400
     data["params"]["height_canvas"] = height_canvas
     base_triangle = random.choice([120, 140, 160, 180, 200, 220])

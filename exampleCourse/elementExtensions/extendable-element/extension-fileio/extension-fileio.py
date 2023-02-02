@@ -1,5 +1,4 @@
 import html
-import os
 
 
 def render_this_extension(client_files):

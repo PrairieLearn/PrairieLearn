@@ -32,6 +32,7 @@
             "title": "Decorative Elements",
             "questions": [
                 {"id": "element/code",                     "points": 2, "maxPoints": 10},
+                {"id": "element/hiddenHints",              "points": 2, "maxPoints": 10},
                 {"id": "element/pythonVariable",           "points": 2, "maxPoints": 10},
                 {"id": "element/dataframe",                "points": 2, "maxPoints": 10},
                 {"id": "element/figure",                   "points": 2, "maxPoints": 10},

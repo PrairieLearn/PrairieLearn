@@ -1,6 +1,3 @@
-import random
-
-
 def generate(data):
     data["correct_answers"]["s"] = 100
 

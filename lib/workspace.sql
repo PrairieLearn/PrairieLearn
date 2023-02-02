@@ -19,6 +19,7 @@ FOR UPDATE;
 -- BLOCK select_workspace_data
 SELECT
     to_jsonb(w.*) AS workspace,
+    v.params AS variant_params,
     to_jsonb(q.*) AS question,
     to_jsonb(c.*) AS course
 FROM
@@ -62,6 +63,6 @@ RETURNING
 -- BLOCK update_workspace_homedir_location
 UPDATE workspaces AS W
 SET
-    homedir_Location = $homedir_location
+    homedir_location = $homedir_location
 WHERE
     w.id = $workspace_id;

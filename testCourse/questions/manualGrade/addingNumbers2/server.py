@@ -1,9 +1,7 @@
-import copy
 import random
 
 
 def generate(data):
-
     # Sample two random integers between 5 and 10 (inclusive)
     a = random.randint(5, 10)
     b = random.randint(5, 10)

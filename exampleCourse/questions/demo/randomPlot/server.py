@@ -7,7 +7,6 @@ import numpy
 
 def file(data):
     if data["filename"] == "figure.png":
-
         # Create the figure
         x = numpy.linspace(-5, 5)
         f = data["params"]["m"] * x + data["params"]["b"]

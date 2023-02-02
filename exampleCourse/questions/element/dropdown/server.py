@@ -1,9 +1,4 @@
-import copy
-import random
-
-
 def generate(data):
-
     QUESTION1 = "aristotle"
 
     data["params"][QUESTION1] = [

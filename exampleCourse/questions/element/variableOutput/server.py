@@ -1,9 +1,7 @@
-import math
 import random
 
 
 def generate(data):
-
     # Simulate values
     a = random.randint(2, 10)
     b = a + 4

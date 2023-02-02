@@ -1,5 +1,4 @@
 import io
-import math
 import random
 
 import matplotlib as ml
@@ -23,7 +22,6 @@ def df(x, a, b):
 
 
 def generate(data):
-
     # equation coefficients
     a = random.choice([9, 10, 11, 12])
     b = random.choice([10, 11, 12, 13])
@@ -86,7 +84,6 @@ def generate(data):
 
 
 def grade(data):
-
     # Custom grade of the plot. Checking the slope of the plot
     graph = data["submitted_answers"].get("lines")
     # the above line will not fail, since the element parse function will fail if no submission is added to the plot area
@@ -112,10 +109,9 @@ def grade(data):
     data["score"] = total_score / len(data["partial_scores"])
 
 
-## The function 'file(data)' is used to generate the figure dynamically,
-## given data defined in the 'generate' function
+# The function 'file(data)' is used to generate the figure dynamically,
+# given data defined in the 'generate' function
 def file(data):
-
     if data["filename"] == "figure1.png":
         # clear
         a0 = 0

@@ -1,9 +1,7 @@
-from functools import wraps
-
 import numpy as np
 from code_feedback import Feedback as feedback
-from pl_helpers import name, not_repeated, points
-from pl_unit_test import PLTestCase, PLTestCaseWithPlot
+from pl_helpers import name, points
+from pl_unit_test import PLTestCaseWithPlot
 
 
 class Test(PLTestCaseWithPlot):
@@ -29,7 +27,7 @@ class Test(PLTestCaseWithPlot):
     def test_1(self):
         points = 0
         results = feedback.call_user(self.st.array_to_scalar, self.ref.a1, self.ref.a2)
-        ## Testing if the return values are given correctly
+        # Testing if the return values are given correctly
         if results is not None:
             if hasattr(results, "__len__"):
                 if len(results) != 2:

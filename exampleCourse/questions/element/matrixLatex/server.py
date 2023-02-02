@@ -1,13 +1,9 @@
-import math
-import random
-
 import numpy as np
 import prairielearn as pl
 import scipy.linalg as sla
 
 
 def generate(data):
-
     sf = 2
 
     # Matrix shape

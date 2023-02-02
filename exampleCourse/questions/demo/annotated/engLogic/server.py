@@ -1,8 +1,4 @@
-import random
-
-
 def grade(data):
-
     # Note that these variables will not be None, because of the PL element parse function (they will be marked as invalid)
     x = data["submitted_answers"].get("x")
     y = data["submitted_answers"].get("y")

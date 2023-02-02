@@ -87,7 +87,6 @@ class CGrader:
         ungradable_if_failed=True,
         return_objects=False,
     ):
-
         cflags = flags
         if cflags and not isinstance(cflags, list):
             cflags = shlex.split(cflags)
@@ -163,7 +162,6 @@ class CGrader:
         add_warning_result_msg=True,
         ungradable_if_failed=True,
     ):
-
         if flags and not isinstance(flags, list):
             flags = shlex.split(flags)
         elif not flags:
@@ -228,7 +226,6 @@ class CGrader:
         add_warning_result_msg=True,
         ungradable_if_failed=True,
     ):
-
         if not add_c_file:
             add_c_file = []
         elif not isinstance(add_c_file, list):
@@ -291,7 +288,6 @@ class CGrader:
         msg=None,
         max_points=1,
     ):
-
         if args is not None:
             if not isinstance(args, list):
                 args = [args]
@@ -440,7 +436,6 @@ class CGrader:
         sandboxed=False,
         use_malloc_debug=False,
     ):
-
         if not args:
             args = []
         if not isinstance(args, list):
@@ -518,7 +513,6 @@ class CGrader:
             json.dump(self.result, resfile)
 
     def start(self):
-
         self.result = {
             "score": 0.0,
             "points": 0,

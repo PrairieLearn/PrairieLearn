@@ -1,14 +1,10 @@
 #! /usr/bin/python3
 
-import math
-import sys
-
 import cgrader
 
 
 class Grader(cgrader.CPPGrader):
     def tests(self):
-
         self.test_compile_file("tax.cpp", "tax")
 
         tax = (

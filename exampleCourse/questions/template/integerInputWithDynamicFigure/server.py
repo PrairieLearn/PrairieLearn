@@ -8,12 +8,11 @@ plt.rcParams.update({"font.size": 30})
 
 
 def generate(data):
-
     # p = 1: the figure is a diamond
     # p = 2: the figure is a circle
     p = random.choice([1, 2])
     data["params"]["p"] = p
-    ## define the desired dimension of the figure
+    # define the desired dimension of the figure
     d = random.choice([1, 2, 3])
     data["params"]["d"] = d
 
@@ -25,14 +24,12 @@ def generate(data):
     data["correct_answers"]["dim"] = 2 * d
 
 
-## The function 'file(data)' is used to generate the figure dynamically,
-## given data defined in the 'generate' function
+# The function 'file(data)' is used to generate the figure dynamically,
+# given data defined in the 'generate' function
 def file(data):
-
-    ## This creates a dynamic figure (either a circle or diamond)
-    ## depending on the parameters d and p defined in the 'generate' function
+    # This creates a dynamic figure (either a circle or diamond)
+    # depending on the parameters d and p defined in the 'generate' function
     if data["filename"] == "figure0.png":
-
         d = data["params"]["d"]
         p = data["params"]["p"]
 
@@ -44,7 +41,7 @@ def file(data):
         for i in range(len(x)):
             r[i] = np.linalg.norm([x[i], y[i]], p)
 
-        fig = plt.figure(figsize=(10, 10))
+        plt.figure(figsize=(10, 10))
         plt.plot(d * x / r, d * y / r, "o")
         plt.grid()
         plt.xlim([-4, 4])

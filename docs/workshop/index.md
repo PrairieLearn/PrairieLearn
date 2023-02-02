@@ -9,9 +9,9 @@ In this training course, we will provide an introduction to the following topics
 
 ## What you need to do before the workshop
 
-1. **Login to PrairieLearn** at [https://prairielearn.org](https://prairielearn.org) (in case you have never done this before).
+1. **Login to PrairieLearn** at [https://us.prairielearn.com](https://us.prairielearn.com) (in case you have never done this before).
 
-2. **Make sure you have access to a course space.** If you have not created a space for your course, you can use this [course request](https://www.prairielearn.org/pl/request_course) link. If you are a graduate teaching assistant or co-instructor, ask the main instructor to give you course access as "Editor" in the [Staff page](https://prairielearn.readthedocs.io/en/latest/course/#course-staff).
+2. **Make sure you have access to a course space.** If you have not created a space for your course, you can use this [course request](https://us.prairielearn.com/pl/request_course) link. If you are a graduate teaching assistant or co-instructor, ask the main instructor to give you course access as "Editor" in the [Staff page](https://prairielearn.readthedocs.io/en/latest/course/#course-staff).
 
 3. **Complete the ["Get Started" tutorial](https://prairielearn.readthedocs.io/en/latest/getStarted/)**, which will show you how to create course instances, assessments, and questions.
 

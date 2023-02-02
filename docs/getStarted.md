@@ -1,6 +1,6 @@
 # Create content in the browser
 
-Now that you have access to your course in [https://prairielearn.org](https://prairielearn.org), it is time to start creating course content.
+Now that you have access to your course in [https://us.prairielearn.com](https://us.prairielearn.com), it is time to start creating course content.
 
 This is a view of your course home page (or a similar variation, depending on when your course was originally created):
 
@@ -9,11 +9,8 @@ This is a view of your course home page (or a similar variation, depending on wh
 This tutorial will show you how to create:
 
 - [a course instance](#creating-a-course-instance)
-
 - [simple questions from scratch](#creating-questions-from-scratch)
-
 - [questions starting from provided examples](#creating-questions-from-the-example-course)
-
 - [assessments](#creating-a-new-assessment)
 
 ### Creating a course instance

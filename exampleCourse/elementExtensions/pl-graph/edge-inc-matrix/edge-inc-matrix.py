@@ -9,7 +9,6 @@ pl_graph = pl.load_host_script("pl-graph.py")
 def graphviz_from_inc_matrix(element, data):
     # Get attributes
 
-    engine = pl.get_string_attrib(element, "engine", pl_graph.ENGINE_DEFAULT)
     input_param = pl.get_string_attrib(
         element, "params-name", pl_graph.PARAMS_NAME_DEFAULT
     )
@@ -17,15 +16,6 @@ def graphviz_from_inc_matrix(element, data):
         element, "params-name-labels", pl_graph.PARAMS_NAME_LABELS_DEFAULT
     )
     mat = np.array(pl.from_json(data["params"][input_param]))
-    show_weights = pl.get_boolean_attrib(
-        element, "weights", pl_graph.WEIGHTS_DEFAULT
-    )  # by default display weights for stochastic matrices
-    digits = pl.get_integer_attrib(
-        element, "weights-digits", pl_graph.WEIGHTS_DIGITS_DEFAULT
-    )  # if displaying weights how many digits to round to
-    presentation_type = pl.get_string_attrib(
-        element, "weights-presentation-type", pl_graph.WEIGHTS_PRESENTATION_TYPE_DEFAULT
-    ).lower()
 
     label = None
     if input_label is not None:

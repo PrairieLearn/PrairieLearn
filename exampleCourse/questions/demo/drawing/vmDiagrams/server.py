@@ -1,9 +1,3 @@
-import math
-import random
-
-import numpy as np
-
-
 def create_dict_xy_coord(p):
     return '{"x": ' + str(p[0]) + ',"y": ' + str(p[1]) + "}"
 
@@ -19,7 +13,6 @@ def create_dict_labels(axis, loc, lab, offsetx=None, offsety=None):
 
 
 def generate(data):
-
     """
     Parameters of the question. These are usually randomized.
     """

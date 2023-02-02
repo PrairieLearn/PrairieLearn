@@ -157,7 +157,7 @@ def prepare(element_html, data):
 
     display_answers = []
     correct_answer_list = []
-    for (i, (index, correct, html, feedback)) in enumerate(sampled_answers):
+    for i, (index, correct, html, feedback) in enumerate(sampled_answers):
         keyed_answer = {"key": pl.index2key(i), "html": html, "feedback": feedback}
         display_answers.append(keyed_answer)
         if correct:
@@ -449,7 +449,6 @@ def render(element_html, data):
                 html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
-
         if not pl.get_boolean_attrib(
             element, "hide-answer-panel", HIDE_ANSWER_PANEL_DEFAULT
         ):

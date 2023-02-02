@@ -1,15 +1,10 @@
 #! /usr/bin/python3
 
-import math
-import sys
-
 import cgrader
-import sympy
 
 
 class DemoGrader(cgrader.CGrader):
     def tests(self):
-
         self.test_compile_file("square.c", "main", main_file="/grade/tests/main.c")
 
         for inval in [0, 1, 2, 3, 5, 10, -20, 100, 512, -23, -4]:

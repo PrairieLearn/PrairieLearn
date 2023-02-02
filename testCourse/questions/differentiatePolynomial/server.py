@@ -3,7 +3,6 @@ import sympy
 
 
 def generate(data):
-
     # Create a variable
     x = sympy.symbols("x")
 
