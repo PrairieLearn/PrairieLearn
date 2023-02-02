@@ -3,6 +3,7 @@ const express = require('express');
 
 const config = require('../../lib/config');
 const csrf = require('../../lib/csrf');
+const sqldb = require('../../prairielib/lib/sql-db');
 
 var router = express.Router();
 
