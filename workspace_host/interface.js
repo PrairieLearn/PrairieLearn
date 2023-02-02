@@ -715,6 +715,7 @@ function _createContainer(workspace, callback) {
         try {
           await fsPromises.access(workspaceJobPath);
         } catch (err) {
+          console.error(err);
           throw Error('Could not access workspace files.', { cause: err });
         }
       },
