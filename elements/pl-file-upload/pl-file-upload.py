@@ -53,10 +53,23 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     element = lxml.html.fragment_fromstring(element_html)
     uuid = pl.get_uuid()
+
     raw_file_names = pl.get_string_attrib(element, "file-names", "")
-    file_names = get_file_names_as_array(raw_file_names)
+    file_names = sorted(get_file_names_as_array(raw_file_names))
     file_names_json = json.dumps(file_names, allow_nan=False)
+
     answer_name = get_answer_name(raw_file_names)
+
+    # Only send the file names to the client. We don't include the contents
+    # to avoid bloating the HTML. The client will fetch any submitted files
+    # asynchronously once the page loads.
+    #
+    # We filter out any files that weren't specified in the file names for this element.
+    submitted_files = data["submitted_answers"].get("_files", [])
+    submitted_file_names = list(
+        {x.get("name") for x in submitted_files} & set(file_names)
+    )
+    submitted_file_names_json = json.dumps(submitted_file_names, allow_nan=False)
 
     html_params = {
         "name": answer_name,
@@ -64,18 +77,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "uuid": uuid,
         "editable": data["editable"],
         "submission_files_url": data["options"].get("submission_files_url", None),
+        "submitted_file_names": submitted_file_names_json,
     }
-
-    files = data["submitted_answers"].get("_files", [])
-    # Only send the file names to the client. We don't include the contents
-    # to avoid bloating the HTML. The client will fetch any submitted files
-    # asynchronously once the page loads.
-    #
-    # We filter out any files that weren't specified in the file names for this element.
-    submitted_file_names = list({x.get("name") for x in files} & set(file_names))
-    html_params["submitted_file_names"] = json.dumps(
-        submitted_file_names, allow_nan=False
-    )
 
     with open("pl-file-upload.mustache", "r", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

@@ -1,10 +1,9 @@
 import chevron
 import lxml.html
 import prairielearn as pl
-from pl_file_preview_utils import order_files
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = []
     optional_attribs = []
@@ -18,11 +17,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # Fetch any submitted files
     submitted_files = data["submitted_answers"].get("_files", [])
 
-    # We use the list of required files, if present, to determine the order
-    # in which we render them. This helps ensure consistency between this and
-    # other elements like `pl-file-upload`.
-    required_files = data["params"].get("_required_file_names", [])
-    ordered_files = order_files(submitted_files, required_files)
+    # Order alphabetically so we can display them in a consistent order
+    ordered_files = sorted(submitted_files, key=lambda x: x.get("name", None))
 
     html_params = {
         "uuid": pl.get_uuid(),
