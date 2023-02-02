@@ -949,7 +949,6 @@ async function sendGradedFilesArchive(workspace_id, res) {
   for (const file of gradedFiles) {
     try {
       const filePath = path.join(workspaceDir, file.path);
-      await fsPromises.lstat(filePath);
       archive.file(filePath, { name: file.path });
       debug(`Sending ${file.path}`);
     } catch (err) {
