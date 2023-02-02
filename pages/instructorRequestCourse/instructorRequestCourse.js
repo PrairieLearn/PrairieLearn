@@ -106,22 +106,25 @@ router.post(
     }
 
     // Otherwise, insert the course request and send a Slack message.
-    const insertRequestResult = await sqldb.callAsync('course_requests_insert', [
-      res.locals.authn_user.user_id,
+    const insertRequestResult = await sqldb.queryOneRowAsync(sql.insert_course_request, {
       short_name,
       title,
+      user_id: res.locals.authn_user.user_id,
       github_user,
       first_name,
       last_name,
       work_email,
       institution,
-    ]);
-
-    // Check if we can automatically create the course.
-    const auto_created = insertRequestResult.rows[0].auto_created;
+    });
     const creq_id = insertRequestResult.rows[0].course_request_id;
 
-    if (auto_created) {
+    // Check if we can automatically approve and create the course.
+    const canAutoCreateResult = await sqldb.queryOneRowAsync(sql.can_auto_create_course, {
+      user_id: res.locals.authn_user.user_id,
+    });
+    const canAutoCreateCourse = canAutoCreateResult.rows[0].can_auto_create_course;
+
+    if (config.courseRequestAutoApprovalEnabled && canAutoCreateCourse) {
       // Automatically fill in institution ID and display timezone from the user's other courses.
       const existingSettingsResult = await sqldb.queryOneRowAsync(
         sql.get_existing_owner_course_settings,
