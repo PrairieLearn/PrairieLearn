@@ -211,7 +211,13 @@ def generate(data):
 
 By default, `contents` is expected to be a string in UTF-8 format. To provide binary content, the value must be encoded using base64 or hex, as shown in the example above. In this case, the `encoding` property must also be provided. Only one of `questionFile` and `contents` may be provided. If neither `questionFile` nor `contents` are provided, an empty file is created.
 
-If a file name is found in both the dynamic list from `_workspace_files` and in the `workspace/` or `workspaceTemplates/` directory, the dynamic content is used. For file names found in both `workspace/` and `workspaceTemplates/`, the template version is used.
+If a file name appears in multiple locations, the following precedence takes effect:
+
+- Dynamic content from `_workspace_files` has highest precedence;
+
+- Files in the `workspaceTemplate/` directory are considered next;
+
+- Files in the `workspace/` directory are considered last.
 
 ## Running locally (on Docker)
 
