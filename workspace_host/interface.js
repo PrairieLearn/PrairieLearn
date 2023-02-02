@@ -925,6 +925,7 @@ async function sendGradedFilesArchive(workspace_id, res) {
     await fg(workspaceSettings.workspace_graded_files, {
       cwd: workspaceDir,
       stats: true,
+      ...workspaceHelper.fastGlobDefaultOptions,
     })
   ).filter((file) => contains(workspaceDir, path.join(workspaceDir, file.path)));
 
