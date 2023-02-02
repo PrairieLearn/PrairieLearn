@@ -18,6 +18,8 @@ const net = require('net');
 const asyncHandler = require('express-async-handler');
 const bodyParser = require('body-parser');
 const Sentry = require('@prairielearn/sentry');
+const fg = require('fast-glob');
+const { filesize } = require('filesize');
 
 const dockerUtil = require('../lib/dockerUtil');
 const awsHelper = require('../lib/aws');
@@ -26,6 +28,7 @@ const workspaceHelper = require('../lib/workspace');
 const logger = require('../lib/logger');
 const sprocs = require('../sprocs');
 const LocalLock = require('../lib/local-lock');
+const { contains } = require('../lib/instructorFiles');
 
 const config = require('../lib/config');
 const sqldb = require('../prairielib/lib/sql-db');
@@ -918,19 +921,39 @@ async function sendGradedFilesArchive(workspace_id, res) {
   const zipName = `${workspace.remote_name}-${timestamp}.zip`;
   const workspaceDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
 
+  const gradedFiles = (
+    await fg(workspaceSettings.workspace_graded_files, {
+      cwd: workspaceDir,
+      stats: true,
+      ...workspaceHelper.fastGlobDefaultOptions,
+    })
+  ).filter((file) => contains(workspaceDir, path.join(workspaceDir, file.path)));
+
+  if (gradedFiles.length > config.workspaceMaxGradedFilesCount) {
+    return res.status(500).send({
+      message: `Cannot submit more than ${config.workspaceMaxGradedFilesCount} files from the workspace.`,
+    });
+  }
+  if (_.sumBy(gradedFiles, (file) => file.stats.size) > config.workspaceMaxGradedFilesSize) {
+    return res.status(500).send({
+      message: `Workspace files exceed limit of ${filesize(config.workspaceMaxGradedFilesSize, {
+        base: 2,
+      })}.`,
+    });
+  }
+
   // Stream the archive back to the client as it's generated.
   res.attachment(zipName).status(200);
   const archive = archiver('zip');
   archive.pipe(res);
 
-  for (const file of workspaceSettings.workspace_graded_files) {
+  for (const file of gradedFiles) {
     try {
-      const filePath = path.join(workspaceDir, file);
-      await fsPromises.lstat(filePath);
-      archive.file(filePath, { name: file });
-      debug(`Sending ${file}`);
+      const filePath = path.join(workspaceDir, file.path);
+      archive.file(filePath, { name: file.path });
+      debug(`Sending ${file.path}`);
     } catch (err) {
-      logger.warn(`Graded file ${file} does not exist.`);
+      logger.warn(`Graded file ${file.path} does not exist.`);
       continue;
     }
   }
