@@ -257,7 +257,7 @@ describe('Group based homework assess control on student side', function () {
       var form = {
         __action: 'join_group',
         __csrf_token: locals.__csrf_token,
-        joinCode: locals.joinCode,
+        join_code: locals.joinCode,
       };
       request.post(
         { url: locals.assessmentUrl, form: form, followAllRedirects: true },
@@ -327,7 +327,7 @@ describe('Group based homework assess control on student side', function () {
       var form = {
         __action: 'join_group',
         __csrf_token: locals.__csrf_token,
-        joinCode: locals.joinCode,
+        join_code: locals.joinCode,
       };
       request.post(
         { url: locals.assessmentUrl, form: form, followAllRedirects: true },
