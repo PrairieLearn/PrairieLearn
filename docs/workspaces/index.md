@@ -156,7 +156,7 @@ A minimal `question.html` for an externally graded workspace should look somethi
 </pl-submission-panel>
 ```
 
-### Creating files in the workspace home directory
+## Creating files in the workspace home directory
 
 Workspace questions can optionally include a `workspace/` subdirectory within the regular [PrairieLearn question directory structure](../question.md#directory-structure). If this `workspace/` subdirectory exists, its contents will be copied into the home directory of the student's workspace container, as configured in the `home` setting in `info.json`.
 
