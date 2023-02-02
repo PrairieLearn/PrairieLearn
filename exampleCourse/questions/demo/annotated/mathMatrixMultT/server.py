@@ -3,7 +3,6 @@ import prairielearn as pl
 
 
 def generate(data):
-
     # Number of digits after the decimal
     nDigits = 1
     # Dimension

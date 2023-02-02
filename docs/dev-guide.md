@@ -458,48 +458,6 @@ sqldb.queryOneRow(sql.block_name, params, function (err, result) {
 });
 ```
 
-- For transactions with correct error handling use following pattern. It is important to use `async.series()` to run all the operations rather than using a callback stack, because with `async.series()` we can guarantee that `endTransaction()` is called no matter whether any of the intermediate operations produce an error.
-
-```javascript
-// do this
-sqldb.beginTransaction(function (err, client, done) {
-  if (ERR(err, callback)) return;
-  async.series(
-    [
-      function (callback) {
-        // only use queryWithClient() and queryWithClientOneRow() inside the transaction
-        sqldb.queryWithClient(client, sql.block_name, params, function (err, result) {
-          if (ERR(err, callback)) return;
-          // do things
-          callback(null);
-        });
-      },
-      // more series functions inside the transaction
-    ],
-    function (err) {
-      sqldb.endTransaction(client, done, err, function (err) {
-        // will rollback if err is defined
-        if (ERR(err, callback)) return;
-        // transaction successfully committed at this point
-        callback(null);
-      });
-    }
-  );
-});
-
-// don't do this
-sqldb.beginTransaction(function (err, client, done) {
-  if (ERR(err, callback)) return;
-  sqldb.queryWithClient(client, sql.block_name, params, function (err, result) {
-    if (ERR(err, callback)) return; // THIS IS WRONG, it may exit without endTransaction()
-    sqldb.endTransaction(client, done, err, function (err) {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
-  });
-});
-```
-
 - Use explicit row locking whenever modifying student data related to an assessment. This must be done within a transaction. The rule is that we lock either the variant (if there is no corresponding assessment instance) or the assessment instance (if we have one). It is fine to repeatedly lock the same row within a single transaction, so all functions involved in modifying elements of an assessment (e.g., adding a submission, grading, etc) should call a locking function when they start. All locking functions are equivalent in their action, so the most convenient one should be used in any given situation:
 
 | Locking function            | Argument                 |

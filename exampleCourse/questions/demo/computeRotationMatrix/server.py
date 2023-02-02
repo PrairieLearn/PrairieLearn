@@ -6,7 +6,6 @@ import prairielearn as pl
 
 
 def generate(data):
-
     a = random.choice([-4, -2, 2, 4])
     M = np.zeros((2, 2))
     M[0, 0] = math.cos(math.pi / a)

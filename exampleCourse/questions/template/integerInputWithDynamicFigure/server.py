@@ -8,7 +8,6 @@ plt.rcParams.update({"font.size": 30})
 
 
 def generate(data):
-
     # p = 1: the figure is a diamond
     # p = 2: the figure is a circle
     p = random.choice([1, 2])
@@ -28,11 +27,9 @@ def generate(data):
 # The function 'file(data)' is used to generate the figure dynamically,
 # given data defined in the 'generate' function
 def file(data):
-
     # This creates a dynamic figure (either a circle or diamond)
     # depending on the parameters d and p defined in the 'generate' function
     if data["filename"] == "figure0.png":
-
         d = data["params"]["d"]
         p = data["params"]["p"]
 
