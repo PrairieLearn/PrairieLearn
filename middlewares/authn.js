@@ -83,7 +83,7 @@ module.exports = function (req, res, next) {
   }
 
   // bypass auth for local /pl/ serving
-  // keeping for automated testing, see pages/devLoginMode for another way to dev signin
+  // keeping for automated testing, see pages/authLoginDev for another way to dev signin
   if (config.authType === 'none') {
     var authUid = config.authUid;
     var authName = config.authName;
