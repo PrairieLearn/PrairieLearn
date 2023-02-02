@@ -5,7 +5,6 @@ import string
 
 
 def generate(data):
-
     # Generate 1000 random bytes
     random_binary = os.urandom(1000)
     # Generate 1000 random printable ASCII characters, ending with a line break
