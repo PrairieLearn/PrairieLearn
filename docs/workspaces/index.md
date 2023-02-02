@@ -156,7 +156,7 @@ A minimal `question.html` for an externally graded workspace should look somethi
 
 Workspace questions can optionally include a `workspace/` subdirectory within the regular [PrairieLearn question directory structure](../question.md#directory-structure). If this `workspace/` subdirectory exists, its contents will be copied into the home directory of the student's workspace container, as configured in the `home` setting in `info.json`.
 
-Questions using workspaces can also be randomized, i.e., include files that contain random and dynamic content. This is done using [the `server.py` file in the question directory](../question.md#question-serverpy). In addition to other random parameters that can be created for the question page itself, the `_files` parameter can also be set, containing an array of files to be created. Each element of the array must include a `name` property, containing the file name (which can include a path with directories), and either a `contents` property, containing the contents of the file, or a `questionFile` property, pointing to an existing file in a different location in the question directory. For example:
+Questions using workspaces can also be randomized, i.e., include files that contain random and dynamic content. This is done using [the `server.py` file in the question directory](../question.md#question-serverpy). In addition to other random parameters that can be created for the question page itself, the `_workspace_files` parameter can also be set, containing an array of files to be created. Each element of the array must include a `name` property, containing the file name (which can include a path with directories), and either a `contents` property, containing the contents of the file, or a `questionFile` property, pointing to an existing file in a different location in the question directory. For example:
 
 ```py
 def generate(data):
@@ -166,7 +166,7 @@ def generate(data):
     # Generate 1000 random printable ASCII characters, ending with a line break
     random_text = "".join(random.choices(string.printable, k=1000)) + "\n"
 
-    data["params"]["_files"] = [
+    data["params"]["_workspace_files"] = [
         # By default, `contents` is interpreted as regular text
         {"name": "static.txt", "contents": "test file with data\n"},
         # The contents can be dynamic

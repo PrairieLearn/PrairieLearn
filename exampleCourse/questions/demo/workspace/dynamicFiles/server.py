@@ -11,7 +11,7 @@ def generate(data):
     # Generate 1000 random printable ASCII characters, ending with a line break
     random_text = "".join(random.choices(string.printable, k=1000)) + "\n"
 
-    data["params"]["_files"] = [
+    data["params"]["_workspace_files"] = [
         # By default, `contents` is interpreted as regular text
         {"name": "static.txt", "contents": "test file with data\n"},
         # The contents can be dynamic
