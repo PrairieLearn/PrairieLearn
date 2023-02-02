@@ -1,7 +1,7 @@
 ---
 title: Group work
 summary: Collaborative learning activities
-prairielearn_url: https://www.prairielearn.org/pl/course_instance/4970/assessment/2316938
+prairielearn_url: https://us.prairielearn.com/pl/course_instance/4970/assessment/2316938
 ---
 
 ## Group Activities
@@ -25,7 +25,7 @@ The simple creation of students' teams will rarely guarantee that students will 
 
 Assessments that are based on higher level skills such as _Analyze_, _Evaluate_ and _Create_ from the [Bloom's Taxonomy](https://en.wikipedia.org/wiki/Bloom's_taxonomy) produce more opportunities for students' interactions, where they can learn from each other. Low level skills which require students to remember simple concepts, or apply simple calculations will emphasize the existence of domineering leaders and free loaders. When designing group tasks, we focus on questions that produce discussions and decision-making.
 
-Another strategy to enhance collaborative learning is to provide activities that can be self-managed by the team, such that instructors act only as facilitators instead of source of information. In the course demo, we provide an example that uses JupyterLab notebooks for the [group assessment](https://www.prairielearn.org/pl/course_instance/128605/assessment/2310480). These notebooks can include text, images, and equations for content presentation, and also ask students to perform computations (in this example, using a Python 3 Kernel).
+Another strategy to enhance collaborative learning is to provide activities that can be self-managed by the team, such that instructors act only as facilitators instead of source of information. In the course demo, we provide an example that uses JupyterLab notebooks for the [group assessment](https://us.prairielearn.com/pl/course_instance/128605/assessment/2310480). These notebooks can include text, images, and equations for content presentation, and also ask students to perform computations (in this example, using a Python 3 Kernel).
 
 We can use PrairieLearn external grader to check content for correctness. This will help students self-manage their progress. Instructors can define `#grade` cells inside the JupyterLab notebook, which will be auto-graded for instant feedback (see image below).
 

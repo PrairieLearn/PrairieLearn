@@ -13,7 +13,6 @@ def f(x):
 
 
 def generate(data):
-
     points = np.random.choice([-2, 0, 4], 2, replace=False)
     b = int(max(points))
     a = int(min(points))
@@ -32,7 +31,6 @@ def generate(data):
 # The function 'file(data)' is used to generate the figure dynamically,
 # given data defined in the 'generate' function
 def file(data):
-
     if data["filename"] == "figure1.png":
         # clear
         a0 = -4

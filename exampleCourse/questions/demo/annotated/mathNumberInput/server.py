@@ -3,7 +3,6 @@ import random
 
 
 def generate(data):
-
     # Sample an integer number between 2 and 20
     a = random.randint(2, 20)
     data["params"]["a"] = a

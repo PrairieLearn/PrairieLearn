@@ -283,7 +283,7 @@ When running a workspace container locally the user/group is the default setting
 docker run -it --rm -p HOST_PORT:CLIENT_PORT --user 1001:1001 IMAGE_NAME
 ```
 
-For example, the [example JupyterLab workspace](https://www.prairielearn.org/pl/course/108/question/9045312/preview) using the [JupyterLab image](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab) uses port 8080 and so can be run successfully like this:
+For example, the [example JupyterLab workspace](https://us.prairielearn.com/pl/course/108/question/9045312/preview) using the [JupyterLab image](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab) uses port 8080 and so can be run successfully like this:
 
 ```
 docker run -it --rm -p 8080:8080 --user 1001:1001 prairielearn/workspace-jupyterlab
