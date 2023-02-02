@@ -9,7 +9,7 @@ var router = express.Router();
 
 router.get('/', (req, res, next) => {
   if (!config.devMode) {
-    return next(new Error("devMode logins are not enabled"));
+    return next(new Error('devMode logins are not enabled'));
   }
 
   var authUid = config.authUid;
