@@ -162,7 +162,7 @@ Workspace questions can optionally include a `workspace/` subdirectory within th
 
 Questions using workspaces can also be randomized, i.e., include files that contain random and dynamic content. This may be done in two ways: using mustache-based template files or using [the `server.py` file in the question directory](../question.md#question-serverpy). For template files, a workspace question can optionally include a `workspaceTemplates/` subdirectory within the regular question directory structure. The contents will be copied into the home directory of the student's workspace container, as with the `workspace/` directory. However, all files within this directory may include mustache tags (e.g., `{{params.value}}`), which will be replaced with the equivalent values set by `server.py`. For example, if `server.py` sets `data["params"]["starting_value"]` to `17`, then if the file `main.py` inside `workspaceTemplates` has the following content:
 
-```py
+```txt
 # ...
 starting_value = {{params.starting_value}}
 # ...
