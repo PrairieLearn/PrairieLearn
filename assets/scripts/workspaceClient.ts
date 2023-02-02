@@ -1,6 +1,4 @@
-import type socketIo from 'socket.io-client';
-
-declare const io: typeof socketIo;
+import { io } from 'socket.io-client';
 
 $(function () {
   $('[data-toggle="popover"]').popover({

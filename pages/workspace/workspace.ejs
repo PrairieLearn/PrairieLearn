@@ -3,7 +3,6 @@
   <head>
     <%- include('../partials/head'); %>
     <link href="<%= asset_path('stylesheets/workspace.css') %>" rel="stylesheet">
-    <script src="<%= node_modules_asset_path('socket.io-client/dist/socket.io.min.js') %>"></script>
     <%- compiled_script_tag('workspaceClient.ts') %>
   </head>
   <body class="d-flex flex-column h-100" data-workspace-id="<%= workspace_id %>" data-heartbeat-interval-sec="<%= workspaceHeartbeatIntervalSec %>">
