@@ -13,7 +13,6 @@ def convert_to_float_array(array):
 
 
 class Test(PLTestCase):
-
     student_code_file = "Markov-Chains-2.ipynb"
 
     @points(1)

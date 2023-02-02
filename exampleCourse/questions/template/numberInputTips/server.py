@@ -4,7 +4,6 @@ import numpy as np
 
 
 def generate(data):
-
     a = random.uniform(1, 10)
     around = np.round(a, 2)
 

@@ -4,7 +4,6 @@ import scipy.linalg as sla
 
 
 def generate(data):
-
     sf = 2
 
     # Matrix shape

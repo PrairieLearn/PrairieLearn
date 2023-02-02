@@ -2,7 +2,6 @@ import random
 
 
 def generate(data):
-
     # Create a list of question prompts and the corresponding answers
     scenarios = [
         {

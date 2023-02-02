@@ -9,18 +9,17 @@ const AWS = require('aws-sdk');
 const Docker = require('dockerode');
 const fs = require('fs');
 const async = require('async');
-const chokidar = require('chokidar');
 const fsPromises = require('fs').promises;
 const { v4: uuidv4 } = require('uuid');
 const argv = require('yargs-parser')(process.argv.slice(2));
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const archiver = require('archiver');
 const net = require('net');
-const unzipper = require('unzipper');
-const stream = require('stream');
 const asyncHandler = require('express-async-handler');
 const bodyParser = require('body-parser');
 const Sentry = require('@prairielearn/sentry');
+const fg = require('fast-glob');
+const { filesize } = require('filesize');
 
 const dockerUtil = require('../lib/dockerUtil');
 const awsHelper = require('../lib/aws');
@@ -29,6 +28,7 @@ const workspaceHelper = require('../lib/workspace');
 const logger = require('../lib/logger');
 const sprocs = require('../sprocs');
 const LocalLock = require('../lib/local-lock');
+const { contains } = require('../lib/instructorFiles');
 
 const config = require('../lib/config');
 const sqldb = require('../prairielib/lib/sql-db');
@@ -36,34 +36,11 @@ const sqlLoader = require('../prairielib/lib/sql-loader');
 const { parseDockerLogs } = require('./lib/docker');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-let lastAutoUpdateTime = Date.now();
-let lastPushAllTime = Date.now();
-
 let configFilename = 'config.json';
 if ('config' in argv) {
   configFilename = argv['config'];
 }
 config.loadConfig(configFilename);
-
-if (config.workspaceHostWatchJobFiles) {
-  setInterval(() => {
-    const elapsedSec = (Date.now() - lastAutoUpdateTime) / 1000;
-    if (elapsedSec > 30) {
-      logger.error(
-        `_autoUpdateJobManager() has not run for ${elapsedSec} seconds, update_queue: ${JSON.stringify(
-          update_queue
-        )}`
-      );
-    }
-  }, 1000);
-}
-
-setInterval(() => {
-  const elapsedSec = (Date.now() - lastPushAllTime) / 1000;
-  if (elapsedSec > 900) {
-    logger.error(`_pushAllRunningContainersToS3() has not run for ${elapsedSec} seconds`);
-  }
-}, 1000);
 
 const docker = new Docker();
 
@@ -119,8 +96,6 @@ app.post(
     } else if (action === 'init') {
       const useInitialZip = _.get(req.body.options, 'useInitialZip', false);
       await initSequenceAsync(workspace_id, useInitialZip, res);
-    } else if (action === 'reset') {
-      await resetSequence(workspace_id, res);
     } else if (action === 'getGradedFiles') {
       await sendGradedFilesArchive(workspace_id, res);
     } else if (action === 'getLogs') {
@@ -135,11 +110,6 @@ app.use(Sentry.Handlers.errorHandler());
 
 let server;
 let workspace_server_settings = {};
-
-// Globals for detecting file changes
-let update_queue = {}; // key: path of file on local, value: action ('update' or 'remove').
-let workspacePrefix; // Jobs directory
-let watcher;
 
 async
   .series([
@@ -226,87 +196,6 @@ async
       });
     },
     async () => {
-      // Set up file watching with chokidar
-      workspacePrefix = config.workspaceJobsDirectory;
-      if (!config.workspaceHostWatchJobFiles) {
-        return;
-      }
-
-      watcher = chokidar.watch(workspacePrefix, {
-        ignoreInitial: true,
-        awaitWriteFinish: true,
-        depth: 10,
-      });
-      watcher.on('add', (filename) => {
-        // Handle new files
-        logger.info(`Watching file add ${filename}`);
-        var key = [filename, false];
-        if (key in update_queue && update_queue[key].action === 'skip') {
-          delete update_queue[key];
-        } else {
-          update_queue[key] = { action: 'update' };
-        }
-      });
-      watcher.on('addDir', (filename) => {
-        // Handle new directory
-        logger.info(`Watching directory add ${filename}`);
-        var key = [filename, true];
-        if (key in update_queue && update_queue[key].action === 'skip') {
-          delete update_queue[key];
-        } else {
-          update_queue[key] = { action: 'update' };
-        }
-      });
-      watcher.on('change', (filename) => {
-        // Handle file changes
-        logger.info(`Watching file change ${filename}`);
-        var key = [filename, false];
-        if (key in update_queue && update_queue[key].action === 'skip') {
-          delete update_queue[key];
-        } else {
-          update_queue[key] = { action: 'update' };
-        }
-      });
-      watcher.on('unlink', (filename) => {
-        // Handle removed files
-        var key = [filename, false];
-        update_queue[key] = { action: 'delete' };
-      });
-      watcher.on('unlinkDir', (filename) => {
-        // Handle removed directory
-        var key = [filename, true];
-        update_queue[key] = { action: 'delete' };
-      });
-      watcher.on('error', async (err) => {
-        // Handle errors
-        logger.error('Error watching files', err);
-        await markSelfUnhealthy(err);
-      });
-      async function autoUpdateJobManagerTimeout() {
-        const timeout_id = setTimeout(() => {
-          logger.info(
-            `_autoUpdateJobManager() timed out, update queue:\n${JSON.stringify(update_queue)}`
-          );
-        }, config.workspaceHostFileWatchIntervalSec * 1000);
-        try {
-          await _autoUpdateJobManager();
-        } catch (err) {
-          logger.error('Error in _autoUpdateJobManager()', err);
-        }
-        clearTimeout(timeout_id);
-        setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
-      }
-      setTimeout(autoUpdateJobManagerTimeout, config.workspaceHostFileWatchIntervalSec * 1000);
-    },
-    async () => {
-      // Set up a periodic hard push of all containers to S3
-      async function pushAllContainersTimeout() {
-        await pushAllRunningContainersToS3();
-        setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
-      }
-      setTimeout(pushAllContainersTimeout, config.workspaceHostForceUploadIntervalSec * 1000);
-    },
-    async () => {
       // Set up a periodic pruning of running containers
       async function pruneContainersTimeout() {
         await pruneStoppedContainers();
@@ -354,9 +243,7 @@ async
             debug(`Couldn't find container: ${err}`);
           }
         } else if (ws.state === 'running') {
-          if (ws.launch_uuid) {
-            await pushContainerContentsToS3(ws);
-          } else {
+          if (!ws.launch_uuid) {
             await workspaceHelper.updateState(ws.id, 'stopped', 'Shutting down');
             await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
               workspace_id: ws.id,
@@ -375,54 +262,6 @@ async
     logger.error('Error initializing workspace host:', err);
     await markSelfUnhealthy(err);
   });
-
-/**
- * Push all of the contents of a container's home directory to S3.
- * @param {object} workspace Workspace object, this should contain at least the launch_uuid and id.
- */
-async function pushContainerContentsToS3(workspace) {
-  if (workspace.homedir_location !== 'S3') {
-    // Nothing to do if we're not on S3
-    return;
-  }
-
-  const workspacePath = path.join(workspacePrefix, `workspace-${workspace.launch_uuid}`);
-  const s3Path = `workspace-${workspace.id}-${workspace.version}/current`;
-  const settings = await _getWorkspaceSettingsAsync(workspace.id);
-  try {
-    await awsHelper.uploadDirectoryToS3Async(
-      config.workspaceS3Bucket,
-      s3Path,
-      workspacePath,
-      settings.workspace_sync_ignore
-    );
-  } catch (err) {
-    // Ignore any errors that may occur when the directory doesn't exist
-    logger.error(`Error uploading directory for workspace ${workspace.id}`, err);
-  }
-}
-
-/**
- * Push the contents of all running workspaces to S3.  Workspace home directories are uploaded
- * serially instead of in parallel.
- */
-async function pushAllRunningContainersToS3() {
-  lastPushAllTime = Date.now();
-  const result = await sqldb.queryAsync(sql.get_running_workspaces, {
-    instance_id: workspace_server_settings.instance_id,
-  });
-  await async.eachSeries(result.rows, async (ws) => {
-    if (ws.state === 'running' && ws.homedir_location === 'S3') {
-      logger.info(
-        `Pushing entire running container to S3: workspace_id=${ws.id}, launch_uuid=${ws.launch_uuid}`
-      );
-      await pushContainerContentsToS3(ws);
-      logger.info(
-        `Completed push of entire running container to S3: workspace_id=${ws.id}, launch_uuid=${ws.launch_uuid}`
-      );
-    }
-  });
-}
 
 /**
  * Remove any recently stopped containers. These are identified by having a
@@ -447,7 +286,6 @@ async function pruneStoppedContainers() {
       });
       return;
     }
-    await pushContainerContentsToS3(ws);
     await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
       workspace_id: ws.id,
       instance_id: workspace_server_settings.instance_id,
@@ -511,18 +349,14 @@ async function _getDockerContainerByLaunchUuid(launch_uuid) {
  * @param {import('dockerode').Container} input
  */
 async function dockerAttemptKillAndRemove(container) {
-  let containerInfo = null;
   try {
-    containerInfo = await container.inspect();
+    await container.inspect();
   } catch (err) {
     // This container doesn't exist on this machine.
     logger.error('Could not inspect container', err);
     Sentry.captureException(err);
     return;
   }
-
-  // Strip off the leading forward slash
-  const name = containerInfo.Name.substring(1);
 
   try {
     await container.kill();
@@ -544,15 +378,6 @@ async function dockerAttemptKillAndRemove(container) {
   } catch (err) {
     Sentry.captureException(err);
     logger.error('Error removing stopped container', err);
-  }
-
-  if (name) {
-    const workspaceJobPath = path.join(workspacePrefix, name);
-    try {
-      await fsPromises.rmdir(workspaceJobPath, { recursive: true });
-    } catch (err) {
-      logger.error(`Error removing directory ${workspaceJobPath}`, err);
-    }
   }
 }
 
@@ -582,7 +407,7 @@ async function markSelfUnhealthy(reason) {
  * Looks up a workspace object by the workspace id.
  * This object contains all columns in the 'workspaces' table as well as:
  * - local_name (container name)
- * - remote_name (subdirectory name on s3)
+ * - remote_name (subdirectory name on disk)
  * @param {string | number} workspace_id Workspace ID to search by.
  * @return {Promise<Object>} Workspace object, as described above.
  */
@@ -718,7 +543,6 @@ async function _getWorkspaceSettingsAsync(workspace_id) {
     workspace_home: result.rows[0].workspace_home,
     workspace_graded_files: result.rows[0].workspace_graded_files,
     workspace_args: result.rows[0].workspace_args || '',
-    workspace_sync_ignore: result.rows[0].workspace_sync_ignore || [],
     workspace_enable_networking: !!result.rows[0].workspace_enable_networking,
     // Convert {key: 'value'} to ['key=value'] and {key: null} to ['key'] for Docker API
     workspace_environment: Object.entries(workspace_environment).map(([k, v]) =>
@@ -736,247 +560,6 @@ async function _getWorkspaceSettingsAsync(workspace_id) {
 
   return settings;
 }
-
-// Extracts `workspace_id` and `/path/to/file` from `/prefix/workspace-${uuid}/path/to/file`
-async function _getRunningWorkspaceByPathAsync(path) {
-  let localPath = path.replace(`${workspacePrefix}/`, '').split('/');
-  const localName = localPath.shift();
-  const launch_uuid = localName.replace('workspace-', '');
-  localPath = localPath.join('/');
-
-  try {
-    const result = await sqldb.queryOneRowAsync(sql.get_running_workspace_id_by_uuid, {
-      launch_uuid,
-      instance_id: workspace_server_settings.instance_id,
-    });
-    return {
-      workspace_id: result.rows[0].id,
-      local_path: localPath,
-    };
-  } catch (_err) {
-    return {
-      workspace_id: null,
-      local_path: null,
-    };
-  }
-}
-
-async function _autoUpdateJobManager() {
-  lastAutoUpdateTime = Date.now();
-  var jobs = [];
-  for (const key in update_queue) {
-    logger.info(`_autoUpdateJobManager: key=${key}`);
-    const [path, isDirectory_str] = key.split(',');
-    const isDirectory = isDirectory_str === 'true';
-    const { workspace_id, local_path } = await _getRunningWorkspaceByPathAsync(path);
-    logger.info(`_autoUpdateJobManager: workspace_id=${workspace_id}, local_path=${local_path}`);
-    if (workspace_id == null) continue;
-
-    debug(`watch: workspace_id=${workspace_id}, localPath=${local_path}`);
-    const workspace = await _getWorkspaceAsync(workspace_id);
-    const workspaceSettings = await _getWorkspaceSettingsAsync(workspace_id);
-    const remote_name = workspace.remote_name;
-    const sync_ignore = workspaceSettings.workspace_sync_ignore;
-    debug(`watch: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`);
-    debug(`watch: localPath=${local_path}`);
-    debug(`watch: syncIgnore=${sync_ignore}`);
-    logger.info(
-      `_autoUpdateJobManager: workspace_id=${workspace_id}, isDirectory_str=${isDirectory_str}`
-    );
-    logger.info(`_autoUpdateJobManager: localPath=${local_path}`);
-    logger.info(`_autoUpdateJobManager: syncIgnore=${sync_ignore}`);
-
-    let s3_path = null;
-    if (local_path === '') {
-      // skip root localPath as it produces new S3 dir with empty name
-      logger.info(`_autoUpdateJobManager: skip root`);
-      continue;
-    } else if (sync_ignore.filter((ignored) => local_path.startsWith(ignored)).length > 0) {
-      logger.info(`_autoUpdateJobManager: skip ignored`);
-      continue;
-    } else {
-      s3_path = `${remote_name}/current/${local_path}`;
-      logger.info(`_autoUpdateJobManager: s3_path=${s3_path}`);
-    }
-
-    logger.info(`_autoUpdateJobManager: action=${update_queue[key].action}`);
-    if (update_queue[key].action === 'update') {
-      logger.info(`_autoUpdateJobManager: adding update job`);
-      jobs.push((callback) => {
-        logger.info(`Uploading file to S3: ${s3_path}, ${path}`);
-        awsHelper.uploadToS3(config.workspaceS3Bucket, s3_path, path, isDirectory, (err) => {
-          if (err) {
-            Sentry.captureException(err, {
-              tags: {
-                'workspace.id': workspace_id,
-                's3.bucket': config.workspaceS3Bucket,
-                's3.path': s3_path,
-                path,
-              },
-            });
-            logger.error(`Error uploading file to S3: ${s3_path}, ${path}, ${err}`);
-          } else {
-            logger.info(`Successfully uploaded file to S3: ${s3_path}, ${path}`);
-          }
-          callback(null); // always return success to keep going
-        });
-      });
-    } else if (update_queue[key].action === 'delete') {
-      logger.info(`_autoUpdateJobManager: adding delete job`);
-      jobs.push((callback) => {
-        logger.info(`Removing file from S3: ${s3_path}`);
-        awsHelper.deleteFromS3(config.workspaceS3Bucket, s3_path, isDirectory, (err) => {
-          if (err) {
-            Sentry.captureException(err, {
-              tags: {
-                'workspace.id': workspace_id,
-                's3.bucket': config.workspaceS3Bucket,
-                's3.path': s3_path,
-                path,
-              },
-            });
-            logger.error(`Error removing file from S3: ${s3_path}, ${err}`);
-          } else {
-            logger.info(`Successfully removed file from S3: ${s3_path}`);
-          }
-          callback(null); // always return success to keep going
-        });
-      });
-    }
-  }
-  update_queue = {};
-  try {
-    await async.parallel(jobs);
-  } catch (err) {
-    logger.error(`Error uploading files to S3`, err);
-    await markSelfUnhealthy(err);
-  }
-}
-
-function _recursiveDownloadJobManager(curDirPath, S3curDirPath, callback) {
-  const s3 = new AWS.S3();
-
-  var listingParams = {
-    Bucket: config.workspaceS3Bucket,
-    Prefix: S3curDirPath,
-  };
-
-  s3.listObjectsV2(listingParams, (err, data) => {
-    if (ERR(err, callback)) return;
-    var contents = data['Contents'];
-    var ret = [];
-    contents.forEach((dict) => {
-      if ('Key' in dict) {
-        var filePath = path.join(curDirPath, dict['Key'].slice(S3curDirPath.length));
-        var S3filePath = dict['Key'];
-        ret.push([filePath, S3filePath]);
-      }
-    });
-    callback(null, ret);
-  });
-}
-
-async function _getInitialZipAsync(workspace) {
-  workspaceHelper.updateMessage(workspace.id, 'Loading initial files');
-  const localName = workspace.local_name;
-  const s3Name = workspace.remote_name;
-  const localPath = `${workspacePrefix}/${localName}`;
-  const zipPath = `${config.workspaceHostZipsDirectory}/${localName}-initial.zip`;
-  const s3Path = `${s3Name}/initial.zip`;
-
-  debug(`Downloading s3Path=${s3Path} to zipPath=${zipPath}`);
-  const options = {
-    owner: config.workspaceJobsDirectoryOwnerUid,
-    group: config.workspaceJobsDirectoryOwnerGid,
-  };
-  const isDirectory = false;
-  update_queue[[zipPath, isDirectory]] = { action: 'skip' };
-  await awsHelper.downloadFromS3Async(config.workspaceS3Bucket, s3Path, zipPath, options);
-  await fsPromises.access(zipPath);
-
-  debug(`Making directory ${localPath}`);
-  await fsPromises.mkdir(localPath, { recursive: true });
-  await fsPromises.chown(
-    localPath,
-    config.workspaceJobsDirectoryOwnerUid,
-    config.workspaceJobsDirectoryOwnerGid
-  );
-
-  // FIXME: This unzipper was hotfixed to support workspaces with many/large/nested initial files.
-  // There's probably a better way to do this if someone has more time/knowhow.
-  // See #3146 for gotchas: https://github.com/PrairieLearn/PrairieLearn/pull/3146
-  debug(`Unzipping ${zipPath} to ${localPath}`);
-  fs.createReadStream(zipPath)
-    .pipe(
-      unzipper.Parse({
-        forceStream: true,
-      })
-    )
-    .pipe(
-      new stream.Transform({
-        objectMode: true,
-        transform: (entry, encoding, callback) => {
-          const entryPath = path.join(localPath, entry.path);
-          if (entry.type === 'Directory') {
-            debug(`Making directory ${entryPath}`);
-            util.callbackify(async () => {
-              await fsPromises.mkdir(entryPath, { recursive: true });
-              await fsPromises.chown(
-                entryPath,
-                config.workspaceJobsDirectoryOwnerUid,
-                config.workspaceJobsDirectoryOwnerGid
-              );
-            })(callback);
-          } else {
-            debug(`Extracting file ${entryPath}`);
-            entry.pipe(fs.createWriteStream(entryPath)).on('finish', () => {
-              util.callbackify(async () => {
-                await fsPromises.chown(
-                  entryPath,
-                  config.workspaceJobsDirectoryOwnerUid,
-                  config.workspaceJobsDirectoryOwnerGid
-                );
-              })(callback);
-            });
-          }
-        },
-      })
-    );
-
-  return workspace;
-}
-
-function _getInitialFiles(workspace, callback) {
-  workspaceHelper.updateMessage(workspace.id, 'Loading files');
-
-  const localPath = `${workspacePrefix}/${workspace.local_name}`;
-  const s3Path = `${workspace.remote_name}/current`;
-
-  _recursiveDownloadJobManager(localPath, s3Path, (err, jobs_params) => {
-    if (ERR(err, callback)) return;
-    var jobs = [];
-    jobs_params.forEach(([localPath, s3Path]) => {
-      jobs.push((callback) => {
-        const options = {
-          owner: config.workspaceJobsDirectoryOwnerUid,
-          group: config.workspaceJobsDirectoryOwnerGid,
-        };
-        const isDirectory = localPath.endsWith('/');
-        update_queue[[localPath, isDirectory]] = { action: 'skip' };
-        awsHelper.downloadFromS3(config.workspaceS3Bucket, s3Path, localPath, options, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      });
-    });
-
-    async.parallel(jobs, function (err) {
-      if (ERR(err, callback)) return;
-      callback(null, workspace);
-    });
-  });
-}
-const _getInitialFilesAsync = util.promisify(_getInitialFiles);
 
 function _pullImage(workspace, callback) {
   workspaceHelper.updateMessage(workspace.id, 'Checking image');
@@ -1088,31 +671,16 @@ const _pullImageAsync = util.promisify(_pullImage);
 function _createContainer(workspace, callback) {
   const localName = workspace.local_name;
   const remoteName = workspace.remote_name;
-  let jobDirectory;
+
+  const jobDirectory = config.workspaceHostHomeDirRoot;
+  const workspaceDir = process.env.HOST_JOBS_DIR
+    ? path.join(process.env.HOST_JOBS_DIR, 'workspaces')
+    : jobDirectory;
+
   // Where docker will see the jobs (host path outside docker container).
-  let workspacePath;
+  const workspacePath = path.join(workspaceDir, remoteName, 'current');
   // Where we are putting the job files relative to the server (`/jobs` inside Docker container).
-  let workspaceJobPath;
-
-  if (workspace.homedir_location === 'S3') {
-    jobDirectory = config.workspaceJobsDirectory;
-    const workspaceDir = process.env.HOST_JOBS_DIR
-      ? path.join(process.env.HOST_JOBS_DIR, 'workspaces')
-      : jobDirectory;
-
-    workspacePath = path.join(workspaceDir, localName);
-    workspaceJobPath = path.join(jobDirectory, localName);
-  } else if (workspace.homedir_location === 'FileSystem') {
-    jobDirectory = config.workspaceHostHomeDirRoot;
-    const workspaceDir = process.env.HOST_JOBS_DIR
-      ? path.join(process.env.HOST_JOBS_DIR, 'workspaces')
-      : jobDirectory;
-
-    workspacePath = path.join(workspaceDir, remoteName, 'current');
-    workspaceJobPath = path.join(jobDirectory, remoteName, 'current');
-  } else {
-    return callback(new Error(`Unknown backing file storage: ${workspace.homedir_location}`));
-  }
+  const workspaceJobPath = path.join(jobDirectory, remoteName, 'current');
 
   const containerPath = workspace.settings.workspace_home;
   let args = workspace.settings.workspace_args.trim();
@@ -1147,12 +715,10 @@ function _createContainer(workspace, callback) {
   async.series(
     [
       async () => {
-        if (workspace.homedir_location === 'FileSystem') {
-          try {
-            await fsPromises.access(workspaceJobPath);
-          } catch (err) {
-            throw Error('Could not access workspace files.', { cause: err });
-          }
+        try {
+          await fsPromises.access(workspaceJobPath);
+        } catch (err) {
+          throw Error('Could not access workspace files.', { cause: err });
         }
       },
       (callback) => {
@@ -1261,7 +827,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
   };
   await sqldb.queryAsync(sql.set_workspace_launch_uuid, params);
 
-  const { version, homedir_location, course_id, institution_id } = (
+  const { version, course_id, institution_id } = (
     await sqldb.queryOneRowAsync(sql.select_workspace, { workspace_id })
   ).rows[0];
 
@@ -1273,36 +839,11 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
     launch_uuid: uuid,
     local_name: `workspace-${uuid}`,
     remote_name: `workspace-${workspace_id}-${version}`,
-    homedir_location: homedir_location,
   };
 
   logger.info(`Launching workspace-${workspace_id}-${version} (useInitialZip=${useInitialZip})`);
   try {
     // Only errors at this level will set host to unhealthy.
-
-    // We only need to worry about the initial zip or syncing files if we're
-    // running on S3. Filesystem-backed workspaces can get away with no initial
-    // syncing steps.
-    if (homedir_location === 'S3') {
-      try {
-        if (useInitialZip) {
-          debug(`init: bootstrapping workspace with initial.zip`);
-          await _getInitialZipAsync(workspace);
-        } else {
-          debug(`init: syncing workspace from S3`);
-          await _getInitialFilesAsync(workspace);
-        }
-      } catch (err) {
-        logger.error(`Error fetching files from S3 for workspace ${workspace_id}`, err);
-        // Don't set host to unhealthy, we've probably bungled something up with S3.
-        workspaceHelper.updateState(
-          workspace_id,
-          'stopped',
-          'Error loading workspace files.  Click "Reboot" to try again.'
-        );
-        return;
-      }
-    }
 
     try {
       debug(`init: configuring workspace`);
@@ -1369,17 +910,6 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
   }
 }
 
-// Called by the main server when the user want to reset the file to default
-async function resetSequence(workspace_id, res) {
-  try {
-    const workspace = await _getWorkspaceAsync(workspace_id);
-    await _getInitialFilesAsync(workspace);
-    res.status(200).send(`Code of workspace ${workspace_id} reset.`);
-  } catch (err) {
-    res.status(500).send(err);
-  }
-}
-
 /**
  * @param {string | number} workspace_id
  * @param {import('express').Response} res
@@ -1389,12 +919,27 @@ async function sendGradedFilesArchive(workspace_id, res) {
   const workspaceSettings = await _getWorkspaceSettingsAsync(workspace_id);
   const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
   const zipName = `${workspace.remote_name}-${timestamp}.zip`;
+  const workspaceDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
 
-  let workspaceDir;
-  if (workspace.homedir_location === 'S3') {
-    workspaceDir = path.join(config.workspaceJobsDirectory, workspace.local_name);
-  } else {
-    workspaceDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
+  const gradedFiles = (
+    await fg(workspaceSettings.workspace_graded_files, {
+      cwd: workspaceDir,
+      stats: true,
+      ...workspaceHelper.fastGlobDefaultOptions,
+    })
+  ).filter((file) => contains(workspaceDir, path.join(workspaceDir, file.path)));
+
+  if (gradedFiles.length > config.workspaceMaxGradedFilesCount) {
+    return res.status(500).send({
+      message: `Cannot submit more than ${config.workspaceMaxGradedFilesCount} files from the workspace.`,
+    });
+  }
+  if (_.sumBy(gradedFiles, (file) => file.stats.size) > config.workspaceMaxGradedFilesSize) {
+    return res.status(500).send({
+      message: `Workspace files exceed limit of ${filesize(config.workspaceMaxGradedFilesSize, {
+        base: 2,
+      })}.`,
+    });
   }
 
   // Stream the archive back to the client as it's generated.
@@ -1402,14 +947,13 @@ async function sendGradedFilesArchive(workspace_id, res) {
   const archive = archiver('zip');
   archive.pipe(res);
 
-  for (const file of workspaceSettings.workspace_graded_files) {
+  for (const file of gradedFiles) {
     try {
-      const filePath = path.join(workspaceDir, file);
-      await fsPromises.lstat(filePath);
-      archive.file(filePath, { name: file });
-      debug(`Sending ${file}`);
+      const filePath = path.join(workspaceDir, file.path);
+      archive.file(filePath, { name: file.path });
+      debug(`Sending ${file.path}`);
     } catch (err) {
-      logger.warn(`Graded file ${file} does not exist.`);
+      logger.warn(`Graded file ${file.path} does not exist.`);
       continue;
     }
   }

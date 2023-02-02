@@ -2,7 +2,6 @@ import random
 
 
 def generate(data):
-
     a = random.randint(100, 200)
     ans = "{0:b}".format(a)
     data["params"]["a"] = a
