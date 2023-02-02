@@ -50,14 +50,12 @@ def get_units_fixed_grading_fn(
     rtol: float,
     atol: str,
 ) -> Callable[[str], Tuple[float, Optional[str]]]:
-
     parsed_correct_ans = ureg.Quantity(correct_ans)
     parsed_atol = ureg.Quantity(atol)
 
     def magnitude_comparison_fn(
         submitted_magnitude: float, correct_magnitude: float
     ) -> bool:
-
         submitted_magnitude_parsed = np.float64(submitted_magnitude)
         correct_magnitude_parsed = np.float64(correct_magnitude)
 
