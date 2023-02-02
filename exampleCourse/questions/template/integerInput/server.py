@@ -2,7 +2,6 @@ import random
 
 
 def generate(data):
-
     # Create a list of possible angles in radians
     angles_radians = ["\\pi/2", "\\pi/4", "\\pi/3", "\\pi/6"]
     angles_degrees = [90, 45, 60, 30]

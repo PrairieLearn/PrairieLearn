@@ -8,7 +8,6 @@ plt.rcParams.update({"font.size": 30})
 
 
 def generate(data):
-
     a = random.randint(1, 10)
     data["params"]["a"] = a
 
@@ -27,9 +26,7 @@ def generate(data):
 # The function 'file(data)' is used to generate the figure dynamically,
 # given data defined in the 'generate' function
 def file(data):
-
     if data["filename"] == "figure0.png":
-
         a = data["params"]["a"]
         b = data["params"]["b"]
 

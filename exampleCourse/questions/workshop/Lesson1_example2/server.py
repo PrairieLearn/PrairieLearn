@@ -4,7 +4,6 @@ import numpy as np
 
 
 def generate(data):
-
     T1C = random.randint(850, 950)  # temperature in Celsius
     T1 = T1C + 273
     # convert it to Kelvin

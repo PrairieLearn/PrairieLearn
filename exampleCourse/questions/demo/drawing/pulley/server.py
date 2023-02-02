@@ -3,7 +3,6 @@ import random
 
 
 def generate(data):
-
     height_canvas = 400
     angle = random.choice([30, 40, 50])
     theta_rad = angle * math.pi / 180

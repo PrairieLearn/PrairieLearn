@@ -6,7 +6,6 @@ import prairielearn as pl
 
 
 def generate(data):
-
     website_list = [
         "Google",
         "Wikipedia",
@@ -52,7 +51,6 @@ def generate(data):
 # Helper functions
 # -----------------
 def create_markov_matrix(website_list, npages, max_n_links, min_n_links=0):
-
     Nsite = len(website_list)
     if npages > Nsite:
         npages = Nsite
