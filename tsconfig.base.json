@@ -8,10 +8,4 @@
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
   },
-  "files": [],
-  "include": [],
-  "references": [
-    { "path": "./tsconfig.root.json" },
-    { "path": "./assets/scripts" }
-  ],
 }

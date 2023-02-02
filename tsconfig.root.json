@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.base.json",
+  // We don't actually use any TypeScript; we just use it to validate our
+  // standard JavaScript with JSDoc comments.
+  // Adding new code? Consider opting in to type checking!
+  "include": [
+    "tests/**/*",
+    "sync/**/*",
+    "lib/**/*",
+    "tools/**/*",
+    "ee/**/*",
+    "api/**/*",
+  ],
+}

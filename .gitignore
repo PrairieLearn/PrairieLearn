@@ -99,3 +99,6 @@ __pycache__/
 
 ## Compiled package files
 packages/*/dist
+
+# TypeScript cache
+*.tsbuildinfo
