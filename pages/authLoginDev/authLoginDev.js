@@ -2,11 +2,7 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 
 const config = require('../../lib/config');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
 const csrf = require('../../lib/csrf');
-
-const sql = sqlLoader.loadSqlEquiv(__filename);
 
 var router = express.Router();
 
