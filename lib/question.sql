@@ -49,7 +49,7 @@ ORDER BY
     s.date DESC;
 
 -- BLOCK select_issues_for_variant
-SELECT i.*
+SELECT COUNT(*)
 FROM issues AS i
 WHERE i.variant_id = $variant_id;
 
