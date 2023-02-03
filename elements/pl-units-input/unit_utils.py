@@ -8,9 +8,11 @@ from typing_extensions import assert_never
 
 # TODO write tests for each of these functions
 
-CORRECT_UNITS_INCORRECT_MAGNITUDE_FEEDBACK = "Your answer has correct units, but the magnitude does not match the reference solution."
+CORRECT_UNITS_INCORRECT_MAGNITUDE_FEEDBACK = (
+    "Your answer has correct units, but the magnitude is incorrect."
+)
 INCORRECT_UNITS_CORRECT_MAGNITUDE_FEEDBACK = (
-    "The magnitude of your answer is correct, but your units are incorrect."
+    "Your answer has correct magnitude, but the units are incorrect."
 )
 INCORRECT_UNITS_AND_MAGNITUDE_FEEDBACK = (
     "Your answer has incorrect units and magnitude."
@@ -46,6 +48,7 @@ def get_units_fixed_grading_fn(
     ureg: UnitRegistry,
     correct_ans: str,
     comparison: ComparisonType,
+    magnitude_partial_credit: Optional[float],
     digits: int,
     rtol: float,
     atol: str,
@@ -84,6 +87,15 @@ def get_units_fixed_grading_fn(
 
         assert_never(comparison)
 
+    magnitudes_match_credit = (
+        magnitude_partial_credit if magnitude_partial_credit is not None else 0.0
+    )
+    units_match_credit = (
+        (1.0 - magnitude_partial_credit)
+        if magnitude_partial_credit is not None
+        else 0.0
+    )
+
     def grade_units_fixed(submitted_ans: str) -> Tuple[float, Optional[str]]:
         # will return no error, assuming parse() catches all of them
         parsed_submission = ureg.Quantity(submitted_ans)
@@ -95,9 +107,9 @@ def get_units_fixed_grading_fn(
         if magnitudes_match and units_match:
             return 1.0, None
         elif magnitudes_match and not units_match:
-            return 0.7, INCORRECT_UNITS_CORRECT_MAGNITUDE_FEEDBACK
+            return magnitudes_match_credit, INCORRECT_UNITS_CORRECT_MAGNITUDE_FEEDBACK
         elif units_match and not magnitudes_match:
-            return 0.3, CORRECT_UNITS_INCORRECT_MAGNITUDE_FEEDBACK
+            return units_match_credit, CORRECT_UNITS_INCORRECT_MAGNITUDE_FEEDBACK
 
         return 0.0, INCORRECT_UNITS_AND_MAGNITUDE_FEEDBACK
 

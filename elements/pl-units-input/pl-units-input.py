@@ -34,6 +34,9 @@ ATOL_DEFAULT = "1e-8"
 DIGITS_DEFAULT = 2
 SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
+MAGNITUDE_PARTIAL_CREDIT_DEFAULT = None
+SHOW_FEEDBACK_DEFAULT = True
+
 UNITS_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-units-input.mustache"
 
 
@@ -56,19 +59,41 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "size",
         "show-help-text",
         "placeholder",
+        "magnitude-partial-credit",
+        "show-feedback",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     name = pl.get_string_attrib(element, "answers-name")
-    correct_answer = pl.get_string_attrib(
+    correct_answer_html = pl.get_string_attrib(
         element, "correct-answer", CORRECT_ANSWER_DEFAULT
     )
 
-    if correct_answer is not None:
+    if correct_answer_html is not None:
         # TODO possibly transform correct answers to cannonical unit names?
         if name in data["correct_answers"]:
             raise ValueError("Duplicate correct_answers variable name: {name}")
-        data["correct_answers"][name] = correct_answer
+        data["correct_answers"][name] = correct_answer_html
+
+    ureg = UnitRegistry(cache_folder=":auto:")
+    correct_answer = data["correct_answers"].get(name)
+    correct_answer_parsed = None
+
+    grading_mode = pl.get_enum_attrib(
+        element, "grading-mode", GradingMode, GRADING_MODE_DEFAULT
+    )
+
+    if correct_answer is not None:
+        # Attempt to parse the correct answer to make sure it can be parsed later by the grader.
+        # if parsing succeeds, save the parsed version.
+        # TODO maybe save this in params as something just for a display parameter? Not sure if
+        # this could cause confusing behavior.
+        correct_answer_parsed = ureg.Quantity(correct_answer)
+
+        if grading_mode is GradingMode.UNITS_ONLY:
+            data["correct_answers"][name] = str(correct_answer_parsed.units)
+        else:
+            data["correct_answers"][name] = str(correct_answer_parsed)
 
     digits = pl.get_integer_attrib(element, "digits", None)
     if digits is not None and digits <= 0:
@@ -76,11 +101,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             f"Number of digits specified must be at least 1, not {digits}."
         )
 
-    grading_mode = pl.get_enum_attrib(
-        element, "grading-mode", GradingMode, GRADING_MODE_DEFAULT
-    )
-
-    ureg = UnitRegistry(cache_folder=":auto:")
     atol = pl.get_string_attrib(element, "atol", ATOL_DEFAULT)
     parsed_atol = ureg.Quantity(atol)
 
@@ -102,14 +122,13 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         if pl.has_attrib(element, "rtol"):
             raise ValueError('Cannot set parameter "rtol" in unit agnostic grading.')
 
-        if correct_answer is not None:
-            parsed_answer = ureg.Quantity(correct_answer)
-
-            if not parsed_answer.check(parsed_atol.dimensionality):
-                raise ValueError(
-                    f"Correct answer has dimensionality: {parsed_answer.dimensionality}, "
-                    f"which does not match atol dimensionality: {parsed_atol.dimensionality}."
-                )
+        if (correct_answer_parsed is not None) and (
+            not correct_answer_parsed.check(parsed_atol.dimensionality)
+        ):
+            raise ValueError(
+                f"Correct answer has dimensionality: {correct_answer_parsed.dimensionality}, "
+                f"which does not match atol dimensionality: {parsed_atol.dimensionality}."
+            )
     else:
         if not parsed_atol.dimensionless:
             raise ValueError(
@@ -234,7 +253,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params[score_type] = score_value
 
         feedback = partial_scores.get("feedback")
-        if feedback is not None:
+        show_feedback = pl.get_boolean_attrib(
+            element, "show-feedback", SHOW_FEEDBACK_DEFAULT
+        )
+        if feedback is not None and show_feedback:
             html_params["feedback"] = feedback
 
         html_params["error"] = html_params["parse_error"] or html_params.get(
@@ -354,6 +376,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             correct_ans=a_tru,
             comparison=pl.get_enum_attrib(
                 element, "comparison", uu.ComparisonType, COMPARISON_DEFAULT
+            ),
+            magnitude_partial_credit=pl.get_float_attrib(
+                element, "magnitude-partial-credit", MAGNITUDE_PARTIAL_CREDIT_DEFAULT
             ),
             digits=pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT),
             rtol=pl.get_float_attrib(element, "rtol", RTOL_DEFAULT),
