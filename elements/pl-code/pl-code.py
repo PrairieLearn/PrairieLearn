@@ -182,10 +182,6 @@ def render(element_html, data):
 
         with open(file_path, "r") as f:
             code = f.read()
-        # f = open(file_path, "r")
-        # code = ""
-        # for line in f.readlines():
-        #    code += line
 
         # Chop off ending newlines
         if code[:-2] == "\r\n":
