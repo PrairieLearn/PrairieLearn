@@ -64,7 +64,7 @@ jobs:
       # socket being available, as well as a specific volume mount and
       # environment variable. See the docs for more details:
       # https://prairielearn.readthedocs.io/en/latest/externalGrading/#running-locally-for-development
-      run: docker run -td -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/prairielearn:/jobs -e HOST_JOBS_DIR=/tmp/prairielearn --name=test_container prairielearn/prairielearn /bin/bash
+      run: docker run -td -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/prairielearn:/jobs --tmpfs=/var/postgres -e HOST_JOBS_DIR=/tmp/prairielearn --name=test_container prairielearn/prairielearn /bin/bash
     - name: Run the Python linter
       run: docker exec test_container /PrairieLearn/docker/lint_python.sh
     - name: Run the JavaScript linter
