@@ -160,7 +160,7 @@ A minimal `question.html` for an externally graded workspace should look somethi
 
 Workspace questions can optionally include a `workspace/` subdirectory within the regular [PrairieLearn question directory structure](../question.md#directory-structure). If this `workspace/` subdirectory exists, its contents will be copied into the home directory of the student's workspace container, as configured in the `home` setting in `info.json`.
 
-Questions using workspaces can also be randomized, i.e., include files that contain random and dynamic content. This may be done in two ways: using mustache-based template files or using [the `server.py` file in the question directory](../question.md#question-serverpy). For template files, a workspace question can optionally include a `workspaceTemplates/` subdirectory within the regular question directory structure. The contents will be copied into the home directory of the student's workspace container, as with the `workspace/` directory. However, all files within this directory may include mustache tags (e.g., `{{params.value}}`), which will be replaced with the equivalent values set by `server.py`. For example, if `server.py` sets `data["params"]["starting_value"]` to `17`, then if the file `main.py` inside `workspaceTemplates` has the following content:
+Questions using workspaces can also be randomized, i.e., include files that contain random and dynamic content. This may be done in two ways: using mustache-based template files or using [the `server.py` file in the question directory](../question.md#question-serverpy). For template files, a workspace question can optionally include a `workspaceTemplates/` subdirectory within the regular question directory structure. The contents will be copied into the home directory of the student's workspace container, as with the `workspace/` directory. However, files within this directory may include mustache tags (e.g., `{{params.value}}`), which will be replaced with the equivalent values set by `server.py`. File names may optionally include the `.mustache` extension, and the file will be renamed before being presented to the student. For example, if `server.py` sets `data["params"]["starting_value"]` to `17`, then if the file `main.py,mustache` inside `workspaceTemplates` has the following content:
 
 ```txt
 # ...
@@ -168,7 +168,7 @@ starting_value = {{params.starting_value}}
 # ...
 ```
 
-will be presented to the student as a file with the same name, but with the rendered content:
+Then a file with name `main.py` will be presented to the student, with the rendered content:
 
 ```py
 # ...
