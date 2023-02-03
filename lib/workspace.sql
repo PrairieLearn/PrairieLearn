@@ -97,3 +97,20 @@ INSERT INTO workspace_logs
     (date, workspace_id, version, state, message)
 VALUES
     (now(), $workspace_id, (SELECT version FROM old_workspace), $state, $message);
+
+-- BLOCK update_workspace_message
+WITH workspace AS (
+    UPDATE
+        workspaces as w
+    SET
+        message = $message,
+        message_updated_at = now()
+    WHERE
+        w.id = $workspace_id
+    RETURNING
+        w.version
+)
+INSERT INTO workspace_logs
+    (date, workspace_id, version, message)
+VALUES
+    (now(), $workspace_id, (SELECT version FROM workspace), $message);
