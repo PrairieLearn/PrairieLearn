@@ -75,25 +75,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             raise ValueError("Duplicate correct_answers variable name: {name}")
         data["correct_answers"][name] = correct_answer_html
 
-    ureg = UnitRegistry(cache_folder=":auto:")
     correct_answer = data["correct_answers"].get(name)
-    correct_answer_parsed = None
-
-    grading_mode = pl.get_enum_attrib(
-        element, "grading-mode", GradingMode, GRADING_MODE_DEFAULT
-    )
-
-    if correct_answer is not None:
-        # Attempt to parse the correct answer to make sure it can be parsed later by the grader.
-        # if parsing succeeds, save the parsed version.
-        # TODO maybe save this in params as something just for a display parameter? Not sure if
-        # this could cause confusing behavior.
-        correct_answer_parsed = ureg.Quantity(correct_answer)
-
-        if grading_mode is GradingMode.UNITS_ONLY:
-            data["correct_answers"][name] = str(correct_answer_parsed.units)
-        else:
-            data["correct_answers"][name] = str(correct_answer_parsed)
 
     digits = pl.get_integer_attrib(element, "digits", None)
     if digits is not None and digits <= 0:
@@ -102,7 +84,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         )
 
     atol = pl.get_string_attrib(element, "atol", ATOL_DEFAULT)
+    ureg = UnitRegistry(cache_folder=":auto:")
     parsed_atol = ureg.Quantity(atol)
+
+    grading_mode = pl.get_enum_attrib(
+        element, "grading-mode", GradingMode, GRADING_MODE_DEFAULT
+    )
 
     # In units agnostic mode, absolute tolerance must have units. Otherwise just a float
     if grading_mode is GradingMode.UNITS_AGNOSTIC:
@@ -121,6 +108,17 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         if pl.has_attrib(element, "rtol"):
             raise ValueError('Cannot set parameter "rtol" in unit agnostic grading.')
+
+        partial_credit = pl.get_float_attrib(
+            element, "magnitude-partial-credit", MAGNITUDE_PARTIAL_CREDIT_DEFAULT
+        )
+
+        if partial_credit is not None and not (0.0 <= partial_credit <= 1.0):
+            raise ValueError(
+                f'"magnitude-partial-credit" must be in the range [0.0, 1.0], not {partial_credit}'
+            )
+
+        correct_answer_parsed = ureg.Quantity(correct_answer)
 
         if (correct_answer_parsed is not None) and (
             not correct_answer_parsed.check(parsed_atol.dimensionality)
@@ -272,7 +270,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if a_tru is None:
             return ""
 
-        html_params = {"answer": True, "label": label, "a_tru": a_tru, "suffix": suffix}
+        ureg = UnitRegistry(cache_folder=":auto:")
+        a_tru_parsed = ureg.Quantity(a_tru)
+
+        if grading_mode is GradingMode.UNITS_ONLY:
+            a_tru_string = str(a_tru_parsed.units)
+        else:
+            a_tru_string = str(a_tru_parsed)
+
+        html_params = {
+            "answer": True,
+            "label": label,
+            "a_tru": a_tru_string,
+            "suffix": suffix,
+        }
         with open(UNITS_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
 
@@ -423,7 +434,12 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             feedback = uu.INCORRECT_FEEDBACK
         elif grading_mode is GradingMode.UNITS_FIXED:
             answer = ureg.Quantity(a_tru) * 2
-            partial_score = 0.3
+
+            partial_credit = pl.get_float_attrib(
+                element, "magnitude-partial-credit", MAGNITUDE_PARTIAL_CREDIT_DEFAULT
+            )
+
+            partial_score = 1.0 - partial_credit if partial_credit is not None else 0.0
             feedback = uu.CORRECT_UNITS_INCORRECT_MAGNITUDE_FEEDBACK
         elif grading_mode is GradingMode.UNITS_AGNOSTIC:
             answer = ureg.Quantity(a_tru) * 2
