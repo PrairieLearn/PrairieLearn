@@ -15,11 +15,11 @@ if [[ "$ACTION" == "start" ]]; then
     fi
 fi
 
+mkdir -p $PGDATA
+chown -f postgres:postgres $PGDATA
 su postgres -c 'pg_ctl status' >/dev/null 2>&1
 if [[ $? == 4 ]]; then
     echo "Making new postgres database at ${PGDATA}"
-    mkdir -p $PGDATA
-    chown -f postgres:postgres $PGDATA
     su postgres -c "initdb" >/dev/null 2>&1
     INIT_RESOLVE=0
     ACTION=start
