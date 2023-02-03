@@ -8,8 +8,8 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 type Params = Record<string, any> | any[];
 
 const debug = debugFactory('prairielib:' + path.basename(__filename, '.js'));
-const SEARCH_SCHEMA = Symbol('SEARCH_SCHEMA');
 const lastQueryMap: WeakMap<pg.PoolClient, string> = new WeakMap();
+const searchSchemaMap: WeakMap<pg.PoolClient, string> = new WeakMap();
 
 function addDataToError(err: Error, data: Record<string, any>): Error {
   (err as any).data = {
@@ -148,7 +148,7 @@ export class PostgresPool {
       // garbage collected after they're removed. However, if `pg` someday
       // starts reusing client objects across difference connections, this
       // will ensure that we re-set the search path when the client reconnects.
-      delete (client as any)[SEARCH_SCHEMA];
+      searchSchemaMap.delete(client);
     });
 
     // Attempt to connect to the database so that we can fail quickly if
@@ -229,7 +229,8 @@ export class PostgresPool {
     // It does NOT support clearing the existing search schema - e.g.,
     // `setSearchSchema(null)` would not work as you expect. This is fine, as
     // that's not something we ever do in practice.
-    if (this.searchSchema != null && (client as any)[SEARCH_SCHEMA] !== this.searchSchema) {
+    const clientSearchSchema = searchSchemaMap.get(client);
+    if (this.searchSchema != null && clientSearchSchema !== this.searchSchema) {
       const setSearchPathSql = `SET search_path TO ${escapeIdentifier(this.searchSchema)},public`;
       try {
         await this.queryWithClientAsync(client, setSearchPathSql, {});
@@ -237,7 +238,7 @@ export class PostgresPool {
         client.release();
         throw err;
       }
-      (client as any)[SEARCH_SCHEMA] = this.searchSchema;
+      searchSchemaMap.set(client, this.searchSchema);
     }
 
     return client;
