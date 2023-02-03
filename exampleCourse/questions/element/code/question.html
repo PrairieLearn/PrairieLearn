@@ -1,25 +1,25 @@
 <pl-question-panel>
-<markdown>Questions below were designed to showcase the different features of 
-[`pl-code`](http://prairielearn.readthedocs.io/en/latest/elements/#pl-code-element). 
+<markdown>Questions below were designed to showcase the different features of
+[`pl-code`](http://prairielearn.readthedocs.io/en/latest/elements/#pl-code-element).
  The goal of [`pl-code`](http://prairielearn.readthedocs.io/en/latest/elements/#pl-code-element)
 is to display different programming languages with appropriate syntax highlighting and code line emphasis.
 </markdown>
 </pl-question-panel>
 
-      
+
 <div class="card my-2">
 <div class="card-body">
 <pl-question-panel>
 <markdown>
 The most common use of `pl-code` is to display pre-written code with appropriate syntax highlighting.
 The language must be specified with the `language` attribute. In this case, we are requesting
-python with `language="python"`.
+python with `language="python"`. We also enable the copy code button by setting `copy-code-button="True"`.
 </markdown>
-<pl-code language="python">
+<pl-code language="python" copy-code-button="True">
 def square(x):
     return x * x
 </pl-code>
-</pl-question-panel>                
+</pl-question-panel>
 </div>
 </div>
 
@@ -42,7 +42,7 @@ def square(x):
 def bar(x):
     return 'bar'
 </pl-code>
-</pl-question-panel>                
+</pl-question-panel>
 </div>
 </div>
 
@@ -50,7 +50,7 @@ def bar(x):
 <div class="card-body">
 <pl-question-panel>
 <markdown>
-Lastly, `pl-code` also provides the ability to have code included from an external file. 
+Lastly, `pl-code` also provides the ability to have code included from an external file.
 This can be achieved with `source-file-name="my_code_file.py"` attribute.
 </markdown>
 <pl-code language="python" source-file-name="myCode.py"></pl-code>

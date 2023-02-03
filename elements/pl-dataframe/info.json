@@ -3,12 +3,6 @@
     "dependencies": {
       "elementStyles": [
           "pl-dataframe.css"
-      ],
-      "nodeModulesScripts": [
-        "clipboard/dist/clipboard.min.js"
-      ],
-      "coreScripts": [
-          "PrairieUtil.js"
       ]
     }
 }

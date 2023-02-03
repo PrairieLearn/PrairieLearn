@@ -1,10 +1,4 @@
 {{#show_python}}
-<script>
-$(function(){
-    PrairieUtil.initCopyButton('#pl-dataframe-{{uuid}} .copy-button');
-});
-</script>
-
 <div id="pl-dataframe-{{uuid}}" class="card mb-4">
   <div class="card-header">
     <ul class="nav nav-tabs card-header-tabs" role="tablist">
@@ -32,10 +26,7 @@ $(function(){
       </div>
 
       <div id="code-{{uuid}}" role="tabpanel" class="tab-pane">
-        <pl-code language="python" id=python-code-{{uuid}}>{{{code_string}}}</pl-code>
-        <button type="button" class="btn btn-secondary btn-sm copy-button" data-clipboard-target="#python-code-{{uuid}}">
-        copy this text
-        </button>
+        <pl-code language="python" copy-code-button="True">{{{code_string}}}</pl-code>
       </div>
     </div>
   </div>
