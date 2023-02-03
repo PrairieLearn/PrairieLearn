@@ -236,8 +236,5 @@ def render(element_html, data):
         ),
     }
 
-    if pl.has_attrib(element, "id"):
-        html_params["id"] = pl.get_string_attrib(element, "id")
-
     with open("pl-code.mustache", "r", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()
