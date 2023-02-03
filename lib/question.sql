@@ -31,9 +31,29 @@ WHERE
 ORDER BY
     i.date;
 
--- BLOCK select_submissions
+-- BLOCK select_basic_submissions
 SELECT
-    s.*,
+    -- This includes every `submissions` column EXCEPT for jsonb columns.
+    -- Those can be quite large in size, so we'll only load them for specific
+    -- submissions in the `select_detailed_submissions` query below.
+    s.auth_user_id,
+    s.broken,
+    s.correct,
+    s.credit,
+    s.date,
+    s.duration,
+    s.gradable,
+    s.graded_at,
+    s.grading_method,
+    s.grading_requested_at,
+    s.id,
+    s.mode,
+    s.override_score,
+    s.regradable,
+    s.score,
+    s.sid,
+    s.v2_score,
+    s.variant_id,
     to_jsonb(gj) AS grading_job,
     -- These are separate for historical reasons
     gj.id AS grading_job_id,
@@ -63,6 +83,23 @@ WHERE
     v.id = $variant_id
 ORDER BY
     s.date DESC;
+
+-- BLOCK select_detailed_submissions
+SELECT
+    -- This includes ONLY the jsonb columns from `submissions`.
+    s.feedback,
+    s.format_errors,
+    s.params,
+    s.partial_scores,
+    s.raw_submitted_answer,
+    s.submitted_answer,
+    s.true_answer
+FROM
+    submissions AS s
+WHERE
+    s.id IN (SELECT UNNEST($submission_ids::bigint[]))
+ORDER BY
+   s.date DESC;
 
 -- BLOCK select_issues_for_variant
 SELECT COUNT(*)
