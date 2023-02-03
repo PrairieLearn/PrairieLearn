@@ -155,7 +155,6 @@ module.exports.init = function (callback) {
       'assessment_groups_delete_group.sql',
       'group_info.sql',
       'groups_uid_list.sql',
-      'workspaces_message_update.sql',
       'workspace_loads_current.sql',
       'workspace_hosts_assign_workspace.sql',
       'workspace_hosts_recapture_draining.sql',
