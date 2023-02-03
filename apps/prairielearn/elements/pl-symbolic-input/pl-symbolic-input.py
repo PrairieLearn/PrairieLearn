@@ -147,13 +147,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             if a_sub is not None:
                 if isinstance(a_sub, str):
                     # this is for backward-compatibility
-                    a_sub = phs.convert_string_to_sympy(
+                    a_sub_parsed = phs.convert_string_to_sympy(
                         a_sub, variables, allow_complex=allow_complex
                     )
                 else:
-                    a_sub = phs.json_to_sympy(a_sub, allow_complex=allow_complex)
-                a_sub = a_sub.subs(sympy.I, sympy.Symbol(imaginary_unit))
-                html_params["a_sub"] = sympy.latex(a_sub)
+                    a_sub_parsed = phs.json_to_sympy(a_sub, allow_complex=allow_complex)
+                a_sub_parsed = a_sub_parsed.subs(sympy.I, sympy.Symbol(imaginary_unit))
+                html_params["a_sub"] = sympy.latex(a_sub_parsed)
+                html_params["a_sub_raw"] = data["raw_submitted_answers"].get(name, None)
             else:
                 html_params["missing_input"] = True
                 html_params["parse_error"] = None
