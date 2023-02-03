@@ -1,0 +1,39 @@
+,Unnamed: 0,Random_Id,data,date_iso8601,event_color,event_date,event_name,formatted_date,instance_question_id,instructor_question_number,qid,question_id,student_question_number,submission_id,variant_id,variant_number
+0,0,16,,2021-02-06T22:02:00-08,gray3,2021-02-07T06:02:00.524Z,Begin,2021-02-06 22:02:00 (PST),,,,,,,,
+1,1,16,,2021-02-06T22:02:00-08,green1,2021-02-07T06:02:00.575Z,View assessment overview,2021-02-06 22:02:00 (PST),,,,,,,,
+2,2,16,"{'params': {}, 'options': {}, 'true_answer': {}, 'variant_seed': '79khku'}",2021-02-06T22:02:06-08,gray1,2021-02-07T06:02:06.538Z,New variant,2021-02-06 22:02:06 (PST),252219.0,1.0,PL-demo/DIRECTIONS,1050.0,1.0,,172360.0,1.0
+3,3,16,,2021-02-06T22:02:06-08,green3,2021-02-07T06:02:06.585Z,View variant,2021-02-06 22:02:06 (PST),252219.0,1.0,PL-demo/DIRECTIONS,1050.0,1.0,,172360.0,1.0
+4,4,16,,2021-02-06T22:02:08-08,green1,2021-02-07T06:02:08.568Z,View assessment overview,2021-02-06 22:02:08 (PST),,,,,,,,
+5,5,16,,2021-02-06T22:02:12-08,green3,2021-02-07T06:02:12.371Z,View variant,2021-02-06 22:02:12 (PST),252219.0,1.0,PL-demo/DIRECTIONS,1050.0,1.0,,172360.0,1.0
+6,6,16,"{'correct': True, 'submitted_answer': {}}",2021-02-06T22:03:08-08,blue3,2021-02-07T06:03:08.178Z,Submission,2021-02-06 22:03:08 (PST),252219.0,1.0,PL-demo/DIRECTIONS,1050.0,1.0,310933.0,172360.0,1.0
+7,7,16,,2021-02-06T22:03:08-08,green3,2021-02-07T06:03:08.266Z,View variant,2021-02-06 22:03:08 (PST),252219.0,1.0,PL-demo/DIRECTIONS,1050.0,1.0,,172360.0,1.0
+8,8,16,"{'params': {}, 'options': {}, 'true_answer': {}, 'variant_seed': '1963hqg'}",2021-02-06T22:03:16-08,gray1,2021-02-07T06:03:16.998Z,New variant,2021-02-06 22:03:16 (PST),252220.0,2.0,PLEDGE,1046.0,2.0,,172365.0,1.0
+9,9,16,,2021-02-06T22:03:17-08,green3,2021-02-07T06:03:17.033Z,View variant,2021-02-06 22:03:17 (PST),252220.0,2.0,PLEDGE,1046.0,2.0,,172365.0,1.0
+10,10,16,"{'correct': True, 'submitted_answer': {'pledge': 'Martha Quezada '}}",2021-02-06T22:03:52-08,blue3,2021-02-07T06:03:52.773Z,Submission,2021-02-06 22:03:52 (PST),252220.0,2.0,PLEDGE,1046.0,2.0,310935.0,172365.0,1.0
+11,11,16,,2021-02-06T22:03:52-08,green3,2021-02-07T06:03:52.869Z,View variant,2021-02-06 22:03:52 (PST),252220.0,2.0,PLEDGE,1046.0,2.0,,172365.0,1.0
+12,12,16,"{'params': {'0': [{'key': 'a', 'html': 'past and future'}, {'key': 'b', 'html': 'this and that'}, {'key': 'c', 'html': 'True and False (select this one)'}, {'key': 'd', 'html': 'easy or hard'}, {'key': 'e', 'html': 'foo and bar'}]}, 'options': {}, 'true_answer': {'0': {'key': 'c', 'html': 'True and False (select this one)'}}, 'variant_seed': '17dg1gu'}",2021-02-06T22:03:57-08,gray1,2021-02-07T06:03:57.502Z,New variant,2021-02-06 22:03:57 (PST),252221.0,3.0,PL-demo/demo-multiple-choice,1049.0,3.0,,172366.0,1.0
+13,13,16,,2021-02-06T22:03:57-08,green3,2021-02-07T06:03:57.542Z,View variant,2021-02-06 22:03:57 (PST),252221.0,3.0,PL-demo/demo-multiple-choice,1049.0,3.0,,172366.0,1.0
+14,14,16,"{'correct': True, 'submitted_answer': {'0': 'c'}}",2021-02-06T22:04:11-08,blue3,2021-02-07T06:04:11.814Z,Submission,2021-02-06 22:04:11 (PST),252221.0,3.0,PL-demo/demo-multiple-choice,1049.0,3.0,310937.0,172366.0,1.0
+15,15,16,,2021-02-06T22:04:11-08,green3,2021-02-07T06:04:11.902Z,View variant,2021-02-06 22:04:11 (PST),252221.0,3.0,PL-demo/demo-multiple-choice,1049.0,3.0,,172366.0,1.0
+16,16,16,"{'params': {'0': [{'key': 'a', 'html': 'Incorrect'}, {'key': 'b', 'html': 'Correct'}, {'key': 'c', 'html': 'Correct'}, {'key': 'd', 'html': 'Correct'}, {'key': 'e', 'html': 'Incorrect'}]}, 'options': {}, 'true_answer': {'0': [{'key': 'b', 'html': 'Correct'}, {'key': 'c', 'html': 'Correct'}, {'key': 'd', 'html': 'Correct'}]}, 'variant_seed': '1om2nk9'}",2021-02-06T22:04:16-08,gray1,2021-02-07T06:04:16.237Z,New variant,2021-02-06 22:04:16 (PST),252222.0,4.0,PL-demo/demo-checkbox,1048.0,4.0,,172367.0,1.0
+17,17,16,,2021-02-06T22:04:16-08,green3,2021-02-07T06:04:16.274Z,View variant,2021-02-06 22:04:16 (PST),252222.0,4.0,PL-demo/demo-checkbox,1048.0,4.0,,172367.0,1.0
+18,18,16,"{'correct': True, 'submitted_answer': {'0': ['b', 'c', 'd']}}",2021-02-06T22:04:23-08,blue3,2021-02-07T06:04:23.244Z,Submission,2021-02-06 22:04:23 (PST),252222.0,4.0,PL-demo/demo-checkbox,1048.0,4.0,310941.0,172367.0,1.0
+19,19,16,,2021-02-06T22:04:23-08,green3,2021-02-07T06:04:23.332Z,View variant,2021-02-06 22:04:23 (PST),252222.0,4.0,PL-demo/demo-checkbox,1048.0,4.0,,172367.0,1.0
+20,20,16,"{'params': {}, 'options': {}, 'true_answer': {'ok': 'ok'}, 'variant_seed': 'p5h6ih'}",2021-02-06T22:04:26-08,gray1,2021-02-07T06:04:26.423Z,New variant,2021-02-06 22:04:26 (PST),252223.0,5.0,PL-demo/demo-fill-in-blank,1051.0,5.0,,172368.0,1.0
+21,21,16,,2021-02-06T22:04:26-08,green3,2021-02-07T06:04:26.455Z,View variant,2021-02-06 22:04:26 (PST),252223.0,5.0,PL-demo/demo-fill-in-blank,1051.0,5.0,,172368.0,1.0
+22,22,16,"{'correct': True, 'submitted_answer': {'ok': 'ok'}}",2021-02-06T22:04:33-08,blue3,2021-02-07T06:04:33.806Z,Submission,2021-02-06 22:04:33 (PST),252223.0,5.0,PL-demo/demo-fill-in-blank,1051.0,5.0,310942.0,172368.0,1.0
+23,23,16,,2021-02-06T22:04:33-08,green3,2021-02-07T06:04:33.895Z,View variant,2021-02-06 22:04:33 (PST),252223.0,5.0,PL-demo/demo-fill-in-blank,1051.0,5.0,,172368.0,1.0
+24,24,16,,2021-02-06T22:04:39-08,green1,2021-02-07T06:04:39.914Z,View assessment overview,2021-02-06 22:04:39 (PST),,,,,,,,
+25,25,16,"{'points': 0, 'correct': True, 'max_points': 0, 'score_perc': 0}",2021-02-06T22:04:51-08,brown1,2021-02-07T06:04:51.325Z,Score question,2021-02-06 22:04:51 (PST),252219.0,1.0,PL-demo/DIRECTIONS,1050.0,1.0,,172360.0,1.0
+26,26,16,"{'points': 0, 'correct': True, 'max_points': 0, 'score_perc': 0}",2021-02-06T22:04:51-08,brown1,2021-02-07T06:04:51.325Z,Score question,2021-02-06 22:04:51 (PST),252220.0,2.0,PLEDGE,1046.0,2.0,,172365.0,1.0
+27,27,16,"{'points': 1, 'correct': True, 'max_points': 1, 'score_perc': 100}",2021-02-06T22:04:51-08,brown1,2021-02-07T06:04:51.325Z,Score question,2021-02-06 22:04:51 (PST),252221.0,3.0,PL-demo/demo-multiple-choice,1049.0,3.0,,172366.0,1.0
+28,28,16,"{'points': 1, 'correct': True, 'max_points': 1, 'score_perc': 100}",2021-02-06T22:04:51-08,brown1,2021-02-07T06:04:51.325Z,Score question,2021-02-06 22:04:51 (PST),252222.0,4.0,PL-demo/demo-checkbox,1048.0,4.0,,172367.0,1.0
+29,29,16,"{'points': 1, 'correct': True, 'max_points': 1, 'score_perc': 100}",2021-02-06T22:04:51-08,brown1,2021-02-07T06:04:51.325Z,Score question,2021-02-06 22:04:51 (PST),252223.0,5.0,PL-demo/demo-fill-in-blank,1051.0,5.0,,172368.0,1.0
+30,30,16,"{'points': 0, 'max_points': 3, 'score_perc': 0}",2021-02-06T22:04:51-08,brown3,2021-02-07T06:04:51.325Z,Score assessment,2021-02-06 22:04:51 (PST),,,,,,,,
+31,31,16,"{'points': 0, 'max_points': 3, 'score_perc': 0}",2021-02-06T22:04:51-08,brown3,2021-02-07T06:04:51.325Z,Score assessment,2021-02-06 22:04:51 (PST),,,,,,,,
+32,32,16,"{'points': 1, 'max_points': 3, 'score_perc': 33.3333333333333}",2021-02-06T22:04:51-08,brown3,2021-02-07T06:04:51.325Z,Score assessment,2021-02-06 22:04:51 (PST),,,,,,,,
+33,33,16,"{'points': 2, 'max_points': 3, 'score_perc': 66.6666666666667}",2021-02-06T22:04:51-08,brown3,2021-02-07T06:04:51.325Z,Score assessment,2021-02-06 22:04:51 (PST),,,,,,,,
+34,34,16,"{'points': 3, 'max_points': 3, 'score_perc': 100}",2021-02-06T22:04:51-08,brown3,2021-02-07T06:04:51.325Z,Score assessment,2021-02-06 22:04:51 (PST),,,,,,,,
+35,35,16,,2021-02-06T22:04:51-08,gray3,2021-02-07T06:04:51.325Z,Close,2021-02-06 22:04:51 (PST),,,,,,,,
+36,36,16,,2021-02-06T22:04:51-08,green1,2021-02-07T06:04:51.479Z,View assessment overview,2021-02-06 22:04:51 (PST),,,,,,,,
+37,37,16,,2021-02-06T22:05:00-08,green1,2021-02-07T06:05:00.122Z,View assessment overview,2021-02-06 22:05:00 (PST),,,,,,,,

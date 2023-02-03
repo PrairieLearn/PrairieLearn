@@ -9,12 +9,6 @@
   <span id="test_csrf_token" hidden><%= __csrf_token %></span>
 <% } %>
 
-<% if (config.announcementHtml) { %>
-  <div class="alert alert-<%= config.announcementColor ?? 'primary' %> mb-0 rounded-0 text-center">
-    <%- config.announcementHtml %>
-  </div>
-<% } %>
-
 <div class="mb-4">
 <nav class="navbar navbar-dark bg-dark navbar-expand-md">
   <a class="navbar-brand" href="<%= homeUrl %>">
@@ -48,7 +42,6 @@
       } else {
         displayedName = authz_data.user.uid;
       }
-
       if (authz_data.mode != 'Public') {
         displayedName += ' (' + authz_data.mode + ')';
       }
@@ -88,13 +81,10 @@
         <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
 
           <% if (locals.authn_is_administrator) { %>
-
             <a class="dropdown-item" id="navbar-administrator-toggle">
               <% if (locals.access_as_administrator) { %>Turn off administrator access<% } else { %>Turn on administrator access<% } %>
             </a>
-
             <div class="dropdown-divider"></div>
-
           <% } %>
 
           <% if (typeof viewType !== 'undefined' && locals.course_instance && (authz_data.authn_has_course_permission_preview || authz_data.authn_has_course_instance_permission_view)) {
@@ -106,7 +96,6 @@
             // case, urlPrefix may not be consistent with the page that the effective user
             // was trying to access (instead, it will be consistent with a "plain" page).
             // So, to be safe, we use plainUrlPrefix and construct all full URLs by hand.
-
             var instructorLink = '#';
             var studentLink = '#';
             if (viewType == 'instructor') {
@@ -124,7 +113,6 @@
                 instructorLink = `${urlPrefix}/instructor/instance_admin`;
               }
             }
-
             var headingAuthnViewTypeMenu = 'View type';
             if (authz_data.authn_user.uid != authz_data.user.uid) {
               headingAuthnViewTypeMenu = 'View as';
@@ -134,7 +122,6 @@
                 headingAuthnViewTypeMenu += ` ${authz_data.authn_user.uid}`;
               }
             }
-
             var authnViewTypeMenuChecked = '';
             if (authz_data.authn_user.uid == authz_data.user.uid) {
               if (viewType == 'instructor') {
@@ -150,18 +137,13 @@
               }
             }
           %>
-
             <% if (locals.authz_data?.overrides && authnViewTypeMenuChecked == 'instructor') { %>
               <a class="dropdown-item" href="<%= instructorLink %>" id="navbar-reset-view">
                 Reset to default staff view <span class="badge badge-success">staff</span>
               </a>
-
               <div class="dropdown-divider"></div>
             <% } %>
-
-
             <h6 class="dropdown-header"><%= headingAuthnViewTypeMenu %></h6>
-
             <a class="dropdown-item" href="<%= instructorLink %>" id="navbar-user-view-authn-instructor">
               <div class="d-flex flex-row justify-content-left">
                 <div class="col-1 px-0"><% if (authnViewTypeMenuChecked == 'instructor') { %>&check;<% } %></div>
@@ -171,30 +153,25 @@
                 </div>
               </div>
             </a>
-
             <a class="dropdown-item" href="<%= studentLink %>" id="navbar-user-view-authn-student">
               <div class="d-flex flex-row justify-content-left">
                 <div class="col-1 px-0"><% if (authnViewTypeMenuChecked == 'student') { %>&check;<% } %></div>
                 <div class="col pl-0">Student view <span class="badge badge-warning">student</span></div>
               </div>
             </a>
-
             <a class="dropdown-item" href="<%= studentLink %>" id="navbar-user-view-authn-student-no-rules">
               <div class="d-flex flex-row justify-content-left">
                 <div class="col-1 px-0"><% if (authnViewTypeMenuChecked == 'student-no-rules') { %>&check;<% } %></div>
                 <div class="col pl-0">Student view without access restrictions <span class="badge badge-warning">student</span></div>
               </div>
             </a>
-
             <% if (authz_data.authn_user.uid != authz_data.user.uid) {
-
               var headingViewTypeMenu = 'View as';
               if (authz_data.user.name) {
                 headingViewTypeMenu += ` ${authz_data.user.name} (${authz_data.user.uid})`;
               } else {
                 headingViewTypeMenu += ` ${authz_data.user.uid}`;
               }
-
               var viewTypeMenuChecked = '';
               if (viewType == 'instructor') {
                 if (authz_data.has_course_permission_preview || authz_data.has_course_instance_permission_view) {
@@ -208,10 +185,8 @@
                 }
               }
             %>
-
               <div class="dropdown-divider"></div>
               <h6 class="dropdown-header"><%= headingViewTypeMenu %></h6>
-
               <% if (authz_data.user_with_requested_uid_has_instructor_access_to_course_instance) { %>
                 <a class="dropdown-item" href="<%= instructorLink %>" id="navbar-user-view-instructor">
                   <div class="d-flex flex-row justify-content-left">
@@ -220,29 +195,22 @@
                   </div>
                 </a>
               <% } %>
-
               <a class="dropdown-item" href="<%= studentLink %>" id="navbar-user-view-student">
                 <div class="d-flex flex-row justify-content-left">
                   <div class="col-1 px-0"><% if (viewTypeMenuChecked == 'student') { %>&check;<% } %></div>
                   <div class="col pl-0">Student view</div>
                 </div>
               </a>
-
               <a class="dropdown-item" href="<%= studentLink %>" id="navbar-user-view-student-no-rules">
                 <div class="d-flex flex-row justify-content-left">
                   <div class="col-1 px-0"><% if (viewTypeMenuChecked == 'student-no-rules') { %>&check;<% } %></div>
                   <div class="col pl-0">Student view without access restrictions</div>
                 </div>
               </a>
-
             <% } %>
-
             <div class="dropdown-divider"></div>
-
           <% } %>
-
           <% if (locals.authz_data && (authz_data.authn_has_course_permission_preview || authz_data.authn_has_course_instance_permission_view)) {
-
             let effectiveUserUrl = `${urlPrefix}/effectiveUser`;
             if (navbarType != 'student' && navbarType != 'instructor') {
               // The only way for auhz_data to exist, for authn_has_course_permission_preview to be true,
@@ -263,12 +231,10 @@
             }
           %>
             <h6 class="dropdown-header">Effective user</h6>
-
             <div class="dropdown-item-text d-flex flex-row justify-content-left ml-4 align-items-center">
               <div class="px-0"><input type="email" class="form-control form-control-sm" id="navbar-user-effective-uid-input" placeholder="netid@illinois.edu" style="min-width:15em"></div>
               <div class="pl-2"><button type="button" class="btn btn-primary btn-sm text-nowrap" id="navbar-user-effective-uid-button" disabled>Change UID</button></div>
             </div>
-
             <% if (authz_data.overrides) { %>
               <div class="list-group small dropdown-item-text pl-5" style="white-space: nowrap">
                 <% authz_data.overrides.forEach(function(override) { %>
@@ -276,25 +242,20 @@
                 <% }); %>
               </div>
             <% } %>
-
             <a class="dropdown-item" href="<%= effectiveUserUrl %>">
               <div class="d-flex flex-row justify-content-left">
                 <div class="col-1 px-0"></div>
                 <div class="pl-0">Customize&hellip;</div>
               </div>
             </a>
-
             <div class="dropdown-divider"></div>
-
           <% } %>
-
           <% if (locals.authz_data && authz_data.mode == 'Exam') { %>
             <div class="dropdown-item-text">
               Exam mode means you have a checked-in reservation to CBTF. Your interactions with PrairieLearn are limited to your checked-in exam for the duration of your reservation.
             </div>
             <div class="dropdown-divider"></div>
           <% } %>
-
           <% if (typeof authz_data === 'undefined' ||
                 (typeof authz_data !== 'undefined' && authz_data.mode != 'Exam')) {%>
             <a class="dropdown-item" href="<%= plainUrlPrefix %>/request_course"> Course Requests </a>
@@ -306,16 +267,12 @@
               <span class="badge badge-pill badge-primary news-item-link-count"><%= news_item_notification_count %></span>
             <% } %>
           </a>
-
           <%- include('logout'); %>
-
         </div>
       </li>
     </ul>
   </div>
-
   <script>
-
     <% if (devMode) { %>
       $('#navbar-load-from-disk').click(function() {
         Cookies.remove('pl_requested_uid', { path: '/' });
@@ -326,10 +283,7 @@
         Cookies.set('pl_requested_data_changed', { path: '/' });
       });
     <% } %>
-
-
     <% if (locals.authn_is_administrator) { %>
-
       $(function() {
         const expires = 30; // in units of days
         $('#navbar-administrator-toggle').click(function() {
@@ -343,14 +297,10 @@
           location.reload();
         });
       });
-
     <% } %>
-
     <% if (typeof viewType !== 'undefined' && locals.course_instance && (authz_data.authn_has_course_permission_preview || authz_data.authn_has_course_instance_permission_view)) { %>
-
       $(function() {
         const expires = 30; // in units of days
-
         $('#navbar-reset-view').click(function() {
           Cookies.remove('pl_requested_uid', { path: '/' });
           Cookies.remove('pl_requested_course_role', { path: '/' });
@@ -358,109 +308,84 @@
           Cookies.remove('pl_requested_mode', { path: '/' });
           Cookies.remove('pl_requested_date', { path: '/' });
           Cookies.set('pl_requested_data_changed', { path: '/' });
-
           <% if (viewType == 'instructor') { %>
             location.reload();
           <% } %>
         });
-
         $('#navbar-user-view-authn-instructor').click(function() {
           Cookies.remove('pl_requested_uid', { path: '/' });
           Cookies.remove('pl_requested_course_role', { path: '/' });
           Cookies.remove('pl_requested_course_instance_role', { path: '/' });
           Cookies.set('pl_requested_data_changed', { path: '/' });
-
           <% if (viewType == 'instructor') { %>
             location.reload();
           <% } %>
         });
-
         $('#navbar-user-view-authn-student-no-rules').click(function() {
           Cookies.remove('pl_requested_uid', { path: '/' });
           Cookies.remove('pl_requested_course_role', { path: '/' });
           Cookies.remove('pl_requested_course_instance_role', { path: '/' });
           Cookies.set('pl_requested_data_changed', { path: '/' });
-
           <% if (viewType == 'student') { %>
             location.reload();
           <% } %>
         });
-
         $('#navbar-user-view-authn-student').click(function() {
           Cookies.remove('pl_requested_uid', { path: '/' });
           Cookies.set('pl_requested_course_role', 'None', { path: '/', expires: expires });
           Cookies.set('pl_requested_course_instance_role', 'None', { path: '/', expires: expires });
           Cookies.set('pl_requested_data_changed', { path: '/' });
-
           <% if (viewType == 'student') { %>
             location.reload();
           <% } %>
         });
-
         <% if (authz_data.authn_user.uid != authz_data.user.uid) { %>
-
           <% if (authz_data.user_with_requested_uid_has_instructor_access_to_course_instance) { %>
-
             $('#navbar-user-view-instructor').click(function() {
               Cookies.remove('pl_requested_course_role', { path: '/' });
               Cookies.remove('pl_requested_course_instance_role', { path: '/' });
               Cookies.set('pl_requested_data_changed', { path: '/' });
-
               <% if (viewType == 'instructor') { %>
                 location.reload();
               <% } %>
             });
-
             $('#navbar-user-view-student-no-rules').click(function() {
               Cookies.remove('pl_requested_course_role', { path: '/' });
               Cookies.remove('pl_requested_course_instance_role', { path: '/' });
               Cookies.set('pl_requested_data_changed', { path: '/' });
-
               <% if (viewType == 'student') { %>
                 location.reload();
               <% } %>
             });
-
             $('#navbar-user-view-student').click(function() {
               Cookies.set('pl_requested_course_role', 'None', { path: '/', expires: expires });
               Cookies.set('pl_requested_course_instance_role', 'None', { path: '/', expires: expires });
               Cookies.set('pl_requested_data_changed', { path: '/' });
-
               <% if (viewType == 'student') { %>
                 location.reload();
               <% } %>
             });
-
           <% } else { %>
-
             $('#navbar-user-view-student-no-rules').click(function() {
               Cookies.set('pl_requested_course_role', '<%= authz_data.authn_course_role %>', { path: '/', expires: expires });
               Cookies.set('pl_requested_course_instance_role', '<%= authz_data.authn_course_instance_role %>', { path: '/', expires: expires });
               Cookies.set('pl_requested_data_changed', { path: '/' });
-
               <% if (viewType == 'student') { %>
                 location.reload();
               <% } %>
             });
-
             $('#navbar-user-view-student').click(function() {
               Cookies.remove('pl_requested_course_role', { path: '/' });
               Cookies.remove('pl_requested_course_instance_role', { path: '/' });
               Cookies.set('pl_requested_data_changed', { path: '/' });
-
               <% if (viewType == 'student') { %>
                 location.reload();
               <% } %>
             });
-
           <% } %>
-
         <% } %>
-
       });
-
     <% } %>
-
     <% if (locals.authz_data && (authz_data.authn_has_course_permission_preview || authz_data.authn_has_course_instance_permission_view)) { %>
       $(function() {
         const expires = 30; // in units of days
@@ -472,7 +397,6 @@
             btn.attr('disabled', true);
           }
         });
-
         $('#navbar-user-effective-uid-input').keypress(function(e) {
           if (e.which == 13) {
             const uid = $('#navbar-user-effective-uid-input').val().trim();
@@ -483,7 +407,6 @@
             }
           }
         });
-
         $('#navbar-user-effective-uid-button').click(function() {
           const uid = $('#navbar-user-effective-uid-input').val().trim();
           if (uid != '') {
@@ -494,9 +417,7 @@
         });
       });
     <% } %>
-
   </script>
-
 </nav>
 <% // Mapping navPage to navtab sets
 const navPagesTabs = {

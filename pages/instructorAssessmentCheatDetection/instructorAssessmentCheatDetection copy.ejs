@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('../partials/head', {pageTitle: 'cheat_detection'}); %>
+    <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('d3/dist/d3.min.js') %>"></script>
+    <script src="<%= asset_path('localscripts/histogram.js') %>"></script>
+    <script src="<%= asset_path('localscripts/scatter.js') %>"></script>
+    <script src="<%= asset_path('localscripts/parallel_histograms.js') %>"></script>
+    <!-- Load Chart.js Library-->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.8.0/dist/chart.min.js"></script>
+    <!-- Load Papa Parse Library-->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+  </head>
+  <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover({sanitize: false})
+      });
+    </script>
+    <%- include('../partials/navbar'); %>
+    <div id="content" class="container-fluid">
+      <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Similarity Check for <%= assessment_set.name %> <%= assessment.number %>
+        </div>
+        <% if (assessment_stat.number > 0) { %>
+        <div class="card-body">
+          <!-- Cheat Detection Overall Sim Chart-->
+          <div class = "cd_button">
+            <input type = "file" id = "uploadcsv">
+            <button type="button" class="btn btn-sm btn-primary" id="uploadconfirm"> Upload CSV</button>
+            <hr>
+            
+            <p class="lead text-left"> 
+              Personal Access Token: <input type="text" id="PAT">
+              <button type="submit" class="btn btn-primary" id="submitPersonalAccessToken">Submit</button>
+            </p>
+            
+            <button type="button" class="btn btn-sm btn-primary" onclick="updateChart('overall_prob')"> Overall Similarity </button>
+            <button type="button" class="btn btn-sm btn-primary" onclick="updateChart('rule1_prob')"> Time Similarity </button>
+            <button type="button" class="btn btn-sm btn-primary" onclick="updateChart('rule2_prob')"> Answer Similarity </button>
+            <button type="button" class="btn btn-sm btn-primary" onclick="updateChart('rule3_prob')"> Order Similarity </button>
+            <button type="button" class="btn btn-sm btn-primary" onclick="updateChart('rule4_prob')"> Wrong Answer Similarity </button>
+            <button type="button" class="btn btn-sm btn-primary" onclick="updateChart('rule5_prob')"> Score Similarity </button>
+          
+          </div>
+
+          <!-- 1. bar chart -->
+          <div class="cd_chart">
+            <canvas id="chart"></canvas>
+          </div>
+          <script>
+            let overall_data = {
+              "0-0.1": 0, "0.1-0.2": 0, "0.2-0.3": 0, "0.3-0.4": 0, "0.4-0.5": 0, 
+              "0.5-0.6": 0, "0.6-0.7": 0, "0.7-0.8": 0, "0.8-0.9": 0, "0.9-1": 0 };
+            let time_data = {...overall_data};
+            let answer_data = {...overall_data};
+            let order_data = {...overall_data};
+            let wrong_answer_data = {...overall_data};
+            let score_data = {...overall_data};
+             let group_count = {
+            "0-0.1":0, 
+            "0.1-0.2":0, 
+            "0.2-0.3":0, 
+            "0.3-0.4":0, 
+            "0.4-0.5":0, 
+            "0.5-0.6":0, 
+            "0.6-0.7":0, 
+            "0.7-0.8":0,
+            "0.8-0.9":0, 
+            "0.9-1":0
+            };
+           
+            //const csv = await fetch('pages/instructorAssessmentCheatDetection/cheat-detection-py/result.csv');
+            //const data = await csv.text();
+            var GlobalResults = [];
+            function readWriteData(results, ruleData) {
+              GlobalResults = results;
+              let dict = {};
+              let score = null;
+              if (ruleData === 'overall_prob') { dict = overall_data; }
+              else if (ruleData === 'rule1_prob') { dict = time_data; }
+              else if (ruleData === 'rule2_prob') { dict = answer_data; }
+              else if (ruleData === 'rule3_prob') { dict = order_data; }
+              else if (ruleData === 'rule4_prob') { dict = wrong_answer_data; }
+              else if (ruleData === 'rule5_prob') { dict = score_data; }
+              for (i = 0; i < results.data.length; i++) {
+                if (ruleData === 'overall_prob') { score = results.data[i].overall_prob; }
+                else if (ruleData === 'rule1_prob') { score = results.data[i].rule1_prob; }
+                else if (ruleData === 'rule2_prob') { score = results.data[i].rule2_prob; }
+                else if (ruleData === 'rule3_prob') { score = results.data[i].rule3_prob; }
+                else if (ruleData === 'rule4_prob') { score = results.data[i].rule4_prob; }
+                else if (ruleData === 'rule5_prob') { score = results.data[i].rule5_prob; }
+                if (score <= 0.1)
+                  dict["0-0.1"] += 1;
+                else if (0.1 < score <= 0.2)
+                  dict["0.1-0.2"] += 1;
+                else if (0.2 < score <= 0.3)
+                  dict["0.2-0.3"] += 1;
+                else if (0.3 < score <= 0.4)
+                  dict["0.3-0.4"] += 1;
+                else if (0.4 < score <= 0.5)
+                  dict["0.4-0.5"] += 1;
+                else if (0.5 < score <= 0.6)
+                  dict["0.5-0.6"] += 1;
+                else if (0.6 < score <= 0.7)
+                  dict["0.6-0.7"] += 1;
+                else if (0.7 < score <= 0.8)
+                  dict["0.7-0.8"] += 1;
+                else if (0.8 < score <= 0.9)
+                  dict["0.8-0.9"] += 1;
+                else
+                  dict["0.9-1"] += 1;
+                
+              }
+              if (ruleData === 'overall_prob') { overall_data = dict; }
+              else if (ruleData === 'rule1_prob') { time_data = dict; }
+              else if (ruleData === 'rule2_prob') { answer_data = dict; }
+              else if (ruleData === 'rule3_prob') { order_data = dict; }
+              else if (ruleData === 'rule4_prob') { wrong_answer_data = dict; }
+              else if (ruleData === 'rule5_prob') { score_data = dict; }
+              
+            }
+            const uploadcsv = document.getElementById('uploadconfirm')
+              .addEventListener('click', () => {
+                //Parsing
+                Papa.parse(document.getElementById('uploadcsv').files[0], {
+                  download: true,
+                  header: true,
+                  skipEmptyLines: true,
+                  
+                  complete : function(results) {
+                    readWriteData(results, 'overall_prob');
+                    readWriteData(results, 'rule1_prob', time_data);
+                    readWriteData(results, 'rule2_prob', answer_data);
+                    readWriteData(results, 'rule3_prob', order_data);
+                    readWriteData(results, 'rule4_prob', wrong_answer_data);
+                    readWriteData(results, 'rule5_prob', score_data);
+                    updateTable(results.data);
+                    }
+                });
+              });
+              
+            //Setup Block
+            const data = {
+              labels: Object.keys(group_count),
+              datasets: [{
+                  label: "Overall Similarity",
+                  data: Object.values(group_count),
+                  // xAxisID: "x",
+                  //Blue Bars
+                  backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                  borderColor: 'rgba(54, 162, 235, 0.6)',
+                  borderWidth: 1,
+                  hoverBorderWidth: 2,
+                  hoverBorderColor: 'rgba(54, 162, 235, 1)'
+              }]
+            };
+            //Config Block
+            const config = {
+              type: 'bar',
+              data: data,
+              options: {
+                scales: {
+                  y : {
+                    // type: 'linear',
+                    text: 'Frequency',
+                    grace: '10%'
+                  },
+                  
+                }
+              }
+            };
+            
+            //Init Render Block
+            const myChart = new Chart(
+              document.getElementById('chart'),
+              config
+            );
+            
+            function updateChart(rule) {
+              myChart.data.datasets[0].label = "Number of pairs within the bin";
+              //set display data to data pertaining to rule
+              if (rule === 'overall_prob') {
+                for(const key in overall_data) {
+                group_count[key] = overall_data[key]
+                }
+              }
+              else if (rule === 'rule1_prob') {
+                for(const key in time_data) {
+                group_count[key] = time_data[key]
+                }
+              }
+              else if (rule === 'rule2_prob') {
+                for(const key in answer_data) {
+                group_count[key] = answer_data[key]
+                }
+              }
+              else if (rule === 'rule3_prob') {
+                for(const key in order_data) {
+                group_count[key] = order_data[key]
+                }
+              }
+              else if (rule === 'rule4_prob') {
+                for(const key in wrong_answer_data) {
+                group_count[key] = wrong_answer_data[key]
+                }
+              }
+              else if (rule === 'rule5_prob') {
+                for(const key in score_data) {
+                group_count[key] = score_data[key]
+                }
+              }
+              console.log(Object.values(group_count));
+              myChart.data.datasets[0].data = Object.values(group_count);
+            
+              myChart.update();
+
+            };
+
+            function updateTable(data) {
+              console.log("data");
+              console.log(data);
+
+              // get html element
+              let table_body = $("tbody#table-body");
+
+              // append rows
+              for (let i=0; i<25; i++) {
+                let tr = $("<tr role=\"row\" class=\"even\"></tr>");
+                tr.append($("<td>"+(i+1)+"</td>"));
+                tr.append($("<td>"+data[i].student1+"</td>"));
+                tr.append($("<td>"+data[i].student2+"</td>"));
+                tr.append($("<td>"+parseFloat(data[i].rule1_prob).toFixed(2)+"</td>"));
+                tr.append($("<td>"+parseFloat(data[i].rule2_prob).toFixed(2)+"</td>"));
+                tr.append($("<td>"+parseFloat(data[i].rule3_prob).toFixed(2)+"</td>"));
+                tr.append($("<td>"+parseFloat(data[i].rule4_prob).toFixed(2)+"</td>"));
+                tr.append($("<td>"+parseFloat(data[i].rule4_prob).toFixed(2)+"</td>"));
+                tr.append($("<td>"+parseFloat(data[i].overall_prob).toFixed(2)+"</td>"));
+                table_body.append(tr);
+              }              
+            }
+
+            function setPersonalAccessToken(event) {
+              personalAccessToken = document.getElementById("PAT").value;
+              console.log(personalAccessToken);
+            }
+            document.getElementById("submitPersonalAccessToken").addEventListener("click", setPersonalAccessToken, false);
+          </script>
+        </div>
+        <% } %>
+      </div>
+
+      <!-- 2. scatterplot -->
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Similarity Scatterplot: <%= assessment_set.name %> <%= assessment.number %>
+        </div>
+        <div id="durationScoreScatter" class="scatter"><svg width="600" height="600" class="center-block statsPlot"><g transform="translate(70,10)"><g class="x grid" transform="translate(0,535)" fill="none" font-size="10" font-family="sans-serif" text-anchor="middle"><path class="domain" stroke="currentColor" d="M0.5,-535V0.5H510.5V-535"></path><g class="tick" opacity="1" transform="translate(0.5,0)"><line stroke="currentColor" y2="-535"></line><text fill="currentColor" y="3" dy="0.71em"></text></g><g class="tick" opacity="1" transform="translate(51.5,0)"><line stroke="currentColor" y2="-535"></line><text fill="currentColor" y="3" dy="0.71em"></text></g><g class="tick" opacity="1" transform="translate(102.5,0)"><line stroke="currentColor" y2="-535"></line><text fill="currentColor" y="3" dy="0.71em"></text></g><g class="tick" opacity="1" transform="translate(153.5,0)"><line stroke="currentColor" y2="-535"></line><text fill="currentColor" y="3" dy="0.71em"></text></g><g class="tick" opacity="1" transform="translate(204.5,0)"><line stroke="currentColor" y2="-535"></line><text fill="currentColor" y="3" dy="0.71em"></text></g><g class="tick" opacity="1" transform="translate(255.5,0)"><line stroke="currentColor" y2="-535"></line><text fill="currentColor" y="3" dy="0.71em"></text></g><g class="tick" opacity="1" transform="translate(306.5,0)"><line stroke="currentColor" y2="-535"></line><text fill="currentColor" y="3" dy="0.71em"></text></g><g class="tick" opacity="1" transform="translate(357.5,0)"><line stroke="currentColor" y2="-535"></line><text fill="currentColor" y="3" dy="0.71em"></text></g><g class="tick" opacity="1" transform="translate(408.5,0)"><line stroke="currentColor" y2="-535"></line><text fill="currentColor" y="3" dy="0.71em"></text></g><g class="tick" opacity="1" transform="translate(459.5,0)"><line stroke="currentColor" y2="-535"></line><text fill="currentColor" y="3" dy="0.71em"></text></g><g class="tick" opacity="1" transform="translate(510.5,0)"><line stroke="currentColor" y2="-535"></line><text fill="currentColor" y="3" dy="0.71em"></text></g></g><g class="y grid" fill="none" font-size="10" font-family="sans-serif" text-anchor="end"><path class="domain" stroke="currentColor" d="M510,535.5H0.5V0.5H510"></path><g class="tick" opacity="1" transform="translate(0,535.5)"><line stroke="currentColor" x2="510"></line><text fill="currentColor" x="-3" dy="0.32em"></text></g><g class="tick" opacity="1" transform="translate(0,482)"><line stroke="currentColor" x2="510"></line><text fill="currentColor" x="-3" dy="0.32em"></text></g><g class="tick" opacity="1" transform="translate(0,428.5)"><line stroke="currentColor" x2="510"></line><text fill="currentColor" x="-3" dy="0.32em"></text></g><g class="tick" opacity="1" transform="translate(0,375)"><line stroke="currentColor" x2="510"></line><text fill="currentColor" x="-3" dy="0.32em"></text></g><g class="tick" opacity="1" transform="translate(0,321.5)"><line stroke="currentColor" x2="510"></line><text fill="currentColor" x="-3" dy="0.32em"></text></g><g class="tick" opacity="1" transform="translate(0,268)"><line stroke="currentColor" x2="510"></line><text fill="currentColor" x="-3" dy="0.32em"></text></g><g class="tick" opacity="1" transform="translate(0,214.5)"><line stroke="currentColor" x2="510"></line><text fill="currentColor" x="-3" dy="0.32em"></text></g><g class="tick" opacity="1" transform="translate(0,161.00000000000003)"><line stroke="currentColor" x2="510"></line><text fill="currentColor" x="-3" dy="0.32em"></text></g><g class="tick" opacity="1" transform="translate(0,107.49999999999997)"><line stroke="currentColor" x2="510"></line><text fill="currentColor" x="-3" dy="0.32em"></text></g><g class="tick" opacity="1" transform="translate(0,53.999999999999986)"><line stroke="currentColor" x2="510"></line><text fill="currentColor" x="-3" dy="0.32em"></text></g><g class="tick" opacity="1" transform="translate(0,0.5)"><line stroke="currentColor" x2="510"></line><text fill="currentColor" x="-3" dy="0.32em"></text></g></g><g class="x axis" transform="translate(0,535)" fill="none" font-size="10" font-family="sans-serif" text-anchor="middle"><path class="domain" stroke="currentColor" d="M0.5,6V0.5H510.5V6"></path><g class="tick" opacity="1" transform="translate(0.5,0)"><line stroke="currentColor" y2="6"></line><text fill="currentColor" y="9" dy="0.71em">0</text></g><g class="tick" opacity="1" transform="translate(51.5,0)"><line stroke="currentColor" y2="6"></line><text fill="currentColor" y="9" dy="0.71em">1m</text></g><g class="tick" opacity="1" transform="translate(102.5,0)"><line stroke="currentColor" y2="6"></line><text fill="currentColor" y="9" dy="0.71em">2m</text></g><g class="tick" opacity="1" transform="translate(153.5,0)"><line stroke="currentColor" y2="6"></line><text fill="currentColor" y="9" dy="0.71em">3m</text></g><g class="tick" opacity="1" transform="translate(204.5,0)"><line stroke="currentColor" y2="6"></line><text fill="currentColor" y="9" dy="0.71em">4m</text></g><g class="tick" opacity="1" transform="translate(255.5,0)"><line stroke="currentColor" y2="6"></line><text fill="currentColor" y="9" dy="0.71em">5m</text></g><g class="tick" opacity="1" transform="translate(306.5,0)"><line stroke="currentColor" y2="6"></line><text fill="currentColor" y="9" dy="0.71em">6m</text></g><g class="tick" opacity="1" transform="translate(357.5,0)"><line stroke="currentColor" y2="6"></line><text fill="currentColor" y="9" dy="0.71em">7m</text></g><g class="tick" opacity="1" transform="translate(408.5,0)"><line stroke="currentColor" y2="6"></line><text fill="currentColor" y="9" dy="0.71em">8m</text></g><g class="tick" opacity="1" transform="translate(459.5,0)"><line stroke="currentColor" y2="6"></line><text fill="currentColor" y="9" dy="0.71em">9m</text></g><g class="tick" opacity="1" transform="translate(510.5,0)"><line stroke="currentColor" y2="6"></line><text fill="currentColor" y="9" dy="0.71em">10m</text></g><text class="label" x="255" y="3em" style="text-anchor: middle;">duration</text></g><g class="y axis" fill="none" font-size="10" font-family="sans-serif" text-anchor="end"><path class="domain" stroke="currentColor" d="M-6,535.5H0.5V0.5H-6"></path><g class="tick" opacity="1" transform="translate(0,535.5)"><line stroke="currentColor" x2="-6"></line><text fill="currentColor" x="-9" dy="0.32em">0</text></g><g class="tick" opacity="1" transform="translate(0,482)"><line stroke="currentColor" x2="-6"></line><text fill="currentColor" x="-9" dy="0.32em">10</text></g><g class="tick" opacity="1" transform="translate(0,428.5)"><line stroke="currentColor" x2="-6"></line><text fill="currentColor" x="-9" dy="0.32em">20</text></g><g class="tick" opacity="1" transform="translate(0,375)"><line stroke="currentColor" x2="-6"></line><text fill="currentColor" x="-9" dy="0.32em">30</text></g><g class="tick" opacity="1" transform="translate(0,321.5)"><line stroke="currentColor" x2="-6"></line><text fill="currentColor" x="-9" dy="0.32em">40</text></g><g class="tick" opacity="1" transform="translate(0,268)"><line stroke="currentColor" x2="-6"></line><text fill="currentColor" x="-9" dy="0.32em">50</text></g><g class="tick" opacity="1" transform="translate(0,214.5)"><line stroke="currentColor" x2="-6"></line><text fill="currentColor" x="-9" dy="0.32em">60</text></g><g class="tick" opacity="1" transform="translate(0,161.00000000000003)"><line stroke="currentColor" x2="-6"></line><text fill="currentColor" x="-9" dy="0.32em">70</text></g><g class="tick" opacity="1" transform="translate(0,107.49999999999997)"><line stroke="currentColor" x2="-6"></line><text fill="currentColor" x="-9" dy="0.32em">80</text></g><g class="tick" opacity="1" transform="translate(0,53.999999999999986)"><line stroke="currentColor" x2="-6"></line><text fill="currentColor" x="-9" dy="0.32em">90</text></g><g class="tick" opacity="1" transform="translate(0,0.5)"><line stroke="currentColor" x2="-6"></line><text fill="currentColor" x="-9" dy="0.32em">100</text></g><text class="label" transform="rotate(-90)" x="-267.5" y="-3em" style="text-anchor: middle;">score / %</text></g><line></line><line></line><g><circle class="point" cx="26.691986449999998" cy="272.467857142857" r="2"></circle><text text-anchor="middle" class="pointLabel" x="26.691986449999998" y="266.467857142857"></text></g><g><circle class="point" cx="20.7140614" cy="242.02380952380932" r="2"></circle><text text-anchor="middle" class="pointLabel" x="20.7140614" y="236.02380952380932"></text></g></g></svg></div>
+      </div>
+
+      <!-- 3. detailed report of a pair -->
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Pair (146, 92): Detailed Report in <%= assessment_set.name %> <%= assessment.number %>
+        </div>
+        <a href="http://localhost:3000/pl/course_instance/2/instructor/assessment/32/cheat_detection_details">[student1, student2]</a>
+        <h3>Overview</h3>
+        <p>Number of Students: </p>
+        <p>Time Span: </p>
+        <p>Exam Questions are (shuffled, varianted): </p>
+        <br>
+        <h3>This Pair</h3>
+        
+      </div>
+
+      <!-- 4. results.csv table -->
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Similarity Ranking: <%= assessment_set.name %> <%= assessment.number %>
+        </div>
+
+        <div class="table-responsive">
+          
+          <table role="grid" class="table table-sm table-hover table-striped tablesorter tablesorter-bootstrap tablesorter1baf7fd6a9a23 table-bordered">
+            <thead>
+              <tr role="row" class="tablesorter-headerRow">
+                <th class="align-middle text-nowrap" data-field=""><div class="th-inner sortable both desc"></div><div class="fht-cell"></div></th>
+
+                <th data-column="1" class="tablesorter-header bootstrap-header tablesorter-headerUnSorted" tabindex="0" scope="col" role="columnheader" aria-disabled="false" unselectable="on" aria-sort="none" aria-label="uid: No sort applied, activate to apply an ascending sort" style="user-select: none;">
+                  <div class="tablesorter-wrapper" style="position:relative;height:100%;width:100%">
+                    <div class="tablesorter-header-inner">
+                      Student 1 
+                      <i class="tablesorter-icon bootstrap-icon-unsorted"></i>
+                    </div>
+                  </div>
+                </th>
+
+                <th data-column="1" class="tablesorter-header bootstrap-header tablesorter-headerUnSorted" tabindex="0" scope="col" role="columnheader" aria-disabled="false" unselectable="on" aria-sort="none" aria-label="uid: No sort applied, activate to apply an ascending sort" style="user-select: none;">
+                  <div class="tablesorter-wrapper" style="position:relative;height:100%;width:100%">
+                    <div class="tablesorter-header-inner">
+                      Student 2 
+                      <i class="tablesorter-icon bootstrap-icon-unsorted"></i>
+                    </div>
+                  </div>
+                </th>
+
+                <th class="text-center align-middle text-nowrap" data-field="Rule1 Probability">
+                  <div class="th-inner sortable both desc">Rule1 Probability
+                    <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help">
+                      <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                  <div class="fht-cell"></div>
+                </th>
+
+                <th class="text-center align-middle text-nowrap" data-field="Rule2 Probability"><div class="th-inner sortable both desc">Rule2 Probability
+                  <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help">
+                    <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                  </button>
+                </div><div class="fht-cell"></div></th>
+
+                <th class="text-center align-middle text-nowrap" data-field="Rule3 Probability"><div class="th-inner sortable both desc">Rule3 Probability
+                  <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help">
+                    <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                  </button>
+                </div><div class="fht-cell"></div></th>
+
+                <th class="text-center align-middle text-nowrap" data-field="Rule4 Probability"><div class="th-inner sortable both desc">Rule4 Probability
+                  <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help">
+                    <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                  </button>
+                </div><div class="fht-cell"></div></th>
+
+                <th class="text-center align-middle text-nowrap" data-field="Rule5 Probability"><div class="th-inner sortable both desc">Rule5 Probability
+                  <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help">
+                    <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                  </button>
+                </div><div class="fht-cell"></div></th>
+
+                <th class="text-center align-middle text-nowrap" data-field="Overall Probability"><div class="th-inner sortable both desc">Overall Probability
+                  <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help">
+                    <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                  </button>
+                </div><div class="fht-cell"></div></th>
+
+              </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+
+          <div class="modal fade" id="role-help" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="role-help-title">Rules</h4>
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+                <div class="modal-body">
+                  <ul>
+                    <li><strong>Rule 1</strong> (same time rule) checks the similarity between two students' question-answering time.</li>
+                    <li><strong>Rule 2</strong> (same answer rule) checks the similarity between two students' answer.</li>
+                    <li><strong>Rule 3</strong> (same order rule) checks the similarity between two students' question-answering order.</li>
+                    <li><strong>Rule 4</strong> (same wrong answer rule) checks the similarity between two students' wrong answer.</li>
+                    <li><strong>Rule 5</strong> (same score rule) checks the similarity between two students' score distribution.</li>
+                    <li><strong>Overall Probability</strong> checks .</li>
+                  </ul>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+  </body>
+</html>
+
+<script>
+  $(function() {
+      $(".tablesorter").tablesorter({
+          theme: "bootstrap",
+          widthFixed: true,
+          headerTemplate: '{content} {icon}',
+          widgets: ["uitheme", "zebra"],
+          widgetOptions: {
+              zebra: ["even", "odd"],
+          },
+      });
+  });
+</script>

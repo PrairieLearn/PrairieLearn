@@ -212,6 +212,7 @@ router.get('/:filename', function (req, res, next) {
         if (ERR(err, next)) return;
         res.attachment(req.params.filename);
         res.send(csv);
+        // ruiwei: similar way to save csv?
       });
     });
   } else if (req.params.filename === res.locals.submissionsForManualGradingCsvFilename) {

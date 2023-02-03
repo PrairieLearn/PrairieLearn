@@ -1,0 +1,9 @@
+,event_name,event_color,event_date,auth_user_uid,qid,question_id,instance_question_id,variant_id,variant_number,submission_id,data,formatted_date,date_iso8601,student_question_number,instructor_question_number
+0,Begin,gray3,2022-08-01T23:38:03.089Z,dev@illinois.edu,,,,,,,,2022-08-01 18:38:03 (CDT),2022-08-01T18:38:03-05,,
+1,New variant,gray1,2022-08-01T23:38:05.202Z,dev@illinois.edu,demo/annotated/mathNumberInput,128.0,3.0,1.0,1.0,,"{'params': {'a': 15, 'b': 10, 'equation': '\\sqrt{(a^2 + b^2)}'}, 'options': {}, 'true_answer': {'ans': 18.027756377319946}, 'variant_seed': '1vx1evz'}",2022-08-01 18:38:05 (CDT),2022-08-01T18:38:05-05,1.0,1.0
+2,Submission,blue3,2022-08-01T23:38:09.380Z,dev@illinois.edu,demo/annotated/mathNumberInput,128.0,3.0,1.0,1.0,1.0,"{'correct': False, 'submitted_answer': {'ans': 1}}",2022-08-01 18:38:09 (CDT),2022-08-01T18:38:09-05,1.0,1.0
+3,Score assessment,brown3,2022-08-01T23:38:09.395Z,dev@illinois.edu,,,,,,,"{'points': 0, 'max_points': 15, 'score_perc': 0}",2022-08-01 18:38:09 (CDT),2022-08-01T18:38:09-05,,
+4,Grade submission,orange3,2022-08-01T23:38:09.453Z,dev@illinois.edu,demo/annotated/mathNumberInput,128.0,3.0,1.0,1.0,1.0,"{'score': 0, 'correct': False, 'feedback': {}, 'true_answer': {'ans': 18.027756377319946}, 'submitted_answer': {'ans': 1}}",2022-08-01 18:38:09 (CDT),2022-08-01T18:38:09-05,1.0,1.0
+5,Score question,brown1,2022-08-01T23:38:09.453Z,dev@illinois.edu,demo/annotated/mathNumberInput,128.0,3.0,1.0,1.0,,"{'points': 0, 'correct': False, 'max_points': 3, 'score_perc': 0}",2022-08-01 18:38:09 (CDT),2022-08-01T18:38:09-05,1.0,1.0
+6,Score assessment,brown3,2022-08-01T23:38:09.453Z,dev@illinois.edu,,,,,,,"{'points': 0, 'max_points': 15, 'score_perc': 0}",2022-08-01 18:38:09 (CDT),2022-08-01T18:38:09-05,,
+7,Close,gray3,2022-08-01T23:38:12.898Z,dev@illinois.edu,,,,,,,,2022-08-01 18:38:12 (CDT),2022-08-01T18:38:12-05,,

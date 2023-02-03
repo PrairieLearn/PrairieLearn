@@ -817,6 +817,17 @@ module.exports.initExpress = function () {
       require('./pages/instructorAssessmentStatistics/instructorAssessmentStatistics'),
     ]
   );
+  // redirect to cheat detection page 
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/cheat_detection',
+    [
+      function (req, res, next) {
+        res.locals.navSubPage = 'cheat_detection';
+        next();
+      },
+      require('./pages/instructorAssessmentCheatDetection/instructorAssessmentCheatDetection'),
+    ]
+  );
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/question_statistics',
     [

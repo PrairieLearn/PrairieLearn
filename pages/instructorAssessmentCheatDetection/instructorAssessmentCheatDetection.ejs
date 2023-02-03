@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('../partials/head', {pageTitle: 'cheat_detection'}); %>
+    <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('d3/dist/d3.min.js') %>"></script>
+    <script src="<%= asset_path('localscripts/histogram.js') %>"></script>
+    <script src="<%= asset_path('localscripts/scatter.js') %>"></script>
+    <script src="<%= asset_path('localscripts/histmini_with_marker.js') %>"></script>
+    <script src="<%= asset_path('localscripts/parallel_histograms.js') %>"></script>
+    <!-- Load Chart.js Library-->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.8.0/dist/chart.min.js"></script>
+    <!-- Load Papa Parse Library-->
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.3.2/papaparse.min.js"></script>
+  </head>
+  <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover({sanitize: false})
+      });
+    </script>
+    <%- include('../partials/navbar'); %>
+    <div id="content" class="container-fluid">
+      <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
+
+
+      <p>input form: x% </p>
+      <p>threshold slidebar: loose / medium / strict</p>
+
+      <input type = "file" id = "uploadcsv">
+      <button type="button" class="btn btn-sm btn-primary" id="uploadconfirm"> Upload CSV</button>
+      <hr>
+
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %> Overview
+        </div>
+
+        <div class="card-footer">
+          <small>
+            <ul>
+              <li><strong>Number of students:</strong> 200 </li>
+              <li><strong>Time span: </strong> Students need to finish the exam within 48 hours during 48 hours. </li>
+              <li><strong>Exam questions: </strong> a total of 15 questions are shuffled and with multiple variants.
+            </li></ul>
+          </small>
+
+        </div>
+      </div>
+
+  
+      <!-- <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Similarity Check
+        </div>
+      <div class="card-body">
+        <!-- Cheat Detection Overall Sim Chart-->
+        <!-- <div class = "cd_button"> -->
+          <!-- <input type = "file" id = "uploadcsv"> -->
+          <!-- <button type="button" class="btn btn-sm btn-primary" id="uploadconfirm"> Upload CSV</button> -->
+          <!-- <hr> -->
+          
+          <!-- <p class="lead text-left"> 
+            Personal Access Token: <input type="text" id="PAT">
+            <button type="submit" class="btn btn-primary" id="submitPersonalAccessToken">Submit</button>
+          </p> -->
+          
+          <!-- <button type="button" class="btn btn-sm btn-primary" onclick="updateChart('overall_prob')"> Overall Similarity </button> -->
+          <!-- <button type="button" class="btn btn-sm btn-primary" onclick="updateChart('rule1_prob')"> Time Similarity </button> -->
+          <!-- <button type="button" class="btn btn-sm btn-primary" onclick="updateChart('rule2_prob')"> Answer Similarity </button> -->
+          <!-- <button type="button" class="btn btn-sm btn-primary" onclick="updateChart('rule3_prob')"> Order Similarity </button> -->
+          <!-- <button type="button" class="btn btn-sm btn-primary" onclick="updateChart('rule4_prob')"> Wrong Answer Similarity </button> -->
+          <!-- <button type="button" class="btn btn-sm btn-primary" onclick="updateChart('rule5_prob')"> Score Similarity </button> -->
+        
+        <!-- </div> -->
+
+        <!-- 1. bar chart -->
+        <!-- <div class="cd_chart"> -->
+          <!-- <canvas id="chart"></canvas> -->
+        <!-- </div> -->
+        <script>
+          let overall_data = {
+            "0-0.1": 0, "0.1-0.2": 0, "0.2-0.3": 0, "0.3-0.4": 0, "0.4-0.5": 0, 
+            "0.5-0.6": 0, "0.6-0.7": 0, "0.7-0.8": 0, "0.8-0.9": 0, "0.9-1": 0 };
+          let time_data = {...overall_data};
+          let answer_data = {...overall_data};
+          let order_data = {...overall_data};
+          let wrong_answer_data = {...overall_data};
+          let score_data = {...overall_data};
+           let group_count = {
+          "0-0.1":0, 
+          "0.1-0.2":0, 
+          "0.2-0.3":0, 
+          "0.3-0.4":0, 
+          "0.4-0.5":0, 
+          "0.5-0.6":0, 
+          "0.6-0.7":0, 
+          "0.7-0.8":0,
+          "0.8-0.9":0, 
+          "0.9-1":0
+          };
+         
+          //const csv = await fetch('pages/instructorAssessmentCheatDetection/cheat-detection-py/result.csv');
+          //const data = await csv.text();
+          function readWriteData(results, ruleData) {
+            let dict = {};
+            let score = null;
+            if (ruleData === 'overall_prob') { dict = overall_data; }
+            else if (ruleData === 'rule1_prob') { dict = time_data; }
+            else if (ruleData === 'rule2_prob') { dict = answer_data; }
+            else if (ruleData === 'rule3_prob') { dict = order_data; }
+            else if (ruleData === 'rule4_prob') { dict = wrong_answer_data; }
+            else if (ruleData === 'rule5_prob') { dict = score_data; }
+            for (i = 0; i < results.data.length; i++) {
+              if (ruleData === 'overall_prob') { score = results.data[i].overall_prob; }
+              else if (ruleData === 'rule1_prob') { score = results.data[i].rule1_prob; }
+              else if (ruleData === 'rule2_prob') { score = results.data[i].rule2_prob; }
+              else if (ruleData === 'rule3_prob') { score = results.data[i].rule3_prob; }
+              else if (ruleData === 'rule4_prob') { score = results.data[i].rule4_prob; }
+              else if (ruleData === 'rule5_prob') { score = results.data[i].rule5_prob; }
+              if (score <= 0.1)
+                dict["0-0.1"] += 1;
+              else if (0.1 < score <= 0.2)
+                dict["0.1-0.2"] += 1;
+              else if (0.2 < score <= 0.3)
+                dict["0.2-0.3"] += 1;
+              else if (0.3 < score <= 0.4)
+                dict["0.3-0.4"] += 1;
+              else if (0.4 < score <= 0.5)
+                dict["0.4-0.5"] += 1;
+              else if (0.5 < score <= 0.6)
+                dict["0.5-0.6"] += 1;
+              else if (0.6 < score <= 0.7)
+                dict["0.6-0.7"] += 1;
+              else if (0.7 < score <= 0.8)
+                dict["0.7-0.8"] += 1;
+              else if (0.8 < score <= 0.9)
+                dict["0.8-0.9"] += 1;
+              else
+                dict["0.9-1"] += 1;
+              
+            }
+            if (ruleData === 'overall_prob') { overall_data = dict; }
+            else if (ruleData === 'rule1_prob') { time_data = dict; }
+            else if (ruleData === 'rule2_prob') { answer_data = dict; }
+            else if (ruleData === 'rule3_prob') { order_data = dict; }
+            else if (ruleData === 'rule4_prob') { wrong_answer_data = dict; }
+            else if (ruleData === 'rule5_prob') { score_data = dict; }
+            
+          }
+          const uploadcsv = document.getElementById('uploadconfirm')
+            .addEventListener('click', () => {
+              //Parsing
+              Papa.parse(document.getElementById('uploadcsv').files[0], {
+                download: true,
+                header: true,
+                skipEmptyLines: true,
+                
+                complete : function(results) {
+                  readWriteData(results, 'overall_prob');
+                  readWriteData(results, 'rule1_prob', time_data);
+                  readWriteData(results, 'rule2_prob', answer_data);
+                  readWriteData(results, 'rule3_prob', order_data);
+                  readWriteData(results, 'rule4_prob', wrong_answer_data);
+                  readWriteData(results, 'rule5_prob', score_data);
+                  updateTable(results.data);
+                  updateDetailedReport(results.data);
+                  }
+              });
+            });
+            
+          //Setup Block
+          const data = {
+            labels: Object.keys(group_count),
+            datasets: [{
+                label: "Overall Similarity",
+                data: Object.values(group_count),
+                // xAxisID: "x",
+                //Blue Bars
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 0.6)',
+                borderWidth: 1,
+                hoverBorderWidth: 2,
+                hoverBorderColor: 'rgba(54, 162, 235, 1)'
+            }]
+          };
+          //Config Block
+          const config = {
+            type: 'bar',
+            data: data,
+            options: {
+              scales: {
+                y : {
+                  // type: 'linear',
+                  text: 'Frequency',
+                  grace: '10%'
+                },
+                
+              }
+            }
+          };
+          
+          //Init Render Block
+          const myChart = new Chart(
+            document.getElementById('chart'),
+            config
+          );
+          
+          function updateChart(rule) {
+            myChart.data.datasets[0].label = "Number of pairs within the bin";
+            //set display data to data pertaining to rule
+            if (rule === 'overall_prob') {
+              for(const key in overall_data) {
+              group_count[key] = overall_data[key]
+              }
+            }
+            else if (rule === 'rule1_prob') {
+              for(const key in time_data) {
+              group_count[key] = time_data[key]
+              }
+            }
+            else if (rule === 'rule2_prob') {
+              for(const key in answer_data) {
+              group_count[key] = answer_data[key]
+              }
+            }
+            else if (rule === 'rule3_prob') {
+              for(const key in order_data) {
+              group_count[key] = order_data[key]
+              }
+            }
+            else if (rule === 'rule4_prob') {
+              for(const key in wrong_answer_data) {
+              group_count[key] = wrong_answer_data[key]
+              }
+            }
+            else if (rule === 'rule5_prob') {
+              for(const key in score_data) {
+              group_count[key] = score_data[key]
+              }
+            }
+            console.log(Object.values(group_count));
+            myChart.data.datasets[0].data = Object.values(group_count);
+          
+            myChart.update();
+
+          };
+
+          function updateTable(data) {
+
+            // get html element
+            let table_body = $("tbody#table-body");
+
+            // append rows
+            for (let i=0; i<5; i++) {
+              let tr = $("<tr role=\"row\" class=\"even\"></tr>");
+              tr.append($("<td>"+(i+1)+"</td>"));
+              tr.append($("<td>"+"100%"+"</td>"));
+              tr.append($("<td>"+data[i].student1+"</td>"));
+              tr.append($("<td>"+data[i].student2+"</td>"));
+              highlightSimilarityScore(data[i].rule1_prob, tr)
+              highlightSimilarityScore(data[i].rule2_prob, tr)
+              highlightSimilarityScore(data[i].rule3_prob, tr)
+              highlightSimilarityScore(data[i].rule4_prob, tr)
+              highlightSimilarityScore(data[i].rule4_prob, tr)
+              table_body.append(tr);
+            }              
+          }
+          function highlightSimilarityScore(score, tr) {
+            if (score<0.8) 
+              return tr.append($("<td>"+parseFloat(score).toFixed(2)+"</td>"));
+            else
+              return tr.append($("<td style=background:#fb8072>"+parseFloat(score).toFixed(2)+"</td>"));
+          }
+
+          function updateDetailedReport(data) {
+            console.log("data");
+            console.log(data);
+
+            // get html element
+            let table_body = $("tbody#all-rules-details");
+            // append rows
+          }
+
+          function setPersonalAccessToken(event) {
+            personalAccessToken = document.getElementById("PAT").value;
+            console.log(personalAccessToken);
+          }
+          // document.getElementById("submitPersonalAccessToken").addEventListener("click", setPersonalAccessToken, false);
+        </script>
+      <!-- </div>
+      </div> -->
+      
+      <!-- suspecious student table -->
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Detected Pairs
+        </div>
+
+        <div class="table-responsive">
+          
+          <table role="grid" class="table table-sm table-hover table-striped tablesorter tablesorter-bootstrap tablesorter1baf7fd6a9a23 table-bordered">
+            <thead>
+              <tr role="row" class="tablesorter-headerRow">
+                <th class="align-middle text-nowrap" data-field=""><div class="th-inner sortable both desc"></div><div class="fht-cell"></div></th>
+                
+
+                <th data-column="1" class="tablesorter-header bootstrap-header tablesorter-headerUnSorted" tabindex="0" scope="col" role="columnheader" aria-disabled="false" unselectable="on" aria-sort="none" aria-label="uid: No sort applied, activate to apply an ascending sort" style="user-select: none;">
+                  <div class="tablesorter-wrapper" style="position:relative;height:100%;width:100%">
+                    <div class="tablesorter-header-inner">
+                      Confidence 
+                      <i class="tablesorter-icon bootstrap-icon-unsorted"></i>
+                    </div>
+                  </div>
+                </th>
+
+                <th data-column="1" class="tablesorter-header bootstrap-header tablesorter-headerUnSorted" tabindex="0" scope="col" role="columnheader" aria-disabled="false" unselectable="on" aria-sort="none" aria-label="uid: No sort applied, activate to apply an ascending sort" style="user-select: none;">
+                  <div class="tablesorter-wrapper" style="position:relative;height:100%;width:100%">
+                    <div class="tablesorter-header-inner">
+                      Student 1 
+                      <i class="tablesorter-icon bootstrap-icon-unsorted"></i>
+                    </div>
+                  </div>
+                </th>
+
+                <th data-column="1" class="tablesorter-header bootstrap-header tablesorter-headerUnSorted" tabindex="0" scope="col" role="columnheader" aria-disabled="false" unselectable="on" aria-sort="none" aria-label="uid: No sort applied, activate to apply an ascending sort" style="user-select: none;">
+                  <div class="tablesorter-wrapper" style="position:relative;height:100%;width:100%">
+                    <div class="tablesorter-header-inner">
+                      Student 2 
+                      <i class="tablesorter-icon bootstrap-icon-unsorted"></i>
+                    </div>
+                  </div>
+                </th>
+
+                <th class="text-center align-middle text-nowrap" data-field="Rule1 Probability">
+                  <div class="th-inner sortable both desc">Rule1 Probability
+                    <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help">
+                      <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                    </button>
+                  </div>
+                  <div class="fht-cell"></div>
+                </th>
+
+                <th class="text-center align-middle text-nowrap" data-field="Rule2 Probability"><div class="th-inner sortable both desc">Rule2 Probability
+                  <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help">
+                    <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                  </button>
+                </div><div class="fht-cell"></div></th>
+
+                <th class="text-center align-middle text-nowrap" data-field="Rule3 Probability"><div class="th-inner sortable both desc">Rule3 Probability
+                  <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help">
+                    <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                  </button>
+                </div><div class="fht-cell"></div></th>
+
+                <th class="text-center align-middle text-nowrap" data-field="Rule4 Probability"><div class="th-inner sortable both desc">Rule4 Probability
+                  <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help">
+                    <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                  </button>
+                </div><div class="fht-cell"></div></th>
+
+                <th class="text-center align-middle text-nowrap" data-field="Rule5 Probability"><div class="th-inner sortable both desc">Rule5 Probability
+                  <button class="btn btn-xs" type="button" title="Show roles help" data-toggle="modal" data-target="#role-help">
+                    <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                  </button>
+                </div><div class="fht-cell"></div></th>
+
+
+              </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+
+          <div class="modal fade" id="role-help" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h4 class="modal-title" id="role-help-title">Rules</h4>
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+                <div class="modal-body">
+                  <ul>
+                    <li><strong>Rule 1</strong> (same time rule) checks the similarity between two students' question-answering time.</li>
+                    <li><strong>Rule 2</strong> (same answer rule) checks the similarity between two students' answer.</li>
+                    <li><strong>Rule 3</strong> (same order rule) checks the similarity between two students' question-answering order.</li>
+                    <li><strong>Rule 4</strong> (same wrong answer rule) checks the similarity between two students' wrong answer.</li>
+                    <li><strong>Rule 5</strong> (same score rule) checks the similarity between two students' score distribution.</li>
+                    <!-- <li><strong>Overall Probability</strong> checks .</li> -->
+                  </ul>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p>Pair Details Page</p>
+      <!-- pair detail on all rules -->
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Detailed Report on All Rules
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th class="text-center"></th>
+                <th class="text-center">Similarity Score</th>
+                <th class="text-center">Quintiles</th>
+                <th class="text-center">Median Score</th>
+              </tr>
+            </thead>
+            <tbody id="all-rules-details">
+              <% questions = [{"number":1, "rule_title":"Rule1", "rule_score":100, "median_score":20}, 
+              {"number":1, "rule_title":"Rule2", "rule_score":70, "median_score":30}, 
+              {"number":1, "rule_title":"Rule3", "rule_score":50, "median_score":40}, 
+              {"number":1, "rule_title":"Rule4", "rule_score":40, "median_score":50}, 
+              {"number":1, "rule_title":"Rule5", "rule_score":90, "median_score":10}, ]%>
+              <% questions.forEach(function(row, i) { %>
+                <tr>
+                  <td><%= row.rule_title %></td>
+                  <td class="text-center"><%= row.rule_score %></td>
+                  
+                  <% if (row.number > 0) { %>
+                  <td class="text-center"><div id="scoreHist<%= i %>" class="miniHist"></div></td>
+                  <script>
+                    $(function() {
+                        var data = [10,20,20,40,50,40,40,10,20,20,40,50,59,60,75,34,64,58,23,84,29,56,26,35,100];
+                        var options = {
+                            width: 60,
+                            height: 20,
+                            ymax: 100,
+                        };
+                        histmini_with_marker("#scoreHist<%= i %>", data, <%= row.rule_score%>, options);
+                    });
+                  </script>
+                  <% } else { %>
+                  <td class="text-center"></td>
+                  <% } %>
+
+                  <td class="text-center"><%= row.median_score %></td>
+                  
+                </tr>
+                <% }); %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- pair detail on each rule -->
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Detailed Report for Pair (Student1, Student2)
+        </div>
+        <p style="margin:2%">Student1, Student2 have been detected by 6 abnormal behaviors with a confidence score of 86%: </p>
+        <ol>
+
+        <!-- rule#0: Abnormal time-score-ration -->
+        <li> 
+          <h5>Earn High Score in an Abnormally Short Period of Time (confidence: x%)</h5> 
+          <p>This student's overall time-score-ratio <i style="color:rgb(0, 132, 255)">(total score earned / total time spent)</i> is abnornally high. Only 0.05% students (1 out of 200) among the whole class have same or higher socre-time-ratio.
+            In addition, out of 13 questions, 8 questions (q2, q4, q5, q6, q7, q8, q9, q10) has abnormal time-score-ratio. </p>
+          <p>A Quintiles Graph demonstrates how rare the similarity is</p>
+          <div id="accordion">
+            <div class="card">
+              <div class="card-header" id="headingOne">
+                <h5 class="mb-0">
+                  <button class="btn btn-link" data-toggle="collapse" data-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                    <p>See Submission Log Details</p>
+                  </button>
+                </h5>
+              </div>
+              <div id="collapseOne" class="collapse show" aria-labelledby="headingOne" data-parent="#accordion">
+                <div class="card-body">
+                  <table class="table table-sm table-hover">
+                    <thread>
+                      <tr>
+                        <th class="text-center"></th>
+                        <th class="text-center">Number of Occurance</th>
+                        <th class="text-center">Probability of Getting This Wrong Answer</th>
+                        <th class="text-center">Probability of Getting Same Answer</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Q4</td>
+                        <td class="text-center">5</td>
+                        <td class="text-center">2.5%</td>
+                        <td class="text-center">15%</td>
+                      </tr>
+                      <tr>
+                        <td>Q7</td>
+                        <td class="text-center">2</td>
+                        <td class="text-center">1%</td>
+                        <td class="text-center">25%</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </li><br>
+
+          <!-- rule#1 Time -->
+        <li> 
+          <h5>Submit Multiple Exam Questions in Close Time (confidence: x%)</h5> 
+          <p>Out of 13 same questions, 9 questions (q1, q2, q4, q6, q7, q8, q9, q10, q14) are answered within 60 seconds time difference. Only 0.0025% pairs (1 out of 40000) among the whole class have answered 9 or more questions within 60 seconds.</p>
+          <p>A Quintiles Graph demonstrates how rare the count is</p>
+          <!-- <p>A Quintiles Graph demonstrates time diff distribution</p> -->
+          <div id="accordion">
+            <div class="card">
+              <div class="card-header" id="headingOne">
+                <h5 class="mb-0">
+                  <button class="btn btn-link" data-toggle="collapse" data-target="#collapseTwo" aria-expanded="true" aria-controls="collapseOne">
+                    <p>See Submission Log Details</p>
+                  </button>
+                </h5>
+              </div>
+              <div id="collapseTwo" class="collapse show" aria-labelledby="headingOne" data-parent="#accordion">
+                <div class="card-body">
+                  <table class="table table-sm table-hover">
+                    <thread>
+                      <tr>
+                        <th class="text-center"></th>
+                        <th class="text-center">Student1</th>
+                        <th class="text-center">Student3</th>
+                        <th class="text-center">Time Difference</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Q1 Start Time</td>
+                        <td class="text-center">23:11:35</td>
+                        <td class="text-center">23:11:45</td>
+                        <td class="text-center">00:00:10</td>
+                      </tr>
+                      <tr>
+                        <td>Q1 End Time</td>
+                        <td class="text-center">23:14:11</td>
+                        <td class="text-center">23:12:55</td>
+                        <td class="text-center">00:01:16</td>
+                      </tr>
+                      <tr>
+                        <td>Q2 Start Time</td>
+                        <td class="text-center">23:15:33</td>
+                        <td class="text-center">23:12:59</td>
+                        <td class="text-center">00:02:34</td>
+                      </tr>
+                      <tr>
+                        <td>Q2 End Time</td>
+                        <td class="text-center">23:18:55</td>
+                        <td class="text-center">23:15:01</td>
+                        <td class="text-center">00:03:54</td>
+                      </tr>
+                      <tr>
+                        <td>Q3 Start Time</td>
+                        <td class="text-center">23:19:01</td>
+                        <td class="text-center">23:15:10</td>
+                        <td class="text-center">00:03:51</td>
+                      </tr>
+                      <tr>
+                        <td>Q3 End Time</td>
+                        <td class="text-center">23:25:46</td>
+                        <td class="text-center">23:20:55</td>
+                        <td class="text-center">00:04:09</td>
+                      </tr>
+                      <tr>
+                        <td>...</td>
+                        <td class="text-center">...</td>
+                        <td class="text-center">...</td>
+                        <td class="text-center">...</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          
+        </li><br>
+
+          <!-- rule#3 Order -->
+          <li> 
+            <h5>Submit Multiple Exam Questions in Close Order</h5>
+            <p>Out of 13 same questions, 2 questions (q4, q7) are flagged due to same wrong answers. Only 0.005% pairs (2 out of 40000) among the whole class have higher wrong answer similarity scores.</p>
+            <p>A Quintiles Graph demonstrates how rare the similarity is</p>
+            <div id="accordion">
+              <div class="card">
+                <div class="card-header" id="headingOne">
+                  <h5 class="mb-0">
+                    <button class="btn btn-link" data-toggle="collapse" data-target="#collapseThree" aria-expanded="true" aria-controls="collapseOne">
+                      <p>See Submission Log Details</p>
+                    </button>
+                  </h5>
+                </div>
+                <div id="collapseThree" class="collapse show" aria-labelledby="headingOne" data-parent="#accordion">
+                  <div class="card-body">
+                    <table class="table table-sm table-hover">
+                      <thread>
+                        <tr>
+                          <th class="text-center">Student1's Question Answering Order</th>
+                          <th class="text-center">Student1's Question Answering Order</th>
+                          <th class="text-center">Edit Distance</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td class="text-center">q1, q2, q4, q5, q6, q7, q8, q9, q10</td>
+                          <td class="text-center">q2, q1, q4, q5, q6, q7, q8, q9, q10</td>
+                          <td class="text-center">1</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+          </li><br>
+          
+
+          <!-- rule#2: same anwer -->
+          <li> 
+            <h5>Submit Multiple Exam Questions with Same Answers</h5> 
+            <p>Out of 13 same questions, 8 questions (q2, q4, q5, q6, q7, q8, q9, q10) are flagged due to same answers. Only 0.005% pairs (2 out of 40000) among the whole class have same or higher answer similarity scores.</p>
+            <p>A Quintiles Graph demonstrates how rare the similarity is</p>
+            <div id="accordion">
+              <div class="card">
+                <div class="card-header" id="headingOne">
+                  <h5 class="mb-0">
+                    <button class="btn btn-link" data-toggle="collapse" data-target="#collapseFour" aria-expanded="true" aria-controls="collapseOne">
+                      <p>See Submission Log Details</p>
+                    </button>
+                  </h5>
+                </div>
+                <div id="collapseFour" class="collapse show" aria-labelledby="headingOne" data-parent="#accordion">
+                  <div class="card-body">
+                    <table class="table table-sm table-hover">
+                      <thread>
+                        <tr>
+                          <th class="text-center"></th>
+                          <th class="text-center">Number of Occurance</th>
+                          <th class="text-center">Probability of Getting This Wrong Answer</th>
+                          <th class="text-center">Probability of Getting Same Answer</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>Q4</td>
+                          <td class="text-center">5</td>
+                          <td class="text-center">2.5%</td>
+                          <td class="text-center">15%</td>
+                        </tr>
+                        <tr>
+                          <td>Q7</td>
+                          <td class="text-center">2</td>
+                          <td class="text-center">1%</td>
+                          <td class="text-center">25%</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+          </li><br>
+
+
+          <!-- rule#4: same wrong anwer -->
+          <li> 
+            <h5>Submit Multiple Exam Questions with Same Wrong Answers</h5> 
+            <p>Out of 13 same questions, 2 questions (q4, q7) are flagged due to same wrong answers. Only 0.005% pairs (2 out of 40000) among the whole class have same or higher wrong answer similarity scores.</p>
+            <p>A Quintiles Graph demonstrates how rare the similarity is</p>
+            <div id="accordion">
+              <div class="card">
+                <div class="card-header" id="headingOne">
+                  <h5 class="mb-0">
+                    <button class="btn btn-link" data-toggle="collapse" data-target="#collapseFive" aria-expanded="true" aria-controls="collapseOne">
+                      <p>See Submission Log Details</p>
+                    </button>
+                  </h5>
+                </div>
+                <div id="collapseFive" class="collapse show" aria-labelledby="headingOne" data-parent="#accordion">
+                  <div class="card-body">
+                    <table class="table table-sm table-hover">
+                      <thread>
+                        <tr>
+                          <th class="text-center"></th>
+                          <th class="text-center">Number of Occurance</th>
+                          <th class="text-center">Probability of Getting This Wrong Answer</th>
+                          <th class="text-center">Probability of Getting Same Answer</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>Q4</td>
+                          <td class="text-center">5</td>
+                          <td class="text-center">2.5%</td>
+                          <td class="text-center">15%</td>
+                        </tr>
+                        <tr>
+                          <td>Q7</td>
+                          <td class="text-center">2</td>
+                          <td class="text-center">1%</td>
+                          <td class="text-center">25%</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+          </li><br>
+
+        <!-- rule#5: same score -->
+        <li> 
+          <h5>Submit Multiple Exam Questions with Same Score Distribution</h5> 
+          <p>Out of 13 same questions, 8 questions (q2, q4, q5, q6, q7, q8, q9, q10) are flagged due to same score distribution. Only 0.005% pairs (2 out of 40000) among the whole class have same or higher wrong answer similarity scores.</p>
+          <p>A Quintiles Graph demonstrates how rare the similarity is</p>
+          <div id="accordion">
+            <div class="card">
+              <div class="card-header" id="headingOne">
+                <h5 class="mb-0">
+                  <button class="btn btn-link" data-toggle="collapse" data-target="#collapseSix" aria-expanded="true" aria-controls="collapseOne">
+                    <p>See Submission Log Details</p>
+                  </button>
+                </h5>
+              </div>
+              <div id="collapseSix" class="collapse show" aria-labelledby="headingOne" data-parent="#accordion">
+                <div class="card-body">
+                  <table class="table table-sm table-hover">
+                    <thread>
+                      <tr>
+                        <th class="text-center"></th>
+                        <th class="text-center">Number of Occurance</th>
+                        <th class="text-center">Probability of Getting This Wrong Answer</th>
+                        <th class="text-center">Probability of Getting Same Answer</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>Q4</td>
+                        <td class="text-center">5</td>
+                        <td class="text-center">2.5%</td>
+                        <td class="text-center">15%</td>
+                      </tr>
+                      <tr>
+                        <td>Q7</td>
+                        <td class="text-center">2</td>
+                        <td class="text-center">1%</td>
+                        <td class="text-center">25%</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+        </li><br>
+
+      </ol>
+      
+      
+      <!-- Footer for download report -->
+      <div class="card-footer">
+        <p>
+          Download <a href="/pl/course_instance/57/instructor/instance_admin/assessments/BJC_Fa22_assessment_stats.csv">Report_for_pair_s1_s2.pdf</a> (of this pair).<br>
+          Download <a href="/pl/course_instance/57/instructor/instance_admin/assessments/BJC_Fa22_assessment_stats.csv">Report_all.pdf</a> (of all pairs in the class).
+        </p>
+      </div>
+      </div>
+    </div>
+
+  </body>
+</html>

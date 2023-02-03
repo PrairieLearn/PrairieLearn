@@ -1,0 +1,30 @@
+,Unnamed: 0,Random_Id,data,date_iso8601,event_color,event_date,event_name,formatted_date,instance_question_id,instructor_question_number,qid,question_id,student_question_number,submission_id,variant_id,variant_number
+0,0,11,,2021-02-05T22:13:20-08,gray3,2021-02-06T06:13:20.415Z,Begin,2021-02-05 22:13:20 (PST),,,,,,,,
+1,1,11,,2021-02-05T22:13:20-08,green1,2021-02-06T06:13:20.463Z,View assessment overview,2021-02-05 22:13:20 (PST),,,,,,,,
+2,2,11,"{'params': {}, 'options': {}, 'true_answer': {}, 'variant_seed': '11lkke9'}",2021-02-05T22:13:27-08,gray1,2021-02-06T06:13:27.334Z,New variant,2021-02-05 22:13:27 (PST),250171.0,1.0,PL-demo/DIRECTIONS,1050.0,1.0,,170917.0,1.0
+3,3,11,,2021-02-05T22:13:27-08,green3,2021-02-06T06:13:27.414Z,View variant,2021-02-05 22:13:27 (PST),250171.0,1.0,PL-demo/DIRECTIONS,1050.0,1.0,,170917.0,1.0
+4,4,11,"{'correct': None, 'submitted_answer': {}}",2021-02-05T22:13:32-08,blue3,2021-02-06T06:13:32.115Z,Submission,2021-02-05 22:13:32 (PST),250171.0,1.0,PL-demo/DIRECTIONS,1050.0,1.0,308595.0,170917.0,1.0
+5,5,11,,2021-02-05T22:13:32-08,green3,2021-02-06T06:13:32.225Z,View variant,2021-02-05 22:13:32 (PST),250171.0,1.0,PL-demo/DIRECTIONS,1050.0,1.0,,170917.0,1.0
+6,6,11,"{'params': {}, 'options': {}, 'true_answer': {}, 'variant_seed': 'k0xrml'}",2021-02-05T22:13:38-08,gray1,2021-02-06T06:13:38.654Z,New variant,2021-02-05 22:13:38 (PST),250172.0,2.0,PLEDGE,1046.0,2.0,,170918.0,1.0
+7,7,11,,2021-02-05T22:13:38-08,green3,2021-02-06T06:13:38.709Z,View variant,2021-02-05 22:13:38 (PST),250172.0,2.0,PLEDGE,1046.0,2.0,,170918.0,1.0
+8,8,11,"{'params': {'0': [{'key': 'a', 'html': 'foo and bar'}, {'key': 'b', 'html': 'True and False (select this one)'}, {'key': 'c', 'html': 'no and yes'}, {'key': 'd', 'html': 'up and down'}, {'key': 'e', 'html': 'this and that'}]}, 'options': {}, 'true_answer': {'0': {'key': 'b', 'html': 'True and False (select this one)'}}, 'variant_seed': '1aofj67'}",2021-02-05T22:13:45-08,gray1,2021-02-06T06:13:45.463Z,New variant,2021-02-05 22:13:45 (PST),250173.0,3.0,PL-demo/demo-multiple-choice,1049.0,3.0,,170919.0,1.0
+9,9,11,,2021-02-05T22:13:45-08,green3,2021-02-06T06:13:45.520Z,View variant,2021-02-05 22:13:45 (PST),250173.0,3.0,PL-demo/demo-multiple-choice,1049.0,3.0,,170919.0,1.0
+10,10,11,"{'correct': None, 'submitted_answer': {'0': 'b'}}",2021-02-05T22:14:14-08,blue3,2021-02-06T06:14:14.622Z,Submission,2021-02-05 22:14:14 (PST),250173.0,3.0,PL-demo/demo-multiple-choice,1049.0,3.0,308596.0,170919.0,1.0
+11,11,11,,2021-02-05T22:14:14-08,green3,2021-02-06T06:14:14.731Z,View variant,2021-02-05 22:14:14 (PST),250173.0,3.0,PL-demo/demo-multiple-choice,1049.0,3.0,,170919.0,1.0
+12,12,11,"{'params': {'0': [{'key': 'a', 'html': 'Correct'}, {'key': 'b', 'html': 'Incorrect'}, {'key': 'c', 'html': 'Incorrect'}, {'key': 'd', 'html': 'Correct'}, {'key': 'e', 'html': 'Incorrect'}]}, 'options': {}, 'true_answer': {'0': [{'key': 'a', 'html': 'Correct'}, {'key': 'd', 'html': 'Correct'}]}, 'variant_seed': '2c3jm0'}",2021-02-05T22:14:16-08,gray1,2021-02-06T06:14:16.750Z,New variant,2021-02-05 22:14:16 (PST),250174.0,4.0,PL-demo/demo-checkbox,1048.0,4.0,,170920.0,1.0
+13,13,11,,2021-02-05T22:14:16-08,green3,2021-02-06T06:14:16.816Z,View variant,2021-02-05 22:14:16 (PST),250174.0,4.0,PL-demo/demo-checkbox,1048.0,4.0,,170920.0,1.0
+14,14,11,"{'correct': None, 'submitted_answer': {'0': ['a', 'd']}}",2021-02-05T22:14:29-08,blue3,2021-02-06T06:14:29.311Z,Submission,2021-02-05 22:14:29 (PST),250174.0,4.0,PL-demo/demo-checkbox,1048.0,4.0,308603.0,170920.0,1.0
+15,15,11,,2021-02-05T22:14:29-08,green3,2021-02-06T06:14:29.412Z,View variant,2021-02-05 22:14:29 (PST),250174.0,4.0,PL-demo/demo-checkbox,1048.0,4.0,,170920.0,1.0
+16,16,11,"{'params': {}, 'options': {}, 'true_answer': {'ok': 'ok'}, 'variant_seed': 'etzpu3'}",2021-02-05T22:14:31-08,gray1,2021-02-06T06:14:31.465Z,New variant,2021-02-05 22:14:31 (PST),250175.0,5.0,PL-demo/demo-fill-in-blank,1051.0,5.0,,170921.0,1.0
+17,17,11,,2021-02-05T22:14:31-08,green3,2021-02-06T06:14:31.515Z,View variant,2021-02-05 22:14:31 (PST),250175.0,5.0,PL-demo/demo-fill-in-blank,1051.0,5.0,,170921.0,1.0
+18,18,11,"{'correct': None, 'submitted_answer': {'ok': 'ok'}}",2021-02-05T22:14:40-08,blue3,2021-02-06T06:14:40.830Z,Submission,2021-02-05 22:14:40 (PST),250175.0,5.0,PL-demo/demo-fill-in-blank,1051.0,5.0,308605.0,170921.0,1.0
+19,19,11,,2021-02-05T22:14:40-08,green3,2021-02-06T06:14:40.928Z,View variant,2021-02-05 22:14:40 (PST),250175.0,5.0,PL-demo/demo-fill-in-blank,1051.0,5.0,,170921.0,1.0
+20,20,11,,2021-02-05T22:14:45-08,green3,2021-02-06T06:14:45.427Z,View variant,2021-02-05 22:14:45 (PST),250174.0,4.0,PL-demo/demo-checkbox,1048.0,4.0,,170920.0,1.0
+21,21,11,,2021-02-05T22:14:46-08,green3,2021-02-06T06:14:46.242Z,View variant,2021-02-05 22:14:46 (PST),250173.0,3.0,PL-demo/demo-multiple-choice,1049.0,3.0,,170919.0,1.0
+22,22,11,,2021-02-05T22:14:47-08,green3,2021-02-06T06:14:47.059Z,View variant,2021-02-05 22:14:47 (PST),250172.0,2.0,PLEDGE,1046.0,2.0,,170918.0,1.0
+23,23,11,"{'correct': None, 'submitted_answer': {'pledge': 'Muscaan Birdi'}}",2021-02-05T22:15:11-08,blue3,2021-02-06T06:15:11.017Z,Submission,2021-02-05 22:15:11 (PST),250172.0,2.0,PLEDGE,1046.0,2.0,308606.0,170918.0,1.0
+24,24,11,,2021-02-05T22:15:11-08,green3,2021-02-06T06:15:11.130Z,View variant,2021-02-05 22:15:11 (PST),250172.0,2.0,PLEDGE,1046.0,2.0,,170918.0,1.0
+25,25,11,,2021-02-05T22:15:15-08,green3,2021-02-06T06:15:15.313Z,View variant,2021-02-05 22:15:15 (PST),250173.0,3.0,PL-demo/demo-multiple-choice,1049.0,3.0,,170919.0,1.0
+26,26,11,,2021-02-05T22:15:16-08,green3,2021-02-06T06:15:16.307Z,View variant,2021-02-05 22:15:16 (PST),250174.0,4.0,PL-demo/demo-checkbox,1048.0,4.0,,170920.0,1.0
+27,27,11,,2021-02-05T22:15:17-08,green3,2021-02-06T06:15:17.299Z,View variant,2021-02-05 22:15:17 (PST),250175.0,5.0,PL-demo/demo-fill-in-blank,1051.0,5.0,,170921.0,1.0
+28,28,11,,2021-02-05T22:15:19-08,green1,2021-02-06T06:15:19.938Z,View assessment overview,2021-02-05 22:15:19 (PST),,,,,,,,

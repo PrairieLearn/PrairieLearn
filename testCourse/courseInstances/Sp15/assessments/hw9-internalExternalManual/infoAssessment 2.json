@@ -1,0 +1,22 @@
+{
+    "uuid": "294e5841-b705-4720-b5d4-266d82e9c6d8",
+    "type": "Homework",
+    "title": "Homework for Internal, External, Manual grading methods",
+    "set": "Homework",
+    "number": "9",
+    "allowAccess": [
+        {
+            "credit": 100
+        }
+    ],
+    "zones": [
+        {
+            "questions": [
+                {"id": "internalGrade/addingNumbers",                       "points": 2, "maxPoints": 6},
+                {"id": "manualGrade/codeUpload",                            "points": 2, "maxPoints": 6},
+                {"id": "externalGrade/codeUpload",                          "points": 2, "maxPoints": 6}
+            ]
+        }
+    ]
+}
+

@@ -355,7 +355,7 @@ describe('Manual Grading', function () {
       assert.equal(nextUngraded.headers.get('location'), manualGradingAssessmentQuestionUrl);
     });
 
-    step('submit a grade using percentage', async () => {
+    step('submit a grade', async () => {
       setUser(mockStaff[2]);
       const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
       const $manualGradingIQPage = cheerio.load(manualGradingIQPage);

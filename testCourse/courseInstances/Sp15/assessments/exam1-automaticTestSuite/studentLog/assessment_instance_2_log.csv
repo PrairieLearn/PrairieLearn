@@ -1,0 +1,15 @@
+,event_name,event_color,event_date,auth_user_uid,qid,question_id,instance_question_id,variant_id,variant_number,submission_id,data,formatted_date,date_iso8601,student_question_number,instructor_question_number
+0,Begin,gray3,2022-08-08T21:41:46.500Z,dev@illinois.edu,,,,,,,,2022-08-08 16:41:46 (CDT),2022-08-08T16:41:46-05,,
+1,View assessment overview,green1,2022-08-08T21:41:46.548Z,dev@illinois.edu,,,,,,,,2022-08-08 16:41:46 (CDT),2022-08-08T16:41:46-05,,
+2,New variant,gray1,2022-08-08T21:41:49.115Z,dev@illinois.edu,demo/annotated/mathNumberInput,128.0,9.0,5.0,1.0,,"{'params': {'a': 7, 'b': 6, 'equation': '\\sqrt{(a^2 + b^2)}'}, 'options': {}, 'true_answer': {'ans': 9.219544457292887}, 'variant_seed': '1vwwllf'}",2022-08-08 16:41:49 (CDT),2022-08-08T16:41:49-05,1.0,1.0
+3,View variant,green3,2022-08-08T21:41:49.211Z,dev@illinois.edu,demo/annotated/mathNumberInput,128.0,9.0,5.0,1.0,,,2022-08-08 16:41:49 (CDT),2022-08-08T16:41:49-05,1.0,1.0
+4,Submission,blue3,2022-08-08T21:41:51.969Z,dev@illinois.edu,demo/annotated/mathNumberInput,128.0,9.0,5.0,1.0,3.0,"{'correct': False, 'submitted_answer': {'ans': 11}}",2022-08-08 16:41:51 (CDT),2022-08-08T16:41:51-05,1.0,1.0
+5,Score assessment,brown3,2022-08-08T21:41:51.983Z,dev@illinois.edu,,,,,,,"{'points': 0, 'max_points': 15, 'score_perc': 0}",2022-08-08 16:41:51 (CDT),2022-08-08T16:41:51-05,,
+6,Grade submission,orange3,2022-08-08T21:41:52.033Z,dev@illinois.edu,demo/annotated/mathNumberInput,128.0,9.0,5.0,1.0,3.0,"{'score': 0, 'correct': False, 'feedback': {}, 'true_answer': {'ans': 9.219544457292887}, 'submitted_answer': {'ans': 11}}",2022-08-08 16:41:52 (CDT),2022-08-08T16:41:52-05,1.0,1.0
+7,Score question,brown1,2022-08-08T21:41:52.033Z,dev@illinois.edu,demo/annotated/mathNumberInput,128.0,9.0,5.0,1.0,,"{'points': 0, 'correct': False, 'max_points': 3, 'score_perc': 0}",2022-08-08 16:41:52 (CDT),2022-08-08T16:41:52-05,1.0,1.0
+8,Score assessment,brown3,2022-08-08T21:41:52.033Z,dev@illinois.edu,,,,,,,"{'points': 0, 'max_points': 15, 'score_perc': 0}",2022-08-08 16:41:52 (CDT),2022-08-08T16:41:52-05,,
+9,View variant,green3,2022-08-08T21:41:52.202Z,dev@illinois.edu,demo/annotated/mathNumberInput,128.0,9.0,5.0,1.0,,,2022-08-08 16:41:52 (CDT),2022-08-08T16:41:52-05,1.0,1.0
+10,View assessment overview,green1,2022-08-08T21:41:52.850Z,dev@illinois.edu,,,,,,,,2022-08-08 16:41:52 (CDT),2022-08-08T16:41:52-05,,
+11,Close,gray3,2022-08-08T21:41:55.079Z,dev@illinois.edu,,,,,,,,2022-08-08 16:41:55 (CDT),2022-08-08T16:41:55-05,,
+12,View assessment overview,green1,2022-08-08T21:41:55.130Z,dev@illinois.edu,,,,,,,,2022-08-08 16:41:55 (CDT),2022-08-08T16:41:55-05,,
+13,View assessment overview,green1,2022-08-08T21:41:58.158Z,dev@illinois.edu,,,,,,,,2022-08-08 16:41:58 (CDT),2022-08-08T16:41:58-05,,

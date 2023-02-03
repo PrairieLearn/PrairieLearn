@@ -6,6 +6,7 @@ def main():
     parser = argparse.ArgumentParser(description='Download all PrairieLearn course data as JSON via the API')
     parser.add_argument('-t', '--token', required=True, help='the API token from PrairieLearn')
     parser.add_argument('-i', '--course-instance-id', required=True, help='the course instance ID to download')
+    parser.add_argument('-a', '--assessment-id', required=True, help='the assessment ID to download')
     parser.add_argument('-o', '--output-dir', required=True, help='the output directory to store JSON into (will be created if necessary)')
     parser.add_argument('-s', '--server', help='the server API address', default='https://us.prairielearn.com/pl/api/v1')
     args = parser.parse_args()
@@ -18,7 +19,10 @@ def main():
     print(f'opening log file {logfilename} ...')
     with open(logfilename, 'wt') as logfile:
         print(f'successfully opened log file')
-        download_course_instance(args, logfile)
+        if args.assessment_id:
+            download_assessment_instance(args, logfile)
+        else:
+            download_course_instance(args, logfile)
 
 def download_course_instance(args, logfile):
 
@@ -104,6 +108,33 @@ def get_and_save_json(endpoint, filename, args, logfile):
 
     return data
 
+def download_assessment_instance(args, logfile):
+    
+    log(logfile, f'starting download at {local_iso_time()} ...')
+    start_time = time.time()
+    
+    course_instance_path = f'/course_instances/{args.course_instance_id}'
+
+    #outputs all the json from Assessment instances list
+    #We need this to get all student ID's to then acces their individual event logs
+    assessment_instances = get_and_save_json(
+                f'{course_instance_path}/assessments/{args.assessment_id}/assessment_instances', 
+                f'assessment_{args.assessment_id}_instances', 
+                args, logfile)
+    
+    #Iterates over all assessment instances 
+    for assessment_instance in assessment_instances:
+        
+        #generates all submission logs of all students
+        submission_log = get_and_save_json(
+                        f'{course_instance_path}/assessment_instances/{assessment_instance["assessment_instance_id"]}/log', 
+                        f'assessment_instance_{assessment_instance["assessment_instance_id"]}_log', 
+                        args, logfile)
+
+        
+    end_time = time.time()
+    log(logfile, f'successfully completed downloaded at {local_iso_time()}')
+    log(logfile, f'total time elapsed: {end_time - start_time} seconds')
 
 def log(logfile, message):
     logfile.write(message + '\n')

@@ -1,0 +1,42 @@
+,Unnamed: 0,Random_Id,data,date_iso8601,event_color,event_date,event_name,formatted_date,instance_question_id,instructor_question_number,qid,question_id,student_question_number,submission_id,variant_id,variant_number
+0,0,24,,2021-02-05T22:15:35-08,gray3,2021-02-06T06:15:35.495Z,Begin,2021-02-05 22:15:35 (PST),,,,,,,,
+1,1,24,,2021-02-05T22:15:35-08,green1,2021-02-06T06:15:35.545Z,View assessment overview,2021-02-05 22:15:35 (PST),,,,,,,,
+2,2,24,"{'params': {}, 'options': {}, 'true_answer': {}, 'variant_seed': '1tvj94m'}",2021-02-05T22:17:11-08,gray1,2021-02-06T06:17:11.114Z,New variant,2021-02-05 22:17:11 (PST),250194.0,1.0,PL-demo/DIRECTIONS,1050.0,1.0,,170926.0,1.0
+3,3,24,,2021-02-05T22:17:11-08,green3,2021-02-06T06:17:11.193Z,View variant,2021-02-05 22:17:11 (PST),250194.0,1.0,PL-demo/DIRECTIONS,1050.0,1.0,,170926.0,1.0
+4,4,24,,2021-02-05T22:17:14-08,green1,2021-02-06T06:17:14.060Z,View assessment overview,2021-02-05 22:17:14 (PST),,,,,,,,
+5,5,24,,2021-02-05T22:17:17-08,green3,2021-02-06T06:17:17.001Z,View variant,2021-02-05 22:17:17 (PST),250194.0,1.0,PL-demo/DIRECTIONS,1050.0,1.0,,170926.0,1.0
+6,6,24,"{'correct': None, 'submitted_answer': {}}",2021-02-05T22:18:28-08,blue3,2021-02-06T06:18:28.805Z,Submission,2021-02-05 22:18:28 (PST),250194.0,1.0,PL-demo/DIRECTIONS,1050.0,1.0,308626.0,170926.0,1.0
+7,7,24,,2021-02-05T22:18:28-08,green3,2021-02-06T06:18:28.920Z,View variant,2021-02-05 22:18:28 (PST),250194.0,1.0,PL-demo/DIRECTIONS,1050.0,1.0,,170926.0,1.0
+8,8,24,,2021-02-05T22:18:30-08,green1,2021-02-06T06:18:30.538Z,View assessment overview,2021-02-05 22:18:30 (PST),,,,,,,,
+9,9,24,,2021-02-05T22:18:32-08,green3,2021-02-06T06:18:32.159Z,View variant,2021-02-05 22:18:32 (PST),250194.0,1.0,PL-demo/DIRECTIONS,1050.0,1.0,,170926.0,1.0
+10,10,24,"{'correct': True, 'submitted_answer': {}}",2021-02-05T22:18:42-08,blue3,2021-02-06T06:18:42.364Z,Submission,2021-02-05 22:18:42 (PST),250194.0,1.0,PL-demo/DIRECTIONS,1050.0,1.0,308627.0,170926.0,1.0
+11,11,24,,2021-02-05T22:18:42-08,green3,2021-02-06T06:18:42.481Z,View variant,2021-02-05 22:18:42 (PST),250194.0,1.0,PL-demo/DIRECTIONS,1050.0,1.0,,170926.0,1.0
+12,12,24,"{'params': {}, 'options': {}, 'true_answer': {}, 'variant_seed': '5yp22i'}",2021-02-05T22:18:46-08,gray1,2021-02-06T06:18:46.111Z,New variant,2021-02-05 22:18:46 (PST),250195.0,2.0,PLEDGE,1046.0,2.0,,170930.0,1.0
+13,13,24,,2021-02-05T22:18:46-08,green3,2021-02-06T06:18:46.165Z,View variant,2021-02-05 22:18:46 (PST),250195.0,2.0,PLEDGE,1046.0,2.0,,170930.0,1.0
+14,14,24,"{'correct': True, 'submitted_answer': {'pledge': 'Britney Pirring'}}",2021-02-05T22:19:39-08,blue3,2021-02-06T06:19:39.758Z,Submission,2021-02-05 22:19:39 (PST),250195.0,2.0,PLEDGE,1046.0,2.0,308630.0,170930.0,1.0
+15,15,24,,2021-02-05T22:19:39-08,green3,2021-02-06T06:19:39.894Z,View variant,2021-02-05 22:19:39 (PST),250195.0,2.0,PLEDGE,1046.0,2.0,,170930.0,1.0
+16,16,24,"{'params': {'0': [{'key': 'a', 'html': 'up and down'}, {'key': 'b', 'html': 'today or tomorrow'}, {'key': 'c', 'html': 'easy or hard'}, {'key': 'd', 'html': 'True and False (select this one)'}, {'key': 'e', 'html': 'here and there'}]}, 'options': {}, 'true_answer': {'0': {'key': 'd', 'html': 'True and False (select this one)'}}, 'variant_seed': '1tp29mb'}",2021-02-05T22:19:42-08,gray1,2021-02-06T06:19:42.135Z,New variant,2021-02-05 22:19:42 (PST),250196.0,3.0,PL-demo/demo-multiple-choice,1049.0,3.0,,170933.0,1.0
+17,17,24,,2021-02-05T22:19:42-08,green3,2021-02-06T06:19:42.191Z,View variant,2021-02-05 22:19:42 (PST),250196.0,3.0,PL-demo/demo-multiple-choice,1049.0,3.0,,170933.0,1.0
+18,18,24,"{'correct': True, 'submitted_answer': {'0': 'd'}}",2021-02-05T22:19:51-08,blue3,2021-02-06T06:19:51.361Z,Submission,2021-02-05 22:19:51 (PST),250196.0,3.0,PL-demo/demo-multiple-choice,1049.0,3.0,308631.0,170933.0,1.0
+19,19,24,,2021-02-05T22:19:51-08,green3,2021-02-06T06:19:51.510Z,View variant,2021-02-05 22:19:51 (PST),250196.0,3.0,PL-demo/demo-multiple-choice,1049.0,3.0,,170933.0,1.0
+20,20,24,"{'params': {'0': [{'key': 'a', 'html': 'Incorrect'}, {'key': 'b', 'html': 'Incorrect'}, {'key': 'c', 'html': 'Correct'}, {'key': 'd', 'html': 'Incorrect'}, {'key': 'e', 'html': 'Correct'}]}, 'options': {}, 'true_answer': {'0': [{'key': 'c', 'html': 'Correct'}, {'key': 'e', 'html': 'Correct'}]}, 'variant_seed': '1g6dies'}",2021-02-05T22:19:54-08,gray1,2021-02-06T06:19:54.042Z,New variant,2021-02-05 22:19:54 (PST),250197.0,4.0,PL-demo/demo-checkbox,1048.0,4.0,,170934.0,1.0
+21,21,24,,2021-02-05T22:19:54-08,green3,2021-02-06T06:19:54.100Z,View variant,2021-02-05 22:19:54 (PST),250197.0,4.0,PL-demo/demo-checkbox,1048.0,4.0,,170934.0,1.0
+22,22,24,"{'correct': True, 'submitted_answer': {'0': ['c', 'e']}}",2021-02-05T22:20:03-08,blue3,2021-02-06T06:20:03.648Z,Submission,2021-02-05 22:20:03 (PST),250197.0,4.0,PL-demo/demo-checkbox,1048.0,4.0,308632.0,170934.0,1.0
+23,23,24,,2021-02-05T22:20:03-08,green3,2021-02-06T06:20:03.757Z,View variant,2021-02-05 22:20:03 (PST),250197.0,4.0,PL-demo/demo-checkbox,1048.0,4.0,,170934.0,1.0
+24,24,24,"{'params': {}, 'options': {}, 'true_answer': {'ok': 'ok'}, 'variant_seed': '116opy'}",2021-02-05T22:20:05-08,gray1,2021-02-06T06:20:05.696Z,New variant,2021-02-05 22:20:05 (PST),250198.0,5.0,PL-demo/demo-fill-in-blank,1051.0,5.0,,170935.0,1.0
+25,25,24,,2021-02-05T22:20:05-08,green3,2021-02-06T06:20:05.752Z,View variant,2021-02-05 22:20:05 (PST),250198.0,5.0,PL-demo/demo-fill-in-blank,1051.0,5.0,,170935.0,1.0
+26,26,24,"{'correct': True, 'submitted_answer': {'ok': 'ok'}}",2021-02-05T22:20:11-08,blue3,2021-02-06T06:20:11.993Z,Submission,2021-02-05 22:20:11 (PST),250198.0,5.0,PL-demo/demo-fill-in-blank,1051.0,5.0,308633.0,170935.0,1.0
+27,27,24,,2021-02-05T22:20:12-08,green3,2021-02-06T06:20:12.099Z,View variant,2021-02-05 22:20:12 (PST),250198.0,5.0,PL-demo/demo-fill-in-blank,1051.0,5.0,,170935.0,1.0
+28,28,24,,2021-02-05T22:20:14-08,green1,2021-02-06T06:20:14.521Z,View assessment overview,2021-02-05 22:20:14 (PST),,,,,,,,
+29,29,24,"{'points': 0, 'correct': True, 'max_points': 0, 'score_perc': 0}",2021-02-05T22:20:22-08,brown1,2021-02-06T06:20:22.229Z,Score question,2021-02-05 22:20:22 (PST),250194.0,1.0,PL-demo/DIRECTIONS,1050.0,1.0,,170926.0,1.0
+30,30,24,"{'points': 0, 'correct': True, 'max_points': 0, 'score_perc': 0}",2021-02-05T22:20:22-08,brown1,2021-02-06T06:20:22.229Z,Score question,2021-02-05 22:20:22 (PST),250195.0,2.0,PLEDGE,1046.0,2.0,,170930.0,1.0
+31,31,24,"{'points': 1, 'correct': True, 'max_points': 1, 'score_perc': 100}",2021-02-05T22:20:22-08,brown1,2021-02-06T06:20:22.229Z,Score question,2021-02-05 22:20:22 (PST),250196.0,3.0,PL-demo/demo-multiple-choice,1049.0,3.0,,170933.0,1.0
+32,32,24,"{'points': 1, 'correct': True, 'max_points': 1, 'score_perc': 100}",2021-02-05T22:20:22-08,brown1,2021-02-06T06:20:22.229Z,Score question,2021-02-05 22:20:22 (PST),250197.0,4.0,PL-demo/demo-checkbox,1048.0,4.0,,170934.0,1.0
+33,33,24,"{'points': 1, 'correct': True, 'max_points': 1, 'score_perc': 100}",2021-02-05T22:20:22-08,brown1,2021-02-06T06:20:22.229Z,Score question,2021-02-05 22:20:22 (PST),250198.0,5.0,PL-demo/demo-fill-in-blank,1051.0,5.0,,170935.0,1.0
+34,34,24,"{'points': 0, 'max_points': 3, 'score_perc': 0}",2021-02-05T22:20:22-08,brown3,2021-02-06T06:20:22.229Z,Score assessment,2021-02-05 22:20:22 (PST),,,,,,,,
+35,35,24,"{'points': 0, 'max_points': 3, 'score_perc': 0}",2021-02-05T22:20:22-08,brown3,2021-02-06T06:20:22.229Z,Score assessment,2021-02-05 22:20:22 (PST),,,,,,,,
+36,36,24,"{'points': 1, 'max_points': 3, 'score_perc': 33.3333333333333}",2021-02-05T22:20:22-08,brown3,2021-02-06T06:20:22.229Z,Score assessment,2021-02-05 22:20:22 (PST),,,,,,,,
+37,37,24,"{'points': 2, 'max_points': 3, 'score_perc': 66.6666666666667}",2021-02-05T22:20:22-08,brown3,2021-02-06T06:20:22.229Z,Score assessment,2021-02-05 22:20:22 (PST),,,,,,,,
+38,38,24,"{'points': 3, 'max_points': 3, 'score_perc': 100}",2021-02-05T22:20:22-08,brown3,2021-02-06T06:20:22.229Z,Score assessment,2021-02-05 22:20:22 (PST),,,,,,,,
+39,39,24,,2021-02-05T22:20:22-08,gray3,2021-02-06T06:20:22.229Z,Close,2021-02-05 22:20:22 (PST),,,,,,,,
+40,40,24,,2021-02-05T22:20:22-08,green1,2021-02-06T06:20:22.360Z,View assessment overview,2021-02-05 22:20:22 (PST),,,,,,,,
