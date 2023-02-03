@@ -25,7 +25,6 @@ SHOW_PYTHON_DEFAULT = True
 
 
 def get_python_string(varname: str, frame: pd.DataFrame) -> str:
-    # FIXME this doesn't work with certain data types (an issue with repr as well).
     code_string = pprint.pformat(frame.to_dict(), width=500, indent=4)
     return f"import pandas as pd\n{varname} = pd.DataFrame(\n{code_string}\n)"
 

@@ -1285,6 +1285,8 @@ def generate(data):
 
 When setting a parameter, use PrairieLearn's built in `pl.to_json()` on the DataFrame to display. Note that there are multiple serialization options for Pandas DataFrames. Encoding a DataFrame `df` by setting `pl.to_json(df, df_encoding_version=2)` allows for missing and date time values whereas `pl.to_json(df, df_encoding_version=1)` (default) does not. However, `df_encoding_version=1` has support for complex numbers, while `df_encoding_version=2` does not.
 
+Note that some Python types may not be serialized correctly in the code provided to reconstruct the DataFrame.
+
 #### Example implementations
 
 - [element/dataframe]
