@@ -1,5 +1,0 @@
-,Unnamed: 0,Random_Id,data,date_iso8601,event_color,event_date,event_name,formatted_date,instance_question_id,instructor_question_number,qid,question_id,student_question_number,submission_id,variant_id,variant_number
-0,0,7,,2021-02-04T05:36:45-08,gray3,2021-02-04T13:36:45.179Z,Begin,2021-02-04 05:36:45 (PST),,,,,,,,
-1,1,7,,2021-02-04T05:36:45-08,green1,2021-02-04T13:36:45.460Z,View assessment overview,2021-02-04 05:36:45 (PST),,,,,,,,
-2,2,7,"{'params': {}, 'options': {}, 'true_answer': {}, 'variant_seed': 'mxfo6x'}",2021-02-04T05:36:47-08,gray1,2021-02-04T13:36:47.074Z,New variant,2021-02-04 05:36:47 (PST),248614.0,1.0,PL-demo/DIRECTIONS,1050.0,1.0,,170085.0,1.0
-3,3,7,,2021-02-04T05:36:47-08,green3,2021-02-04T13:36:47.123Z,View variant,2021-02-04 05:36:47 (PST),248614.0,1.0,PL-demo/DIRECTIONS,1050.0,1.0,,170085.0,1.0
