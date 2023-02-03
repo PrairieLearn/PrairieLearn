@@ -132,12 +132,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
     show_info = pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT)
 
+    raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
     partial_scores = data["partial_scores"].get(name, {})
     score = partial_scores.get("score")
 
     if data["panel"] == "question":
         editable = data["editable"]
-        raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
 
         # Get info strings
         with open(UNITS_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
@@ -215,6 +215,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             html_params["suffix"] = suffix
             html_params["a_sub"] = a_sub
+            html_params["raw_submitted_answer"] = raw_submitted_answer
 
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
