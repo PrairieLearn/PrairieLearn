@@ -32,10 +32,7 @@ $(function(){
       </div>
 
       <div id="code-{{uuid}}" role="tabpanel" class="tab-pane">
-
-        <!-- Don't unindent this, since it will add annoying indentations to the display -->
         <pl-code language="python" id=python-code-{{uuid}}>{{{code_string}}}</pl-code>
-
         <button type="button" class="btn btn-secondary btn-sm copy-button" data-clipboard-target="#python-code-{{uuid}}">
         copy this text
         </button>
