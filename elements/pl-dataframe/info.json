@@ -1,8 +1,14 @@
 {
     "controller": "pl-dataframe.py",
     "dependencies": {
-        "elementStyles": [
-            "pl-dataframe.css"
-        ]
+      "elementStyles": [
+          "pl-dataframe.css"
+      ],
+      "nodeModulesScripts": [
+        "clipboard/dist/clipboard.min.js"
+      ],
+      "coreScripts": [
+          "PrairieUtil.js"
+      ]
     }
 }

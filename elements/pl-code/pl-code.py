@@ -115,6 +115,7 @@ def prepare(element_html, data):
         "prevent-select",
         "highlight-lines",
         "highlight-lines-color",
+        "id",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -230,6 +231,9 @@ def render(element_html, data):
         "code": code,
         "prevent_select": prevent_select,
     }
+
+    if pl.has_attrib(element, "id"):
+        html_params["id"] = pl.get_string_attrib(element, "id")
 
     with open("pl-code.mustache", "r", encoding="utf-8") as f:
         html = chevron.render(f, html_params).strip()

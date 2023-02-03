@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import cast
-
+import pprint
 import chevron
 import lxml.html
 import pandas as pd
@@ -21,6 +21,12 @@ DISPLAY_VARIABLE_NAME_DEFAULT = "df"
 SHOW_DTYPE_DEFAULT = False
 NUM_DIGITS_DEFAULT = None
 SHOW_PYTHON_DEFAULT = True
+
+
+def get_python_string(varname: str, frame: pd.DataFrame) -> str:
+    # FIXME this doesn't work with certain data types (an issue with repr as well).
+    code_string = pprint.pformat(frame.to_dict(), width=500, indent=4)
+    return f"import pandas as pd\n{varname} = pd.DataFrame(\n{code_string}\n)"
 
 
 def convert_pandas_dtype_to_r(s: pd.Series) -> str:
@@ -157,8 +163,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     html_params = {
         "uuid": pl.get_uuid(),
         "frame_html": frame_style.to_html(),
-        "varname": display_variable_name,
-        "code_string": repr(frame.to_dict("split")),
+        "code_string": get_python_string(display_variable_name, frame),
         "show_python": show_python,
     }
 

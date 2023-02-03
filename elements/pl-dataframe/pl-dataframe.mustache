@@ -1,32 +1,46 @@
 {{#show_python}}
-<ul class="nav nav-tabs">
-  <li class="nav-item"><a class="nav-link active" data-toggle="tab" href="#table-{{uuid}}">Table</a></li>
-  <li class="nav-item"><a class="nav-link" data-toggle="tab" href="#code-{{uuid}}">Code</a></li>
-</ul>
+<script>
+$(function(){
+    PrairieUtil.initCopyButton('#pl-dataframe-{{uuid}} .copy-button');
+});
+</script>
 
-<div class="tab-content">
-  <div id="table-{{uuid}}" class="tab-pane fade show active">
+<div id="pl-dataframe-{{uuid}}" class="card mb-4">
+  <div class="card-header">
+    <ul class="nav nav-tabs card-header-tabs" role="tablist">
+      <li class="nav-item" role="presentation"><a class="nav-link active" data-toggle="tab" href="#table-{{uuid}}">Table</a></li>
+      <li class="nav-item" role="presentation"><a class="nav-link" data-toggle="tab" href="#code-{{uuid}}">Code</a></li>
+    </ul>
+  </div>
+
+  <div class="card-body">
+    <div class="tab-content">
+      <div id="table-{{uuid}}" role="tabpanel" class="tab-pane show active">
 {{/show_python}}
 
-<div>
+        <div>
 {{{frame_html}}}
 
 {{#num_rows}}
 {{#num_cols}}
-    <p class="pl-dataframe-table-dimensions">{{num_rows}} rows x {{num_cols}} columns</p>
+          <p class="pl-dataframe-table-dimensions">{{num_rows}} rows x {{num_cols}} columns</p>
 {{/num_cols}}
 {{/num_rows}}
-</div>
+        </div>
 
 {{#show_python}}
-</div>
-<div id="code-{{uuid}}" class="tab-pane fade">
-<!-- Don't unindent this, since it will add annoying indentations to the display -->
-<pl-code language="python">
-import pandas as pd
-{{varname}} = pd.DataFrame({{{code_string}}})
-</pl-code>
-</div>
+      </div>
 
+      <div id="code-{{uuid}}" role="tabpanel" class="tab-pane">
+
+        <!-- Don't unindent this, since it will add annoying indentations to the display -->
+        <pl-code language="python" id=python-code-{{uuid}}>{{{code_string}}}</pl-code>
+
+        <button type="button" class="btn btn-secondary btn-sm copy-button" data-clipboard-target="#python-code-{{uuid}}">
+        copy this text
+        </button>
+      </div>
+    </div>
+  </div>
 </div>
 {{/show_python}}
