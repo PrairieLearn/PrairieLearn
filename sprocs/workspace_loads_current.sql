@@ -109,7 +109,7 @@ BEGIN
     -- Compute desired number of workspace hosts.
     --
     -- We only consider workspaces that are launching OR that are running on
-    -- an active host. In the case where a workspace is running on a host that
+    -- a healthy host. In the case where a workspace is running on a host that
     -- is unhealthy, that workspace will continue to run there until it times
     -- out and is shut down. We don't want to include those workspaces in the
     -- computation to avoid overprovisioning after deploys when all existing
