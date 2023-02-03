@@ -17,6 +17,7 @@
     box-sizing: border-box;
     color: black;
     vertical-align: bottom;
+
     text-align: right;
 }
 
@@ -24,6 +25,7 @@
 .pl-dataframe-table tr,
 .pl-dataframe-table td {
     border: none;
+    padding: 0.0em 0.5em;
 }
 
 .pl-dataframe-table td,
