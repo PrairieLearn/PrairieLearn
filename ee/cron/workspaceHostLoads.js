@@ -87,6 +87,10 @@ const cloudwatch_definitions = {
     name: 'WorkspacesRunning',
     unit: 'Count',
   },
+  workspace_running_on_healthy_hosts_count: {
+    name: 'WorkspacesRunningOnHealthyHosts',
+    unit: 'Count',
+  },
   workspace_active_count: {
     name: 'WorkspacesActive',
     unit: 'Count',
