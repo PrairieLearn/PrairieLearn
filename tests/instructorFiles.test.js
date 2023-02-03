@@ -1,5 +1,6 @@
 const { contains } = require('../lib/instructorFiles');
 const assert = require('chai').assert;
+const path = require('path');
 
 describe('File paths', () => {
   describe('parentContainsChild function', () => {
@@ -17,9 +18,9 @@ describe('File paths', () => {
     });
 
     it('works with valid absolute over relative paths', async () => {
-      assert.ok(contains('/PrairieLearn', 'tests'));
-      assert.ok(contains('/PrairieLearn', 'exampleCourse/questions'));
-      assert.ok(contains('/PrairieLearn/exampleCourse', 'exampleCourse/questions'));
+      assert.ok(contains(process.cwd(), 'tests'));
+      assert.ok(contains(process.cwd(), 'exampleCourse/questions'));
+      assert.ok(contains(path.join(process.cwd(), 'exampleCourse'), 'exampleCourse/questions'));
     });
 
     it('works with absolute paths that are not contained', async () => {
