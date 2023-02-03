@@ -25,6 +25,7 @@ CREATE FUNCTION
         OUT workspace_running_count integer,
         OUT workspace_running_on_healthy_hosts_count integer,
         OUT workspace_active_count integer,
+        OUT workspace_active_on_healthy_hosts_count integer,
         -- max time in each workspace state
         OUT workspace_longest_launching_sec double precision,
         OUT workspace_longest_running_sec double precision,
@@ -49,6 +50,7 @@ BEGIN
         AND wh.state != 'unhealthy';
 
     workspace_active_count := workspace_running_count + workspace_launching_count;
+    workspace_active_on_healthy_hosts_count := workspace_running_on_healthy_hosts_count + workspace_launching_count;
 
     -- Longest running workspace in launching state.
     SELECT COALESCE(max(DATE_PART('epoch', now() - state_updated_at)), 0)
@@ -114,7 +116,7 @@ BEGIN
     -- out and is shut down. We don't want to include those workspaces in the
     -- computation to avoid overprovisioning after deploys when all existing
     -- hosts are marked as unhealthy.
-    workspace_jobs_capacity_desired := (workspace_running_on_healthy_hosts_count + workspace_launching_count) * workspace_capacity_factor;
+    workspace_jobs_capacity_desired := workspace_active_on_healthy_hosts_count * workspace_capacity_factor;
     workspace_hosts_desired := CEIL(workspace_jobs_capacity_desired / workspace_host_capacity);
     IF (workspace_hosts_desired < 1) THEN
        workspace_hosts_desired := 1;
@@ -140,7 +142,9 @@ BEGIN
         ('workspace_launching_count', workspace_launching_count),
         ('workspace_relaunching_count', workspace_relaunching_count),
         ('workspace_running_count', workspace_running_count),
+        ('workspace_running_on_healthy_hosts_count', workspace_running_on_healthy_hosts_count),
         ('workspace_active_count', workspace_active_count),
+        ('workspace_active_on_healthy_hosts_count', workspace_active_on_healthy_hosts_count),
         ('workspace_longest_launching_sec', workspace_longest_launching_sec),
         ('workspace_longest_running_sec', workspace_longest_running_sec);
 
