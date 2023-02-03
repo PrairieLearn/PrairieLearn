@@ -17,6 +17,7 @@
     box-sizing: border-box;
     color: black;
     vertical-align: bottom;
+    text-align: right;
 }
 
 .pl-dataframe-table th,
