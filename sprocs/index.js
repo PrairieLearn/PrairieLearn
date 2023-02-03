@@ -147,7 +147,6 @@ module.exports.init = function (callback) {
       'sync_question_tags.sql',
       'sync_assessment_sets.sql',
       'sync_assessments.sql',
-      'course_requests_insert.sql',
       'assessment_groups_update.sql',
       'assessment_groups_delete_all.sql',
       'assessment_groups_copy.sql',
