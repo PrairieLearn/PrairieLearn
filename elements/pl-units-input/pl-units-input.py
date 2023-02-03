@@ -274,9 +274,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         a_tru_parsed = ureg.Quantity(a_tru)
 
         if grading_mode is GradingMode.UNITS_ONLY:
-            a_tru_string = str(a_tru_parsed.units)
+            a_tru_string = f"{a_tru_parsed.units}"
         else:
-            a_tru_string = str(a_tru_parsed)
+            a_tru_string = f"{a_tru_parsed}"
 
         html_params = {
             "answer": True,
