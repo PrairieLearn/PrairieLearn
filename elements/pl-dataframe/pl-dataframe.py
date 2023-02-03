@@ -1,6 +1,7 @@
+import pprint
 from enum import Enum
 from typing import cast
-import pprint
+
 import chevron
 import lxml.html
 import pandas as pd
