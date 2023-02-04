@@ -168,7 +168,7 @@ router.post('/', (req, res, next) => {
               `to add them again. However, you should first check the reason for each failure to ` +
               `grant access (see below). For example, it may be that a user you tried to add ` +
               `was already a member of the course staff, in which case you will find them in the ` +
-              `list and can update their course content acccess as appropriate.</p>`;
+              `list and can update their course content access as appropriate.</p>`;
           }
           err.info +=
             '<hr>' +
