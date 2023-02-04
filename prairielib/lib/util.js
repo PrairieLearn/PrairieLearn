@@ -34,3 +34,21 @@ module.exports.sanitizeObject = function sanitizeObject(value) {
 module.exports.escapeRegExp = function escapeRegExp(string) {
   return string.replace(/[.*+\-?^${}()|[\]\\/]/g, '\\$&');
 };
+
+module.exports.recursivelyTruncateStrings = function recursivelyTruncateStrings(obj, maxLength) {
+  if (typeof obj === 'string') {
+    if (obj.length <= maxLength) {
+      return obj;
+    }
+    return obj.substring(0, maxLength) + '...[truncated]';
+  } else if (Array.isArray(obj)) {
+    return obj.map((value) => recursivelyTruncateStrings(value, maxLength));
+  } else if (typeof obj === 'object') {
+    return Object.entries(obj).reduce((acc, [key, value]) => {
+      acc[key] = recursivelyTruncateStrings(value, maxLength);
+      return acc;
+    }, {});
+  } else {
+    return obj;
+  }
+};

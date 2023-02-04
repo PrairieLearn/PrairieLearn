@@ -82,3 +82,31 @@ describe('sanitizeObject', () => {
     check(input, expected);
   });
 });
+
+describe('recursivelyTruncateStrings', () => {
+  test('empty object', () => {
+    expect(util.recursivelyTruncateStrings({}, 10)).toEqual({});
+  });
+
+  test('legal string', () => {
+    expect(util.recursivelyTruncateStrings({ test: 'test' }, 10)).toEqual({ test: 'test' });
+  });
+
+  test('long string', () => {
+    expect(util.recursivelyTruncateStrings({ test: 'testtest' }, 4)).toEqual({
+      test: 'test...[truncated]',
+    });
+  });
+
+  test('long string in array', () => {
+    expect(util.recursivelyTruncateStrings({ test: ['testtest'] }, 4)).toEqual({
+      test: ['test...[truncated]'],
+    });
+  });
+
+  test('long string in object in array', () => {
+    expect(util.recursivelyTruncateStrings({ test: [{ test: 'testtest' }] }, 4)).toEqual({
+      test: [{ test: 'test...[truncated]' }],
+    });
+  });
+});
