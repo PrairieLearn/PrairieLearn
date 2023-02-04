@@ -88,6 +88,11 @@ describe('recursivelyTruncateStrings', () => {
     expect(util.recursivelyTruncateStrings({}, 10)).toEqual({});
   });
 
+  test('null and undefined', () => {
+    expect(util.recursivelyTruncateStrings({ test: null }, 10)).toEqual({ test: null });
+    expect(util.recursivelyTruncateStrings({ test: undefined }, 10)).toEqual({ test: undefined });
+  });
+
   test('legal string', () => {
     expect(util.recursivelyTruncateStrings({ test: 'test' }, 10)).toEqual({ test: 'test' });
   });

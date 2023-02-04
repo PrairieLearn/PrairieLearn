@@ -1,6 +1,6 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
-const router = express.Router();
+const express = require('express');
 const async = require('async');
 const path = require('path');
 const { callbackify } = require('util');
@@ -11,7 +11,7 @@ const sqldb = require('../../prairielib/lib/sql-db');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const logPageView = require('../../middlewares/logPageView')(path.basename(__filename, '.js'));
 
-const express = require('express');
+const router = express.Router();
 
 function processSubmission(req, res, callback) {
   let variant_id, submitted_answer;
@@ -101,6 +101,7 @@ async function processIssue(req, res, callback) {
     systemData: {},
     authnUserId: res.locals.authn_user.user_id,
   });
+  return variantId;
 }
 
 router.post('/', function (req, res, next) {
