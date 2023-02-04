@@ -4,6 +4,7 @@ const error = require('../../prairielib/lib/error');
 
 const fileStore = require('../../lib/file-store');
 const { idsEqual } = require('../../lib/id');
+const { recursivelyTruncateStrings } = require('../../prairielib/util');
 
 /*
  * Get a validated variant_id from a request, or throw an exception.
@@ -107,13 +108,14 @@ module.exports.processIssue = async (req, res) => {
     'course_instance',
     'course',
   ]);
+  const truncatedCourseData = recursivelyTruncateStrings(course_data, 1000);
   const params = [
     variant_id,
     description, // student message
     'student-reported issue', // instructor message
     true, // manually_reported
     true, // course_caused
-    course_data,
+    truncatedCourseData, // course_data
     {}, // system_data
     res.locals.authn_user.user_id,
   ];

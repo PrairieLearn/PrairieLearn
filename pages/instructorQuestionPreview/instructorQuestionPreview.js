@@ -7,6 +7,7 @@ const error = require('../../prairielib/lib/error');
 const question = require('../../lib/question');
 const sqldb = require('../../prairielib/lib/sql-db');
 const path = require('path');
+const { recursivelyTruncateStrings } = require('../../prairielib/util');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const logPageView = require('../../middlewares/logPageView')(path.basename(__filename, '.js'));
 
@@ -94,13 +95,14 @@ function processIssue(req, res, callback) {
       if (ERR(err, callback)) return;
 
       const course_data = _.pick(res.locals, ['variant', 'question', 'course_instance', 'course']);
+      const truncatedCourseData = recursivelyTruncateStrings(course_data, 1000);
       const params = [
         variant_id,
         description, // student message
         'instructor-reported issue', // instructor message
         true, // manually_reported
         true, // course_caused
-        course_data,
+        truncatedCourseData, // course_data
         {}, // system_data
         res.locals.authn_user.user_id,
       ];
