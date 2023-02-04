@@ -6,12 +6,11 @@ Helper functions for [PrairieLearn](https://github.com/PrairieLearn/PrairieLearn
 [STAT430](https://stat430.com) (during 2018-2020) and now [STAT447](https://stat447.com) along
 with [STAT385](https://stat385.org).
 
-
 ### Example Workflow Within the PrairieLearn External Autograder
 
 Here we assume the instructor has created a file called `solution.R` in the `tests` directory
 containing the reference answer and that the student has submitted a file called `submission.R`.
-See [the PrairieLearn docs](https://prairielearn.readthedocs.io/en/latest/) for more details 
+See [the PrairieLearn docs](https://prairielearn.readthedocs.io/en/latest/) for more details
 on the external autograder.
 
 For a question that test the creation of objects, a test file might look like:
@@ -60,9 +59,8 @@ expect_equal_with_diff(std$fun(x = y), ref$fun(x = y))
 ```
 
 These two testing patterns can be combined to evaluate many possible R problems.
-Additionally, the tests can be grouped arbitrarily (from a single test in each file 
+Additionally, the tests can be grouped arbitrarily (from a single test in each file
 to every test in one file) to adapt to the author's preferences.
-
 
 ### Who wrote it?
 
