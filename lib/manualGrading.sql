@@ -239,3 +239,90 @@ FROM
     inserted_rubric_grading AS irg
     LEFT JOIN inserted_rubric_grading_items AS irgi ON (TRUE)
 LIMIT 1;
+
+-- BLOCK select_submission_for_score_update
+SELECT
+    s.id AS submission_id,
+    iq.id AS instance_question_id,
+    ai.id AS assessment_instance_id,
+    aq.max_points,
+    aq.max_auto_points,
+    aq.max_manual_points,
+    aq.manual_rubric_id,
+    aq.auto_rubric_id,
+    s.partial_scores,
+    iq.auto_points,
+    iq.manual_points,
+    s.auto_rubric_grading_id,
+    s.manual_rubric_grading_id,
+    $check_modified_at::TIMESTAMPTZ IS NOT NULL AND $check_modified_at != iq.modified_at AS modified_at_conflict
+FROM
+    instance_questions AS iq
+    JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+    JOIN questions AS q on (q.id = aq.question_id)
+    JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+    JOIN assessments AS a ON (a.id = ai.assessment_id)
+    LEFT JOIN variants AS v ON (v.instance_question_id = iq.id)
+    LEFT JOIN submissions AS s ON (s.variant_id = v.id)
+WHERE
+    a.id = $assessment_id
+    AND iq.id = $instance_question_id
+    AND (s.id = $submission_id OR $submission_id IS NULL)
+ORDER BY s.date DESC, ai.number DESC
+LIMIT 1;
+
+-- BLOCK insert_grading_job
+INSERT INTO grading_jobs
+    (submission_id, auth_user_id, graded_by, graded_at, grading_method,
+     correct, score, auto_points, manual_points,
+     feedback, partial_scores, manual_rubric_grading_id, auto_rubric_grading_id)
+VALUES
+    ($submission_id, $authn_user_id, $authn_user_id, now(), 'Manual',
+     $correct, $score, $auto_points, $manual_points,
+     $feedback, $partial_scores, $manual_rubric_grading_id, $auto_rubric_grading_id)
+RETURNING id;
+
+-- BLOCK update_submission_score
+UPDATE submissions AS s
+SET
+    feedback = CASE
+        WHEN feedback IS NULL THEN $feedback::JSONB
+        WHEN $feedback::JSONB IS NULL THEN feedback
+        WHEN jsonb_typeof(feedback) = 'object' AND jsonb_typeof($feedback::JSONB) = 'object' THEN feedback || $feedback::JSONB
+        ELSE $feedback::JSONB
+    END,
+    partial_scores = COALESCE($partial_scores::JSONB, partial_scores),
+    auto_rubric_grading_id = $auto_rubric_grading_id,
+    manual_rubric_grading_id = $manual_rubric_grading_id,
+    graded_at = now(),
+    override_score = COALESCE($score, override_score),
+    score = COALESCE($score, score),
+    correct = COALESCE($correct, correct),
+    gradable = CASE WHEN $score IS NULL THEN gradable ELSE TRUE END
+WHERE s.id = $submission_id;
+
+-- BLOCK update_instance_question_score
+WITH updated_instance_question AS (
+    UPDATE instance_questions AS iq
+    SET
+        points = $points,
+        score_perc = $score_perc,
+        auto_points = COALESCE($auto_points, auto_points),
+        manual_points = COALESCE($manual_points, manual_points),
+        status = 'complete',
+        modified_at = now(),
+        highest_submission_score = COALESCE($score, highest_submission_score),
+        requires_manual_grading = FALSE,
+        last_grader = $authn_user_id
+    WHERE iq.id = $instance_question_id
+    RETURNING id
+)
+INSERT INTO question_score_logs
+    (instance_question_id, auth_user_id, max_points, max_manual_points, max_auto_points,
+    points, score_perc, auto_points, manual_points)
+SELECT
+    uiq.id, $authn_user_id, $max_points, $max_manual_points, $max_auto_points,
+    $points, $score_perc, $auto_points, $manual_points
+FROM updated_instance_question uiq
+RETURNING *;
+
