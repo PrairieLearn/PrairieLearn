@@ -5,7 +5,7 @@ import chevron
 import lxml.html
 import prairielearn as pl
 import unit_utils as uu
-from pint import Unit, UnitRegistry, errors
+from pint import Unit, errors
 from typing_extensions import assert_never
 
 
@@ -70,7 +70,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
 
     if correct_answer_html is not None:
-        # TODO possibly transform correct answers to cannonical unit names?
         if name in data["correct_answers"]:
             raise ValueError("Duplicate correct_answers variable name: {name}")
         data["correct_answers"][name] = correct_answer_html
@@ -84,7 +83,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         )
 
     atol = pl.get_string_attrib(element, "atol", ATOL_DEFAULT)
-    ureg = UnitRegistry(cache_folder=":auto:")
+    ureg = pl.get_unit_registry()
     parsed_atol = ureg.Quantity(atol)
 
     grading_mode = pl.get_enum_attrib(
@@ -270,7 +269,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if a_tru is None:
             return ""
 
-        ureg = UnitRegistry(cache_folder=":auto:")
+        ureg = pl.get_unit_registry()
         a_tru_parsed = ureg.Quantity(a_tru)
 
         if grading_mode is GradingMode.ONLY_UNITS:
@@ -320,8 +319,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
         return
 
-    # TODO double check that doing this is ok. May need to switch to directory local to question / server
-    ureg = UnitRegistry(cache_folder=":auto:")
+    ureg = pl.get_unit_registry()
 
     # checks for invalids by parsing as a dimensionful quantity
     # TODO check for more possible exceptions here?
@@ -377,7 +375,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     # Store cache on system. Needed to prevent slow grading / parsing times
     # due to object creation
-    ureg = UnitRegistry(cache_folder=":auto:")
+    ureg = pl.get_unit_registry()
 
     if grading_mode is GradingMode.ONLY_UNITS:
         grading_fn = uu.get_only_units_grading_fn(ureg=ureg, correct_ans=a_tru)
@@ -427,7 +425,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["partial_scores"][name] = {"score": 1, "weight": weight}
     elif result == "incorrect":
         # TODO Possibly add other test cases
-        ureg = UnitRegistry(cache_folder=":auto:")
+        ureg = pl.get_unit_registry()
         if grading_mode is GradingMode.ONLY_UNITS:
             answer = str((ureg.Quantity(a_tru) * ureg.meters).units)
             partial_score = 0.0
