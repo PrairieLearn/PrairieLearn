@@ -1214,6 +1214,7 @@ line callouts.
 | `prevent-select`        | boolean | false     | Applies methods to make the source code more difficult to copy, like preventing selection or right-clicking. Note that the source code is still accessible in the page source, which will always be visible to students.                                                                                                                                                                                                                              |
 | `highlight-lines`       | text    | -         | Apply a distinctive background highlight the specified lines of code. Accepts input like `4`, `1-3,5-10`, and `1,2-5,20`.                                                                                                                                                                                                                                                                                                                             |
 | `highlight-lines-color` | text    | `#b3d7ff` | Specifies the color of highlighted lines of code.                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `copy-code-button`      | boolean | false     | Whether to include a button to copy the code displayed by this element.                                                                                                                                                                                                                                                                                                                                                                               |
 
 #### Details
 
@@ -1327,10 +1328,13 @@ def generate(data):
 | `display-variable-name` | string        | "df"     | Variable name to display in code to recreate DataFrame.                                                                                                |
 | `show-python`           | boolean       | true     | Show code that can be used to recreate the DataFrame in Python in a separate tab.                                                                      |
 | `digits`                | integer       | -        | Number of digits to display for floating point entries.                                                                                                |
+| `width`                 | integer       | 500      | Max characters per line for displaying Python code.                                                                                                    |
 
 #### Details
 
 When setting a parameter, use PrairieLearn's built in `pl.to_json()` on the DataFrame to display. Note that there are multiple serialization options for Pandas DataFrames. Encoding a DataFrame `df` by setting `pl.to_json(df, df_encoding_version=2)` allows for missing and date time values whereas `pl.to_json(df, df_encoding_version=1)` (default) does not. However, `df_encoding_version=1` has support for complex numbers, while `df_encoding_version=2` does not.
+
+Note that some Python types may not be serialized correctly in the code provided to reconstruct the DataFrame.
 
 #### Example implementations
 
