@@ -27,7 +27,7 @@ class ComparisonType(Enum):
     DECDIG = "decdig"
 
 
-def get_units_only_grading_fn(
+def get_only_units_grading_fn(
     *, ureg: UnitRegistry, correct_ans: str
 ) -> Callable[[str], Tuple[bool, Optional[str]]]:
     """Returns the grading function used for units only grading mode."""
@@ -43,7 +43,7 @@ def get_units_only_grading_fn(
     return grade_units_only
 
 
-def get_units_fixed_grading_fn(
+def get_exact_units_grading_fn(
     *,
     ureg: UnitRegistry,
     correct_ans: str,
@@ -96,7 +96,7 @@ def get_units_fixed_grading_fn(
         else 0.0
     )
 
-    def grade_units_fixed(submitted_ans: str) -> Tuple[float, Optional[str]]:
+    def grade_exact_units(submitted_ans: str) -> Tuple[float, Optional[str]]:
         # will return no error, assuming parse() catches all of them
         parsed_submission = ureg.Quantity(submitted_ans)
         magnitudes_match = magnitude_comparison_fn(
@@ -113,17 +113,17 @@ def get_units_fixed_grading_fn(
 
         return 0.0, INCORRECT_UNITS_AND_MAGNITUDE_FEEDBACK
 
-    return grade_units_fixed
+    return grade_exact_units
 
 
-def get_units_agnostic_grading_fn(
+def get_with_units_grading_fn(
     *, ureg: UnitRegistry, correct_ans: str, atol: str
 ) -> Callable[[str], Tuple[float, Optional[str]]]:
     # Assume atol and correct answer have same dimensionality, checked in prepare method
     correct_ans_base_unit = ureg.Quantity(correct_ans).to_base_units()
     parsed_atol = ureg.Quantity(atol).to_base_units()
 
-    def grade_units_fixed(submitted_ans: str) -> Tuple[float, Optional[str]]:
+    def grade_with_units(submitted_ans: str) -> Tuple[float, Optional[str]]:
         # will return no error, assuming parse() catches all of them
         parsed_sub_base_unit = ureg.Quantity(submitted_ans).to_base_units()
 
@@ -145,7 +145,7 @@ def get_units_agnostic_grading_fn(
 
         return 0.0, INCORRECT_FEEDBACK
 
-    return grade_units_fixed
+    return grade_with_units
 
 
 def is_numberless(a_sub: str, a_sub_parsed: Quantity) -> bool:

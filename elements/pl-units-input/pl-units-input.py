@@ -15,12 +15,12 @@ class DisplayType(Enum):
 
 
 class GradingMode(Enum):
-    UNITS_ONLY = 1
-    UNITS_FIXED = 2
-    UNITS_AGNOSTIC = 3
+    ONLY_UNITS = 1
+    EXACT_UNITS = 2
+    WITH_UNITS = 3
 
 
-GRADING_MODE_DEFAULT = GradingMode.UNITS_FIXED
+GRADING_MODE_DEFAULT = GradingMode.WITH_UNITS
 WEIGHT_DEFAULT = 1
 CORRECT_ANSWER_DEFAULT = None
 LABEL_DEFAULT = None
@@ -92,7 +92,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
 
     # In units agnostic mode, absolute tolerance must have units. Otherwise just a float
-    if grading_mode is GradingMode.UNITS_AGNOSTIC:
+    if grading_mode is GradingMode.WITH_UNITS:
         if not pl.has_attrib(element, "atol"):
             raise ValueError("atol is a required parameter for units agnostic grading.")
 
@@ -160,14 +160,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         with open(UNITS_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             info = chevron.render(
                 f,
-                {"format": True, "units_only": grading_mode is GradingMode.UNITS_ONLY},
+                {"format": True, "only_units": grading_mode is GradingMode.ONLY_UNITS},
             ).strip()
 
         if pl.has_attrib(element, "placeholder"):
             placeholder_text = pl.get_string_attrib(element, "placeholder")
-        elif grading_mode is GradingMode.UNITS_ONLY:
+        elif grading_mode is GradingMode.ONLY_UNITS:
             placeholder_text = "Unit"
-        elif grading_mode is GradingMode.UNITS_AGNOSTIC:
+        elif grading_mode is GradingMode.WITH_UNITS:
             atol = pl.get_string_attrib(element, "atol", ATOL_DEFAULT)
             placeholder_text = f"Number (atol={atol}) + Unit"
 
@@ -273,7 +273,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         ureg = UnitRegistry(cache_folder=":auto:")
         a_tru_parsed = ureg.Quantity(a_tru)
 
-        if grading_mode is GradingMode.UNITS_ONLY:
+        if grading_mode is GradingMode.ONLY_UNITS:
             a_tru_string = f"{a_tru_parsed.units}"
         else:
             a_tru_string = f"{a_tru_parsed}"
@@ -296,9 +296,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     allow_blank = pl.get_string_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
 
-    units_only = (
+    only_units = (
         pl.get_enum_attrib(element, "grading-mode", GradingMode, GRADING_MODE_DEFAULT)
-        is GradingMode.UNITS_ONLY
+        is GradingMode.ONLY_UNITS
     )
 
     # retrieves submitted answer
@@ -342,14 +342,14 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # checks for no number in submitted answer
     numberless = uu.is_numberless(a_sub, a_sub_parsed)
 
-    if numberless and not units_only:
+    if numberless and not only_units:
         data["format_errors"][
             name
         ] = "Invalid format. The submitted answer should include a magnitude."
         data["submitted_answers"][name] = None
         return
 
-    if units_only and not numberless:
+    if only_units and not numberless:
         data["format_errors"][
             name
         ] = "Invalid format. The submitted answer should not include a magnitude."
@@ -357,7 +357,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         return
 
     # Convert submitted answer to full names
-    if units_only:
+    if only_units:
         data["submitted_answers"][name] = str(a_sub_parsed.units)
     else:
         data["submitted_answers"][name] = str(a_sub_parsed)
@@ -379,10 +379,10 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     # due to object creation
     ureg = UnitRegistry(cache_folder=":auto:")
 
-    if grading_mode is GradingMode.UNITS_ONLY:
-        grading_fn = uu.get_units_only_grading_fn(ureg=ureg, correct_ans=a_tru)
-    elif grading_mode is GradingMode.UNITS_FIXED:
-        grading_fn = uu.get_units_fixed_grading_fn(
+    if grading_mode is GradingMode.ONLY_UNITS:
+        grading_fn = uu.get_only_units_grading_fn(ureg=ureg, correct_ans=a_tru)
+    elif grading_mode is GradingMode.EXACT_UNITS:
+        grading_fn = uu.get_exact_units_grading_fn(
             ureg=ureg,
             correct_ans=a_tru,
             comparison=pl.get_enum_attrib(
@@ -395,8 +395,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             rtol=pl.get_float_attrib(element, "rtol", RTOL_DEFAULT),
             atol=pl.get_string_attrib(element, "atol", ATOL_DEFAULT),
         )
-    elif grading_mode is GradingMode.UNITS_AGNOSTIC:
-        grading_fn = uu.get_units_agnostic_grading_fn(
+    elif grading_mode is GradingMode.WITH_UNITS:
+        grading_fn = uu.get_with_units_grading_fn(
             ureg=ureg,
             correct_ans=a_tru,
             atol=pl.get_string_attrib(element, "atol"),  # No default in this case.
@@ -419,7 +419,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
     result = data["test_type"]
     if result == "correct":
-        if grading_mode is GradingMode.UNITS_ONLY:
+        if grading_mode is GradingMode.ONLY_UNITS:
             data["raw_submitted_answers"][name] = str(Unit(a_tru))
         else:
             data["raw_submitted_answers"][name] = a_tru
@@ -428,11 +428,11 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     elif result == "incorrect":
         # TODO Possibly add other test cases
         ureg = UnitRegistry(cache_folder=":auto:")
-        if grading_mode is GradingMode.UNITS_ONLY:
+        if grading_mode is GradingMode.ONLY_UNITS:
             answer = str((ureg.Quantity(a_tru) * ureg.meters).units)
             partial_score = 0.0
             feedback = uu.INCORRECT_FEEDBACK
-        elif grading_mode is GradingMode.UNITS_FIXED:
+        elif grading_mode is GradingMode.EXACT_UNITS:
             answer = ureg.Quantity(a_tru) * 2
 
             partial_credit = pl.get_float_attrib(
@@ -441,7 +441,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
             partial_score = 1.0 - partial_credit if partial_credit is not None else 0.0
             feedback = uu.CORRECT_UNITS_INCORRECT_MAGNITUDE_FEEDBACK
-        elif grading_mode is GradingMode.UNITS_AGNOSTIC:
+        elif grading_mode is GradingMode.WITH_UNITS:
             answer = ureg.Quantity(a_tru) * 2
             partial_score = 0.0
             feedback = uu.INCORRECT_FEEDBACK
