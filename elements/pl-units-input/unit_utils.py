@@ -33,14 +33,14 @@ def get_only_units_grading_fn(
     """Returns the grading function used for units only grading mode."""
     parsed_correct_ans = ureg.Quantity(correct_ans)
 
-    def grade_units_only(submitted_ans: str) -> Tuple[bool, Optional[str]]:
+    def grade_only_units(submitted_ans: str) -> Tuple[bool, Optional[str]]:
         parsed_submission = ureg.Quantity(submitted_ans)
         if parsed_correct_ans.units == parsed_submission.units:
             return True, None
 
         return False, INCORRECT_FEEDBACK
 
-    return grade_units_only
+    return grade_only_units
 
 
 def get_exact_units_grading_fn(
@@ -118,7 +118,7 @@ def get_exact_units_grading_fn(
 
 def get_with_units_grading_fn(
     *, ureg: UnitRegistry, correct_ans: str, atol: str
-) -> Callable[[str], Tuple[float, Optional[str]]]:
+) -> Callable[[str], Tuple[bool, Optional[str]]]:
     # Assume atol and correct answer have same dimensionality, checked in prepare method
     correct_ans_base_unit = ureg.Quantity(correct_ans).to_base_units()
     parsed_atol = ureg.Quantity(atol).to_base_units()
@@ -141,9 +141,9 @@ def get_with_units_grading_fn(
         )
 
         if magnitudes_match:
-            return 1.0, None
+            return True, None
 
-        return 0.0, INCORRECT_FEEDBACK
+        return False, INCORRECT_FEEDBACK
 
     return grade_with_units
 
