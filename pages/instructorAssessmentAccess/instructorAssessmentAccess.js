@@ -5,7 +5,6 @@ const path = require('path');
 const _ = require('lodash');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-const config = require('../../lib/config');
 const sqldb = require('../../prairielib/lib/sql-db');
 const sqlLoader = require('../../prairielib/lib/sql-loader');
 
