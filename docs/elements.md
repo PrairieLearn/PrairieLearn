@@ -1280,6 +1280,7 @@ def generate(data):
 | `display-variable-name` | string        | "df"     | Variable name to display in code to recreate DataFrame.                                                                                                |
 | `show-python`           | boolean       | true     | Show code that can be used to recreate the DataFrame in Python in a separate tab.                                                                      |
 | `digits`                | integer       | -        | Number of digits to display for floating point entries.                                                                                                |
+| `width`                 | integer       | 500      | Max characters per line for displaying Python code.                                                                                                    |
 
 #### Details
 

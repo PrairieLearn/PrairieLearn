@@ -22,6 +22,7 @@ DISPLAY_VARIABLE_NAME_DEFAULT = "df"
 SHOW_DTYPE_DEFAULT = False
 NUM_DIGITS_DEFAULT = None
 SHOW_PYTHON_DEFAULT = True
+WIDTH_DEFAULT = 500
 
 
 def convert_pandas_dtype_to_r(s: pd.Series) -> str:
@@ -73,6 +74,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             "display-language",
             "display-variable-name",
             "digits",
+            "width",
         ],
     )
 
@@ -97,6 +99,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
 
     num_digits = pl.get_integer_attrib(element, "digits", NUM_DIGITS_DEFAULT)
+
+    width = pl.get_integer_attrib(element, "width", WIDTH_DEFAULT)
 
     if varname not in data["params"]:
         raise KeyError(
@@ -159,7 +163,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "uuid": pl.get_uuid(),
         "frame_html": frame_style.to_html(),
         "code_string": pprint.pformat(
-            frame.to_dict(), width=500, indent=4, sort_dicts=False
+            frame.to_dict(), width=width, indent=4, sort_dicts=False
         ),
         "varname": display_variable_name,
         "show_python": show_python,
