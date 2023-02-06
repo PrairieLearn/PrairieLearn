@@ -4,6 +4,7 @@ const error = require('../../prairielib/lib/error');
 
 const fileStore = require('../../lib/file-store');
 const { idsEqual } = require('../../lib/id');
+const issues = require('../../lib/issues');
 
 /*
  * Get a validated variant_id from a request, or throw an exception.
@@ -96,27 +97,24 @@ module.exports.processIssue = async (req, res) => {
     throw new Error('A description of the issue must be provided');
   }
 
-  const variant_id = await module.exports.getValidVariantId(req, res);
-
-  const course_data = _.pick(res.locals, [
-    'variant',
-    'instance_question',
-    'question',
-    'assessment_instance',
-    'assessment',
-    'course_instance',
-    'course',
-  ]);
-  const params = [
-    variant_id,
-    description, // student message
-    'student-reported issue', // instructor message
-    true, // manually_reported
-    true, // course_caused
-    course_data,
-    {}, // system_data
-    res.locals.authn_user.user_id,
-  ];
-  await sqldb.callAsync('issues_insert_for_variant', params);
-  return variant_id;
+  const variantId = await module.exports.getValidVariantId(req, res);
+  await issues.insertIssue({
+    variantId: variantId,
+    studentMessage: description,
+    instructorMessage: 'student-reported issue',
+    manuallyReported: true,
+    courseCaused: true,
+    courseData: _.pick(res.locals, [
+      'variant',
+      'instance_question',
+      'question',
+      'assessment_instance',
+      'assessment',
+      'course_instance',
+      'course',
+    ]),
+    systemData: {},
+    authnUserId: res.locals.authn_user.user_id,
+  });
+  return variantId;
 };
