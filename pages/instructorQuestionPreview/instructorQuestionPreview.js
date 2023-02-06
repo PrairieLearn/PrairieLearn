@@ -4,10 +4,10 @@ const express = require('express');
 const async = require('async');
 const path = require('path');
 const { callbackify } = require('util');
+const sqldb = require('@prairielearn/postgres');
 const error = require('../../prairielib/lib/error');
 const question = require('../../lib/question');
 const issues = require('../../lib/issues');
-const sqldb = require('../../prairielib/lib/sql-db');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const logPageView = require('../../middlewares/logPageView')(path.basename(__filename, '.js'));
 

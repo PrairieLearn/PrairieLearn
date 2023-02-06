@@ -5,7 +5,7 @@ var router = express.Router();
 
 var config = require('../../../lib/config');
 var csrf = require('../../../lib/csrf');
-var sqldb = require('../../../prairielib/lib/sql-db');
+var sqldb = require('@prairielearn/postgres');
 
 router.post('/', function (req, res, next) {
   const authData = {

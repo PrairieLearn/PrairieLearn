@@ -4,7 +4,7 @@ const path = require('path');
 const _ = require('lodash');
 const util = require('util');
 
-const sqldb = require('../prairielib/lib/sql-db');
+const sqldb = require('@prairielearn/postgres');
 const migrations = require('../prairielib/lib/migrations');
 const sprocs = require('../sprocs');
 const namedLocks = require('../lib/named-locks');

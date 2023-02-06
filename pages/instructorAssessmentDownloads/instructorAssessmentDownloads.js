@@ -9,10 +9,9 @@ const csvMaker = require('../../lib/csv-maker');
 const { paginateQuery } = require('../../lib/paginate');
 const sanitizeName = require('../../lib/sanitize-name');
 const error = require('../../prairielib/error');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const setFilenames = function (locals) {
   const prefix = sanitizeName.assessmentFilenamePrefix(

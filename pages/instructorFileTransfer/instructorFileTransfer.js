@@ -4,14 +4,13 @@ const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const async = require('async');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 const logger = require('../../lib/logger');
 const { QuestionTransferEditor } = require('../../lib/editors');
 const config = require('../../lib/config');
 const { idsEqual } = require('../../lib/id');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 function getFileTransfer(file_transfer_id, user_id, callback) {
   let file_transfer;

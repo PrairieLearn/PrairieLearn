@@ -5,9 +5,8 @@ const _ = require('lodash');
 const oauthSignature = require('oauth-signature');
 const debug = require('debug')('prairielearn:authCallbackLti');
 
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sqldb = require('@prairielearn/postgres');
+const sql = sqldb.loadSqlEquiv(__filename);
 const error = require('../../prairielib/lib/error');
 const csrf = require('../../lib/csrf');
 const config = require('../../lib/config');
