@@ -5,10 +5,8 @@ const path = require('path');
 const _ = require('lodash');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
-
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sqldb = require('@prairielearn/postgres');
+const sql = sqldb.loadSqlEquiv(__filename);
 
 let compareDate = function (oldDate, newDate, oldIsNull, newIsNull, bothAreNull) {
   if (oldDate === null) return newDate === null ? bothAreNull : oldIsNull;

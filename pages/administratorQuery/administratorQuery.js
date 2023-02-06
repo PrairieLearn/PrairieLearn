@@ -8,10 +8,9 @@ const hljs = require('highlight.js');
 
 const csvMaker = require('../../lib/csv-maker');
 const jsonLoad = require('../../lib/json-load');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const queriesDir = 'admin_queries';
 const schemaFilename = 'schemas/schemas/adminQuery.json';

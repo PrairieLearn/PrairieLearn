@@ -1,11 +1,11 @@
-/* eslint-env jest */
-const sqldb = require('./sql-db');
+import { assert } from 'chai';
+import * as pgPool from './pool';
 
 /**
  * Returns true if the property on `PostgresPool` should be considered
  * hidden - that is, if it should be available on the module's exports.
  */
-function isHiddenProperty(property) {
+function isHiddenProperty(property: string) {
   switch (property) {
     case 'pool':
     case 'alsClient':
@@ -18,23 +18,23 @@ function isHiddenProperty(property) {
 
 describe('sqldb', () => {
   it('exports the full PostgresPool interface', () => {
-    const pool = new sqldb.PostgresPool();
+    const pool = new pgPool.PostgresPool();
 
     Object.getOwnPropertyNames(pool)
       .filter((n) => !isHiddenProperty(n))
       .forEach((prop) => {
-        expect(sqldb).toHaveProperty(prop);
-        expect(sqldb[prop]).toBeDefined();
+        assert.property(pgPool, prop);
+        assert.ok((pgPool as any)[prop]);
       });
 
     Object.getOwnPropertyNames(Object.getPrototypeOf(pool)).forEach((prop) => {
-      expect(sqldb).toHaveProperty(prop);
-      expect(sqldb[prop]).toBeDefined();
+      assert.property(pgPool, prop);
+      assert.ok((pgPool as any)[prop]);
     });
   });
 
   it('should not have extra properties', () => {
-    const pool = new sqldb.PostgresPool();
+    const pool = new pgPool.PostgresPool();
 
     const knownProperties = [
       ...Object.getOwnPropertyNames(pool),
@@ -43,7 +43,7 @@ describe('sqldb', () => {
     ];
 
     Object.getOwnPropertyNames(pool).forEach((prop) => {
-      expect(knownProperties).toContain(prop);
+      assert.include(knownProperties, prop);
     });
   });
 });

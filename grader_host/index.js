@@ -10,7 +10,7 @@ const path = require('path');
 const byline = require('byline');
 const Sentry = require('@prairielearn/sentry');
 
-const sqldb = require('../prairielib/lib/sql-db');
+const sqldb = require('@prairielearn/postgres');
 const sanitizeObject = require('../prairielib/lib/util').sanitizeObject;
 
 const globalLogger = require('./lib/logger');
