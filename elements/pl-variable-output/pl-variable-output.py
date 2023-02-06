@@ -56,7 +56,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     displayed_tab = [show_matlab, show_mathematica, show_python, show_r, show_sympy]
     if not any(displayed_tab):
         raise ValueError(
-            "All tabs have been hidden from display. " "At least one tab must be shown."
+            "All tabs have been hidden from display. At least one tab must be shown."
         )
 
     tab_list = [
