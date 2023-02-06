@@ -18,6 +18,7 @@ PREVENT_SELECT_DEFAULT = False
 HIGHLIGHT_LINES_DEFAULT = None
 HIGHLIGHT_LINES_COLOR_DEFAULT = "#b3d7ff"
 DIRECTORY_DEFAULT = "."
+COPY_CODE_BUTTON_DEFAULT = False
 
 
 class NoHighlightingLexer(pygments.lexer.Lexer):
@@ -115,6 +116,7 @@ def prepare(element_html, data):
         "prevent-select",
         "highlight-lines",
         "highlight-lines-color",
+        "copy-code-button",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -177,10 +179,9 @@ def render(element_html, data):
         file_path = os.path.join(base_path, source_file_name)
         if not os.path.exists(file_path):
             raise Exception(f'Unknown file path: "{file_path}".')
-        f = open(file_path, "r")
-        code = ""
-        for line in f.readlines():
-            code += line
+
+        with open(file_path, "r") as f:
+            code = f.read()
 
         # Chop off ending newlines
         if code[:-2] == "\r\n":
@@ -226,12 +227,14 @@ def render(element_html, data):
     code = pygments.highlight(unescape(code), lexer, formatter)
 
     html_params = {
+        "uuid": pl.get_uuid(),
         "no_highlight": no_highlight,
         "code": code,
         "prevent_select": prevent_select,
+        "copy_code_button": pl.get_boolean_attrib(
+            element, "copy-code-button", COPY_CODE_BUTTON_DEFAULT
+        ),
     }
 
     with open("pl-code.mustache", "r", encoding="utf-8") as f:
-        html = chevron.render(f, html_params).strip()
-
-    return html
+        return chevron.render(f, html_params).strip()
