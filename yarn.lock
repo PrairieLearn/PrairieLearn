@@ -3770,6 +3770,7 @@ __metadata:
     eslint: ^8.33.0
     eslint-config-prettier: ^8.6.0
     eslint-plugin-import: 2.27.5
+    eslint-plugin-mocha: ^10.1.0
     eslint-plugin-no-floating-promise: ^1.0.2
     execa: ^5.1.1
     express: ^4.18.2
@@ -7029,6 +7030,18 @@ __metadata:
   peerDependencies:
     eslint: ^2 || ^3 || ^4 || ^5 || ^6 || ^7.2.0 || ^8
   checksum: f500571a380167e25d72a4d925ef9a7aae8899eada57653e5f3051ec3d3c16d08271fcefe41a30a9a2f4fefc232f066253673ee4ea77b30dba65ae173dade85d
+  languageName: node
+  linkType: hard
+
+"eslint-plugin-mocha@npm:^10.1.0":
+  version: 10.1.0
+  resolution: "eslint-plugin-mocha@npm:10.1.0"
+  dependencies:
+    eslint-utils: ^3.0.0
+    rambda: ^7.1.0
+  peerDependencies:
+    eslint: ">=7.0.0"
+  checksum: 67c063ba190fe8ab3186baaf800a375e9f16a17f69deaac2ea0d1825f6e4260f9a56bd510ceb2ffbe6644d7090beda0efbd2ab7824e4852ce2abee53a1086179
   languageName: node
   linkType: hard
 
@@ -12510,6 +12523,13 @@ __metadata:
     core-js: ^3.23.5
     regenerator-runtime: ^0.13.9
   checksum: b969545bbc81a268e1ddd8747ab3c2a55d9de48491556b254db79aa60a233670290eb193e70b6a52173c13c599f5d1c9dd034460bb119159f4e0226b48fb3096
+  languageName: node
+  linkType: hard
+
+"rambda@npm:^7.1.0":
+  version: 7.4.0
+  resolution: "rambda@npm:7.4.0"
+  checksum: 9c3f1fecd81121b94c261cdaef777c570c3df7f981f1d3cd60e671869088b9dcd29f331f049a7f29862ed392c5acce12c8f2a6c1c50d14ae75db745a350caff9
   languageName: node
   linkType: hard
 

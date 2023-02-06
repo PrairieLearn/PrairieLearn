@@ -26,7 +26,6 @@ const awsHelper = require('../lib/aws');
 const socketServer = require('../lib/socket-server'); // must load socket server before workspace
 const workspaceHelper = require('../lib/workspace');
 const logger = require('../lib/logger');
-const sprocs = require('../sprocs');
 const LocalLock = require('../lib/local-lock');
 const { contains } = require('../lib/instructorFiles');
 
@@ -167,15 +166,6 @@ async
       sqldb.init(pgConfig, idleErrorHandler, function (err) {
         if (ERR(err, callback)) return;
         logger.verbose('Successfully connected to database');
-        callback(null);
-      });
-    },
-    async () => {
-      await sqldb.setRandomSearchSchemaAsync(config.instanceId);
-    },
-    (callback) => {
-      sprocs.init(function (err) {
-        if (ERR(err, callback)) return;
         callback(null);
       });
     },

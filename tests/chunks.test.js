@@ -365,7 +365,7 @@ describe('chunks', () => {
       );
     });
 
-    it.skip('deletes chunks that are no longer needed', async () => {
+    it('deletes chunks that are no longer needed', async () => {
       const courseDir = tempTestCourseDir.path;
       const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({ id: courseId, path: null });
 
