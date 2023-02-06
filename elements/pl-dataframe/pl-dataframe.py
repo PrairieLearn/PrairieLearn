@@ -24,11 +24,6 @@ NUM_DIGITS_DEFAULT = None
 SHOW_PYTHON_DEFAULT = True
 
 
-def get_python_string(varname: str, frame: pd.DataFrame) -> str:
-    code_string = pprint.pformat(frame.to_dict(), width=500, indent=4)
-    return f"import pandas as pd\n{varname} = pd.DataFrame(\n{code_string}\n)"
-
-
 def convert_pandas_dtype_to_r(s: pd.Series) -> str:
     # Force series to avoid odd element-wise output
     s.dtype
@@ -163,7 +158,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     html_params = {
         "uuid": pl.get_uuid(),
         "frame_html": frame_style.to_html(),
-        "code_string": get_python_string(display_variable_name, frame),
+        "code_string": pprint.pformat(
+            frame.to_dict(), width=500, indent=4, sort_dicts=False
+        ),
+        "varname": display_variable_name,
         "show_python": show_python,
     }
 

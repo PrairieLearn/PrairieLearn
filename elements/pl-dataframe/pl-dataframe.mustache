@@ -26,7 +26,15 @@
       </div>
 
       <div id="code-{{uuid}}" role="tabpanel" class="tab-pane">
-        <pl-code language="python" copy-code-button="True">{{{code_string}}}</pl-code>
+<!-- Don't unindent this, will cause formatting issues -->
+<pl-code language="python" copy-code-button="True">
+from pandas import DataFrame, Timestamp
+from numpy import nan
+
+{{{varname}}} = DataFrame(
+{{{code_string}}}
+)
+</pl-code>
       </div>
     </div>
   </div>
