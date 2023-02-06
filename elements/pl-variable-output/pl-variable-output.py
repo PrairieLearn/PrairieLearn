@@ -1,7 +1,18 @@
+from enum import Enum
+
 import chevron
 import lxml.html
 import numpy as np
 import prairielearn as pl
+
+
+class TabType(Enum):
+    MATLAB = 1
+    MATHEMATICA = 2
+    PYTHON = 3
+    R = 4
+    SYMPY = 5
+
 
 DIGITS_DEFAULT = 2
 SHOW_MATLAB_DEFAULT = True
@@ -9,7 +20,7 @@ SHOW_MATHEMATICA_DEFAULT = True
 SHOW_PYTHON_DEFAULT = True
 SHOW_R_DEFAULT = True
 SHOW_SYMPY_DEFAULT = True
-DEFAULT_TAB_DEFAULT = "matlab"
+DEFAULT_TAB_DEFAULT = TabType.MATLAB
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -37,11 +48,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     show_python = pl.get_boolean_attrib(element, "show-python", SHOW_PYTHON_DEFAULT)
     show_r = pl.get_boolean_attrib(element, "show-r", SHOW_R_DEFAULT)
     show_sympy = pl.get_boolean_attrib(element, "show-sympy", SHOW_SYMPY_DEFAULT)
-    default_tab = pl.get_string_attrib(element, "default-tab", DEFAULT_TAB_DEFAULT)
-
-    tab_list = ["matlab", "mathematica", "python", "r", "sympy"]
-    if default_tab not in tab_list:
-        raise Exception(f"invalid default-tab: {default_tab}")
+    default_tab = pl.get_enum_attrib(
+        element, "default-tab", TabType, DEFAULT_TAB_DEFAULT
+    )
 
     # Setting the default tab
     displayed_tab = [show_matlab, show_mathematica, show_python, show_r, show_sympy]
@@ -50,12 +59,20 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "All tabs have been hidden from display. At least one tab must be shown."
         )
 
+    tab_list = [
+        TabType.MATLAB,
+        TabType.MATHEMATICA,
+        TabType.PYTHON,
+        TabType.R,
+        TabType.SYMPY,
+    ]
+
     default_tab_index = tab_list.index(default_tab)
     # If not displayed, make first visible tab the default
     if not displayed_tab[default_tab_index]:
         first_display = displayed_tab.index(True)
         default_tab = tab_list[first_display]
-    default_tab_index = tab_list.index(default_tab)
+        default_tab_index = tab_list.index(default_tab)
 
     # Active tab should be the default tab
     default_tab_keys = [
