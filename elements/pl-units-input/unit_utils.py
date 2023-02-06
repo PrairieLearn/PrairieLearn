@@ -123,7 +123,7 @@ def get_with_units_grading_fn(
     correct_ans_base_unit = ureg.Quantity(correct_ans).to_base_units()
     parsed_atol = ureg.Quantity(atol).to_base_units()
 
-    def grade_with_units(submitted_ans: str) -> Tuple[float, Optional[str]]:
+    def grade_with_units(submitted_ans: str) -> Tuple[bool, Optional[str]]:
         # will return no error, assuming parse() catches all of them
         parsed_sub_base_unit = ureg.Quantity(submitted_ans).to_base_units()
 
