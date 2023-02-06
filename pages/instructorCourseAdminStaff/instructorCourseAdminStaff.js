@@ -5,14 +5,13 @@ const async = require('async');
 
 const logger = require('../../lib/logger');
 const error = require('../../prairielib/lib/error');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 const { idsEqual } = require('../../lib/id');
 
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', (req, res, next) => {
   if (!res.locals.authz_data.has_course_permission_own) {

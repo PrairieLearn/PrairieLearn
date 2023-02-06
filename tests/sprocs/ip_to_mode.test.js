@@ -1,10 +1,9 @@
 var assert = require('chai').assert;
 
-var sqldb = require('../../prairielib/lib/sql-db');
-var sqlLoader = require('../../prairielib/lib/sql-loader');
+var sqldb = require('@prairielearn/postgres');
 var helperDb = require('../helperDb');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+var sql = sqldb.loadSqlEquiv(__filename);
 
 let user_id = null;
 
