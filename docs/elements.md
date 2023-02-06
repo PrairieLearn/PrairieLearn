@@ -724,53 +724,43 @@ def generate(data):
 
 ### `pl-units-input` element
 
-Fill in the blank field
-that allows for **numeric** input and **units**.
+Fill in the blank field that allows for **numeric** input and accompanying **units**.
 
 #### Sample element
 
 **question.html**
 
 ```html
-<pl-units-input answers-name="length" comparison="sigfig" digits="3"> </pl-units-input>
-```
-
-**server.py**
-
-```py
-def generate(data):
-    data['correct_answers']['length2'] = "1 m"
+<pl-units-input answers-name="c_1" correct-answer="1m" atol="1cm"></pl-units-input>
 ```
 
 #### Customizations
 
-| Attribute        | Type                                             | Default       | Description                                                                                                                                                                                                                                                                           |
-| ---------------- | ------------------------------------------------ | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`   | string                                           | &mdash;       | Variable name to store data in.                                                                                                                                                                                                                                                       |
-| `weight`         | integer                                          | 1             | Weight to use when computing a weighted average score over elements.                                                                                                                                                                                                                  |
-| `correct-answer` | string                                           | special       | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                                                                                                                                      |
-| `label`          | text                                             | &mdash;       | A prefix to display before the input box (e.g., `label="$F =$"`).                                                                                                                                                                                                                     |
-| `suffix`         | text                                             | &mdash;       | A suffix to display after the input box (e.g., `suffix="$\rm m/s^2$"`).                                                                                                                                                                                                               |
-| `display`        | "block" or "inline"                              | "inline"      | How to display the input field.                                                                                                                                                                                                                                                       |
-| `grading-mode`   | "units-only", "units-fixed", or "units-agnostic" | "units-fixed" | How to grade student submission. "units-only" only checks for the units input by the student. "units-fixed" asks for a quantity with a specified unit. "units-agnostic" is similar to "units-fixed", but will automatically convert the units used by the given answer if possible.   |
-| `comparison`     | "exact", "sigfig", "decdig" or "relabs"          | "sigfig"      | How to grade. "relabs" uses relative ("rtol") and absolute ("atol") tolerances. "sigfig" use "digits" significant digits. "decdig" uses "digits" after decimal place, "exact" uses `==` and should only be used for integers. Attribute can only be set if `grading-mode=units-fixed` |
-| `rtol`           | number                                           | 1e-2          | Relative tolerance for `comparison="relabs"` and `grading-mode=units-agnostic`.                                                                                                                                                                                                       |
-| `atol`           | string                                           | 1e-8          | Absolute tolerance for `comparison="relabs"` and `grading-mode=units-agnostic`. Required and must include units when `grading-mode=units-agnostic`.                                                                                                                                   |
-| `digits`         | integer                                          | 2             | Number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.                                                                                                                                                                                             |
-| `allow-blank`    | boolean                                          | false         | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                                                                                                                                      |
-| `blank-value`    | string                                           | ""            | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is true. Must follow the same format as an expected user input.                                                                                                                                 |
-| `size`           | integer                                          | 35            | Size of the input box.                                                                                                                                                                                                                                                                |
-| `show-help-text` | boolean                                          | true          | Show the question mark at the end of the input displaying required input parameters.                                                                                                                                                                                                  |
-| `placeholder`    | string                                           | -             | String to override default placeholder text. The default placeholder gives information about the comparison type used.                                                                                                                                                                |
+| Attribute                  | Type                                         | Default      | Description                                                                                                                                                                                                                                                                             |
+| -------------------------- | -------------------------------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name`             | string                                       | &mdash;      | Variable name to store data in.                                                                                                                                                                                                                                                         |
+| `weight`                   | integer                                      | 1            | Weight to use when computing a weighted average score over elements.                                                                                                                                                                                                                    |
+| `correct-answer`           | string                                       | special      | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                                                                                                                                        |
+| `label`                    | text                                         | &mdash;      | A prefix to display before the input box (e.g., `label="$F =$"`).                                                                                                                                                                                                                       |
+| `suffix`                   | text                                         | &mdash;      | A suffix to display after the input box (e.g., `suffix="$\rm m/s^2$"`).                                                                                                                                                                                                                 |
+| `display`                  | "block" or "inline"                          | "inline"     | How to display the input field.                                                                                                                                                                                                                                                         |
+| `grading-mode`             | "with-units", "exact-units", or "only-units" | "with-units" | How to grade student submission. "only-units" only checks for the units input by the student. "exact-units" asks for a quantity with a specified unit. "with-units" is similar to "units-fixed", but will automatically convert the units used by the given answer if possible.         |
+| `comparison`               | "exact", "sigfig", "decdig" or "relabs"      | "sigfig"     | How to grade. "relabs" uses relative ("rtol") and absolute ("atol") tolerances. "sigfig" use "digits" significant digits. "decdig" uses "digits" after decimal place, "exact" uses `==` and should only be used for integers. Attribute can only be set if `grading-mode=exact-units`   |
+| `rtol`                     | number                                       | 1e-2         | Relative tolerance for `comparison="relabs"` and `grading-mode=exact-units`.                                                                                                                                                                                                            |
+| `atol`                     | string                                       | 1e-8         | Absolute tolerance for `comparison="relabs"` and `grading-mode=with-units`. Required and must include units when `grading-mode=with-units`.                                                                                                                                             |
+| `digits`                   | integer                                      | 2            | Number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.                                                                                                                                                                                               |
+| `allow-blank`              | boolean                                      | false        | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                                                                                                                                        |
+| `blank-value`              | string                                       | ""           | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is true. Must follow the same format as an expected user input.                                                                                                                                   |
+| `size`                     | integer                                      | 35           | Size of the input box.                                                                                                                                                                                                                                                                  |
+| `show-help-text`           | boolean                                      | true         | Show the question mark at the end of the input displaying required input parameters.                                                                                                                                                                                                    |
+| `placeholder`              | string                                       | -            | String to override default placeholder text. The default placeholder gives information about the comparison type used.                                                                                                                                                                  |
+| `magnitude-partial-credit` | float                                        | -            | Fraction of partial credit given to answers of correct magnitude and incorrect units when `grading-mode=exact-units`. Remaining fraction of credit given when units are correct but magnitude is incorrect. Must be between 0.0 and 1.0. Partial credit is disabled if this is not set. |
+| `show-feedback`            | boolean                                      | true         | Whether to show feedback for incorrect answers.                                                                                                                                                                                                                                         |
 
 #### Allowed Units
 
 This element uses [Pint](https://pint.readthedocs.io/en/stable/index.html) to parse and represent units. Any units allowed by
 Pint are supported by this element.
-
-#### Partial credit grading
-
-## TODO include detailed discussion of partial credit with different grading schemes.
 
 #### Example implementations
 
