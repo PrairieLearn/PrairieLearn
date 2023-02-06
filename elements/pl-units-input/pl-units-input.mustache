@@ -118,8 +118,8 @@
 {{/error}}
 
 {{^error}}
-<div class="d-inline-flex align-items-center">
-    <div>
+<div class="align-items-center">
+    <div class="d-inline-block">
         {{#label}}<span>{{{label}}}</span>{{/label}}
         <samp class="user-output">{{a_sub}}</samp>
         {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
@@ -134,7 +134,7 @@
     </div>
 
     {{#feedback}}
-        <div class="pl-units-input-feedback">
+        <div class="d-inline-flex pl-units-input-feedback">
             {{{feedback}}}
         </div>
     {{/feedback}}
