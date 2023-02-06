@@ -105,7 +105,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             # Get value of variable, raising exception if variable does not exist
             var_data = data["params"].get(var_name, None)
             if var_data is None:
-                raise ValueError(
+                raise KeyError(
                     f'No value in data["params"] for variable {var_name} in '
                     "pl-variable-output element."
                 )
