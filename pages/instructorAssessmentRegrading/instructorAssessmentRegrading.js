@@ -6,10 +6,9 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 
 const error = require('../../prairielib/lib/error');
 const regrading = require('../../lib/regrading');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
   debug('GET /');

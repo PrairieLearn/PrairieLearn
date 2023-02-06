@@ -1,6 +1,22 @@
 -- BLOCK select_issues
 SELECT
-    i.*,
+    i.assessment_id,
+    i.authn_user_id,
+    i.course_caused,
+    (CASE WHEN $load_course_data THEN i.course_data END) AS course_data,
+    i.course_id,
+    i.course_instance_id,
+    i.date,
+    i.id,
+    i.instance_question_id,
+    i.instructor_message,
+    i.manually_reported,
+    i.open,
+    i.question_id,
+    i.student_message,
+    i.system_data,
+    i.user_id,
+    i.variant_id,
     format_date_full(i.date, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_date,
     u.uid AS user_uid,
     u.name AS user_name
@@ -87,8 +103,8 @@ WHERE
 ORDER BY
    s.date DESC;
 
--- BLOCK select_issues_for_variant
-SELECT i.*
+-- BLOCK select_issue_count_for_variant
+SELECT COUNT(*)::int
 FROM issues AS i
 WHERE i.variant_id = $variant_id;
 

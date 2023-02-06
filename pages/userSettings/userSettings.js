@@ -5,10 +5,9 @@ const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 
 const error = require('../../prairielib/lib/error');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.post('/', (req, res, next) => {
   if (req.body.__action === 'token_generate') {

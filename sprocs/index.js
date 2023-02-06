@@ -5,7 +5,7 @@ const async = require('async');
 
 const error = require('../prairielib/lib/error');
 const logger = require('../lib/logger');
-const sqldb = require('../prairielib/lib/sql-db');
+const sqldb = require('@prairielearn/postgres');
 
 module.exports.init = function (callback) {
   logger.verbose('Starting DB stored procedure initialization');
@@ -116,7 +116,6 @@ module.exports.init = function (callback) {
       'files_insert.sql',
       'files_delete.sql',
       'issues_insert_for_variant.sql',
-      'issues_insert_for_assessment.sql',
       'issues_update_open.sql',
       'issues_update_open_all.sql',
       'variants_lock.sql',

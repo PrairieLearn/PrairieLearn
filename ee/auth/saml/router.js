@@ -5,7 +5,7 @@ const { Router } = require('express');
 const passport = require('passport');
 const util = require('util');
 
-const sqldb = require('../../../prairielib/lib/sql-db');
+const sqldb = require('@prairielearn/postgres');
 const config = require('../../../lib/config');
 const csrf = require('../../../lib/csrf');
 

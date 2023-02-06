@@ -2854,6 +2854,21 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/postgres@^1.0.0, @prairielearn/postgres@workspace:packages/postgres":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/postgres@workspace:packages/postgres"
+  dependencies:
+    "@prairielearn/tsconfig": "*"
+    "@types/debug": ^4.1.7
+    "@types/lodash": ^4.14.191
+    "@types/mocha": ^10.0.1
+    "@types/node": ^18.11.18
+    mocha: ^10.2.0
+    ts-node: ^10.9.1
+    typescript: ^4.9.4
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/sentry@^1.0.0, @prairielearn/sentry@workspace:packages/sentry":
   version: 0.0.0-use.local
   resolution: "@prairielearn/sentry@workspace:packages/sentry"
@@ -3205,6 +3220,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/debug@npm:^4.1.7":
+  version: 4.1.7
+  resolution: "@types/debug@npm:4.1.7"
+  dependencies:
+    "@types/ms": "*"
+  checksum: 0a7b89d8ed72526858f0b61c6fd81f477853e8c4415bb97f48b1b5545248d2ae389931680b94b393b993a7cfe893537a200647d93defe6d87159b96812305adc
+  languageName: node
+  linkType: hard
+
 "@types/diff@npm:^5.0.2":
   version: 5.0.2
   resolution: "@types/diff@npm:5.0.2"
@@ -3455,6 +3479,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/ms@npm:*":
+  version: 0.7.31
+  resolution: "@types/ms@npm:0.7.31"
+  checksum: daadd354aedde024cce6f5aa873fefe7b71b22cd0e28632a69e8b677aeb48ae8caa1c60e5919bb781df040d116b01cb4316335167a3fc0ef6a63fa3614c0f6da
+  languageName: node
+  linkType: hard
+
 "@types/node-fetch@npm:^2.6.2":
   version: 2.6.2
   resolution: "@types/node-fetch@npm:2.6.2"
@@ -3671,6 +3702,7 @@ __metadata:
     "@prairielearn/compiled-assets": ^1.0.0
     "@prairielearn/html": ^2.0.0
     "@prairielearn/opentelemetry": ^1.0.0
+    "@prairielearn/postgres": ^1.0.0
     "@prairielearn/sentry": ^1.0.0
     "@types/async": ^3.2.16
     "@types/body-parser": ^1.19.2
@@ -14444,7 +14476,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^4.9.5":
+"typescript@npm:^4.9.4, typescript@npm:^4.9.5":
   version: 4.9.5
   resolution: "typescript@npm:4.9.5"
   bin:
@@ -14454,7 +14486,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@^4.9.5#~builtin<compat/typescript>":
+"typescript@patch:typescript@^4.9.4#~builtin<compat/typescript>, typescript@patch:typescript@^4.9.5#~builtin<compat/typescript>":
   version: 4.9.5
   resolution: "typescript@patch:typescript@npm%3A4.9.5#~builtin<compat/typescript>::version=4.9.5&hash=ad5954"
   bin:

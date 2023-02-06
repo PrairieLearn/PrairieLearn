@@ -5,15 +5,14 @@ const async = require('async');
 const moment = require('moment');
 const express = require('express');
 const router = express.Router();
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 const error = require('../../prairielib/lib/error');
 
 const syncHelpers = require('../shared/syncHelpers');
 const config = require('../../lib/config');
 const dockerUtil = require('../../lib/dockerUtil');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_permission_edit) {
