@@ -171,7 +171,13 @@
       function setState(state) {
         if (state == 'running') {
           showWorkspaceFrame();
-          workspaceFrame.src = `${window.location.href}/container/`;
+          
+          // Avoid unnecessarily reassigning the src attribute, which causes the
+          // iframe to reload.
+          const workspaceFrameSrc = `${window.location.href}/container/`;
+          if (workspaceFrame.src != workspaceFrameSrc) {
+            workspaceFrame.src = workspaceFrameSrc;
+          }
         }
         if (state == 'stopped') {
           workspaceFrame.src = 'about:blank';
@@ -190,10 +196,14 @@
         setMessage(msg.message);
       });
 
-      socket.emit('joinWorkspace', {workspace_id: <%= workspace_id %>}, (msg) => {
-        console.log(`joinWorkspace, msg = ${JSON.stringify(msg)}`);
-        setState(msg.state);
+      socket.on('connect', () => {
+        socket.emit('joinWorkspace', {workspace_id: <%= workspace_id %>}, (msg) => {
+          console.log(`joinWorkspace, msg = ${JSON.stringify(msg)}`);
+          setState(msg.state);
+        });
       });
+
+      socket.emit('startWorkspace', {workspace_id: <%= workspace_id %>});
 
       setInterval(() => {
         socket.emit('heartbeat', {workspace_id: <%= workspace_id %>}, (msg) => {

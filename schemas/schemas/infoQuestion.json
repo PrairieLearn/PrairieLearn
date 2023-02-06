@@ -227,19 +227,7 @@
         "workspaceOptions": {
             "description": "Options for workspace questions.",
             "type": "object",
-            "additionalProperties": {
-                "type": "object",
-                "properties": {
-                    "syncIgnore": {
-                        "description": "(deprecated) The list of files or directories that will be excluded from sync.",
-                        "type": "array",
-                        "items": {
-                            "description": "A single file or directory that will be excluded from sync.",
-                            "type": "string"
-                        }
-                    }
-                }
-            },
+            "additionalProperties": false,
             "required": [
                 "image",
                 "port",
@@ -285,6 +273,14 @@
                 "environment": {
                     "description": "Environment variables to set inside the workspace container.",
                     "type": "object"
+                },
+                "syncIgnore": {
+                    "description": "(deprecated) The list of files or directories that will be excluded from sync.",
+                    "type": "array",
+                    "items": {
+                        "description": "A single file or directory that will be excluded from sync.",
+                        "type": "string"
+                    }
                 }
             }
         }
