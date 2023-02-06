@@ -40,6 +40,9 @@ def test_only_units_grading_fn(
         ("1m", "3.28 feet", "1cm", True),
         ("1m", "1.010001 meters", "1cm", False),
         ("1m", "1 foot", "1cm", False),
+        ("1m", "1 m/s", "1cm", False),
+        ("1m", "1 second", "1cm", False),
+        ("1m", "1 us", "1cm", False),
     ],
 )
 def test_with_units_grading_fn(

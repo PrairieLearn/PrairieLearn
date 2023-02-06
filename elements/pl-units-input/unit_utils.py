@@ -128,7 +128,7 @@ def get_with_units_grading_fn(
         parsed_sub_base_unit = ureg.Quantity(submitted_ans).to_base_units()
 
         if not correct_ans_base_unit.check(parsed_sub_base_unit.dimensionality):
-            return 0.0, (
+            return False, (
                 f"Your answer has dimensionality <code>{parsed_sub_base_unit.dimensionality}</code>, "
                 f"which is inconsistent with <code>{correct_ans_base_unit.dimensionality}</code>."
             )
