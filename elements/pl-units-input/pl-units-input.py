@@ -322,11 +322,13 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     ureg = pl.get_unit_registry()
 
     # checks for invalids by parsing as a dimensionful quantity
-    # TODO check for more possible exceptions here?
     try:
         a_sub_parsed = ureg.Quantity(a_sub)
     except errors.UndefinedUnitError:  # incorrect units
         data["format_errors"][name] = "Invalid unit."
+        return
+    except Exception as e:
+        data["format_errors"][name] = f"Exception when parsing submission: {e}"
         return
 
     # Checks for no unit in submitted answer, all answers require units
