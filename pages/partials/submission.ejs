@@ -43,7 +43,7 @@
     </button>
   </div>
 
-  <div class="collapse js-submission-body <% if (submission.submission_number == submissionCount || locals.expanded) { %>show<% } %> <% if (submissionHtml === undefined) { %>render-pending<% } %>" data-submission-id="<%= submission.id %>" id="submission-<%= submission.id %>-body">
+  <div class="collapse js-submission-body <% if (submission.submission_number == submissionCount || locals.expanded) { %>show<% } %> <% if (submissionHtml === undefined && question.type === 'Freeform') { %>render-pending<% } %>" data-submission-id="<%= submission.id %>" id="submission-<%= submission.id %>-body">
     <div class="card-body submission-body" >
       <%- submissionHtml %>
       <% if (submissionHtml === undefined) { %>
