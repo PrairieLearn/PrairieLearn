@@ -149,9 +149,8 @@ var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var express = require('express');
 var router = express.Router();
-var sqldb = require('../prairielib/sql-db'); // adjust path as needed
-var sqlLoader = require('../prairielib/sql-loader'); // adjust path as needed
-var sql = sqlLoader.loadSqlEquiv(__filename);
+var sqldb = require('@prairielearn/postgres');
+var sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
   var params = { course_instance_id: res.params.courseInstanceId };
@@ -217,8 +216,8 @@ INSERT INTO submissions (submitted_answer) VALUES ($submitted_answer) RETURNING 
 From JavaScript you can then do:
 
 ```javascript
-var sqlLoader = require('../prairielib/sql-loader'); // adjust path as needed
-var sql = sqlLoader.loadSqlEquiv(__filename); // from filename.js will load filename.sql
+var sqldb = require('@prairielearn/postgres');
+var sql = sqldb.loadSqlEquiv(__filename); // from filename.js will load filename.sql
 
 // run the entire contents of the SQL file
 sqldb.query(sql.all, params, ...);
@@ -455,48 +454,6 @@ SELECT * FROM questions WHERE course_id = $course_id;
 sqldb.queryOneRow(sql.block_name, params, function (err, result) {
   if (ERR(err, callback)) return;
   var obj = result.rows[0]; // guaranteed to exist and no more
-});
-```
-
-- For transactions with correct error handling use following pattern. It is important to use `async.series()` to run all the operations rather than using a callback stack, because with `async.series()` we can guarantee that `endTransaction()` is called no matter whether any of the intermediate operations produce an error.
-
-```javascript
-// do this
-sqldb.beginTransaction(function (err, client, done) {
-  if (ERR(err, callback)) return;
-  async.series(
-    [
-      function (callback) {
-        // only use queryWithClient() and queryWithClientOneRow() inside the transaction
-        sqldb.queryWithClient(client, sql.block_name, params, function (err, result) {
-          if (ERR(err, callback)) return;
-          // do things
-          callback(null);
-        });
-      },
-      // more series functions inside the transaction
-    ],
-    function (err) {
-      sqldb.endTransaction(client, done, err, function (err) {
-        // will rollback if err is defined
-        if (ERR(err, callback)) return;
-        // transaction successfully committed at this point
-        callback(null);
-      });
-    }
-  );
-});
-
-// don't do this
-sqldb.beginTransaction(function (err, client, done) {
-  if (ERR(err, callback)) return;
-  sqldb.queryWithClient(client, sql.block_name, params, function (err, result) {
-    if (ERR(err, callback)) return; // THIS IS WRONG, it may exit without endTransaction()
-    sqldb.endTransaction(client, done, err, function (err) {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
-  });
 });
 ```
 

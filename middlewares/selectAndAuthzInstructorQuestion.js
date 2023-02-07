@@ -1,11 +1,10 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
 
-var sqldb = require('../prairielib/lib/sql-db');
-var sqlLoader = require('../prairielib/lib/sql-loader');
+var sqldb = require('@prairielearn/postgres');
 var error = require('../prairielib/lib/error');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+var sql = sqldb.loadSqlEquiv(__filename);
 
 module.exports = function (req, res, next) {
   if (res.locals.course_instance) {

@@ -74,9 +74,14 @@ properties:
   resultsQueueUrl:
     default: null
     envVar: RESULTS_QUEUE_URL
+
+  # Timeouts
   defaultTimeout:
     default: 30
     envVar: DEFAULT_TIMEOUT
+  timeoutOverhead:
+    default: 300
+    envVar: TIMEOUT_OVERHEAD
 
   # Postgres config
   postgresqlHost:

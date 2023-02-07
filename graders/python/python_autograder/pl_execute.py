@@ -1,14 +1,12 @@
-import io
 import json
 import os
 import os.path as path
 import random
 import sys
 from copy import deepcopy
-from types import FunctionType, ModuleType
+from types import ModuleType
 
 import numpy as np
-import numpy.random
 import pl_helpers
 
 
@@ -27,7 +25,7 @@ def try_read(fname):
     try:
         with open(fname, "r", encoding="utf-8") as f:
             contents = f.read()
-    except:
+    except Exception:
         contents = ""
     return contents
 
@@ -57,8 +55,6 @@ def execute_code(
     - plot_value: Any plots made by the student
     """
 
-    base_dir = os.environ.get("MERGE_DIR")
-    job_dir = os.environ.get("JOB_DIR")
     filenames_dir = os.environ.get("FILENAMES_DIR")
 
     with open(path.join(filenames_dir, "data.json"), encoding="utf-8") as f:
@@ -154,7 +150,7 @@ def execute_code(
             student_code[i] = j
     student_code = deepcopy(student_code)
 
-    ## Execute student code
+    # Execute student code
     previous_stdout = sys.stdout
     if console_output_fname:
         sys.stdout = open(console_output_fname, "w", encoding="utf-8")

@@ -7,11 +7,10 @@ const _ = require('lodash');
 const error = require('../../prairielib/lib/error');
 const assessment = require('../../lib/assessment');
 const studentAssessmentInstance = require('../shared/studentAssessmentInstance');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 var groupAssessmentHelper = require('../../lib/groups');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.post('/', function (req, res, next) {
   if (res.locals.assessment.type !== 'Exam') return next();
