@@ -27,7 +27,6 @@ LABEL_DEFAULT = None
 SUFFIX_DEFAULT = None
 DISPLAY_DEFAULT = DisplayType.INLINE
 ALLOW_BLANK_DEFAULT = False
-BLANK_VALUE_DEFAULT = ""
 COMPARISON_DEFAULT = uu.ComparisonType.RELABS
 RTOL_DEFAULT = 1e-2
 ATOL_DEFAULT = "1e-8"
@@ -64,6 +63,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
+    allow_blank = pl.get_string_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    if allow_blank and not pl.has_attrib(element, "blank-value"):
+        raise ValueError(
+            'Attribute "blank-value" must be provided if "allow-blank" is enabled.'
+        )
+
     name = pl.get_string_attrib(element, "answers-name")
     correct_answer_html = pl.get_string_attrib(
         element, "correct-answer", CORRECT_ANSWER_DEFAULT
@@ -71,7 +76,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     if correct_answer_html is not None:
         if name in data["correct_answers"]:
-            raise ValueError("Duplicate correct_answers variable name: {name}")
+            raise ValueError(f"Duplicate correct_answers variable name: {name}")
         data["correct_answers"][name] = correct_answer_html
 
     correct_answer = data["correct_answers"].get(name)
@@ -293,7 +298,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     allow_blank = pl.get_string_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-    blank_value = pl.get_string_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
 
     only_units = (
         pl.get_enum_attrib(element, "grading-mode", GradingMode, GRADING_MODE_DEFAULT)
@@ -310,7 +314,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # checks for blank answer
     if not a_sub:
         if allow_blank:
-            data["submitted_answers"][name] = blank_value
+            data["submitted_answers"][name] = pl.get_string_attrib(
+                element, "blank-value"
+            )
         else:
             data["format_errors"][
                 name

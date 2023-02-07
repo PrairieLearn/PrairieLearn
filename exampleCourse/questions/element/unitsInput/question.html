@@ -93,12 +93,25 @@
     <div class="card-body">
         <pl-question-panel>
             <p>This example shows the use of the attribute <code>size</code> to control the width of the input box.
-                We also use <code>placeholder=""</code> and <code>show-help-text="false"</code></p>
+                We also use <code>placeholder=""</code> and <code>show-help-text="false"</code></p>. We have also
+            set <code>show-feedback="False"</code> to suppress feedback given to students.
             <p>Express the distance of one mile in feet (include unit).</p>
         </pl-question-panel>
         Distance of 1 mile =
         <pl-units-input answers-name="c_6" placeholder="" show-help-text="false" size="10" comparison="exact"
-            show-feedback="false" correct-answer="5280ft" grading-mode="exact-units"
-            allow-blank="True"></pl-units-input>
+            show-feedback="false" correct-answer="5280ft" grading-mode="exact-units"></pl-units-input>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-body">
+        <pl-question-panel>
+            <p>This example shows the use of the attribute <code>allow-blank</code> to allow students to leave
+                this input blank. We set <code>blank-value="1m"</code> to customize the value used for the blank input.
+            </p>
+            <p>How long is a meter stick? Leave the box blank to submit "1 meter".</p>
+        </pl-question-panel>
+        <pl-units-input answers-name="c_7" display="block" correct-answer="1m" allow-blank="True" atol="1cm"
+            blank-value="1m" placeholder="1 meter"></pl-units-input>
     </div>
 </div>
