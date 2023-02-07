@@ -19,17 +19,12 @@ const MEDIA_PREFIXES = ['image/', 'audio/', 'video/', 'application/pdf'];
  */
 async function guessMimeType(name, buffer) {
   const mimeType = mime.getType(name);
-  const isBinary = await isBinaryFile(buffer);
-
-  if (!isBinary) {
-    return 'text/plain';
-  }
-
   if (mimeType && MEDIA_PREFIXES.some((p) => mimeType.startsWith(p))) {
     return mimeType;
   }
 
-  return 'application/octet-stream';
+  const isBinary = await isBinaryFile(buffer);
+  return isBinary ? 'application/octet-stream' : 'text/plain';
 }
 
 router.get(
