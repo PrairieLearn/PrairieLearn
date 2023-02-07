@@ -9,7 +9,7 @@ const hash = require('crypto').createHash;
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const { instrumented } = require('@prairielearn/opentelemetry');
-const sqlDb = require('../prairielib/lib/sql-db');
+const sqlDb = require('@prairielearn/postgres');
 
 const schemas = require('../schemas');
 const config = require('../lib/config');

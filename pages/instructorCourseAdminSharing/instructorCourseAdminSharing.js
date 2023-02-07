@@ -7,10 +7,8 @@ const { v4: uuidv4 } = require('uuid');
 const ERR = require('async-stacktrace');
 const error = require('../../prairielib/lib/error');
 const { InstructorSharing } = require('./instructorCourseAdminSharing.html');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
-
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sqldb = require('@prairielearn/postgres');
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
   debug('GET /');
