@@ -51,7 +51,7 @@ router.get(
     }
 
     const contents = fileRes.rows[0].contents;
-    if (!contents) {
+    if (contents == null) {
       res.sendStatus(404);
       return;
     }
