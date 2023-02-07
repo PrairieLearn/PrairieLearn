@@ -36,7 +36,8 @@
 
         const errorMessage = li.querySelector('.alert.error');
 
-        function showErrorMessage() {
+        function showErrorMessage(message) {
+          errorMessage.textContent = message;
           errorMessage.classList.remove('d-none');
         }
 
@@ -53,7 +54,7 @@
             })
             .catch((err) => {
               console.error(err);
-              showErrorMessage();
+              showErrorMessage('An error occurred while downloading the file.');
             });
         });
 
@@ -78,6 +79,7 @@
                 const text = await blob.text();
                 code.textContent = text;
                 pre.classList.remove('d-none');
+                hideErrorMessage();
               } else if (type.startsWith('image/')) {
                 const url = URL.createObjectURL(blob);
                 img.src = url;
@@ -85,13 +87,12 @@
                   URL.revokeObjectURL(url);
                 };
                 img.classList.remove('d-none');
+                hideErrorMessage();
               } else {
                 // We can't preview this file.
-                code.textContent = 'Content preview is not available for this type of file.';
-                pre.classList.remove('d-none');
+                showErrorMessage('Content preview is not available for this type of file.');
               }
               wasOpened = true;
-              hideErrorMessage();
             })
             .catch((err) => {
               console.error(err);

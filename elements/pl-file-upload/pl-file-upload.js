@@ -260,12 +260,20 @@
             '">Download</a>';
 
           var $preview = $(
-            '<div class="file-preview collapse" id="file-preview-' +
-              uuid +
-              '-' +
-              index +
-              '"><pre class="bg-dark text-white rounded p-3 mt-2 mb-0"><code></code></pre></div>'
+            '<div class="file-preview collapse" id="file-preview-' + uuid + '-' + index + '"></div>'
           );
+
+          var $error = $('<div class="alert alert-danger mt-2 d-none" role="alert"></div>');
+          $preview.append($error);
+
+          var $imgPreview = $('<img class="mw-100 mt-2 d-none"/>');
+          $preview.append($imgPreview);
+
+          var $codePreview = $(
+            '<pre class="bg-dark text-white rounded p-3 mt-2 mb-0 d-none"><code></code></pre>'
+          );
+          $preview.append($codePreview);
+
           if (isExpanded) {
             $preview.addClass('show');
           }
@@ -276,14 +284,17 @@
             } else {
               $preview.find('code').text('Binary file not previewed.');
             }
+            $codePreview.removeClass('d-none');
           } catch (e) {
-            var img = $('<img class="mw-100 mt-2"/>')
-              .on('load', () => $preview.html(img))
-              .on('error', () =>
-                $preview
-                  .find('code')
+            $imgPreview
+              .on('load', () => {
+                $imgPreview.removeClass('d-none');
+              })
+              .on('error', () => {
+                $error
                   .text('Content preview is not available for this type of file.')
-              )
+                  .removeClass('d-none');
+              })
               .attr('src', 'data:application/octet-stream;base64,' + fileData);
           }
           $file.append($preview);
