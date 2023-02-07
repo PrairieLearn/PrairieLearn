@@ -148,7 +148,7 @@ router.post('/', async function (req, res, next) {
         } else {
           res.locals.permissions = permissions;
           res.locals.groupSize = 0;
-          res.locals.used_join_code = req.body.joinCode;
+          res.locals.used_join_code = req.body.join_code;
           res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         }
       }
