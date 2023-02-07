@@ -1,6 +1,22 @@
 -- BLOCK select_issues
 SELECT
-    i.*,
+    i.assessment_id,
+    i.authn_user_id,
+    i.course_caused,
+    (CASE WHEN $load_course_data THEN i.course_data END) AS course_data,
+    i.course_id,
+    i.course_instance_id,
+    i.date,
+    i.id,
+    i.instance_question_id,
+    i.instructor_message,
+    i.manually_reported,
+    i.open,
+    i.question_id,
+    i.student_message,
+    i.system_data,
+    i.user_id,
+    i.variant_id,
     format_date_full(i.date, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_date,
     u.uid AS user_uid,
     u.name AS user_name
@@ -15,9 +31,29 @@ WHERE
 ORDER BY
     i.date;
 
--- BLOCK select_submissions
+-- BLOCK select_basic_submissions
 SELECT
-    s.*,
+    -- This includes every `submissions` column EXCEPT for jsonb columns.
+    -- Those can be quite large in size, so we'll only load them for specific
+    -- submissions in the `select_detailed_submissions` query below.
+    s.auth_user_id,
+    s.broken,
+    s.correct,
+    s.credit,
+    s.date,
+    s.duration,
+    s.gradable,
+    s.graded_at,
+    s.grading_method,
+    s.grading_requested_at,
+    s.id,
+    s.mode,
+    s.override_score,
+    s.regradable,
+    s.score,
+    s.sid,
+    s.v2_score,
+    s.variant_id,
     to_jsonb(gj) AS grading_job,
     -- These are separate for historical reasons
     gj.id AS grading_job_id,
@@ -39,8 +75,8 @@ FROM
     LEFT JOIN LATERAL (
         SELECT *
         FROM grading_jobs
-        WHERE submission_id = s.id
-        ORDER BY id DESC
+        WHERE submission_id = s.id AND grading_method != 'Manual'
+        ORDER BY date DESC, id DESC
         LIMIT 1
     ) AS gj ON TRUE
 WHERE
@@ -48,17 +84,70 @@ WHERE
 ORDER BY
     s.date DESC;
 
--- BLOCK select_issues_for_variant
-SELECT i.*
+-- BLOCK select_detailed_submissions
+SELECT
+    -- This includes ONLY the jsonb columns from `submissions`.
+    s.feedback,
+    s.format_errors,
+    s.params,
+    s.partial_scores,
+    s.raw_submitted_answer,
+    s.submitted_answer,
+    s.true_answer
+FROM
+    submissions AS s
+WHERE
+    s.id IN (SELECT UNNEST($submission_ids::bigint[]))
+ORDER BY
+   s.date DESC;
+
+-- BLOCK select_issue_count_for_variant
+SELECT COUNT(*)::int
 FROM issues AS i
 WHERE i.variant_id = $variant_id;
 
 -- BLOCK select_submission_info
+WITH next_iq AS (
+    SELECT
+        iq.id AS current_id,
+        (lead(iq.id) OVER w) AS id,
+        (lead(qo.sequence_locked) OVER w) AS sequence_locked
+    FROM
+        instance_questions AS iq
+        JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+        JOIN question_order(ai.id) AS qo ON (qo.instance_question_id = iq.id)
+    WHERE
+        -- need all of these rows to join on question_order
+        ai.id IN (
+            SELECT 
+                iq.assessment_instance_id 
+            FROM
+                submissions AS s
+                JOIN variants AS v ON (v.id = s.variant_id)
+                JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+                JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+            WHERE
+                s.id = $submission_id
+        )
+    WINDOW
+        w AS (ORDER BY qo.row_order)
+),
+last_grading_job AS (
+    SELECT *
+    FROM grading_jobs AS gj
+    WHERE gj.submission_id = $submission_id AND grading_method != 'Manual'
+    ORDER BY gj.date DESC, gj.id DESC
+    LIMIT 1
+)
 SELECT
-    to_jsonb(gj) AS grading_job,
+    to_jsonb(lgj) AS grading_job,
     to_jsonb(s) AS submission,
     to_jsonb(v) AS variant,
-    to_jsonb(iq) AS instance_question,
+    to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
+    jsonb_build_object(
+        'id', next_iq.id,
+        'sequence_locked', next_iq.sequence_locked
+    ) AS next_instance_question,
     to_jsonb(q) AS question,
     to_jsonb(aq) AS assessment_question,
     to_jsonb(ai) AS assessment_instance,
@@ -67,8 +156,8 @@ SELECT
     to_jsonb(ci) AS course_instance,
     to_jsonb(c) AS course,
     to_jsonb(ci) AS course_instance,
-    gj.id AS grading_job_id,
-    grading_job_status(gj.id) AS grading_job_status,
+    lgj.id AS grading_job_id,
+    grading_job_status(lgj.id) AS grading_job_status,
     format_date_full_compact(s.date, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_date,
     (
         SELECT count(*)
@@ -82,9 +171,9 @@ SELECT
         WHERE s2.variant_id = s.variant_id
     ) AS submission_count
 FROM
-    grading_jobs AS gj
-    JOIN submissions AS s ON (s.id = gj.submission_id)
+    submissions AS s
     JOIN variants AS v ON (v.id = s.variant_id)
+    LEFT JOIN last_grading_job AS lgj ON (TRUE)
     LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
     JOIN questions AS q ON (q.id = v.question_id)
     LEFT JOIN assessment_questions AS aq ON (iq.assessment_question_id = aq.id)
@@ -93,14 +182,13 @@ FROM
     LEFT JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     LEFT JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
     JOIN pl_courses AS c ON (c.id = q.course_id)
+    JOIN LATERAL instance_questions_next_allowed_grade(iq.id) AS iqnag ON TRUE
+    LEFT JOIN next_iq ON (next_iq.current_id = iq.id)
 WHERE
     s.id = $submission_id
-    AND gj.id = (
-        SELECT MAX(gj2.id)
-        FROM submissions AS s
-        LEFT JOIN grading_jobs AS gj2 ON (gj2.submission_id = s.id)
-        WHERE s.id = $submission_id
-    );
+    AND q.id = $question_id
+    AND (CASE WHEN $instance_question_id::BIGINT IS NULL THEN iq.id IS NULL ELSE iq.id = $instance_question_id::BIGINT END)
+    AND v.id = $variant_id;
 
 -- BLOCK select_assessment_for_submission
 SELECT
@@ -112,3 +200,11 @@ FROM
     LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
 WHERE
     s.id = $submission_id;
+
+-- BLOCK select_workspace_id
+SELECT
+    w.id AS workspace_id
+FROM
+    variants AS v
+    JOIN workspaces AS w ON (v.workspace_id = w.id)
+WHERE v.id = $variant_id;

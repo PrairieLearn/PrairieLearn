@@ -1,22 +1,14 @@
 #!/bin/bash
 
+echo 'Starting PrairieLearn...'
+
 cd /PrairieLearn
+make -s start-support
+node server.js --migrate-and-exit >/dev/null
 
-
-if [[ -f /efs/container/config.json ]] ; then
-    # we are running in production mode
-    node server --config /efs/container/config.json
+if [[ $NODEMON == "true" ]]; then
+    # start-nodemon is listed first so it can use standard input
+    make -s -j 2 start-nodemon start-workspace-host-nodemon
 else
-    # we are running in local development mode
-    docker/start_postgres.sh
-    docker/gen_ssl.sh
-
-    # Uncomment to start redis to test message passing
-    # redis-server --daemonize yes
-
-    if [[ $NODEMON == "true" ]]; then
-        npm run start-nodemon
-    else
-        npm start
-    fi
+    make -s -j 2 start start-workspace-host
 fi

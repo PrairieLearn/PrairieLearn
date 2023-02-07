@@ -57,6 +57,7 @@ line.axis {
 .statsPlot .label {
     font-size: 14px;
     font-weight: normal;
+    fill: black;
 }
 
 .statsPlot .fitLine {
@@ -116,6 +117,22 @@ pre {
 /**************
  * Submissions
  **************/
+
+/* General-purpose show/hide button with animation */
+.show-hide-btn {
+  cursor: pointer;
+}
+
+.show-hide-btn .expand-icon {
+  transition: transform 400ms;
+}
+
+.show-hide-btn.collapsed .expand-icon {
+  transform: rotateX(180deg);
+}
+
+/* Button in submission header context
+   prepends "hide" or "show" automatically */
 .submission-header {
   cursor: pointer;
 }
@@ -153,6 +170,17 @@ a.badge {
   text-decoration: none;
 }
 
+.navbar, #course-nav {
+    align-items: baseline;
+}
+
+.no-select {
+    user-select: none;
+}
+
+/*****************
+ * Brand label ("PrairieLearn" text)
+ *****************/
 .navbar-brand {
   position: relative;
 }

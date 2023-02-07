@@ -6,15 +6,21 @@ mwest@illinois.edu,1,63.5
 zilles@illinois.edu,1,100</pre>
 <p>
   The example above will change the total assessment
-  percentage scores for <tt>mwest@illinois.edu</tt> to 63.5% and for
-  <tt>zilles@illinois.edu</tt> to 100%. The <tt>instance</tt> column
+  percentage scores for <code>mwest@illinois.edu</code> to 63.5% and for
+  <code>zilles@illinois.edu</code> to 100%. The <code>instance</code> column
   indicates which assessment instance to modify, and should
-  be <tt>1</tt> if there is only a single instance per student.
+  be <code>1</code> if there is only a single instance per student.
 </p>
 <p>
   Alternatively, the total assessment points can be changed with a CSV
-  containing a <tt>points</tt> column, like:
+  containing a <code>points</code> column, like:
 </p>
 <pre class="ml-4">uid,instance,points
 mwest@illinois.edu,1,120
 zilles@illinois.edu,1,130.27</pre>
+<p>
+  For assessments using group work, use the <code>group_name</code> column instead:
+</p>
+<pre class="ml-4">group_name,instance,score_perc
+myhappygroup,1,95
+greatgroup,1,85</pre>

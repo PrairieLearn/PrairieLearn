@@ -1,0 +1,8 @@
+{
+    "uuid": "07d724c3-ae9d-425f-86fc-6154cc87abaa",
+    "title": "Element pl-xss-safe: present potentially malicious student code",
+    "topic": "Element",
+    "gradingMethod": "Manual",
+    "tags": ["jonatan", "manual"],
+    "type": "v3"
+}

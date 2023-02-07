@@ -1,5 +1,4 @@
-DROP FUNCTION IF EXISTS format_date_short(timestamp with time zone,text);
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     format_date_short (
         d timestamp with time zone,
         display_timezone text

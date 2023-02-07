@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html class="bg-dark">
+<html lang="en" class="bg-dark">
 <head>
   <%- include('../partials/head'); %>
   <style>
@@ -16,7 +16,7 @@
     padding: 20px;
     height: 100%;
   }
-  .login-methods > a:not(:last-child) {
+  .login-methods > :not(:last-child) {
     margin-bottom: 0.5rem;
   }
   @media (min-width: 576px) {
@@ -62,6 +62,29 @@
     border-color: <%- config.shibLinkColors.active.border %>;
     color: <%- config.shibLinkColors.active.text %>;
   }
+  <% if (institutionAuthnProviders) { %>
+  .institution-header {
+    overflow: hidden;
+    text-align: center;
+  }
+  .institution-header:before, .institution-header:after {
+    background-color: #000;
+    content: "";
+    display: inline-block;
+    height: 1px;
+    position: relative;
+    vertical-align: middle;
+    width: 50%;
+  }
+  .institution-header:before {
+    right: 0.5em;
+    margin-left: -50%;
+  }
+  .institution-header:after {
+    left: 0.5em;
+    margin-right: -50%;
+  }
+  <% } %>
   </style>
 </head>
 <body class="d-flex bg-dark">
@@ -69,15 +92,19 @@
     <div class="login-container">
       <div>
         <h1 class="text-center">PrairieLearn</h1>
-        <h2 class="text-center subheader">An online system for problem-driven learning</h2>
-        <hr>
-        <div class="login-methods">
+        <h2 class="text-center subheader">
+          Sign in
+          <% if (service) { %>
+              to continue to <%= service %>
+          <% } %>
+        </h2>
+        <div class="login-methods mt-5">
           <% if (devMode) { %>
             <a class="btn btn-success w-100" href="/pl" role="button">
               <span class="font-weight-bold">DevMode by-pass</span>
             </a>
           <% } %>
-          <% if (config.hasShib) { %>
+          <% if (config.hasShib && !config.hideShibLogin) { %>
             <a class="btn btn-shib w-100 position-relative" href="/pl/shibcallback" role="button">
               <% if (config.shibLinkLogo != null) { %>
                 <img src="<%- config.shibLinkLogo %>" class="social-icon"/>
@@ -93,13 +120,25 @@
               <span class="font-weight-bold">Sign in with Google
             </a>
           <% } %>
-          <% if (config.hasAzure) { %>
+          <% if (hasAzure) { %>
             <a class="btn btn-dark w-100 position-relative" href="/pl/azure_login" role="button">
               <img src="/images/ms_logo.svg" class="social-icon"/>
               <span class="font-weight-bold">Sign in with Microsoft</span>
             </a>
           <% } %>
         </div>
+        <% if (institutionAuthnProviders?.length > 0) { %>
+          <div class="institution-header text-muted my-3">
+            Institution sign-on
+          </div>
+          <div class="login-methods">
+          <% institutionAuthnProviders.forEach((provider) => { %>
+            <a href="<%= provider.url %>" class="btn btn-outline-dark btn-block">
+              <%= provider.name %>
+            </a>
+          <% }) %>
+          </div>
+        <% } %>
       </div>
     </div>
   </div>

@@ -6,7 +6,10 @@ columns
     date: timestamp with time zone default CURRENT_TIMESTAMP
     date_limit: timestamp with time zone
     duration: interval default '00:00:00'::interval
+    grading_needed: boolean not null default false
+    group_id: bigint
     id: bigint not null default nextval('assessment_instances_id_seq'::regclass)
+    max_bonus_points: double precision
     max_points: double precision
     mode: enum_mode
     modified_at: timestamp with time zone not null default CURRENT_TIMESTAMP
@@ -14,29 +17,30 @@ columns
     obj: jsonb
     open: boolean default true
     points: double precision default 0
-    points_in_grading: double precision default 0
     qids: jsonb
     score_perc: double precision default 0
-    score_perc_in_grading: double precision default 0
     tiid: text
-    user_id: bigint not null
+    user_id: bigint
 
 indexes
     assessment_instances_pkey: PRIMARY KEY (id) USING btree (id)
+    assessment_instances_assessment_id_group_id_number_key: UNIQUE (assessment_id, group_id, number) USING btree (assessment_id, group_id, number)
     assessment_instances_assessment_id_user_id_number_key: UNIQUE (assessment_id, user_id, number) USING btree (assessment_id, user_id, number)
     assessment_instances_tiid_key: UNIQUE (tiid) USING btree (tiid)
+    assessment_instances_assessment_id_modified_at_idx: USING btree (assessment_id, modified_at)
     assessment_instances_modified_at_key: USING btree (modified_at)
     assessment_instances_user_id_idx: USING btree (user_id)
 
 foreign-key constraints
     assessment_instances_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
     assessment_instances_auth_user_id_fkey: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessment_instances_group_id_fkey: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
     assessment_instances_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
     assessment_score_logs: FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     assessment_state_logs: FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     current_pages: FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
-    files: FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    files: FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE SET NULL
     instance_questions: FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     page_view_logs: FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE

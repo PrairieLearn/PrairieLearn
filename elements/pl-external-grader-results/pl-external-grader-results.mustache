@@ -1,12 +1,12 @@
 {{#graded}}
-<div class="pl-external-grader-results mt-4">
+<div class="pl-external-grader-results">
   {{^grading_succeeded}}
     <h3>Grading failed!</h3>
     {{#message}}
-      <pre class="output text-white rounded p-3 mb-0"><code>{{{message}}}</code></pre>
+      <pre class="bg-dark text-white rounded p-3 mb-0"><code>{{{message}}}</code></pre>
     {{/message}}
     {{^message}}
-      <pre class="output text-white rounded p-3 mb-0"><code>Unknown error; please contact course staff.</code></pre>
+      <pre class="bg-dark text-white rounded p-3 mb-0"><code>Unknown error; please contact course staff.</code></pre>
     {{/message}}
   {{/grading_succeeded}}
   {{#grading_succeeded}}
@@ -33,20 +33,30 @@
         {{/format_errors}}
         </div>
     {{/has_format_errors}}
-    {{#has_message_or_output}}
+    {{#has_message_or_output_or_image}}
       {{#has_message}}
         <div class="card">
           <div class="card-header">Message</div>
-          <pre class="output text-white p-3 mb-0"><code>{{{message}}}</code></pre>
+          <pre class="bg-dark text-white p-3 mb-0"><code>{{{message}}}</code></pre>
         </div>
       {{/has_message}}
       {{#has_output}}
         <div class="card mt-4">
           <div class="card-header">Output</div>
-          <pre class="output text-white p-3 mb-0"><code>{{{output}}}</code></pre>
+          <pre class="bg-dark text-white p-3 mb-0"><code>{{{output}}}</code></pre>
         </div>
       {{/has_output}}
-    {{/has_message_or_output}}
+      {{#has_images}}
+          <ul class="list-group list-group-flush">
+              {{#images}}
+                  <li class="list-group-item">
+                      <div><strong>{{#label}}{{label}}{{/label}}{{^label}}Figure{{/label}}</strong></div>
+                      <img src="{{#url}}{{url}}{{/url}}{{^url}}{{.}}{{/url}}"/>
+                  </li>
+              {{/images}}
+          </ul>
+      {{/has_images}}
+    {{/has_message_or_output_or_image}}
     {{#has_tests}}
       <h3>Test Results</h3>
       <div class="mt-3">
@@ -58,10 +68,10 @@
           <div class="card-header d-flex collapsed" data-toggle="collapse" data-target="#card-{{uuid}}-{{index}}" style="cursor: pointer;">
             <div class="mr-auto">
               <span class="card-title">
-                {{^tests_missing_points}}
+                {{#show_points}}
                   <i class="fa {{results_icon}}" aria-hidden="true" style="color: {{results_color}}"></i>
                   <span style="color: {{results_color}}; margin-left: 5px;"><strong>[{{points}}/{{max_points}}]</strong></span>
-                {{/tests_missing_points}}
+                {{/show_points}}
                 <span style="margin-left: 5px;">{{name}}</span>
               </span>
             </div>
@@ -74,22 +84,30 @@
               {{#has_description}}
                 <li class="list-group-item"><strong>Description:</strong> {{description}}</li>
               {{/has_description}}
-              {{^tests_missing_points}}
+              {{#show_points}}
                 <li class="list-group-item"><strong>Max points:</strong> {{max_points}}</li>
                 <li class="list-group-item"><strong>Earned points:</strong> {{points}}</li>
-              {{/tests_missing_points}}
+              {{/show_points}}
               {{#has_message}}
-                <li class="list-group-item">
-                  <div><strong>Message</strong></div>
-                  <pre class="output text-white rounded p-3 mb-0"><code>{{{message}}}</code></pre>
-                </li>
+                  <li class="list-group-item">
+                      <div class="mt-1 mb-3"><strong>Message</strong></div>
+                      <pre class="bg-dark text-white rounded p-3 mb-2">{{{message}}}</pre>
+                  </li>
               {{/has_message}}
               {{#has_output}}
-                <li class="list-group-item">
-                  <div><strong>Output</strong></div>
-                  <pre class="output text-white rounded p-3 mb-0"><code>{{{output}}}</code></pre>
-                </li>
+                  <li class="list-group-item">
+                      <div class="mt-1 mb-3"><strong>Output</strong></div>
+                      <pre class="bg-dark text-white rounded p-3 mb-2">{{{output}}}</pre>
+                  </li>
               {{/has_output}}
+              {{#has_images}}
+                  <li class="list-group-item">
+                      {{#images}}
+                      <div><strong>{{#label}}{{label}}{{/label}}{{^label}}Figure{{/label}}</strong></div>
+                      <img src="{{#url}}{{url}}{{/url}}{{^url}}{{.}}{{/url}}"/>
+                      {{/images}}
+                  </li>
+              {{/has_images}}
             </ul>
           </div>
         </div>

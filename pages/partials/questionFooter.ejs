@@ -1,11 +1,16 @@
-<% if (question.type == 'Freeform') { %>
+<% if (question_context !== 'manual_grading') { %>
   <div class="card-footer" id="question-panel-footer">
+<% if (question.type == 'Freeform') { %>
     <% if (showTrueAnswer && (question_context == 'student_exam')) { %>
     This question is complete and cannot be answered again.
+    <% } else if (locals.authz_result && (!authz_result.authorized_edit)) { %>
+      <div class="alert alert-warning mt-2" role="alert">
+        You are viewing the question instance of a different user and so are not authorized to save answers, to submit answers for grading, or to try a new variant of this same question.
+      </div>
     <% } else { %>
     <div class="row">
       <div class="col d-flex justify-content-between">
-        <span class="d-flex">
+        <span class="d-flex align-items-center">
           <% if (showSaveButton) { %>
             <button class="btn btn-info question-save disable-on-submit order-2" name="__action" value="save">
               <% if (showGradeButton) { %>
@@ -16,42 +21,70 @@
             </button>
           <% } %>
           <% if (showGradeButton) { %>
-              <% if (question_context == 'student_homework') { %>
-                  <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" name="__action" value="grade">Save & Grade
-                      <% if ((assessment_question.tries_per_variant - variant.num_tries) > 1) { %>
-                          <span class="badge">
-                              <%= String(assessment_question.tries_per_variant - variant.num_tries) %>
-                              tries left
-                          </span>
-                      <% } %>
-                  </button>
-              <% } else { %>
-                  <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" name="__action" value="grade">Save & Grade</button>
-              <% } %>
-          <% } %>
-          <% if (showManualGradingMsg) { %>
-          This question will be manually graded.
+            <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" <%= disableGradeButton ? "disabled" : "" %> name="__action" value="grade">Save & Grade
+            <% if (variantAttemptsTotal > 0) { %>
+               <% if (variantAttemptsLeft > 1) { %>
+               <small class="font-italic ml-2"><%= variantAttemptsLeft %> attempts left</small>
+               <% } else if (variantAttemptsLeft == 1 && variantAttemptsTotal > 1) { %>
+               <small class="font-italic ml-2">Last attempt</small>
+               <% } else if (variantAttemptsLeft == 1) { %>
+               <small class="font-italic ml-2">Single attempt</small>
+               <% } %>
+            <% } else if (question_context != 'instructor') { %>
+               <small class="font-italic ml-2">Unlimited attempts</small>
+            <% } %>
+            </button>
           <% } %>
         </span>
         <span class="d-flex">
           <input type="hidden" name="__variant_id" value="<%= variant.id %>">
           <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-          <% if (showNewVariantButton) { %><a href="<%= newVariantUrl %>" class="btn btn-primary disable-on-click ml-1">New variant</a><% } %>
-          <% if (showTryAgainButton) { %><a href="<%= tryAgainUrl %>" class="btn btn-primary disable-on-click ml-1">Try question again</a><% } %>
+          <% if (showNewVariantButton) { %><a href="<%= newVariantUrl %>" class="btn btn-primary disable-on-click ml-1">New variant</a>
+          <% } else if (showTryAgainButton) { %><a href="<%= tryAgainUrl %>" class="btn btn-primary disable-on-click ml-1">Try a new variant</a>
+          <% } else if (hasAttemptsOtherVariants) { %>
+          <small class="font-italic align-self-center">Additional attempts available with new variants</small>
+          <a class="btn btn-xs align-self-center" data-toggle="popover" data-html="true" data-content="<%= include('newVariantInfo') %>" data-placement="auto" data-trigger="focus" data-container="body" tabindex="0">
+              <i class="fa fa-question-circle" aria-hidden="true"></i>
+          </a>
+          <% } %>
+          <% if (question_context == 'student_exam' && instance_question.points_list) { %>
+          <small class="font-italic align-self-center text-right">
+              <% if (instance_question.points_list[0] == 1) { %>
+              1 point available for this attempt
+              <% } else { %>
+              <%= instance_question.points_list[0] %> points available for this attempt
+              <% } %>
+              <% if (assessment_question?.max_manual_points > 0) { %>
+                <% if (instance_question.points_list[0] > assessment_question?.max_manual_points) { %>
+                  &mdash; <%= instance_question.points_list[0] - assessment_question?.max_manual_points %> auto-graded, <%= assessment_question?.max_manual_points %> manually graded
+                <% } else { %>
+                  &mdash; manually graded
+                <% } %>
+              <% } %>
+              <% if (instance_question.points_list.length == 2) { %>
+              <br />(following attempt is worth: <%= instance_question.points_list[1] %>)
+              <% } else if (instance_question.points_list.length > 2) { %>
+              <br />(following attempts are worth: <%= instance_question.points_list.slice(1).join(', ') %>)
+              <% } %>
+          </small>
+          <% } %>
         </span>
       </div>
     </div>
+    <%- include('submitRateFooter') %>
     <% } %>
-  </div>
 <% } else { %>
-  <div class="card-footer" id="question-panel-footer">
     <form class="question-form" name="question-form" method="POST">
       <% if (showTrueAnswer && (question_context == 'student_exam')) { %>
       This question is complete and cannot be answered again.
+      <% } else if (locals.authz_result && (!authz_result.authorized_edit)) { %>
+        <div class="alert alert-warning mt-2" role="alert">
+          You are viewing the question instance of a different user and so are not authorized to save answers, to submit answers for grading, or to try a new variant of this same question.
+        </div>
       <% } else { %>
       <div class="row">
         <div class="col d-flex justify-content-between">
-          <span class="d-flex">
+          <span class="d-flex align-items-center">
               <% if (showSaveButton) { %>
                 <button class="btn btn-info question-save disable-on-submit order-2">
                   <% if (showGradeButton) { %>
@@ -62,91 +95,68 @@
                 </button>
               <% } %>
               <% if (showGradeButton) { %>
-                  <% if (question_context == 'student_homework') { %>
-                      <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1">Save & Grade
-                          <% if ((assessment_question.tries_per_variant - variant.num_tries) > 1) { %>
-                              <span class="badge">
-                                  <%= String(assessment_question.tries_per_variant - variant.num_tries) %>
-                                  tries left
-                              </span>
-                          <% } %>
-                      </button>
-                  <% } else { %>
-                      <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1">Save & Grade</button>
-                  <% } %>
-              <% } %>
-              <% if (showManualGradingMsg) { %>
-              This question will be manually graded.
+                <button class="btn btn-primary question-grade disable-on-submit order-1 mr-1" <%= disableGradeButton ? "disabled" : "" %> >Save & Grade
+            <% if (variantAttemptsTotal > 0) { %>
+               <% if (variantAttemptsLeft > 1) { %>
+               <small class="font-italic ml-2"><%= variantAttemptsLeft %> attempts left</small>
+               <% } else if (variantAttemptsLeft == 1 && variantAttemptsTotal > 1) { %>
+               <small class="font-italic ml-2">Last attempt</small>
+               <% } else if (variantAttemptsLeft == 1) { %>
+               <small class="font-italic ml-2">Single attempt</small>
+               <% } %>
+            <% } else if (question_context != 'instructor') { %>
+               <small class="font-italic ml-2">Unlimited attempts</small>
+            <% } %>
+            </button>
               <% } %>
           </span>
           <span class="d-flex">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
             <input type="hidden" name="postData" class="postData">
             <input type="hidden" name="__action" class="__action">
-            <% if (showNewVariantButton) { %><a href="<%= newVariantUrl %>" class="btn btn-primary disable-on-click ml-1">New variant</a><% } %>
-            <% if (showTryAgainButton) { %><a href="<%= tryAgainUrl %>" class="btn btn-primary disable-on-click ml-1">Try question again</a><% } %>
+            <% if (showNewVariantButton) { %><a href="<%= newVariantUrl %>" class="btn btn-primary disable-on-click ml-1">New variant</a>
+            <% } else if (showTryAgainButton) { %><a href="<%= tryAgainUrl %>" class="btn btn-primary disable-on-click ml-1">Try a new variant</a>
+            <% } else if (hasAttemptsOtherVariants) { %>
+            <small class="font-italic align-self-center">Additional attempts available with new variants</small>
+            <a class="btn btn-xs" data-toggle="popover" data-html="true" data-content="<%= include('newVariantInfo') %>" data-placement="auto" data-trigger="focus" data-container="body" tabindex="0">
+                <i class="fa fa-question-circle" aria-hidden="true"></i>
+            </a>
+            <% } %>
+            <% if (question_context == 'student_exam' && instance_question.points_list) { %>
+            <small class="font-italic align-self-center text-right">
+              <% if (instance_question.points_list[0] == 1) { %>
+              1 point available for this attempt
+              <% } else { %>
+              <%= instance_question.points_list[0] %> points available for this attempt
+              <% } %>
+              <% if (instance_question.points_list.length == 2) { %>
+              <br />(following attempt is worth: <%= instance_question.points_list[1] %>)
+              <% } else if (instance_question.points_list.length > 2) { %>
+              <br />(following attempts are worth: <%= instance_question.points_list.slice(1).join(', ') %>)
+              <% } %>
+            </small>
+            <% } %>
           </span>
         </div>
       </div>
+      <%- include('submitRateFooter') %>
       <% } %>
     </form>
-
-    <script>
-      $('form').on('submit', function(e) {
-          if (!$(this).data('submitted')) {
-              $(this).data('submitted', true);
-
-              var form = $(this);
-              form.find('.disable-on-submit').each(function (index) {
-                  // Create a disabled clone of the submit button
-                  $(this).clone(false).removeAttr('id').prop('disabled', true).insertBefore($(this));
-
-                  // Hide the actual submit button and move it to the beginning of the form
-                  $(this).hide();
-                  form.prepend($(this));
-              });
-
-          } else {
-              e.preventDefault();
-          }
-      });
-
-      $('a.disable-on-click').on('click', function() {
-          $(this).addClass('disabled');
-      });
-    </script>
+<% } %>
   </div>
 <% } %>
-
 <script>
-    // Wait for DOM (ace, file upload, etc.)
-    $(document).ready(() => {
-        const form = $('form.question-form');
-        const getForm = () => form.serialize();
-
-        // Set form state on load and submit
-        var initialForm = getForm();
-        form.submit(() => {
-            initialForm = getForm();
-        });
-
-        // Check form state on unload
-        $(window).bind('beforeunload', (e) => {
-            const isSameForm = initialForm == getForm();
-
-            // allowQuestionUnload: pages/partials/countdown.ejs
-            if(!isSameForm && !window.allowQuestionUnload) {
-                const event = e || window.event;
-
-                // MDN recommendation (not fully supported)
-                event.preventDefault();
-
-                // Chrome legacy
-                event.returnValue = '';
-
-                // Fallback
-                return '';
-            }
-        });
-    });
+  // Install on page load and reinstall on websocket re-render
+  $('a.disable-on-click').on('click', function() {
+    $(this).addClass('disabled');
+  });
+  // Enable popover
+  $(document).ready(function(){
+    $('[data-toggle="popover"]').popover({sanitize: false, container: 'body'});
+  });
+  window.nextSubmissionReady = function() {
+    $('.question-grade').prop('disabled', false);
+    $('.submission-suspended-msg').hide();
+    $('.grade-rate-limit-popover').hide();
+  };
 </script>

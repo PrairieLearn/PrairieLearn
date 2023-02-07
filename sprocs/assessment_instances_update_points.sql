@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS assessment_instances_update_points(bigint,double precision,bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_instances_update_points(
         IN assessment_instance_id bigint,
         IN new_points double precision,
@@ -21,19 +19,15 @@ BEGIN
         UPDATE assessment_instances AS ai
         SET
             points = new_points,
-            points_in_grading = 0,
             score_perc = new_score_perc,
-            score_perc_in_grading = 0,
             modified_at = now()
         WHERE ai.id = assessment_instance_id
         RETURNING ai.*
     )
     INSERT INTO assessment_score_logs
-        (assessment_instance_id,  auth_user_id,    max_points,
-           points,    points_in_grading,    score_perc,    score_perc_in_grading)
+        (assessment_instance_id, auth_user_id, max_points, points, score_perc)
     SELECT
-                          ai.id, authn_user_id, ai.max_points,
-        ai.points, ai.points_in_grading, ai.score_perc, ai.score_perc_in_grading
+        ai.id, authn_user_id, ai.max_points, ai.points, ai.score_perc
     FROM
         updated_assessment_instances AS ai;
 END;

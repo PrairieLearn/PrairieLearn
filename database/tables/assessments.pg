@@ -1,27 +1,53 @@
 columns
+    advance_score_perc: double precision
     allow_issue_reporting: boolean default true
     allow_real_time_grading: boolean default true
-    assessment_set_id: bigint not null
+    assessment_module_id: bigint
+    assessment_set_id: bigint
     auto_close: boolean default true
     config: jsonb
     constant_question_value: boolean default false
     course_instance_id: bigint not null
     deleted_at: timestamp with time zone
+    duration_stat_hist: integer[] not null default ARRAY[]::integer[]
+    duration_stat_max: interval not null default '00:00:00'::interval
+    duration_stat_mean: interval not null default '00:00:00'::interval
+    duration_stat_median: interval not null default '00:00:00'::interval
+    duration_stat_min: interval not null default '00:00:00'::interval
+    duration_stat_threshold_labels: text[] not null default ARRAY[]::text[]
+    duration_stat_threshold_seconds: double precision[] not null default ARRAY[]::double precision[]
+    duration_stat_thresholds: interval[] not null default ARRAY[]::interval[]
+    group_work: boolean default false
     id: bigint not null default nextval('assessments_id_seq'::regclass)
+    max_bonus_points: double precision
     max_points: double precision
-    mode: enum_mode
     multiple_instance: boolean
-    number: text
+    number: text not null default '0'::text
     obj: jsonb
     order_by: integer
     require_honor_code: boolean default true
+    score_stat_hist: integer[] not null default ARRAY[]::integer[]
+    score_stat_max: double precision not null default 0
+    score_stat_mean: double precision not null default 0
+    score_stat_median: double precision not null default 0
+    score_stat_min: double precision not null default 0
+    score_stat_n_hundred: integer not null default 0
+    score_stat_n_hundred_perc: double precision not null default 0
+    score_stat_n_zero: integer not null default 0
+    score_stat_n_zero_perc: double precision not null default 0
+    score_stat_number: integer not null default 0
+    score_stat_std: double precision not null default 0
     shuffle_questions: boolean default false
+    statistics_last_updated_at: timestamp with time zone not null default (now() - '100 years'::interval)
     stats_last_updated: timestamp with time zone
+    sync_errors: text
+    sync_job_sequence_id: bigint
+    sync_warnings: text
     text: text
     tid: text
     title: text
     type: enum_assessment_type
-    uuid: uuid not null
+    uuid: uuid
 
 indexes
     assessments_pkey: PRIMARY KEY (id) USING btree (id)
@@ -30,16 +56,21 @@ indexes
     assessments_course_instance_id_idx: USING btree (course_instance_id)
 
 foreign-key constraints
-    assessments_assessment_set_id_fkey: FOREIGN KEY (assessment_set_id) REFERENCES assessment_sets(id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessments_assessment_module_id_fkey: FOREIGN KEY (assessment_module_id) REFERENCES assessment_modules(id) ON UPDATE CASCADE ON DELETE SET NULL
+    assessments_assessment_set_id_fkey: FOREIGN KEY (assessment_set_id) REFERENCES assessment_sets(id) ON UPDATE CASCADE ON DELETE SET NULL
     assessments_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessments_sync_job_sequence_id_fkey: FOREIGN KEY (sync_job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by
     alternative_groups: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
     assessment_access_rules: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
     assessment_instances: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
     assessment_questions: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    chunks: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
     current_pages: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
     files: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    group_configs: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    group_roles: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
     issues: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE SET NULL
     job_sequences: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
     jobs: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE

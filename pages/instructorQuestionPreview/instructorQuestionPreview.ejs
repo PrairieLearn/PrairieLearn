@@ -1,23 +1,24 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head', {pageNote: 'Preview', pageTitle: question.qid}); %>
     <%- include('../partials/mathjax'); %>
-    <script src="/javascripts/socket.io.js"></script>
+    <script src="<%= node_modules_asset_path('socket.io-client/dist/socket.io.min.js') %>"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
     <% if (question.type != 'Freeform') { %>
-    <script src="/javascripts/lodash.min.js"></script>
-    <script src="/javascripts/require.js"></script>
-    <script src="/localscripts/question.js"></script>
-    <script src="/localscripts/question<%= effectiveQuestionType %>.js"></script>
+    <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
+    <script src="<%= asset_path('javascripts/require.js') %>"></script>
+    <script src="<%= asset_path('localscripts/question.js') %>"></script>
+    <script src="<%= asset_path(`localscripts/question${effectiveQuestionType}.js`) %>"></script>
     <% } %>
     <%- extraHeadersHtml %>
   </head>
   <body>
     <%- include('../partials/navbar'); %>
     <div class="container-fluid">
+      <%- include('../partials/questionSyncErrorsAndWarnings'); %>
     </div>
     <div id="content" class="container">
       <div class="row">
@@ -27,7 +28,7 @@
 
           <div class="col-lg-3 col-sm-12">
               <div class="card mb-4">
-                  <div class="card-header bg-secondary">Student view placeholder</div>
+                  <div class="card-header bg-secondary text-white">Student view placeholder</div>
                   <div class="card-body">
                       <div class="d-flex justify-content-center">
                           In student views this area is used for assessment and score info.
@@ -39,5 +40,7 @@
       </div>
 
     </div>
+    <!-- Needs to be located below element scripts -->
+    <script src="<%= asset_path('localscripts/questionPageScripts.js') %>"></script>
   </body>
 </html>

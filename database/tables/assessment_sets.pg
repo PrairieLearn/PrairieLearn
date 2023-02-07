@@ -15,4 +15,4 @@ foreign-key constraints
     assessment_sets_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
-    assessments: FOREIGN KEY (assessment_set_id) REFERENCES assessment_sets(id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessments: FOREIGN KEY (assessment_set_id) REFERENCES assessment_sets(id) ON UPDATE CASCADE ON DELETE SET NULL

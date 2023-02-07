@@ -36,9 +36,11 @@ last_submissions AS (
 )
 SELECT
     ai.id AS assessment_instance_id,
-    date_trunc('second', ai.date) AS start_date,
-    date_trunc('second', now() - last_views.date) AS since_last_view,
-    date_trunc('second', now() - last_submissions.date) AS since_last_submission,
+    format_date_full_compact(ai.date, config_select('display_timezone')) AS start_date,
+    format_interval(now() - last_views.date) AS since_last_view,
+    DATE_PART('epoch', (now() - last_views.date)) AS _sortval_since_last_view,
+    format_interval(now() - last_submissions.date) AS since_last_submission,
+    DATE_PART('epoch', (now() - last_submissions.date)) AS _sortval_since_last_submission,
     ci.short_name AS instance,
     c.short_name AS course,
     aset.name AS assessment_set,

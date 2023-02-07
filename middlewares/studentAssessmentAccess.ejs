@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <%- include('../pages/partials/head'); %>
     <% if (prompt == 'SEB') { %>
@@ -22,7 +22,7 @@
 
             <div class="card-body">
 
-                <% if (typeof assessment_instance !== 'undefined' && assessment_instance.open === false) { %>
+                <% if (typeof assessment_instance !== 'undefined' && (assessment_instance.open === false || authz_result.active === false) && prompt !== 'closedAssessmentNotActiveHiddenGrade') { %>
 
                     <div class="row align-items-center">
                       <div class="col-md-3 col-sm-6">
@@ -32,9 +32,20 @@
                       <div class="col-md-3 col-sm-6">
                         <%- include('../pages/partials/scorebar', {score: assessment_instance.score_perc}) %>
                       </div>
-                      <div class="col-md-6 col-sm-12 text-right test-suite-assessment-closed-message">
-                          Assessment is <strong>closed</strong> and is no longer available.
-                      </div>
+                      
+                      <% if (assessment_instance.open === false) { %>
+                        <div class="col-md-6 col-sm-12 text-right test-suite-assessment-closed-message">
+                            Assessment is <strong>closed</strong> and is no longer available.
+                        </div>
+                      <% } else if (authz_result.next_active_time === null) { %>
+                        <div class="col-md-6 col-sm-12 text-right test-suite-assessment-closed-message">
+                            Assessment is no longer available.
+                        </div>
+                      <% } else { %>
+                        <div class="col-md-6 col-sm-12 text-right test-suite-assessment-closed-message">
+                            Assessment will become available on <%= authz_result.next_active_time %>.
+                        </div>
+                      <% } %>
                     </div>
 
                     <% if (authz_data.mode == 'SEB') { %>
@@ -52,8 +63,20 @@
                     <a class="btn btn-lg btn-success" href="<%= SEBUrl %>?data=<%= SEBdata %>" onClick="backOnFocus();">
                         Launch into the Safe Exam Browser
                     </a>
+                
+                <% } else if (typeof assessment_instance === 'undefined' || assessment_instance.open) { %>
 
-                <% } else { %>
+                    <% if (authz_result.next_active_time === null) { %>
+                        <div class="test-suite-assessment-closed-message">
+                            Assessment is no longer available.
+                        </div>
+                    <% } else { %>
+                        <div class="test-suite-assessment-closed-message">
+                            Assessment will become available on <%= authz_result.next_active_time %>.
+                        </div>
+                    <% } %>
+
+                <% } else { %> <!-- Case where assessment instance is closed and grade is hidden -->
                     <div class="test-suite-assessment-closed-message">
                         Assessment is <strong>closed</strong> and is no longer available.
                     </div>

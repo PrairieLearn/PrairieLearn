@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_label(
         a assessments,
         aset assessment_sets

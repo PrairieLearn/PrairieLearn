@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
-    <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
-    <link rel="stylesheet" href="/node_modules/highlight.js/styles/default.css">
-    <script src="/javascripts/jquery.tablesorter.min.js"></script>
-    <script src="/javascripts/jquery.tablesorter.widgets.js"></script>
+    <link href="<%= node_modules_asset_path('highlight.js/styles/default.css') %>" rel="stylesheet">
+    <link href="<%= node_modules_asset_path('tablesorter/dist/css/theme.bootstrap.min.css') %>" rel="stylesheet" />
+    <script src="<%= node_modules_asset_path('tablesorter/dist/js/jquery.tablesorter.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('tablesorter/dist/js/jquery.tablesorter.widgets.min.js') %>"></script>
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: 'admin', navSubPage: 'queries'}); %>
@@ -22,32 +22,41 @@
               %> <%
           } else if (col == 'assessment_id' && 'assessment' in row && 'course_instance_id' in row) {
               %> <%
+          } else if (/^_sortval_/.test(col)) {
+              %> <%
           } else {
               %> <th><%= col %></th> <%
           }
       }
 
       function render(row, col) {
+          let tdAttributes = '';
+          if (('_sortval_' + col) in row) {
+              tdAttributes = `data-text="${row['_sortval_' + col]}"`;
+          }
+
           if (col == 'course_id' && 'course' in row) {
               %> <%
           } else if (col == 'course' && 'course_id' in row) {
-              %> <td><a href="<%= urlPrefix %>/course/<%= row['course_id'] %>"><%= row[col] %></a></td> <%
+              %> <td <%- tdAttributes %> ><a href="<%= urlPrefix %>/course/<%= row['course_id'] %>"><%= row[col] %></a></td> <%
           } else if (col == 'course_instance_id' && 'course_instance' in row) {
               %> <%
           } else if (col == 'course_instance' && 'course_instance_id' in row) {
-              %> <td><a href="<%= urlPrefix %>/course_instance/<%= row['course_instance_id'] %>"><%= row[col] %></a></td> <%
+              %> <td <%- tdAttributes %> ><a href="<%= urlPrefix %>/course_instance/<%= row['course_instance_id'] %>"><%= row[col] %></a></td> <%
           } else if (col == 'assessment_id' && 'assessment' in row && 'course_instance_id' in row) {
               %> <%
           } else if (col == 'assessment' && 'assessment_id' in row && 'course_instance_id' in row) {
-              %> <td><a href="<%= urlPrefix %>/course_instance/<%= row['course_instance_id'] %>/instructor/assessment/<%= row['assessment_id'] %>"><%= row[col] %></a></td> <%
+              %> <td <%- tdAttributes %> ><a href="<%= urlPrefix %>/course_instance/<%= row['course_instance_id'] %>/instructor/assessment/<%= row['assessment_id'] %>"><%= row[col] %></a></td> <%
+          } else if (/^_sortval_/.test(col)) {
+              %> <%
           } else if (row[col] == null) {
-              %> <td></td> <%
+              %> <td <%- tdAttributes %> ></td> <%
           } else if (info.resultFormats && info.resultFormats[col] == 'pre') {
-              %> <td><pre><%= row[col] %></pre></td> <%
+              %> <td <%- tdAttributes %> ><pre><%= row[col] %></pre></td> <%
           } else if (typeof(row[col]) == 'object') {
-              %> <td><tt><%= JSON.stringify(row[col]) %></tt></td> <%
+              %> <td <%- tdAttributes %> ><tt><%= JSON.stringify(row[col]) %></tt></td> <%
           } else {
-              %> <td><%= row[col] %></td> <%
+              %> <td <%- tdAttributes %> ><%= row[col] %></td> <%
           }
       }
       %>
@@ -148,6 +157,50 @@
         </div>
         <% } %>
         <% } %>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          Recent query runs
+        </div>
+        <div class="table-responsive">
+        <% if (recent_query_runs.length > 0) { %>
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Params</th>
+                <th>User name</th>
+                <th>User UID</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% recent_query_runs.forEach(run => { %>
+                <tr>
+                  <td>
+                    <a href="?query_run_id=<%= run.id %>">
+                      <%= run.formatted_date %>
+                    </a>
+                  </td>
+                  <td>
+                    <pre class="mb-0"><%= JSON.stringify(run.params) %></pre>
+                  </td>
+                  <td>
+                    <%= run.user_name %>
+                  </td>
+                  <td>
+                    <%= run.user_uid %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        <% } else { %>
+          <div class="card-body">
+            <div class="text-center text-muted">No recent runs found</div>
+          </div>
+        <% } %>
+        </div>
       </div>
 
     </div>

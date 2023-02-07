@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS instance_questions_select_variant(bigint, boolean);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     instance_questions_select_variant (
         IN instance_question_id bigint,
         IN require_open boolean,

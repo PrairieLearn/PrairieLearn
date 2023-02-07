@@ -1,57 +1,47 @@
-const { callbackify } = require('util');
-const sqldb = require('@prairielearn/prairielib/sql-db');
+// @ts-check
+const sqldb = require('@prairielearn/postgres');
 
-function getDuplicates(arr) {
-    const seen = new Set();
-    return arr.filter(v => {
-        const present = seen.has(v);
-        seen.add(v);
-        return present;
-    });
-}
+const infofile = require('../infofile');
+const perf = require('../performance')('topics');
 
-function getDuplicatesByKey(arr, key) {
-    return getDuplicates(arr.map(v => v[key]));
-}
+/**
+ * @param {import('../course-db').CourseData} courseData
+ */
+module.exports.sync = async function (courseId, courseData) {
+  // We can only safely remove unused topics if both `infoCourse.json` and all
+  // question `info.json` files are valid.
+  const isInfoCourseValid = !infofile.hasErrors(courseData.course);
+  const areAllInfoQuestionsValid = Object.values(courseData.questions).every(
+    (q) => !infofile.hasErrors(q)
+  );
+  const deleteUnused = isInfoCourseValid && areAllInfoQuestionsValid;
 
-module.exports.sync = function(courseInfo, questionDB, callback) {
-    callbackify(async () => {
-        const topics = courseInfo.topics || [];
+  /** @type {string[]} */
+  let courseTopics = [];
+  if (!infofile.hasErrors(courseData.course)) {
+    courseTopics = courseData.course.data.topics.map((t) =>
+      JSON.stringify([t.name, t.description, t.color])
+    );
+  }
 
-        // First, do a sanity check for duplicate topic names. Because of how the
-        // syncing sproc is structured, there's no meaningful error message if
-        // duplicates are present.
-        const duplicateNames = getDuplicatesByKey(topics, 'name');
-        if (duplicateNames.length > 0) {
-            const duplicateNamesJoined = duplicateNames.join(', ');
-            throw new Error(`Duplicate topic names found: ${duplicateNamesJoined}. Topic names must be unique within the course.`);
-        }
+  /** @type Set<string> */
+  const knownQuestionTopicNames = new Set();
+  Object.values(courseData.questions).forEach((q) => {
+    if (!infofile.hasErrors(q)) {
+      knownQuestionTopicNames.add(q.data.topic);
+    }
+  });
+  const questionTopicNames = [...knownQuestionTopicNames];
 
-        // We'll create placeholder topics for topics that aren't specified in
-        // infoCourse.json.
-        const knownTopicNames = new Set(topics.map(topic => topic.name));
-        const missingTopicNames = new Set();
-        Object.values(questionDB).forEach(q => {
-            if (!knownTopicNames.has(q.topic)) {
-                missingTopicNames.add(q.topic);
-            }
-        });
-        topics.push(...[...missingTopicNames].map(name => ({
-            name,
-            color: 'gray1',
-            description: 'Auto-generated from use in a question; add this topic to your courseInfo.json file to customize',
-        })));
+  const params = [
+    !infofile.hasErrors(courseData.course),
+    deleteUnused,
+    courseTopics,
+    questionTopicNames,
+    courseId,
+  ];
 
-        const topicsParams = topics.map((topic) => ({
-            name: topic.name,
-            color: topic.color,
-            description: topic.description,
-        }));
-
-        const params = [
-            JSON.stringify(topicsParams),
-            courseInfo.courseId,
-        ];
-        await sqldb.callAsync('sync_topics', params);
-    })(callback);
+  perf.start('sproc:sync_topics');
+  await sqldb.callAsync('sync_topics', params);
+  perf.end('sproc:sync_topics');
 };

@@ -1,30 +1,60 @@
-var ERR = require('async-stacktrace');
-var express = require('express');
-var router = express.Router();
+// @ts-check
+const { Router } = require('express');
+const asyncHandler = require('express-async-handler');
 
-var sqldb = require('@prairielearn/prairielib').sqlDb;
-var sqlLoader = require('@prairielearn/prairielib').sqlLoader;
+const config = require('../../lib/config');
+const sqldb = require('@prairielearn/postgres');
+const { isEnterprise } = require('../../lib/license');
 
-var config = require('../../lib/config');
+const sql = sqldb.loadSqlEquiv(__filename);
+const router = Router();
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+router.get(
+  '/',
+  asyncHandler(async (req, res, _next) => {
+    res.locals.service = req.query.service ?? null;
+    res.locals.institutionAuthnProviders = null;
 
-router.get('/', function(req, res, next) {
-    var params = {
-        ip: req.ip,
-        force_mode: (config.authType == 'none' && req.cookies.pl_requested_mode) ? req.cookies.pl_requested_mode : null,
-        req_date: res.locals.req_date,
-    };
-    sqldb.query(sql.get_mode, params, function(err, result) {
-        if (ERR(err, next)) return;
-        res.locals.mode = result.rows[0].mode;
-        // We could set res.locals.config.hasOauth = false (or
-        // hasAzure) to not display those options inside the CBTF, but
-        // this will also need to depend on which institution we have
-        // detected (e.g., UIUC doesn't want Azure during exams, but
-        // ZJUI does want it).
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    });
-});
+    if (isEnterprise()) {
+      const institutionAuthnProviders = await sqldb.queryAsync(
+        sql.select_institution_authn_providers,
+        {}
+      );
+      res.locals.institutionAuthnProviders = institutionAuthnProviders.rows
+        .map((provider) => {
+          // Special case: omit the default institution.
+          if (provider.id === '1') return null;
+
+          let url = null;
+          switch (provider.default_authn_provider_name) {
+            case 'SAML':
+              url = `/pl/auth/institution/${provider.id}/saml/login`;
+              break;
+            case 'Google':
+              url = '/pl/oauth2login';
+              break;
+            case 'Azure':
+              url = '/pl/azure_login';
+              break;
+            case 'Shibboleth':
+              url = '/pl/shibcallback';
+              break;
+            default:
+              return null;
+          }
+
+          return {
+            name: `${provider.long_name} (${provider.short_name})`,
+            url,
+          };
+        })
+        .filter(Boolean);
+    }
+
+    res.locals.hasAzure = config.hasAzure && isEnterprise();
+
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  })
+);
 
 module.exports = router;

@@ -1,0 +1,17 @@
+<pl-question-panel>
+
+<p>The graph below indicates the outgoing links for 4 different websites.</p>
+
+<pl-graph params-name="M" params-name-labels="page_names" weights-digits="2" weights="false"></pl-graph>
+
+<p> Using the Google matrix described in class, with damping factor $\alpha = 0.85$,
+determine the website with the higher rank.</p>
+</pl-question-panel>
+
+<p>
+<pl-dropdown answers-name="sites" blank="true">
+    {{#params.sites}}
+        <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
+    {{/params.sites}}
+</pl-dropdown>
+</p>

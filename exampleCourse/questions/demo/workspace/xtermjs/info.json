@@ -1,0 +1,25 @@
+{
+    "uuid": "8a75c8cf-ed51-4141-9910-2da2f74cc8af",
+    "title": "Workspace demo: Xterm.js",
+    "topic": "Workspace",
+    "tags": [
+        "su20",
+        "nnytko2",
+        "tyang15"
+    ],
+    "type": "v3",
+    "singleVariant": true,
+    "workspaceOptions": {
+        "comment": {
+            "why": "testing comments in workspace blocks",
+            "also": "testing object comments"
+        },
+        "image": "prairielearn/workspace-xtermjs",
+        "port": 8080,
+        "home": "/home/student",
+        "gradedFiles": [
+            "**/*.h",
+            "**/*.c"
+        ]
+    }
+}
