@@ -35,7 +35,7 @@ const externalGrader = require('./lib/externalGrader');
 const externalGraderResults = require('./lib/externalGraderResults');
 const externalGradingSocket = require('./lib/externalGradingSocket');
 const workspace = require('./lib/workspace');
-const sqldb = require('./prairielib/lib/sql-db');
+const sqldb = require('@prairielearn/postgres');
 const migrations = require('./prairielib/lib/migrations');
 const error = require('./prairielib/error');
 const sprocs = require('./sprocs');
@@ -934,7 +934,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/submission/:submission_id/file',
     [
       require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./pages/submissionFiles/submissionFiles'),
+      require('./pages/submissionFile/submissionFile'),
     ]
   );
 
@@ -1238,7 +1238,7 @@ module.exports.initExpress = function () {
     '/pl/course_instance/:course_instance_id/instructor/question/:question_id/submission/:submission_id/file',
     [
       require('./middlewares/selectAndAuthzInstructorQuestion'),
-      require('./pages/submissionFiles/submissionFiles'),
+      require('./pages/submissionFile/submissionFile'),
     ]
   );
 
@@ -1378,7 +1378,7 @@ module.exports.initExpress = function () {
     [
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./middlewares/studentAssessmentAccess'),
-      require('./pages/submissionFiles/submissionFiles'),
+      require('./pages/submissionFile/submissionFile'),
     ]
   );
 
@@ -1599,7 +1599,7 @@ module.exports.initExpress = function () {
   // Submission files
   app.use('/pl/course/:course_id/question/:question_id/submission/:submission_id/file', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
-    require('./pages/submissionFiles/submissionFiles'),
+    require('./pages/submissionFile/submissionFile'),
   ]);
 
   // legacy client file paths

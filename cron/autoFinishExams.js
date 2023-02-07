@@ -6,7 +6,7 @@ var error = require('../prairielib/lib/error');
 var config = require('../lib/config');
 var logger = require('../lib/logger');
 var assessment = require('../lib/assessment');
-var sqldb = require('../prairielib/lib/sql-db');
+var sqldb = require('@prairielearn/postgres');
 
 /**
  * This cron job runs periodically to check for any exams that need to be

@@ -8,11 +8,10 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 const moment = require('moment');
 const config = require('../lib/config');
 const error = require('../prairielib/error');
-const sqldb = require('../prairielib/sql-db');
-const sqlLoader = require('../prairielib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 const { idsEqual } = require('../lib/id');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 module.exports = function (req, res, next) {
   const isCourseInstance = Boolean(req.params.course_instance_id);

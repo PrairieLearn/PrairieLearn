@@ -3,14 +3,12 @@ const express = require('express');
 const asyncHandler = require('express-async-handler');
 const { isBinaryFile } = require('isbinaryfile');
 const mime = require('mime');
+const sqldb = require('@prairielearn/postgres');
 
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
-
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 const router = express.Router({ mergeParams: true });
 
-const MEDIA_PREFIXES = ['image/', 'audio/', 'video/'];
+const MEDIA_PREFIXES = ['image/', 'audio/', 'video/', 'application/pdf'];
 
 /**
  * Guesses the mime type for a file based on its name and contents.
@@ -21,17 +19,12 @@ const MEDIA_PREFIXES = ['image/', 'audio/', 'video/'];
  */
 async function guessMimeType(name, buffer) {
   const mimeType = mime.getType(name);
-  const isBinary = await isBinaryFile(buffer);
-
-  if (!isBinary) {
-    return 'text/plain';
-  }
-
   if (mimeType && MEDIA_PREFIXES.some((p) => mimeType.startsWith(p))) {
     return mimeType;
   }
 
-  return 'application/octet-stream';
+  const isBinary = await isBinaryFile(buffer);
+  return isBinary ? 'application/octet-stream' : 'text/plain';
 }
 
 router.get(
@@ -53,18 +46,12 @@ router.get(
     }
 
     const contents = fileRes.rows[0].contents;
-    if (!contents) {
+    if (contents == null) {
       res.sendStatus(404);
       return;
     }
 
     const buffer = Buffer.from(contents, 'base64');
-
-    // res.sendStatus(404);
-    // return;
-
-    // Artificial delay for testing.
-    // await new Promise((resolve) => setTimeout(resolve, 3000));
 
     // To avoid having to do expensive content checks on the client, we'll do
     // our best to guess a mime type for the file.
