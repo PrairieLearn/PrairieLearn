@@ -1,4 +1,5 @@
 # Question Sharing
+
 In order to avoid instructors needing to copy question files in between courses, PrairieLearn provides a way for questions from one course to be used in assessments in other courses.
 
 ## Establishing a sharing connection with another course
