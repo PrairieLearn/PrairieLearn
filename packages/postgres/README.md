@@ -93,6 +93,38 @@ You can call this sproc in your JavaScript code:
 await sqldb.callAsync('insert_data', [1, 2]);
 ```
 
+### Zod validation
+
+For increased safety and confidence, you can describe the shape of data you expect from the database with a [Zod](https://zod.dev/) schema. You can then provide this schema when making a query, and the data returned from the database will be parsed with that schema.
+
+```ts
+import { z } from 'zod';
+import { loadSqlEquiv, queryValidatedRows } from '@prairielearn/postgres';
+
+const sql = loadSqlEquiv(import.meta.url);
+
+const User = z.object({
+  name: z.string(),
+  email: z.string(),
+  age: z.number(),
+});
+
+const users = queryValidatedOneRow(sql.select_user, { user_id: 1 }, User);
+console.log(users[0].name);
+```
+
+As with the non-validated query functions, there are several variants available:
+
+- `queryValidatedRows`
+- `queryValidatedOneRow`
+- `queryValidatedZeroOrOneRow`
+- `queryValidatedSingleColumnRows`
+- `queryValidatedSingleColumnOneRow`
+- `queryValidatedSingleColumnZeroOrOneRow`
+- `callValidatedRows`
+- `callValidatedOneRow`
+- `callValidatedZeroOrOneRow`
+
 ### Transactions
 
 To use transactions, wrap your queries with the `runInTransaction` function:

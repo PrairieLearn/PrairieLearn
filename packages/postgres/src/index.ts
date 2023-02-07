@@ -1,3 +1,5 @@
-export { loadSql, loadSqlEquiv } from './loader';
-export * from './pool';
 export { PoolClient } from 'pg';
+
+export { loadSql, loadSqlEquiv } from './loader';
+export { PostgresPool } from './pool';
+export * from './default-pool';
