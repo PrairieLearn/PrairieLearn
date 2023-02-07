@@ -107,7 +107,6 @@ def test_set_score_data(
     score_3: float,
     expected_score: float,
 ) -> None:
-
     question_data["partial_scores"] = {
         "p1": {"score": score_1, "weight": 2},
         "p2": {"score": score_2, "weight": 4},
@@ -234,7 +233,6 @@ def test_grade_answer_parametrized_correct(
     weight: int,
     expected_grade: bool,
 ) -> None:
-
     question_data["submitted_answers"] = {question_name: student_answer}
 
     good_feedback = "you did good"

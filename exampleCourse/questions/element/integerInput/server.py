@@ -2,7 +2,6 @@ import random
 
 
 def generate(data):
-
     # Simulate values
     a = random.randint(2, 10)
     b = random.randint(2, 10)

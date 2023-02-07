@@ -2,7 +2,6 @@ import random
 
 
 def generate(data):
-
     height_canvas = 400
     data["params"]["height_canvas"] = height_canvas
 

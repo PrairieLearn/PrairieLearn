@@ -3,8 +3,7 @@ const express = require('express');
 const router = express.Router();
 const async = require('async');
 const error = require('../../prairielib/lib/error');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 const fs = require('fs-extra');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
@@ -27,9 +26,9 @@ const modelist = require('ace-code/src/ext/modelist');
 const { decodePath } = require('../../lib/uri-util');
 const chunks = require('../../lib/chunks');
 const { idsEqual } = require('../../lib/id');
-const { getPaths } = require('../../lib/instructorFiles');
+const { contains, getPaths } = require('../../lib/instructorFiles');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/*', (req, res, next) => {
   if (!res.locals.authz_data.has_course_permission_edit) {
@@ -88,7 +87,7 @@ router.get('/*', (req, res, next) => {
   debug(
     `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`
   );
-  if (relPath.split(path.sep)[0] === '..' || path.isAbsolute(relPath)) {
+  if (!contains(fileEdit.coursePath, fullPath)) {
     return next(
       error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
         locals: res.locals,
@@ -253,7 +252,7 @@ router.post('/*', (req, res, next) => {
   debug(
     `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`
   );
-  if (relPath.split(path.sep)[0] === '..' || path.isAbsolute(relPath)) {
+  if (!contains(fileEdit.coursePath, fullPath)) {
     return next(
       error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
         locals: res.locals,

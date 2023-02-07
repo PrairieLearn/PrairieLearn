@@ -2,7 +2,6 @@ import random
 
 
 def generate(data):
-
     a = random.randint(1, 10)
     data["params"]["a"] = a
 
