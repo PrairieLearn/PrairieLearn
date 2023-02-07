@@ -1,4 +1,4 @@
-const ERR = require('async-stacktrace');
+const asyncHandler = require('express-async-handler');
 const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
@@ -6,34 +6,40 @@ const router = express.Router();
 const error = require('../../prairielib/error');
 const sqldb = require('@prairielearn/postgres');
 
+const { AdministratorAdmins } = require('./administratorAdmins.html');
+
 const sql = sqldb.loadSqlEquiv(__filename);
 
-router.get('/', (req, res, next) => {
-  sqldb.queryOneRow(sql.select, [], (err, result) => {
-    if (ERR(err, next)) return;
-
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    const result = await sqldb.queryOneRowAsync(sql.select, []);
     _.assign(res.locals, result.rows[0]);
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  });
-});
+    res.send(AdministratorAdmins({ resLocals: res.locals }));
+  })
+);
 
-router.post('/', (req, res, next) => {
-  if (!res.locals.is_administrator) return next(new Error('Insufficient permissions'));
-  if (req.body.__action === 'administrators_insert_by_user_uid') {
-    let params = [req.body.uid, res.locals.authn_user.user_id];
-    sqldb.call('administrators_insert_by_user_uid', params, (err, _result) => {
-      if (ERR(err, next)) return;
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.is_administrator) throw new Error('Insufficient permissions');
+
+    if (req.body.__action === 'administrators_insert_by_user_uid') {
+      await sqldb.callAsync('administrators_insert_by_user_uid', [
+        req.body.uid,
+        res.locals.authn_user.user_id,
+      ]);
       res.redirect(req.originalUrl);
-    });
-  } else if (req.body.__action === 'administrators_delete_by_user_id') {
-    let params = [req.body.user_id, res.locals.authn_user.user_id];
-    sqldb.call('administrators_delete_by_user_id', params, (err, _result) => {
-      if (ERR(err, next)) return;
+    } else if (req.body.__action === 'administrators_delete_by_user_id') {
+      await sqldb.callAsync('administrators_delete_by_user_id', [
+        req.body.user_id,
+        res.locals.authn_user.user_id,
+      ]);
       res.redirect(req.originalUrl);
-    });
-  } else {
-    return next(error.make(400, 'unknown __action', { locals: res.locals, body: req.body }));
-  }
-});
+    } else {
+      throw error.make(400, 'unknown __action', { locals: res.locals, body: req.body });
+    }
+  })
+);
 
 module.exports = router;
