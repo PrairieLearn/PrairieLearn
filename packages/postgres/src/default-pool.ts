@@ -49,6 +49,18 @@ export const callWithClientOneRowAsync = defaultPool.callWithClientOneRowAsync.b
 export const callWithClientZeroOrOneRow = defaultPool.callWithClientZeroOrOneRow.bind(defaultPool);
 export const callWithClientZeroOrOneRowAsync =
   defaultPool.callWithClientZeroOrOneRowAsync.bind(defaultPool);
+export const queryValidatedRows = defaultPool.queryValidatedRows.bind(defaultPool);
+export const queryValidatedOneRow = defaultPool.queryValidatedOneRow.bind(defaultPool);
+export const queryValidatedZeroOrOneRow = defaultPool.queryValidatedZeroOrOneRow.bind(defaultPool);
+export const queryValidatedSingleColumnRows =
+  defaultPool.queryValidatedSingleColumnRows.bind(defaultPool);
+export const queryValidatedSingleColumnOneRow =
+  defaultPool.queryValidatedSingleColumnOneRow.bind(defaultPool);
+export const queryValidatedSingleColumnZeroOrOneRow =
+  defaultPool.queryValidatedSingleColumnZeroOrOneRow.bind(defaultPool);
+export const callValidatedRows = defaultPool.callValidatedRows.bind(defaultPool);
+export const callValidatedOneRow = defaultPool.callValidatedOneRow.bind(defaultPool);
+export const callValidatedZeroOrOneRow = defaultPool.callValidatedZeroOrOneRow.bind(defaultPool);
 export const setSearchSchema = defaultPool.setSearchSchema.bind(defaultPool);
 export const getSearchSchema = defaultPool.getSearchSchema.bind(defaultPool);
 export const setRandomSearchSchema = defaultPool.setRandomSearchSchema.bind(defaultPool);
