@@ -164,10 +164,11 @@ router.get(
       if (new_set.uids.length) res.locals.exception_sets.push(new_set);
     });
 
-    res.locals.exception_sets.forEach((set) => {
-      set.rules.sort((rule1, rule2) => rule1.start_date_raw - rule2.start_date_raw);
-    });
-    general_rules.sort((rule1, rule2) => rule1.start_date_raw - rule2.start_date_raw);
+    const rule_sort_fn = (rule1, rule2) =>
+      rule1.mode.localeCompare(rule2.mode) || rule1.start_date_raw - rule2.start_date_raw;
+
+    res.locals.exception_sets.forEach((set) => set.rules.sort(rule_sort_fn));
+    general_rules.sort(rule_sort_fn);
 
     res.locals.general_rules = { general_rules: true, rules: general_rules };
 
