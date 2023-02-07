@@ -1,13 +1,12 @@
 const asyncHandler = require('express-async-handler');
 const _ = require('lodash');
 const express = require('express');
-const router = express.Router();
-
-const error = require('../../prairielib/error');
 const sqldb = require('@prairielearn/postgres');
 
+const error = require('../../prairielib/error');
 const { AdministratorAdmins } = require('./administratorAdmins.html');
 
+const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get(
