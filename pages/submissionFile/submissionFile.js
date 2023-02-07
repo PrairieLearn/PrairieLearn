@@ -8,7 +8,7 @@ const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 const router = express.Router({ mergeParams: true });
 
-const MEDIA_PREFIXES = ['image/', 'audio/', 'video/'];
+const MEDIA_PREFIXES = ['image/', 'audio/', 'video/', 'application/pdf'];
 
 /**
  * Guesses the mime type for a file based on its name and contents.
