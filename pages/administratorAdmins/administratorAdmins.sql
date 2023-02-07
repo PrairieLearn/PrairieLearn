@@ -27,6 +27,3 @@ SELECT
 FROM
     select_administrator_users,
     select_question_render_cache_stats;
-
--- BLOCK select_course
-SELECT * FROM pl_courses WHERE id = $course_id;

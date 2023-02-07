@@ -6,8 +6,6 @@ const router = express.Router();
 const error = require('../../prairielib/error');
 const sqldb = require('@prairielearn/postgres');
 
-const cache = require('../../lib/cache');
-
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', (req, res, next) => {
@@ -30,11 +28,6 @@ router.post('/', (req, res, next) => {
   } else if (req.body.__action === 'administrators_delete_by_user_id') {
     let params = [req.body.user_id, res.locals.authn_user.user_id];
     sqldb.call('administrators_delete_by_user_id', params, (err, _result) => {
-      if (ERR(err, next)) return;
-      res.redirect(req.originalUrl);
-    });
-  } else if (req.body.__action === 'invalidate_question_cache') {
-    cache.reset((err) => {
       if (ERR(err, next)) return;
       res.redirect(req.originalUrl);
     });
