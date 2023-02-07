@@ -3,11 +3,9 @@ const express = require('express');
 const asyncHandler = require('express-async-handler');
 const { isBinaryFile } = require('isbinaryfile');
 const mime = require('mime');
+const sqldb = require('@prairielearn/postgres');
 
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
-
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 const router = express.Router({ mergeParams: true });
 
 const MEDIA_PREFIXES = ['image/', 'audio/', 'video/'];
