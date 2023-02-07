@@ -1,16 +1,19 @@
-var ERR = require('async-stacktrace');
-const async = require('async');
+//var ERR = require('async-stacktrace');
+//const async = require('async');
+const asyncHandler = require('express-async-handler');
 
 var config = require('../lib/config');
 var csrf = require('../lib/csrf');
 var sqldb = require('../prairielib/lib/sql-db');
 var sqlLoader = require('../prairielib/lib/sql-loader');
 
+const authnLib = require('../lib/authn');
+
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 const UUID_REGEXP = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 
-module.exports = function (req, res, next) {
+module.exports = asyncHandler(async (req, res, next) => {
   res.locals.is_administrator = false;
   res.locals.news_item_notification_count = 0;
 
@@ -44,46 +47,24 @@ module.exports = function (req, res, next) {
 
     const uuid = data.uuid;
 
-    const uid = `loadtest+${uuid}@prairielearn.com`;
-    const uin = `loadtest+${uuid}`;
-    const name = `Load Test ${uuid}`;
-    const authnProviderName = 'LoadTest';
+    let authnParams = {
+      authnUid: `loadtest+${uuid}@prairielearn.com`,
+      authnUin: `loadtest+${uuid}`,
+      authnName: `Load Test ${uuid}`,
+    };
 
-    async.series(
-      [
-        async () => {
-          const result = await sqldb.callAsync('users_select_or_insert', [
-            uid,
-            name,
-            uin,
-            authnProviderName,
-          ]);
-          const userResult = await sqldb.queryOneRowAsync(sql.select_user, {
-            user_id: result.rows[0].user_id,
-          });
-          res.locals.authn_user = userResult.rows[0].user;
-          res.locals.authn_institution = userResult.rows[0].institution;
-          res.locals.authn_provider_name = 'LoadTest';
-          res.locals.authn_is_administrator = userResult.rows[0].is_administrator;
-          checkAdministratorAccess(req, res);
+    await authnLib.load_user_profile(req, res, authnParams, 'LoadTest', false);
 
-          // Enroll the load test user in the example course.
-          await sqldb.queryAsync(sql.enroll_user_in_example_course, {
-            user_id: result.rows[0].user_id,
-          });
-        },
-      ],
-      (err) => {
-        if (ERR(err, next)) return;
-        return next();
-      }
-    );
+    // Enroll the load test user in the example course.
+    await sqldb.queryAsync(sql.enroll_user_in_example_course, {
+      user_id: res.locals.authn_user.user_id,
+    });
 
-    return;
+    return next();
   }
 
-  // bypass auth for local /pl/ serving
-  // keeping for automated testing, see pages/authLoginDev for another way to dev signin
+  // Allow auth to be bypassed for local dev mode; also used for tests.
+  // See `pages/authLoginDev` for cookie-based authentication in dev mode.
   if (config.authType === 'none') {
     var authUid = config.authUid;
     var authName = config.authName;
@@ -102,29 +83,9 @@ module.exports = function (req, res, next) {
       authUin = '100000000';
     }
 
-    let params = [authUid, authName, authUin, 'dev'];
-    sqldb.call('users_select_or_insert', params, (err, result) => {
-      if (ERR(err, next)) return;
-
-      let params = {
-        user_id: result.rows[0].user_id,
-      };
-      sqldb.query(sql.select_user, params, (err, result) => {
-        if (ERR(err, next)) return;
-        if (result.rowCount === 0) {
-          return next(new Error('user not found with user_id ' + authnData.user_id));
-        }
-        res.locals.authn_user = result.rows[0].user;
-        res.locals.authn_institution = result.rows[0].institution;
-        res.locals.authn_provider_name = 'Local';
-        res.locals.authn_is_administrator = result.rows[0].is_administrator;
-        res.locals.authn_is_instructor = result.rows[0].is_instructor;
-        checkAdministratorAccess(req, res);
-        res.locals.news_item_notification_count = result.rows[0].news_item_notification_count;
-        next();
-      });
-    });
-    return;
+    let authnParams = { authUid, authName, authUin };
+    await authnLib.load_user_profile(req, res, authnParams, 'dev', false);
+    return next();
   }
 
   var authnData = null;
@@ -159,42 +120,10 @@ module.exports = function (req, res, next) {
     }
   }
 
-  let params = {
+  let authnParams = {
     user_id: authnData.user_id,
   };
-  sqldb.query(sql.select_user, params, (err, result) => {
-    if (ERR(err, next)) return;
-    if (result.rowCount === 0) {
-      return next(new Error('user not found with user_id ' + authnData.user_id));
-    }
-    res.locals.authn_user = result.rows[0].user;
-    res.locals.authn_institution = result.rows[0].institution;
-    res.locals.authn_provider_name = authnData.authn_provider_name;
-    res.locals.authn_is_administrator = result.rows[0].is_administrator;
-    res.locals.authn_is_instructor = result.rows[0].is_instructor;
-    checkAdministratorAccess(req, res);
-    res.locals.news_item_notification_count = result.rows[0].news_item_notification_count;
+  await authnLib.load_user_profile(req, res, authnParams, authnData.authn_provider_name, true);
 
-    // reset cookie timeout (#2268)
-    var tokenData = {
-      user_id: authnData.user_id,
-      authn_provider_name: authnData.authn_provider_name || null,
-    };
-    var pl_authn = csrf.generateToken(tokenData, config.secretKey);
-    res.cookie('pl_authn', pl_authn, {
-      maxAge: config.authnCookieMaxAgeMilliseconds,
-      httpOnly: true,
-      secure: true,
-    });
-
-    next();
-  });
-};
-
-function checkAdministratorAccess(req, res) {
-  const defaultAccessType = res.locals.devMode ? 'active' : 'inactive';
-  const accessType = req.cookies.pl_access_as_administrator || defaultAccessType;
-  res.locals.access_as_administrator = accessType === 'active';
-  res.locals.is_administrator =
-    res.locals.authn_is_administrator && res.locals.access_as_administrator;
-}
+  return next();
+});

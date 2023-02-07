@@ -1,13 +1,12 @@
-const ERR = require('async-stacktrace');
-const express = require('express');
+const { Router } = require('express');
+const asyncHandler = require('express-async-handler');
 
 const config = require('../../lib/config');
-const csrf = require('../../lib/csrf');
-const sqldb = require('../../prairielib/lib/sql-db');
+const authnLib = require('../../lib/authn');
 
-var router = express.Router();
+var router = Router();
 
-router.get('/', (req, res, next) => {
+router.get('/', asyncHandler(async (req, res, next) => {
   if (!config.devMode) {
     return next(new Error('devMode logins are not enabled'));
   }
@@ -16,40 +15,16 @@ router.get('/', (req, res, next) => {
   var authName = config.authName;
   var authUin = config.authUin;
 
-  // We allow unit tests to override the user. Unit tests may also override the req_date
-  // (middlewares/date.js) and the req_mode (middlewares/authzCourseOrInstance.js).
+  let authnParams = { authUid, authName, authUin };
 
-  if (req.cookies.pl_test_user === 'test_student') {
-    authUid = 'student@illinois.edu';
-    authName = 'Student User';
-    authUin = '000000001';
-  } else if (req.cookies.pl_test_user === 'test_instructor') {
-    authUid = 'instructor@illinois.edu';
-    authName = 'Instructor User';
-    authUin = '100000000';
+  await authnLib.load_user_profile(req, res, authnParams, 'dev', true);
+
+  var redirUrl = res.locals.homeUrl;
+  if ('preAuthUrl' in req.cookies) {
+    redirUrl = req.cookies.preAuthUrl;
+    res.clearCookie('preAuthUrl');
   }
-
-  let params = [authUid, authName, authUin, 'dev'];
-  sqldb.call('users_select_or_insert', params, (err, result) => {
-    if (ERR(err, next)) return;
-
-    var tokenData = {
-      user_id: result.rows[0].user_id,
-      authn_provider_name: 'devMode',
-    };
-    var pl_authn = csrf.generateToken(tokenData, config.secretKey);
-    res.cookie('pl_authn', pl_authn, {
-      maxAge: config.authnCookieMaxAgeMilliseconds,
-      httpOnly: true,
-      secure: true,
-    });
-    var redirUrl = res.locals.homeUrl;
-    if ('preAuthUrl' in req.cookies) {
-      redirUrl = req.cookies.preAuthUrl;
-      res.clearCookie('preAuthUrl');
-    }
-    res.redirect(redirUrl);
-  });
-});
+  res.redirect(redirUrl);
+}));
 
 module.exports = router;
