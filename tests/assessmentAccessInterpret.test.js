@@ -5,9 +5,9 @@ const fetch = require('node-fetch').default;
 
 const config = require('../lib/config');
 const helperServer = require('./helperServer');
-const sqlLoader = require('../prairielib/lib/sql-loader');
-const sqldb = require('../prairielib/lib/sql-db');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+
+const sqldb = require('@prairielearn/postgres');
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
