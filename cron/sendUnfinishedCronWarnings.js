@@ -2,10 +2,9 @@ const { callbackify } = require('util');
 
 const logger = require('../lib/logger');
 const opsbot = require('../lib/opsbot');
-const sqldb = require('../prairielib/lib/sql-db');
-const sqlLoader = require('../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 module.exports = {};
 

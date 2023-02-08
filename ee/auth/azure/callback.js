@@ -1,11 +1,10 @@
-var ERR = require('async-stacktrace');
-var passport = require('passport');
-var express = require('express');
-var router = express.Router();
+const ERR = require('async-stacktrace');
+const passport = require('passport');
+const express = require('express');
+const router = express.Router();
 const asyncHandler = require('express-async-handler');
 
 const authnLib = require('../../../lib/authn');
-
 
 router.post('/', asyncHandler(async (req, res, next) => {
   const authData = {

@@ -8,9 +8,8 @@ const { step } = require('mocha-steps');
 const config = require('../lib/config');
 const fetch = require('node-fetch').default;
 const helperServer = require('./helperServer');
-const sqlLoader = require('../prairielib/lib/sql-loader');
-const sqldb = require('../prairielib/lib/sql-db');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sqldb = require('@prairielearn/postgres');
+const sql = sqldb.loadSqlEquiv(__filename);
 const { setUser, parseInstanceQuestionId, saveOrGrade } = require('./helperClient');
 
 const siteUrl = 'http://localhost:' + config.serverPort;

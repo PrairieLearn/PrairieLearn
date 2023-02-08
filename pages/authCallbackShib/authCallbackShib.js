@@ -6,7 +6,7 @@ const asyncHandler = require('express-async-handler');
 const authnLib = require('../../lib/authn');
 var config = require('../../lib/config');
 var csrf = require('../../lib/csrf');
-var sqldb = require('../../prairielib/lib/sql-db');
+var sqldb = require('@prairielearn/postgres');
 
 router.get('/', asyncHandler(async (req, res, next) => {
   if (!config.hasShib) return next(new Error('Shibboleth login is not enabled'));

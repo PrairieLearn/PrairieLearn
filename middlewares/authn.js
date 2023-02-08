@@ -1,13 +1,11 @@
 const asyncHandler = require('express-async-handler');
 
-var config = require('../lib/config');
-var csrf = require('../lib/csrf');
-var sqldb = require('../prairielib/lib/sql-db');
-var sqlLoader = require('../prairielib/lib/sql-loader');
-
+const config = require('../lib/config');
+const csrf = require('../lib/csrf');
+const sqldb = require('@prairielearn/postgres');
 const authnLib = require('../lib/authn');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const UUID_REGEXP = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
 

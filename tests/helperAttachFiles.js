@@ -2,9 +2,8 @@ const assert = require('chai').assert;
 const requestp = require('request-promise-native');
 const cheerio = require('cheerio');
 
-const sqldb = require('../prairielib/lib/sql-db');
-const sqlLoader = require('../prairielib/lib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sqldb = require('@prairielearn/postgres');
+const sql = sqldb.loadSqlEquiv(__filename);
 
 let page, elemList;
 
