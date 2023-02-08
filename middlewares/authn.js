@@ -1,5 +1,3 @@
-//var ERR = require('async-stacktrace');
-//const async = require('async');
 const asyncHandler = require('express-async-handler');
 
 var config = require('../lib/config');
@@ -53,7 +51,11 @@ module.exports = asyncHandler(async (req, res, next) => {
       authnName: `Load Test ${uuid}`,
     };
 
-    await authnLib.load_user_profile(req, res, authnParams, 'LoadTest', false);
+    await authnLib.load_user_profile(req, res, authnParams, 'LoadTest', {
+      pl_authn_cookie: false,
+      redirect: false,
+      locals_authn: true,
+    });
 
     // Enroll the load test user in the example course.
     await sqldb.queryAsync(sql.enroll_user_in_example_course, {
@@ -66,25 +68,29 @@ module.exports = asyncHandler(async (req, res, next) => {
   // Allow auth to be bypassed for local dev mode; also used for tests.
   // See `pages/authLoginDev` for cookie-based authentication in dev mode.
   if (config.authType === 'none') {
-    var authUid = config.authUid;
-    var authName = config.authName;
-    var authUin = config.authUin;
+    var authnUid = config.authUid;
+    var authnName = config.authName;
+    var authnUin = config.authUin;
 
     // We allow unit tests to override the user. Unit tests may also override the req_date
     // (middlewares/date.js) and the req_mode (middlewares/authzCourseOrInstance.js).
 
     if (req.cookies.pl_test_user === 'test_student') {
-      authUid = 'student@illinois.edu';
-      authName = 'Student User';
-      authUin = '000000001';
+      authnUid = 'student@illinois.edu';
+      authnName = 'Student User';
+      authnUin = '000000001';
     } else if (req.cookies.pl_test_user === 'test_instructor') {
-      authUid = 'instructor@illinois.edu';
-      authName = 'Instructor User';
-      authUin = '100000000';
+      authnUid = 'instructor@illinois.edu';
+      authnName = 'Instructor User';
+      authnUin = '100000000';
     }
 
-    let authnParams = { authUid, authName, authUin };
-    await authnLib.load_user_profile(req, res, authnParams, 'dev', false);
+    let authnParams = { authnUid, authnName, authnUin };
+    await authnLib.load_user_profile(req, res, authnParams, 'dev', {
+      redirect: false,
+      pl_authn_cookie: false,
+      locals_authn: true,
+    });
     return next();
   }
 
@@ -123,7 +129,12 @@ module.exports = asyncHandler(async (req, res, next) => {
   let authnParams = {
     user_id: authnData.user_id,
   };
-  await authnLib.load_user_profile(req, res, authnParams, authnData.authn_provider_name, true);
+  await authnLib.load_user_profile(req, res, authnParams, authnData.authn_provider_name, {
+    redirect: false,
+    // Cookie is being set here again to reset the cookie timeout (#2268)
+    pl_authn_cookie: true,
+    locals_authn: true,
+  });
 
   return next();
 });

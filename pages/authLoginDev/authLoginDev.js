@@ -11,20 +11,16 @@ router.get('/', asyncHandler(async (req, res, next) => {
     return next(new Error('devMode logins are not enabled'));
   }
 
-  var authUid = config.authUid;
-  var authName = config.authName;
-  var authUin = config.authUin;
+  var authnUid = config.authUid;
+  var authnName = config.authName;
+  var authnUin = config.authUin;
 
-  let authnParams = { authUid, authName, authUin };
+  let authnParams = { authnUid, authnName, authnUin };
 
-  await authnLib.load_user_profile(req, res, authnParams, 'dev', true);
-
-  var redirUrl = res.locals.homeUrl;
-  if ('preAuthUrl' in req.cookies) {
-    redirUrl = req.cookies.preAuthUrl;
-    res.clearCookie('preAuthUrl');
-  }
-  res.redirect(redirUrl);
+  await authnLib.load_user_profile(req, res, authnParams, 'dev', {
+    redirect: true,
+    pl_authn_cookie: true,
+  });
 }));
 
 module.exports = router;

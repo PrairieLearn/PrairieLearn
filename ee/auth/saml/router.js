@@ -5,9 +5,7 @@ const { Router } = require('express');
 const passport = require('passport');
 const util = require('util');
 
-const sqldb = require('../../../prairielib/lib/sql-db');
-const config = require('../../../lib/config');
-const csrf = require('../../../lib/csrf');
+const authnLib = require('../../../lib/authn');
 
 const { strategy } = require('./index');
 const { SamlTest } = require('./router.html');
@@ -52,18 +50,18 @@ router.post(
 
     // Read the appropriate attributes.
     // @ts-expect-error `attributes` is not defined on the type.
-    const authUid = req.user.attributes[uidAttribute];
+    const authnUid = req.user.attributes[uidAttribute];
     // @ts-expect-error `attributes` is not defined on the type.
-    const authUin = req.user.attributes[uinAttribute];
+    const authnUin = req.user.attributes[uinAttribute];
     // @ts-expect-error `attributes` is not defined on the type.
-    const authName = req.user.attributes[nameAttribute];
+    const authnName = req.user.attributes[nameAttribute];
 
     if (req.body.RelayState === 'test') {
       res.send(
         SamlTest({
-          uid: authUid,
-          uin: authUin,
-          name: authName,
+          uid: authnUid,
+          uin: authnUin,
+          name: authnName,
           uidAttribute,
           uinAttribute,
           nameAttribute,
@@ -79,29 +77,20 @@ router.post(
     if (!uidAttribute || !uinAttribute || !nameAttribute) {
       throw new Error('Missing one or more SAML attribute mappings');
     }
-    if (!authUid || !authUin || !authName) {
+    if (!authnUid || !authnUin || !authnName) {
       throw new Error('Missing one or more SAML attributes');
     }
 
-    const params = [authUid, authName, authUin, 'SAML', institutionId];
-    const userRes = await sqldb.callAsync('users_select_or_insert', params);
-    const tokenData = {
-      user_id: userRes.rows[0].user_id,
-      authn_provider_name: 'SAML',
+    let authnParams = {
+      authnUid,
+      authnName,
+      authnUin,
     };
-    const pl_authn = csrf.generateToken(tokenData, config.secretKey);
-    res.cookie('pl_authn', pl_authn, {
-      maxAge: config.authnCookieMaxAgeMilliseconds,
-      httpOnly: true,
-      secure: true,
-    });
 
-    let redirUrl = res.locals.homeUrl;
-    if ('preAuthUrl' in req.cookies) {
-      redirUrl = req.cookies.preAuthUrl;
-      res.clearCookie('preAuthUrl');
-    }
-    res.redirect(redirUrl);
+    await authnLib.load_user_profile(req, res, authnParams, 'SAML', {
+      pl_authn_cookie: true,
+      redirect: true,
+    });
   })
 );
 

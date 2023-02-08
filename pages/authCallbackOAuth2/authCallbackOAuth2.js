@@ -3,16 +3,16 @@ const assert = require('assert');
 const Sentry = require('@prairielearn/sentry');
 const express = require('express');
 const router = express.Router();
+const asyncHandler = require('express-async-handler');
 
+const authnLib = require('../../lib/authn');
 const logger = require('../../lib/logger');
 const config = require('../../lib/config');
-const csrf = require('../../lib/csrf');
-const sqldb = require('../../prairielib/lib/sql-db');
 
 const { google } = require('googleapis');
 const OAuth2 = google.auth.OAuth2;
 
-router.get('/', function (req, res, next) {
+router.get('/', asyncHandler(async (req, res, next) => {
   if (!config.hasOauth) return next(new Error('Google login is not enabled'));
   const code = req.query.code;
   if (code == null) {
@@ -31,7 +31,7 @@ router.get('/', function (req, res, next) {
     return;
   }
   logger.verbose('Got Google auth with code: ' + code);
-  oauth2Client.getToken(code, function (err, tokens) {
+  oauth2Client.getToken(code, async function (err, tokens) {
     if (err?.response) {
       // This is probably a detailed error from the Google API client. We'll
       // pick off the useful bits and attach them to the Sentry scope so that
@@ -59,32 +59,16 @@ router.get('/', function (req, res, next) {
       ERR(err, next);
       return;
     }
-    const params = [
-      identity.email, // uid
-      identity.name || identity.email, // name (use email if name is not present)
-      identity.sub, // uin
-      'Google', // provider
-    ];
-    sqldb.call('users_select_or_insert', params, (err, result) => {
-      if (ERR(err, next)) return;
-      const tokenData = {
-        user_id: result.rows[0].user_id,
-        authn_provider_name: 'Google',
-      };
-      const pl_authn = csrf.generateToken(tokenData, config.secretKey);
-      res.cookie('pl_authn', pl_authn, {
-        maxAge: config.authnCookieMaxAgeMilliseconds,
-        httpOnly: true,
-        secure: true,
-      });
-      let redirUrl = res.locals.homeUrl;
-      if ('preAuthUrl' in req.cookies) {
-        redirUrl = req.cookies.preAuthUrl;
-        res.clearCookie('preAuthUrl');
-      }
-      res.redirect(redirUrl);
+    let authnParams = {
+      authnUid: identity.email,
+      authnName: identity.name || identity.email,
+      authnUin: identity.sub,
+    };
+    await authnLib.load_user_profile(req, res, authnParams, 'Google', {
+      pl_authn_cookie: true,
+      redirect: true,
     });
   });
-});
+}));
 
 module.exports = router;

@@ -1,46 +1,37 @@
 var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
+const asyncHandler = require('express-async-handler');
 
+const authnLib = require('../../lib/authn');
 var config = require('../../lib/config');
 var csrf = require('../../lib/csrf');
 var sqldb = require('../../prairielib/lib/sql-db');
 
-router.get('/', function (req, res, next) {
+router.get('/', asyncHandler(async (req, res, next) => {
   if (!config.hasShib) return next(new Error('Shibboleth login is not enabled'));
-  var authUid = null;
-  var authName = null;
-  var authUin = null;
-  if (req.headers['x-trust-auth-uid']) authUid = req.headers['x-trust-auth-uid'];
-  if (req.headers['x-trust-auth-name']) authName = req.headers['x-trust-auth-name'];
-  if (req.headers['x-trust-auth-uin']) authUin = req.headers['x-trust-auth-uin'];
-  if (!authUid) return next(new Error('No authUid'));
+  var authnUid = null;
+  var authnName = null;
+  var authnUin = null;
+  if (req.headers['x-trust-auth-uid']) authnUid = req.headers['x-trust-auth-uid'];
+  if (req.headers['x-trust-auth-name']) authnName = req.headers['x-trust-auth-name'];
+  if (req.headers['x-trust-auth-uin']) authnUin = req.headers['x-trust-auth-uin'];
+  if (!authnUid) return next(new Error('No authUid'));
 
   // catch bad Shibboleth data
   const authError =
     'Your account is not registered for this service. Please contact your course instructor or IT support.';
-  if (authUid === '(null)') return next(new Error(authError));
+  if (authnUid === '(null)') return next(new Error(authError));
 
-  var params = [authUid, authName, authUin, 'Shibboleth'];
-  sqldb.call('users_select_or_insert', params, (err, result) => {
-    if (ERR(err, next)) return;
-    var tokenData = {
-      user_id: result.rows[0].user_id,
-      authn_provider_name: 'Shibboleth',
-    };
-    var pl_authn = csrf.generateToken(tokenData, config.secretKey);
-    res.cookie('pl_authn', pl_authn, {
-      maxAge: config.authnCookieMaxAgeMilliseconds,
-      httpOnly: true,
-      secure: true,
-    });
-    var redirUrl = res.locals.homeUrl;
-    if ('preAuthUrl' in req.cookies) {
-      redirUrl = req.cookies.preAuthUrl;
-      res.clearCookie('preAuthUrl');
-    }
-    res.redirect(redirUrl);
+  let authnParams = {
+    authnUid,
+    authnName,
+    authnUin,
+  };
+  await authnLib.load_user_profile(req, res, authnParams, 'Shibboleth', {
+    pl_authn_cookie: true,
+    redirect: true,
   });
-});
+}));
 
 module.exports = router;
