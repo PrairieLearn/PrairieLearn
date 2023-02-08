@@ -6,21 +6,24 @@ const authnLib = require('../../lib/authn');
 
 var router = Router();
 
-router.get('/', asyncHandler(async (req, res, next) => {
-  if (!config.devMode) {
-    return next(new Error('devMode logins are not enabled'));
-  }
+router.get(
+  '/',
+  asyncHandler(async (req, res, next) => {
+    if (!config.devMode) {
+      return next(new Error('devMode logins are not enabled'));
+    }
 
-  var authnUid = config.authUid;
-  var authnName = config.authName;
-  var authnUin = config.authUin;
+    var authnUid = config.authUid;
+    var authnName = config.authName;
+    var authnUin = config.authUin;
 
-  let authnParams = { authnUid, authnName, authnUin };
+    let authnParams = { authnUid, authnName, authnUin };
 
-  await authnLib.load_user_profile(req, res, authnParams, 'dev', {
-    redirect: true,
-    pl_authn_cookie: true,
-  });
-}));
+    await authnLib.load_user_profile(req, res, authnParams, 'dev', {
+      redirect: true,
+      pl_authn_cookie: true,
+    });
+  })
+);
 
 module.exports = router;
