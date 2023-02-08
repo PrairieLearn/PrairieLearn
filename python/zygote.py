@@ -21,8 +21,10 @@ import json
 import os
 import signal
 import sys
-from inspect import signature
 import time
+from inspect import signature
+
+import question_phases
 
 saved_path = copy.copy(sys.path)
 
@@ -58,7 +60,6 @@ import nltk
 import numpy
 import prairielearn
 import sklearn
-import phases
 
 matplotlib.use("PDF")
 
@@ -155,7 +156,7 @@ def worker_loop():
                 context = args[1]
 
                 start = time.time()
-                rendered_html, rendered_elements = phases.render(data, context)
+                rendered_html, rendered_elements = question_phases.render(data, context)
                 end = time.time()
                 print(f"rendered in {(end - start) * 1000}ms")
                 val = {

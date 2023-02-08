@@ -1,12 +1,11 @@
-from typing import Union, Set, Tuple
-import pathlib
-import os
 import copy
+import os
+import pathlib
 import sys
 import time
+from typing import Set, Tuple, Union
 
 import lxml.html
-
 from traverse import traverse_and_replace
 
 PYTHON_PATH = pathlib.Path(__file__).parent.parent.resolve()
