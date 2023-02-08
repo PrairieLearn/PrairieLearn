@@ -2,6 +2,10 @@
 // dependencies like `pg` and `express`.
 const opentelemetry = require('@prairielearn/opentelemetry');
 
+const Sentry = require('@prairielearn/sentry');
+require('@sentry/tracing');
+const { ProfilingIntegration } = require('@sentry/profiling-node');
+
 const ERR = require('async-stacktrace');
 const fs = require('fs');
 const path = require('path');
@@ -24,7 +28,6 @@ const multer = require('multer');
 const { filesize } = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const Sentry = require('@prairielearn/sentry');
 const compiledAssets = require('@prairielearn/compiled-assets');
 
 const logger = require('./lib/logger');
@@ -78,16 +81,18 @@ if ('h' in argv || 'help' in argv) {
 
 /**
  * Creates the express application and sets up all PrairieLearn routes.
- * @return {Express App} The express "app" object that was created.
+ * @param {import('express').Application} expressApp The express "app" object that was created.
+ * @return {import('express').Application} The express "app" object that was created.
  */
-module.exports.initExpress = function () {
-  const app = express();
+module.exports.initExpress = function (expressApp) {
+  const app = expressApp ?? express();
   app.set('views', path.join(__dirname, 'pages'));
   app.set('view engine', 'ejs');
   app.set('trust proxy', config.trustProxy);
 
   // This should come first so that we get instrumentation on all our requests.
   app.use(Sentry.Handlers.requestHandler());
+  app.use(Sentry.Handlers.tracingHandler());
 
   // Set res.locals variables first, so they will be available on
   // all pages including the error page (which we could jump to at
@@ -1723,8 +1728,11 @@ module.exports.initExpress = function () {
 /** @type {import('http').Server | import('https').Server} */
 var server;
 
-module.exports.startServer = async () => {
-  const app = module.exports.initExpress();
+/**
+ * @param {import('express').Application} app
+ */
+module.exports.startServer = async (app) => {
+  module.exports.initExpress(app);
 
   if (config.serverType === 'https') {
     const key = await fs.promises.readFile(config.sslKeyFile);
@@ -1799,6 +1807,7 @@ module.exports.insertDevUser = function (callback) {
 };
 
 if (config.startServer) {
+  const app = express();
   async.series(
     [
       async () => {
@@ -1827,6 +1836,12 @@ if (config.startServer) {
           await Sentry.init({
             dsn: config.sentryDsn,
             environment: config.sentryEnvironment,
+            integrations: [new ProfilingIntegration()],
+            // TODO: make configurable.
+            tracesSampleRate: 1.0,
+            // TODO: make configurable.
+            // This is relative to `tracesSampleRate`.
+            profilesSampleRate: 1.0,
             beforeSend: (event) => {
               // This will be necessary until we can consume the following change:
               // https://github.com/chimurai/http-proxy-middleware/pull/823
@@ -2019,7 +2034,7 @@ if (config.startServer) {
       },
       async () => {
         logger.verbose('Starting server...');
-        await module.exports.startServer();
+        await module.exports.startServer(app);
       },
       async () => socketServer.init(server),
       function (callback) {
