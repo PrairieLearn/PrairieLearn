@@ -14,23 +14,30 @@ def traverse_and_execute(
 ) -> list:
     elements = lxml.html.fragments_fromstring(html)
 
+    # Special case: just a string.
+    if len(elements) == 1 and isinstance(elements[0], str):
+        return elements
+
     # If there's leading text, the first element of the array will be a string.
     # We'll strip that off and add it back at the end, as we can't treat it
     # like an element.
-    result_elements = []
+    # TODO: update above comment.
     if isinstance(elements[0], str):
-        result_elements.append(elements[0])
         del elements[0]
 
-    if elements:
-        root_parent = elements[0].getparent()
-        children = root_parent.getchildren()
-        print("traversing into element", root_parent)
-        for element in children:
-            result = traverse_and_execute_impl(element, fn)
-            print("result", result)
+    root_parent = elements[0].getparent()
+    children = root_parent.getchildren()
+    print("traversing into element", root_parent)
+    for element in children:
+        result = traverse_and_execute_impl(element, fn)
+        print("result", result)
 
-        result_elements.extend(root_parent.getchildren())
+    print("root_parent", root_parent, lxml.html.tostring(root_parent))
+    print("root_parent.getchildren()", root_parent.getchildren())
+
+    result_elements = root_parent.getchildren()
+    if root_parent.text:
+        result_elements.insert(0, root_parent.text)
 
     print("result_elements", result_elements)
     return result_elements
@@ -100,11 +107,33 @@ def traverse_and_replace(
                     print("parent", lxml.html.tostring(parent))
                 del new_elements[0]
 
-            # Special case: 
-            if len(parent) == 1:
+            # Special case: our parent has only a single child (us) and the
+            # element we're removing has trailing text. In that case, we should
+            # reattach that text to the end of the last new element.
+            if len(parent) == 1 and element.tail is not None:
+                if len(new_elements) > 0:
+                    print("attaching tail")
+                    if new_elements[-1].tail:
+                        new_elements[-1].tail += element.tail
+                    else:
+                        new_elements[-1].tail = element.tail
+                else:
+                    print("attaching tail to parent")
+                    # Special case: the parent is the body element.
+                    if parent.tag == "body":
+                        if parent.text:
+                            parent.text += element.tail
+                        else:
+                            parent.text = element.tail
+                    else:
+                        if parent.tail:
+                            parent.tail += element.tail
+                        else:
+                            parent.tail = element.tail
+                print("parent", lxml.html.tostring(parent))
 
             parent.remove(element)
-            print('parent after removal', lxml.html.tostring(parent))
+            print("parent after removal", lxml.html.tostring(parent))
             print("iterating over elements", new_elements, type(new_elements))
             for index, new_element in enumerate(new_elements):
                 print("iteration", index, new_element)
