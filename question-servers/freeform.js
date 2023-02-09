@@ -111,8 +111,8 @@ module.exports = {
     } catch (err) {
       if (err && err.code === 'ENOENT') {
         // Directory doesn't exist, most likely a course with no elements.
-        // Proceed with an empty array.
-        return [];
+        // Proceed with an empty object.
+        return {};
       }
 
       throw err;
