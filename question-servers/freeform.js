@@ -506,7 +506,7 @@ module.exports = {
     err = checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test']);
     if (err) return err;
     // prettier-ignore
-    err = checkProp('feedback',              'object',  ['render', 'grade', 'test'],          ['grade', 'feedback']);
+    err = checkProp('feedback',              'object',  ['render', 'grade', 'test'],          ['grade', 'test']);
     if (err) return err;
     // prettier-ignore
     err = checkProp('editable',              'boolean', ['render'],                           []);
