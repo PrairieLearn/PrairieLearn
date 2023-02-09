@@ -48,13 +48,13 @@ def render(data: dict, context: RenderContext) -> Tuple[str, Set[str]]:
 
     def render_element(element: lxml.html.HtmlElement) -> Optional[str]:
         if element.tag not in elements:
-            return None
+            return element
 
         start = time.time()
         rendered_elements.add(element.tag)
 
         element_info = elements[element.tag]
-        element_path = CORE_ELEMENTS_PATH / element.tag
+        element_path = CORE_ELEMENTS_PATH / element_info["name"]
         element_controller = element_info["controller"]
         element_controller_path = element_path / element_controller
 
