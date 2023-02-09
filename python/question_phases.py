@@ -7,6 +7,7 @@ from typing import Dict, Optional, Set, Tuple, TypedDict
 
 import lxml.html
 from traverse import traverse_and_replace
+from check_data import check_data
 
 PYTHON_PATH = pathlib.Path(__file__).parent.parent.resolve()
 CORE_ELEMENTS_PATH = (PYTHON_PATH / "elements").resolve()
@@ -81,27 +82,31 @@ def render(data: dict, context: RenderContext) -> Tuple[str, Set[str]]:
         if "render" not in mod:
             return ""
 
-        data["extensions"] = element_extensions.get(element.tag, {})
-        data["client_files_element_url"] = (
+        # Make a deep copy of the data so that question/element code can't
+        # modify the source data.
+        data["extensions"] = copy.deepcopy(element_extensions.get(element.tag, {}))
+        data["options"]["client_files_element_url"] = (
             pathlib.Path(data["options"]["base_url"])
             / "elements"
-            / element.tag
+            / element_info["name"]
             / "clientFilesElement"
         ).as_posix()
-        data["client_files_course_url"] = {
+        data["options"]["client_files_extensions_url"] = {
             extension: (
                 pathlib.Path(data["options"]["base_url"])
                 / "elementExtensions"
-                / element.tag
+                / element_info["name"]
                 / extension
                 / "clientFilesExtension"
             ).as_posix()
             for extension in data["extensions"]
         }
 
+        old_data = copy.deepcopy(data)
+
         element_rendered_html = mod["render"](lxml.html.tostring(element), data)
 
-        del data["extensions"]
+        check_data(old_data, data, "render")
 
         end = time.time()
         delta = end - start
