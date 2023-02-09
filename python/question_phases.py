@@ -6,8 +6,8 @@ import time
 from typing import Dict, Optional, Set, Tuple, TypedDict
 
 import lxml.html
-from traverse import traverse_and_execute, traverse_and_replace
 from check_data import Phase, check_data
+from traverse import traverse_and_execute, traverse_and_replace
 
 PYTHON_PATH = pathlib.Path(__file__).parent.parent.resolve()
 CORE_ELEMENTS_PATH = (PYTHON_PATH / "elements").resolve()
