@@ -4,11 +4,12 @@ columns
     user_id: bigint not null
 
 indexes
-    group_users_pkey: PRIMARY KEY (group_id, user_id, group_role_id) USING btree (group_id, user_id, group_role_id)
-    group_users_group_id_key: USING btree (group_id)
-    group_users_user_id_key: USING btree (user_id)
+    group_user_roles_pkey: PRIMARY KEY (group_id, user_id, group_role_id) USING btree (group_id, user_id, group_role_id)
+    group_user_roles_group_id_key: USING btree (group_id)
+    group_user_roles_group_role_id_key: USING btree (group_role_id)
+    group_user_roles_user_id_key: USING btree (user_id)
 
 foreign-key constraints
-    group_users_group_id_fkey: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
-    group_users_group_role_id_fkey: FOREIGN KEY (group_role_id) REFERENCES group_roles(id) ON UPDATE CASCADE ON DELETE CASCADE
-    group_users_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    group_user_roles_group_id_fkey: FOREIGN KEY (group_id) REFERENCES groups(id)
+    group_user_roles_group_role_id_fkey: FOREIGN KEY (group_role_id) REFERENCES group_roles(id)
+    group_user_roles_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id)
