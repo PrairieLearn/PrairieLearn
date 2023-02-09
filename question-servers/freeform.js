@@ -878,7 +878,7 @@ module.exports = {
     let processFunction;
     let args;
     // eslint-disable-next-line no-constant-condition
-    if (phase === 'render' && false) {
+    if (true) {
       processFunction = module.exports.experimentalProcess;
       args = [phase, codeCaller, data, context, html];
     } else if (useNewQuestionRenderer) {
