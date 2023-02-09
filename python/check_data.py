@@ -1,4 +1,4 @@
-from typing import Dict, List, Literal, TypedDict, Union
+from typing import Any, Dict, List, Literal, TypedDict, Union
 
 Phase = Union[
     Literal["generate"],
@@ -76,7 +76,7 @@ PROPS: Dict[str, PropInfo] = {
     "feedback": {
         "type": "object",
         "present_phases": ["render", "grade", "test"],
-        "edit_phases": ["grade", "feedback"],
+        "edit_phases": ["grade", "test"],
     },
     "editable": {
         "type": "boolean",
@@ -123,8 +123,8 @@ PROPS: Dict[str, PropInfo] = {
 
 def check_prop(
     prop: str,
-    old_value: any,
-    new_value: any,
+    old_value: Any,
+    new_value: Any,
     value_type: str,
     present_phases: List[Phase],
     edit_phases: List[Phase],

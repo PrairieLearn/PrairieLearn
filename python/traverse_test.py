@@ -1,12 +1,13 @@
-from typing import List
+from typing import List, Optional
+import lxml.html
 
-from traverse import traverse_and_execute, traverse_and_replace
+from traverse import traverse_and_execute, traverse_and_replace, ElementReplacement
 
 
 def test_traverse_and_execute() -> None:
     text: List[str] = []
 
-    def capture_text(element):
+    def capture_text(element) -> None:
         if element.text:
             text.append(element.text)
 
@@ -26,7 +27,7 @@ def test_traverse_and_replace_none() -> None:
 
 
 def test_traverse_and_replace_nested_none() -> None:
-    def replace(e):
+    def replace(e) -> ElementReplacement:
         if e.tag == "strong":
             return None
         return e
@@ -46,7 +47,7 @@ def test_traverse_and_replace_identity() -> None:
 
 
 def test_traverse_and_replace_fragment() -> None:
-    def replace(e):
+    def replace(e) -> ElementReplacement:
         if e.tag == "p":
             return "<strong>Goodbye</strong>"
         return e
@@ -56,7 +57,7 @@ def test_traverse_and_replace_fragment() -> None:
 
 
 def test_traverse_and_replace_fragments() -> None:
-    def replace(e):
+    def replace(e) -> ElementReplacement:
         if e.tag == "p":
             return "<strong>Goodbye</strong><strong>Goodbye</strong>"
         return e
@@ -66,7 +67,7 @@ def test_traverse_and_replace_fragments() -> None:
 
 
 def traverse_and_replace_nested() -> None:
-    def replace(e):
+    def replace(e) -> ElementReplacement:
         if e.tag == "strong":
             return "<em>Goodbye</em>"
         return e
@@ -76,7 +77,7 @@ def traverse_and_replace_nested() -> None:
 
 
 def test_traverse_and_replace_recursive() -> None:
-    def replace(e):
+    def replace(e) -> ElementReplacement:
         if e.tag == "p":
             return "<strong>Goodbye</strong>"
         elif e.tag == "strong":
@@ -88,7 +89,7 @@ def test_traverse_and_replace_recursive() -> None:
 
 
 def test_traverse_and_replace_nested_trailing_text() -> None:
-    def replace(e):
+    def replace(e) -> ElementReplacement:
         if e.tag == "strong":
             return "<em>Goodbye</em>"
         return e
@@ -103,7 +104,7 @@ def test_traverse_and_replace_leading_trailing_text() -> None:
 
 
 def test_traverse_and_replace_leading_trailing_recursive() -> None:
-    def replace(e):
+    def replace(e) -> ElementReplacement:
         if e.tag == "i":
             return "<em>beautiful</em>"
         return e
@@ -113,7 +114,7 @@ def test_traverse_and_replace_leading_trailing_recursive() -> None:
 
 
 def test_traverse_and_replace_leading_trailing_recursive_2() -> None:
-    def replace(e):
+    def replace(e) -> ElementReplacement:
         if e.tag == "i":
             return "<em>beautiful</em>"
         if e.tag == "em":
@@ -125,7 +126,7 @@ def test_traverse_and_replace_leading_trailing_recursive_2() -> None:
 
 
 def test_traverse_and_replace_leading_trailing_recursive_3() -> None:
-    def replace(e):
+    def replace(e) -> ElementReplacement:
         if e.tag == "i":
             return "really <em>beautiful</em> green"
         if e.tag == "em":
@@ -137,7 +138,7 @@ def test_traverse_and_replace_leading_trailing_recursive_3() -> None:
 
 
 def test_traverse_and_replace_leading_trailing_recursive_4() -> None:
-    def replace(e):
+    def replace(e) -> ElementReplacement:
         if e.tag == "i":
             return "really <em>beautiful</em> green"
         if e.tag == "em":
@@ -149,7 +150,7 @@ def test_traverse_and_replace_leading_trailing_recursive_4() -> None:
 
 
 def test_traverse_and_replace_leading_trailing_recursive_5() -> None:
-    def replace(e):
+    def replace(e) -> ElementReplacement:
         if e.tag == "em":
             return "big"
         if e.tag == "i":
@@ -163,7 +164,7 @@ def test_traverse_and_replace_leading_trailing_recursive_5() -> None:
 
 
 def test_traverse_and_replace_leading_trailing_recursive_6() -> None:
-    def replace(e):
+    def replace(e) -> ElementReplacement:
         if e.tag == "em":
             return "<strong>big</strong>"
         if e.tag == "i":
@@ -177,7 +178,7 @@ def test_traverse_and_replace_leading_trailing_recursive_6() -> None:
 
 
 def test_traverse_and_replace_leading_trailing_recursive_7() -> None:
-    def replace(e):
+    def replace(e) -> ElementReplacement:
         if e.tag == "em":
             return "<strong>big</strong>, green,"
         if e.tag == "i":
@@ -191,7 +192,7 @@ def test_traverse_and_replace_leading_trailing_recursive_7() -> None:
 
 
 def test_traverse_and_replace_leading_trailing_recursive_8() -> None:
-    def replace(e):
+    def replace(e) -> ElementReplacement:
         if e.tag == "em":
             return "green, <strong>big</strong>"
         if e.tag == "i":

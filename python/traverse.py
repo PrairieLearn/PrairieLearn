@@ -3,6 +3,11 @@ from typing import Callable, List, Optional, Union
 import lxml.html
 
 
+ElementReplacement = Optional[
+    Union[str, lxml.html.HtmlElement, List[lxml.html.HtmlElement]]
+]
+
+
 def serialize_str_or_element(e) -> str:
     if isinstance(e, str):
         return e
@@ -91,7 +96,7 @@ def traverse_and_replace(
     html: str,
     replace: Callable[
         [lxml.html.HtmlElement],
-        Optional[Union[str, lxml.html.HtmlElement, List[lxml.html.HtmlElement]]],
+        ElementReplacement,
     ],
 ) -> str:
     def handle_element(

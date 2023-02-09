@@ -15,6 +15,7 @@ SAVED_PATH = copy.copy(sys.path)
 
 
 class ElementInfo(TypedDict):
+    name: str
     controller: str
     type: str
 
@@ -32,7 +33,9 @@ class RenderContext(TypedDict):
     course_path: str
 
 
-def process(phase: Phase, data: dict, context: RenderContext) -> Tuple[str, Set[str]]:
+def process(
+    phase: Phase, data: dict, context: RenderContext
+) -> Tuple[Optional[str], Set[str]]:
     # This will be a string consisting of `question.html` with Mustache templating applied.
     html = context["html"]
 
@@ -121,17 +124,19 @@ def process(phase: Phase, data: dict, context: RenderContext) -> Tuple[str, Set[
             # TODO: validate that return value was a string?
             return element_rendered_html
 
+    def process_element_return_none(element: lxml.html.HtmlElement) -> None:
+        process_element(element)
+
+    rendered_html = None
+
     if phase == "render":
         rendered_html = traverse_and_replace(html, process_element)
     else:
-        traverse_and_execute(html, process_element)
+        traverse_and_execute(html, process_element_return_none)
 
     # We added an `extensions` property to the `data` object; remove it.
     del data["extensions"]
 
     print(f"Total process time: {total_time * 1000}ms")
 
-    if phase == "render":
-        return rendered_html, rendered_elements
-    else:
-        return None, rendered_elements
+    return rendered_html, rendered_elements
