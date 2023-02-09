@@ -158,18 +158,20 @@ def traverse_and_replace(
                     print("parent", lxml.html.tostring(parent))
                 del new_elements[0]
 
-            # Special case: the new element is NOT just a string, and the
-            # element we're replacing has trailing text.
-            # if
-
             print("len(parent)", len(parent))
 
             # Special case: the element we're replacing has trailing text.
             if len(parent) > 1 and element.tail is not None:
+                last_new_element = new_elements[-1] if len(new_elements) > 0 else None
                 if self_index == 0:
-                    # We need to attach this string to the `text` of the parent.
-                    print("attaching tail to parent text (multi)")
-                    append_text(parent, element.tail)
+                    if last_new_element is not None:
+                        # We need to attach this string to the `text` of the parent.
+                        print("attaching tail to last new element")
+                        append_tail(last_new_element, element.tail)
+                        print("last_new_element", lxml.html.tostring(last_new_element))
+                    else:
+                        print("attaching tail to parent text")
+                        append_text(parent, element.tail)
                 else:
                     # We need to attach this string to the `tail` of the previous element.
                     print("attaching tail to previous child (multi)")
