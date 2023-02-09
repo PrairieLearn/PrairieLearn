@@ -88,14 +88,14 @@
               <th class="align-middle">Sharing Sets</th>
               <td>
                 <%= sharing_sets_in.map(sharing_set => sharing_set.name).join(',') %>
-                <form name="sharing-set-add-<%= question.id %>" method="POST" class="d-inline">
+                <form name="sharing-set-add" method="POST" class="d-inline">
                   <input type="hidden" name="__action" value="sharing_set_add">
                   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                   <div class="btn-group btn-group-sm" role="group">
-                    <button id="addSharingSet-<%= question.id %>" type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <button id="addSharingSet" type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                       Add...
                     </button>
-                    <div class="dropdown-menu" aria-labelledby="addSharingSet-<%= question.id %>">
+                    <div class="dropdown-menu" aria-labelledby="addSharingSet">
                         <% sharing_sets_other.forEach(function(sharing_set) { %>
                           <button class="dropdown-item" type="submit" name="sharing_set_id" value="<%= sharing_set.id %>">
                             <%= sharing_set.name %>

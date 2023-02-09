@@ -5,7 +5,7 @@ On the 'sharing' page:
 - [x] create a new 'sharing set'
 - [x] share a 'sharing set' to a particular course
 - [x] auto generate sharing UUID the first time this page is visited
-- [] disallow changing the sharing id once set
+- [] disallow changing the sharing id once set (don't allow an UI element for it, throw a SQL exception on a failed update)
 
 On the settings page for each question:
 
