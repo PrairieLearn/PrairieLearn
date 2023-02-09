@@ -36,14 +36,8 @@ To discuss with Matt/Nathan:
 - [] User interface of 'Add...' button on question settings page when there are no sharing sets to show there. Have a 'create new' button with a text box right there? or link to the other page for now?
 - [] do we have a good way for testing different config options in the unit tests?
 - [] if sharing is not enabled for a course, should we show the tab? what should we show on direct access to URL? An error page? or a page saying you need it enabled? What has worked for manual grading?
+- [] should we still have a server-level flag now that we have one for each course?
 
 Deployment considerations
 
 - [x] Special case to only enable the feature on the main (Illinois) server!!! Use a config flag!
-
-Next steps after the MVP Launch:
-
-- [] Bulk operations for adding questions to sharing sets
-- [] Get statistics tab working on the question page
-- [] Ability to mark questions as Public, so anyone can access them
-- [] Nice way to make question sharing work in local dev? (all you need to do normally is just add run one line of SQL to point the sharing set name at the correct course ID in the local database. Should I add something about this to the documentation)
