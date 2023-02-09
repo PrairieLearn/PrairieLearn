@@ -4,14 +4,13 @@ const util = require('util');
 const tmp = require('tmp-promise');
 const fs = require('fs-extra');
 const path = require('path');
+const sqldb = require('@prairielearn/postgres');
 
 const courseDB = require('../sync/course-db');
 const chunksLib = require('../lib/chunks');
 const config = require('../lib/config');
-const sqldb = require('../prairielib/lib/sql-db');
-const sqlLoader = require('../prairielib/lib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(__filename);
 const logger = require('./dummyLogger');
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const helperServer = require('./helperServer');
 const { syncDiskToSqlAsync } = require('../sync/syncFromDisk');
@@ -366,7 +365,7 @@ describe('chunks', () => {
       );
     });
 
-    it.skip('deletes chunks that are no longer needed', async () => {
+    it('deletes chunks that are no longer needed', async () => {
       const courseDir = tempTestCourseDir.path;
       const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({ id: courseId, path: null });
 

@@ -26,15 +26,13 @@ const awsHelper = require('../lib/aws');
 const socketServer = require('../lib/socket-server'); // must load socket server before workspace
 const workspaceHelper = require('../lib/workspace');
 const logger = require('../lib/logger');
-const sprocs = require('../sprocs');
 const LocalLock = require('../lib/local-lock');
 const { contains } = require('../lib/instructorFiles');
 
 const config = require('../lib/config');
-const sqldb = require('../prairielib/lib/sql-db');
-const sqlLoader = require('../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 const { parseDockerLogs } = require('./lib/docker');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 let configFilename = 'config.json';
 if ('config' in argv) {
@@ -168,15 +166,6 @@ async
       sqldb.init(pgConfig, idleErrorHandler, function (err) {
         if (ERR(err, callback)) return;
         logger.verbose('Successfully connected to database');
-        callback(null);
-      });
-    },
-    async () => {
-      await sqldb.setRandomSearchSchemaAsync(config.instanceId);
-    },
-    (callback) => {
-      sprocs.init(function (err) {
-        if (ERR(err, callback)) return;
         callback(null);
       });
     },

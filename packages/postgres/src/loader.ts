@@ -1,13 +1,15 @@
-const fs = require('fs');
-const path = require('path');
-const url = require('url');
+import fs from 'node:fs';
+import path from 'node:path';
+import url from 'node:url';
 
-module.exports.load = function (filename) {
-  const sql = {};
+type SqlFile = Record<string, string>;
+
+export function loadSql(filename: string): SqlFile {
+  const sql: SqlFile = {};
   sql.all = fs.readFileSync(filename, 'utf8');
   const lines = sql.all.split(/\r?\n/);
   const blockRE = /^ *-- *BLOCK +([^ ]+) *$/;
-  let blockName = null;
+  let blockName: string | null = null;
   lines.forEach((line) => {
     var result = blockRE.exec(line);
     if (result) {
@@ -19,15 +21,9 @@ module.exports.load = function (filename) {
     }
   });
   return sql;
-};
+}
 
-/**
- * Replace the extension of the given filename with ".sql" and load it.
- *
- * @param filename A path or file URL of a non-SQL file (e.g., `__filename` or `import.meta.url`).
- * @returns The SQL data structure.
- */
-module.exports.loadSqlEquiv = function (filePathOrUrl) {
+export function loadSqlEquiv(filePathOrUrl: string): SqlFile {
   let resolvedPath = filePathOrUrl;
 
   // This allows for us to pass `import.meta.url` to this function in ES Modules
@@ -38,8 +34,6 @@ module.exports.loadSqlEquiv = function (filePathOrUrl) {
 
   const components = path.parse(resolvedPath);
   components.ext = '.sql';
-  delete components.base;
-  // var sqlFilename = path.format(components); // FIXME: this doesn't work in node 0.12? It should work.
   const sqlFilename = path.join(components.dir, components.name) + components.ext;
-  return module.exports.load(sqlFilename);
-};
+  return loadSql(sqlFilename);
+}
