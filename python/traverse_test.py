@@ -201,7 +201,4 @@ def test_traverse_and_replace_leading_trailing_recursive_8() -> None:
     html = traverse_and_replace(
         "<div>Hello <em>small</em> and <i>cruel</i> world</div>", replace
     )
-    assert (
-        html
-        == "<div>Hello green, <strong>big</strong> and beautiful world</div>"
-    )
+    assert html == "<div>Hello green, <strong>big</strong> and beautiful world</div>"

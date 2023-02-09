@@ -13,19 +13,12 @@ CORE_ELEMENTS_PATH = (PYTHON_PATH / "elements").resolve()
 SAVED_PATH = copy.copy(sys.path)
 
 
-# def resolve_element(element_name: str, context: dict) -> dict:
-#     if element_name in context["course_elements"]:
-#         return context["course_elements"][element_name]
-#     elif element_name in context["c_elements"]:
-
-
 class ElementInfo(TypedDict):
     controller: str
     type: str
 
 
 class RenderContext(TypedDict):
-
     html: str
     """A string consisting of `question.html` with Mustache templating applied."""
 
