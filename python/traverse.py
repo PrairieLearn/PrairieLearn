@@ -73,6 +73,11 @@ def traverse_and_replace(
         element: lxml.html.HtmlElement,
     ) -> Optional[lxml.html.HtmlElement]:
         new_elements = replace(element)
+
+        # Special case: returned the current element (no change).
+        if new_elements is element:
+            return None
+
         if new_elements is not None:
             if isinstance(new_elements, str):
                 new_elements = lxml.html.fragments_fromstring(new_elements)
@@ -89,8 +94,13 @@ def traverse_and_replace(
 
             print("-------")
             print("new_elements", new_elements)
-            print("existing element", element)
-            print("element", lxml.html.tostring(element), element.text, element.tail)
+            print(
+                "element",
+                element,
+                lxml.html.tostring(element),
+                element.text,
+                element.tail,
+            )
             print("parent", lxml.html.tostring(parent), parent.text, parent.tail)
 
             # Special case: the first new element is just a string.
@@ -113,6 +123,12 @@ def traverse_and_replace(
             if len(parent) == 1 and element.tail is not None:
                 if len(new_elements) > 0:
                     print("attaching tail")
+                    print(
+                        "new_elements[-1]",
+                        lxml.html.tostring(new_elements[-1]),
+                        new_elements[-1].tail,
+                    )
+                    print("element", lxml.html.tostring(element), element.tail)
                     if new_elements[-1].tail:
                         new_elements[-1].tail += element.tail
                     else:
@@ -138,6 +154,7 @@ def traverse_and_replace(
             for index, new_element in enumerate(new_elements):
                 print("iteration", index, new_element)
                 parent.insert(self_index + index, new_element)
+            print("parent after insertion", lxml.html.tostring(parent))
 
             return new_elements
 

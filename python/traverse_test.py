@@ -80,3 +80,49 @@ def test_traverse_and_replace_recursive() -> None:
 def test_traverse_and_replace_leading_trailing_text() -> None:
     html = traverse_and_replace("Hello <i>cruel</i> world", lambda e: "beautiful")
     assert html == "Hello beautiful world"
+
+
+def test_traverse_and_replace_leading_trailing_recursive() -> None:
+    def replace(e):
+        if e.tag == "i":
+            return "<em>beautiful</em>"
+        return e
+
+    html = traverse_and_replace("Hello <i>cruel</i> world", replace)
+    assert html == "Hello <em>beautiful</em> world"
+
+
+def test_traverse_and_replace_leading_trailing_recursive_2() -> None:
+    def replace(e):
+        if e.tag == "i":
+            return "<em>beautiful</em>"
+        if e.tag == "em":
+            return "beautiful"
+        return e
+
+    html = traverse_and_replace("Hello <i>cruel</i> world", replace)
+    assert html == "Hello beautiful world"
+
+
+def test_traverse_and_replace_leading_trailing_recursive_3() -> None:
+    def replace(e):
+        if e.tag == "i":
+            return "really <em>beautiful</em> green"
+        if e.tag == "em":
+            return "beautiful"
+        return e
+
+    html = traverse_and_replace("Hello <i>cruel</i> world", replace)
+    assert html == "Hello really beautiful green world"
+
+
+def test_traverse_and_replace_leading_trailing_recursive_4() -> None:
+    def replace(e):
+        if e.tag == "i":
+            return "really <em>beautiful</em> green"
+        if e.tag == "em":
+            return "beautiful"
+        return e
+
+    html = traverse_and_replace("<div>Hello <i>cruel</i> world</div>", replace)
+    assert html == "<div>Hello really beautiful green world</div>"
