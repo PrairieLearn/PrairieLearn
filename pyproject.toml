@@ -65,6 +65,7 @@ include = [
     "./elements/pl-hidden-hints",
     "./elements/pl-python-variable",
     "./elements/pl-symbolic-input",
+    "./elements/pl-variable-output",
     "./python/check_data.py",
     "./python/check_data_test.py",
     "./python/conftest.py",
