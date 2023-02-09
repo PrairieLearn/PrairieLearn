@@ -10,6 +10,19 @@ const { InstructorSharing } = require('./instructorCourseAdminSharing.html');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 
+function generateSharingId(req, res, next) {
+  let newSharingId = uuidv4();
+  sqldb.queryZeroOrOneRow(
+    sql.update_sharing_id,
+    { sharing_id: newSharingId, course_id: res.locals.course.id },
+    (err, _result) => {
+      if (ERR(err, next)) return;
+
+      res.redirect(req.originalUrl);
+    }
+  );
+}
+
 router.get('/', function (req, res, next) {
   debug('GET /');
 
@@ -21,9 +34,13 @@ router.get('/', function (req, res, next) {
       let sharing_name = result.rows[0].sharing_name;
       let sharing_id = result.rows[0].sharing_id;
 
+      if (!sharing_id) {
+        generateSharingId(req, res, next);
+        return;
+      }
+
       sqldb.query(sql.select_sharing_sets, { course_id: res.locals.course.id }, (err, result) => {
         if (ERR(err, next)) return;
-
         res.send(
           InstructorSharing({
             sharing_name: sharing_name,
@@ -43,16 +60,7 @@ router.post('/', (req, res, next) => {
   }
 
   if (req.body.__action === 'sharing_id_regenerate') {
-    let newSharingId = uuidv4();
-    sqldb.queryZeroOrOneRow(
-      sql.update_sharing_id,
-      { sharing_id: newSharingId, course_id: res.locals.course.id },
-      (err, _result) => {
-        if (ERR(err, next)) return;
-
-        res.redirect(req.originalUrl);
-      }
-    );
+    generateSharingId(req, res, next);
   } else if (req.body.__action === 'sharing_set_create') {
     // TODO: disallow duplicates!
     sqldb.queryZeroOrOneRow(
