@@ -63,14 +63,14 @@ SELECT
     (count(qss.question_id = $question_id) > 0)::boolean AS in_set
 FROM
     sharing_sets AS ss
-    LEFT JOIN question_sharing_sets AS qss ON qss.sharing_set_id = ss.id
+    LEFT JOIN sharing_set_questions AS qss ON qss.sharing_set_id = ss.id
 WHERE
     ss.course_id = $course_id
 GROUP BY
     ss.id, ss.name;
 
 -- BLOCK sharing_set_add
-INSERT INTO question_sharing_sets
+INSERT INTO sharing_set_questions
     (question_id, sharing_set_id)
 VALUES
     ($question_id, $sharing_set_id); -- TODO do any validation? ensure the sharing_set_id exists and belongs to this course?

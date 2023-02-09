@@ -3,30 +3,29 @@ CREATE TABLE IF NOT EXISTS sharing_sets (
     course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,
     name text,
     description text,
-    UNIQUE (name, course_id)
+    UNIQUE (course_id, name)
 );
 
-CREATE TABLE IF NOT EXISTS question_sharing_sets (
+CREATE TABLE IF NOT EXISTS sharing_set_questions (
     id BIGSERIAL PRIMARY KEY,
+    sharing_set_id BIGINT NOT NULL,
     question_id BIGINT NOT NULL,
-    sharing_set_id BIGINT NOT NULL
+    UNIQUE(sharing_set_id, question_id)
 );
 
-ALTER TABLE question_sharing_sets
-ADD CONSTRAINT question_sharing_sets_question_id_fkey
+ALTER TABLE sharing_set_questions
+ADD CONSTRAINT sharing_set_questions_question_id_fkey
 FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-ALTER TABLE question_sharing_sets
-ADD CONSTRAINT question_sharing_sets_sharing_set_id_fkey
+ALTER TABLE sharing_set_questions
+ADD CONSTRAINT sharing_set_questions_sharing_set_id_fkey
 FOREIGN KEY (sharing_set_id) REFERENCES sharing_sets(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
-
--- TODO: table name here might be confusing. It should denote
--- that these are the courses that are allowed to access a given sharing set
-CREATE TABLE IF NOT EXISTS course_sharing_sets (
+CREATE TABLE IF NOT EXISTS sharing_set_courses (
     id BIGSERIAL PRIMARY KEY,
+    sharing_set_id BIGINT NOT NULL REFERENCES sharing_sets ON DELETE CASCADE ON UPDATE CASCADE,
     course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,
-    sharing_set_id BIGINT NOT NULL REFERENCES sharing_sets ON DELETE CASCADE ON UPDATE CASCADE
+    UNIQUE(sharing_set_id, course_id)
 );
 
 ALTER TABLE pl_courses ADD COLUMN IF NOT EXISTS sharing_name text;
@@ -55,13 +54,13 @@ INSERT INTO sharing_sets
         id, 'blah', 'Nonsense sharing set name.'
     from pl_courses WHERE title = 'Test Course';
 
-INSERT INTO question_sharing_sets
+INSERT INTO sharing_set_questions
     (question_id, sharing_set_id)
     select
         id, 1
     from questions where qid = 'addNumbers';
 
-INSERT INTO course_sharing_sets
+INSERT INTO sharing_set_courses
     (course_id, sharing_set_id)
     select
         id, 1

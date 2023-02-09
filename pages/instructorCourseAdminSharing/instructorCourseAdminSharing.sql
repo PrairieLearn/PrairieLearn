@@ -14,7 +14,7 @@ SELECT
     ) ORDER BY c.short_name) AS shared_with
 FROM
     sharing_sets AS ss
-    LEFT JOIN course_sharing_sets AS css on css.sharing_set_id = ss.id
+    LEFT JOIN sharing_set_courses AS css on css.sharing_set_id = ss.id
     LEFT JOIN pl_courses AS c on c.id = css.course_id
 WHERE
     ss.course_id = $course_id
@@ -38,7 +38,7 @@ VALUES
 
 
 -- BLOCK course_sharing_set_add
-INSERT INTO course_sharing_sets
+INSERT INTO sharing_set_courses
     (course_id, sharing_set_id)
 SELECT
     id, $sharing_set_id
