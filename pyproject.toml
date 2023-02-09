@@ -66,6 +66,7 @@ include = [
     "./elements/pl-python-variable",
     "./elements/pl-symbolic-input",
     "./elements/pl-units-input",
+    "./elements/pl-variable-output",
     "./python/conftest.py",
     "./python/prairielearn.py",
     "./python/prairielearn_test.py",
