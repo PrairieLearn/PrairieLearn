@@ -85,11 +85,9 @@
               <td><% if (locals.assessments) { %><%- include('../partials/assessments', {assessments: assessments}); %><% } %></td>
             </tr>
             <tr>
-              <th>Sharing Sets</th>
+              <th class="align-middle">Sharing Sets</th>
               <td>
-                <% sharing_sets_in.forEach(function(sharing_set) { %>
-                <%= sharing_set.name %>,
-                <% }); %>
+                <%= sharing_sets_in.map(sharing_set => sharing_set.name).join(',') %>
                 <form name="sharing-set-add-<%= question.id %>" method="POST" class="d-inline">
                   <input type="hidden" name="__action" value="sharing_set_add">
                   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
