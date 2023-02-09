@@ -22,7 +22,17 @@ def test_traverse_and_replace_text() -> None:
 
 def test_traverse_and_replace_none() -> None:
     html = traverse_and_replace("<p>Hello</p>", lambda e: None)
-    assert html == "<p>Hello</p>"
+    assert html == ""
+
+
+def test_traverse_and_replace_nested_none() -> None:
+    def replace(e):
+        if e.tag == "strong":
+            return None
+        return e
+
+    html = traverse_and_replace("<p><strong>Hello</strong> world</p>", replace)
+    assert html == "<p>world</p>"
 
 
 def test_traverse_and_replace_empty() -> None:
@@ -77,6 +87,16 @@ def test_traverse_and_replace_recursive() -> None:
     assert html == "<em>Goodbye</em>"
 
 
+def test_traverse_and_replace_nested_trailing_text() -> None:
+    def replace(e):
+        if e.tag == "strong":
+            return "<em>Goodbye</em>"
+        return e
+
+    html = traverse_and_replace("<p><strong>Hello</strong> world</p>", replace)
+    assert html == "<p><em>Goodbye</em> world</p>"
+
+
 def test_traverse_and_replace_leading_trailing_text() -> None:
     html = traverse_and_replace("Hello <i>cruel</i> world", lambda e: "beautiful")
     assert html == "Hello beautiful world"
@@ -126,3 +146,31 @@ def test_traverse_and_replace_leading_trailing_recursive_4() -> None:
 
     html = traverse_and_replace("<div>Hello <i>cruel</i> world</div>", replace)
     assert html == "<div>Hello really beautiful green world</div>"
+
+
+def test_traverse_and_replace_leading_trailing_recursive_5() -> None:
+    def replace(e):
+        if e.tag == "em":
+            return "big"
+        if e.tag == "i":
+            return "beautiful"
+        return e
+
+    html = traverse_and_replace(
+        "<div>Hello <em>small</em> and <i>cruel</i> world</div>", replace
+    )
+    assert html == "<div>Hello big and beautiful world</div>"
+
+
+def test_traverse_and_replace_leading_trailing_recursive_6() -> None:
+    def replace(e):
+        if e.tag == "em":
+            return "<strong>big</strong>"
+        if e.tag == "i":
+            return "beautiful"
+        return e
+
+    html = traverse_and_replace(
+        "<div>Hello <em>small</em> and <i>cruel</i> world</div>", replace
+    )
+    assert html == "<div>Hello <strong>big<strong> and beautiful world</div>"
