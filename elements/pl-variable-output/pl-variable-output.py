@@ -120,8 +120,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             var_python_comment = ""
             var_r_comment = ""
             var_sympy_comment = ""
-            if pl.has_attrib(child, "comment"):
-                var_comment = pl.get_string_attrib(child, "comment")
+
+            var_comment = pl.get_string_attrib(child, "comment", None)
+            if var_comment is not None:
                 var_matlab_comment = f" % {var_comment}"
                 var_mathematica_comment = f" (* {var_comment} *)"
                 var_python_comment = f" # {var_comment}"
@@ -154,13 +155,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             # Mathematica reserved letters: C D E I K N O
             mathematica_reserved = ["C", "D", "E", "I", "K", "N", "O"]
-            if pl.inner_html(child) in mathematica_reserved:
+            var_name_disp = pl.inner_html(child)
+
+            if var_name_disp in mathematica_reserved:
                 mathematica_suffix = "m"
             else:
                 mathematica_suffix = ""
 
             # Create string for matlab and python format
-            var_name_disp = pl.inner_html(child)
             var_matlab_data = pl.string_from_numpy(
                 var_data, language="matlab", digits=var_digits
             )
