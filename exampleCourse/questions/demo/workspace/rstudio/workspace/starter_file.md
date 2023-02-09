@@ -1,4 +1,3 @@
-<!-- prettier-ignore -->
 # Example workspace starter file
 
 This file will be copied into the directory specified as "home" under
