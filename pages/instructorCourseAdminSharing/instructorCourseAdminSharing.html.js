@@ -1,3 +1,4 @@
+// @ts-check
 const { html } = require('@prairielearn/html');
 const { renderEjs } = require('@prairielearn/html-ejs');
 
