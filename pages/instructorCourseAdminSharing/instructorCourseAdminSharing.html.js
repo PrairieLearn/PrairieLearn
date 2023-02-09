@@ -74,10 +74,6 @@ const chooseSharingNameButton = (resLocals) => {
   `;
 };
 
-// const generateSharingSetRow = () => {
-
-// }
-
 const InstructorSharing = ({ sharing_name, sharing_id, sharing_sets, resLocals }) => {
   return html`
     <!DOCTYPE html>

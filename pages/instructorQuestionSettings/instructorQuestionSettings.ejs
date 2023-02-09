@@ -87,7 +87,7 @@
             <tr>
               <th class="align-middle">Sharing Sets</th>
               <td>
-                <%= sharing_sets_in.map(sharing_set => sharing_set.name).join(',') %>
+                <%= sharing_sets_in.map(sharing_set => sharing_set.name).join(', ') %>
                 <form name="sharing-set-add" method="POST" class="d-inline">
                   <input type="hidden" name="__action" value="sharing_set_add">
                   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">

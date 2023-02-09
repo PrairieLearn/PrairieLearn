@@ -10,12 +10,15 @@ On the 'sharing' page:
 On the settings page for each question:
 
 - [x] add the question to a sharing set
+- [] FIX BUG where sharing sets are showing up for all questoins, not just the question they were added to (some join error or something?)
 
-When trying to access a question:
+Authorization Stuff
 
 - [] Fix the hack I put in before, make sure it works for shared and non-shared questions
 - [] Check if course elements/clientFiles/serverFiles, etc. work as expected!
 - [] Give access denied! for the endpoints for all Tabs except the 'Preview' tab (meaning the Files, Settings, and Statistics pages should all give 404)
+- [] Check if
+- [] When the Question instance is created, it should live under the course id of the consuming course, right? But the question id in that row still refers to a question from another course
 
 Fill out the new documentation page!
 
@@ -35,7 +38,7 @@ To discuss with Matt/Nathan:
 - [] User interface of 'Add...' button on question settings page when there are no sharing sets to show there. Have a 'create new' button with a text box right there? or link to the other page for now?
 - [] if sharing is not enabled for a course, should we show the tab? what should we show on direct access to URL? An error page? or a page saying you need it enabled? What has worked for manual grading?
 - [] should we still have a server-level flag now that we have one for each course?
-
-Deployment considerations
+- []  how the HECK does all of this authz stuff work? there are like a million authz files, what is doing what, and what should I be editing? It seems like I need to mess with auth when an instructor is looking at a question preview. In all other situatoins, an instance has already been taken, and as such, everthing works as expected? (with the possible exception of client/server files and custom course elements)
+- [] should I add 'This cannot be undone!' error messages?
 
 - [x] Special case to only enable the feature on the main (Illinois) server!!! Use a config flag!
