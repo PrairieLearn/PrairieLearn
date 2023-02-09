@@ -31,37 +31,3 @@ CREATE TABLE IF NOT EXISTS sharing_set_courses (
 ALTER TABLE pl_courses ADD COLUMN IF NOT EXISTS sharing_name text;
 ALTER TABLE pl_courses ADD COLUMN IF NOT EXISTS sharing_id text;
 ALTER TABLE pl_courses ADD COLUMN IF NOT EXISTS question_sharing_enabled boolean default false;
-
-
--- TODO: remove everything below here before merging
--- Need to run (or re-run) after the test course is synced
--- Run with command:
--- docker exec -it mypl psql postgres -f PrairieLearn/migrations/20231101200859_sharing_sets__create.sql
-UPDATE pl_courses SET sharing_name = 'test-course' WHERE title = 'Test Course';
--- UPDATE pl_courses SET sharing_id = '390bd8c3-7461-4b05-b5f8-dd5c821109d8' WHERE title = 'Test Course';
-
-UPDATE pl_courses SET question_sharing_enabled = true WHERE title IN ('Test Course', 'Example Course');
-
-INSERT INTO sharing_sets
-    (course_id, name, description)
-    select
-        id, 'to-example', 'Questions to be shared with the example course.'
-    from pl_courses WHERE title = 'Test Course';
-
-INSERT INTO sharing_sets
-    (course_id, name, description)
-    select
-        id, 'blah', 'Nonsense sharing set name.'
-    from pl_courses WHERE title = 'Test Course';
-
-INSERT INTO sharing_set_questions
-    (question_id, sharing_set_id)
-    select
-        id, 1
-    from questions where qid = 'addNumbers';
-
-INSERT INTO sharing_set_courses
-    (course_id, sharing_set_id)
-    select
-        id, 1
-    from pl_courses where title = 'Example Course';
