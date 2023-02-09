@@ -174,3 +174,17 @@ def test_traverse_and_replace_leading_trailing_recursive_6() -> None:
         "<div>Hello <em>small</em> and <i>cruel</i> world</div>", replace
     )
     assert html == "<div>Hello <strong>big</strong> and beautiful world</div>"
+
+
+def test_traverse_and_replace_leading_trailing_recursive_7() -> None:
+    def replace(e):
+        if e.tag == "em":
+            return "<strong>big</strong>, green,"
+        if e.tag == "i":
+            return "beautiful"
+        return e
+
+    html = traverse_and_replace(
+        "<div>Hello <em>small</em> and <i>cruel</i> world</div>", replace
+    )
+    assert html == "<div>Hello <strong>big</strong>, green, and beautiful world</div>"
