@@ -6,8 +6,8 @@ import time
 from typing import Dict, Optional, Set, Tuple, TypedDict
 
 import lxml.html
-from traverse import traverse_and_replace
-from check_data import check_data
+from traverse import traverse_and_execute, traverse_and_replace
+from check_data import Phase, check_data
 
 PYTHON_PATH = pathlib.Path(__file__).parent.parent.resolve()
 CORE_ELEMENTS_PATH = (PYTHON_PATH / "elements").resolve()
@@ -32,7 +32,7 @@ class RenderContext(TypedDict):
     course_path: str
 
 
-def render(data: dict, context: RenderContext) -> Tuple[str, Set[str]]:
+def process(phase: Phase, data: dict, context: RenderContext) -> Tuple[str, Set[str]]:
     # This will be a string consisting of `question.html` with Mustache templating applied.
     html = context["html"]
 
@@ -47,7 +47,7 @@ def render(data: dict, context: RenderContext) -> Tuple[str, Set[str]]:
 
     total_time = 0
 
-    def render_element(element: lxml.html.HtmlElement) -> Optional[str]:
+    def process_element(element: lxml.html.HtmlElement) -> Optional[str]:
         if element.tag not in elements:
             return element
 
@@ -79,45 +79,59 @@ def render(data: dict, context: RenderContext) -> Tuple[str, Set[str]]:
             code = compile(inf.read(), element_controller_path, "exec")
             exec(code, mod)
 
-        if "render" not in mod:
-            return ""
+        if phase not in mod:
+            return None
 
         # Make a deep copy of the data so that question/element code can't
         # modify the source data.
         data["extensions"] = copy.deepcopy(element_extensions.get(element.tag, {}))
-        data["options"]["client_files_element_url"] = (
-            pathlib.Path(data["options"]["base_url"])
-            / "elements"
-            / element_info["name"]
-            / "clientFilesElement"
-        ).as_posix()
-        data["options"]["client_files_extensions_url"] = {
-            extension: (
+
+        # `base_url` and associated values are only present during the render phase.
+        if phase == "render":
+            data["options"]["client_files_element_url"] = (
                 pathlib.Path(data["options"]["base_url"])
-                / "elementExtensions"
+                / "elements"
                 / element_info["name"]
-                / extension
-                / "clientFilesExtension"
+                / "clientFilesElement"
             ).as_posix()
-            for extension in data["extensions"]
-        }
+            data["options"]["client_files_extensions_url"] = {
+                extension: (
+                    pathlib.Path(data["options"]["base_url"])
+                    / "elementExtensions"
+                    / element_info["name"]
+                    / extension
+                    / "clientFilesExtension"
+                ).as_posix()
+                for extension in data["extensions"]
+            }
 
         old_data = copy.deepcopy(data)
 
-        element_rendered_html = mod["render"](lxml.html.tostring(element), data)
+        element_rendered_html = mod[phase](lxml.html.tostring(element), data)
 
-        check_data(old_data, data, "render")
+        check_data(old_data, data, phase)
 
         end = time.time()
         delta = end - start
         nonlocal total_time
         total_time += delta
-        print(f"Rendered {element.tag} in {delta * 1000}ms")
+        print(f"Processed {element.tag} in {delta * 1000}ms")
 
-        return element_rendered_html
+        if phase == "render":
+            # TODO: validate that return value was a string?
+            return element_rendered_html
 
-    rendered_html = traverse_and_replace(html, render_element)
+    if phase == "render":
+        rendered_html = traverse_and_replace(html, process_element)
+    else:
+        traverse_and_execute(html, process_element)
 
-    print(f"Total render time: {total_time * 1000}ms")
+    # We added an `extensions` property to the `data` object; remove it.
+    del data["extensions"]
 
-    return rendered_html, rendered_elements
+    print(f"Total process time: {total_time * 1000}ms")
+
+    if phase == "render":
+        return rendered_html, rendered_elements
+    else:
+        return None, rendered_elements

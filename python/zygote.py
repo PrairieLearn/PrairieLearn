@@ -146,8 +146,8 @@ def worker_loop():
             # change to the desired working directory
             os.chdir(cwd)
 
-            if file == "question.html" and fcn == "render":
-                # This is an experimental implementation of question rendering
+            if file == "question.html":
+                # This is an experimental implementation of question processing
                 # that does all HTML parsing and rendering in Python. This should
                 # be much faster than the current implementation that does an IPC
                 # call for each element.
@@ -156,11 +156,14 @@ def worker_loop():
                 context = args[1]
 
                 start = time.time()
-                rendered_html, rendered_elements = question_phases.render(data, context)
+                rendered_html, rendered_elements = question_phases.process(
+                    fcn, data, context
+                )
                 end = time.time()
-                print(f"rendered in {(end - start) * 1000}ms")
+                print(f"processed in {(end - start) * 1000}ms")
                 val = {
-                    "html": rendered_html,
+                    "html": rendered_html if fcn == "render" else None,
+                    "data": data,
                     "rendered_elements": list(rendered_elements),
                 }
 

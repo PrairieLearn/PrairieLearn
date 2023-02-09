@@ -544,7 +544,7 @@ module.exports = {
    * @param {any} context
    * @param {string} html
    */
-  async experimentalRender(phase, codeCaller, data, context, html) {
+  async experimentalProcess(phase, codeCaller, data, context, html) {
     const start = Date.now();
     const pythonContext = {
       html,
@@ -553,7 +553,6 @@ module.exports = {
         // Course elements should always take precedence over core elements.
         ...context.course_elements,
       },
-      // TODO: implement support for extensions in Python
       element_extensions: context.course_element_extensions,
       course_path:
         config.workersExecutionMode === 'container' ? '/course' : context.course_dir_host,
@@ -566,23 +565,32 @@ module.exports = {
         'question',
         context.question.directory,
         'question.html',
-        'render',
+        phase,
         [data, pythonContext]
       );
       result = res.result;
       output = res.output;
     } catch (err) {
+      console.error('process error', err);
       courseIssues.push(err);
     }
-    console.log(`Render took ${Date.now() - start}ms`);
-    console.log(output);
+    console.log(`processed in ${Date.now() - start}ms`);
+
+    if (output?.length > 0) {
+      courseIssues.push(
+        new CourseIssueError(`output logged on console during ${phase}()`, {
+          data: { outputBoth: output },
+          fatal: false,
+        })
+      );
+    }
 
     return {
       courseIssues,
-      data,
-      html: result?.html,
+      data: result?.data ?? data,
+      html: result?.html ?? '',
       fileData: null,
-      renderedElementNames: result?.rendered_elements,
+      renderedElementNames: result?.rendered_elements ?? [],
     };
   },
 
@@ -870,8 +878,8 @@ module.exports = {
     let processFunction;
     let args;
     // eslint-disable-next-line no-constant-condition
-    if (phase === 'render') {
-      processFunction = module.exports.experimentalRender;
+    if (phase === 'render' && false) {
+      processFunction = module.exports.experimentalProcess;
       args = [phase, codeCaller, data, context, html];
     } else if (useNewQuestionRenderer) {
       console.log('using new renderer');
