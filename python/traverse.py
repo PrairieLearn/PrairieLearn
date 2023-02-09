@@ -119,7 +119,8 @@ def traverse_and_replace(
 
             # Special case: our parent has only a single child (us) and the
             # element we're removing has trailing text. In that case, we should
-            # reattach that text to the end of the last new element.
+            # reattach that text to the end of the last new element OR to the
+            # parent's text.
             if len(parent) == 1 and element.tail is not None:
                 if len(new_elements) > 0:
                     print("attaching tail")
@@ -135,17 +136,11 @@ def traverse_and_replace(
                         new_elements[-1].tail = element.tail
                 else:
                     print("attaching tail to parent")
-                    # Special case: the parent is the body element.
-                    if parent.tag == "body":
-                        if parent.text:
-                            parent.text += element.tail
-                        else:
-                            parent.text = element.tail
+                    print("attaching tail to tail of body")
+                    if parent.text:
+                        parent.text += element.tail
                     else:
-                        if parent.tail:
-                            parent.tail += element.tail
-                        else:
-                            parent.tail = element.tail
+                        parent.text = element.tail
                 print("parent", lxml.html.tostring(parent))
 
             parent.remove(element)
