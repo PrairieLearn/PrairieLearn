@@ -55,8 +55,7 @@ def traverse_and_execute(
     children = root_parent.getchildren()
     print("traversing into element", root_parent)
     for element in children:
-        result = traverse_and_execute_impl(element, fn)
-        print("result", result)
+        traverse_and_execute_impl(element, fn)
 
     print("root_parent", root_parent, lxml.html.tostring(root_parent))
     print("root_parent.getchildren()", root_parent.getchildren())
