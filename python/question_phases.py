@@ -3,7 +3,7 @@ import os
 import pathlib
 import sys
 import time
-from typing import Set, Tuple, Union
+from typing import Dict, Optional, Set, Tuple, TypedDict
 
 import lxml.html
 from traverse import traverse_and_replace
@@ -19,7 +19,26 @@ SAVED_PATH = copy.copy(sys.path)
 #     elif element_name in context["c_elements"]:
 
 
-def render(data: dict, context: dict) -> Tuple[str, Set[str]]:
+class ElementInfo(TypedDict):
+    controller: str
+    type: str
+
+
+class RenderContext(TypedDict):
+
+    html: str
+    """A string consisting of `question.html` with Mustache templating applied."""
+
+    elements: Dict[str, ElementInfo]
+    """A dict mapping an element name to information about them."""
+
+    element_extensions: Dict[str, Dict[str, Dict]]
+    """A dict mapping an element name to a dict of extensions for that element."""
+
+    course_path: str
+
+
+def render(data: dict, context: RenderContext) -> Tuple[str, Set[str]]:
     # This will be a string consisting of `question.html` with Mustache templating applied.
     html = context["html"]
 
@@ -34,7 +53,7 @@ def render(data: dict, context: dict) -> Tuple[str, Set[str]]:
 
     total_time = 0
 
-    def render_element(element: lxml.html.HtmlElement) -> Union[str, None]:
+    def render_element(element: lxml.html.HtmlElement) -> Optional[str]:
         if element.tag not in elements:
             return None
 

@@ -3,7 +3,7 @@ from typing import List
 from traverse import traverse_and_execute, traverse_and_replace
 
 
-def test_traverse_and_execute():
+def test_traverse_and_execute() -> None:
     text: List[str] = []
 
     def capture_text(element):
@@ -15,22 +15,27 @@ def test_traverse_and_execute():
     assert text == ["Hello", "world"]
 
 
-def test_traverse_and_replace_none():
+def test_traverse_and_replace_text() -> None:
+    html = traverse_and_replace("Hello", lambda e: "Goodbye")
+    assert html == "Hello"
+
+
+def test_traverse_and_replace_none() -> None:
     html = traverse_and_replace("<p>Hello</p>", lambda e: None)
     assert html == "<p>Hello</p>"
 
 
-def test_traverse_and_replace_empty():
+def test_traverse_and_replace_empty() -> None:
     html = traverse_and_replace("<p>Hello</p>", lambda e: "")
     assert html == ""
 
 
-def test_traverse_and_replace_identity():
+def test_traverse_and_replace_identity() -> None:
     html = traverse_and_replace("<p>Hello</p>", lambda e: e)
     assert html == "<p>Hello</p>"
 
 
-def test_traverse_and_replace_fragment():
+def test_traverse_and_replace_fragment() -> None:
     def replace(e):
         if e.tag == "p":
             return "<strong>Goodbye</strong>"
@@ -40,7 +45,7 @@ def test_traverse_and_replace_fragment():
     assert html == "<strong>Goodbye</strong>"
 
 
-def test_traverse_and_replace_fragments():
+def test_traverse_and_replace_fragments() -> None:
     def replace(e):
         if e.tag == "p":
             return "<strong>Goodbye</strong><strong>Goodbye</strong>"
@@ -50,7 +55,7 @@ def test_traverse_and_replace_fragments():
     assert html == "<strong>Goodbye</strong><strong>Goodbye</strong>"
 
 
-def traverse_and_replace_nested():
+def traverse_and_replace_nested() -> None:
     def replace(e):
         if e.tag == "strong":
             return "<em>Goodbye</em>"
@@ -60,7 +65,7 @@ def traverse_and_replace_nested():
     assert html == "<p><em>Goodbye</em></p>"
 
 
-def test_traverse_and_replace_recursive():
+def test_traverse_and_replace_recursive() -> None:
     def replace(e):
         if e.tag == "p":
             return "<strong>Goodbye</strong>"
@@ -70,3 +75,8 @@ def test_traverse_and_replace_recursive():
 
     html = traverse_and_replace("<p>Hello</p>", replace)
     assert html == "<em>Goodbye</em>"
+
+
+def test_traverse_and_replace_leading_trailing_text() -> None:
+    html = traverse_and_replace("Hello <i>cruel</i> world", lambda e: "beautiful")
+    assert html == "Hello beautiful world"
