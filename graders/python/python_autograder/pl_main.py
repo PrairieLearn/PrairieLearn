@@ -1,10 +1,9 @@
 import json
 import os
-import sys
 import traceback
 from collections import defaultdict
 from os.path import join
-from unittest import TestLoader, TestSuite
+from unittest import TestLoader
 
 from pl_result import PLTestResult
 
@@ -25,7 +24,7 @@ def add_files(results):
         if os.path.exists(image_fname):
             with open(image_fname, "r") as content_file:
                 imgsrc = content_file.read()
-            if not "images" in test:
+            if "images" not in test:
                 test["images"] = []
             test["images"].append(imgsrc)
             os.remove(image_fname)
@@ -135,7 +134,7 @@ if __name__ == "__main__":
 
         with open(output_fname, mode="w", encoding="utf-8") as out:
             json.dump(grading_result, out)
-    except:
+    except:  # noqa: E722
         # Last-ditch effort to capture meaningful error information
         grading_result = {}
         grading_result["score"] = 0.0

@@ -4,10 +4,9 @@ const router = express.Router();
 const config = require('../../lib/config');
 const QR = require('qrcode-svg');
 
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const async = require('async');
 const path = require('path');

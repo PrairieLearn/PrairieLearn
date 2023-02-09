@@ -5,10 +5,9 @@ var router = express.Router();
 const { checkPasswordOrRedirect } = require('../../middlewares/studentAssessmentAccess');
 var error = require('../../prairielib/lib/error');
 var assessment = require('../../lib/assessment');
-var sqldb = require('../../prairielib/lib/sql-db');
-var sqlLoader = require('../../prairielib/lib/sql-loader');
+var sqldb = require('@prairielearn/postgres');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+var sql = sqldb.loadSqlEquiv(__filename);
 var groupAssessmentHelper = require('../../lib/groups');
 
 router.get('/', async function (req, res, next) {

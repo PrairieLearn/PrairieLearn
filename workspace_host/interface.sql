@@ -1,7 +1,6 @@
 -- BLOCK select_workspace
 SELECT
     w.version,
-    w.homedir_location,
     c.id AS course_id,
     i.id AS institution_id
 FROM

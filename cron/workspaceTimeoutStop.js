@@ -3,10 +3,9 @@ const util = require('util');
 const config = require('../lib/config');
 const logger = require('../lib/logger');
 const workspaceHelper = require('../lib/workspace');
-const sqldb = require('../prairielib/lib/sql-db');
-const sqlLoader = require('../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 module.exports = {};
 

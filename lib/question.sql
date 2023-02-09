@@ -1,6 +1,22 @@
 -- BLOCK select_issues
 SELECT
-    i.*,
+    i.assessment_id,
+    i.authn_user_id,
+    i.course_caused,
+    (CASE WHEN $load_course_data THEN i.course_data END) AS course_data,
+    i.course_id,
+    i.course_instance_id,
+    i.date,
+    i.id,
+    i.instance_question_id,
+    i.instructor_message,
+    i.manually_reported,
+    i.open,
+    i.question_id,
+    i.student_message,
+    (CASE WHEN $load_system_data THEN i.system_data END) AS system_data,
+    i.user_id,
+    i.variant_id,
     format_date_full(i.date, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_date,
     u.uid AS user_uid,
     u.name AS user_name
@@ -15,9 +31,29 @@ WHERE
 ORDER BY
     i.date;
 
--- BLOCK select_submissions
+-- BLOCK select_basic_submissions
 SELECT
-    s.*,
+    -- This includes every `submissions` column EXCEPT for jsonb columns.
+    -- Those can be quite large in size, so we'll only load them for specific
+    -- submissions in the `select_detailed_submissions` query below.
+    s.auth_user_id,
+    s.broken,
+    s.correct,
+    s.credit,
+    s.date,
+    s.duration,
+    s.gradable,
+    s.graded_at,
+    s.grading_method,
+    s.grading_requested_at,
+    s.id,
+    s.mode,
+    s.override_score,
+    s.regradable,
+    s.score,
+    s.sid,
+    s.v2_score,
+    s.variant_id,
     to_jsonb(gj) AS grading_job,
     -- These are separate for historical reasons
     gj.id AS grading_job_id,
@@ -48,8 +84,25 @@ WHERE
 ORDER BY
     s.date DESC;
 
--- BLOCK select_issues_for_variant
-SELECT i.*
+-- BLOCK select_detailed_submissions
+SELECT
+    -- This includes ONLY the jsonb columns from `submissions`.
+    s.feedback,
+    s.format_errors,
+    s.params,
+    s.partial_scores,
+    s.raw_submitted_answer,
+    s.submitted_answer,
+    s.true_answer
+FROM
+    submissions AS s
+WHERE
+    s.id IN (SELECT UNNEST($submission_ids::bigint[]))
+ORDER BY
+   s.date DESC;
+
+-- BLOCK select_issue_count_for_variant
+SELECT COUNT(*)::int
 FROM issues AS i
 WHERE i.variant_id = $variant_id;
 

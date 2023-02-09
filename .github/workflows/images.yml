@@ -46,7 +46,7 @@ jobs:
           platforms: linux/amd64
           push: true
           no-cache: true
-          tags: prairielearn/prairielearn:latest
+          tags: prairielearn/prairielearn:latest,prairielearn/prairielearn:${{ github.sha }}
 
       ######################################################################################################
       # grader-c

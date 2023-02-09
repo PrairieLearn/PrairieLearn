@@ -5,6 +5,7 @@ on:
     branches:
       - master
   pull_request:
+  merge_group:
 
 concurrency:
   # Ensure that we only run one concurrent job for Pull Requests. This ensures
@@ -64,7 +65,9 @@ jobs:
       # socket being available, as well as a specific volume mount and
       # environment variable. See the docs for more details:
       # https://prairielearn.readthedocs.io/en/latest/externalGrading/#running-locally-for-development
-      run: docker run -td -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/prairielearn:/jobs -e HOST_JOBS_DIR=/tmp/prairielearn --name=test_container prairielearn/prairielearn /bin/bash
+      #
+      # We put the Postgres data on a tmpfs volume, which should be much faster.
+      run: docker run -td -v /var/run/docker.sock:/var/run/docker.sock -v /tmp/prairielearn:/jobs --tmpfs=/var/postgres -e HOST_JOBS_DIR=/tmp/prairielearn --name=test_container prairielearn/prairielearn /bin/bash
     - name: Run the Python linter
       run: docker exec test_container /PrairieLearn/docker/lint_python.sh
     - name: Run the JavaScript linter
@@ -85,7 +88,13 @@ jobs:
       # spinning until it eventually times out. This shorter timeout helps
       # ensure that the tests fail more quickly so that people can fix them.
       timeout-minutes: 30
-    - name: Install dependencies on host
+
+    - name: Set up Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+        cache: 'yarn'
+    - name: Install dependencies
       run: yarn install --immutable
     - name: Build executor image
       run: ./tools/executor/build.js

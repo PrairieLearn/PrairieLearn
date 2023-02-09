@@ -1,10 +1,11 @@
-import numpy as np
 import random
 
-def generate(data):
+import numpy as np
 
+
+def generate(data):
     concept = random.choice(["prime", "even", "odd"])
-    data['params']['concept'] = concept
+    data["params"]["concept"] = concept
 
     def is_prime(a):
         return all(a % i for i in np.arange(2, a))
@@ -18,17 +19,16 @@ def generate(data):
 
     dic = []
     if concept == "prime":
-        for num in np.arange(1,20):
+        for num in np.arange(1, 20):
             if num == 1:
-                dic.append({'tag': "false", 'ans': str(num)})
+                dic.append({"tag": "false", "ans": str(num)})
             else:
-                dic.append({'tag': str(is_prime(num)).lower(), 'ans': str(num)})
+                dic.append({"tag": str(is_prime(num)).lower(), "ans": str(num)})
     else:
-        for num in np.arange(1,20):
-            if num % 2 == 0: # this is an even number
-                dic.append({'tag': is_even, 'ans': str(num)})
-            else: # this is an odd number
-                dic.append({'tag': is_odd, 'ans': str(num)})
+        for num in np.arange(1, 20):
+            if num % 2 == 0:  # this is an even number
+                dic.append({"tag": is_even, "ans": str(num)})
+            else:  # this is an odd number
+                dic.append({"tag": is_odd, "ans": str(num)})
 
-
-    data['params']['t_options'] = dic
+    data["params"]["t_options"] = dic
