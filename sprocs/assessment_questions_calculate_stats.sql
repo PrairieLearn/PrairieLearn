@@ -10,17 +10,15 @@ relevant_assessment_instances AS (
         assessment_questions AS aq
         JOIN assessments AS a ON (a.id = aq.assessment_id)
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-        LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.deleted_at IS NULL)
-        LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
-        JOIN enrollments AS e ON ((e.user_id = ai.user_id OR e.user_id = gu.user_id) AND e.course_instance_id = a.course_instance_id)
     WHERE
         aq.id = assessment_question_id_param
-        AND NOT users_is_instructor_in_course_instance(e.user_id, e.course_instance_id)
+        AND ai.include_in_statistics
 ),
 relevant_instance_questions AS (
     SELECT DISTINCT
         iq.*,
-        (ai.user_id, ai.group_id) AS u_gr_id
+        -- Determine a unique ID for each user or group by making group IDs negative.
+        coalesce(ai.user_id, -ai.group_id) AS u_gr_id
     FROM
         instance_questions AS iq
         JOIN relevant_assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
