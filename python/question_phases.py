@@ -31,19 +31,16 @@ class RenderContext(TypedDict):
     """A dict mapping an element name to a dict of extensions for that element."""
 
     course_path: str
+    """The path to the course directory."""
 
 
 def process(
     phase: Phase, data: dict, context: RenderContext
 ) -> Tuple[Optional[str], Set[str]]:
-    # This will be a string consisting of `question.html` with Mustache templating applied.
     html = context["html"]
-
-    # This will be a dict mapping an element name to information about them.
     elements = context["elements"]
-
-    # This will be a dict mapping an element name to a dict of extensions for that element.
     element_extensions = context["element_extensions"]
+    course_path = context["course_path"]
 
     # This will track which elements have been rendered.
     rendered_elements: Set[str] = set()
@@ -59,7 +56,12 @@ def process(
             rendered_elements.add(element.tag)
 
             element_info = elements[element.tag]
-            element_path = CORE_ELEMENTS_PATH / element_info["name"]
+            element_type = element_info["type"]
+            element_name = element_info["name"]
+            if element_type == "core":
+                element_path = CORE_ELEMENTS_PATH / element_name
+            elif element_type == "course":
+                element_path = pathlib.Path(course_path) / "elements" / element_name
             element_controller = element_info["controller"]
             element_controller_path = element_path / element_controller
 
@@ -70,9 +72,7 @@ def process(
             sys.path = copy.copy(SAVED_PATH)
             sys.path.insert(0, str(PYTHON_PATH))
             if element_info["type"] == "course":
-                sys.path.insert(
-                    0, str(pathlib.Path(context["course_path"]) / "serverFilesCourse")
-                )
+                sys.path.insert(0, str(pathlib.Path(course_path) / "serverFilesCourse"))
             sys.path.insert(0, str(element_path))
 
             mod = {}
