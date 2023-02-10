@@ -1,14 +1,8 @@
-from typing import Any, Dict, List, Literal, TypedDict, Union
+from typing import Any, Dict, List, Literal, TypedDict
 
-Phase = Union[
-    Literal["generate"],
-    Literal["prepare"],
-    Literal["render"],
-    Literal["parse"],
-    Literal["grade"],
-    Literal["test"],
-    Literal["file"],
-]
+Phase = Literal["generate", "prepare", "render", "parse", "grade", "test", "file"]
+
+ValueType = Literal["boolean", "integer", "number", "string", "object"]
 
 all_phases: List[Phase] = [
     "generate",
@@ -22,7 +16,7 @@ all_phases: List[Phase] = [
 
 
 class PropInfo(TypedDict):
-    type: str
+    type: ValueType
     present_phases: List[Phase]
     edit_phases: List[Phase]
 
@@ -125,7 +119,7 @@ def check_prop(
     prop: str,
     old_value: Any,
     new_value: Any,
-    value_type: str,
+    value_type: ValueType,
     present_phases: List[Phase],
     edit_phases: List[Phase],
     phase: Phase,
@@ -150,13 +144,13 @@ def check_data(old_data: dict, new_data: dict, phase: Phase) -> None:
     # First, check for extra keys on `new_data`.
     extra_keys = set(new_data.keys()) - set(PROPS.keys())
     if extra_keys:
-        extra_keys_str = ", ".join(key for key in extra_keys)
+        extra_keys_str = ", ".join(extra_keys)
         raise ValueError(f"data contains extra keys: {extra_keys_str}")
 
     # Then, check for missing keys on `new_data`.
     missing_keys = set(old_data.keys()) - set(new_data.keys())
     if missing_keys:
-        missing_keys_str = ", ".join(key for key in missing_keys)
+        missing_keys_str = ", ".join(missing_keys)
         raise ValueError(f"data is missing keys: {missing_keys_str}")
 
     # Validate each entry in `new_data`.
