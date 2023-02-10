@@ -10,7 +10,7 @@ router.get(
   '/',
   asyncHandler(async (req, res, next) => {
     if (!config.devMode) {
-      return next(new Error('devMode logins are not enabled'));
+      throw new Error('devMode login is not enabled');
     }
 
     var authnUid = config.authUid;
