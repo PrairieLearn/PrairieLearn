@@ -109,18 +109,20 @@ module.exports.initExpress = function () {
     next();
   });
 
-  app.use(session({
-    secret: config.secretKey,
-    store: new plSessionStore(),
-    resave: false,
-    saveUninitialized: true,
-    cookie: {
+  app.use(
+    session({
+      secret: config.secretKey,
+      store: new plSessionStore(),
+      resave: false,
+      saveUninitialized: true,
+      cookie: {
         maxAge: config.sessionStoreExpireSeconds,
         httpOnly: true,
         secure: true,
         sameSite: 'None',
-    },
-  }));
+      },
+    })
+  );
 
   // browser detection - data format is https://lancedikson.github.io/bowser/docs/global.html#ParsedResult
   app.use(function (req, res, next) {
