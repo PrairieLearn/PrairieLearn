@@ -1,3 +1,4 @@
+// @ts-check
 const asyncHandler = require('express-async-handler');
 
 const config = require('../lib/config');
@@ -44,12 +45,13 @@ module.exports = asyncHandler(async (req, res, next) => {
     const uuid = data.uuid;
 
     let authnParams = {
-      authnUid: `loadtest+${uuid}@prairielearn.com`,
-      authnUin: `loadtest+${uuid}`,
-      authnName: `Load Test ${uuid}`,
+      uid: `loadtest+${uuid}@prairielearn.com`,
+      uin: `loadtest+${uuid}`,
+      name: `Load Test ${uuid}`,
+      provider: 'LoadTest',
     };
 
-    await authnLib.load_user_profile(req, res, authnParams, 'LoadTest', {
+    await authnLib.loadUser(req, res, authnParams, {
       pl_authn_cookie: false,
       redirect: false,
       locals_authn: true,
@@ -66,25 +68,31 @@ module.exports = asyncHandler(async (req, res, next) => {
   // Allow auth to be bypassed for local dev mode; also used for tests.
   // See `pages/authLoginDev` for cookie-based authentication in dev mode.
   if (config.authType === 'none') {
-    var authnUid = config.authUid;
-    var authnName = config.authName;
-    var authnUin = config.authUin;
+    var uid = config.authUid;
+    var name = config.authName;
+    var uin = config.authUin;
 
     // We allow unit tests to override the user. Unit tests may also override the req_date
     // (middlewares/date.js) and the req_mode (middlewares/authzCourseOrInstance.js).
 
     if (req.cookies.pl_test_user === 'test_student') {
-      authnUid = 'student@illinois.edu';
-      authnName = 'Student User';
-      authnUin = '000000001';
+      uid = 'student@illinois.edu';
+      name = 'Student User';
+      uin = '000000001';
     } else if (req.cookies.pl_test_user === 'test_instructor') {
-      authnUid = 'instructor@illinois.edu';
-      authnName = 'Instructor User';
-      authnUin = '100000000';
+      uid = 'instructor@illinois.edu';
+      name = 'Instructor User';
+      uin = '100000000';
     }
 
-    let authnParams = { authnUid, authnName, authnUin };
-    await authnLib.load_user_profile(req, res, authnParams, 'dev', {
+    let authnParams = {
+      uid,
+      uin,
+      name,
+      provider: 'dev',
+    };
+
+    await authnLib.loadUser(req, res, authnParams, {
       redirect: false,
       pl_authn_cookie: false,
       locals_authn: true,
@@ -126,8 +134,9 @@ module.exports = asyncHandler(async (req, res, next) => {
 
   let authnParams = {
     user_id: authnData.user_id,
+    provider: authnData.authn_provider_name,
   };
-  await authnLib.load_user_profile(req, res, authnParams, authnData.authn_provider_name, {
+  await authnLib.loadUser(req, res, authnParams, {
     redirect: false,
     // Cookie is being set here again to reset the cookie timeout (#2268)
     pl_authn_cookie: true,
