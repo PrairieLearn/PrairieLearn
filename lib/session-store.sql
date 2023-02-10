@@ -10,7 +10,7 @@ WITH delete_expired AS (
     DELETE FROM pl_sessions
     WHERE
         sid = $sid
-        AND EXTRACT(EPOCH FROM (now() - updated_at)) > $expirationInSeconds
+        AND EXTRACT(EPOCH FROM (now() - updated_at)) >= $expirationInSeconds
     RETURNING sid
 )
 SELECT pl_sessions.*
@@ -26,13 +26,19 @@ WHERE
 DELETE FROM pl_sessions WHERE sid = $sid;
 
 -- BLOCK length
-SELECT count(*) AS count FROM pl_sessions;
--- consider expired
+SELECT count(*) AS count
+FROM pl_sessions
+WHERE
+    EXTRACT(EPOCH FROM (now() - updated_at)) < $expirationInSeconds
+;
 
 -- BLOCK clear
 TRUNCATE pl_sessions;
 
 -- BLOCK allsessions
-SELECT * FROM pl_sessions
+SELECT *
+FROM pl_sessions
+WHERE
+    EXTRACT(EPOCH FROM (now() - updated_at)) < $expirationInSeconds
+    -- do this math the other way
 ORDER BY sid;
--- consider expired

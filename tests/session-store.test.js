@@ -69,22 +69,17 @@ describe('session-store', function () {
         });
     });
 
-    //
-    // Test expiration
-    //
     describe('expiration functionality', () => {
-        it('get() of an expired entry should return null', async () => {
+        it('set() 1 session, mark old, get() should return null', async () => {
             await promisify(store.set)('expire1', {value: 1});
 
-            let expire_query =
-    `UPDATE pl_sessions SET updated_at = '1900-01-01 00:00:00'
-    WHERE sid='expire1';
-    `;
-            await sqldb.queryAsync(expire_query, {});
+            await sqldb.queryAsync(
+                `UPDATE pl_sessions SET updated_at = '1900-01-01 00:00:00'
+                WHERE sid='expire1'`,
+                {});
             let result = await promisify(store.get)('expire1');
             assert.isNull(result);
         });
-
 
         it('set() 5 sessions', async () => {
             await promisify(store.set)('sid1', {value: 1});
@@ -94,23 +89,57 @@ describe('session-store', function () {
             await promisify(store.set)('sid5', {value: 5});
         });
 
-        it('set() 3 sessions, mark them old, run the cron expiry', async () => {
+        it('set() 3 sessions, mark them old', async () => {
             await promisify(store.set)('expire2', 'old');
             await promisify(store.set)('expire3', 'old');
             await promisify(store.set)('expire4', 'old');
 
-            let expire_query =
-    `UPDATE pl_sessions SET updated_at = '1900-01-01 00:00:00' WHERE sid ~ 'expire';`;
+            await sqldb.queryAsync(
+                `UPDATE pl_sessions SET updated_at = '1900-01-01 00:00:00' WHERE sid ~ 'expire';`,
+                {});
+        });
 
-            await sqldb.queryAsync(expire_query, {});
+        it('database has 8 rows', async () => {
+            let result = await sqldb.queryAsync(`SELECT * FROM pl_sessions`, {});
+            assert.equal(result.rowCount, 8);
+        });
 
-            await promisify(sessionStoreExpire.run)();
+        it('get(\'expire2\') should return null and remove from db', async () => {
+            let result = await promisify(store.get)('expire2');
+            assert.isNull(result);
+        });
+
+        it('database has 7 rows', async () => {
+            let result = await sqldb.queryAsync(`SELECT * FROM pl_sessions`, {});
+            assert.equal(result.rowCount, 7);
         });
 
         it('all() returns list of 5', async () => {
             let result = await promisify(store.all)();
             assert.isArray(result);
             assert.lengthOf(result, 5);
+        });
+
+        it('length() returns 5', async () => {
+            let result = await promisify(store.length)();
+            assert.equal(result, 5);
+        });
+
+        it('mark all sessions in db as old', async () => {
+            await sqldb.queryAsync(
+                `UPDATE pl_sessions SET updated_at = '1900-01-01 00:00:00';`,
+                {});
+        });
+
+        it('set() 1 session', async () => {
+            await promisify(store.set)('sid1', {value: 1});
+        });
+
+        it('run cron, database should have 1 row', async () => {
+            await promisify(sessionStoreExpire.run)();
+
+            let result = await sqldb.queryAsync(`SELECT * FROM pl_sessions`, {});
+            assert.equal(result.rowCount, 1);
         });
     });
 });
