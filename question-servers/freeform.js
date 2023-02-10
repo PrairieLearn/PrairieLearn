@@ -876,6 +876,7 @@ module.exports = {
     // Switch based on which renderer is enabled for this course
     const useNewQuestionRenderer = _.get(context, 'course.options.useNewQuestionRenderer', false);
     let processFunction;
+    /** @type {[string, import('../lib/code-caller/index').CodeCaller, any, any, string]} */
     let args;
     // eslint-disable-next-line no-constant-condition
     if (true) {
