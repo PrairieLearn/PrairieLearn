@@ -12,6 +12,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cookieParser = require('cookie-parser');
 const passport = require('passport');
+const session = require('express-session');
 const Bowser = require('bowser');
 const http = require('http');
 const https = require('https');
@@ -54,6 +55,7 @@ const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
 const { enrichSentryScope } = require('./lib/sentry');
 const lifecycleHooks = require('./lib/lifecycle-hooks');
+const plSessionStore = require('./lib/session-store');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -106,6 +108,19 @@ module.exports.initExpress = function () {
     config.setLocals(res.locals);
     next();
   });
+
+  app.use(session({
+    secret: config.secretKey,
+    store: new plSessionStore(),
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+        maxAge: config.sessionStoreExpireSeconds,
+        httpOnly: true,
+        secure: true,
+        sameSite: 'None',
+    },
+  }));
 
   // browser detection - data format is https://lancedikson.github.io/bowser/docs/global.html#ParsedResult
   app.use(function (req, res, next) {
