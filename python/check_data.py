@@ -102,7 +102,7 @@ PROPS: Dict[str, PropInfo] = {
         "present_phases": ["file"],
         "edit_phases": [],
     },
-    "test": {
+    "test_type": {
         "type": "string",
         "present_phases": ["test"],
         "edit_phases": [],

@@ -592,8 +592,8 @@ module.exports = {
       courseIssues,
       data: result?.data ?? data,
       html: result?.html ?? '',
-      fileData: null,
-      renderedElementNames: result?.rendered_elements ?? [],
+      fileData: Buffer.from(result?.file ?? '', 'base64'),
+      renderedElementNames: result?.processed_elements ?? [],
     };
   },
 

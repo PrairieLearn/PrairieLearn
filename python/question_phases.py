@@ -1,9 +1,11 @@
+import base64
 import copy
+import io
 import os
 import pathlib
 import sys
 import time
-from typing import Dict, Optional, Set, Tuple, TypedDict
+from typing import Any, Dict, Optional, Set, Tuple, TypedDict
 
 import lxml.html
 from check_data import Phase, check_data
@@ -34,6 +36,25 @@ class RenderContext(TypedDict):
     """The path to the course directory."""
 
 
+def filelike_to_string(filelike: Any) -> str:
+    # if val is None, replace it with empty string
+    if filelike is None:
+        filelike = ""
+
+    # if val is a file-like object, read whatever is inside
+    if isinstance(filelike, io.IOBase):
+        filelike.seek(0)
+        filelike = filelike.read()
+
+    # if val is a string, treat it as utf-8
+    if isinstance(filelike, str):
+        filelike = bytes(filelike, "utf-8")
+
+    # if this next call does not work, it will throw an error, because
+    # the thing returned by file() does not have the correct format
+    filelike = base64.b64encode(filelike).decode()
+
+
 def process(
     phase: Phase, data: dict, context: RenderContext
 ) -> Tuple[Optional[str], Set[str]]:
@@ -42,18 +63,25 @@ def process(
     element_extensions = context["element_extensions"]
     course_path = context["course_path"]
 
-    # This will track which elements have been rendered.
-    rendered_elements: Set[str] = set()
+    # This will track which elements have been processed.
+    processed_elements: Set[str] = set()
+
+    # If we're in the `render` phase, we'll eventually capture the HTML here.
+    # If we're in the `file` phase, we'll capture file data here.
+    # Otherwise, this will remain `None`.
+    result = None
 
     total_time = 0
 
     def process_element(element: lxml.html.HtmlElement) -> Optional[str]:
+        nonlocal result
+
         if element.tag not in elements:
             return element
 
         try:
             start = time.time()
-            rendered_elements.add(element.tag)
+            processed_elements.add(element.tag)
 
             element_info = elements[element.tag]
             element_type = element_info["type"]
@@ -116,7 +144,7 @@ def process(
             temp_tail = element.tail
             element.tail = None
 
-            element_rendered_html = mod[phase](lxml.html.tostring(element), data)
+            element_value = mod[phase](lxml.html.tostring(element), data)
 
             # Restore the tail text.
             element.tail = temp_tail
@@ -131,23 +159,29 @@ def process(
 
             if phase == "render":
                 # TODO: validate that return value was a string?
-                return element_rendered_html
+                return element_value
+            elif phase == "file":
+                if result is not None:
+                    raise Exception("Another element already returned a file")
+                result = element_value
         except Exception:
             raise Exception(f"Error processing element {element.tag}")
 
     def process_element_return_none(element: lxml.html.HtmlElement) -> None:
         process_element(element)
 
-    rendered_html = None
-
     if phase == "render":
-        rendered_html = traverse_and_replace(html, process_element)
+        result = traverse_and_replace(html, process_element)
     else:
         traverse_and_execute(html, process_element_return_none)
 
-    # We added an `extensions` property to the `data` object; remove it.
-    del data["extensions"]
+    if phase == "file":
+        result = filelike_to_string(result)
+
+    # We may have added an `extensions` property to the `data` object; remove it.
+    if "extensions" in data:
+        del data["extensions"]
 
     print(f"Total process time: {total_time * 1000}ms")
 
-    return rendered_html, rendered_elements
+    return result, processed_elements

@@ -156,13 +156,12 @@ def worker_loop():
                 context = args[1]
 
                 start = time.time()
-                rendered_html, rendered_elements = question_phases.process(
-                    fcn, data, context
-                )
+                result, rendered_elements = question_phases.process(fcn, data, context)
                 end = time.time()
                 print(f"processed in {(end - start) * 1000}ms")
                 val = {
-                    "html": rendered_html if fcn == "render" else None,
+                    "html": result if fcn == "render" else None,
+                    "file": result if fcn == "file" else None,
                     "data": data,
                     "rendered_elements": list(rendered_elements),
                 }
