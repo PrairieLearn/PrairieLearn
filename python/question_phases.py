@@ -5,11 +5,12 @@ import os
 import pathlib
 import sys
 import time
-from typing import Any, Dict, Optional, Set, Tuple, TypedDict
+from typing import Any, Dict, Literal, Optional, Set, Tuple, TypedDict
 
 import lxml.html
 from check_data import Phase, check_data
 from traverse import traverse_and_execute, traverse_and_replace
+from typing_extensions import assert_never
 
 PYTHON_PATH = pathlib.Path(__file__).parent.parent.resolve()
 CORE_ELEMENTS_PATH = (PYTHON_PATH / "elements").resolve()
@@ -19,7 +20,7 @@ SAVED_PATH = copy.copy(sys.path)
 class ElementInfo(TypedDict):
     name: str
     controller: str
-    type: str
+    type: Literal["core", "course"]
 
 
 class RenderContext(TypedDict):
@@ -91,7 +92,7 @@ def process(
             elif element_type == "course":
                 element_path = pathlib.Path(course_path) / "elements" / element_name
             else:
-                raise Exception(f"Unknown element type: {element_type}")
+                assert_never(element_type)
             element_controller = element_info["controller"]
             element_controller_path = element_path / element_controller
 
