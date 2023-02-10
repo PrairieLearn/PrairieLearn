@@ -111,8 +111,8 @@ module.exports = {
     } catch (err) {
       if (err && err.code === 'ENOENT') {
         // Directory doesn't exist, most likely a course with no elements.
-        // Proceed with an empty array.
-        return [];
+        // Proceed with an empty object.
+        return {};
       }
 
       throw err;
@@ -506,7 +506,7 @@ module.exports = {
     err = checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test']);
     if (err) return err;
     // prettier-ignore
-    err = checkProp('feedback',              'object',  ['render', 'grade', 'test'],          ['grade', 'feedback']);
+    err = checkProp('feedback',              'object',  ['render', 'grade', 'test'],          ['grade', 'test']);
     if (err) return err;
     // prettier-ignore
     err = checkProp('editable',              'boolean', ['render'],                           []);
