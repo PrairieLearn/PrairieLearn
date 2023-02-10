@@ -20,6 +20,7 @@ router.get('/', function (req, res, next) {
     url = oauth2Client.generateAuthUrl({
       access_type: 'online',
       scope: scopes,
+      prompt: 'select_account',
       // FIXME: should add some state here to avoid CSRF
     });
   } catch (err) {
