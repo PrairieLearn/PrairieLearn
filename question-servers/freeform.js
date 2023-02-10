@@ -576,7 +576,10 @@ module.exports = {
     }
     console.log(`processed in ${Date.now() - start}ms`);
 
-    if (output?.length > 0) {
+    // Temporarily prevent output from creating a course issue.
+    // TODO: revert this once we remove debug output from the renderer.
+    // eslint-disable-next-line no-constant-condition
+    if (output?.length > 0 && false) {
       courseIssues.push(
         new CourseIssueError(`output logged on console during ${phase}()`, {
           data: { outputBoth: output },
