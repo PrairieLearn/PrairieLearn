@@ -23,7 +23,7 @@ router.get(
       name,
       uin,
       provider: 'dev',
-     };
+    };
 
     await authnLib.loadUser(req, res, authnParams, {
       redirect: true,

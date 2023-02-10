@@ -1,5 +1,4 @@
 // @ts-check
-const ERR = require('async-stacktrace');
 const assert = require('assert');
 const Sentry = require('@prairielearn/sentry');
 const express = require('express');
