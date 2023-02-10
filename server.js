@@ -81,18 +81,22 @@ if ('h' in argv || 'help' in argv) {
 
 /**
  * Creates the express application and sets up all PrairieLearn routes.
- * @param {import('express').Application} expressApp The express "app" object that was created.
  * @return {import('express').Application} The express "app" object that was created.
  */
-module.exports.initExpress = function (expressApp) {
-  const app = expressApp ?? express();
+module.exports.initExpress = function () {
+  const app = express();
   app.set('views', path.join(__dirname, 'pages'));
   app.set('view engine', 'ejs');
   app.set('trust proxy', config.trustProxy);
 
-  // This should come first so that we get instrumentation on all our requests.
-  app.use(Sentry.Handlers.requestHandler());
-  app.use(Sentry.Handlers.tracingHandler());
+  // These should come first so that we get instrumentation on all our requests.
+  if (config.sentryDsn) {
+    app.use(Sentry.Handlers.requestHandler());
+
+    if (config.sentryTracesSampleRate) {
+      app.use(Sentry.Handlers.tracingHandler());
+    }
+  }
 
   // Set res.locals variables first, so they will be available on
   // all pages including the error page (which we could jump to at
@@ -1728,11 +1732,8 @@ module.exports.initExpress = function (expressApp) {
 /** @type {import('http').Server | import('https').Server} */
 var server;
 
-/**
- * @param {import('express').Application} app
- */
-module.exports.startServer = async (app) => {
-  module.exports.initExpress(app);
+module.exports.startServer = async () => {
+  const app = module.exports.initExpress();
 
   if (config.serverType === 'https') {
     const key = await fs.promises.readFile(config.sslKeyFile);
@@ -1807,7 +1808,6 @@ module.exports.insertDevUser = function (callback) {
 };
 
 if (config.startServer) {
-  const app = express();
   async.series(
     [
       async () => {
@@ -1837,11 +1837,9 @@ if (config.startServer) {
             dsn: config.sentryDsn,
             environment: config.sentryEnvironment,
             integrations: [new ProfilingIntegration()],
-            // TODO: make configurable.
-            tracesSampleRate: 1.0,
-            // TODO: make configurable.
+            tracesSampleRate: config.sentryTracesSampleRate,
             // This is relative to `tracesSampleRate`.
-            profilesSampleRate: 1.0,
+            profilesSampleRate: config.sentryProfilesSampleRate,
             beforeSend: (event) => {
               // This will be necessary until we can consume the following change:
               // https://github.com/chimurai/http-proxy-middleware/pull/823
@@ -2034,7 +2032,7 @@ if (config.startServer) {
       },
       async () => {
         logger.verbose('Starting server...');
-        await module.exports.startServer(app);
+        await module.exports.startServer();
       },
       async () => socketServer.init(server),
       function (callback) {
