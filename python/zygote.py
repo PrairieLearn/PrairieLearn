@@ -20,6 +20,7 @@ import io
 import json
 import os
 import signal
+import socket
 import sys
 from inspect import signature
 
@@ -247,6 +248,12 @@ def terminate_worker(signum, stack):
 
 signal.signal(signal.SIGTERM, terminate_worker)
 signal.signal(signal.SIGINT, terminate_worker)  # Ctrl-C case
+
+port = int(os.environ.get("PORT"))
+
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    s.connect(("127.0.0.1", port))
+    s.sendall(b"this is some data")
 
 with open(4, "w", encoding="utf-8") as exitf:
     while True:
