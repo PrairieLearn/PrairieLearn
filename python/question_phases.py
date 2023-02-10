@@ -52,7 +52,7 @@ def filelike_to_string(filelike: Any) -> str:
 
     # if this next call does not work, it will throw an error, because
     # the thing returned by file() does not have the correct format
-    filelike = base64.b64encode(filelike).decode()
+    return base64.b64encode(filelike).decode()
 
 
 def process(
@@ -90,6 +90,8 @@ def process(
                 element_path = CORE_ELEMENTS_PATH / element_name
             elif element_type == "course":
                 element_path = pathlib.Path(course_path) / "elements" / element_name
+            else:
+                raise Exception(f"Unknown element type: {element_type}")
             element_controller = element_info["controller"]
             element_controller_path = element_path / element_controller
 
