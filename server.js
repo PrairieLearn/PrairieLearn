@@ -3,6 +3,7 @@
 const opentelemetry = require('@prairielearn/opentelemetry');
 
 const Sentry = require('@prairielearn/sentry');
+// `@sentry/tracing` must be imported before `@sentry/profiling-node`.
 require('@sentry/tracing');
 const { ProfilingIntegration } = require('@sentry/profiling-node');
 
