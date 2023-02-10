@@ -1834,10 +1834,15 @@ if (config.startServer) {
 
         // Same with Sentry configuration.
         if (config.sentryDsn) {
+          const integrations = [];
+          if (config.sentryProfilesSampleRate) {
+            integrations.push(new ProfilingIntegration());
+          }
+
           await Sentry.init({
             dsn: config.sentryDsn,
             environment: config.sentryEnvironment,
-            integrations: [new ProfilingIntegration()],
+            integrations,
             tracesSampleRate: config.sentryTracesSampleRate,
             // This is relative to `tracesSampleRate`.
             profilesSampleRate: config.sentryProfilesSampleRate,
