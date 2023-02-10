@@ -1835,7 +1835,7 @@ if (config.startServer) {
         // Same with Sentry configuration.
         if (config.sentryDsn) {
           const integrations = [];
-          if (config.sentryProfilesSampleRate) {
+          if (config.sentryTracesSampleRate && config.sentryProfilesSampleRate) {
             integrations.push(new ProfilingIntegration());
           }
 
