@@ -1,4 +1,3 @@
-// @ts-check
 const assert = require('assert');
 const Sentry = require('@prairielearn/sentry');
 const express = require('express');
