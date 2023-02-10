@@ -17,7 +17,9 @@ relevant_assessment_instances AS (
 relevant_instance_questions AS (
     SELECT DISTINCT
         iq.*,
-        -- Determine a unique ID for each user or group by making group IDs negative.
+        -- Determine a unique ID for each user or group by making group IDs
+        -- negative. Exactly one of user_id or group_id will be NULL, so this
+        -- results in a unqiue non-NULL ID for each assessment instance.
         coalesce(ai.user_id, -ai.group_id) AS u_gr_id
     FROM
         instance_questions AS iq
@@ -26,10 +28,10 @@ relevant_instance_questions AS (
 ),
 assessment_scores_by_user_or_group AS (
     SELECT
-        (ai.user_id, ai.group_id) AS u_gr_id,
+        coalesce(ai.user_id, -ai.group_id) AS u_gr_id,
         max(ai.score_perc) AS score_perc
     FROM relevant_assessment_instances AS ai
-    GROUP BY (ai.user_id, ai.group_id)
+    GROUP BY coalesce(ai.user_id, -ai.group_id)
 ),
 question_stats_by_user_or_group AS (
     SELECT

@@ -76,7 +76,7 @@ BEGIN
         auto_close := TRUE;
     END IF;
 
-    -- we will use this for statistics if the user is NOT an instructor
+    -- we will use this assessment instance for statistics if the user is NOT an instructor
     include_in_statistics := NOT users_is_instructor_in_course_instance(
         assessment_instances_insert.user_id,
         assessment.course_instance_id
