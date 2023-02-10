@@ -2,7 +2,6 @@ from typing import Callable, List, Optional, Union
 
 import lxml.html
 
-
 ElementReplacement = Optional[
     Union[str, lxml.html.HtmlElement, List[lxml.html.HtmlElement]]
 ]
