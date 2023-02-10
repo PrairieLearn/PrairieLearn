@@ -82,12 +82,13 @@ router.post(
     }
 
     let authnParams = {
-      authnUid,
-      authnName,
-      authnUin,
+      uid: authnUid,
+      name: authnName,
+      uin: authnUin,
+      provider: 'SAML',
     };
 
-    await authnLib.load_user_profile(req, res, authnParams, 'SAML', {
+    await authnLib.loadUser(req, res, authnParams, {
       pl_authn_cookie: true,
       redirect: true,
     });

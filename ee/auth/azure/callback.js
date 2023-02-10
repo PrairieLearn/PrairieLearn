@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const passport = require('passport');
 const express = require('express');
@@ -19,12 +20,13 @@ router.post(
       if (!user) return next(new Error('Login failed'));
 
       let authnParams = {
-        authnUid: user.upn,
-        authnName: user.displayName,
-        authnUin: null,
+        uid: user.upn,
+        name: user.displayName,
+        uin: null,
+        provider: 'Azure',
       };
 
-      await authnLib.load_user_profile(req, res, authnParams, 'Azure', {
+      await authnLib.loadUser(req, res, authnParams, {
         redirect: true,
         pl_authn_cookie: true,
       });

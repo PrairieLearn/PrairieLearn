@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const assert = require('assert');
 const Sentry = require('@prairielearn/sentry');
@@ -14,7 +15,7 @@ const OAuth2 = google.auth.OAuth2;
 
 router.get(
   '/',
-  asyncHandler(async (req, res, next) => {
+  asyncHandler(async (req, res, _next) => {
     if (!config.hasOauth) throw new Error('Google login is not enabled');
     const code = req.query.code;
     if (code == null) {
@@ -29,7 +30,7 @@ router.get(
     );
 
     logger.verbose('Got Google auth with code: ' + code);
-    oauth2Client.getToken(code).catch((err) => {
+    const tokens = oauth2Client.getToken(code).catch((err) => {
       if (err?.response) {
         // This is probably a detailed error from the Google API client. We'll
         // pick off the useful bits and attach them to the Sentry scope so that
@@ -56,11 +57,12 @@ router.get(
     assert(identity.email);
 
     let authnParams = {
-      authnUid: identity.email,
-      authnName: identity.name || identity.email,
-      authnUin: identity.sub,
+      uid: identity.email,
+      name: identity.name || identity.email,
+      uin: identity.sub,
+      provider: 'Google',
     };
-    await authnLib.load_user_profile(req, res, authnParams, 'Google', {
+    await authnLib.loadUser(req, res, authnParams, {
       pl_authn_cookie: true,
       redirect: true,
     });

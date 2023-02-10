@@ -1,3 +1,4 @@
+// @ts-check
 const { Router } = require('express');
 const asyncHandler = require('express-async-handler');
 
@@ -8,18 +9,23 @@ var router = Router();
 
 router.get(
   '/',
-  asyncHandler(async (req, res, next) => {
+  asyncHandler(async (req, res, _next) => {
     if (!config.devMode) {
       throw new Error('devMode login is not enabled');
     }
 
-    var authnUid = config.authUid;
-    var authnName = config.authName;
-    var authnUin = config.authUin;
+    var uid = config.authUid;
+    var name = config.authName;
+    var uin = config.authUin;
 
-    let authnParams = { authnUid, authnName, authnUin };
+    let authnParams = {
+      uid,
+      name,
+      uin,
+      provider: 'dev',
+     };
 
-    await authnLib.load_user_profile(req, res, authnParams, 'dev', {
+    await authnLib.loadUser(req, res, authnParams, {
       redirect: true,
       pl_authn_cookie: true,
     });
