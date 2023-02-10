@@ -55,7 +55,7 @@ const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
 const { enrichSentryScope } = require('./lib/sentry');
 const lifecycleHooks = require('./lib/lifecycle-hooks');
-const plSessionStore = require('./lib/session-store');
+const SessionStore = require('./lib/session-store');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -112,7 +112,9 @@ module.exports.initExpress = function () {
   app.use(
     session({
       secret: config.secretKey,
-      store: new plSessionStore(),
+      store: new SessionStore({
+        expireSeconds: config.sessionStoreExpireSeconds,
+      }),
       resave: false,
       saveUninitialized: true,
       cookie: {

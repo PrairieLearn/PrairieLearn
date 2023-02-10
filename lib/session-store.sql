@@ -2,8 +2,7 @@
 INSERT INTO pl_sessions (sid, session, updated_at) VALUES
 ($sid, $session::jsonb, now())
 ON CONFLICT (sid) DO
-UPDATE SET session = $session::jsonb, updated_at = now()
-;
+UPDATE SET session = $session::jsonb, updated_at = now();
 
 -- BLOCK get
 WITH delete_expired AS (
@@ -19,8 +18,7 @@ SELECT pl_sessions.*
     -- Only return something that isn't in the deleted result
 WHERE
     sid = $sid
-    AND delete_expired.sid IS NULL
-;
+    AND delete_expired.sid IS NULL;
 
 -- BLOCK destroy
 DELETE FROM pl_sessions WHERE sid = $sid;
@@ -29,8 +27,7 @@ DELETE FROM pl_sessions WHERE sid = $sid;
 SELECT count(*) AS count
 FROM pl_sessions
 WHERE
-    EXTRACT(EPOCH FROM (now() - updated_at)) < $expirationInSeconds
-;
+    EXTRACT(EPOCH FROM (now() - updated_at)) < $expirationInSeconds;
 
 -- BLOCK clear
 TRUNCATE pl_sessions;

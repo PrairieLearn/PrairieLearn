@@ -5,3 +5,5 @@ columns
 
 indexes
     pl_sessions_pkey: PRIMARY KEY (sid) USING btree (sid)
+    pl_sessions_session_idx: USING gin (session)
+    pl_sessions_updated_at_idx: USING btree (updated_at)
