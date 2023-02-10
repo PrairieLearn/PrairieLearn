@@ -75,9 +75,11 @@ def try_dumps(obj, sort_keys=False, allow_nan=False):
         raise
 
 
-def worker_loop():
+def worker_loop(s: socket.socket):
     # whether the PRNGs have already been seeded in this worker_loop() call
     seeded = False
+
+    s.sendall(b"some data from the worker")
 
     # file descriptor 3 is for output data
     with open(3, "w", encoding="utf-8") as outf:
@@ -253,74 +255,73 @@ port = int(os.environ.get("PORT"))
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.connect(("127.0.0.1", port))
-    s.sendall(b"this is some data")
 
-with open(4, "w", encoding="utf-8") as exitf:
-    while True:
-        worker_pid = os.fork()
-        if worker_pid == 0:
-            # Ensure that no code running in the worker can interact with
-            # file descriptor 4
-            exitf.close()
+    with open(4, "w", encoding="utf-8") as exitf:
+        while True:
+            worker_pid = os.fork()
+            if worker_pid == 0:
+                # Ensure that no code running in the worker can interact with
+                # file descriptor 4
+                exitf.close()
 
-            # If configured to do so, drop to a deprivileged user before running
-            # any user code. This should generally only be enabled when running
-            # in Docker, as the `prairielearn/executor` image will be guaranteed
-            # to have the user that we drop to.
-            if drop_privileges:
-                import pwd
+                # If configured to do so, drop to a deprivileged user before running
+                # any user code. This should generally only be enabled when running
+                # in Docker, as the `prairielearn/executor` image will be guaranteed
+                # to have the user that we drop to.
+                if drop_privileges:
+                    import pwd
 
-                user = pwd.getpwnam("executor")
-                os.setgid(user.pw_gid)
-                os.setuid(user.pw_uid)
+                    user = pwd.getpwnam("executor")
+                    os.setgid(user.pw_gid)
+                    os.setuid(user.pw_uid)
 
-            worker_loop()
+                worker_loop(s)
 
-            break
-        else:
-            pid, status = os.waitpid(worker_pid, 0)
-            worker_pid = 0
-            if os.WIFEXITED(status):
-                if os.WEXITSTATUS(status) == 0:
-                    # Everything is ok, the worker exited gracefully,
-                    # just repeat
+                break
+            else:
+                pid, status = os.waitpid(worker_pid, 0)
+                worker_pid = 0
+                if os.WIFEXITED(status):
+                    if os.WEXITSTATUS(status) == 0:
+                        # Everything is ok, the worker exited gracefully,
+                        # just repeat
 
-                    exited = True
+                        exited = True
 
-                    # Once this child exits, clean up after it if we
-                    # were running as the `executor` user
-                    if drop_privileges:
-                        # Kill all processes started by `executor`.
-                        os.system("pkill -u executor --signal SIGKILL")
+                        # Once this child exits, clean up after it if we
+                        # were running as the `executor` user
+                        if drop_privileges:
+                            # Kill all processes started by `executor`.
+                            os.system("pkill -u executor --signal SIGKILL")
 
-                        # Check that all processes are gone. If they're not,
-                        # that probably means that someone is trying to escape
-                        # by repeatedly forking. In that case, we'll refuse to
-                        # write an exit confirmation to FD 4. This process will
-                        # be killed, and if we're running inside a Docker container,
-                        # the entire container should be killed too.
-                        import psutil
+                            # Check that all processes are gone. If they're not,
+                            # that probably means that someone is trying to escape
+                            # by repeatedly forking. In that case, we'll refuse to
+                            # write an exit confirmation to FD 4. This process will
+                            # be killed, and if we're running inside a Docker container,
+                            # the entire container should be killed too.
+                            import psutil
 
-                        if any(
-                            p.username() == "executor" for p in psutil.process_iter()
-                        ):
-                            raise Exception(
-                                "found remaining processes belonging to executor user"
-                            )
+                            if any(
+                                p.username() == "executor" for p in psutil.process_iter()
+                            ):
+                                raise Exception(
+                                    "found remaining processes belonging to executor user"
+                                )
 
-                    # We'll need to write a confirmation message on file
-                    # descriptor 4 so that PL knows that control was actually
-                    # returned to the zygote.
-                    json.dump({"exited": True}, exitf)
-                    exitf.write("\n")
-                    exitf.flush()
+                        # We'll need to write a confirmation message on file
+                        # descriptor 4 so that PL knows that control was actually
+                        # returned to the zygote.
+                        json.dump({"exited": True}, exitf)
+                        exitf.write("\n")
+                        exitf.flush()
+                    else:
+                        # The worker did not exit gracefully
+                        raise Exception(
+                            "worker process exited unexpectedly with status %d" % status
+                        )
                 else:
-                    # The worker did not exit gracefully
+                    # Something else happened that is weird
                     raise Exception(
                         "worker process exited unexpectedly with status %d" % status
                     )
-            else:
-                # Something else happened that is weird
-                raise Exception(
-                    "worker process exited unexpectedly with status %d" % status
-                )
