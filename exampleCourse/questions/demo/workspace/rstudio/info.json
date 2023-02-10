@@ -1,0 +1,19 @@
+{
+    "uuid": "92344697-f0ba-4dc2-af2b-e112a48d04f0",
+    "title": "Workspace demo: RStudio",
+    "topic": "Workspace",
+    "tags": [
+        "sp23",
+        "echuber2",
+        "balamut2"
+    ],
+    "type": "v3",
+    "singleVariant": true,
+    "workspaceOptions": {
+        "image": "prairielearn/workspace-rstudio",
+        "port": 3939,
+        "args": "",
+        "rewriteUrl": false,
+        "home": "/home/rstudio/workspace"
+    }
+}
