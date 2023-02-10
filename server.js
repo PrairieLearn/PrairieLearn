@@ -1627,9 +1627,18 @@ module.exports.initExpress = function () {
   // Administrator pages ///////////////////////////////////////////////
 
   app.use('/pl/administrator', require('./middlewares/authzIsAdministrator'));
+  app.use('/pl/administrator/admins', require('./pages/administratorAdmins/administratorAdmins'));
   app.use(
-    '/pl/administrator/overview',
-    require('./pages/administratorOverview/administratorOverview')
+    '/pl/administrator/settings',
+    require('./pages/administratorSettings/administratorSettings')
+  );
+  app.use(
+    '/pl/administrator/courses',
+    require('./pages/administratorCourses/administratorCourses')
+  );
+  app.use(
+    '/pl/administrator/networks',
+    require('./pages/administratorNetworks/administratorNetworks')
   );
   app.use(
     '/pl/administrator/queries',

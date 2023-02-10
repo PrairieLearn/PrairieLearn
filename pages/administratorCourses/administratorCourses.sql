@@ -1,15 +1,5 @@
 -- BLOCK select
 WITH
-select_administrator_users AS (
-    SELECT
-        coalesce(
-            jsonb_agg(to_json(u) ORDER BY u.uid, u.user_id),
-            '[]'::jsonb
-        ) AS administrator_users
-    FROM
-        administrators AS adm
-        JOIN users AS u ON (u.user_id = adm.user_id)
-),
 select_course_request_jobs AS (
     SELECT
         cr.id,
@@ -64,30 +54,6 @@ select_courses AS (
     WHERE
         c.deleted_at IS NULL
 ),
-select_networks AS (
-    SELECT
-        coalesce(
-            jsonb_agg(jsonb_build_object(
-                    'network', n.network,
-                    'start_date', coalesce(format_date_full_compact(lower(n.during), config_select('display_timezone')), '—'),
-                    'end_date', coalesce(format_date_full_compact(upper(n.during), config_select('display_timezone')), '—'),
-                    'location', n.location,
-                    'purpose', n.purpose
-                ) ORDER BY n.during, n.network),
-            '[]'::jsonb
-        ) AS networks
-    FROM
-        exam_mode_networks AS n
-),
-select_config AS (
-    SELECT
-        coalesce(
-            jsonb_agg(to_json(c) ORDER BY c.key),
-            '[]'::jsonb
-        ) AS configs
-    FROM
-        config AS c
-),
 select_institutions_with_authn_providers AS (
     SELECT
         i.*,
@@ -111,18 +77,12 @@ select_institutions AS (
         select_institutions_with_authn_providers AS i
 )
 SELECT
-    administrator_users,
     course_requests,
     courses,
-    networks,
-    configs,
     institutions
 FROM
-    select_administrator_users,
     select_course_requests,
     select_courses,
-    select_networks,
-    select_config,
     select_institutions;
 
 -- BLOCK select_course
@@ -130,9 +90,7 @@ SELECT * FROM pl_courses WHERE id = $course_id;
 
 -- BLOCK update_course_request
 UPDATE course_requests
-SET approved_by = $user_id,
+SET
+    approved_by = $user_id,
     approved_status = $action
 WHERE course_requests.id = $id;
-
--- BLOCK select_course_request
-SELECT * FROM course_requests WHERE id = $id;
