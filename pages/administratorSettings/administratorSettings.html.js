@@ -17,7 +17,7 @@ function AdministratorSettings({ resLocals }) {
         ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'admin',
-          navSubPage: 'server',
+          navSubPage: 'settings',
         })}
         <div id="content" class="container-fluid">
           <!-- Config -->
