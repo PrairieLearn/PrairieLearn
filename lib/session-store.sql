@@ -40,5 +40,4 @@ SELECT *
 FROM pl_sessions
 WHERE
     EXTRACT(EPOCH FROM (now() - updated_at)) < $expirationInSeconds
-    -- do this math the other way
 ORDER BY sid;

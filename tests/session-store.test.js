@@ -37,6 +37,14 @@ describe('session-store', function () {
     it('get() returns accurate data', async () => {
       let result = await promisify(store.get)('sid1');
       assert.deepEqual(result, { value: 1 });
+      result = await promisify(store.get)('sid2');
+      assert.deepEqual(result, { value: 2 });
+      result = await promisify(store.get)('sid3');
+      assert.deepEqual(result, { value: 3 });
+      result = await promisify(store.get)('sid4');
+      assert.deepEqual(result, { value: 4 });
+      result = await promisify(store.get)('sid5');
+      assert.deepEqual(result, { value: 5 });
     });
 
     it("destroy('sid1') succeeds", async () => {

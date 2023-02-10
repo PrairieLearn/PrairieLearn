@@ -119,7 +119,7 @@ module.exports.initExpress = function () {
         maxAge: config.sessionStoreExpireSeconds,
         httpOnly: true,
         secure: true,
-        sameSite: 'None',
+        sameSite: 'none', // needed for iframes, Canvas LTI
       },
     })
   );

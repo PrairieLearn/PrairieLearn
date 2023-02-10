@@ -1,7 +1,7 @@
 columns
     session: jsonb
     sid: text not null
-    updated_at: timestamp with time zone
+    updated_at: timestamp with time zone not null default CURRENT_TIMESTAMP
 
 indexes
     pl_sessions_pkey: PRIMARY KEY (sid) USING btree (sid)

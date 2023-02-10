@@ -12,7 +12,7 @@ For now, only ephemeral data with expiry of a day. Data that doesn't need to liv
   - admin user emulating
 - Error or response messages
 
-Eventually, we could hold longer term data (with longer expiration or refreshes)
+Eventually, we could hold longer term data (with longer expiration or refreshes).
 
 - replace the `pl_authn` cookie
 
