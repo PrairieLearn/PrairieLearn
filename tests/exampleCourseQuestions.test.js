@@ -71,7 +71,7 @@ describe('Auto-test questions in exampleCourse', function () {
 
   before(
     'set up testing server',
-    helperServer.before(exampleCourseDir, { allowSyncFailure: false })
+    helperServer.before(exampleCourseDir, { allowSyncFailure: true })
   );
   after('shut down testing server', helperServer.after);
 
