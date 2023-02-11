@@ -80,12 +80,6 @@ const InstructorSharing = ({ sharing_name, sharing_id, sharing_sets, resLocals }
     <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../../pages/partials/head') %>", resLocals)}
-        <style>
-          .continue-card-container {
-            width: 100%;
-            max-width: 400px;
-          }
-        </style>
       </head>
       <body>
         <script>
