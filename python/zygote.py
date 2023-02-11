@@ -100,7 +100,7 @@ def worker_loop(s: socket.socket):
 
     def write_json_to_socket(data: str):
         encoded_data = bytes(try_dumps(data, allow_nan=False), "utf-8")
-        s.send(len(encoded_data).to_bytes(4, byteorder="big"))
+        s.sendall(len(encoded_data).to_bytes(4, byteorder="big"))
         s.sendall(encoded_data)
 
     # Infinite loop where we wait for an input command, do it, and
