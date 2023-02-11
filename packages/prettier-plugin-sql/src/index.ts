@@ -25,7 +25,7 @@ export const printers = {
         format(path.getValue(), {
           language: 'postgresql',
           paramTypes: { named: ['$'] },
-        }).replace(/\r\n?/g, '\n') + '\n'
+        }) + '\n'
       );
     },
   },
