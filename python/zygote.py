@@ -87,7 +87,7 @@ def worker_loop(s: socket.socket):
         nonlocal length
 
         while True:
-            data += s.recv(1024)
+            data += s.recv(256 * 1024)
             if len(data) >= 4:
                 if length is None:
                     length = int.from_bytes(data[0:4], byteorder="big")
