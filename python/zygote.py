@@ -265,6 +265,9 @@ port = int(os.environ.get("PORT"))
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.connect(("127.0.0.1", port))
 
+    # Disable Nagle's algorithm
+    s.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+
     with open(4, "w", encoding="utf-8") as exitf:
         while True:
             worker_pid = os.fork()
