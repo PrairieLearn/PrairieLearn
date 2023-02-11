@@ -1,20 +1,5 @@
 -- BLOCK select
 WITH
-  select_administrator_users AS (
-    SELECT
-      coalesce(
-        jsonb_agg(
-          to_json(u)
-          ORDER BY
-            u.uid,
-            u.user_id
-        ),
-        '[]'::jsonb
-      ) AS administrator_users
-    FROM
-      administrators AS adm
-      JOIN users AS u ON (u.user_id = adm.user_id)
-  ),
   select_course_request_jobs AS (
     SELECT
       cr.id,
@@ -104,56 +89,6 @@ WITH
     WHERE
       c.deleted_at IS NULL
   ),
-  select_networks AS (
-    SELECT
-      coalesce(
-        jsonb_agg(
-          jsonb_build_object(
-            'network',
-            n.network,
-            'start_date',
-            coalesce(
-              format_date_full_compact (
-                lower(n.during),
-                config_select ('display_timezone')
-              ),
-              '—'
-            ),
-            'end_date',
-            coalesce(
-              format_date_full_compact (
-                upper(n.during),
-                config_select ('display_timezone')
-              ),
-              '—'
-            ),
-            'location',
-            n.location,
-            'purpose',
-            n.purpose
-          )
-          ORDER BY
-            n.during,
-            n.network
-        ),
-        '[]'::jsonb
-      ) AS networks
-    FROM
-      exam_mode_networks AS n
-  ),
-  select_config AS (
-    SELECT
-      coalesce(
-        jsonb_agg(
-          to_json(c)
-          ORDER BY
-            c.key
-        ),
-        '[]'::jsonb
-      ) AS configs
-    FROM
-      config AS c
-  ),
   select_institutions_with_authn_providers AS (
     SELECT
       i.*,
@@ -186,18 +121,12 @@ WITH
       select_institutions_with_authn_providers AS i
   )
 SELECT
-  administrator_users,
   course_requests,
   courses,
-  networks,
-  configs,
   institutions
 FROM
-  select_administrator_users,
   select_course_requests,
   select_courses,
-  select_networks,
-  select_config,
   select_institutions;
 
 -- BLOCK select_course
@@ -215,11 +144,3 @@ SET
   approved_status = $action
 WHERE
   course_requests.id = $id;
-
--- BLOCK select_course_request
-SELECT
-  *
-FROM
-  course_requests
-WHERE
-  id = $id;

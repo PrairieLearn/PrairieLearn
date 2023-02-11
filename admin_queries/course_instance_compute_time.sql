@@ -54,8 +54,7 @@ WITH
         $institution_short_name = ''
         OR i.short_name = $institution_short_name
       )
-      AND gj.date >= $start_date
-      AND gj.date <= $end_date
+      AND (gj.date BETWEEN $start_date AND $end_date)
       AND gj.grading_method = 'External'
     GROUP BY
       ci.id
