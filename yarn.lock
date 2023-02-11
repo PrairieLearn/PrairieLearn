@@ -3459,7 +3459,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/mime@npm:*":
+"@types/mime@npm:*, @types/mime@npm:^3.0.1":
   version: 3.0.1
   resolution: "@types/mime@npm:3.0.1"
   checksum: 4040fac73fd0cea2460e29b348c1a6173da747f3a87da0dbce80dd7a9355a3d0e51d6d9a401654f3e5550620e3718b5a899b2ec1debf18424e298a2c605346e7
@@ -3717,6 +3717,7 @@ __metadata:
     "@types/jest": ^29.4.0
     "@types/lodash": ^4.14.191
     "@types/loopbench": ^1.2.1
+    "@types/mime": ^3.0.1
     "@types/mocha": ^10.0.1
     "@types/node": ^18.11.18
     "@types/node-fetch": ^2.6.2
@@ -3783,7 +3784,7 @@ __metadata:
     folder-hash: ^4.0.4
     fs-extra: ^11.1.0
     generic-pool: ^3.9.0
-    googleapis: ^110.0.0
+    google-auth-library: ^8.7.0
     he: ^1.2.0
     highlight.js: ^11.7.0
     htmlhint: ^1.1.4
@@ -3808,6 +3809,7 @@ __metadata:
     mathjax: ^3.2.2
     memorystream: ^0.3.1
     mersenne: 0.0.4
+    mime: ^3.0.0
     mocha: ^10.2.0
     mocha-steps: ^1.3.0
     moment: ^2.29.4
@@ -8072,7 +8074,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"google-auth-library@npm:^8.0.2":
+"google-auth-library@npm:^8.7.0":
   version: 8.7.0
   resolution: "google-auth-library@npm:8.7.0"
   dependencies:
@@ -8097,30 +8099,6 @@ __metadata:
   bin:
     gp12-pem: build/src/bin/gp12-pem.js
   checksum: 59a5026331ea67455672e83770da29f09d979f02e06cb2227ea5916f8cca437887c2d3869f2602a686dc84437886ae9d2ac010780803cbe8e5f161c2d02d8efd
-  languageName: node
-  linkType: hard
-
-"googleapis-common@npm:^6.0.0":
-  version: 6.0.3
-  resolution: "googleapis-common@npm:6.0.3"
-  dependencies:
-    extend: ^3.0.2
-    gaxios: ^5.0.1
-    google-auth-library: ^8.0.2
-    qs: ^6.7.0
-    url-template: ^2.0.8
-    uuid: ^9.0.0
-  checksum: 72b3f2f4018d96d6e5bcc08096c693e393ba1ae59be243ac409e8876d941f918aad556a62d828709956552a5940295360674b9681b7871a1b3be54ea8a588f3f
-  languageName: node
-  linkType: hard
-
-"googleapis@npm:^110.0.0":
-  version: 110.0.0
-  resolution: "googleapis@npm:110.0.0"
-  dependencies:
-    google-auth-library: ^8.0.2
-    googleapis-common: ^6.0.0
-  checksum: 4cfa66d007ecca350e9df240a476792654385e878c76d3ca755a5df3898c97cd3256134b788c4765513bca393062f9e033f746245eba45ae189769918d1ccd98
   languageName: node
   linkType: hard
 
@@ -10984,6 +10962,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"mime@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "mime@npm:3.0.0"
+  bin:
+    mime: cli.js
+  checksum: f43f9b7bfa64534e6b05bd6062961681aeb406a5b53673b53b683f27fcc4e739989941836a355eef831f4478923651ecc739f4a5f6e20a76487b432bfd4db928
+  languageName: node
+  linkType: hard
+
 "mimic-fn@npm:^2.1.0":
   version: 2.1.0
   resolution: "mimic-fn@npm:2.1.0"
@@ -12455,7 +12442,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"qs@npm:6.11.0, qs@npm:^6.7.0":
+"qs@npm:6.11.0":
   version: 6.11.0
   resolution: "qs@npm:6.11.0"
   dependencies:
@@ -14701,13 +14688,6 @@ __metadata:
   dependencies:
     punycode: ^2.1.0
   checksum: 7167432de6817fe8e9e0c9684f1d2de2bb688c94388f7569f7dbdb1587c9f4ca2a77962f134ec90be0cc4d004c939ff0d05acc9f34a0db39a3c797dada262633
-  languageName: node
-  linkType: hard
-
-"url-template@npm:^2.0.8":
-  version: 2.0.8
-  resolution: "url-template@npm:2.0.8"
-  checksum: 4183fccd74e3591e4154134d4443dccecba9c455c15c7df774f1f1e3fa340fd9bffb903b5beec347196d15ce49c34edf6dec0634a95d170ad6e78c0467d6e13e
   languageName: node
   linkType: hard
 

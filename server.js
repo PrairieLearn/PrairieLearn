@@ -928,6 +928,16 @@ module.exports.initExpress = function () {
       require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
     ]
   );
+
+  // Submission files
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/submission/:submission_id/file',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./pages/submissionFile/submissionFile'),
+    ]
+  );
+
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading',
     [
@@ -1230,6 +1240,15 @@ module.exports.initExpress = function () {
     ]
   );
 
+  // Submission files
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/question/:question_id/submission/:submission_id/file',
+    [
+      require('./middlewares/selectAndAuthzInstructorQuestion'),
+      require('./pages/submissionFile/submissionFile'),
+    ]
+  );
+
   // legacy client file paths
   // handle routes with and without /preview/ in them to handle URLs with and without trailing slashes
   app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file', [
@@ -1357,6 +1376,16 @@ module.exports.initExpress = function () {
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./middlewares/studentAssessmentAccess'),
       require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
+    ]
+  );
+
+  // Submission files
+  app.use(
+    '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/submission/:submission_id/file',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./middlewares/studentAssessmentAccess'),
+      require('./pages/submissionFile/submissionFile'),
     ]
   );
 
@@ -1581,6 +1610,12 @@ module.exports.initExpress = function () {
     require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
   ]);
 
+  // Submission files
+  app.use('/pl/course/:course_id/question/:question_id/submission/:submission_id/file', [
+    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./pages/submissionFile/submissionFile'),
+  ]);
+
   // legacy client file paths
   // handle routes with and without /preview/ in them to handle URLs with and without trailing slashes
   app.use('/pl/course/:course_id/question/:question_id/file', [
@@ -1606,9 +1641,18 @@ module.exports.initExpress = function () {
   // Administrator pages ///////////////////////////////////////////////
 
   app.use('/pl/administrator', require('./middlewares/authzIsAdministrator'));
+  app.use('/pl/administrator/admins', require('./pages/administratorAdmins/administratorAdmins'));
   app.use(
-    '/pl/administrator/overview',
-    require('./pages/administratorOverview/administratorOverview')
+    '/pl/administrator/settings',
+    require('./pages/administratorSettings/administratorSettings')
+  );
+  app.use(
+    '/pl/administrator/courses',
+    require('./pages/administratorCourses/administratorCourses')
+  );
+  app.use(
+    '/pl/administrator/networks',
+    require('./pages/administratorNetworks/administratorNetworks')
   );
   app.use(
     '/pl/administrator/queries',

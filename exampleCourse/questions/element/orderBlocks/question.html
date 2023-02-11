@@ -104,3 +104,25 @@ to display the input area above the output area.</p>
   <pl-answer correct="true" tag="3" depends="1" > Then $C$ is true. </pl-answer>
   <pl-answer correct="true" tag="4" depends="2,3" > Since $A$ and $C$, we know $A \land C$</pl-answer>
 </pl-order-blocks>
+
+<hr>
+
+<pl-question-panel>
+  <p>
+    <strong>Example 5:</strong> Drag all fruits to the answer zone.
+  </p>
+
+  <p>
+    This example uses the attribute <code>source-blocks-order="alphabetized"</code>
+    to order the source blocks alphabetically, even though they appear in a random
+    order in <code>question.html</code>.
+  </p>
+</pl-question-panel>
+
+<pl-order-blocks answers-name="alphabetized" source-blocks-order="alphabetized" grading-method="unordered">
+  <pl-answer correct="true">eggplant</pl-answer>
+  <pl-answer correct="true">banana</pl-answer>
+  <pl-answer correct="true">date</pl-answer>
+  <pl-answer correct="false">carrot</pl-answer>
+  <pl-answer correct="true">apple</pl-answer>
+</pl-order-blocks>

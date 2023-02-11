@@ -289,6 +289,8 @@ def prepare(element_html, data):
         random.shuffle(mcq_options)
     elif source_blocks_order == "ordered":
         mcq_options.sort(key=lambda a: a["index"])
+    elif source_blocks_order == "alphabetized":
+        mcq_options.sort(key=lambda a: a["inner_html"])
     else:
         raise Exception(
             'The specified option for the "source-blocks-order" attribute is invalid.'
