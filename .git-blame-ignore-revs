@@ -7,3 +7,7 @@
 
 # Format Python files with black + isort
 b5ee36cebacd8c3192dd0e2457ab472cc185a055
+
+# Format SQL files with sql-formatter
+# TODO Update once PR #7152 is merged, based on hash after squash merge into master
+04ae7304c21c87fd2c3f6d597c22568e9cf655b5
