@@ -827,6 +827,7 @@ module.exports = {
       args = [phase, codeCaller, data, context, $];
     }
 
+    const start = Date.now();
     const {
       courseIssues,
       data: resultData,
@@ -834,6 +835,9 @@ module.exports = {
       fileData,
       renderedElementNames,
     } = await processFunction(...args);
+    console.log(
+      `Processed question HTML in phase ${phase} (${data.panel}) in ${Date.now() - start}ms`
+    );
 
     if (phase === 'grade' || phase === 'test') {
       if (context.question.partial_credit) {
