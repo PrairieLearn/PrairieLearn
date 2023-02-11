@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
@@ -5,13 +6,13 @@ const router = express.Router();
 const logger = require('../../lib/logger');
 const config = require('../../lib/config');
 
-const { google } = require('googleapis');
+const { OAuth2Client } = require('google-auth-library');
 
 router.get('/', function (req, res, next) {
   if (!config.hasOauth) return next(new Error('Google login is not enabled'));
   let url;
   try {
-    const oauth2Client = new google.auth.OAuth2(
+    const oauth2Client = new OAuth2Client(
       config.googleClientId,
       config.googleClientSecret,
       config.googleRedirectUrl
