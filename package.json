@@ -67,7 +67,7 @@
         "folder-hash": "^4.0.4",
         "fs-extra": "^11.1.0",
         "generic-pool": "^3.9.0",
-        "googleapis": "^110.0.0",
+        "google-auth-library": "^8.7.0",
         "he": "^1.2.0",
         "highlight.js": "^11.7.0",
         "http-proxy-middleware": "^2.0.6",
