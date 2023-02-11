@@ -35,10 +35,20 @@ The recommended way to write queries is to store them in a `.sql` file adjacent 
 
 ```sql
 -- BLOCK select_user
-SELECT * FROM users WHERE id = $user_id;
+SELECT
+  *
+FROM
+  users
+WHERE
+  id = $user_id;
 
 -- BLOCK select_course
-SELECT * FROM courses WHERE id = $course_id;
+SELECT
+  *
+FROM
+  courses
+WHERE
+  id = $course_id;
 ```
 
 You can then load these queries in your JavaScript file:
@@ -79,11 +89,18 @@ There are a variety of utility methods that can make assertions about the result
 There are also functions that make it easy to call a stored procedure with a given set of arguments. Consider a database that has the following sproc defined:
 
 ```sql
-CREATE PROCEDURE insert_data(a integer, b integer)
-LANGUAGE SQL
+CREATE PROCEDURE insert_data (a integer, b integer) LANGUAGE SQL
 BEGIN ATOMIC
-  INSERT INTO tbl VALUES (a);
-  INSERT INTO tbl VALUES (b);
+INSERT INTO
+  tbl
+VALUES
+  (a);
+
+INSERT INTO
+  tbl
+VALUES
+  (b);
+
 END;
 ```
 

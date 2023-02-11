@@ -1,4 +1,5 @@
-ALTER TABLE tags DROP CONSTRAINT IF EXISTS tags_name_course_id_key;
+ALTER TABLE tags
+DROP CONSTRAINT IF EXISTS tags_name_course_id_key;
 
 DO $$
 BEGIN

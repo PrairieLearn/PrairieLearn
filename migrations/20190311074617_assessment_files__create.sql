@@ -1,4 +1,5 @@
-CREATE TABLE files (
+CREATE TABLE
+  files (
     id bigserial PRIMARY KEY,
     user_id BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
     assessment_id BIGINT REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,
@@ -11,8 +12,10 @@ CREATE TABLE files (
     display_filename text NOT NULL,
     storage_filename text NOT NULL UNIQUE,
     type text NOT NULL
-);
+  );
 
-CREATE INDEX files_assessment_id_user_id_idx ON files (assessment_id,user_id);
+CREATE INDEX files_assessment_id_user_id_idx ON files (assessment_id, user_id);
+
 CREATE INDEX files_assessment_instance_id_idx ON files (assessment_instance_id);
+
 CREATE INDEX files_instance_question_id_idx ON files (instance_question_id);
