@@ -21,11 +21,12 @@ export const parsers = {
 export const printers = {
   sql: {
     print(path: AstPath) {
-      const formatted = format(path.getValue(), {
-        language: 'postgresql',
-        paramTypes: { named: ['$'] },
-      }).replace(/\r\n?/g, '\n');
-      return formatted.endsWith('\n') ? formatted : formatted + '\n';
+      return (
+        format(path.getValue(), {
+          language: 'postgresql',
+          paramTypes: { named: ['$'] },
+        }).replace(/\r\n?/g, '\n') + '\n'
+      );
     },
   },
 };
