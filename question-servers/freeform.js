@@ -343,7 +343,10 @@ module.exports = {
     const directory = resolvedElementName;
 
     try {
-      return await codeCaller.call(type, directory, pythonFile, fcn, pythonArgs);
+      const start = Date.now();
+      const res = await codeCaller.call(type, directory, pythonFile, fcn, pythonArgs);
+      console.log(`elementFunction ${fcn} ${elementName} ${Date.now() - start}ms`);
+      return res;
     } catch (err) {
       if (err instanceof FunctionMissingError) {
         // function wasn't present in server
