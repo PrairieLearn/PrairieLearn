@@ -1,5 +1,4 @@
 // @ts-check
-const ERR = require('async-stacktrace');
 const assert = require('assert');
 const Sentry = require('@prairielearn/sentry');
 const express = require('express');
@@ -16,6 +15,7 @@ router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
     if (!config.hasOauth) throw new Error('Google login is not enabled');
+
     const code = String(req.query.code);
     if (code == null) {
       throw new Error('No "code" query parameter for authCallbackOAuth2');
