@@ -16,9 +16,11 @@ router.get(
   asyncHandler(async (req, res, _next) => {
     if (!config.hasOauth) throw new Error('Google login is not enabled');
 
-    const code = String(req.query.code);
+    const code = req.query.code;
     if (code == null) {
       throw new Error('No "code" query parameter for authCallbackOAuth2');
+    } else if (typeof code !== 'string') {
+      throw new Error(`Invalid 'code' query parameter for authCallbackOAuth2: ${code}`);
     }
     // FIXME: should check req.query.state to avoid CSRF
     let oauth2Client, identity;
