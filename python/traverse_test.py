@@ -5,14 +5,17 @@ from traverse import ElementReplacement, traverse_and_execute, traverse_and_repl
 
 def test_traverse_and_execute() -> None:
     text: List[str] = []
+    tags: List[str] = []
 
-    def capture_text(element) -> None:
+    def capture_element(element) -> None:
         if element.text:
             text.append(element.text)
+        tags.append(element.tag)
 
-    traverse_and_execute("<p><i>Hello</i> <strong>world</strong></p>", capture_text)
+    traverse_and_execute("<p><i>Hello</i> <strong>world</strong></p>", capture_element)
 
     assert text == ["Hello", "world"]
+    assert tags == ["p", "i", "strong"]
 
 
 def test_traverse_and_replace_text() -> None:

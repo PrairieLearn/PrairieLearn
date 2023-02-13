@@ -4,7 +4,7 @@ import textwrap
 orig_html = textwrap.dedent(
     """
 <div>
-    <p>Hello <strong>world</strong>  </p>
+    <p foo='bar'>Hello <strong>world</strong>  </p>
       <div>
        <p>What
          </p>
