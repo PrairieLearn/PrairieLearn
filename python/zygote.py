@@ -79,8 +79,8 @@ def worker_loop(s: socket.socket):
     # whether the PRNGs have already been seeded in this worker_loop() call
     seeded = False
 
-    length = None
     data = bytearray("", encoding="utf-8")
+    length = None
 
     def receive_json_from_socket():
         nonlocal data
@@ -91,10 +91,10 @@ def worker_loop(s: socket.socket):
             if len(data) >= 4:
                 if length is None:
                     length = int.from_bytes(data[0:4], byteorder="big")
-                    data = data[4:]
+                    del data[4:]
                 if len(data) >= length:
                     json_inp = data[0:length]
-                    data = data[length:]
+                    del data[length:]
                     length = None
                     return json.loads(json_inp)
 
