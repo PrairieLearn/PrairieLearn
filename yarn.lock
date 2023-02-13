@@ -2870,7 +2870,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/prettier-plugin-sql@workspace:^, @prairielearn/prettier-plugin-sql@workspace:packages/prettier-plugin-sql":
+"@prairielearn/prettier-plugin-sql@workspace:*, @prairielearn/prettier-plugin-sql@workspace:packages/prettier-plugin-sql":
   version: 0.0.0-use.local
   resolution: "@prairielearn/prettier-plugin-sql@workspace:packages/prettier-plugin-sql"
   dependencies:
@@ -3756,7 +3756,7 @@ __metadata:
     "@prairielearn/html": ^2.0.0
     "@prairielearn/opentelemetry": ^1.0.0
     "@prairielearn/postgres": ^1.0.0
-    "@prairielearn/prettier-plugin-sql": "workspace:^"
+    "@prairielearn/prettier-plugin-sql": "workspace:*"
     "@prairielearn/sentry": ^1.0.0
     "@sentry/profiling-node": ^0.1.0
     "@sentry/tracing": ^7.36.0
