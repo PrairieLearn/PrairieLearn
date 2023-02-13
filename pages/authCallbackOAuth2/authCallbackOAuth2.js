@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const assert = require('assert');
 const Sentry = require('@prairielearn/sentry');
@@ -9,19 +10,20 @@ const config = require('../../lib/config');
 const csrf = require('../../lib/csrf');
 const sqldb = require('@prairielearn/postgres');
 
-const { google } = require('googleapis');
-const OAuth2 = google.auth.OAuth2;
+const { OAuth2Client } = require('google-auth-library');
 
 router.get('/', function (req, res, next) {
   if (!config.hasOauth) return next(new Error('Google login is not enabled'));
   const code = req.query.code;
   if (code == null) {
     return next(new Error('No "code" query parameter for authCallbackOAuth2'));
+  } else if (typeof code !== 'string') {
+    return next(new Error(`Invalid "code" query parameter for authCallbackOAuth2: ${code}`));
   }
   // FIXME: should check req.query.state to avoid CSRF
   let oauth2Client, identity;
   try {
-    oauth2Client = new OAuth2(
+    oauth2Client = new OAuth2Client(
       config.googleClientId,
       config.googleClientSecret,
       config.googleRedirectUrl

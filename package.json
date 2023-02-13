@@ -19,6 +19,8 @@
         "@prairielearn/opentelemetry": "^1.0.0",
         "@prairielearn/postgres": "^1.0.0",
         "@prairielearn/sentry": "^1.0.0",
+        "@sentry/profiling-node": "^0.1.0",
+        "@sentry/tracing": "^7.36.0",
         "ace-builds": "^1.15.0",
         "ace-code": "^1.15.0",
         "ajv": "^8.12.0",
@@ -67,7 +69,7 @@
         "folder-hash": "^4.0.4",
         "fs-extra": "^11.1.0",
         "generic-pool": "^3.9.0",
-        "googleapis": "^110.0.0",
+        "google-auth-library": "^8.7.0",
         "he": "^1.2.0",
         "highlight.js": "^11.7.0",
         "http-proxy-middleware": "^2.0.6",
@@ -206,7 +208,8 @@
             "public/*",
             "exampleCourse/*",
             "testCourse/*",
-            "s3rver/*"
+            "s3rver/*",
+            "elements/**/*.js"
         ],
         "ext": "js,json,sql"
     },
