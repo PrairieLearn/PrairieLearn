@@ -197,8 +197,8 @@ module.exports = {
       elementFolders = await fs.readdir(sourceDir);
     } catch (err) {
       if (err.code === 'ENOENT') {
-        // We don't really care if there are no extensions, just return an empty array.
-        return [];
+        // We don't really care if there are no extensions, just return an empty object.
+        return {};
       }
 
       throw err;
