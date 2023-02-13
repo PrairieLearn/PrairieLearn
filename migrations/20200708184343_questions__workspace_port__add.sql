@@ -1,1 +1,2 @@
-ALTER TABLE questions ADD COLUMN workspace_port integer;
+ALTER TABLE questions
+ADD COLUMN workspace_port integer;

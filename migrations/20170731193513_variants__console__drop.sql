@@ -1,1 +1,2 @@
-ALTER TABLE variants DROP COLUMN console;
+ALTER TABLE variants
+DROP COLUMN console;

@@ -1,4 +1,5 @@
-ALTER TABLE job_sequences ADD COLUMN IF NOT EXISTS assessment_id BIGINT;
+ALTER TABLE job_sequences
+ADD COLUMN IF NOT EXISTS assessment_id BIGINT;
 
 DO $$
 BEGIN
