@@ -1,5 +1,5 @@
 from collections import deque
-from typing import Callable, Deque, List, Optional, Tuple, TypedDict, Union
+from typing import Callable, Deque, List, Optional, Tuple, Union
 import timeit
 
 import lxml.html
@@ -93,7 +93,7 @@ def traverse_and_execute_impl(
             traverse_and_execute_impl(child, fn)
 
 
-def traverse_and_replace(
+def traverse_and_replace_old(
     html: str,
     replace: Callable[
         [lxml.html.HtmlElement],
@@ -217,6 +217,7 @@ def traverse_and_replace(
 
 
 def get_source_definition(element: lxml.html.HtmlElement) -> str:
+    print(element, type(element))
     return (
         "<"
         + " ".join((element.tag, *(f'{k}="{v}"' for k, v in element.attrib.items())))
@@ -224,7 +225,7 @@ def get_source_definition(element: lxml.html.HtmlElement) -> str:
     )
 
 
-def traverse_and_replace_new(
+def traverse_and_replace(
     html: str, replace: Callable[[lxml.html.HtmlElement], ElementReplacement]
 ) -> str:
     # Initialize result and work data structures
@@ -267,91 +268,8 @@ def traverse_and_replace_new(
 
                 continue
 
-            # Add opening tag and text
-            result.append(get_source_definition(new_elements))
-
-            if new_elements.text is not None:
-                result.append(new_elements.text)
-
-            # Add all children to the work stack
-            children = list(new_elements)
-
-            if children:
-                work_stack.extend(reversed(children))
-
-            count_stack.append(len(children))
-            tail_stack.append((new_elements.tag, element.tail))
-
-        # Close all closable tags
-        while count_stack[-1] == 0:
-            count_stack.pop()
-            tail_tag, tail_text = tail_stack.pop()
-
-            result.append(f"</{tail_tag}>")
-            if tail_text is not None:
-                result.append(tail_text)
-        else:
-            count_stack[-1] -= 1
-
-    # No need to empty tail stack, should be empty from above
-    # can add asserts that the tail stack and count stack are
-    # empty here to debug
-
-    return "".join(result)
-
-
-class ElementWithChildren(TypedDict):
-    element: lxml.html.HtmlElement
-
-
-class Node:
-    def __init__(self, element: Union[lxml.html.Element, str]):
-        pass
-
-
-
-def traverse_and_replace_exp(
-    html: str, replace: Callable[[lxml.html.HtmlElement], ElementReplacement]
-) -> str:
-
-    # Initialize result and work data structures
-    result: Deque[Union[str, lxml.html.HtmlElement]] = deque()
-
-    initial_list = lxml.html.fragments_fromstring(html)
-    count_stack: Deque[int] = deque([len(initial_list)])
-    work_stack: Deque[Union[str, lxml.html.HtmlElement]] = deque(reversed(initial_list))
-    tail_stack: Deque[Tuple[str, Optional[str]]] = deque()
-
-    while work_stack:
-        element = work_stack.pop()
-
-        # For just a string, append to final result
-        if isinstance(element, str):
-            result.append(element)
-
-        else:
-            new_elements = replace(element)
-
-            # Turn new_elements into a list containing we can process
-            if new_elements is None:
-                new_elements = []
-            elif isinstance(new_elements, str):
-                fragments = lxml.html.fragments_fromstring(new_elements)
-                new_elements = fragments if fragments is not None else []
-
-            if isinstance(new_elements, list):
-                # Modify count stack for new elements and decrement for element that was replaced
-                count_stack[-1] += len(new_elements) - 1
-
-                # Add element tail before processing replaced element
-                if element.tail is not None:
-                    count_stack[-1] += 1
-                    work_stack.append(element.tail)
-
-                # Extend and go to the next iteration
-                if new_elements:
-                    work_stack.extend(reversed(new_elements))
-
+            if isinstance(new_elements, lxml.html.HtmlComment):
+                result.append(lxml.html.tostring(new_elements, encoding="unicode"))
                 continue
 
             # Add opening tag and text
