@@ -42,12 +42,11 @@ def traverse_and_execute(
 
 
 def format_attrib_value(v: str) -> str:
-    return v.replace('"', "&quot;").replace("\xa0", "&amp;nbsp;")
+    # https://html.spec.whatwg.org/multipage/parsing.html#escapingString
+    return v.replace("&", "&amp;").replace('"', "&quot;").replace("\xa0", "&nbsp;")
 
 
 def get_source_definition(element: lxml.html.HtmlElement) -> str:
-    # https://html.spec.whatwg.org/multipage/parsing.html#escapingString
-    print(element.tag, element.attrib.items())
     attributes = (
         f'''{k}="{format_attrib_value(v)}"''' for k, v in element.attrib.items()
     )
@@ -67,9 +66,6 @@ def traverse_and_replace(
 
     while work_stack:
         element = work_stack.pop()
-        print("element", element)
-        if hasattr(element, "attrib"):
-            print("element attrib", element.attrib)
 
         # For just a string, append to final result
         if isinstance(element, str):
@@ -82,12 +78,7 @@ def traverse_and_replace(
             if new_elements is None:
                 new_elements = []
             elif isinstance(new_elements, str):
-                print(new_elements)
                 fragments = lxml.html.fragments_fromstring(new_elements)
-                if fragments:
-                    print("fragments", fragments[0])
-                    if hasattr(fragments[0], "attrib"):
-                        print("fragments attrib", fragments[0].attrib)
                 new_elements = fragments if fragments is not None else []
 
             if isinstance(new_elements, list):
@@ -166,12 +157,6 @@ if __name__ == "__main__":
             return "<div><pl-code></pl-code><pl-code></pl-code></div>"
         if e.tag == "pl-code":
             return "<pre><code>foo</code></pre>"
-
-    original = timeit.timeit(
-        lambda: traverse_and_replace_old(html, replace), number=1000
-    )
-
-    print("original", original)
 
     new = timeit.timeit(lambda: traverse_and_replace(html, replace), number=1000)
 

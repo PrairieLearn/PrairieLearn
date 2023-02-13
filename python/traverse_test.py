@@ -45,7 +45,8 @@ def test_traverse_and_replace_nested_none() -> None:
         return e
 
     html = traverse_and_replace("<p><strong>Hello</strong> world</p>", replace)
-    assert html == "<p>world</p>"
+    # The leading space is consistent with the DOM's behavior if a node is removed.
+    assert html == "<p> world</p>"
 
 
 def test_traverse_and_replace_empty() -> None:
@@ -251,7 +252,20 @@ def test_traverse_and_replace_attribute_nbsp() -> None:
         "<div>Hello</div>",
         replace,
     )
-    assert html == '<span attr="foo &nbsp; bar">Goodbye</div>'
+    assert html == '<span attr="foo &nbsp; bar">Goodbye</span>'
+
+
+def test_traverse_and_replace_attribute_ampersand() -> None:
+    def replace(e) -> ElementReplacement:
+        if e.tag == "div":
+            return '<span attr="foo & bar">Goodbye</span>'
+        return e
+
+    html = traverse_and_replace(
+        "<div>Hello</div>",
+        replace,
+    )
+    assert html == '<span attr="foo &amp; bar">Goodbye</span>'
 
 
 def test_traverse_and_replace_void_elements() -> None:

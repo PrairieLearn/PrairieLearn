@@ -4,7 +4,7 @@ import lxml.html
 
 orig_html = textwrap.dedent(
     """
-<div attr="foo &nbsp bar"></div>
+<div attr="foo & bar"></div>
     """
 )
 
