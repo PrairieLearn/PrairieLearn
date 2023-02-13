@@ -206,7 +206,8 @@
             "public/*",
             "exampleCourse/*",
             "testCourse/*",
-            "s3rver/*"
+            "s3rver/*",
+            "tools/*"
         ],
         "ext": "js,json,sql"
     },

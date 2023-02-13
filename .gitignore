@@ -99,3 +99,7 @@ __pycache__/
 
 ## Compiled package files
 packages/*/dist
+
+## Question HTML snapshots
+/new-renderer/
+/old-renderer/

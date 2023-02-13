@@ -329,10 +329,12 @@ if __name__ == "__main__":
         if e.tag == "pl-code":
             return "<pre><code>foo</code></pre>"
 
-    original = timeit.timeit(lambda: traverse_and_replace(html, replace), number=1000)
+    original = timeit.timeit(
+        lambda: traverse_and_replace_old(html, replace), number=1000
+    )
 
     print("original", original)
 
-    new = timeit.timeit(lambda: traverse_and_replace_new(html, replace), number=1000)
+    new = timeit.timeit(lambda: traverse_and_replace(html, replace), number=1000)
 
     print("new", new)

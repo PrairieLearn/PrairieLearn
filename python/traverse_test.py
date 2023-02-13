@@ -212,3 +212,14 @@ def test_traverse_and_replace_leading_trailing_recursive_8() -> None:
         "<div>Hello <em>small</em> and <i>cruel</i> world</div>", replace
     )
     assert html == "<div>Hello green, <strong>big</strong> and beautiful world</div>"
+
+
+def test_traverse_indentation() -> None:
+    original_html = (
+        "<div><pre><code>def hello():\n    print('Hello!')</code></pre></div>"
+    )
+    html = traverse_and_replace(
+        original_html,
+        lambda e: e,
+    )
+    assert html == original_html
