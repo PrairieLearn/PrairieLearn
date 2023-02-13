@@ -18,7 +18,11 @@ SELECT
   i.open,
   i.question_id,
   i.student_message,
-  i.system_data,
+  (
+    CASE
+      WHEN $load_system_data THEN i.system_data
+    END
+  ) AS system_data,
   i.user_id,
   i.variant_id,
   format_date_full (
