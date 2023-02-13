@@ -19,6 +19,8 @@
         "@prairielearn/opentelemetry": "^1.0.0",
         "@prairielearn/postgres": "^1.0.0",
         "@prairielearn/sentry": "^1.0.0",
+        "@sentry/profiling-node": "^0.1.0",
+        "@sentry/tracing": "^7.36.0",
         "ace-builds": "^1.15.0",
         "ace-code": "^1.15.0",
         "ajv": "^8.12.0",
@@ -207,7 +209,8 @@
             "public/*",
             "exampleCourse/*",
             "testCourse/*",
-            "s3rver/*"
+            "s3rver/*",
+            "elements/**/*.js"
         ],
         "ext": "js,json,sql"
     },
