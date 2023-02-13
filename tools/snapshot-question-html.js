@@ -24,12 +24,12 @@ async function loadQuestion(id) {
 
 function sanitizeHtml(html) {
   // Replace anything matching a UUID regexp with a placeholder
-  return html.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, '<UUID>')
+  return html.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, '<UUID>');
 }
 
 /**
  * Usage:
- * 
+ *
  * ```sh
  * node tools/snapshot-question-html.js ./old-renderer
  * node tools/snapshot-question-html.js ./new-renderer
