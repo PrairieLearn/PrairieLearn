@@ -61,9 +61,8 @@ chmod 777 /grade/params
 chmod 777 /grade/params/params.json
 
 # Disable Java management options to hinder student's ability to dump
-# the heap. The port is not a valid int on purpose, to trigger an
-# error on attempt to launch it.
-DISABLE_JAVA_MANAGEMENT="-XX:+DisableAttachMechanism -Dcom.sun.management.jmxremote.ssl=false -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.port=x"
+# the heap.
+DISABLE_JAVA_MANAGEMENT="-XX:+DisableAttachMechanism -Djavax.management.builder.initial=DISABLED"
 
 su - sbuser <<EOF
 java -cp "$CLASSPATH" $DISABLE_JAVA_MANAGEMENT JUnitAutograder

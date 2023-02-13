@@ -1,4 +1,5 @@
-ALTER TABLE assessment_instances DROP CONSTRAINT IF EXISTS assessment_instances_number_assessment_id_user_id_key;
+ALTER TABLE assessment_instances
+DROP CONSTRAINT IF EXISTS assessment_instances_number_assessment_id_user_id_key;
 
 DO $$
 BEGIN

@@ -61,6 +61,8 @@ include = [
     "./elements/pl-big-o-input",
     "./elements/pl-dataframe",
     "./elements/pl-external-grader-variables",
+    "./elements/pl-file-preview",
+    "./elements/pl-file-upload",
     "./elements/pl-graph",
     "./elements/pl-hidden-hints",
     "./elements/pl-python-variable",
