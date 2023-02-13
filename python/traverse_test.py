@@ -239,3 +239,24 @@ def test_traverse_and_replace_attribute_quotes() -> None:
         replace,
     )
     assert html == '<div><strong attr1="a&quot;b" attr2="a\'b">Goodbye</strong></div>'
+
+
+def test_traverse_and_replace_attribute_nbsp() -> None:
+    def replace(e) -> ElementReplacement:
+        if e.tag == "div":
+            return '<span attr="foo &nbsp; bar">Goodbye</span>'
+        return e
+
+    html = traverse_and_replace(
+        "<div>Hello</div>",
+        replace,
+    )
+    assert html == '<span attr="foo &nbsp; bar">Goodbye</div>'
+
+
+def test_traverse_and_replace_void_elements() -> None:
+    def replace(e) -> ElementReplacement:
+        return e
+
+    html = traverse_and_replace('<div><br><input name="input"</div>', replace)
+    assert html == '<div><br><input name="input"></div>'

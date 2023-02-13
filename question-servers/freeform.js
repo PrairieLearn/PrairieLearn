@@ -886,7 +886,6 @@ module.exports = {
       processFunction = module.exports.experimentalProcess;
       args = [phase, codeCaller, data, context, html];
     } else if (useNewQuestionRenderer) {
-      console.log('using new renderer');
       processFunction = module.exports.traverseQuestionAndExecuteFunctions;
       args = [phase, codeCaller, data, context, html];
     } else {

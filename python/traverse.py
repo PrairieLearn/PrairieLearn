@@ -1,6 +1,6 @@
+import timeit
 from collections import deque
 from typing import Callable, Deque, List, Optional, Tuple, Union
-import timeit
 
 import lxml.html
 
@@ -8,37 +8,22 @@ ElementReplacement = Optional[
     Union[str, lxml.html.HtmlElement, List[lxml.html.HtmlElement]]
 ]
 
-
-def serialize_str_or_element(e) -> str:
-    if isinstance(e, str):
-        return e
-    return lxml.html.tostring(e, encoding="unicode")
-
-
-def append_text(element: lxml.html.HtmlElement, text: str) -> None:
-    stripped_text = text.lstrip()
-
-    if element.text:
-        # print("appending element text", text)
-        stripped_element_text = element.text.rstrip()
-        sep = " " if stripped_element_text and stripped_text else ""
-        element.text = stripped_element_text + sep + stripped_text
-    else:
-        # print("setting element text", text)
-        element.text = stripped_text
-
-
-def append_tail(element: lxml.html.HtmlElement, text: str) -> None:
-    stripped_text = text.lstrip()
-
-    if element.tail:
-        # print("appending element tail", text)
-        stripped_element_tail = element.tail.rstrip()
-        sep = " " if stripped_element_tail and stripped_text else ""
-        element.tail = stripped_element_tail + sep + stripped_text
-    else:
-        # print("setting element tail", text)
-        element.tail = " " + stripped_text
+# https://developer.mozilla.org/en-US/docs/Glossary/Void_element
+VOID_ELEMENTS = {
+    "area",
+    "base",
+    "br",
+    "col",
+    "embed",
+    "hr",
+    "img",
+    "input",
+    "link",
+    "meta",
+    "source",
+    "track",
+    "wbr",
+}
 
 
 def traverse_and_execute(
@@ -56,10 +41,15 @@ def traverse_and_execute(
             fn(e)
 
 
+def format_attrib_value(v: str) -> str:
+    return v.replace('"', "&quot;").replace("\xa0", "&amp;nbsp;")
+
+
 def get_source_definition(element: lxml.html.HtmlElement) -> str:
     # https://html.spec.whatwg.org/multipage/parsing.html#escapingString
+    print(element.tag, element.attrib.items())
     attributes = (
-        f'''{k}="{v.replace('"', "&quot;")}"''' for k, v in element.attrib.items()
+        f'''{k}="{format_attrib_value(v)}"''' for k, v in element.attrib.items()
     )
     return f"<{' '.join((element.tag, *attributes))}>"
 
@@ -77,6 +67,9 @@ def traverse_and_replace(
 
     while work_stack:
         element = work_stack.pop()
+        print("element", element)
+        if hasattr(element, "attrib"):
+            print("element attrib", element.attrib)
 
         # For just a string, append to final result
         if isinstance(element, str):
@@ -89,7 +82,12 @@ def traverse_and_replace(
             if new_elements is None:
                 new_elements = []
             elif isinstance(new_elements, str):
+                print(new_elements)
                 fragments = lxml.html.fragments_fromstring(new_elements)
+                if fragments:
+                    print("fragments", fragments[0])
+                    if hasattr(fragments[0], "attrib"):
+                        print("fragments attrib", fragments[0].attrib)
                 new_elements = fragments if fragments is not None else []
 
             if isinstance(new_elements, list):
@@ -131,7 +129,8 @@ def traverse_and_replace(
             count_stack.pop()
             tail_tag, tail_text = tail_stack.pop()
 
-            result.append(f"</{tail_tag}>")
+            if tail_tag not in VOID_ELEMENTS:
+                result.append(f"</{tail_tag}>")
             if tail_text is not None:
                 result.append(tail_text)
         else:
