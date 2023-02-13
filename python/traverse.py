@@ -28,7 +28,7 @@ VOID_ELEMENTS = {
 
 def traverse_and_execute(
     html: str, fn: Callable[[lxml.html.HtmlElement], None]
-) -> list:
+) -> None:
     elements = lxml.html.fragments_fromstring(html)
 
     # If there's leading text, the first element of the array will be a string.
@@ -57,7 +57,7 @@ def traverse_and_replace(
     html: str, replace: Callable[[lxml.html.HtmlElement], ElementReplacement]
 ) -> str:
     # Initialize result and work data structures
-    result: Deque[Union[str, lxml.html.HtmlElement]] = deque()
+    result: Deque[str] = deque()
 
     initial_list = lxml.html.fragments_fromstring(html)
     count_stack: Deque[int] = deque([len(initial_list)])
@@ -157,6 +157,7 @@ if __name__ == "__main__":
             return "<div><pl-code></pl-code><pl-code></pl-code></div>"
         if e.tag == "pl-code":
             return "<pre><code>foo</code></pre>"
+        return e
 
     new = timeit.timeit(lambda: traverse_and_replace(html, replace), number=1000)
 
