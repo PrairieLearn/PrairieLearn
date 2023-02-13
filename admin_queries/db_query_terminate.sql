@@ -1,1 +1,2 @@
-SELECT pg_terminate_backend($pid);
+SELECT
+  pg_terminate_backend($pid);

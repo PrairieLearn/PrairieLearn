@@ -3,5 +3,7 @@ ALTER TABLE workspaces
 ADD COLUMN IF NOT EXISTS homedir_location enum_file_storage_type;
 
 UPDATE workspaces
-SET homedir_location = 'S3'
-WHERE homedir_location IS NULL;
+SET
+  homedir_location = 'S3'
+WHERE
+  homedir_location IS NULL;

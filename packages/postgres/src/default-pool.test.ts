@@ -1,5 +1,6 @@
 import { assert } from 'chai';
-import * as pgPool from './pool';
+import { PostgresPool } from './pool';
+import * as pgPool from './default-pool';
 
 /**
  * Returns true if the property on `PostgresPool` should be considered
@@ -18,7 +19,7 @@ function isHiddenProperty(property: string) {
 
 describe('sqldb', () => {
   it('exports the full PostgresPool interface', () => {
-    const pool = new pgPool.PostgresPool();
+    const pool = new PostgresPool();
 
     Object.getOwnPropertyNames(pool)
       .filter((n) => !isHiddenProperty(n))
@@ -34,7 +35,7 @@ describe('sqldb', () => {
   });
 
   it('should not have extra properties', () => {
-    const pool = new pgPool.PostgresPool();
+    const pool = new PostgresPool();
 
     const knownProperties = [
       ...Object.getOwnPropertyNames(pool),

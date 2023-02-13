@@ -5,6 +5,7 @@ on:
     branches:
       - master
   pull_request:
+  merge_group:
 
 concurrency:
   # Ensure that we only run one concurrent job for Pull Requests. This ensures
