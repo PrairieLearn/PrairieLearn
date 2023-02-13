@@ -38,6 +38,24 @@ def test_traverse_and_replace_comment() -> None:
     assert html == "<!-- Goodbye --><i>world</i>"
 
 
+def test_traverse_and_replace_comment_nested() -> None:
+    def replace(e) -> ElementReplacement:
+        if e.tag == "p":
+            return "<!-- Goodbye --><i>world</i>"
+        return e
+
+    html = traverse_and_replace("<i><p>Hello</p></i>", replace)
+    assert html == "<i><!-- Goodbye --><i>world</i></i>"
+
+
+def test_traverse_and_replace_comment_with_text() -> None:
+    def replace(e) -> ElementReplacement:
+        return e
+
+    html = traverse_and_replace("<div><!-- Hello --> world</div>", replace)
+    assert html == "<div><!-- Hello --> world</div>"
+
+
 def test_traverse_and_replace_nested_none() -> None:
     def replace(e) -> ElementReplacement:
         if e.tag == "strong":
