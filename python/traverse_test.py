@@ -25,6 +25,16 @@ def test_traverse_and_replace_none() -> None:
     assert html == ""
 
 
+def test_traverse_and_replace_comment() -> None:
+    def replace(e) -> ElementReplacement:
+        if e.tag == "p":
+            return "<!-- Goodbye --><i>world</i>"
+        return e
+
+    html = traverse_and_replace("<p>Hello</p>", replace)
+    assert html == "<!-- Goodbye --><i>world</i>"
+
+
 def test_traverse_and_replace_nested_none() -> None:
     def replace(e) -> ElementReplacement:
         if e.tag == "strong":
