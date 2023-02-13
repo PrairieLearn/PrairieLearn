@@ -223,3 +223,16 @@ def test_traverse_indentation() -> None:
         lambda e: e,
     )
     assert html == original_html
+
+
+def test_traverse_and_replace_attribute_quotes() -> None:
+    def replace(e) -> ElementReplacement:
+        if e.tag == "span":
+            return "<strong attr1='a\"b' attr2=\"a'b\">Goodbye</strong>"
+        return e
+
+    html = traverse_and_replace(
+        "<div><span>Hello</span></div>",
+        replace,
+    )
+    assert html == '<div><strong attr1="a&quot;b" attr2="a\'b">Goodbye</strong></div>'

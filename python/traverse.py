@@ -217,12 +217,11 @@ def traverse_and_replace_old(
 
 
 def get_source_definition(element: lxml.html.HtmlElement) -> str:
-    print(element, type(element))
-    return (
-        "<"
-        + " ".join((element.tag, *(f'{k}="{v}"' for k, v in element.attrib.items())))
-        + ">"
+    # https://html.spec.whatwg.org/multipage/parsing.html#escapingString
+    attributes = (
+        f'''{k}="{v.replace('"', "&quot;")}"''' for k, v in element.attrib.items()
     )
+    return f"<{' '.join((element.tag, *attributes))}>"
 
 
 def traverse_and_replace(
