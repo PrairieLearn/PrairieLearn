@@ -80,14 +80,14 @@ def worker_loop(s: socket.socket):
     seeded = False
 
     length = None
-    data = bytes("", encoding="utf-8")
+    data = bytearray("", encoding="utf-8")
 
     def receive_json_from_socket():
         nonlocal data
         nonlocal length
 
         while True:
-            data += s.recv(256 * 1024)
+            data.extend(s.recv(256 * 1024))
             if len(data) >= 4:
                 if length is None:
                     length = int.from_bytes(data[0:4], byteorder="big")
