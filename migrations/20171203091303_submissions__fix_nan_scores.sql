@@ -1,9 +1,8 @@
-CREATE OR REPLACE FUNCTION
-    migration_102_array_increments_above_max(
-        IN data double precision[],
-        OUT increments double precision[]
-    )
-AS $$
+CREATE
+OR REPLACE FUNCTION migration_102_array_increments_above_max (
+  IN data double precision[],
+  OUT increments double precision[]
+) AS $$
 DECLARE
     i integer;
     max_val double precision := 0;
@@ -17,14 +16,12 @@ $$ LANGUAGE plpgsql VOLATILE;
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
-
-CREATE OR REPLACE FUNCTION
-    migration_102_array_product(
-        IN x DOUBLE PRECISION[],
-        IN y DOUBLE PRECISION[],
-        OUT product DOUBLE PRECISION[]
-    )
-AS $$
+CREATE
+OR REPLACE FUNCTION migration_102_array_product (
+  IN x DOUBLE PRECISION[],
+  IN y DOUBLE PRECISION[],
+  OUT product DOUBLE PRECISION[]
+) AS $$
 BEGIN
     SELECT array_agg(xi * yi) INTO product FROM unnest(x, y) as tmp (xi,yi);
 END;
@@ -32,12 +29,8 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
-
-CREATE OR REPLACE FUNCTION
-    migration_102_instance_questions_calculate_stats(
-        instance_question_id_param bigint
-    ) RETURNS VOID
-AS $$
+CREATE
+OR REPLACE FUNCTION migration_102_instance_questions_calculate_stats (instance_question_id_param bigint) RETURNS VOID AS $$
 WITH first_calculation AS (
     SELECT
         count(s.id) > 0                        AS some_submission_var,
@@ -75,27 +68,33 @@ $$ LANGUAGE SQL VOLATILE;
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
-
 WITH
-fixed_submissions AS (
+  fixed_submissions AS (
     UPDATE submissions AS s
-    SET score = 0
-    WHERE score = 'NaN'
-    RETURNING s.*
-),
-instance_questions_needing_fixing AS (
-    SELECT DISTINCT iq.id
+    SET
+      score = 0
+    WHERE
+      score = 'NaN'
+    RETURNING
+      s.*
+  ),
+  instance_questions_needing_fixing AS (
+    SELECT DISTINCT
+      iq.id
     FROM
-        fixed_submissions AS s
-        JOIN variants AS v ON (v.id = s.variant_id)
-        JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
-)
-SELECT migration_102_instance_questions_calculate_stats(iq.id)
-FROM instance_questions_needing_fixing AS iq;
+      fixed_submissions AS s
+      JOIN variants AS v ON (v.id = s.variant_id)
+      JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+  )
+SELECT
+  migration_102_instance_questions_calculate_stats (iq.id)
+FROM
+  instance_questions_needing_fixing AS iq;
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
+DROP FUNCTION migration_102_instance_questions_calculate_stats (BIGINT);
 
-DROP FUNCTION migration_102_instance_questions_calculate_stats(BIGINT);
-DROP FUNCTION migration_102_array_product(DOUBLE PRECISION[],DOUBLE PRECISION[]);
-DROP FUNCTION migration_102_array_increments_above_max(double precision[]);
+DROP FUNCTION migration_102_array_product (DOUBLE PRECISION[], DOUBLE PRECISION[]);
+
+DROP FUNCTION migration_102_array_increments_above_max (double precision[]);

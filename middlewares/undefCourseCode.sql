@@ -1,5 +1,5 @@
 -- BLOCK select_course_paths
 SELECT
-    c.path
+  c.path
 FROM
-    pl_courses AS c;
+  pl_courses AS c;

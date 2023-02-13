@@ -4,6 +4,7 @@ import path from 'node:path';
 import debugFactory from 'debug';
 import { callbackify } from 'node:util';
 import { AsyncLocalStorage } from 'node:async_hooks';
+import { z } from 'zod';
 
 type Params = Record<string, any> | any[];
 
@@ -678,6 +679,153 @@ export class PostgresPool {
   callWithClientZeroOrOneRow = callbackify(this.callWithClientZeroOrOneRowAsync);
 
   /**
+   * Wrapper around {@link queryAsync} that validates that the returned data
+   * matches the given validation model. Returns only the rows of the query.
+   */
+  async queryValidatedRows<Model extends z.ZodTypeAny>(
+    query: string,
+    params: Record<string, any>,
+    model: Model
+  ): Promise<z.infer<Model>[]> {
+    const results = await this.queryAsync(query, params);
+    return z.array(model).parse(results.rows);
+  }
+
+  /**
+   * Wrapper around {@link queryOneRowAsync} that validates that the returned data
+   * matches the given validation model. Returns only a single row of the query.
+   */
+  async queryValidatedOneRow<Model extends z.ZodTypeAny>(
+    query: string,
+    params: Record<string, any>,
+    model: Model
+  ): Promise<z.infer<Model>> {
+    const results = await this.queryOneRowAsync(query, params);
+    return model.parse(results.rows[0]);
+  }
+
+  /**
+   * Wrapper around {@link queryZeroOrOneRowAsync} that validates that the
+   * returned data matches the given validation model, if it return anything.
+   * Returns either the single row of the query or `null`.
+   */
+  async queryValidatedZeroOrOneRow<Model extends z.ZodTypeAny>(
+    query: string,
+    params: Record<string, any>,
+    model: Model
+  ): Promise<z.infer<Model> | null> {
+    const results = await this.queryZeroOrOneRowAsync(query, params);
+    if (results.rows.length == 0) {
+      return null;
+    } else {
+      return model.parse(results.rows[0]);
+    }
+  }
+
+  /**
+   * Wrapper around {@link queryAsync} that validates that only one column is
+   * returned and the data in it matches the given validation model. Returns only
+   * the single column of the query as an array.
+   */
+  async queryValidatedSingleColumnRows<Model extends z.ZodTypeAny>(
+    query: string,
+    params: Record<string, any>,
+    model: Model
+  ): Promise<z.infer<Model>[]> {
+    const results = await this.queryAsync(query, params);
+    if (results.fields.length != 1) {
+      throw new Error(`Expected one column, got ${results.fields.length}`);
+    }
+    const columnName = results.fields[0].name;
+    const rawData = results.rows.map((row) => row[columnName]);
+    return z.array(model).parse(rawData);
+  }
+
+  /**
+   * Wrapper around {@link queryOneRowAsync} that validates that only one column
+   * is returned and the data in it matches the given validation model. Returns
+   * only the single entry.
+   */
+  async queryValidatedSingleColumnOneRow<Model extends z.ZodTypeAny>(
+    query: string,
+    params: Record<string, any>,
+    model: Model
+  ): Promise<z.infer<Model>> {
+    const results = await this.queryOneRowAsync(query, params);
+    if (results.fields.length != 1) {
+      throw new Error(`Expected one column, got ${results.fields.length}`);
+    }
+    const columnName = results.fields[0].name;
+    return model.parse(results.rows[0][columnName]);
+  }
+
+  /**
+   * Wrapper around {@link queryZeroOrOneRowAsync} that validates that only one
+   * column is returned and the data in it matches the given validation model, if
+   * it return anything. Returns either the single row of the query or `null`.
+   */
+  async queryValidatedSingleColumnZeroOrOneRow<Model extends z.ZodTypeAny>(
+    query: string,
+    params: Record<string, any>,
+    model: Model
+  ): Promise<z.infer<Model> | null> {
+    const results = await this.queryZeroOrOneRowAsync(query, params);
+    if (results.fields.length != 1) {
+      throw new Error(`Expected one column, got ${results.fields.length}`);
+    }
+    if (results.rows.length == 0) {
+      return null;
+    } else {
+      const columnName = results.fields[0].name;
+      return model.parse(results.rows[0][columnName]);
+    }
+  }
+
+  /**
+   * Wrapper around {@link callAsync} that validates that the returned data
+   * matches the given validation model. Returns only the rows.
+   */
+  async callValidatedRows<Model extends z.ZodTypeAny>(
+    sprocName: string,
+    params: any[],
+    model: Model
+  ): Promise<z.infer<Model>[]> {
+    const results = await this.callAsync(sprocName, params);
+    return z.array(model).parse(results.rows);
+  }
+
+  /**
+   * Wrapper around {@link callOneRowAsync} that validates that the returned data
+   * matches the given validation model. Returns only a single row.
+   */
+  async callValidatedOneRow<Model extends z.ZodTypeAny>(
+    sprocName: string,
+    params: any[],
+    model: Model
+  ): Promise<z.infer<Model>> {
+    const results = await this.callOneRowAsync(sprocName, params);
+    return model.parse(results.rows[0]);
+  }
+
+  /**
+   * Wrapper around {@link callZeroOrOneRowAsync} that validates that the
+   * returned data matches the given validation model, if it return anything.
+   * Returns at most a single row.
+   */
+  async callValidatedZeroOrOneRow<Model extends z.ZodTypeAny>(
+    sprocName: string,
+    params: any[],
+    model: Model
+  ): Promise<z.infer<Model> | null> {
+    const results = await this.callZeroOrOneRowAsync(sprocName, params);
+    if (results.rows.length == 0) {
+      return null;
+    } else {
+      return model.parse(results.rows[0]);
+    }
+  }
+
+  /**
    * Set the schema to use for the search path.
    *
    * @param schema The schema name to use (can be "null" to unset the search path)
@@ -732,57 +880,3 @@ export class PostgresPool {
    */
   setRandomSearchSchema = callbackify(this.setRandomSearchSchemaAsync);
 }
-
-const defaultPool = new PostgresPool();
-
-// We re-expose all functions from the default pool here to account for the
-// default case of a shared global pool of clients. If someone want to create
-// their own pool, we expose the `PostgresPool` class.
-//
-// Note that we explicitly bind all functions to `defaultPool`. This ensures
-// that they'll be invoked with the correct `this` context, specifically when
-// this module is imported as `import * as db from '...'` and that import is
-// subsequently transformed by Babel to `interopRequireWildcard(...)`.
-export const init = defaultPool.init.bind(defaultPool);
-export const initAsync = defaultPool.initAsync.bind(defaultPool);
-export const close = defaultPool.close.bind(defaultPool);
-export const closeAsync = defaultPool.closeAsync.bind(defaultPool);
-export const getClientAsync = defaultPool.getClientAsync.bind(defaultPool);
-export const getClient = defaultPool.getClient.bind(defaultPool);
-export const queryWithClient = defaultPool.queryWithClient.bind(defaultPool);
-export const queryWithClientAsync = defaultPool.queryWithClientAsync.bind(defaultPool);
-export const queryWithClientOneRow = defaultPool.queryWithClientOneRow.bind(defaultPool);
-export const queryWithClientOneRowAsync = defaultPool.queryWithClientOneRowAsync.bind(defaultPool);
-export const queryWithClientZeroOrOneRow =
-  defaultPool.queryWithClientZeroOrOneRow.bind(defaultPool);
-export const queryWithClientZeroOrOneRowAsync =
-  defaultPool.queryWithClientZeroOrOneRowAsync.bind(defaultPool);
-export const rollbackWithClientAsync = defaultPool.rollbackWithClientAsync.bind(defaultPool);
-export const rollbackWithClient = defaultPool.rollbackWithClient.bind(defaultPool);
-export const beginTransactionAsync = defaultPool.beginTransactionAsync.bind(defaultPool);
-export const endTransactionAsync = defaultPool.endTransactionAsync.bind(defaultPool);
-export const endTransaction = defaultPool.endTransaction.bind(defaultPool);
-export const runInTransactionAsync = defaultPool.runInTransactionAsync.bind(defaultPool);
-export const query = defaultPool.query.bind(defaultPool);
-export const queryAsync = defaultPool.queryAsync.bind(defaultPool);
-export const queryOneRow = defaultPool.queryOneRow.bind(defaultPool);
-export const queryOneRowAsync = defaultPool.queryOneRowAsync.bind(defaultPool);
-export const queryZeroOrOneRow = defaultPool.queryZeroOrOneRow.bind(defaultPool);
-export const queryZeroOrOneRowAsync = defaultPool.queryZeroOrOneRowAsync.bind(defaultPool);
-export const call = defaultPool.call.bind(defaultPool);
-export const callAsync = defaultPool.callAsync.bind(defaultPool);
-export const callOneRow = defaultPool.callOneRow.bind(defaultPool);
-export const callOneRowAsync = defaultPool.callOneRowAsync.bind(defaultPool);
-export const callZeroOrOneRow = defaultPool.callZeroOrOneRow.bind(defaultPool);
-export const callZeroOrOneRowAsync = defaultPool.callZeroOrOneRowAsync.bind(defaultPool);
-export const callWithClient = defaultPool.callWithClient.bind(defaultPool);
-export const callWithClientAsync = defaultPool.callWithClientAsync.bind(defaultPool);
-export const callWithClientOneRow = defaultPool.callWithClientOneRow.bind(defaultPool);
-export const callWithClientOneRowAsync = defaultPool.callWithClientOneRowAsync.bind(defaultPool);
-export const callWithClientZeroOrOneRow = defaultPool.callWithClientZeroOrOneRow.bind(defaultPool);
-export const callWithClientZeroOrOneRowAsync =
-  defaultPool.callWithClientZeroOrOneRowAsync.bind(defaultPool);
-export const setSearchSchema = defaultPool.setSearchSchema.bind(defaultPool);
-export const getSearchSchema = defaultPool.getSearchSchema.bind(defaultPool);
-export const setRandomSearchSchema = defaultPool.setRandomSearchSchema.bind(defaultPool);
-export const setRandomSearchSchemaAsync = defaultPool.setRandomSearchSchemaAsync.bind(defaultPool);

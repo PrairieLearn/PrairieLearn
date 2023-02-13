@@ -1,2 +1,5 @@
-SELECT key, value
-FROM config;
+SELECT
+  key,
+  value
+FROM
+  config;

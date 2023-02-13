@@ -1,1 +1,2 @@
-ALTER TYPE enum_instance_question_status ADD VALUE 'grading';
+ALTER TYPE enum_instance_question_status
+ADD VALUE 'grading';

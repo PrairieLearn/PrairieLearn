@@ -25,17 +25,23 @@ Each migration file should contain one or more SQL statements to make the approp
 
 ```sql
 -- add a column to a table
-ALTER TABLE assessments ADD COLUMN auto_close boolean DEFAULT true;
+ALTER TABLE assessments
+ADD COLUMN auto_close boolean DEFAULT true;
 
 -- add a foreign key to a table
-ALTER TABLE variants ADD COLUMN authn_user_id bigint;
-ALTER TABLE variants ADD FOREIGN KEY (authn_user_id) REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE variants
+ADD COLUMN authn_user_id bigint;
+
+ALTER TABLE variants
+ADD FOREIGN KEY (authn_user_id) REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- remove a constraint
-ALTER TABLE alternative_groups DROP CONSTRAINT alternative_groups_number_assessment_id_key;
+ALTER TABLE alternative_groups
+DROP CONSTRAINT alternative_groups_number_assessment_id_key;
 
 -- add a constraint
-ALTER TABLE alternative_groups ADD UNIQUE (assessment_id, number);
+ALTER TABLE alternative_groups
+ADD UNIQUE (assessment_id, number);
 ```
 
 > Note: migrations were previously identified by indexes, but this caused problems with merge conflicts. See https://github.com/PrairieLearn/PrairieLearn/pull/6129 or the PR that added support for timestamps.
