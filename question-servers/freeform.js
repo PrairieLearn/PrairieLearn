@@ -8,7 +8,12 @@ const cheerio = require('cheerio');
 const hash = require('crypto').createHash;
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const { instrumented } = require('@prairielearn/opentelemetry');
+const {
+  instrumented,
+  metrics,
+  ValueType,
+  observeWithHistogram,
+} = require('@prairielearn/opentelemetry');
 
 const schemas = require('../schemas');
 const config = require('../lib/config');
@@ -20,6 +25,50 @@ const courseUtil = require('../lib/courseUtil');
 const markdown = require('../lib/markdown');
 const chunks = require('../lib/chunks');
 const assets = require('../lib/assets');
+
+const meter = metrics.getMeter('prairielearn');
+
+// TODO: maybe get rid of descriptions?
+const phaseHistograms = {
+  generate: meter.createHistogram('freeform.generate.duration', {
+    description: 'Time spent generating freeform questions',
+    unit: 'milliseconds',
+    valueType: ValueType.DOUBLE,
+  }),
+  prepare: meter.createHistogram('freeform.prepare.duration', {
+    description: 'Time spent preparing freeform questions',
+    unit: 'milliseconds',
+    valueType: ValueType.DOUBLE,
+  }),
+  render: meter.createHistogram('freeform.render.duration', {
+    description: 'Time spent rendering freeform panels',
+    unit: 'milliseconds',
+    valueType: ValueType.DOUBLE,
+  }),
+  parse: meter.createHistogram('freeform.parse.duration', {
+    description: 'Time spent parsing freeform questions',
+    unit: 'milliseconds',
+    valueType: ValueType.DOUBLE,
+  }),
+  grade: meter.createHistogram('freeform.grade.duration', {
+    description: 'Time spent grading freeform questions',
+    unit: 'milliseconds',
+    valueType: ValueType.DOUBLE,
+  }),
+  test: meter.createHistogram('freeform.test.duration', {
+    description: 'Time spent testing freeform questions',
+    unit: 'milliseconds',
+    valueType: ValueType.DOUBLE,
+  }),
+  file: meter.createHistogram('freeform.file.duration', {
+    description: 'Time spent processing freeform files',
+    unit: 'milliseconds',
+    valueType: ValueType.DOUBLE,
+  }),
+};
+
+const up = meter.createCounter('up');
+up.add(1);
 
 // Maps core element names to element info
 let coreElementsCache = {};
@@ -956,55 +1005,67 @@ module.exports = {
   },
 
   async processQuestion(phase, codeCaller, data, context) {
-    if (phase === 'generate') {
-      return module.exports.processQuestionServer(
-        phase,
-        codeCaller,
-        data,
-        '',
-        Buffer.from(''),
-        context
-      );
-    } else {
-      const {
-        courseIssues,
-        data: htmlData,
-        html,
-        fileData,
-        renderedElementNames,
-      } = await module.exports.processQuestionHtml(phase, codeCaller, data, context);
-      const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
-      if (hasFatalError) {
-        return {
-          courseIssues,
+    const meter = metrics.getMeter('prairielearn');
+
+    const count = meter.createCounter(`freeform.${phase}.count`, { valueType: ValueType.INT });
+    count.add(1);
+
+    const histogram = meter.createHistogram(`freeform.${phase}.duration`, {
+      unit: 'milliseconds',
+      valueType: ValueType.DOUBLE,
+    });
+
+    return observeWithHistogram(histogram, async () => {
+      if (phase === 'generate') {
+        return module.exports.processQuestionServer(
+          phase,
+          codeCaller,
           data,
+          '',
+          Buffer.from(''),
+          context
+        );
+      } else {
+        const {
+          courseIssues,
+          data: htmlData,
           html,
           fileData,
           renderedElementNames,
+        } = await module.exports.processQuestionHtml(phase, codeCaller, data, context);
+        const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
+        if (hasFatalError) {
+          return {
+            courseIssues,
+            data,
+            html,
+            fileData,
+            renderedElementNames,
+          };
+        }
+        const {
+          courseIssues: serverCourseIssues,
+          data: serverData,
+          html: serverHtml,
+          fileData: serverFileData,
+        } = await module.exports.processQuestionServer(
+          phase,
+          codeCaller,
+          htmlData,
+          html,
+          fileData,
+          context
+        );
+        courseIssues.push(...serverCourseIssues);
+        return {
+          courseIssues,
+          data: serverData,
+          html: serverHtml,
+          fileData: serverFileData,
+          renderedElementNames,
         };
       }
-      const {
-        courseIssues: serverCourseIssues,
-        data: serverData,
-        html: serverHtml,
-        fileData: serverFileData,
-      } = await module.exports.processQuestionServer(
-        phase,
-        codeCaller,
-        htmlData,
-        html,
-        fileData,
-        context
-      );
-      courseIssues.push(...serverCourseIssues);
-      return {
-        courseIssues,
-        data: serverData,
-        html: serverHtml,
-        fileData: serverFileData,
-        renderedElementNames,
-      };
-    }
+    });
   },
 
   /**

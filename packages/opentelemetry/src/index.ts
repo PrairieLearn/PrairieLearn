@@ -1,28 +1,35 @@
 import { Metadata, credentials } from '@grpc/grpc-js';
 
-import { tracing } from '@opentelemetry/sdk-node';
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
+import {
+  PeriodicExportingMetricReader,
+  MeterProvider,
+  PushMetricExporter,
+  ConsoleMetricExporter,
+} from '@opentelemetry/sdk-metrics';
 import {
   SpanExporter,
   ReadableSpan,
   SpanProcessor,
   SimpleSpanProcessor,
+  BatchSpanProcessor,
   ParentBasedSampler,
   TraceIdRatioBasedSampler,
   AlwaysOnSampler,
   AlwaysOffSampler,
   Sampler,
+  ConsoleSpanExporter,
 } from '@opentelemetry/sdk-trace-base';
 import { detectResources, Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { ExpressLayerType } from '@opentelemetry/instrumentation-express';
-import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base';
-import { Span, SpanStatusCode, trace } from '@opentelemetry/api';
+import { Span, SpanStatusCode, trace, metrics, Histogram } from '@opentelemetry/api';
 import { hrTimeToMilliseconds } from '@opentelemetry/core';
 
 // Exporters go here.
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
 import { JaegerExporter } from '@opentelemetry/exporter-jaeger';
+import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
 
 // Instrumentations go here.
 import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
@@ -122,12 +129,92 @@ let tracerProvider: NodeTracerProvider | null;
 export interface OpenTelemetryConfig {
   openTelemetryEnabled: boolean;
   openTelemetryExporter: 'console' | 'honeycomb' | 'jaeger' | SpanExporter;
+  openTelemetryMetricExporter?: 'console' | 'honeycomb' | PushMetricExporter;
   openTelemetrySamplerType: 'always-on' | 'always-off' | 'trace-id-ratio';
   openTelemetrySampleRate?: number;
   openTelemetrySpanProcessor?: 'batch' | 'simple';
   honeycombApiKey?: string;
   honeycombDataset?: string;
   serviceName?: string;
+}
+
+function getTraceExporter(config: OpenTelemetryConfig): SpanExporter {
+  if (typeof config.openTelemetryExporter === 'object') {
+    return config.openTelemetryExporter;
+  }
+  switch (config.openTelemetryExporter) {
+    case 'console': {
+      // Export telemetry to the console for testing purposes.
+      return new ConsoleSpanExporter();
+    }
+    case 'honeycomb': {
+      if (!config.honeycombApiKey) throw new Error('Missing Honeycomb API key');
+      if (!config.honeycombDataset) throw new Error('Missing Honeycomb dataset');
+
+      // Create a Honeycomb exporter with the appropriate metadata from the
+      // config we've been provided with.
+      const metadata = new Metadata();
+
+      metadata.set('x-honeycomb-team', config.honeycombApiKey);
+      metadata.set('x-honeycomb-dataset', config.honeycombDataset);
+
+      return new OTLPTraceExporter({
+        url: 'grpc://api.honeycomb.io:443/',
+        credentials: credentials.createSsl(),
+        metadata,
+      });
+      break;
+    }
+    case 'jaeger': {
+      return new JaegerExporter({
+        // By default, the UDP sender will be used, but that causes issues
+        // with packet sizes when Jaeger is running in Docker. We'll instead
+        // configure it to use the HTTP sender, which shouldn't face those
+        // same issues. We'll still allow the endpoint to be overridden via
+        // environment variable if needed.
+        endpoint: process.env.OTEL_EXPORTER_JAEGER_ENDPOINT ?? 'http://localhost:14268/api/traces',
+      });
+      break;
+    }
+    default:
+      throw new Error(`Unknown OpenTelemetry exporter: ${config.openTelemetryExporter}`);
+  }
+}
+
+function getMetricExporter(config: OpenTelemetryConfig): PushMetricExporter | null {
+  if (!config.openTelemetryMetricExporter) return null;
+
+  if (typeof config.openTelemetryMetricExporter === 'object') {
+    return config.openTelemetryMetricExporter;
+  }
+
+  switch (config.openTelemetryMetricExporter) {
+    case 'console': {
+      // Export telemetry to the console for testing purposes.
+      return new ConsoleMetricExporter();
+    }
+    case 'honeycomb': {
+      if (!config.honeycombApiKey) throw new Error('Missing Honeycomb API key');
+      if (!config.honeycombDataset) throw new Error('Missing Honeycomb dataset');
+
+      // Create a Honeycomb exporter with the appropriate metadata from the
+      // config we've been provided with.
+      const metadata = new Metadata();
+
+      metadata.set('x-honeycomb-team', config.honeycombApiKey);
+      metadata.set('x-honeycomb-dataset', config.honeycombDataset);
+
+      return new OTLPMetricExporter({
+        url: 'grpc://api.honeycomb.io:443/',
+        credentials: credentials.createSsl(),
+        metadata,
+      });
+    }
+    default:
+      throw new Error(
+        `Unknown OpenTelemetry metric exporter: ${config.openTelemetryMetricExporter}`
+      );
+  }
 }
 
 /**
@@ -147,50 +234,8 @@ export async function init(config: OpenTelemetryConfig) {
     return;
   }
 
-  let exporter: SpanExporter;
-  if (typeof config.openTelemetryExporter === 'object') {
-    exporter = config.openTelemetryExporter;
-  } else {
-    switch (config.openTelemetryExporter) {
-      case 'console': {
-        // Export spans to the console for testing purposes.
-        exporter = new tracing.ConsoleSpanExporter();
-        break;
-      }
-      case 'honeycomb': {
-        if (!config.honeycombApiKey) throw new Error('Missing Honeycomb API key');
-        if (!config.honeycombDataset) throw new Error('Missing Honeycomb dataset');
-
-        // Create a Honeycomb exporter with the appropriate metadata from the
-        // config we've been provided with.
-        const metadata = new Metadata();
-
-        metadata.set('x-honeycomb-team', config.honeycombApiKey);
-        metadata.set('x-honeycomb-dataset', config.honeycombDataset);
-
-        exporter = new OTLPTraceExporter({
-          url: 'grpc://api.honeycomb.io:443/',
-          credentials: credentials.createSsl(),
-          metadata,
-        });
-        break;
-      }
-      case 'jaeger': {
-        exporter = new JaegerExporter({
-          // By default, the UDP sender will be used, but that causes issues
-          // with packet sizes when Jaeger is running in Docker. We'll instead
-          // configure it to use the HTTP sender, which shouldn't face those
-          // same issues. We'll still allow the endpoint to be overridden via
-          // environment variable if needed.
-          endpoint:
-            process.env.OTEL_EXPORTER_JAEGER_ENDPOINT ?? 'http://localhost:14268/api/traces',
-        });
-        break;
-      }
-      default:
-        throw new Error(`Unknown OpenTelemetry exporter: ${config.openTelemetryExporter}`);
-    }
-  }
+  const traceExporter = getTraceExporter(config);
+  const metricExporter = getMetricExporter(config);
 
   let sampler: Sampler;
   switch (config.openTelemetrySamplerType ?? 'always-on') {
@@ -215,11 +260,11 @@ export async function init(config: OpenTelemetryConfig) {
   let spanProcessor: SpanProcessor;
   switch (config.openTelemetrySpanProcessor ?? 'batch') {
     case 'batch': {
-      spanProcessor = new FilterBatchSpanProcessor(exporter, filter);
+      spanProcessor = new FilterBatchSpanProcessor(traceExporter, filter);
       break;
     }
     case 'simple': {
-      spanProcessor = new SimpleSpanProcessor(exporter);
+      spanProcessor = new SimpleSpanProcessor(traceExporter);
       break;
     }
     default: {
@@ -243,17 +288,28 @@ export async function init(config: OpenTelemetryConfig) {
     );
   }
 
+  // Set up tracing instrumentation.
   const nodeTracerProvider = new NodeTracerProvider({
     sampler,
     resource,
   });
   nodeTracerProvider.addSpanProcessor(spanProcessor);
   nodeTracerProvider.register();
-
   instrumentations.forEach((i) => i.setTracerProvider(nodeTracerProvider));
 
   // Save the provider so we can shut it down later.
-  tracerProvider = tracerProvider;
+  tracerProvider = nodeTracerProvider;
+
+  // Set up metrics instrumentation if it's enabled.
+  if (metricExporter) {
+    const meterProvider = new MeterProvider({ resource });
+    metrics.setGlobalMeterProvider(meterProvider);
+    const metricReader = new PeriodicExportingMetricReader({
+      exporter: metricExporter,
+      exportIntervalMillis: 3_000,
+    });
+    meterProvider.addMetricReader(metricReader);
+  }
 }
 
 /**
@@ -291,5 +347,18 @@ export async function instrumented<T>(
     });
 }
 
-export { trace, context, SpanStatusCode } from '@opentelemetry/api';
+export async function observeWithHistogram<T>(
+  histogram: Histogram,
+  fn: () => Promise<T> | T
+): Promise<T> {
+  const start = Date.now();
+  try {
+    return await fn();
+  } finally {
+    console.log('recording...');
+    histogram.record(Date.now() - start);
+  }
+}
+
+export { trace, metrics, context, SpanStatusCode, ValueType } from '@opentelemetry/api';
 export { suppressTracing } from '@opentelemetry/core';
