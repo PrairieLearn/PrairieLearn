@@ -61,9 +61,14 @@ const definedRules = [
     password: 'part5',
   },
   {
+    endDate: '2023-12-10 09:59:59 (CST)',
+    credit: 55,
+    password: 'part6',
+  },
+  {
     endDate: '2023-12-10 11:59:59 (CST)',
     credit: 50,
-    password: 'part6',
+    password: 'part7',
   },
   {
     uids: 'student2@illinois.edu',
@@ -80,98 +85,110 @@ const definedRules = [
 
 const interpretedRulesSpecific = [
   {
-    dates: 'Until 2023-02-10 12:00:00 (CST)',
-    credit: 50,
+    dates: 'Until 2023-02-10 12:00:00',
+    credit: 55,
     password: 'part6',
     after: 'Cannot see score or answers',
   },
   {
-    dates: 'Between 2023-02-10 12:00:01 (CST) and 2023-03-10 12:00:00 (CST)',
+    dates: 'From 2023-02-10 12:00:01 to 2023-03-10 12:00:00',
     credit: 60,
     password: 'part5',
     after: 'Can see score, but not answers',
   },
   {
-    dates: 'Between 2023-03-10 12:00:01 (CST) and 2023-04-10 12:00:00 (CDT)',
+    dates: 'From 2023-03-10 12:00:01 to 2023-04-10 12:00:00',
     credit: 80,
     password: 'part3',
   },
   {
-    dates: 'Between 2023-04-10 12:00:01 (CDT) and 2023-04-15 12:00:00 (CDT)',
+    dates: 'From 2023-04-10 12:00:01 to 2023-04-15 12:00:00',
     credit: 100,
   },
   {
-    dates: 'Between 2023-04-15 12:00:01 (CDT) and 2023-08-05 11:59:59 (CDT)',
+    dates: 'From 2023-04-15 12:00:01 to 2023-08-05 11:59:59',
     credit: 110,
   },
   {
-    dates: 'Between 2023-08-05 12:00:00 (CDT) and 2023-08-10 11:59:59 (CDT)',
+    dates: 'From 2023-08-05 12:00:00 to 2023-08-10 11:59:59',
     credit: 100,
   },
   {
-    dates: 'Between 2023-08-10 12:00:00 (CDT) and 2023-10-10 11:59:59 (CDT)',
+    dates: 'From 2023-08-10 12:00:00 to 2023-10-10 11:59:59',
     credit: 90,
     password: 'part2',
   },
   {
-    dates: 'Between 2023-10-10 12:00:00 (CDT) and 2023-11-10 11:59:59 (CST)',
+    dates: 'From 2023-10-10 12:00:00 to 2023-11-10 11:59:59',
     credit: 60,
     password: 'part5',
     after: 'Can see score, but not answers',
   },
   {
-    dates: 'Between 2023-11-10 12:00:00 (CST) and 2023-12-10 11:59:59 (CST)',
-    credit: 50,
+    dates: 'From 2023-11-10 12:00:00 to 2023-12-10 09:59:59',
+    credit: 55,
     password: 'part6',
     after: 'Cannot see score or answers',
   },
   {
-    dates: 'From 2023-12-10 12:00:00 (CST)',
+    dates: 'On 2023-12-10, from 10:00:00 to 11:59:59',
+    credit: 50,
+    password: 'part7',
+    after: 'Cannot see score or answers',
+  },
+  {
+    dates: 'From 2023-12-10 12:00:00',
     active: false,
   },
 ];
 
 const interpretedRulesGeneral = [
   {
-    dates: 'Until 2023-02-10 12:00:00 (CST)',
-    credit: 50,
+    dates: 'Until 2023-02-10 12:00:00',
+    credit: 55,
     password: 'part6',
     after: 'Cannot see score or answers',
   },
   {
-    dates: 'Between 2023-02-10 12:00:01 (CST) and 2023-03-10 12:00:00 (CST)',
+    dates: 'From 2023-02-10 12:00:01 to 2023-03-10 12:00:00',
     credit: 60,
     password: 'part5',
     after: 'Can see score, but not answers',
   },
   {
-    dates: 'Between 2023-03-10 12:00:01 (CST) and 2023-04-10 12:00:00 (CDT)',
+    dates: 'From 2023-03-10 12:00:01 to 2023-04-10 12:00:00',
     credit: 80,
     password: 'part3',
   },
   {
-    dates: 'Between 2023-04-10 12:00:01 (CDT) and 2023-08-10 11:59:59 (CDT)',
+    dates: 'From 2023-04-10 12:00:01 to 2023-08-10 11:59:59',
     credit: 100,
   },
   {
-    dates: 'Between 2023-08-10 12:00:00 (CDT) and 2023-10-10 11:59:59 (CDT)',
+    dates: 'From 2023-08-10 12:00:00 to 2023-10-10 11:59:59',
     credit: 90,
     password: 'part2',
   },
   {
-    dates: 'Between 2023-10-10 12:00:00 (CDT) and 2023-11-10 11:59:59 (CST)',
+    dates: 'From 2023-10-10 12:00:00 to 2023-11-10 11:59:59',
     credit: 60,
     password: 'part5',
     after: 'Can see score, but not answers',
   },
   {
-    dates: 'Between 2023-11-10 12:00:00 (CST) and 2023-12-10 11:59:59 (CST)',
-    credit: 50,
+    dates: 'From 2023-11-10 12:00:00 to 2023-12-10 09:59:59',
+    credit: 55,
     password: 'part6',
     after: 'Cannot see score or answers',
   },
   {
-    dates: 'From 2023-12-10 12:00:00 (CST)',
+    dates: 'On 2023-12-10, from 10:00:00 to 11:59:59',
+    credit: 50,
+    password: 'part7',
+    after: 'Cannot see score or answers',
+  },
+  {
+    dates: 'From 2023-12-10 12:00:00',
     active: false,
   },
 ];
@@ -323,11 +340,12 @@ describe('Access page', function () {
   });
 
   it('shows the appropriate access rule as active', async () => {
-    await testActiveBadge('2023-01-16T13:12:00Z', 0, 0);
-    await testActiveBadge('2023-02-16T13:12:00Z', 1, 1);
-    await testActiveBadge('2023-04-16T13:12:00Z', 3, 4);
-    await testActiveBadge('2023-08-06T13:12:00Z', 3, 5);
-    await testActiveBadge('2023-11-16T13:12:00Z', 6, 8);
-    await testActiveBadge('2024-01-16T13:12:00Z', 7, 9);
+    await testActiveBadge('2023-01-16T13:12:00-06:00', 0, 0);
+    await testActiveBadge('2023-02-16T13:12:00-06:00', 1, 1);
+    await testActiveBadge('2023-04-16T13:12:00-05:00', 3, 4);
+    await testActiveBadge('2023-08-06T13:12:00-05:00', 3, 5);
+    await testActiveBadge('2023-11-16T13:12:00-06:00', 6, 8);
+    await testActiveBadge('2023-12-10T11:12:00-06:00', 7, 9);
+    await testActiveBadge('2024-01-16T13:12:00-06:00', 8, 10);
   });
 });

@@ -156,19 +156,7 @@
                   Any mode
                   <% } %>
                 </td>
-                <td>
-                  <% if (access_rule.start_date_raw && access_rule.end_date_raw) { %>
-                  Between <%= access_rule.start_date %> and <%= access_rule.end_date %>
-                  <% } else if (access_rule.start_date_raw) { %>
-                  From <%= access_rule.start_date %>
-                  <% } else if (access_rule.end_date_raw) { %>
-                  Until <%= access_rule.end_date %>
-                  <% } else if (access_rule.exam_uuid) { %>
-                  While exam is active
-                  <% } else { %>
-                  Any time
-                  <% } %>
-                </td>
+                <td><%= access_rule.date_range %></td>
                 <% if (access_rule.active) { %>
                 <td>Can start the assessment</td>
                 <td><%= access_rule.credit %></td>

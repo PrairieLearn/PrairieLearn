@@ -18,20 +18,6 @@ SELECT
     ELSE format_date_full_compact (aar.end_date, ci.display_timezone)
   END AS end_date,
   CASE
-    WHEN aar.start_date IS NULL THEN '—'
-    ELSE format_date_full_compact (
-      aar.start_date - interval '1 sec',
-      ci.display_timezone
-    )
-  END AS start_date_minus_one,
-  CASE
-    WHEN aar.end_date IS NULL THEN '—'
-    ELSE format_date_full_compact (
-      aar.end_date + interval '1 sec',
-      ci.display_timezone
-    )
-  END AS end_date_plus_one,
-  CASE
     WHEN aar.credit IS NULL THEN '—'
     ELSE aar.credit::text || '%'
   END AS credit,
@@ -62,10 +48,8 @@ SELECT
     ),
     '{}'::JSONB
   ) AS uids_names,
-  aar.start_date AS start_date_raw,
-  aar.end_date AS end_date_raw,
-  aar.start_date - interval '1 sec' AS start_date_minus_one_raw,
-  aar.end_date + interval '1 sec' AS end_date_plus_one_raw,
+  aar.start_date at time zone ci.display_timezone AS start_date_raw,
+  aar.end_date at time zone ci.display_timezone AS end_date_raw,
   (
     aar.start_date IS NULL
     OR aar.start_date <= COALESCE($req_date::TIMESTAMPTZ, NOW())

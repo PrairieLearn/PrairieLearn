@@ -49,9 +49,16 @@
       "showClosedAssessment": false
     },
     {
+      "endDate": "2023-12-10T09:59:59Z",
+      "credit": 55,
+      "password": "part6",
+      "showClosedAssessment": false,
+      "showClosedAssessmentScore": false
+    },
+    {
       "endDate": "2023-12-10T11:59:59Z",
       "credit": 50,
-      "password": "part6",
+      "password": "part7",
       "showClosedAssessment": false,
       "showClosedAssessmentScore": false
     },

@@ -4,6 +4,7 @@ const asyncHandler = require('express-async-handler');
 const path = require('path');
 const _ = require('lodash');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const { format, isSameDay, addSeconds, subSeconds } = require('date-fns');
 
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -12,6 +13,29 @@ let compareDate = function (oldDate, newDate, oldIsNull, newIsNull, bothAreNull)
   if (oldDate === null) return newDate === null ? bothAreNull : oldIsNull;
   else if (newDate === null) return newIsNull;
   else return oldDate - newDate;
+};
+
+let updateAccessRuleRange = function (rule) {
+  const date_time_format = 'yyyy-MM-dd HH:mm:ss';
+  const date_format = 'yyyy-MM-dd';
+  const time_format = 'HH:mm:ss';
+  if (!rule.start_date_raw && !rule.end_date_raw) {
+    rule.date_range = rule.exam_uuid ? 'While exam is active' : 'Any time';
+  } else if (!rule.start_date_raw) {
+    rule.date_range = `Until ${format(rule.end_date_raw, date_time_format)}`;
+  } else if (!rule.end_date_raw) {
+    rule.date_range = `From ${format(rule.start_date_raw, date_time_format)}`;
+  } else if (isSameDay(rule.start_date_raw, rule.end_date_raw)) {
+    rule.date_range = `On ${format(rule.start_date_raw, date_format)}, from ${format(
+      rule.start_date_raw,
+      time_format
+    )} to ${format(rule.end_date_raw, time_format)}`;
+  } else {
+    rule.date_range = `From ${format(rule.start_date_raw, date_time_format)} to ${format(
+      rule.end_date_raw,
+      date_time_format
+    )}`;
+  }
 };
 
 let applyRule = function (list, originalRule) {
@@ -62,30 +86,26 @@ let applyRule = function (list, originalRule) {
       compareDate(new_rule.start_date_raw, old_rule.end_date_raw, -1, -1, -1) <= 0
     ) {
       // Old rule ends after the new one starts, so in effect the new rule starts after the old rule
-      new_rule.start_date_raw = old_rule.end_date_plus_one_raw;
-      new_rule.start_date = old_rule.end_date_plus_one;
+      new_rule.start_date_raw = addSeconds(old_rule.end_date_raw, 1);
     } else if (
       compareDate(new_rule.end_date_raw, old_rule.start_date_raw, +1, +1, +1) >= 0 &&
       compareDate(new_rule.end_date_raw, old_rule.end_date_raw, +1, -1, 0) <= 0
     ) {
       // Old rule starts before the new one ends, so in effect the new rule ends before the old rule
-      new_rule.end_date_raw = old_rule.start_date_minus_one_raw;
-      new_rule.end_date = old_rule.start_date_minus_one;
+      new_rule.end_date_raw = subSeconds(old_rule.start_date_raw, 1);
     } else if (
       compareDate(new_rule.start_date_raw, old_rule.start_date_raw, -1, +1, 0) < 0 &&
       compareDate(new_rule.end_date_raw, old_rule.end_date_raw, +1, -1, 0) > 0
     ) {
       // Old rule has dates completely within the new one, so create two effective rules, one ending before the old one...
       let rule_before = { ...new_rule };
-      rule_before.end_date_raw = old_rule.start_date_minus_one_raw;
-      rule_before.end_date = old_rule.start_date_minus_one;
+      rule_before.end_date_raw = subSeconds(old_rule.start_date_raw, 1);
       rule_before.valid_now_on_end = old_rule.valid_now_on_end;
       applyRule(list, rule_before);
 
       // ... and one starting after the old one
       let rule_after = { ...new_rule };
-      rule_after.start_date_raw = old_rule.end_date_plus_one_raw;
-      rule_after.start_date = old_rule.end_date_plus_one;
+      rule_after.start_date_raw = addSeconds(old_rule.end_date_raw, 1);
       rule_after.valid_now_on_start = old_rule.valid_now_on_start;
       applyRule(list, rule_after);
 
@@ -141,10 +161,7 @@ router.get(
       }
 
       user_spec_rules.forEach((set) => {
-        if (
-          db_rule.uids_raw === null ||
-          set.uids.filter((uid) => db_rule.uids_raw.includes(uid)).length
-        ) {
+        if (db_rule.uids_raw === null || set.uids.some((uid) => db_rule.uids_raw.includes(uid))) {
           applyRule(set.rules, db_rule);
         }
       });
@@ -167,10 +184,12 @@ router.get(
     const rule_sort_fn = (rule1, rule2) =>
       rule1.mode.localeCompare(rule2.mode) || rule1.start_date_raw - rule2.start_date_raw;
 
-    res.locals.exception_sets.forEach((set) => set.rules.sort(rule_sort_fn));
-    general_rules.sort(rule_sort_fn);
-
     res.locals.general_rules = { general_rules: true, rules: general_rules };
+
+    res.locals.exception_sets.concat([res.locals.general_rules]).forEach((set) => {
+      set.rules.sort(rule_sort_fn);
+      set.rules.forEach(updateAccessRuleRange);
+    });
 
     res.locals.access_rules.forEach((db_rule) => {
       db_rule.has_application =
