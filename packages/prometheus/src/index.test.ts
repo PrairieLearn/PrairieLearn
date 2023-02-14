@@ -48,4 +48,27 @@ describe('handler', () => {
       assert.match(text, /# TYPE test_counter counter/);
     });
   });
+
+  it('validates authorization header', async () => {
+    await withExpressServer(async ({ app, port }) => {
+      app.use('/metrics', handler({ authorizationHeader: 'Bearer foobar' }));
+
+      const noAuthRes = await fetch(`http://localhost:${port}/metrics`);
+      assert.equal(noAuthRes.status, 401);
+
+      const badAuthRes = await fetch(`http://localhost:${port}/metrics`, {
+        headers: {
+          authorization: 'Bearer bad',
+        },
+      });
+      assert.equal(badAuthRes.status, 401);
+
+      const authRes = await fetch(`http://localhost:${port}/metrics`, {
+        headers: {
+          authorization: 'Bearer foobar',
+        },
+      });
+      assert.equal(authRes.status, 200);
+    });
+  });
 });
