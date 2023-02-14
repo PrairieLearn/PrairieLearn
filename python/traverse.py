@@ -96,9 +96,7 @@ def traverse_and_replace(
 
                 continue
 
-            is_comment = isinstance(new_elements, lxml.html.HtmlComment)
-
-            if is_comment:
+            if isinstance(new_elements, lxml.html.HtmlComment):
                 result.append(lxml.html.tostring(new_elements, encoding="unicode"))
             else:
                 # Add opening tag and text
@@ -107,19 +105,14 @@ def traverse_and_replace(
                 if new_elements.text is not None:
                     result.append(new_elements.text)
 
-            # Add all children to the work stack
-            children = list(new_elements)
+                # Add all children to the work stack
+                children = list(new_elements)
 
-            if children:
-                work_stack.extend(reversed(children))
+                if children:
+                    work_stack.extend(reversed(children))
 
-            count_stack.append(len(children))
-
-            # If this was a comment, we shouldn't consider its tag or tail, as
-            # it will have already been serialized above.
-            tail_tag = new_elements.tag if not is_comment else None
-            tail_text = new_elements.tail if not is_comment else None
-            tail_stack.append((tail_tag, tail_text))
+                count_stack.append(len(children))
+                tail_stack.append((new_elements.tag, element.tail))
 
         # Close all closable tags
         while count_stack[-1] == 0:
