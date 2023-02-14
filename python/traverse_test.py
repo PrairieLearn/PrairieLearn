@@ -292,3 +292,13 @@ def test_traverse_and_replace_void_elements() -> None:
 
     html = traverse_and_replace('<div><br><input name="input"</div>', replace)
     assert html == '<div><br><input name="input"></div>'
+
+
+def test_traverse_and_replace_angle_brackets() -> None:
+    def replace(e) -> ElementReplacement:
+        if e.tag == "pl-code":
+            return "<pre><code>&lt;div&gt;</code></pre>"
+        return e
+
+    html = traverse_and_replace("<pl-code></pl-code>", replace)
+    assert html == "<pre><code>&lt;div&gt;</code></pre>"
