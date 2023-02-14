@@ -126,9 +126,11 @@ def traverse_and_replace(
         else:
             count_stack[-1] -= 1
 
-    # No need to empty tail stack, should be empty from above
-    # can add asserts that the tail stack and count stack are
-    # empty here to debug
+    # No need to empty tail stack, should be empty from above.
+    # If debugging, you can add the following assertions:
+    #
+    # assert count_stack == deque([0])
+    # assert not tail_stack
 
     return "".join(result)
 
@@ -158,6 +160,10 @@ if __name__ == "__main__":
             return "<pre><code>foo</code></pre>"
         return e
 
-    new = timeit.timeit(lambda: traverse_and_replace(html, replace), number=1000)
+    number = 1000
+    total_time = timeit.timeit(
+        lambda: traverse_and_replace(html, replace), number=number
+    )
+    time_per_iter = total_time / number
 
-    print("new", new)
+    print(f"${number} loops, {time_per_iter * 1000}ms per loop")
