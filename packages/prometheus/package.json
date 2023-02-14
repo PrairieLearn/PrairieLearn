@@ -1,0 +1,24 @@
+{
+  "name": "@prairielearn/prometheus",
+  "version": "1.0.0",
+  "description": "Prometheus client for PrairieLearn",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput",
+    "test": "mocha --no-config --require ts-node/register src/*.test.ts"
+  },
+  "dependencies": {
+    "compression": "^1.7.4",
+    "express": "^4.18.2",
+    "express-async-handler": "^1.2.0",
+    "prom-client": "^14.1.1"
+  },
+  "devDependencies": {
+    "@types/compression": "^1.7.2",
+    "@types/mocha": "^10.0.1",
+    "mocha": "^10.2.0",
+    "node-fetch": "^2.6.9",
+    "ts-node": "^10.9.1"
+  }
+}
