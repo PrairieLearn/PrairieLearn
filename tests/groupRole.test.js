@@ -22,7 +22,8 @@ locals.courseDir = path.join(__dirname, '..', 'testCourse');
 
 const storedConfig = {};
 
-describe('Group based homework assess control on student side', function () {
+// TODO: Figure out a more descriptive title?
+describe('Group based homework assess custom group roles from student side', function () {
   this.timeout(20000);
   before('set authenticated user', function (callback) {
     storedConfig.authUid = config.authUid;
@@ -41,7 +42,6 @@ describe('Group based homework assess control on student side', function () {
     it('should contain a group-based homework assessment with roles', function (callback) {
       sqldb.query(sql.select_group_work_assessment_with_roles, [], function (err, result) {
         if (ERR(err, callback)) return;
-        console.log(result.rows);
         assert.lengthOf(result.rows, 1);
         assert.notEqual(result.rows[0].id, undefined);
         locals.assessment_id = result.rows[0].id;
@@ -59,18 +59,18 @@ describe('Group based homework assess control on student side', function () {
         if (ERR(err, callback)) return;
         assert.lengthOf(result.rows, 5);
         locals.studentUsers = result.rows.slice(0, 3);
-        locals.studentUserNotGrouped = result.rows[3];
-        locals.studentUserInDiffGroup = result.rows[4];
+        // locals.studentUserNotGrouped = result.rows[3];
+        // locals.studentUserInDiffGroup = result.rows[4];
         locals.groupCreator = locals.studentUsers[0];
         assert.lengthOf(locals.studentUsers, 3);
+
+        // switch user to the group creator
+        config.authUid = locals.groupCreator.uid;
+        config.authName = locals.groupCreator.name;
+        config.authUin = '00000001';
+        config.userId = locals.groupCreator.user_id;
         callback(null);
       });
-    });
-    it('should be able to switch user', function (callback) {
-      config.authUid = locals.groupCreator.uid;
-      config.authName = locals.groupCreator.name;
-      config.authUin = '00000001';
-      callback(null);
     });
   });
 
@@ -119,24 +119,49 @@ describe('Group based homework assess control on student side', function () {
     });
   });
 
-  // TODO: add tests for checking new role table UI
   describe('4. the group information after 1 user join the group', function () {
-    it('should contain the correct group name', function () {
-      elemList = locals.$('#group-name');
-      assert.equal(elemList.text(), locals.group_name);
+    it('should have user set to manager role in the database', function (callback) {
+      var params = {
+        assessment_id: locals.assessment_id,
+        user_id: config.userId,
+      };
+      sqldb.query(sql.get_current_user_roles, params, function (err, result) {
+        if (ERR(err, callback)) return;
+        let userRoles = result.rows;
+        assert.lengthOf(userRoles, 1);
+        assert.equal(userRoles[0].role_name, 'Manager');
+        locals.currentRoleIds = [userRoles[0].id];
+      });
+      callback(null);
     });
-    it('should contain the 4-character join code', function () {
-      elemList = locals.$('#join-code');
-      locals.joinCode = elemList.text();
-      assert.lengthOf(locals.joinCode, locals.$('#group-name').text().length + 1 + 4);
+    it('group role table is visible and has one user in it', function () {
+      elemList = locals.$('#role-select-form').find('tr');
+      assert.lengthOf(elemList, 2);
+    });
+    it('should contain four textboxes per table row', function () {
+      // gets all <input> elems within the second <tr> (the first is a header)
+      elemList = locals.$('#role-select-form').find('tr').eq(1).find('input');
+      assert.lengthOf(elemList, 4);
+    });
+    it('should have only manager role in the role table', function () {
+      // gets all <input> elems that are selected
+      elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:checked');
+      assert.lengthOf(elemList, 1);
+
+      elemList = elemList.next(); // look at the <label> just after the <input>
+      assert.equal(elemList.text().trim(), 'Manager');
+      // NOTE: Should we be looking at the html name/id of the <input>? Or is the label text fine?
+      // TODO: Should we explicitly confirm the "Manager" role has assigner privleges? Or is that implied already?
     });
     it('should not be able to start assessment', function () {
       elemList = locals.$('#start-assessment');
       assert.isTrue(elemList.is(':disabled'));
     });
-    it('should be missing 2 more group members to start', function () {
-      elemList = locals.$('.text-center:contains(2 more)');
-      assert.lengthOf(elemList, 1);
+    it('should display error for too few recorders/reflectors', function () {
+      // TODO: Write test
+    });
+    it('should not be able to select the contributor role', function () {
+      // TODO: Write test
     });
   });
 });

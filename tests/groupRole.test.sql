@@ -11,6 +11,17 @@ WHERE
     AND a.group_work is TRUE
     AND gc.has_roles is TRUE;
 
+
+-- BLOCK get_current_user_roles
+SELECT 
+    gr.id, gr.role_name
+FROM
+    group_roles as gr JOIN group_user_roles as gu ON gr.id = gu.group_role_id
+WHERE
+    gr.assessment_id = $assessment_id AND gu.user_id = $user_id;
+
+
+
 -- BLOCK select_group_config
 SELECT minimum, maximum
 FROM group_configs
