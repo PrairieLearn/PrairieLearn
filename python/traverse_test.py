@@ -40,12 +40,12 @@ def test_traverse_and_replace_comment() -> None:
 
 def test_traverse_and_replace_comment_nested() -> None:
     def replace(e) -> ElementReplacement:
-        if e.tag == "p":
-            return "<!-- Goodbye --><i>world</i>"
+        if e.tag == "span":
+            return "<!-- Goodbye --><strong>world</strong>"
         return e
 
-    html = traverse_and_replace("<i><p>Hello</p></i>", replace)
-    assert html == "<i><!-- Goodbye --><i>world</i></i>"
+    html = traverse_and_replace("<p><span>Hello</span></p>", replace)
+    assert html == "<p><!-- Goodbye --><strong>world</strong></p>"
 
 
 def test_traverse_and_replace_comment_with_text() -> None:
