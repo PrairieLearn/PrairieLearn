@@ -44,3 +44,6 @@ docs/code-docs/
 
 # pytest cache
 .pytest_cache/
+
+# prettier-plugin-sql does not properly support sprocs, so ignoring those
+sprocs/*.sql

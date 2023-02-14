@@ -1,4 +1,5 @@
-ALTER TABLE variants ADD COLUMN IF NOT EXISTS authn_user_id bigint;
+ALTER TABLE variants
+ADD COLUMN IF NOT EXISTS authn_user_id bigint;
 
 DO $$
 BEGIN

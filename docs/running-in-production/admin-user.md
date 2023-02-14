@@ -11,12 +11,15 @@ psql postgres
 - Check the users table by running
 
 ```sql
-SELECT * FROM users;
+SELECT
+  *
+FROM
+  users;
 ```
 
 Which will display a table of users in the database:
 
-```sql
+```txt
  user_id |       uid        |    uin    |   name   | lti_course_instance_id | lti_user_id | lti_context_id | institution_id | deleted_at
 ---------+------------------+-----------+----------+------------------------+-------------+----------------+----------------+------------
        1 | dev@illinois.edu | 000000000 | Dev User |                        |             |                |              1 |
@@ -25,5 +28,12 @@ Which will display a table of users in the database:
 Add the desired user to the administrators table by running
 
 ```sql
-INSERT INTO administrators (user_id) VALUES (user_id from users table);
+INSERT INTO
+  administrators (user_id)
+VALUES
+  (
+    user_id
+    from
+      users table
+  );
 ```

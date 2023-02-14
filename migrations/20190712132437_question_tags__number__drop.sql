@@ -1,1 +1,2 @@
-ALTER TABLE question_tags DROP COLUMN IF EXISTS number;
+ALTER TABLE question_tags
+DROP COLUMN IF EXISTS number;

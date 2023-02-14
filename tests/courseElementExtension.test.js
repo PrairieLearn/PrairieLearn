@@ -68,8 +68,8 @@ describe('Course element extensions', function () {
         path.join(__dirname, '..', 'testCourse', 'elementExtensions'),
         path.join(__dirname, '..', 'testCourse', 'elementExtensions')
       );
-      assert(
-        extensions.length === 0,
+      assert.isEmpty(
+        extensions,
         'non-zero number of extensions were loaded from a course without extensions'
       );
     });

@@ -1,4 +1,5 @@
-ALTER TABLE variants DROP CONSTRAINT IF EXISTS variants_number_instance_question_id_key;
+ALTER TABLE variants
+DROP CONSTRAINT IF EXISTS variants_number_instance_question_id_key;
 
 DO $$
 BEGIN

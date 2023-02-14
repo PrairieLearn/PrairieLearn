@@ -2,6 +2,11 @@
 // dependencies like `pg` and `express`.
 const opentelemetry = require('@prairielearn/opentelemetry');
 
+const Sentry = require('@prairielearn/sentry');
+// `@sentry/tracing` must be imported before `@sentry/profiling-node`.
+require('@sentry/tracing');
+const { ProfilingIntegration } = require('@sentry/profiling-node');
+
 const ERR = require('async-stacktrace');
 const fs = require('fs');
 const path = require('path');
@@ -24,7 +29,6 @@ const multer = require('multer');
 const { filesize } = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const Sentry = require('@prairielearn/sentry');
 const compiledAssets = require('@prairielearn/compiled-assets');
 
 const logger = require('./lib/logger');
@@ -78,7 +82,7 @@ if ('h' in argv || 'help' in argv) {
 
 /**
  * Creates the express application and sets up all PrairieLearn routes.
- * @return {Express App} The express "app" object that was created.
+ * @return {import('express').Application} The express "app" object that was created.
  */
 module.exports.initExpress = function () {
   const app = express();
@@ -86,8 +90,14 @@ module.exports.initExpress = function () {
   app.set('view engine', 'ejs');
   app.set('trust proxy', config.trustProxy);
 
-  // This should come first so that we get instrumentation on all our requests.
-  app.use(Sentry.Handlers.requestHandler());
+  // These should come first so that we get instrumentation on all our requests.
+  if (config.sentryDsn) {
+    app.use(Sentry.Handlers.requestHandler());
+
+    if (config.sentryTracesSampleRate) {
+      app.use(Sentry.Handlers.tracingHandler());
+    }
+  }
 
   // Set res.locals variables first, so they will be available on
   // all pages including the error page (which we could jump to at
@@ -928,6 +938,16 @@ module.exports.initExpress = function () {
       require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
     ]
   );
+
+  // Submission files
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/submission/:submission_id/file',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./pages/submissionFile/submissionFile'),
+    ]
+  );
+
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading',
     [
@@ -1230,6 +1250,15 @@ module.exports.initExpress = function () {
     ]
   );
 
+  // Submission files
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/question/:question_id/submission/:submission_id/file',
+    [
+      require('./middlewares/selectAndAuthzInstructorQuestion'),
+      require('./pages/submissionFile/submissionFile'),
+    ]
+  );
+
   // legacy client file paths
   // handle routes with and without /preview/ in them to handle URLs with and without trailing slashes
   app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file', [
@@ -1357,6 +1386,16 @@ module.exports.initExpress = function () {
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./middlewares/studentAssessmentAccess'),
       require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
+    ]
+  );
+
+  // Submission files
+  app.use(
+    '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/submission/:submission_id/file',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./middlewares/studentAssessmentAccess'),
+      require('./pages/submissionFile/submissionFile'),
     ]
   );
 
@@ -1581,6 +1620,12 @@ module.exports.initExpress = function () {
     require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
   ]);
 
+  // Submission files
+  app.use('/pl/course/:course_id/question/:question_id/submission/:submission_id/file', [
+    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./pages/submissionFile/submissionFile'),
+  ]);
+
   // legacy client file paths
   // handle routes with and without /preview/ in them to handle URLs with and without trailing slashes
   app.use('/pl/course/:course_id/question/:question_id/file', [
@@ -1606,9 +1651,18 @@ module.exports.initExpress = function () {
   // Administrator pages ///////////////////////////////////////////////
 
   app.use('/pl/administrator', require('./middlewares/authzIsAdministrator'));
+  app.use('/pl/administrator/admins', require('./pages/administratorAdmins/administratorAdmins'));
   app.use(
-    '/pl/administrator/overview',
-    require('./pages/administratorOverview/administratorOverview')
+    '/pl/administrator/settings',
+    require('./pages/administratorSettings/administratorSettings')
+  );
+  app.use(
+    '/pl/administrator/courses',
+    require('./pages/administratorCourses/administratorCourses')
+  );
+  app.use(
+    '/pl/administrator/networks',
+    require('./pages/administratorNetworks/administratorNetworks')
   );
   app.use(
     '/pl/administrator/queries',
@@ -1803,9 +1857,18 @@ if (config.startServer) {
 
         // Same with Sentry configuration.
         if (config.sentryDsn) {
+          const integrations = [];
+          if (config.sentryTracesSampleRate && config.sentryProfilesSampleRate) {
+            integrations.push(new ProfilingIntegration());
+          }
+
           await Sentry.init({
             dsn: config.sentryDsn,
             environment: config.sentryEnvironment,
+            integrations,
+            tracesSampleRate: config.sentryTracesSampleRate,
+            // This is relative to `tracesSampleRate`.
+            profilesSampleRate: config.sentryProfilesSampleRate,
             beforeSend: (event) => {
               // This will be necessary until we can consume the following change:
               // https://github.com/chimurai/http-proxy-middleware/pull/823

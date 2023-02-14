@@ -112,8 +112,8 @@ module.exports = {
     } catch (err) {
       if (err && err.code === 'ENOENT') {
         // Directory doesn't exist, most likely a course with no elements.
-        // Proceed with an empty array.
-        return [];
+        // Proceed with an empty object.
+        return {};
       }
 
       throw err;
@@ -198,8 +198,8 @@ module.exports = {
       elementFolders = await fs.readdir(sourceDir);
     } catch (err) {
       if (err.code === 'ENOENT') {
-        // We don't really care if there are no extensions, just return an empty array.
-        return [];
+        // We don't really care if there are no extensions, just return an empty object.
+        return {};
       }
 
       throw err;
@@ -507,7 +507,7 @@ module.exports = {
     err = checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test']);
     if (err) return err;
     // prettier-ignore
-    err = checkProp('feedback',              'object',  ['render', 'grade', 'test'],          ['grade', 'feedback']);
+    err = checkProp('feedback',              'object',  ['render', 'grade', 'test'],          ['grade', 'test']);
     if (err) return err;
     // prettier-ignore
     err = checkProp('editable',              'boolean', ['render'],                           []);
@@ -1164,10 +1164,18 @@ module.exports = {
       num_valid_submissions: _.get(variant, 'num_tries', null),
     };
 
+    // This URL is submission-specific, so we have to compute it here (that is,
+    // it won't be present in `locals`). This URL will only have meaning if
+    // there's a submission, so it will be `null` otherwise.
+    const submissionFilesUrl = submission
+      ? locals.questionUrl + `submission/${submission?.id}/file`
+      : null;
+
     // Put base URLs in data.options for access by question code
     data.options.client_files_question_url = locals.clientFilesQuestionUrl;
     data.options.client_files_course_url = locals.clientFilesCourseUrl;
     data.options.client_files_question_dynamic_url = locals.clientFilesQuestionGeneratedFileUrl;
+    data.options.submission_files_url = submission ? submissionFilesUrl : null;
     data.options.base_url = locals.baseUrl;
     data.options.workspace_url = locals.workspaceUrl || null;
 
