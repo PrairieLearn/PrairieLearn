@@ -82,19 +82,22 @@ RETURNING
 
 -- BLOCK select_sharing_sets
 SELECT
-    ss.id,
-    ss.name,
-    (count(qss.question_id = $question_id) > 0)::boolean AS in_set
+  ss.id,
+  ss.name,
+  (count(qss.question_id = $question_id) > 0)::boolean AS in_set
 FROM
-    sharing_sets AS ss
-    LEFT JOIN sharing_set_questions AS qss ON qss.sharing_set_id = ss.id
+  sharing_sets AS ss
+  LEFT JOIN sharing_set_questions AS qss ON qss.sharing_set_id = ss.id
 WHERE
-    ss.course_id = $course_id
+  ss.course_id = $course_id
 GROUP BY
-    ss.id, ss.name;
+  ss.id,
+  ss.name;
 
 -- BLOCK sharing_set_add
-INSERT INTO sharing_set_questions
-    (question_id, sharing_set_id)
+INSERT INTO
+  sharing_set_questions (question_id, sharing_set_id)
 VALUES
-    ($question_id, $sharing_set_id); -- TODO do any validation? ensure the sharing_set_id exists and belongs to this course?
+  ($question_id, $sharing_set_id);
+
+-- TODO do any validation? ensure the sharing_set_id exists and belongs to this course?
