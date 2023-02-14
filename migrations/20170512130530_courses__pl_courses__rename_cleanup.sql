@@ -1,4 +1,5 @@
-ALTER SEQUENCE IF EXISTS courses_id_seq RENAME TO pl_courses_id_seq;
+ALTER SEQUENCE IF EXISTS courses_id_seq
+RENAME TO pl_courses_id_seq;
 
 DO $$
 BEGIN
@@ -19,4 +20,5 @@ BEGIN
 END;
 $$;
 
-ALTER INDEX IF EXISTS courses_pkey1 RENAME TO courses_pkey;
+ALTER INDEX IF EXISTS courses_pkey1
+RENAME TO courses_pkey;

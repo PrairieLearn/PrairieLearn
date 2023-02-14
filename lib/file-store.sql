@@ -1,7 +1,8 @@
 -- BLOCK select_file
-SELECT *
+SELECT
+  *
 FROM
-    files AS f
+  files AS f
 WHERE
-    f.id = $file_id
-    AND f.deleted_at IS NULL;
+  f.id = $file_id
+  AND f.deleted_at IS NULL;

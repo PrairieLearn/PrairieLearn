@@ -1,21 +1,23 @@
 -- BLOCK get_config_info
 SELECT
-    gc.*
+  gc.*
 FROM
-    group_configs AS gc
+  group_configs AS gc
 WHERE
-    gc.assessment_id = $assessment_id AND gc.deleted_at IS NULL;
+  gc.assessment_id = $assessment_id
+  AND gc.deleted_at IS NULL;
 
 -- BLOCK create_group
 WITH
-create_group AS (
-    INSERT INTO groups
-        (name, group_config_id, course_instance_id)
-    (
+  create_group AS (
+    INSERT INTO
+      groups (name, group_config_id, course_instance_id) (
         SELECT
-            $group_name, gc.id, gc.course_instance_id
+          $group_name,
+          gc.id,
+          gc.course_instance_id
         FROM
-            group_configs AS gc
+          group_configs AS gc
         WHERE
             gc.assessment_id = $assessment_id
             AND gc.deleted_at IS NULL
@@ -57,12 +59,12 @@ SELECT $authn_user_id, $user_id, cg.id, 'join' FROM create_group AS cg;
 SELECT
     DISTINCT u.uid, u.user_id, gu.group_id, g.name AS group_name, g.join_code
 FROM
-    assessments AS a
-    JOIN group_configs AS gc ON gc.assessment_id = a.id
-    JOIN groups AS g ON g.group_config_id = gc.id
-    JOIN group_users AS gu ON gu.group_id = g.id
-    JOIN group_users AS gu2 ON gu2.group_id = gu.group_id
-    JOIN users AS u ON u.user_id = gu2.user_id
+  assessments AS a
+  JOIN group_configs AS gc ON gc.assessment_id = a.id
+  JOIN groups AS g ON g.group_config_id = gc.id
+  JOIN group_users AS gu ON gu.group_id = g.id
+  JOIN group_users AS gu2 ON gu2.group_id = gu.group_id
+  JOIN users AS u ON u.user_id = gu2.user_id
 WHERE
     a.id = $assessment_id
     AND gu.user_id = $user_id
