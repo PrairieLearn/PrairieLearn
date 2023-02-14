@@ -1,1 +1,2 @@
-ALTER TABLE variants RENAME COLUMN available TO open;
+ALTER TABLE variants
+RENAME COLUMN available TO open;

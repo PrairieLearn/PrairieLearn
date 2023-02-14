@@ -1,4 +1,6 @@
-ALTER TABLE jobs ADD COLUMN IF NOT EXISTS course_request_id BIGINT;
+ALTER TABLE jobs
+ADD COLUMN IF NOT EXISTS course_request_id BIGINT;
+
 DO $$
 BEGIN
     IF NOT EXISTS (
@@ -11,7 +13,9 @@ BEGIN
 END;
 $$;
 
-ALTER TABLE job_sequences ADD COLUMN IF NOT EXISTS course_request_id BIGINT;
+ALTER TABLE job_sequences
+ADD COLUMN IF NOT EXISTS course_request_id BIGINT;
+
 DO $$
 BEGIN
     IF NOT EXISTS (

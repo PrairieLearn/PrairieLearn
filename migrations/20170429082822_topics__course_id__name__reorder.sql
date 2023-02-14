@@ -1,4 +1,5 @@
-ALTER TABLE topics DROP CONSTRAINT IF EXISTS topics_name_course_id_key;
+ALTER TABLE topics
+DROP CONSTRAINT IF EXISTS topics_name_course_id_key;
 
 DO $$
 BEGIN
