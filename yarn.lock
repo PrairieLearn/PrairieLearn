@@ -2550,7 +2550,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/instrumentation@npm:0.35.1":
+"@opentelemetry/instrumentation@npm:0.35.1, @opentelemetry/instrumentation@npm:^0.35.1":
   version: 0.35.1
   resolution: "@opentelemetry/instrumentation@npm:0.35.1"
   dependencies:
@@ -2691,7 +2691,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/sdk-metrics@npm:1.9.1":
+"@opentelemetry/sdk-metrics@npm:1.9.1, @opentelemetry/sdk-metrics@npm:^1.9.1":
   version: 1.9.1
   resolution: "@opentelemetry/sdk-metrics@npm:1.9.1"
   dependencies:
@@ -2834,6 +2834,7 @@ __metadata:
     "@opentelemetry/core": ^1.9.1
     "@opentelemetry/exporter-jaeger": ^1.9.1
     "@opentelemetry/exporter-trace-otlp-grpc": ^0.35.1
+    "@opentelemetry/instrumentation": ^0.35.1
     "@opentelemetry/instrumentation-aws-sdk": ^0.33.0
     "@opentelemetry/instrumentation-connect": ^0.31.0
     "@opentelemetry/instrumentation-dns": ^0.31.0
@@ -2843,6 +2844,7 @@ __metadata:
     "@opentelemetry/instrumentation-redis": ^0.34.1
     "@opentelemetry/resource-detector-aws": ^1.2.1
     "@opentelemetry/resources": ^1.9.1
+    "@opentelemetry/sdk-metrics": ^1.9.1
     "@opentelemetry/sdk-node": ^0.35.1
     "@opentelemetry/sdk-trace-base": ^1.9.1
     "@opentelemetry/sdk-trace-node": ^1.9.1
