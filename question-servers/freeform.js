@@ -8,12 +8,7 @@ const cheerio = require('cheerio');
 const hash = require('crypto').createHash;
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const {
-  instrumented,
-  metrics,
-  ValueType,
-  observeWithHistogram,
-} = require('@prairielearn/opentelemetry');
+const { instrumented, metrics, instrumentedWithMetrics } = require('@prairielearn/opentelemetry');
 
 const schemas = require('../schemas');
 const config = require('../lib/config');
@@ -885,7 +880,7 @@ module.exports = {
           fatal: true,
         })
       );
-      return { courseIssues, data, html: '', fileData: Buffer.from('') };
+      return { courseIssues, data, html: '', fileData: Buffer.from(''), renderedElementNames: [] };
     }
 
     let result, output;
@@ -962,16 +957,7 @@ module.exports = {
 
   async processQuestion(phase, codeCaller, data, context) {
     const meter = metrics.getMeter('prairielearn');
-
-    const count = meter.createCounter(`freeform.${phase}.count`, { valueType: ValueType.INT });
-    count.add(1);
-
-    const histogram = meter.createHistogram(`freeform.${phase}.duration`, {
-      unit: 'milliseconds',
-      valueType: ValueType.DOUBLE,
-    });
-
-    return observeWithHistogram(histogram, async () => {
+    return instrumentedWithMetrics(meter, `freeform.${phase}`, async () => {
       if (phase === 'generate') {
         return module.exports.processQuestionServer(
           phase,

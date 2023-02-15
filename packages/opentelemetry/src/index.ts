@@ -23,7 +23,7 @@ import {
 import { detectResources, Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 import { ExpressLayerType } from '@opentelemetry/instrumentation-express';
-import { Span, SpanStatusCode, trace, metrics, Histogram } from '@opentelemetry/api';
+import { Span, SpanStatusCode, trace, metrics, Meter, ValueType } from '@opentelemetry/api';
 import { hrTimeToMilliseconds } from '@opentelemetry/core';
 
 // Exporters go here.
@@ -348,13 +348,26 @@ export async function instrumented<T>(
     });
 }
 
-export async function observeWithHistogram<T>(
-  histogram: Histogram,
+export async function instrumentedWithMetrics<T>(
+  meter: Meter,
+  name: string,
   fn: () => Promise<T> | T
 ): Promise<T> {
+  const success = meter.createCounter(`${name}.success`, { valueType: ValueType.INT });
+  const error = meter.createCounter(`${name}.error`, { valueType: ValueType.INT });
+  const histogram = meter.createHistogram(`${name}.duration`, {
+    unit: 'milliseconds',
+    valueType: ValueType.DOUBLE,
+  });
+
   const start = Date.now();
   try {
-    return await fn();
+    const res = await fn();
+    success.add(1);
+    return res;
+  } catch (e) {
+    error.add(1);
+    throw e;
   } finally {
     histogram.record(Date.now() - start);
   }
