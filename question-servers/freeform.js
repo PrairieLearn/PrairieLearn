@@ -26,50 +26,6 @@ const markdown = require('../lib/markdown');
 const chunks = require('../lib/chunks');
 const assets = require('../lib/assets');
 
-const meter = metrics.getMeter('prairielearn');
-
-// TODO: maybe get rid of descriptions?
-const phaseHistograms = {
-  generate: meter.createHistogram('freeform.generate.duration', {
-    description: 'Time spent generating freeform questions',
-    unit: 'milliseconds',
-    valueType: ValueType.DOUBLE,
-  }),
-  prepare: meter.createHistogram('freeform.prepare.duration', {
-    description: 'Time spent preparing freeform questions',
-    unit: 'milliseconds',
-    valueType: ValueType.DOUBLE,
-  }),
-  render: meter.createHistogram('freeform.render.duration', {
-    description: 'Time spent rendering freeform panels',
-    unit: 'milliseconds',
-    valueType: ValueType.DOUBLE,
-  }),
-  parse: meter.createHistogram('freeform.parse.duration', {
-    description: 'Time spent parsing freeform questions',
-    unit: 'milliseconds',
-    valueType: ValueType.DOUBLE,
-  }),
-  grade: meter.createHistogram('freeform.grade.duration', {
-    description: 'Time spent grading freeform questions',
-    unit: 'milliseconds',
-    valueType: ValueType.DOUBLE,
-  }),
-  test: meter.createHistogram('freeform.test.duration', {
-    description: 'Time spent testing freeform questions',
-    unit: 'milliseconds',
-    valueType: ValueType.DOUBLE,
-  }),
-  file: meter.createHistogram('freeform.file.duration', {
-    description: 'Time spent processing freeform files',
-    unit: 'milliseconds',
-    valueType: ValueType.DOUBLE,
-  }),
-};
-
-const up = meter.createCounter('up');
-up.add(1);
-
 // Maps core element names to element info
 let coreElementsCache = {};
 // Maps course IDs to course element info
