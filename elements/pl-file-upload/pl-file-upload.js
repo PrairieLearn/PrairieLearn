@@ -136,7 +136,9 @@
 
         if (!isFromDownload) {
           // Show the preview for the newly-uploaded file
-          this.element.find(`li[data-file="${name}"] .file-preview`).addClass('show');
+          const container = this.element.find(`li[data-file="${name}"]`);
+          container.find('.file-preview').addClass('show');
+          container.find('.file-status-container').removeClass('collapsed');
 
           // Ensure that students see a prompt if they try to navigate away
           // from the page without saving the form. This check is initially
