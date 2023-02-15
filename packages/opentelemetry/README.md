@@ -74,7 +74,7 @@ import { instrumentedWithMetrics } from '@prairielearn/opentelemetry';
 
 await instrumentedWithMetrics('operation.name', async () => {
   const random = Math.random() * 1000;
-  await new Promise(resolve => setTimeout(resolve, random));
+  await new Promise((resolve) => setTimeout(resolve, random));
   if (random > 900) {
     throw new Error('Failed!');
   }
