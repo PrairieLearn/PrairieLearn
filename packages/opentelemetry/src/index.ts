@@ -6,6 +6,7 @@ import {
   MeterProvider,
   PushMetricExporter,
   ConsoleMetricExporter,
+  AggregationTemporality,
 } from '@opentelemetry/sdk-metrics';
 import {
   SpanExporter,
@@ -139,14 +140,14 @@ export interface OpenTelemetryConfig {
   serviceName?: string;
 }
 
-function getHoneycombMetadata(config: OpenTelemetryConfig): Metadata {
+function getHoneycombMetadata(config: OpenTelemetryConfig, datasetSuffix = ''): Metadata {
   if (!config.honeycombApiKey) throw new Error('Missing Honeycomb API key');
   if (!config.honeycombDataset) throw new Error('Missing Honeycomb dataset');
 
   const metadata = new Metadata();
 
   metadata.set('x-honeycomb-team', config.honeycombApiKey);
-  metadata.set('x-honeycomb-dataset', config.honeycombDataset);
+  metadata.set('x-honeycomb-dataset', config.honeycombDataset + datasetSuffix);
 
   return metadata;
 }
@@ -155,19 +156,18 @@ function getTraceExporter(config: OpenTelemetryConfig): SpanExporter {
   if (typeof config.openTelemetryExporter === 'object') {
     return config.openTelemetryExporter;
   }
+
   switch (config.openTelemetryExporter) {
-    case 'console': {
+    case 'console':
       return new ConsoleSpanExporter();
-    }
-    case 'honeycomb': {
+    case 'honeycomb':
       return new OTLPTraceExporter({
         url: 'grpc://api.honeycomb.io:443/',
         credentials: credentials.createSsl(),
         metadata: getHoneycombMetadata(config),
       });
       break;
-    }
-    case 'jaeger': {
+    case 'jaeger':
       return new JaegerExporter({
         // By default, the UDP sender will be used, but that causes issues
         // with packet sizes when Jaeger is running in Docker. We'll instead
@@ -176,8 +176,6 @@ function getTraceExporter(config: OpenTelemetryConfig): SpanExporter {
         // environment variable if needed.
         endpoint: process.env.OTEL_EXPORTER_JAEGER_ENDPOINT ?? 'http://localhost:14268/api/traces',
       });
-      break;
-    }
     default:
       throw new Error(`Unknown OpenTelemetry exporter: ${config.openTelemetryExporter}`);
   }
@@ -191,16 +189,20 @@ function getMetricExporter(config: OpenTelemetryConfig): PushMetricExporter | nu
   }
 
   switch (config.openTelemetryMetricExporter) {
-    case 'console': {
+    case 'console':
       return new ConsoleMetricExporter();
-    }
-    case 'honeycomb': {
+    case 'honeycomb':
       return new OTLPMetricExporter({
         url: 'grpc://api.honeycomb.io:443/',
         credentials: credentials.createSsl(),
-        metadata: getHoneycombMetadata(config),
+        // Honeycomb recommends using a separate dataset for metrics, so we'll
+        // adopt the convention of appending '-metrics' to the dataset name.
+        metadata: getHoneycombMetadata(config, '-metrics'),
+        // Delta temporality means that sums, histograms, etc. will reset each
+        // time data is collected. This more closely matches how we want to
+        // observe our metrics than the default cumulative temporality.
+        temporalityPreference: AggregationTemporality.DELTA,
       });
-    }
     default:
       throw new Error(
         `Unknown OpenTelemetry metric exporter: ${config.openTelemetryMetricExporter}`
