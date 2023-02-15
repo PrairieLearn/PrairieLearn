@@ -120,6 +120,11 @@ describe('Group based homework assess custom group roles from student side', fun
   });
 
   describe('4. the group information after 1 user join the group', function () {
+    it('should contain the 4-character join code', function () {
+      elemList = locals.$('#join-code');
+      locals.joinCode = elemList.text();
+      assert.lengthOf(locals.joinCode, locals.$('#group-name').text().length + 1 + 4);
+    });
     it('should have user set to manager role in the database', function (callback) {
       var params = {
         assessment_id: locals.assessment_id,
@@ -151,7 +156,6 @@ describe('Group based homework assess custom group roles from student side', fun
       elemList = elemList.next(); // look at the <label> just after the <input>
       assert.equal(elemList.text().trim(), 'Manager');
       // NOTE: Should we be looking at the html name/id of the <input>? Or is the label text fine?
-      // TODO: Should we explicitly confirm the "Manager" role has assigner privleges? Or is that implied already?
     });
     it('should not be able to start assessment', function () {
       elemList = locals.$('#start-assessment');
@@ -171,5 +175,250 @@ describe('Group based homework assess custom group roles from student side', fun
       elemList = elemList.next();
       assert.equal(elemList.text().trim(), 'Contributor');
     });
+  });
+
+  describe('5. the group information after 1 user leaves and rejoins the group', function () {
+    it('should be able to leave the group', function (callback) {
+      var form = {
+        __action: 'leave_group',
+        __csrf_token: locals.__csrf_token,
+      };
+      request.post(
+        {
+          url: locals.assessmentUrl,
+          form: form,
+          followAllRedirects: true,
+        },
+        function (error, response, body) {
+          if (ERR(error, callback)) return;
+          if (response.statusCode !== 200) {
+            return callback(new Error('bad status: ' + response.statusCode));
+          }
+          page = body;
+          callback(null);
+        }
+      );
+    });
+    it('should load assessment page successfully', function (callback) {
+      request(locals.assessmentUrl, function (error, response, body) {
+        if (ERR(error, callback)) return;
+        if (response.statusCode !== 200) {
+          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
+        }
+        page = body;
+        callback(null);
+      });
+    });
+    it('should not have a role for user 1', function (callback) {
+      var params = {
+        assessment_id: locals.assessment_id,
+        user_id: config.userId,
+      };
+      sqldb.query(sql.get_current_user_roles, params, function (err, result) {
+        if (ERR(err, callback)) return;
+        let userRoles = result.rows;
+        assert.lengthOf(userRoles, 0);
+      });
+      callback(null);
+    });
+    it('should be able to join group', function (callback) {
+      var form = {
+        __action: 'join_group',
+        __csrf_token: locals.__csrf_token,
+        join_code: locals.joinCode,
+      };
+      request.post(
+        { url: locals.assessmentUrl, form: form, followAllRedirects: true },
+        function (error, response, body) {
+          if (ERR(error, callback)) return;
+          if (response.statusCode !== 200) {
+            return callback(new Error('bad status: ' + response.statusCode));
+          }
+          page = body;
+          callback(null);
+        }
+      );
+    });
+    it('should parse', function () {
+      locals.$ = cheerio.load(page);
+    });
+    // The tests below copy the previous test section
+    it('should have user set to manager role in the database', function (callback) {
+      var params = {
+        assessment_id: locals.assessment_id,
+        user_id: config.userId,
+      };
+      sqldb.query(sql.get_current_user_roles, params, function (err, result) {
+        if (ERR(err, callback)) return;
+        let userRoles = result.rows;
+        assert.lengthOf(userRoles, 1);
+        assert.equal(userRoles[0].role_name, 'Manager');
+        assert.equal(locals.currentRoleIds[0], userRoles[0].id);
+      });
+      callback(null);
+    });
+    it('group role table is visible and has one user in it', function () {
+      elemList = locals.$('#role-select-form').find('tr');
+      assert.lengthOf(elemList, 2);
+    });
+    it('should contain four textboxes per table row', function () {
+      // gets all <input> elems within the second <tr> (the first is a header)
+      elemList = locals.$('#role-select-form').find('tr').eq(1).find('input');
+      assert.lengthOf(elemList, 4);
+    });
+    it('should have only manager role checked in the role table', function () {
+      // gets all <input> elems that are selected
+      elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:checked');
+      assert.lengthOf(elemList, 1);
+
+      elemList = elemList.next(); // look at the <label> just after the <input>
+      assert.equal(elemList.text().trim(), 'Manager');
+      // NOTE: Should we be looking at the html name/id of the <input>? Or is the label text fine?
+    });
+    it('should not be able to start assessment', function () {
+      elemList = locals.$('#start-assessment');
+      assert.isTrue(elemList.is(':disabled'));
+    });
+    it('should display error for too few recorders/reflectors', function () {
+      elemList = locals.$('.alert:contains(Recorder has too few assignments)');
+      assert.lengthOf(elemList, 1);
+      elemList = locals.$('.alert:contains(Reflector has too few assignments)');
+      assert.lengthOf(elemList, 1);
+    });
+    it('should not be able to select the contributor role', function () {
+      elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
+      assert.lengthOf(elemList, 1);
+
+      // Get label of checkbox
+      elemList = elemList.next();
+      assert.equal(elemList.text().trim(), 'Contributor');
+    });
+  });
+
+  describe('6. the second user can join the group using code', function () {
+    it('should be able to switch user', function (callback) {
+      let student = locals.studentUsers[1];
+      config.authUid = student.uid;
+      config.authName = student.name;
+      config.authUin = '00000002';
+      config.userId = student.user_id;
+      callback(null);
+    });
+    it('should load assessment page successfully', function (callback) {
+      request(locals.assessmentUrl, function (error, response, body) {
+        if (ERR(error, callback)) return;
+        if (response.statusCode !== 200) {
+          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
+        }
+        page = body;
+        callback(null);
+      });
+    });
+    it('should parse', function () {
+      locals.$ = cheerio.load(page);
+    });
+    it('should have a CSRF token', function () {
+      elemList = locals.$('form input[name="__csrf_token"]');
+      assert.lengthOf(elemList, 2);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.__csrf_token = elemList[0].attribs.value;
+      assert.isString(locals.__csrf_token);
+    });
+    it('should be able to join group', function (callback) {
+      var form = {
+        __action: 'join_group',
+        __csrf_token: locals.__csrf_token,
+        join_code: locals.joinCode,
+      };
+      request.post(
+        { url: locals.assessmentUrl, form: form, followAllRedirects: true },
+        function (error, response, body) {
+          if (ERR(error, callback)) return;
+          if (response.statusCode !== 200) {
+            return callback(new Error('bad status: ' + response.statusCode));
+          }
+          page = body;
+          callback(null);
+        }
+      );
+    });
+    it('should parse', function () {
+      locals.$ = cheerio.load(page);
+    });
+  });
+
+  describe('7. the group information after 2 users join the group', function () {
+    it('should not be able to start assessment', function () {
+      elemList = locals.$('#start-assessment');
+      assert.isTrue(elemList.is(':disabled'));
+    });
+    it('should be missing 1 more group members to start', function () {
+      elemList = locals.$('.text-center:contains(1 more)');
+      assert.lengthOf(elemList, 1);
+    });
+    it('should have user set to recorder role in the database', function (callback) {
+      var params = {
+        assessment_id: locals.assessment_id,
+        user_id: config.userId,
+      };
+      sqldb.query(sql.get_current_user_roles, params, function (err, result) {
+        if (ERR(err, callback)) return;
+        let userRoles = result.rows;
+        assert.lengthOf(userRoles, 1);
+        assert.equal(userRoles[0].role_name, 'Recorder');
+        locals.currentRoleIds = [userRoles[0].role_id];
+      });
+      callback(null);
+    });
+    it('group role table is invisible', function () {
+      elemList = locals.$('#role-select-form').find('tr');
+      assert.lengthOf(elemList, 0);
+    });
+    it('should not be able to start assessment', function () {
+      elemList = locals.$('#start-assessment');
+      assert.isTrue(elemList.is(':disabled'));
+    });
+    it('should display error for too few reflectors', function () {
+      // FIXME: (Renzo) I'm of the opinion that even if a user has a non-assigner role, they
+      // should still be able to view these errors. I'll let the tests pass for now, but we should talk about it.
+      elemList = locals.$('.alert:contains(Reflector has too few assignments)');
+      assert.lengthOf(elemList, 0);
+    });
+  });
+
+  describe('8. the third user can join group using code', function () {
+    // TODO: implement
+  });
+
+  describe('9. the group information after 3 users join the group', function () {
+    // TODO: implement
+  });
+
+  describe('10. the fourth user can join group using code', function () {
+    // TODO: implement
+  });
+
+  describe('11. the group information after 4 users join the group', function () {
+    // TODO: implement
+  });
+
+  describe('12. the role assigner can re-assign roles to valid configuration', function () {
+    // TODO: implement
+  });
+
+  describe('13. the role assigner cannot re-assign roles past a role maximum', function () {
+    // TODO: implement
+  });
+
+  describe('13. non-required roles are dropped when user leaves group', function () {
+    // TODO: implement
+  });
+
+  describe('14. required roles are reorganized when user leaves group', function () {
+    // TODO: implement
+  });
+
+  describe('15. assessments without roles do not show the role selection table', function () {
+    // TODO: implement
   });
 });
