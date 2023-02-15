@@ -14,6 +14,8 @@ import { init } from '@prairielearn/opentelemetry';
 await init({
   openTelemetryEnabled: true,
   openTelemetryExporter: 'honeycomb',
+  openTelemetryMetricExporter: 'honeycomb',
+  openTelemetryMetricExportIntervalMillis: 30_000,
   openTelemetrySamplerType: 'always-on',
   openTelemetrySampleRate: 0.1,
   honeycombApiKey: 'KEY',
@@ -22,6 +24,10 @@ await init({
 ```
 
 This will automatically instrument a variety of commonly-used Node packages.
+
+When using code from the OpenTelemetry libraries, make sure you import it via `@prairielearn/opentelemetry` instead of installing it separately to ensure that there is only one version of each OpenTelemetry package in use at once. If the desired functionality is not yet exported, please add it!
+
+## Traces
 
 To easily instrument individual pieces of functionality, you can use the `instrumented()` helper function:
 
@@ -59,4 +65,18 @@ await tracer.startActiveSpan('span.name', async (span) => {
 });
 ```
 
-When using code from the OpenTelemetry libraries, make sure you import it via `@prairielearn/opentelemetry` instead of installing it separately to ensure that there is only one version of each OpenTelemetry package in use at once. If the desired functionality is not yet exported, please add it!
+## Metrics
+
+You can also use the `instrumentedWithMetrics` helper to automatically capture a duration histogram and error count:
+
+```ts
+import { instrumentedWithMetrics } from '@prairielearn/opentelemetry';
+
+await instrumentedWithMetrics('operation.name', async () => {
+  const random = Math.random() * 1000;
+  await new Promise(resolve => setTimeout(resolve, random));
+  if (random > 900) {
+    throw new Error('Failed!');
+  }
+});
+```
