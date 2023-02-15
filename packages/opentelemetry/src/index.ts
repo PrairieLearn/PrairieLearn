@@ -139,30 +139,31 @@ export interface OpenTelemetryConfig {
   serviceName?: string;
 }
 
+function getHoneycombMetadata(config: OpenTelemetryConfig): Metadata {
+  if (!config.honeycombApiKey) throw new Error('Missing Honeycomb API key');
+  if (!config.honeycombDataset) throw new Error('Missing Honeycomb dataset');
+
+  const metadata = new Metadata();
+
+  metadata.set('x-honeycomb-team', config.honeycombApiKey);
+  metadata.set('x-honeycomb-dataset', config.honeycombDataset);
+
+  return metadata;
+}
+
 function getTraceExporter(config: OpenTelemetryConfig): SpanExporter {
   if (typeof config.openTelemetryExporter === 'object') {
     return config.openTelemetryExporter;
   }
   switch (config.openTelemetryExporter) {
     case 'console': {
-      // Export telemetry to the console for testing purposes.
       return new ConsoleSpanExporter();
     }
     case 'honeycomb': {
-      if (!config.honeycombApiKey) throw new Error('Missing Honeycomb API key');
-      if (!config.honeycombDataset) throw new Error('Missing Honeycomb dataset');
-
-      // Create a Honeycomb exporter with the appropriate metadata from the
-      // config we've been provided with.
-      const metadata = new Metadata();
-
-      metadata.set('x-honeycomb-team', config.honeycombApiKey);
-      metadata.set('x-honeycomb-dataset', config.honeycombDataset);
-
       return new OTLPTraceExporter({
         url: 'grpc://api.honeycomb.io:443/',
         credentials: credentials.createSsl(),
-        metadata,
+        metadata: getHoneycombMetadata(config),
       });
       break;
     }
@@ -191,24 +192,13 @@ function getMetricExporter(config: OpenTelemetryConfig): PushMetricExporter | nu
 
   switch (config.openTelemetryMetricExporter) {
     case 'console': {
-      // Export telemetry to the console for testing purposes.
       return new ConsoleMetricExporter();
     }
     case 'honeycomb': {
-      if (!config.honeycombApiKey) throw new Error('Missing Honeycomb API key');
-      if (!config.honeycombDataset) throw new Error('Missing Honeycomb dataset');
-
-      // Create a Honeycomb exporter with the appropriate metadata from the
-      // config we've been provided with.
-      const metadata = new Metadata();
-
-      metadata.set('x-honeycomb-team', config.honeycombApiKey);
-      metadata.set('x-honeycomb-dataset', config.honeycombDataset);
-
       return new OTLPMetricExporter({
         url: 'grpc://api.honeycomb.io:443/',
         credentials: credentials.createSsl(),
-        metadata,
+        metadata: getHoneycombMetadata(config),
       });
     }
     default:
