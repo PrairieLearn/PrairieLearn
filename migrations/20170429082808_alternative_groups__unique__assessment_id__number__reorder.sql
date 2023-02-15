@@ -1,4 +1,5 @@
-ALTER TABLE alternative_groups DROP CONSTRAINT IF EXISTS alternative_groups_number_assessment_id_key;
+ALTER TABLE alternative_groups
+DROP CONSTRAINT IF EXISTS alternative_groups_number_assessment_id_key;
 
 DO $$
 BEGIN

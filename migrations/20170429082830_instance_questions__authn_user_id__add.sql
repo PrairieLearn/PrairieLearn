@@ -1,4 +1,5 @@
-ALTER TABLE instance_questions ADD COLUMN IF NOT EXISTS authn_user_id bigint;
+ALTER TABLE instance_questions
+ADD COLUMN IF NOT EXISTS authn_user_id bigint;
 
 DO $$
 BEGIN
