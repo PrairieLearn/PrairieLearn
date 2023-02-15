@@ -130,6 +130,7 @@ export interface OpenTelemetryConfig {
   openTelemetryEnabled: boolean;
   openTelemetryExporter: 'console' | 'honeycomb' | 'jaeger' | SpanExporter;
   openTelemetryMetricExporter?: 'console' | 'honeycomb' | PushMetricExporter;
+  openTelemetryMetricExportIntervalMillis?: number;
   openTelemetrySamplerType: 'always-on' | 'always-off' | 'trace-id-ratio';
   openTelemetrySampleRate?: number;
   openTelemetrySpanProcessor?: 'batch' | 'simple';
@@ -306,7 +307,7 @@ export async function init(config: OpenTelemetryConfig) {
     metrics.setGlobalMeterProvider(meterProvider);
     const metricReader = new PeriodicExportingMetricReader({
       exporter: metricExporter,
-      exportIntervalMillis: 3_000,
+      exportIntervalMillis: config.openTelemetryMetricExportIntervalMillis ?? 30_000,
     });
     meterProvider.addMetricReader(metricReader);
   }
