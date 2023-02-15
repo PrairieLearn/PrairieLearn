@@ -356,7 +356,6 @@ export async function observeWithHistogram<T>(
   try {
     return await fn();
   } finally {
-    console.log('recording...');
     histogram.record(Date.now() - start);
   }
 }
