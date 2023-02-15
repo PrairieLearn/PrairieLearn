@@ -143,7 +143,7 @@ describe('Group based homework assess custom group roles from student side', fun
       elemList = locals.$('#role-select-form').find('tr').eq(1).find('input');
       assert.lengthOf(elemList, 4);
     });
-    it('should have only manager role in the role table', function () {
+    it('should have only manager role checked in the role table', function () {
       // gets all <input> elems that are selected
       elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:checked');
       assert.lengthOf(elemList, 1);
@@ -158,10 +158,18 @@ describe('Group based homework assess custom group roles from student side', fun
       assert.isTrue(elemList.is(':disabled'));
     });
     it('should display error for too few recorders/reflectors', function () {
-      // TODO: Write test
+      elemList = locals.$('.alert:contains(Recorder has too few assignments)');
+      assert.lengthOf(elemList, 1);
+      elemList = locals.$('.alert:contains(Reflector has too few assignments)');
+      assert.lengthOf(elemList, 1);
     });
     it('should not be able to select the contributor role', function () {
-      // TODO: Write test
+      elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
+      assert.lengthOf(elemList, 1);
+
+      // Get label of checkbox
+      elemList = elemList.next();
+      assert.equal(elemList.text().trim(), 'Contributor');
     });
   });
 });

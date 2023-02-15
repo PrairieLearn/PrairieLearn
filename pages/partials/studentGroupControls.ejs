@@ -42,13 +42,7 @@
     <% if (typeof rolesInfo.validationErrors !== 'undefined' && rolesInfo.validationErrors.length > 0) { %>
       <% rolesInfo.validationErrors.forEach(function ({ role_id, role_name, count, minimum, maximum }) { %>
         <div class="alert alert-danger my-2" role="alert">
-          <%= role_name %>
-        <% if (count < minimum) { %>
-          has too few assignments (found  
-          <% } else { %>
-          has too many assignments (found
-          <% } %>
-          <%= count %> but expected
+          <%= role_name %><% if (count < minimum) { %> has too few assignments <% } else { %>has too many assignments <% } %> (found <%= count %> but expected
           <% if (minimum === maximum) { %>
             <%= minimum%>.)
           <% } else {%>
