@@ -5,10 +5,10 @@ const fs = require('fs-extra');
 const path = require('path');
 const mustache = require('mustache');
 const cheerio = require('cheerio');
-const hash = require('crypto').createHash;
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const { instrumented } = require('@prairielearn/opentelemetry');
+const objectHash = require('object-hash');
 
 const schemas = require('../schemas');
 const config = require('../lib/config');
@@ -1854,7 +1854,7 @@ module.exports = {
   async getCacheKey(course, data, context) {
     try {
       const commitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(course);
-      const dataHash = hash('sha1').update(JSON.stringify({ data, context })).digest('base64');
+      const dataHash = objectHash({ data, context }, { algorithm: 'sha1', encoding: 'base64' });
       return `${commitHash}-${dataHash}`;
     } catch (err) {
       return null;
