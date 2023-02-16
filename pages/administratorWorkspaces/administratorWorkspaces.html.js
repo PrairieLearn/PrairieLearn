@@ -91,19 +91,22 @@ function AdministratorWorkspaces({ workspaces, workspaceLoadHostCapacity, resLoc
                 return html`
                   <div class="list-group-item">
                     <div class="d-flex flex-row flex-wrap align-items-center">
-                      <span class="mr-auto pr-2 text-monospace">
+                      <div class="d-flex align-items-center mr-auto pr-2 text-monospace">
                         <a
                           href="workspaces-${workspaceHost.id}"
+                          class="mr-2"
                           data-target="#workspaces-${workspaceHost.id}"
                           data-toggle="collapse"
                           aria-expanded="false"
                           aria-controls="workspaces-${workspaceHost.id}"
                           >${workspaceHost.hostname}</a
                         >
-                        ${instanceId ? html`(<span class="text-muted">${instanceId}</span>)` : null}
+                        ${instanceId
+                          ? html`<span class="text-muted mr-2">(${instanceId})</span>`
+                          : null}
                         ${WorkspaceHostState({ state: workspaceHost.state })}
-                        <span class="badge badge-secondary"> ${workspaceHost.time_in_state} </span>
-                      </span>
+                        <span class="badge badge-secondary">${workspaceHost.time_in_state}</span>
+                      </div>
                       ${Capacity({
                         total: workspaceLoadHostCapacity,
                         current: workspaceHost.workspaces.length,
@@ -178,7 +181,7 @@ function WorkspaceHostState({ state }) {
       color = 'danger';
       break;
   }
-  return html`<span class="badge badge-${color}">${state}</span>`;
+  return html`<span class="badge badge-${color} mr-2">${state}</span>`;
 }
 
 module.exports = {
