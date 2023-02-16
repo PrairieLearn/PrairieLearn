@@ -14,7 +14,8 @@ WHERE
 -- BLOCK get_current_user_roles
 SELECT
   gr.id,
-  gr.role_name
+  gr.role_name,
+  gr.can_assign_roles_at_start
 FROM
   group_roles as gr
   JOIN group_user_roles as gu ON gr.id = gu.group_role_id
