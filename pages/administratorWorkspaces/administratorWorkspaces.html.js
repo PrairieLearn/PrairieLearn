@@ -19,6 +19,10 @@ const WorkspaceSchema = z.object({
     'terminated',
   ]),
   workspace_host_time_in_state: z.string(),
+  question_name: z.string(),
+  course_instance_name: z.string().nullable(),
+  course_name: z.string(),
+  institution_name: z.string(),
 });
 
 /** @typedef {z.infer<WorkspaceSchema>} Workspace */
@@ -115,15 +119,26 @@ function AdministratorWorkspaces({ workspaces, workspaceLoadHostCapacity, resLoc
                     <div id="workspaces-${workspaceHost.id}" class="collapse">
                       <div class="list-group list-group my-2">
                         ${workspaceHost.workspaces.map((workspace) => {
+                          const courseInstanceName = workspace.course_instance_name
+                            ? `(${workspace.course_instance_name})`
+                            : null;
                           return html`
-                            <div class="list-group-item d-flex align-items-center">
-                              <span class="mr-2" style="font-variant-numeric: tabular-nums;">
-                                ${workspace.id}
-                              </span>
-                              ${WorkspaceState({ state: workspace.state })}
-                              <span class="badge badge-secondary">
-                                ${workspace.time_in_state}
-                              </span>
+                            <div class="list-group-item">
+                              <div class="d-flex align-items-center">
+                                <span class="mr-2" style="font-variant-numeric: tabular-nums;">
+                                  ${workspace.id}
+                                </span>
+                                <span> </span>
+                                ${WorkspaceState({ state: workspace.state })}
+                                <span class="badge badge-secondary">
+                                  ${workspace.time_in_state}
+                                </span>
+                              </div>
+                              <div class="text-muted text-small">
+                                <span class="text-monospace">${workspace.question_name}</span>
+                                &bull; ${workspace.course_name} ${courseInstanceName} &bull;
+                                ${workspace.institution_name}
+                              </div>
                             </div>
                           `;
                         })}
