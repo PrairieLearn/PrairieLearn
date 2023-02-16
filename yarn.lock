@@ -3596,6 +3596,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/object-hash@npm:^3.0.2":
+  version: 3.0.2
+  resolution: "@types/object-hash@npm:3.0.2"
+  checksum: 0332e59074e7df2e74c093a7419c05c1e1c5ae1e12d3779f3240b3031835ff045b4ac591362be0b411ace24d3b5e760386b434761c33af25904f7a3645cb3785
+  languageName: node
+  linkType: hard
+
 "@types/parse5@npm:^5.0.0":
   version: 5.0.3
   resolution: "@types/parse5@npm:5.0.3"
@@ -3802,6 +3809,7 @@ __metadata:
     "@types/mocha": ^10.0.1
     "@types/node": ^18.11.18
     "@types/node-fetch": ^2.6.2
+    "@types/object-hash": ^3.0.2
     "@types/passport": ^1.0.11
     "@types/passport-azure-ad": ^4.3.1
     "@types/pem": ^1.9.6
@@ -3902,6 +3910,7 @@ __metadata:
     numeric: ^1.2.6
     nyc: ^15.1.0
     oauth-signature: ^1.5.0
+    object-hash: ^3.0.0
     on-finished: ^2.4.1
     parse5: ^6.0.1
     passport: ^0.6.0
@@ -11490,8 +11499,8 @@ __metadata:
   linkType: hard
 
 "node-jose@npm:^2.0.0":
-  version: 2.1.1
-  resolution: "node-jose@npm:2.1.1"
+  version: 2.2.0
+  resolution: "node-jose@npm:2.2.0"
   dependencies:
     base64url: ^3.0.1
     buffer: ^6.0.3
@@ -11501,8 +11510,8 @@ __metadata:
     node-forge: ^1.2.1
     pako: ^2.0.4
     process: ^0.11.10
-    uuid: ^8.3.2
-  checksum: ae82fa789f3b7df39a2b3070b6ffdcf30b5fd3c03e6c2f056c4a4ed2d11cde7f69a22a7e49fb550c94a90ccac76a8b9a9341864be5c8e14782f3badd052e3d3a
+    uuid: ^9.0.0
+  checksum: ec021aaf12e256a88e0f8504b529d94685b9af774d3009048d4b005294add7735a99ef771f135a0cf6648c2c2c9c82ea4883f1c79b99fe6003b700e67819e24f
   languageName: node
   linkType: hard
 
@@ -11722,6 +11731,13 @@ __metadata:
   version: 4.1.1
   resolution: "object-assign@npm:4.1.1"
   checksum: fcc6e4ea8c7fe48abfbb552578b1c53e0d194086e2e6bbbf59e0a536381a292f39943c6e9628af05b5528aa5e3318bb30d6b2e53cadaf5b8fe9e12c4b69af23f
+  languageName: node
+  linkType: hard
+
+"object-hash@npm:^3.0.0":
+  version: 3.0.0
+  resolution: "object-hash@npm:3.0.0"
+  checksum: 80b4904bb3857c52cc1bfd0b52c0352532ca12ed3b8a6ff06a90cd209dfda1b95cee059a7625eb9da29537027f68ac4619363491eedb2f5d3dddbba97494fd6c
   languageName: node
   linkType: hard
 
