@@ -1651,6 +1651,10 @@ module.exports.initExpress = function () {
     require('./pages/administratorNetworks/administratorNetworks')
   );
   app.use(
+    '/pl/administrator/workspaces',
+    require('./pages/administratorWorkspaces/administratorWorkspaces')
+  );
+  app.use(
     '/pl/administrator/queries',
     require('./pages/administratorQueries/administratorQueries')
   );
