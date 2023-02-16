@@ -75,22 +75,19 @@ export async function instrumentedWithMetrics<T>(
   name: string,
   fn: () => Promise<T> | T
 ): Promise<T> {
-  const success = getCounter(meter, `${name}.success`, { valueType: ValueType.INT });
   const error = getCounter(meter, `${name}.error`, { valueType: ValueType.INT });
   const histogram = getHistogram(meter, `${name}.duration`, {
     unit: 'milliseconds',
     valueType: ValueType.DOUBLE,
   });
 
-  const start = Date.now();
+  const start = performance.now();
   try {
-    const res = await fn();
-    success.add(1);
-    return res;
+    return await fn();
   } catch (e) {
     error.add(1);
     throw e;
   } finally {
-    histogram.record(Date.now() - start);
+    histogram.record(performance.now() - start);
   }
 }
