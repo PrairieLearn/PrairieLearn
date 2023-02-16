@@ -574,6 +574,7 @@ describe('Group based homework assess custom group roles from student side', fun
 
       // Role IDs: 1 = Manager, 2 = Recorder, 3 = Reflector, 4 = Contributor
       // Pattern: user_role_<role_id>_<user_id>
+      // TODO: Make sure user IDs match what I'm putting here. Printing it out yields 2, 3, 4, 5
       let roleUpdates = ['user_role_2_2', 'user_role_3_3', 'user_role_4_4'];
       roleUpdates.forEach((update) => {
         locals.$(`#${update}`).prop('checked', true);
@@ -596,8 +597,15 @@ describe('Group based homework assess custom group roles from student side', fun
         }
       );
     });
-    it('should have correct role configuration in the database', function () {
-      // TODO: implement
+    it('should have correct role configuration in the database', function (callback) {
+      var params = {
+        assessment_id: locals.assessment_id,
+      };
+      sqldb.query(sql.get_group_roles, params, function (err, result) {
+        if (ERR(err, callback)) return;
+        console.log(result);
+      });
+      callback(null);
     });
     it('should have correct roles checked in the table', function () {
       // TODO: implement
