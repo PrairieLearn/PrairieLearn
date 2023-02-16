@@ -119,8 +119,10 @@ function AdministratorWorkspaces({ workspaces, workspaceLoadHostCapacity, resLoc
                     <div id="workspaces-${workspaceHost.id}" class="collapse">
                       <div class="list-group list-group my-2">
                         ${workspaceHost.workspaces.map((workspace) => {
-                          const courseInstanceName = workspace.course_instance_name
-                            ? `(${workspace.course_instance_name})`
+                          const maybeCourseInstanceName = workspace.course_instance_name
+                            ? html`(<span title="Course instance"
+                                  >${workspace.course_instance_name}</span
+                                >)`
                             : null;
                           return html`
                             <div class="list-group-item">
@@ -135,9 +137,13 @@ function AdministratorWorkspaces({ workspaces, workspaceLoadHostCapacity, resLoc
                                 </span>
                               </div>
                               <div class="text-muted text-small">
-                                <span class="text-monospace">${workspace.question_name}</span>
-                                &bull; ${workspace.course_name} ${courseInstanceName} &bull;
-                                ${workspace.institution_name}
+                                <span class="text-monospace" title="Question"
+                                  >${workspace.question_name}</span
+                                >
+                                &bull;
+                                <span title="Course">${workspace.course_name}</span>
+                                ${maybeCourseInstanceName} &bull;
+                                <span title="Institution">${workspace.institution_name}</span>
                               </div>
                             </div>
                           `;
