@@ -67,12 +67,34 @@ await tracer.startActiveSpan('span.name', async (span) => {
 
 ## Metrics
 
+You can manually create counters and other metrics with the following functions
+
+- `getHistogram`
+- `getCounter`
+- `getUpDownCounter`
+- `getObservableCounter`
+- `getObservableUpDownCounter`
+- `getObservableGauge`
+
+```ts
+import { metrics, getCounter, ValueType } from '@prairielearn/opentelemetry';
+
+function handleRequest(req, res) {
+  const meter = metrics.getMeter('meter-name');
+  const requestCounter = getCounter(meter, 'request.count', {
+    valueType: ValueType.INT,
+  });
+  requestCounter.add(1);
+}
+```
+
 You can also use the `instrumentedWithMetrics` helper to automatically capture a duration histogram and error count:
 
 ```ts
-import { instrumentedWithMetrics } from '@prairielearn/opentelemetry';
+import { metrics, instrumentedWithMetrics } from '@prairielearn/opentelemetry';
 
-await instrumentedWithMetrics('operation.name', async () => {
+const meter = metrics.getMeter('meter-name');
+await instrumentedWithMetrics(meter, 'operation.name', async () => {
   const random = Math.random() * 1000;
   await new Promise((resolve) => setTimeout(resolve, random));
   if (random > 900) {
