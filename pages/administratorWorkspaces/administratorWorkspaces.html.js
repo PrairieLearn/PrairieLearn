@@ -6,6 +6,7 @@ const _ = require('lodash');
 const WorkspaceSchema = z.object({
   id: z.string(),
   state: z.enum(['uninitialized', 'stopped', 'launching', 'running']),
+  time_in_state: z.string(),
   workspace_host_id: z.string(),
   workspace_host_hostname: z.string().optional(),
   workspace_instance_id: z.string().optional(),
@@ -17,6 +18,7 @@ const WorkspaceSchema = z.object({
     'terminating',
     'terminated',
   ]),
+  workspace_host_time_in_state: z.string(),
 });
 
 /** @typedef {z.infer<WorkspaceSchema>} Workspace */
@@ -34,7 +36,7 @@ const WorkspaceSchema = z.object({
  */
 function AdministratorWorkspaces({ workspaces, workspaceLoadHostCapacity, resLocals }) {
   const workspacesByHost = _.groupBy(workspaces, 'workspace_host_id');
-  const workspaceHostsTmp = Object.entries(workspacesByHost).map(
+  const workspaceHosts = Object.entries(workspacesByHost).map(
     ([workspaceHostId, workspacesForHost]) => {
       // Pick a representative workspace to grab host information from; this
       // should be the same for all workspaces in a group.
@@ -45,12 +47,12 @@ function AdministratorWorkspaces({ workspaces, workspaceLoadHostCapacity, resLoc
         hostname: workspace.workspace_host_hostname,
         instance_id: workspace.workspace_instance_id,
         state: workspace.workspace_host_state,
+        time_in_state: workspace.workspace_host_time_in_state,
         workspaces: workspacesForHost,
       };
     }
   );
-  const workspaceHosts = workspaceHostsTmp.concat(workspaceHostsTmp);
-  console.log(workspaceHosts);
+
   return html`
     <!DOCTYPE html>
     <html>
@@ -61,6 +63,13 @@ function AdministratorWorkspaces({ workspaces, workspaceLoadHostCapacity, resLoc
         <script>
           $(() => {
             $('[data-toggle="popover"]').popover({ sanitize: false });
+            const toggleButton = document.querySelector('#toggle-all-workspaces');
+            toggleButton.addEventListener('click', () => {
+              const state = toggleButton.dataset.state;
+              $('#content .collapse').collapse(state === 'collapsed' ? 'show' : 'hide');
+              toggleButton.dataset.state = state === 'collapsed' ? 'expanded' : 'collapsed';
+              toggleButton.textContent = state === 'collapsed' ? 'Collapse all' : 'Expand all';
+            });
           });
         </script>
         ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
@@ -70,7 +79,12 @@ function AdministratorWorkspaces({ workspaces, workspaceLoadHostCapacity, resLoc
         })}
         <div id="content" class="container">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Workspace hosts</div>
+            <div class="card-header bg-primary text-white d-flex align-items-center">
+              <span class="mr-auto">Workspace hosts</span>
+              <button class="btn btn-light" id="toggle-all-workspaces" data-state="collapsed">
+                Expand all
+              </button>
+            </div>
             <div class="list-group list-group-flush">
               ${workspaceHosts.map((workspaceHost) => {
                 const instanceId = workspaceHost.instance_id;
@@ -88,6 +102,7 @@ function AdministratorWorkspaces({ workspaces, workspaceLoadHostCapacity, resLoc
                         >
                         ${instanceId ? html`(<span class="text-muted">${instanceId}</span>)` : null}
                         ${WorkspaceHostState({ state: workspaceHost.state })}
+                        <span class="badge badge-secondary"> ${workspaceHost.time_in_state} </span>
                       </span>
                       ${Capacity({
                         total: workspaceLoadHostCapacity,
@@ -103,6 +118,9 @@ function AdministratorWorkspaces({ workspaces, workspaceLoadHostCapacity, resLoc
                                 ${workspace.id}
                               </span>
                               ${WorkspaceState({ state: workspace.state })}
+                              <span class="badge badge-secondary">
+                                ${workspace.time_in_state}
+                              </span>
                             </div>
                           `;
                         })}
@@ -113,8 +131,6 @@ function AdministratorWorkspaces({ workspaces, workspaceLoadHostCapacity, resLoc
               })}
             </div>
           </div>
-          <pre><code>${JSON.stringify(workspacesByHost, null, 2)}</code></pre>
-          <pre><code>${JSON.stringify(workspaces, null, 2)}</code></pre>
         </div>
       </body>
     </html>
@@ -147,7 +163,7 @@ function Capacity({ total, current }) {
 
 function WorkspaceState({ state }) {
   const color = state === 'running' ? 'success' : 'secondary';
-  return html` <span class="badge badge-${color}">${state}</span> `;
+  return html` <span class="badge badge-${color} mr-2">${state}</span> `;
 }
 
 function WorkspaceHostState({ state }) {
