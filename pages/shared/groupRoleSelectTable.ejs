@@ -17,7 +17,6 @@
               type="checkbox"
               id="user_role_<%= role.id %>-<%= user.user_id %>"
               name="user_role_<%= role.id %>-<%= user.user_id %>"
-              value="checked"
               <% if (rolesInfo.disabledRoles.includes(role.role_name)) { %>
                 disabled
               <% } else if (rolesInfo.roleAssignments[user.uid].includes(role.role_name)) { %>

@@ -568,17 +568,42 @@ describe('Group based homework assess custom group roles from student side', fun
   });
 
   describe('13. the role assigner can re-assign roles to valid configuration', function () {
+    it('group role table is visible and has four users in it', function () {
+      elemList = locals.$('#role-select-form').find('tr');
+      // Header row and four user rows
+      assert.lengthOf(elemList, 5);
+    });
     it('should edit role table to correct configuration', function () {
       // Uncheck all of the inputs
-      locals.$('#role-select-form').find('input[type="checkbox"]').prop('checked', false);
+      const roleIds = [1, 2, 3, 4];
+      const userIds = locals.studentUsers.map((user) => user.user_id);
+      for (const roleId of roleIds) {
+        for (const userId of userIds) {
+          const elementId = `#user_role_${roleId}-${userId}`;
+          locals.$('#role-select-form').find(elementId).prop('checked', false);
+        }
+      }
+      elemList = locals.$('#role-select-form').find('input[type="checkbox"]') // .prop('checked', false);
+
+      console.log(elemList);
+      elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+      assert.lengthOf(elemList, 0);
+      // console.log(elemList);
+
+      // TODO: use variables for getting role updates
+      // let roleUpdates = locals.studentUsers
 
       // Role IDs: 1 = Manager, 2 = Recorder, 3 = Reflector, 4 = Contributor
-      // Pattern: user_role_<role_id>_<user_id>
+      // Pattern: user_role_<role_id>-<user_id>
       // TODO: Make sure user IDs match what I'm putting here. Printing it out yields 2, 3, 4, 5
-      let roleUpdates = ['user_role_2_2', 'user_role_3_3', 'user_role_4_4'];
+      let roleUpdates = ['user_role_2-2', 'user_role_3-3', 'user_role_4-4'];
       roleUpdates.forEach((update) => {
         locals.$(`#${update}`).prop('checked', true);
       });
+      
+      // elemList = locals.$('#role-select-form').find('input[type="checkbox"]').prop('checked');
+      elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+      assert.lengthOf(elemList, 4);
     });
     it('should press submit button to perform the role updates', function (callback) {
       var form = {
@@ -599,11 +624,17 @@ describe('Group based homework assess custom group roles from student side', fun
     });
     it('should have correct role configuration in the database', function (callback) {
       var params = {
-        assessment_id: locals.assessment_id,
+        assessment_id: locals.assessment_id
       };
       sqldb.query(sql.get_group_roles, params, function (err, result) {
         if (ERR(err, callback)) return;
-        console.log(result);
+        let expected = [
+          { user_id: '2', group_role_id: '1' },
+          { user_id: '3', group_role_id: '2' },
+          { user_id: '4', group_role_id: '3' },
+          { user_id: '5', group_role_id: '4' }
+        ];
+        assert.deepEqual(expected, result.rows);
       });
       callback(null);
     });
@@ -614,7 +645,8 @@ describe('Group based homework assess custom group roles from student side', fun
       // TODO: implement
     });
     it('should be able to start assessment', function () {
-      // TODO: implement
+      elemList = locals.$('#start-assessment');
+      assert.isFalse(elemList.is(':disabled'));
     });
   });
 
