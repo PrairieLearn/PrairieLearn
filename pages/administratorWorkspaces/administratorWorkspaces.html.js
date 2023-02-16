@@ -178,7 +178,15 @@ function Capacity({ total, current }) {
       <div class="text-muted mr-2" style="font-variant-numeric: tabular-nums;">
         ${current} / ${total}
       </div>
-      <div class="progress flex-grow-1" style="width: 100px">
+      <div
+        class="progress flex-grow-1"
+        style="width: 100px"
+        role="meter"
+        aria-label="Host capacity"
+        aria-valuemin="0"
+        aria-valuemax="${total}"
+        aria-valuenow="${current}"
+      >
         <div class="progress-bar" style="width: ${capacity}%"></div>
       </div>
     </div>
