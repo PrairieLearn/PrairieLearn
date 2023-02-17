@@ -313,15 +313,20 @@ class CGrader:
             reject_output = [reject_output]
 
         def compile_re(t):
-            return re.compile(
-                "\\s+".join(map(re.escape, re.split("\\s+", str(t))))
-                if ignore_consec_spaces
-                else re.escape(str(t)),
-                re.I if ignore_case else 0,
+            if isinstance(t, re.Pattern):
+                return (t.pattern, t)
+            return (
+                str(t).strip(),
+                re.compile(
+                    "\\s+".join(map(re.escape, re.split("\\s+", str(t))))
+                    if ignore_consec_spaces
+                    else re.escape(str(t)),
+                    re.I if ignore_case else 0,
+                ),
             )
 
-        exp_output = [(str(t).strip(), compile_re(t)) for t in exp_output]
-        reject_output = [(str(t).strip(), compile_re(t)) for t in reject_output]
+        exp_output = [compile_re(t) for t in exp_output]
+        reject_output = [compile_re(t) for t in reject_output]
 
         out = self.run_command(
             command if args is None else ([command] + args),
