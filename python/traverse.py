@@ -2,15 +2,12 @@ import codecs
 import timeit
 from collections import deque
 from itertools import chain
-from typing import Callable, Deque, List, Optional, Tuple, Union
+from typing import Callable, Deque, List, Optional, Union
 
 import lxml.html
-
 import selectolax.parser as slp
 
-ElementReplacement = Optional[
-    Union[str, lxml.html.HtmlElement, List[lxml.html.HtmlElement]]
-]
+ElementReplacement = Optional[Union[str, slp.Node, List[slp.Node]]]
 
 # https://developer.mozilla.org/en-US/docs/Glossary/Void_element
 VOID_ELEMENTS = {
@@ -65,7 +62,7 @@ def format_attrib_value(v: Optional[str]) -> str:
     return v.replace("&", "&amp;").replace('"', "&quot;").replace("\xa0", "&nbsp;")
 
 
-def get_source_definition(element: lxml.html.HtmlElement) -> str:
+def get_source_definition(element: slp.Node) -> str:
     attributes = (
         f'{k}="{format_attrib_value(v)}"' for k, v in element.attributes.items()
     )
@@ -73,7 +70,7 @@ def get_source_definition(element: lxml.html.HtmlElement) -> str:
 
 
 def traverse_and_replace(
-    html: str, replace: Callable[[lxml.html.HtmlElement], ElementReplacement]
+    html: str, replace: Callable[[slp.Node], Union[None, str, slp.Node]]
 ) -> str:
 
     # Initialize result and work data structures
@@ -82,8 +79,8 @@ def traverse_and_replace(
     initial_list = list(slp.HTMLParser(html).body.iter(include_text=True))
 
     count_stack: Deque[int] = deque([len(initial_list)])
-    work_stack: Deque[Union[str, slp.HTMLParser]] = deque(reversed(initial_list))
-    tail_stack: Deque[Tuple[str, Optional[str]]] = deque()
+    work_stack: Deque[slp.Node] = deque(reversed(initial_list))
+    tail_stack: Deque[str] = deque()
 
     while work_stack:
         element = work_stack.pop()
