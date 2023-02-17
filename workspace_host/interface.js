@@ -144,7 +144,6 @@ async
     async () => {
       // Always grab the port from the config
       workspace_server_settings.port = config.workspaceHostPort;
-      logger.verbose(`Workspace S3 bucket: ${config.workspaceS3Bucket}`);
     },
     (callback) => {
       const pgConfig = {
