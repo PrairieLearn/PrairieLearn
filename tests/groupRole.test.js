@@ -580,30 +580,24 @@ describe('Group based homework assess custom group roles from student side', fun
       for (const roleId of roleIds) {
         for (const userId of userIds) {
           const elementId = `#user_role_${roleId}-${userId}`;
-          locals.$('#role-select-form').find(elementId).prop('checked', false);
+          locals.$('#role-select-form').find(elementId).attr('checked', null);
         }
       }
-      elemList = locals.$('#role-select-form').find('input[type="checkbox"]') // .prop('checked', false);
 
-      console.log(elemList);
+      // Ensure all checkboxes are unchecked
       elemList = locals.$('#role-select-form').find('tr').find('input:checked');
       assert.lengthOf(elemList, 0);
-      // console.log(elemList);
-
-      // TODO: use variables for getting role updates
-      // let roleUpdates = locals.studentUsers
 
       // Role IDs: 1 = Manager, 2 = Recorder, 3 = Reflector, 4 = Contributor
       // Pattern: user_role_<role_id>-<user_id>
       // TODO: Make sure user IDs match what I'm putting here. Printing it out yields 2, 3, 4, 5
       let roleUpdates = ['user_role_2-2', 'user_role_3-3', 'user_role_4-4'];
       roleUpdates.forEach((update) => {
-        locals.$(`#${update}`).prop('checked', true);
+        locals.$(`#${update}`).attr('checked', '');
       });
-      
-      // elemList = locals.$('#role-select-form').find('input[type="checkbox"]').prop('checked');
+
       elemList = locals.$('#role-select-form').find('tr').find('input:checked');
-      assert.lengthOf(elemList, 4);
+      assert.lengthOf(elemList, 3);
     });
     it('should press submit button to perform the role updates', function (callback) {
       var form = {
@@ -622,9 +616,22 @@ describe('Group based homework assess custom group roles from student side', fun
         }
       );
     });
+    it('should reload assessment page successfully', function (callback) {
+      request(locals.assessmentUrl, function (error, response, body) {
+        if (ERR(error, callback)) return;
+        if (response.statusCode !== 200) {
+          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
+        }
+        page = body;
+        callback(null);
+      });
+    });
+    it('should parse', function () {
+      locals.$ = cheerio.load(page);
+    });
     it('should have correct role configuration in the database', function (callback) {
       var params = {
-        assessment_id: locals.assessment_id
+        assessment_id: locals.assessment_id,
       };
       sqldb.query(sql.get_group_roles, params, function (err, result) {
         if (ERR(err, callback)) return;
@@ -632,17 +639,26 @@ describe('Group based homework assess custom group roles from student side', fun
           { user_id: '2', group_role_id: '1' },
           { user_id: '3', group_role_id: '2' },
           { user_id: '4', group_role_id: '3' },
-          { user_id: '5', group_role_id: '4' }
+          { user_id: '5', group_role_id: '4' },
         ];
+        console.log('Actual: ', result.rows);
+        console.log('Expected: ', expected);
         assert.deepEqual(expected, result.rows);
       });
       callback(null);
     });
     it('should have correct roles checked in the table', function () {
-      // TODO: implement
+      let roleUpdates = ['user_role_1-2', 'user_role_2-3', 'user_role_3-4', 'user_role_4-5'];
+      roleUpdates.forEach((update) => {
+        elemList = locals.$('#role-select-form').find(`#${update}`).find('input:checked');
+        assert.lengthOf(elemList, 1);
+      });
     });
     it('should have no errors displayed', function () {
-      // TODO: implement
+      elemList = locals.$('.alert:contains(has too few assignments)');
+      assert.lengthOf(elemList, 0);
+      elemList = locals.$('.alert:contains(has too many assignments)');
+      assert.lengthOf(elemList, 0);
     });
     it('should be able to start assessment', function () {
       elemList = locals.$('#start-assessment');
@@ -650,19 +666,19 @@ describe('Group based homework assess custom group roles from student side', fun
     });
   });
 
-  describe('13. the role assigner cannot re-assign roles past a role maximum', function () {
+  describe('14. the role assigner cannot re-assign roles past a role maximum', function () {
     // TODO: implement
   });
 
-  describe('14. non-required roles are dropped when user leaves group', function () {
+  describe('15. non-required roles are dropped when user leaves group', function () {
     // TODO: implement
   });
 
-  describe('15. required roles are reorganized when user leaves group', function () {
+  describe('16. required roles are reorganized when user leaves group', function () {
     // TODO: implement
   });
 
-  describe('16. assessments without roles do not show the role selection table', function () {
+  describe('17. assessments without roles do not show the role selection table', function () {
     // TODO: implement
   });
 });
