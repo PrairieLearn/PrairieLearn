@@ -220,6 +220,16 @@ Some times a test must ensure that some strings are _not_ found in the output of
 self.test_run("diff -q output.txt expected.txt", reject_output=["differ"])
 ```
 
+If you would like to highlight, in the test message or output, the expected and rejected outputs, you can use the `highlight_matches` argument. This option will highlight in green (for expected outputs) and red (for rejected outputs) all strings that matched in the program output.
+
+```python
+self.test_run("./square",
+              exp_output=["TEST 1 PASSED", "TEST 2 PASSED"],
+              reject_output=["ERROR", "FAIL"],
+              must_match_all_outputs=True,
+              highlight_matches=True)
+```
+
 By default, any sequence of space-like characters (space, line break, carriage return, tab) in the program output, expected output and rejected output strings will be treated as a single space for comparison. This means difference in the number and type of spacing will be ignored. So, for example, if the output prints two numbers as `1 \n 2`, while the expected output is `1 2`, the test will pass. If, however, the intention is that spaces must match a pattern exactly, the `ignore_consec_spaces` option can be set to `False`:
 
 ```python
