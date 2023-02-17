@@ -1,10 +1,12 @@
+import codecs
 import timeit
 from collections import deque
-from typing import Callable, Deque, List, Optional, Tuple, Union
-import selectolax as sl
-import codecs
 from itertools import chain
+from typing import Callable, Deque, List, Optional, Tuple, Union
+
 import lxml.html
+
+import selectolax.parser as slp
 
 ElementReplacement = Optional[
     Union[str, lxml.html.HtmlElement, List[lxml.html.HtmlElement]]
@@ -43,13 +45,16 @@ def traverse_and_execute(
             fn(e)
 
 
-def get_elements_list(html: str):
-    parser = sl.parser.HTMLParser(html)
+def get_elements_list(html: str) -> List[slp.Node]:
+    parser = slp.HTMLParser(html)
 
-    return list(chain(
-        parser.head.iter(include_text=True),
-        parser.body.iter(include_text=True),
-    ))
+    return list(
+        chain(
+            parser.head.iter(include_text=True),
+            parser.body.iter(include_text=True),
+        )
+    )
+
 
 def format_attrib_value(v: Optional[str]) -> str:
     # https://html.spec.whatwg.org/multipage/parsing.html#escapingString
@@ -58,6 +63,7 @@ def format_attrib_value(v: Optional[str]) -> str:
         return ""
 
     return v.replace("&", "&amp;").replace('"', "&quot;").replace("\xa0", "&nbsp;")
+
 
 def get_source_definition(element: lxml.html.HtmlElement) -> str:
     attributes = (
@@ -73,19 +79,19 @@ def traverse_and_replace(
     # Initialize result and work data structures
     result: Deque[str] = deque()
 
-    initial_list = list(sl.parser.HTMLParser(html).body.iter(include_text=True))
+    initial_list = list(slp.HTMLParser(html).body.iter(include_text=True))
 
     count_stack: Deque[int] = deque([len(initial_list)])
-    work_stack: Deque[Union[str, sl.parser.HTMLParser]] = deque(reversed(initial_list))
+    work_stack: Deque[Union[str, slp.HTMLParser]] = deque(reversed(initial_list))
     tail_stack: Deque[Tuple[str, Optional[str]]] = deque()
 
     while work_stack:
         element = work_stack.pop()
 
         # For just a string, append to final result
-        if element.tag == '-text':
+        if element.tag == "-text":
             result.append(codecs.decode(element.raw_value))
-        elif element.tag == '_comment':
+        elif element.tag == "_comment":
             result.append(element.html)
 
         else:
