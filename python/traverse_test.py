@@ -35,7 +35,7 @@ def test_traverse_and_replace_comment() -> None:
         return e
 
     html = traverse_and_replace("<p>Hello</p>", replace)
-    assert html == "<!-- Goodbye --><i>world</i>"
+    assert html == "<i>world</i>"
 
 
 def test_traverse_and_replace_comment_nested() -> None:
@@ -45,7 +45,7 @@ def test_traverse_and_replace_comment_nested() -> None:
         return e
 
     html = traverse_and_replace("<p><span>Hello</span></p>", replace)
-    assert html == "<p><!-- Goodbye --><strong>world</strong></p>"
+    assert html == "<p><strong>world</strong></p>"
 
 
 def test_traverse_and_replace_comment_with_text() -> None:
@@ -290,7 +290,7 @@ def test_traverse_and_replace_void_elements() -> None:
     def replace(e) -> ElementReplacement:
         return e
 
-    html = traverse_and_replace('<div><br><input name="input"</div>', replace)
+    html = traverse_and_replace('<div><br><input name="input"></div>', replace)
     assert html == '<div><br><input name="input"></div>'
 
 

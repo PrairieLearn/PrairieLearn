@@ -1,7 +1,9 @@
 import timeit
 from collections import deque
 from typing import Callable, Deque, List, Optional, Tuple, Union
-
+import selectolax as sl
+import codecs
+from itertools import chain
 import lxml.html
 
 ElementReplacement = Optional[
@@ -41,14 +43,25 @@ def traverse_and_execute(
             fn(e)
 
 
-def format_attrib_value(v: str) -> str:
-    # https://html.spec.whatwg.org/multipage/parsing.html#escapingString
-    return v.replace("&", "&amp;").replace('"', "&quot;").replace("\xa0", "&nbsp;")
+def get_elements_list(html: str):
+    parser = sl.parser.HTMLParser(html)
 
+    return list(chain(
+        parser.head.iter(include_text=True),
+        parser.body.iter(include_text=True),
+    ))
+
+def format_attrib_value(v: Optional[str]) -> str:
+    # https://html.spec.whatwg.org/multipage/parsing.html#escapingString
+
+    if v is None:
+        return ""
+
+    return v.replace("&", "&amp;").replace('"', "&quot;").replace("\xa0", "&nbsp;")
 
 def get_source_definition(element: lxml.html.HtmlElement) -> str:
     attributes = (
-        f'''{k}="{format_attrib_value(v)}"''' for k, v in element.attrib.items()
+        f'{k}="{format_attrib_value(v)}"' for k, v in element.attributes.items()
     )
     return f"<{' '.join((element.tag, *attributes))}>"
 
@@ -56,20 +69,24 @@ def get_source_definition(element: lxml.html.HtmlElement) -> str:
 def traverse_and_replace(
     html: str, replace: Callable[[lxml.html.HtmlElement], ElementReplacement]
 ) -> str:
+
     # Initialize result and work data structures
     result: Deque[str] = deque()
 
-    initial_list = lxml.html.fragments_fromstring(html)
+    initial_list = list(sl.parser.HTMLParser(html).body.iter(include_text=True))
+
     count_stack: Deque[int] = deque([len(initial_list)])
-    work_stack: Deque[Union[str, lxml.html.HtmlElement]] = deque(reversed(initial_list))
+    work_stack: Deque[Union[str, sl.parser.HTMLParser]] = deque(reversed(initial_list))
     tail_stack: Deque[Tuple[str, Optional[str]]] = deque()
 
     while work_stack:
         element = work_stack.pop()
 
         # For just a string, append to final result
-        if isinstance(element, str):
-            result.append(element)
+        if element.tag == '-text':
+            result.append(codecs.decode(element.raw_value))
+        elif element.tag == '_comment':
+            result.append(element.html)
 
         else:
             new_elements = replace(element)
@@ -78,17 +95,11 @@ def traverse_and_replace(
             if new_elements is None:
                 new_elements = []
             elif isinstance(new_elements, str):
-                fragments = lxml.html.fragments_fromstring(new_elements)
-                new_elements = fragments if fragments is not None else []
+                new_elements = get_elements_list(new_elements)
 
             if isinstance(new_elements, list):
                 # Modify count stack for new elements and decrement for element that was replaced
                 count_stack[-1] += len(new_elements) - 1
-
-                # Add element tail before processing replaced element
-                if element.tail is not None:
-                    count_stack[-1] += 1
-                    work_stack.append(element.tail)
 
                 # Extend and go to the next iteration
                 if new_elements:
@@ -96,33 +107,23 @@ def traverse_and_replace(
 
                 continue
 
-            if isinstance(new_elements, lxml.html.HtmlComment):
-                result.append(lxml.html.tostring(new_elements, encoding="unicode"))
-            else:
-                # Add opening tag and text
-                result.append(get_source_definition(new_elements))
+            result.append(get_source_definition(new_elements))
+            # Add all children to the work stack
+            children = list(new_elements.iter(include_text=True))
 
-                if new_elements.text is not None:
-                    result.append(new_elements.text)
+            if children:
+                work_stack.extend(reversed(children))
 
-                # Add all children to the work stack
-                children = list(new_elements)
-
-                if children:
-                    work_stack.extend(reversed(children))
-
-                count_stack.append(len(children))
-                tail_stack.append((new_elements.tag, element.tail))
+            count_stack.append(len(children))
+            tail_stack.append(new_elements.tag)
 
         # Close all closable tags
         while count_stack[-1] == 0:
             count_stack.pop()
-            tail_tag, tail_text = tail_stack.pop()
+            tail_tag = tail_stack.pop()
 
             if tail_tag not in VOID_ELEMENTS and tail_tag is not None:
                 result.append(f"</{tail_tag}>")
-            if tail_text is not None:
-                result.append(tail_text)
         else:
             count_stack[-1] -= 1
 
