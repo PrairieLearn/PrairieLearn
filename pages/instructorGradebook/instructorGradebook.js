@@ -7,12 +7,11 @@ var router = express.Router();
 const { getCourseOwners } = require('../../lib/course');
 var error = require('../../prairielib/lib/error');
 const sanitizeName = require('../../lib/sanitize-name');
-var sqldb = require('../../prairielib/lib/sql-db');
-var sqlLoader = require('../../prairielib/lib/sql-loader');
+var sqldb = require('@prairielearn/postgres');
 
 var course = require('../../lib/course');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+var sql = sqldb.loadSqlEquiv(__filename);
 
 var csvFilename = function (locals) {
   return (

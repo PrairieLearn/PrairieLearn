@@ -3,10 +3,9 @@ var express = require('express');
 var router = express.Router();
 
 var config = require('../../lib/config');
-var sqldb = require('../../prairielib/lib/sql-db');
-var sqlLoader = require('../../prairielib/lib/sql-loader');
+var sqldb = require('@prairielearn/postgres');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+var sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
   res.locals.isAuthenticated = !!res.locals.authn_user;

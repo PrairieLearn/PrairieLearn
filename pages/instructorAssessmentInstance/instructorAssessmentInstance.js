@@ -4,13 +4,12 @@ const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
 const router = express.Router();
 const error = require('../../prairielib/lib/error');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
 const sanitizeName = require('../../lib/sanitize-name');
 const ltiOutcomes = require('../../lib/ltiOutcomes');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const logCsvFilename = (locals) => {
   return (

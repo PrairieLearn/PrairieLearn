@@ -1,5 +1,6 @@
 import random
 
+
 def fib(n):
     c = 0
     for i in range(10000):

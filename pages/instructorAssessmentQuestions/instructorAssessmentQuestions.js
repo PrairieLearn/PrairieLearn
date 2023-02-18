@@ -7,10 +7,9 @@ const _ = require('lodash');
 const { default: AnsiUp } = require('ansi_up');
 const ansiUp = new AnsiUp();
 
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
   debug('GET /');

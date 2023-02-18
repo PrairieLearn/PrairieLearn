@@ -46,14 +46,12 @@ TEST_OUTPUT = """>>> Generated with the help of https://pub.dev/packages/ansicol
 [38;5;15m[48;5;240m 240 [0m[38;5;240m 240 [0m[38;5;15m[48;5;241m 241 [0m[38;5;241m 241 [0m[38;5;15m[48;5;242m 242 [0m[38;5;242m 242 [0m[38;5;15m[48;5;243m 243 [0m[38;5;243m 243 [0m[38;5;15m[48;5;244m 244 [0m[38;5;244m 244 [0m[38;5;15m[48;5;245m 245 [0m[38;5;245m 245 [0m[38;5;15m[48;5;246m 246 [0m[38;5;246m 246 [0m[38;5;15m[48;5;247m 247 [0m[38;5;247m 247 [0m
 [38;5;15m[48;5;248m 248 [0m[38;5;248m 248 [0m[38;5;15m[48;5;249m 249 [0m[38;5;249m 249 [0m[38;5;15m[48;5;250m 250 [0m[38;5;250m 250 [0m[38;5;15m[48;5;251m 251 [0m[38;5;251m 251 [0m[38;5;15m[48;5;252m 252 [0m[38;5;252m 252 [0m[38;5;15m[48;5;253m 253 [0m[38;5;253m 253 [0m[38;5;15m[48;5;254m 254 [0m[38;5;254m 254 [0m[38;5;15m[48;5;255m 255 [0m[38;5;255m 255 [0m"""
 
-def grade(data):
-    results = {
-        'output': TEST_OUTPUT,
-        'score': 1.0
-    }
-    feedback = data.get('feedback', {})
-    feedback['results'] = results
-    feedback['succeeded'] = True
 
-    data['score'] = 1.0
-    data['feedback'] = feedback
+def grade(data):
+    results = {"output": TEST_OUTPUT, "score": 1.0}
+    feedback = data.get("feedback", {})
+    feedback["results"] = results
+    feedback["succeeded"] = True
+
+    data["score"] = 1.0
+    data["feedback"] = feedback

@@ -1217,7 +1217,6 @@ def string_to_2darray(s, allow_complex=True):
 
         # Iterate over rows
         for i in range(0, m):
-
             # Split row
             s_row = re.split(matlab_delimiter_regex, s[i])
 
@@ -1417,7 +1416,6 @@ def string_to_2darray(s, allow_complex=True):
 
 
 def latex_from_2darray(A, presentation_type="f", digits=2):
-
     r"""latex_from_2darray
     This function assumes that A is one of these things:
             - a number (float or complex)

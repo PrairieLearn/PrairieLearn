@@ -6,9 +6,8 @@ const path = require('path');
 const config = require('../lib/config');
 const fetch = require('node-fetch');
 const helperServer = require('./helperServer');
-const sqlLoader = require('../prairielib/lib/sql-loader');
-const sqldb = require('../prairielib/lib/sql-db');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sqldb = require('@prairielearn/postgres');
+const sql = sqldb.loadSqlEquiv(__filename);
 const io = require('socket.io-client');
 const { setUser, parseInstanceQuestionId, saveOrGrade } = require('./helperClient');
 

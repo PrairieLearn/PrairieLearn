@@ -16,11 +16,11 @@ Given a matrix $A$ and a vector $b$, compute the matrix-vector multiplication $y
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson3_example1_v1](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211625/preview)
+- [workshop/Lesson3_example1_v1](https://us.prairielearn.com/pl/course/108/question/8211625/preview)
 
-- [workshop/Lesson3_example1_v2](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211627/preview)
+- [workshop/Lesson3_example1_v2](https://us.prairielearn.com/pl/course/108/question/8211627/preview)
 
-- [workshop/Lesson3_example1_v3](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211626/preview)
+- [workshop/Lesson3_example1_v3](https://us.prairielearn.com/pl/course/108/question/8211626/preview)
 
 ## Example 2:
 
@@ -55,11 +55,11 @@ You can download the figure files and the table:
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson3_example2_v1](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211628/preview)
+- [workshop/Lesson3_example2_v1](https://us.prairielearn.com/pl/course/108/question/8211628/preview)
 
-- [workshop/Lesson3_example2_v2](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211629/preview)
+- [workshop/Lesson3_example2_v2](https://us.prairielearn.com/pl/course/108/question/8211629/preview)
 
-- [workshop/Lesson3_example2_v3](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211630/preview)
+- [workshop/Lesson3_example2_v3](https://us.prairielearn.com/pl/course/108/question/8211630/preview)
 
 ## Example 3:
 
@@ -71,7 +71,7 @@ You can use `pl-multiple-choice` for this question. If you want to have the stud
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson3_example3](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211631/preview)
+- [workshop/Lesson3_example3](https://us.prairielearn.com/pl/course/108/question/8211631/preview)
 
 ## Example 4:
 
@@ -87,24 +87,24 @@ You can use `pl-overlay` to add the input boxes on top of the image.
 
 **PrairieLearn implementation:**
 
-- [workshop/Lesson3_example4_v1](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211632/preview)
+- [workshop/Lesson3_example4_v1](https://us.prairielearn.com/pl/course/108/question/8211632/preview)
 
-- [workshop/Lesson3_example4_v2](https://prairielearn.engr.illinois.edu/pl/course/108/question/8211633/preview)
+- [workshop/Lesson3_example4_v2](https://us.prairielearn.com/pl/course/108/question/8211633/preview)
 
 ## Homework 3
 
 Create new questions using some of the elements discussed today:
 
-`pl-matrix-component-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-matrix-component-input-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/1793641/preview)
+`pl-matrix-component-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-matrix-component-input-element) and [example](https://us.prairielearn.com/pl/course/108/question/1793641/preview)
 
-`pl-matrix-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-matrix-input-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/611932/preview)
+`pl-matrix-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-matrix-input-element) and [example](https://us.prairielearn.com/pl/course/108/question/611932/preview)
 
-`pl-matrix-latex` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-matrix-latex-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/1793638/preview)
+`pl-matrix-latex` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-matrix-latex-element) and [example](https://us.prairielearn.com/pl/course/108/question/1793638/preview)
 
-`pl-variable-output` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-variable-output-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/3637022/preview)
+`pl-variable-output` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-variable-output-element) and [example](https://us.prairielearn.com/pl/course/108/question/3637022/preview)
 
 `pl-python-variable` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-python-variable-element) and [example](https://prairielearn.readthedocs.io/en/latest/elements/#pl-python-variable-element)
 
-`pl-string-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-string-input-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/1793642/preview)
+`pl-string-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-string-input-element) and [example](https://us.prairielearn.com/pl/course/108/question/1793642/preview)
 
-`pl-overlay` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-overlay-element) and [example](https://prairielearn.engr.illinois.edu/pl/course/108/question/7911589/preview)
+`pl-overlay` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/#pl-overlay-element) and [example](https://us.prairielearn.com/pl/course/108/question/7911589/preview)
