@@ -126,7 +126,7 @@ const User = z.object({
   age: z.number(),
 });
 
-const users = queryValidatedOneRow(sql.select_user, { user_id: 1 }, User);
+const users = await queryValidatedOneRow(sql.select_user, { user_id: 1 }, User);
 console.log(users[0].name);
 ```
 
@@ -144,12 +144,13 @@ As with the non-validated query functions, there are several variants available:
 
 ### Transactions
 
-To use transactions, wrap your queries with the `runInTransaction` function:
+To use transactions, wrap your queries with the `runInTransactionAsync` function:
 
 ```ts
-await sqldb.runInTransaction(async () => {
-  await sqldb.queryAsync(sql.insert_user, { name: 'Kevin Young' });
-  await sqldb.queryAsync(sql.insert_course, { rubric: 'CS 101' });
+const { user, course } = await sqldb.runInTransactionAsync(async () => {
+  const user = await sqldb.queryAsync(sql.insert_user, { name: 'Kevin Young' });
+  const course = await sqldb.queryAsync(sql.insert_course, { rubric: 'CS 101' });
+  return { user, course };
 });
 ```
 
