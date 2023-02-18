@@ -126,7 +126,7 @@ const User = z.object({
   age: z.number(),
 });
 
-const users = queryValidatedOneRow(sql.select_user, { user_id: 1 }, User);
+const users = await queryValidatedOneRow(sql.select_user, { user_id: 1 }, User);
 console.log(users[0].name);
 ```
 
