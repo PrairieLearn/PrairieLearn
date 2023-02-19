@@ -243,6 +243,12 @@ By default, differences in cases are ignored. To make all comparisons case-sensi
 self.test_run("./lowercase", "ABC", "abc", ignore_case=False)
 ```
 
+For both `exp_output` and `reject_output`, regular expressions may be used, by providing a compiled pattern object from [Python's `re` module](https://docs.python.org/3/library/re.html#re.compile). Note: if a pattern object is used, arguments `ignore_consec_spaces` and `ignore_case` do not take effect. If these patterns should ignore consecutive spaces, a pattern such as `\\s+` may be used instead of spaces, while case may be ignored by using the [`re.I` flag](https://docs.python.org/3/library/re.html#re.I);
+
+```python
+self.test_run("./valid_date", exp_output=re.compile('([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))'))
+```
+
 To avoid issues with student-provided code running longer than expected, such as in cases of infinite loop, the program will timeout after one second. In this case, the test will be considered failed. This setting can be changed with the `timeout` argument, which should be set to a number of seconds.
 
 ```python
