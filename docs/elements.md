@@ -1171,7 +1171,7 @@ line callouts.
 
 #### Details
 
-The `pl-code` element uses the _Pygments_ library for syntax highlighting, a full list of supported languages can be found [here](https://pygments.org/languages/).
+The `pl-code` element uses the _Pygments_ library for syntax highlighting. It supports the any of the built-in supported languages, be found [here](https://pygments.org/languages/), as well as the custom [`ansi-color` custom language](https://github.com/chriskuehl/pygments-ansi-color) that can be used to display terminal output.
 
 ##### Common Pitfalls
 
