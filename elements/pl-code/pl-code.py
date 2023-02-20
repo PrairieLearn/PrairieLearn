@@ -9,7 +9,10 @@ import pygments.formatters
 import pygments.lexer
 import pygments.lexers
 import pygments.util
+from pygments.style import Style
+from pygments.styles import get_style_by_name
 from pygments.token import Token
+from pygments_ansi_color import color_tokens
 
 LANGUAGE_DEFAULT = None
 NO_HIGHLIGHT_DEFAULT = False
@@ -19,6 +22,22 @@ HIGHLIGHT_LINES_DEFAULT = None
 HIGHLIGHT_LINES_COLOR_DEFAULT = "#b3d7ff"
 DIRECTORY_DEFAULT = "."
 COPY_CODE_BUTTON_DEFAULT = False
+
+
+class AnsiColorStyle(Style):
+    styles = dict(get_style_by_name("friendly").styles)
+    # These are the same colors used in pl-external-grader-result
+    ansi_colors = {
+        "Black": "#000000",
+        "Red": "#c91b00",
+        "Green": "#00c200",
+        "Yellow": "#c7c400",
+        "Blue": "#0037da",
+        "Magenta": "#c930c7",
+        "Cyan": "#00c5c7",
+        "White": "#ffffff",
+    }
+    styles.update(color_tokens(ansi_colors, ansi_colors))
 
 
 class NoHighlightingLexer(pygments.lexer.Lexer):
@@ -214,7 +233,9 @@ def render(element_html, data):
         lexer = NoHighlightingLexer()
 
     formatter_opts = {
-        "style": "friendly",
+        "style": AnsiColorStyle
+        if language in ("ansi-color", "ansi-terminal", "ansi")
+        else "friendly",
         "cssclass": "mb-2 rounded",
         "prestyles": "padding: 0.5rem; margin-bottom: 0px",
         "noclasses": True,
