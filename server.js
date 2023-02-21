@@ -1852,6 +1852,7 @@ if (config.startServer) {
             appName: 'prairielearn',
             serverAddress: config.pyroscopeServerAddress,
             authToken: config.pyroscopeAuthToken,
+            tags: config.pyroscopeTags ?? {},
           });
           Pyroscope.start();
         }
