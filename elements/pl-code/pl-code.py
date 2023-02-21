@@ -9,8 +9,8 @@ import pygments.formatters
 import pygments.lexer
 import pygments.lexers
 import pygments.util
-from pygments.style import Style
 from pygments.styles import get_style_by_name
+from pygments.styles.friendly import FriendlyStyle
 from pygments.token import Token
 from pygments_ansi_color import color_tokens
 
@@ -24,8 +24,8 @@ DIRECTORY_DEFAULT = "."
 COPY_CODE_BUTTON_DEFAULT = False
 
 
-class AnsiColorStyle(Style):
-    styles = dict(get_style_by_name("friendly").styles)
+class AnsiColorStyle(FriendlyStyle):
+    styles = dict(FriendlyStyle.styles)
     # These are the same colors used in pl-external-grader-result
     ansi_colors = {
         "Black": "#000000",
@@ -233,9 +233,7 @@ def render(element_html, data):
         lexer = NoHighlightingLexer()
 
     formatter_opts = {
-        "style": AnsiColorStyle
-        if language in ("ansi-color", "ansi-terminal", "ansi")
-        else "friendly",
+        "style": AnsiColorStyle,
         "cssclass": "mb-2 rounded",
         "prestyles": "padding: 0.5rem; margin-bottom: 0px",
         "noclasses": True,
