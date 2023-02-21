@@ -9,7 +9,6 @@ import pygments.formatters
 import pygments.lexer
 import pygments.lexers
 import pygments.util
-from pygments.styles import get_style_by_name
 from pygments.styles.friendly import FriendlyStyle
 from pygments.token import Token
 from pygments_ansi_color import color_tokens
