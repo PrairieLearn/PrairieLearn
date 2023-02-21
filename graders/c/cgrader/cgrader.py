@@ -315,12 +315,14 @@ class CGrader:
         def compile_re(t):
             if isinstance(t, re.Pattern):
                 return (t.pattern, t)
+            # If t is not a string, convert it to its string representation
+            t = str(t)
             return (
-                str(t).strip(),
+                t.strip(),
                 re.compile(
-                    "\\s+".join(map(re.escape, re.split("\\s+", str(t))))
+                    "\\s+".join(map(re.escape, re.split("\\s+", t)))
                     if ignore_consec_spaces
-                    else re.escape(str(t)),
+                    else re.escape(t),
                     re.I if ignore_case else 0,
                 ),
             )
