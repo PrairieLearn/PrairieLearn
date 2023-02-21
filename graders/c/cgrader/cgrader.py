@@ -338,9 +338,9 @@ class CGrader:
         outcmp = out
         if highlight_matches and out:
             for _, r in exp_output:
-                out = r.sub(f"\\033[32m\\g<0>\\033[0m", out)
+                out = r.sub(r"\033[32m\g<0>\033[0m", out)
             for _, r in reject_output:
-                out = r.sub(f"\\033[31m\\g<0>\\033[0m", out)
+                out = r.sub(r"\033[31m\g<0>\033[0m", out)
         if not out:
             out = "(NO OUTPUT)"
         elif not out.endswith("\n"):
@@ -355,21 +355,17 @@ class CGrader:
                 else " one of"
             )
             msg = f"Expected{comment}:\n\t" + "\n\t".join(
-                [
-                    f"\033[32m{t}\033[0m"
-                    if highlight_matches and r.search(outcmp)
-                    else t
-                    for t, r in exp_output
-                ]
+                f"\033[32m{t}\033[0m"
+                if highlight_matches and r.search(outcmp) is not None
+                else t
+                for t, r in exp_output
             )
             if reject_output:
                 msg += "\nBut not:\n\t" + "\n\t".join(
-                    [
-                        f"\033[31m{t}\033[0m"
-                        if highlight_matches and r.search(outcmp)
-                        else t
-                        for t, r in reject_output
-                    ]
+                    f"\033[31m{t}\033[0m"
+                    if highlight_matches and r.search(outcmp) is not None
+                    else t
+                    for t, r in reject_output
                 )
         elif msg is None:
             msg = ""
@@ -381,10 +377,10 @@ class CGrader:
             out = out[0:size_limit] + "\nTRUNCATED: Output too long."
             points = False
         elif not (all if must_match_all_outputs else any)(
-            [r.search(outcmp) for _, r in exp_output]
+            r.search(outcmp) is not None for _, r in exp_output
         ):
             points = False
-        elif any([r.search(outcmp) for _, r in reject_output]):
+        elif any(r.search(outcmp) is not None for _, r in reject_output):
             points = False
 
         return self.add_test_result(
@@ -576,4 +572,5 @@ class CPPGrader(CGrader):
         super(CPPGrader, self).__init__(compiler)
 
 
-CGrader().start()
+if __name__ == "__main":
+    CGrader().start()
