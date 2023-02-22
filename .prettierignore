@@ -10,7 +10,7 @@ coverage/
 packages/*/dist
 
 # Built assets
-public/build/scripts/
+public/build/
 
 # The `public/localscripts/calculationQuestion` directory unfortunately
 # contains a mixture of first-party and vendored third-party scripts. We want
