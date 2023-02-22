@@ -23,6 +23,11 @@ WHERE
   gr.assessment_id = $assessment_id
   AND gu.user_id = $user_id;
 
+-- BLOCK get_assessment_group_roles
+SELECT gr.id, gr.role_name
+FROM group_roles AS gr
+WHERE gr.assessment_id = $assessment_id;
+
 -- BLOCK get_group_roles
 SELECT gur.user_id, gur.group_role_id
 FROM 
@@ -30,7 +35,7 @@ FROM
   JOIN groups AS gr ON gur.group_id = gr.id
   JOIN group_configs AS gc ON gc.id = gr.group_config_id
 WHERE
-  gc.assessment_id = $assessment_id
+  gc.assessment_id = $assessment_id;
 
 -- BLOCK select_group_config
 SELECT

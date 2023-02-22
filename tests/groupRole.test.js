@@ -22,8 +22,7 @@ locals.courseDir = path.join(__dirname, '..', 'testCourse');
 
 const storedConfig = {};
 
-// TODO: Figure out a more descriptive title?
-describe('Group based homework assess custom group roles from student side', function () {
+describe('Test group based assessments with custom group roles from student side', function () {
   this.timeout(20000);
   before('set authenticated user', function (callback) {
     storedConfig.authUid = config.authUid;
@@ -48,6 +47,18 @@ describe('Group based homework assess custom group roles from student side', fun
         locals.assessmentUrl = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id;
         locals.instructorAssessmentsUrlGroupTab =
           locals.courseInstanceUrl + '/instructor/assessment/' + locals.assessment_id + '/groups';
+        callback(null);
+      });
+    });
+
+    it('should contain 4 roles for the assessment', function (callback) {
+      const params = {
+        assessment_id: locals.assessment_id,
+      };
+      sqldb.query(sql.get_assessment_group_roles, params, function (err, result) {
+        if (ERR(err, callback)) return;
+        assert.lengthOf(result.rows, 4);
+        locals.groupRoles = result.rows;
         callback(null);
       });
     });
@@ -136,8 +147,8 @@ describe('Group based homework assess custom group roles from student side', fun
         assert.lengthOf(userRoles, 1);
         assert.equal(userRoles[0].role_name, 'Manager');
         locals.currentRoleIds = [userRoles[0].id];
+        callback(null);
       });
-      callback(null);
     });
     it('group role table is visible and has one user in it', function () {
       elemList = locals.$('#role-select-form').find('tr');
@@ -220,8 +231,8 @@ describe('Group based homework assess custom group roles from student side', fun
         if (ERR(err, callback)) return;
         let userRoles = result.rows;
         assert.lengthOf(userRoles, 0);
+        callback(null);
       });
-      callback(null);
     });
     it('should be able to join group', function (callback) {
       var form = {
@@ -256,45 +267,12 @@ describe('Group based homework assess custom group roles from student side', fun
         assert.lengthOf(userRoles, 1);
         assert.equal(userRoles[0].role_name, 'Manager');
         assert.equal(locals.currentRoleIds[0], userRoles[0].id);
+        callback(null);
       });
-      callback(null);
     });
     it('group role table is visible and has one user in it', function () {
       elemList = locals.$('#role-select-form').find('tr');
       assert.lengthOf(elemList, 2);
-    });
-    // TODO: I don't think we need to re-include all of these
-    it('should contain four textboxes per table row', function () {
-      // gets all <input> elems within the second <tr> (the first is a header)
-      elemList = locals.$('#role-select-form').find('tr').eq(1).find('input');
-      assert.lengthOf(elemList, 4);
-    });
-    it('should have only manager role checked in the role table', function () {
-      // gets all <input> elems that are selected
-      elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:checked');
-      assert.lengthOf(elemList, 1);
-
-      elemList = elemList.next(); // look at the <label> just after the <input>
-      assert.equal(elemList.text().trim(), 'Manager');
-      // NOTE: Should we be looking at the html name/id of the <input>? Or is the label text fine?
-    });
-    it('should not be able to start assessment', function () {
-      elemList = locals.$('#start-assessment');
-      assert.isTrue(elemList.is(':disabled'));
-    });
-    it('should display error for too few recorders/reflectors', function () {
-      elemList = locals.$('.alert:contains(Recorder has too few assignments)');
-      assert.lengthOf(elemList, 1);
-      elemList = locals.$('.alert:contains(Reflector has too few assignments)');
-      assert.lengthOf(elemList, 1);
-    });
-    it('should not be able to select the contributor role', function () {
-      elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
-      assert.lengthOf(elemList, 1);
-
-      // Get label of checkbox
-      elemList = elemList.next();
-      assert.equal(elemList.text().trim(), 'Contributor');
     });
   });
 
@@ -366,8 +344,8 @@ describe('Group based homework assess custom group roles from student side', fun
         assert.lengthOf(userRoles, 1);
         assert.equal(userRoles[0].role_name, 'Recorder');
         locals.currentRoleIds = [userRoles[0].role_id];
+        callback(null);
       });
-      callback(null);
     });
     it('group role table is invisible', function () {
       elemList = locals.$('#role-select-form').find('tr');
@@ -453,8 +431,8 @@ describe('Group based homework assess custom group roles from student side', fun
         assert.lengthOf(userRoles, 1);
         assert.equal(userRoles[0].role_name, 'Recorder');
         locals.currentRoleIds = [userRoles[0].role_id];
+        callback(null);
       });
-      callback(null);
     });
     // TODO: Should we add a test to confirm that the other two users' roles are still correct?
   });
@@ -531,8 +509,8 @@ describe('Group based homework assess custom group roles from student side', fun
         assert.lengthOf(userRoles, 1);
         assert.equal(userRoles[0].role_name, 'Contributor');
         locals.currentRoleIds = [userRoles[0].role_id];
+        callback(null);
       });
-      callback(null);
     });
   });
 
@@ -575,7 +553,7 @@ describe('Group based homework assess custom group roles from student side', fun
     });
     it('should edit role table to correct configuration', function () {
       // Uncheck all of the inputs
-      const roleIds = [1, 2, 3, 4];
+      const roleIds = locals.groupRoles.map((role) => role.id);
       const userIds = locals.studentUsers.map((user) => user.user_id);
       for (const roleId of roleIds) {
         for (const userId of userIds) {
@@ -588,21 +566,32 @@ describe('Group based homework assess custom group roles from student side', fun
       elemList = locals.$('#role-select-form').find('tr').find('input:checked');
       assert.lengthOf(elemList, 0);
 
-      // Role IDs: 1 = Manager, 2 = Recorder, 3 = Reflector, 4 = Contributor
-      // Pattern: user_role_<role_id>-<user_id>
-      // TODO: Make sure user IDs match what I'm putting here. Printing it out yields 2, 3, 4, 5
-      let roleUpdates = ['user_role_2-2', 'user_role_3-3', 'user_role_4-4'];
-      roleUpdates.forEach((update) => {
-        locals.$(`#${update}`).attr('checked', '');
-      });
+      // Construct role updates from database info
+      const roleUpdates = locals.groupRoles.map((role, i) => ({
+        roleId: role.id,
+        groupUserId: locals.studentUsers[i].user_id,
+      }));
 
+      // Drop and store the first element here, since we want to test whether Manager is correctly reassigned
+      locals.assignerRoleUpdate = roleUpdates.shift();
+      locals.roleUpdates = roleUpdates;
+      // Mark the checkboxes as checked
+      roleUpdates.forEach(({ roleId, groupUserId }) => {
+        locals.$(`#user_role_${roleId}-${groupUserId}`).attr('checked', '');
+      });
       elemList = locals.$('#role-select-form').find('tr').find('input:checked');
       assert.lengthOf(elemList, 3);
     });
     it('should press submit button to perform the role updates', function (callback) {
+      // Grab IDs of checkboxes to construct update request
+      const checkedElementIds = {};
+      for (let i = 0; i < elemList.length; i++) {
+        checkedElementIds[elemList[i.toString()].attribs.id] = 'on';
+      }
       var form = {
         __action: 'update_group_roles',
         __csrf_token: locals.__csrf_token,
+        ...checkedElementIds,
       };
       request.post(
         { url: locals.assessmentUrl, form: form, followAllRedirects: true },
@@ -635,23 +624,22 @@ describe('Group based homework assess custom group roles from student side', fun
       };
       sqldb.query(sql.get_group_roles, params, function (err, result) {
         if (ERR(err, callback)) return;
-        let expected = [
-          { user_id: '2', group_role_id: '1' },
-          { user_id: '3', group_role_id: '2' },
-          { user_id: '4', group_role_id: '3' },
-          { user_id: '5', group_role_id: '4' },
-        ];
-        console.log('Actual: ', result.rows);
-        console.log('Expected: ', expected);
-        assert.deepEqual(expected, result.rows);
+        // We expect the db to have all role updates, including the assigner role
+        locals.roleUpdates.push(locals.assignerRoleUpdate);
+        const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+          user_id: groupUserId,
+          group_role_id: roleId,
+        }));
+        assert.sameDeepMembers(expected, result.rows);
+        callback(null);
       });
-      callback(null);
     });
     it('should have correct roles checked in the table', function () {
-      let roleUpdates = ['user_role_1-2', 'user_role_2-3', 'user_role_3-4', 'user_role_4-5'];
-      roleUpdates.forEach((update) => {
-        elemList = locals.$('#role-select-form').find(`#${update}`).find('input:checked');
+      locals.roleUpdates.forEach(({ roleId, groupUserId }) => {
+        const elementId = `#user_role_${roleId}-${groupUserId}`;
+        elemList = locals.$('#role-select-form').find(elementId);
         assert.lengthOf(elemList, 1);
+        assert.isDefined(elemList['0'].attribs.checked);
       });
     });
     it('should have no errors displayed', function () {
