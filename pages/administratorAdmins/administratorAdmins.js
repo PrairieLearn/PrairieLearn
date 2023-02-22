@@ -11,7 +11,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const result = await sqldb.queryOneRowAsync(sql.select_admins, []);
+    const result = await sqldb.queryAsync(sql.select_admins, []);
     res.send(AdministratorAdmins({ admins: result.rows, resLocals: res.locals }));
   })
 );
