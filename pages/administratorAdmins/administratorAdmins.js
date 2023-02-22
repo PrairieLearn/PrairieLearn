@@ -1,5 +1,4 @@
 const asyncHandler = require('express-async-handler');
-const _ = require('lodash');
 const express = require('express');
 const sqldb = require('@prairielearn/postgres');
 
@@ -12,9 +11,8 @@ const sql = sqldb.loadSqlEquiv(__filename);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const result = await sqldb.queryOneRowAsync(sql.select, []);
-    _.assign(res.locals, result.rows[0]);
-    res.send(AdministratorAdmins({ resLocals: res.locals }));
+    const result = await sqldb.queryAsync(sql.select_admins, []);
+    res.send(AdministratorAdmins({ admins: result.rows, resLocals: res.locals }));
   })
 );
 

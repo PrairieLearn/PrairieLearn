@@ -7,7 +7,7 @@ const mustache = require('mustache');
 const cheerio = require('cheerio');
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const { instrumented } = require('@prairielearn/opentelemetry');
+const { instrumented, metrics, instrumentedWithMetrics } = require('@prairielearn/opentelemetry');
 const objectHash = require('object-hash');
 
 const schemas = require('../schemas');
@@ -880,7 +880,7 @@ module.exports = {
           fatal: true,
         })
       );
-      return { courseIssues, data, html: '', fileData: Buffer.from('') };
+      return { courseIssues, data, html: '', fileData: Buffer.from(''), renderedElementNames: [] };
     }
 
     let result, output;
@@ -956,55 +956,58 @@ module.exports = {
   },
 
   async processQuestion(phase, codeCaller, data, context) {
-    if (phase === 'generate') {
-      return module.exports.processQuestionServer(
-        phase,
-        codeCaller,
-        data,
-        '',
-        Buffer.from(''),
-        context
-      );
-    } else {
-      const {
-        courseIssues,
-        data: htmlData,
-        html,
-        fileData,
-        renderedElementNames,
-      } = await module.exports.processQuestionHtml(phase, codeCaller, data, context);
-      const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
-      if (hasFatalError) {
-        return {
-          courseIssues,
+    const meter = metrics.getMeter('prairielearn');
+    return instrumentedWithMetrics(meter, `freeform.${phase}`, async () => {
+      if (phase === 'generate') {
+        return module.exports.processQuestionServer(
+          phase,
+          codeCaller,
           data,
+          '',
+          Buffer.from(''),
+          context
+        );
+      } else {
+        const {
+          courseIssues,
+          data: htmlData,
           html,
           fileData,
           renderedElementNames,
+        } = await module.exports.processQuestionHtml(phase, codeCaller, data, context);
+        const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
+        if (hasFatalError) {
+          return {
+            courseIssues,
+            data,
+            html,
+            fileData,
+            renderedElementNames,
+          };
+        }
+        const {
+          courseIssues: serverCourseIssues,
+          data: serverData,
+          html: serverHtml,
+          fileData: serverFileData,
+        } = await module.exports.processQuestionServer(
+          phase,
+          codeCaller,
+          htmlData,
+          html,
+          fileData,
+          context
+        );
+        courseIssues.push(...serverCourseIssues);
+        return {
+          courseIssues,
+          data: serverData,
+          html: serverHtml,
+          fileData: serverFileData,
+          renderedElementNames,
         };
       }
-      const {
-        courseIssues: serverCourseIssues,
-        data: serverData,
-        html: serverHtml,
-        fileData: serverFileData,
-      } = await module.exports.processQuestionServer(
-        phase,
-        codeCaller,
-        htmlData,
-        html,
-        fileData,
-        context
-      );
-      courseIssues.push(...serverCourseIssues);
-      return {
-        courseIssues,
-        data: serverData,
-        html: serverHtml,
-        fileData: serverFileData,
-        renderedElementNames,
-      };
-    }
+    });
   },
 
   /**
