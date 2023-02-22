@@ -572,5 +572,5 @@ class CPPGrader(CGrader):
         super(CPPGrader, self).__init__(compiler)
 
 
-if __name__ == "__main":
+if __name__ == "__main__":
     CGrader().start()
