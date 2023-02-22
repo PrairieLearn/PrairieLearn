@@ -175,24 +175,25 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             atol = pl.get_string_attrib(element, "atol", ATOL_DEFAULT)
             placeholder_text = f"Number (atol={atol}) + Unit"
 
-        # Grading mode must be units fixed at this point,
-        # now can case based on comparison
-        elif comparison is uu.ComparisonType.RELABS:
-            rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
-            atol = pl.get_string_attrib(element, "atol", ATOL_DEFAULT)
-            placeholder_text = f"Number (rtol={rtol}, atol={atol}) + Unit"
-        elif comparison is uu.ComparisonType.EXACT:
-            placeholder_text = "Number (exact) + Unit"
-        elif comparison is uu.ComparisonType.SIGFIG:
-            digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
-            figure_str = "figure" if digits == 1 else "figures"
-            placeholder_text = f"Number ({digits} significant {figure_str}) + Unit"
-        elif comparison is uu.ComparisonType.DECDIG:
-            digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
-            digit_str = "digit" if digits == 1 else "digits"
-            placeholder_text = f"Number ({digits} {digit_str} after decimal) + Unit"
+        elif grading_mode is GradingMode.EXACT_UNITS:
+            if comparison is uu.ComparisonType.RELABS:
+                rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
+                atol = pl.get_string_attrib(element, "atol", ATOL_DEFAULT)
+                placeholder_text = f"Number (rtol={rtol}, atol={atol}) + Unit"
+            elif comparison is uu.ComparisonType.EXACT:
+                placeholder_text = "Number (exact) + Unit"
+            elif comparison is uu.ComparisonType.SIGFIG:
+                digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
+                figure_str = "figure" if digits == 1 else "figures"
+                placeholder_text = f"Number ({digits} significant {figure_str}) + Unit"
+            elif comparison is uu.ComparisonType.DECDIG:
+                digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
+                digit_str = "digit" if digits == 1 else "digits"
+                placeholder_text = f"Number ({digits} {digit_str} after decimal) + Unit"
+            else:
+                assert_never(comparison)
         else:
-            assert_never(comparison)
+            assert_never(grading_mode)
 
         html_params = {
             "question": True,
@@ -229,7 +230,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         }
 
         if parse_error is None and name in data["submitted_answers"]:
-            # Get submitted answer, raising an exception if it does not exist
             a_sub = data["submitted_answers"].get(name, None)
             if a_sub is None:
                 raise ValueError("submitted answer is None")
@@ -243,7 +243,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params["parse_error"] = None
 
         else:
-            # Getting data from submitted answers means that
             submitted_answer = data["raw_submitted_answers"].get(name, None)
             if submitted_answer is not None:
                 html_params["raw_submitted_answer"] = pl.escape_unicode_string(
