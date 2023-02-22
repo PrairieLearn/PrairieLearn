@@ -380,9 +380,7 @@ class CGrader:
             points = False
         elif not (all if must_match_all_outputs else any)(
             r.search(outcmp) is not None for _, r in exp_output
-        ):
-            points = False
-        elif any(r.search(outcmp) is not None for _, r in reject_output):
+        ) or any(r.search(outcmp) is not None for _, r in reject_output):
             points = False
 
         return self.add_test_result(
