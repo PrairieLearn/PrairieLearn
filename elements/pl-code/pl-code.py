@@ -34,7 +34,15 @@ class AnsiColorStyle(FriendlyStyle):
         "Blue": "#0037da",
         "Magenta": "#c930c7",
         "Cyan": "#00c5c7",
-        "White": "#ffffff",
+        "White": "#c7c7c7",
+        "BrightBlack": "#676767",
+        "BrightRed": "#ff6d67",
+        "BrightGreen": "#5ff967",
+        "BrightYellow": "#fefb67",
+        "BrightBlue": "#6871ff",
+        "BrightMagenta": "#ff76ff",
+        "BrightCyan": "#5ffdff",
+        "BrightWhite": "#feffff",
     }
     styles.update(color_tokens(ansi_colors, ansi_colors))
 
