@@ -215,15 +215,8 @@ def render(element_html, data):
             raise ValueError(f'Unknown file path: "{file_path}".')
 
         with open(file_path, "r") as f:
-            code = f.read()
+            code = f.read().removesuffix("\n").removesuffix("\r")
 
-        # Chop off ending newlines
-        if code[:-2] == "\r\n":
-            code = code[:-2]
-        if code[:-1] == "\n":
-            code = code[:-1]
-
-        f.close()
         # Automatically escape code in file source (important for: html/xml).
         code = escape(code)
     else:
@@ -236,11 +229,7 @@ def render(element_html, data):
         #
         # which technically starts with a newline, but we probably
         # don't want a blank line at the start of the code block.
-        code = pl.inner_html(element)
-        if len(code) > 1 and code[0] == "\r" and code[1] == "\n":
-            code = code[2:]
-        elif len(code) > 0 and (code[0] == "\n" or code[0] == "\r"):
-            code = code[1:]
+        code = pl.inner_html(element).removeprefix("\r").removeprefix("\n")
 
     lexer = NoHighlightingLexer() if language is None else get_lexer_by_name(language)
 
