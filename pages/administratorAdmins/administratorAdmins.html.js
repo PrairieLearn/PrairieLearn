@@ -2,7 +2,7 @@
 const { html, escapeHtml } = require('@prairielearn/html');
 const { renderEjs } = require('@prairielearn/html-ejs');
 
-function AdministratorAdmins({ resLocals }) {
+function AdministratorAdmins({ admins, resLocals }) {
   return html`
     <!DOCTYPE html>
     <html>
@@ -59,11 +59,11 @@ function AdministratorAdmins({ resLocals }) {
                 </thead>
 
                 <tbody>
-                  ${resLocals.administrator_users.map(
-                    (administrator_user, i) => html`
+                  ${admins.map(
+                    (admin, i) => html`
                       <tr>
-                        <td class="align-middle">${administrator_user.uid}</td>
-                        <td class="align-middle">${administrator_user.name}</td>
+                        <td class="align-middle">${admin.uid}</td>
+                        <td class="align-middle">${admin.name}</td>
                         <td class="align-middle">
                           <button
                             type="button"
@@ -79,8 +79,8 @@ function AdministratorAdmins({ resLocals }) {
                               AdministratorDeleteForm({
                                 csrfToken: resLocals.__csrf_token,
                                 id: 'administratorDeleteButton' + i,
-                                uid: administrator_user.uid,
-                                userId: administrator_user.user_id,
+                                uid: admin.uid,
+                                userId: admin.user_id,
                               })
                             )}"
                             data-trigger="manual"
