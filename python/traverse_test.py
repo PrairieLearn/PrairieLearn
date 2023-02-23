@@ -8,15 +8,18 @@ def test_traverse_and_execute() -> None:
     text: List[str] = []
     tags: List[str] = []
 
-    def capture_element(element) -> None:
-        if element.text:
-            text.append(element.text)
+    def capture_element(element: slp.Node) -> None:
+        element_text = element.text(deep=False, strip=True)
+
+        if element_text:
+            text.append(element_text)
+
         tags.append(element.tag)
 
     traverse_and_execute("<p><i>Hello</i> <strong>world</strong></p>", capture_element)
 
     assert text == ["Hello", "world"]
-    assert tags == ["p", "i", "strong"]
+    assert tags == ["head", "body", "p", "i", "strong"]
 
 
 def test_traverse_and_replace_text() -> None:

@@ -8,7 +8,6 @@ import time
 from typing import Any, Dict, Literal, Optional, Set, Tuple, TypedDict
 
 import selectolax.parser as slp
-
 from check_data import Phase, check_data
 from traverse import ElementReplacement, traverse_and_execute, traverse_and_replace
 from typing_extensions import assert_never

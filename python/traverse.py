@@ -4,7 +4,6 @@ from collections import deque
 from itertools import chain
 from typing import Callable, Deque, List, Optional, Union
 
-import lxml.html
 import selectolax.parser as slp
 
 ElementReplacement = Union[None, str, slp.Node, List[slp.Node]]
@@ -27,22 +26,6 @@ VOID_ELEMENTS = {
 }
 
 
-# TODO change this to take in SLP nodes instead of lxml elements
-def traverse_and_execute(
-    html: str, fn: Callable[[lxml.html.HtmlElement], None]
-) -> None:
-    elements = lxml.html.fragments_fromstring(html)
-
-    # If there's leading text, the first element of the array will be a string.
-    # We can just discard that.
-    if isinstance(elements[0], str):
-        del elements[0]
-
-    for element in elements:
-        for e in element.iter():
-            fn(e)
-
-
 def get_elements_list(html: str) -> List[slp.Node]:
     parser = slp.HTMLParser(html)
     res = []
@@ -54,6 +37,18 @@ def get_elements_list(html: str) -> List[slp.Node]:
         res.extend(parser.body.iter(include_text=True))
 
     return res
+
+
+def traverse_and_execute(html: str, fn: Callable[[slp.Node], None]) -> None:
+    # elements = get_elements_list(html)
+
+    page = slp.HTMLParser(html)
+
+    if page.head is None:
+        return
+
+    for element in chain(page.head.traverse()):
+        fn(element)
 
 
 def format_attrib_value(v: Optional[str]) -> str:
@@ -158,7 +153,7 @@ if __name__ == "__main__":
     </pl-answer-panel>
     """
 
-    def replace(e: lxml.html.Element) -> str:
+    def replace(e: slp.Node) -> Optional[str]:
         if e.tag == "<pl-integer-input>":
             return "<pl-number-input></pl-number-input>"
         if e.tag == "pl-number-input":
@@ -167,7 +162,7 @@ if __name__ == "__main__":
             return "<div><pl-code></pl-code><pl-code></pl-code></div>"
         if e.tag == "pl-code":
             return "<pre><code>foo</code></pre>"
-        return e
+        return e.html
 
     number = 1000
     total_time = timeit.timeit(
