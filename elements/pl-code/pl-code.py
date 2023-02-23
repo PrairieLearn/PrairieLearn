@@ -232,7 +232,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         #
         # which technically starts with a newline, but we probably
         # don't want a blank line at the start of the code block.
-        code = pl.inner_html(element).removeprefix("\r").removeprefix("\n")
+        code = pl.inner_html(element).removeprefix("\r").removeprefix("\n")  # type: ignore
 
     lexer = NoHighlightingLexer() if language is None else get_lexer_by_name(language)
 
