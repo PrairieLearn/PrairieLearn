@@ -3327,6 +3327,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/express-session@npm:^1.17.6":
+  version: 1.17.6
+  resolution: "@types/express-session@npm:1.17.6"
+  dependencies:
+    "@types/express": "*"
+  checksum: f5f2201d6b9568d8b9319735a4f6806b5ca144cee450274965aec54bc0a0331ba8bfffc1ad5addadf2e625769e13813a48cb5aea5b166fa05f474a12302dbb38
+  languageName: node
+  linkType: hard
+
 "@types/express@npm:*":
   version: 4.17.14
   resolution: "@types/express@npm:4.17.14"
@@ -3767,6 +3776,7 @@ __metadata:
     "@types/cheerio": ^0.22.31
     "@types/diff": ^5.0.2
     "@types/dockerode": ^3.3.14
+    "@types/express-session": ^1.17.6
     "@types/folder-hash": ^4.0.2
     "@types/fs-extra": ^11.0.1
     "@types/jest": ^29.4.0
