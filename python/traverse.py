@@ -7,7 +7,7 @@ from typing import Callable, Deque, List, Optional, Union
 import lxml.html
 import selectolax.parser as slp
 
-ElementReplacement = Optional[Union[str, slp.Node, List[slp.Node]]]
+ElementReplacement = Union[None, str, slp.Node, List[slp.Node]]
 
 # https://developer.mozilla.org/en-US/docs/Glossary/Void_element
 VOID_ELEMENTS = {
@@ -27,6 +27,7 @@ VOID_ELEMENTS = {
 }
 
 
+# TODO change this to take in SLP nodes instead of lxml elements
 def traverse_and_execute(
     html: str, fn: Callable[[lxml.html.HtmlElement], None]
 ) -> None:
@@ -44,13 +45,15 @@ def traverse_and_execute(
 
 def get_elements_list(html: str) -> List[slp.Node]:
     parser = slp.HTMLParser(html)
+    res = []
 
-    return list(
-        chain(
-            parser.head.iter(include_text=True),
-            parser.body.iter(include_text=True),
-        )
-    )
+    if parser.head is not None:
+        res.extend(parser.head.iter(include_text=True))
+
+    if parser.body is not None:
+        res.extend(parser.body.iter(include_text=True))
+
+    return res
 
 
 def format_attrib_value(v: Optional[str]) -> str:
@@ -70,13 +73,12 @@ def get_source_definition(element: slp.Node) -> str:
 
 
 def traverse_and_replace(
-    html: str, replace: Callable[[slp.Node], Union[None, str, slp.Node]]
+    html: str, replace: Callable[[slp.Node], ElementReplacement]
 ) -> str:
-
     # Initialize result and work data structures
-    result: Deque[str] = deque()
+    initial_list = get_elements_list(html)
 
-    initial_list = list(slp.HTMLParser(html).body.iter(include_text=True))
+    result: Deque[str] = deque()
 
     count_stack: Deque[int] = deque([len(initial_list)])
     work_stack: Deque[slp.Node] = deque(reversed(initial_list))
@@ -89,6 +91,9 @@ def traverse_and_replace(
         if element.tag == "-text":
             result.append(codecs.decode(element.raw_value))
         elif element.tag == "_comment":
+            if element.html is None:
+                continue
+
             result.append(element.html)
 
         else:

@@ -1,5 +1,6 @@
 from typing import List
 
+import selectolax.parser as slp
 from traverse import ElementReplacement, traverse_and_execute, traverse_and_replace
 
 
@@ -29,7 +30,7 @@ def test_traverse_and_replace_none() -> None:
 
 
 def test_traverse_and_replace_comment() -> None:
-    def replace(e) -> ElementReplacement:
+    def replace(e: slp.Node) -> ElementReplacement:
         if e.tag == "p":
             return "<!-- Goodbye --><i>world</i>"
         return e
@@ -39,7 +40,7 @@ def test_traverse_and_replace_comment() -> None:
 
 
 def test_traverse_and_replace_comment_nested() -> None:
-    def replace(e) -> ElementReplacement:
+    def replace(e: slp.Node) -> ElementReplacement:
         if e.tag == "span":
             return "<!-- Goodbye --><strong>world</strong>"
         return e
@@ -49,7 +50,7 @@ def test_traverse_and_replace_comment_nested() -> None:
 
 
 def test_traverse_and_replace_comment_with_text() -> None:
-    def replace(e) -> ElementReplacement:
+    def replace(e: slp.Node) -> ElementReplacement:
         return e
 
     html = traverse_and_replace("<div><!-- Hello --> world</div>", replace)
@@ -57,7 +58,7 @@ def test_traverse_and_replace_comment_with_text() -> None:
 
 
 def test_traverse_and_replace_nested_none() -> None:
-    def replace(e) -> ElementReplacement:
+    def replace(e: slp.Node) -> ElementReplacement:
         if e.tag == "strong":
             return None
         return e
@@ -78,7 +79,7 @@ def test_traverse_and_replace_identity() -> None:
 
 
 def test_traverse_and_replace_fragment() -> None:
-    def replace(e) -> ElementReplacement:
+    def replace(e: slp.Node) -> ElementReplacement:
         if e.tag == "p":
             return "<strong>Goodbye</strong>"
         return e
@@ -88,7 +89,7 @@ def test_traverse_and_replace_fragment() -> None:
 
 
 def test_traverse_and_replace_fragments() -> None:
-    def replace(e) -> ElementReplacement:
+    def replace(e: slp.Node) -> ElementReplacement:
         if e.tag == "p":
             return "<strong>Goodbye</strong><strong>Goodbye</strong>"
         return e
@@ -98,7 +99,7 @@ def test_traverse_and_replace_fragments() -> None:
 
 
 def traverse_and_replace_nested() -> None:
-    def replace(e) -> ElementReplacement:
+    def replace(e: slp.Node) -> ElementReplacement:
         if e.tag == "strong":
             return "<em>Goodbye</em>"
         return e
@@ -108,7 +109,7 @@ def traverse_and_replace_nested() -> None:
 
 
 def test_traverse_and_replace_recursive() -> None:
-    def replace(e) -> ElementReplacement:
+    def replace(e: slp.Node) -> ElementReplacement:
         if e.tag == "p":
             return "<strong>Goodbye</strong>"
         elif e.tag == "strong":
@@ -120,7 +121,7 @@ def test_traverse_and_replace_recursive() -> None:
 
 
 def test_traverse_and_replace_nested_trailing_text() -> None:
-    def replace(e) -> ElementReplacement:
+    def replace(e: slp.Node) -> ElementReplacement:
         if e.tag == "strong":
             return "<em>Goodbye</em>"
         return e
@@ -135,7 +136,7 @@ def test_traverse_and_replace_leading_trailing_text() -> None:
 
 
 def test_traverse_and_replace_leading_trailing_recursive() -> None:
-    def replace(e) -> ElementReplacement:
+    def replace(e: slp.Node) -> ElementReplacement:
         if e.tag == "i":
             return "<em>beautiful</em>"
         return e
@@ -145,7 +146,7 @@ def test_traverse_and_replace_leading_trailing_recursive() -> None:
 
 
 def test_traverse_and_replace_leading_trailing_recursive_2() -> None:
-    def replace(e) -> ElementReplacement:
+    def replace(e: slp.Node) -> ElementReplacement:
         if e.tag == "i":
             return "<em>beautiful</em>"
         if e.tag == "em":
@@ -157,7 +158,7 @@ def test_traverse_and_replace_leading_trailing_recursive_2() -> None:
 
 
 def test_traverse_and_replace_leading_trailing_recursive_3() -> None:
-    def replace(e) -> ElementReplacement:
+    def replace(e: slp.Node) -> ElementReplacement:
         if e.tag == "i":
             return "really <em>beautiful</em> green"
         if e.tag == "em":
@@ -169,7 +170,7 @@ def test_traverse_and_replace_leading_trailing_recursive_3() -> None:
 
 
 def test_traverse_and_replace_leading_trailing_recursive_4() -> None:
-    def replace(e) -> ElementReplacement:
+    def replace(e: slp.Node) -> ElementReplacement:
         if e.tag == "i":
             return "really <em>beautiful</em> green"
         if e.tag == "em":
@@ -181,7 +182,7 @@ def test_traverse_and_replace_leading_trailing_recursive_4() -> None:
 
 
 def test_traverse_and_replace_leading_trailing_recursive_5() -> None:
-    def replace(e) -> ElementReplacement:
+    def replace(e: slp.Node) -> ElementReplacement:
         if e.tag == "em":
             return "big"
         if e.tag == "i":
@@ -195,7 +196,7 @@ def test_traverse_and_replace_leading_trailing_recursive_5() -> None:
 
 
 def test_traverse_and_replace_leading_trailing_recursive_6() -> None:
-    def replace(e) -> ElementReplacement:
+    def replace(e: slp.Node) -> ElementReplacement:
         if e.tag == "em":
             return "<strong>big</strong>"
         if e.tag == "i":
@@ -209,7 +210,7 @@ def test_traverse_and_replace_leading_trailing_recursive_6() -> None:
 
 
 def test_traverse_and_replace_leading_trailing_recursive_7() -> None:
-    def replace(e) -> ElementReplacement:
+    def replace(e: slp.Node) -> ElementReplacement:
         if e.tag == "em":
             return "<strong>big</strong>, green,"
         if e.tag == "i":
@@ -223,7 +224,7 @@ def test_traverse_and_replace_leading_trailing_recursive_7() -> None:
 
 
 def test_traverse_and_replace_leading_trailing_recursive_8() -> None:
-    def replace(e) -> ElementReplacement:
+    def replace(e: slp.Node) -> ElementReplacement:
         if e.tag == "em":
             return "green, <strong>big</strong>"
         if e.tag == "i":
@@ -248,7 +249,7 @@ def test_traverse_indentation() -> None:
 
 
 def test_traverse_and_replace_attribute_quotes() -> None:
-    def replace(e) -> ElementReplacement:
+    def replace(e: slp.Node) -> ElementReplacement:
         if e.tag == "span":
             return "<strong attr1='a\"b' attr2=\"a'b\">Goodbye</strong>"
         return e
@@ -261,7 +262,7 @@ def test_traverse_and_replace_attribute_quotes() -> None:
 
 
 def test_traverse_and_replace_attribute_nbsp() -> None:
-    def replace(e) -> ElementReplacement:
+    def replace(e: slp.Node) -> ElementReplacement:
         if e.tag == "div":
             return '<span attr="foo &nbsp; bar">Goodbye</span>'
         return e
@@ -274,7 +275,7 @@ def test_traverse_and_replace_attribute_nbsp() -> None:
 
 
 def test_traverse_and_replace_attribute_ampersand() -> None:
-    def replace(e) -> ElementReplacement:
+    def replace(e: slp.Node) -> ElementReplacement:
         if e.tag == "div":
             return '<span attr="foo & bar">Goodbye</span>'
         return e
@@ -287,7 +288,7 @@ def test_traverse_and_replace_attribute_ampersand() -> None:
 
 
 def test_traverse_and_replace_void_elements() -> None:
-    def replace(e) -> ElementReplacement:
+    def replace(e: slp.Node) -> ElementReplacement:
         return e
 
     html = traverse_and_replace('<div><br><input name="input"></div>', replace)
@@ -295,7 +296,7 @@ def test_traverse_and_replace_void_elements() -> None:
 
 
 def test_traverse_and_replace_angle_brackets() -> None:
-    def replace(e) -> ElementReplacement:
+    def replace(e: slp.Node) -> ElementReplacement:
         if e.tag == "pl-code":
             return "<pre><code>&lt;div&gt;</code></pre>"
         return e

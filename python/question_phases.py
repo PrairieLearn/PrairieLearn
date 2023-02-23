@@ -7,9 +7,10 @@ import sys
 import time
 from typing import Any, Dict, Literal, Optional, Set, Tuple, TypedDict
 
-import lxml.html
+import selectolax.parser as slp
+
 from check_data import Phase, check_data
-from traverse import traverse_and_execute, traverse_and_replace
+from traverse import ElementReplacement, traverse_and_execute, traverse_and_replace
 from typing_extensions import assert_never
 
 PYTHON_PATH = pathlib.Path(__file__).parent.parent.resolve()
@@ -72,16 +73,16 @@ def process(
     # Otherwise, this will remain `None`.
     result = None
 
-    total_time = 0
+    total_time = 0.0
 
-    def process_element(element: lxml.html.HtmlElement) -> Optional[str]:
+    def process_element(element: slp.Node) -> ElementReplacement:
         nonlocal result
 
         if element.tag not in elements:
             return element
 
         try:
-            start = time.time()
+            start = time.perf_counter()
             processed_elements.add(element.tag)
 
             element_info = elements[element.tag]
@@ -106,6 +107,7 @@ def process(
                 sys.path.insert(0, str(pathlib.Path(course_path) / "serverFilesCourse"))
             sys.path.insert(0, str(element_path))
 
+            # TODO this mod dict calls functions based on phase, should be declared using a typed dict somewhere
             mod = {}
             with open(element_controller_path, encoding="utf-8") as inf:
                 # use compile to associate filename with code object, so the
@@ -144,17 +146,18 @@ def process(
 
             # Temporarily strip tail text from the element; the `parse_fragment`
             # function will choke on it.
-            temp_tail = element.tail
-            element.tail = None
+            # temp_tail = element.tail
+            # element.tail = None
 
-            element_value = mod[phase](lxml.html.tostring(element), data)
+            html_value = element.html if element.html is not None else ""
+            element_value = mod[phase](html_value, data)
 
             # Restore the tail text.
-            element.tail = temp_tail
+            # element.tail = temp_tail
 
             check_data(old_data, data, phase)
 
-            end = time.time()
+            end = time.perf_counter()
             delta = end - start
             nonlocal total_time
             total_time += delta
@@ -170,7 +173,7 @@ def process(
         except Exception:
             raise Exception(f"Error processing element {element.tag}")
 
-    def process_element_return_none(element: lxml.html.HtmlElement) -> None:
+    def process_element_return_none(element: slp.Node) -> None:
         process_element(element)
 
     if phase == "render":
