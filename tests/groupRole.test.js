@@ -70,18 +70,17 @@ describe('Test group based assessments with custom group roles from student side
         if (ERR(err, callback)) return;
         assert.lengthOf(result.rows, 5);
         locals.studentUsers = result.rows.slice(0, 4);
-        // locals.studentUserNotGrouped = result.rows[3];
-        // locals.studentUserInDiffGroup = result.rows[4];
         locals.groupCreator = locals.studentUsers[0];
         assert.lengthOf(locals.studentUsers, 4);
-
-        // switch user to the group creator
-        config.authUid = locals.groupCreator.uid;
-        config.authName = locals.groupCreator.name;
-        config.authUin = '00000001';
-        config.userId = locals.groupCreator.user_id;
         callback(null);
       });
+    });
+
+    it('should switch current user to the group creator', function () {
+      config.authUid = locals.groupCreator.uid;
+      config.authName = locals.groupCreator.name;
+      config.authUin = '00000001';
+      config.userId = locals.groupCreator.user_id;
     });
   });
 
@@ -131,6 +130,7 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   describe('4. the group information after 1 user join the group', function () {
+    // FIXME: (Cale) I don't think we need this join code test
     it('should contain the 4-character join code', function () {
       elemList = locals.$('#join-code');
       locals.joinCode = elemList.text();
@@ -277,13 +277,12 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   describe('6. the second user can join the group using code', function () {
-    it('should be able to switch user', function (callback) {
+    it('should be able to switch user', function () {
       let student = locals.studentUsers[1];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000002';
       config.userId = student.user_id;
-      callback(null);
     });
     it('should load assessment page successfully', function (callback) {
       request(locals.assessmentUrl, function (error, response, body) {
@@ -347,7 +346,7 @@ describe('Test group based assessments with custom group roles from student side
         callback(null);
       });
     });
-    it('group role table is invisible', function () {
+    it('should not render the group role table', function () {
       elemList = locals.$('#role-select-form').find('tr');
       assert.lengthOf(elemList, 0);
     });
@@ -416,8 +415,13 @@ describe('Test group based assessments with custom group roles from student side
       elemList = locals.$('#start-assessment');
       assert.isTrue(elemList.is(':disabled'));
     });
-    it('group role table is invisible', function () {
+    it('should not render the group role table', function () {
       elemList = locals.$('#role-select-form').find('tr');
+      assert.lengthOf(elemList, 0);
+    });
+    it('should display error for too few reflectors', function () {
+      // FIXME: Same as above. We should make errors visible to everyone
+      elemList = locals.$('.alert:contains(Reflector has too few assignments)');
       assert.lengthOf(elemList, 0);
     });
     it('should have user set to recorder role in the database', function (callback) {
@@ -494,7 +498,12 @@ describe('Test group based assessments with custom group roles from student side
       elemList = locals.$('#start-assessment');
       assert.isTrue(elemList.is(':disabled'));
     });
-    it('group role table is invisible', function () {
+    it('should display error for too few reflectors', function () {
+      // FIXME: Same as above. We should make errors visible to everyone
+      elemList = locals.$('.alert:contains(Reflector has too few assignments)');
+      assert.lengthOf(elemList, 0);
+    });
+    it('should not render the group role table', function () {
       elemList = locals.$('#role-select-form').find('tr');
       assert.lengthOf(elemList, 0);
     });
@@ -567,6 +576,8 @@ describe('Test group based assessments with custom group roles from student side
       assert.lengthOf(elemList, 0);
 
       // Construct role updates from database info
+      // FIXME: (Cale) This is really clean but not sure how extensible it is to other tests.
+      // I get that we don't want to necessarily hard-code in the role/user IDs for each config...
       const roleUpdates = locals.groupRoles.map((role, i) => ({
         roleId: role.id,
         groupUserId: locals.studentUsers[i].user_id,
@@ -635,6 +646,9 @@ describe('Test group based assessments with custom group roles from student side
       });
     });
     it('should have correct roles checked in the table', function () {
+      elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+      assert.lengthOf(elemList, 4);
+
       locals.roleUpdates.forEach(({ roleId, groupUserId }) => {
         const elementId = `#user_role_${roleId}-${groupUserId}`;
         elemList = locals.$('#role-select-form').find(elementId);
@@ -652,18 +666,343 @@ describe('Test group based assessments with custom group roles from student side
       elemList = locals.$('#start-assessment');
       assert.isFalse(elemList.is(':disabled'));
     });
+    it('should be able to select the contributor role', function () {
+      elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
+      assert.lengthOf(elemList, 0);
+    });
   });
 
-  describe('14. the role assigner cannot re-assign roles past a role maximum', function () {
-    // TODO: implement
+  describe('14. invalid role configuration - too many students in one role', function () {
+    it('should edit role table to correct configuration', function () {
+      // Uncheck all of the inputs
+      const roleIds = locals.groupRoles.map((role) => role.id);
+      const userIds = locals.studentUsers.map((user) => user.user_id);
+      for (const roleId of roleIds) {
+        for (const userId of userIds) {
+          const elementId = `#user_role_${roleId}-${userId}`;
+          locals.$('#role-select-form').find(elementId).attr('checked', null);
+        }
+      }
+      elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+      assert.lengthOf(elemList, 0);
+
+      // [Manager, Recorder, Recorder, Reflector]
+      const roleUpdates = ['1', '2', '2', '3'].map((role_id, i) => ({
+        roleId: role_id,
+        groupUserId: locals.studentUsers[i].user_id,
+      }));
+      locals.roleUpdates = roleUpdates;
+
+      // Mark the checkboxes as checked
+      roleUpdates.forEach(({ roleId, groupUserId }) => {
+        locals.$(`#user_role_${roleId}-${groupUserId}`).attr('checked', '');
+      });
+      elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+      assert.lengthOf(elemList, 4);
+    });
+    it('should press submit button to perform the role updates', function (callback) {
+      // Grab IDs of checkboxes to construct update request
+      const checkedElementIds = {};
+      for (let i = 0; i < elemList.length; i++) {
+        checkedElementIds[elemList[i.toString()].attribs.id] = 'on';
+      }
+      var form = {
+        __action: 'update_group_roles',
+        __csrf_token: locals.__csrf_token,
+        ...checkedElementIds,
+      };
+      request.post(
+        { url: locals.assessmentUrl, form: form, followAllRedirects: true },
+        function (error, response, body) {
+          if (ERR(error, callback)) return;
+          if (response.statusCode !== 200) {
+            return callback(new Error('bad status: ' + response.statusCode));
+          }
+          page = body;
+          callback(null);
+        }
+      );
+    });
+    it('should reload assessment page successfully', function (callback) {
+      request(locals.assessmentUrl, function (error, response, body) {
+        if (ERR(error, callback)) return;
+        if (response.statusCode !== 200) {
+          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
+        }
+        page = body;
+        callback(null);
+      });
+    });
+    it('should parse', function () {
+      locals.$ = cheerio.load(page);
+    });
+    it('should have correct role configuration in the database', function (callback) {
+      var params = {
+        assessment_id: locals.assessment_id,
+      };
+      sqldb.query(sql.get_group_roles, params, function (err, result) {
+        if (ERR(err, callback)) return;
+        const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+          user_id: groupUserId,
+          group_role_id: roleId,
+        }));
+        assert.sameDeepMembers(expected, result.rows);
+        callback(null);
+      });
+    });
+    it('should have correct roles checked in the table', function () {
+      elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+      assert.lengthOf(elemList, 4);
+
+      locals.roleUpdates.forEach(({ roleId, groupUserId }) => {
+        const elementId = `#user_role_${roleId}-${groupUserId}`;
+        elemList = locals.$('#role-select-form').find(elementId);
+        assert.lengthOf(elemList, 1);
+        assert.isDefined(elemList['0'].attribs.checked);
+      });
+    });
+    it('should display error for too many recorders', function () {
+      elemList = locals.$('.alert:contains(Recorder has too many assignments)');
+      assert.lengthOf(elemList, 1);
+    });
   });
 
-  describe('15. non-required roles are dropped when user leaves group', function () {
-    // TODO: implement
+  describe('15. invalid role configuration - one student has too many roles', function () {
+    it('should edit role table to correct configuration', function () {
+      // Uncheck all of the inputs
+      const roleIds = locals.groupRoles.map((role) => role.id);
+      const userIds = locals.studentUsers.map((user) => user.user_id);
+      for (const roleId of roleIds) {
+        for (const userId of userIds) {
+          const elementId = `#user_role_${roleId}-${userId}`;
+          locals.$('#role-select-form').find(elementId).attr('checked', null);
+        }
+      }
+      elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+      assert.lengthOf(elemList, 0);
+
+      // [P1: Manager, P2: Recorder, P3: Reflector, P4: Contributor]
+      let roleUpdates = locals.groupRoles.map((role, i) => ({
+        roleId: role.id,
+        groupUserId: locals.studentUsers[i].user_id,
+      }));
+      // Give P1 the Contributor role also
+      roleUpdates.push({
+        roleId: locals.groupRoles[3].id,
+        groupUserId: locals.studentUsers[0].user_id,
+      });
+      locals.roleUpdates = roleUpdates;
+
+      // Mark the checkboxes as checked
+      roleUpdates.forEach(({ roleId, groupUserId }) => {
+        locals.$(`#user_role_${roleId}-${groupUserId}`).attr('checked', '');
+      });
+      elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+      assert.lengthOf(elemList, 5);
+    });
+    it('should press submit button to perform the role updates', function (callback) {
+      // Grab IDs of checkboxes to construct update request
+      const checkedElementIds = {};
+      for (let i = 0; i < elemList.length; i++) {
+        checkedElementIds[elemList[i.toString()].attribs.id] = 'on';
+      }
+      var form = {
+        __action: 'update_group_roles',
+        __csrf_token: locals.__csrf_token,
+        ...checkedElementIds,
+      };
+      request.post(
+        { url: locals.assessmentUrl, form: form, followAllRedirects: true },
+        function (error, response, body) {
+          if (ERR(error, callback)) return;
+          if (response.statusCode !== 200) {
+            return callback(new Error('bad status: ' + response.statusCode));
+          }
+          page = body;
+          callback(null);
+        }
+      );
+    });
+    it('should reload assessment page successfully', function (callback) {
+      request(locals.assessmentUrl, function (error, response, body) {
+        if (ERR(error, callback)) return;
+        if (response.statusCode !== 200) {
+          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
+        }
+        page = body;
+        callback(null);
+      });
+    });
+    it('should parse', function () {
+      locals.$ = cheerio.load(page);
+    });
+    it('should have correct role configuration in the database', function (callback) {
+      var params = {
+        assessment_id: locals.assessment_id,
+      };
+      sqldb.query(sql.get_group_roles, params, function (err, result) {
+        if (ERR(err, callback)) return;
+        const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+          user_id: groupUserId,
+          group_role_id: roleId,
+        }));
+        assert.sameDeepMembers(expected, result.rows);
+        callback(null);
+      });
+    });
+    it('should have correct roles checked in the table', function () {
+      elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+      assert.lengthOf(elemList, 5);
+
+      locals.roleUpdates.forEach(({ roleId, groupUserId }) => {
+        const elementId = `#user_role_${roleId}-${groupUserId}`;
+        elemList = locals.$('#role-select-form').find(elementId);
+        assert.lengthOf(elemList, 1);
+        assert.isDefined(elemList['0'].attribs.checked);
+      });
+    });
+    it('should display error for a student having too many roles', function () {
+      elemList = locals.$('.alert:contains(too many roles)');
+      assert.lengthOf(elemList, 1);
+    });
+    it('should not be able to start assessment', function () {
+      elemList = locals.$('#start-assessment');
+      assert.isTrue(elemList.is(':disabled'));
+    });
+  });
+
+  describe('16. switch to the fourth user and leave the group', function () {
+    it('should be able to switch user', function (callback) {
+      let student = locals.studentUsers[3];
+      config.authUid = student.uid;
+      config.authName = student.name;
+      config.authUin = '00000004';
+      config.userId = student.user_id;
+      callback(null);
+    });
+    it('should load assessment page successfully', function (callback) {
+      request(locals.assessmentUrl, function (error, response, body) {
+        if (ERR(error, callback)) return;
+        if (response.statusCode !== 200) {
+          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
+        }
+        page = body;
+        callback(null);
+      });
+    });
+    it('should parse', function () {
+      locals.$ = cheerio.load(page);
+    });
+    it('should have a CSRF token', function () {
+      elemList = locals.$('form input[name="__csrf_token"]');
+      assert.lengthOf(elemList, 1); // TODO: (Cale) I changed this from 2 to 1. Why was it breaking with 2?
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.__csrf_token = elemList[0].attribs.value;
+      assert.isString(locals.__csrf_token);
+    });
+    it('should be able to leave the group', function (callback) {
+      var form = {
+        __action: 'leave_group',
+        __csrf_token: locals.__csrf_token,
+      };
+      request.post(
+        {
+          url: locals.assessmentUrl,
+          form: form,
+          followAllRedirects: true,
+        },
+        function (error, response, body) {
+          if (ERR(error, callback)) return;
+          if (response.statusCode !== 200) {
+            return callback(new Error('bad status: ' + response.statusCode));
+          }
+          page = body;
+          callback(null);
+        }
+      );
+    });
+    it('should parse', function () {
+      locals.$ = cheerio.load(page);
+    });
+    it('should update locals with roles updates', function () {
+      // TODO: Should we find a way to not hard-code this in?
+      locals.roleUpdates = [
+        { roleId: '1', groupUserId: '2' },
+        { roleId: '2', groupUserId: '3' },
+        { roleId: '3', groupUserId: '4' },
+      ];
+    });
+  });
+
+  describe('17. switch back to the first user', function () {
+    it('should be able to switch user', function (callback) {
+      let student = locals.studentUsers[0];
+      config.authUid = student.uid;
+      config.authName = student.name;
+      config.authUin = '00000001';
+      config.userId = student.user_id;
+      callback(null);
+    });
+    it('should load assessment page successfully', function (callback) {
+      request(locals.assessmentUrl, function (error, response, body) {
+        if (ERR(error, callback)) return;
+        if (response.statusCode !== 200) {
+          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
+        }
+        page = body;
+        callback(null);
+      });
+    });
+    it('should parse', function () {
+      locals.$ = cheerio.load(page);
+    });
+    it('should have a CSRF token', function () {
+      elemList = locals.$('form input[name="__csrf_token"]');
+      assert.lengthOf(elemList, 3);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.__csrf_token = elemList[0].attribs.value;
+      assert.isString(locals.__csrf_token);
+    });
+  });
+
+  describe('18. non-required roles are dropped when user leaves group', function () {
+    // Current config: [P1: Manager/Contributor, P2: Recorder, P3: Reflector, P4: Contributor]
+    // P4 (the Contributor) leaves
+    // Desired config: [P1: Manager, P2: Recorder, P3: Reflector]
+    // The Contributor role does not get reassigned, and other Contributors lose their role.
+    it('should have correct role configuration in the database', function (callback) {
+      var params = {
+        assessment_id: locals.assessment_id,
+      };
+      sqldb.query(sql.get_group_roles, params, function (err, result) {
+        if (ERR(err, callback)) return;
+        const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+          user_id: groupUserId,
+          group_role_id: roleId,
+        }));
+        assert.sameDeepMembers(expected, result.rows);
+        callback(null);
+      });
+    });
+    it('should have correct roles checked in the table', function () {
+      elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+      assert.lengthOf(elemList, 3);
+
+      locals.roleUpdates.forEach(({ roleId, groupUserId }) => {
+        const elementId = `#user_role_${roleId}-${groupUserId}`;
+        elemList = locals.$('#role-select-form').find(elementId);
+        assert.lengthOf(elemList, 1);
+        assert.isDefined(elemList['0'].attribs.checked);
+      });
+    });
   });
 
   describe('16. required roles are reorganized when user leaves group', function () {
     // TODO: implement
+    // P4 rejoins
+    // Config: [P1: Manager, P2: Recorder, P3: Reflector, P4: Contributor]
+    // P3 leaves
+    // Config: [P1: Manager, P2: Recorder, P4: Reflector]
   });
 
   describe('17. assessments without roles do not show the role selection table', function () {
