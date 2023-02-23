@@ -32,8 +32,8 @@ WHERE
 -- BLOCK clear
 TRUNCATE pl_sessions;
 
--- BLOCK allsessions
-SELECT *
+-- BLOCK all_sessions
+SELECT session
 FROM pl_sessions
 WHERE
     EXTRACT(EPOCH FROM (now() - updated_at)) < $expirationInSeconds
