@@ -59,6 +59,7 @@ skip_glob = ["tools/*", "node_modules/*"]
 [tool.pyright]
 include = [
     "./elements/pl-big-o-input",
+    "./elements/pl-code",
     "./elements/pl-dataframe",
     "./elements/pl-external-grader-variables",
     "./elements/pl-file-preview",

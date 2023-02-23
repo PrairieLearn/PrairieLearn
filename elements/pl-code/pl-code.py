@@ -1,5 +1,6 @@
 import os
 from html import escape, unescape
+from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, Type
 
 import chevron
 import lxml.html
@@ -50,11 +51,11 @@ class NoHighlightingLexer(pygments.lexer.Lexer):
     want to run it through the highlighter for styling and code escaping.
     """
 
-    def __init__(self, **options):
+    def __init__(self, **options: Dict[str, Any]) -> None:
         pygments.lexer.Lexer.__init__(self, **options)
         self.compress = options.get("compress", "")
 
-    def get_tokens_unprocessed(self, text):
+    def get_tokens_unprocessed(self, text: str) -> List[Tuple[int, Type, str]]:
         return [(0, Token.Text, text)]
 
 
@@ -64,11 +65,13 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
     with highlighted lines.
     """
 
-    def __init__(self, **options):
+    def __init__(self, **options: Dict[str, Any]) -> None:
         pygments.formatters.HtmlFormatter.__init__(self, **options)
         self.hl_color = options.get("hl_color", HIGHLIGHT_LINES_COLOR_DEFAULT)
 
-    def _highlight_lines(self, tokensource):
+    def _highlight_lines(
+        self, tokensource: Iterable[Tuple[int, str]]
+    ) -> Generator[Tuple[int, str], None, None]:
         """
         Highlighted the lines specified in the `hl_lines` option by post-processing the token stream.
         Based on the code at "https://github.com/pygments/pygments/blob/master/pygments/formatters/html.py#L816"
@@ -82,7 +85,7 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
                 yield 1, value
 
 
-def parse_highlight_lines(highlight_lines):
+def parse_highlight_lines(highlight_lines: str) -> Optional[List[int]]:
     """
     Parses a string like "1", "1-4", "1-3,5,7-8" into a list of lines like
     [1], [1,2,3,4], and [1,2,3,5,7,8]
@@ -102,14 +105,14 @@ def parse_highlight_lines(highlight_lines):
             try:
                 start = int(numbers[0])
                 end = int(numbers[1])
-                for i in range(start, end + 1):
-                    lines.append(i)
+                lines.extend(range(start, end + 1))
+
             except ValueError:
                 return None
     return lines
 
 
-def get_lexer_by_name(name):
+def get_lexer_by_name(name: str) -> Optional[pygments.lexer.Lexer]:
     """
     Tries to find a lexer by both its proper name and any aliases it has.
     """
@@ -128,7 +131,7 @@ def get_lexer_by_name(name):
             return None
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = []
     optional_attribs = [
@@ -181,7 +184,7 @@ def prepare(element_html, data):
             )
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     language = pl.get_string_attrib(element, "language", LANGUAGE_DEFAULT)
     style = pl.get_string_attrib(element, "style", STYLE_DEFAULT)
@@ -235,7 +238,7 @@ def render(element_html, data):
 
     pygments_style = get_style_by_name(style)
 
-    class CustomStyleWithAnsiColors(pygments_style):
+    class CustomStyleWithAnsiColors(pygments_style):  # type: ignore
         styles = dict(pygments_style.styles)
         styles.update(color_tokens(ANSI_COLORS, ANSI_COLORS))
 
