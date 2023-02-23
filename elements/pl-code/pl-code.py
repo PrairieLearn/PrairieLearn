@@ -24,7 +24,7 @@ DIRECTORY_DEFAULT = "."
 COPY_CODE_BUTTON_DEFAULT = False
 
 # These are the same colors used in pl-external-grader-result
-ansi_colors = {
+ANSI_COLORS = {
     "Black": "#000000",
     "Red": "#c91b00",
     "Green": "#00c200",
@@ -151,15 +151,14 @@ def prepare(element_html, data):
             allowed_languages = map(
                 lambda tup: tup[1][0], pygments.lexers.get_all_lexers()
             )
-            raise Exception(
+            raise KeyError(
                 f'Unknown language: "{language}". Must be one of {", ".join(allowed_languages)}'
             )
 
     style = pl.get_string_attrib(element, "style", STYLE_DEFAULT)
-    pygments_style = get_style_by_name(style)
-    if pygments_style is None:
-        allowed_styles = STYLE_MAP.keys()
-        raise Exception(
+    allowed_styles = STYLE_MAP.keys()
+    if style not in allowed_styles:
+        raise KeyError(
             f'Unknown style: "{style}". Must be one of {", ".join(allowed_styles)}'
         )
 
@@ -168,7 +167,7 @@ def prepare(element_html, data):
     )
     if source_file_name is not None:
         if element.text is not None and not str(element.text).isspace():
-            raise Exception(
+            raise ValueError(
                 'Existing code cannot be added inside html element when "source-file-name" attribute is used.'
             )
 
@@ -177,7 +176,7 @@ def prepare(element_html, data):
     )
     if highlight_lines is not None:
         if parse_highlight_lines(highlight_lines) is None:
-            raise Exception(
+            raise ValueError(
                 "Could not parse highlight-lines attribute; check your syntax"
             )
 
@@ -213,7 +212,7 @@ def render(element_html, data):
             base_path = os.path.join(data["options"]["question_path"], directory)
         file_path = os.path.join(base_path, source_file_name)
         if not os.path.exists(file_path):
-            raise Exception(f'Unknown file path: "{file_path}".')
+            raise ValueError(f'Unknown file path: "{file_path}".')
 
         with open(file_path, "r") as f:
             code = f.read()
@@ -249,7 +248,7 @@ def render(element_html, data):
 
     class CustomStyleWithAnsiColors(pygments_style):
         styles = dict(pygments_style.styles)
-        styles.update(color_tokens(ansi_colors, ansi_colors))
+        styles.update(color_tokens(ANSI_COLORS, ANSI_COLORS))
 
     formatter_opts = {
         "style": CustomStyleWithAnsiColors,
