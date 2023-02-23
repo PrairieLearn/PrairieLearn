@@ -9,11 +9,12 @@ import pygments.formatters
 import pygments.lexer
 import pygments.lexers
 import pygments.util
-from pygments.styles.friendly import FriendlyStyle
+from pygments.styles import STYLE_MAP, get_style_by_name
 from pygments.token import Token
 from pygments_ansi_color import color_tokens
 
 LANGUAGE_DEFAULT = None
+STYLE_DEFAULT = "friendly"
 NO_HIGHLIGHT_DEFAULT = False
 SOURCE_FILE_NAME_DEFAULT = None
 PREVENT_SELECT_DEFAULT = False
@@ -22,29 +23,25 @@ HIGHLIGHT_LINES_COLOR_DEFAULT = "#b3d7ff"
 DIRECTORY_DEFAULT = "."
 COPY_CODE_BUTTON_DEFAULT = False
 
-
-class AnsiColorStyle(FriendlyStyle):
-    styles = dict(FriendlyStyle.styles)
-    # These are the same colors used in pl-external-grader-result
-    ansi_colors = {
-        "Black": "#000000",
-        "Red": "#c91b00",
-        "Green": "#00c200",
-        "Yellow": "#c7c400",
-        "Blue": "#0037da",
-        "Magenta": "#c930c7",
-        "Cyan": "#00c5c7",
-        "White": "#c7c7c7",
-        "BrightBlack": "#676767",
-        "BrightRed": "#ff6d67",
-        "BrightGreen": "#5ff967",
-        "BrightYellow": "#fefb67",
-        "BrightBlue": "#6871ff",
-        "BrightMagenta": "#ff76ff",
-        "BrightCyan": "#5ffdff",
-        "BrightWhite": "#feffff",
-    }
-    styles.update(color_tokens(ansi_colors, ansi_colors))
+# These are the same colors used in pl-external-grader-result
+ansi_colors = {
+    "Black": "#000000",
+    "Red": "#c91b00",
+    "Green": "#00c200",
+    "Yellow": "#c7c400",
+    "Blue": "#0037da",
+    "Magenta": "#c930c7",
+    "Cyan": "#00c5c7",
+    "White": "#c7c7c7",
+    "BrightBlack": "#676767",
+    "BrightRed": "#ff6d67",
+    "BrightGreen": "#5ff967",
+    "BrightYellow": "#fefb67",
+    "BrightBlue": "#6871ff",
+    "BrightMagenta": "#ff76ff",
+    "BrightCyan": "#5ffdff",
+    "BrightWhite": "#feffff",
+}
 
 
 class NoHighlightingLexer(pygments.lexer.Lexer):
@@ -143,6 +140,7 @@ def prepare(element_html, data):
         "highlight-lines",
         "highlight-lines-color",
         "copy-code-button",
+        "style",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -156,6 +154,14 @@ def prepare(element_html, data):
             raise Exception(
                 f'Unknown language: "{language}". Must be one of {", ".join(allowed_languages)}'
             )
+
+    style = pl.get_string_attrib(element, "style", STYLE_DEFAULT)
+    pygments_style = get_style_by_name(style)
+    if pygments_style is None:
+        allowed_styles = STYLE_MAP.keys()
+        raise Exception(
+            f'Unknown style: "{style}". Must be one of {", ".join(allowed_styles)}'
+        )
 
     source_file_name = pl.get_string_attrib(
         element, "source-file-name", SOURCE_FILE_NAME_DEFAULT
@@ -179,6 +185,7 @@ def prepare(element_html, data):
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     language = pl.get_string_attrib(element, "language", LANGUAGE_DEFAULT)
+    style = pl.get_string_attrib(element, "style", STYLE_DEFAULT)
     no_highlight = pl.get_boolean_attrib(element, "no-highlight", NO_HIGHLIGHT_DEFAULT)
     specify_language = (language is not None) and (not no_highlight)
     source_file_name = pl.get_string_attrib(
@@ -239,8 +246,14 @@ def render(element_html, data):
     else:
         lexer = NoHighlightingLexer()
 
+    pygments_style = get_style_by_name(style)
+
+    class CustomStyleWithAnsiColors(pygments_style):
+        styles = dict(pygments_style.styles)
+        styles.update(color_tokens(ansi_colors, ansi_colors))
+
     formatter_opts = {
-        "style": AnsiColorStyle,
+        "style": CustomStyleWithAnsiColors,
         "cssclass": "mb-2 rounded",
         "prestyles": "padding: 0.5rem; margin-bottom: 0px",
         "noclasses": True,
@@ -254,7 +267,6 @@ def render(element_html, data):
 
     html_params = {
         "uuid": pl.get_uuid(),
-        "no_highlight": no_highlight,
         "code": code,
         "prevent_select": prevent_select,
         "copy_code_button": pl.get_boolean_attrib(
