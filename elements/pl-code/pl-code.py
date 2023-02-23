@@ -218,7 +218,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             raise ValueError(f'Unknown file path: "{file_path}".')
 
         with open(file_path, "r") as f:
-            code = f.read().removesuffix("\n").removesuffix("\r")  # type: ignore
+            code = f.read().removesuffix("\n").removesuffix("\r")
 
         # Automatically escape code in file source (important for: html/xml).
         code = escape(code)
@@ -232,7 +232,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         #
         # which technically starts with a newline, but we probably
         # don't want a blank line at the start of the code block.
-        code = pl.inner_html(element).removeprefix("\r").removeprefix("\n")  # type: ignore
+        code = pl.inner_html(element).removeprefix("\r").removeprefix("\n")
 
     lexer = NoHighlightingLexer() if language is None else get_lexer_by_name(language)
 
