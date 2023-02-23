@@ -218,7 +218,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             raise ValueError(f'Unknown file path: "{file_path}".')
 
         with open(file_path, "r") as f:
-            code = f.read().removesuffix("\n").removesuffix("\r")
+            code = f.read().removesuffix("\n").removesuffix("\r")  # type: ignore
 
         # Automatically escape code in file source (important for: html/xml).
         code = escape(code)
