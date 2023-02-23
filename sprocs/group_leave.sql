@@ -101,6 +101,14 @@ BEGIN
                         END IF;
                 END IF;
             END LOOP;
+
+            -- Make sure no users are left with non-required roles
+            DELETE FROM group_user_roles gur
+            WHERE group_id = arg_group_id AND group_role_id IN (
+                SELECT id
+                FROM group_roles
+                WHERE assessment_id = arg_assessment_id AND minimum = 0
+            );
         END IF;
     END IF;
 
