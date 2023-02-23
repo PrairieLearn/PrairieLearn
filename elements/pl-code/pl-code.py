@@ -133,7 +133,7 @@ def prepare(element_html, data):
     required_attribs = []
     optional_attribs = [
         "language",
-        "no-highlight",
+        "no-highlight",  # Deprecated, accepted for backwards compatibility
         "source-file-name",
         "directory",
         "prevent-select",
@@ -186,8 +186,6 @@ def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     language = pl.get_string_attrib(element, "language", LANGUAGE_DEFAULT)
     style = pl.get_string_attrib(element, "style", STYLE_DEFAULT)
-    no_highlight = pl.get_boolean_attrib(element, "no-highlight", NO_HIGHLIGHT_DEFAULT)
-    specify_language = (language is not None) and (not no_highlight)
     source_file_name = pl.get_string_attrib(
         element, "source-file-name", SOURCE_FILE_NAME_DEFAULT
     )
@@ -201,6 +199,10 @@ def render(element_html, data):
     highlight_lines_color = pl.get_string_attrib(
         element, "highlight-lines-color", HIGHLIGHT_LINES_COLOR_DEFAULT
     )
+
+    # The no-highlight option is deprecated, but supported for backwards compatibility
+    if pl.get_boolean_attrib(element, "no-highlight", NO_HIGHLIGHT_DEFAULT):
+        language = None
 
     if source_file_name is not None:
         if directory == "serverFilesCourse":
@@ -241,10 +243,7 @@ def render(element_html, data):
         elif len(code) > 0 and (code[0] == "\n" or code[0] == "\r"):
             code = code[1:]
 
-    if specify_language:
-        lexer = get_lexer_by_name(language)
-    else:
-        lexer = NoHighlightingLexer()
+    lexer = NoHighlightingLexer() if language is None else get_lexer_by_name(language)
 
     pygments_style = get_style_by_name(style)
 
