@@ -1670,6 +1670,10 @@ module.exports.initExpress = function () {
     require('./pages/administratorNetworks/administratorNetworks')
   );
   app.use(
+    '/pl/administrator/workspaces',
+    require('./pages/administratorWorkspaces/administratorWorkspaces')
+  );
+  app.use(
     '/pl/administrator/queries',
     require('./pages/administratorQueries/administratorQueries')
   );
@@ -1859,6 +1863,21 @@ if (config.startServer) {
           ...config,
           serviceName: 'prairielearn',
         });
+
+        // Start capturing CPU and memory profiles as soon as possible.
+        if (config.pyroscopeEnabled) {
+          const Pyroscope = require('@pyroscope/nodejs');
+          Pyroscope.init({
+            appName: 'prairielearn',
+            serverAddress: config.pyroscopeServerAddress,
+            authToken: config.pyroscopeAuthToken,
+            tags: {
+              instanceId: config.instanceId,
+              ...(config.pyroscopeTags ?? {}),
+            },
+          });
+          Pyroscope.start();
+        }
 
         // Same with Sentry configuration.
         if (config.sentryDsn) {
