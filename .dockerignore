@@ -39,6 +39,7 @@
 !packages/
 !prairielib/
 !public/
+public/build/
 !python/
 !question-servers/
 !requirements.txt
