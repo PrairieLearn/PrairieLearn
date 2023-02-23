@@ -1,6 +1,6 @@
 import os
 from html import escape, unescape
-from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple, Type
+from typing import Any, Generator, Iterable, Optional, Type
 
 import chevron
 import lxml.html
@@ -51,11 +51,11 @@ class NoHighlightingLexer(pygments.lexer.Lexer):
     want to run it through the highlighter for styling and code escaping.
     """
 
-    def __init__(self, **options: Dict[str, Any]) -> None:
+    def __init__(self, **options: dict[str, Any]) -> None:
         pygments.lexer.Lexer.__init__(self, **options)
         self.compress = options.get("compress", "")
 
-    def get_tokens_unprocessed(self, text: str) -> List[Tuple[int, Type, str]]:
+    def get_tokens_unprocessed(self, text: str) -> list[tuple[int, Type, str]]:
         return [(0, Token.Text, text)]
 
 
@@ -65,13 +65,13 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
     with highlighted lines.
     """
 
-    def __init__(self, **options: Dict[str, Any]) -> None:
+    def __init__(self, **options: dict[str, Any]) -> None:
         pygments.formatters.HtmlFormatter.__init__(self, **options)
         self.hl_color = options.get("hl_color", HIGHLIGHT_LINES_COLOR_DEFAULT)
 
     def _highlight_lines(
-        self, tokensource: Iterable[Tuple[int, str]]
-    ) -> Generator[Tuple[int, str], None, None]:
+        self, tokensource: Iterable[tuple[int, str]]
+    ) -> Generator[tuple[int, str], None, None]:
         """
         Highlighted the lines specified in the `hl_lines` option by post-processing the token stream.
         Based on the code at "https://github.com/pygments/pygments/blob/master/pygments/formatters/html.py#L816"
@@ -85,7 +85,7 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
                 yield 1, value
 
 
-def parse_highlight_lines(highlight_lines: str) -> Optional[List[int]]:
+def parse_highlight_lines(highlight_lines: str) -> Optional[list[int]]:
     """
     Parses a string like "1", "1-4", "1-3,5,7-8" into a list of lines like
     [1], [1,2,3,4], and [1,2,3,5,7,8]
