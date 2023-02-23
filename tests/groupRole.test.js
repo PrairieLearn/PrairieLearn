@@ -65,6 +65,7 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   describe('2. get 5 student user', function () {
+    // FIXME: (Cale) I think we only need 4?
     it('should insert/get 5 users into/from the DB', function (callback) {
       sqldb.query(sql.generate_and_enroll_5_users, [], function (err, result) {
         if (ERR(err, callback)) return;
@@ -438,7 +439,6 @@ describe('Test group based assessments with custom group roles from student side
         callback(null);
       });
     });
-    // TODO: Should we add a test to confirm that the other two users' roles are still correct?
   });
 
   describe('10. the fourth user can join group using code', function () {
@@ -499,7 +499,7 @@ describe('Test group based assessments with custom group roles from student side
       assert.isTrue(elemList.is(':disabled'));
     });
     it('should display error for too few reflectors', function () {
-      // FIXME: Same as above. We should make errors visible to everyone
+      // FIXME: (Cale) Same as above. We should make errors visible to everyone
       elemList = locals.$('.alert:contains(Reflector has too few assignments)');
       assert.lengthOf(elemList, 0);
     });
@@ -507,6 +507,7 @@ describe('Test group based assessments with custom group roles from student side
       elemList = locals.$('#role-select-form').find('tr');
       assert.lengthOf(elemList, 0);
     });
+    // FIXME: (Cale) We should test the entire group's role configuration, not just the current user
     it('should have user set to contributor role in the database', function (callback) {
       var params = {
         assessment_id: locals.assessment_id,
@@ -895,7 +896,7 @@ describe('Test group based assessments with custom group roles from student side
     });
     it('should have a CSRF token', function () {
       elemList = locals.$('form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 1); // TODO: (Cale) I changed this from 2 to 1. Why was it breaking with 2?
+      assert.lengthOf(elemList, 1); // FIXME: (Cale) I changed this from 2 to 1. Why was it breaking with 2?
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
@@ -966,10 +967,6 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   describe('18. non-required roles are dropped when user leaves group', function () {
-    // Current config: [P1: Manager/Contributor, P2: Recorder, P3: Reflector, P4: Contributor]
-    // P4 (the Contributor) leaves
-    // Desired config: [P1: Manager, P2: Recorder, P3: Reflector]
-    // The Contributor role does not get reassigned, and other Contributors lose their role.
     it('should have correct role configuration in the database', function (callback) {
       var params = {
         assessment_id: locals.assessment_id,
@@ -997,12 +994,122 @@ describe('Test group based assessments with custom group roles from student side
     });
   });
 
-  describe('16. required roles are reorganized when user leaves group', function () {
-    // TODO: implement
-    // P4 rejoins
-    // Config: [P1: Manager, P2: Recorder, P3: Reflector, P4: Contributor]
-    // P3 leaves
-    // Config: [P1: Manager, P2: Recorder, P4: Reflector]
+  describe('19. switch to user 3, leave, switch back to first user', function () {
+    it('should be able to switch user', function (callback) {
+      let student = locals.studentUsers[2];
+      config.authUid = student.uid;
+      config.authName = student.name;
+      config.authUin = '00000003';
+      config.userId = student.user_id;
+      callback(null);
+    });
+    it('should load assessment page successfully', function (callback) {
+      request(locals.assessmentUrl, function (error, response, body) {
+        if (ERR(error, callback)) return;
+        if (response.statusCode !== 200) {
+          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
+        }
+        page = body;
+        callback(null);
+      });
+    });
+    it('should parse', function () {
+      locals.$ = cheerio.load(page);
+    });
+    it('should have a CSRF token', function () {
+      elemList = locals.$('form input[name="__csrf_token"]');
+      assert.lengthOf(elemList, 2);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.__csrf_token = elemList[0].attribs.value;
+      assert.isString(locals.__csrf_token);
+    });
+    it('should be able to leave the group', function (callback) {
+      var form = {
+        __action: 'leave_group',
+        __csrf_token: locals.__csrf_token,
+      };
+      request.post(
+        {
+          url: locals.assessmentUrl,
+          form: form,
+          followAllRedirects: true,
+        },
+        function (error, response, body) {
+          if (ERR(error, callback)) return;
+          if (response.statusCode !== 200) {
+            return callback(new Error('bad status: ' + response.statusCode));
+          }
+          page = body;
+          callback(null);
+        }
+      );
+    });
+    it('should parse', function () {
+      locals.$ = cheerio.load(page);
+    });
+    it('should update locals with roles updates', function () {
+      locals.roleUpdates = [
+        { roleId: '1', groupUserId: '2' },
+        { roleId: '2', groupUserId: '3' },
+        { roleId: '3', groupUserId: '2' },
+      ];
+    });
+    it('should be able to switch user', function (callback) {
+      let student = locals.studentUsers[0];
+      config.authUid = student.uid;
+      config.authName = student.name;
+      config.authUin = '00000001';
+      config.userId = student.user_id;
+      callback(null);
+    });
+    it('should load assessment page successfully', function (callback) {
+      request(locals.assessmentUrl, function (error, response, body) {
+        if (ERR(error, callback)) return;
+        if (response.statusCode !== 200) {
+          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
+        }
+        page = body;
+        callback(null);
+      });
+    });
+    it('should parse', function () {
+      locals.$ = cheerio.load(page);
+    });
+    it('should have a CSRF token', function () {
+      elemList = locals.$('form input[name="__csrf_token"]');
+      assert.lengthOf(elemList, 3);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.__csrf_token = elemList[0].attribs.value;
+      assert.isString(locals.__csrf_token);
+    });
+  });
+
+  describe('20. required roles are reorganized when user leaves group', function () {
+    it('should have correct role configuration in the database', function (callback) {
+      var params = {
+        assessment_id: locals.assessment_id,
+      };
+      sqldb.query(sql.get_group_roles, params, function (err, result) {
+        if (ERR(err, callback)) return;
+        const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+          user_id: groupUserId,
+          group_role_id: roleId,
+        }));
+        assert.sameDeepMembers(expected, result.rows);
+        callback(null);
+      });
+    });
+    it('should have correct roles checked in the table', function () {
+      elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+      assert.lengthOf(elemList, 3);
+
+      locals.roleUpdates.forEach(({ roleId, groupUserId }) => {
+        const elementId = `#user_role_${roleId}-${groupUserId}`;
+        elemList = locals.$('#role-select-form').find(elementId);
+        assert.lengthOf(elemList, 1);
+        assert.isDefined(elemList['0'].attribs.checked);
+      });
+    });
   });
 
   describe('17. assessments without roles do not show the role selection table', function () {
