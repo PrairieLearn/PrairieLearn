@@ -1,6 +1,5 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
-const util = require('util');
 const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
 const router = express.Router();
@@ -34,7 +33,7 @@ const logCsvFilename = (locals) => {
 
 router.get(
   '/',
-  asyncHandler(async (req, res, next) => {
+  asyncHandler(async (req, res, _next) => {
     res.locals.logCsvFilename = logCsvFilename(res.locals);
     res.locals.assessment_instance_stats = (
       await sqldb.queryAsync(sql.assessment_instance_stats, {
@@ -56,9 +55,10 @@ router.get(
       })
     ).rows;
 
-    res.locals.log = (
-      await assessment.selectAssessmentInstanceLog(res.locals.assessment_instance.id, false)
-    ).rows;
+    res.locals.log = await assessment.selectAssessmentInstanceLog(
+      res.locals.assessment_instance.id,
+      false
+    );
 
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   })
@@ -68,9 +68,10 @@ router.get(
   '/:filename',
   asyncHandler(async (req, res, next) => {
     if (req.params.filename === logCsvFilename(res.locals)) {
-      const log = (
-        await assessment.selectAssessmentInstanceLog(res.locals.assessment_instance.id, false)
-      ).rows;
+      const log = await assessment.selectAssessmentInstanceLog(
+        res.locals.assessment_instance.id,
+        false
+      );
       const csvHeaders = [
         'Time',
         'Auth user',

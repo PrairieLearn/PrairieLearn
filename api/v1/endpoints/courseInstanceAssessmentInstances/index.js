@@ -65,11 +65,11 @@ router.get(
       return;
     }
 
-    const logsResult = await assessment.selectAssessmentInstanceLog(
+    const logs = await assessment.selectAssessmentInstanceLog(
       result.rows[0].assessment_instance_id,
       true
     );
-    res.status(200).send(logsResult.rows);
+    res.status(200).send(logs);
   })
 );
 
