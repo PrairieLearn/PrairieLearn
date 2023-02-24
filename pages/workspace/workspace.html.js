@@ -316,22 +316,29 @@ function Workspace({ navTitle, showLogs, heartbeatIntervalSec, visibilityTimeout
 
             socket.emit('startWorkspace', { workspace_id: workspaceId });
 
-            const intervalId = setInterval(() => {
+            const heartbeatIntervalId = setInterval(() => {
               socket.emit('heartbeat', { workspace_id: workspaceId }, (msg) => {
                 console.log('heartbeat, msg =', msg);
               });
             }, heartbeatInterval * 1000);
 
-            let timeoutId = null;
+            let visibilityTimeoutId = null;
             document.addEventListener('visibilitychange', () => {
               if (document.visibilityState == 'hidden') {
-                timeoutId = setTimeout(() => {
-                  clearInterval(intervalId);
+                visibilityTimeoutId = setTimeout(() => {
+                  // Stop heartbeating.
+                  clearInterval(heartbeatIntervalId);
+
+                  // Instruct the backend to immediately stop the workspace.
+                  socket.emit('visibilityTimeout', { workspace_id: workspaceId });
+
+                  // Unload the iframe and show a message indicating that the workspace
+                  // was stopped due to inactivity.
                   workspaceFrame.src = 'about:blank';
                   showStoppedFrame();
                 }, visibilityTimeout * 1000);
               } else {
-                clearTimeout(timeoutId);
+                clearTimeout(visibilityTimeoutId);
               }
             });
 
