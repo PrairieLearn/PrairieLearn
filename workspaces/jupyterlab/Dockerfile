@@ -1,4 +1,4 @@
-FROM jupyter/datascience-notebook:lab-3.5.0
+FROM jupyter/datascience-notebook:lab-3.6.1
 COPY jupyter_notebook_config.py /etc/jupyter/
 
 ENV XDG_DATA_HOME=/tmp/local/share
