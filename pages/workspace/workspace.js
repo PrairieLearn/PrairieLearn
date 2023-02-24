@@ -1,30 +1,41 @@
+// @ts-check
 const path = require('path');
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
+const sqldb = require('@prairielearn/postgres');
 
 const config = require('../../lib/config');
 const workspaceHelper = require('../../lib/workspace');
 
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const error = require('../../prairielib/lib/error');
-const sqldb = require('@prairielearn/postgres');
+
+const { Workspace } = require('./workspace.html');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', (_req, res, _next) => {
   res.locals.workspaceHeartbeatIntervalSec = config.workspaceHeartbeatIntervalSec;
+
+  let navTitle;
   if (res.locals.assessment == null) {
     // instructor preview
     res.locals.pageNote = 'Preview';
     res.locals.pageTitle = res.locals.question_qid;
-    res.locals.navTitle = res.locals.pageTitle;
+    navTitle = res.locals.pageTitle;
   } else {
     // student assessment
-    res.locals.navTitle = `${res.locals.instance_question_info.question_number} - ${res.locals.course.short_name}`;
+    navTitle = `${res.locals.instance_question_info.question_number} - ${res.locals.course.short_name}`;
   }
-  res.locals.showLogs = res.locals.authn_is_administrator || res.locals.authn_is_instructor;
-  res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+
+  res.send(
+    Workspace({
+      navTitle,
+      showLogs: res.locals.authn_is_administrator || res.locals.authn_is_instructor,
+      resLocals: res.locals,
+    })
+  );
 });
 
 router.post(
