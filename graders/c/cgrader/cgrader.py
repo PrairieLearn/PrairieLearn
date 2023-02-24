@@ -105,7 +105,6 @@ class CGrader:
             if isinstance(pkg_config_flags, str):
                 pkg_config_flags = shlex.split(pkg_config_flags)
             out_flags = self.run_command(["pkg-config", "--cflags"] + pkg_config_flags)
-            print("out_flags in compiler is: ", out_flags)
             if out_flags:
                 cflags.extend(shlex.split(out_flags))
 
@@ -186,7 +185,6 @@ class CGrader:
             if isinstance(pkg_config_flags, str):
                 pkg_config_flags = shlex.split(pkg_config_flags)
             out_flags = self.run_command(["pkg-config", "--libs"] + pkg_config_flags)
-            print("out_flags in linker is: ", out_flags)
             if out_flags:
                 flags.extend(shlex.split(out_flags))
 
@@ -287,6 +285,7 @@ class CGrader:
         name=None,
         msg=None,
         max_points=1,
+        highlight_matches=False,
     ):
         if args is not None:
             if not isinstance(args, list):
@@ -302,20 +301,34 @@ class CGrader:
         elif name is None:
             name = "Test command: %s" % command
 
-        if exp_output is not None and not isinstance(exp_output, list):
+        if exp_output is None:
+            exp_output = []
+            must_match_all_outputs = True
+        elif not isinstance(exp_output, list):
             exp_output = [exp_output]
-        if reject_output is not None and not isinstance(reject_output, list):
+
+        if reject_output is None:
+            reject_output = []
+        elif not isinstance(reject_output, list):
             reject_output = [reject_output]
-        if msg is None and exp_output is not None:
-            msg = "Expected: %s" % (" AND " if must_match_all_outputs else " OR ").join(
-                [f"\n{t}\n" if "\n" in str(t) else f'"{t}"' for t in exp_output]
-            ) + (
-                ' but not "%s"' % '"/"'.join([str(t) for t in reject_output])
-                if reject_output
-                else ""
+
+        def compile_re(t):
+            if isinstance(t, re.Pattern):
+                return (t.pattern, t)
+            # If t is not a string, convert it to its string representation
+            t = str(t)
+            return (
+                t.strip(),
+                re.compile(
+                    "\\s+".join(map(re.escape, re.split("\\s+", t)))
+                    if ignore_consec_spaces
+                    else re.escape(t),
+                    re.I if ignore_case else 0,
+                ),
             )
-        elif msg is None:
-            msg = ""
+
+        exp_output = [compile_re(t) for t in exp_output]
+        reject_output = [compile_re(t) for t in reject_output]
 
         out = self.run_command(
             command if args is None else ([command] + args),
@@ -323,48 +336,51 @@ class CGrader:
             sandboxed=True,
             timeout=timeout,
         )
+
         outcmp = out
+        if highlight_matches and out:
+            for _, r in exp_output:
+                out = r.sub(r"\033[32m\g<0>\033[0m", out)
+            for _, r in reject_output:
+                out = r.sub(r"\033[31m\g<0>\033[0m", out)
         if not out:
             out = "(NO OUTPUT)"
         elif not out.endswith("\n"):
             out += "\n(NO ENDING LINE BREAK)"
 
-        if ignore_case:
-            outcmp = outcmp.lower()
-            if exp_output:
-                exp_output = [str(t).lower() for t in exp_output]
+        if msg is None and exp_output:
+            comment = (
+                ""
+                if len(exp_output) == 1
+                else " all of"
+                if must_match_all_outputs
+                else " one of"
+            )
+            msg = f"Expected{comment}:\n\t" + "\n\t".join(
+                f"\033[32m{t}\033[0m"
+                if highlight_matches and r.search(outcmp) is not None
+                else t
+                for t, r in exp_output
+            )
             if reject_output:
-                reject_output = [str(t).lower() for t in reject_output]
-
-        if ignore_consec_spaces:
-            # Replace all space-like characters with single space
-            outcmp = re.sub(r"\s+", " ", outcmp)
-            if exp_output:
-                exp_output = [re.sub(r"\s+", " ", str(t)) for t in exp_output]
-            if reject_output:
-                reject_output = [re.sub(r"\s+", " ", str(t)) for t in reject_output]
+                msg += "\nBut not:\n\t" + "\n\t".join(
+                    f"\033[31m{t}\033[0m"
+                    if highlight_matches and r.search(outcmp) is not None
+                    else t
+                    for t, r in reject_output
+                )
+        elif msg is None:
+            msg = ""
 
         points = True
-        if timeout and "TIMEOUT" in out:
+        if timeout and "TIMEOUT" in outcmp:
             points = False
-        elif size_limit and len(out) > size_limit:
+        elif size_limit and len(outcmp) > size_limit:
             out = out[0:size_limit] + "\nTRUNCATED: Output too long."
             points = False
-        elif (
-            exp_output is not None
-            and must_match_all_outputs
-            and [t for t in exp_output if str(t) not in outcmp]
-        ):
-            points = False
-        elif (
-            exp_output is not None
-            and not must_match_all_outputs
-            and not [t for t in exp_output if str(t) in outcmp]
-        ):
-            points = False
-        elif reject_output is not None and [
-            t for t in reject_output if str(t) in outcmp
-        ]:
+        elif not (all if must_match_all_outputs else any)(
+            r.search(outcmp) is not None for _, r in exp_output
+        ) or any(r.search(outcmp) is not None for _, r in reject_output):
             points = False
 
         return self.add_test_result(
@@ -556,4 +572,5 @@ class CPPGrader(CGrader):
         super(CPPGrader, self).__init__(compiler)
 
 
-CGrader().start()
+if __name__ == "__main__":
+    CGrader().start()

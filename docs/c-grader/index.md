@@ -220,6 +220,16 @@ Some times a test must ensure that some strings are _not_ found in the output of
 self.test_run("diff -q output.txt expected.txt", reject_output=["differ"])
 ```
 
+If you would like to highlight, in the test message or output, the expected and rejected outputs, you can use the `highlight_matches` argument. This option will highlight in green (for expected outputs) and red (for rejected outputs) all strings that matched in the program output.
+
+```python
+self.test_run("./square",
+              exp_output=["TEST 1 PASSED", "TEST 2 PASSED"],
+              reject_output=["ERROR", "FAIL"],
+              must_match_all_outputs=True,
+              highlight_matches=True)
+```
+
 By default, any sequence of space-like characters (space, line break, carriage return, tab) in the program output, expected output and rejected output strings will be treated as a single space for comparison. This means difference in the number and type of spacing will be ignored. So, for example, if the output prints two numbers as `1 \n 2`, while the expected output is `1 2`, the test will pass. If, however, the intention is that spaces must match a pattern exactly, the `ignore_consec_spaces` option can be set to `False`:
 
 ```python
@@ -231,6 +241,12 @@ By default, differences in cases are ignored. To make all comparisons case-sensi
 
 ```python
 self.test_run("./lowercase", "ABC", "abc", ignore_case=False)
+```
+
+For both `exp_output` and `reject_output`, regular expressions may be used, by providing a compiled pattern object from [Python's `re` module](https://docs.python.org/3/library/re.html#re.compile). Note: if a pattern object is used, arguments `ignore_consec_spaces` and `ignore_case` do not take effect. If these patterns should ignore consecutive spaces, a pattern such as `\\s+` may be used instead of spaces, while case may be ignored by using the [`re.I` flag](https://docs.python.org/3/library/re.html#re.I);
+
+```python
+self.test_run("./valid_date", exp_output=re.compile('([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))'))
 ```
 
 To avoid issues with student-provided code running longer than expected, such as in cases of infinite loop, the program will timeout after one second. In this case, the test will be considered failed. This setting can be changed with the `timeout` argument, which should be set to a number of seconds.

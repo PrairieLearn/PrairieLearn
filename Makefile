@@ -74,3 +74,5 @@ typecheck-python:
 
 changeset:
 	@yarn changeset
+
+ci: lint typecheck test
