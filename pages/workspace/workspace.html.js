@@ -206,10 +206,18 @@ function Workspace({ navTitle, showLogs, resLocals }) {
         <main class="d-flex flex-column flex-grow h-100">
           <div
             id="loading"
-            class="d-flex flex-grow h-100 justify-content-center align-items-center"
+            class="d-flex h-100 flex-grow justify-content-center align-items-center"
           >
             <i class="d-block fa fa-10x fa-circle-notch fa-spin text-info" aria-hidden="true"></i>
             <span class="sr-only">Loading workspace &hellip;</span>
+          </div>
+          <div
+            id="stopped"
+            class="d-none h-100 flex-grow flex-column justify-content-center align-items-center"
+          >
+            <h2>Workspace stopped due to inactivity</h2>
+            <p>Your data was automatically saved. Reload the page to restart the workspace.</p>
+            <button id="reload" class="btn btn-primary">Reload</button>
           </div>
           <iframe id="workspace" class="d-none flex-grow h-100 border-0"></iframe>
         </main>
@@ -227,17 +235,27 @@ function Workspace({ navTitle, showLogs, resLocals }) {
 
             const socket = io('/workspace');
             const loadingFrame = document.getElementById('loading');
+            const stoppedFrame = document.getElementById('stopped');
             const workspaceFrame = document.getElementById('workspace');
             const stateBadge = document.getElementById('state');
             const messageBadge = document.getElementById('message');
+            const reloadButton = document.getElementById('reload');
 
             const showLoadingFrame = () => {
               loadingFrame.style.setProperty('display', 'flex', 'important');
+              stoppedFrame.style.setProperty('display', 'none', 'important');
+              workspaceFrame.style.setProperty('display', 'none', 'important');
+            };
+
+            const showStoppedFrame = () => {
+              loadingFrame.style.setProperty('display', 'none', 'important');
+              stoppedFrame.style.setProperty('display', 'flex', 'important');
               workspaceFrame.style.setProperty('display', 'none', 'important');
             };
 
             const showWorkspaceFrame = () => {
               loadingFrame.style.setProperty('display', 'none', 'important');
+              stoppedFrame.style.setProperty('display', 'none', 'important');
               workspaceFrame.style.setProperty('display', 'flex', 'important');
             };
 
@@ -264,6 +282,7 @@ function Workspace({ navTitle, showLogs, resLocals }) {
               }
               if (state == 'stopped') {
                 workspaceFrame.src = 'about:blank';
+                showStoppedFrame();
               }
               stateBadge.innerHTML = state;
             }
@@ -288,11 +307,28 @@ function Workspace({ navTitle, showLogs, resLocals }) {
 
             socket.emit('startWorkspace', { workspace_id: workspaceId });
 
-            setInterval(() => {
+            const intervalId = setInterval(() => {
               socket.emit('heartbeat', { workspace_id: workspaceId }, (msg) => {
                 console.log('heartbeat, msg =', msg);
               });
             }, heartbeatInterval * 1000);
+
+            let timeoutId = null;
+            document.addEventListener('visibilitychange', () => {
+              if (document.visibilityState == 'hidden') {
+                timeoutId = setTimeout(() => {
+                  clearInterval(intervalId);
+                  workspaceFrame.src = 'abount:blank';
+                  showStoppedFrame();
+                }, 10 * 1000);
+              } else {
+                clearTimeout(timeoutId);
+              }
+            });
+
+            reloadButton.addEventListener('click', () => {
+              location.reload();
+            });
           });
         </script>
       </body>
