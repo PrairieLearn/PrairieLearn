@@ -28,10 +28,10 @@
             <tbody>
               <% institutions.forEach(function(inst, i) { %>
               <tr>
-                  <td><%= inst.short_name %></td>
-                  <td><%= inst.long_name %></td>
-                  <td><code><%= inst.uid_regexp %></code></td>
-                  <td><%= inst.authn_providers.join(', ') %></td>
+                <td><a href="/pl/institution/<%= inst.id %>/admin"><%= inst.short_name %></a></td>
+                <td><%= inst.long_name %></td>
+                <td><code><%= inst.uid_regexp %></code></td>
+                <td><%= inst.authn_providers.join(', ') %></td>
               </tr>
               <% }); %>
             </tbody>
