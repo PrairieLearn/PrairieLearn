@@ -360,10 +360,8 @@ describe('Test group based assessments with custom group roles from student side
       assert.lengthOf(elemList, 0);
     });
     it('should display error for too few reflectors', function () {
-      // FIXME: (Renzo) I'm of the opinion that even if a user has a non-assigner role, they
-      // should still be able to view these errors. I'll let the tests pass for now, but we should talk about it.
       elemList = locals.$('.alert:contains(Reflector has too few assignments)');
-      assert.lengthOf(elemList, 0);
+      assert.lengthOf(elemList, 1);
     });
   });
 
@@ -429,9 +427,8 @@ describe('Test group based assessments with custom group roles from student side
       assert.lengthOf(elemList, 0);
     });
     it('should display error for too few reflectors', function () {
-      // FIXME: Same as above. We should make errors visible to everyone
       elemList = locals.$('.alert:contains(Reflector has too few assignments)');
-      assert.lengthOf(elemList, 0);
+      assert.lengthOf(elemList, 1);
     });
     it('should have user set to recorder role in the database', function (callback) {
       var params = {
@@ -507,9 +504,8 @@ describe('Test group based assessments with custom group roles from student side
       assert.isTrue(elemList.is(':disabled'));
     });
     it('should display error for too few reflectors', function () {
-      // FIXME: (Cale) Same as above. We should make errors visible to everyone
       elemList = locals.$('.alert:contains(Reflector has too few assignments)');
-      assert.lengthOf(elemList, 0);
+      assert.lengthOf(elemList, 1);
     });
     it('should not render the group role table', function () {
       elemList = locals.$('#role-select-form').find('tr');
@@ -903,8 +899,9 @@ describe('Test group based assessments with custom group roles from student side
       locals.$ = cheerio.load(page);
     });
     it('should have a CSRF token', function () {
+      // The only element with CSRF token is to leave the group
       elemList = locals.$('form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 1); // FIXME: (Cale) I changed this from 2 to 1. Why was it breaking with 2?
+      assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
