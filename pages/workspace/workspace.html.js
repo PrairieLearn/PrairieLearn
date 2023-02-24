@@ -269,6 +269,7 @@ function Workspace({ navTitle, showLogs, resLocals }) {
               }
             }
 
+            let previousState = null;
             function setState(state) {
               if (state == 'running') {
                 showWorkspaceFrame();
@@ -282,9 +283,13 @@ function Workspace({ navTitle, showLogs, resLocals }) {
               }
               if (state == 'stopped') {
                 workspaceFrame.src = 'about:blank';
-                showStoppedFrame();
+                if (previousState == 'running') {
+                  showStoppedFrame();
+                }
               }
               stateBadge.innerHTML = state;
+
+              previousState = state;
             }
 
             socket.on('change:state', (msg) => {
