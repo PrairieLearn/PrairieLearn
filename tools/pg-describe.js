@@ -2,8 +2,7 @@
 // @ts-check
 
 const async = require('async');
-const ERR = require('async-stacktrace');
-const chalk = require('chalk').default;
+const chalk = require('chalk');
 const fs = require('fs-extra');
 const _ = require('lodash');
 const path = require('path');
@@ -44,9 +43,6 @@ if (argv._.length !== 1) {
 const coloredOutput = !argv.o && process.stdout.isTTY;
 
 const options = {
-  databaseName: argv._[0],
-  outputFormat: 'string',
-  coloredOutput: coloredOutput,
   ignoreTables: argv['ignore-tables'] || [],
   ignoreEnums: argv['ignore-enums'] || [],
   ignoreColumns: argv['ignore-columns'] || [],
@@ -59,15 +55,20 @@ function formatText(text, formatter) {
   return text;
 }
 
-databaseDescribe.describe(options, (err, description) => {
-  if (ERR(err, (err) => console.log(err))) return process.exit(1);
-
-  if (argv.o) {
-    writeDescriptionToDisk(description, argv.o);
-  } else {
-    printDescription(description);
+databaseDescribe.describe(argv._[0], options).then(
+  async (description) => {
+    if (argv.o) {
+      await writeDescriptionToDisk(description, argv.o);
+    } else {
+      printDescription(description);
+    }
+    process.exit(0);
+  },
+  (err) => {
+    console.error(err);
+    process.exit(1);
   }
-});
+);
 
 function printDescription(description) {
   _.forEach(_.sortBy(_.keys(description.tables)), (tableName) => {
@@ -81,65 +82,17 @@ function printDescription(description) {
     process.stdout.write(description.enums[enumName]);
     process.stdout.write('\n\n');
   });
-
-  process.exit(0);
 }
 
-function writeDescriptionToDisk(description, dir) {
-  async.series(
-    [
-      (callback) => {
-        fs.emptyDir(dir, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        fs.mkdir(path.join(dir, 'tables'), (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        fs.mkdir(path.join(dir, 'enums'), (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        async.eachOf(
-          description.tables,
-          (value, key, callback) => {
-            fs.writeFile(path.join(dir, 'tables', `${key}.pg`), value, (err) => {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
-          },
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          }
-        );
-      },
-      (callback) => {
-        async.eachOf(
-          description.enums,
-          (value, key, callback) => {
-            fs.writeFile(path.join(dir, 'enums', `${key}.pg`), value, (err) => {
-              if (ERR(err, callback)) return;
-              callback(null);
-            });
-          },
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          }
-        );
-      },
-    ],
-    (err) => {
-      if (ERR(err, (err) => console.log(err))) return process.exit(1);
-      process.exit(0);
-    }
-  );
+async function writeDescriptionToDisk(description, dir, coloredOutput) {
+  const formattedDescription = databaseDescribe.formatDescription(description, { coloredOutput });
+  await fs.emptyDir(dir);
+  await fs.mkdir(path.join(dir, 'tables'));
+  await fs.mkdir(path.join(dir, 'enums'));
+  await async.eachOf(formattedDescription.tables, async (value, key) => {
+    await fs.writeFile(path.join(dir, 'tables', `${key}.pg`), value);
+  });
+  await async.eachOf(formattedDescription.enums, async (value, key) => {
+    await fs.writeFile(path.join(dir, 'enums', `${key}.pg`), value);
+  });
 }

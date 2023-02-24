@@ -2,6 +2,11 @@
 // dependencies like `pg` and `express`.
 const opentelemetry = require('@prairielearn/opentelemetry');
 
+const Sentry = require('@prairielearn/sentry');
+// `@sentry/tracing` must be imported before `@sentry/profiling-node`.
+require('@sentry/tracing');
+const { ProfilingIntegration } = require('@sentry/profiling-node');
+
 const ERR = require('async-stacktrace');
 const fs = require('fs');
 const path = require('path');
@@ -21,11 +26,10 @@ const onFinished = require('on-finished');
 const { v4: uuidv4 } = require('uuid');
 const argv = require('yargs-parser')(process.argv.slice(2));
 const multer = require('multer');
-const filesize = require('filesize');
+const { filesize } = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const util = require('util');
-const Sentry = require('@prairielearn/sentry');
+const compiledAssets = require('@prairielearn/compiled-assets');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -35,7 +39,7 @@ const externalGrader = require('./lib/externalGrader');
 const externalGraderResults = require('./lib/externalGraderResults');
 const externalGradingSocket = require('./lib/externalGradingSocket');
 const workspace = require('./lib/workspace');
-const sqldb = require('./prairielib/lib/sql-db');
+const sqldb = require('@prairielearn/postgres');
 const migrations = require('./prairielib/lib/migrations');
 const error = require('./prairielib/error');
 const sprocs = require('./sprocs');
@@ -78,7 +82,7 @@ if ('h' in argv || 'help' in argv) {
 
 /**
  * Creates the express application and sets up all PrairieLearn routes.
- * @return {Express App} The express "app" object that was created.
+ * @return {import('express').Application} The express "app" object that was created.
  */
 module.exports.initExpress = function () {
   const app = express();
@@ -86,8 +90,14 @@ module.exports.initExpress = function () {
   app.set('view engine', 'ejs');
   app.set('trust proxy', config.trustProxy);
 
-  // This should come first so that we get instrumentation on all our requests.
-  app.use(Sentry.Handlers.requestHandler());
+  // These should come first so that we get instrumentation on all our requests.
+  if (config.sentryDsn) {
+    app.use(Sentry.Handlers.requestHandler());
+
+    if (config.sentryTracesSampleRate) {
+      app.use(Sentry.Handlers.tracingHandler());
+    }
+  }
 
   // Set res.locals variables first, so they will be available on
   // all pages including the error page (which we could jump to at
@@ -95,6 +105,7 @@ module.exports.initExpress = function () {
   app.use((req, res, next) => {
     res.locals.asset_path = assets.assetPath;
     res.locals.node_modules_asset_path = assets.nodeModulesAssetPath;
+    res.locals.compiled_script_tag = compiledAssets.compiledScriptTag;
     next();
   });
   app.use(function (req, res, next) {
@@ -365,6 +376,8 @@ module.exports.initExpress = function () {
   // "cacheable" route above.
   app.use(express.static(path.join(__dirname, 'public')));
 
+  app.use('/build/', compiledAssets.handler());
+
   // To allow for more aggressive caching of files served from node_modules/,
   // we insert a hash of the module version into the resource path. This allows
   // us to treat those files as immutable and cache them essentially forever.
@@ -426,10 +439,13 @@ module.exports.initExpress = function () {
   app.use('/pl/oauth2login', require('./pages/authLoginOAuth2/authLoginOAuth2'));
   app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOAuth2'));
   app.use(/\/pl\/shibcallback/, require('./pages/authCallbackShib/authCallbackShib'));
-  app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
-  app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
 
   if (isEnterprise()) {
+    if (config.hasAzure) {
+      app.use('/pl/azure_login', require('./ee/auth/azure/login'));
+      app.use('/pl/azure_callback', require('./ee/auth/azure/callback'));
+    }
+
     app.use('/pl/auth/institution/:institution_id/saml', require('./ee/auth/saml/router'));
   }
 
@@ -443,6 +459,9 @@ module.exports.initExpress = function () {
   if (isEnterprise()) {
     app.use('/pl/prairietest/auth', require('./ee/auth/prairietest'));
   }
+
+  // Must come before CSRF middleware; we do our own signature verification here.
+  app.use('/pl/webhooks/terminate', require('./webhooks/terminate'));
 
   app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
   app.use(require('./middlewares/logRequest'));
@@ -548,8 +567,10 @@ module.exports.initExpress = function () {
       next();
     },
     require('./middlewares/authzWorkspace'),
-    require('./pages/workspace/workspace'),
   ]);
+  app.use('/pl/workspace/:workspace_id', require('./pages/workspace/workspace'));
+  app.use('/pl/workspace/:workspace_id/logs', require('./pages/workspaceLogs/workspaceLogs'));
+
   // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
   if (config.devMode) {
     app.use('/pl/loadFromDisk', [
@@ -917,6 +938,16 @@ module.exports.initExpress = function () {
       require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
     ]
   );
+
+  // Submission files
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/submission/:submission_id/file',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./pages/submissionFile/submissionFile'),
+    ]
+  );
+
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading',
     [
@@ -1212,6 +1243,15 @@ module.exports.initExpress = function () {
     ]
   );
 
+  // Submission files
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/question/:question_id/submission/:submission_id/file',
+    [
+      require('./middlewares/selectAndAuthzInstructorQuestion'),
+      require('./pages/submissionFile/submissionFile'),
+    ]
+  );
+
   // legacy client file paths
   // handle routes with and without /preview/ in them to handle URLs with and without trailing slashes
   app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file', [
@@ -1295,13 +1335,6 @@ module.exports.initExpress = function () {
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
     require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
   ]);
-  app.use('/pl/course_instance/:course_instance_id/report_cheating', [
-    function (req, res, next) {
-      res.locals.navSubPage = 'report_cheating';
-      next();
-    },
-    require('./pages/studentReportCheating/studentReportCheating'),
-  ]);
   if (config.devMode) {
     app.use(
       '/pl/course_instance/:course_instance_id/loadFromDisk',
@@ -1346,6 +1379,16 @@ module.exports.initExpress = function () {
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./middlewares/studentAssessmentAccess'),
       require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
+    ]
+  );
+
+  // Submission files
+  app.use(
+    '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/submission/:submission_id/file',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./middlewares/studentAssessmentAccess'),
+      require('./pages/submissionFile/submissionFile'),
     ]
   );
 
@@ -1563,6 +1606,12 @@ module.exports.initExpress = function () {
     require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
   ]);
 
+  // Submission files
+  app.use('/pl/course/:course_id/question/:question_id/submission/:submission_id/file', [
+    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./pages/submissionFile/submissionFile'),
+  ]);
+
   // legacy client file paths
   // handle routes with and without /preview/ in them to handle URLs with and without trailing slashes
   app.use('/pl/course/:course_id/question/:question_id/file', [
@@ -1588,9 +1637,22 @@ module.exports.initExpress = function () {
   // Administrator pages ///////////////////////////////////////////////
 
   app.use('/pl/administrator', require('./middlewares/authzIsAdministrator'));
+  app.use('/pl/administrator/admins', require('./pages/administratorAdmins/administratorAdmins'));
   app.use(
-    '/pl/administrator/overview',
-    require('./pages/administratorOverview/administratorOverview')
+    '/pl/administrator/settings',
+    require('./pages/administratorSettings/administratorSettings')
+  );
+  app.use(
+    '/pl/administrator/courses',
+    require('./pages/administratorCourses/administratorCourses')
+  );
+  app.use(
+    '/pl/administrator/networks',
+    require('./pages/administratorNetworks/administratorNetworks')
+  );
+  app.use(
+    '/pl/administrator/workspaces',
+    require('./pages/administratorWorkspaces/administratorWorkspaces')
   );
   app.use(
     '/pl/administrator/queries',
@@ -1783,11 +1845,35 @@ if (config.startServer) {
           serviceName: 'prairielearn',
         });
 
+        // Start capturing CPU and memory profiles as soon as possible.
+        if (config.pyroscopeEnabled) {
+          const Pyroscope = require('@pyroscope/nodejs');
+          Pyroscope.init({
+            appName: 'prairielearn',
+            serverAddress: config.pyroscopeServerAddress,
+            authToken: config.pyroscopeAuthToken,
+            tags: {
+              instanceId: config.instanceId,
+              ...(config.pyroscopeTags ?? {}),
+            },
+          });
+          Pyroscope.start();
+        }
+
         // Same with Sentry configuration.
         if (config.sentryDsn) {
+          const integrations = [];
+          if (config.sentryTracesSampleRate && config.sentryProfilesSampleRate) {
+            integrations.push(new ProfilingIntegration());
+          }
+
           await Sentry.init({
             dsn: config.sentryDsn,
             environment: config.sentryEnvironment,
+            integrations,
+            tracesSampleRate: config.sentryTracesSampleRate,
+            // This is relative to `tracesSampleRate`.
+            profilesSampleRate: config.sentryProfilesSampleRate,
             beforeSend: (event) => {
               // This will be necessary until we can consume the following change:
               // https://github.com/chimurai/http-proxy-middleware/pull/823
@@ -1834,41 +1920,10 @@ if (config.startServer) {
         }
       },
       async () => {
-        if (!config.hasAzure) return;
-
-        let OIDCStrategy = require('passport-azure-ad').OIDCStrategy;
-        const azureConfig = {
-          identityMetadata: config.azureIdentityMetadata,
-          clientID: config.azureClientID,
-          responseType: config.azureResponseType,
-          responseMode: config.azureResponseMode,
-          redirectUrl: config.azureRedirectUrl,
-          allowHttpForRedirectUrl: config.azureAllowHttpForRedirectUrl,
-          clientSecret: config.azureClientSecret,
-          validateIssuer: config.azureValidateIssuer,
-          isB2C: config.azureIsB2C,
-          issuer: config.azureIssuer,
-          passReqToCallback: config.azurePassReqToCallback,
-          scope: config.azureScope,
-          loggingLevel: config.azureLoggingLevel,
-          nonceLifetime: config.azureNonceLifetime,
-          nonceMaxAmount: config.azureNonceMaxAmount,
-          useCookieInsteadOfSession: config.azureUseCookieInsteadOfSession,
-          cookieEncryptionKeys: config.azureCookieEncryptionKeys,
-          clockSkew: config.azureClockSkew,
-        };
-        passport.use(
-          new OIDCStrategy(azureConfig, function (
-            iss,
-            sub,
-            profile,
-            accessToken,
-            refreshToken,
-            done
-          ) {
-            return done(null, profile);
-          })
-        );
+        if (isEnterprise() && config.hasAzure) {
+          const { getAzureStrategy } = require('./ee/auth/azure/index');
+          passport.use(getAzureStrategy());
+        }
       },
       async () => {
         if (isEnterprise()) {
@@ -1968,6 +2023,14 @@ if (config.startServer) {
           callback(null);
         });
       },
+      async () => {
+        compiledAssets.init({
+          dev: config.devMode,
+          sourceDirectory: path.resolve(__dirname, 'assets'),
+          buildDirectory: path.resolve(__dirname, 'public/build'),
+          publicPath: '/build',
+        });
+      },
       // We need to initialize these first, as the code callers require these
       // to be set up.
       function (callback) {
@@ -2044,32 +2107,37 @@ if (config.startServer) {
           process.exit(0);
         }
 
-        const prepareForTermination = async () => {
-          logger.info('Preparing for termination...');
-          // We want to proceed with termination even if something goes wrong,
-          // so don't allow this function to throw.
-          try {
-            // By this point, we should have already been detached from the
-            // load balancer, so the following should be no-ops. However, we
-            // still do to ensure that we don't get any more traffic as we're
-            // shutting everything down.
-            await util.promisify(server.close).call(server);
-            await socketServer.close();
+        // SIGTERM can be used to gracefully shut down the process. This signal
+        // may come from another process, but we also send it to ourselves if
+        // we want to gracefully shut down. This is used below in the ASG
+        // lifecycle handler, and also within the "terminate" webhook.
+        process.once('SIGTERM', async () => {
+          // By this point, we should no longer be attached to the load balancer,
+          // so there's no point shutting down the HTTP server or the socket.io
+          // server.
+          //
+          // We use `allSettled()` here to ensure that all tasks can gracefully
+          // shut down, even if some of them fail.
+          logger.info('Shutting down async processing');
+          const results = await Promise.allSettled([
+            externalGraderResults.stop(),
+            cron.stop(),
+            serverJobs.stop(),
+          ]);
+          results.forEach((r) => {
+            if (r.status === 'rejected') {
+              logger.error('Error shutting down async processing', r.reason);
+              Sentry.captureException(r.reason);
+            }
+          });
 
-            // We use `allSettled()` here to ensure that all tasks can gracefully
-            // shut down, even if some of them fail.
-            await Promise.allSettled([
-              externalGraderResults.stop(),
-              cron.stop(),
-              serverJobs.stop(),
-            ]);
+          try {
+            await lifecycleHooks.completeInstanceTermination();
           } catch (err) {
-            logger.error('Error while shutting down server', err);
+            logger.error('Error completing instance termination', err);
             Sentry.captureException(err);
           }
-        };
 
-        const terminate = async () => {
           logger.info('Terminating...');
           // Shut down OpenTelemetry exporting.
           try {
@@ -2085,23 +2153,7 @@ if (config.startServer) {
           } finally {
             process.exit(0);
           }
-        };
-
-        // If we're running in EC2 auto scaling, this will wait for our instance
-        // to enter the `Terminating:Wait` state.
-        //
-        // If we're not running in EC2, this will be a no-op.
-        lifecycleHooks
-          .handleAndCompleteInstanceTermination(prepareForTermination)
-          .catch((err) => {
-            logger.error('Error handling instance termination', err);
-            Sentry.captureException(err);
-          })
-          .finally(terminate);
-
-        // Also listen for and handle SIGTERM, which can be sent to gracefully
-        // shutdown a process.
-        process.on('SIGTERM', () => prepareForTermination().finally(terminate));
+        });
       }
     }
   );

@@ -4,12 +4,11 @@ const asyncHandler = require('express-async-handler');
 const util = require('util');
 const question = require('../../../lib/question');
 const error = require('../../../prairielib/lib/error');
-const sqldb = require('../../../prairielib/lib/sql-db');
-const sqlLoader = require('../../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 const ltiOutcomes = require('../../../lib/ltiOutcomes');
 const manualGrading = require('../../../lib/manualGrading');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get(
   '/',
@@ -87,8 +86,7 @@ router.post(
     }
     if (req.body.__action === 'add_manual_grade') {
       const params = [
-        req.body.assessment_id,
-        null, // assessment_instance_id,
+        res.locals.assessment.id,
         null, // submission_id
         res.locals.instance_question.id, // instance_question_id,
         null, // uid
@@ -122,12 +120,12 @@ router.post(
           req.baseUrl + `?conflict_grading_job_id=${update_result.grading_job_id}`
         );
       }
-      await util.promisify(ltiOutcomes.updateScore)(req.body.assessment_instance_id);
+      await util.promisify(ltiOutcomes.updateScore)(res.locals.assessment_instance.id);
       res.redirect(
         await manualGrading.nextUngradedInstanceQuestionUrl(
           res.locals.urlPrefix,
           res.locals.assessment.id,
-          req.body.assessment_question_id,
+          res.locals.assessment_question.id,
           res.locals.authz_data.user.user_id,
           res.locals.instance_question.id
         )

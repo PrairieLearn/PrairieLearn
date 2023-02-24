@@ -4,9 +4,9 @@ var router = express.Router();
 
 var config = require('../../lib/config');
 var csrf = require('../../lib/csrf');
-var sqldb = require('../../prairielib/lib/sql-db');
+var sqldb = require('@prairielearn/postgres');
 
-router.get('/:action?/:target(*)?', function (req, res, next) {
+router.get('/', function (req, res, next) {
   if (!config.hasShib) return next(new Error('Shibboleth login is not enabled'));
   var authUid = null;
   var authName = null;
@@ -34,7 +34,6 @@ router.get('/:action?/:target(*)?', function (req, res, next) {
       httpOnly: true,
       secure: true,
     });
-    if (req.params.action === 'redirect') return res.redirect('/' + req.params.target);
     var redirUrl = res.locals.homeUrl;
     if ('preAuthUrl' in req.cookies) {
       redirUrl = req.cookies.preAuthUrl;

@@ -4,8 +4,7 @@ const asyncHandler = require('express-async-handler');
 const pem = require('pem');
 
 const error = require('../../../prairielib/error');
-const sqldb = require('../../../prairielib/sql-db');
-const sqlLoader = require('../../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 const { InstitutionAdminSaml } = require('./saml.html');
 const {
   getInstitution,
@@ -13,7 +12,7 @@ const {
   getInstitutionAuthenticationProviders,
 } = require('../utils');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
 
 /**

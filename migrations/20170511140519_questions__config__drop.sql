@@ -1,1 +1,2 @@
-ALTER TABLE questions DROP COLUMN IF EXISTS config;
+ALTER TABLE questions
+DROP COLUMN IF EXISTS config;

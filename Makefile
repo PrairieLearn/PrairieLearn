@@ -1,5 +1,6 @@
 build:
 	@yarn turbo run build
+	@node packages/compiled-assets/dist/cli.js build ./assets ./public/build
 
 dev:
 	@yarn turbo run dev
@@ -10,6 +11,8 @@ start-nodemon: start-support
 	@yarn nodemon server.js
 start-workspace-host: start-support kill-running-workspaces
 	@node workspace_host/interface.js
+start-workspace-host-nodemon: start-support kill-running-workspaces
+	@yarn nodemon --config workspace_host/nodemon.json workspace_host/interface.js
 start-executor:
 	@node executor.js
 
@@ -47,7 +50,7 @@ test-python:
 lint: lint-js lint-python lint-html lint-links
 lint-js:
 	@yarn eslint --ext js --report-unused-disable-directives "**/*.js"
-	@yarn prettier --check "**/*.{js,ts,md}"
+	@yarn prettier --check "**/*.{js,ts,md,sql}"
 lint-python:
 	@python3 -m flake8 ./
 lint-html:
@@ -55,16 +58,21 @@ lint-html:
 lint-links:
 	@node tools/validate-links.mjs
 
-format: format-js
+format: format-js format-python
 format-js:
 	@yarn eslint --ext js --fix "**/*.js"
-	@yarn prettier --write "**/*.{js,ts,md}"
+	@yarn prettier --write "**/*.{js,ts,md,sql}"
+format-python:
+	@python3 -m isort ./
+	@python3 -m black ./
 
 typecheck: typecheck-js typecheck-python
 typecheck-js:
 	@yarn tsc
 typecheck-python:
-	@yarn pyright
+	@yarn pyright --skipunannotated
 
 changeset:
 	@yarn changeset
+
+ci: lint typecheck test

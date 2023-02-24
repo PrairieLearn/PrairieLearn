@@ -34,7 +34,7 @@
         },
         "redisUrl": {
             "description": "The url for connecting to Redis.",
-            "type": "string"
+            "type": ["string", "null"]
         },
         "logFilename": {
             "description": "Filename to use for server logging.",

@@ -10,4 +10,4 @@ c.ServerApp.password = ''
 c.ServerApp.token = ''
 c.ServerApp.allow_origin = '*'
 c.FileContentsManager.delete_to_trash = False
-c.FileCheckpoints.checkpoint_dir = '/tmp/ipynb_checkpoints'
+c.FileCheckpoints.checkpoint_dir = "/tmp/ipynb_checkpoints"

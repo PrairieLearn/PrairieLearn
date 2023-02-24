@@ -9,10 +9,9 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 const error = require('../../prairielib/lib/error');
 const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const sanitizeName = require('../../lib/sanitize-name');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const filenames = function (locals) {
   const prefix = sanitizeName.questionFilenamePrefix(locals.question, locals.course);

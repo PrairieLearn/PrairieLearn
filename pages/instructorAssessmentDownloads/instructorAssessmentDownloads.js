@@ -9,10 +9,9 @@ const csvMaker = require('../../lib/csv-maker');
 const { paginateQuery } = require('../../lib/paginate');
 const sanitizeName = require('../../lib/sanitize-name');
 const error = require('../../prairielib/error');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const setFilenames = function (locals) {
   const prefix = sanitizeName.assessmentFilenamePrefix(
@@ -205,6 +204,8 @@ router.get('/:filename', function (req, res, next) {
         ['Last submission score', 'last_submission_score'],
         ['Number attempts', 'number_attempts'],
         ['Duration seconds', 'duration_seconds'],
+        ['Assigned manual grader', 'assigned_grader'],
+        ['Last manual grader', 'last_grader'],
       ]);
       csvMaker.rowsToCsv(result.rows, columns, function (err, csv) {
         if (ERR(err, next)) return;
@@ -284,6 +285,8 @@ router.get('/:filename', function (req, res, next) {
         ['Mode', 'mode'],
         ['Grading requested date', 'grading_requested_at_formatted'],
         ['Grading date', 'graded_at_formatted'],
+        ['Assigned manual grader', 'assigned_grader'],
+        ['Last manual grader', 'last_grader'],
         ['Score', 'score'],
         ['Correct', 'correct'],
         ['Feedback', 'feedback'],

@@ -1,4 +1,5 @@
-ALTER TABLE assessment_sets DROP CONSTRAINT IF EXISTS assessment_sets_name_course_id_key;
+ALTER TABLE assessment_sets
+DROP CONSTRAINT IF EXISTS assessment_sets_name_course_id_key;
 
 DO $$
 BEGIN

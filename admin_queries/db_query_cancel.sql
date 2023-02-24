@@ -1,1 +1,2 @@
-SELECT pg_cancel_backend($pid);
+SELECT
+  pg_cancel_backend($pid);

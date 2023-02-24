@@ -64,7 +64,8 @@ BEGIN
 
         IF NOT has_student_access_with_enrollment AND enroll_if_needed THEN
             INSERT INTO enrollments AS e (user_id, course_instance_id)
-            VALUES (authz_course_instance.user_id, authz_course_instance.course_instance_id);
+            VALUES (authz_course_instance.user_id, authz_course_instance.course_instance_id)
+            ON CONFLICT DO NOTHING;
 
             has_student_access_with_enrollment := TRUE;
         END IF;

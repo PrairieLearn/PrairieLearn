@@ -3,13 +3,12 @@ var express = require('express');
 var router = express.Router();
 
 var error = require('../../prairielib/lib/error');
-var sqldb = require('../../prairielib/lib/sql-db');
-var sqlLoader = require('../../prairielib/lib/sql-loader');
+var sqldb = require('@prairielearn/postgres');
 
 const chunks = require('../../lib/chunks');
 var filePaths = require('../../lib/file-paths');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+var sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/:filename', function (req, res, next) {
   var question = res.locals.question;

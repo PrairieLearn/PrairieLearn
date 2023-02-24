@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const async = require('async');
 const _ = require('lodash');
@@ -11,10 +12,9 @@ const logger = require('../lib/logger');
 const { sleep } = require('../lib/sleep');
 const namedLocks = require('../lib/named-locks');
 
-const sqldb = require('../prairielib/lib/sql-db');
-const sqlLoader = require('../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 // jobTimeouts meaning (used by stop()):
 //     Timeout object = timeout is running and can be canceled
@@ -104,6 +104,11 @@ module.exports = {
         intervalSec:
           config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostTransitionsSec,
       },
+      {
+        name: 'cleanTimeSeries',
+        module: require('./cleanTimeSeries'),
+        intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalCleanTimeSeriesSec,
+      },
     ];
 
     if (isEnterprise()) {
@@ -112,7 +117,31 @@ module.exports = {
         module: require('../ee/cron/workspaceHostLoads'),
         intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostLoadsSec,
       });
+
+      module.exports.jobs.push({
+        name: 'chunksHostAutoScaling',
+        module: require('../ee/cron/chunksHostAutoScaling'),
+        intervalSec:
+          config.cronOverrideAllIntervalsSec || config.cronIntervalChunksHostAutoScalingSec,
+      });
     }
+
+    const enabledJobs = config.cronEnabledJobs;
+    const disabledJobs = config.cronDisabledJobs;
+
+    if (enabledJobs && disabledJobs) {
+      throw new Error('Cannot set both cronEnabledJobs and cronDisabledJobs');
+    }
+
+    module.exports.jobs = module.exports.jobs.filter((job) => {
+      if (enabledJobs) {
+        return enabledJobs.includes(job.name);
+      } else if (disabledJobs) {
+        return !disabledJobs.includes(job.name);
+      } else {
+        return true;
+      }
+    });
 
     logger.verbose(
       'initializing cron',
@@ -121,9 +150,12 @@ module.exports = {
 
     const jobsByPeriodSec = _.groupBy(module.exports.jobs, 'intervalSec');
     _.forEach(jobsByPeriodSec, (jobsList, intervalSec) => {
+      const intervalSecNum = Number.parseInt(intervalSec);
       if (intervalSec === 'daily') {
         this.queueDailyJobs(jobsList);
-      } else if (intervalSec > 0) {
+      } else if (Number.isNaN(intervalSecNum)) {
+        throw new Error(`Invalid cron interval: ${intervalSec}`);
+      } else if (intervalSecNum > 0) {
         this.queueJobs(jobsList, intervalSec);
       } // zero or negative intervalSec jobs are not run
     });
@@ -172,7 +204,7 @@ module.exports = {
     debug(`queueDailyJobs()`);
     const that = this;
     function timeToNextMS() {
-      const now = new Date();
+      const now = Date.now();
       const midnight = new Date(now).setHours(0, 0, 0, 0);
       const sinceMidnightMS = now - midnight;
       const cronDailyMS = config.cronDailySec * 1000;
@@ -238,11 +270,11 @@ module.exports = {
 
                   span.recordException(err);
                   span.setStatus({
-                    status: SpanStatusCode.ERROR,
+                    code: SpanStatusCode.ERROR,
                     message: err.message,
                   });
                 } else {
-                  span.setStatus({ status: SpanStatusCode.OK });
+                  span.setStatus({ code: SpanStatusCode.OK });
                 }
 
                 // resolve no matter what so that we run all jobs even if one fails
@@ -344,10 +376,10 @@ module.exports = {
   runJob(job, cronUuid, callback) {
     debug(`runJob(): ${job.name}`);
     logger.verbose('cron: starting ' + job.name, { cronUuid });
-    var startTime = new Date();
+    var startTime = Date.now();
     job.module.run((err) => {
       if (ERR(err, callback)) return;
-      var endTime = new Date();
+      var endTime = Date.now();
       var elapsedTimeMS = endTime - startTime;
       debug(`runJob(): ${job.name}: success, duration ${elapsedTimeMS} ms`);
       logger.verbose('cron: ' + job.name + ' success', {

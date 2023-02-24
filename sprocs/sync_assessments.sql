@@ -142,7 +142,7 @@ BEGIN
     FOR valid_assessment IN (
         SELECT tid, data, warnings
         FROM disk_assessments AS src
-        wHERE (src.errors IS NULL OR src.errors = '')
+        WHERE (src.errors IS NULL OR src.errors = '')
     ) LOOP
         UPDATE assessments AS a
         SET

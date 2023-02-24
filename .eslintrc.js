@@ -7,10 +7,13 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 13,
   },
+  plugins: ['no-floating-promise', 'mocha'],
   rules: {
     curly: ['error', 'multi-line', 'consistent'],
     eqeqeq: ['error', 'smart'],
+    'no-floating-promise/no-floating-promise': 'error',
     'handle-callback-err': 'error',
+    'no-template-curly-in-string': 'error',
     'no-restricted-syntax': [
       'error',
       {
@@ -40,12 +43,24 @@ module.exports = {
         commonjs: true,
       },
     ],
+
+    // The recommended Mocha rules are too strict for us; we'll only enable
+    // these two rules.
+    'mocha/no-exclusive-tests': 'error',
+    'mocha/no-skipped-tests': 'error',
   },
   overrides: [
     {
       files: ['*.test.{js,ts,mjs}'],
       env: {
         mocha: true,
+      },
+    },
+    {
+      files: ['assets/scripts/*.js'],
+      env: {
+        browser: true,
+        jquery: true,
       },
     },
   ],

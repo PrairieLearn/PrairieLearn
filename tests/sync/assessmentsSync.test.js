@@ -4,14 +4,13 @@ const chai = require('chai');
 chai.use(chaiAsPromised);
 const fs = require('fs-extra');
 const path = require('path');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 const { idsEqual } = require('../../lib/id');
 
 const util = require('./util');
 const helperDb = require('../helperDb');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 const { assert } = chai;
 
 /**
@@ -1572,7 +1571,7 @@ describe('Assessment syncing', () => {
       (a) => a.tid === 'repeatedAssessment' && a.deleted_at == null
     );
     assert.equal(syncedAssessment.uuid, newAssessment.uuid);
-    assert.match(syncedAssessment.sync_errors, /should have required property 'title'/);
+    assert.match(syncedAssessment.sync_errors, /must have required property 'title'/);
 
     // check that the old deleted assessment does not have any errors
     const deletedAssessment = syncedAssessments.find(

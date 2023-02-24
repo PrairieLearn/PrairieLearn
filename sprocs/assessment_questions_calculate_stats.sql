@@ -10,17 +10,17 @@ relevant_assessment_instances AS (
         assessment_questions AS aq
         JOIN assessments AS a ON (a.id = aq.assessment_id)
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-        LEFT JOIN groups AS g ON (g.id = ai.group_id AND g.deleted_at IS NULL)
-        LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
-        JOIN enrollments AS e ON ((e.user_id = ai.user_id OR e.user_id = gu.user_id) AND e.course_instance_id = a.course_instance_id)
     WHERE
         aq.id = assessment_question_id_param
-        AND NOT users_is_instructor_in_course_instance(e.user_id, e.course_instance_id)
+        AND ai.include_in_statistics
 ),
 relevant_instance_questions AS (
     SELECT DISTINCT
         iq.*,
-        (ai.user_id, ai.group_id) AS u_gr_id
+        -- Determine a unique ID for each user or group by making group IDs
+        -- negative. Exactly one of user_id or group_id will be NULL, so this
+        -- results in a unqiue non-NULL ID for each assessment instance.
+        coalesce(ai.user_id, -ai.group_id) AS u_gr_id
     FROM
         instance_questions AS iq
         JOIN relevant_assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -28,10 +28,10 @@ relevant_instance_questions AS (
 ),
 assessment_scores_by_user_or_group AS (
     SELECT
-        (ai.user_id, ai.group_id) AS u_gr_id,
+        coalesce(ai.user_id, -ai.group_id) AS u_gr_id,
         max(ai.score_perc) AS score_perc
     FROM relevant_assessment_instances AS ai
-    GROUP BY (ai.user_id, ai.group_id)
+    GROUP BY coalesce(ai.user_id, -ai.group_id)
 ),
 question_stats_by_user_or_group AS (
     SELECT
@@ -75,7 +75,7 @@ aq_stats AS (
     SELECT
         least(100, greatest(0, avg(question_stats_by_user_or_group.score_perc)))                     AS mean_question_score,
         sqrt(var_pop(question_stats_by_user_or_group.score_perc))                                    AS question_score_variance,
-        corr(question_stats_by_user_or_group.score_perc, assessment_scores_by_user_or_group.score_perc) * 100 AS discrimination,
+        coalesce(corr(question_stats_by_user_or_group.score_perc, assessment_scores_by_user_or_group.score_perc) * 100, CASE WHEN count(question_stats_by_user_or_group.score_perc) > 0 THEN 0 ELSE NULL END) AS discrimination,
         avg(question_stats_by_user_or_group.some_submission_perc)                                    AS some_submission_perc,
         avg(question_stats_by_user_or_group.some_perfect_submission_perc)                            AS some_perfect_submission_perc,
         avg(question_stats_by_user_or_group.some_nonzero_submission_perc)                            AS some_nonzero_submission_perc,
