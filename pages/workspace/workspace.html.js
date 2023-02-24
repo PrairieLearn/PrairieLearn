@@ -1,7 +1,7 @@
 const { html } = require('@prairielearn/html');
 const { renderEjs } = require('@prairielearn/html-ejs');
 
-function Workspace({ navTitle, showLogs, resLocals }) {
+function Workspace({ navTitle, showLogs, heartbeatIntervalSec, visibilityTimeoutSec, resLocals }) {
   return html`
     <!DOCTYPE html>
     <html lang="en" class="h-100">
@@ -16,7 +16,8 @@ function Workspace({ navTitle, showLogs, resLocals }) {
       <body
         class="d-flex flex-column h-100"
         data-workspace-id="${resLocals.workspace_id}"
-        data-heartbeat-interval="${resLocals.workspaceHeartbeatIntervalSec}"
+        data-heartbeat-interval="${heartbeatIntervalSec}"
+        data-visibility-timeout="${visibilityTimeoutSec}"
       >
         <div
           class="modal fade"
@@ -232,6 +233,9 @@ function Workspace({ navTitle, showLogs, resLocals }) {
             const heartbeatInterval = Number.parseFloat(
               document.body.getAttribute('data-heartbeat-interval')
             );
+            const visibilityTimeout = Number.parseFloat(
+              document.body.getAttribute('data-visibility-timeout')
+            );
 
             const socket = io('/workspace');
             const loadingFrame = document.getElementById('loading');
@@ -323,9 +327,9 @@ function Workspace({ navTitle, showLogs, resLocals }) {
               if (document.visibilityState == 'hidden') {
                 timeoutId = setTimeout(() => {
                   clearInterval(intervalId);
-                  workspaceFrame.src = 'abount:blank';
+                  workspaceFrame.src = 'about:blank';
                   showStoppedFrame();
-                }, 10 * 1000);
+                }, visibilityTimeout * 1000);
               } else {
                 clearTimeout(timeoutId);
               }
