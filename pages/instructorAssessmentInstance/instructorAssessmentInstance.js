@@ -4,6 +4,7 @@ const util = require('util');
 const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
 const router = express.Router();
+const asyncHandler = require('express-async-handler');
 const error = require('../../prairielib/lib/error');
 const sqldb = require('@prairielearn/postgres');
 
@@ -31,84 +32,80 @@ const logCsvFilename = (locals) => {
   );
 };
 
-router.get('/', (req, res, next) => {
-  res.locals.logCsvFilename = logCsvFilename(res.locals);
-  const params = { assessment_instance_id: res.locals.assessment_instance.id };
-  sqldb.query(sql.assessment_instance_stats, params, (err, result) => {
-    if (ERR(err, next)) return;
-    res.locals.assessment_instance_stats = result.rows;
-
-    sqldb.queryOneRow(sql.select_date_formatted_duration, params, (err, result) => {
-      if (ERR(err, next)) return;
-      res.locals.assessment_instance_date_formatted =
-        result.rows[0].assessment_instance_date_formatted;
-      res.locals.assessment_instance_duration = result.rows[0].assessment_instance_duration;
-
-      const params = {
+router.get(
+  '/',
+  asyncHandler(async (req, res, next) => {
+    res.locals.logCsvFilename = logCsvFilename(res.locals);
+    res.locals.assessment_instance_stats = (
+      await sqldb.queryAsync(sql.assessment_instance_stats, {
         assessment_instance_id: res.locals.assessment_instance.id,
-      };
-      sqldb.query(sql.select_instance_questions, params, (err, result) => {
-        if (ERR(err, next)) return;
-        res.locals.instance_questions = result.rows;
+      })
+    ).rows;
 
-        util.callbackify(assessment.selectAssessmentInstanceLog)(
-          res.locals.assessment_instance.id,
-          false,
-          (err, result) => {
-            if (ERR(err, next)) return;
-            res.locals.log = result.rows;
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-          }
-        );
-      });
+    const dateDurationResult = await sqldb.queryOneRowAsync(sql.select_date_formatted_duration, {
+      assessment_instance_id: res.locals.assessment_instance.id,
     });
-  });
-});
+    res.locals.assessment_instance_date_formatted =
+      dateDurationResult.rows[0].assessment_instance_date_formatted;
+    res.locals.assessment_instance_duration =
+      dateDurationResult.rows[0].assessment_instance_duration;
 
-router.get('/:filename', (req, res, next) => {
-  if (req.params.filename === logCsvFilename(res.locals)) {
-    util.callbackify(assessment.selectAssessmentInstanceLog)(
-      res.locals.assessment_instance.id,
-      false,
-      (err, result) => {
-        if (ERR(err, next)) return;
-        const log = result.rows;
-        const csvHeaders = [
-          'Time',
-          'Auth user',
-          'Event',
-          'Instructor question',
-          'Student question',
-          'Data',
+    res.locals.instance_questions = (
+      await sqldb.queryAsync(sql.select_instance_questions, {
+        assessment_instance_id: res.locals.assessment_instance.id,
+      })
+    ).rows;
+
+    res.locals.log = (
+      await assessment.selectAssessmentInstanceLog(res.locals.assessment_instance.id, false)
+    ).rows;
+
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  })
+);
+
+router.get(
+  '/:filename',
+  asyncHandler(async (req, res, next) => {
+    if (req.params.filename === logCsvFilename(res.locals)) {
+      const log = (
+        await assessment.selectAssessmentInstanceLog(res.locals.assessment_instance.id, false)
+      ).rows;
+      const csvHeaders = [
+        'Time',
+        'Auth user',
+        'Event',
+        'Instructor question',
+        'Student question',
+        'Data',
+      ];
+      const csvData = _.map(log, (row) => {
+        return [
+          row.date_iso8601,
+          row.auth_user_uid,
+          row.event_name,
+          row.instructor_question_number == null
+            ? null
+            : 'I-' + row.instructor_question_number + ' (' + row.qid + ')',
+          row.student_question_number == null
+            ? null
+            : 'S-' +
+              row.student_question_number +
+              (row.variant_number == null ? '' : '#' + row.variant_number),
+          row.data == null ? null : JSON.stringify(row.data),
         ];
-        const csvData = _.map(log, (row) => {
-          return [
-            row.date_iso8601,
-            row.auth_user_uid,
-            row.event_name,
-            row.instructor_question_number == null
-              ? null
-              : 'I-' + row.instructor_question_number + ' (' + row.qid + ')',
-            row.student_question_number == null
-              ? null
-              : 'S-' +
-                row.student_question_number +
-                (row.variant_number == null ? '' : '#' + row.variant_number),
-            row.data == null ? null : JSON.stringify(row.data),
-          ];
-        });
-        csvData.splice(0, 0, csvHeaders);
-        csvStringify(csvData, (err, csv) => {
-          if (err) throw Error('Error formatting CSV', err);
-          res.attachment(req.params.filename);
-          res.send(csv);
-        });
-      }
-    );
-  } else {
-    next(error.make(404, 'Unknown filename: ' + req.params.filename));
-  }
-});
+      });
+      csvData.splice(0, 0, csvHeaders);
+      csvStringify(csvData, (err, csv) => {
+        if (err) throw Error('Error formatting CSV', err);
+        res.attachment(req.params.filename);
+        res.send(csv);
+      });
+    } else {
+      next(error.make(404, 'Unknown filename: ' + req.params.filename));
+    }
+  })
+);
 
 router.post('/', (req, res, next) => {
   if (!res.locals.authz_data.has_course_instance_permission_edit) {
