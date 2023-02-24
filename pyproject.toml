@@ -59,6 +59,7 @@ skip_glob = ["tools/*", "node_modules/*"]
 [tool.pyright]
 include = [
     "./elements/pl-big-o-input",
+    "./elements/pl-code",
     "./elements/pl-dataframe",
     "./elements/pl-external-grader-variables",
     "./elements/pl-file-preview",
@@ -76,4 +77,4 @@ include = [
     "./python/python_helper_sympy_test.py"
 ]
 extraPaths = ["./python"]
-pythonVersion = "3.8"
+pythonVersion = "3.9"
