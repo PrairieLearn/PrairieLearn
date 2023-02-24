@@ -2,6 +2,7 @@
 const asyncHandler = require('express-async-handler');
 const path = require('path');
 const express = require('express');
+const assessment = require('../../../../lib/assessment');
 const router = express.Router({ mergeParams: true });
 
 const sqldb = require('@prairielearn/postgres');
@@ -64,10 +65,10 @@ router.get(
       return;
     }
 
-    const logsResult = await sqldb.callAsync('assessment_instances_select_log', [
+    const logsResult = await assessment.selectAssessmentInstanceLog(
       result.rows[0].assessment_instance_id,
-      true,
-    ]);
+      true
+    );
     res.status(200).send(logsResult.rows);
   })
 );

@@ -1,5 +1,6 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
+const util = require('util');
 const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
 const router = express.Router();
@@ -8,6 +9,7 @@ const sqldb = require('@prairielearn/postgres');
 
 const sanitizeName = require('../../lib/sanitize-name');
 const ltiOutcomes = require('../../lib/ltiOutcomes');
+const assessment = require('../../lib/assessment');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -49,12 +51,15 @@ router.get('/', (req, res, next) => {
         if (ERR(err, next)) return;
         res.locals.instance_questions = result.rows;
 
-        const params = [res.locals.assessment_instance.id, false];
-        sqldb.call('assessment_instances_select_log', params, (err, result) => {
-          if (ERR(err, next)) return;
-          res.locals.log = result.rows;
-          res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-        });
+        util.callbackify(assessment.selectAssessmentInstanceLog)(
+          res.locals.assessment_instance.id,
+          false,
+          (err, result) => {
+            if (ERR(err, next)) return;
+            res.locals.log = result.rows;
+            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+          }
+        );
       });
     });
   });
@@ -62,41 +67,44 @@ router.get('/', (req, res, next) => {
 
 router.get('/:filename', (req, res, next) => {
   if (req.params.filename === logCsvFilename(res.locals)) {
-    const params = [res.locals.assessment_instance.id, false];
-    sqldb.call('assessment_instances_select_log', params, (err, result) => {
-      if (ERR(err, next)) return;
-      const log = result.rows;
-      const csvHeaders = [
-        'Time',
-        'Auth user',
-        'Event',
-        'Instructor question',
-        'Student question',
-        'Data',
-      ];
-      const csvData = _.map(log, (row) => {
-        return [
-          row.date_iso8601,
-          row.auth_user_uid,
-          row.event_name,
-          row.instructor_question_number == null
-            ? null
-            : 'I-' + row.instructor_question_number + ' (' + row.qid + ')',
-          row.student_question_number == null
-            ? null
-            : 'S-' +
-              row.student_question_number +
-              (row.variant_number == null ? '' : '#' + row.variant_number),
-          row.data == null ? null : JSON.stringify(row.data),
+    util.callbackify(assessment.selectAssessmentInstanceLog)(
+      res.locals.assessment_instance.id,
+      false,
+      (err, result) => {
+        if (ERR(err, next)) return;
+        const log = result.rows;
+        const csvHeaders = [
+          'Time',
+          'Auth user',
+          'Event',
+          'Instructor question',
+          'Student question',
+          'Data',
         ];
-      });
-      csvData.splice(0, 0, csvHeaders);
-      csvStringify(csvData, (err, csv) => {
-        if (err) throw Error('Error formatting CSV', err);
-        res.attachment(req.params.filename);
-        res.send(csv);
-      });
-    });
+        const csvData = _.map(log, (row) => {
+          return [
+            row.date_iso8601,
+            row.auth_user_uid,
+            row.event_name,
+            row.instructor_question_number == null
+              ? null
+              : 'I-' + row.instructor_question_number + ' (' + row.qid + ')',
+            row.student_question_number == null
+              ? null
+              : 'S-' +
+                row.student_question_number +
+                (row.variant_number == null ? '' : '#' + row.variant_number),
+            row.data == null ? null : JSON.stringify(row.data),
+          ];
+        });
+        csvData.splice(0, 0, csvHeaders);
+        csvStringify(csvData, (err, csv) => {
+          if (err) throw Error('Error formatting CSV', err);
+          res.attachment(req.params.filename);
+          res.send(csv);
+        });
+      }
+    );
   } else {
     next(error.make(404, 'Unknown filename: ' + req.params.filename));
   }
