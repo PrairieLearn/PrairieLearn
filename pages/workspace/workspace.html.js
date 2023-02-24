@@ -13,7 +13,11 @@ function Workspace({ navTitle, showLogs, resLocals }) {
           )}"></script>
       </head>
 
-      <body class="d-flex flex-column h-100">
+      <body
+        class="d-flex flex-column h-100"
+        data-workspace-id="${resLocals.workspace_id}"
+        data-heartbeat-interval="${resLocals.workspaceHeartbeatIntervalSec}"
+      >
         <div
           class="modal fade"
           id="rebootModal"
@@ -215,10 +219,12 @@ function Workspace({ navTitle, showLogs, resLocals }) {
             $('[data-toggle="popover"]').popover({
               trigger: 'focus',
             });
-          });
-        </script>
-        <script>
-          $(function () {
+
+            const workspaceId = document.body.getAttribute('data-workspace-id');
+            const heartbeatInterval = Number.parseFloat(
+              document.body.getAttribute('data-heartbeat-interval')
+            );
+
             const socket = io('/workspace');
             const loadingFrame = document.getElementById('loading');
             const workspaceFrame = document.getElementById('workspace');
@@ -274,19 +280,19 @@ function Workspace({ navTitle, showLogs, resLocals }) {
             });
 
             socket.on('connect', () => {
-              socket.emit('joinWorkspace', {workspace_id: <%= workspace_id %>}, (msg) => {
-                console.log('joinWorkspace, msg =',msg);
+              socket.emit('joinWorkspace', { workspace_id: workspaceId }, (msg) => {
+                console.log('joinWorkspace, msg =', msg);
                 setState(msg.state);
               });
             });
 
-            socket.emit('startWorkspace', {workspace_id: <%= workspace_id %>});
+            socket.emit('startWorkspace', { workspace_id: workspaceId });
 
             setInterval(() => {
-              socket.emit('heartbeat', {workspace_id: <%= workspace_id %>}, (msg) => {
+              socket.emit('heartbeat', { workspace_id: workspaceId }, (msg) => {
                 console.log('heartbeat, msg =', msg);
               });
-            }, 1000 * <%= workspaceHeartbeatIntervalSec %>);
+            }, heartbeatInterval * 1000);
           });
         </script>
       </body>
