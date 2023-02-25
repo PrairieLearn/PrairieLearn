@@ -39,12 +39,12 @@ class TestSympy:
     ]
 
     EXPR_LIST: list = [
-        sympy.sin(5*N),
+        sympy.sin(5 * N),
         5 * N,
         M * N,
         M + 1,
         M * M + N * N + 4 * N,
-        N * sympy.sin(M*7) + M * M * sympy.cos(N*6),
+        N * sympy.sin(M * 7) + M * M * sympy.cos(N * 6),
         sympy.I * N + M,
         -N,
         sympy.sympify(10),

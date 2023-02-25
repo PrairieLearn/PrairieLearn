@@ -375,7 +375,7 @@ def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
 
     try:
         code = stringify_expr(expr, local_dict, global_dict, transformations)
-    except TokenError as err:
+    except TokenError:
         # TODO see if can get tuple used to create this
         raise HasParseError(-1)
 
@@ -612,7 +612,7 @@ def validate_string_as_sympy(
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
-    except Exception as d:
+    except Exception:
         return "Invalid format."
 
     # If complex numbers are not allowed, raise error if expression has the imaginary unit
