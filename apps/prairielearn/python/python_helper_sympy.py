@@ -10,8 +10,7 @@ from typing import Any, Callable, Literal, Optional, Type, TypedDict, Union, cas
 import sympy
 from sympy.parsing.sympy_parser import (
     eval_expr,
-    implicit_application,
-    implicit_multiplication,
+    implicit_multiplication_application,
     standard_transformations,
     stringify_expr,
 )
@@ -202,24 +201,6 @@ class HasInvalidSymbolError(BaseSympyError):
     symbol: str
 
 
-class CheckNumbers(ast.NodeTransformer):
-    def visit_Constant(self, node: ast.Constant) -> ast.Constant:
-        if isinstance(node.n, int):
-            return cast(
-                ast.Constant,
-                ast.Call(
-                    func=ast.Name(id="_Integer", ctx=ast.Load()),
-                    args=[node],
-                    keywords=[],
-                ),
-            )
-        elif isinstance(node.n, float):
-            raise HasFloatError(node.col_offset, node.n)
-        elif isinstance(node.n, complex):
-            raise HasComplexError(node.col_offset, node.n)
-        return node
-
-
 class CheckWhiteList(ast.NodeVisitor):
     def __init__(self, whitelist: ASTWhiteListT) -> None:
         self.whitelist = whitelist
@@ -330,9 +311,6 @@ def ast_check(expr: str, locals_for_eval: LocalsForEval) -> None:
 
     CheckWhiteList(whitelist).visit(root)
 
-    # Disallow float and complex, and replace int with sympy equivalent
-    CheckNumbers().visit(root)
-
 
 def sympy_check(expr: sympy.Expr, locals_for_eval: LocalsForEval) -> None:
     valid_symbols = set().union(
@@ -368,10 +346,7 @@ def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
         if isinstance(obj, types.BuiltinFunctionType):
             global_dict[name] = obj
 
-    transformations = standard_transformations + (
-        implicit_multiplication,
-        implicit_application,
-    )
+    transformations = standard_transformations + (implicit_multiplication_application,)
 
     try:
         code = stringify_expr(expr, local_dict, global_dict, transformations)
@@ -381,6 +356,9 @@ def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
 
     # First do AST check, mainly for security
     parsed_locals_to_eval = copy.deepcopy(locals_for_eval)
+
+    # Add locals that appear after sympy stringification
+    # This check is only for safety, so won't change what gets parsed
     parsed_locals_to_eval["functions"].update(
         {
             "Integer": sympy.Integer,
@@ -388,6 +366,9 @@ def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
             "Float": sympy.Float,
         }
     )
+
+    parsed_locals_to_eval["variables"]["I"] = sympy.I
+
     ast_check(code, parsed_locals_to_eval)
 
     # Now that it's safe, get sympy expression

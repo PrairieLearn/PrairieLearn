@@ -9,6 +9,8 @@ class TestSympy:
     M, N = sympy.symbols("m n")
 
     EXPR_PAIRS = [
+        ("5mn sin m + arccos 3n", 5 * M * N * sympy.sin(M) + sympy.acos(3 * N)),
+        ("sin**2 (m)", sympy.sin(M) ** 2),
         ("sin 5n", sympy.sin(5 * N)),
         ("5n", 5 * N),
         ("4n + 2m", 4 * N + 2 * M),
@@ -19,6 +21,7 @@ class TestSympy:
             "n * sin(7*m) + m**2 * cos(6*n)",
             N * sympy.sin(M * 7) + M * M * sympy.cos(N * 6),
         ),
+        ("3jn", sympy.I * 3 * N),
         ("i * n + m", sympy.I * N + M),
         ("i * i * n", -N),
         ("sqrt(100)", sympy.sympify(10)),
