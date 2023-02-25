@@ -40,8 +40,6 @@ def get_elements_list(html: str) -> List[slp.Node]:
 
 
 def traverse_and_execute(html: str, fn: Callable[[slp.Node], None]) -> None:
-    # elements = get_elements_list(html)
-
     page = slp.HTMLParser(html)
 
     if page.head is None:
