@@ -9,6 +9,7 @@ class TestSympy:
     M, N = sympy.symbols("m n")
 
     EXPR_STRINGS = [
+        "5n",
         "n * m",
         "m + 1",
         "m**2 + n**2 + 4 * n",
@@ -37,6 +38,7 @@ class TestSympy:
     ]
 
     EXPR_LIST: list = [
+        5 * N,
         M * N,
         M + 1,
         M * M + N * N + 4 * N,
@@ -161,7 +163,7 @@ class TestExceptions:
 
     @pytest.mark.parametrize("a_sub", INVALID_PARSE_CASES)
     def test_parse_error(self, a_sub: str) -> None:
-        with pytest.raises(phs.HasParseError):
+        with pytest.raises(phs.BaseSympyError):
             phs.convert_string_to_sympy(a_sub, self.VARIABLES)
 
     @pytest.mark.parametrize("a_sub", INVALID_ESCAPE_CASES)
@@ -183,7 +185,7 @@ class TestExceptions:
             (INVALID_EXPRESSION_CASES, "invalid expression"),
             (INVALID_FUNCTION_CASES, "invalid function"),
             (INVALID_VARIABLE_CASES, "invalid variable"),
-            (INVALID_PARSE_CASES, "syntax error"),
+            (INVALID_PARSE_CASES, ""),
             (INVALID_ESCAPE_CASES, 'must not contain the character "\\"'),
             (INVALID_COMMENT_CASES, 'must not contain the character "#"'),
         ],

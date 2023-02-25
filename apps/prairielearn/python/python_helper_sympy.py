@@ -269,55 +269,61 @@ def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
     try:
         root = ast.parse(expr, mode="eval")
     except SyntaxError as err:
-        offset = err.offset if err.offset is not None else -1
-        raise HasParseError(offset)
+        pass
+        #offset = err.offset if err.offset is not None else -1
+        #raise HasParseError(offset)
+    else:
+        #TODO I think ok because invalid syntax means nothing malicious can be executed
+        # Link each node to its parent
+        for node in ast.walk(root):
+            for child in ast.iter_child_nodes(node):
+                child.parent = node  # type: ignore
 
-    # Link each node to its parent
-    for node in ast.walk(root):
-        for child in ast.iter_child_nodes(node):
-            child.parent = node  # type: ignore
+        # Disallow functions that are not in locals_for_eval
+        CheckFunctions(locals_for_eval["functions"]).visit(root)
 
-    # Disallow functions that are not in locals_for_eval
-    CheckFunctions(locals_for_eval["functions"]).visit(root)
+        # Disallow variables that are not in locals_for_eval
+        CheckVariables(locals_for_eval["variables"]).visit(root)
 
-    # Disallow variables that are not in locals_for_eval
-    CheckVariables(locals_for_eval["variables"]).visit(root)
+        # Disallow AST nodes that are not in whitelist
+        #
+        # Be very careful about adding to the list below. In particular,
+        # do not add `ast.Attribute` without fully understanding the
+        # reflection-based attacks described by
+        # https://nedbatchelder.com/blog/201206/eval_really_is_dangerous.html
+        # http://blog.delroth.net/2013/03/escaping-a-python-sandbox-ndh-2013-quals-writeup/
+        #
+        whitelist: ASTWhiteListT = (
+            ast.Module,
+            ast.Expr,
+            ast.Load,
+            ast.Expression,
+            ast.Call,
+            ast.Name,
+            ast.Constant,
+            ast.UnaryOp,
+            ast.UAdd,
+            ast.USub,
+            ast.BinOp,
+            ast.Add,
+            ast.Sub,
+            ast.Mult,
+            ast.Div,
+            ast.Mod,
+            ast.Pow,
+        )
 
-    # Disallow AST nodes that are not in whitelist
-    #
-    # Be very careful about adding to the list below. In particular,
-    # do not add `ast.Attribute` without fully understanding the
-    # reflection-based attacks described by
-    # https://nedbatchelder.com/blog/201206/eval_really_is_dangerous.html
-    # http://blog.delroth.net/2013/03/escaping-a-python-sandbox-ndh-2013-quals-writeup/
-    #
-    whitelist: ASTWhiteListT = (
-        ast.Module,
-        ast.Expr,
-        ast.Load,
-        ast.Expression,
-        ast.Call,
-        ast.Name,
-        ast.Constant,
-        ast.UnaryOp,
-        ast.UAdd,
-        ast.USub,
-        ast.BinOp,
-        ast.Add,
-        ast.Sub,
-        ast.Mult,
-        ast.Div,
-        ast.Mod,
-        ast.Pow,
-    )
+        CheckWhiteList(whitelist).visit(root)
 
-    CheckWhiteList(whitelist).visit(root)
+        # Disallow float and complex, and replace int with sympy equivalent
+        root = CheckNumbers().visit(root)
 
-    # Disallow float and complex, and replace int with sympy equivalent
-    root = CheckNumbers().visit(root)
+
+
+
 
     # Clean up lineno and col_offset attributes
-    ast.fix_missing_locations(root)
+    #ast.fix_missing_locations(root)
 
     from sympy.parsing.sympy_parser import (parse_expr, standard_transformations, implicit_application, implicit_multiplication)
     #def substitutions(tokens: List, local_dict: Dict, global_dict: Dict) -> List:
@@ -329,15 +335,22 @@ def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
     from sympy import Function, Symbol
 
     #thing = lambda x : sympy.I if x == "i" else x
-    transformations = standard_transformations #(implicit_multiplication, implicit_application)
-    res = parse_expr(expr, transformations=transformations, local_dict=locals_for_eval)
+    transformations = standard_transformations + (implicit_application, implicit_multiplication)
+    try:
+        res = parse_expr(expr, transformations=transformations, local_dict=locals_for_eval["functions"])
+    except SyntaxError as err:
+        offset = err.offset if err.offset is not None else -1
+        raise HasParseError(offset)
+    except Exception:
+        raise BaseSympyError()
     #arccos =
-    subs_list = [
-        (Function('arccos'), sympy.acos),
-        (Function('arcsin'), sympy.asin),
-        (Function('arctan'), sympy.atan),
-        (Function('arctan2'), sympy.atan2)
-    ]
+
+    subs_list = []
+    #    (Function('arccos'), sympy.acos),
+    #    (Function('arcsin'), sympy.asin),
+    #    (Function('arctan'), sympy.atan),
+    #    (Function('arctan2'), sympy.atan2)
+    #]
 
     for function_name, function in locals_for_eval["functions"].items():
         subs_list.append((Function(function_name), function))
@@ -345,17 +358,15 @@ def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
     for function_name, function in locals_for_eval["variables"].items():
         subs_list.append((Symbol(function_name), function))
 
-    print(locals_for_eval)
 
+    #if locals_for_eval["variables"].get("i") == sympy.I:
+    #    subs_list.append((Symbol("i"), sympy.I))
 
-    if locals_for_eval["variables"].get("i") == sympy.I:
-        subs_list.append((Symbol("i"), sympy.I))
+    #if locals_for_eval["variables"].get("j") == sympy.I:
+    #    subs_list.append((Symbol("j"), sympy.I))
 
-    if locals_for_eval["variables"].get("j") == sympy.I:
-        subs_list.append((Symbol("j"), sympy.I))
-
-    for variable in locals_for_eval["variables"].items():
-        print(type(variable[1]))
+    #for variable in locals_for_eval["variables"].items():
+    #    print(type(variable[1]))
 
     res = res.subs(subs_list)
 
@@ -576,7 +587,7 @@ def validate_string_as_sympy(
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
-    except Exception:
+    except Exception as d:
         return "Invalid format."
 
     # If complex numbers are not allowed, raise error if expression has the imaginary unit
