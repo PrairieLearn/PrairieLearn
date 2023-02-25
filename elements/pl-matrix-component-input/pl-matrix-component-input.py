@@ -520,15 +520,18 @@ def test(element_html, data):
             "feedback": feedback,
         }
 
+from typing import Literal
+from typing_extensions import assert_never
+FormatTypes = Literal["output-invalid", "output-feedback", "input"]
 
-def createTableForHTMLDisplay(m, n, name, label, data, format):
+def createTableForHTMLDisplay(m: int, n: int, name: str, label: str, data: pl.QuestionData, format: FormatTypes) -> str:
     editable = data["editable"]
 
     if format == "output-invalid":
-        display_array = "<table>"
-        display_array += "<tr>"
-        display_array += '<td class="close-left" rowspan="' + str(m) + '"></td>'
-        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
+        display_array = ["<table>",
+                         "<tr>",
+                         f'<td class="close-left" rowspan="{m}"></td>',
+                         f'<td style="width:4px" rowspan="{m}"></td>']
         # First row of array
         for j in range(n):
             each_entry_name = name + str(j + 1)
@@ -537,18 +540,18 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
             )
             format_errors = data["format_errors"].get(each_entry_name, None)
             if format_errors is None:
-                display_array += '<td class="allborder"><code class="user-output">'
+                display_array.append('<td class="allborder"><code class="user-output">')
             else:
-                display_array += (
+                display_array.append(
                     '<td class="allborder"><code class="user-output-invalid">'
                 )
-            display_array += escape(pl.escape_unicode_string(raw_submitted_answer))
-            display_array += "</code></td> "
-        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
-        display_array += '<td class="close-right" rowspan="' + str(m) + '"></td>'
+            display_array.append(escape(pl.escape_unicode_string(raw_submitted_answer)))
+            display_array.append("</code></td> ")
+        display_array.append(f'<td style="width:4px" rowspan="{m}"></td>')
+        display_array.append(f'<td class="close-right" rowspan="{m}"></td>')
         # Add the other rows
         for i in range(1, m):
-            display_array += " <tr>"
+            display_array.append(" <tr>")
             for j in range(n):
                 each_entry_name = name + str(n * i + j + 1)
                 raw_submitted_answer = data["raw_submitted_answers"].get(
@@ -556,21 +559,24 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
                 )
                 format_errors = data["format_errors"].get(each_entry_name, None)
                 if format_errors is None:
-                    display_array += '<td class="allborder"><code class="user-output">'
+                    display_array.append('<td class="allborder"><code class="user-output">')
                 else:
-                    display_array += (
+                    display_array.append(
                         '<td class="allborder"><code class="user-output-invalid">'
                     )
-                display_array += escape(pl.escape_unicode_string(raw_submitted_answer))
-                display_array += "</code></td> "
-            display_array += "</tr>"
-        display_array += "</table>"
+                display_array.append(escape(pl.escape_unicode_string(raw_submitted_answer)))
+                display_array.append("</code></td> ")
+            display_array.append("</tr>")
+        display_array.append("</table>")
+
+        return "".join(display_array)
 
     elif format == "output-feedback":
         partial_score_feedback = data["partial_scores"].get(name, {"feedback": None})
         feedback_each_entry = partial_score_feedback.get("feedback", None)
         score = partial_score_feedback.get("score", None)
 
+        # TODO fold this into the mustache template
         if score is not None:
             score = float(score)
             if score >= 1:
@@ -586,54 +592,53 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
         else:
             score_message = ""
 
-        display_array = "<table>"
-        display_array += "<tr>"
+        display_array = ["<table>", "<tr>"]
         # Add the prefix
         if label is not None:
-            display_array += '<td rowspan="0">' + label + "&nbsp;</td>"
-        display_array += '<td class="close-left" rowspan="' + str(m) + '"></td>'
-        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
+            display_array.append(f'<td rowspan="0">{label}&nbsp;</td>')
+        display_array.append(f'<td class="close-left" rowspan="{m}"></td>')
+        display_array.append(f'<td style="width:4px" rowspan="{m}"></td>')
         # First row of array
         for j in range(n):
             each_entry_name = name + str(j + 1)
             raw_submitted_answer = data["raw_submitted_answers"].get(
                 each_entry_name, None
             )
-            display_array += '<td class="allborder">'
-            display_array += escape(raw_submitted_answer)
+            display_array.append('<td class="allborder">')
+            display_array.append(escape(raw_submitted_answer))
             if feedback_each_entry is not None:
                 if feedback_each_entry[each_entry_name] == "correct":
                     feedback_message = '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
                 elif feedback_each_entry[each_entry_name] == "incorrect":
                     feedback_message = '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
-                display_array += feedback_message
-            display_array += "</td> "
+                display_array.append(feedback_message)
+            display_array.append("</td> ")
         # Add the suffix
-        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
-        display_array += '<td class="close-right" rowspan="' + str(m) + '"></td>'
+        display_array.append(f'<td style="width:4px" rowspan="{m}"></td>')
+        display_array.append(f'<td class="close-right" rowspan="{m}"></td>')
         if score_message is not None:
-            display_array += '<td rowspan="0">&nbsp;' + score_message + "</td>"
-        display_array += "</tr>"
+            display_array.append(f'<td rowspan="0">&nbsp;{score_message}</td>')
+        display_array.append("</tr>")
         # Add the other rows
         for i in range(1, m):
-            display_array += " <tr>"
+            display_array.append(" <tr>")
             for j in range(n):
                 each_entry_name = name + str(n * i + j + 1)
                 raw_submitted_answer = data["raw_submitted_answers"].get(
                     each_entry_name, None
                 )
-                display_array += ' <td class="allborder"> '
-                display_array += escape(raw_submitted_answer)
+                display_array.append(' <td class="allborder"> ')
+                display_array.append(escape(raw_submitted_answer))
                 if feedback_each_entry is not None:
                     if feedback_each_entry[each_entry_name] == "correct":
                         feedback_message = '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
                     elif feedback_each_entry[each_entry_name] == "incorrect":
                         feedback_message = '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
-                    display_array += feedback_message
-                display_array += " </td> "
-            display_array += "</tr>"
-        display_array += "</table>"
-
+                    display_array.append(feedback_message)
+                display_array.append(" </td> ")
+            display_array.append("</tr>")
+        display_array.append("</table>")
+        return "".join(display_array)
     elif format == "input":
         display_array = "<table>"
         display_array += "<tr>"
@@ -680,6 +685,7 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
         display_array += "</table>"
 
     else:
-        display_array = ""
-
+        assert_never(format)
+    print(format)
+    print(display_array)
     return display_array
