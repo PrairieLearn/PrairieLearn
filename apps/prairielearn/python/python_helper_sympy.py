@@ -429,7 +429,7 @@ def convert_string_to_sympy(
     if allow_trig_functions:
         locals_for_eval["functions"].update(const.trig_functions)
 
-    # If there is a list of variables, add each one to the whitelist
+    # If there is a list of variables, add each one to the whitelist with assumptions
     if variables is not None:
         variable_dict = locals_for_eval["variables"]
         for variable in variables:
@@ -442,6 +442,7 @@ def convert_string_to_sympy(
                     variable, **assumptions.get(variable, {})
                 )
 
+    # If there is a list of custom functions, add each one to the whitelist with assumptions
     if custom_functions is not None:
         function_dict = locals_for_eval["functions"]
         for function in custom_functions:

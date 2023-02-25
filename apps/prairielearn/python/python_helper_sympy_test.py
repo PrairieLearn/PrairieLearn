@@ -95,8 +95,14 @@ class TestSympy:
     ]
 
     @pytest.mark.parametrize("a_sub, sympy_ref", CUSTOM_FUNCTION_PAIRS)
+    @pytest.mark.parametrize(
+        "assumptions", [None, {"g": {"real": True}, "f": {"rational_function": True}}]
+    )
     def test_custom_function_conversion(
-        self, a_sub: str, sympy_ref: sympy.Expr
+        self,
+        a_sub: str,
+        sympy_ref: sympy.Expr,
+        assumptions: Optional[phs.AssumptionsDictT],
     ) -> None:
         assert sympy_ref == phs.convert_string_to_sympy(
             a_sub,
@@ -147,8 +153,12 @@ class TestSympy:
             zip(CUSTOM_FUNCTION_PAIRS, repeat(FUNCTION_NAMES)),
         ),
     )
+    @pytest.mark.parametrize("remove_assumptions", [True, False])
     def test_json_conversion(
-        self, a_pair: tuple[str, sympy.Expr], custom_functions: Optional[list[str]]
+        self,
+        a_pair: tuple[str, sympy.Expr],
+        custom_functions: Optional[list[str]],
+        remove_assumptions: bool,
     ) -> None:
         a_sub, _ = a_pair
         sympy_expr = phs.convert_string_to_sympy(
@@ -158,10 +168,16 @@ class TestSympy:
             custom_functions=custom_functions,
         )
         # Check that json serialization works
-        json_expr = json.dumps(phs.sympy_to_json(sympy_expr), allow_nan=False)
+        json_dict = phs.sympy_to_json(sympy_expr)
+
+        if remove_assumptions:
+            json_dict.pop("_assumptions")
+
+        json_expr = json.dumps(json_dict, allow_nan=False)
 
         # Check equivalence after converting back
         json_converted_expr = phs.json_to_sympy(json.loads(json_expr))
+
         assert sympy_expr == json_converted_expr
 
     # TODO parameterize this with more extensive test cases
