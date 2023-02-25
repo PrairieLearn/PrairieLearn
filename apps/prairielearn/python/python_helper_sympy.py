@@ -331,8 +331,33 @@ def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
     #thing = lambda x : sympy.I if x == "i" else x
     transformations = standard_transformations #(implicit_multiplication, implicit_application)
     res = parse_expr(expr, transformations=transformations, local_dict=locals_for_eval)
-    arccos =
-    res = res.subs(Function('arccos'), sympy.acos)
+    #arccos =
+    subs_list = [
+        (Function('arccos'), sympy.acos),
+        (Function('arcsin'), sympy.asin),
+        (Function('arctan'), sympy.atan),
+        (Function('arctan2'), sympy.atan2)
+    ]
+
+    for function_name, function in locals_for_eval["functions"].items():
+        subs_list.append((Function(function_name), function))
+
+    for function_name, function in locals_for_eval["variables"].items():
+        subs_list.append((Symbol(function_name), function))
+
+    print(locals_for_eval)
+
+
+    if locals_for_eval["variables"].get("i") == sympy.I:
+        subs_list.append((Symbol("i"), sympy.I))
+
+    if locals_for_eval["variables"].get("j") == sympy.I:
+        subs_list.append((Symbol("j"), sympy.I))
+
+    for variable in locals_for_eval["variables"].items():
+        print(type(variable[1]))
+
+    res = res.subs(subs_list)
 
     return res
     # Convert AST to code and evaluate it with no global expressions and with
@@ -423,12 +448,12 @@ def sympy_to_json(
         reserved |= const.trig_functions.keys()
 
     # Check if reserved variables conflict, raise an error if they do
-    #conflicting_reserved_variables = reserved & set(variables)
+    conflicting_reserved_variables = reserved & set(variables)
 
-    #if conflicting_reserved_variables:
-    #    raise ValueError(
-    #        f"sympy expression has variables with reserved names: {conflicting_reserved_variables}"
-    #    )
+    if conflicting_reserved_variables:
+        raise ValueError(
+            f"sympy expression has variables with reserved names: {conflicting_reserved_variables}"
+        )
 
     # Apply substitutions for hidden variables
     a_sub = a.subs([(val, key) for key, val in const.hidden_variables.items()])
