@@ -1,6 +1,5 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
-const util = require('util');
 const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
 const router = express.Router();
@@ -123,7 +122,7 @@ router.post(
         req.body.points,
         res.locals.authn_user.user_id,
       ]);
-      await util.promisify(ltiOutcomes.updateScore)(res.locals.assessment_instance.id);
+      await ltiOutcomes.updateScoreAsync(res.locals.assessment_instance.id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_total_score_perc') {
       await sqldb.callAsync('assessment_instances_update_score_perc', [
@@ -131,7 +130,7 @@ router.post(
         req.body.score_perc,
         res.locals.authn_user.user_id,
       ]);
-      await util.promisify(ltiOutcomes.updateScore)(res.locals.assessment_instance.id);
+      await ltiOutcomes.updateScoreAsync(res.locals.assessment_instance.id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_question_points') {
       const { modified_at_conflict, grading_job_id } =
