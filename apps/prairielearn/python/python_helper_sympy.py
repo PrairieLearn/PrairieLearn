@@ -314,10 +314,10 @@ def ast_check(expr: str, locals_for_eval: LocalsForEval) -> None:
 
 def sympy_check(expr: sympy.Expr, locals_for_eval: LocalsForEval) -> None:
     valid_symbols = set().union(
-        *(inner_dict.keys() for inner_dict in locals_for_eval.values())
+        *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
     )
 
-    work_stack = deque([expr])
+    work_stack: deque[sympy.Basic] = deque([expr])
 
     while work_stack:
         item = work_stack.pop()
@@ -332,7 +332,9 @@ def sympy_check(expr: sympy.Expr, locals_for_eval: LocalsForEval) -> None:
 
 def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
     local_dict = {
-        k: v for inner_dict in locals_for_eval.values() for k, v in inner_dict.items()
+        k: v
+        for inner_dict in locals_for_eval.values()
+        for k, v in cast(SympyMapT, inner_dict).items()
     }
 
     # Based on code here:
