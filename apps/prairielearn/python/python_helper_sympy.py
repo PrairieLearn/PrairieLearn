@@ -319,6 +319,22 @@ def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
     # Clean up lineno and col_offset attributes
     ast.fix_missing_locations(root)
 
+    from sympy.parsing.sympy_parser import (parse_expr, standard_transformations, implicit_application, implicit_multiplication)
+    #def substitutions(tokens: List, local_dict: Dict, global_dict: Dict) -> List:
+    #    res = []
+    #    for token in tokens:
+    #        print(token)
+    #        res.append(token)
+    #    return res
+    from sympy import Function, Symbol
+
+    #thing = lambda x : sympy.I if x == "i" else x
+    transformations = standard_transformations #(implicit_multiplication, implicit_application)
+    res = parse_expr(expr, transformations=transformations, local_dict=locals_for_eval)
+    arccos =
+    res = res.subs(Function('arccos'), sympy.acos)
+
+    return res
     # Convert AST to code and evaluate it with no global expressions and with
     # a whitelist of local expressions. Flattens out the inner dictionaries
     # that appear in locals_for_eval for the final call to eval.
@@ -407,12 +423,12 @@ def sympy_to_json(
         reserved |= const.trig_functions.keys()
 
     # Check if reserved variables conflict, raise an error if they do
-    conflicting_reserved_variables = reserved & set(variables)
+    #conflicting_reserved_variables = reserved & set(variables)
 
-    if conflicting_reserved_variables:
-        raise ValueError(
-            f"sympy expression has variables with reserved names: {conflicting_reserved_variables}"
-        )
+    #if conflicting_reserved_variables:
+    #    raise ValueError(
+    #        f"sympy expression has variables with reserved names: {conflicting_reserved_variables}"
+    #    )
 
     # Apply substitutions for hidden variables
     a_sub = a.subs([(val, key) for key, val in const.hidden_variables.items()])
