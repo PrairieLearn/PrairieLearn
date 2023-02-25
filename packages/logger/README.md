@@ -5,12 +5,17 @@ Provides a shared [Winston](https://github.com/winstonjs/winston) instance for a
 ## Usage
 
 ```ts
-import { logger, enableFileLogging } from '@prairielearn/logger';
+import { logger, addFileLogging } from '@prairielearn/logger';
 
-enableFileLogging('/path/to/file.log');
+// Log all messages to a file.
+addFileLogging({ filename: '/path/to/file.log' });
 
-logger.info('info');
+// Log all errors to another file.
+addFileLogging({ filename: '/path/to/errors.log', level: 'error' });
+
+logger.debug('verbose');
 logger.verbose('verbose');
+logger.info('info');
 logger.warn('warn');
 
 try {

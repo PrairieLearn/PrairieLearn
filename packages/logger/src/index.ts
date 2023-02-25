@@ -10,11 +10,16 @@ export const logger = winston.createLogger({
   ],
 });
 
-export function enableFileLogging(filename: string) {
+interface AddFileLoggingOptions {
+  filename: string;
+  level?: string;
+}
+
+export function addFileLogging(options: AddFileLoggingOptions) {
   logger.add(
     new winston.transports.File({
-      filename: filename,
-      level: 'debug',
+      filename: options.filename,
+      level: options.level ?? 'debug',
       format: format.combine(format.timestamp(), format.json()),
     })
   );
