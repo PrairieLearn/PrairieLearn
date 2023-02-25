@@ -4,7 +4,6 @@ import copy
 import types
 from collections import deque
 from dataclasses import dataclass
-from itertools import chain
 from tokenize import TokenError
 from typing import Any, Callable, Literal, Optional, Type, TypedDict, Union, cast
 
@@ -435,11 +434,8 @@ def convert_string_to_sympy(
     if allow_trig_functions:
         locals_for_eval["functions"].update(const.trig_functions)
 
-    used_names = set(
-        chain.from_iterable(
-            cast(SympyMapT, symbol_dict).keys()
-            for symbol_dict in locals_for_eval.values()
-        )
+    used_names = set().union(
+        *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
     )
 
     # Check assumptions are all made about valid variables only
