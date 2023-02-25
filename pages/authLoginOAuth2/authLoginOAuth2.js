@@ -9,9 +9,7 @@ const config = require('../../lib/config');
 const { OAuth2Client } = require('google-auth-library');
 
 router.get('/', function (req, res, next) {
-  if (!(config.hasGoogleAuth || config.hasOauth)) {
-    return next(new Error('Google login is not enabled'));
-  }
+  if (!config.hasOauth) return next(new Error('Google login is not enabled'));
   let url;
   try {
     const oauth2Client = new OAuth2Client(

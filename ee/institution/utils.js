@@ -32,7 +32,7 @@ async function getSupportedAuthenticationProviders() {
       return config.hasShib;
     }
     if (row.name === 'Google') {
-      return config.hasGoogleAuth;
+      return config.hasOauth;
     }
     if (row.name === 'Azure') {
       return config.hasAzure;
