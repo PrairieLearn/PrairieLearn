@@ -4,7 +4,7 @@ const asyncHandler = require('express-async-handler');
 const router = express.Router();
 const opsbot = require('../../lib/opsbot');
 const github = require('../../lib/github');
-const logger = require('../../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const config = require('../../lib/config');
 const path = require('path');
 

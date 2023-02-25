@@ -31,7 +31,7 @@ const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const compiledAssets = require('@prairielearn/compiled-assets');
 
-const logger = require('./lib/logger');
+const { logger, enableFileLogging } = require('@prairielearn/logger');
 const config = require('./lib/config');
 const load = require('./lib/load');
 const awsHelper = require('./lib/aws.js');
@@ -1894,7 +1894,7 @@ if (config.startServer) {
         }
 
         if (config.logFilename) {
-          logger.addFileLogging(config.logFilename);
+          enableFileLogging(config.logFilename);
           logger.verbose('activated file logging: ' + config.logFilename);
         }
       },

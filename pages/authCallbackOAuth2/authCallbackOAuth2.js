@@ -5,7 +5,7 @@ const Sentry = require('@prairielearn/sentry');
 const express = require('express');
 const router = express.Router();
 
-const logger = require('../../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const config = require('../../lib/config');
 const csrf = require('../../lib/csrf');
 const sqldb = require('@prairielearn/postgres');
