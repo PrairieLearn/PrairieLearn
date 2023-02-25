@@ -235,8 +235,8 @@ class TestExceptions:
         a_true = "n**2"
 
         # Test for invalid functions in student submission and solution
-        with pytest.raises(phs.HasInvalidFunctionError):
+        with pytest.raises((phs.HasInvalidSymbolError, phs.HasInvalidFunctionError)):
             grading_fn(a_true, a_sub, VARIABLES)
 
-        with pytest.raises(phs.HasInvalidFunctionError):
+        with pytest.raises((phs.HasInvalidSymbolError, phs.HasInvalidFunctionError)):
             grading_fn(a_sub, a_true, VARIABLES)
