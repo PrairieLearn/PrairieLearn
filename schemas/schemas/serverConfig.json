@@ -153,7 +153,11 @@
             "type": "boolean"
         },
         "hasOauth": {
-            "description": "Enables OAuth authentication",
+            "description": "Enables Google authentication, deprecated name",
+            "type": "boolean"
+        },
+        "hasGoogleAuth": {
+            "description": "Enables Google authentication",
             "type": "boolean"
         },
         "workersCount": {

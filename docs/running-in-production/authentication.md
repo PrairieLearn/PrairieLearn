@@ -9,7 +9,7 @@ PrairieLearn currently has a few ways to do user authentication.
 
 ## Google OAuth 2
 
-Take a look in `pages/authLoginOAuth2/authLoginOAuth2.js` and `pages/authCallbackOAuth2/authCallbackOAuth2.js` to get an idea of what variables you need to modify.
+Take a look in `pages/authLoginGoogle/authLoginGoogle.js` and `pages/authCallbackGoogle/authCallbackGoogle.js` to get an idea of what variables you need to modify.
 
 To start create a [Google Cloud account](https://cloud.google.com/) and then:
 
