@@ -154,6 +154,14 @@ class BaseSympyError(Exception):
     pass
 
 
+class HasConflictingVariable(BaseSympyError):
+    pass
+
+
+class HasConflictingFunction(BaseSympyError):
+    pass
+
+
 @dataclass
 class HasFloatError(BaseSympyError):
     offset: int
@@ -393,11 +401,12 @@ def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
 
 def convert_string_to_sympy(
     expr: str,
-    variables: Optional[list[str]],
+    variables: Optional[list[str]] = None,
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
+    custom_functions: Optional[list[str]] = None,
     assumptions: Optional[AssumptionsDictT] = None,
 ) -> sympy.Expr:
     const = _Constants()
@@ -421,16 +430,39 @@ def convert_string_to_sympy(
 
     # If there is a list of variables, add each one to the whitelist
     if variables is not None:
-        if assumptions is not None:
-            locals_for_eval["variables"].update(
-                (variable, sympy.Symbol(variable, **assumptions.get(variable, {})))
-                for variable in variables
-            )
+        variable_dict = locals_for_eval["variables"]
+        for variable in variables:
+            if variable in variable_dict:
+                raise HasConflictingVariable(f"Conflicting variable name: {variable}")
+            elif assumptions is None:
+                variable_dict[variable] = sympy.Symbol(variable)
+            else:
+                variable_dict[variable] = sympy.Symbol(
+                    variable, **assumptions.get(variable, {})
+                )
+
+    if custom_functions is not None:
+        function_dict = locals_for_eval["functions"]
+        for function in custom_functions:
+            if function in function_dict:
+                raise HasConflictingFunction(f"Conflicting variable name: {function}")
+            elif assumptions is None:
+                function_dict[function] = sympy.Function(function)
+            else:
+                function_dict[function] = sympy.Function(
+                    function, **assumptions.get(function, {})
+                )
+
+        # if assumptions is not None:
+        #    variable_dict.update(
+        #        (variable, )
+        #        for variable in variables
+        #    )
         # Add assumptions to each variable if they exist
-        else:
-            locals_for_eval["variables"].update(
-                (variable, sympy.Symbol(variable)) for variable in variables
-            )
+        # else:
+        #    locals_for_eval["variables"].update(
+        #        (variable, sympy.Symbol(variable)) for variable in variables
+        #    )
 
     # Do the conversion
     return evaluate(expr, locals_for_eval)
@@ -470,7 +502,7 @@ def sympy_to_json(
     conflicting_reserved_variables = reserved & set(variables)
 
     if conflicting_reserved_variables:
-        raise ValueError(
+        raise HasConflictingVariable(
             f"sympy expression has variables with reserved names: {conflicting_reserved_variables}"
         )
 

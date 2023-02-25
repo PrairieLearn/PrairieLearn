@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 import pytest
 import python_helper_sympy as phs
@@ -31,7 +32,24 @@ def test_evaluate() -> None:
 
 
 class TestSympy:
+    SYMBOL_NAMES = ["n", "m"]
+    FUNCTION_NAMES = ["f", "g"]
     M, N = sympy.symbols("m n")
+
+    # Any annotations here to ignore annoying typechecking complaining
+    F: Any = sympy.Function("f")
+    G: Any = sympy.Function("g")
+
+    # TODO add more tests of custom functions
+    CUSTOM_FUNCTION_PAIRS = [
+        ("f(1) + g(2)", F(1) + G(2)),
+        ("f(1) + g(2, 3) + sin n", F(1) + G(2, 3) + sympy.sin(N)),
+    ]
+
+    INCORRECT_FUNCTION_PAIRS = [
+        ("f(1) + g(2)", F(1) + G(2, 3)),
+        ("f(1) + g(2)", G(1) + F(2)),
+    ]
 
     EXPR_PAIRS = [
         ("3^m + 4", 3**M + 4),
@@ -73,17 +91,40 @@ class TestSympy:
         ("acosh(m)", sympy.acosh(M)),
     ]
 
+    @pytest.mark.parametrize("a_sub, sympy_ref", CUSTOM_FUNCTION_PAIRS)
+    def test_custom_function_conversion(
+        self, a_sub: str, sympy_ref: sympy.Expr
+    ) -> None:
+        assert sympy_ref == phs.convert_string_to_sympy(
+            a_sub,
+            self.SYMBOL_NAMES,
+            allow_complex=True,
+            custom_functions=self.FUNCTION_NAMES,
+        )
+
+    @pytest.mark.parametrize("a_sub, sympy_ref", INCORRECT_FUNCTION_PAIRS)
+    def test_custom_function_incorrect(self, a_sub: str, sympy_ref: sympy.Expr) -> None:
+        assert sympy_ref != phs.convert_string_to_sympy(
+            a_sub,
+            self.SYMBOL_NAMES,
+            allow_complex=True,
+            custom_functions=self.FUNCTION_NAMES,
+        )
+
     @pytest.mark.parametrize("a_sub, sympy_ref", EXPR_PAIRS)
     def test_string_conversion(self, a_sub: str, sympy_ref: sympy.Expr) -> None:
         assert sympy_ref == phs.convert_string_to_sympy(
-            a_sub, ["n", "m"], allow_complex=True
+            a_sub,
+            self.SYMBOL_NAMES,
+            allow_complex=True,
         )
 
     @pytest.mark.parametrize("a_pair", EXPR_PAIRS)
     def test_valid_format(self, a_pair: tuple[str, sympy.Expr]) -> None:
         a_sub, _ = a_pair
         assert (
-            phs.validate_string_as_sympy(a_sub, ["n", "m"], allow_complex=True) is None
+            phs.validate_string_as_sympy(a_sub, self.SYMBOL_NAMES, allow_complex=True)
+            is None
         )
 
     @pytest.mark.parametrize(
@@ -99,7 +140,9 @@ class TestSympy:
     @pytest.mark.parametrize("a_pair", EXPR_PAIRS)
     def test_json_conversion(self, a_pair: tuple[str, sympy.Expr]) -> None:
         a_sub, _ = a_pair
-        sympy_expr = phs.convert_string_to_sympy(a_sub, ["n", "m"], allow_complex=True)
+        sympy_expr = phs.convert_string_to_sympy(
+            a_sub, self.SYMBOL_NAMES, allow_complex=True
+        )
         # Check that json serialization works
         json_expr = json.dumps(phs.sympy_to_json(sympy_expr), allow_nan=False)
 
@@ -146,9 +189,12 @@ class TestExceptions:
 
     @pytest.mark.parametrize("a_sub", COMPLEX_CASES)
     def test_reserved_variables(self, a_sub: str) -> None:
-        expr = phs.convert_string_to_sympy(a_sub, ["i", "j"], allow_complex=True)
-        with pytest.raises(ValueError):
-            phs.sympy_to_json(expr)
+        with pytest.raises(phs.HasConflictingVariable):
+            phs.convert_string_to_sympy(a_sub, ["i", "j"], allow_complex=True)
+
+    def test_reserved_functions(self) -> None:
+        with pytest.raises(phs.HasConflictingFunction):
+            phs.convert_string_to_sympy("sin 1", custom_functions=["sin", "f"])
 
     @pytest.mark.parametrize("a_sub", NO_FLOATS_CASES)
     def test_no_floats(self, a_sub: str) -> None:
