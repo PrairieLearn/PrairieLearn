@@ -1,8 +1,20 @@
 import ast
+import builtins
+import copy
+import types
+from collections import deque
 from dataclasses import dataclass
+from tokenize import TokenError
 from typing import Any, Callable, Literal, Optional, Type, TypedDict, Union, cast
 
 import sympy
+from sympy.parsing.sympy_parser import (
+    eval_expr,
+    implicit_application,
+    implicit_multiplication,
+    standard_transformations,
+    stringify_expr,
+)
 from typing_extensions import NotRequired
 
 SympyMapT = dict[str, Union[Callable, sympy.Basic]]
@@ -185,6 +197,11 @@ class HasCommentError(BaseSympyError):
     offset: int
 
 
+@dataclass
+class HasInvalidSymbolError(BaseSympyError):
+    symbol: str
+
+
 class CheckNumbers(ast.NodeTransformer):
     def visit_Constant(self, node: ast.Constant) -> ast.Constant:
         if isinstance(node.n, int):
@@ -254,7 +271,7 @@ def get_parent_with_location(node: ast.AST) -> Any:
     return get_parent_with_location(node.parent)  # type: ignore
 
 
-def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
+def ast_check(expr: str, locals_for_eval: LocalsForEval) -> None:
     # Disallow escape character
     ind = expr.find("\\")
     if ind != -1:
@@ -269,118 +286,120 @@ def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
     try:
         root = ast.parse(expr, mode="eval")
     except SyntaxError as err:
-        pass
-        #offset = err.offset if err.offset is not None else -1
-        #raise HasParseError(offset)
-    else:
-        #TODO I think ok because invalid syntax means nothing malicious can be executed
-        # Link each node to its parent
-        for node in ast.walk(root):
-            for child in ast.iter_child_nodes(node):
-                child.parent = node  # type: ignore
-
-        # Disallow functions that are not in locals_for_eval
-        CheckFunctions(locals_for_eval["functions"]).visit(root)
-
-        # Disallow variables that are not in locals_for_eval
-        CheckVariables(locals_for_eval["variables"]).visit(root)
-
-        # Disallow AST nodes that are not in whitelist
-        #
-        # Be very careful about adding to the list below. In particular,
-        # do not add `ast.Attribute` without fully understanding the
-        # reflection-based attacks described by
-        # https://nedbatchelder.com/blog/201206/eval_really_is_dangerous.html
-        # http://blog.delroth.net/2013/03/escaping-a-python-sandbox-ndh-2013-quals-writeup/
-        #
-        whitelist: ASTWhiteListT = (
-            ast.Module,
-            ast.Expr,
-            ast.Load,
-            ast.Expression,
-            ast.Call,
-            ast.Name,
-            ast.Constant,
-            ast.UnaryOp,
-            ast.UAdd,
-            ast.USub,
-            ast.BinOp,
-            ast.Add,
-            ast.Sub,
-            ast.Mult,
-            ast.Div,
-            ast.Mod,
-            ast.Pow,
-        )
-
-        CheckWhiteList(whitelist).visit(root)
-
-        # Disallow float and complex, and replace int with sympy equivalent
-        root = CheckNumbers().visit(root)
-
-
-
-
-
-    # Clean up lineno and col_offset attributes
-    #ast.fix_missing_locations(root)
-
-    from sympy.parsing.sympy_parser import (parse_expr, standard_transformations, implicit_application, implicit_multiplication)
-    #def substitutions(tokens: List, local_dict: Dict, global_dict: Dict) -> List:
-    #    res = []
-    #    for token in tokens:
-    #        print(token)
-    #        res.append(token)
-    #    return res
-    from sympy import Function, Symbol
-
-    #thing = lambda x : sympy.I if x == "i" else x
-    transformations = standard_transformations + (implicit_application, implicit_multiplication)
-    try:
-        res = parse_expr(expr, transformations=transformations, local_dict=locals_for_eval["functions"])
-    except SyntaxError as err:
         offset = err.offset if err.offset is not None else -1
         raise HasParseError(offset)
-    except Exception:
-        raise BaseSympyError()
-    #arccos =
 
-    subs_list = []
-    #    (Function('arccos'), sympy.acos),
-    #    (Function('arcsin'), sympy.asin),
-    #    (Function('arctan'), sympy.atan),
-    #    (Function('arctan2'), sympy.atan2)
-    #]
+    # Link each node to its parent
+    for node in ast.walk(root):
+        for child in ast.iter_child_nodes(node):
+            child.parent = node  # type: ignore
 
-    for function_name, function in locals_for_eval["functions"].items():
-        subs_list.append((Function(function_name), function))
+    # Disallow functions that are not in locals_for_eval
+    CheckFunctions(locals_for_eval["functions"]).visit(root)
 
-    for function_name, function in locals_for_eval["variables"].items():
-        subs_list.append((Symbol(function_name), function))
+    # Disallow variables that are not in locals_for_eval
+    CheckVariables(locals_for_eval["variables"]).visit(root)
+
+    # Disallow AST nodes that are not in whitelist
+    #
+    # Be very careful about adding to the list below. In particular,
+    # do not add `ast.Attribute` without fully understanding the
+    # reflection-based attacks described by
+    # https://nedbatchelder.com/blog/201206/eval_really_is_dangerous.html
+    # http://blog.delroth.net/2013/03/escaping-a-python-sandbox-ndh-2013-quals-writeup/
+    #
+    whitelist: ASTWhiteListT = (
+        ast.Module,
+        ast.Expr,
+        ast.Load,
+        ast.Expression,
+        ast.Call,
+        ast.Name,
+        ast.Constant,
+        ast.UnaryOp,
+        ast.UAdd,
+        ast.USub,
+        ast.BinOp,
+        ast.Add,
+        ast.Sub,
+        ast.Mult,
+        ast.Div,
+        ast.Mod,
+        ast.Pow,
+    )
+
+    CheckWhiteList(whitelist).visit(root)
+
+    # Disallow float and complex, and replace int with sympy equivalent
+    CheckNumbers().visit(root)
 
 
-    #if locals_for_eval["variables"].get("i") == sympy.I:
-    #    subs_list.append((Symbol("i"), sympy.I))
+def sympy_check(expr: sympy.Expr, locals_for_eval: LocalsForEval) -> None:
+    valid_symbols = set().union(
+        *(inner_dict.keys() for inner_dict in locals_for_eval.values())
+    )
 
-    #if locals_for_eval["variables"].get("j") == sympy.I:
-    #    subs_list.append((Symbol("j"), sympy.I))
+    work_stack = deque([expr])
 
-    #for variable in locals_for_eval["variables"].items():
-    #    print(type(variable[1]))
+    while work_stack:
+        item = work_stack.pop()
 
-    res = res.subs(subs_list)
+        if isinstance(item, sympy.Symbol) and str(item) not in valid_symbols:
+            raise HasInvalidSymbolError(str(item))
+        elif isinstance(item, sympy.Float):
+            raise HasFloatError(-1, float(str(item)))
 
-    return res
-    # Convert AST to code and evaluate it with no global expressions and with
-    # a whitelist of local expressions. Flattens out the inner dictionaries
-    # that appear in locals_for_eval for the final call to eval.
-    locals = {
-        name: expr
-        for local_expressions in locals_for_eval.values()
-        for name, expr in cast(SympyMapT, local_expressions).items()
+        work_stack.extend(item.args)
+
+
+def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
+    local_dict = {
+        k: v for inner_dict in locals_for_eval.values() for k, v in inner_dict.items()
     }
 
-    return eval(compile(root, "<ast>", "eval"), {"__builtins__": None}, locals)
+    # Based on code here:
+    # https://github.com/sympy/sympy/blob/26f7bdbe3f860e7b4492e102edec2d6b429b5aaf/sympy/parsing/sympy_parser.py#L1086
+
+    global_dict = {}
+    exec("from sympy import *", global_dict)
+
+    builtins_dict = vars(builtins)
+    for name, obj in builtins_dict.items():
+        if isinstance(obj, types.BuiltinFunctionType):
+            global_dict[name] = obj
+
+    transformations = standard_transformations + (
+        implicit_multiplication,
+        implicit_application,
+    )
+
+    try:
+        code = stringify_expr(expr, local_dict, global_dict, transformations)
+    except TokenError as err:
+        # TODO see if can get tuple used to create this
+        raise HasParseError(-1)
+
+    # First do AST check, mainly for security
+    parsed_locals_to_eval = copy.deepcopy(locals_for_eval)
+    parsed_locals_to_eval["functions"].update(
+        {
+            "Integer": sympy.Integer,
+            "Symbol": sympy.Symbol,
+            "Float": sympy.Float,
+        }
+    )
+    ast_check(code, parsed_locals_to_eval)
+
+    # Now that it's safe, get sympy expression
+    try:
+        res = eval_expr(code, local_dict, global_dict)
+    except Exception:
+        raise BaseSympyError()
+
+    # Finaly, check for invalid symbols
+    sympy_check(res, locals_for_eval)
+
+    return res
 
 
 def convert_string_to_sympy(
@@ -567,6 +586,12 @@ def validate_string_as_sympy(
         return (
             f'Your answer refers to an invalid variable "{err.text}". '
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
+            "Note that the location of the syntax error is approximate."
+        )
+    except HasInvalidSymbolError as err:
+        return (
+            f'Your answer refers to an invalid symbol "{err.symbol}". '
+            f"<br><br><pre>{point_to_error(expr, -1)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
     except HasParseError as err:

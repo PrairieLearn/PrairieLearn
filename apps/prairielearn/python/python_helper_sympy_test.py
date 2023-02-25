@@ -9,11 +9,12 @@ class TestSympy:
     M, N = sympy.symbols("m n")
 
     EXPR_STRINGS = [
+        "sin 5n",
         "5n",
         "n * m",
         "m + 1",
         "m**2 + n**2 + 4 * n",
-        "n * sin(m) + m**2 * cos(n)",
+        "n * sin(7*m) + m**2 * cos(6*n)",
         "i * n + m",
         "i * i * n",
         "sqrt(100)",
@@ -38,11 +39,12 @@ class TestSympy:
     ]
 
     EXPR_LIST: list = [
+        sympy.sin(5*N),
         5 * N,
         M * N,
         M + 1,
         M * M + N * N + 4 * N,
-        N * sympy.sin(M) + M * M * sympy.cos(N),
+        N * sympy.sin(M*7) + M * M * sympy.cos(N*6),
         sympy.I * N + M,
         -N,
         sympy.sympify(10),
@@ -132,7 +134,7 @@ class TestExceptions:
 
     @pytest.mark.parametrize("a_sub", COMPLEX_CASES)
     def test_not_allowed_complex(self, a_sub: str) -> None:
-        with pytest.raises(phs.HasInvalidVariableError):
+        with pytest.raises(phs.HasInvalidSymbolError):
             phs.convert_string_to_sympy(a_sub, self.VARIABLES, allow_complex=False)
 
     @pytest.mark.parametrize("a_sub", COMPLEX_CASES)
@@ -153,17 +155,17 @@ class TestExceptions:
 
     @pytest.mark.parametrize("a_sub", INVALID_FUNCTION_CASES)
     def test_invalid_function(self, a_sub: str) -> None:
-        with pytest.raises(phs.HasInvalidFunctionError):
+        with pytest.raises((phs.HasInvalidSymbolError, phs.HasInvalidFunctionError)):
             phs.convert_string_to_sympy(a_sub, self.VARIABLES)
 
     @pytest.mark.parametrize("a_sub", INVALID_VARIABLE_CASES)
     def test_invalid_variable(self, a_sub: str) -> None:
-        with pytest.raises(phs.HasInvalidVariableError):
+        with pytest.raises(phs.HasInvalidSymbolError):
             phs.convert_string_to_sympy(a_sub, self.VARIABLES)
 
     @pytest.mark.parametrize("a_sub", INVALID_PARSE_CASES)
     def test_parse_error(self, a_sub: str) -> None:
-        with pytest.raises(phs.BaseSympyError):
+        with pytest.raises(phs.HasParseError):
             phs.convert_string_to_sympy(a_sub, self.VARIABLES)
 
     @pytest.mark.parametrize("a_sub", INVALID_ESCAPE_CASES)
@@ -183,9 +185,9 @@ class TestExceptions:
         [
             (NO_FLOATS_CASES, "floating-point number"),
             (INVALID_EXPRESSION_CASES, "invalid expression"),
-            (INVALID_FUNCTION_CASES, "invalid function"),
-            (INVALID_VARIABLE_CASES, "invalid variable"),
-            (INVALID_PARSE_CASES, ""),
+            (INVALID_FUNCTION_CASES, "invalid"),
+            (INVALID_VARIABLE_CASES, "invalid symbol"),
+            (INVALID_PARSE_CASES, "syntax error"),
             (INVALID_ESCAPE_CASES, 'must not contain the character "\\"'),
             (INVALID_COMMENT_CASES, 'must not contain the character "#"'),
         ],
