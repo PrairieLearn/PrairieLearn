@@ -5,6 +5,7 @@ from typing import Callable, Optional, Union
 
 import selectolax.parser as slp
 
+# TODO maybe remove the non-string return types?
 ElementReplacement = Union[None, str, slp.Node, list[slp.Node]]
 
 # https://developer.mozilla.org/en-US/docs/Glossary/Void_element
