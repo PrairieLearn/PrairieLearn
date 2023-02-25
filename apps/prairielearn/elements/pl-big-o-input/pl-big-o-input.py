@@ -59,7 +59,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     name = pl.get_string_attrib(element, "answers-name")
-    variables = phs.get_variables_list(
+    variables = phs.get_items_list(
         pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
 
@@ -85,7 +85,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    variables = phs.get_variables_list(
+    variables = phs.get_items_list(
         pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
     display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
@@ -225,7 +225,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    variables = phs.get_variables_list(
+    variables = phs.get_items_list(
         pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
 
@@ -251,7 +251,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    variables = phs.get_variables_list(
+    variables = phs.get_items_list(
         pl.get_string_attrib(element, "variable", VARIABLES_DEFAULT)
     )
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)

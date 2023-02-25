@@ -30,6 +30,7 @@ class SympyJson(TypedDict):
     _value: str
     _variables: list[str]
     _assumptions: NotRequired[AssumptionsDictT]
+    _custom_functions: NotRequired[list[str]]
 
 
 class LocalsForEval(TypedDict):
@@ -453,17 +454,6 @@ def convert_string_to_sympy(
                     function, **assumptions.get(function, {})
                 )
 
-        # if assumptions is not None:
-        #    variable_dict.update(
-        #        (variable, )
-        #        for variable in variables
-        #    )
-        # Add assumptions to each variable if they exist
-        # else:
-        #    locals_for_eval["variables"].update(
-        #        (variable, sympy.Symbol(variable)) for variable in variables
-        #    )
-
     # Do the conversion
     return evaluate(expr, locals_for_eval)
 
@@ -484,7 +474,7 @@ def sympy_to_json(
     # Get list of variables in the sympy expression
     variables = list(map(str, a.free_symbols))
 
-    # Check that variables do not conflict with reserved names
+    # Get reserved variables for custom function parsing
     reserved = (
         const.helpers.keys()
         | const.variables.keys()
@@ -498,14 +488,6 @@ def sympy_to_json(
     if allow_trig_functions:
         reserved |= const.trig_functions.keys()
 
-    # Check if reserved variables conflict, raise an error if they do
-    conflicting_reserved_variables = reserved & set(variables)
-
-    if conflicting_reserved_variables:
-        raise HasConflictingVariable(
-            f"sympy expression has variables with reserved names: {conflicting_reserved_variables}"
-        )
-
     # Apply substitutions for hidden variables
     a_sub = a.subs([(val, key) for key, val in const.hidden_variables.items()])
     if allow_complex:
@@ -517,11 +499,16 @@ def sympy_to_json(
         str(variable): variable.assumptions0 for variable in a.free_symbols
     }
 
+    # Don't check for conflicts here, that happens in parsing.
+    functions_set = {str(func_obj.func) for func_obj in a.atoms(sympy.Function)}
+    custom_functions = list(functions_set - reserved)
+
     return {
         "_type": "sympy",
         "_value": str(a_sub),
         "_variables": variables,
         "_assumptions": assumptions_dict,
+        "_custom_functions": custom_functions,
     }
 
 
@@ -546,6 +533,7 @@ def json_to_sympy(
         allow_hidden=True,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig_functions,
+        custom_functions=sympy_expr_dict.get("_custom_functions"),
         assumptions=sympy_expr_dict.get("_assumptions"),
     )
 
@@ -557,6 +545,7 @@ def validate_string_as_sympy(
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
+    custom_functions: Optional[list[str]] = None,
     imaginary_unit: Optional[str] = None,
 ) -> Optional[str]:
     """Tries to parse expr as a sympy expression. If it fails, returns a string with an appropriate error message for display on the frontend."""
@@ -568,6 +557,7 @@ def validate_string_as_sympy(
             allow_hidden=allow_hidden,
             allow_complex=allow_complex,
             allow_trig_functions=allow_trig_functions,
+            custom_functions=custom_functions,
         )
     except HasFloatError as err:
         return (
@@ -651,11 +641,11 @@ def validate_string_as_sympy(
     return None
 
 
-def get_variables_list(variables_string: Optional[str]) -> list[str]:
-    if variables_string is None:
+def get_items_list(items_string: Optional[str]) -> list[str]:
+    if items_string is None:
         return []
 
-    return list(map(str.strip, variables_string.split(",")))
+    return list(map(str.strip, items_string.split(",")))
 
 
 def process_student_input(student_input: str) -> str:

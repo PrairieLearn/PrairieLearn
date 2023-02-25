@@ -1,5 +1,6 @@
 import json
-from typing import Any
+from itertools import chain, repeat
+from typing import Any, Optional
 
 import pytest
 import python_helper_sympy as phs
@@ -43,6 +44,7 @@ class TestSympy:
     # TODO add more tests of custom functions
     CUSTOM_FUNCTION_PAIRS = [
         ("f(1) + g(2)", F(1) + G(2)),
+        ("f(g(n), 1)", F(G(N), 1)),
         ("f(1) + g(2, 3) + sin n", F(1) + G(2, 3) + sympy.sin(N)),
     ]
 
@@ -58,6 +60,7 @@ class TestSympy:
         ("5mn sin m + arccos 3n", 5 * M * N * sympy.sin(M) + sympy.acos(3 * N)),
         ("sin**2 (m)", sympy.sin(M) ** 2),
         ("sin 5n", sympy.sin(5 * N)),
+        ("pi", sympy.pi),
         ("5n", 5 * N),
         ("4n + 2m", 4 * N + 2 * M),
         ("n * m", M * N),
@@ -137,11 +140,22 @@ class TestSympy:
             a_sub, ["i", "j"], allow_complex=False
         )
 
-    @pytest.mark.parametrize("a_pair", EXPR_PAIRS)
-    def test_json_conversion(self, a_pair: tuple[str, sympy.Expr]) -> None:
+    @pytest.mark.parametrize(
+        "a_pair, custom_functions",
+        chain(
+            zip(EXPR_PAIRS, repeat(None)),
+            zip(CUSTOM_FUNCTION_PAIRS, repeat(FUNCTION_NAMES)),
+        ),
+    )
+    def test_json_conversion(
+        self, a_pair: tuple[str, sympy.Expr], custom_functions: Optional[list[str]]
+    ) -> None:
         a_sub, _ = a_pair
         sympy_expr = phs.convert_string_to_sympy(
-            a_sub, self.SYMBOL_NAMES, allow_complex=True
+            a_sub,
+            self.SYMBOL_NAMES,
+            allow_complex=True,
+            custom_functions=custom_functions,
         )
         # Check that json serialization works
         json_expr = json.dumps(phs.sympy_to_json(sympy_expr), allow_nan=False)
