@@ -12,14 +12,16 @@ def test_evaluate() -> None:
     f = sympy.Function("f")
     custom_function = sympy.Function("custom_function")
 
-    locals_for_eval = {
+    locals_for_eval: phs.LocalsForEval = {
         "functions": {str(f): f, str(custom_function): custom_function},
         "variables": {str(z): z},
         "helpers": {},
     }
 
+    expression = f(z) + custom_function(z, 1) + 3  # type: ignore
+
     # Check that using custom functions on the backend works
-    assert (f(z) + custom_function(z, 1) + 3) == phs.evaluate(
+    assert expression == phs.evaluate(
         "f(z) + custom_function(z, 1) + 3", locals_for_eval=locals_for_eval
     )
 
