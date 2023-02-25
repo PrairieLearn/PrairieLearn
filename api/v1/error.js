@@ -1,4 +1,4 @@
-const logger = require('../../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const status = require('http-status');
 
 module.exports = (err, req, res, _next) => {
