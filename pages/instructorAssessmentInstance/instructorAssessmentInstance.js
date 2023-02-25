@@ -1,4 +1,3 @@
-const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
