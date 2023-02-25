@@ -6,8 +6,6 @@ import prairielearn as pl
 from pint import Quantity, UnitRegistry
 from typing_extensions import assert_never
 
-# TODO write tests for each of these functions
-
 CORRECT_UNITS_INCORRECT_MAGNITUDE_FEEDBACK = (
     "Your answer has correct units, but incorrect magnitude."
 )

@@ -34,7 +34,7 @@ DIGITS_DEFAULT = 2
 SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
 MAGNITUDE_PARTIAL_CREDIT_DEFAULT = None
-SHOW_FEEDBACK_DEFAULT = True
+ALLOW_FEEDBACK_DEFAULT = True
 
 UNITS_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-units-input.mustache"
 
@@ -59,7 +59,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "show-help-text",
         "placeholder",
         "magnitude-partial-credit",
-        "show-feedback",
+        "allow-feedback",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -152,6 +152,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "grading-mode", GradingMode, GRADING_MODE_DEFAULT
     )
     show_info = pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT)
+    digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
 
     raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
     partial_scores = data["partial_scores"].get(name, {})
@@ -183,11 +184,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             elif comparison is uu.ComparisonType.EXACT:
                 placeholder_text = "Number (exact) + Unit"
             elif comparison is uu.ComparisonType.SIGFIG:
-                digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
                 figure_str = "figure" if digits == 1 else "figures"
                 placeholder_text = f"Number ({digits} significant {figure_str}) + Unit"
             elif comparison is uu.ComparisonType.DECDIG:
-                digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
                 digit_str = "digit" if digits == 1 else "digits"
                 placeholder_text = f"Number ({digits} {digit_str} after decimal) + Unit"
             else:
@@ -254,10 +253,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params[score_type] = score_value
 
         feedback = partial_scores.get("feedback")
-        show_feedback = pl.get_boolean_attrib(
-            element, "show-feedback", SHOW_FEEDBACK_DEFAULT
+        allow_feedback = pl.get_boolean_attrib(
+            element, "allow-feedback", ALLOW_FEEDBACK_DEFAULT
         )
-        if feedback is not None and show_feedback:
+        if feedback is not None and allow_feedback:
             html_params["feedback"] = feedback
 
         html_params["error"] = html_params["parse_error"] or html_params.get(
@@ -266,7 +265,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         with open(UNITS_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
 
-    # TODO make this display consistent with number input (sigfigs and such)
     elif data["panel"] == "answer":
         a_tru = data["correct_answers"].get(name, None)
 
@@ -279,7 +277,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if grading_mode is GradingMode.ONLY_UNITS:
             a_tru_string = f"{a_tru_parsed.units}"
         else:
-            a_tru_string = f"{a_tru_parsed}"
+            # Display reference solution with the given number of digits
+            # TODO double check if this is confusing or not
+            a_tru_string = f"{a_tru_parsed:.{digits}g}"
 
         html_params = {
             "answer": True,
