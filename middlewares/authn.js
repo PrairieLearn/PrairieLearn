@@ -54,7 +54,6 @@ module.exports = asyncHandler(async (req, res, next) => {
     await authnLib.loadUser(req, res, authnParams, {
       pl_authn_cookie: false,
       redirect: false,
-      locals_authn: true,
     });
 
     // Enroll the load test user in the example course.
@@ -95,7 +94,6 @@ module.exports = asyncHandler(async (req, res, next) => {
     await authnLib.loadUser(req, res, authnParams, {
       redirect: false,
       pl_authn_cookie: false,
-      locals_authn: true,
     });
     return next();
   }
@@ -140,7 +138,6 @@ module.exports = asyncHandler(async (req, res, next) => {
     redirect: false,
     // Cookie is being set here again to reset the cookie timeout (#2268)
     pl_authn_cookie: true,
-    locals_authn: true,
   });
 
   return next();
