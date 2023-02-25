@@ -1,12 +1,11 @@
 import codecs
 import timeit
 from collections import deque
-from itertools import chain
-from typing import Callable, Deque, List, Optional, Union
+from typing import Callable, Optional, Union
 
 import selectolax.parser as slp
 
-ElementReplacement = Union[None, str, slp.Node, List[slp.Node]]
+ElementReplacement = Union[None, str, slp.Node, list[slp.Node]]
 
 # https://developer.mozilla.org/en-US/docs/Glossary/Void_element
 VOID_ELEMENTS = {
@@ -26,7 +25,7 @@ VOID_ELEMENTS = {
 }
 
 
-def get_elements_list(html: str) -> List[slp.Node]:
+def get_elements_list(html: str) -> list[slp.Node]:
     parser = slp.HTMLParser(html)
     res = []
 
@@ -45,7 +44,7 @@ def traverse_and_execute(html: str, fn: Callable[[slp.Node], None]) -> None:
     if page.head is None:
         return
 
-    for element in chain(page.head.traverse()):
+    for element in page.head.traverse():
         fn(element)
 
 
@@ -71,11 +70,11 @@ def traverse_and_replace(
     # Initialize result and work data structures
     initial_list = get_elements_list(html)
 
-    result: Deque[str] = deque()
+    result: deque[str] = deque()
 
-    count_stack: Deque[int] = deque([len(initial_list)])
-    work_stack: Deque[slp.Node] = deque(reversed(initial_list))
-    tail_stack: Deque[str] = deque()
+    count_stack: deque[int] = deque([len(initial_list)])
+    work_stack: deque[slp.Node] = deque(reversed(initial_list))
+    tail_stack: deque[str] = deque()
 
     while work_stack:
         element = work_stack.pop()

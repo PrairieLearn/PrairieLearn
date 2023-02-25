@@ -80,7 +80,7 @@ include = [
     "./python/traverse_test.py",
 ]
 extraPaths = ["./python"]
-pythonVersion = "3.8"
+pythonVersion = "3.9"
 
 [tool.pytest.ini_options]
 # `pl_unit_test.py` has an unfortunate file name - it matches the pattern that
