@@ -91,6 +91,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     constants_class = phs._Constants()
 
     operators: list[str] = list(phs.STANDARD_OPERATORS)
+    operators.extend(custom_functions)
     operators.extend(constants_class.functions.keys())
     operators.extend(constants_class.trig_functions.keys())
 

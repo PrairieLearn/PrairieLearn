@@ -95,14 +95,8 @@ class TestSympy:
     ]
 
     @pytest.mark.parametrize("a_sub, sympy_ref", CUSTOM_FUNCTION_PAIRS)
-    @pytest.mark.parametrize(
-        "assumptions", [None, {"g": {"real": True}, "f": {"rational_function": True}}]
-    )
     def test_custom_function_conversion(
-        self,
-        a_sub: str,
-        sympy_ref: sympy.Expr,
-        assumptions: Optional[phs.AssumptionsDictT],
+        self, a_sub: str, sympy_ref: sympy.Expr
     ) -> None:
         assert sympy_ref == phs.convert_string_to_sympy(
             a_sub,
@@ -184,7 +178,7 @@ class TestSympy:
     def test_assumption_conversion(self) -> None:
         assumptions = {"x": {"positive": True}, "y": {}}
         sympy_expr = phs.convert_string_to_sympy(
-            "(x**2)**(1/2) + y + z",
+            "(x**2)**(1/2) + y",
             ["x", "y", "z"],
             allow_complex=True,
             assumptions=assumptions,
@@ -196,6 +190,14 @@ class TestSympy:
         json_converted_expr = phs.json_to_sympy(json.loads(json_expr))
         assert sympy_expr == json_converted_expr
         assert sympy_expr.assumptions0 == json_converted_expr.assumptions0
+
+        bad_assumptions = {"f": {}}
+        with pytest.raises(phs.HasInvalidAssumption):
+            sympy_expr = phs.convert_string_to_sympy(
+                "f(1)",
+                custom_functions=["f"],
+                assumptions=bad_assumptions,
+            )
 
 
 class TestExceptions:

@@ -117,3 +117,33 @@
         <pl-symbolic-input answers-name="assumptions_2" variables="C"></pl-symbolic-input>
     </div>
 </div>
+
+<div class="card my-2">
+    <div class="card-header">
+        Custom functions test.
+    </div>
+    <div class="card-body">
+        <pl-question-panel>
+            <p>
+                Submit $f(1) + g(x)$.
+            </p>
+        </pl-question-panel>
+        <pl-symbolic-input answers-name="custom_function" variables="x" custom-functions="f,g"
+            correct-answer="f(1) + g(x)"></pl-symbolic-input>
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        Another custom functions test.
+    </div>
+    <div class="card-body">
+        <pl-question-panel>
+            <p>
+                Submit $f(y) + g(b) + a$.
+            </p>
+        </pl-question-panel>
+        <pl-symbolic-input answers-name="custom_function_2" variables="a,y,b"
+            custom-functions="f,g"></pl-symbolic-input>
+    </div>
+</div>

@@ -4,6 +4,7 @@ import copy
 import types
 from collections import deque
 from dataclasses import dataclass
+from itertools import chain
 from tokenize import TokenError
 from typing import Any, Callable, Literal, Optional, Type, TypedDict, Union, cast
 
@@ -160,6 +161,10 @@ class HasConflictingVariable(BaseSympyError):
 
 
 class HasConflictingFunction(BaseSympyError):
+    pass
+
+
+class HasInvalidAssumption(BaseSympyError):
     pass
 
 
@@ -419,6 +424,7 @@ def convert_string_to_sympy(
         "variables": const.variables,
         "helpers": const.helpers,
     }
+
     if allow_hidden:
         locals_for_eval["variables"].update(const.hidden_variables)
     if allow_complex:
@@ -429,31 +435,50 @@ def convert_string_to_sympy(
     if allow_trig_functions:
         locals_for_eval["functions"].update(const.trig_functions)
 
+    used_names = set(
+        chain.from_iterable(
+            cast(SympyMapT, symbol_dict).keys()
+            for symbol_dict in locals_for_eval.values()
+        )
+    )
+
+    # Check assumptions are all made about valid variables only
+    if assumptions is not None:
+        unbound_variables = assumptions.keys() - set(
+            variables if variables is not None else []
+        )
+        if unbound_variables:
+            raise HasInvalidAssumption(
+                f'Assumptions for variables that are not present: {",".join(unbound_variables)}'
+            )
+
     # If there is a list of variables, add each one to the whitelist with assumptions
     if variables is not None:
         variable_dict = locals_for_eval["variables"]
+
         for variable in variables:
-            if variable in variable_dict:
+            # Check for naming conflicts
+            if variable in used_names:
                 raise HasConflictingVariable(f"Conflicting variable name: {variable}")
-            elif assumptions is None:
+            else:
+                used_names.add(variable)
+
+            # If no conflict, add to locals dict with assumptions
+            if assumptions is None:
                 variable_dict[variable] = sympy.Symbol(variable)
             else:
                 variable_dict[variable] = sympy.Symbol(
                     variable, **assumptions.get(variable, {})
                 )
 
-    # If there is a list of custom functions, add each one to the whitelist with assumptions
+    # If there is a list of custom functions, add each one to the whitelist
     if custom_functions is not None:
         function_dict = locals_for_eval["functions"]
         for function in custom_functions:
-            if function in function_dict:
+            if function in used_names:
                 raise HasConflictingFunction(f"Conflicting variable name: {function}")
-            elif assumptions is None:
-                function_dict[function] = sympy.Function(function)
-            else:
-                function_dict[function] = sympy.Function(
-                    function, **assumptions.get(function, {})
-                )
+
+            function_dict[function] = sympy.Function(function)
 
     # Do the conversion
     return evaluate(expr, locals_for_eval)

@@ -20,3 +20,9 @@ def generate(data):
 
     C = sympy.symbols("C", nonpositive=True)
     data["correct_answers"]["assumptions_2"] = pl.to_json(sympy.Abs(C))
+
+    f = sympy.Function("f")
+    g = sympy.Function("g")
+
+    ans = f(y) + g(b) + a
+    data["correct_answers"]["custom_function_2"] = pl.to_json(ans)
