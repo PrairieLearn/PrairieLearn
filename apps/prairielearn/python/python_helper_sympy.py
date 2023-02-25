@@ -474,6 +474,8 @@ def convert_string_to_sympy(
             if function in used_names:
                 raise HasConflictingFunction(f"Conflicting variable name: {function}")
 
+            used_names.add(function)
+
             function_dict[function] = sympy.Function(function)
 
     # Do the conversion
