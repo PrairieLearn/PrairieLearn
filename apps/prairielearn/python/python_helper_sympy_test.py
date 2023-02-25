@@ -5,6 +5,29 @@ import python_helper_sympy as phs
 import sympy
 
 
+def test_evaluate() -> None:
+    """Test evaluate in the case of custom functions"""
+
+    z = sympy.Symbol("z")
+    f = sympy.Function("f")
+    custom_function = sympy.Function("custom_function")
+
+    locals_for_eval = {
+        "functions": {str(f): f, str(custom_function): custom_function},
+        "variables": {str(z): z},
+        "helpers": {},
+    }
+
+    # Check that using custom functions on the backend works
+    assert (f(z) + custom_function(z, 1) + 3) == phs.evaluate(
+        "f(z) + custom_function(z, 1) + 3", locals_for_eval=locals_for_eval
+    )
+
+    # Safety check
+    with pytest.raises(phs.BaseSympyError):
+        phs.evaluate("eval('dict')", locals_for_eval=locals_for_eval)
+
+
 class TestSympy:
     M, N = sympy.symbols("m n")
 
