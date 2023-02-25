@@ -333,6 +333,10 @@ def sympy_check(expr: sympy.Expr, locals_for_eval: LocalsForEval) -> None:
 
 
 def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
+    # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
+    # for exponentiation. In Python, only the latter can be used.
+    expr = expr.replace("^", "**")
+
     local_dict = {
         k: v
         for inner_dict in locals_for_eval.values()
@@ -623,12 +627,8 @@ def get_variables_list(variables_string: Optional[str]) -> list[str]:
 
 
 def process_student_input(student_input: str) -> str:
-    # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
-    # for exponentiation. In Python, only the latter can be used.
-    a_sub = student_input.replace("^", "**")
-
     # Replace Unicode minus with hyphen minus wherever it occurs
-    a_sub = a_sub.replace("\u2212", "-")
+    a_sub = student_input.replace("\u2212", "-")
 
     # Strip whitespace
     return a_sub.strip()

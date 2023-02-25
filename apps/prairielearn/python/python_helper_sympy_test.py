@@ -9,6 +9,7 @@ class TestSympy:
     M, N = sympy.symbols("m n")
 
     EXPR_PAIRS = [
+        ("3^m + 4", 3**M + 4),
         ("factorial(3m)", sympy.factorial(3 * M)),
         ("m! + n", sympy.factorial(M) + N),
         ("5mn sin m + arccos 3n", 5 * M * N * sympy.sin(M) + sympy.acos(3 * N)),
