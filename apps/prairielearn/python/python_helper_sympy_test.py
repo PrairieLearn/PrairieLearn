@@ -8,74 +8,49 @@ import sympy
 class TestSympy:
     M, N = sympy.symbols("m n")
 
-    EXPR_STRINGS = [
-        "sin 5n",
-        "5n",
-        "n * m",
-        "m + 1",
-        "m**2 + n**2 + 4 * n",
-        "n * sin(7*m) + m**2 * cos(6*n)",
-        "i * n + m",
-        "i * i * n",
-        "sqrt(100)",
-        "cos(m)",
-        "sin(m)",
-        "tan(m)",
-        "arccos(m)",
-        "arcsin(m)",
-        "arctan(m)",
-        "acos(m)",
-        "asin(m)",
-        "atan(m)",
-        "arctan2(m, n)",
-        "atan2(m, n)",
-        "csc(m)",
-        "sec(m)",
-        "cot(m)",
-        "ln(m)",
-        "atanh(m)",
-        "asinh(m)",
-        "acosh(m)",
+    EXPR_PAIRS = [
+        ("sin 5n", sympy.sin(5 * N)),
+        ("5n", 5 * N),
+        ("4n + 2m", 4 * N + 2 * M),
+        ("n * m", M * N),
+        ("m + 1", M + 1),
+        ("m**2 + n**2 + 4 * n", M * M + N * N + 4 * N),
+        (
+            "n * sin(7*m) + m**2 * cos(6*n)",
+            N * sympy.sin(M * 7) + M * M * sympy.cos(N * 6),
+        ),
+        ("i * n + m", sympy.I * N + M),
+        ("i * i * n", -N),
+        ("sqrt(100)", sympy.sympify(10)),
+        ("cos(m)", sympy.cos(M)),
+        ("sin(m)", sympy.sin(M)),
+        ("tan(m)", sympy.tan(M)),
+        ("arccos(m)", sympy.acos(M)),
+        ("arcsin(m)", sympy.asin(M)),
+        ("arctan(m)", sympy.atan(M)),
+        ("acos(m)", sympy.acos(M)),
+        ("asin(m)", sympy.asin(M)),
+        ("atan(m)", sympy.atan(M)),
+        ("arctan2(m, n)", sympy.atan2(M, N)),
+        ("atan2(m, n)", sympy.atan2(M, N)),
+        ("csc(m)", sympy.csc(M)),
+        ("sec(m)", sympy.sec(M)),
+        ("cot(m)", sympy.cot(M)),
+        ("ln(m)", sympy.log(M)),
+        ("atanh(m)", sympy.atanh(M)),
+        ("asinh(m)", sympy.asinh(M)),
+        ("acosh(m)", sympy.acosh(M)),
     ]
 
-    EXPR_LIST: list = [
-        sympy.sin(5 * N),
-        5 * N,
-        M * N,
-        M + 1,
-        M * M + N * N + 4 * N,
-        N * sympy.sin(M * 7) + M * M * sympy.cos(N * 6),
-        sympy.I * N + M,
-        -N,
-        sympy.sympify(10),
-        sympy.cos(M),
-        sympy.sin(M),
-        sympy.tan(M),
-        sympy.acos(M),
-        sympy.asin(M),
-        sympy.atan(M),
-        sympy.acos(M),
-        sympy.asin(M),
-        sympy.atan(M),
-        sympy.atan2(M, N),
-        sympy.atan2(M, N),
-        sympy.csc(M),
-        sympy.sec(M),
-        sympy.cot(M),
-        sympy.log(M),
-        sympy.atanh(M),
-        sympy.asinh(M),
-        sympy.acosh(M),
-    ]
-
-    @pytest.mark.parametrize("a_sub, sympy_ref", zip(EXPR_STRINGS, EXPR_LIST))
+    @pytest.mark.parametrize("a_sub, sympy_ref", EXPR_PAIRS)
     def test_string_conversion(self, a_sub: str, sympy_ref: sympy.Expr) -> None:
         assert sympy_ref == phs.convert_string_to_sympy(
             a_sub, ["n", "m"], allow_complex=True
         )
 
-    @pytest.mark.parametrize("a_sub", EXPR_STRINGS)
-    def test_valid_format(self, a_sub: str) -> None:
+    @pytest.mark.parametrize("a_pair", EXPR_PAIRS)
+    def test_valid_format(self, a_pair: tuple[str, sympy.Expr]) -> None:
+        a_sub, _ = a_pair
         assert (
             phs.validate_string_as_sympy(a_sub, ["n", "m"], allow_complex=True) is None
         )
@@ -90,8 +65,9 @@ class TestSympy:
             a_sub, ["i", "j"], allow_complex=False
         )
 
-    @pytest.mark.parametrize("a_sub", EXPR_STRINGS)
-    def test_json_conversion(self, a_sub: str) -> None:
+    @pytest.mark.parametrize("a_pair", EXPR_PAIRS)
+    def test_json_conversion(self, a_pair: tuple[str, sympy.Expr]) -> None:
+        a_sub, _ = a_pair
         sympy_expr = phs.convert_string_to_sympy(a_sub, ["n", "m"], allow_complex=True)
         # Check that json serialization works
         json_expr = json.dumps(phs.sympy_to_json(sympy_expr), allow_nan=False)
@@ -122,7 +98,7 @@ class TestExceptions:
     VARIABLES = ["n"]
 
     COMPLEX_CASES = ["i", "5 * i", "j"]
-    NO_FLOATS_CASES = ["3.5", "3.5*n", "3.14159*n**2"]
+    NO_FLOATS_CASES = ["3.5", "4.2n", "3.5*n", "3.14159*n**2"]
     INVALID_EXPRESSION_CASES = ["5==5", "5!=5", "5>5", "5<5", "5>=5", "5<=5"]
     INVALID_FUNCTION_CASES = ["eval(n)", "f(n)", "g(n)", "dir(n)"]
     INVALID_VARIABLE_CASES = ["x", "y", "z*n"]
