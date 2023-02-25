@@ -2,14 +2,14 @@
 const assert = require('assert');
 const Sentry = require('@prairielearn/sentry');
 const express = require('express');
-const router = express.Router();
 const asyncHandler = require('express-async-handler');
+const { OAuth2Client } = require('google-auth-library');
+const { logger } = require('@prairielearn/logger');
 
 const authnLib = require('../../lib/authn');
-const logger = require('../../lib/logger');
 const config = require('../../lib/config');
 
-const { OAuth2Client } = require('google-auth-library');
+const router = express.Router();
 
 router.get(
   '/',

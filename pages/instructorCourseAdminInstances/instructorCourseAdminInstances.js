@@ -9,7 +9,7 @@ var sql = sqldb.loadSqlEquiv(__filename);
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const error = require('../../prairielib/lib/error');
-const logger = require('../../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const { CourseInstanceAddEditor } = require('../../lib/editors');
 const { idsEqual } = require('../../lib/id');
 

@@ -1,7 +1,7 @@
 const AWS = require('aws-sdk');
 const { callbackify } = require('util');
 
-const logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const config = require('../lib/config');
 const request = require('request-promise-native');
 const async = require('async');
