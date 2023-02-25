@@ -96,7 +96,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     constants_class = phs._Constants()
 
-    operators = ["( )", "+", "-", "*", "/", "^", "**"]
+    operators: list[str] = list(phs.STANDARD_OPERATORS)
     operators.extend(variables)
     operators.extend(constants_class.functions.keys())
 
@@ -153,7 +153,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         if parse_error is None and name in data["submitted_answers"]:
             a_sub = sympy.latex(
-                sympy.sympify(data["submitted_answers"][name], evaluate=False)
+                phs.convert_string_to_sympy(
+                    data["submitted_answers"][name],
+                    variables,
+                    allow_complex=False,
+                    allow_trig_functions=False,
+                )
             )
             if name in data["partial_scores"]:
                 feedback = data["partial_scores"][name].get("feedback")
@@ -203,7 +208,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if a_tru is None:
             return ""
 
-        a_tru = sympy.sympify(a_tru)
+        a_tru = phs.convert_string_to_sympy(
+            a_tru, variables, allow_complex=False, allow_trig_functions=False
+        )
         html_params = {
             "answer": True,
             "a_tru": sympy.latex(a_tru),

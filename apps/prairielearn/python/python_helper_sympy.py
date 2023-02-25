@@ -16,8 +16,10 @@ from sympy.parsing.sympy_parser import (
 )
 from typing_extensions import NotRequired
 
+STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
+
 SympyMapT = dict[str, Union[Callable, sympy.Basic]]
-ASTWhitelistT = tuple[Type[ast.AST], ...]
+ASTWhiteListT = tuple[Type[ast.AST], ...]
 AssumptionsDictT = dict[str, dict[str, Any]]
 
 

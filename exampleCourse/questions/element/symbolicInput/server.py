@@ -17,3 +17,6 @@ def generate(data):
 
     B = sympy.symbols("B", positive=True)
     data["correct_answers"]["assumptions"] = pl.to_json(sympy.sqrt(B**2))
+
+    C = sympy.symbols("C", nonpositive=True)
+    data["correct_answers"]["assumptions_2"] = pl.to_json(sympy.Abs(C))

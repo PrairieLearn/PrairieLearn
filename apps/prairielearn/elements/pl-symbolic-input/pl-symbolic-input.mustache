@@ -109,18 +109,25 @@ ${{a_tru}}$
 {{#format}}
 <p><strong>General format information:</strong><br>Your answer must be a symbolic expression. All numbers must be rational - so, <code class="user-output">1/2</code> instead of <code class="user-output">0.5</code>.
 {{^allow_complex}}Complex numbers are not allowed.{{/allow_complex}}</p>
-
+<!-- From https://stackoverflow.com/a/14417521/2923069 -->
+{{#variables.0}}
 <p>
-    <strong>Allowable variables, constants, and operators:</strong><br>
+    <strong>Allowable variables:</strong><br>
     {{#variables}} <code class="user-output">{{.}}</code> &nbsp; {{/variables}}
+</p>
+{{/variables.0}}
+{{#constants.0}}
+<p>
+    <strong>Allowable constants:</strong><br>
     {{#constants}} <code class="user-output">{{.}}</code> &nbsp; {{/constants}}
+</p>
+{{/constants.0}}
+{{#operators.0}}
+<p>
+    <strong>Allowable operators:</strong><br>
     {{#operators}} <code class="user-output">{{.}}</code> &nbsp; {{/operators}}
 </p>
-
-<p>All operations must be explicit:</p>
-
-<p> Example <i>valid</i> inputs: <code class="user-output">2*3</code> &nbsp; <code class="user-output">cos(1)</code> </p>
-<p> Example <i>invalid</i> inputs: <code class="user-output">2(3)</code> &nbsp; <code class="user-output">cos 1</code> </p>
+{{/operators.0}}
 
 <p>Note that either <code class="user-output">^</code> or <code class="user-output">**</code> can be used for exponentiation.</p>
 {{/format}}

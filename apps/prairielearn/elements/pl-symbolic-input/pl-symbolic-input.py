@@ -83,8 +83,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
 
     constants_class = phs._Constants()
-    operators = ["( )", "+", "-", "*", "/", "^", "**"]
 
+    operators: list[str] = list(phs.STANDARD_OPERATORS)
     operators.extend(constants_class.functions.keys())
     operators.extend(constants_class.trig_functions.keys())
 

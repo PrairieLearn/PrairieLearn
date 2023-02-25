@@ -894,9 +894,9 @@ The question will only be graded when all matrix components are entered, unless 
 
 #### See also
 
-- [`pl-matrix-input` for a matrix formatted in an implemented programming language](#pl-matrix-input)
-- [`pl-number-input` for a single numeric input](#pl-number-input)
-- [`pl-symbolic-input` for a mathematical expression input](#pl-symbolic-input)
+- [`pl-matrix-input` for a matrix formatted in an implemented programming language](#pl-matrix-input-element)
+- [`pl-number-input` for a single numeric input](#pl-number-input-element)
+- [`pl-symbolic-input` for a mathematical expression input](#pl-symbolic-input-element)
 
 ---
 
@@ -973,9 +973,9 @@ In the submission panel, a `pl-matrix-input` element displays either the submitt
 
 #### See also
 
-- [`pl-matrix-component-input` for individual input boxes for each element in the matrix](#pl-matrix-component-input)
-- [`pl-number-input` for a single numeric input](#pl-number-input)
-- [`pl-symbolic-input` for a mathematical expression input](#pl-symbolic-input)
+- [`pl-matrix-component-input` for individual input boxes for each element in the matrix](#pl-matrix-component-input-element)
+- [`pl-number-input` for a single numeric input](#pl-number-input-element)
+- [`pl-symbolic-input` for a mathematical expression input](#pl-symbolic-input-element)
 
 ---
 
