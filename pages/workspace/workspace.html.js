@@ -16,8 +16,8 @@ function Workspace({ navTitle, showLogs, heartbeatIntervalSec, visibilityTimeout
       <body
         class="d-flex flex-column h-100"
         data-workspace-id="${resLocals.workspace_id}"
-        data-heartbeat-interval="${heartbeatIntervalSec}"
-        data-visibility-timeout="${visibilityTimeoutSec}"
+        data-heartbeat-interval-sec="${heartbeatIntervalSec}"
+        data-visibility-timeout-sec="${visibilityTimeoutSec}"
       >
         <div
           class="modal fade"
@@ -230,11 +230,11 @@ function Workspace({ navTitle, showLogs, heartbeatIntervalSec, visibilityTimeout
             });
 
             const workspaceId = document.body.getAttribute('data-workspace-id');
-            const heartbeatInterval = Number.parseFloat(
-              document.body.getAttribute('data-heartbeat-interval')
+            const heartbeatIntervalSec = Number.parseFloat(
+              document.body.getAttribute('data-heartbeat-interval-sec')
             );
-            const visibilityTimeout = Number.parseFloat(
-              document.body.getAttribute('data-visibility-timeout')
+            const visibilityTimeoutSec = Number.parseFloat(
+              document.body.getAttribute('data-visibility-timeout-sec')
             );
 
             const socket = io('/workspace');
@@ -320,7 +320,7 @@ function Workspace({ navTitle, showLogs, heartbeatIntervalSec, visibilityTimeout
               socket.emit('heartbeat', { workspace_id: workspaceId }, (msg) => {
                 console.log('heartbeat, msg =', msg);
               });
-            }, heartbeatInterval * 1000);
+            }, heartbeatIntervalSec * 1000);
 
             let visibilityTimeoutId = null;
             document.addEventListener('visibilitychange', () => {
@@ -333,10 +333,11 @@ function Workspace({ navTitle, showLogs, heartbeatIntervalSec, visibilityTimeout
                   socket.emit('visibilityTimeout', { workspace_id: workspaceId });
 
                   // Unload the iframe and show a message indicating that the workspace
-                  // was stopped due to inactivity.
-                  workspaceFrame.src = 'about:blank';
-                  showStoppedFrame();
-                }, visibilityTimeout * 1000);
+                  // was stopped due to inactivity. Note that this will technically
+                  // also happen when we get a 'change:state' message from the backend,
+                  // but we want to show the message as soon as possible.
+                  setState('stopped');
+                }, visibilityTimeoutSec * 1000);
               } else {
                 clearTimeout(visibilityTimeoutId);
               }
