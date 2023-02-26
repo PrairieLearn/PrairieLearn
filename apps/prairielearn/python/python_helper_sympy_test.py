@@ -54,6 +54,8 @@ class TestSympy:
     ]
 
     EXPR_PAIRS = [
+        ("n/-m", -N / M),
+        ("n / 2", N / 2),
         ("3^m + 4", 3**M + 4),
         ("factorial(3m)", sympy.factorial(3 * M)),
         ("m! + n", sympy.factorial(M) + N),
@@ -177,7 +179,7 @@ class TestSympy:
 
     # TODO parameterize this with more extensive test cases
     def test_assumption_conversion(self) -> None:
-        assumptions = {"x": {"positive": True}, "y": {}}
+        assumptions = {"x": {"positive": True}, "y": {"real": True}}
         sympy_expr = phs.convert_string_to_sympy(
             "(x**2)**(1/2) + y",
             ["x", "y", "z"],
@@ -192,11 +194,21 @@ class TestSympy:
         assert sympy_expr == json_converted_expr
         assert sympy_expr.assumptions0 == json_converted_expr.assumptions0
 
-        bad_assumptions = {"f": {}}
+    @pytest.mark.parametrize(
+        "expr, bad_assumptions",
+        [
+            ("f(1)", {"f": {}}),
+            ("x+5", {"x": {}}),
+        ],
+    )
+    def test_bad_assumption_conversion(
+        self, expr: str, bad_assumptions: phs.AssumptionsDictT
+    ) -> None:
         with pytest.raises(phs.HasInvalidAssumption):
-            sympy_expr = phs.convert_string_to_sympy(
-                "f(1)",
+            phs.convert_string_to_sympy(
+                expr,
                 custom_functions=["f"],
+                variables=["y"],
                 assumptions=bad_assumptions,
             )
 
