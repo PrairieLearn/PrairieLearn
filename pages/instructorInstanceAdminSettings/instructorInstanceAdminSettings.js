@@ -12,7 +12,7 @@ const async = require('async');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const error = require('../../prairielib/lib/error');
-const logger = require('../../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const {
   CourseInstanceCopyEditor,
   CourseInstanceRenameEditor,

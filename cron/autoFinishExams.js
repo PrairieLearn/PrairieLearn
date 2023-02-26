@@ -4,7 +4,7 @@ var async = require('async');
 
 var error = require('../prairielib/lib/error');
 var config = require('../lib/config');
-var logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 var assessment = require('../lib/assessment');
 var sqldb = require('@prairielearn/postgres');
 
