@@ -20,9 +20,9 @@ export async function mochaGlobalTeardown() {
  */
 export const mochaHooks = {
   beforeAll: async function () {
-    const logger = await import('../lib/logger.js');
+    const logger = await import('@prairielearn/logger');
 
-    const consoleTransport = logger.default.transports.find(
+    const consoleTransport = logger.logger.transports.find(
       // @ts-expect-error - The `TransportStream` type does not include `name`.
       (transport) => transport.name === 'console'
     );

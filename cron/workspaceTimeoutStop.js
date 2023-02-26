@@ -4,7 +4,7 @@ const sqldb = require('@prairielearn/postgres');
 const { metrics, getCounter, ValueType } = require('@prairielearn/opentelemetry');
 
 const config = require('../lib/config');
-const logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const workspaceHelper = require('../lib/workspace');
 
 const sql = sqldb.loadSqlEquiv(__filename);

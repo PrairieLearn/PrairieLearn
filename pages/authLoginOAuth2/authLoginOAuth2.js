@@ -3,7 +3,7 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 
-const logger = require('../../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const config = require('../../lib/config');
 
 const { OAuth2Client } = require('google-auth-library');
