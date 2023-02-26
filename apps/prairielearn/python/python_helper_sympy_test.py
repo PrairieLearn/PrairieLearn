@@ -204,9 +204,9 @@ class TestExceptions:
     VARIABLES = ["n"]
 
     COMPLEX_CASES = ["i", "5 * i", "j"]
-    NO_FLOATS_CASES = ["3.5", "4.2n", "3.5*n", "3.14159*n**2"]
+    NO_FLOATS_CASES = ["3.5", "4.2n", "3.5*n", "3.14159*n**2", "sin(2.3)"]
     INVALID_EXPRESSION_CASES = ["5==5", "5!=5", "5>5", "5<5", "5>=5", "5<=5"]
-    INVALID_FUNCTION_CASES = ["eval(n)", "f(n)", "g(n)", "dir(n)"]
+    INVALID_FUNCTION_CASES = ["eval(n)", "f(n)", "g(n)+cos(n)", "dir(n)", "sin(f(n))"]
     INVALID_VARIABLE_CASES = ["x", "y", "z*n"]
     INVALID_PARSE_CASES = ["(", "n**", "n**2+"]
     INVALID_ESCAPE_CASES = ["\\", "n + 2 \\", "2 \\"]
@@ -280,7 +280,7 @@ class TestExceptions:
     def test_invalid_format(self, a_sub_list: list[str], target_string: str) -> None:
         for a_sub in a_sub_list:
             format_error = phs.validate_string_as_sympy(
-                a_sub, self.VARIABLES, allow_complex=False, allow_trig_functions=False
+                a_sub, self.VARIABLES, allow_complex=False, allow_trig_functions=True
             )
             assert format_error is not None
             assert target_string in format_error
