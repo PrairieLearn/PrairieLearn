@@ -347,7 +347,7 @@ def sympy_check(
 
 
 def evaluate(
-    expr: str, locals_for_eval: LocalsForEval, *, allow_complex=True
+    expr: str, locals_for_eval: LocalsForEval, *, allow_complex=False
 ) -> sympy.Expr:
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
