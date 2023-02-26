@@ -11,7 +11,7 @@
  * @returns {Buffer}
  */
 function parseDockerLogs(buffer) {
-  let output = Buffer.from([]);
+  let outputChunks = [];
 
   while (buffer.length > 0) {
     // Ensure that we gracefully handle the case where we have a partial header.
@@ -25,7 +25,7 @@ function parseDockerLogs(buffer) {
     const dataLength = header.readUInt32BE(4);
 
     const content = bufferSlice(dataLength);
-    output = Buffer.concat([output, content]);
+    outputChunks.push(content);
   }
 
   function bufferSlice(end) {
@@ -34,7 +34,7 @@ function parseDockerLogs(buffer) {
     return out;
   }
 
-  return output;
+  return Buffer.concat(outputChunks);
 }
 
 module.exports = {
