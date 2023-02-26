@@ -172,7 +172,6 @@ class HasFloatError(BaseSympyError):
     n: float
 
 
-
 class HasComplexError(BaseSympyError):
     pass
 
@@ -325,7 +324,9 @@ def ast_check(expr: str, locals_for_eval: LocalsForEval) -> None:
     CheckWhiteList(whitelist).visit(root)
 
 
-def sympy_check(expr: sympy.Expr, locals_for_eval: LocalsForEval, allow_complex: bool) -> None:
+def sympy_check(
+    expr: sympy.Expr, locals_for_eval: LocalsForEval, allow_complex: bool
+) -> None:
     valid_symbols = set().union(
         *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
     )
@@ -345,7 +346,9 @@ def sympy_check(expr: sympy.Expr, locals_for_eval: LocalsForEval, allow_complex:
         work_stack.extend(item.args)
 
 
-def evaluate(expr: str, locals_for_eval: LocalsForEval, *, allow_complex=True) -> sympy.Expr:
+def evaluate(
+    expr: str, locals_for_eval: LocalsForEval, *, allow_complex=True
+) -> sympy.Expr:
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
     expr = expr.replace("^", "**")
