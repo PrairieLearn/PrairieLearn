@@ -9,16 +9,7 @@ import re
 import unicodedata
 import uuid
 from enum import Enum
-from typing import (
-    Any,
-    Callable,
-    Literal,
-    Optional,
-    Type,
-    TypedDict,
-    TypeVar,
-    Union,
-)
+from typing import Any, Callable, Literal, Optional, Type, TypedDict, TypeVar, Union
 
 import colors
 import lxml.html

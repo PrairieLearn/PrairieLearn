@@ -1,15 +1,14 @@
 import math
 import random
+from enum import Enum
 from html import escape
+from typing import Literal
 
 import chevron
 import lxml.html
 import numpy as np
 import prairielearn as pl
-
-from typing import Literal
 from typing_extensions import assert_never
-from enum import Enum
 
 
 class ComparisonType(Enum):
@@ -393,7 +392,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     number_of_correct = 0
     feedback = {}
-    #TODO use zip trick
+    # TODO use zip trick
     for i in range(m):
         for j in range(n):
             each_entry_name = name + str(n * i + j + 1)
