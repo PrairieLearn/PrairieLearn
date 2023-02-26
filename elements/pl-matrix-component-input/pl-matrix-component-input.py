@@ -55,20 +55,24 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         m = pl.get_integer_attrib(element, "rows", None)
         if m is None:
             raise ValueError(
-                "Number of rows is not set in pl-matrix-component-input with no correct answer."
+                "Number of rows is not set in pl-matrix-component-input "
+                "with no correct answer."
             )
         if m < 1:
             raise ValueError(
-                f"Number of rows in pl-matrix-component-input must be strictly positive, not {m}."
+                "Number of rows in pl-matrix-component-input must "
+                f"be strictly positive, not {m}."
             )
         n = pl.get_integer_attrib(element, "columns", None)
         if n is None:
             raise ValueError(
-                "Number of columns is not set in pl-matrix-component-input with no correct answer."
+                "Number of columns is not set in pl-matrix-component-input "
+                "with no correct answer."
             )
         if n < 1:
             raise ValueError(
-                f"Number of columns in pl-matrix-component-input must be strictly positive, not {n}."
+                "Number of columns in pl-matrix-component-input must be "
+                f"strictly positive, not {n}."
             )
 
 
@@ -97,17 +101,17 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             n = pl.get_integer_attrib(element, "columns", None)
         else:
             if np.isscalar(a_tru):
-                raise Exception(
-                    'Value in data["correct_answers"] for variable %s in pl-matrix-component-input element cannot be a scalar.'
-                    % name
+                raise ValueError(
+                    f'Value in data["correct_answers"] for variable {name} in '
+                    "pl-matrix-component-input element cannot be a scalar."
                 )
             else:
                 a_tru = np.array(a_tru)
 
             if a_tru.ndim != 2:
-                raise Exception(
-                    'Value in data["correct_answers"] for variable %s in pl-matrix-component-input element must be a 2D array.'
-                    % name
+                raise ValueError(
+                    f'Value in data["correct_answers"] for variable {name} in '
+                    "pl-matrix-component-input element must be a 2D array."
                 )
             else:
                 m, n = np.shape(a_tru)
@@ -484,9 +488,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 raise Exception("invalid result: %s" % result)
 
     if result == "invalid":
-        data["format_errors"][
-            name
-        ] = "At least one of the entries has invalid format (empty entries or not a double precision floating point number)"
+        data["format_errors"][name] = (
+            "At least one of the entries has invalid format (empty entries or not a "
+            "double precision floating point number)"
+        )
 
     if number_of_correct == m * n:
         data["partial_scores"][name] = {"score": 1, "weight": weight}

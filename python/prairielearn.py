@@ -861,7 +861,7 @@ def string_from_2darray(A, language="python", presentation_type="f", digits=2):
     return result
 
 
-def string_from_number_sigfig(a: Union[float, complex], digits: int = 2) -> str:
+def string_from_number_sigfig(a: np.number, digits: int = 2) -> str:
     """_string_from_complex_sigfig(a, digits=2)
 
     This function assumes that "a" is of type float or complex. It returns "a"
@@ -1014,7 +1014,11 @@ def string_to_number(s, allow_complex=True):
         return None
 
 
-def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
+class StringFractionData(TypedDict):
+    submitted_answers: Optional[dict[str, Any]]
+    format_errors: str
+
+def string_fraction_to_number(a_sub:Optional[str], allow_fractions:bool=True, allow_complex:bool=True) -> tuple[Optional[np.number], StringFractionData]:
     """string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True)
 
     Parses a string containing a decimal number with support for answers expressing
