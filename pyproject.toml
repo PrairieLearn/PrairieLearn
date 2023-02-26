@@ -67,6 +67,7 @@ include = [
     "./elements/pl-graph",
     "./elements/pl-hidden-hints",
     "./elements/pl-matrix-component-input",
+    "./elements/pl-matrix-latex",
     "./elements/pl-python-variable",
     "./elements/pl-symbolic-input",
     "./elements/pl-variable-output",
