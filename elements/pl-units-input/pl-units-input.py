@@ -1,11 +1,12 @@
 from enum import Enum
 from html import escape
+from typing import Optional
 
 import chevron
 import lxml.html
 import prairielearn as pl
 import unit_utils as uu
-from pint import Unit, errors
+from pint import Quantity, Unit, errors
 from typing_extensions import assert_never
 
 
@@ -154,9 +155,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     show_info = pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT)
     digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
 
+    custom_format = pl.get_string_attrib(element, "custom-format", None)
+
     raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
     partial_scores = data["partial_scores"].get(name, {})
     score = partial_scores.get("score")
+
+    ureg = pl.get_unit_registry()
 
     if data["panel"] == "question":
         editable = data["editable"]
@@ -233,8 +238,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             if a_sub is None:
                 raise ValueError("submitted answer is None")
 
+            a_sub_parsed = ureg.Quantity(a_sub)
+            html_params["a_sub"] = prepare_display_string(
+                a_sub_parsed, custom_format, grading_mode
+            )
             html_params["suffix"] = suffix
-            html_params["a_sub"] = a_sub
             html_params["raw_submitted_answer"] = raw_submitted_answer
 
         elif name not in data["submitted_answers"]:
@@ -271,20 +279,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if a_tru is None:
             return ""
 
-        ureg = pl.get_unit_registry()
         a_tru_parsed = ureg.Quantity(a_tru)
-
-        if grading_mode is GradingMode.ONLY_UNITS:
-            a_tru_string = f"{a_tru_parsed.units}"
-        else:
-            # Display reference solution with the given number of digits
-            # TODO double check if this is confusing or not
-            a_tru_string = f"{a_tru_parsed:.{digits}g}"
 
         html_params = {
             "answer": True,
             "label": label,
-            "a_tru": a_tru_string,
+            "a_tru": prepare_display_string(a_tru_parsed, custom_format, grading_mode),
             "suffix": suffix,
         }
         with open(UNITS_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
@@ -465,3 +465,15 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["format_errors"][name] = "Invalid unit."
     else:
         assert_never(result)
+
+
+def prepare_display_string(
+    quantity: Quantity, custom_format: Optional[str], grading_mode: GradingMode
+) -> str:
+    if grading_mode is GradingMode.ONLY_UNITS:
+        return str(quantity.units)
+    elif custom_format is None:
+        return str(quantity)
+
+    # Display reference solution with the given custom format
+    return f"{quantity:{custom_format}}"
