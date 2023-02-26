@@ -13,7 +13,7 @@ AWS.config.update({ region: 'us-east-2' });
 const dockerUtil = require('../lib/dockerUtil');
 const configManager = require('../lib/config');
 const config = require('../lib/config').config;
-const logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const sqldb = require('@prairielearn/postgres');
 
 var imagesText = `alawini/cs411-mongo:latest
