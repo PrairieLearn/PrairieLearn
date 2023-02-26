@@ -861,7 +861,7 @@ def string_from_2darray(A, language="python", presentation_type="f", digits=2):
     return result
 
 
-def string_from_number_sigfig(a, digits=2):
+def string_from_number_sigfig(a: Union[float, complex], digits: int = 2) -> str:
     """_string_from_complex_sigfig(a, digits=2)
 
     This function assumes that "a" is of type float or complex. It returns "a"
@@ -1404,7 +1404,11 @@ def string_to_2darray(s, allow_complex=True):
     raise Exception(f"Invalid number of left brackets: {number_of_left_brackets}")
 
 
-def latex_from_2darray(A, presentation_type="f", digits=2):
+def latex_from_2darray(
+    A: Union[np.number, np.ndarray],
+    presentation_type: str = "f",
+    digits: int = 2,
+) -> str:
     r"""latex_from_2darray
     This function assumes that A is one of these things:
             - a number (float or complex)
@@ -1453,8 +1457,8 @@ def latex_from_2darray(A, presentation_type="f", digits=2):
         .splitlines()
     )
     rv = [r"\begin{bmatrix}"]
-    rv += ["  " + " & ".join(line.split()) + r"\\" for line in lines]
-    rv += [r"\end{bmatrix}"]
+    rv.extend("  " + " & ".join(line.split()) + r"\\" for line in lines)
+    rv.extend(r"\end{bmatrix}")
     return "".join(rv)
 
 
