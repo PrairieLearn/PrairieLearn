@@ -59,7 +59,7 @@ describe('Test group based assessments with custom group roles from student side
         callback(null);
       });
     });
-    it('should contain 4 roles for the assessment', function (callback) {
+    it('should contain the 4 roles for the assessment', function (callback) {
       const params = {
         assessment_id: locals.assessment_id,
       };
@@ -67,17 +67,35 @@ describe('Test group based assessments with custom group roles from student side
         if (ERR(err, callback)) return;
         assert.lengthOf(result.rows, 4);
         locals.groupRoles = result.rows;
+
+        // Store roles by name for later tests
+        const manager = result.rows.find((row) => row.role_name === 'Manager');
+        console.log(manager);
+        assert.isDefined(manager);
+
+        const recorder = result.rows.find((row) => row.role_name === 'Recorder');
+        assert.isDefined(recorder);
+
+        const reflector = result.rows.find((row) => row.role_name === 'Reflector');
+        assert.isDefined(reflector);
+
+        const contributor = result.rows.find((row) => row.role_name === 'Contributor');
+        assert.isDefined(contributor);
+
+        locals.manager = manager;
+        locals.recorder = recorder;
+        locals.reflector = reflector;
+        locals.contributor = contributor;
         callback(null);
       });
     });
   });
 
-  describe('2. get 5 student user', function () {
-    // FIXME: (Cale) I think we only need 4?
-    it('should insert/get 5 users into/from the DB', function (callback) {
-      sqldb.query(sql.generate_and_enroll_5_users, [], function (err, result) {
+  describe('2. get 4 student user', function () {
+    it('should insert/get 4 users into/from the DB', function (callback) {
+      sqldb.query(sql.generate_and_enroll_4_users, [], function (err, result) {
         if (ERR(err, callback)) return;
-        assert.lengthOf(result.rows, 5);
+        assert.lengthOf(result.rows, 4);
         locals.studentUsers = result.rows.slice(0, 4);
         locals.groupCreator = locals.studentUsers[0];
         assert.lengthOf(locals.studentUsers, 4);
@@ -139,7 +157,6 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   describe('4. the group information after 1 user join the group', function () {
-    // FIXME: (Cale) I don't think we need this join code test
     it('should contain the 4-character join code', function () {
       elemList = locals.$('#join-code');
       locals.joinCode = elemList.text();
@@ -154,7 +171,8 @@ describe('Test group based assessments with custom group roles from student side
         if (ERR(err, callback)) return;
         let userRoles = result.rows;
         assert.lengthOf(userRoles, 1);
-        assert.equal(userRoles[0].role_name, 'Manager');
+        assert.equal(userRoles[0].role_name, locals.manager.role_name);
+        assert.equal(userRoles[0].role_id, locals.manager.role_id);
         locals.currentRoleIds = [userRoles[0].id];
         callback(null);
       });
@@ -274,7 +292,8 @@ describe('Test group based assessments with custom group roles from student side
         if (ERR(err, callback)) return;
         let userRoles = result.rows;
         assert.lengthOf(userRoles, 1);
-        assert.equal(userRoles[0].role_name, 'Manager');
+        assert.equal(userRoles[0].role_name, locals.manager.role_name);
+        assert.equal(userRoles[0].role_id, locals.manager.role_id);
         assert.equal(locals.currentRoleIds[0], userRoles[0].id);
         callback(null);
       });
@@ -350,7 +369,8 @@ describe('Test group based assessments with custom group roles from student side
         if (ERR(err, callback)) return;
         let userRoles = result.rows;
         assert.lengthOf(userRoles, 1);
-        assert.equal(userRoles[0].role_name, 'Recorder');
+        assert.equal(userRoles[0].role_name, locals.recorder.role_name);
+        assert.equal(userRoles[0].id, locals.recorder.id);
         locals.currentRoleIds = [userRoles[0].role_id];
         callback(null);
       });
@@ -439,7 +459,8 @@ describe('Test group based assessments with custom group roles from student side
         if (ERR(err, callback)) return;
         let userRoles = result.rows;
         assert.lengthOf(userRoles, 1);
-        assert.equal(userRoles[0].role_name, 'Recorder');
+        assert.equal(userRoles[0].role_name, locals.recorder.role_name);
+        assert.equal(userRoles[0].id, locals.recorder.id);
         locals.currentRoleIds = [userRoles[0].role_id];
         callback(null);
       });
@@ -521,7 +542,8 @@ describe('Test group based assessments with custom group roles from student side
         if (ERR(err, callback)) return;
         let userRoles = result.rows;
         assert.lengthOf(userRoles, 1);
-        assert.equal(userRoles[0].role_name, 'Contributor');
+        assert.equal(userRoles[0].role_name, locals.contributor.role_name);
+        assert.equal(userRoles[0].id, locals.contributor.id);
         locals.currentRoleIds = [userRoles[0].role_id];
         callback(null);
       });
@@ -692,7 +714,12 @@ describe('Test group based assessments with custom group roles from student side
       assert.lengthOf(elemList, 0);
 
       // [Manager, Recorder, Recorder, Reflector]
-      const roleUpdates = ['1', '2', '2', '3'].map((role_id, i) => ({
+      const roleUpdates = [
+        locals.manager.id,
+        locals.recorder.id,
+        locals.recorder.id,
+        locals.reflector.id,
+      ].map((role_id, i) => ({
         roleId: role_id,
         groupUserId: locals.studentUsers[i].user_id,
       }));
@@ -933,9 +960,9 @@ describe('Test group based assessments with custom group roles from student side
     it('should update locals with roles updates', function () {
       // TODO: Should we find a way to not hard-code this in?
       locals.roleUpdates = [
-        { roleId: '1', groupUserId: '2' },
-        { roleId: '2', groupUserId: '3' },
-        { roleId: '3', groupUserId: '4' },
+        { roleId: locals.manager.id, groupUserId: '2' },
+        { roleId: locals.recorder.id, groupUserId: '3' },
+        { roleId: locals.reflector.id, groupUserId: '4' },
       ];
     });
   });
@@ -1148,9 +1175,9 @@ describe('Test group based assessments with custom group roles from student side
     });
     it('should update locals with roles updates', function () {
       locals.roleUpdates = [
-        { roleId: '1', groupUserId: '3' },
-        { roleId: '2', groupUserId: '3' },
-        { roleId: '3', groupUserId: '3' },
+        { roleId: locals.manager.id, groupUserId: '3' },
+        { roleId: locals.recorder.id, groupUserId: '3' },
+        { roleId: locals.reflector.id, groupUserId: '3' },
       ];
     });
     it('should be able to switch user', function (callback) {
@@ -1182,7 +1209,7 @@ describe('Test group based assessments with custom group roles from student side
       assert.isString(locals.__csrf_token);
     });
   });
-  describe('22. role with assigner privleges is reassigned upon group leave', function () {
+  describe('22. role with assigner privileges is reassigned upon group leave', function () {
     it('should have correct role configuration in the database', function (callback) {
       var params = {
         assessment_id: locals.assessment_id,
@@ -1214,7 +1241,7 @@ describe('Test group based assessments with custom group roles from student side
     });
   });
 
-  describe('17. assessments without roles do not show the role selection table', function () {
+  describe('23. assessments without roles do not show the role selection table', function () {
     it('should be able to switch user', function (callback) {
       let student = locals.studentUsers[0];
       config.authUid = student.uid;
