@@ -1,7 +1,5 @@
 #!/bin/bash
-set -e
-
-yum install -y tmux
+set -ex
 
 yum update -y
 
@@ -11,26 +9,33 @@ amazon-linux-extras install -y \
     postgresql11 \
     redis4.0
 
+# Notes:
+# - `gcc-c++` is needed to build the native bindings in `packages/bind-mount`
+# - `libjpeg-devel` is needed by the Pillow package
+# - `procps-ng` is needed for the `pkill` executable, which is used by `zygote.py`
+# - `texlive` and `texlive-dvipng` are needed for matplotlib LaTeX labels
 yum -y install \
-    postgresql-server \
-    postgresql-contrib \
-    man \
+    dos2unix \
     emacs-nox \
     gcc \
-    make \
-    lsof \
-    openssl \
-    dos2unix \
-    tar \
-    ImageMagick \
-    fontconfig-devel \
-    texlive \
-    texlive-dvipng \
+    gcc-c++ \
     git \
     graphviz \
-    graphviz-devel
+    graphviz-devel \
+    ImageMagick \
+    libjpeg-devel \
+    lsof \
+    make \
+    man \
+    openssl \
+    postgresql-contrib \
+    postgresql-server \
+    procps-ng \
+    tar \
+    texlive \
+    texlive-dvipng \
+    tmux
 
-yum clean all
 
 echo "installing node via nvm"
 git clone https://github.com/creationix/nvm.git /nvm
@@ -38,7 +43,7 @@ cd /nvm
 git checkout `git describe --abbrev=0 --tags --match "v[0-9]*" $(git rev-list --tags --max-count=1)`
 source /nvm/nvm.sh
 export NVM_SYMLINK_CURRENT=true
-nvm install 14
+nvm install 16
 # PrairieLearn doesn't currently use `npm` itself, but we can't be sure that
 # someone else isn't using our base image and relying on `npm`, so we'll
 # continue to install it to avoid breaking things.
@@ -56,20 +61,22 @@ arch=`uname -m`
 curl -LO https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh
 bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
 
-if [[ "${arch}" != "aarch64" ]]; then # R is not yet supported on ARM64.
+# If R package installation is specifically disabled, we'll avoid installing anything R-related.
+if [[ "${SKIP_R_PACKAGES}" != "yes" ]]; then
     echo "installing R..."
-    conda install r-essentials
+    conda install --channel r r-base r-essentials
 
     echo "installing Python packages..."
     python3 -m pip install --no-cache-dir -r /python-requirements.txt
-
-    if [[ "${SKIP_R_PACKAGES}" != "yes" ]] ; then
-        echo "installing R packages..."
-        echo "set SKIP_R_PACKAGES=yes to skip this step"
-        Rscript /r-requirements.R
-    fi
 else
+    echo "R package installation is disabled"
     sed '/rpy2/d' /python-requirements.txt > /py_req_no_r.txt # Remove rpy2 package.
     echo "installing Python packages..."
     python3 -m pip install --no-cache-dir -r /py_req_no_r.txt
 fi
+
+# Clear various caches to minimize the final image size.
+yum clean all
+conda clean --all
+nvm cache clear
+rm Miniforge3-Linux-${arch}.sh

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const _ = require('lodash');
 
-var logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 var csrf = require('../lib/csrf');
 var config = require('../lib/config');
 const { idsEqual } = require('../lib/id');
@@ -51,27 +51,13 @@ router.all('/', function (req, res, next) {
     }
   }
 
-  // Password protect the assessment
-  if (
-    'authz_result' in res.locals &&
-    'password' in res.locals.authz_result &&
-    res.locals.authz_result.password &&
-    res.locals?.assessment_instance?.open
-  ) {
-    // No password yet case
-    if (req.cookies.pl_assessmentpw == null) {
-      return badPassword(res, req);
-    }
-
-    // Invalid or expired password case
-    var pwData = csrf.getCheckedData(req.cookies.pl_assessmentpw, config.secretKey, {
-      maxAge: timeout * 60 * 60 * 1000,
-    });
-    if (pwData == null || pwData.password !== res.locals.authz_result.password) {
-      return badPassword(res, req);
-    }
-
-    // Successful password case: falls though
+  // Password protect the assessment. Note that this only handles the general
+  // case of an existing assessment instance. This middleware can't handle
+  // the intricacies of creating a new assessment instance. We handle those
+  // cases on the `studentAssessmentExam` and `studentAssessmentHomework`
+  // pages.
+  if (res.locals?.assessment_instance?.open && !module.exports.checkPasswordOrRedirect(req, res)) {
+    return;
   }
 
   // Pass-through for everything else
@@ -79,6 +65,40 @@ router.all('/', function (req, res, next) {
 });
 
 module.exports = router;
+
+/**
+ * Checks if the given request has the correct password. If not, redirects to
+ * a password input page.
+ *
+ * Returns `true` if the password is correct, `false` otherwise. If this
+ * function returns `false`, the caller should not continue with the request.
+ *
+ * @returns {boolean}
+ */
+module.exports.checkPasswordOrRedirect = function (req, res) {
+  if (!res.locals.authz_result?.password) {
+    // No password is required.
+    return true;
+  }
+
+  if (req.cookies.pl_assessmentpw == null) {
+    // The user has not entered a password yet.
+    badPassword(res, req);
+    return false;
+  }
+
+  var pwData = csrf.getCheckedData(req.cookies.pl_assessmentpw, config.secretKey, {
+    maxAge: timeout * 60 * 60 * 1000,
+  });
+  if (pwData == null || pwData.password !== res.locals.authz_result.password) {
+    // The password is incorrect or the cookie is expired.
+    badPassword(res, req);
+    return false;
+  }
+
+  // The password is correct and not expired!
+  return true;
+};
 
 function badPassword(res, req) {
   logger.verbose(`invalid password attempt for ${res.locals.user.uid}`);

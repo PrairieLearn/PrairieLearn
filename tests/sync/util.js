@@ -1,7 +1,7 @@
 const fs = require('fs-extra');
 const tmp = require('tmp-promise');
 const path = require('path');
-const sqldb = require('../../prairielib/lib/sql-db');
+const sqldb = require('@prairielearn/postgres');
 const stringify = require('json-stable-stringify');
 const { assert } = require('chai');
 
@@ -35,6 +35,12 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  */
 
 /**
+ * @typedef {Object} Module
+ * @property {string} name
+ * @property {string} heading
+ */
+
+/**
  * @typedef {Object} Course
  * @property {string} uuid
  * @property {string} name
@@ -45,6 +51,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {Tag[]} tags
  * @property {Topic[]} topics
  * @property {AssessmentSet[]} assessmentSets
+ * @property {Module[]} [assessmentModules]
  */
 
 /**
@@ -62,6 +69,17 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {number} [number]
  * @property {string} [timezone]
  * @property {CourseInstanceAllowAccess[]} [allowAccess]
+ * @property {"Set" | "Module"} [groupAssessmentsBy]
+ */
+
+/**
+ * @typedef {Object} GroupRole
+ * @property {string} name
+ * @property {number} [minimum]
+ * @property {number} [maximum]
+ * @property {boolean} [canAssignRolesAtStart]
+ * @property {boolean} [canAssignRolesDuringAssessment]
+ * @property {boolean} [canSubmitAssessment]
  */
 
 /**
@@ -73,44 +91,53 @@ const syncFromDisk = require('../../sync/syncFromDisk');
 
 /**
  * @typedef {Object} AssessmentAllowAccess
- * @property {"Public" | "Exam" | "SEB"} mode
- * @property {string} examUuid
- * @property {string[]} uids
- * @property {number} credit
- * @property {string} startDate
- * @property {string} endDate
- * @property {number} timeLimitMin
- * @property {string} password
- * @property {SEBConfig} SEBConfig
+ * @property {"Public" | "Exam" | "SEB"} [mode]
+ * @property {string} [examUuid]
+ * @property {string[]} [uids]
+ * @property {number} [credit]
+ * @property {string} [startDate]
+ * @property {string} [endDate]
+ * @property {number} [timeLimitMin]
+ * @property {string} [password]
+ * @property {SEBConfig} [SEBConfig]
+ * @property {boolean} [active]
  */
 
 /**
  * @typedef {Object} QuestionAlternative
- * @property {number | number[]} points
- * @property {numer | number[]} maxPoints
- * @property {string} id
- * @property {boolean} forceMaxPoints
- * @property {number} triesPerVariant
+ * @property {number | number[]} [points]
+ * @property {number | number[]} [autoPoints]
+ * @property {number} [maxPoints]
+ * @property {number} [maxAutoPoints]
+ * @property {number} [manualPoints]
+ * @property {string} [id]
+ * @property {boolean} [forceMaxPoints]
+ * @property {number} [triesPerVariant]
  */
 
 /**
  * @typedef {Object} ZoneQuestion
- * @property {number | number[]} points
- * @property {number | []} maxPoints
- * @property {string} id
- * @property {boolean} forceMaxPoints
- * @property {QuestionAlternative[]} alternatives
- * @property {number} numberChoose
- * @property {number} triesPerVariant
+ * @property {number | number[]} [points]
+ * @property {number | number[]} [autoPoints]
+ * @property {number} [maxPoints]
+ * @property {number} [maxAutoPoints]
+ * @property {number} [manualPoints]
+ * @property {string} [id]
+ * @property {boolean} [forceMaxPoints]
+ * @property {QuestionAlternative[]} [alternatives]
+ * @property {number} [numberChoose]
+ * @property {number} [triesPerVariant]
+ * @property {string[]} [canSubmit]
+ * @property {string[]} [canView]
  */
 
 /**
  * @typedef {Object} Zone
- * @property {string} title
- * @property {number} maxPoints
- * @property {number} maxChoose
- * @property {number} bestQuestions
- * @property {ZoneQuestion[]} questions
+ * @property {string} [title]
+ * @property {number} [maxPoints]
+ * @property {number} [maxChoose]
+ * @property {number} [bestQuestions]
+ * @property {ZoneQuestion[]} [questions]
  */
 
 /**
@@ -119,24 +146,26 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {"Homework" | "Exam"} type
  * @property {string} title
  * @property {string} set
+ * @property {string} [module]
  * @property {string} number
- * @property {boolean} allowIssueReporting
- * @property {boolean} allowRealTimeGrading
- * @property {boolean} requireHonorCode
- * @property {boolean} multipleInstance
- * @property {boolean} shuffleQuestions
- * @property {AssessmentAllowAccess[]} allowAccess
- * @property {string} text
- * @property {number} maxPoints
- * @property {boolean} autoClose
- * @property {Zone[]} zones
- * @property {boolean} constantQuestionValue
- * @property {boolean} groupWork
- * @property {number} groupMaxSize
- * @property {number} groupMinSize
- * @property {boolean} studentGroupCreate
- * @property {boolean} studentGroupJoin
- * @property {boolean} studentGroupLeave
+ * @property {GroupRole[]} [groupRoles]
+ * @property {boolean} [allowIssueReporting]
+ * @property {boolean} [allowRealTimeGrading]
+ * @property {boolean} [requireHonorCode]
+ * @property {boolean} [multipleInstance]
+ * @property {boolean} [shuffleQuestions]
+ * @property {AssessmentAllowAccess[]} [allowAccess]
+ * @property {string} [text]
+ * @property {number} [maxPoints]
+ * @property {boolean} [autoClose]
+ * @property {Zone[]} [zones]
+ * @property {boolean} [constantQuestionValue]
+ * @property {boolean} [groupWork]
+ * @property {number} [groupMaxSize]
+ * @property {number} [groupMinSize]
+ * @property {boolean} [studentGroupCreate]
+ * @property {boolean} [studentGroupJoin]
+ * @property {boolean} [studentGroupLeave]
  */
 
 /**
@@ -157,7 +186,6 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string} home
  * @property {string} args
  * @property {string[]} gradedFiles
- * @property {string[]} syncIgnore
  * @property {string} rewriteUrl
  * @property {boolean=} enableNetworking
  * @property {Record<string, string | null>=} environment
@@ -175,6 +203,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string} [template]
  * @property {"Internal" | "External" | "Manual"} [gradingMethod]
  * @property {boolean} [singleVariant]
+ * @property {boolean} [showCorrectAnswer]
  * @property {boolean} [partialCredit]
  * @property {Object} [options]
  * @property {QuestionExternalGradingOptions} [externalGradingOptions]
@@ -193,7 +222,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  */
 module.exports.writeCourseToTempDirectory = async function (courseData) {
   const { path: coursePath } = await tmp.dir({ unsafeCleanup: true });
-  await this.writeCourseToDirectory(courseData, coursePath);
+  await module.exports.writeCourseToDirectory(courseData, coursePath);
   return coursePath;
 };
 
@@ -208,7 +237,7 @@ module.exports.writeCourseToTempDirectory = async function (courseData) {
 module.exports.writeCourseToDirectory = async function (courseData, coursePath) {
   await fs.emptyDir(coursePath);
 
-  // courseInfo.json
+  // infoCourse.json
   const courseInfoPath = path.join(coursePath, 'infoCourse.json');
   await fs.writeJSON(courseInfoPath, courseData.course);
 
@@ -252,6 +281,8 @@ module.exports.writeCourseToDirectory = async function (courseData, coursePath) 
 
 module.exports.QUESTION_ID = 'test';
 module.exports.ALTERNATIVE_QUESTION_ID = 'test2';
+module.exports.MANUAL_GRADING_QUESTION_ID = 'test_manual';
+module.exports.WORKSPACE_QUESTION_ID = 'workspace';
 module.exports.COURSE_INSTANCE_ID = 'Fa19';
 
 /** @type {Course} */
@@ -277,6 +308,12 @@ const course = {
       abbreviation: 'Private',
       heading: 'Used by the default assessment, do not use in your own tests',
       color: 'red2',
+    },
+  ],
+  assessmentModules: [
+    {
+      name: 'TEST',
+      heading: 'Test module',
     },
   ],
   topics: [
@@ -331,6 +368,15 @@ const questions = {
     tags: ['test'],
     type: 'Calculation',
   },
+  [module.exports.MANUAL_GRADING_QUESTION_ID]: {
+    uuid: '2798b1ba-06e0-4ddf-9e5d-765fcca08a46',
+    title: 'Test question',
+    topic: 'Test',
+    gradingMethod: 'Manual',
+    secondaryTopics: [],
+    tags: ['test'],
+    type: 'v3',
+  },
   [module.exports.WORKSPACE_QUESTION_ID]: {
     uuid: '894927f7-19b3-451d-8ad1-75974ad2ffb7',
     title: 'Workspace test question',
@@ -344,7 +390,6 @@ const questions = {
       home: '/home/coder',
       args: '--auth none',
       gradedFiles: ['animal.h', 'animal.c'],
-      syncIgnore: ['.local/share/code-server/'],
     },
   },
 };
@@ -418,7 +463,7 @@ module.exports.getFakeLogger = function () {
  * logger interface.
  */
 module.exports.syncCourseData = function (courseDir) {
-  const logger = this.getFakeLogger();
+  const logger = module.exports.getFakeLogger();
   return new Promise((resolve, reject) => {
     syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, (err) => {
       if (err) {
@@ -431,7 +476,7 @@ module.exports.syncCourseData = function (courseDir) {
 };
 
 module.exports.createAndSyncCourseData = async function () {
-  const courseData = this.getCourseData();
+  const courseData = module.exports.getCourseData();
   const courseDir = await module.exports.writeCourseToTempDirectory(courseData);
   await module.exports.syncCourseData(courseDir);
 
@@ -449,8 +494,8 @@ module.exports.createAndSyncCourseData = async function () {
  * @returns {Promise<string>} the path to the new temp directory
  */
 module.exports.writeAndSyncCourseData = async function (courseData) {
-  const courseDir = await this.writeCourseToTempDirectory(courseData);
-  await this.syncCourseData(courseDir);
+  const courseDir = await module.exports.writeCourseToTempDirectory(courseData);
+  await module.exports.syncCourseData(courseDir);
   return courseDir;
 };
 
@@ -461,8 +506,8 @@ module.exports.writeAndSyncCourseData = async function (courseData) {
  * @param {string} courseDir - The path to write the course data to
  */
 module.exports.overwriteAndSyncCourseData = async function (courseData, courseDir) {
-  await this.writeCourseToDirectory(courseData, courseDir);
-  await this.syncCourseData(courseDir);
+  await module.exports.writeCourseToDirectory(courseData, courseDir);
+  await module.exports.syncCourseData(courseDir);
 };
 
 /**

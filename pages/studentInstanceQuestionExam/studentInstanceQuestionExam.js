@@ -9,7 +9,7 @@ const logPageView = require('../../middlewares/logPageView')('studentInstanceQue
 const question = require('../../lib/question');
 const assessment = require('../../lib/assessment');
 const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
-const sqldb = require('../../prairielib/lib/sql-db');
+const sqldb = require('@prairielearn/postgres');
 
 function processSubmission(req, res, callback) {
   if (!res.locals.assessment_instance.open) {
@@ -101,7 +101,9 @@ router.post('/', function (req, res, next) {
 
   if (req.body.__action === 'grade' || req.body.__action === 'save') {
     if (res.locals.authz_result.time_limit_expired) {
-      return next(new Error('time limit is expired, please go back and finish your assessment'));
+      return next(
+        error.make(403, 'time limit is expired, please go back and finish your assessment')
+      );
     }
     if (req.body.__action === 'grade' && !res.locals.assessment.allow_real_time_grading) {
       next(error.make(403, 'Real-time grading is not allowed for this assessment'));
@@ -112,15 +114,18 @@ router.post('/', function (req, res, next) {
       res.redirect(req.originalUrl);
     });
   } else if (req.body.__action === 'timeLimitFinish') {
-    const closeExam = true;
-    const overrideGradeRate = false;
     // Only close if the timer expired due to time limit, not for access end
     if (!res.locals.assessment_instance_time_limit_expired) {
       return res.redirect(req.originalUrl);
     }
+
+    const requireOpen = true;
+    const closeExam = true;
+    const overrideGradeRate = false;
     assessment.gradeAssessmentInstance(
       res.locals.assessment_instance.id,
       res.locals.authn_user.user_id,
+      requireOpen,
       closeExam,
       overrideGradeRate,
       function (err) {
@@ -197,6 +202,24 @@ router.post('/', function (req, res, next) {
       })
     );
   }
+});
+
+router.get('/variant/:variant_id/submission/:submission_id', function (req, res, next) {
+  question.renderPanelsForSubmission(
+    req.params.submission_id,
+    res.locals.question.id,
+    res.locals.instance_question.id,
+    req.params.variant_id,
+    res.locals.urlPrefix,
+    null, // questionContext
+    null, // csrfToken
+    null, // authorizedEdit
+    false, // renderScorePanels
+    (err, results) => {
+      if (ERR(err, next)) return;
+      res.send({ submissionPanel: results.submissionPanel });
+    }
+  );
 });
 
 router.get('/', function (req, res, next) {

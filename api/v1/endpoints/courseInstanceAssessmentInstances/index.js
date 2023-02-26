@@ -1,23 +1,22 @@
-const ERR = require('async-stacktrace');
+// @ts-check
+const asyncHandler = require('express-async-handler');
 const path = require('path');
 const express = require('express');
-const router = express.Router({
-  mergeParams: true,
-});
+const assessment = require('../../../../lib/assessment');
+const router = express.Router({ mergeParams: true });
 
-const sqldb = require('../../../../prairielib/lib/sql-db');
-const sqlLoader = require('../../../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
-const sql = sqlLoader.load(path.join(__dirname, '..', 'queries.sql'));
+const sql = sqldb.loadSql(path.join(__dirname, '..', 'queries.sql'));
 
-router.get('/:assessment_instance_id', (req, res, next) => {
-  const params = {
-    course_instance_id: res.locals.course_instance.id,
-    assessment_id: null,
-    assessment_instance_id: req.params.assessment_instance_id,
-  };
-  sqldb.queryOneRow(sql.select_assessment_instances, params, (err, result) => {
-    if (ERR(err, next)) return;
+router.get(
+  '/:unsafe_assessment_instance_id',
+  asyncHandler(async (req, res) => {
+    const result = await sqldb.queryOneRowAsync(sql.select_assessment_instances, {
+      course_instance_id: res.locals.course_instance.id,
+      unsafe_assessment_id: null,
+      unsafe_assessment_instance_id: req.params.unsafe_assessment_instance_id,
+    });
     const data = result.rows[0].item;
     if (data.length === 0) {
       res.status(404).send({
@@ -26,39 +25,52 @@ router.get('/:assessment_instance_id', (req, res, next) => {
     } else {
       res.status(200).send(data[0]);
     }
-  });
-});
+  })
+);
 
-router.get('/:assessment_instance_id/instance_questions', (req, res, next) => {
-  const params = {
-    course_instance_id: res.locals.course_instance.id,
-    assessment_instance_id: req.params.assessment_instance_id,
-    instance_question_id: null,
-  };
-  sqldb.queryOneRow(sql.select_instance_questions, params, (err, result) => {
-    if (ERR(err, next)) return;
+router.get(
+  '/:unsafe_assessment_instance_id/instance_questions',
+  asyncHandler(async (req, res) => {
+    const result = await sqldb.queryOneRowAsync(sql.select_instance_questions, {
+      course_instance_id: res.locals.course_instance.id,
+      unsafe_assessment_instance_id: req.params.unsafe_assessment_instance_id,
+    });
     res.status(200).send(result.rows[0].item);
-  });
-});
+  })
+);
 
-router.get('/:assessment_instance_id/submissions', (req, res, next) => {
-  const params = {
-    course_instance_id: res.locals.course_instance.id,
-    assessment_instance_id: req.params.assessment_instance_id,
-    submission_id: null,
-  };
-  sqldb.queryOneRow(sql.select_submissions, params, (err, result) => {
-    if (ERR(err, next)) return;
+router.get(
+  '/:unsafe_assessment_instance_id/submissions',
+  asyncHandler(async (req, res) => {
+    const result = await sqldb.queryOneRowAsync(sql.select_submissions, {
+      course_instance_id: res.locals.course_instance.id,
+      unsafe_assessment_instance_id: req.params.unsafe_assessment_instance_id,
+      unsafe_submission_id: null,
+    });
     res.status(200).send(result.rows[0].item);
-  });
-});
+  })
+);
 
-router.get('/:assessment_instance_id/log', (req, res, next) => {
-  const params = [req.params.assessment_instance_id, true];
-  sqldb.call('assessment_instances_select_log', params, (err, result) => {
-    if (ERR(err, next)) return;
-    res.status(200).send(result.rows);
-  });
-});
+router.get(
+  '/:unsafe_assessment_instance_id/log',
+  asyncHandler(async (req, res) => {
+    const result = await sqldb.queryZeroOrOneRowAsync(sql.select_assessment_instance, {
+      course_instance_id: res.locals.course_instance.id,
+      unsafe_assessment_instance_id: req.params.unsafe_assessment_instance_id,
+    });
+    if (result.rowCount === 0) {
+      res.status(404).send({
+        message: 'Not Found',
+      });
+      return;
+    }
+
+    const logs = await assessment.selectAssessmentInstanceLog(
+      result.rows[0].assessment_instance_id,
+      true
+    );
+    res.status(200).send(logs);
+  })
+);
 
 module.exports = router;

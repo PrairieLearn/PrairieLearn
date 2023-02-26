@@ -2,10 +2,9 @@ var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
 
-var sqldb = require('../../prairielib/lib/sql-db');
-var sqlLoader = require('../../prairielib/lib/sql-loader');
+var sqldb = require('@prairielearn/postgres');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+var sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
   var params = {
@@ -13,6 +12,7 @@ router.get('/', function (req, res, next) {
     authz_data: res.locals.authz_data,
     user_id: res.locals.user.user_id,
     req_date: res.locals.req_date,
+    assessments_group_by: res.locals.course_instance.assessments_group_by,
   };
   sqldb.query(sql.select_assessments, params, function (err, result) {
     if (ERR(err, next)) return;

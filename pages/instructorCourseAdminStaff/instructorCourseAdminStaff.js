@@ -3,16 +3,15 @@ const express = require('express');
 const router = express.Router();
 const async = require('async');
 
-const logger = require('../../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const error = require('../../prairielib/lib/error');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 const { idsEqual } = require('../../lib/id');
 
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', (req, res, next) => {
   if (!res.locals.authz_data.has_course_permission_own) {
@@ -31,7 +30,7 @@ router.post('/', (req, res, next) => {
     return next(error.make(403, 'Access denied (must be course owner)'));
   }
 
-  if (req.body.__action === 'course_permissions_insert_by_multi_user_uid') {
+  if (req.body.__action === 'course_permissions_insert_by_user_uids') {
     // Get set of unique, non-empty UIDs with no leading or trailing whitespaces
     let uids = new Set(
       req.body.uid
@@ -168,7 +167,7 @@ router.post('/', (req, res, next) => {
               `to add them again. However, you should first check the reason for each failure to ` +
               `grant access (see below). For example, it may be that a user you tried to add ` +
               `was already a member of the course staff, in which case you will find them in the ` +
-              `list and can update their course content acccess as appropriate.</p>`;
+              `list and can update their course content access as appropriate.</p>`;
           }
           err.info +=
             '<hr>' +
@@ -181,15 +180,6 @@ router.post('/', (req, res, next) => {
         res.redirect(req.originalUrl);
       }
     );
-  } else if (req.body.__action === 'course_permissions_insert_by_user_uid') {
-    let uid = req.body.uid.trim();
-    if (!uid) return next(error.make(400, `Empty UID`));
-
-    const params = [res.locals.course.id, uid, 'None', res.locals.authz_data.authn_user.user_id];
-    sqldb.call('course_permissions_insert_by_user_uid', params, (err, _result) => {
-      if (ERR(err, next)) return;
-      res.redirect(req.originalUrl);
-    });
   } else if (req.body.__action === 'course_permissions_update_role') {
     if (
       idsEqual(req.body.user_id, res.locals.user.user_id) &&

@@ -5,9 +5,8 @@ const assert = require('chai').assert;
 const request = require('request');
 const cheerio = require('cheerio');
 
-const sqldb = require('../prairielib/lib/sql-db');
-const sqlLoader = require('../prairielib/lib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sqldb = require('@prairielearn/postgres');
+const sql = sqldb.loadSqlEquiv(__filename);
 
 let page, elemList;
 
@@ -21,7 +20,7 @@ module.exports = {
           callback(null);
         });
       });
-      it('should complete', function (callback) {
+      it('should be successful', function (callback) {
         var checkComplete = function () {
           var params = { job_sequence_id: locals.job_sequence_id };
           sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
@@ -418,6 +417,22 @@ module.exports = {
           1e-6
         );
       });
+      it('should have the correct instance_question auto_points', function () {
+        if (!_.has(locals.expectedResult, 'instance_question_auto_points')) return; // skip check
+        assert.approximately(
+          locals.instance_question.auto_points,
+          locals.expectedResult.instance_question_auto_points,
+          1e-6
+        );
+      });
+      it('should have the correct instance_question manual_points', function () {
+        if (!_.has(locals.expectedResult, 'instance_question_manual_points')) return; // skip check
+        assert.approximately(
+          locals.instance_question.manual_points,
+          locals.expectedResult.instance_question_manual_points,
+          1e-6
+        );
+      });
     });
   },
 
@@ -713,11 +728,7 @@ module.exports = {
       });
       describe('GET to instructor question settings URL', function () {
         it('should load successfully', function (callback) {
-          const questionUrl =
-            locals.questionBaseUrl +
-            '/' +
-            locals.question.id +
-            (locals.questionSettingsTabUrl || '');
+          const questionUrl = locals.questionBaseUrl + '/' + locals.question.id + '/settings';
           request(questionUrl, function (error, response, body) {
             if (error) {
               return callback(error);
@@ -746,11 +757,7 @@ module.exports = {
             __action: 'test_once',
             __csrf_token: locals.__csrf_token,
           };
-          var questionUrl =
-            locals.questionBaseUrl +
-            '/' +
-            locals.question.id +
-            (locals.questionSettingsTabUrl || '');
+          var questionUrl = locals.questionBaseUrl + '/' + locals.question.id + '/settings/test';
           request.post(
             { url: questionUrl, form: form, followAllRedirects: true },
             function (error, response, body) {
@@ -776,8 +783,8 @@ module.exports = {
             var params = { job_sequence_id: locals.job_sequence_id };
             sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
               if (ERR(err, callback)) return;
-              locals.job_sequence_status = result.rows[0].status;
-              if (locals.job_sequence_status === 'Running') {
+              locals.job_sequence = result.rows[0];
+              if (locals.job_sequence.status === 'Running') {
                 setTimeout(checkComplete, 10);
               } else {
                 callback(null);
@@ -786,23 +793,24 @@ module.exports = {
           };
           setTimeout(checkComplete, 10);
         });
-        it('should be successful', function () {
-          assert.equal(locals.job_sequence_status, 'Success');
-        });
-        it('should produce no issues', function (callback) {
-          sqldb.query(sql.select_issues_for_last_variant, [], (err, result) => {
-            if (ERR(err, callback)) return;
-            if (result.rowCount > 0) {
-              callback(
-                new Error(
-                  `found ${result.rowCount} issues (expected zero issues):\n` +
-                    JSON.stringify(result.rows, null, '    ')
-                )
-              );
-              return;
-            }
-            callback(null);
-          });
+        it('should be successful and produce no issues', async function () {
+          const issues = await sqldb.queryAsync(sql.select_issues_for_last_variant, []);
+
+          // To aid in debugging, if the job failed, we'll fetch the logs from
+          // all child jobs and print them out. We'll also log any issues. We
+          // do this before making assertions to ensure that they're printed.
+          if (locals.job_sequence.status !== 'Success') {
+            console.log(locals.job_sequence);
+            const params = { job_sequence_id: locals.job_sequence_id };
+            const result = await sqldb.queryAsync(sql.select_jobs, params);
+            console.log(result.rows);
+          }
+          if (issues.rows.length > 0) {
+            console.log(issues.rows);
+          }
+
+          assert.equal(locals.job_sequence.status, 'Success');
+          assert.lengthOf(issues.rows, 0);
         });
       });
     });

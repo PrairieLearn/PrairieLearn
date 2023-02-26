@@ -25,5 +25,7 @@ if git diff --exit-code $DIFF_SOURCE...HEAD -- ${BUILD_DIRECTORY}; then
   echo "${BUILD_DIRECTORY} files not modified; no rebuild required"
 else
   echo "${BUILD_DIRECTORY} files modified; ${TAG_NAME} requires a rebuild"
-  docker buildx build --platform linux/amd64,linux/arm64 ${BUILD_DIRECTORY} -t ${TAG_NAME}
+  docker buildx build --load ${BUILD_DIRECTORY} -t ${TAG_NAME}
+  docker image history ${TAG_NAME}
 fi
+

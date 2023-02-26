@@ -7,8 +7,6 @@ CREATE FUNCTION
     ) RETURNS SETOF RECORD
 AS $$
 BEGIN
-    PERFORM assessment_instances_ensure_open(assessment_instance_id);
-
     -- most recent variant for each instance_question
     RETURN QUERY
     SELECT DISTINCT ON (iq.id)

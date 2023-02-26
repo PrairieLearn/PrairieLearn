@@ -1,23 +1,18 @@
 // @ts-check
-const ERR = require('async-stacktrace');
 const path = require('path');
 const _ = require('lodash');
 const fs = require('fs-extra');
-const fsPromises = require('fs').promises;
-const util = require('util');
 const async = require('async');
 const jju = require('jju');
 const Ajv = require('ajv').default;
-const betterAjvErrors = require('better-ajv-errors');
+const betterAjvErrors = require('better-ajv-errors').default;
 const { parseISO, isValid, isAfter, isFuture } = require('date-fns');
-const { default: chalkDefault } = require('chalk');
+const { chalk } = require('../lib/chalk');
 
 const schemas = require('../schemas');
 const infofile = require('./infofile');
 const jsonLoad = require('../lib/json-load');
 const perf = require('./performance')('course-db');
-
-const chalk = new chalkDefault.constructor({ enabled: true, level: 3 });
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv({ allErrors: true });
@@ -26,7 +21,9 @@ const DEFAULT_QUESTION_INFO = {
   type: 'Calculation',
   clientFiles: ['client.js', 'question.html', 'answer.html'],
 };
-const DEFAULT_COURSE_INSTANCE_INFO = {};
+const DEFAULT_COURSE_INSTANCE_INFO = {
+  groupAssessmentsBy: 'Set',
+};
 const DEFAULT_ASSESSMENT_INFO = {};
 
 const DEFAULT_ASSESSMENT_SETS = [
@@ -212,6 +209,12 @@ const FILE_UUID_REGEX =
  */
 
 /**
+ * @typedef AssessmentModule
+ * @property {string} name
+ * @property {string} heading
+ */
+
+/**
  * @typedef {Object} Course
  * @property {string} uuid
  * @property {string} name
@@ -223,6 +226,7 @@ const FILE_UUID_REGEX =
  * @property {Tag[]} tags
  * @property {Topic[]} topics
  * @property {AssessmentSet[]} assessmentSets
+ * @property {AssessmentModule[]} assessmentModules
  */
 
 /** @typedef {"Student" | "TA" | "Instructor" | "Superuser"} UserRole */
@@ -247,6 +251,7 @@ const FILE_UUID_REGEX =
  * @property {{ [uid: string]: "Student" | "TA" | "Instructor"}} userRoles
  * @property {CourseInstanceAllowAccess[]} allowAccess
  * @property {boolean} allowIssueReporting
+ * @property {"Set" | "Module"} groupAssessmentsBy
  */
 
 /**
@@ -274,23 +279,35 @@ const FILE_UUID_REGEX =
 /**
  * @typedef {Object} QuestionAlternative
  * @property {number | number[]} points
- * @property {number | number[]} maxPoints
+ * @property {number | number[]} autoPoints
+ * @property {number} maxPoints
+ * @property {number} manualPoints
+ * @property {number} maxAutoPoints
  * @property {string} id
  * @property {boolean} forceMaxPoints
  * @property {number} triesPerVariant
+ * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
+ * @property {string[]} canView
+ * @property {string[]} canSubmit
  */
 
 /**
  * @typedef {Object} ZoneQuestion
  * @property {number | number[]} points
- * @property {number | number[]} maxPoints
+ * @property {number | number[]} autoPoints
+ * @property {number} maxPoints
+ * @property {number} manualPoints
+ * @property {number} maxAutoPoints
  * @property {string} [id]
  * @property {boolean} forceMaxPoints
  * @property {QuestionAlternative[]} [alternatives]
  * @property {number} numberChoose
  * @property {number} triesPerVariant
+ * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
+ * @property {string[]} canView
+ * @property {string[]} canSubmit
  */
 
 /**
@@ -300,7 +317,17 @@ const FILE_UUID_REGEX =
  * @property {number} numberChoose
  * @property {number} bestQuestions
  * @property {ZoneQuestion[]} questions
+ * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
+ */
+
+/**
+ * @typedef {Object} GroupRole
+ * @property {string} name
+ * @property {number} minimum
+ * @property {number} maximum
+ * @property {boolean} canAssignRolesAtStart
+ * @property {boolean} canAssignRolesDuringAssessment
  */
 
 /**
@@ -309,6 +336,7 @@ const FILE_UUID_REGEX =
  * @property {"Homework" | "Exam"} type
  * @property {string} title
  * @property {string} set
+ * @property {string} module
  * @property {string} number
  * @property {boolean} allowIssueReporting
  * @property {boolean} allowRealTimeGrading
@@ -327,6 +355,8 @@ const FILE_UUID_REGEX =
  * @property {boolean} studentGroupCreate
  * @property {boolean} studentGroupJoin
  * @property {boolean} studentGroupLeave
+ * @property {GroupRole[]} groupRoles
+ * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
  */
 
@@ -348,7 +378,6 @@ const FILE_UUID_REGEX =
  * @property {string} home
  * @property {string} args
  * @property {string[]} gradedFiles
- * @property {string[]} syncIgnore
  * @property {string} rewriteUrl
  * @property {boolean} enableNetworking
  * @property {Record<string, string | null>} environment
@@ -368,6 +397,7 @@ const FILE_UUID_REGEX =
  * @property {string} template
  * @property {"Internal" | "External" | "Manual"} gradingMethod
  * @property {boolean} singleVariant
+ * @property {boolean} showCorrectAnswer
  * @property {boolean} partialCredit
  * @property {Object} options
  * @property {QuestionExternalGradingOptions} externalGradingOptions
@@ -389,70 +419,10 @@ const FILE_UUID_REGEX =
  */
 
 /**
- * TODO: Remove `logger` param when we do later refactoring.
- * @param {string} courseDir
- * @param {(err: Error | null, course?: any, newCourse?: CourseData) => void} callback
- */
-module.exports.loadFullCourse = function (courseDir, logger, callback) {
-  util.callbackify(this.loadFullCourseNew)(courseDir, (err, courseData) => {
-    if (ERR(err, callback)) return;
-
-    // First, scan through everything to check for errors, and if we find one, "throw" it
-    if (infofile.hasErrors(courseData.course)) {
-      return callback(new Error(infofile.stringifyErrors(courseData.course)));
-    }
-    for (const qid in courseData.questions) {
-      if (infofile.hasErrors(courseData.questions[qid])) {
-        return callback(new Error(infofile.stringifyErrors(courseData.questions[qid])));
-      }
-    }
-    for (const ciid in courseData.courseInstances) {
-      if (infofile.hasErrors(courseData.courseInstances[ciid].courseInstance)) {
-        return callback(
-          new Error(infofile.stringifyErrors(courseData.courseInstances[ciid].courseInstance))
-        );
-      }
-    }
-    for (const ciid in courseData.courseInstances) {
-      const courseInstance = courseData.courseInstances[ciid];
-      for (const tid in courseInstance.assessments) {
-        if (infofile.hasErrors(courseInstance.assessments[tid])) {
-          return callback(new Error(infofile.stringifyErrors(courseInstance.assessments[tid])));
-        }
-      }
-    }
-
-    const questions = {};
-    Object.entries(courseData.questions).forEach(
-      ([qid, question]) => (questions[qid] = question.data)
-    );
-
-    const courseInstances = {};
-    Object.entries(courseData.courseInstances).forEach(([ciid, courseInstance]) => {
-      const assessments = {};
-      Object.entries(courseInstance.assessments).forEach(([tid, assessment]) => {
-        assessments[tid] = assessment.data;
-      });
-      courseInstances[ciid] = {
-        ...courseInstance.courseInstance.data,
-        assessmentDB: assessments,
-      };
-    });
-
-    const course = {
-      courseInfo: courseData.course.data,
-      questionDB: questions,
-      courseInstanceDB: courseInstances,
-    };
-    callback(null, course, courseData);
-  });
-};
-
-/**
  * @param {string} courseDir
  * @returns {Promise<CourseData>}
  */
-module.exports.loadFullCourseNew = async function (courseDir) {
+module.exports.loadFullCourse = async function (courseDir) {
   const courseInfo = await module.exports.loadCourseInfo(courseDir);
   perf.start('loadQuestions');
   const questions = await module.exports.loadQuestions(courseDir);
@@ -607,7 +577,7 @@ module.exports.loadInfoFile = async function ({
     // we could potentially hit an EMFILE error, but we haven't seen that in
     // practice in years, so that's a risk we're willing to take. We explicitly
     // use the native Node fs API here to opt out of this queueing behavior.
-    contents = await fsPromises.readFile(absolutePath, 'utf8');
+    contents = await fs.readFile(absolutePath, 'utf8');
     // perf.end(`readfile:${absolutePath}`);
   } catch (err) {
     // perf.end(`readfile:${absolutePath}`);
@@ -656,8 +626,7 @@ module.exports.loadInfoFile = async function ({
     }
 
     // Validate file against schema
-    /** @type {import('ajv').ValidateFunction<T>} */
-    const validate = ajv.compile(schema);
+    const validate = /** @type {import('ajv').ValidateFunction<T>} */ (ajv.compile(schema));
     try {
       const valid = validate(json);
       if (!valid) {
@@ -724,86 +693,56 @@ module.exports.loadCourseInfo = async function (coursePath) {
 
   const info = loadedData.data;
 
-  // Make a first pass over assessment sets, warn about duplicates
-  /** @type {Map<string, AssessmentSet>} */
-  const knownAssessmentSets = new Map();
-  /** @type{Set<string>} */
-  const duplicateAssessmentSetNames = new Set();
-  (info.assessmentSets || []).forEach((aset) => {
-    if (knownAssessmentSets.has(aset.name)) {
-      duplicateAssessmentSetNames.add(aset.name);
+  /**
+   * Used to retrieve fields such as "assessmentSets" and "topics".
+   * Adds a warning when syncing if duplicates are found.
+   * If defaults are provided, the entries from defaults not present in the resulting list are merged.
+   * @param {string} fieldName The member of `info` to inspect
+   * @param {string} entryIdentifier The member of each element of the field which uniquely identifies it, usually "name"
+   * @param {array} defaults
+   */
+  function getFieldWithoutDuplicates(fieldName, entryIdentifier, defaults) {
+    const known = new Map();
+    const duplicateEntryIds = new Set();
+
+    (info[fieldName] || []).forEach((entry) => {
+      const entryId = entry[entryIdentifier];
+      if (known.has(entryId)) {
+        duplicateEntryIds.add(entryId);
+      }
+      known.set(entryId, entry);
+    });
+
+    if (duplicateEntryIds.size > 0) {
+      const duplicateIdsString = [...duplicateEntryIds.values()]
+        .map((name) => `"${name}"`)
+        .join(', ');
+      const warning = `Found duplicates in '${fieldName}': ${duplicateIdsString}. Only the last of each duplicate will be synced.`;
+      infofile.addWarning(loadedData, warning);
     }
-    knownAssessmentSets.set(aset.name, aset);
-  });
-  if (duplicateAssessmentSetNames.size > 0) {
-    const quotedNames = [...duplicateAssessmentSetNames.values()].map((name) => `"${name}"`);
-    const duplicateNamesString = quotedNames.join(', ');
-    infofile.addWarning(
-      loadedData,
-      `Found duplicate assessment sets: ${duplicateNamesString}. Only the last of each duplicate will be synced.`
-    );
+
+    if (defaults) {
+      defaults.forEach((defaultEntry) => {
+        const defaultEntryId = defaultEntry[entryIdentifier];
+        if (!known.has(defaultEntryId)) {
+          known.set(defaultEntryId, defaultEntry);
+        }
+      });
+    }
+
+    // Turn the map back into a list; the JS spec ensures that Maps remember
+    // insertion order, so the order is preserved.
+    return [...known.values()];
   }
 
-  // Add any default assessment sets that weren't also defined by the course
-  DEFAULT_ASSESSMENT_SETS.forEach((aset) => {
-    if (!knownAssessmentSets.has(aset.name)) {
-      knownAssessmentSets.set(aset.name, aset);
-    }
-  });
-
-  // Turn the map back into a list; the JS spec ensures that Maps remember
-  // insertion order, so the order is preserved.
-  const assessmentSets = [...knownAssessmentSets.values()];
-
-  // Now, we do the same thing for tags
-  // Make a first pass over tags, warn about duplicates
-  const knownTags = new Map();
-  const duplicateTagNames = new Set();
-  (info.tags || []).forEach((tag) => {
-    if (knownTags.has(tag.name)) {
-      duplicateTagNames.add(tag.name);
-    }
-    knownTags.set(tag.name, tag);
-  });
-  if (duplicateTagNames.size > 0) {
-    const quotedNames = [...duplicateTagNames.values()].map((name) => `"${name}"`);
-    const duplicateNamesString = quotedNames.join(', ');
-    infofile.addWarning(
-      loadedData,
-      `Found duplicate tags: ${duplicateNamesString}. Only the last of each duplicate will be synced.`
-    );
-  }
-
-  // Add any default tags that weren't also defined by the course
-  DEFAULT_TAGS.forEach((tag) => {
-    if (!knownTags.has(tag.name)) {
-      knownTags.set(tag.name, tag);
-    }
-  });
-
-  // Turn the map back into a list; the JS spec ensures that Maps remember
-  // insertion order, so the order is preserved.
-  const tags = [...knownTags.values()];
-
-  // Finally, handle duplicate topics
-  const knownTopics = new Map();
-  const duplicateTopicNames = new Set();
-  (info.topics || []).forEach((topic) => {
-    if (knownTopics.has(topic.name)) {
-      duplicateTopicNames.add(topic.name);
-    }
-    knownTopics.set(topic.name, topic);
-  });
-  if (duplicateTopicNames.size > 0) {
-    const quotedNames = [...duplicateTopicNames.values()].map((name) => `"${name}"`);
-    const duplicateNamesString = quotedNames.join(', ');
-    infofile.addWarning(
-      loadedData,
-      `Found duplicate topics: ${duplicateNamesString}. Only the last of each duplicate will be synced.`
-    );
-  }
-
-  const topics = [...knownTopics.values()];
+  const assessmentSets = getFieldWithoutDuplicates(
+    'assessmentSets',
+    'name',
+    DEFAULT_ASSESSMENT_SETS
+  );
+  const tags = getFieldWithoutDuplicates('tags', 'name', DEFAULT_TAGS);
+  const topics = getFieldWithoutDuplicates('topics', 'name', null);
+  const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name', null);
 
   const exampleCourse =
     info.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5' &&
@@ -817,6 +756,7 @@ module.exports.loadCourseInfo = async function (coursePath) {
     title: info.title,
     timezone: info.timezone,
     assessmentSets,
+    assessmentModules,
     tags,
     topics,
     exampleCourse,
@@ -1087,11 +1027,18 @@ async function validateAssessment(assessment, questions) {
   const warnings = [];
   const errors = [];
 
-  // Because of how Homework-type assessments work, we don't allow
-  // real-time grading to be disabled for them.
   const allowRealTimeGrading = _.get(assessment, 'allowRealTimeGrading', true);
-  if (!allowRealTimeGrading && assessment.type === 'Homework') {
-    errors.push(`Real-time grading cannot be disabled for Homework-type assessments`);
+  if (assessment.type === 'Homework') {
+    // Because of how Homework-type assessments work, we don't allow
+    // real-time grading to be disabled for them.
+    if (!allowRealTimeGrading) {
+      errors.push(`Real-time grading cannot be disabled for Homework-type assessments`);
+    }
+
+    // Homework-type assessments with multiple instances are not supported
+    if (assessment.multipleInstance) {
+      errors.push(`"multipleInstance" cannot be used for Homework-type assessments`);
+    }
   }
 
   // Check assessment access rules
@@ -1133,36 +1080,35 @@ async function validateAssessment(assessment, questions) {
   };
   (assessment.zones || []).forEach((zone) => {
     (zone.questions || []).map((zoneQuestion) => {
-      if (
-        !allowRealTimeGrading &&
-        Array.isArray(zoneQuestion.points) &&
-        zoneQuestion.points.length > 1
-      ) {
+      /** @type {number | number[]} */
+      const autoPoints = zoneQuestion.autoPoints ?? zoneQuestion.points;
+      if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
         errors.push(
           `Cannot specify an array of multiple point values for a question if real-time grading is disabled`
         );
       }
       // We'll normalize either single questions or alternative groups
       // to make validation easier
-      /** @type {{ points: number | number[], maxPoints: number | number[] }[]} */
+      /** @type {{ points: number | number[], autoPoints: number | number[], maxPoints: number, maxAutoPoints: number, manualPoints: number }[]} */
       let alternatives = [];
       if ('alternatives' in zoneQuestion && 'id' in zoneQuestion) {
         errors.push('Cannot specify both "alternatives" and "id" in one question');
       } else if ('alternatives' in zoneQuestion) {
         zoneQuestion.alternatives.forEach((alternative) => checkAndRecordQid(alternative.id));
         alternatives = zoneQuestion.alternatives.map((alternative) => {
-          if (
-            !allowRealTimeGrading &&
-            Array.isArray(alternative.points) &&
-            alternative.points.length > 1
-          ) {
+          /** @type {number | number[]} */
+          const autoPoints = alternative.autoPoints ?? alternative.points;
+          if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
             errors.push(
               `Cannot specify an array of multiple point values for an alternative if real-time grading is disabled`
             );
           }
           return {
-            points: alternative.points || zoneQuestion.points,
-            maxPoints: alternative.maxPoints || zoneQuestion.maxPoints,
+            points: alternative.points ?? zoneQuestion.points,
+            maxPoints: alternative.maxPoints ?? zoneQuestion.maxPoints,
+            maxAutoPoints: alternative.maxAutoPoints ?? zoneQuestion.maxAutoPoints,
+            autoPoints: alternative.autoPoints ?? zoneQuestion.autoPoints,
+            manualPoints: alternative.manualPoints ?? zoneQuestion.manualPoints,
           };
         });
       } else if ('id' in zoneQuestion) {
@@ -1171,6 +1117,9 @@ async function validateAssessment(assessment, questions) {
           {
             points: zoneQuestion.points,
             maxPoints: zoneQuestion.maxPoints,
+            maxAutoPoints: zoneQuestion.maxAutoPoints,
+            autoPoints: zoneQuestion.autoPoints,
+            manualPoints: zoneQuestion.manualPoints,
           },
         ];
       } else {
@@ -1178,21 +1127,44 @@ async function validateAssessment(assessment, questions) {
       }
 
       alternatives.forEach((alternative) => {
+        if (
+          alternative.points === undefined &&
+          alternative.autoPoints === undefined &&
+          alternative.manualPoints === undefined
+        ) {
+          errors.push('Must specify "points", "autoPoints" or "manualPoints" for a question');
+        }
+        if (
+          alternative.points !== undefined &&
+          (alternative.autoPoints !== undefined ||
+            alternative.manualPoints !== undefined ||
+            alternative.maxAutoPoints !== undefined)
+        ) {
+          errors.push(
+            'Cannot specify "points" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified'
+          );
+        }
         if (assessment.type === 'Exam') {
-          if (alternative.maxPoints !== undefined) {
-            errors.push('Cannot specify "maxPoints" for a question in an "Exam" assessment');
-          }
-          if (alternative.points === undefined) {
-            errors.push('Must specify "points" for a question in an "Exam" assessment');
+          if (alternative.maxPoints !== undefined || alternative.maxAutoPoints !== undefined) {
+            errors.push(
+              'Cannot specify "maxPoints" or "maxAutoPoints" for a question in an "Exam" assessment'
+            );
           }
         }
         if (assessment.type === 'Homework') {
-          if (alternative.points === undefined) {
-            errors.push('Must specify "points" for a question in a "Homework" assessment');
-          }
-          if (Array.isArray(alternative.points)) {
+          if (
+            alternative.maxPoints !== undefined &&
+            (alternative.autoPoints !== undefined ||
+              alternative.manualPoints !== undefined ||
+              alternative.maxAutoPoints !== undefined)
+          ) {
             errors.push(
-              'Cannot specify "points" as a list for a question in a "Homework" assessment'
+              'Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified'
+            );
+          }
+          if (Array.isArray(alternative.autoPoints ?? alternative.points)) {
+            errors.push(
+              'Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment'
             );
           }
         }
@@ -1211,6 +1183,30 @@ async function validateAssessment(assessment, questions) {
       `The following questions do not exist in this course: ${[...missingQids].join(', ')}`
     );
   }
+
+  const validRoleNames = new Set();
+  assessment.groupRoles?.forEach((role) => {
+    validRoleNames.add(role.name);
+  });
+
+  (assessment.zones || []).forEach((zone) => {
+    (zone.questions || []).forEach((zoneQuestion) => {
+      (zoneQuestion.canView || []).forEach((roleName) => {
+        if (!validRoleNames.has(roleName)) {
+          errors.push(
+            `A zone question's "canView" permission contains the non-existent group role name "${roleName}".`
+          );
+        }
+      });
+      (zoneQuestion.canSubmit || []).forEach((roleName) => {
+        if (!validRoleNames.has(roleName)) {
+          errors.push(
+            `A zone question's "canSubmit" permission contains the non-existent group role name "${roleName}".`
+          );
+        }
+      });
+    });
+  });
 
   return { warnings, errors };
 }
@@ -1276,6 +1272,13 @@ module.exports.loadQuestions = async function (coursePath) {
     validate: validateQuestion,
     recursive: true,
   });
+  // Don't allow questions to start with '@', because it will be used to
+  // reference questions outside the course once question sharing is implemented.
+  for (let qid in questions) {
+    if (qid[0] === '@') {
+      infofile.addError(questions[qid], `Question IDs are not allowed to begin with '@'`);
+    }
+  }
   checkDuplicateUUIDs(
     questions,
     (uuid, ids) => `UUID "${uuid}" is used in other questions: ${ids.join(', ')}`

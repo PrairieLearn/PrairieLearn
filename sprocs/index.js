@@ -3,29 +3,11 @@ const fs = require('fs');
 const path = require('path');
 const async = require('async');
 
-const namedLocks = require('../lib/named-locks');
 const error = require('../prairielib/lib/error');
-const logger = require('../lib/logger');
-const sqldb = require('../prairielib/lib/sql-db');
+const { logger } = require('@prairielearn/logger');
+const sqldb = require('@prairielearn/postgres');
 
 module.exports.init = function (callback) {
-  const lockName = 'sprocs';
-  logger.verbose(`Waiting for lock ${lockName}`);
-  namedLocks.waitLock(lockName, {}, (err, lock) => {
-    if (ERR(err, callback)) return;
-    logger.verbose(`Acquired lock ${lockName}`);
-    module.exports._initWithLock((err) => {
-      namedLocks.releaseLock(lock, (lockErr) => {
-        if (ERR(lockErr, callback)) return;
-        if (ERR(err, callback)) return;
-        logger.verbose(`Released lock ${lockName}`);
-        callback(null);
-      });
-    });
-  });
-};
-
-module.exports._initWithLock = function (callback) {
   logger.verbose('Starting DB stored procedure initialization');
   async.eachSeries(
     [
@@ -60,7 +42,7 @@ module.exports._initWithLock = function (callback) {
       'assessment_instances_update_points.sql',
       'assessment_instances_update_score_perc.sql',
       'assessments_duration_stats.sql',
-      'assessments_stats.sql',
+      'assessments_score_stats.sql',
       'assessments_format.sql',
       'assessments_format_for_question.sql',
       'tags_for_question.sql',
@@ -91,13 +73,13 @@ module.exports._initWithLock = function (callback) {
       'courses_delete.sql',
       'courses_with_staff_access.sql',
       'course_instances_with_staff_access.sql',
+      'course_instances_select_graders.sql',
       'select_or_insert_course_by_path.sql',
       'assessment_instances_delete.sql',
       'assessment_instances_delete_all.sql',
       'assessment_instances_grade.sql',
       'assessment_instances_regrade.sql',
-      'assessment_instances_select_for_auto_close.sql',
-      'assessment_instances_select_log.sql',
+      'assessment_instances_select_for_auto_finish.sql',
       'assessment_instances_ensure_open.sql',
       'instance_questions_points_homework.sql',
       'instance_questions_points_exam.sql',
@@ -114,15 +96,11 @@ module.exports._initWithLock = function (callback) {
       'submissions_insert.sql',
       'submissions_update_parsing.sql',
       'assessment_instances_update.sql',
-      'instance_questions_update_in_grading.sql',
-      'instance_question_select_manual_grading_objects.sql',
       'assessment_instances_close.sql',
       'grading_job_status.sql',
       'grading_jobs_lock.sql',
       'grading_jobs_insert.sql',
-      'grading_jobs_insert_external_manual.sql',
-      'grading_jobs_insert_internal.sql',
-      'grading_jobs_process_external.sql',
+      'grading_jobs_update_after_grading.sql',
       'ip_to_mode.sql',
       'config_select.sql',
       'users_select_or_insert.sql',
@@ -138,7 +116,6 @@ module.exports._initWithLock = function (callback) {
       'files_insert.sql',
       'files_delete.sql',
       'issues_insert_for_variant.sql',
-      'issues_insert_for_assessment.sql',
       'issues_update_open.sql',
       'issues_update_open_all.sql',
       'variants_lock.sql',
@@ -150,7 +127,6 @@ module.exports._initWithLock = function (callback) {
       'variants_select_for_assessment_instance_grading.sql',
       'variants_update_after_grading.sql',
       'variants_ensure_open.sql',
-      'variants_unlink.sql',
       'grader_loads_current.sql',
       'server_loads_current.sql',
       'server_usage_current.sql',
@@ -169,8 +145,6 @@ module.exports._initWithLock = function (callback) {
       'sync_question_tags.sql',
       'sync_assessment_sets.sql',
       'sync_assessments.sql',
-      'lock_timeout_set.sql',
-      'course_requests_insert.sql',
       'assessment_groups_update.sql',
       'assessment_groups_delete_all.sql',
       'assessment_groups_copy.sql',
@@ -179,14 +153,13 @@ module.exports._initWithLock = function (callback) {
       'assessment_groups_delete_group.sql',
       'group_info.sql',
       'groups_uid_list.sql',
-      'workspaces_message_update.sql',
-      'workspaces_state_update.sql',
       'workspace_loads_current.sql',
       'workspace_hosts_assign_workspace.sql',
       'workspace_hosts_recapture_draining.sql',
       'workspace_hosts_drain_extra.sql',
       'workspace_hosts_find_terminable.sql',
       'group_users_insert.sql',
+      'sync_assessment_modules.sql',
     ],
     function (filename, callback) {
       logger.verbose('Loading ' + filename);

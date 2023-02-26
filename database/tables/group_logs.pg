@@ -8,3 +8,5 @@ columns
 
 indexes
     group_logs_pkey: PRIMARY KEY (id) USING btree (id)
+    group_logs_group_id_idx: USING btree (group_id)
+    group_logs_user_id_idx: USING btree (user_id)

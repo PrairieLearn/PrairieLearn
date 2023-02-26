@@ -2,9 +2,8 @@ const assert = require('chai').assert;
 const requestp = require('request-promise-native');
 const cheerio = require('cheerio');
 
-const sqldb = require('../prairielib/lib/sql-db');
-const sqlLoader = require('../prairielib/lib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sqldb = require('@prairielearn/postgres');
+const sql = sqldb.loadSqlEquiv(__filename);
 
 let page, elemList;
 
@@ -12,7 +11,7 @@ module.exports.attachFile = (locals, textFile) => {
   describe('attachFile-1. GET to assessment_instance URL', () => {
     it('should load successfully', async () => {
       page = await requestp(locals.attachFilesUrl);
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
     it('should have a CSRF token', () => {
       if (textFile) {
@@ -81,7 +80,7 @@ module.exports.attachFile = (locals, textFile) => {
         }
       }
       page = await requestp.post(options);
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
     it('should create an attached file', async () => {
       const result = await sqldb.queryAsync(sql.select_files, []);
@@ -101,7 +100,7 @@ module.exports.downloadAttachedFile = (locals) => {
   describe('downloadAttachedFile-1. GET to assessment_instance URL', () => {
     it('should load successfully', async () => {
       page = await requestp(locals.attachFilesUrl);
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
     it('should have a file URL', () => {
       elemList = locals.$('#attach-file-panel a.attached-file');
@@ -126,7 +125,7 @@ module.exports.deleteAttachedFile = (locals) => {
   describe('deleteAttachedFile-1. GET to assessment_instance URL', () => {
     it('should load successfully', async () => {
       page = await requestp(locals.attachFilesUrl);
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
   });
 
@@ -184,7 +183,7 @@ module.exports.deleteAttachedFile = (locals) => {
         file_id: locals.file_id,
       };
       page = await requestp.post(options);
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
     it('should result in no attached files', async () => {
       const result = await sqldb.queryAsync(sql.select_files, []);
@@ -197,7 +196,7 @@ module.exports.checkNoAttachedFiles = (locals) => {
   describe('checkNoAttachedFiles-1. GET to assessment_instance URL', () => {
     it('should load successfully', async () => {
       page = await requestp(locals.attachFilesUrl);
-      locals.$ = cheerio.load(page); // eslint-disable-line require-atomic-updates
+      locals.$ = cheerio.load(page);
     });
     it('should not have a file URL', () => {
       elemList = locals.$('#attach-file-panel a.attached-file');

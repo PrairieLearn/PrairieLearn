@@ -11,8 +11,8 @@ BEGIN
     FROM variants
     WHERE id = variant_id;
 
-    IF NOT FOUND THEN RAISE EXCEPTION 'no such variant_id: %', variant_id; END IF;
+    IF NOT FOUND THEN RAISE EXCEPTION 'no such variant_id: %', variant_id USING ERRCODE = 'ST404'; END IF;
 
-    IF NOT current_open THEN RAISE EXCEPTION 'variant is not open: %', variant_id; END IF;
+    IF NOT current_open THEN RAISE EXCEPTION 'variant is not open: %', variant_id USING ERRCODE = 'ST403'; END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

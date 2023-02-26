@@ -8,7 +8,7 @@
              $('input[name=cr-role]').change(function() {
                 var role = this.value;
                 $('.question-form button').prop('disabled', role != "instructor");
-                $('.role-comment').hide(); 
+                $('.role-comment').hide();
                 $('.role-comment-' + role).show();
             });
           });
@@ -67,6 +67,33 @@
                 <form class="question-form" name="course-request" method="POST">
                     <div class="card-body">
                         <p> This form is for instructors who want to create a new course on PrairieLearn. Students should <strong>not</strong> submit this form and should instead use the "Enroll course" button on the PrairieLearn homepage. Teaching assistants and course staff are granted access by the owner of their course and should <strong>not</strong> submit this form. </p>
+
+                        <div class="form-row">
+                          <div class="form-group col-md-6">
+                            <label for="cr-firstname">First name</label>
+                            <input type="text" class="form-control" name="cr-firstname"  minlength="1" required>
+                          </div>
+                          <div class="form-group col-md-6">
+                            <label for="cr-lastname">Last name</label>
+                            <input type="text" class="form-control" name="cr-lastname"  minlength="1" required>
+                          </div>
+                        </div>
+                        <div class="form-row">
+                          <div class="form-group col-md-6">
+                            <label for="cr-institution">Institution</label>
+                            <input type="text" class="form-control" name="cr-institution"  minlength="1" required>
+                            <small class="form-text text-muted">
+                                This is your academic institution (e.g., "University of Illinois").
+                            </small>
+                          </div>
+                          <div class="form-group col-md-6">
+                            <label for="cr-email">Email</label>
+                            <input type="email" class="form-control" name="cr-email" placeholder="login@yourinstitution.edu" minlength="1" required>
+                            <small class="form-text text-muted">
+                                Use your official work email address.
+                            </small>
+                          </div>
+                        </div>
                         <div class="form-group">
                             <label for="cr-shortname">Course Rubric and Number</label>
                             <input type="text" class="form-control" name="cr-shortname" placeholder="MATH 101" pattern="[a-zA-Z]+ [a-zA-Z0-9]+" title="this is a series of letters, followed by a space, followed by a series of numbers and/or letters" required>
@@ -100,7 +127,7 @@
                           </div>
                           <div class="form-control">
                             <input type="radio" id="role-admin" name="cr-role" value="admin">
-                            <label for="role-admin">Other administrative staff</label>
+                            <label for="role-admin">Institution Administrative Staff</label>
                           </div>
                           <div class="form-control">
                             <input type="radio" id="role-student" name="cr-role" value="student">

@@ -3,6 +3,7 @@
     "type": "Homework",
     "title": "Homework template including extra credit",
     "set": "Homework",
+    "module": "AnotherModule",
     "number": "2",
     "allowAccess": [
       {

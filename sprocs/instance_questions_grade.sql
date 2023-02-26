@@ -12,7 +12,8 @@ DECLARE
     new_instance_question instance_questions%ROWTYPE;
 BEGIN
     SELECT iq.open INTO instance_question_open
-    FROM instance_questions AS iq WHERE iq.id = instance_question_id;
+    FROM instance_questions AS iq
+    WHERE iq.id = instance_question_id;
 
     IF NOT instance_question_open THEN
         -- this shouldn't happen, so log an error
@@ -30,18 +31,16 @@ BEGIN
         RETURN;
     END IF;
 
-    SELECT *
-    INTO new_values
+    SELECT * INTO new_values
     FROM instance_questions_points(instance_question_id, submission_score);
 
     UPDATE instance_questions AS iq
     SET
         open = new_values.open,
         status = new_values.status,
+        auto_points = new_values.auto_points,
         points = new_values.points,
-        points_in_grading = 0,
         score_perc = new_values.score_perc,
-        score_perc_in_grading = 0,
         highest_submission_score = new_values.highest_submission_score,
         current_value = new_values.current_value,
         points_list = new_values.points_list,
@@ -51,11 +50,11 @@ BEGIN
         iq.id = instance_question_id;
 
     INSERT INTO question_score_logs
-        (instance_question_id, auth_user_id,  max_points,
-                   points,            score_perc, grading_job_id)
+        (instance_question_id, auth_user_id, max_points, max_auto_points,
+         points, auto_points, score_perc, grading_job_id)
     VALUES
-        (instance_question_id, authn_user_id, new_values.max_points,
-        new_values.points, new_values.score_perc, grading_job_id);
+        (instance_question_id, authn_user_id, new_values.max_points, new_values.max_auto_points,
+         new_values.points, new_values.auto_points, new_values.score_perc, grading_job_id);
 
     PERFORM instance_questions_calculate_stats(instance_question_id);
 END;

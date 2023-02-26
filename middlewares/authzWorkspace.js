@@ -2,9 +2,8 @@ const _ = require('lodash');
 const asyncHandler = require('express-async-handler');
 const { promisify } = require('util');
 
-const sqldb = require('../prairielib/lib/sql-db');
-const sqlLoader = require('../prairielib/lib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sqldb = require('@prairielearn/postgres');
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const authzCourseOrInstance = promisify(require('./authzCourseOrInstance'));
 const selectAndAuthzInstanceQuestion = promisify(require('./selectAndAuthzInstanceQuestion'));
@@ -33,8 +32,8 @@ module.exports = asyncHandler(async (req, res, next) => {
     } else if (res.locals.assessment_instance_id) {
       await selectAndAuthzAssessmentInstance(req, res);
     } else {
-      /* If we have neither assessment instance nor question instance ids, we are probably viewing in
-               instructor view and should authorize for that. */
+      // If we have neither assessment instance nor question instance ids,
+      // we are probably viewing in instructor view and should authorize for that.
       res.locals.course_instance = { id: res.locals.course_instance_id };
       await authzHasCoursePreviewOrInstanceView(req, res);
       await selectAndAuthzInstructorQuestion(req, res);

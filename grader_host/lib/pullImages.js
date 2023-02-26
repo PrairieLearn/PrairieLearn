@@ -1,12 +1,11 @@
 const ERR = require('async-stacktrace');
 const async = require('async');
 const Docker = require('dockerode');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
-const logger = require('./logger');
+const { logger } = require('@prairielearn/logger');
 const dockerUtil = require('./dockerUtil');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 const config = require('./config').config;
 
 module.exports = function (callback) {

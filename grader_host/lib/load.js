@@ -1,10 +1,9 @@
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
-const logger = require('./logger');
+const sqldb = require('@prairielearn/postgres');
+const { logger } = require('@prairielearn/logger');
 const config = require('./config').config;
 const lifecycle = require('./lifecycle');
 const healthCheck = require('./healthCheck');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 var initialized = false;
 var currentJobs, maxJobs, lastEstimateTimeMS, lastIncrementTimeMS, integratedLoad;

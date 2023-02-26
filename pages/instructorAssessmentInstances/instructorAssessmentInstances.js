@@ -7,10 +7,9 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 const error = require('../../prairielib/lib/error');
 const regrading = require('../../lib/regrading');
 const assessment = require('../../lib/assessment');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/raw_data.json', function (req, res, next) {
   debug('GET /raw_data.json');
@@ -56,11 +55,13 @@ router.post('/', function (req, res, next) {
     assessment.checkBelongs(assessment_instance_id, assessment_id, (err) => {
       if (ERR(err, next)) return;
 
+      const requireOpen = true;
       const close = true;
       const overrideGradeRate = true;
       assessment.gradeAssessmentInstance(
         assessment_instance_id,
         res.locals.authn_user.user_id,
+        requireOpen,
         close,
         overrideGradeRate,
         function (err) {

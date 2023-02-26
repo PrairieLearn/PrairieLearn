@@ -1,14 +1,13 @@
 const AWS = require('aws-sdk');
 const { callbackify } = require('util');
 
-const logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const config = require('../lib/config');
 const request = require('request-promise-native');
 const async = require('async');
 
-const sqldb = require('../prairielib/lib/sql-db');
-const sqlLoader = require('../prairielib/lib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sqldb = require('@prairielearn/postgres');
+const sql = sqldb.loadSqlEquiv(__filename);
 
 module.exports = {};
 
@@ -20,10 +19,11 @@ module.exports.run = callbackify(async () => {
   await checkHealth();
 });
 
+/**
+ * Attempts to make the list of hosts in EC2 consistent with what is in
+ * the database.
+ */
 async function checkDBConsistency() {
-  /* Attempt to make the list of hosts in EC2 consistent with what
-       we see in the database. */
-
   const ec2 = new AWS.EC2();
   const running_host_set = new Set();
   const reservations = (
@@ -65,7 +65,7 @@ async function checkDBConsistency() {
     return diff;
   };
 
-  /* Kill off any host that is running but not in the db */
+  // Kill off any host that is running but not in the db
   const not_in_db = set_difference(running_host_set, db_hosts_nonterminated);
   if (not_in_db.size > 0) {
     logger.info('Terminating hosts that are not in the database', Array.from(not_in_db));
@@ -75,7 +75,7 @@ async function checkDBConsistency() {
     await ec2.terminateInstances({ InstanceIds: Array.from(not_in_db) }).promise();
   }
 
-  /* Any host that is in the db but not running we will mark as "terminated" */
+  // Any host that is in the db but not running we will mark as "terminated".
   const not_in_ec2 = set_difference(db_hosts_nonterminated, running_host_set);
   if (not_in_ec2.size > 0) {
     logger.info('Terminating hosts that are not running in EC2', Array.from(not_in_ec2));

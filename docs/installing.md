@@ -52,17 +52,21 @@ docker pull prairielearn/prairielearn
 
 After this, run PrairieLearn using the same commands as above.
 
-## Running a specific older version of PrairieLearn
+## Running a specific version of PrairieLearn
 
-The commands above will always run the very latest version of PrairieLearn, which might be an unreleased development version.
+The commands above will always run the very latest version of PrairieLearn, which might be an unreleased development version. If you would like to run the version that is currently deployed, use the appropriate tag for the server you're using:
 
-The list of available versions is viewable on the [hub.docker build page](https://hub.docker.com/r/prairielearn/prairielearn/builds/).
-
-To run a specific older version (e.g., version 1.2.3) then you can do:
+- For courses running under https://us.prairielearn.com/ use the tag `us-prod-live`;
+- For courses running under https://ca.prairielearn.com/ use the tag `ca-live`;
+- For institutions with local installations of PrairieLearn, consult your local IT department.
 
 ```sh
-docker run -it --rm -p 3000:3000 [other args] prairielearn/prairielearn:1.2.3
+docker run -it --rm -p 3000:3000 --pull=always [other args] prairielearn/prairielearn:us-prod-live
 ```
+
+Note that the command above uses the `--pull=always` option, which will update the local version of the image every time the docker command is restarted. If you keep a long-running container locally, make sure to restart the container when updates in the production servers are announced in the [PrairieLearn GitHub Discussions page](https://github.com/PrairieLearn/PrairieLearn/discussions/categories/announcements).
+
+Additional tags are available for older versions. The list of available versions is viewable on the [Docker Hub build page](https://hub.docker.com/r/prairielearn/prairielearn/builds/).
 
 ## Running PrairieLearn from a WSL2 instance
 

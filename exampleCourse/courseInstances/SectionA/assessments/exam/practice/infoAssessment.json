@@ -3,6 +3,7 @@
     "type": "Exam",
     "title": "Auto-graded randomized practice exams",
     "set": "Practice Exam",
+    "module": "FinalModule",
     "number": "1",
     "comment": "students can open several instances of this quiz for practice. Here we disable the honor code message, since in the practice environment students may be allowed to communicate with each other.",
     "multipleInstance": true,
@@ -13,7 +14,7 @@
             "mode": "Public",
             "credit": 100,
             "startDate": "2021-01-01T00:00:01",
-            "endDate": "2021-12-31T23:59:59",
+            "endDate": "2025-12-31T23:59:59",
             "timeLimitMin": 50,
             "showClosedAssessment": false
         }

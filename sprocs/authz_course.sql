@@ -34,10 +34,10 @@ BEGIN
 
     IF NOT FOUND THEN
         course_role := 'None';
-    END IF;
 
-    IF is_example_course AND allow_example_course_override THEN
-        course_role := 'Viewer';
+        IF is_example_course AND allow_example_course_override THEN
+            course_role := 'Viewer';
+        END IF;
     END IF;
 
     IF is_administrator THEN

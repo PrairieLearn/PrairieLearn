@@ -1,9 +1,14 @@
 #!/bin/bash
 
 echo 'Starting PrairieLearn...'
-make -s -C /PrairieLearn start-workspace-host
+
+cd /PrairieLearn
+make -s start-support
+node server.js --migrate-and-exit >/dev/null
+
 if [[ $NODEMON == "true" ]]; then
-    make -s -C /PrairieLearn start-nodemon
+    # start-nodemon is listed first so it can use standard input
+    make -s -j 2 start-nodemon start-workspace-host-nodemon
 else
-    make -s -C /PrairieLearn start
+    make -s -j 2 start start-workspace-host
 fi

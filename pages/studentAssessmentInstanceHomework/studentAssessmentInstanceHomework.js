@@ -4,14 +4,15 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const _ = require('lodash');
 
 const assessment = require('../../lib/assessment');
 const studentAssessmentInstance = require('../shared/studentAssessmentInstance');
 const error = require('../../prairielib/lib/error');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
+var groupAssessmentHelper = require('../../lib/groups');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const ensureUpToDate = (locals, callback) => {
   debug('ensureUpToDate()');
@@ -52,6 +53,15 @@ router.get('/', function (req, res, next) {
       res.locals.questions = result.rows;
       debug('number of questions:', res.locals.questions.length);
 
+      res.locals.has_manual_grading_question = _.some(
+        res.locals.questions,
+        (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading
+      );
+      res.locals.has_auto_grading_question = _.some(
+        res.locals.questions,
+        (q) => q.max_auto_points || q.auto_points || !q.max_points
+      );
+
       debug('rendering assessment text');
       assessment.renderText(
         res.locals.assessment,
@@ -61,16 +71,39 @@ router.get('/', function (req, res, next) {
           res.locals.assessment_text_templated = assessment_text_templated;
           debug('rendering EJS');
           if (res.locals.assessment.group_work) {
-            sqldb.query(sql.get_group_info, params, function (err, result) {
-              if (ERR(err, next)) return;
-              res.locals.group_info = result.rows;
-              if (result.rowCount === 0) {
-                return next(error.make(403, 'Not a group member', res.locals));
+            groupAssessmentHelper.getGroupInfo(
+              res.locals.assessment.id,
+              res.locals.user.user_id,
+              function (
+                err,
+                groupMember,
+                permissions,
+                minsize,
+                maxsize,
+                groupsize,
+                needsize,
+                group_info,
+                join_code,
+                start,
+                used_join_code
+              ) {
+                if (ERR(err, next)) return;
+                res.locals.permissions = permissions;
+                res.locals.minsize = minsize;
+                res.locals.maxsize = maxsize;
+                res.locals.groupsize = groupsize;
+                res.locals.needsize = needsize;
+                res.locals.group_info = group_info;
+                if (!groupMember) {
+                  return next(error.make(403, 'Not a group member', res.locals));
+                } else {
+                  res.locals.join_code = join_code;
+                  res.locals.start = start;
+                  res.locals.used_join_code = used_join_code;
+                }
+                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
               }
-              res.locals.join_code =
-                res.locals.group_info[0].name + '-' + res.locals.group_info[0].join_code;
-              res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-            });
+            );
           } else {
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
           }
@@ -103,20 +136,20 @@ router.post('/', function (req, res, next) {
     });
   } else if (req.body.__action === 'leave_group') {
     if (!res.locals.authz_result.active) return next(error.make(400, 'Unauthorized request.'));
-    const params = {
-      assessment_instance_id: res.locals.assessment_instance.id,
-      user_id: res.locals.user.user_id,
-      authn_user_id: res.locals.authn_user.user_id,
-    };
-    sqldb.query(sql.leave_group, params, function (err, _result) {
-      if (ERR(err, next)) return;
-      res.redirect(
-        '/pl/course_instance/' +
-          res.locals.course_instance.id +
-          '/assessment/' +
-          res.locals.assessment.id
-      );
-    });
+    groupAssessmentHelper.leaveGroup(
+      res.locals.assessment.id,
+      res.locals.user.user_id,
+      res.locals.authn_user.user_id,
+      function (err) {
+        if (ERR(err, next)) return;
+        res.redirect(
+          '/pl/course_instance/' +
+            res.locals.course_instance.id +
+            '/assessment/' +
+            res.locals.assessment.id
+        );
+      }
+    );
   } else {
     next(
       error.make(400, 'unknown __action', {

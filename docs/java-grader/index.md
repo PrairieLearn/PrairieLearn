@@ -61,7 +61,7 @@ A full `info.json` file should look something like:
 
 ### `question.html`
 
-As with other autograders, most questions using this autograder will contain a `pl-file-editor` or `pl-file-upload` element. The question should also include, in the `pl-submission-panel`, a `pl-external-grading-results` to show the status of grading jobs. It is also recommended to place a `pl-file-preview` element in the submission panel so that students may see their previous code submissions. An example question markup is given below:
+As with other autograders, most questions using this autograder will contain a `pl-file-editor` or `pl-file-upload` element. The question should also include, in the `pl-submission-panel`, a `pl-external-grader-results` to show the status of grading jobs. It is also recommended to place a `pl-file-preview` element in the submission panel so that students may see their previous code submissions. An example question markup is given below:
 
 ```html
 <pl-question-panel>
@@ -69,7 +69,7 @@ As with other autograders, most questions using this autograder will contain a `
 </pl-question-panel>
 
 <pl-submission-panel>
-  <pl-external-grading-results></pl-external-grading-results>
+  <pl-external-grader-results></pl-external-grader-results>
   <pl-file-preview></pl-file-preview>
 </pl-submission-panel>
 ```
@@ -108,6 +108,29 @@ import org.prairielearn.autograder.AutograderInfo;
 
 To change the order in which test results are shown to the user, you may use [the `@TestMethodOrder` annotation](https://junit.org/junit5/docs/current/user-guide/#writing-tests-test-execution-order).
 
+The autograder will give a question points based on if a test passed or failed based on the default Java behaviour. Note that [Java's built-in assertions](https://docs.oracle.com/javase/7/docs/technotes/guides/language/assert.html) are disabled by default, and as such tests that rely on Java's `assert` keyword may not work as intended. If test failures based on `assert` statements are needed, the program must be set up to be compiled with the `-ea` option, [as listed below](#changing-compilation-options). An alternative is to use the `assertTrue` method in JUnit itself, with the benefit of providing more flexibility on the error message shown to students.
+
+### Dynamic, parameterized and repeated tests
+
+JUnit 5 supports tests that are generated dynamically. These include [parameterized tests](https://junit.org/junit5/docs/current/user-guide/#writing-tests-parameterized-tests), [repeated tests](https://junit.org/junit5/docs/current/user-guide/#writing-tests-repeated-tests) and [test factories](https://junit.org/junit5/docs/current/user-guide/#writing-tests-dynamic-tests).
+
+While the autograder supports the execution of these types of tests, they may in rare instances cause inconsistencies in the total number of points assigned to each submission. In particular, if different submissions generate different sets of tests, the total number of tests assigned to one student (and consequentially the maximum number of points) may be different than other students, causing the score percentage to be inconsistent. Also, if the student's code causes the autograder to crash (e.g., in case of out-of-memory errors or thread exhaustion), some tests may not be registered on time to be considered in the grading process.
+
+To avoid these issues, if a particular test class includes any dynamic test (i.e., tests using annotations like `@ParameterizedTest`, `@RepeatedTest` or `@TestFactory`), instructors are encouraged to define the maximum number of expected points as a class annotation, as demonstrated below. Classes that only use regular method tests (i.e., tests using annotations like `@Test`) are not required to use such a tag, as the total number of points can be easily retrieved from the static tests themselves at the start of the testing process.
+
+```java
+@Tag("maxpoints=16")
+public class ExampleJUnit5Test {
+
+    @ParameterizedTest(name = "Test with input {0}")
+    @ValueSource(ints = {0, 1, 2, 4, 10, -1, -10, -100})
+    @Tag("points=2")
+    public void testWithInput(int i) {
+        // ...
+    }
+}
+```
+
 ### Changing compilation options
 
 By default the Java compiler will show all compilation warnings to the user, except for `serial` (missing `serialVersionUID` on serializable classes). If you would like to change the compilation warnings or other compilation settings, you may do so by setting the `JDK_JAVAC_OPTIONS` environment variable in `info.json`, as follows:
@@ -128,7 +151,8 @@ The example above disables the `static` warning (use of static fields applied to
 
 - `-Xlint:none` or `-nowarn` to disable all warnings;
 - `-Xdoclint` to enable warnings for javadoc comments;
-- `-source 10` to compile using the Java 10 language version.
+- `-source 10` to compile using the Java 10 language version;
+- `-ea` to enable [Java assertions](https://docs.oracle.com/javase/7/docs/technotes/guides/language/assert.html).
 
 ### Libraries and instructor-provided classes
 
