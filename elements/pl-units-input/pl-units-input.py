@@ -46,6 +46,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     optional_attribs = [
         "weight",
         "correct-answer",
+        "custom-format",
         "label",
         "suffix",
         "display",
