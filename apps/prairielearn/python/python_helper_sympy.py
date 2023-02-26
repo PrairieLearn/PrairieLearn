@@ -302,8 +302,9 @@ def ast_check(expr: str, locals_for_eval: LocalsForEval) -> None:
     # http://blog.delroth.net/2013/03/escaping-a-python-sandbox-ndh-2013-quals-writeup/
     #
     whitelist: ASTWhiteListT = (
-        ast.Module,
-        ast.Expr,
+        # TODO auditing whitelist, maybe can remove the two commented out items below??
+        # ast.Module,
+        # ast.Expr,
         ast.Load,
         ast.Expression,
         ast.Call,
