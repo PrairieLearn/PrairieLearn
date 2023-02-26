@@ -12,10 +12,8 @@ from enum import Enum
 from typing import (
     Any,
     Callable,
-    Dict,
     Literal,
     Optional,
-    Tuple,
     Type,
     TypedDict,
     TypeVar,
@@ -37,7 +35,7 @@ class PartialScore(TypedDict):
     "A class with type signatures for the partial scores dict"
     score: Optional[float]
     weight: NotRequired[int]
-    feedback: NotRequired[str]
+    feedback: NotRequired[Any]
 
 
 # TODO: This type definition should not yet be seen as authoritative, it may
@@ -50,19 +48,19 @@ class PartialScore(TypedDict):
 class QuestionData(TypedDict):
     "A class with type signatures for the data dictionary"
 
-    params: Dict[str, Any]
-    correct_answers: Dict[str, Any]
-    submitted_answers: Dict[str, Any]
-    format_errors: Dict[str, Any]
-    partial_scores: Dict[str, PartialScore]
+    params: dict[str, Any]
+    correct_answers: dict[str, Any]
+    submitted_answers: dict[str, Any]
+    format_errors: dict[str, Any]
+    partial_scores: dict[str, PartialScore]
     score: float
-    feedback: Dict[str, Any]
+    feedback: dict[str, Any]
     variant_seed: str
-    options: Dict[str, Any]
-    raw_submitted_answers: Dict[str, Any]
+    options: dict[str, Any]
+    raw_submitted_answers: dict[str, Any]
     editable: bool
     panel: Literal["question", "submission", "answer"]
-    extensions: Dict[str, Any]
+    extensions: dict[str, Any]
     num_valid_submissions: int
 
 
@@ -73,7 +71,7 @@ class ElementTestData(QuestionData):
 def grade_answer_parameterized(
     data: QuestionData,
     question_name: str,
-    grade_function: Callable[[Any], Tuple[Union[bool, float], Optional[str]]],
+    grade_function: Callable[[Any], tuple[Union[bool, float], Optional[str]]],
     weight: int = 1,
 ) -> None:
     """
@@ -117,7 +115,7 @@ def grade_answer_parameterized(
 
 def determine_score_params(
     score: float,
-) -> Tuple[Literal["correct", "partial", "incorrect"], Union[bool, float]]:
+) -> tuple[Literal["correct", "partial", "incorrect"], Union[bool, float]]:
     """
     Determine appropriate key and value for display on the frontend given the
     score for a particular question. For elements following PrairieLearn
