@@ -31,7 +31,7 @@ const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const compiledAssets = require('@prairielearn/compiled-assets');
 
-const logger = require('./lib/logger');
+const { logger, addFileLogging } = require('@prairielearn/logger');
 const config = require('./lib/config');
 const load = require('./lib/load');
 const awsHelper = require('./lib/aws.js');
@@ -451,6 +451,9 @@ module.exports.initExpress = function () {
 
   app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
   app.use('/pl/login', require('./pages/authLogin/authLogin'));
+  if (config.devMode) {
+    app.use('/pl/dev_login', require('./pages/authLoginDev/authLoginDev'));
+  }
   // disable SEB until we can fix the mcrypt issues
   // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
   app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
@@ -1651,6 +1654,10 @@ module.exports.initExpress = function () {
     require('./pages/administratorNetworks/administratorNetworks')
   );
   app.use(
+    '/pl/administrator/workspaces',
+    require('./pages/administratorWorkspaces/administratorWorkspaces')
+  );
+  app.use(
     '/pl/administrator/queries',
     require('./pages/administratorQueries/administratorQueries')
   );
@@ -1841,6 +1848,21 @@ if (config.startServer) {
           serviceName: 'prairielearn',
         });
 
+        // Start capturing CPU and memory profiles as soon as possible.
+        if (config.pyroscopeEnabled) {
+          const Pyroscope = require('@pyroscope/nodejs');
+          Pyroscope.init({
+            appName: 'prairielearn',
+            serverAddress: config.pyroscopeServerAddress,
+            authToken: config.pyroscopeAuthToken,
+            tags: {
+              instanceId: config.instanceId,
+              ...(config.pyroscopeTags ?? {}),
+            },
+          });
+          Pyroscope.start();
+        }
+
         // Same with Sentry configuration.
         if (config.sentryDsn) {
           const integrations = [];
@@ -1875,8 +1897,11 @@ if (config.startServer) {
         }
 
         if (config.logFilename) {
-          logger.addFileLogging(config.logFilename);
-          logger.verbose('activated file logging: ' + config.logFilename);
+          addFileLogging({ filename: config.logFilename });
+        }
+
+        if (config.logErrorFilename) {
+          addFileLogging({ filename: config.logErrorFilename, level: 'error' });
         }
       },
       async () => {

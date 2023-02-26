@@ -1,6 +1,6 @@
 const { callbackify } = require('util');
 
-const logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const opsbot = require('../lib/opsbot');
 const sqldb = require('@prairielearn/postgres');
 

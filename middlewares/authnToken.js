@@ -1,7 +1,7 @@
 const ERR = require('async-stacktrace');
 const crypto = require('crypto');
 const sqldb = require('@prairielearn/postgres');
-const logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 

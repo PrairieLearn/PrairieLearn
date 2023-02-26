@@ -1,7 +1,7 @@
 const ERR = require('async-stacktrace');
 const fs = require('fs');
 const async = require('async');
-const logger = require('../../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const config = require('../../lib/config');
 const serverJobs = require('../../lib/server-jobs');
 const syncFromDisk = require('../../sync/syncFromDisk');

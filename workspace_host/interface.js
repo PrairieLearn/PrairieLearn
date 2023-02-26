@@ -25,7 +25,7 @@ const dockerUtil = require('../lib/dockerUtil');
 const awsHelper = require('../lib/aws');
 const socketServer = require('../lib/socket-server'); // must load socket server before workspace
 const workspaceHelper = require('../lib/workspace');
-const logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const LocalLock = require('../lib/local-lock');
 const { contains } = require('../lib/instructorFiles');
 
@@ -144,7 +144,6 @@ async
     async () => {
       // Always grab the port from the config
       workspace_server_settings.port = config.workspaceHostPort;
-      logger.verbose(`Workspace S3 bucket: ${config.workspaceS3Bucket}`);
     },
     (callback) => {
       const pgConfig = {

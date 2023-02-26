@@ -9,7 +9,7 @@ const sqldb = require('@prairielearn/postgres');
 const github = require('../../lib/github');
 const config = require('../../lib/config');
 const opsbot = require('../../lib/opsbot');
-const logger = require('../../lib/logger');
+const { logger } = require('@prairielearn/logger');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
