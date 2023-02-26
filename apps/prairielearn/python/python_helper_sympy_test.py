@@ -203,7 +203,7 @@ class TestSympy:
 class TestExceptions:
     VARIABLES = ["n"]
 
-    COMPLEX_CASES = ["i", "5 * i", "j"]
+    COMPLEX_CASES = ["i", "5 * i", "j", "I"]
     NO_FLOATS_CASES = ["3.5", "4.2n", "3.5*n", "3.14159*n**2", "sin(2.3)"]
     INVALID_EXPRESSION_CASES = ["5==5", "5!=5", "5>5", "5<5", "5>=5", "5<=5"]
     INVALID_FUNCTION_CASES = ["eval(n)", "f(n)", "g(n)+cos(n)", "dir(n)", "sin(f(n))"]
@@ -216,7 +216,7 @@ class TestExceptions:
 
     @pytest.mark.parametrize("a_sub", COMPLEX_CASES)
     def test_not_allowed_complex(self, a_sub: str) -> None:
-        with pytest.raises(phs.HasInvalidSymbolError):
+        with pytest.raises((phs.HasComplexError, phs.HasInvalidSymbolError)):
             phs.convert_string_to_sympy(a_sub, self.VARIABLES, allow_complex=False)
 
     @pytest.mark.parametrize("a_sub", COMPLEX_CASES)

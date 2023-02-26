@@ -169,14 +169,12 @@ class HasInvalidAssumption(BaseSympyError):
 
 @dataclass
 class HasFloatError(BaseSympyError):
-    offset: int
     n: float
 
 
-@dataclass
+
 class HasComplexError(BaseSympyError):
-    offset: int
-    n: complex
+    pass
 
 
 @dataclass
@@ -327,7 +325,7 @@ def ast_check(expr: str, locals_for_eval: LocalsForEval) -> None:
     CheckWhiteList(whitelist).visit(root)
 
 
-def sympy_check(expr: sympy.Expr, locals_for_eval: LocalsForEval) -> None:
+def sympy_check(expr: sympy.Expr, locals_for_eval: LocalsForEval, allow_complex: bool) -> None:
     valid_symbols = set().union(
         *(cast(SympyMapT, inner_dict).keys() for inner_dict in locals_for_eval.values())
     )
@@ -340,12 +338,14 @@ def sympy_check(expr: sympy.Expr, locals_for_eval: LocalsForEval) -> None:
         if isinstance(item, sympy.Symbol) and str(item) not in valid_symbols:
             raise HasInvalidSymbolError(str(item))
         elif isinstance(item, sympy.Float):
-            raise HasFloatError(-1, float(str(item)))
+            raise HasFloatError(float(str(item)))
+        elif not allow_complex and item == sympy.I:
+            raise HasComplexError()
 
         work_stack.extend(item.args)
 
 
-def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
+def evaluate(expr: str, locals_for_eval: LocalsForEval, *, allow_complex=True) -> sympy.Expr:
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
     expr = expr.replace("^", "**")
@@ -399,7 +399,7 @@ def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
         raise BaseSympyError()
 
     # Finaly, check for invalid symbols
-    sympy_check(res, locals_for_eval)
+    sympy_check(res, locals_for_eval, allow_complex=allow_complex)
 
     return res
 
@@ -479,7 +479,7 @@ def convert_string_to_sympy(
             function_dict[function] = sympy.Function(function)
 
     # Do the conversion
-    return evaluate(expr, locals_for_eval)
+    return evaluate(expr, locals_for_eval, allow_complex=allow_complex)
 
 
 def point_to_error(expr: str, ind: int, w: int = 5) -> str:
@@ -586,13 +586,11 @@ def validate_string_as_sympy(
     except HasFloatError as err:
         return (
             f"Your answer contains the floating-point number {err.n}. "
-            f"All numbers must be expressed as integers (or ratios of integers)"
-            f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
-            "Note that the location of the syntax error is approximate."
+            f"All numbers must be expressed as integers (or ratios of integers)."
         )
     except HasComplexError as err:
         err_string = [
-            f"Your answer contains the complex number {err.n}. "
+            f"Your answer contains a complex number. "
             "All numbers must be expressed as integers (or ratios of integers). "
         ]
 
@@ -602,8 +600,6 @@ def validate_string_as_sympy(
                 "of an integer with the imaginary unit <code>i</code> or <code>j</code>."
             )
 
-        err_string.append(f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>")
-        err_string.append("Note that the location of the syntax error is approximate.")
         return "".join(err_string)
     except HasInvalidExpressionError as err:
         return (
