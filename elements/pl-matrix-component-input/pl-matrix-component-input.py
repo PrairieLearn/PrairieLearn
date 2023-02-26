@@ -7,6 +7,11 @@ import lxml.html
 import numpy as np
 import prairielearn as pl
 
+from typing import Literal
+from typing_extensions import assert_never
+
+FormatTypes = Literal["output-invalid", "output-feedback", "input"]
+
 WEIGHT_DEFAULT = 1
 LABEL_DEFAULT = None
 COMPARISON_DEFAULT = "relabs"
@@ -19,7 +24,7 @@ ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = 0
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["answers-name"]
     optional_attribs = [
@@ -60,7 +65,7 @@ def prepare(element_html, data):
             )
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     # get the name of the element, in this case, the name of the array
     name = pl.get_string_attrib(element, "answers-name")
@@ -321,8 +326,7 @@ def render(element_html, data):
 
     return html
 
-
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     allow_fractions = pl.get_boolean_attrib(
@@ -377,7 +381,7 @@ def parse(element_html, data):
         data["submitted_answers"][name] = pl.to_json(A)
 
 
-def grade(element_html, data):
+def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     allow_partial_credit = pl.get_boolean_attrib(
@@ -454,7 +458,7 @@ def grade(element_html, data):
         }
 
 
-def test(element_html, data):
+def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
@@ -520,18 +524,19 @@ def test(element_html, data):
             "feedback": feedback,
         }
 
-from typing import Literal
-from typing_extensions import assert_never
-FormatTypes = Literal["output-invalid", "output-feedback", "input"]
 
-def createTableForHTMLDisplay(m: int, n: int, name: str, label: str, data: pl.QuestionData, format: FormatTypes) -> str:
+def createTableForHTMLDisplay(
+    m: int, n: int, name: str, label: str, data: pl.QuestionData, format: FormatTypes
+) -> str:
     editable = data["editable"]
 
     if format == "output-invalid":
-        display_array = ["<table>",
-                         "<tr>",
-                         f'<td class="close-left" rowspan="{m}"></td>',
-                         f'<td style="width:4px" rowspan="{m}"></td>']
+        display_array = [
+            "<table>",
+            "<tr>",
+            f'<td class="close-left" rowspan="{m}"></td>',
+            f'<td style="width:4px" rowspan="{m}"></td>',
+        ]
         # First row of array
         for j in range(n):
             each_entry_name = name + str(j + 1)
@@ -559,17 +564,19 @@ def createTableForHTMLDisplay(m: int, n: int, name: str, label: str, data: pl.Qu
                 )
                 format_errors = data["format_errors"].get(each_entry_name, None)
                 if format_errors is None:
-                    display_array.append('<td class="allborder"><code class="user-output">')
+                    display_array.append(
+                        '<td class="allborder"><code class="user-output">'
+                    )
                 else:
                     display_array.append(
                         '<td class="allborder"><code class="user-output-invalid">'
                     )
-                display_array.append(escape(pl.escape_unicode_string(raw_submitted_answer)))
+                display_array.append(
+                    escape(pl.escape_unicode_string(raw_submitted_answer))
+                )
                 display_array.append("</code></td> ")
             display_array.append("</tr>")
         display_array.append("</table>")
-
-        return "".join(display_array)
 
     elif format == "output-feedback":
         partial_score_feedback = data["partial_scores"].get(name, {"feedback": None})
@@ -638,54 +645,50 @@ def createTableForHTMLDisplay(m: int, n: int, name: str, label: str, data: pl.Qu
                 display_array.append(" </td> ")
             display_array.append("</tr>")
         display_array.append("</table>")
-        return "".join(display_array)
+
     elif format == "input":
-        display_array = "<table>"
-        display_array += "<tr>"
+        display_array = ["<table>", "<tr>"]
         # Add first row
-        display_array += '<td class="close-left" rowspan="' + str(m) + '"></td>'
-        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
+        display_array.append(f'<td class="close-left" rowspan="{m}"></td>')
+        display_array.append(f'<td style="width:4px" rowspan="{m}"></td>')
         for j in range(n):
             each_entry_name = name + str(j + 1)
             raw_submitted_answer = data["raw_submitted_answers"].get(
                 each_entry_name, None
             )
-            display_array += (
-                ' <td> <input name= "' + each_entry_name + '" type="text" size="8"  '
+            display_array.append(
+                f' <td> <input name= "{each_entry_name}" type="text" size="8"  '
             )
             if not editable:
-                display_array += " disabled "
+                display_array.append(" disabled ")
             if raw_submitted_answer is not None:
-                display_array += '  value= "'
-                display_array += escape(raw_submitted_answer)
-            display_array += '" /> </td>'
-        display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
-        display_array += '<td class="close-right" rowspan="' + str(m) + '"></td>'
+                display_array.append('  value= "')
+                display_array.append(escape(raw_submitted_answer))
+            display_array.append('" /> </td>')
+        display_array.append(f'<td style="width:4px" rowspan="{m}"></td>')
+        display_array.append(f'<td class="close-right" rowspan="{m}"></td>')
         # Add other rows
         for i in range(1, m):
-            display_array += " <tr>"
+            display_array.append(" <tr>")
             for j in range(n):
                 each_entry_name = name + str(n * i + j + 1)
                 raw_submitted_answer = data["raw_submitted_answers"].get(
                     each_entry_name, None
                 )
-                display_array += (
-                    ' <td> <input name= "'
-                    + each_entry_name
-                    + '" type="text" size="8"  '
+                display_array.append(
+                    f' <td> <input name= "{each_entry_name}" type="text" size="8"  '
                 )
                 if not editable:
-                    display_array += " disabled "
+                    display_array.append(" disabled ")
                 if raw_submitted_answer is not None:
-                    display_array += '  value= "'
-                    display_array += escape(raw_submitted_answer)
-                display_array += '" /> </td>'
-                display_array += " </td> "
-            display_array += "</tr>"
-        display_array += "</table>"
+                    display_array.append('  value= "')
+                    display_array.append(escape(raw_submitted_answer))
+                display_array.append('" /> </td>')
+                display_array.append(" </td> ")
+            display_array.append("</tr>")
+        display_array.append("</table>")
 
     else:
         assert_never(format)
-    print(format)
-    print(display_array)
-    return display_array
+
+    return "".join(display_array)
