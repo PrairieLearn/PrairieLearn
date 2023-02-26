@@ -316,30 +316,33 @@ function Workspace({ navTitle, showLogs, heartbeatIntervalSec, visibilityTimeout
 
             socket.emit('startWorkspace', { workspace_id: workspaceId });
 
-            const heartbeatIntervalId = setInterval(() => {
-              socket.emit('heartbeat', { workspace_id: workspaceId }, (msg) => {
-                console.log('heartbeat, msg =', msg);
-              });
-            }, heartbeatIntervalSec * 1000);
+            let heartbeatIntervalId = null;
+
+            function startHeartbeat() {
+              if (heartbeatIntervalId) return;
+
+              heartbeatIntervalId = setInterval(() => {
+                socket.emit('heartbeat', { workspace_id: workspaceId }, (msg) => {
+                  console.log('heartbeat, msg =', msg);
+                });
+              }, heartbeatIntervalSec * 1000);
+            }
+
+            function stopHeartbeat() {
+              if (heartbeatIntervalId) {
+                clearInterval(heartbeatIntervalId);
+              }
+            }
 
             let visibilityTimeoutId = null;
             document.addEventListener('visibilitychange', () => {
               if (document.visibilityState == 'hidden') {
                 visibilityTimeoutId = setTimeout(() => {
-                  // Stop heartbeating.
-                  clearInterval(heartbeatIntervalId);
-
-                  // Instruct the backend to immediately stop the workspace.
-                  socket.emit('visibilityTimeout', { workspace_id: workspaceId });
-
-                  // Unload the iframe and show a message indicating that the workspace
-                  // was stopped due to inactivity. Note that this will technically
-                  // also happen when we get a 'change:state' message from the backend,
-                  // but we want to show the message as soon as possible.
-                  setState('stopped');
+                  stopHeartbeat();
                 }, visibilityTimeoutSec * 1000);
               } else {
                 clearTimeout(visibilityTimeoutId);
+                startHeartbeat();
               }
             });
 
