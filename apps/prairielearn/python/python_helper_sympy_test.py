@@ -67,8 +67,8 @@ class TestSympy:
         ("-5n", -5 * N),
         ("4n + 2m", 4 * N + 2 * M),
         ("n * m", M * N),
-        ("m + 1", M + 1),
-        ("m**2 + n**2 + 4 * n", M * M + N * N + 4 * N),
+        ("m - 1", M - 1),
+        ("m**2 + n**2 - 4 * n", M * M + N * N - 4 * N),
         (
             "n * sin(7*m) + m**2 * cos(6*n)",
             N * sympy.sin(M * 7) + M * M * sympy.cos(N * 6),
