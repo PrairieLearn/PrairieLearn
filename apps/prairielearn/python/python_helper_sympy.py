@@ -592,9 +592,9 @@ def validate_string_as_sympy(
             f"Your answer contains the floating-point number {err.n}. "
             f"All numbers must be expressed as integers (or ratios of integers)."
         )
-    except HasComplexError as err:
+    except HasComplexError:
         err_string = [
-            f"Your answer contains a complex number. "
+            "Your answer contains a complex number. "
             "All numbers must be expressed as integers (or ratios of integers). "
         ]
 
