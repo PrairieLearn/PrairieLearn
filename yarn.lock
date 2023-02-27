@@ -2893,6 +2893,21 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/path-utils@workspace:^, @prairielearn/path-utils@workspace:packages/path-utils":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/path-utils@workspace:packages/path-utils"
+  dependencies:
+    "@prairielearn/tsconfig": "*"
+    "@types/chai": ^4.3.4
+    "@types/mocha": ^10.0.1
+    "@types/node": ^18.11.18
+    chai: ^4.3.7
+    mocha: ^10.2.0
+    ts-node: ^10.9.1
+    typescript: ^4.9.5
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/postgres@^1.0.0, @prairielearn/postgres@workspace:packages/postgres":
   version: 0.0.0-use.local
   resolution: "@prairielearn/postgres@workspace:packages/postgres"
@@ -2943,6 +2958,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/workspace-utils@workspace:packages/workspace-utils"
   dependencies:
+    "@prairielearn/path-utils": "workspace:^"
     "@prairielearn/tsconfig": "*"
     "@types/node": ^18.11.18
     copyfiles: ^2.4.1

@@ -17,6 +17,7 @@
     "@prairielearn/postgres": "workspace:*"
   },
   "dependencies": {
+    "@prairielearn/path-utils": "workspace:^",
     "fast-glob": "^3.2.12",
     "filesize": "^10.0.6"
   }
