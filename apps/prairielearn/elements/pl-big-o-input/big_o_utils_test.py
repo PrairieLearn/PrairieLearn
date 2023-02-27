@@ -125,7 +125,7 @@ class TestBigOInput:
             ("n**2", "n**2*log(n)"),
             ("2**n", "n**n"),
             ("2**n", "factorial(n)"),
-            ("n**2", "n!"),
+            ("2**n", "n!"),
             ("2**n", "2**(n**2)"),
             ("factorial(n-1)", "factorial(n)"),
         ],
