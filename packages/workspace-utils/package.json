@@ -4,12 +4,13 @@
   "private": true,
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "rm -rf dist/ && tsc && copyfiles -u 1 \"./src/**/*.sql\" dist",
     "dev": "tsc --watch --preserveWatchOutput"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "*",
     "@types/node": "^18.11.18",
+    "copyfiles": "^2.4.1",
     "typescript": "^4.9.4"
   },
   "peerDependencies": {

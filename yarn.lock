@@ -2939,6 +2939,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/workspace-utils@workspace:packages/workspace-utils":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/workspace-utils@workspace:packages/workspace-utils"
+  dependencies:
+    "@prairielearn/tsconfig": "*"
+    "@types/node": ^18.11.18
+    copyfiles: ^2.4.1
+    typescript: ^4.9.4
+  peerDependencies:
+    "@prairielearn/postgres": "workspace:*"
+  languageName: unknown
+  linkType: soft
+
 "@protobufjs/aspromise@npm:^1.1.1, @protobufjs/aspromise@npm:^1.1.2":
   version: 1.1.2
   resolution: "@protobufjs/aspromise@npm:1.1.2"
@@ -5698,6 +5711,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"copyfiles@npm:^2.4.1":
+  version: 2.4.1
+  resolution: "copyfiles@npm:2.4.1"
+  dependencies:
+    glob: ^7.0.5
+    minimatch: ^3.0.3
+    mkdirp: ^1.0.4
+    noms: 0.0.0
+    through2: ^2.0.1
+    untildify: ^4.0.0
+    yargs: ^16.1.0
+  bin:
+    copyfiles: copyfiles
+    copyup: copyfiles
+  checksum: aea69873bb99cc5f553967660cbfb70e4eeda198f572a36fb0f748b36877ff2c90fd906c58b1d540adbad8afa8ee82820172f1c18e69736f7ab52792c12745a7
+  languageName: node
+  linkType: hard
+
 "core-js@npm:^3.23.5":
   version: 3.26.1
   resolution: "core-js@npm:3.26.1"
@@ -8160,7 +8191,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"glob@npm:^7.1.3, glob@npm:^7.1.4, glob@npm:^7.1.6, glob@npm:^7.2.0":
+"glob@npm:^7.0.5, glob@npm:^7.1.3, glob@npm:^7.1.4, glob@npm:^7.1.6, glob@npm:^7.2.0":
   version: 7.2.3
   resolution: "glob@npm:7.2.3"
   dependencies:
@@ -8845,7 +8876,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"inherits@npm:2, inherits@npm:2.0.4, inherits@npm:^2.0.1, inherits@npm:^2.0.3, inherits@npm:^2.0.4, inherits@npm:~2.0.0, inherits@npm:~2.0.3":
+"inherits@npm:2, inherits@npm:2.0.4, inherits@npm:^2.0.1, inherits@npm:^2.0.3, inherits@npm:^2.0.4, inherits@npm:~2.0.0, inherits@npm:~2.0.1, inherits@npm:~2.0.3":
   version: 2.0.4
   resolution: "inherits@npm:2.0.4"
   checksum: 4a48a733847879d6cf6691860a6b1e3f0f4754176e4d71494c41f3475553768b10f84b5ce1d40fbd0e34e6bfbb864ee35858ad4dd2cf31e02fc4a154b724d7f1
@@ -11152,7 +11183,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"minimatch@npm:2 || 3, minimatch@npm:^3.0.4, minimatch@npm:^3.0.5, minimatch@npm:^3.1.1, minimatch@npm:^3.1.2":
+"minimatch@npm:2 || 3, minimatch@npm:^3.0.3, minimatch@npm:^3.0.4, minimatch@npm:^3.0.5, minimatch@npm:^3.1.1, minimatch@npm:^3.1.2":
   version: 3.1.2
   resolution: "minimatch@npm:3.1.2"
   dependencies:
@@ -11611,6 +11642,16 @@ __metadata:
   bin:
     nodemon: bin/nodemon.js
   checksum: 9fe858682414fe703179f4fe36c86e71f40d2693b5345c09803d7b191816a6589c5df8f1f9873bffee92893880183b95a031c86340e46b364ef1b0b7f619edbf
+  languageName: node
+  linkType: hard
+
+"noms@npm:0.0.0":
+  version: 0.0.0
+  resolution: "noms@npm:0.0.0"
+  dependencies:
+    inherits: ^2.0.1
+    readable-stream: ~1.0.31
+  checksum: a05f056dabf764c86472b6b5aad10455f3adcb6971f366cdf36a72b559b29310a940e316bca30802f2804fdd41707941366224f4cba80c4f53071512245bf200
   languageName: node
   linkType: hard
 
@@ -12884,6 +12925,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"readable-stream@npm:~1.0.31":
+  version: 1.0.34
+  resolution: "readable-stream@npm:1.0.34"
+  dependencies:
+    core-util-is: ~1.0.0
+    inherits: ~2.0.1
+    isarray: 0.0.1
+    string_decoder: ~0.10.x
+  checksum: 85042c537e4f067daa1448a7e257a201070bfec3dd2706abdbd8ebc7f3418eb4d3ed4b8e5af63e2544d69f88ab09c28d5da3c0b77dc76185fddd189a59863b60
+  languageName: node
+  linkType: hard
+
 "readable-web-to-node-stream@npm:^3.0.0":
   version: 3.0.2
   resolution: "readable-web-to-node-stream@npm:3.0.2"
@@ -14105,6 +14158,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"string_decoder@npm:~0.10.x":
+  version: 0.10.31
+  resolution: "string_decoder@npm:0.10.31"
+  checksum: fe00f8e303647e5db919948ccb5ce0da7dea209ab54702894dd0c664edd98e5d4df4b80d6fabf7b9e92b237359d21136c95bf068b2f7760b772ca974ba970202
+  languageName: node
+  linkType: hard
+
 "string_decoder@npm:~1.1.1":
   version: 1.1.1
   resolution: "string_decoder@npm:1.1.1"
@@ -14351,6 +14411,16 @@ __metadata:
   bin:
     thrift2json: ./thrift2json.js
   checksum: fc03374131a713f5c5eca712a4092abf48282d985d23542f3ef7c92d222af52716e7037c446d5734708cc514d8fad42674f82dd6a9c59b8807beba0a1169b539
+  languageName: node
+  linkType: hard
+
+"through2@npm:^2.0.1":
+  version: 2.0.5
+  resolution: "through2@npm:2.0.5"
+  dependencies:
+    readable-stream: ~2.3.6
+    xtend: ~4.0.1
+  checksum: beb0f338aa2931e5660ec7bf3ad949e6d2e068c31f4737b9525e5201b824ac40cac6a337224856b56bd1ddd866334bbfb92a9f57cd6f66bc3f18d3d86fc0fe50
   languageName: node
   linkType: hard
 
@@ -14947,6 +15017,13 @@ __metadata:
   version: 1.0.0
   resolution: "unpipe@npm:1.0.0"
   checksum: 4fa18d8d8d977c55cb09715385c203197105e10a6d220087ec819f50cb68870f02942244f1017565484237f1f8c5d3cd413631b1ae104d3096f24fdfde1b4aa2
+  languageName: node
+  linkType: hard
+
+"untildify@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "untildify@npm:4.0.0"
+  checksum: 39ced9c418a74f73f0a56e1ba4634b4d959422dff61f4c72a8e39f60b99380c1b45ed776fbaa0a4101b157e4310d873ad7d114e8534ca02609b4916bb4187fb9
   languageName: node
   linkType: hard
 
@@ -15596,7 +15673,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"xtend@npm:^4.0.0, xtend@npm:~4.0.0":
+"xtend@npm:^4.0.0, xtend@npm:~4.0.0, xtend@npm:~4.0.1":
   version: 4.0.2
   resolution: "xtend@npm:4.0.2"
   checksum: ac5dfa738b21f6e7f0dd6e65e1b3155036d68104e67e5d5d1bde74892e327d7e5636a076f625599dc394330a731861e87343ff184b0047fef1360a7ec0a5a36a
@@ -15674,7 +15751,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yargs@npm:16.2.0, yargs@npm:^16.2.0":
+"yargs@npm:16.2.0, yargs@npm:^16.1.0, yargs@npm:^16.2.0":
   version: 16.2.0
   resolution: "yargs@npm:16.2.0"
   dependencies:

@@ -1,5 +1,7 @@
-import { queryAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import type { Namespace } from 'socket.io';
+
+const sql = loadSqlEquiv(__filename);
 
 export interface WorkspaceUpdater {
   /**
@@ -14,6 +16,7 @@ export interface WorkspaceUpdater {
     message: string,
     toDatabase?: boolean
   ): Promise<void>;
+
   /**
    * Updates a workspace's current state and message.
    *
