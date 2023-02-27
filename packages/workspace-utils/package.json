@@ -15,5 +15,9 @@
   },
   "peerDependencies": {
     "@prairielearn/postgres": "workspace:*"
+  },
+  "dependencies": {
+    "fast-glob": "^3.2.12",
+    "filesize": "^10.0.6"
   }
 }

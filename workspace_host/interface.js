@@ -18,16 +18,13 @@ const net = require('net');
 const asyncHandler = require('express-async-handler');
 const bodyParser = require('body-parser');
 const Sentry = require('@prairielearn/sentry');
-const fg = require('fast-glob');
-const { filesize } = require('filesize');
+const workspaceUtils = require('@prairielearn/workspace-utils');
 
 const dockerUtil = require('../lib/dockerUtil');
 const awsHelper = require('../lib/aws');
 const socketServer = require('../lib/socket-server'); // must load socket server before workspace
-const workspaceHelper = require('../lib/workspace');
 const { logger } = require('@prairielearn/logger');
 const LocalLock = require('../lib/local-lock');
-const { contains } = require('../lib/instructorFiles');
 
 const config = require('../lib/config');
 const sqldb = require('@prairielearn/postgres');
@@ -174,15 +171,8 @@ async
       logger.info(`Workspace server listening on port ${workspace_server_settings.port}`);
       callback(null);
     },
-    async () => {
-      socketServer.init(server);
-    },
-    (callback) => {
-      util.callbackify(workspaceHelper.init)((err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
-    },
+    async () => socketServer.init(server),
+    async () => workspaceUtils.init(socketServer.io),
     async () => {
       // Set up a periodic pruning of running containers
       async function pruneContainersTimeout() {
@@ -219,7 +209,7 @@ async
         if (ws.state === 'launching') {
           // We don't know what state the container is in, kill it and let the
           // user retry initializing it.
-          await workspaceHelper.updateState(ws.id, 'stopped', 'Status unknown');
+          await workspaceUtils.updateState(ws.id, 'stopped', 'Status unknown');
           await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
             workspace_id: ws.id,
             instance_id: workspace_server_settings.instance_id,
@@ -232,7 +222,7 @@ async
           }
         } else if (ws.state === 'running') {
           if (!ws.launch_uuid) {
-            await workspaceHelper.updateState(ws.id, 'stopped', 'Shutting down');
+            await workspaceUtils.updateState(ws.id, 'stopped', 'Shutting down');
             await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
               workspace_id: ws.id,
               instance_id: workspace_server_settings.instance_id,
@@ -550,7 +540,7 @@ async function _getWorkspaceSettingsAsync(workspace_id) {
 }
 
 function _pullImage(workspace, callback) {
-  workspaceHelper.updateMessage(workspace.id, 'Checking image');
+  workspaceUtils.updateMessage(workspace.id, 'Checking image');
   const workspace_image = workspace.settings.workspace_image;
   if (config.workspacePullImagesFromDockerHub) {
     logger.info(`Pulling docker image: ${workspace_image}`);
@@ -595,7 +585,7 @@ function _pullImage(workspace, callback) {
             if (ERR(err, callback)) return;
             if (percentDisplayed) {
               const toDatabase = false;
-              workspaceHelper.updateMessage(workspace.id, `Pulling image (100%)`, toDatabase);
+              workspaceUtils.updateMessage(workspace.id, `Pulling image (100%)`, toDatabase);
             }
             callback(null, workspace);
           },
@@ -638,7 +628,7 @@ function _pullImage(workspace, callback) {
                 dateCache = date;
                 percentDisplayed = true;
                 const toDatabase = false;
-                workspaceHelper.updateMessage(
+                workspaceUtils.updateMessage(
                   workspace.id,
                   `Pulling image (${percent}%)`,
                   toDatabase
@@ -794,7 +784,7 @@ function _createContainer(workspace, callback) {
 const _createContainerAsync = util.promisify(_createContainer);
 
 function _startContainer(workspace, callback) {
-  workspaceHelper.updateMessage(workspace.id, 'Starting container');
+  workspaceUtils.updateMessage(workspace.id, 'Starting container');
   workspace.container.start((err) => {
     if (ERR(err, callback)) return;
     callback(null, workspace);
@@ -839,7 +829,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       workspace.settings = await _getWorkspaceSettingsAsync(workspace.id);
     } catch (err) {
       logger.error(`Error configuring workspace ${workspace_id}`, err);
-      workspaceHelper.updateState(
+      workspaceUtils.updateState(
         workspace_id,
         'stopped',
         `Error configuring workspace. Click "Reboot" to try again.`
@@ -852,7 +842,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
     } catch (err) {
       const image = workspace.settings.workspace_image;
       logger.error(`Error pulling image ${image} for workspace ${workspace_id}`, err);
-      workspaceHelper.updateState(
+      workspaceUtils.updateState(
         workspace_id,
         'stopped',
         `Error pulling image. Click "Reboot" to try again.`
@@ -861,7 +851,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
     }
 
     try {
-      workspaceHelper.updateMessage(workspace.id, 'Creating container');
+      workspaceUtils.updateMessage(workspace.id, 'Creating container');
       const hostname = `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`;
       await sqldb.queryAsync(sql.update_workspace_hostname, {
         workspace_id,
@@ -870,7 +860,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       workspace.container = await _createContainerAsync(workspace);
     } catch (err) {
       logger.error(`Error creating container for workspace ${workspace.id}`, err);
-      workspaceHelper.updateState(
+      workspaceUtils.updateState(
         workspace_id,
         'stopped',
         `Error creating container. Click "Reboot" to try again.`
@@ -882,10 +872,10 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       await _startContainerAsync(workspace);
       await _checkServerAsync(workspace);
       debug(`init: container initialized for workspace_id=${workspace_id}`);
-      workspaceHelper.updateState(workspace_id, 'running', null);
+      workspaceUtils.updateState(workspace_id, 'running', null);
     } catch (err) {
       logger.error(`Error starting container for workspace ${workspace.id}`, err);
-      workspaceHelper.updateState(
+      workspaceUtils.updateState(
         workspace_id,
         'stopped',
         `Error starting container. Click "Reboot" to try again.`
@@ -909,25 +899,19 @@ async function sendGradedFilesArchive(workspace_id, res) {
   const zipName = `${workspace.remote_name}-${timestamp}.zip`;
   const workspaceDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
 
-  const gradedFiles = (
-    await fg(workspaceSettings.workspace_graded_files, {
-      cwd: workspaceDir,
-      stats: true,
-      ...workspaceHelper.fastGlobDefaultOptions,
-    })
-  ).filter((file) => contains(workspaceDir, path.join(workspaceDir, file.path)));
-
-  if (gradedFiles.length > config.workspaceMaxGradedFilesCount) {
-    return res.status(500).send({
-      message: `Cannot submit more than ${config.workspaceMaxGradedFilesCount} files from the workspace.`,
-    });
-  }
-  if (_.sumBy(gradedFiles, (file) => file.stats.size) > config.workspaceMaxGradedFilesSize) {
-    return res.status(500).send({
-      message: `Workspace files exceed limit of ${filesize(config.workspaceMaxGradedFilesSize, {
-        base: 2,
-      })}.`,
-    });
+  let gradedFiles;
+  try {
+    gradedFiles = workspaceUtils.getGradedFiles(
+      workspaceDir,
+      workspaceSettings.workspace_graded_files,
+      {
+        maxFiles: config.workspaceMaxGradedFilesCount,
+        maxSize: config.workspaceMaxGradedFilesSize,
+      }
+    );
+  } catch (err) {
+    res.status(500).send(err.message);
+    return;
   }
 
   // Stream the archive back to the client as it's generated.

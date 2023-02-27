@@ -1,5 +1,7 @@
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import type { Server as SocketIOServer } from 'socket.io';
+import fg, { Entry } from 'fast-glob';
+import { filesize } from 'filesize';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -59,3 +61,42 @@ export async function updateState(
     message,
   });
 }
+
+interface GradedFilesLimits {
+  maxFiles: number;
+  maxSize: number;
+}
+
+export async function getGradedFiles(
+  workspaceDir: string,
+  gradedFiles: string[],
+  limits: GradedFilesLimits
+): Promise<Entry[]> {
+  const files = (
+    await fg(gradedFiles, {
+      cwd: workspaceDir,
+      stats: true,
+      ...module.exports.fastGlobDefaultOptions,
+    })
+  ).filter((file) => contains(remoteDir, path.join(remoteDir, file.path)));
+
+  if (gradedFiles.length > limits.maxFiles) {
+    throw new Error(`Cannot submit more than ${limits.maxFiles} files from the workspace.`);
+  }
+
+  const totalSize = gradedFiles.reduce((acc, file) => acc + file.stats.size, 0);
+  if (totalSize > limits.maxSize) {
+    throw new Error(
+      `Workspace files exceed limit of ${filesize(limits.maxSize, {
+        base: 2,
+      })}.`
+    );
+  }
+
+  return files;
+}
+
+export const fastGlobDefaultOptions = {
+  extglob: false,
+  braceExpansion: false,
+};
