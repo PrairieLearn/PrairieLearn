@@ -16,7 +16,6 @@ const sql = sqldb.loadSqlEquiv(__filename);
 const helperServer = require('./helperServer');
 
 const locals = {};
-let page, elemList;
 
 const courseTemplateDir = path.join(__dirname, 'testFileEditor', 'courseTemplate');
 
@@ -384,14 +383,15 @@ function testEdit(params) {
   describe(`GET to ${params.url}`, () => {
     if (params.url) {
       it('should load successfully', async () => {
-        page = await fetch(params.url).then((res) => res.text());
-        locals.$ = cheerio.load(page);
+        const res = await fetch(params.url);
+        locals.$ = cheerio.load(await res.text());
       });
     }
     it('should have a CSRF token', () => {
       if (params.button) {
-        elemList = locals.$(`button[id="${params.button}"]`);
+        let elemList = locals.$(`button[id="${params.button}"]`);
         assert.lengthOf(elemList, 1);
+
         const $ = cheerio.load(elemList[0].attribs['data-content']);
         elemList = $(`form[name="${params.form}"] input[name="__csrf_token"]`);
         assert.lengthOf(elemList, 1);
@@ -399,7 +399,7 @@ function testEdit(params) {
         locals.__csrf_token = elemList[0].attribs.value;
         assert.isString(locals.__csrf_token);
       } else {
-        elemList = locals.$(`form[name="${params.form}"] input[name="__csrf_token"]`);
+        let elemList = locals.$(`form[name="${params.form}"] input[name="__csrf_token"]`);
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
         locals.__csrf_token = elemList[0].attribs.value;
@@ -415,12 +415,13 @@ function testEdit(params) {
         __csrf_token: locals.__csrf_token,
         ...(params?.data ?? {}),
       };
-      page = await fetch(params.url || locals.url, {
+      const res = await fetch(params.url || locals.url, {
         method: 'POST',
         body: new URLSearchParams(form),
-      }).then((res) => res.text());
-      locals.url = page.request.href;
-      locals.$ = cheerio.load(page.body);
+      });
+      assert.isOk(res.ok);
+      locals.url = res.url;
+      locals.$ = cheerio.load(await res.text());
     });
   });
 
