@@ -209,7 +209,7 @@ async
         if (ws.state === 'launching') {
           // We don't know what state the container is in, kill it and let the
           // user retry initializing it.
-          await workspaceUtils.updateState(ws.id, 'stopped', 'Status unknown');
+          await workspaceUtils.updateWorkspaceState(ws.id, 'stopped', 'Status unknown');
           await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
             workspace_id: ws.id,
             instance_id: workspace_server_settings.instance_id,
@@ -222,7 +222,7 @@ async
           }
         } else if (ws.state === 'running') {
           if (!ws.launch_uuid) {
-            await workspaceUtils.updateState(ws.id, 'stopped', 'Shutting down');
+            await workspaceUtils.updateWorkspaceState(ws.id, 'stopped', 'Shutting down');
             await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
               workspace_id: ws.id,
               instance_id: workspace_server_settings.instance_id,
@@ -540,7 +540,7 @@ async function _getWorkspaceSettingsAsync(workspace_id) {
 }
 
 function _pullImage(workspace, callback) {
-  workspaceUtils.updateMessage(workspace.id, 'Checking image');
+  workspaceUtils.updateWorkspaceMessage(workspace.id, 'Checking image');
   const workspace_image = workspace.settings.workspace_image;
   if (config.workspacePullImagesFromDockerHub) {
     logger.info(`Pulling docker image: ${workspace_image}`);
@@ -585,7 +585,11 @@ function _pullImage(workspace, callback) {
             if (ERR(err, callback)) return;
             if (percentDisplayed) {
               const toDatabase = false;
-              workspaceUtils.updateMessage(workspace.id, `Pulling image (100%)`, toDatabase);
+              workspaceUtils.updateWorkspaceMessage(
+                workspace.id,
+                `Pulling image (100%)`,
+                toDatabase
+              );
             }
             callback(null, workspace);
           },
@@ -628,7 +632,7 @@ function _pullImage(workspace, callback) {
                 dateCache = date;
                 percentDisplayed = true;
                 const toDatabase = false;
-                workspaceUtils.updateMessage(
+                workspaceUtils.updateWorkspaceMessage(
                   workspace.id,
                   `Pulling image (${percent}%)`,
                   toDatabase
@@ -784,7 +788,7 @@ function _createContainer(workspace, callback) {
 const _createContainerAsync = util.promisify(_createContainer);
 
 function _startContainer(workspace, callback) {
-  workspaceUtils.updateMessage(workspace.id, 'Starting container');
+  workspaceUtils.updateWorkspaceMessage(workspace.id, 'Starting container');
   workspace.container.start((err) => {
     if (ERR(err, callback)) return;
     callback(null, workspace);
@@ -829,7 +833,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       workspace.settings = await _getWorkspaceSettingsAsync(workspace.id);
     } catch (err) {
       logger.error(`Error configuring workspace ${workspace_id}`, err);
-      workspaceUtils.updateState(
+      workspaceUtils.updateWorkspaceState(
         workspace_id,
         'stopped',
         `Error configuring workspace. Click "Reboot" to try again.`
@@ -842,7 +846,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
     } catch (err) {
       const image = workspace.settings.workspace_image;
       logger.error(`Error pulling image ${image} for workspace ${workspace_id}`, err);
-      workspaceUtils.updateState(
+      workspaceUtils.updateWorkspaceState(
         workspace_id,
         'stopped',
         `Error pulling image. Click "Reboot" to try again.`
@@ -851,7 +855,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
     }
 
     try {
-      workspaceUtils.updateMessage(workspace.id, 'Creating container');
+      workspaceUtils.updateWorkspaceMessage(workspace.id, 'Creating container');
       const hostname = `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`;
       await sqldb.queryAsync(sql.update_workspace_hostname, {
         workspace_id,
@@ -860,7 +864,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       workspace.container = await _createContainerAsync(workspace);
     } catch (err) {
       logger.error(`Error creating container for workspace ${workspace.id}`, err);
-      workspaceUtils.updateState(
+      workspaceUtils.updateWorkspaceState(
         workspace_id,
         'stopped',
         `Error creating container. Click "Reboot" to try again.`
@@ -872,10 +876,10 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       await _startContainerAsync(workspace);
       await _checkServerAsync(workspace);
       debug(`init: container initialized for workspace_id=${workspace_id}`);
-      workspaceUtils.updateState(workspace_id, 'running', null);
+      workspaceUtils.updateWorkspaceState(workspace_id, 'running', null);
     } catch (err) {
       logger.error(`Error starting container for workspace ${workspace.id}`, err);
-      workspaceUtils.updateState(
+      workspaceUtils.updateWorkspaceState(
         workspace_id,
         'stopped',
         `Error starting container. Click "Reboot" to try again.`
@@ -901,7 +905,7 @@ async function sendGradedFilesArchive(workspace_id, res) {
 
   let gradedFiles;
   try {
-    gradedFiles = workspaceUtils.getGradedFiles(
+    gradedFiles = workspaceUtils.getWorkspaceGradedFiles(
       workspaceDir,
       workspaceSettings.workspace_graded_files,
       {

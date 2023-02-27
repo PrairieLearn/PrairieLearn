@@ -14,12 +14,12 @@ export function init(io: SocketIOServer) {
 }
 
 function emitMessageForWorkspace(workspaceId: string | number, event: string, ...args: any[]) {
-  getSocketNamespace()
+  getWorkspaceSocketNamespace()
     .to(`workspace-${workspaceId}`)
     .emit(event, ...args);
 }
 
-export function getSocketNamespace() {
+export function getWorkspaceSocketNamespace() {
   if (!socketIoServer) throw new Error('socket.io server not initialized');
   return socketIoServer.of('/workspace');
 }
@@ -31,7 +31,7 @@ export function getSocketNamespace() {
  * @param message The workspace's new message.
  * @param toDatabase Whether to write the message to the database.
  */
-export async function updateMessage(
+export async function updateWorkspaceMessage(
   workspace_id: string | number,
   message: string,
   toDatabase: boolean = true
@@ -50,7 +50,7 @@ export async function updateMessage(
  * @param state The workspace's new state.
  * @param message The workspace's new message.
  */
-export async function updateState(
+export async function updateWorkspaceState(
   workspace_id: string | number,
   state: string,
   message: string = ''
@@ -69,7 +69,7 @@ interface GradedFilesLimits {
   maxSize: number;
 }
 
-export async function getGradedFiles(
+export async function getWorkspaceGradedFiles(
   workspaceDir: string,
   gradedFiles: string[],
   limits: GradedFilesLimits
@@ -78,7 +78,7 @@ export async function getGradedFiles(
     await fg(gradedFiles, {
       cwd: workspaceDir,
       stats: true,
-      ...module.exports.fastGlobDefaultOptions,
+      ...workspaceFastGlobDefaultOptions,
     })
   ).filter((file) => contains(workspaceDir, path.join(workspaceDir, file.path)));
 
@@ -98,7 +98,10 @@ export async function getGradedFiles(
   return files;
 }
 
-export const fastGlobDefaultOptions = {
+/**
+ * Default options for calls to `fast-glob`.
+ */
+export const workspaceFastGlobDefaultOptions = {
   extglob: false,
   braceExpansion: false,
 };
