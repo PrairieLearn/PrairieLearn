@@ -3906,6 +3906,7 @@ __metadata:
     file-type: ^16.5.4
     filesize: ^10.0.6
     folder-hash: ^4.0.4
+    form-data: ^4.0.0
     fs-extra: ^11.1.0
     generic-pool: ^3.9.0
     google-auth-library: ^8.7.0

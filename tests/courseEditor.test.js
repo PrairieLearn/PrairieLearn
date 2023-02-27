@@ -6,7 +6,7 @@ const async = require('async');
 const ncp = require('ncp');
 const cheerio = require('cheerio');
 const { exec } = require('child_process');
-const requestp = require('request-promise-native');
+const fetch = require('node-fetch').default;
 const klaw = require('klaw');
 const tmp = require('tmp');
 
@@ -384,7 +384,7 @@ function testEdit(params) {
   describe(`GET to ${params.url}`, () => {
     if (params.url) {
       it('should load successfully', async () => {
-        page = await requestp(params.url);
+        page = await fetch(params.url).then((res) => res.text());
         locals.$ = cheerio.load(page);
       });
     }
@@ -410,19 +410,15 @@ function testEdit(params) {
 
   describe(`POST to ${params.url} with action ${params.action}`, function () {
     it('should load successfully', async () => {
-      const options = {
-        url: params.url || locals.url,
-        followAllRedirects: true,
-        resolveWithFullResponse: true,
-      };
-      options.form = {
+      const form = {
         __action: params.action,
         __csrf_token: locals.__csrf_token,
+        ...(params?.data ?? {}),
       };
-      if (params.data) {
-        options.form = { ...options.form, ...params.data };
-      }
-      page = await requestp.post(options);
+      page = await fetch(params.url || locals.url, {
+        method: 'POST',
+        body: new URLSearchParams(form),
+      }).then((res) => res.text());
       locals.url = page.request.href;
       locals.$ = cheerio.load(page.body);
     });
