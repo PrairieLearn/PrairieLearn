@@ -13,15 +13,8 @@ class PLTestResult(unittest.TestResult):
     """
 
     error_message = (
-        "The grading code failed.\n\n"
-        "Look at the traceback below to help debug your code.\n\n"
-        "The error traceback is:\n"
-    )
-
-    major_error_message = (
-        "The grading code was not able to run.\n\n"
-        "Look at the traceback below to help debug your code.\n\n"
-        "The error traceback is:\n"
+        "Thre was an error while grading your code.\n\n"
+        "Look at the traceback below to help debug your code:\n"
     )
 
     def __init__(self):
@@ -95,28 +88,11 @@ class PLTestResult(unittest.TestResult):
                 ipynb_key=Feedback.test.ipynb_key,
             )
         else:
+            # Error in a single test -- keep going
+            unittest.TestResult.addError(self, test, err)
+            self.results[-1]["points"] = 0
             tr_list = traceback.format_exception(*err)
-            test_id = test.id().split()[0]
-            if not test_id.startswith("test"):
-                # Error in setup code -- not recoverable
-                self.done_grading = True
-                self.grading_succeeded = False
-                self.results = []
-                self.results.append(
-                    {
-                        "name": "Internal Grading Error",
-                        "filename": "error",
-                        "max_points": 1,
-                        "points": 0,
-                    }
-                )
-                Feedback.set_name("error")
-                Feedback.add_feedback(self.major_error_message + "".join(tr_list))
-            else:
-                # Error in a single test -- keep going
-                unittest.TestResult.addError(self, test, err)
-                self.results[-1]["points"] = 0
-                Feedback.add_feedback(self.error_message + "".join(tr_list))
+            Feedback.add_feedback(self.error_message + "".join(tr_list))
 
     def addFailure(self, test, err):
         unittest.TestResult.addFailure(self, test, err)
