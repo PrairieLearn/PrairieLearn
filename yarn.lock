@@ -2939,7 +2939,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/workspace-utils@workspace:packages/workspace-utils":
+"@prairielearn/workspace-utils@workspace:*, @prairielearn/workspace-utils@workspace:packages/workspace-utils":
   version: 0.0.0-use.local
   resolution: "@prairielearn/workspace-utils@workspace:packages/workspace-utils"
   dependencies:
@@ -3838,6 +3838,7 @@ __metadata:
     "@prairielearn/postgres": ^1.0.0
     "@prairielearn/prettier-plugin-sql": "workspace:*"
     "@prairielearn/sentry": ^1.0.0
+    "@prairielearn/workspace-utils": "workspace:*"
     "@pyroscope/nodejs": ^0.2.5
     "@sentry/profiling-node": ^0.1.0
     "@sentry/tracing": ^7.36.0

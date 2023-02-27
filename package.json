@@ -19,6 +19,7 @@
         "@prairielearn/opentelemetry": "^1.0.0",
         "@prairielearn/postgres": "^1.0.0",
         "@prairielearn/sentry": "^1.0.0",
+        "@prairielearn/workspace-utils": "workspace:*",
         "@pyroscope/nodejs": "^0.2.5",
         "@sentry/profiling-node": "^0.1.0",
         "@sentry/tracing": "^7.36.0",
