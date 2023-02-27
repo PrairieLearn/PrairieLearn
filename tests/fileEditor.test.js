@@ -1138,8 +1138,9 @@ function doFiles(data) {
 function testUploadFile(params) {
   describe(`GET to ${params.url}`, () => {
     it('should load successfully', async () => {
-      page = await fetch(params.url).then((res) => res.text());
-      locals.$ = cheerio.load(page);
+      const res = await fetch(params.url);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
     it('should have a CSRF token and either a file_path or a working_path', () => {
       elemList = locals.$(`button[id="instructorFileUploadForm-${params.id}"]`);
@@ -1190,8 +1191,9 @@ function testUploadFile(params) {
         assert.fail('found neither file_path nor working_path');
       }
 
-      page = await fetch(params.url, { method: 'POST', body: formData }).then((res) => res.text());
-      locals.$ = cheerio.load(page);
+      const res = await fetch(params.url, { method: 'POST', body: formData });
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
   });
 
@@ -1201,8 +1203,9 @@ function testUploadFile(params) {
 function testRenameFile(params) {
   describe(`GET to ${params.url}`, () => {
     it('should load successfully', async () => {
-      page = await fetch(params.url).then((res) => res.text());
-      locals.$ = cheerio.load(page);
+      const res = await fetch(params.url);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
     it('should have a CSRF token, old_file_name, working_path', () => {
       elemList = locals.$(`button[id="instructorFileRenameForm-${params.id}"]`);
@@ -1242,10 +1245,9 @@ function testRenameFile(params) {
         old_file_name: locals.old_file_name,
         new_file_name: params.new_file_name,
       };
-      page = await fetch(params.url, { method: 'POST', body: new URLSearchParams(form) }).then(
-        (res) => res.text()
-      );
-      locals.$ = cheerio.load(page);
+      const res = await fetch(params.url, { method: 'POST', body: new URLSearchParams(form) });
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
   });
 
@@ -1255,8 +1257,9 @@ function testRenameFile(params) {
 function testDeleteFile(params) {
   describe(`GET to ${params.url}`, () => {
     it('should load successfully', async () => {
-      page = await fetch(params.url).then((res) => res.text());
-      locals.$ = cheerio.load(page);
+      const res = await fetch(params.url);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
     it('should have a CSRF token and a file_path', () => {
       elemList = locals.$(`button[id="instructorFileDeleteForm-${params.id}"]`);
@@ -1280,17 +1283,13 @@ function testDeleteFile(params) {
 
   describe(`POST to ${params.url} with action delete_file`, function () {
     it('should load successfully', async () => {
-      const options = {
-        url: params.url,
-        followAllRedirects: true,
-      };
-      options.formData = {
+      const form = {
         __action: 'delete_file',
         __csrf_token: locals.__csrf_token,
         file_path: locals.file_path,
       };
-      page = await requestp.post(options);
-      locals.$ = cheerio.load(page);
+      const res = await fetch(params.url, { method: 'POST', body: new URLSearchParams(form) });
+      assert.isOk(res.ok);
     });
   });
 

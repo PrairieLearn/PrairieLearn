@@ -384,6 +384,7 @@ function testEdit(params) {
     if (params.url) {
       it('should load successfully', async () => {
         const res = await fetch(params.url);
+        assert.isOk(res.ok);
         locals.$ = cheerio.load(await res.text());
       });
     }

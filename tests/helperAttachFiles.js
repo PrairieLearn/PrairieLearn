@@ -6,13 +6,14 @@ const cheerio = require('cheerio');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 
-let page, elemList;
+let elemList;
 
 module.exports.attachFile = (locals, textFile) => {
   describe('attachFile-1. GET to assessment_instance URL', () => {
     it('should load successfully', async () => {
-      page = await fetch(locals.attachFilesUrl).then((res) => res.text());
-      locals.$ = cheerio.load(page);
+      const res = await fetch(locals.attachFilesUrl);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
     it('should have a CSRF token', () => {
       if (textFile) {
@@ -52,11 +53,6 @@ module.exports.attachFile = (locals, textFile) => {
 
   describe('attachFile-2. POST to assessment_instance URL', () => {
     it('should load successfully', async () => {
-      const options = {
-        url: locals.attachFilesUrl,
-        followAllRedirects: true,
-      };
-
       const formData = new FormData();
       formData.append('__action', locals.__action);
       formData.append('__csrf_token', locals.__csrf_token);
@@ -75,10 +71,9 @@ module.exports.attachFile = (locals, textFile) => {
         });
       }
 
-      page = await fetch(locals.attachFilesUrl, { method: 'POST', body: formData }).then((res) =>
-        res.text()
-      );
-      locals.$ = cheerio.load(page);
+      const res = await fetch(locals.attachFilesUrl, { method: 'POST', body: formData });
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
     it('should create an attached file', async () => {
       const result = await sqldb.queryAsync(sql.select_files, []);
@@ -97,8 +92,9 @@ module.exports.attachFile = (locals, textFile) => {
 module.exports.downloadAttachedFile = (locals) => {
   describe('downloadAttachedFile-1. GET to assessment_instance URL', () => {
     it('should load successfully', async () => {
-      page = await fetch(locals.attachFilesUrl).then((res) => res.text());
-      locals.$ = cheerio.load(page);
+      const res = await fetch(locals.attachFilesUrl);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
     it('should have a file URL', () => {
       elemList = locals.$('#attach-file-panel a.attached-file');
@@ -111,10 +107,10 @@ module.exports.downloadAttachedFile = (locals) => {
 
   describe('downloadAttachedFile-2. GET to file URL', () => {
     it('should load successfully', async () => {
-      page = await fetch(locals.siteUrl + locals.fileHref).then((res) => res.text());
-    });
-    it('should contain the correct data', () => {
-      assert.equal(page, 'This is the test text');
+      const res = await fetch(locals.siteUrl + locals.fileHref);
+      assert.isOk(res.ok);
+      const contents = await res.text();
+      assert.equal(contents, 'This is the test text');
     });
   });
 };
@@ -122,8 +118,9 @@ module.exports.downloadAttachedFile = (locals) => {
 module.exports.deleteAttachedFile = (locals) => {
   describe('deleteAttachedFile-1. GET to assessment_instance URL', () => {
     it('should load successfully', async () => {
-      page = await fetch(locals.attachFilesUrl).then((res) => res.text());
-      locals.$ = cheerio.load(page);
+      const res = await fetch(locals.attachFilesUrl);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
   });
 
@@ -176,11 +173,12 @@ module.exports.deleteAttachedFile = (locals) => {
         __variant_id: locals.__variant_id,
         file_id: locals.file_id,
       };
-      page = await fetch(locals.attachFilesUrl, {
+      const res = await fetch(locals.attachFilesUrl, {
         method: 'POST',
         body: new URLSearchParams(form),
-      }).then((res) => res.text());
-      locals.$ = cheerio.load(page);
+      });
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
     it('should result in no attached files', async () => {
       const result = await sqldb.queryAsync(sql.select_files, []);
@@ -192,8 +190,9 @@ module.exports.deleteAttachedFile = (locals) => {
 module.exports.checkNoAttachedFiles = (locals) => {
   describe('checkNoAttachedFiles-1. GET to assessment_instance URL', () => {
     it('should load successfully', async () => {
-      page = await fetch(locals.attachFilesUrl).then((res) => res.text());
-      locals.$ = cheerio.load(page);
+      const res = await fetch(locals.attachFilesUrl);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
     it('should not have a file URL', () => {
       elemList = locals.$('#attach-file-panel a.attached-file');
