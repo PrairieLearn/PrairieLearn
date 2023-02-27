@@ -88,11 +88,29 @@ class PLTestResult(unittest.TestResult):
                 ipynb_key=Feedback.test.ipynb_key,
             )
         else:
-            # Error in a single test -- keep going
-            unittest.TestResult.addError(self, test, err)
-            self.results[-1]["points"] = 0
-            tr_list = traceback.format_exception(*err)
-            Feedback.add_feedback(self.error_message + "".join(tr_list))
+            tr_message = ''.join(traceback.format_exception(*err))
+
+            if isinstance(test, unittest.suite._ErrorHolder):
+                # Error occurred outside of a test case, like in setup code for example
+                # We can't really recover from this
+
+                self.done_grading = True
+                self.grading_succeeded = False
+                self.results = [
+                    {
+                        "name": "Internal Grading Error",
+                        "filename": "error",
+                        "max_points": 1,
+                        "points": 0,
+                    }
+                ]
+                Feedback.set_name("error")
+                Feedback.add_feedback(self.error_message + tr_message)
+            else:
+                # Error in a single test -- keep going
+                unittest.TestResult.addError(self, test, err)
+                self.results[-1]["points"] = 0
+                Feedback.add_feedback(self.error_message + tr_message)
 
     def addFailure(self, test, err):
         unittest.TestResult.addFailure(self, test, err)
