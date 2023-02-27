@@ -3,7 +3,7 @@ const { callbackify } = require('util');
 
 const { logger } = require('@prairielearn/logger');
 const config = require('../lib/config');
-const request = require('request-promise-native');
+const fetch = require('node-fetch').default;
 const async = require('async');
 
 const sqldb = require('@prairielearn/postgres');
@@ -106,10 +106,11 @@ async function checkHealth() {
       healthy = false;
     } else {
       try {
-        await request({ uri: url, resolveWithFullResponse: true });
+        const res = await fetch(url);
+        healthy = res.ok;
       } catch (err) {
         healthy = false;
-        logger.info(`Could not reach host ${host.hostname}: ${err}`);
+        logger.error(`Could not reach host ${host.hostname}`, err);
       }
     }
 
