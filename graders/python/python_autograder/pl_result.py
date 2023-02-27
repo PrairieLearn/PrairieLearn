@@ -13,19 +13,14 @@ class PLTestResult(unittest.TestResult):
     """
 
     error_message = (
-        "The grading code failed -- sorry about that!\n\n"
-        "This may be an issue with your code.\nIf so, you can "
-        "take a look at the traceback below to help debug.\n"
-        "If you believe this is an issue with the grading code,\n"
-        "please notify the course staff.\n\n"
-        "The error traceback is below:\n"
+        "The grading code failed.\n\n"
+        "Look at the traceback below to help debug your code.\n\n"
+        "The error traceback is:\n"
     )
 
     major_error_message = (
-        "The grading code was not able to run.\n"
-        "Please notify the course staff "
-        "and include this entire message,\n"
-        "including the traceback below.\n\n"
+        "The grading code was not able to run.\n\n"
+        "Look at the traceback below to help debug your code.\n\n"
         "The error traceback is:\n"
     )
 
