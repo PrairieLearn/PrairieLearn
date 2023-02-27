@@ -2893,7 +2893,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/path-utils@workspace:^, @prairielearn/path-utils@workspace:packages/path-utils":
+"@prairielearn/path-utils@workspace:*, @prairielearn/path-utils@workspace:packages/path-utils":
   version: 0.0.0-use.local
   resolution: "@prairielearn/path-utils@workspace:packages/path-utils"
   dependencies:
@@ -2958,7 +2958,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/workspace-utils@workspace:packages/workspace-utils"
   dependencies:
-    "@prairielearn/path-utils": "workspace:^"
+    "@prairielearn/path-utils": "workspace:*"
     "@prairielearn/tsconfig": "*"
     "@types/node": ^18.11.18
     copyfiles: ^2.4.1
@@ -3853,6 +3853,7 @@ __metadata:
     "@prairielearn/compiled-assets": ^1.0.0
     "@prairielearn/html": ^2.0.0
     "@prairielearn/opentelemetry": ^1.0.0
+    "@prairielearn/path-utils": "workspace:*"
     "@prairielearn/postgres": ^1.0.0
     "@prairielearn/prettier-plugin-sql": "workspace:*"
     "@prairielearn/sentry": ^1.0.0
