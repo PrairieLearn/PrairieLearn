@@ -106,7 +106,7 @@ async function checkHealth() {
       healthy = false;
     } else {
       try {
-        await request({ uri: url, resolveWithFullResponse: true });
+        await request({ uri: url, timeout: 30_000 });
       } catch (err) {
         healthy = false;
         logger.info(`Could not reach host ${host.hostname}: ${err}`);
