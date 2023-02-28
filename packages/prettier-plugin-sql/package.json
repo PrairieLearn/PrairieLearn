@@ -12,6 +12,7 @@
     "typescript": "^4.9.4"
   },
   "dependencies": {
+    "@types/prettier": "^2.7.2",
     "sql-formatter": "^12.1.0"
   }
 }
