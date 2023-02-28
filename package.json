@@ -160,7 +160,6 @@
         "@types/dockerode": "^3.3.14",
         "@types/folder-hash": "^4.0.2",
         "@types/fs-extra": "^11.0.1",
-        "@types/jest": "^29.4.0",
         "@types/lodash": "^4.14.191",
         "@types/loopbench": "^1.2.1",
         "@types/mime": "^3.0.1",
