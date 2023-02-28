@@ -17,6 +17,10 @@ class PLTestResult(unittest.TestResult):
         "Review the question text to ensure your code matches\nthe expected requirements, such as variable names,\nfunction names, and parameters.\n\n"
         "Look at the traceback below to help debug your code:\n"
     )
+    internal_error_message = (
+        "There was an internal error while grading your code.\n\n"
+        "The associated traceback is:\n"
+    )
 
     def __init__(self):
         unittest.TestResult.__init__(self)
@@ -106,7 +110,7 @@ class PLTestResult(unittest.TestResult):
                     }
                 ]
                 Feedback.set_name("error")
-                Feedback.add_feedback(self.error_message + tr_message)
+                Feedback.add_feedback(self.internal_error_message + tr_message)
             else:
                 # Error in a single test -- keep going
                 unittest.TestResult.addError(self, test, err)
