@@ -171,7 +171,6 @@
         "@types/passport-azure-ad": "^4.3.1",
         "@types/pem": "^1.9.6",
         "@types/pg": "^8.6.6",
-        "@types/prettier": "^2.7.2",
         "@types/tmp": "^0.2.3",
         "@types/uuid": "^9.0.0",
         "@types/yargs": "^17.0.22",
