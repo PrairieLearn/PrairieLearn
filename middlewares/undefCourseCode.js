@@ -1,12 +1,11 @@
 var ERR = require('async-stacktrace');
 var async = require('async');
 
-var logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 var requireFrontend = require('../lib/require-frontend');
-var sqldb = require('../prairielib/lib/sql-db');
-var sqlLoader = require('../prairielib/lib/sql-loader');
+var sqldb = require('@prairielearn/postgres');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+var sql = sqldb.loadSqlEquiv(__filename);
 
 var undefAllCourseCode = function (callback) {
   sqldb.query(sql.select_course_paths, [], function (err, result) {

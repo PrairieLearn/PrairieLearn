@@ -114,7 +114,6 @@ def test_set_score_data(
     score_3: float,
     expected_score: float,
 ) -> None:
-
     question_data["partial_scores"] = {
         "p1": {"score": score_1, "weight": 2},
         "p2": {"score": score_2, "weight": 4},
@@ -133,12 +132,12 @@ def test_set_score_data(
         np.int32(-12),
         np.uint8(55),
         np.byte(3),
-        np.float128(-1100204.04010340),
+        np.float64(-1100204.04010340),
         np.float32(2.1100044587483),
         np.float16(0.00000184388328),
         np.int64((2**53) + 5),
+        np.complex64("12+3j"),
         np.complex128("12+3j"),
-        np.complex256("12+3j"),
         np.arange(15),
         np.array([1.2, 3.5, 5.1]),
         np.array([1, 2, 3, 4]),
@@ -241,7 +240,6 @@ def test_grade_answer_parametrized_correct(
     weight: int,
     expected_grade: bool,
 ) -> None:
-
     question_data["submitted_answers"] = {question_name: student_answer}
 
     good_feedback = "you did good"

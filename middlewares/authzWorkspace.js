@@ -2,9 +2,8 @@ const _ = require('lodash');
 const asyncHandler = require('express-async-handler');
 const { promisify } = require('util');
 
-const sqldb = require('../prairielib/lib/sql-db');
-const sqlLoader = require('../prairielib/lib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sqldb = require('@prairielearn/postgres');
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const authzCourseOrInstance = promisify(require('./authzCourseOrInstance'));
 const selectAndAuthzInstanceQuestion = promisify(require('./selectAndAuthzInstanceQuestion'));

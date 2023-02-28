@@ -6,11 +6,10 @@ const { nonblockingStringifyAsync } = require('../../lib/nonblocking-csv-stringi
 
 const error = require('../../prairielib/lib/error');
 const sanitizeName = require('../../lib/sanitize-name');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 const assessment = require('../../lib/assessment');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const setFilenames = function (locals) {
   const prefix = sanitizeName.assessmentFilenamePrefix(

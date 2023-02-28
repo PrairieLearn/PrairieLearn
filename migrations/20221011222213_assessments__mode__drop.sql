@@ -1,1 +1,2 @@
-ALTER TABLE assessments DROP COLUMN IF EXISTS mode;
+ALTER TABLE assessments
+DROP COLUMN IF EXISTS mode;

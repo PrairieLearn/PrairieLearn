@@ -10,8 +10,6 @@
   transform: rotateX(180deg);
 }
 
-.pl-external-grader-results .output {
-  background-color: black;
-  line-height: 1.2;
-  overflow-wrap: normal;
+.pl-external-grader-results pre {
+  max-height: 40vh;
 }

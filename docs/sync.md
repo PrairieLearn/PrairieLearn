@@ -8,7 +8,7 @@ The two steps are:
 
 1. On your local computer, sync or push your course content to GitHub.
 
-2. On the live website at [https://prairielearn.engr.illinois.edu](https://prairielearn.engr.illinois.edu), go to your course, select the "Sync" page in the menu bar, and then click the "Pull from remote git repository” button.
+2. On the live website at [https://us.prairielearn.com](https://us.prairielearn.com), go to your course, select the "Sync" page in the menu bar, and then click the "Pull from remote git repository” button.
 
 ## Course admin permissions
 

@@ -112,4 +112,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if suffix_newline:
         suffix = "\n" + suffix
 
-    return f'<pl-code language="python" no-highlight="{no_highlight}">{prefix}{var_string}{suffix}</pl-code>'
+    language = "" if no_highlight else ' language="python"'
+
+    return f"<pl-code{language}>{prefix}{var_string}{suffix}</pl-code>"

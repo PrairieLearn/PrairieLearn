@@ -430,23 +430,23 @@ Element to arrange given blocks of code or text that are displayed initially in 
 
 #### Customizations
 
-| Attribute             | Type                    | Default                        | Description                                                                                                                                                                                                                                                                                                                                                                                              |
-| --------------------- | ----------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name`        | string                  | —                              | Variable name to store data in.                                                                                                                                                                                                                                                                                                                                                                          |
-| `weight`              | integer                 | 1                              | Weight to use when computing a weighted average score over all elements in a question.                                                                                                                                                                                                                                                                                                                   |
-| `grading-method`      | string                  | "ordered"                      | One of the following: `ordered`, `unordered`, `ranking`, `dag`, `external`. See more details below.                                                                                                                                                                                                                                                                                                      |
-| `file-name`           | string                  | `user_code.py`                 | Name of the file where the information from the blocks will be saved, to be used by the external grader.                                                                                                                                                                                                                                                                                                 |
-| `source-blocks-order` | string                  | "random"                       | The order of the blocks in the source area. One of the following: `random` or `ordered`. See more details below.                                                                                                                                                                                                                                                                                         |
-| `indentation`         | boolean                 | false                          | Enable both the ability for indentation in the solution area and the grading of the expected indentation (set by `indent` in `pl-answer`, as described below).                                                                                                                                                                                                                                           |
-| `max-incorrect`       | integer                 | special                        | The maximum number of incorrect answers to be displayed in the source area. The incorrect answers are set using `<pl-answer correct="false">`. Defaults to displaying all incorrect answers.                                                                                                                                                                                                             |
-| `min-incorrect`       | integer                 | special                        | The minimum number of incorrect answers to be displayed in the source area. The incorrect answers are set using `<pl-answer correct="false">`. Defaults to displaying all incorrect answers.                                                                                                                                                                                                             |
-| `source-header`       | string                  | "Drag from here"               | The text that appears at the start of the source area.                                                                                                                                                                                                                                                                                                                                                   |
-| `solution-header`     | string                  | "Construct your solution here" | The text that appears at the start of the solution area.                                                                                                                                                                                                                                                                                                                                                 |
-| `solution-placement`  | "right" or "bottom"     | "right"                        | `right` shows the source and solution areas aligned side-by-side. `bottom` shows the solution area below the source area.                                                                                                                                                                                                                                                                                |
-| `partial-credit`      | "none" or "lcs"         | Depends on `grading-method`    | For the `dag` and `ranking` grading methods, you may specify `none` for no partial credit or `lcs` (default) for partial credit based on the LCS edit-distance from the student solution to some correct solution. For the other grading methods, using this property is not yet supported. Grading method `unordered` will always assign partial credit, and grading method `ordered` will never do so. |
-| `feedback`            | "none" or "first-wrong" | "none"                         | The level of feedback the student will recieve upon giving an incorrect answer. Available with the `dag` or `ranking` grading mode. `first-wrong` will tell the student which block in their answer was the first to be incorrect, `none` will give no feedback.                                                                                                                                         |
-| `format`              | "code" or "default"     | "default"                      | If this property is set to "code", then the contents of each of the blocks will be wrapped with a `pl-code` element.                                                                                                                                                                                                                                                                                     |
-| `code-language`       | string                  | -                              | The programming language syntax highlighting to use. Only available when using `format="code"`.                                                                                                                                                                                                                                                                                                          |
+| Attribute             | Type                                   | Default                        | Description                                                                                                                                                                                                                                                                                                                                                                                              |
+| --------------------- | -------------------------------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name`        | string                                 | —                              | Variable name to store data in.                                                                                                                                                                                                                                                                                                                                                                          |
+| `weight`              | integer                                | 1                              | Weight to use when computing a weighted average score over all elements in a question.                                                                                                                                                                                                                                                                                                                   |
+| `grading-method`      | string                                 | "ordered"                      | One of the following: `ordered`, `unordered`, `ranking`, `dag`, `external`. See more details below.                                                                                                                                                                                                                                                                                                      |
+| `file-name`           | string                                 | `user_code.py`                 | Name of the file where the information from the blocks will be saved, to be used by the external grader.                                                                                                                                                                                                                                                                                                 |
+| `source-blocks-order` | "random", "ordered", or "alphabetized" | "random"                       | The order of the blocks in the source area. See more details below.                                                                                                                                                                                                                                                                                                                                      |
+| `indentation`         | boolean                                | false                          | Enable both the ability for indentation in the solution area and the grading of the expected indentation (set by `indent` in `pl-answer`, as described below).                                                                                                                                                                                                                                           |
+| `max-incorrect`       | integer                                | special                        | The maximum number of incorrect answers to be displayed in the source area. The incorrect answers are set using `<pl-answer correct="false">`. Defaults to displaying all incorrect answers.                                                                                                                                                                                                             |
+| `min-incorrect`       | integer                                | special                        | The minimum number of incorrect answers to be displayed in the source area. The incorrect answers are set using `<pl-answer correct="false">`. Defaults to displaying all incorrect answers.                                                                                                                                                                                                             |
+| `source-header`       | string                                 | "Drag from here"               | The text that appears at the start of the source area.                                                                                                                                                                                                                                                                                                                                                   |
+| `solution-header`     | string                                 | "Construct your solution here" | The text that appears at the start of the solution area.                                                                                                                                                                                                                                                                                                                                                 |
+| `solution-placement`  | "right" or "bottom"                    | "right"                        | `right` shows the source and solution areas aligned side-by-side. `bottom` shows the solution area below the source area.                                                                                                                                                                                                                                                                                |
+| `partial-credit`      | "none" or "lcs"                        | Depends on `grading-method`    | For the `dag` and `ranking` grading methods, you may specify `none` for no partial credit or `lcs` (default) for partial credit based on the LCS edit-distance from the student solution to some correct solution. For the other grading methods, using this property is not yet supported. Grading method `unordered` will always assign partial credit, and grading method `ordered` will never do so. |
+| `feedback`            | "none" or "first-wrong"                | "none"                         | The level of feedback the student will recieve upon giving an incorrect answer. Available with the `dag` or `ranking` grading mode. `first-wrong` will tell the student which block in their answer was the first to be incorrect, `none` will give no feedback.                                                                                                                                         |
+| `format`              | "code" or "default"                    | "default"                      | If this property is set to "code", then the contents of each of the blocks will be wrapped with a `pl-code` element.                                                                                                                                                                                                                                                                                     |
+| `code-language`       | string                                 | -                              | The programming language syntax highlighting to use. Only available when using `format="code"`.                                                                                                                                                                                                                                                                                                          |
 
 Within the `pl-order-blocks` element, each element must either be a `pl-answer` or a `pl-block-group` (see details below for more info on `pl-block-group`). Each element within a `pl-block-group` must be a `pl-answer`. The `pl-answer` elements specify the content for each of the blocks, and may have the following attributes:
 
@@ -471,8 +471,9 @@ Different grading options are defined via the attribute `grading-method`:
 
 Different ordering of the blocks in the source area defined via the attribute `source-blocks-order`:
 
-- `ordered`: the blocks appear in the source area in the same order they appear in the HTML file.
 - `random`: the blocks are shuffled.
+- `ordered`: the blocks appear in the source area in the same order they appear in the HTML file.
+- `alphabetized`: the blocks are alphabetized according to their HTML contents. Take care when including HTML in blocks. For instance, `<b>cat</b>` will appear before `<i>bat</i>`.
 
 #### Example implementations
 
@@ -1157,19 +1158,20 @@ line callouts.
 
 #### Customizations
 
-| Attribute               | Type    | Default   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| ----------------------- | ------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `language`              | string  | —         | The programming language syntax highlighting to use. See below for options.                                                                                                                                                                                                                                                                                                                                                                           |
-| `no-highlight`          | boolean | false     | Disable highlighting.                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `source-file-name`      | text    | -         | Name of the source file with existing code to be displayed as a code block (instead of writing the existing code between the element tags as illustrated in the above code snippet).                                                                                                                                                                                                                                                                  |
-| `directory`             | string  | special   | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `clientFilesCourse` or `serverFilesCourse`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory. |
-| `prevent-select`        | boolean | false     | Applies methods to make the source code more difficult to copy, like preventing selection or right-clicking. Note that the source code is still accessible in the page source, which will always be visible to students.                                                                                                                                                                                                                              |
-| `highlight-lines`       | text    | -         | Apply a distinctive background highlight the specified lines of code. Accepts input like `4`, `1-3,5-10`, and `1,2-5,20`.                                                                                                                                                                                                                                                                                                                             |
-| `highlight-lines-color` | text    | `#b3d7ff` | Specifies the color of highlighted lines of code.                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Attribute               | Type    | Default    | Description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ----------------------- | ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `language`              | string  | —          | The programming language syntax highlighting to use. See below for options.                                                                                                                                                                                                                                                                                                                                                                           |
+| `style`                 | string  | "friendly" | The pygments style to use. A sample of valid styles can be found [here](https://pygments.org/styles/).                                                                                                                                                                                                                                                                                                                                                |
+| `source-file-name`      | text    | -          | Name of the source file with existing code to be displayed as a code block (instead of writing the existing code between the element tags as illustrated in the above code snippet).                                                                                                                                                                                                                                                                  |
+| `directory`             | string  | special    | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `clientFilesCourse` or `serverFilesCourse`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory. |
+| `prevent-select`        | boolean | false      | Applies methods to make the source code more difficult to copy, like preventing selection or right-clicking. Note that the source code is still accessible in the page source, which will always be visible to students.                                                                                                                                                                                                                              |
+| `highlight-lines`       | text    | -          | Apply a distinctive background highlight the specified lines of code. Accepts input like `4`, `1-3,5-10`, and `1,2-5,20`.                                                                                                                                                                                                                                                                                                                             |
+| `highlight-lines-color` | text    | `#b3d7ff`  | Specifies the color of highlighted lines of code.                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `copy-code-button`      | boolean | false      | Whether to include a button to copy the code displayed by this element.                                                                                                                                                                                                                                                                                                                                                                               |
 
 #### Details
 
-The `pl-code` element uses the _Pygments_ library for syntax highlighting, a full list of supported languages can be found [here](https://pygments.org/languages/).
+The `pl-code` element uses the _Pygments_ library for syntax highlighting. It supports the any of the built-in supported languages, be found [here](https://pygments.org/languages/), as well as the custom [`ansi-color` custom language](https://github.com/chriskuehl/pygments-ansi-color) that can be used to display terminal output. If the language is not provided, no syntax highlighting is done.
 
 ##### Common Pitfalls
 
@@ -1279,10 +1281,13 @@ def generate(data):
 | `display-variable-name` | string        | "df"     | Variable name to display in code to recreate DataFrame.                                                                                                |
 | `show-python`           | boolean       | true     | Show code that can be used to recreate the DataFrame in Python in a separate tab.                                                                      |
 | `digits`                | integer       | -        | Number of digits to display for floating point entries.                                                                                                |
+| `width`                 | integer       | 500      | Max characters per line for displaying Python code.                                                                                                    |
 
 #### Details
 
 When setting a parameter, use PrairieLearn's built in `pl.to_json()` on the DataFrame to display. Note that there are multiple serialization options for Pandas DataFrames. Encoding a DataFrame `df` by setting `pl.to_json(df, df_encoding_version=2)` allows for missing and date time values whereas `pl.to_json(df, df_encoding_version=1)` (default) does not. However, `df_encoding_version=1` has support for complex numbers, while `df_encoding_version=2` does not.
+
+Note that some Python types may not be serialized correctly in the code provided to reconstruct the DataFrame.
 
 #### Example implementations
 
@@ -1783,7 +1788,15 @@ An overlay is pre-defined as a "overlay area" with a static size. By default, el
 
 ### `pl-external-grader-variables` element
 
-Displays variables that are given to the student, or expected for the student to define in externally-graded questions. The list of variables should be stored in `data["params"]` and has the following format:
+Displays variables that are given to the student, or expected for the student to define in externally-graded Python questions.
+
+**We advise against using this element for any question not using the `prairielearn/grader-python` Docker image**, as the way this element stores parameters is specifically for use with that autograder. If you want to display a table of variables for a question using a different autograder, consider using a standard HTML `<table>` instead.
+
+The list of variables can be defined in in `data["params"]` or the question HTML itself (but not both!). If defined in the
+question HTML itself, the variable information is added to `data["params"]` for use by the external grader. If no descriptions
+are present, this colmun is hidden in the table shown to the student.
+
+If stored in `data["params"]`, the variables list has the following format:
 
 ```python
 data["params"]["names_for_user"] = [
@@ -1806,7 +1819,18 @@ data["params"]["names_from_user"] = [
 <pl-external-grader-variables params-name="names_for_user"></pl-external-grader-variables>
 
 <p>Your code snippet should define the following variables:</p>
-<pl-external-grader-variables params-name="names_from_user"></pl-external-grader-variables>
+<pl-external-grader-variables params-name="names_from_user">
+  <pl-variable name="x" type="numpy array (length $n$)"
+    >Solution to $\mathbf{Ax}=\mathbf{b}$.</pl-variable
+  >
+</pl-external-grader-variables>
+
+<!--
+  The following tag defines an empty list for the given params-name.
+  This is useful for some cases where a parameter must be set to empty to run the external grader.
+  Nothing will be displayed from this tag.
+-->
+<pl-external-grader-variables params-name="names_empty" empty="true"></pl-external-grader-variables>
 ```
 
 **server.py**
@@ -1818,16 +1842,21 @@ def generate(data):
         {"name": "A", "description": r"Matrix $\mathbf{A}$.", "type": "numpy array"},
         {"name": "b", "description": r"Vector $\mathbf{b}$.", "type": "numpy array"}
     ]
-    data["params"]["names_from_user"] = [
-        {"name": "x", "description": r"Solution to $\mathbf{Ax}=\mathbf{b}$.", "type": "numpy array"}
-    ]
 ```
 
 #### Customizations
 
-| Attribute     | Type   | Default | Description                                                                                         |
-| ------------- | ------ | ------- | --------------------------------------------------------------------------------------------------- |
-| `params-name` | string | `None`  | Name of variable specification in `data["params"]` to display, the format for which is given above. |
+| Attribute     | Type    | Default | Description                                                                                                                                 |
+| ------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `params-name` | string  | -       | Name of variable specification in `data["params"]` to display, the format for which is given above.                                         |
+| `empty`       | boolean | false   | Whether the entry for the given `params-name` should be set to empty. Will throw an error if variables are defined and this is set to true. |
+
+The HTML inside the inner `pl-variable` tag is used as the description. If the tag is empty, no description is used for the given variable. The inner `pl-variable` tag has the following attributes:
+
+| Attribute | Type   | Default | Description                                             |
+| --------- | ------ | ------- | ------------------------------------------------------- |
+| `name`    | string | -       | Name of the given variable. Required for all variables. |
+| `type`    | string | -       | Type of the given variable. Required for all variables. |
 
 #### Example implementations
 
@@ -2152,11 +2181,12 @@ spamming incorrect submissions to reveal all hints right away.
 
 #### Customizations
 
-For the inner `pl-hint` element:
+For the inner `pl-hint` tag:
 
-| Attribute               | Type | Default | Description                                                                                                                                                                                                 |
-| ----------------------- | ---- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `show-after-submission` | int  | -       | Number of submissions on the current variant needed before the hint is accessible. If not set, hint is always accessible. **Should only be set for questions that allow multiple submissions per variant.** |
+| Attribute               | Type   | Default | Description                                                                                                                                                                                                 |
+| ----------------------- | ------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `show-after-submission` | int    | -       | Number of submissions on the current variant needed before the hint is accessible. If not set, hint is always accessible. **Should only be set for questions that allow multiple submissions per variant.** |
+| `hint-name`             | string | -       | Custom heading to display for the given hint. If not set, then displays a default heading including the hint number.                                                                                        |
 
 #### Details
 
