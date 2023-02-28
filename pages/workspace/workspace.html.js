@@ -1,7 +1,7 @@
 const { html } = require('@prairielearn/html');
 const { renderEjs } = require('@prairielearn/html-ejs');
 
-function Workspace({ navTitle, showLogs, resLocals }) {
+function Workspace({ navTitle, showLogs, heartbeatIntervalSec, visibilityTimeoutSec, resLocals }) {
   return html`
     <!DOCTYPE html>
     <html lang="en" class="h-100">
@@ -16,7 +16,8 @@ function Workspace({ navTitle, showLogs, resLocals }) {
       <body
         class="d-flex flex-column h-100"
         data-workspace-id="${resLocals.workspace_id}"
-        data-heartbeat-interval="${resLocals.workspaceHeartbeatIntervalSec}"
+        data-heartbeat-interval-sec="${heartbeatIntervalSec}"
+        data-visibility-timeout-sec="${visibilityTimeoutSec}"
       >
         <div
           class="modal fade"
@@ -206,10 +207,18 @@ function Workspace({ navTitle, showLogs, resLocals }) {
         <main class="d-flex flex-column flex-grow h-100">
           <div
             id="loading"
-            class="d-flex flex-grow h-100 justify-content-center align-items-center"
+            class="d-flex h-100 flex-grow justify-content-center align-items-center"
           >
             <i class="d-block fa fa-10x fa-circle-notch fa-spin text-info" aria-hidden="true"></i>
             <span class="sr-only">Loading workspace &hellip;</span>
+          </div>
+          <div
+            id="stopped"
+            class="d-none h-100 flex-grow flex-column justify-content-center align-items-center"
+          >
+            <h2>Workspace stopped due to inactivity</h2>
+            <p>Your data was automatically saved. Reload the page to restart the workspace.</p>
+            <button id="reload" class="btn btn-primary">Reload</button>
           </div>
           <iframe id="workspace" class="d-none flex-grow h-100 border-0"></iframe>
         </main>
@@ -221,23 +230,36 @@ function Workspace({ navTitle, showLogs, resLocals }) {
             });
 
             const workspaceId = document.body.getAttribute('data-workspace-id');
-            const heartbeatInterval = Number.parseFloat(
-              document.body.getAttribute('data-heartbeat-interval')
+            const heartbeatIntervalSec = Number.parseFloat(
+              document.body.getAttribute('data-heartbeat-interval-sec')
+            );
+            const visibilityTimeoutSec = Number.parseFloat(
+              document.body.getAttribute('data-visibility-timeout-sec')
             );
 
             const socket = io('/workspace');
             const loadingFrame = document.getElementById('loading');
+            const stoppedFrame = document.getElementById('stopped');
             const workspaceFrame = document.getElementById('workspace');
             const stateBadge = document.getElementById('state');
             const messageBadge = document.getElementById('message');
+            const reloadButton = document.getElementById('reload');
 
             const showLoadingFrame = () => {
               loadingFrame.style.setProperty('display', 'flex', 'important');
+              stoppedFrame.style.setProperty('display', 'none', 'important');
+              workspaceFrame.style.setProperty('display', 'none', 'important');
+            };
+
+            const showStoppedFrame = () => {
+              loadingFrame.style.setProperty('display', 'none', 'important');
+              stoppedFrame.style.setProperty('display', 'flex', 'important');
               workspaceFrame.style.setProperty('display', 'none', 'important');
             };
 
             const showWorkspaceFrame = () => {
               loadingFrame.style.setProperty('display', 'none', 'important');
+              stoppedFrame.style.setProperty('display', 'none', 'important');
               workspaceFrame.style.setProperty('display', 'flex', 'important');
             };
 
@@ -251,6 +273,7 @@ function Workspace({ navTitle, showLogs, resLocals }) {
               }
             }
 
+            let previousState = null;
             function setState(state) {
               if (state == 'running') {
                 showWorkspaceFrame();
@@ -264,8 +287,13 @@ function Workspace({ navTitle, showLogs, resLocals }) {
               }
               if (state == 'stopped') {
                 workspaceFrame.src = 'about:blank';
+                if (previousState == 'running') {
+                  showStoppedFrame();
+                }
               }
               stateBadge.innerHTML = state;
+
+              previousState = state;
             }
 
             socket.on('change:state', (msg) => {
@@ -288,11 +316,30 @@ function Workspace({ navTitle, showLogs, resLocals }) {
 
             socket.emit('startWorkspace', { workspace_id: workspaceId });
 
+            let lastVisibleTime = Date.now();
             setInterval(() => {
-              socket.emit('heartbeat', { workspace_id: workspaceId }, (msg) => {
-                console.log('heartbeat, msg =', msg);
-              });
-            }, heartbeatInterval * 1000);
+              if (document.visibilityState == 'visible') {
+                lastVisibleTime = Date.now();
+              }
+
+              // Only send a heartbeat if this page was recently visible.
+              if (Date.now() < lastVisibleTime + visibilityTimeoutSec * 1000) {
+                socket.emit('heartbeat', { workspace_id: workspaceId }, (msg) => {
+                  console.log('heartbeat, msg =', msg);
+                });
+              }
+            }, heartbeatIntervalSec * 1000);
+
+            document.addEventListener('visibilitychange', () => {
+              // Every time we switch to or from this page, record that it was visible.
+              // This is needed to capture the visibility when we switch to this page
+              // and then quickly switch away again.
+              lastVisibleTime = Date.now();
+            });
+
+            reloadButton.addEventListener('click', () => {
+              location.reload();
+            });
           });
         </script>
       </body>
