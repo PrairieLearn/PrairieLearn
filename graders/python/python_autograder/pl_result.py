@@ -13,7 +13,7 @@ class PLTestResult(unittest.TestResult):
     """
 
     error_message = (
-        "Thre was an error while grading your code.\n\n"
+        "There was an error while grading your code.\n\n"
         "Look at the traceback below to help debug your code:\n"
     )
 
