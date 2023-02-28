@@ -770,7 +770,7 @@ def numpy_to_matlab(A, ndigits=2, wtype="f"):
         return A_str
 
 
-def string_from_numpy(A, language="python", presentation_type="f", digits=2):
+def string_from_numpy(A, language="python", presentation_type="f", digits: Union[int, str]=2):
     """string_from_numpy(A)
 
     This function assumes that A is one of these things:

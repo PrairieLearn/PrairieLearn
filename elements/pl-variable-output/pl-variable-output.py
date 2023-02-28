@@ -129,10 +129,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 var_sympy_comment = f" # {var_comment}"
 
             # Get digit for child, if it exists
-            if pl.has_attrib(child, "digits"):
-                var_digits = pl.get_integer_attrib(child, "digits")
-            else:
+            if not pl.has_attrib(child, "digits"):
                 var_digits = digits
+            else:
+                var_digits = pl.get_string_attrib(child, "digits")
 
             # Assembling Python array formatting
             if np.isscalar(var_data):
