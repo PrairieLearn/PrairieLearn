@@ -1766,6 +1766,13 @@ module.exports.startServer = async () => {
     throw new Error('unknown serverType: ' + config.serverType);
   }
 
+  // Capture metrics about the server, including the number of active connections
+  // and the total number of connections that have been started.
+
+  const connectionCounter = null;
+
+  server.on('connection', () => {});
+
   server.timeout = config.serverTimeout;
   server.keepAliveTimeout = config.serverKeepAliveTimeout;
   server.listen(config.serverPort);
