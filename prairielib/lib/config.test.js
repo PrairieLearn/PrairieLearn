@@ -1,97 +1,72 @@
-/* eslint-env jest */
+// @ts-check
+const { assert } = require('chai');
 const path = require('path');
-const config = require('./config');
+const util = require('util');
+const { loadConfigForEnvironment } = require('./config');
 
 describe('config', () => {
   const configDir = path.resolve(__dirname, '..', 'fixtures', 'config');
 
-  it('loads defaults from config', (done) => {
-    config.loadConfigForEnvironment(configDir, 'testbase', (err, config) => {
-      expect(err).toBe(null);
-      expect(config.testBoolean).toBe(true);
-      expect(config.testNumber).toBe(123);
-      expect(config.testString).toBe('hello');
-      done();
-    });
+  it('loads defaults from config', async () => {
+    const config = await util.promisify(loadConfigForEnvironment)(configDir, 'testbase');
+    assert.equal(config.testBoolean, true);
+    assert.equal(config.testNumber, 123);
+    assert.equal(config.testString, 'hello');
   });
 
-  it('overrides boolean from environment variable', (done) => {
+  it('overrides boolean from environment variable', async () => {
     process.env['TEST_BOOLEAN'] = 'false';
-    config.loadConfigForEnvironment(configDir, 'testbase', (err, config) => {
-      expect(err).toBe(null);
-      expect(config.testBoolean).toBe(false);
-      delete process.env['TEST_BOOLEAN'];
-      done();
-    });
+    const config = await util.promisify(loadConfigForEnvironment)(configDir, 'testbase');
+    assert.equal(config.testBoolean, false);
+    delete process.env['TEST_BOOLEAN'];
   });
 
-  it('overrides number from environment variable', (done) => {
+  it('overrides number from environment variable', async () => {
     process.env['TEST_NUMBER'] = '321';
-    config.loadConfigForEnvironment(configDir, 'testbase', (err, config) => {
-      expect(err).toBe(null);
-      expect(config.testNumber).toBe(321);
-      delete process.env['TEST_NUMBER'];
-      done();
-    });
+    const config = await util.promisify(loadConfigForEnvironment)(configDir, 'testbase');
+    assert.equal(config.testNumber, 321);
+    delete process.env['TEST_NUMBER'];
   });
 
-  it('overrides string from environment variable', (done) => {
+  it('overrides string from environment variable', async () => {
     process.env['TEST_STRING'] = 'olleh';
-    config.loadConfigForEnvironment(configDir, 'testbase', (err, config) => {
-      expect(err).toBe(null);
-      expect(config.testString).toBe('olleh');
-      delete process.env['TEST_STRING'];
-      done();
-    });
+    const config = await util.promisify(loadConfigForEnvironment)(configDir, 'testbase');
+    assert.equal(config.testString, 'olleh');
+    delete process.env['TEST_STRING'];
   });
 
-  it('inheritance: loads from config with a parent', (done) => {
-    config.loadConfigForEnvironment(configDir, 'test', (err, config) => {
-      expect(err).toBe(null);
-      expect(config.testBoolean).toBe(false);
-      expect(config.testNumber).toBe(456);
-      expect(config.testString).toBe('goodbye');
-      done();
-    });
+  it('inheritance: loads from config with a parent', async () => {
+    const config = await util.promisify(loadConfigForEnvironment)(configDir, 'test');
+    assert.equal(config.testBoolean, false);
+    assert.equal(config.testNumber, 456);
+    assert.equal(config.testString, 'goodbye');
   });
 
-  it('inheritance: overrides boolean from environment variable (true)', (done) => {
+  it('inheritance: overrides boolean from environment variable (true)', async () => {
     process.env['TEST_BOOLEAN'] = 'true';
-    config.loadConfigForEnvironment(configDir, 'test', (err, config) => {
-      expect(err).toBe(null);
-      expect(config.testBoolean).toBe(true);
-      delete process.env['TEST_BOOLEAN'];
-      done();
-    });
+    const config = await util.promisify(loadConfigForEnvironment)(configDir, 'test');
+    assert.equal(config.testBoolean, true);
+    delete process.env['TEST_BOOLEAN'];
   });
 
-  it('inheritance: overrides boolean from environment variable (false)', (done) => {
+  it('inheritance: overrides boolean from environment variable (false)', async () => {
     process.env['TEST_BOOLEAN'] = 'false';
-    config.loadConfigForEnvironment(configDir, 'test', (err, config) => {
-      expect(err).toBe(null);
-      expect(config.testBoolean).toBe(false);
-      delete process.env['TEST_BOOLEAN'];
-      done();
-    });
+    const config = await util.promisify(loadConfigForEnvironment)(configDir, 'test');
+    assert.equal(config.testBoolean, false);
+    delete process.env['TEST_BOOLEAN'];
   });
 
-  it('inheritance: overrides number from environment variable', (done) => {
+  it('inheritance: overrides number from environment variable', async () => {
     process.env['TEST_NUMBER'] = '321';
-    config.loadConfigForEnvironment(configDir, 'test', (err, config) => {
-      expect(err).toBe(null);
-      expect(config.testNumber).toBe(321);
-      delete process.env['TEST_NUMBER'];
-      done();
-    });
+    const config = await util.promisify(loadConfigForEnvironment)(configDir, 'test');
+    assert.equal(config.testNumber, 321);
+    delete process.env['TEST_NUMBER'];
   });
 
-  it('inheritance: overrides string from environment variable', (done) => {
+  it('inheritance: overrides string from environment variable', async () => {
     process.env['TEST_STRING'] = 'olleh';
-    config.loadConfigForEnvironment(configDir, 'test', (err, config) => {
-      expect(err).toBe(null);
-      expect(config.testString).toBe('olleh');
-      delete process.env['TEST_STRING'];
-      done();
-    });
+    const config = await util.promisify(loadConfigForEnvironment)(configDir, 'test');
+    assert.equal(config.testString, 'olleh');
+    delete process.env['TEST_STRING'];
   });
 });
