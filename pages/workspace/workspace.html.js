@@ -318,33 +318,19 @@ function Workspace({ navTitle, showLogs, heartbeatIntervalSec, visibilityTimeout
 
             let heartbeatIntervalId = null;
 
-            function startHeartbeat() {
-              if (heartbeatIntervalId) return;
+            let lastVisibleTime = Date.now();
+            setInterval(() => {
+              if (document.visibilityState == 'visible') {
+                lastVisibleTime = Date.now();
+              }
 
-              heartbeatIntervalId = setInterval(() => {
+              // Only send a heartbeat if this page was recently visible.
+              if (Date.now() < lastVisibleTime + visibilityTimeoutSec * 1000) {
                 socket.emit('heartbeat', { workspace_id: workspaceId }, (msg) => {
                   console.log('heartbeat, msg =', msg);
                 });
-              }, heartbeatIntervalSec * 1000);
-            }
-
-            function stopHeartbeat() {
-              if (heartbeatIntervalId) {
-                clearInterval(heartbeatIntervalId);
               }
-            }
-
-            let visibilityTimeoutId = null;
-            document.addEventListener('visibilitychange', () => {
-              if (document.visibilityState == 'hidden') {
-                visibilityTimeoutId = setTimeout(() => {
-                  stopHeartbeat();
-                }, visibilityTimeoutSec * 1000);
-              } else {
-                clearTimeout(visibilityTimeoutId);
-                startHeartbeat();
-              }
-            });
+            }, heartbeatIntervalSec * 1000);
 
             reloadButton.addEventListener('click', () => {
               location.reload();
