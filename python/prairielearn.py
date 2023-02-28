@@ -574,8 +574,6 @@ def get_string_attrib(element, name, *args):
 
 
 # Order here matters, as we want to override the case where the args is omitted
-
-
 @overload
 def get_boolean_attrib(element: lxml.html.HtmlElement, name: str) -> bool:
     ...
@@ -629,8 +627,6 @@ def get_boolean_attrib(element, name, *args):
 
 
 # Order here matters, as we want to override the case where the args is omitted
-
-
 @overload
 def get_integer_attrib(element: lxml.html.HtmlElement, name: str) -> int:
     ...
