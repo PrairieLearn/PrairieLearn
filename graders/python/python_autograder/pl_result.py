@@ -14,6 +14,7 @@ class PLTestResult(unittest.TestResult):
 
     error_message = (
         "There was an error while grading your code.\n\n"
+        "Review the question text to ensure your code matches the expected requirements, such as variable names, function names, and parameters.\n\n"
         "Look at the traceback below to help debug your code:\n"
     )
 
