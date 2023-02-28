@@ -9,6 +9,7 @@ import re
 import unicodedata
 import uuid
 from enum import Enum
+from itertools import chain
 from typing import (
     Any,
     Callable,
@@ -455,14 +456,16 @@ def inner_html(element: lxml.html.HtmlElement) -> str:
     """
     Gets the inner HTML of an element.
     """
-
-    inner = element.text
-    if inner is None:
-        inner = ""
-    inner = html.escape(str(inner))
-    for child in element:
-        inner += lxml.html.tostring(child, method="html").decode("utf-8")
-    return inner
+    inner_text = "" if element.text is None else html.escape(element.text)
+    return "".join(
+        chain(
+            (inner_text,),
+            (
+                lxml.html.tostring(child, method="html").decode("utf-8")
+                for child in element
+            ),
+        )
+    )
 
 
 def compat_get(object, attrib, default):
@@ -540,11 +543,10 @@ def has_attrib(element: lxml.html.HtmlElement, name: str) -> bool:
     old_name = name.replace("-", "_")
     return name in element.attrib or old_name in element.attrib
 
-# TODO fix this annotation
+
+# Order here matters, as we want to override the case where the args is omitted
 @overload
-def get_string_attrib(
-    element: lxml.html.HtmlElement, name: str, *args: None
-) -> Optional[str]:
+def get_string_attrib(element: lxml.html.HtmlElement, name: str) -> str:
     ...
 
 
@@ -554,8 +556,11 @@ def get_string_attrib(element: lxml.html.HtmlElement, name: str, *args: str) -> 
 
 
 @overload
-def get_string_attrib(element: lxml.html.HtmlElement, name: str) -> str:
+def get_string_attrib(
+    element: lxml.html.HtmlElement, name: str, *args: None
+) -> Optional[str]:
     ...
+
 
 def get_string_attrib(element, name, *args):
     """value = get_string_attrib(element, name, default)
@@ -569,9 +574,7 @@ def get_string_attrib(element, name, *args):
 
 
 @overload
-def get_boolean_attrib(
-    element: lxml.html.HtmlElement, name: str, *args: None
-) -> Optional[bool]:
+def get_boolean_attrib(element: lxml.html.HtmlElement, name: str) -> bool:
     ...
 
 
@@ -581,7 +584,9 @@ def get_boolean_attrib(element: lxml.html.HtmlElement, name: str, *args: bool) -
 
 
 @overload
-def get_boolean_attrib(element: lxml.html.HtmlElement, name: str) -> bool:
+def get_boolean_attrib(
+    element: lxml.html.HtmlElement, name: str, *args: None
+) -> Optional[bool]:
     ...
 
 
@@ -620,10 +625,11 @@ def get_boolean_attrib(element, name, *args):
         raise Exception('Attribute "%s" must be a boolean value: %s' % (name, val))
 
 
+# Order here matters, as we want to override the case where the args is omitted
+
+
 @overload
-def get_integer_attrib(
-    element: lxml.html.HtmlElement, name: str, *args: None
-) -> Optional[int]:
+def get_integer_attrib(element: lxml.html.HtmlElement, name: str) -> int:
     ...
 
 
@@ -633,7 +639,9 @@ def get_integer_attrib(element: lxml.html.HtmlElement, name: str, *args: int) ->
 
 
 @overload
-def get_integer_attrib(element: lxml.html.HtmlElement, name: str) -> int:
+def get_integer_attrib(
+    element: lxml.html.HtmlElement, name: str, *args: None
+) -> Optional[int]:
     ...
 
 
