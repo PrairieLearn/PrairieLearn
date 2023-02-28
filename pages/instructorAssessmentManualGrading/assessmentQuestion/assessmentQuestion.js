@@ -3,13 +3,12 @@ const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const util = require('util');
 const error = require('../../../prairielib/lib/error');
-const sqldb = require('../../../prairielib/lib/sql-db');
-const sqlLoader = require('../../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
 const ltiOutcomes = require('../../../lib/ltiOutcomes');
 const manualGrading = require('../../../lib/manualGrading');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get(
   '/',
@@ -79,8 +78,7 @@ router.post(
       res.send({});
     } else if (req.body.__action === 'edit_question_points') {
       const params = [
-        res.locals.assessment_id,
-        req.body.assessment_instance_id,
+        res.locals.assessment.id,
         null, // submission_id
         req.body.instance_question_id,
         null, // uid
@@ -108,8 +106,7 @@ router.post(
       res.send({});
     } else if (req.body.__action === 'edit_question_score_perc') {
       const params = [
-        res.locals.assessment_id,
-        req.body.assessment_instance_id,
+        res.locals.assessment.id,
         null, // submission_id
         req.body.instance_question_id,
         null, // uid

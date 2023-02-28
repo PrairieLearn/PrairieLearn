@@ -7,11 +7,10 @@ const SearchString = require('search-string');
 
 const error = require('../../prairielib/lib/error');
 const paginate = require('../../lib/paginate');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 const { idsEqual } = require('../../lib/id');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const PAGE_SIZE = 100;
 

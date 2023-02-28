@@ -5,14 +5,14 @@ const fs = require('fs-extra');
 const path = require('path');
 const mustache = require('mustache');
 const cheerio = require('cheerio');
-const hash = require('crypto').createHash;
 const parse5 = require('parse5');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const { instrumented } = require('@prairielearn/opentelemetry');
+const { instrumented, metrics, instrumentedWithMetrics } = require('@prairielearn/opentelemetry');
+const objectHash = require('object-hash');
 
 const schemas = require('../schemas');
 const config = require('../lib/config');
-const logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const { withCodeCaller, FunctionMissingError } = require('../lib/code-caller');
 const jsonLoader = require('../lib/json-load');
 const cache = require('../lib/cache');
@@ -111,8 +111,8 @@ module.exports = {
     } catch (err) {
       if (err && err.code === 'ENOENT') {
         // Directory doesn't exist, most likely a course with no elements.
-        // Proceed with an empty array.
-        return [];
+        // Proceed with an empty object.
+        return {};
       }
 
       throw err;
@@ -197,8 +197,8 @@ module.exports = {
       elementFolders = await fs.readdir(sourceDir);
     } catch (err) {
       if (err.code === 'ENOENT') {
-        // We don't really care if there are no extensions, just return an empty array.
-        return [];
+        // We don't really care if there are no extensions, just return an empty object.
+        return {};
       }
 
       throw err;
@@ -506,7 +506,7 @@ module.exports = {
     err = checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test']);
     if (err) return err;
     // prettier-ignore
-    err = checkProp('feedback',              'object',  ['render', 'grade', 'test'],          ['grade', 'feedback']);
+    err = checkProp('feedback',              'object',  ['render', 'grade', 'test'],          ['grade', 'test']);
     if (err) return err;
     // prettier-ignore
     err = checkProp('editable',              'boolean', ['render'],                           []);
@@ -880,7 +880,7 @@ module.exports = {
           fatal: true,
         })
       );
-      return { courseIssues, data, html: '', fileData: Buffer.from('') };
+      return { courseIssues, data, html: '', fileData: Buffer.from(''), renderedElementNames: [] };
     }
 
     let result, output;
@@ -956,55 +956,58 @@ module.exports = {
   },
 
   async processQuestion(phase, codeCaller, data, context) {
-    if (phase === 'generate') {
-      return module.exports.processQuestionServer(
-        phase,
-        codeCaller,
-        data,
-        '',
-        Buffer.from(''),
-        context
-      );
-    } else {
-      const {
-        courseIssues,
-        data: htmlData,
-        html,
-        fileData,
-        renderedElementNames,
-      } = await module.exports.processQuestionHtml(phase, codeCaller, data, context);
-      const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
-      if (hasFatalError) {
-        return {
-          courseIssues,
+    const meter = metrics.getMeter('prairielearn');
+    return instrumentedWithMetrics(meter, `freeform.${phase}`, async () => {
+      if (phase === 'generate') {
+        return module.exports.processQuestionServer(
+          phase,
+          codeCaller,
           data,
+          '',
+          Buffer.from(''),
+          context
+        );
+      } else {
+        const {
+          courseIssues,
+          data: htmlData,
           html,
           fileData,
           renderedElementNames,
+        } = await module.exports.processQuestionHtml(phase, codeCaller, data, context);
+        const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
+        if (hasFatalError) {
+          return {
+            courseIssues,
+            data,
+            html,
+            fileData,
+            renderedElementNames,
+          };
+        }
+        const {
+          courseIssues: serverCourseIssues,
+          data: serverData,
+          html: serverHtml,
+          fileData: serverFileData,
+        } = await module.exports.processQuestionServer(
+          phase,
+          codeCaller,
+          htmlData,
+          html,
+          fileData,
+          context
+        );
+        courseIssues.push(...serverCourseIssues);
+        return {
+          courseIssues,
+          data: serverData,
+          html: serverHtml,
+          fileData: serverFileData,
+          renderedElementNames,
         };
       }
-      const {
-        courseIssues: serverCourseIssues,
-        data: serverData,
-        html: serverHtml,
-        fileData: serverFileData,
-      } = await module.exports.processQuestionServer(
-        phase,
-        codeCaller,
-        htmlData,
-        html,
-        fileData,
-        context
-      );
-      courseIssues.push(...serverCourseIssues);
-      return {
-        courseIssues,
-        data: serverData,
-        html: serverHtml,
-        fileData: serverFileData,
-        renderedElementNames,
-      };
-    }
+    });
   },
 
   /**
@@ -1163,10 +1166,18 @@ module.exports = {
       num_valid_submissions: _.get(variant, 'num_tries', null),
     };
 
+    // This URL is submission-specific, so we have to compute it here (that is,
+    // it won't be present in `locals`). This URL will only have meaning if
+    // there's a submission, so it will be `null` otherwise.
+    const submissionFilesUrl = submission
+      ? locals.questionUrl + `submission/${submission?.id}/file`
+      : null;
+
     // Put base URLs in data.options for access by question code
     data.options.client_files_question_url = locals.clientFilesQuestionUrl;
     data.options.client_files_course_url = locals.clientFilesCourseUrl;
     data.options.client_files_question_dynamic_url = locals.clientFilesQuestionGeneratedFileUrl;
+    data.options.submission_files_url = submission ? submissionFilesUrl : null;
     data.options.base_url = locals.baseUrl;
     data.options.workspace_url = locals.workspaceUrl || null;
 
@@ -1236,7 +1247,7 @@ module.exports = {
     course_instance,
     locals
   ) {
-    return instrumented('freeform.render', async (span) => {
+    return instrumented('freeform.render', async () => {
       debug('render()');
       const htmls = {
         extraHeadersHtml: '',
@@ -1246,8 +1257,6 @@ module.exports = {
       };
       let allRenderedElementNames = [];
       const courseIssues = [];
-      let panelCount = 0,
-        cacheHitCount = 0;
       const context = await module.exports.getContext(question, course);
 
       return withCodeCaller(context.course_dir_host, async (codeCaller) => {
@@ -1260,7 +1269,6 @@ module.exports = {
               courseIssues: newCourseIssues,
               html,
               renderedElementNames,
-              cacheHit,
             } = await module.exports.renderPanelInstrumented(
               'question',
               codeCaller,
@@ -1274,8 +1282,6 @@ module.exports = {
 
             courseIssues.push(...newCourseIssues);
             htmls.questionHtml = html;
-            panelCount++;
-            if (cacheHit) cacheHitCount++;
             allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
           },
           async () => {
@@ -1286,7 +1292,6 @@ module.exports = {
                 courseIssues: newCourseIssues,
                 html,
                 renderedElementNames,
-                cacheHit,
               } = await module.exports.renderPanelInstrumented(
                 'submission',
                 codeCaller,
@@ -1299,8 +1304,6 @@ module.exports = {
               );
 
               courseIssues.push(...newCourseIssues);
-              panelCount++;
-              if (cacheHit) cacheHitCount++;
               allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
               return html;
             });
@@ -1312,7 +1315,6 @@ module.exports = {
               courseIssues: newCourseIssues,
               html,
               renderedElementNames,
-              cacheHit,
             } = await module.exports.renderPanelInstrumented(
               'answer',
               codeCaller,
@@ -1326,19 +1328,9 @@ module.exports = {
 
             courseIssues.push(...newCourseIssues);
             htmls.answerHtml = html;
-            panelCount++;
-            if (cacheHit) cacheHitCount++;
             allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
           },
           async () => {
-            // The logPageView middleware knows to write this to the DB
-            // when we log the page view - sorry for mutable object hell
-            locals.panel_render_count = panelCount;
-            locals.panel_render_cache_hit_count = cacheHitCount;
-
-            span.setAttribute('panel_count', panelCount);
-            span.setAttribute('cache_hit_count', cacheHitCount);
-
             const extensions = context.course_element_extensions;
             const dependencies = {
               coreStyles: [],
@@ -1865,7 +1857,7 @@ module.exports = {
   async getCacheKey(course, data, context) {
     try {
       const commitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(course);
-      const dataHash = hash('sha1').update(JSON.stringify({ data, context })).digest('base64');
+      const dataHash = objectHash({ data, context }, { algorithm: 'sha1', encoding: 'base64' });
       return `${commitHash}-${dataHash}`;
     } catch (err) {
       return null;

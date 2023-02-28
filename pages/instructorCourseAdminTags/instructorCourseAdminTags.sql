@@ -1,9 +1,9 @@
 -- BLOCK select_tags
 SELECT
-    tag.*
+  tag.*
 FROM
-    tags AS tag
+  tags AS tag
 WHERE
-    tag.course_id = $course_id
+  tag.course_id = $course_id
 ORDER BY
-    tag.number;
+  tag.number;

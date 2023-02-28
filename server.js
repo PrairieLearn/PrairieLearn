@@ -2,6 +2,11 @@
 // dependencies like `pg` and `express`.
 const opentelemetry = require('@prairielearn/opentelemetry');
 
+const Sentry = require('@prairielearn/sentry');
+// `@sentry/tracing` must be imported before `@sentry/profiling-node`.
+require('@sentry/tracing');
+const { ProfilingIntegration } = require('@sentry/profiling-node');
+
 const ERR = require('async-stacktrace');
 const fs = require('fs');
 const path = require('path');
@@ -21,12 +26,12 @@ const onFinished = require('on-finished');
 const { v4: uuidv4 } = require('uuid');
 const argv = require('yargs-parser')(process.argv.slice(2));
 const multer = require('multer');
-const filesize = require('filesize');
+const { filesize } = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const Sentry = require('@prairielearn/sentry');
+const compiledAssets = require('@prairielearn/compiled-assets');
 
-const logger = require('./lib/logger');
+const { logger, addFileLogging } = require('@prairielearn/logger');
 const config = require('./lib/config');
 const load = require('./lib/load');
 const awsHelper = require('./lib/aws.js');
@@ -34,7 +39,7 @@ const externalGrader = require('./lib/externalGrader');
 const externalGraderResults = require('./lib/externalGraderResults');
 const externalGradingSocket = require('./lib/externalGradingSocket');
 const workspace = require('./lib/workspace');
-const sqldb = require('./prairielib/lib/sql-db');
+const sqldb = require('@prairielearn/postgres');
 const migrations = require('./prairielib/lib/migrations');
 const error = require('./prairielib/error');
 const sprocs = require('./sprocs');
@@ -77,7 +82,7 @@ if ('h' in argv || 'help' in argv) {
 
 /**
  * Creates the express application and sets up all PrairieLearn routes.
- * @return {Express App} The express "app" object that was created.
+ * @return {import('express').Application} The express "app" object that was created.
  */
 module.exports.initExpress = function () {
   const app = express();
@@ -85,8 +90,14 @@ module.exports.initExpress = function () {
   app.set('view engine', 'ejs');
   app.set('trust proxy', config.trustProxy);
 
-  // This should come first so that we get instrumentation on all our requests.
-  app.use(Sentry.Handlers.requestHandler());
+  // These should come first so that we get instrumentation on all our requests.
+  if (config.sentryDsn) {
+    app.use(Sentry.Handlers.requestHandler());
+
+    if (config.sentryTracesSampleRate) {
+      app.use(Sentry.Handlers.tracingHandler());
+    }
+  }
 
   // Set res.locals variables first, so they will be available on
   // all pages including the error page (which we could jump to at
@@ -94,6 +105,7 @@ module.exports.initExpress = function () {
   app.use((req, res, next) => {
     res.locals.asset_path = assets.assetPath;
     res.locals.node_modules_asset_path = assets.nodeModulesAssetPath;
+    res.locals.compiled_script_tag = compiledAssets.compiledScriptTag;
     next();
   });
   app.use(function (req, res, next) {
@@ -364,6 +376,8 @@ module.exports.initExpress = function () {
   // "cacheable" route above.
   app.use(express.static(path.join(__dirname, 'public')));
 
+  app.use('/build/', compiledAssets.handler());
+
   // To allow for more aggressive caching of files served from node_modules/,
   // we insert a hash of the module version into the resource path. This allows
   // us to treat those files as immutable and cache them essentially forever.
@@ -437,6 +451,9 @@ module.exports.initExpress = function () {
 
   app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
   app.use('/pl/login', require('./pages/authLogin/authLogin'));
+  if (config.devMode) {
+    app.use('/pl/dev_login', require('./pages/authLoginDev/authLoginDev'));
+  }
   // disable SEB until we can fix the mcrypt issues
   // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
   app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
@@ -924,6 +941,16 @@ module.exports.initExpress = function () {
       require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
     ]
   );
+
+  // Submission files
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/submission/:submission_id/file',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./pages/submissionFile/submissionFile'),
+    ]
+  );
+
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading',
     [
@@ -1219,6 +1246,15 @@ module.exports.initExpress = function () {
     ]
   );
 
+  // Submission files
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/question/:question_id/submission/:submission_id/file',
+    [
+      require('./middlewares/selectAndAuthzInstructorQuestion'),
+      require('./pages/submissionFile/submissionFile'),
+    ]
+  );
+
   // legacy client file paths
   // handle routes with and without /preview/ in them to handle URLs with and without trailing slashes
   app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file', [
@@ -1302,13 +1338,6 @@ module.exports.initExpress = function () {
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
     require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
   ]);
-  app.use('/pl/course_instance/:course_instance_id/report_cheating', [
-    function (req, res, next) {
-      res.locals.navSubPage = 'report_cheating';
-      next();
-    },
-    require('./pages/studentReportCheating/studentReportCheating'),
-  ]);
   if (config.devMode) {
     app.use(
       '/pl/course_instance/:course_instance_id/loadFromDisk',
@@ -1353,6 +1382,16 @@ module.exports.initExpress = function () {
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./middlewares/studentAssessmentAccess'),
       require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
+    ]
+  );
+
+  // Submission files
+  app.use(
+    '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/submission/:submission_id/file',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./middlewares/studentAssessmentAccess'),
+      require('./pages/submissionFile/submissionFile'),
     ]
   );
 
@@ -1570,6 +1609,12 @@ module.exports.initExpress = function () {
     require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
   ]);
 
+  // Submission files
+  app.use('/pl/course/:course_id/question/:question_id/submission/:submission_id/file', [
+    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./pages/submissionFile/submissionFile'),
+  ]);
+
   // legacy client file paths
   // handle routes with and without /preview/ in them to handle URLs with and without trailing slashes
   app.use('/pl/course/:course_id/question/:question_id/file', [
@@ -1595,9 +1640,22 @@ module.exports.initExpress = function () {
   // Administrator pages ///////////////////////////////////////////////
 
   app.use('/pl/administrator', require('./middlewares/authzIsAdministrator'));
+  app.use('/pl/administrator/admins', require('./pages/administratorAdmins/administratorAdmins'));
   app.use(
-    '/pl/administrator/overview',
-    require('./pages/administratorOverview/administratorOverview')
+    '/pl/administrator/settings',
+    require('./pages/administratorSettings/administratorSettings')
+  );
+  app.use(
+    '/pl/administrator/courses',
+    require('./pages/administratorCourses/administratorCourses')
+  );
+  app.use(
+    '/pl/administrator/networks',
+    require('./pages/administratorNetworks/administratorNetworks')
+  );
+  app.use(
+    '/pl/administrator/workspaces',
+    require('./pages/administratorWorkspaces/administratorWorkspaces')
   );
   app.use(
     '/pl/administrator/queries',
@@ -1790,11 +1848,35 @@ if (config.startServer) {
           serviceName: 'prairielearn',
         });
 
+        // Start capturing CPU and memory profiles as soon as possible.
+        if (config.pyroscopeEnabled) {
+          const Pyroscope = require('@pyroscope/nodejs');
+          Pyroscope.init({
+            appName: 'prairielearn',
+            serverAddress: config.pyroscopeServerAddress,
+            authToken: config.pyroscopeAuthToken,
+            tags: {
+              instanceId: config.instanceId,
+              ...(config.pyroscopeTags ?? {}),
+            },
+          });
+          Pyroscope.start();
+        }
+
         // Same with Sentry configuration.
         if (config.sentryDsn) {
+          const integrations = [];
+          if (config.sentryTracesSampleRate && config.sentryProfilesSampleRate) {
+            integrations.push(new ProfilingIntegration());
+          }
+
           await Sentry.init({
             dsn: config.sentryDsn,
             environment: config.sentryEnvironment,
+            integrations,
+            tracesSampleRate: config.sentryTracesSampleRate,
+            // This is relative to `tracesSampleRate`.
+            profilesSampleRate: config.sentryProfilesSampleRate,
             beforeSend: (event) => {
               // This will be necessary until we can consume the following change:
               // https://github.com/chimurai/http-proxy-middleware/pull/823
@@ -1815,8 +1897,11 @@ if (config.startServer) {
         }
 
         if (config.logFilename) {
-          logger.addFileLogging(config.logFilename);
-          logger.verbose('activated file logging: ' + config.logFilename);
+          addFileLogging({ filename: config.logFilename });
+        }
+
+        if (config.logErrorFilename) {
+          addFileLogging({ filename: config.logErrorFilename, level: 'error' });
         }
       },
       async () => {
@@ -1942,6 +2027,14 @@ if (config.startServer) {
         news_items.init(notify_with_new_server, function (err) {
           if (ERR(err, callback)) return;
           callback(null);
+        });
+      },
+      async () => {
+        compiledAssets.init({
+          dev: config.devMode,
+          sourceDirectory: path.resolve(__dirname, 'assets'),
+          buildDirectory: path.resolve(__dirname, 'public/build'),
+          publicPath: '/build',
         });
       },
       // We need to initialize these first, as the code callers require these

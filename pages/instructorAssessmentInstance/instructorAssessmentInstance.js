@@ -3,14 +3,15 @@ const _ = require('lodash');
 const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
 const router = express.Router();
+const asyncHandler = require('express-async-handler');
 const error = require('../../prairielib/lib/error');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
 const sanitizeName = require('../../lib/sanitize-name');
 const ltiOutcomes = require('../../lib/ltiOutcomes');
+const assessment = require('../../lib/assessment');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const logCsvFilename = (locals) => {
   return (
@@ -30,43 +31,47 @@ const logCsvFilename = (locals) => {
   );
 };
 
-router.get('/', (req, res, next) => {
-  res.locals.logCsvFilename = logCsvFilename(res.locals);
-  const params = { assessment_instance_id: res.locals.assessment_instance.id };
-  sqldb.query(sql.assessment_instance_stats, params, (err, result) => {
-    if (ERR(err, next)) return;
-    res.locals.assessment_instance_stats = result.rows;
-
-    sqldb.queryOneRow(sql.select_date_formatted_duration, params, (err, result) => {
-      if (ERR(err, next)) return;
-      res.locals.assessment_instance_date_formatted =
-        result.rows[0].assessment_instance_date_formatted;
-      res.locals.assessment_instance_duration = result.rows[0].assessment_instance_duration;
-
-      const params = {
+router.get(
+  '/',
+  asyncHandler(async (req, res, _next) => {
+    res.locals.logCsvFilename = logCsvFilename(res.locals);
+    res.locals.assessment_instance_stats = (
+      await sqldb.queryAsync(sql.assessment_instance_stats, {
         assessment_instance_id: res.locals.assessment_instance.id,
-      };
-      sqldb.query(sql.select_instance_questions, params, (err, result) => {
-        if (ERR(err, next)) return;
-        res.locals.instance_questions = result.rows;
+      })
+    ).rows;
 
-        const params = [res.locals.assessment_instance.id, false];
-        sqldb.call('assessment_instances_select_log', params, (err, result) => {
-          if (ERR(err, next)) return;
-          res.locals.log = result.rows;
-          res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-        });
-      });
+    const dateDurationResult = await sqldb.queryOneRowAsync(sql.select_date_formatted_duration, {
+      assessment_instance_id: res.locals.assessment_instance.id,
     });
-  });
-});
+    res.locals.assessment_instance_date_formatted =
+      dateDurationResult.rows[0].assessment_instance_date_formatted;
+    res.locals.assessment_instance_duration =
+      dateDurationResult.rows[0].assessment_instance_duration;
 
-router.get('/:filename', (req, res, next) => {
-  if (req.params.filename === logCsvFilename(res.locals)) {
-    const params = [res.locals.assessment_instance.id, false];
-    sqldb.call('assessment_instances_select_log', params, (err, result) => {
-      if (ERR(err, next)) return;
-      const log = result.rows;
+    res.locals.instance_questions = (
+      await sqldb.queryAsync(sql.select_instance_questions, {
+        assessment_instance_id: res.locals.assessment_instance.id,
+      })
+    ).rows;
+
+    res.locals.log = await assessment.selectAssessmentInstanceLog(
+      res.locals.assessment_instance.id,
+      false
+    );
+
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  })
+);
+
+router.get(
+  '/:filename',
+  asyncHandler(async (req, res, next) => {
+    if (req.params.filename === logCsvFilename(res.locals)) {
+      const log = await assessment.selectAssessmentInstanceLog(
+        res.locals.assessment_instance.id,
+        false
+      );
       const csvHeaders = [
         'Time',
         'Auth user',
@@ -97,11 +102,11 @@ router.get('/:filename', (req, res, next) => {
         res.attachment(req.params.filename);
         res.send(csv);
       });
-    });
-  } else {
-    next(error.make(404, 'Unknown filename: ' + req.params.filename));
-  }
-});
+    } else {
+      next(error.make(404, 'Unknown filename: ' + req.params.filename));
+    }
+  })
+);
 
 router.post('/', (req, res, next) => {
   if (!res.locals.authz_data.has_course_instance_permission_edit) {
@@ -136,8 +141,7 @@ router.post('/', (req, res, next) => {
     });
   } else if (req.body.__action === 'edit_question_points') {
     const params = [
-      null, // assessment_id
-      res.locals.assessment_instance.id,
+      res.locals.assessment.id,
       null, // submission_id
       req.body.instance_question_id,
       null, // uid
@@ -168,8 +172,7 @@ router.post('/', (req, res, next) => {
     });
   } else if (req.body.__action === 'edit_question_score_perc') {
     const params = [
-      null, // assessment_id
-      res.locals.assessment_instance.id,
+      res.locals.assessment.id,
       null, // submission_id
       req.body.instance_question_id,
       null, // uid

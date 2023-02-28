@@ -1,14 +1,13 @@
 const AWS = require('aws-sdk');
 const { callbackify } = require('util');
 
-const logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const config = require('../lib/config');
 const request = require('request-promise-native');
 const async = require('async');
 
-const sqldb = require('../prairielib/lib/sql-db');
-const sqlLoader = require('../prairielib/lib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sqldb = require('@prairielearn/postgres');
+const sql = sqldb.loadSqlEquiv(__filename);
 
 module.exports = {};
 

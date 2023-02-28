@@ -3,10 +3,9 @@ var express = require('express');
 var router = express.Router();
 
 var config = require('../../lib/config');
-var sqldb = require('../../prairielib/lib/sql-db');
-var sqlLoader = require('../../prairielib/lib/sql-loader');
+var sqldb = require('@prairielearn/postgres');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+var sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
   res.locals.isAuthenticated = !!res.locals.authn_user;
@@ -27,15 +26,20 @@ router.get('/', function (req, res, next) {
       if (ERR(err, next)) return;
 
       res.locals.instructor_courses = result.rows[0].instructor_courses;
-      if (res.locals.instructor_courses.length > 0 || config.devMode) {
-        // If the list of instructor courses is non-empty, then prepend
-        // with the list of example courses (otherwise, discard the list
-        // of example courses).
+      res.locals.student_courses = result.rows[0].student_courses;
+
+      // Example courses are only shown to users who are either instructors of
+      // at least one other course, or who are admins. They're also shown
+      // unconditionally in dev mode.
+      if (
+        res.locals.instructor_courses.length > 0 ||
+        res.locals.is_administrator ||
+        config.devMode
+      ) {
         res.locals.instructor_courses = res.locals.instructor_courses.concat(
           result.rows[0].example_courses
         );
       }
-      res.locals.student_courses = result.rows[0].student_courses;
 
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });

@@ -1,10 +1,9 @@
 const ERR = require('async-stacktrace');
 const assert = require('chai').assert;
 
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(__filename);
-const helperDb = require('../helperDb');
+var sqldb = require('@prairielearn/postgres');
+var sql = sqldb.loadSqlEquiv(__filename);
+var helperDb = require('../helperDb');
 
 describe('sproc check_assessment_access* tests', function () {
   before('set up testing server', helperDb.before);

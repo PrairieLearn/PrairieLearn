@@ -266,14 +266,6 @@
                         "type": "string"
                     }
                 },
-                "syncIgnore": {
-                    "description": "The list of files or directories that will be excluded from sync.",
-                    "type": "array",
-                    "items": {
-                        "description": "A single file or directory that will be excluded from sync.",
-                        "type": "string"
-                    }
-                },
                 "enableNetworking": {
                     "description": "Whether the workspace should have network access. Access is disabled by default.",
                     "type": "boolean"
@@ -281,6 +273,14 @@
                 "environment": {
                     "description": "Environment variables to set inside the workspace container.",
                     "type": "object"
+                },
+                "syncIgnore": {
+                    "description": "(deprecated) The list of files or directories that will be excluded from sync.",
+                    "type": "array",
+                    "items": {
+                        "description": "A single file or directory that will be excluded from sync.",
+                        "type": "string"
+                    }
                 }
             }
         }

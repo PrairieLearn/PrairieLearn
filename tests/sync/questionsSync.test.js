@@ -230,10 +230,7 @@ describe('Question syncing', () => {
     await util.syncCourseData(courseDir);
     const syncedQuestions = await util.dumpTable('questions');
     const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
-    assert.match(
-      syncedQuestion.sync_errors,
-      /data should have required property 'incorrectAnswers'/
-    );
+    assert.match(syncedQuestion.sync_errors, /data must have required property 'incorrectAnswers'/);
   });
 
   it('records a warning if same UUID is used in multiple questions', async () => {
@@ -349,7 +346,7 @@ describe('Question syncing', () => {
       (q) => q.qid === 'repeatedQuestion' && q.deleted_at == null
     );
     assert.equal(syncedQuestion.uuid, newQuestion.uuid);
-    assert.match(syncedQuestion.sync_errors, /should have required property 'title'/);
+    assert.match(syncedQuestion.sync_errors, /must have required property 'title'/);
 
     // check that the old deleted question does not have any errors
     const deletedQuestion = syncedQuestions.find(

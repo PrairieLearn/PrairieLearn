@@ -4,7 +4,7 @@ const jose = require('jose');
 const crypto = require('crypto');
 
 const config = require('../lib/config');
-const logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 
 /**
  * This is a webhook that can be called when infrastructure wants this instance
