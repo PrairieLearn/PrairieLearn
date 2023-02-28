@@ -1,5 +1,5 @@
 const sqldb = require('@prairielearn/postgres');
-const { logger } = require('@prairielearn/logger');
+const { logger } = require('./logger');
 const config = require('./config').config;
 const lifecycle = require('./lifecycle');
 const healthCheck = require('./healthCheck');
