@@ -316,8 +316,6 @@ function Workspace({ navTitle, showLogs, heartbeatIntervalSec, visibilityTimeout
 
             socket.emit('startWorkspace', { workspace_id: workspaceId });
 
-            let heartbeatIntervalId = null;
-
             let lastVisibleTime = Date.now();
             setInterval(() => {
               if (document.visibilityState == 'visible') {
