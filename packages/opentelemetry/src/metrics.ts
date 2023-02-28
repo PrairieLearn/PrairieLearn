@@ -38,33 +38,33 @@ function getCachedMetric<T>(
   return metric;
 }
 
-export function getHistogram(meter: Meter, name: string, options: MetricOptions): Histogram {
+export function getHistogram(meter: Meter, name: string, options?: MetricOptions): Histogram {
   return getCachedMetric(histogramCache, meter, name, () => meter.createHistogram(name, options));
 }
 
-export function getCounter(meter: Meter, name: string, options: MetricOptions) {
+export function getCounter(meter: Meter, name: string, options?: MetricOptions) {
   return getCachedMetric(counterCache, meter, name, () => meter.createCounter(name, options));
 }
 
-export function getUpDownCounter(meter: Meter, name: string, options: MetricOptions) {
+export function getUpDownCounter(meter: Meter, name: string, options?: MetricOptions) {
   return getCachedMetric(upDownCounterCache, meter, name, () =>
     meter.createUpDownCounter(name, options)
   );
 }
 
-export function getObservableCounter(meter: Meter, name: string, options: MetricOptions) {
+export function getObservableCounter(meter: Meter, name: string, options?: MetricOptions) {
   return getCachedMetric(observableCounterCache, meter, name, () =>
     meter.createObservableCounter(name, options)
   );
 }
 
-export function getObservableUpDownCounter(meter: Meter, name: string, options: MetricOptions) {
+export function getObservableUpDownCounter(meter: Meter, name: string, options?: MetricOptions) {
   return getCachedMetric(observableUpDownCounterCache, meter, name, () =>
     meter.createObservableUpDownCounter(name, options)
   );
 }
 
-export function getObservableGauge(meter: Meter, name: string, options: MetricOptions) {
+export function getObservableGauge(meter: Meter, name: string, options?: MetricOptions) {
   return getCachedMetric(observableGaugeCache, meter, name, () =>
     meter.createObservableGauge(name, options)
   );
