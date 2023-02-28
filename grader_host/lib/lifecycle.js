@@ -1,7 +1,7 @@
 const assert = require('assert');
 const AWS = require('aws-sdk');
 
-const { logger } = require('@prairielearn/logger');
+const { logger } = require('./logger');
 const config = require('./config').config;
 
 /**
