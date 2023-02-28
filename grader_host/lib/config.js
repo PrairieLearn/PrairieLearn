@@ -5,7 +5,7 @@ const AWS = require('aws-sdk');
 const _ = require('lodash');
 const configLib = require('../../prairielib/lib/config');
 
-const { logger } = require('./logger');
+const logger = require('./logger');
 
 const configDir = path.resolve(__dirname, '..', 'config');
 

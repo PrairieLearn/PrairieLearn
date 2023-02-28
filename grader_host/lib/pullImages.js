@@ -3,7 +3,7 @@ const async = require('async');
 const Docker = require('dockerode');
 const sqldb = require('@prairielearn/postgres');
 
-const { logger } = require('./logger');
+const logger = require('./logger');
 const dockerUtil = require('./dockerUtil');
 const sql = sqldb.loadSqlEquiv(__filename);
 const config = require('./config').config;
