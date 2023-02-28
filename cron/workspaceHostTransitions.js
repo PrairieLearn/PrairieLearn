@@ -1,15 +1,14 @@
+// @ts-check
+const async = require('async');
 const AWS = require('aws-sdk');
 const { callbackify } = require('util');
-
-const { logger } = require('@prairielearn/logger');
-const config = require('../lib/config');
 const fetch = require('node-fetch').default;
-const async = require('async');
+const { logger } = require('@prairielearn/logger');
+
+const config = require('../lib/config');
 
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
-
-module.exports = {};
 
 module.exports.run = callbackify(async () => {
   if (!config.runningInEc2) return;
@@ -106,7 +105,7 @@ async function checkHealth() {
       healthy = false;
     } else {
       try {
-        const res = await fetch(url);
+        const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
         healthy = res.ok;
       } catch (err) {
         healthy = false;
