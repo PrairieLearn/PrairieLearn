@@ -9,7 +9,7 @@
 const ERR = require('async-stacktrace');
 const sqldb = require('@prairielearn/postgres');
 const config = require('../lib/config');
-const logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const readline = require('readline');
 
 var sql = sqldb.loadSqlEquiv(__filename);

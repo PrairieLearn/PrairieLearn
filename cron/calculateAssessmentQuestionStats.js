@@ -1,6 +1,6 @@
 const util = require('util');
 
-const logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const sqldb = require('@prairielearn/postgres');
 
 const sql = sqldb.loadSqlEquiv(__filename);

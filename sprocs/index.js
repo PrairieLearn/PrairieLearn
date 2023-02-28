@@ -4,7 +4,7 @@ const path = require('path');
 const async = require('async');
 
 const error = require('../prairielib/lib/error');
-const logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const sqldb = require('@prairielearn/postgres');
 
 module.exports.init = function (callback) {
