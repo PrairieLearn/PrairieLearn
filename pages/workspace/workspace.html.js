@@ -330,6 +330,13 @@ function Workspace({ navTitle, showLogs, heartbeatIntervalSec, visibilityTimeout
               }
             }, heartbeatIntervalSec * 1000);
 
+            document.addEventListener('visibilitychange', () => {
+              // Every time we switch to or from this page, record that it was visible.
+              // This is needed to capture the visibility when we switch to this page
+              // and then quickly switch away again.
+              lastVisibleTime = Date.now();
+            });
+
             reloadButton.addEventListener('click', () => {
               location.reload();
             });
