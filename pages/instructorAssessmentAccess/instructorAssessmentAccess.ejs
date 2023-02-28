@@ -158,7 +158,7 @@
                 </td>
                 <td><%= access_rule.date_range %></td>
                 <% if (access_rule.active) { %>
-                <td>Can start the assessment</td>
+                <td><% if (assessment.multiple_instance) { %>Can start a new instance<% } else { %>Can start the assessment<% } %></td>
                 <td><%= access_rule.credit %></td>
                 <td><%= access_rule.time_limit %></td>
                 <td><%= access_rule.password %></td>
@@ -192,6 +192,10 @@
               <tr>
                 <th>Assessment Type</th>
                 <td><%= assessment.type %></td>
+              </tr>
+              <tr>
+                <th>Multiple Instances</th>
+                <td><%= assessment.multiple_instance ? 'Enabled' : 'Disabled' %></td>
               </tr>
               <tr>
                 <th>Real-Time Grading</th>
