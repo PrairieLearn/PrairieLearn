@@ -1,5 +1,11 @@
 # @prairielearn/opentelemetry
 
+## 1.7.0
+
+### Minor Changes
+
+- ee0c530b5: Export `getCounter` and all similar functions
+
 ## 1.5.2
 
 ### Patch Changes
