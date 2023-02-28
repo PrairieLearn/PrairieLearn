@@ -103,7 +103,7 @@ describe('queueReceiver', () => {
       '',
       (message, errCb, successCb) => successCb(),
       (err) => {
-        assert.isNull(err);
+        assert.isNotNull(err);
         assert.equal(sqs.deleteMessage.callCount, 0);
         done();
       }
@@ -123,7 +123,7 @@ describe('queueReceiver', () => {
       '',
       (message, errCb, successCb) => successCb(),
       (err) => {
-        assert.isNull(err);
+        assert.isNotNull(err);
         assert.equal(sqs.deleteMessage.callCount, 0);
         done();
       }
@@ -159,7 +159,7 @@ describe('queueReceiver', () => {
       '',
       (message, errCb, _successCb) => errCb(new Error('RIP')),
       (err) => {
-        assert.isNull(err);
+        assert.isNotNull(err);
         assert.equal(sqs.deleteMessage.callCount, 0);
         done();
       }
