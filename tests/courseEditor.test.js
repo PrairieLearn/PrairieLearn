@@ -6,7 +6,7 @@ const async = require('async');
 const ncp = require('ncp');
 const cheerio = require('cheerio');
 const { exec } = require('child_process');
-const requestp = require('request-promise-native');
+const fetch = require('node-fetch').default;
 const klaw = require('klaw');
 const tmp = require('tmp');
 
@@ -16,7 +16,6 @@ const sql = sqldb.loadSqlEquiv(__filename);
 const helperServer = require('./helperServer');
 
 const locals = {};
-let page, elemList;
 
 const courseTemplateDir = path.join(__dirname, 'testFileEditor', 'courseTemplate');
 
@@ -384,14 +383,16 @@ function testEdit(params) {
   describe(`GET to ${params.url}`, () => {
     if (params.url) {
       it('should load successfully', async () => {
-        page = await requestp(params.url);
-        locals.$ = cheerio.load(page);
+        const res = await fetch(params.url);
+        assert.isOk(res.ok);
+        locals.$ = cheerio.load(await res.text());
       });
     }
     it('should have a CSRF token', () => {
       if (params.button) {
-        elemList = locals.$(`button[id="${params.button}"]`);
+        let elemList = locals.$(`button[id="${params.button}"]`);
         assert.lengthOf(elemList, 1);
+
         const $ = cheerio.load(elemList[0].attribs['data-content']);
         elemList = $(`form[name="${params.form}"] input[name="__csrf_token"]`);
         assert.lengthOf(elemList, 1);
@@ -399,7 +400,7 @@ function testEdit(params) {
         locals.__csrf_token = elemList[0].attribs.value;
         assert.isString(locals.__csrf_token);
       } else {
-        elemList = locals.$(`form[name="${params.form}"] input[name="__csrf_token"]`);
+        let elemList = locals.$(`form[name="${params.form}"] input[name="__csrf_token"]`);
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
         locals.__csrf_token = elemList[0].attribs.value;
@@ -410,21 +411,18 @@ function testEdit(params) {
 
   describe(`POST to ${params.url} with action ${params.action}`, function () {
     it('should load successfully', async () => {
-      const options = {
-        url: params.url || locals.url,
-        followAllRedirects: true,
-        resolveWithFullResponse: true,
-      };
-      options.form = {
+      const form = {
         __action: params.action,
         __csrf_token: locals.__csrf_token,
+        ...(params?.data ?? {}),
       };
-      if (params.data) {
-        options.form = { ...options.form, ...params.data };
-      }
-      page = await requestp.post(options);
-      locals.url = page.request.href;
-      locals.$ = cheerio.load(page.body);
+      const res = await fetch(params.url || locals.url, {
+        method: 'POST',
+        body: new URLSearchParams(form),
+      });
+      assert.isOk(res.ok);
+      locals.url = res.url;
+      locals.$ = cheerio.load(await res.text());
     });
   });
 
