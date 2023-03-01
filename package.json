@@ -128,7 +128,7 @@
         "serve-favicon": "^2.5.0",
         "showdown": "^2.1.0",
         "socket.io": "^4.6.1",
-        "socket.io-client": "^4.5.4",
+        "socket.io-client": "^4.6.1",
         "socket.io-redis": "^6.1.1",
         "streamifier": "^0.1.1",
         "tablesorter": "^2.31.3",
