@@ -3539,7 +3539,7 @@ __metadata:
     plist: ^3.0.6
     popper.js: ^1.16.1
     prettier: 2.8.4
-    pyright: ^1.1.292
+    pyright: ^1.1.296
     qrcode-svg: ^1.1.0
     quill: ^1.3.7
     quilljs-markdown: ^1.2.0
@@ -11605,13 +11605,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pyright@npm:^1.1.292":
-  version: 1.1.292
-  resolution: "pyright@npm:1.1.292"
+"pyright@npm:^1.1.296":
+  version: 1.1.296
+  resolution: "pyright@npm:1.1.296"
   bin:
     pyright: index.js
     pyright-langserver: langserver.index.js
-  checksum: e3fed9c3324b11fb2c0f213883819e5cb1a9222ec661e8a71d4f69594ad10e9d324932d27dd792eb80302a347cc3a31ccd15d7a83178c1b6dc5d08de1514efe9
+  checksum: 4ea3a0cfe526b96d0b231b437c95f6efe7fd06e04573a25b5586e159f36b1b381159bef91c5349d1a880d610c473c70e7ec4e21a43c70488ecab93e3d9bf792a
   languageName: node
   linkType: hard
 
