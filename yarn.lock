@@ -1039,16 +1039,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/parser@npm:^7.18.10, @babel/parser@npm:^7.20.5":
-  version: 7.20.5
-  resolution: "@babel/parser@npm:7.20.5"
-  bin:
-    parser: ./bin/babel-parser.js
-  checksum: e8d514ce0aa74d56725bd102919a49fa367afef9cd8208cf52f670f54b061c4672f51b4b7980058ab1f5fe73615fe4dc90720ab47bbcebae07ad08d667eda318
-  languageName: node
-  linkType: hard
-
-"@babel/parser@npm:^7.20.15":
+"@babel/parser@npm:^7.18.10, @babel/parser@npm:^7.20.15, @babel/parser@npm:^7.20.5":
   version: 7.21.2
   resolution: "@babel/parser@npm:7.21.2"
   bin:
@@ -2679,22 +2670,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/node@npm:^7.34.0":
-  version: 7.36.0
-  resolution: "@sentry/node@npm:7.36.0"
-  dependencies:
-    "@sentry/core": 7.36.0
-    "@sentry/types": 7.36.0
-    "@sentry/utils": 7.36.0
-    cookie: ^0.4.1
-    https-proxy-agent: ^5.0.0
-    lru_map: ^0.3.3
-    tslib: ^1.9.3
-  checksum: a4240844a93cfe02c71412fc25c602d8c6eef5c7fe19be7b5e8a58ebf58fdadea0e4ab6db0d51d20f97aa5b09318edc042229d0316da5dc0d4590ca2cfceb4c6
-  languageName: node
-  linkType: hard
-
-"@sentry/node@npm:^7.39.0":
+"@sentry/node@npm:^7.34.0, @sentry/node@npm:^7.39.0":
   version: 7.39.0
   resolution: "@sentry/node@npm:7.39.0"
   dependencies:
@@ -2726,19 +2702,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/tracing@npm:^7.34.0":
-  version: 7.36.0
-  resolution: "@sentry/tracing@npm:7.36.0"
-  dependencies:
-    "@sentry/core": 7.36.0
-    "@sentry/types": 7.36.0
-    "@sentry/utils": 7.36.0
-    tslib: ^1.9.3
-  checksum: 8c56925897a376d813c3a6fdbabd83de6ecfff7ea1da1e44f957eb3bf4fd803205301a2b1c8897691a4b136aaa5aaed4b9597e5ff1d078fc56f09f300286fd35
-  languageName: node
-  linkType: hard
-
-"@sentry/tracing@npm:^7.39.0":
+"@sentry/tracing@npm:^7.34.0, @sentry/tracing@npm:^7.39.0":
   version: 7.39.0
   resolution: "@sentry/tracing@npm:7.39.0"
   dependencies:
@@ -2750,21 +2714,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/types@npm:7.36.0, @sentry/types@npm:^7.34.0":
+"@sentry/types@npm:7.36.0":
   version: 7.36.0
   resolution: "@sentry/types@npm:7.36.0"
   checksum: 7d4d0b049e23ebff208cbd0519e90fba8953268609a11fa16652406c76edd92d190de3af76acc39f2a0b2f640a60762527ce7b59edae9724edb9009b3cb35426
   languageName: node
   linkType: hard
 
-"@sentry/types@npm:7.39.0":
+"@sentry/types@npm:7.39.0, @sentry/types@npm:^7.34.0":
   version: 7.39.0
   resolution: "@sentry/types@npm:7.39.0"
   checksum: 7d8b3f5fdb033240750bfdd4398b596b24bb6963d1e923b9fe6c5226b19dd965e53cec9790bbf13340641e0006b8f3d0958613a8561b42ae3ff22da1c419df27
   languageName: node
   linkType: hard
 
-"@sentry/utils@npm:7.36.0, @sentry/utils@npm:^7.34.0":
+"@sentry/utils@npm:7.36.0":
   version: 7.36.0
   resolution: "@sentry/utils@npm:7.36.0"
   dependencies:
@@ -2774,7 +2738,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/utils@npm:7.39.0":
+"@sentry/utils@npm:7.39.0, @sentry/utils@npm:^7.34.0":
   version: 7.39.0
   resolution: "@sentry/utils@npm:7.39.0"
   dependencies:
@@ -3229,16 +3193,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/passport@npm:*":
-  version: 1.0.11
-  resolution: "@types/passport@npm:1.0.11"
-  dependencies:
-    "@types/express": "*"
-  checksum: 7fea92aeb0d05bd872c17deadc1f1219dbdb23bae1b8f50e1c432ef755bce2b5f3fd60af76c38815f1fbaa047960d3638a4144221c4330457091be1f6e492168
-  languageName: node
-  linkType: hard
-
-"@types/passport@npm:^1.0.12":
+"@types/passport@npm:*, @types/passport@npm:^1.0.12":
   version: 1.0.12
   resolution: "@types/passport@npm:1.0.12"
   dependencies:
@@ -4046,7 +4001,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"aws-sdk@npm:^2.1325.0":
+"aws-sdk@npm:^2.1325.0, aws-sdk@npm:^2.293.0, aws-sdk@npm:^2.80.0":
   version: 2.1325.0
   resolution: "aws-sdk@npm:2.1325.0"
   dependencies:
@@ -4061,24 +4016,6 @@ __metadata:
     uuid: 8.0.0
     xml2js: 0.4.19
   checksum: 1ee4cb3c146f6547975b0da3bc9ebf44347f28c2d5ef9a208400207042e7d4895e07629fbf77b71be9ddca946f2eac90b2031b6315297a11a4fb8d04a78656a5
-  languageName: node
-  linkType: hard
-
-"aws-sdk@npm:^2.293.0, aws-sdk@npm:^2.80.0":
-  version: 2.1307.0
-  resolution: "aws-sdk@npm:2.1307.0"
-  dependencies:
-    buffer: 4.9.2
-    events: 1.1.1
-    ieee754: 1.1.13
-    jmespath: 0.16.0
-    querystring: 0.2.0
-    sax: 1.2.1
-    url: 0.10.3
-    util: ^0.12.4
-    uuid: 8.0.0
-    xml2js: 0.4.19
-  checksum: c7a24aeb0c91d2d64b449e05a32913182adc8820b1d6179323a9c16f230060d772f75f7135a9e7d3a368a194e23cdd847345020c68a17e05e126c1f666b7db0c
   languageName: node
   linkType: hard
 
@@ -5127,14 +5064,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"content-type@npm:^1.0.4, content-type@npm:~1.0.4":
-  version: 1.0.4
-  resolution: "content-type@npm:1.0.4"
-  checksum: 3d93585fda985d1554eca5ebd251994327608d2e200978fdbfba21c0c679914d5faf266d17027de44b34a72c7b0745b18584ecccaa7e1fdfb6a68ac7114f12e0
-  languageName: node
-  linkType: hard
-
-"content-type@npm:~1.0.5":
+"content-type@npm:^1.0.4, content-type@npm:~1.0.4, content-type@npm:~1.0.5":
   version: 1.0.5
   resolution: "content-type@npm:1.0.5"
   checksum: 566271e0a251642254cde0f845f9dd4f9856e52d988f4eb0d0dcffbb7a1f8ec98de7a5215fc628f3bce30fe2fb6fd2bc064b562d721658c59b544e2d34ea2766
@@ -9617,17 +9547,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lru-cache@npm:^7.18.1":
+"lru-cache@npm:^7.18.1, lru-cache@npm:^7.7.1":
   version: 7.18.1
   resolution: "lru-cache@npm:7.18.1"
   checksum: ab0ec1360c552f1ffa54b1eaf0026126c5116a07bee156b92d1e971f4c8c88e9160f0fad4ab6fed4e0fdea84f25a4590ece085bc57ed9ab1d90b17f0b138c556
-  languageName: node
-  linkType: hard
-
-"lru-cache@npm:^7.7.1":
-  version: 7.14.1
-  resolution: "lru-cache@npm:7.14.1"
-  checksum: d72c6713c6a6d86836a7a6523b3f1ac6764768cca47ec99341c3e76db06aacd4764620e5e2cda719a36848785a52a70e531822dc2b33fb071fa709683746c104
   languageName: node
   linkType: hard
 
@@ -11425,21 +11348,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:2.8.4":
+"prettier@npm:2.8.4, prettier@npm:^2.7.1":
   version: 2.8.4
   resolution: "prettier@npm:2.8.4"
   bin:
     prettier: bin-prettier.js
   checksum: c173064bf3df57b6d93d19aa98753b9b9dd7657212e33b41ada8e2e9f9884066bb9ca0b4005b89b3ab137efffdf8fbe0b462785aba20364798ff4303aadda57e
-  languageName: node
-  linkType: hard
-
-"prettier@npm:^2.7.1":
-  version: 2.8.3
-  resolution: "prettier@npm:2.8.3"
-  bin:
-    prettier: bin-prettier.js
-  checksum: 92f2ceb522d454370e02082aa74ad27388672f7cee8975028b59517c069fe643bdc73e322675c8faf2ff173d7a626d1a6389f26b474000308e793aa25fff46e5
   languageName: node
   linkType: hard
 
@@ -14566,22 +14480,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"yargs@npm:^17.1.1":
-  version: 17.6.2
-  resolution: "yargs@npm:17.6.2"
-  dependencies:
-    cliui: ^8.0.1
-    escalade: ^3.1.1
-    get-caller-file: ^2.0.5
-    require-directory: ^2.1.1
-    string-width: ^4.2.3
-    y18n: ^5.0.5
-    yargs-parser: ^21.1.1
-  checksum: 47da1b0d854fa16d45a3ded57b716b013b2179022352a5f7467409da5a04a1eef5b3b3d97a2dfc13e8bbe5f2ffc0afe3bc6a4a72f8254e60f5a4bd7947138643
-  languageName: node
-  linkType: hard
-
-"yargs@npm:^17.7.1":
+"yargs@npm:^17.1.1, yargs@npm:^17.7.1":
   version: 17.7.1
   resolution: "yargs@npm:17.7.1"
   dependencies:
