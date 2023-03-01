@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/opentelemetry",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -34,7 +34,7 @@
     "@prairielearn/tsconfig": "*",
     "@types/chai": "^4.3.4",
     "@types/mocha": "^10.0.1",
-    "@types/node": "^18.11.18",
+    "@types/node": "^18.14.2",
     "chai": "^4.3.7",
     "mocha": "^10.2.0",
     "ts-node": "^10.9.1",
