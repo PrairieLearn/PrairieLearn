@@ -1,9 +1,7 @@
 -- Initial state, as of 9c698b433f583a1df5f7450f60689424570988a4
-
 ---------------------------------
 -- Types
 ---------------------------------
-
 -- enum_mode
 DO $$
 BEGIN
@@ -88,23 +86,25 @@ $$;
 ---------------------------------
 -- Top-level Tables
 ---------------------------------
-
 -- users
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE IF NOT EXISTS
+  users (
     user_id BIGSERIAL PRIMARY KEY,
     uid text UNIQUE NOT NULL,
     uin char(9) UNIQUE,
     name text
-);
+  );
 
 -- administrators
-CREATE TABLE IF NOT EXISTS administrators (
+CREATE TABLE IF NOT EXISTS
+  administrators (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL UNIQUE REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE
-);
+  );
 
 -- pl_courses
-CREATE TABLE IF NOT EXISTS pl_courses (
+CREATE TABLE IF NOT EXISTS
+  pl_courses (
     id BIGSERIAL PRIMARY KEY,
     short_name text,
     title text,
@@ -113,23 +113,24 @@ CREATE TABLE IF NOT EXISTS pl_courses (
     path text,
     repository text,
     deleted_at TIMESTAMP WITH TIME ZONE
-);
+  );
 
 -- course_permissions
-CREATE TABLE IF NOT EXISTS course_permissions (
+CREATE TABLE IF NOT EXISTS
+  course_permissions (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
     course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,
     course_role enum_course_role,
     UNIQUE (user_id, course_id)
-);
+  );
 
 ---------------------------------
 -- Tables synced from git repo
 ---------------------------------
-
 -- course_instances
-CREATE TABLE IF NOT EXISTS course_instances (
+CREATE TABLE IF NOT EXISTS
+  course_instances (
     id BIGSERIAL PRIMARY KEY,
     uuid UUID NOT NULL UNIQUE,
     course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,
@@ -138,10 +139,11 @@ CREATE TABLE IF NOT EXISTS course_instances (
     number INTEGER,
     display_timezone text,
     deleted_at TIMESTAMP WITH TIME ZONE
-);
+  );
 
 -- course_instance_access_rules
-CREATE TABLE IF NOT EXISTS course_instance_access_rules (
+CREATE TABLE IF NOT EXISTS
+  course_instance_access_rules (
     id BIGSERIAL PRIMARY KEY,
     course_instance_id BIGINT NOT NULL REFERENCES course_instances ON DELETE CASCADE ON UPDATE CASCADE,
     number INTEGER,
@@ -150,10 +152,11 @@ CREATE TABLE IF NOT EXISTS course_instance_access_rules (
     start_date TIMESTAMP WITH TIME ZONE,
     end_date TIMESTAMP WITH TIME ZONE,
     UNIQUE (number, course_instance_id)
-);
+  );
 
 -- topics
-CREATE TABLE IF NOT EXISTS topics (
+CREATE TABLE IF NOT EXISTS
+  topics (
     id BIGSERIAL PRIMARY KEY,
     name text,
     number INTEGER,
@@ -161,10 +164,11 @@ CREATE TABLE IF NOT EXISTS topics (
     description text,
     course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE (name, course_id)
-);
+  );
 
 -- questions
-CREATE TABLE IF NOT EXISTS questions (
+CREATE TABLE IF NOT EXISTS
+  questions (
     id BIGSERIAL PRIMARY KEY,
     uuid UUID NOT NULL UNIQUE,
     qid text,
@@ -181,10 +185,11 @@ CREATE TABLE IF NOT EXISTS questions (
     topic_id BIGINT REFERENCES topics ON DELETE SET NULL ON UPDATE CASCADE,
     deleted_at TIMESTAMP WITH TIME ZONE,
     UNIQUE (number, course_id)
-);
+  );
 
 -- tags
-CREATE TABLE IF NOT EXISTS tags (
+CREATE TABLE IF NOT EXISTS
+  tags (
     id BIGSERIAL PRIMARY KEY,
     name text,
     number INTEGER,
@@ -192,19 +197,21 @@ CREATE TABLE IF NOT EXISTS tags (
     description text,
     course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE (name, course_id)
-);
+  );
 
 -- question_tags
-CREATE TABLE IF NOT EXISTS question_tags (
+CREATE TABLE IF NOT EXISTS
+  question_tags (
     id BIGSERIAL PRIMARY KEY,
     question_id BIGINT NOT NULL REFERENCES questions ON DELETE CASCADE ON UPDATE CASCADE,
     tag_id BIGINT NOT NULL REFERENCES tags ON DELETE CASCADE ON UPDATE CASCADE,
     number INTEGER,
     UNIQUE (question_id, tag_id)
-);
+  );
 
 -- assessment_sets
-CREATE TABLE IF NOT EXISTS assessment_sets (
+CREATE TABLE IF NOT EXISTS
+  assessment_sets (
     id BIGSERIAL PRIMARY KEY,
     abbreviation text,
     name text,
@@ -213,10 +220,11 @@ CREATE TABLE IF NOT EXISTS assessment_sets (
     number INTEGER,
     course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE (name, course_id)
-);
+  );
 
 -- assessments
-CREATE TABLE IF NOT EXISTS assessments (
+CREATE TABLE IF NOT EXISTS
+  assessments (
     id BIGSERIAL PRIMARY KEY,
     uuid UUID NOT NULL UNIQUE,
     tid text,
@@ -233,30 +241,33 @@ CREATE TABLE IF NOT EXISTS assessments (
     assessment_set_id BIGINT REFERENCES assessment_sets ON DELETE SET NULL ON UPDATE CASCADE,
     deleted_at TIMESTAMP WITH TIME ZONE,
     obj JSONB
-);
+  );
 
 -- zones
-CREATE TABLE IF NOT EXISTS zones (
+CREATE TABLE IF NOT EXISTS
+  zones (
     id BIGSERIAL PRIMARY KEY,
     title text,
     number INTEGER,
     number_choose INTEGER, -- NULL means choose all
     assessment_id BIGINT NOT NULL REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE (number, assessment_id)
-);
+  );
 
 -- alternative_groups
-CREATE TABLE IF NOT EXISTS alternative_groups (
+CREATE TABLE IF NOT EXISTS
+  alternative_groups (
     id BIGSERIAL PRIMARY KEY,
     number INTEGER,
     number_choose INTEGER, -- NULL means choose all
     zone_id BIGINT NOT NULL REFERENCES zones ON DELETE CASCADE ON UPDATE CASCADE,
     assessment_id BIGINT NOT NULL REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE (number, assessment_id)
-);
+  );
 
 -- assessment_access_rules
-CREATE TABLE IF NOT EXISTS assessment_access_rules (
+CREATE TABLE IF NOT EXISTS
+  assessment_access_rules (
     id BIGSERIAL PRIMARY KEY,
     assessment_id BIGINT NOT NULL REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,
     number INTEGER,
@@ -267,10 +278,11 @@ CREATE TABLE IF NOT EXISTS assessment_access_rules (
     end_date TIMESTAMP WITH TIME ZONE,
     credit INTEGER,
     UNIQUE (number, assessment_id)
-);
+  );
 
 -- assessment_questions
-CREATE TABLE IF NOT EXISTS assessment_questions (
+CREATE TABLE IF NOT EXISTS
+  assessment_questions (
     id BIGSERIAL PRIMARY KEY,
     number INTEGER,
     max_points DOUBLE PRECISION,
@@ -282,22 +294,24 @@ CREATE TABLE IF NOT EXISTS assessment_questions (
     question_id BIGINT NOT NULL REFERENCES questions ON DELETE CASCADE ON UPDATE CASCADE,
     deleted_at TIMESTAMP WITH TIME ZONE,
     UNIQUE (question_id, assessment_id)
-);
+  );
 
 ---------------------------------
 -- Tables created during operation
 ---------------------------------
 -- enrollments
-CREATE TABLE IF NOT EXISTS enrollments (
+CREATE TABLE IF NOT EXISTS
+  enrollments (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
     course_instance_id BIGINT NOT NULL REFERENCES course_instances ON DELETE CASCADE ON UPDATE CASCADE,
     role enum_role,
     UNIQUE (user_id, course_instance_id)
-);
+  );
 
 -- assessment_instances
-CREATE TABLE IF NOT EXISTS assessment_instances (
+CREATE TABLE IF NOT EXISTS
+  assessment_instances (
     id BIGSERIAL PRIMARY KEY,
     tiid text UNIQUE, -- temporary, delete after Mongo import
     qids JSONB, -- temporary, delete after Mongo import
@@ -318,10 +332,11 @@ CREATE TABLE IF NOT EXISTS assessment_instances (
     score_perc DOUBLE PRECISION DEFAULT 0,
     score_perc_in_grading DOUBLE PRECISION DEFAULT 0,
     UNIQUE (number, assessment_id, user_id)
-);
+  );
 
 -- instance_questions
-CREATE TABLE IF NOT EXISTS instance_questions (
+CREATE TABLE IF NOT EXISTS
+  instance_questions (
     id BIGSERIAL PRIMARY KEY,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     open BOOLEAN DEFAULT TRUE,
@@ -337,10 +352,11 @@ CREATE TABLE IF NOT EXISTS instance_questions (
     assessment_instance_id BIGINT NOT NULL REFERENCES assessment_instances ON DELETE CASCADE ON UPDATE CASCADE,
     assessment_question_id BIGINT NOT NULL REFERENCES assessment_questions ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE (assessment_question_id, assessment_instance_id)
-);
+  );
 
 -- variants
-CREATE TABLE IF NOT EXISTS variants (
+CREATE TABLE IF NOT EXISTS
+  variants (
     id BIGSERIAL PRIMARY KEY,
     qiid text UNIQUE, -- temporary, delete after Mongo import
     date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -352,10 +368,11 @@ CREATE TABLE IF NOT EXISTS variants (
     true_answer JSONB,
     options JSONB,
     UNIQUE (number, instance_question_id)
-);
+  );
 
 -- submissions
-CREATE TABLE IF NOT EXISTS submissions (
+CREATE TABLE IF NOT EXISTS
+  submissions (
     id BIGSERIAL PRIMARY KEY,
     sid text UNIQUE, -- temporary, delete after Mongo import
     date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -371,10 +388,11 @@ CREATE TABLE IF NOT EXISTS submissions (
     score DOUBLE PRECISION,
     correct BOOLEAN,
     feedback JSONB
-);
+  );
 
 -- job_sequences
-CREATE TABLE IF NOT EXISTS job_sequences (
+CREATE TABLE IF NOT EXISTS
+  job_sequences (
     id BIGSERIAL PRIMARY KEY,
     start_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     finish_date TIMESTAMP WITH TIME ZONE,
@@ -386,10 +404,11 @@ CREATE TABLE IF NOT EXISTS job_sequences (
     description TEXT,
     status enum_job_status DEFAULT 'Running',
     UNIQUE (course_id, number)
-);
+  );
 
 -- jobs
-CREATE TABLE IF NOT EXISTS jobs (
+CREATE TABLE IF NOT EXISTS
+  jobs (
     id BIGSERIAL PRIMARY KEY,
     start_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     finish_date TIMESTAMP WITH TIME ZONE,
@@ -415,23 +434,24 @@ CREATE TABLE IF NOT EXISTS jobs (
     error_message TEXT,
     UNIQUE (course_id, number),
     UNIQUE (job_sequence_id, number_in_sequence)
-);
+  );
 
 ---------------------------------
 -- Tables for logging
 ---------------------------------
-
 -- assessment_state_logs
-CREATE TABLE IF NOT EXISTS assessment_state_logs (
+CREATE TABLE IF NOT EXISTS
+  assessment_state_logs (
     id BIGSERIAL PRIMARY KEY,
     date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     open BOOLEAN,
     assessment_instance_id BIGINT NOT NULL REFERENCES assessment_instances ON DELETE CASCADE ON UPDATE CASCADE,
     auth_user_id BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE
-);
+  );
 
 -- assessment_score_logs
-CREATE TABLE IF NOT EXISTS assessment_score_logs (
+CREATE TABLE IF NOT EXISTS
+  assessment_score_logs (
     id BIGSERIAL PRIMARY KEY,
     date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     points DOUBLE PRECISION,
@@ -441,10 +461,11 @@ CREATE TABLE IF NOT EXISTS assessment_score_logs (
     score_perc_in_grading DOUBLE PRECISION,
     assessment_instance_id BIGINT NOT NULL REFERENCES assessment_instances ON DELETE CASCADE ON UPDATE CASCADE,
     auth_user_id BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE
-);
+  );
 
 -- access_logs
-CREATE TABLE IF NOT EXISTS access_logs (
+CREATE TABLE IF NOT EXISTS
+  access_logs (
     id BIGSERIAL PRIMARY KEY,
     mongo_id text UNIQUE,
     date timestamp with time zone,
@@ -459,19 +480,21 @@ CREATE TABLE IF NOT EXISTS access_logs (
     path text,
     params jsonb,
     body jsonb
-);
+  );
 
 -- variant_view_logs
-CREATE TABLE IF NOT EXISTS variant_view_logs (
+CREATE TABLE IF NOT EXISTS
+  variant_view_logs (
     id BIGSERIAL PRIMARY KEY,
     variant_id BIGINT NOT NULL REFERENCES variants ON DELETE CASCADE ON UPDATE CASCADE,
     access_log_id BIGINT UNIQUE NOT NULL REFERENCES access_logs ON DELETE CASCADE ON UPDATE CASCADE,
     open BOOLEAN,
     credit INTEGER
-);
+  );
 
 -- grading_logs
-CREATE TABLE IF NOT EXISTS grading_logs (
+CREATE TABLE IF NOT EXISTS
+  grading_logs (
     id BIGSERIAL PRIMARY KEY,
     date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     submission_id BIGINT NOT NULL REFERENCES submissions ON DELETE CASCADE ON UPDATE CASCADE,
@@ -485,10 +508,11 @@ CREATE TABLE IF NOT EXISTS grading_logs (
     correct BOOLEAN,
     feedback JSONB,
     auth_user_id BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE
-);
+  );
 
 -- question_score_logs
-CREATE TABLE IF NOT EXISTS question_score_logs (
+CREATE TABLE IF NOT EXISTS
+  question_score_logs (
     id BIGSERIAL PRIMARY KEY,
     date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     instance_question_id BIGINT NOT NULL REFERENCES instance_questions ON DELETE CASCADE ON UPDATE CASCADE,
@@ -496,10 +520,11 @@ CREATE TABLE IF NOT EXISTS question_score_logs (
     points DOUBLE PRECISION,
     max_points DOUBLE PRECISION,
     score_perc DOUBLE PRECISION
-);
+  );
 
 -- audit_logs
-CREATE TABLE IF NOT EXISTS audit_logs (
+CREATE TABLE IF NOT EXISTS
+  audit_logs (
     id BIGSERIAL PRIMARY KEY,
     date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     authn_user_id BIGINT,
@@ -513,4 +538,4 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     parameters JSONB,
     old_state JSONB,
     new_state JSONB
-);
+  );

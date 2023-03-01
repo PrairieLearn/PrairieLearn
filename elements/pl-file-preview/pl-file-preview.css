@@ -1,21 +1,5 @@
 [id^=file-preview] .file-status-container {
-  display: flex;
-  flex-direction: row;
-}
-
-[id^=file-preview] .file-status-container.has-preview {
   cursor: pointer;
-}
-
-[id^=file-preview] .file-status-container-left {
-  display: block;
-  justify-self: left;
-  flex: 1;
-}
-
-[id^=file-preview] .file-status-container-right {
-  justify-self: right;
-  align-self: center;
 }
 
 [id^=file-preview] .file-status-icon {
@@ -39,7 +23,7 @@
 
 [id^=file-preview] .file-preview-icon {
   margin-left: 10px;
-  transition: all 400ms;
+  transition: transform 400ms;
 }
 
 [id^=file-preview] .file-status-container:not(.collapsed) .file-preview-icon {
@@ -47,6 +31,5 @@
 }
 
 [id^=file-preview] .file-preview pre {
-  margin-top: 10px;
   max-height: 200px;
 }

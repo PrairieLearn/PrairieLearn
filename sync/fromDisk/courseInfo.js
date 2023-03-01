@@ -1,10 +1,9 @@
 // @ts-check
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
 const infofile = require('../infofile');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 /**
  * @param {import('../course-db').CourseData} courseData

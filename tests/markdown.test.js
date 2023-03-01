@@ -29,7 +29,7 @@ describe('Markdown processing', () => {
 
   it('handles code blocks', async () => {
     const question = '<markdown>\n```\nint a = 12;\n```\n</markdown>';
-    const expected = '<pl-code no-highlight="true">int a = 12;</pl-code>';
+    const expected = '<pl-code>int a = 12;</pl-code>';
     testMarkdownQuestion(question, expected);
   });
 
@@ -41,7 +41,7 @@ describe('Markdown processing', () => {
 
   it('handles code blocks with highlighted lines', async () => {
     const question = '<markdown>\n```{1,2-3}\nint a = 12;\n```\n</markdown>';
-    const expected = '<pl-code no-highlight="true" highlight-lines="1,2-3">int a = 12;</pl-code>';
+    const expected = '<pl-code highlight-lines="1,2-3">int a = 12;</pl-code>';
     testMarkdownQuestion(question, expected);
   });
 

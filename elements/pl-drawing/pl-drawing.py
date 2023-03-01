@@ -1,3 +1,4 @@
+import html
 import json
 import warnings
 
@@ -203,7 +204,7 @@ def render_controls(template, elem):
                 {
                     "render_button": True,
                     "button_class": elem.attrib.get("type", ""),
-                    "options": json.dumps(opts),
+                    "options": html.escape(json.dumps(opts), quote=True),
                 },
             ).strip()
     elif elem.tag == "pl-controls-group":
