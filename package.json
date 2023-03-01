@@ -164,7 +164,7 @@
         "@types/loopbench": "^1.2.1",
         "@types/mime": "^3.0.1",
         "@types/mocha": "^10.0.1",
-        "@types/node": "^18.11.18",
+        "@types/node": "^18.14.2",
         "@types/node-fetch": "^2.6.2",
         "@types/object-hash": "^3.0.2",
         "@types/passport": "^1.0.12",
