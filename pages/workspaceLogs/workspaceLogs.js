@@ -88,6 +88,7 @@ async function loadLogsForWorkspaceVersion(workspaceId, version) {
       method: 'POST',
       body: JSON.stringify({ workspace_id: workspaceId, action: 'getLogs' }),
       headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(30_000),
     });
     if (res.ok) {
       logParts.push(await res.text());
