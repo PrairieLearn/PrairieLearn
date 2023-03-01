@@ -22,4 +22,4 @@ scikit-image==0.19.3
 scikit-learn==1.2.1
 scipy==1.10.0
 sympy==1.11.1
-typing-extensions==4.4.0
+typing-extensions==4.5.0
