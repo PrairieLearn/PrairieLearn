@@ -83,7 +83,7 @@ async function loadLogsForWorkspaceVersion(workspaceId, version) {
   // If the current workspace version matches the requested version, we can
   // reach out to the workspace host directly to get the remaining logs. Otherwise,
   // they should have been flushed to S3 already.
-  if (workspace.state === 'running' && workspace.is_current_version) {
+  if (workspace.state === 'running' && workspace.is_current_version && workspace.hostname) {
     const res = await fetch(`http://${workspace.hostname}/`, {
       method: 'POST',
       body: JSON.stringify({ workspace_id: workspaceId, action: 'getLogs' }),
