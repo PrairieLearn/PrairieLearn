@@ -21,7 +21,7 @@
         "@prairielearn/sentry": "^1.0.0",
         "@pyroscope/nodejs": "^0.2.5",
         "@sentry/profiling-node": "^0.1.0",
-        "@sentry/tracing": "^7.36.0",
+        "@sentry/tracing": "^7.39.0",
         "ace-builds": "^1.15.0",
         "ace-code": "^1.15.2",
         "ajv": "^8.12.0",
