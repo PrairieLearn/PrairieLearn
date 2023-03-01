@@ -1039,12 +1039,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/parser@npm:^7.18.10, @babel/parser@npm:^7.20.5, @babel/parser@npm:^7.9.4":
+"@babel/parser@npm:^7.18.10, @babel/parser@npm:^7.20.5":
   version: 7.20.5
   resolution: "@babel/parser@npm:7.20.5"
   bin:
     parser: ./bin/babel-parser.js
   checksum: e8d514ce0aa74d56725bd102919a49fa367afef9cd8208cf52f670f54b061c4672f51b4b7980058ab1f5fe73615fe4dc90720ab47bbcebae07ad08d667eda318
+  languageName: node
+  linkType: hard
+
+"@babel/parser@npm:^7.20.15":
+  version: 7.21.2
+  resolution: "@babel/parser@npm:7.21.2"
+  bin:
+    parser: ./bin/babel-parser.js
+  checksum: e2b89de2c63d4cdd2cafeaea34f389bba729727eec7a8728f736bc472a59396059e3e9fe322c9bed8fd126d201fb609712949dc8783f4cae4806acd9a73da6ff
   languageName: node
   linkType: hard
 
@@ -3425,7 +3434,7 @@ __metadata:
     jquery-ui-dist: ^1.13.2
     jquery-ui-touch-punch: ^0.2.3
     js-cookie: ^3.0.1
-    jsdoc: ^4.0.0
+    jsdoc: ^4.0.2
     json-stable-stringify: ^1.0.2
     json-stringify-safe: ^5.0.1
     klaw: ^4.1.0
@@ -8768,11 +8777,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jsdoc@npm:^4.0.0":
-  version: 4.0.0
-  resolution: "jsdoc@npm:4.0.0"
+"jsdoc@npm:^4.0.2":
+  version: 4.0.2
+  resolution: "jsdoc@npm:4.0.2"
   dependencies:
-    "@babel/parser": ^7.9.4
+    "@babel/parser": ^7.20.15
     "@jsdoc/salty": ^0.2.1
     "@types/markdown-it": ^12.2.3
     bluebird: ^3.7.2
@@ -8789,7 +8798,7 @@ __metadata:
     underscore: ~1.13.2
   bin:
     jsdoc: jsdoc.js
-  checksum: 3aa99ccb13986e07929abda10276caa2b428faeb230563f89b3dea041f97bc9354f70eb4bd1add961b9041cd950fa8c5cdfad15f59e8ac6e6d3a58b153fc7184
+  checksum: 04bf5ab005349b7581bd0e72ed99933eb71a41dcb47235b486b7d9146fbdf212a53e0cc044abe48ccf46012bd812dc1dfc007c6d679660ebdd053cd000242515
   languageName: node
   linkType: hard
 
