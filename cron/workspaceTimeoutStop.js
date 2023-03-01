@@ -1,21 +1,26 @@
+// @ts-check
 const util = require('util');
+const sqldb = require('@prairielearn/postgres');
+const { metrics, getCounter, ValueType } = require('@prairielearn/opentelemetry');
 
 const config = require('../lib/config');
-const logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const workspaceHelper = require('../lib/workspace');
-const sqldb = require('@prairielearn/postgres');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
 module.exports = {};
 
 async function stopLaunchedTimeoutWorkspaces() {
-  const params = {
+  const meter = metrics.getMeter('prairielearn');
+  const launchedTimeoutCounter = getCounter(meter, 'workspace.stopped.launched_timeout', {
+    valueType: ValueType.INT,
+  });
+
+  const result = await sqldb.queryAsync(sql.select_launched_timeout_workspaces, {
     launched_timeout_sec: config.workspaceLaunchedTimeoutSec,
-  };
-  const result = await sqldb.queryAsync(sql.select_launched_timeout_workspaces, params);
-  const workspaces = result.rows;
-  for (const workspace of workspaces) {
+  });
+  for (const workspace of result.rows) {
     logger.verbose(`workspaceTimeoutStop: launched timeout for workspace_id = ${workspace.id}`);
     await workspaceHelper.updateState(
       workspace.id,
@@ -24,16 +29,20 @@ async function stopLaunchedTimeoutWorkspaces() {
         config.workspaceLaunchedTimeoutSec / 3600
       )} hours exceeded. Click "Reboot" to keep working.`
     );
+    launchedTimeoutCounter.add(1);
   }
 }
 
 async function stopHeartbeatTimeoutWorkspaces() {
-  const params = {
+  const meter = metrics.getMeter('prairielearn');
+  const visibilityTimeoutCounter = getCounter(meter, 'workspace.stopped.heartbeat_timeout', {
+    valueType: ValueType.INT,
+  });
+
+  const result = await sqldb.queryAsync(sql.select_heartbeat_timeout_workspaces, {
     heartbeat_timeout_sec: config.workspaceHeartbeatTimeoutSec,
-  };
-  const result = await sqldb.queryAsync(sql.select_heartbeat_timeout_workspaces, params);
-  const workspaces = result.rows;
-  for (const workspace of workspaces) {
+  });
+  for (const workspace of result.rows) {
     logger.verbose(`workspaceTimeoutStop: heartbeat timeout for workspace_id = ${workspace.id}`);
     await workspaceHelper.updateState(
       workspace.id,
@@ -42,14 +51,19 @@ async function stopHeartbeatTimeoutWorkspaces() {
         config.workspaceHeartbeatTimeoutSec / 60
       )} min. Click "Reboot" to keep working.`
     );
+    visibilityTimeoutCounter.add(1);
   }
 }
 
 async function stopInLaunchingTimeoutWorkspaces() {
-  const params = {
+  const meter = metrics.getMeter('prairielearn');
+  const launchingTimeoutCounter = getCounter(meter, 'workspace.stopped.launching_timeout', {
+    valueType: ValueType.INT,
+  });
+
+  const result = await sqldb.queryAsync(sql.select_in_launching_timeout_workspaces, {
     in_launching_timeout_sec: config.workspaceInLaunchingTimeoutSec,
-  };
-  const result = await sqldb.queryAsync(sql.select_in_launching_timeout_workspaces, params);
+  });
   const workspaces = result.rows;
   for (const workspace of workspaces) {
     // these are errors because timeouts should have been enforced
@@ -62,6 +76,7 @@ async function stopInLaunchingTimeoutWorkspaces() {
         config.workspaceInLaunchingTimeoutSec / 60
       )} min exceeded. Click "Reboot" to keep working.`
     );
+    launchingTimeoutCounter.add(1);
   }
 }
 

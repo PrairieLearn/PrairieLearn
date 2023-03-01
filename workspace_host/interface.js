@@ -25,7 +25,7 @@ const dockerUtil = require('../lib/dockerUtil');
 const awsHelper = require('../lib/aws');
 const socketServer = require('../lib/socket-server'); // must load socket server before workspace
 const workspaceHelper = require('../lib/workspace');
-const logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const LocalLock = require('../lib/local-lock');
 const { contains } = require('../lib/instructorFiles');
 
@@ -144,7 +144,6 @@ async
     async () => {
       // Always grab the port from the config
       workspace_server_settings.port = config.workspaceHostPort;
-      logger.verbose(`Workspace S3 bucket: ${config.workspaceS3Bucket}`);
     },
     (callback) => {
       const pgConfig = {
@@ -958,7 +957,13 @@ async function sendLogs(workspaceId, res) {
   try {
     const workspace = await _getWorkspaceAsync(workspaceId);
     const container = await _getDockerContainerByLaunchUuid(workspace.launch_uuid);
-    const logs = await container.logs({ stdout: true, stderr: true, timestamps: true });
+    const logs = await container.logs({
+      stdout: true,
+      stderr: true,
+      timestamps: true,
+      // This should give us a reasonable bound on the worst-case performance.
+      tail: 50000,
+    });
     const parsedLogs = parseDockerLogs(logs);
     res.status(200).send(parsedLogs);
   } catch (err) {
@@ -992,7 +997,13 @@ async function flushLogsToS3(container) {
   // date for ordering of logs from different versions.
   const startedAt = containerInfo.State.StartedAt;
 
-  const logs = await container.logs({ stdout: true, stderr: true, timestamps: true });
+  const logs = await container.logs({
+    stdout: true,
+    stderr: true,
+    timestamps: true,
+    // This should give us a reasonable bound on the worst-case performance.
+    tail: 50000,
+  });
   const parsedLogs = parseDockerLogs(logs);
 
   const key = `${workspaceId}/${version}/${startedAt}.log`;
