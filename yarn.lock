@@ -2887,10 +2887,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/async@npm:^3.2.16":
-  version: 3.2.16
-  resolution: "@types/async@npm:3.2.16"
-  checksum: 42b26d59e65ebb06ca5debee128a9dc9684af5f376a6b74e5d6e9e969e999077593aa04504ca5ac1f30e18371c06dcc5edeaf64be6e727fa20dbd1a98c487c37
+"@types/async@npm:^3.2.18":
+  version: 3.2.18
+  resolution: "@types/async@npm:3.2.18"
+  checksum: fe860993cc3fc087a00c4a55ca256bfb7aebfc56f1b1f05857b124a7328ff95177da48f441b1efc0bbb6e663a49e91a807c0adabb9950abc8b817b6bcffcfee0
   languageName: node
   linkType: hard
 
@@ -3412,7 +3412,7 @@ __metadata:
     "@pyroscope/nodejs": ^0.2.5
     "@sentry/profiling-node": ^0.1.0
     "@sentry/tracing": ^7.39.0
-    "@types/async": ^3.2.16
+    "@types/async": ^3.2.18
     "@types/body-parser": ^1.19.2
     "@types/chai": ^4.3.4
     "@types/chai-as-promised": ^7.1.5
