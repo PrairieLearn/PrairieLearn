@@ -2425,7 +2425,7 @@ __metadata:
   dependencies:
     "@prairielearn/html": ^2.0.0
     "@prairielearn/tsconfig": "*"
-    "@types/ejs": ^3.1.1
+    "@types/ejs": ^3.1.2
     "@types/node": ^18.11.18
     ejs: ^3.1.8
     mocha: ^10.2.0
@@ -2917,10 +2917,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/ejs@npm:^3.1.1":
-  version: 3.1.1
-  resolution: "@types/ejs@npm:3.1.1"
-  checksum: 12fa444920aaa70af2fae4424fa62b49c23b31a37129c428b7c9f9068e58c0696b4e5601b0449f87bae8794e039c679a43651c356c34f17d1bb460456dd41441
+"@types/ejs@npm:^3.1.2":
+  version: 3.1.2
+  resolution: "@types/ejs@npm:3.1.2"
+  checksum: e4f0745b6ed53a63c08bdfdeb019a7d0e0c400896722b44d6732b4ee6bf6061d2dc965206186b8b0ae2ecd71303c29f1af1feddbca2df0acbd7bd234a74ca518
   languageName: node
   linkType: hard
 
