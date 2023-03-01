@@ -10,7 +10,7 @@ lxml==4.9.2
 matplotlib==3.6.3
 networkx==3.0
 nltk==3.8.1
-numpy==1.24.1
+numpy==1.24.2
 openpyxl==3.1.0
 pandas-stubs==1.5.2.230105
 pandas==1.5.3
