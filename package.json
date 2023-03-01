@@ -144,7 +144,7 @@
         "winston-aws-cloudwatch": "^3.0.0",
         "xml2js": "^0.4.23",
         "xss": "^1.0.14",
-        "yargs": "^17.6.2",
+        "yargs": "^17.7.1",
         "yargs-parser": "^21.1.1",
         "zod": "^3.20.2"
     },
