@@ -18,6 +18,6 @@
   "dependencies": {
     "@types/debug": "^4.1.7",
     "@types/lodash": "^4.14.191",
-    "zod": "^3.20.2"
+    "zod": "^3.20.6"
   }
 }
