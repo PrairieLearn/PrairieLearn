@@ -22,8 +22,8 @@ FROM
 WHERE
   q.id = $question_id
   AND q.course_id = $course_id -- I'm not really sure what to do here. This authorization is used for TONS of stuff.
-                               -- We probably want to keep this constraint for most cases (e.g. editing quesiton files, etc.),
-                               -- but then for the case where an instructor is viewing a question shared with their course, allow it.
+  -- We probably want to keep this constraint for most cases (e.g. editing quesiton files, etc.),
+  -- but then for the case where an instructor is viewing a question shared with their course, allow it.
   AND q.deleted_at IS NULL;
 
 -- BLOCK select_and_auth_with_course_instance
