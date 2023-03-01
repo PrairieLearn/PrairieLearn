@@ -4,13 +4,13 @@ bokeh==3.0.3
 colormath==3.0.0
 defusedxml==0.7.1
 folium==0.14.0
-ipython==8.10.0
+ipython==8.11.0
 matplotlib==3.7.0
 nbconvert==7.2.9
 nbformat==5.7.3
 networkx==3.0
 nltk==3.8.1
-numpy==1.24.1
+numpy==1.24.2
 openpyxl==3.1.1
 pandas==1.5.3
 Pillow==9.4.0
