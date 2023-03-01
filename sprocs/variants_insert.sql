@@ -115,11 +115,11 @@ BEGIN
     INSERT INTO variants
         (instance_question_id, question_id,      course_instance_id, user_id, group_id,
         number,     variant_seed, params, true_answer, options, broken, authn_user_id,
-        workspace_id)
+        workspace_id, course_id)
     VALUES
         (instance_question_id, real_question_id, real_course_instance_id, real_user_id, real_group_id,
         new_number, variant_seed, params, true_answer, options, broken, authn_user_id,
-        workspace_id)
+        workspace_id, course_id)
     RETURNING id
     INTO variant_id;
 
