@@ -1,6 +1,6 @@
 -- BLOCK update_job_output
 UPDATE grading_jobs
 SET
-    output = $output
+  output = $output
 WHERE
-    id = $grading_job_id
+  id = $grading_job_id

@@ -1,7 +1,7 @@
 {
     "uuid": "75be4222-e9d1-11eb-9a03-0242ac130003",
     "type": "Exam",
-    "title": "Exam with active acccess restriction",
+    "title": "Exam with active access restriction",
     "set": "Exam",
     "number": "3",
     "allowAccess": [

@@ -291,7 +291,7 @@ def prepare(element_html, data):
     # overwriting previous choice(s)
     display_answers = []
     correct_answer = None
-    for (i, (index, correct, html, feedback, score)) in enumerate(sampled_answers):
+    for i, (index, correct, html, feedback, score) in enumerate(sampled_answers):
         keyed_answer = {
             "key": pl.index2key(i),
             "html": html,

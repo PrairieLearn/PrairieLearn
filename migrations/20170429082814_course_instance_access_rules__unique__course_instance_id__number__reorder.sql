@@ -1,4 +1,5 @@
-ALTER TABLE course_instance_access_rules DROP CONSTRAINT IF EXISTS course_instance_access_rules_number_course_instance_id_key;
+ALTER TABLE course_instance_access_rules
+DROP CONSTRAINT IF EXISTS course_instance_access_rules_number_course_instance_id_key;
 
 DO $$
 BEGIN

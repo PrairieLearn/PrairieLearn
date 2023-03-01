@@ -1,7 +1,7 @@
 const fs = require('fs-extra');
 const tmp = require('tmp-promise');
 const path = require('path');
-const sqldb = require('../../prairielib/lib/sql-db');
+const sqldb = require('@prairielearn/postgres');
 const stringify = require('json-stable-stringify');
 const { assert } = require('chai');
 
@@ -186,7 +186,6 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string} home
  * @property {string} args
  * @property {string[]} gradedFiles
- * @property {string[]} syncIgnore
  * @property {string} rewriteUrl
  * @property {boolean=} enableNetworking
  * @property {Record<string, string | null>=} environment
@@ -391,7 +390,6 @@ const questions = {
       home: '/home/coder',
       args: '--auth none',
       gradedFiles: ['animal.h', 'animal.c'],
-      syncIgnore: ['.local/share/code-server/'],
     },
   },
 };

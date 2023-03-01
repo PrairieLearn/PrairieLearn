@@ -3,8 +3,8 @@ const _ = require('lodash');
 const AWS = require('aws-sdk');
 
 const config = require('../lib/config');
-const logger = require('../lib/logger');
-const sqldb = require('../prairielib/lib/sql-db');
+const { logger } = require('@prairielearn/logger');
+const sqldb = require('@prairielearn/postgres');
 
 module.exports = {};
 

@@ -1,10 +1,9 @@
-CREATE OR REPLACE FUNCTION
-    migration_097_array_product(
-        IN x DOUBLE PRECISION[],
-        IN y DOUBLE PRECISION[],
-        OUT product DOUBLE PRECISION[]
-    )
-AS $$
+CREATE
+OR REPLACE FUNCTION migration_097_array_product (
+  IN x DOUBLE PRECISION[],
+  IN y DOUBLE PRECISION[],
+  OUT product DOUBLE PRECISION[]
+) AS $$
 BEGIN
     SELECT array_agg(xi * yi) INTO product FROM unnest(x, y) as tmp (xi,yi);
 END;
@@ -12,13 +11,11 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
-
-CREATE OR REPLACE FUNCTION
-    migration_097_array_increments_above_max(
-        IN data double precision[],
-        OUT increments double precision[]
-    )
-AS $$
+CREATE
+OR REPLACE FUNCTION migration_097_array_increments_above_max (
+  IN data double precision[],
+  OUT increments double precision[]
+) AS $$
 DECLARE
     i integer;
     max_val double precision := 0;
@@ -32,12 +29,8 @@ $$ LANGUAGE plpgsql VOLATILE;
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
-
-CREATE OR REPLACE FUNCTION
-    migration_097_instance_questions_calculate_stats(
-        instance_question_id_param bigint
-    ) RETURNS VOID
-AS $$
+CREATE
+OR REPLACE FUNCTION migration_097_instance_questions_calculate_stats (instance_question_id_param bigint) RETURNS VOID AS $$
 WITH first_calculation AS (
     SELECT
         count(s.id) > 0                        AS some_submission_var,
@@ -75,10 +68,13 @@ $$ LANGUAGE SQL VOLATILE;
 
 ------------------------------------------------------------------------------
 ------------------------------------------------------------------------------
+SELECT
+  migration_097_instance_questions_calculate_stats (iq.id)
+FROM
+  instance_questions AS iq;
 
-SELECT migration_097_instance_questions_calculate_stats(iq.id)
-FROM instance_questions AS iq;
+DROP FUNCTION migration_097_array_product (DOUBLE PRECISION[], DOUBLE PRECISION[]);
 
-DROP FUNCTION migration_097_array_product(DOUBLE PRECISION[],DOUBLE PRECISION[]);
-DROP FUNCTION migration_097_array_increments_above_max(DOUBLE PRECISION[]);
-DROP FUNCTION migration_097_instance_questions_calculate_stats(BIGINT);
+DROP FUNCTION migration_097_array_increments_above_max (DOUBLE PRECISION[]);
+
+DROP FUNCTION migration_097_instance_questions_calculate_stats (BIGINT);

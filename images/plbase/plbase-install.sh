@@ -75,7 +75,7 @@ else
     python3 -m pip install --no-cache-dir -r /py_req_no_r.txt
 fi
 
-# Clear various caches to keep the final image size down.
+# Clear various caches to minimize the final image size.
 yum clean all
 conda clean --all
 nvm cache clear

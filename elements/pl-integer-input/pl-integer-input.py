@@ -235,7 +235,6 @@ def parse(element_html, data):
         return
 
     if a_sub.strip() == "":
-
         if pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT):
             a_sub = pl.get_integer_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
         else:
