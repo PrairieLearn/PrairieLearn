@@ -1545,10 +1545,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@fortawesome/fontawesome-free@npm:^6.2.1":
-  version: 6.2.1
-  resolution: "@fortawesome/fontawesome-free@npm:6.2.1"
-  checksum: c77b7c8b0965e5c17f4ca45667885b6273e26af97a9e83db343fc756c159b5acd35cf420e73e1b916af1d275179290ccfb1900af48631749e30f36464f339bd3
+"@fortawesome/fontawesome-free@npm:^6.3.0":
+  version: 6.3.0
+  resolution: "@fortawesome/fontawesome-free@npm:6.3.0"
+  checksum: 5c62c2a836079e84b86cea1ab9934f7118ded2b93799a0439b947d5fa821d2df9707dc5f1a6e1e2c85dafb78ad3167597310a526a6ad41ae17aa340f989eec3d
   languageName: node
   linkType: hard
 
@@ -3370,7 +3370,7 @@ __metadata:
   dependencies:
     "@aws-sdk/client-auto-scaling": ^3.262.0
     "@changesets/cli": ^2.26.0
-    "@fortawesome/fontawesome-free": ^6.2.1
+    "@fortawesome/fontawesome-free": ^6.3.0
     "@octokit/rest": ^19.0.7
     "@prairielearn/bind-mount": ^1.0.0
     "@prairielearn/compiled-assets": ^1.0.0
