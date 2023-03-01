@@ -112,6 +112,8 @@ BEGIN
         END IF;
     END IF;
 
+    -- TODO: If someone has no roles, and another person has more than one required role, transfer one of the required roles
+
     -- Delete the user from the group
     DELETE FROM group_users
     WHERE user_id = arg_user_id AND group_id = arg_group_id;

@@ -25,6 +25,8 @@ BEGIN
     AND g.deleted_at IS NULL
     AND gc.deleted_at IS NULL;
 
+    DELETE FROM group_user_roles WHERE group_id = arg_group_id;
+
     -- Assign each user's role
     FOREACH arg_role_update IN ARRAY role_updates LOOP
         DELETE FROM group_user_roles WHERE user_id = (arg_role_update->>'user_id')::bigint AND group_id = arg_group_id;
