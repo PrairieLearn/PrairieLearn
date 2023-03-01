@@ -113,7 +113,7 @@
         "qrcode-svg": "^1.1.0",
         "quill": "^1.3.7",
         "quilljs-markdown": "^1.2.0",
-        "redis": "^3.1.2",
+        "redis": "^4.6.5",
         "redis-lru": "^0.6.0",
         "rehype-raw": "^5.1.0",
         "rehype-sanitize": "4.0.0",
