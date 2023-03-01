@@ -90,7 +90,7 @@ BEGIN
         FROM
             pl_courses AS c
             JOIN course_instances AS ci ON (ci.course_id = c.id)
-            JOIN questions AS q ON (q.course_id = c.id)
+            JOIN questions AS q ON (q.course_id = c.id) -- TODO: instead of making sure the question matches the course_id, make sure the question has been shared with the course_id
         WHERE
             ci.id = real_course_instance_id
             AND q.id = real_question_id;

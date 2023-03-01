@@ -34,7 +34,7 @@ FROM
   JOIN topics AS top ON (top.id = q.topic_id)
   LEFT JOIN issue_count ON (issue_count.question_id = q.id)
 WHERE
-  q.course_id = $course_id
+  q.course_id = $course_id -- leave the same for now? eventually we will have a way to view shared questions but not now
   AND q.deleted_at IS NULL
 GROUP BY
   q.id,
@@ -50,5 +50,5 @@ FROM
   questions AS q
 WHERE
   q.uuid = $uuid
-  AND q.course_id = $course_id
+  AND q.course_id = $course_id -- leave the same for now? eventually we will have a way to view shared questions but not now
   AND q.deleted_at IS NULL;

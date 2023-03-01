@@ -77,7 +77,7 @@ WITH RECURSIVE
     SELECT
       tq.id,
       tq.qid,
-      tq.course_id,
+      tq.course_id, -- TODO: should be left the same, right?
       tq.template_directory
     FROM
       questions AS q

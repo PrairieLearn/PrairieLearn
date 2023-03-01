@@ -4,7 +4,7 @@ SELECT
 FROM
   questions AS q
 WHERE
-  q.course_id = $course_id
+  q.course_id = $course_id -- used to ensure unique ids within a course. leave the same
   AND q.deleted_at IS NULL;
 
 -- BLOCK select_question_id_from_uuid

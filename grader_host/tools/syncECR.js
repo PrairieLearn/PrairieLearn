@@ -88,7 +88,7 @@ async.series(
       var sql = `
         SELECT DISTINCT external_grading_image
         FROM questions AS q
-        JOIN pl_courses AS plc ON (q.course_id = plc.id)
+        JOIN pl_courses AS plc ON (q.course_id = plc.id) -- does it matter if I change this?
         WHERE external_grading_image IS NOT NULL
         AND q.deleted_at IS NULL
         AND plc.deleted_at IS NULL

@@ -36,5 +36,5 @@ SELECT
 FROM
   questions AS q
 WHERE
-  q.course_id = $course_id
+  q.course_id = $course_id -- should be left the same?
   AND q.deleted_at IS NULL;
