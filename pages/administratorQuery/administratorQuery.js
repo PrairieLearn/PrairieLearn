@@ -57,7 +57,7 @@ router.get(
       res.send(res.locals.result.rows);
     } else if (req.query.format === 'csv') {
       res.attachment(req.params.query + '.csv');
-      csvMaker.resultToCsv(res.locals.result).pipe(res);
+      csvMaker.rowsToCsv(res.locals.result.rows, res.locals.result.columns).pipe(res);
     } else {
       const recentQueryRuns = await sqldb.queryAsync(sql.select_recent_query_runs, {
         query_name: req.params.query,
