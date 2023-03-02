@@ -3,7 +3,7 @@ var _ = require('lodash');
 var path = require('path');
 var jsonStringifySafe = require('json-stringify-safe');
 
-var logger = require('../../lib/logger');
+const { logger } = require('@prairielearn/logger');
 
 /** @type {import('express').ErrorRequestHandler} */
 module.exports = function (err, req, res, _next) {
