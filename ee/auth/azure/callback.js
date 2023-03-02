@@ -1,36 +1,40 @@
 // @ts-check
-const ERR = require('async-stacktrace');
 const passport = require('passport');
 const express = require('express');
-const router = express.Router();
 const asyncHandler = require('express-async-handler');
+const util = require('util');
 
 const authnLib = require('../../../lib/authn');
 
+const router = express.Router();
+
 router.post(
   '/',
-  asyncHandler(async (req, res, next) => {
-    const authData = {
-      response: res,
-      failureRedirect: '/pl',
-      session: false,
+  asyncHandler(async (req, res) => {
+    // This will write the resolved user to `req.user`.
+    await util.promisify(
+      passport.authenticate('azuread-openidconnect', {
+        failureRedirect: '/pl',
+        session: false,
+      })
+    )(res, res);
+
+    const user = req.user;
+    if (!user) throw new Error('Login failed');
+
+    const authnParams = {
+      // @ts-expect-error `upn` is not defined on the type.
+      uid: user.upn,
+      // @ts-expect-error `displayName` is not defined on the type.
+      name: user.displayName,
+      uin: null,
+      provider: 'Azure',
     };
-    passport.authenticate('azuread-openidconnect', authData, async (err, user, _info) => {
-      if (ERR(err, next)) return;
-      if (!user) return next(new Error('Login failed'));
 
-      let authnParams = {
-        uid: user.upn,
-        name: user.displayName,
-        uin: null,
-        provider: 'Azure',
-      };
-
-      await authnLib.loadUser(req, res, authnParams, {
-        redirect: true,
-        pl_authn_cookie: true,
-      });
-    })(req, res, next);
+    await authnLib.loadUser(req, res, authnParams, {
+      redirect: true,
+      pl_authn_cookie: true,
+    });
   })
 );
 
