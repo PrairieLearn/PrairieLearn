@@ -70,7 +70,6 @@ describe('Test group based assessments with custom group roles from student side
 
         // Store roles by name for later tests
         const manager = result.rows.find((row) => row.role_name === 'Manager');
-        console.log(manager);
         assert.isDefined(manager);
 
         const recorder = result.rows.find((row) => row.role_name === 'Recorder');
