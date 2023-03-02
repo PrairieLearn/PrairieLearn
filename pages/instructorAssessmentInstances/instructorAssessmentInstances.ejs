@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <%- include('../partials/head'); %>
-    
+
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/bootstrap-table.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/sticky-header/bootstrap-table-sticky-header.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('bootstrap-table/dist/extensions/auto-refresh/bootstrap-table-auto-refresh.js') %>"></script>
@@ -159,7 +159,7 @@
               </button>
               <%# Capture all clicks to dropdown items to prevent scrolling to the top of the page %>
               <div class="dropdown-menu dropdown-menu-right" onclick="window.event.preventDefault();">
-                
+
                 <% if (authz_data.has_course_instance_permission_edit) { %>
                 <a class="dropdown-item"
                    role="button" tabindex="0"
@@ -184,7 +184,7 @@
                   Must have editor permission
                 </a>
                 <% } %>
-                
+
               </div>
             </div>
           </div>
@@ -323,7 +323,7 @@
         </table>
 
         <div class="spinning-wheel card-body spinner-border"><span class="sr-only">Loading...</span></div>
-        
+
         <div class="modal fade" id="role-help" tabindex="-1" role="dialog">
           <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
@@ -346,7 +346,7 @@
             </div>
           </div>
         </div>
-        
+
         <div class="modal fade" id="duration-help" tabindex="-1" role="dialog">
           <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
@@ -398,7 +398,7 @@
             </div>
           </div>
         </div>
-        
+
         <div class="modal fade" id="time-remaining-help" tabindex="-1" role="dialog">
           <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
@@ -412,7 +412,7 @@
                 <p>For open assessments with a time limit, this column
                   will indicate the number of minutes (rounded down)
                   the student has left to complete the assessment. If
-                  the value is <strong>%lt; 1 min</strong>, the student has
+                  the value is <strong>&lt; 1 min</strong>, the student has
                   less than one minute to complete it. This column may
                   also contain one of the following special
                   values.</p>
