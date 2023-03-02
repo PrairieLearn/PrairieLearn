@@ -28,6 +28,11 @@ var MathJax = {
         // tries to switch the renderer with the pop-up menu. The bug will
         // supposedly be fixed in MathJax 4, and then this could be changed
         // back to global.
+        // Refer to issues on MathJax:
+        // https://github.com/mathjax/MathJax/issues/2924
+        // https://github.com/mathjax/MathJax/issues/2956
+        // This PR was merged but not released until MathJax v4:
+        // https://github.com/mathjax/MathJax-src/pull/859
         fontCache: 'local'
     },
     loader: {
