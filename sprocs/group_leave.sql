@@ -50,7 +50,7 @@ BEGIN
             -- 1. Grab a random other user from the group
             SELECT user_id
             INTO arg_assignee_id
-            FROM group_user_roles
+            FROM group_users
             WHERE group_id = arg_group_id AND user_id != arg_user_id
             LIMIT 1;
 
