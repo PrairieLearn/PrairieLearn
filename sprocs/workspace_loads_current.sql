@@ -41,13 +41,13 @@ BEGIN
     SELECT count(*) INTO workspace_launching_count FROM workspaces AS w WHERE w.state = 'launching';
     SELECT count(*) INTO workspace_relaunching_count FROM workspaces AS w WHERE w.state = 'launching' AND num_nonnulls(w.rebooted_at, w.reset_at) > 0;
     SELECT count(*) INTO workspace_running_count FROM workspaces AS w WHERE w.state = 'running';
-    SELECT count(*) INTO workspace_running_on_healthy_hosts_count
+    SELECT count(*)
     FROM
         workspaces AS w
         JOIN workspace_hosts AS wh ON (wh.id = w.workspace_host_id)
     WHERE
         w.state = 'running'
-        AND wh.state = 'ready' OR wh.state = 'draining';
+        AND (wh.state = 'ready' OR wh.state = 'draining');
 
     workspace_active_count := workspace_running_count + workspace_launching_count;
     workspace_active_on_healthy_hosts_count := workspace_running_on_healthy_hosts_count + workspace_launching_count;
