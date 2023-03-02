@@ -41,7 +41,7 @@ BEGIN
     SELECT count(*) INTO workspace_launching_count FROM workspaces AS w WHERE w.state = 'launching';
     SELECT count(*) INTO workspace_relaunching_count FROM workspaces AS w WHERE w.state = 'launching' AND num_nonnulls(w.rebooted_at, w.reset_at) > 0;
     SELECT count(*) INTO workspace_running_count FROM workspaces AS w WHERE w.state = 'running';
-    SELECT count(*)
+    SELECT count(*) INTO workspace_running_on_healthy_hosts_count
     FROM
         workspaces AS w
         JOIN workspace_hosts AS wh ON (wh.id = w.workspace_host_id)
