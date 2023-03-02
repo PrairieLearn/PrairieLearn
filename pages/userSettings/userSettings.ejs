@@ -15,6 +15,59 @@
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
+          Logged-in user profile information
+          <a href="/pl/logout" class="btn btn-danger btn-sm ml-auto">Logout</a>
+        </div>
+          <table class="table table-sm two-column-description">
+            <tbody>
+              <tr>
+                <th>User ID (UID)</th>
+                <td>
+                  <%= authn_user.uid %>
+                </td>
+              </tr>
+              <tr>
+                <th>User Name</th>
+                <td><%= authn_user.name %></td>
+              </tr>
+              <tr>
+                <th>Unique Id Number (UIN)</th>
+                <td><%= authn_user.uin %></td>
+              </tr>
+              <tr>
+                <th>Institution</th>
+                <td><%= authn_institution.long_name %> (<%= authn_institution.short_name %>)</td>
+              </tr>
+              <tr>
+                <th>Authentication method</th>
+                <td>
+                  <%= authn_provider_name %>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex">
+          Browser configuration
+        </div>
+        <div class="card-body">
+          <p>These options will let you reset some browser settings related to technology inside PrairieLearn.
+            Use these buttons to reset things if things are broken for you.
+          </p>
+          <p>
+          <button class="btn btn-md btn-info"
+            onClick="localStorage.removeItem('MathJax-Menu-Settings');alert('MathJax menu settings have been reset');">
+            Reset MathJax menu settings
+          </button> Can be helpful if your math shows up as
+          <strong>$ x = \frac {-b \pm \sqrt {b^2 - 4ac}}{2a} $</strong>
+          </p>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
           Personal Access Tokens
           <button id="generateTokenButton"
             type="button" class="btn btn-light btn-sm ml-auto"
