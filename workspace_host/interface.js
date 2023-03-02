@@ -796,14 +796,25 @@ function _createContainer(workspace, callback) {
 }
 const _createContainerAsync = util.promisify(_createContainer);
 
-function _startContainer(workspace, callback) {
-  workspaceUtils.updateWorkspaceMessage(workspace.id, 'Starting container');
-  workspace.container.start((err) => {
-    if (ERR(err, callback)) return;
-    callback(null, workspace);
+async function _startContainer(workspace) {
+  await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Starting container');
+  await workspace.container.start();
+}
+
+/**
+ * Wrapper around `updateWorkspaceState()` that will ensure any errors don't
+ * propagate to the caller. Useful during the initialization sequence when we
+ * would mark the host as unhealthy if an error occurred while updating the state.
+ * @param {*} workspaceId
+ * @param {*} state
+ * @param {*} message
+ */
+function safeUpdateWorkspaceState(workspaceId, state, message) {
+  workspaceUtils.updateWorkspaceState(workspaceId, state, message).catch((err) => {
+    logger.error('Error updating workspace state', err);
+    Sentry.captureException(err);
   });
 }
-const _startContainerAsync = util.promisify(_startContainer);
 
 // Called by the main server the first time a workspace is used by a user
 async function initSequenceAsync(workspace_id, useInitialZip, res) {
@@ -842,7 +853,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       workspace.settings = await _getWorkspaceSettingsAsync(workspace.id);
     } catch (err) {
       logger.error(`Error configuring workspace ${workspace_id}`, err);
-      workspaceUtils.updateWorkspaceState(
+      safeUpdateWorkspaceState(
         workspace_id,
         'stopped',
         `Error configuring workspace. Click "Reboot" to try again.`
@@ -855,7 +866,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
     } catch (err) {
       const image = workspace.settings.workspace_image;
       logger.error(`Error pulling image ${image} for workspace ${workspace_id}`, err);
-      workspaceUtils.updateWorkspaceState(
+      safeUpdateWorkspaceState(
         workspace_id,
         'stopped',
         `Error pulling image. Click "Reboot" to try again.`
@@ -864,7 +875,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
     }
 
     try {
-      workspaceUtils.updateWorkspaceMessage(workspace.id, 'Creating container');
+      await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Creating container');
       const hostname = `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`;
       await sqldb.queryAsync(sql.update_workspace_hostname, {
         workspace_id,
@@ -873,7 +884,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       workspace.container = await _createContainerAsync(workspace);
     } catch (err) {
       logger.error(`Error creating container for workspace ${workspace.id}`, err);
-      workspaceUtils.updateWorkspaceState(
+      safeUpdateWorkspaceState(
         workspace_id,
         'stopped',
         `Error creating container. Click "Reboot" to try again.`
@@ -882,13 +893,13 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
     }
 
     try {
-      await _startContainerAsync(workspace);
+      await _startContainer(workspace);
       await _checkServerAsync(workspace);
       debug(`init: container initialized for workspace_id=${workspace_id}`);
-      workspaceUtils.updateWorkspaceState(workspace_id, 'running', null);
+      await workspaceUtils.updateWorkspaceState(workspace_id, 'running', null);
     } catch (err) {
       logger.error(`Error starting container for workspace ${workspace.id}`, err);
-      workspaceUtils.updateWorkspaceState(
+      safeUpdateWorkspaceState(
         workspace_id,
         'stopped',
         `Error starting container. Click "Reboot" to try again.`
