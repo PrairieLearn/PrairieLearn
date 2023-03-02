@@ -38,6 +38,11 @@ var MathJax = {
                     MathJax.typesetPromise();
                 }
             };
+
+            // Disallow the user from changing the MathJax renderer. This often
+            // lead to bugs in the past.
+            const renderer = window.MathJax.startup.document.menu.menu.find('Renderer');
+            if (renderer) renderer.disable();
         },
         pageReady: () => {
             MathJax.startup.defaultPageReady();
