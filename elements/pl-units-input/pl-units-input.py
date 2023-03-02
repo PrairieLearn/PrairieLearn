@@ -1,12 +1,12 @@
 from enum import Enum
 from html import escape
-from typing import Optional
+from typing import Any, Optional
 
 import chevron
 import lxml.html
 import prairielearn as pl
 import unit_utils as uu
-from pint import Quantity, Unit, errors
+from pint import Unit, errors
 from typing_extensions import assert_never
 
 
@@ -469,7 +469,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
 
 def prepare_display_string(
-    quantity: Quantity, custom_format: Optional[str], grading_mode: GradingMode
+    quantity: Any, custom_format: Optional[str], grading_mode: GradingMode
 ) -> str:
     if grading_mode is GradingMode.ONLY_UNITS:
         return str(quantity.units)

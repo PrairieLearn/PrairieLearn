@@ -1,9 +1,9 @@
 from enum import Enum
-from typing import Callable, Optional, Tuple
+from typing import Any, Callable, Optional, Tuple
 
 import numpy as np
 import prairielearn as pl
-from pint import Quantity, UnitRegistry
+from pint import UnitRegistry
 from typing_extensions import assert_never
 
 CORRECT_UNITS_INCORRECT_MAGNITUDE_FEEDBACK = (
@@ -146,5 +146,5 @@ def get_with_units_grading_fn(
     return grade_with_units
 
 
-def is_numberless(a_sub: str, a_sub_parsed: Quantity) -> bool:
+def is_numberless(a_sub: str, a_sub_parsed: Any) -> bool:
     return "1" not in a_sub and a_sub_parsed.magnitude == 1
