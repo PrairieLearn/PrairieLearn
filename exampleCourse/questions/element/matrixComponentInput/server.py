@@ -3,7 +3,6 @@ import prairielearn as pl
 
 
 def generate(data):
-
     N = 2
     A = np.random.rand(N, N)
     sf = 2

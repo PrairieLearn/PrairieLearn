@@ -2,7 +2,6 @@ import random
 
 
 def generate(data):
-
     namelist = ["Silicon", "Titanium", "Copper"]
     rholist = [2.33, 4.507, 8.92]
     Mlist = [28.086, 47.88, 63.546]

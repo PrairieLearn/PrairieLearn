@@ -9,6 +9,9 @@ coverage/
 # Transpiled files
 packages/*/dist
 
+# Built assets
+public/build/
+
 # The `public/localscripts/calculationQuestion` directory unfortunately
 # contains a mixture of first-party and vendored third-party scripts. We want
 # to format our own scripts, but we should avoid formatting anything that was
@@ -44,3 +47,6 @@ docs/code-docs/
 
 # pytest cache
 .pytest_cache/
+
+# prettier-plugin-sql does not properly support sprocs, so ignoring those
+sprocs/*.sql

@@ -59,12 +59,16 @@ skip_glob = ["tools/*", "node_modules/*"]
 [tool.pyright]
 include = [
     "./elements/pl-big-o-input",
+    "./elements/pl-code",
     "./elements/pl-dataframe",
     "./elements/pl-external-grader-variables",
+    "./elements/pl-file-preview",
+    "./elements/pl-file-upload",
     "./elements/pl-graph",
     "./elements/pl-hidden-hints",
     "./elements/pl-python-variable",
     "./elements/pl-symbolic-input",
+    "./elements/pl-variable-output",
     "./python/conftest.py",
     "./python/prairielearn.py",
     "./python/prairielearn_test.py",
@@ -72,4 +76,4 @@ include = [
     "./python/python_helper_sympy_test.py"
 ]
 extraPaths = ["./python"]
-pythonVersion = "3.8"
+pythonVersion = "3.9"

@@ -4,7 +4,6 @@ import numpy as np
 
 
 def generate(data):
-
     a = np.round(random.uniform(1, 10), 1)
     data["params"]["a"] = a
     data["correct_answers"]["area"] = a**2

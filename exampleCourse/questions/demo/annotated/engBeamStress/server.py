@@ -6,7 +6,6 @@ import prairielearn as pl
 
 
 def generate(data):
-
     # Creating the corner points for the I-beam cross section
     # ----------------------------------------------------------------------
     w = 100  # width of the flange

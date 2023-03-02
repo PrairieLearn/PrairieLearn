@@ -18,8 +18,8 @@
         "port": 8080,
         "home": "/home/student",
         "gradedFiles": [
-            "starter_code.h",
-            "starter_code.c"
+            "**/*.h",
+            "**/*.c"
         ]
     }
 }

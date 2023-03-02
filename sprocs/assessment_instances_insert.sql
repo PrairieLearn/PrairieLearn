@@ -18,6 +18,7 @@ DECLARE
     date_limit timestamptz := NULL;
     auto_close boolean := FALSE;
     tmp_group_id bigint;
+    include_in_statistics boolean;
 BEGIN
     -- ######################################################################
     -- get the assessment
@@ -75,16 +76,24 @@ BEGIN
         auto_close := TRUE;
     END IF;
 
+    -- we will use this assessment instance for statistics if the user is NOT an instructor
+    include_in_statistics := NOT users_is_instructor_in_course_instance(
+        assessment_instances_insert.user_id,
+        assessment.course_instance_id
+    );
+
     -- ######################################################################
     -- do the actual insert
     -- ON CONFLICT: make sure there is no new instance created by student's teammate simultaneously
     -- ON CONFLICT will not update anything but for returning the id
 
     INSERT INTO assessment_instances
-            ( auth_user_id, assessment_id, user_id,     group_id, mode, auto_close, date_limit, number)
+            ( auth_user_id, assessment_id, user_id,     group_id, mode, auto_close,
+              date_limit, number, include_in_statistics)
     VALUES  (authn_user_id, assessment_id,
             CASE WHEN group_work THEN NULL      ELSE user_id END,
-            CASE WHEN group_work THEN tmp_group_id ELSE NULL END, mode, auto_close, date_limit, number)
+            CASE WHEN group_work THEN tmp_group_id ELSE NULL END, mode, auto_close,
+              date_limit, number, include_in_statistics)
     ON CONFLICT (assessment_id, group_id, number) DO UPDATE
     SET assessment_id = excluded.assessment_id
     RETURNING id
@@ -103,8 +112,7 @@ BEGIN
     VALUES (true, assessment_instance_id, date_limit, authn_user_id);
 
     -- ######################################################################
-    -- start a record of the last access time
-    -- After code review I will delete those two lines of comment
+    -- record the last access time
     IF group_work THEN
         INSERT INTO last_accesses
                 (group_id, last_access)

@@ -264,7 +264,6 @@ def get_parent_with_location(node: ast.AST) -> Any:
 
 
 def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
-
     # Disallow escape character
     ind = expr.find("\\")
     if ind != -1:

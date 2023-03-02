@@ -8,14 +8,13 @@ const { trace, context, suppressTracing, SpanStatusCode } = require('@prairielea
 
 const config = require('../lib/config');
 const { isEnterprise } = require('../lib/license');
-const logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const { sleep } = require('../lib/sleep');
 const namedLocks = require('../lib/named-locks');
 
-const sqldb = require('../prairielib/lib/sql-db');
-const sqlLoader = require('../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 // jobTimeouts meaning (used by stop()):
 //     Timeout object = timeout is running and can be canceled

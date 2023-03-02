@@ -3,7 +3,6 @@ import prairielearn as pl
 
 
 def generate(data):
-
     # Dimensions
     n = np.random.randint(3, 5)
     m = np.random.randint(2, 4)

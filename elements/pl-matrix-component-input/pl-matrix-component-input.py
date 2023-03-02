@@ -189,7 +189,6 @@ def render(element_html, data):
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
-
         parse_error = data["format_errors"].get(name, None)
         html_params = {
             "submission": True,
@@ -267,7 +266,6 @@ def render(element_html, data):
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
-
         # Get true answer - do nothing if it does not exist
         a_tru = pl.from_json(data["correct_answers"].get(name, None))
         if a_tru is not None:
@@ -418,7 +416,6 @@ def grade(element_html, data):
     feedback = {}
     for i in range(m):
         for j in range(n):
-
             each_entry_name = name + str(n * i + j + 1)
             a_sub = data["submitted_answers"].get(each_entry_name, None)
             # Get submitted answer (if it does not exist, score is zero)
@@ -525,11 +522,9 @@ def test(element_html, data):
 
 
 def createTableForHTMLDisplay(m, n, name, label, data, format):
-
     editable = data["editable"]
 
     if format == "output-invalid":
-
         display_array = "<table>"
         display_array += "<tr>"
         display_array += '<td class="close-left" rowspan="' + str(m) + '"></td>'
@@ -572,7 +567,6 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
         display_array += "</table>"
 
     elif format == "output-feedback":
-
         partial_score_feedback = data["partial_scores"].get(name, {"feedback": None})
         feedback_each_entry = partial_score_feedback.get("feedback", None)
         score = partial_score_feedback.get("score", None)
@@ -686,7 +680,6 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
         display_array += "</table>"
 
     else:
-
         display_array = ""
 
     return display_array

@@ -2,12 +2,12 @@
 const asyncHandler = require('express-async-handler');
 const path = require('path');
 const express = require('express');
+const assessment = require('../../../../lib/assessment');
 const router = express.Router({ mergeParams: true });
 
-const sqldb = require('../../../../prairielib/lib/sql-db');
-const sqlLoader = require('../../../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
-const sql = sqlLoader.load(path.join(__dirname, '..', 'queries.sql'));
+const sql = sqldb.loadSql(path.join(__dirname, '..', 'queries.sql'));
 
 router.get(
   '/:unsafe_assessment_instance_id',
@@ -65,11 +65,11 @@ router.get(
       return;
     }
 
-    const logsResult = await sqldb.callAsync('assessment_instances_select_log', [
+    const logs = await assessment.selectAssessmentInstanceLog(
       result.rows[0].assessment_instance_id,
-      true,
-    ]);
-    res.status(200).send(logsResult.rows);
+      true
+    );
+    res.status(200).send(logs);
   })
 );
 

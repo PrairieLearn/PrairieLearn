@@ -3,8 +3,7 @@ const { Router } = require('express');
 const asyncHandler = require('express-async-handler');
 const z = require('zod');
 
-const sqldb = require('../../../prairielib/sql-db');
-const sqlLoader = require('../../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
 const { InstitutionAdminSso } = require('./sso.html');
 const {
@@ -14,7 +13,7 @@ const {
   getInstitutionSamlProvider,
 } = require('../utils');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
 
 const enabledProvidersSchema = z.array(z.string());

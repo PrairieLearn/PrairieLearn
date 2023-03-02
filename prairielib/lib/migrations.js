@@ -5,12 +5,11 @@ const path = require('path');
 const async = require('async');
 
 const namedLocks = require('../../lib/named-locks');
-const logger = require('../../lib/logger');
-const sqldb = require('../lib/sql-db');
-const sqlLoader = require('../lib/sql-loader');
+const { logger } = require('@prairielearn/logger');
+const sqldb = require('@prairielearn/postgres');
 const error = require('../lib/error');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 var migrationDir;
 var project;
