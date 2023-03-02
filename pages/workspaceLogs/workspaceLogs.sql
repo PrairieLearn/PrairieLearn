@@ -1,6 +1,7 @@
 -- BLOCK select_workspace
 SELECT
   w.version,
+  w.state,
   wh.hostname,
   ($version = version) AS is_current_version
 FROM
