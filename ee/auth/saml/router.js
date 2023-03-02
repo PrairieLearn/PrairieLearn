@@ -3,7 +3,6 @@ const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
 const { Router } = require('express');
 const passport = require('passport');
-const util = require('util');
 
 const authnLib = require('../../../lib/authn');
 
