@@ -905,7 +905,7 @@ async function sendGradedFilesArchive(workspace_id, res) {
 
   let gradedFiles;
   try {
-    gradedFiles = workspaceUtils.getWorkspaceGradedFiles(
+    gradedFiles = await workspaceUtils.getWorkspaceGradedFiles(
       workspaceDir,
       workspaceSettings.workspace_graded_files,
       {
