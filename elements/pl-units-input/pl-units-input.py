@@ -1,5 +1,6 @@
 from enum import Enum
 from html import escape
+from random import choice
 from typing import Any, Optional
 
 import chevron
@@ -432,7 +433,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
         data["partial_scores"][name] = {"score": 1, "weight": weight}
     elif result == "incorrect":
-        # TODO Possibly add other test cases
         ureg = pl.get_unit_registry()
         if grading_mode is GradingMode.ONLY_UNITS:
             answer = str((ureg.Quantity(a_tru) * ureg.meters).units)
@@ -462,8 +462,10 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
         data["raw_submitted_answers"][name] = str(answer)
     elif result == "invalid":
-        data["raw_submitted_answers"][name] = "1 vfg"
-        data["format_errors"][name] = "Invalid unit."
+        invalid_answer = choice(["1 vfg", "1/0", "tan x"])
+
+        data["raw_submitted_answers"][name] = invalid_answer
+        data["format_errors"][name] = ""
     else:
         assert_never(result)
 
