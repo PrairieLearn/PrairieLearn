@@ -124,11 +124,8 @@ router.get('/:filename', function (req, res, next) {
           csvData.push(questionStatsData);
         });
 
-        csvStringify(csvData, function (err, csv) {
-          if (ERR(err, next)) return;
-          res.attachment(req.params.filename);
-          res.send(csv);
-        });
+        res.attachment(req.params.filename);
+        csvStringify(csvData).pipe(res);
       }
     );
   } else {

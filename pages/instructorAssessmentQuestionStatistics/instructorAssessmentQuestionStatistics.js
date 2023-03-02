@@ -2,7 +2,7 @@ const _ = require('lodash');
 const asyncHandler = require('express-async-handler');
 const express = require('express');
 const router = express.Router();
-const { nonblockingStringifyAsync } = require('../../lib/nonblocking-csv-stringify');
+const csvStringify = require('../../lib/nonblocking-csv-stringify');
 
 const error = require('../../prairielib/lib/error');
 const sanitizeName = require('../../lib/sanitize-name');
@@ -121,10 +121,9 @@ router.get(
 
         csvData.push(questionStatsData);
       });
-      const csv = await nonblockingStringifyAsync(csvData);
 
       res.attachment(req.params.filename);
-      res.send(csv);
+      csvStringify(csvData).pipe(res);
     } else {
       throw error.make(404, 'Unknown filename: ' + req.params.filename);
     }

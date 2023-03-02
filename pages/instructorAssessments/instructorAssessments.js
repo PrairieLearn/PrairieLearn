@@ -152,11 +152,9 @@ router.get(
         csvData.push(csvRow);
       });
       csvData.splice(0, 0, csvHeaders);
-      csvStringify(csvData, function (err, csv) {
-        if (err) throw Error('Error formatting CSV', err);
-        res.attachment(req.params.filename);
-        res.send(csv);
-      });
+
+      res.attachment(req.params.filename);
+      csvStringify(csvData).pipe(res);
     } else {
       throw error.make(404, 'Unknown filename: ' + req.params.filename);
     }

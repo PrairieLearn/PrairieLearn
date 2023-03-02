@@ -66,12 +66,8 @@ var sendInstancesCsv = function (res, req, columns, options, callback) {
   sqldb.query(sql.select_assessment_instances, params, function (err, result) {
     if (ERR(err, callback)) return;
 
-    var rows = result.rows;
-    csvMaker.rowsToCsv(rows, columns, function (err, csv) {
-      if (ERR(err, callback)) return;
-      res.attachment(req.params.filename);
-      res.send(csv);
-    });
+    res.attachment(req.params.filename);
+    csvMaker.rowsToCsv(result.rows, columns).pipe(res);
   });
 };
 
@@ -207,11 +203,9 @@ router.get('/:filename', function (req, res, next) {
         ['Assigned manual grader', 'assigned_grader'],
         ['Last manual grader', 'last_grader'],
       ]);
-      csvMaker.rowsToCsv(result.rows, columns, function (err, csv) {
-        if (ERR(err, next)) return;
-        res.attachment(req.params.filename);
-        res.send(csv);
-      });
+
+      res.attachment(req.params.filename);
+      csvMaker.rowsToCsv(result.rows, columns).pipe(res);
     });
   } else if (req.params.filename === res.locals.submissionsForManualGradingCsvFilename) {
     let params = {
@@ -239,11 +233,9 @@ router.get('/:filename', function (req, res, next) {
         ['score_perc', null],
         ['feedback', null],
       ]);
-      csvMaker.rowsToCsv(result.rows, columns, function (err, csv) {
-        if (ERR(err, next)) return;
-        res.attachment(req.params.filename);
-        res.send(csv);
-      });
+
+      res.attachment(req.params.filename);
+      csvMaker.rowsToCsv(result.rows, columns).pipe(res);
     });
   } else if (
     req.params.filename === res.locals.allSubmissionsCsvFilename ||
@@ -298,11 +290,9 @@ router.get('/:filename', function (req, res, next) {
         ['Manual points', 'manual_points'],
         ['Max manual points', 'max_manual_points'],
       ]);
-      csvMaker.rowsToCsv(result.rows, columns, function (err, csv) {
-        if (ERR(err, next)) return;
-        res.attachment(req.params.filename);
-        res.send(csv);
-      });
+
+      res.attachment(req.params.filename);
+      csvMaker.rowsToCsv(result.rows, columns).pipe(res);
     });
   } else if (req.params.filename === res.locals.filesForManualGradingZipFilename) {
     const params = {
@@ -378,15 +368,13 @@ router.get('/:filename', function (req, res, next) {
     };
     sqldb.query(sql.group_configs, params, function (err, result) {
       if (ERR(err, next)) return;
-      var columns = [
+      const columns = [
         ['groupName', 'name'],
         ['UID', 'uid'],
       ];
-      csvMaker.rowsToCsv(result.rows, columns, function (err, csv) {
-        if (ERR(err, next)) return;
-        res.attachment(req.params.filename);
-        res.send(csv);
-      });
+
+      res.attachment(req.params.filename);
+      csvMaker.rowsToCsv(result.rows, columns).pipe(res);
     });
   } else if (req.params.filename === res.locals.scoresGroupCsvFilename) {
     sendInstancesCsv(
