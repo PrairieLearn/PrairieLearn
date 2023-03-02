@@ -17,7 +17,7 @@ router.post(
         failureRedirect: '/pl',
         session: false,
       })
-    )(res, res);
+    )(req, res);
 
     const user = req.user;
     if (!user) throw new Error('Login failed');
