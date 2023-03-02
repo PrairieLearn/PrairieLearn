@@ -30,9 +30,7 @@ WITH
     FROM
       jobs AS j
     WHERE
-      j.course_id IS NOT DISTINCT
-    FROM
-      $course_id
+      j.course_id IS NOT DISTINCT FROM $course_id
       AND j.job_sequence_id = $job_sequence_id
       AND j.job_sequence_id IS NOT NULL
   )
@@ -87,9 +85,7 @@ WITH
     FROM
       job_sequences AS js
     WHERE
-      js.course_id IS NOT DISTINCT
-    FROM
-      $course_id
+      js.course_id IS NOT DISTINCT FROM $course_id
   )
 INSERT INTO
   job_sequences (
@@ -286,9 +282,7 @@ WITH
       LEFT JOIN users AS authn_u ON (authn_u.user_id = j.authn_user_id)
     WHERE
       j.job_sequence_id = $job_sequence_id
-      AND j.course_id IS NOT DISTINCT
-    FROM
-      $course_id
+      AND j.course_id IS NOT DISTINCT FROM $course_id
     ORDER BY
       j.number_in_sequence,
       j.id
@@ -321,9 +315,7 @@ FROM
   aggregated_member_jobs
 WHERE
   js.id = $job_sequence_id
-  AND js.course_id IS NOT DISTINCT
-FROM
-  $course_id;
+  AND js.course_id IS NOT DISTINCT FROM $course_id;
 
 -- BLOCK update_heartbeats
 UPDATE jobs AS j
