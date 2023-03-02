@@ -57,10 +57,7 @@ class _Constants:
             "_Integer": sympy.Integer,
         }
 
-        self.variables = {
-            "pi": sympy.pi,
-            "e": sympy.E,
-        }
+        self.variables = {"pi": sympy.pi, "e": sympy.E, "infty": sympy.oo}
 
         self.hidden_variables = {
             "_Exp1": sympy.E,
@@ -392,7 +389,12 @@ def evaluate(
         }
     )
 
-    parsed_locals_to_eval["variables"]["I"] = sympy.I
+    parsed_locals_to_eval["variables"].update(
+        {
+            "I": sympy.I,
+            "oo": sympy.oo,
+        }
+    )
 
     ast_check(code, parsed_locals_to_eval)
 
@@ -402,7 +404,7 @@ def evaluate(
     except Exception:
         raise BaseSympyError()
 
-    # Finaly, check for invalid symbols
+    # Finally, check for invalid symbols
     sympy_check(res, locals_for_eval, allow_complex=allow_complex)
 
     return res

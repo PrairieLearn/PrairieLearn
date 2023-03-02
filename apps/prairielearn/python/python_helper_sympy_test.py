@@ -54,6 +54,9 @@ class TestSympy:
     ]
 
     EXPR_PAIRS = [
+        ("e^(pi * i)", -1),
+        ("infty", sympy.oo),
+        ("infty", sympy.oo + 99),
         ("n/-m", -N / M),
         ("n / 2", N / 2),
         ("3^m + 4", 3**M + 4),
