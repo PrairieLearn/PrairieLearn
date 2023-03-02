@@ -51,6 +51,11 @@
         </div>
       <% }) %>
     <% } %>
+    <% if (typeof rolesInfo.usersWithoutRoles !== 'undefined' && rolesInfo.usersWithoutRoles.length > 0) { %>
+      <div class="alert alert-danger my-2" role="alert">
+        At least one user does not have a role. All users must have a role.
+      </div>
+    <% } %>
     <% if (canViewRoleTable) { %>
     <%- include('../shared/groupRoleSelectTable.ejs', {groupMembers: groupMembers, rolesInfo: rolesInfo}); %>
     <% } %>

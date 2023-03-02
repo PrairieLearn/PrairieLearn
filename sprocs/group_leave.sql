@@ -50,7 +50,7 @@ BEGIN
             -- 1. Grab a random other user from the group
             SELECT user_id
             INTO arg_assignee_id
-            FROM group_user_roles
+            FROM group_users
             WHERE group_id = arg_group_id AND user_id != arg_user_id
             LIMIT 1;
 
@@ -111,6 +111,8 @@ BEGIN
             );
         END IF;
     END IF;
+
+    -- TODO: If someone has no roles, and another person has more than one required role, transfer one of the required roles
 
     -- Delete the user from the group
     DELETE FROM group_users
