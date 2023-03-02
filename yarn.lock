@@ -657,21 +657,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/types@npm:3.272.0":
+"@aws-sdk/types@npm:3.272.0, @aws-sdk/types@npm:^3.222.0":
   version: 3.272.0
   resolution: "@aws-sdk/types@npm:3.272.0"
   dependencies:
     tslib: ^2.3.1
   checksum: c4e4f09dd2672eab4fc15b08006c730c1d07d4b54ae35e03167d99f6110751e36b5332165e03c71c28724037f623f8da87a45a018eb631a1ce86d406f9d08da6
-  languageName: node
-  linkType: hard
-
-"@aws-sdk/types@npm:^3.222.0":
-  version: 3.257.0
-  resolution: "@aws-sdk/types@npm:3.257.0"
-  dependencies:
-    tslib: ^2.3.1
-  checksum: eab2154f7d27d0bec29df41374481652525e1658ad987c64ed02cbe7b7388c563e6a8d317c8fc564ac6fbd97c98be700a29352c9acebc3903cf3305431bf0a86
   languageName: node
   linkType: hard
 
@@ -2435,6 +2426,22 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/docker-utils@workspace:packages/docker-utils":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/docker-utils@workspace:packages/docker-utils"
+  dependencies:
+    "@prairielearn/tsconfig": "*"
+    "@types/node": ^18.11.18
+    async-stacktrace: ^0.0.2
+    aws-sdk: ^2.1327.0
+    debug: ^4.3.4
+    dockerode: ^3.3.4
+    lodash: ^4.17.21
+    moment: ^2.29.4
+    typescript: ^4.9.5
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/html-ejs@workspace:packages/html-ejs":
   version: 0.0.0-use.local
   resolution: "@prairielearn/html-ejs@workspace:packages/html-ejs"
@@ -3129,10 +3136,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=12.12.47, @types/node@npm:>=13.7.0":
-  version: 18.11.18
-  resolution: "@types/node@npm:18.11.18"
-  checksum: 03f17f9480f8d775c8a72da5ea7e9383db5f6d85aa5fefde90dd953a1449bd5e4ffde376f139da4f3744b4c83942166d2a7603969a6f8ea826edfb16e6e3b49d
+"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=12.12.47, @types/node@npm:>=13.7.0, @types/node@npm:^18.11.18, @types/node@npm:^18.14.2":
+  version: 18.14.4
+  resolution: "@types/node@npm:18.14.4"
+  checksum: 3f2f625777747b9f87e793eea5a8bbf1ac2c828846bda5811d07a457d55cfe6762239779759de61e7b7e917632b9ceee3f7ffd2a024117e7ec364dc1b4eb8d55
   languageName: node
   linkType: hard
 
@@ -3140,13 +3147,6 @@ __metadata:
   version: 12.20.55
   resolution: "@types/node@npm:12.20.55"
   checksum: e4f86785f4092706e0d3b0edff8dca5a13b45627e4b36700acd8dfe6ad53db71928c8dee914d4276c7fd3b6ccd829aa919811c9eb708a2c8e4c6eb3701178c37
-  languageName: node
-  linkType: hard
-
-"@types/node@npm:^18.14.2":
-  version: 18.14.2
-  resolution: "@types/node@npm:18.14.2"
-  checksum: 53c07e721f6ae33de71306f6a0b75dae6066a4f55bd5484c93bd59ff25f0c5f004ceafeef509a4d0cb9e24a247efc34d50489bcc1b05a53ecc68e2fc088e65cb
   languageName: node
   linkType: hard
 
@@ -3954,7 +3954,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"async-stacktrace@npm:0.0.2":
+"async-stacktrace@npm:0.0.2, async-stacktrace@npm:^0.0.2":
   version: 0.0.2
   resolution: "async-stacktrace@npm:0.0.2"
   checksum: 5e4a4af07569ddbf7b7025d324c32b569fd38934c2b6f75e530608b4b570811d04ac7074998ab12e8896b8fa3e660b9d3beb7d15242656b8c36a8be59e4d40c0
@@ -3989,9 +3989,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"aws-sdk@npm:^2.1325.0, aws-sdk@npm:^2.293.0, aws-sdk@npm:^2.80.0":
-  version: 2.1325.0
-  resolution: "aws-sdk@npm:2.1325.0"
+"aws-sdk@npm:^2.1325.0, aws-sdk@npm:^2.1327.0, aws-sdk@npm:^2.293.0, aws-sdk@npm:^2.80.0":
+  version: 2.1327.0
+  resolution: "aws-sdk@npm:2.1327.0"
   dependencies:
     buffer: 4.9.2
     events: 1.1.1
@@ -4003,7 +4003,7 @@ __metadata:
     util: ^0.12.4
     uuid: 8.0.0
     xml2js: 0.4.19
-  checksum: 1ee4cb3c146f6547975b0da3bc9ebf44347f28c2d5ef9a208400207042e7d4895e07629fbf77b71be9ddca946f2eac90b2031b6315297a11a4fb8d04a78656a5
+  checksum: 559a1ac525f3d30dd3022653ca15a82d9774806a42ee9e6a65eeb05180edc3ab559a4938d1854b0b832ea4eeb6562bf792dc006122b1e2b45bf9ba478e463b76
   languageName: node
   linkType: hard
 
