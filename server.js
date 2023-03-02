@@ -9,6 +9,7 @@ const { ProfilingIntegration } = require('@sentry/profiling-node');
 
 const ERR = require('async-stacktrace');
 const fs = require('fs');
+const util = require('util');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const favicon = require('serve-favicon');
@@ -1765,6 +1766,27 @@ module.exports.startServer = async () => {
   } else {
     throw new Error('unknown serverType: ' + config.serverType);
   }
+
+  // Capture metrics about the server, including the number of active connections
+  // and the total number of connections that have been started.
+  const meter = opentelemetry.metrics.getMeter('prairielearn');
+
+  const connectionCounter = opentelemetry.getCounter(meter, 'http.connections', {
+    unit: opentelemetry.ValueType.INT,
+  });
+  server.on('connection', () => connectionCounter.add(1));
+
+  const activeConnectionsGauge = opentelemetry.getObservableGauge(
+    meter,
+    'http.connections.active',
+    {
+      unit: opentelemetry.ValueType.INT,
+    }
+  );
+  activeConnectionsGauge.addCallback(async (observableResult) => {
+    const count = await util.promisify(server.getConnections.bind(server))();
+    observableResult.observe(count);
+  });
 
   server.timeout = config.serverTimeout;
   server.keepAliveTimeout = config.serverKeepAliveTimeout;

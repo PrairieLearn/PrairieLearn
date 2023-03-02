@@ -219,6 +219,12 @@ If a file name appears in multiple locations, the following precedence takes eff
 
 - Files in the `workspace/` directory are considered last.
 
+## Custom workspace images
+
+You can build custom workspace images if you want to use a specific browser-based editor or if you need to install specific dependencies for use by students.
+
+If you're using your own editor, you must ensure that it frequently autosaves any work and persists it to disk. We make every effort to ensure reliable execution of workspaces, but an occasional hardware failure or other issue may result in the unexpected termination of a workspace. Students will be able to quickly reboot their workspace to start it on a new underlying host, but their work may be lost if it isn't frequently and automatically saved by your workspace code.
+
 ## Running locally (on Docker)
 
 - First, create an empty directory to use to share job data between containers.

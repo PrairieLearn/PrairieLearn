@@ -156,7 +156,6 @@ class TestBigOInput:
     @pytest.mark.parametrize(
         "a_true, a_sub",
         [
-            ("log(n)", "0"),
             ("log(n)", "1"),
             ("log(n)", "log(log(n))"),
             ("n**2", "1"),
@@ -184,7 +183,6 @@ class TestBigOInput:
     @pytest.mark.parametrize(
         "a_true, a_sub",
         [
-            ("log(n)", "0"),
             ("1", "log(n)"),
             ("log(log(n))", "log(n)"),
             ("1", "n**2"),
@@ -208,6 +206,19 @@ class TestBigOInput:
 
         assert score == 0.0
         assert feedback == bou.INCORRECT_FEEDBACK
+
+    @pytest.mark.parametrize("a_true", ["1", "log(n)", "n", "n**2"])
+    @pytest.mark.parametrize(
+        "a_sub", ["0", "1/0", "0/0", "1/log(1)", "1/(log(1))**2", "n**(1/log(1))"]
+    )
+    @pytest.mark.parametrize("grading_fn", ALL_GRADING_FUNCTIONS)
+    def test_invalid_answer(
+        self, a_true: str, a_sub: str, grading_fn: bou.BigOGradingFunctionT
+    ) -> None:
+        score, feedback = grading_fn(a_true, a_sub, VARIABLES)
+
+        assert score == 0.0
+        assert feedback == bou.TYPE_ERROR_FEEDBACK
 
 
 class TestExceptions:
