@@ -3,22 +3,6 @@
 // Default to SVG, as lines were sometimes disappearing when using the CHTML renderer.
 var outputComponent = 'output/svg';
 
-// If the user overrides the renderer preference with the pop-up menu, reset
-// it when the page reloads. The menu choice is useful for investigating the
-// differences in rendering interactively, but later on the menu could be
-// deactivated for users entirely.
-try {
-    const settingsKey = 'MathJax-Menu-Settings';
-    const settings = JSON.parse(localStorage.getItem(settingsKey)) || {};
-    delete settings['renderer'];
-    const settingsJson = JSON.stringify(settings);
-    if (settingsJson === '{}') {
-        localStorage.removeItem(settingsKey);
-    } else {
-        localStorage.setItem(settingsKey, settingsJson);
-    }
-} catch(e) { }
-
 var MathJax = {
     tex: {
         inlineMath: [['$', '$'], ['\\(', '\\)']]
