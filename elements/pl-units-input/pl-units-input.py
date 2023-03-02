@@ -7,7 +7,7 @@ import chevron
 import lxml.html
 import prairielearn as pl
 import unit_utils as uu
-from pint import Unit, errors
+from pint import errors
 from typing_extensions import assert_never
 
 
@@ -423,17 +423,16 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     grading_mode = pl.get_enum_attrib(
         element, "grading-mode", GradingMode, GRADING_MODE_DEFAULT
     )
-
+    ureg = pl.get_unit_registry()
     result = data["test_type"]
     if result == "correct":
         if grading_mode is GradingMode.ONLY_UNITS:
-            data["raw_submitted_answers"][name] = str(Unit(a_tru))
+            data["raw_submitted_answers"][name] = str(ureg.Quantity(a_tru).units)
         else:
             data["raw_submitted_answers"][name] = a_tru
 
         data["partial_scores"][name] = {"score": 1, "weight": weight}
     elif result == "incorrect":
-        ureg = pl.get_unit_registry()
         if grading_mode is GradingMode.ONLY_UNITS:
             answer = str((ureg.Quantity(a_tru) * ureg.meters).units)
             partial_score = 0.0
