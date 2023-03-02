@@ -3,8 +3,7 @@
 // default to CHTML because of https://github.com/PrairieLearn/PrairieLearn/pull/3520
 // var outputComponent = 'output/chtml';
 
-// Default to SVG again: Windows+Chrome was the primary case where the CHTML
-// mode was active, but now thin lines are disappearing on that platform too.
+// Default to SVG, as lines were sometimes disappearing when using the CHTML renderer.
 var outputComponent = 'output/svg';
 
 // With 'output/svg' now being the default, the following checks may be
