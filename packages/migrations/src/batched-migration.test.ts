@@ -23,7 +23,6 @@ async function makeTestDatabase() {
   await client.query(`CREATE DATABASE ${POSTGRES_DATABASE};`);
   await client.end();
 
-  console.log('here');
   await sqldb.initAsync(
     {
       user: POSTGRES_USER,
@@ -36,7 +35,6 @@ async function makeTestDatabase() {
       throw err;
     }
   );
-  console.log('now here');
 
   // Run local migrations to set up the database. Once the real migration-running
   // code is lifted into this package, we can use that instead.
@@ -71,9 +69,7 @@ class TestBatchMigration extends BatchedMigration {
     return '10000';
   }
 
-  async execute(start: BigInt, end: BigInt) {
-    console.log('running for range', start, end);
-  }
+  async execute(_start: BigInt, _end: BigInt) {}
 }
 
 async function getBatchedMigrationState() {
