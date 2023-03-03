@@ -12,8 +12,6 @@ interface DockerAuth {
   password: string;
 }
 
-interface EmptyDockerAuth {}
-
 let dockerAuthData: DockerAuth | null = null;
 let dockerAuthDataExpiresAt: Date | null | undefined = null;
 
@@ -34,9 +32,8 @@ function authDataExtractLogin(data: AWS.ECR.AuthorizationData): DockerAuth {
 
 export async function setupDockerAuthAsync(
   imageRegistry: string | null | undefined
-): Promise<DockerAuth | EmptyDockerAuth> {
-  // TODO: can we just return null here?
-  if (!imageRegistry) return {};
+): Promise<DockerAuth | null> {
+  if (!imageRegistry) return null;
 
   // If we have cached data that's not within an hour of expiring, use it.
   if (
@@ -124,8 +121,7 @@ export class DockerName {
   }
 
   getRegistryRepo() {
-    var combined = '';
-
+    let combined = '';
     if (typeof this.registry !== 'undefined') {
       combined = this.registry + '/';
     }
@@ -134,8 +130,7 @@ export class DockerName {
   }
 
   getCombined(latestTag = false) {
-    var combined = '';
-
+    let combined = '';
     if (typeof this.registry !== 'undefined') {
       combined = this.registry + '/';
     }
