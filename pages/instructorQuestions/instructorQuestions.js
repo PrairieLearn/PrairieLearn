@@ -1,7 +1,7 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const path = require('path');
 const { logger } = require('@prairielearn/logger');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
