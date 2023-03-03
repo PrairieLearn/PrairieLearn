@@ -12,7 +12,7 @@ CREATE FUNCTION
         IN authn_user_id bigint,
         IN group_work boolean,
         IN require_open boolean,
-        IN course_id bigint,
+        IN variant_course_id bigint,
         OUT variant json
     )
 AS $$
@@ -84,16 +84,16 @@ BEGIN
     END IF;
 
     -- check consistency of question_id and course_id
-    SELECT q.course_id
-    INTO course_id
+    SELECT q.id
+    INTO real_question_id
     FROM
         questions AS q
     WHERE
         q.id = real_question_id
         -- TODO: when implementing question sharing, make sure the question has been shared with the course_id
         -- instead of requiring the question being created in the course that created it.
-        AND q.course_id = course_id;
-    IF course_id IS NULL THEN RAISE EXCEPTION 'inconsistent course for question_id and course_id'; END IF;
+        AND q.course_id = variant_course_id;
+    IF real_question_id IS NULL THEN RAISE EXCEPTION 'inconsistent course for question_id and course_id'; END IF;
 
     -- check if workspace needed
     SELECT q.workspace_image
@@ -116,7 +116,7 @@ BEGIN
     VALUES
         (instance_question_id, real_question_id, real_course_instance_id, real_user_id, real_group_id,
         new_number, variant_seed, params, true_answer, options, broken, authn_user_id,
-        workspace_id, course_id)
+        workspace_id, variant_course_id)
     RETURNING id
     INTO variant_id;
 
