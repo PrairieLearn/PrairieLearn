@@ -100,7 +100,7 @@ async.series(
       });
     },
     (callback) => {
-      setupDockerAuth((err, auth) => {
+      setupDockerAuth(config.cacheImageRegistry, (err, auth) => {
         if (ERR(err)) return;
 
         async.eachSeries(
@@ -191,7 +191,7 @@ var pullAndPushToECR = function (image, dockerAuth, callback) {
         if (ERR(err, callback)) return;
 
         // Tag the image to add the new registry
-        repository.registry = config.cacheImageRegistry;
+        repository.setRegistry(config.cacheImageRegistry);
 
         var options = {
           repo: repository.getCombined(),

@@ -24,7 +24,7 @@ module.exports = function (callback) {
       (callback) => {
         if (config.cacheImageRegistry) {
           logger.info('Authenticating to docker');
-          setupDockerAuth((err, auth) => {
+          setupDockerAuth(config.cacheImageRegistry, (err, auth) => {
             if (ERR(err, callback)) return;
             dockerAuth = auth;
             callback(null);
@@ -56,7 +56,7 @@ module.exports = function (callback) {
               );
               var repository = new DockerName(image);
               if (config.cacheImageRegistry) {
-                repository.registry = config.cacheImageRegistry;
+                repository.setRegistry(config.cacheImageRegistry);
                 ourAuth = dockerAuth;
               }
               const params = {

@@ -540,7 +540,7 @@ async function _getWorkspaceSettingsAsync(workspace_id) {
 
   if (config.cacheImageRegistry) {
     const repository = new DockerName(settings.workspace_image);
-    repository.registry = config.cacheImageRegistry;
+    repository.setRegistry(config.cacheImageRegistry);
     const newImage = repository.getCombined();
     logger.info(`Using ${newImage} for ${settings.workspace_image}`);
     settings.workspace_image = newImage;
@@ -554,7 +554,7 @@ function _pullImage(workspace, callback) {
   const workspace_image = workspace.settings.workspace_image;
   if (config.workspacePullImagesFromDockerHub) {
     logger.info(`Pulling docker image: ${workspace_image}`);
-    setupDockerAuth((err, auth) => {
+    setupDockerAuth(config.cacheImageRegistry, (err, auth) => {
       if (ERR(err, callback)) return;
 
       let percentDisplayed = false;

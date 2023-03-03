@@ -255,7 +255,7 @@ function initDocker(info, callback) {
       (callback) => {
         if (config.cacheImageRegistry) {
           logger.info('Authenticating to docker');
-          setupDockerAuth((err, auth) => {
+          setupDockerAuth(config.cacheImageRegistry, (err, auth) => {
             if (ERR(err, callback)) return;
             dockerAuth = auth;
             callback(null);
@@ -268,7 +268,7 @@ function initDocker(info, callback) {
         logger.info(`Pulling latest version of "${image}" image`);
         var repository = new DockerName(image);
         if (config.cacheImageRegistry) {
-          repository.registry = config.cacheImageRegistry;
+          repository.setRegistry(config.cacheImageRegistry);
         }
         const params = {
           fromImage: repository.getRegistryRepo(),
@@ -416,7 +416,7 @@ function runJob(info, callback) {
 
   var repository = new DockerName(image);
   if (config.cacheImageRegistry) {
-    repository.registry = config.cacheImageRegistry;
+    repository.setRegistry(config.cacheImageRegistry);
   }
   const runImage = repository.getCombined();
   logger.info(`Run image: ${runImage}`);

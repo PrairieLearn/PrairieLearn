@@ -3,6 +3,10 @@ import moment from 'moment';
 import util from 'util';
 import { logger } from '@prairielearn/logger';
 
+// @ts-expect-error
+import mmm from 'aws-sdk/lib/maintenance_mode_message';
+mmm.suppress = true;
+
 interface DockerAuth {
   username: string;
   password: string;
@@ -107,7 +111,7 @@ export class DockerName {
     }
   }
 
-  setRegistry(registry: string) {
+  setRegistry(registry: string | undefined) {
     this.registry = registry;
   }
 
