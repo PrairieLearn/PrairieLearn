@@ -2475,6 +2475,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/migrations@workspace:packages/migrations":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/migrations@workspace:packages/migrations"
+  dependencies:
+    "@prairielearn/postgres": ^1.2.0
+    "@prairielearn/tsconfig": "*"
+    "@types/node": ^18.14.2
+    ts-node: ^10.9.1
+    typescript: ^4.9.5
+    zod: ^3.20.6
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/opentelemetry@^1.0.0, @prairielearn/opentelemetry@workspace:packages/opentelemetry":
   version: 0.0.0-use.local
   resolution: "@prairielearn/opentelemetry@workspace:packages/opentelemetry"
@@ -2511,7 +2524,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/postgres@^1.0.0, @prairielearn/postgres@workspace:packages/postgres":
+"@prairielearn/postgres@^1.0.0, @prairielearn/postgres@^1.2.0, @prairielearn/postgres@workspace:packages/postgres":
   version: 0.0.0-use.local
   resolution: "@prairielearn/postgres@workspace:packages/postgres"
   dependencies:
