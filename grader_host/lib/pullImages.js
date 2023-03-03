@@ -2,9 +2,9 @@ const ERR = require('async-stacktrace');
 const async = require('async');
 const Docker = require('dockerode');
 const sqldb = require('@prairielearn/postgres');
+const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 
 const logger = require('./logger');
-const dockerUtil = require('./dockerUtil');
 const sql = sqldb.loadSqlEquiv(__filename);
 const config = require('./config').config;
 
@@ -24,7 +24,7 @@ module.exports = function (callback) {
       (callback) => {
         if (config.cacheImageRegistry) {
           logger.info('Authenticating to docker');
-          dockerUtil.setupDockerAuth((err, auth) => {
+          setupDockerAuth((err, auth) => {
             if (ERR(err, callback)) return;
             dockerAuth = auth;
             callback(null);
@@ -54,7 +54,7 @@ module.exports = function (callback) {
                   config.cacheImageRegistry || 'default registry'
                 }`
               );
-              var repository = new dockerUtil.DockerName(image);
+              var repository = new DockerName(image);
               if (config.cacheImageRegistry) {
                 repository.registry = config.cacheImageRegistry;
                 ourAuth = dockerAuth;

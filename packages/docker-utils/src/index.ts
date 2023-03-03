@@ -1,27 +1,17 @@
 import AWS from 'aws-sdk';
-import ERR from 'async-stacktrace';
-import Docker from 'dockerode';
-import _ from 'lodash';
 import moment from 'moment';
 import util from 'util';
-import debugFactory from 'debug';
-
-const { logger } = require('@prairielearn/logger');
-
-const debug = debugFactory('prairielearn:dockerUtil');
-
-var dockerUtil = {};
-var docker = new Docker();
+import { logger } from '@prairielearn/logger';
 
 interface DockerAuth {
   username: string;
   password: string;
-  expiresAt: Date | undefined;
 }
 
 interface EmptyDockerAuth {}
 
 let dockerAuthData: DockerAuth | null = null;
+let dockerAuthDataExpiresAt: Date | null | undefined = null;
 
 function authDataExtractLogin(data: AWS.ECR.AuthorizationData): DockerAuth {
   const token = data.authorizationToken;
@@ -35,7 +25,6 @@ function authDataExtractLogin(data: AWS.ECR.AuthorizationData): DockerAuth {
   return {
     username: authArray[0],
     password: authArray[1],
-    expiresAt: data.expiresAt,
   };
 }
 
@@ -48,12 +37,11 @@ export async function setupDockerAuthAsync(
   // If we have cached data that's not within an hour of expiring, use it.
   if (
     dockerAuthData &&
-    dockerAuthData.expiresAt &&
-    moment().isBefore(moment(dockerAuthData.expiresAt).subtract(1, 'hour'))
+    dockerAuthDataExpiresAt &&
+    moment().isBefore(moment(dockerAuthDataExpiresAt).subtract(1, 'hour'))
   ) {
-    debug(dockerAuthData);
     logger.info('Using cached ECR authorization token');
-    return authDataExtractLogin(dockerAuthData);
+    return dockerAuthData;
   }
 
   logger.info('Getting ECR authorization token');
@@ -63,11 +51,14 @@ export async function setupDockerAuthAsync(
   if (!authorizationData) {
     throw new Error('No authorization data in ECR response');
   }
+
   dockerAuthData = authDataExtractLogin(authorizationData[0]);
+  dockerAuthDataExpiresAt = authorizationData[0].expiresAt;
+
   return dockerAuthData;
 }
 
-export const setupDockerAuth = util.promisify(setupDockerAuthAsync);
+export const setupDockerAuth = util.callbackify(setupDockerAuthAsync);
 
 /**
  * Borrowed from https://github.com/apocas/dockerode/blob/master/lib/util.js
@@ -116,6 +107,10 @@ export class DockerName {
     }
   }
 
+  setRegistry(registry: string) {
+    this.registry = registry;
+  }
+
   getRepository() {
     return this.repository;
   }
@@ -149,156 +144,3 @@ export class DockerName {
     return combined;
   }
 }
-
-function locateImage(image, callback) {
-  debug('locateImage');
-  docker.listImages(function (err, list) {
-    if (ERR(err, callback)) return;
-    debug(`locateImage: list=${list}`);
-    for (var i = 0, len = list.length; i < len; i++) {
-      if (list[i].RepoTags && list[i].RepoTags.indexOf(image) !== -1) {
-        return callback(null, docker.getImage(list[i].Id));
-      }
-    }
-    return callback(new Error(`Unable to find image=${image}`));
-  });
-}
-
-function confirmOrCreateECRRepo(repo, job, callback) {
-  const ecr = new AWS.ECR();
-  job.info(`Describing repositories with name: ${repo}`);
-  ecr.describeRepositories({ repositoryNames: [repo] }, (err, data) => {
-    let repositoryFound = false;
-    if (err) {
-      job.info(`Error returned from describeRepositories(): ${err}`);
-      job.info('Treating this error as meaning the desired repository does not exist');
-    } else {
-      repositoryFound = _.find(data.repositories, ['repositoryName', repo]);
-    }
-
-    if (!repositoryFound) {
-      job.info('Repository not found');
-
-      job.info(`Creating repository: ${repo}`);
-      var params = {
-        repositoryName: repo,
-      };
-      ecr.createRepository(params, (err) => {
-        if (ERR(err, callback)) return;
-        job.info('Successfully created repository');
-        callback(null);
-      });
-    } else {
-      job.info('Repository found');
-      // Already exists, nothing to do
-      callback(null);
-    }
-  });
-}
-
-dockerUtil.logProgressOutput = function (output, job, printedInfos, prefix) {
-  let info = null;
-  if (
-    'status' in output &&
-    'id' in output &&
-    'progressDetail' in output &&
-    output.progressDetail.total
-  ) {
-    info = `${output.status} ${output.id} (${output.progressDetail.total} bytes)`;
-  } else if ('status' in output && 'id' in output) {
-    info = `${output.status} ${output.id}`;
-  } else if ('status' in output) {
-    info = `${output.status}`;
-  }
-  if (info != null && !printedInfos.has(info)) {
-    printedInfos.add(info);
-    job.info(prefix + info);
-  }
-};
-
-dockerUtil.pullAndPushToECR = function (image, dockerAuth, job, callback) {
-  debug(`pullAndPushtoECR for ${image}`);
-
-  if (!config.cacheImageRegistry) {
-    return callback(new Error('cacheImageRegistry not defined'));
-  }
-
-  const repository = new dockerUtil.DockerName(image);
-  const params = {
-    fromImage: repository.getRepository(),
-    tag: repository.getTag() || 'latest',
-  };
-  job.info(`Pulling ${repository.getCombined()}`);
-  docker.createImage({}, params, (err, stream) => {
-    if (ERR(err, callback)) return;
-
-    const printedInfos = new Set();
-    docker.modem.followProgress(
-      stream,
-      (err) => {
-        if (ERR(err, callback)) return;
-
-        job.info('Pull complete');
-
-        // Find the image we just downloaded
-        const downloadedImage = repository.getCombined(true);
-        job.info(`Locating downloaded image: ${downloadedImage}`);
-        locateImage(downloadedImage, (err, localImage) => {
-          if (ERR(err, callback)) return;
-          job.info('Successfully located downloaded image');
-
-          // Tag the image to add the new registry
-          repository.registry = config.cacheImageRegistry;
-
-          var options = {
-            repo: repository.getCombined(),
-          };
-          job.info(`Tagging image: ${options.repo}`);
-          localImage.tag(options, (err) => {
-            if (ERR(err, callback)) return;
-            job.info('Successfully tagged image');
-
-            const repositoryName = repository.getRepository();
-            job.info(`Ensuring repository exists: ${repositoryName}`);
-            confirmOrCreateECRRepo(repositoryName, job, (err) => {
-              if (ERR(err, callback)) return;
-              job.info('Successfully ensured repository exists');
-
-              // Create a new docker image instance with the new registry name
-              // localImage isn't specific enough to the ECR repo
-              const pushImageName = repository.getCombined();
-              var pushImage = new Docker.Image(docker.modem, pushImageName);
-
-              job.info(`Pushing image: ${repository.getCombined()}`);
-              pushImage.push(
-                {},
-                (err, stream) => {
-                  if (ERR(err, callback)) return;
-
-                  const printedInfos = new Set();
-                  docker.modem.followProgress(
-                    stream,
-                    (err) => {
-                      if (ERR(err, callback)) return;
-                      job.info('Push complete');
-                      callback(null);
-                    },
-                    (output) => {
-                      dockerUtil.logProgressOutput(output, job, printedInfos, 'Push progress: ');
-                    }
-                  );
-                },
-                dockerAuth
-              );
-            });
-          });
-        });
-      },
-      (output) => {
-        dockerUtil.logProgressOutput(output, job, printedInfos, 'Pull progress: ');
-      }
-    );
-  });
-};
-
-module.exports = dockerUtil;
