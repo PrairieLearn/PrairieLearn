@@ -2430,14 +2430,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/docker-utils@workspace:packages/docker-utils"
   dependencies:
+    "@prairielearn/logger": "workspace:^"
     "@prairielearn/tsconfig": "*"
     "@types/mocha": ^10.0.1
     "@types/node": ^18.11.18
-    async-stacktrace: ^0.0.2
     aws-sdk: ^2.1327.0
-    debug: ^4.3.4
-    dockerode: ^3.3.4
-    lodash: ^4.17.21
     mocha: ^10.2.0
     moment: ^2.29.4
     ts-node: ^10.9.1
@@ -2472,7 +2469,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/logger@workspace:packages/logger":
+"@prairielearn/logger@workspace:^, @prairielearn/logger@workspace:packages/logger":
   version: 0.0.0-use.local
   resolution: "@prairielearn/logger@workspace:packages/logger"
   dependencies:
@@ -3957,7 +3954,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"async-stacktrace@npm:0.0.2, async-stacktrace@npm:^0.0.2":
+"async-stacktrace@npm:0.0.2":
   version: 0.0.2
   resolution: "async-stacktrace@npm:0.0.2"
   checksum: 5e4a4af07569ddbf7b7025d324c32b569fd38934c2b6f75e530608b4b570811d04ac7074998ab12e8896b8fa3e660b9d3beb7d15242656b8c36a8be59e4d40c0

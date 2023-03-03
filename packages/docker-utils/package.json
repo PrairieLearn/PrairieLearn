@@ -17,11 +17,8 @@
     "typescript": "^4.9.5"
   },
   "dependencies": {
-    "async-stacktrace": "^0.0.2",
+    "@prairielearn/logger": "workspace:^",
     "aws-sdk": "^2.1327.0",
-    "debug": "^4.3.4",
-    "dockerode": "^3.3.4",
-    "lodash": "^4.17.21",
     "moment": "^2.29.4"
   }
 }
