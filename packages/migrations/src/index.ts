@@ -1,1 +1,1 @@
-export { BatchedMigration } from './batched-migration';
+export { BatchedMigration, BatchedMigrationExecutor } from './batched-migration';
