@@ -68,7 +68,7 @@ class TestBatchMigration extends BatchedMigration {
   }
 
   async getMax() {
-    return '0';
+    return '10000';
   }
 
   async execute(start: BigInt, end: BigInt) {
@@ -76,15 +76,35 @@ class TestBatchMigration extends BatchedMigration {
   }
 }
 
+async function getBatchedMigrationState() {
+  const migration = await sqldb.queryOneRowAsync(
+    'SELECT * FROM batched_migrations WHERE name = $name;',
+    { name: 'test_batch_migration' }
+  );
+  return migration.rows[0];
+}
+
 describe('BatchedMigrationExecutor', () => {
   beforeEach(async () => makeTestDatabase());
   afterEach(async () => destroyTestDatabase());
 
-  it('works', async () => {
+  it('runs one iteration of a batched migration', async () => {
     assert.equal(true, true);
 
     const migration = new TestBatchMigration();
     const executor = new BatchedMigrationExecutor('test_batch_migration', migration);
+    await executor.run({ iterations: 1 });
+
+    const migrationState = await getBatchedMigrationState();
+    assert.equal(migrationState.current, '1000');
+  });
+
+  it('runs an entire batched migration', async () => {
+    const migration = new TestBatchMigration();
+    const executor = new BatchedMigrationExecutor('test_batch_migration', migration);
     await executor.run();
+
+    const migrationState = await getBatchedMigrationState();
+    assert.equal(migrationState.current, '10000');
   });
 });

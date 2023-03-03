@@ -77,19 +77,28 @@ export class BatchedMigrationExecutor {
     await this.run({ signal: AbortSignal.timeout(duration * 1000) });
   }
 
-  async run({ signal }: { signal?: AbortSignal } = {}): Promise<void> {
+  async run({
+    signal,
+    iterations,
+  }: { signal?: AbortSignal; iterations?: number } = {}): Promise<void> {
     const migrationState = await this.getMigrationState();
 
     let current = migrationState.current;
-    while (!signal?.aborted && current <= migrationState.max) {
-      let min = current;
+    let iterationCount = 0;
+    while (
+      !signal?.aborted &&
+      (iterations ? iterationCount < iterations : true) &&
+      current < migrationState.max
+    ) {
       // TODO: configurable batch size
       let max = current + 1000n;
+      if (max > migrationState.max) max = migrationState.max;
 
-      this.migration.execute(min, max);
+      this.migration.execute(current, max);
 
       current = max;
       await this.updateMigrationState(current);
+      iterationCount += 1;
     }
   }
 }
