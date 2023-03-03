@@ -12,6 +12,7 @@ CREATE FUNCTION
         IN authn_user_id bigint,
         IN group_work boolean,
         IN require_open boolean,
+        IN variant_course_id bigint,
         OUT variant json
     )
 AS $$
@@ -22,7 +23,6 @@ DECLARE
     real_group_id bigint;
     new_number integer;
     assessment_instance_id bigint;
-    course_id bigint;
     variant_id bigint;
     question_workspace_image text;
     workspace_id bigint;
@@ -83,20 +83,17 @@ BEGIN
         real_user_id := user_id;
     END IF;
 
-    -- check consistency of question_id and course_instance_id
-    IF real_question_id IS NOT NULL AND real_course_instance_id IS NOT NULL THEN
-        SELECT c.id
-        INTO course_id
-        FROM
-            pl_courses AS c
-            JOIN course_instances AS ci ON (ci.course_id = c.id)
-            JOIN questions AS q ON (q.course_id = c.id) -- TODO: instead of making sure the question matches the course_id, make sure the question has been shared with the course_id
-        WHERE
-            ci.id = real_course_instance_id
-            AND q.id = real_question_id;
-
-        IF course_id IS NULL THEN RAISE EXCEPTION 'inconsistent course for question_id and course_instance_id'; END IF;
-    END IF;
+    -- check consistency of question_id and course_id
+    SELECT q.id
+    INTO real_question_id
+    FROM
+        questions AS q
+    WHERE
+        q.id = real_question_id
+        -- TODO: when implementing question sharing, make sure the question has been shared with the course_id
+        -- instead of requiring the question being created in the course that created it.
+        AND q.course_id = variant_course_id;
+    IF real_question_id IS NULL THEN RAISE EXCEPTION 'inconsistent course for question_id and course_id'; END IF;
 
     -- check if workspace needed
     SELECT q.workspace_image
@@ -119,7 +116,7 @@ BEGIN
     VALUES
         (instance_question_id, real_question_id, real_course_instance_id, real_user_id, real_group_id,
         new_number, variant_seed, params, true_answer, options, broken, authn_user_id,
-        workspace_id, course_id)
+        workspace_id, variant_course_id)
     RETURNING id
     INTO variant_id;
 
