@@ -10,7 +10,7 @@ const AWS = require('aws-sdk');
 AWS.config.update({ region: 'us-east-2' });
 //const ecr = new AWS.ECR();
 
-const dockerUtil = require('../lib/dockerUtil');
+const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 const configManager = require('../lib/config');
 const config = require('../lib/config').config;
 const { logger } = require('@prairielearn/logger');
@@ -100,7 +100,7 @@ async.series(
       });
     },
     (callback) => {
-      dockerUtil.setupDockerAuth((err, auth) => {
+      setupDockerAuth((err, auth) => {
         if (ERR(err)) return;
 
         async.eachSeries(
@@ -167,7 +167,7 @@ function confirmOrCreateECRRepo(repo, callback) {
 var pullAndPushToECR = function (image, dockerAuth, callback) {
   logger.info(`pullAndPushtoECR for ${image}`);
 
-  var repository = new dockerUtil.DockerName(image);
+  var repository = new DockerName(image);
   const params = {
     fromImage: repository.getRepository(),
     tag: repository.getTag() || 'latest',
