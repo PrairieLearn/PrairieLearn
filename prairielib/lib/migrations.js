@@ -11,18 +11,19 @@ const error = require('../lib/error');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-var migrationDir;
-var project;
-
-module.exports.init = function (dir, proj, callback) {
+/**
+ * @param {string[] | string} directories
+ * @param {string} project
+ * @param {(err?: Error) => void} callback
+ */
+module.exports.init = function (directories, project, callback) {
+  const migrationDirectories = Array.isArray(directories) ? directories : [directories];
   const lockName = 'migrations';
   logger.verbose(`Waiting for lock ${lockName}`);
   namedLocks.waitLock(lockName, {}, (err, lock) => {
     if (ERR(err, callback)) return;
     logger.verbose(`Acquired lock ${lockName}`);
-    migrationDir = dir;
-    project = proj;
-    module.exports._initWithLock((err) => {
+    module.exports._initWithLock(migrationDirectories, project, (err) => {
       namedLocks.releaseLock(lock, (lockErr) => {
         if (ERR(lockErr, callback)) return;
         if (ERR(err, callback)) return;
@@ -41,12 +42,12 @@ const MIGRATION_FILENAME_REGEX = /^([0-9]{14})_.+\.sql$/;
 
 /**
  * @typedef {Object} MigrationFile
+ * @property {string} directory
  * @property {string} filename
  * @property {string | null} timestamp
  */
 
 /**
- *
  * @param {string} dir
  * @return {Promise<MigrationFile[]>}
  */
@@ -67,6 +68,7 @@ async function readAndValidateMigrationsFromDirectory(dir) {
     }
 
     return {
+      directory: dir,
       filename: mf,
       timestamp,
     };
@@ -86,6 +88,18 @@ async function readAndValidateMigrationsFromDirectory(dir) {
     }
   }
 
+  return migrations;
+}
+
+/**
+ * @param {string[]} directories
+ * @return {Promise<MigrationFile[]>}
+ */
+async function readAndValidateMigrationsFromDirectories(directories) {
+  const migrations = [];
+  for (const directory of directories) {
+    migrations.push(...(await readAndValidateMigrationsFromDirectory(directory)));
+  }
   return migrations;
 }
 
@@ -114,7 +128,12 @@ function getMigrationsToExecute(migrationFiles, executedMigrations) {
   return migrationFiles.filter((m) => !executedMigrationTimestamps.has(m.timestamp));
 }
 
-module.exports._initWithLock = function (callback) {
+/**
+ * @param {string[]} directories
+ * @param {string} project
+ * @param {(err?: Error) => void} callback
+ */
+module.exports._initWithLock = function (directories, project, callback) {
   logger.verbose('Starting DB schema migration');
 
   async.waterfall(
@@ -147,7 +166,7 @@ module.exports._initWithLock = function (callback) {
 
         let allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
 
-        const migrationFiles = await readAndValidateMigrationsFromDirectory(migrationDir);
+        const migrationFiles = await readAndValidateMigrationsFromDirectories(directories);
 
         // Validation: if we not all previously-executed migrations have timestamps,
         // prompt the user to deploy an earlier version that includes both indexes
@@ -177,7 +196,7 @@ module.exports._initWithLock = function (callback) {
           allMigrations.rows
         );
 
-        for (const { filename, timestamp } of migrationsToExecute) {
+        for (const { directory, filename, timestamp } of migrationsToExecute) {
           if (allMigrations.rows.length === 0) {
             // if we are running all the migrations then log at a lower level
             logger.verbose(`Running migration ${filename}`);
@@ -186,7 +205,7 @@ module.exports._initWithLock = function (callback) {
           }
 
           // Read the migration.
-          const migrationSql = await fs.readFile(path.join(migrationDir, filename), 'utf8');
+          const migrationSql = await fs.readFile(path.join(directory, filename), 'utf8');
 
           // Perform the migration.
           try {
