@@ -2475,6 +2475,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/named-locks@workspace:packages/named-locks":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/named-locks@workspace:packages/named-locks"
+  dependencies:
+    "@prairielearn/tsconfig": "*"
+    "@types/mocha": ^10.0.1
+    "@types/node": ^18.14.2
+    mocha: ^10.2.0
+    ts-node: ^10.9.1
+    typescript: ^4.9.4
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/opentelemetry@^1.0.0, @prairielearn/opentelemetry@workspace:packages/opentelemetry":
   version: 0.0.0-use.local
   resolution: "@prairielearn/opentelemetry@workspace:packages/opentelemetry"
