@@ -16,6 +16,7 @@
         "@prairielearn/bind-mount": "^1.0.0",
         "@prairielearn/compiled-assets": "^1.0.0",
         "@prairielearn/html": "^2.0.0",
+        "@prairielearn/named-locks": "^1.0.0",
         "@prairielearn/opentelemetry": "^1.0.0",
         "@prairielearn/postgres": "^1.0.0",
         "@prairielearn/sentry": "^1.0.0",
