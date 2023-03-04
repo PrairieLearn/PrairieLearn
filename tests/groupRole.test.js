@@ -352,6 +352,12 @@ describe('Test group based assessments with custom group roles from student side
     it('should parse', function () {
       locals.$ = cheerio.load(page);
     });
+    it('should update locals with role updates', function () {
+      locals.roleUpdates = [
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+      ];
+    });
   });
 
   describe('7. the group information after 2 users join the group', function () {
@@ -359,18 +365,17 @@ describe('Test group based assessments with custom group roles from student side
       elemList = locals.$('#start-assessment');
       assert.isTrue(elemList.is(':disabled'));
     });
-    it('should have user set to recorder role in the database', function (callback) {
+    it('should have correct role configuration in the database', function (callback) {
       var params = {
         assessment_id: locals.assessment_id,
-        user_id: config.userId,
       };
-      sqldb.query(sql.get_current_user_roles, params, function (err, result) {
+      sqldb.query(sql.get_group_roles, params, function (err, result) {
         if (ERR(err, callback)) return;
-        let userRoles = result.rows;
-        assert.lengthOf(userRoles, 1);
-        assert.equal(userRoles[0].role_name, locals.recorder.role_name);
-        assert.equal(userRoles[0].id, locals.recorder.id);
-        locals.currentRoleIds = [userRoles[0].role_id];
+        const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+          user_id: groupUserId,
+          group_role_id: roleId,
+        }));
+        assert.sameDeepMembers(expected, result.rows);
         callback(null);
       });
     });
@@ -434,6 +439,13 @@ describe('Test group based assessments with custom group roles from student side
     it('should parse', function () {
       locals.$ = cheerio.load(page);
     });
+    it('should update locals with role updates', function () {
+      locals.roleUpdates = [
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].user_id },
+      ];
+    });
   });
 
   describe('9. the group information after 3 users join the group', function () {
@@ -449,20 +461,27 @@ describe('Test group based assessments with custom group roles from student side
       elemList = locals.$('.alert:contains(Reflector has too few assignments)');
       assert.lengthOf(elemList, 1);
     });
-    it('should have user set to recorder role in the database', function (callback) {
+    it('should have correct role configuration in the database', function (callback) {
       var params = {
         assessment_id: locals.assessment_id,
-        user_id: config.userId,
       };
-      sqldb.query(sql.get_current_user_roles, params, function (err, result) {
+      sqldb.query(sql.get_group_roles, params, function (err, result) {
         if (ERR(err, callback)) return;
-        let userRoles = result.rows;
-        assert.lengthOf(userRoles, 1);
-        assert.equal(userRoles[0].role_name, locals.recorder.role_name);
-        assert.equal(userRoles[0].id, locals.recorder.id);
-        locals.currentRoleIds = [userRoles[0].role_id];
+        const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+          user_id: groupUserId,
+          group_role_id: roleId,
+        }));
+        assert.sameDeepMembers(expected, result.rows);
         callback(null);
       });
+    });
+    it('should update locals with role updates', function () {
+      locals.roleUpdates = [
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].user_id },
+        { roleId: locals.contributor.id, groupUserId: locals.studentUsers[3].user_id },
+      ];
     });
   });
 
@@ -531,19 +550,17 @@ describe('Test group based assessments with custom group roles from student side
       elemList = locals.$('#role-select-form').find('tr');
       assert.lengthOf(elemList, 0);
     });
-    // FIXME: (Cale) We should test the entire group's role configuration, not just the current user
-    it('should have user set to contributor role in the database', function (callback) {
+    it('should have correct role configuration in the database', function (callback) {
       var params = {
         assessment_id: locals.assessment_id,
-        user_id: config.userId,
       };
-      sqldb.query(sql.get_current_user_roles, params, function (err, result) {
+      sqldb.query(sql.get_group_roles, params, function (err, result) {
         if (ERR(err, callback)) return;
-        let userRoles = result.rows;
-        assert.lengthOf(userRoles, 1);
-        assert.equal(userRoles[0].role_name, locals.contributor.role_name);
-        assert.equal(userRoles[0].id, locals.contributor.id);
-        locals.currentRoleIds = [userRoles[0].role_id];
+        const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+          user_id: groupUserId,
+          group_role_id: roleId,
+        }));
+        assert.sameDeepMembers(expected, result.rows);
         callback(null);
       });
     });
@@ -602,16 +619,17 @@ describe('Test group based assessments with custom group roles from student side
       assert.lengthOf(elemList, 0);
 
       // Construct role updates from database info
-      // FIXME: (Cale) This is really clean but not sure how extensible it is to other tests.
-      // I get that we don't want to necessarily hard-code in the role/user IDs for each config...
-      const roleUpdates = locals.groupRoles.map((role, i) => ({
-        roleId: role.id,
-        groupUserId: locals.studentUsers[i].user_id,
-      }));
+      const roleUpdates = [
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
+        { roleId: locals.contributor.id, groupUserId: locals.studentUsers[3].user_id },
+      ];
 
       // Drop and store the first element here, since we want to test whether Manager is correctly reassigned
       locals.assignerRoleUpdate = roleUpdates.shift();
       locals.roleUpdates = roleUpdates;
+
       // Mark the checkboxes as checked
       roleUpdates.forEach(({ roleId, groupUserId }) => {
         locals.$(`#user_role_${roleId}-${groupUserId}`).attr('checked', '');
@@ -713,19 +731,15 @@ describe('Test group based assessments with custom group roles from student side
       assert.lengthOf(elemList, 0);
 
       // [Manager, Recorder, Recorder, Reflector]
-      const roleUpdates = [
-        locals.manager.id,
-        locals.recorder.id,
-        locals.recorder.id,
-        locals.reflector.id,
-      ].map((role_id, i) => ({
-        roleId: role_id,
-        groupUserId: locals.studentUsers[i].user_id,
-      }));
-      locals.roleUpdates = roleUpdates;
+      locals.roleUpdates = [
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].user_id },
+        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].user_id },
+      ];
 
       // Mark the checkboxes as checked
-      roleUpdates.forEach(({ roleId, groupUserId }) => {
+      locals.roleUpdates.forEach(({ roleId, groupUserId }) => {
         locals.$(`#user_role_${roleId}-${groupUserId}`).attr('checked', '');
       });
       elemList = locals.$('#role-select-form').find('tr').find('input:checked');
@@ -812,20 +826,18 @@ describe('Test group based assessments with custom group roles from student side
       elemList = locals.$('#role-select-form').find('tr').find('input:checked');
       assert.lengthOf(elemList, 0);
 
-      // [P1: Manager, P2: Recorder, P3: Reflector, P4: Contributor]
-      let roleUpdates = locals.groupRoles.map((role, i) => ({
-        roleId: role.id,
-        groupUserId: locals.studentUsers[i].user_id,
-      }));
-      // Give P1 the Contributor role also
-      roleUpdates.push({
-        roleId: locals.groupRoles[3].id,
-        groupUserId: locals.studentUsers[0].user_id,
-      });
-      locals.roleUpdates = roleUpdates;
+      locals.roleUpdates = [
+        // First user has both manager and contributor
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+        { roleId: locals.contributor.id, groupUserId: locals.studentUsers[0].user_id },
+
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
+        { roleId: locals.contributor.id, groupUserId: locals.studentUsers[3].user_id },
+      ];
 
       // Mark the checkboxes as checked
-      roleUpdates.forEach(({ roleId, groupUserId }) => {
+      locals.roleUpdates.forEach(({ roleId, groupUserId }) => {
         locals.$(`#user_role_${roleId}-${groupUserId}`).attr('checked', '');
       });
       elemList = locals.$('#role-select-form').find('tr').find('input:checked');
@@ -959,9 +971,9 @@ describe('Test group based assessments with custom group roles from student side
     it('should update locals with roles updates', function () {
       // TODO: Should we find a way to not hard-code this in?
       locals.roleUpdates = [
-        { roleId: locals.manager.id, groupUserId: '2' },
-        { roleId: locals.recorder.id, groupUserId: '3' },
-        { roleId: locals.reflector.id, groupUserId: '4' },
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
       ];
     });
   });
@@ -1078,13 +1090,13 @@ describe('Test group based assessments with custom group roles from student side
     it('should parse', function () {
       locals.$ = cheerio.load(page);
     });
-    it('should update locals with roles updates', function () {
-      // Role ID 3 could either go to user_id 2 or 3
-      locals.roleUpdates = [
-        { roleId: '1', groupUserId: '2' },
-        { roleId: '2', groupUserId: '3' },
-      ];
-    });
+    // it('should update locals with roles updates', function () {
+    //   // Role ID 3 could either go to user_id 2 or 3
+    //   locals.roleUpdates = [
+    // { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+    // { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+    //   ];
+    // });
     it('should be able to switch user', function (callback) {
       let student = locals.studentUsers[0];
       config.authUid = student.uid;
@@ -1116,35 +1128,53 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   describe('20. required roles are reorganized when user leaves group', function () {
-    // FIXME: This should be flexible for either scenerio where roleId 3 is given to userId 2 or 3
-    // it('should have correct role configuration in the database', function (callback) {
-    //   var params = {
-    //     assessment_id: locals.assessment_id,
-    //   };
-    //   sqldb.query(sql.get_group_roles, params, function (err, result) {
-    //     if (ERR(err, callback)) return;
-    //     const roleCounts = {};
-    //     result.rows.forEach(({roleId, groupUserId}) => ({
-    //       roleCounts[roleId] = roleCounts[roleId] + 1;
-    //     }));
-    //     const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
-    //       user_id: groupUserId,
-    //       group_role_id: roleId,
-    //     }));
-    //     assert.sameDeepMembers(expected, result.rows);
-    //     callback(null);
-    //   });
-    // });
-    // it('should have correct roles checked in the table', function () {
-    //   elemList = locals.$('#role-select-form').find('tr').find('input:checked');
-    //   assert.lengthOf(elemList, 3);
-    //   locals.roleUpdates.forEach(({ roleId, groupUserId }) => {
-    //     const elementId = `#user_role_${roleId}-${groupUserId}`;
-    //     elemList = locals.$('#role-select-form').find(elementId);
-    //     assert.lengthOf(elemList, 1);
-    //     assert.isDefined(elemList['0'].attribs.checked);
-    //   });
-    // });
+    it('should have correct role configuration in the database', function (callback) {
+      var params = {
+        assessment_id: locals.assessment_id,
+      };
+      // Reflector is given to the first user
+      const roleUpdates1 = [
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[0].user_id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+      ];
+      // Reflector is given to the second user
+      const roleUpdates2 = [
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[1].user_id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+      ];
+      // Assert that the reflector role is given to either first or second user
+      sqldb.query(sql.get_group_roles, params, function (err, result) {
+        if (ERR(err, callback)) return;
+        assert.lengthOf(result.rows, 3);
+        // Get all roles for first user
+        const firstUserRoleUpdates = result.rows.filter(
+          (row) => row.user_id === locals.studentUsers[0].user_id
+        );
+        assert.isTrue(firstUserRoleUpdates.length === 1 || firstUserRoleUpdates.length === 2);
+        const roleUpdates = firstUserRoleUpdates.length === 2 ? roleUpdates1 : roleUpdates2;
+        const expected = roleUpdates.map(({ roleId, groupUserId }) => ({
+          user_id: groupUserId,
+          group_role_id: roleId,
+        }));
+
+        assert.sameDeepMembers(expected, result.rows);
+        locals.roleUpdates = roleUpdates;
+        callback(null);
+      });
+      locals.roleUpdates = roleUpdates1;
+    });
+    it('should have correct roles checked in the table', function () {
+      elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+      assert.lengthOf(elemList, 3);
+      locals.roleUpdates.forEach(({ roleId, groupUserId }) => {
+        const elementId = `#user_role_${roleId}-${groupUserId}`;
+        elemList = locals.$('#role-select-form').find(elementId);
+        assert.lengthOf(elemList, 1);
+        assert.isDefined(elemList['0'].attribs.checked);
+      });
+    });
   });
 
   describe('21. leave group as user 1 and switch to user 2', function () {
@@ -1174,9 +1204,9 @@ describe('Test group based assessments with custom group roles from student side
     });
     it('should update locals with roles updates', function () {
       locals.roleUpdates = [
-        { roleId: locals.manager.id, groupUserId: '3' },
-        { roleId: locals.recorder.id, groupUserId: '3' },
-        { roleId: locals.reflector.id, groupUserId: '3' },
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[1].user_id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[1].user_id },
       ];
     });
     it('should be able to switch user', function (callback) {
