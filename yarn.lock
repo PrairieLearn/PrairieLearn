@@ -657,21 +657,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@aws-sdk/types@npm:3.272.0":
+"@aws-sdk/types@npm:3.272.0, @aws-sdk/types@npm:^3.222.0":
   version: 3.272.0
   resolution: "@aws-sdk/types@npm:3.272.0"
   dependencies:
     tslib: ^2.3.1
   checksum: c4e4f09dd2672eab4fc15b08006c730c1d07d4b54ae35e03167d99f6110751e36b5332165e03c71c28724037f623f8da87a45a018eb631a1ce86d406f9d08da6
-  languageName: node
-  linkType: hard
-
-"@aws-sdk/types@npm:^3.222.0":
-  version: 3.257.0
-  resolution: "@aws-sdk/types@npm:3.257.0"
-  dependencies:
-    tslib: ^2.3.1
-  checksum: eab2154f7d27d0bec29df41374481652525e1658ad987c64ed02cbe7b7388c563e6a8d317c8fc564ac6fbd97c98be700a29352c9acebc3903cf3305431bf0a86
   languageName: node
   linkType: hard
 
@@ -2475,15 +2466,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/named-locks@workspace:^, @prairielearn/named-locks@workspace:packages/named-locks":
+"@prairielearn/named-locks@^1.0.0, @prairielearn/named-locks@workspace:packages/named-locks":
   version: 0.0.0-use.local
   resolution: "@prairielearn/named-locks@workspace:packages/named-locks"
   dependencies:
     "@prairielearn/tsconfig": "*"
-    "@types/mocha": ^10.0.1
     "@types/node": ^18.14.2
-    mocha: ^10.2.0
-    ts-node: ^10.9.1
     typescript: ^4.9.4
   languageName: unknown
   linkType: soft
@@ -3142,10 +3130,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=12.12.47, @types/node@npm:>=13.7.0":
-  version: 18.11.18
-  resolution: "@types/node@npm:18.11.18"
-  checksum: 03f17f9480f8d775c8a72da5ea7e9383db5f6d85aa5fefde90dd953a1449bd5e4ffde376f139da4f3744b4c83942166d2a7603969a6f8ea826edfb16e6e3b49d
+"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=12.12.47, @types/node@npm:>=13.7.0, @types/node@npm:^18.14.2":
+  version: 18.14.2
+  resolution: "@types/node@npm:18.14.2"
+  checksum: 53c07e721f6ae33de71306f6a0b75dae6066a4f55bd5484c93bd59ff25f0c5f004ceafeef509a4d0cb9e24a247efc34d50489bcc1b05a53ecc68e2fc088e65cb
   languageName: node
   linkType: hard
 
@@ -3153,13 +3141,6 @@ __metadata:
   version: 12.20.55
   resolution: "@types/node@npm:12.20.55"
   checksum: e4f86785f4092706e0d3b0edff8dca5a13b45627e4b36700acd8dfe6ad53db71928c8dee914d4276c7fd3b6ccd829aa919811c9eb708a2c8e4c6eb3701178c37
-  languageName: node
-  linkType: hard
-
-"@types/node@npm:^18.14.2":
-  version: 18.14.2
-  resolution: "@types/node@npm:18.14.2"
-  checksum: 53c07e721f6ae33de71306f6a0b75dae6066a4f55bd5484c93bd59ff25f0c5f004ceafeef509a4d0cb9e24a247efc34d50489bcc1b05a53ecc68e2fc088e65cb
   languageName: node
   linkType: hard
 
@@ -3361,7 +3342,7 @@ __metadata:
     "@prairielearn/bind-mount": ^1.0.0
     "@prairielearn/compiled-assets": ^1.0.0
     "@prairielearn/html": ^2.0.0
-    "@prairielearn/named-locks": "workspace:^"
+    "@prairielearn/named-locks": ^1.0.0
     "@prairielearn/opentelemetry": ^1.0.0
     "@prairielearn/postgres": ^1.0.0
     "@prairielearn/prettier-plugin-sql": "workspace:*"
