@@ -98,7 +98,7 @@ export async function tryLockAsync(name: string): Promise<Lock | null> {
   return getLock(name, { wait: false });
 }
 
-export const tryLock = util.callbackify(module.exports.tryLockAsync);
+export const tryLock = util.callbackify(tryLockAsync);
 
 /**
  * Wait until a lock can be successfully acquired.
@@ -117,7 +117,7 @@ export async function waitLockAsync(name: string, options: LockOptions): Promise
   return lock;
 }
 
-export const waitLock = util.callbackify(module.exports.waitLockAsync);
+export const waitLock = util.callbackify(waitLockAsync);
 
 /**
  * Release a lock.
@@ -129,7 +129,7 @@ export async function releaseLockAsync(lock: Lock) {
   await pool.endTransactionAsync(lock.client, null);
 }
 
-export const releaseLock = util.callbackify(module.exports.releaseLockAsync);
+export const releaseLock = util.callbackify(releaseLockAsync);
 
 /**
  * Acquires the given lock, executes the provided function with the lock held,
@@ -140,11 +140,11 @@ export async function doWithLock<T>(
   options: LockOptions,
   func: () => Promise<T>
 ): Promise<T> {
-  const lock = await module.exports.waitLockAsync(name, options);
+  const lock = await waitLockAsync(name, options);
   try {
     return await func();
   } finally {
-    await module.exports.releaseLockAsync(lock);
+    await releaseLockAsync(lock);
   }
 }
 
