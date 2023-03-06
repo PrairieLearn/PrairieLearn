@@ -1,37 +1,24 @@
-// @ts-check
-const ERR = require('async-stacktrace');
-const fs = require('fs-extra');
-const path = require('path');
-const async = require('async');
+import fs from 'fs-extra';
+import path from 'path';
 
-const namedLocks = require('../../lib/named-locks');
-const { logger } = require('@prairielearn/logger');
-const sqldb = require('@prairielearn/postgres');
-const error = require('../lib/error');
+// @ts-expect-error -- Update import once https://github.com/PrairieLearn/PrairieLearn/pull/7294 lands
+import namedLocks from '../../../lib/named-locks';
+import { logger } from '@prairielearn/logger';
+import * as sqldb from '@prairielearn/postgres';
+// @ts-expect-error -- Update import once https://github.com/PrairieLearn/PrairieLearn/pull/7293 lands
+import error from '../../../prairielib/lib/error';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-var migrationDir;
-var project;
-
-module.exports.init = function (dir, proj, callback) {
+export async function init(migrationDir: string, project: string) {
   const lockName = 'migrations';
   logger.verbose(`Waiting for lock ${lockName}`);
-  namedLocks.waitLock(lockName, {}, (err, lock) => {
-    if (ERR(err, callback)) return;
+  await namedLocks.doWithLock(lockName, {}, async () => {
     logger.verbose(`Acquired lock ${lockName}`);
-    migrationDir = dir;
-    project = proj;
-    module.exports._initWithLock((err) => {
-      namedLocks.releaseLock(lock, (lockErr) => {
-        if (ERR(lockErr, callback)) return;
-        if (ERR(err, callback)) return;
-        logger.verbose(`Released lock ${lockName}`);
-        callback(null);
-      });
-    });
+    await initWithLock(migrationDir, project);
   });
-};
+  logger.verbose(`Released lock ${lockName}`);
+}
 
 /**
  * Timestamp prefixes will be of the form `YYYYMMDDHHMMSS`, which will have 14 digits.
@@ -39,18 +26,14 @@ module.exports.init = function (dir, proj, callback) {
  */
 const MIGRATION_FILENAME_REGEX = /^([0-9]{14})_.+\.sql$/;
 
-/**
- * @typedef {Object} MigrationFile
- * @property {string} filename
- * @property {string | null} timestamp
- */
+interface MigrationFile {
+  filename: string;
+  timestamp: string;
+}
 
-/**
- *
- * @param {string} dir
- * @return {Promise<MigrationFile[]>}
- */
-async function readAndValidateMigrationsFromDirectory(dir) {
+export async function readAndValidateMigrationsFromDirectory(
+  dir: string
+): Promise<MigrationFile[]> {
   const migrationFiles = (await fs.readdir(dir)).filter((m) => m.endsWith('.sql'));
 
   const migrations = migrationFiles.map((mf) => {
@@ -89,22 +72,16 @@ async function readAndValidateMigrationsFromDirectory(dir) {
   return migrations;
 }
 
-/**
- * @param {MigrationFile[]} migrationFiles
- * @return {MigrationFile[]}
- */
-function sortMigrationFiles(migrationFiles) {
+export function sortMigrationFiles(migrationFiles: MigrationFile[]): MigrationFile[] {
   return migrationFiles.sort((a, b) => {
     return a.timestamp.localeCompare(b.timestamp);
   });
 }
 
-/**
- * @param {MigrationFile[]} migrationFiles
- * @param {{ timestamp: string | null }[]} executedMigrations
- * @return {MigrationFile[]}
- */
-function getMigrationsToExecute(migrationFiles, executedMigrations) {
+export function getMigrationsToExecute(
+  migrationFiles: MigrationFile[],
+  executedMigrations: { timestamp: string | null }[]
+): MigrationFile[] {
   // If no migrations have ever been run, run them all.
   if (executedMigrations.length === 0) {
     return migrationFiles;
@@ -114,106 +91,87 @@ function getMigrationsToExecute(migrationFiles, executedMigrations) {
   return migrationFiles.filter((m) => !executedMigrationTimestamps.has(m.timestamp));
 }
 
-module.exports._initWithLock = function (callback) {
+async function initWithLock(migrationDir: string, project: string) {
   logger.verbose('Starting DB schema migration');
 
-  async.waterfall(
-    [
-      async () => {
-        // Create the migrations table if needed
-        await sqldb.queryAsync(sql.create_migrations_table, {});
+  // Create the migrations table if needed
+  await sqldb.queryAsync(sql.create_migrations_table, {});
 
-        // Apply necessary changes to the migrations table as needed.
-        try {
-          await sqldb.queryAsync('SELECT project FROM migrations;', {});
-        } catch (err) {
-          if (err.routine === 'errorMissingColumn') {
-            logger.info('Altering migrations table');
-            await sqldb.queryAsync(sql.add_projects_column, {});
-          } else {
-            throw err;
-          }
-        }
-        try {
-          await sqldb.queryAsync('SELECT timestamp FROM migrations;', {});
-        } catch (err) {
-          if (err.routine === 'errorMissingColumn') {
-            logger.info('Altering migrations table again');
-            await sqldb.queryAsync(sql.add_timestamp_column, {});
-          } else {
-            throw err;
-          }
-        }
-
-        let allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
-
-        const migrationFiles = await readAndValidateMigrationsFromDirectory(migrationDir);
-
-        // Validation: if we not all previously-executed migrations have timestamps,
-        // prompt the user to deploy an earlier version that includes both indexes
-        // and timestamps.
-        const migrationsMissingTimestamps = allMigrations.rows.filter((m) => !m.timestamp);
-        if (migrationsMissingTimestamps.length > 0) {
-          throw new Error(
-            [
-              'The following migrations are missing timestamps:',
-              migrationsMissingTimestamps.map((m) => `  ${m.filename}`),
-              // This revision was the most recent commit to `master` before the
-              // code handling indexes was removed.
-              'You must deploy revision 1aa43c7348fa24cf636413d720d06a2fa9e38ef2 first.',
-            ].join('\n')
-          );
-        }
-
-        // Refetch the list of migrations from the database.
-        allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
-
-        // Sort the migration files into execution order.
-        const sortedMigrationFiles = sortMigrationFiles(migrationFiles);
-
-        // Figure out which migrations have to be applied.
-        const migrationsToExecute = getMigrationsToExecute(
-          sortedMigrationFiles,
-          allMigrations.rows
-        );
-
-        for (const { filename, timestamp } of migrationsToExecute) {
-          if (allMigrations.rows.length === 0) {
-            // if we are running all the migrations then log at a lower level
-            logger.verbose(`Running migration ${filename}`);
-          } else {
-            logger.info(`Running migration ${filename}`);
-          }
-
-          // Read the migration.
-          const migrationSql = await fs.readFile(path.join(migrationDir, filename), 'utf8');
-
-          // Perform the migration.
-          try {
-            await sqldb.queryAsync(migrationSql, {});
-          } catch (err) {
-            error.addData(err, { sqlFile: filename });
-            throw err;
-          }
-
-          // Record the migration.
-          await sqldb.queryAsync(sql.insert_migration, {
-            filename: filename,
-            timestamp,
-            project,
-          });
-        }
-      },
-    ],
-    (err) => {
-      if (ERR(err, callback)) return;
-      logger.verbose('Successfully completed DB schema migration');
-      callback(null);
+  // Apply necessary changes to the migrations table as needed.
+  try {
+    await sqldb.queryAsync('SELECT project FROM migrations;', {});
+  } catch (err: any) {
+    if (err.routine === 'errorMissingColumn') {
+      logger.info('Altering migrations table');
+      await sqldb.queryAsync(sql.add_projects_column, {});
+    } else {
+      throw err;
     }
-  );
-};
+  }
+  try {
+    await sqldb.queryAsync('SELECT timestamp FROM migrations;', {});
+  } catch (err: any) {
+    if (err.routine === 'errorMissingColumn') {
+      logger.info('Altering migrations table again');
+      await sqldb.queryAsync(sql.add_timestamp_column, {});
+    } else {
+      throw err;
+    }
+  }
 
-// Exported for testing.
-module.exports.readAndValidateMigrationsFromDirectory = readAndValidateMigrationsFromDirectory;
-module.exports.sortMigrationFiles = sortMigrationFiles;
-module.exports.getMigrationsToExecute = getMigrationsToExecute;
+  let allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
+
+  const migrationFiles = await readAndValidateMigrationsFromDirectory(migrationDir);
+
+  // Validation: if we not all previously-executed migrations have timestamps,
+  // prompt the user to deploy an earlier version that includes both indexes
+  // and timestamps.
+  const migrationsMissingTimestamps = allMigrations.rows.filter((m) => !m.timestamp);
+  if (migrationsMissingTimestamps.length > 0) {
+    throw new Error(
+      [
+        'The following migrations are missing timestamps:',
+        migrationsMissingTimestamps.map((m) => `  ${m.filename}`),
+        // This revision was the most recent commit to `master` before the
+        // code handling indexes was removed.
+        'You must deploy revision 1aa43c7348fa24cf636413d720d06a2fa9e38ef2 first.',
+      ].join('\n')
+    );
+  }
+
+  // Refetch the list of migrations from the database.
+  allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
+
+  // Sort the migration files into execution order.
+  const sortedMigrationFiles = sortMigrationFiles(migrationFiles);
+
+  // Figure out which migrations have to be applied.
+  const migrationsToExecute = getMigrationsToExecute(sortedMigrationFiles, allMigrations.rows);
+
+  for (const { filename, timestamp } of migrationsToExecute) {
+    if (allMigrations.rows.length === 0) {
+      // if we are running all the migrations then log at a lower level
+      logger.verbose(`Running migration ${filename}`);
+    } else {
+      logger.info(`Running migration ${filename}`);
+    }
+
+    // Read the migration.
+    const migrationSql = await fs.readFile(path.join(migrationDir, filename), 'utf8');
+
+    // Perform the migration.
+    try {
+      await sqldb.queryAsync(migrationSql, {});
+    } catch (err) {
+      error.addData(err, { sqlFile: filename });
+      throw err;
+    }
+
+    // Record the migration.
+    await sqldb.queryAsync(sql.insert_migration, {
+      filename: filename,
+      timestamp,
+      project,
+    });
+  }
+}
