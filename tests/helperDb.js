@@ -35,8 +35,7 @@ async function runMigrationsAndSprocs(dbName, mochaThis, runMigrations) {
   await namedLocks.init(pgConfig, idleErrorHandler);
 
   if (runMigrations) {
-    // @ts-expect-error
-    await util.promisify(migrations.init)(path.join(__dirname, '..', 'migrations'), 'prairielearn');
+    await migrations.init(path.join(__dirname, '..', 'migrations'), 'prairielearn');
   }
 
   await sqldb.setRandomSearchSchemaAsync('test');

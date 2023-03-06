@@ -1991,22 +1991,17 @@ if (config.startServer) {
 
         logger.verbose('Successfully connected to database');
       },
-      function (callback) {
+      async () => {
         // Using the `--migrate-and-exit` flag will override the value of
         // `config.runMigrations`. This allows us to use the same config when
         // running migrations as we do when we start the server.
-        if (!config.runMigrations && !argv['migrate-and-exit']) return callback(null);
-        migrations.init(path.join(__dirname, 'migrations'), 'prairielearn', function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      function (callback) {
-        if (argv['migrate-and-exit']) {
-          logger.info('option --migrate-and-exit passed, running DB setup and exiting');
-          process.exit(0);
-        } else {
-          callback(null);
+        if (config.runMigrations || argv['migrate-and-exit']) {
+          await migrations.init(path.join(__dirname, 'migrations'), 'prairielearn');
+
+          if (argv['migrate-and-exit']) {
+            logger.info('option --migrate-and-exit passed, running DB setup and exiting');
+            process.exit(0);
+          }
         }
       },
       async () => {
