@@ -1784,7 +1784,7 @@ module.exports.startServer = async () => {
     }
   );
   activeConnectionsGauge.addCallback(async (observableResult) => {
-    const count = await util.promisify(server.getConnections)();
+    const count = await util.promisify(server.getConnections.bind(server))();
     observableResult.observe(count);
   });
 

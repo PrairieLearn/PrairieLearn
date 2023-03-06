@@ -31,6 +31,7 @@ import numpy as np
 import pandas
 import sympy
 import to_precision
+from pint import UnitRegistry
 from python_helper_sympy import convert_string_to_sympy, json_to_sympy, sympy_to_json
 from typing_extensions import NotRequired, assert_never
 
@@ -70,6 +71,14 @@ class QuestionData(TypedDict):
 
 class ElementTestData(QuestionData):
     test_type: Literal["correct", "incorrect", "invalid"]
+
+
+def get_unit_registry() -> UnitRegistry:
+    """Get a unit registry using cache folder valid on production machines."""
+
+    pid = os.getpid()
+    cache_dir = f"/tmp/pint_{pid}"
+    return UnitRegistry(cache_folder=cache_dir)
 
 
 def grade_answer_parameterized(
