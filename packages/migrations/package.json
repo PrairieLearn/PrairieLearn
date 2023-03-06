@@ -19,7 +19,6 @@
   },
   "dependencies": {
     "@prairielearn/postgres": "^1.2.0",
-    "fs-extra": "^11.1.0",
-    "zod": "^3.20.6"
+    "fs-extra": "^11.1.0"
   }
 }
