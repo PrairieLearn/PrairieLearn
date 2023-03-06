@@ -67,6 +67,7 @@ class QuestionData(TypedDict):
     panel: Literal["question", "submission", "answer"]
     extensions: Dict[str, Any]
     num_valid_submissions: int
+    manual_grading: bool
 
 
 class ElementTestData(QuestionData):
