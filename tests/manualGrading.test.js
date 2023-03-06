@@ -8,9 +8,8 @@ const { step } = require('mocha-steps');
 const config = require('../lib/config');
 const fetch = require('node-fetch').default;
 const helperServer = require('./helperServer');
-const sqlLoader = require('../prairielib/lib/sql-loader');
-const sqlDb = require('../prairielib/lib/sql-db');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sqldb = require('@prairielearn/postgres');
+const sql = sqldb.loadSqlEquiv(__filename);
 const { setUser, parseInstanceQuestionId, saveOrGrade } = require('./helperClient');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
@@ -95,11 +94,11 @@ describe('Manual Grading', function () {
   after('shut down testing server', helperServer.after);
 
   before('ensure course has manual grading enabled', async () => {
-    await sqlDb.queryAsync(sql.enable_manual_grading, {});
+    await sqldb.queryAsync(sql.enable_manual_grading, {});
   });
 
   before('build assessment manual grading page URL', async () => {
-    const assessments = (await sqlDb.queryAsync(sql.get_assessment, {})).rows;
+    const assessments = (await sqldb.queryAsync(sql.get_assessment, {})).rows;
     assert.lengthOf(assessments, 1);
     manualGradingAssessmentUrl = `${baseUrl}/course_instance/1/instructor/assessment/${assessments[0].id}/manual_grading`;
     instancesAssessmentUrl = `${baseUrl}/course_instance/1/instructor/assessment/${assessments[0].id}/instances`;
@@ -109,14 +108,14 @@ describe('Manual Grading', function () {
     await Promise.all(
       mockStaff.map(async (staff) => {
         const courseStaffParams = [1, staff.authUid, 'None', 1];
-        const courseStaffResult = await sqlDb.callAsync(
+        const courseStaffResult = await sqldb.callAsync(
           'course_permissions_insert_by_user_uid',
           courseStaffParams
         );
         assert.equal(courseStaffResult.rowCount, 1);
         staff.user_id = courseStaffResult.rows[0].user_id;
         const ciStaffParams = [1, staff.user_id, 1, 'Student Data Editor', 1];
-        const ciStaffResult = await sqlDb.callAsync(
+        const ciStaffResult = await sqldb.callAsync(
           'course_instance_permissions_insert',
           ciStaffParams
         );
@@ -133,7 +132,7 @@ describe('Manual Grading', function () {
       iqId = parseInstanceQuestionId(iqUrl);
       manualGradingIQUrl = `${manualGradingAssessmentUrl}/instance_question/${iqId}`;
 
-      const instance_questions = (await sqlDb.queryAsync(sql.get_instance_question, { iqId })).rows;
+      const instance_questions = (await sqldb.queryAsync(sql.get_instance_question, { iqId })).rows;
       assert.lengthOf(instance_questions, 1);
       assert.equal(instance_questions[0].requires_manual_grading, false);
     });
@@ -146,11 +145,14 @@ describe('Manual Grading', function () {
       const $questionsPage = cheerio.load(questionsPage);
 
       assert.equal(gradeRes.status, 200);
-      assert.equal(getLatestSubmissionStatus($questionsPage), 'saved, not graded');
+      assert.equal(
+        getLatestSubmissionStatus($questionsPage),
+        'manual grading: waiting for grading'
+      );
     });
 
     step('should tag question as requiring grading', async () => {
-      const instanceQuestions = (await sqlDb.queryAsync(sql.get_instance_question, { iqId })).rows;
+      const instanceQuestions = (await sqldb.queryAsync(sql.get_instance_question, { iqId })).rows;
       assert.lengthOf(instanceQuestions, 1);
       assert.equal(instanceQuestions[0].requires_manual_grading, true);
     });
@@ -166,7 +168,7 @@ describe('Manual Grading', function () {
     step('manual grading page should list one question requiring grading', async () => {
       const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
       assert.equal(row.length, 1);
-      const count = row.find('td:nth-child(4)').text().replace(/\s/g, '');
+      const count = row.find('td[data-testid="iq-to-grade-count"]').text().replace(/\s/g, '');
       assert.equal(count, '1/1');
       const nextButton = row.find('.btn:contains("next submission")');
       assert.equal(nextButton.length, 1);
@@ -317,7 +319,7 @@ describe('Manual Grading', function () {
       $manualGradingPage = cheerio.load(manualGradingPage);
       const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
       assert.equal(row.length, 1);
-      const count = row.find('td:nth-child(4)').text().replace(/\s/g, '');
+      const count = row.find('td[data-testid="iq-to-grade-count"]').text().replace(/\s/g, '');
       assert.equal(count, '1/1');
       const nextButton = row.find('.btn:contains("next submission")');
       assert.equal(nextButton.length, 1);
@@ -331,7 +333,7 @@ describe('Manual Grading', function () {
         $manualGradingPage = cheerio.load(manualGradingPage);
         const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
         assert.equal(row.length, 1);
-        const count = row.find('td:nth-child(4)').text().replace(/\s/g, '');
+        const count = row.find('td[data-testid="iq-to-grade-count"]').text().replace(/\s/g, '');
         assert.equal(count, '1/1');
         const nextButton = row.find('.btn:contains("next submission")');
         assert.equal(nextButton.length, 0);
@@ -371,10 +373,10 @@ describe('Manual Grading', function () {
           assessment_question_id: form.find('input[name=assessment_question_id]').val(),
           modified_at: form.find('input[name=modified_at]').val(),
           use_score_perc: 'on',
-          submission_score_percent: score_percent.toString(),
+          score_manual_percent: score_percent.toString(),
           // Set points to invalid value to ensure score is the one being considered, points should
           // be ignored
-          submission_score_points: (score_points + 1).toString(),
+          score_manual_points: (score_points + 1).toString(),
           submission_note: feedback_note,
         }).toString(),
       });
@@ -387,8 +389,8 @@ describe('Manual Grading', function () {
         const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
         const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
         const form = $manualGradingIQPage('form[name=instance_question-manual-grade-update-form]');
-        assert.equal(form.find('input[name=submission_score_percent]').val(), score_percent);
-        assert.equal(form.find('input[name=submission_score_points]').val(), score_points);
+        assert.equal(form.find('input[name=score_manual_percent]').val(), score_percent);
+        assert.equal(form.find('input[name=score_manual_points]').val(), score_points);
         assert.equal(form.find('textarea').text(), feedback_note);
       }
     );
@@ -411,6 +413,8 @@ describe('Manual Grading', function () {
         assert.equal(instanceList[0].last_grader_name, mockStaff[2].authName);
         assert.equal(instanceList[0].score_perc, score_percent);
         assert.equal(instanceList[0].points, score_points);
+        assert.equal(instanceList[0].manual_points, score_points);
+        assert.equal(instanceList[0].auto_points, 0);
       }
     );
 
@@ -422,7 +426,7 @@ describe('Manual Grading', function () {
         $manualGradingPage = cheerio.load(manualGradingPage);
         const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
         assert.equal(row.length, 1);
-        const count = row.find('td:nth-child(4)').text().replace(/\s/g, '');
+        const count = row.find('td[data-testid="iq-to-grade-count"]').text().replace(/\s/g, '');
         assert.equal(count, '0/1');
         const nextButton = row.find('.btn:contains("next submission")');
         assert.equal(nextButton.length, 0);
@@ -445,16 +449,15 @@ describe('Manual Grading', function () {
       const questionsPage = await (await fetch(iqUrl)).text();
       const $questionsPage = cheerio.load(questionsPage);
 
+      assert.equal(getLatestSubmissionStatus($questionsPage), `manual grading: ${score_percent}%`);
       assert.equal(
-        getLatestSubmissionStatus($questionsPage),
-        `partially correct: ${score_percent}%`
-      );
-      assert.equal(
-        $questionsPage('#question-score-panel tr:contains("Awarded points") .badge')
+        $questionsPage(
+          '#question-score-panel tr:contains("Total points") [data-testid="awarded-points"]'
+        )
           .first()
           .text()
           .trim(),
-        `${score_points}/6`
+        `${score_points}`
       );
       assert.equal(
         $questionsPage('[data-testid="feedback-body"]').first().text().trim(),
@@ -481,10 +484,10 @@ describe('Manual Grading', function () {
           assessment_question_id: form.find('input[name=assessment_question_id]').val(),
           modified_at: form.find('input[name=modified_at]').val(),
           // use_score_perc not set, so that points are used instead of percentage
-          submission_score_points: score_points.toString(),
+          score_manual_points: score_points.toString(),
           // Set percentage to invalid value to ensure points is the one being considered,
           // percentage should be ignored
-          submission_score_percent: (score_percent - 10).toString(),
+          score_manual_percent: (score_percent - 10).toString(),
           submission_note: feedback_note,
         }).toString(),
       });
@@ -497,8 +500,8 @@ describe('Manual Grading', function () {
         const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
         const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
         const form = $manualGradingIQPage('form[name=instance_question-manual-grade-update-form]');
-        assert.equal(form.find('input[name=submission_score_percent]').val(), score_percent);
-        assert.equal(form.find('input[name=submission_score_points]').val(), score_points);
+        assert.equal(form.find('input[name=score_manual_percent]').val(), score_percent);
+        assert.equal(form.find('input[name=score_manual_points]').val(), score_points);
         assert.equal(form.find('textarea').text(), feedback_note);
       }
     );
@@ -521,6 +524,8 @@ describe('Manual Grading', function () {
         assert.equal(instanceList[0].last_grader_name, mockStaff[2].authName);
         assert.equal(instanceList[0].score_perc, score_percent);
         assert.equal(instanceList[0].points, score_points);
+        assert.equal(instanceList[0].manual_points, score_points);
+        assert.equal(instanceList[0].auto_points, 0);
       }
     );
 
@@ -532,7 +537,7 @@ describe('Manual Grading', function () {
         $manualGradingPage = cheerio.load(manualGradingPage);
         const row = $manualGradingPage(`tr:contains("${manualGradingQuestionTitle}")`);
         assert.equal(row.length, 1);
-        const count = row.find('td:nth-child(4)').text().replace(/\s/g, '');
+        const count = row.find('td[data-testid="iq-to-grade-count"]').text().replace(/\s/g, '');
         assert.equal(count, '0/1');
         const nextButton = row.find('.btn:contains("next submission")');
         assert.equal(nextButton.length, 0);
@@ -555,16 +560,15 @@ describe('Manual Grading', function () {
       const questionsPage = await (await fetch(iqUrl)).text();
       const $questionsPage = cheerio.load(questionsPage);
 
+      assert.equal(getLatestSubmissionStatus($questionsPage), `manual grading: ${score_percent}%`);
       assert.equal(
-        getLatestSubmissionStatus($questionsPage),
-        `partially correct: ${score_percent}%`
-      );
-      assert.equal(
-        $questionsPage('#question-score-panel tr:contains("Awarded points") .badge')
+        $questionsPage(
+          '#question-score-panel tr:contains("Total points") [data-testid="awarded-points"]'
+        )
           .first()
           .text()
           .trim(),
-        `${score_points}/6`
+        `${score_points}`
       );
       assert.equal(
         $questionsPage('[data-testid="feedback-body"]').first().text().trim(),

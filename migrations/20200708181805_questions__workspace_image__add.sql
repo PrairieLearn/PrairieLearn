@@ -1,1 +1,2 @@
-ALTER TABLE questions ADD COLUMN workspace_image text;
+ALTER TABLE questions
+ADD COLUMN workspace_image text;

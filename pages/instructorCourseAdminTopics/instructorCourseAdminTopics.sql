@@ -1,9 +1,9 @@
 -- BLOCK select_topics
 SELECT
-    topic.*
+  topic.*
 FROM
-    topics AS topic
+  topics AS topic
 WHERE
-    topic.course_id = $course_id
+  topic.course_id = $course_id
 ORDER BY
-    topic.number;
+  topic.number;

@@ -1,8 +1,12 @@
 const config = require('../lib/config');
-const logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const { enrichSentryScope } = require('../lib/sentry');
 
 module.exports = function (req, res, next) {
+  // Capture the path at the start of the request; it may have been rewritten
+  // by the time the finish handler executes.
+  const path = req.path;
+
   if (req.method !== 'OPTIONS') {
     res.once('finish', function () {
       // Attach information to the Sentry scope so that we can more easily
@@ -17,7 +21,7 @@ module.exports = function (req, res, next) {
         ip: req.ip,
         forwardedIP: req.headers['x-forwarded-for'],
         method: req.method,
-        path: req.path,
+        path,
         params: req.params,
         body: req.body,
         authn_user_id: res.locals && res.locals.authn_user ? res.locals.authn_user.user_id : null,

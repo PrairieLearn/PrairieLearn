@@ -27,12 +27,18 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Node.js 16.x
-        uses: actions/setup-node@v3.4.0
+        uses: actions/setup-node@v3.6.0
         with:
           node-version: 16.x
 
       - name: Install Dependencies
-        run: yarn --frozen-lockfile
+        run: yarn --immutable
+
+      # `changesets` will use Prettier to format our changelogs. Because our
+      # config points to a custom plugin, we need to build that plugin first.
+      # We'll build everything for good measure.
+      - name: Build Packages
+        run: make build
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets

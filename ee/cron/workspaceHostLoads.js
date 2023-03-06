@@ -2,9 +2,8 @@ const AWS = require('aws-sdk');
 const { callbackify } = require('util');
 
 const config = require('../../lib/config');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sqldb = require('@prairielearn/postgres');
+const sql = sqldb.loadSqlEquiv(__filename);
 
 module.exports.run = callbackify(async () => {
   if (!config.runningInEc2) return;
@@ -47,10 +46,6 @@ const cloudwatch_definitions = {
     name: 'HostsTerminating',
     unit: 'Count',
   },
-  workspace_hosts_terminated_count: {
-    name: 'HostsTerminated',
-    unit: 'Count',
-  },
   workspace_hosts_active_count: {
     name: 'HostsActive',
     unit: 'Count',
@@ -79,10 +74,6 @@ const cloudwatch_definitions = {
     name: 'WorkspacesUninitialized',
     unit: 'Count',
   },
-  workspace_stopped_count: {
-    name: 'WorkspacesStopped',
-    unit: 'Count',
-  },
   workspace_launching_count: {
     name: 'WorkspacesLaunching',
     unit: 'Count',
@@ -95,8 +86,16 @@ const cloudwatch_definitions = {
     name: 'WorkspacesRunning',
     unit: 'Count',
   },
+  workspace_running_on_healthy_hosts_count: {
+    name: 'WorkspacesRunningOnHealthyHosts',
+    unit: 'Count',
+  },
   workspace_active_count: {
     name: 'WorkspacesActive',
+    unit: 'Count',
+  },
+  workspace_active_on_healthy_hosts_count: {
+    name: 'WorkspacesActiveOnHealthyHosts',
     unit: 'Count',
   },
   workspace_longest_launching_sec: {

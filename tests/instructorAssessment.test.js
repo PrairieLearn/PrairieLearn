@@ -33,6 +33,8 @@ describe('Instructor assessment editing', function () {
           submission_correct: false,
           instance_question_points: 0,
           instance_question_score_perc: (0 / 5) * 100,
+          instance_question_auto_points: 0,
+          instance_question_manual_points: 0,
           assessment_instance_points: 0,
           assessment_instance_score_perc: (0 / helperExam.assessmentMaxPoints) * 100,
         };
@@ -60,6 +62,8 @@ describe('Instructor assessment editing', function () {
           submission_correct: true,
           instance_question_points: 3,
           instance_question_score_perc: (3 / 5) * 100,
+          instance_question_auto_points: 3,
+          instance_question_manual_points: 0,
           assessment_instance_points: 3,
           assessment_instance_score_perc: (3 / helperExam.assessmentMaxPoints) * 100,
         };
@@ -86,7 +90,9 @@ describe('Instructor assessment editing', function () {
           submission_score: 1,
           submission_correct: true,
           instance_question_points: 11,
-          instance_question_score_perc: (11 / 11) * 100,
+          instance_question_score_perc: (11 / 21) * 100,
+          instance_question_auto_points: 11,
+          instance_question_manual_points: 0,
           assessment_instance_points: 14,
           assessment_instance_score_perc: (14 / helperExam.assessmentMaxPoints) * 100,
         };

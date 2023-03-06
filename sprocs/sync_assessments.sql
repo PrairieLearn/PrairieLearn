@@ -27,6 +27,9 @@ DECLARE
     bad_assessments text;
     new_group_role_names text[];
     new_group_role_name text;
+    question_grading_method enum_grading_method;
+    computed_manual_points double precision;
+    computed_max_auto_points double precision;
 BEGIN
     -- The sync algorithm used here is described in the preprint
     -- "Preserving identity during opportunistic unidirectional
@@ -63,12 +66,22 @@ BEGIN
 
     WITH
     matched_rows AS (
-        SELECT src.tid AS src_tid, src.uuid AS src_uuid, dest.id AS dest_id -- matched_rows cols have underscores
+        -- See `sync_questions.sql` for an explanation of the use of DISTINCT ON.
+        SELECT DISTINCT ON (src_tid)
+            src.tid AS src_tid,
+            src.uuid AS src_uuid,
+            dest.id AS dest_id
         FROM disk_assessments AS src LEFT JOIN assessments AS dest ON (
             dest.course_instance_id = syncing_course_instance_id
-            AND (src.uuid = dest.uuid
-                 OR ((src.uuid IS NULL OR dest.uuid IS NULL)
-                     AND src.tid = dest.tid AND dest.deleted_at IS NULL)))
+            AND (
+                src.uuid = dest.uuid
+                OR (
+                    (src.uuid IS NULL OR dest.uuid IS NULL)
+                    AND src.tid = dest.tid AND dest.deleted_at IS NULL
+                )
+            )
+        )
+        ORDER BY src_tid, (src.uuid = dest.uuid) DESC NULLS LAST
     ),
     deactivate_unmatched_dest_rows AS (
         UPDATE assessments AS dest
@@ -129,7 +142,7 @@ BEGIN
     FOR valid_assessment IN (
         SELECT tid, data, warnings
         FROM disk_assessments AS src
-        wHERE (src.errors IS NULL OR src.errors = '')
+        WHERE (src.errors IS NULL OR src.errors = '')
     ) LOOP
         UPDATE assessments AS a
         SET
@@ -356,9 +369,27 @@ BEGIN
 
                 -- Insert an assessment question for each question in this alternative group
                 FOR assessment_question IN SELECT * FROM JSONB_ARRAY_ELEMENTS(alternative_group->'questions') LOOP
+                    IF (assessment_question->>'has_split_points')::boolean THEN
+                        computed_manual_points := (assessment_question->>'manual_points')::double precision;
+                        computed_max_auto_points := (assessment_question->>'max_points')::double precision;
+                    ELSE
+                        SELECT grading_method INTO question_grading_method
+                        FROM questions q
+                        WHERE q.id = (assessment_question->>'question_id')::bigint;
+
+                        IF FOUND AND question_grading_method = 'Manual' THEN
+                            computed_manual_points := (assessment_question->>'max_points')::double precision;
+                            computed_max_auto_points := 0;
+                        ELSE
+                            computed_manual_points := 0;
+                            computed_max_auto_points := (assessment_question->>'max_points')::double precision;
+                        END IF;
+                    END IF;
                     INSERT INTO assessment_questions AS aq (
                         number,
                         max_points,
+                        max_manual_points,
+                        max_auto_points,
                         init_points,
                         points_list,
                         force_max_points,
@@ -373,7 +404,9 @@ BEGIN
                         effective_advance_score_perc
                     ) VALUES (
                         (assessment_question->>'number')::integer,
-                        (assessment_question->>'max_points')::double precision,
+                        COALESCE(computed_manual_points, 0) + COALESCE(computed_max_auto_points, 0),
+                        COALESCE(computed_manual_points, 0),
+                        COALESCE(computed_max_auto_points, 0),
                         (assessment_question->>'init_points')::double precision,
                         jsonb_array_to_double_precision_array(assessment_question->'points_list'),
                         (assessment_question->>'force_max_points')::boolean,
@@ -390,6 +423,8 @@ BEGIN
                     SET
                         number = EXCLUDED.number,
                         max_points = EXCLUDED.max_points,
+                        max_manual_points = EXCLUDED.max_manual_points,
+                        max_auto_points = EXCLUDED.max_auto_points,
                         points_list = EXCLUDED.points_list,
                         init_points = EXCLUDED.init_points,
                         force_max_points = EXCLUDED.force_max_points,

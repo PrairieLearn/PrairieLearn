@@ -1,7 +1,4 @@
-import random
-
 def generate(data):
-
     a = "01011"
     b = "10010"
     data["params"]["a"] = a
@@ -9,6 +6,7 @@ def generate(data):
 
     c = "11101"
     data["correct_answers"]["c"] = c
+
 
 def grade(data):
     # use get() for submitted_answers in case no answer was submitted
@@ -25,8 +23,12 @@ def grade(data):
         # get the submitted answer, defaulting to empty string if it's missing
         sub = data["submitted_answers"].get("c", "")
         if len(sub.replace("0", "").replace("1", "")) > 0:
-            data["feedback"]["c"] = "Your answer should not contain characters other than '0' and '1'"
+            data["feedback"][
+                "c"
+            ] = "Your answer should not contain characters other than '0' and '1'"
         elif len(sub) != len(data["correct_answers"]["c"]):
             data["feedback"]["c"] = "Your answer has the wrong length"
         else:
-            data["feedback"]["c"] = "Your answer was has the correct length and format, but the value is wrong"
+            data["feedback"][
+                "c"
+            ] = "Your answer was has the correct length and format, but the value is wrong"

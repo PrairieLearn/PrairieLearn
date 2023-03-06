@@ -1,5 +1,5 @@
 // @ts-check
-const sqldb = require('../../prairielib/lib/sql-db');
+const sqldb = require('@prairielearn/postgres');
 
 const infofile = require('../infofile');
 const perf = require('../performance')('question');
@@ -45,7 +45,6 @@ function getParamsForQuestion(q) {
     workspace_args: q.workspaceOptions && q.workspaceOptions.args,
     workspace_home: q.workspaceOptions && q.workspaceOptions.home,
     workspace_graded_files: q.workspaceOptions && q.workspaceOptions.gradedFiles,
-    workspace_sync_ignore: q.workspaceOptions && q.workspaceOptions.syncIgnore,
     workspace_url_rewrite: q.workspaceOptions && q.workspaceOptions.rewriteUrl,
     workspace_enable_networking: q.workspaceOptions && q.workspaceOptions.enableNetworking,
     workspace_environment: q.workspaceOptions?.environment ?? {},

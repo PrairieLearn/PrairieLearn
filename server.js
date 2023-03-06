@@ -2,8 +2,14 @@
 // dependencies like `pg` and `express`.
 const opentelemetry = require('@prairielearn/opentelemetry');
 
+const Sentry = require('@prairielearn/sentry');
+// `@sentry/tracing` must be imported before `@sentry/profiling-node`.
+require('@sentry/tracing');
+const { ProfilingIntegration } = require('@sentry/profiling-node');
+
 const ERR = require('async-stacktrace');
 const fs = require('fs');
+const util = require('util');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const favicon = require('serve-favicon');
@@ -21,12 +27,12 @@ const onFinished = require('on-finished');
 const { v4: uuidv4 } = require('uuid');
 const argv = require('yargs-parser')(process.argv.slice(2));
 const multer = require('multer');
-const filesize = require('filesize');
+const { filesize } = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const Sentry = require('@prairielearn/sentry');
+const compiledAssets = require('@prairielearn/compiled-assets');
 
-const logger = require('./lib/logger');
+const { logger, addFileLogging } = require('@prairielearn/logger');
 const config = require('./lib/config');
 const load = require('./lib/load');
 const awsHelper = require('./lib/aws.js');
@@ -34,7 +40,7 @@ const externalGrader = require('./lib/externalGrader');
 const externalGraderResults = require('./lib/externalGraderResults');
 const externalGradingSocket = require('./lib/externalGradingSocket');
 const workspace = require('./lib/workspace');
-const sqldb = require('./prairielib/lib/sql-db');
+const sqldb = require('@prairielearn/postgres');
 const migrations = require('./prairielib/lib/migrations');
 const error = require('./prairielib/error');
 const sprocs = require('./sprocs');
@@ -52,6 +58,7 @@ const namedLocks = require('./lib/named-locks');
 const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
 const { enrichSentryScope } = require('./lib/sentry');
+const lifecycleHooks = require('./lib/lifecycle-hooks');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -76,18 +83,21 @@ if ('h' in argv || 'help' in argv) {
 
 /**
  * Creates the express application and sets up all PrairieLearn routes.
- * @return {Express App} The express "app" object that was created.
+ * @return {import('express').Application} The express "app" object that was created.
  */
 module.exports.initExpress = function () {
   const app = express();
   app.set('views', path.join(__dirname, 'pages'));
   app.set('view engine', 'ejs');
   app.set('trust proxy', config.trustProxy);
-  config.devMode = app.get('env') === 'development';
 
-  // If we're set up with Sentry, use its middleware to record requests.
+  // These should come first so that we get instrumentation on all our requests.
   if (config.sentryDsn) {
     app.use(Sentry.Handlers.requestHandler());
+
+    if (config.sentryTracesSampleRate) {
+      app.use(Sentry.Handlers.tracingHandler());
+    }
   }
 
   // Set res.locals variables first, so they will be available on
@@ -96,6 +106,7 @@ module.exports.initExpress = function () {
   app.use((req, res, next) => {
     res.locals.asset_path = assets.assetPath;
     res.locals.node_modules_asset_path = assets.nodeModulesAssetPath;
+    res.locals.compiled_script_tag = compiledAssets.compiledScriptTag;
     next();
   });
   app.use(function (req, res, next) {
@@ -366,6 +377,8 @@ module.exports.initExpress = function () {
   // "cacheable" route above.
   app.use(express.static(path.join(__dirname, 'public')));
 
+  app.use('/build/', compiledAssets.handler());
+
   // To allow for more aggressive caching of files served from node_modules/,
   // we insert a hash of the module version into the resource path. This allows
   // us to treat those files as immutable and cache them essentially forever.
@@ -426,16 +439,22 @@ module.exports.initExpress = function () {
   app.use(require('./middlewares/effectiveRequestChanged'));
   app.use('/pl/oauth2login', require('./pages/authLoginOAuth2/authLoginOAuth2'));
   app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOAuth2'));
-  app.use('/pl/shibcallback', require('./pages/authCallbackShib/authCallbackShib'));
-  app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
-  app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
+  app.use(/\/pl\/shibcallback/, require('./pages/authCallbackShib/authCallbackShib'));
 
   if (isEnterprise()) {
+    if (config.hasAzure) {
+      app.use('/pl/azure_login', require('./ee/auth/azure/login'));
+      app.use('/pl/azure_callback', require('./ee/auth/azure/callback'));
+    }
+
     app.use('/pl/auth/institution/:institution_id/saml', require('./ee/auth/saml/router'));
   }
 
   app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
   app.use('/pl/login', require('./pages/authLogin/authLogin'));
+  if (config.devMode) {
+    app.use('/pl/dev_login', require('./pages/authLoginDev/authLoginDev'));
+  }
   // disable SEB until we can fix the mcrypt issues
   // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
   app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
@@ -444,6 +463,9 @@ module.exports.initExpress = function () {
   if (isEnterprise()) {
     app.use('/pl/prairietest/auth', require('./ee/auth/prairietest'));
   }
+
+  // Must come before CSRF middleware; we do our own signature verification here.
+  app.use('/pl/webhooks/terminate', require('./webhooks/terminate'));
 
   app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
   app.use(require('./middlewares/logRequest'));
@@ -549,8 +571,10 @@ module.exports.initExpress = function () {
       next();
     },
     require('./middlewares/authzWorkspace'),
-    require('./pages/workspace/workspace'),
   ]);
+  app.use('/pl/workspace/:workspace_id', require('./pages/workspace/workspace'));
+  app.use('/pl/workspace/:workspace_id/logs', require('./pages/workspaceLogs/workspaceLogs'));
+
   // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
   if (config.devMode) {
     app.use('/pl/loadFromDisk', [
@@ -918,6 +942,16 @@ module.exports.initExpress = function () {
       require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
     ]
   );
+
+  // Submission files
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/submission/:submission_id/file',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./pages/submissionFile/submissionFile'),
+    ]
+  );
+
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading',
     [
@@ -1213,6 +1247,15 @@ module.exports.initExpress = function () {
     ]
   );
 
+  // Submission files
+  app.use(
+    '/pl/course_instance/:course_instance_id/instructor/question/:question_id/submission/:submission_id/file',
+    [
+      require('./middlewares/selectAndAuthzInstructorQuestion'),
+      require('./pages/submissionFile/submissionFile'),
+    ]
+  );
+
   // legacy client file paths
   // handle routes with and without /preview/ in them to handle URLs with and without trailing slashes
   app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file', [
@@ -1296,13 +1339,6 @@ module.exports.initExpress = function () {
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
     require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
   ]);
-  app.use('/pl/course_instance/:course_instance_id/report_cheating', [
-    function (req, res, next) {
-      res.locals.navSubPage = 'report_cheating';
-      next();
-    },
-    require('./pages/studentReportCheating/studentReportCheating'),
-  ]);
   if (config.devMode) {
     app.use(
       '/pl/course_instance/:course_instance_id/loadFromDisk',
@@ -1347,6 +1383,16 @@ module.exports.initExpress = function () {
       require('./middlewares/selectAndAuthzInstanceQuestion'),
       require('./middlewares/studentAssessmentAccess'),
       require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
+    ]
+  );
+
+  // Submission files
+  app.use(
+    '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/submission/:submission_id/file',
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./middlewares/studentAssessmentAccess'),
+      require('./pages/submissionFile/submissionFile'),
     ]
   );
 
@@ -1564,6 +1610,12 @@ module.exports.initExpress = function () {
     require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
   ]);
 
+  // Submission files
+  app.use('/pl/course/:course_id/question/:question_id/submission/:submission_id/file', [
+    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./pages/submissionFile/submissionFile'),
+  ]);
+
   // legacy client file paths
   // handle routes with and without /preview/ in them to handle URLs with and without trailing slashes
   app.use('/pl/course/:course_id/question/:question_id/file', [
@@ -1589,9 +1641,22 @@ module.exports.initExpress = function () {
   // Administrator pages ///////////////////////////////////////////////
 
   app.use('/pl/administrator', require('./middlewares/authzIsAdministrator'));
+  app.use('/pl/administrator/admins', require('./pages/administratorAdmins/administratorAdmins'));
   app.use(
-    '/pl/administrator/overview',
-    require('./pages/administratorOverview/administratorOverview')
+    '/pl/administrator/settings',
+    require('./pages/administratorSettings/administratorSettings')
+  );
+  app.use(
+    '/pl/administrator/courses',
+    require('./pages/administratorCourses/administratorCourses')
+  );
+  app.use(
+    '/pl/administrator/networks',
+    require('./pages/administratorNetworks/administratorNetworks')
+  );
+  app.use(
+    '/pl/administrator/workspaces',
+    require('./pages/administratorWorkspaces/administratorWorkspaces')
   );
   app.use(
     '/pl/administrator/queries',
@@ -1625,29 +1690,51 @@ module.exports.initExpress = function () {
 
   app.use(require('./middlewares/redirectEffectiveAccessDenied'));
 
+  /**
+   * Attempts to extract a numeric status code from a Postgres error object.
+   * The convention we use is to use a `ERRCODE` value of `ST###`, where ###
+   * is the three-digit HTTP status code.
+   *
+   * For example, the following exception would set a 404 status code:
+   *
+   * RAISE EXCEPTION 'Entity not found' USING ERRCODE = 'ST404';
+   *
+   * @param {any} err
+   * @returns {number | null} The extracted HTTP status code
+   */
+  function maybeGetStatusCodeFromSqlError(err) {
+    const rawCode = err?.data?.sqlError?.code;
+    if (!rawCode?.startsWith('ST')) return null;
+
+    const parsedCode = Number(rawCode.toString().substring(2));
+    if (Number.isNaN(parsedCode)) return null;
+
+    return parsedCode;
+  }
+
   // This should come first so that both Sentry and our own error page can
-  // read the error ID.
+  // read the error ID and any status code.
   app.use((err, req, res, next) => {
     const _ = require('lodash');
     const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
     res.locals.error_id = _.times(12, () => _.sample(chars)).join('');
 
+    err.status = err.status ?? maybeGetStatusCodeFromSqlError(err) ?? 500;
+
     next(err);
   });
 
-  if (config.sentryDsn) {
-    // We need to add our own handler here to ensure that we add the appropriate
-    // information to the current Sentry scope.
-    //
-    // Note that this is typically done by our `logResponse` middleware, but
-    // that doesn't run soon enough for the Sentry error handler to pick up.
-    app.use((err, req, res, next) => {
-      enrichSentryScope(req, res);
-      next(err);
-    });
-    app.use(Sentry.Handlers.errorHandler());
-  }
+  // We need to add our own handler here to ensure that we add the appropriate
+  // information to the current Sentry scope.
+  //
+  // Note that this is typically done by our `logResponse` middleware, but
+  // that doesn't run soon enough for the Sentry error handler to pick up.
+  app.use((err, req, res, next) => {
+    enrichSentryScope(req, res);
+    next(err);
+  });
+  app.use(Sentry.Handlers.errorHandler());
 
   // Note that the Sentry error handler should come before our error page.
   app.use(require('./pages/error/error'));
@@ -1672,17 +1759,38 @@ module.exports.startServer = async () => {
     const ca = [await fs.promises.readFile(config.sslCAFile)];
     var options = { key, cert, ca };
     server = https.createServer(options, app);
-    server.listen(config.serverPort);
-    server.timeout = 600000; // 10 minutes
     logger.verbose('server listening to HTTPS on port ' + config.serverPort);
   } else if (config.serverType === 'http') {
     server = http.createServer(app);
-    server.listen(config.serverPort);
-    server.timeout = 600000; // 10 minutes
     logger.verbose('server listening to HTTP on port ' + config.serverPort);
   } else {
     throw new Error('unknown serverType: ' + config.serverType);
   }
+
+  // Capture metrics about the server, including the number of active connections
+  // and the total number of connections that have been started.
+  const meter = opentelemetry.metrics.getMeter('prairielearn');
+
+  const connectionCounter = opentelemetry.getCounter(meter, 'http.connections', {
+    unit: opentelemetry.ValueType.INT,
+  });
+  server.on('connection', () => connectionCounter.add(1));
+
+  const activeConnectionsGauge = opentelemetry.getObservableGauge(
+    meter,
+    'http.connections.active',
+    {
+      unit: opentelemetry.ValueType.INT,
+    }
+  );
+  activeConnectionsGauge.addCallback(async (observableResult) => {
+    const count = await util.promisify(server.getConnections.bind(server))();
+    observableResult.observe(count);
+  });
+
+  server.timeout = config.serverTimeout;
+  server.keepAliveTimeout = config.serverKeepAliveTimeout;
+  server.listen(config.serverPort);
 
   // Wait for the server to either start successfully or error out.
   await new Promise((resolve, reject) => {
@@ -1708,6 +1816,7 @@ module.exports.startServer = async () => {
 
 module.exports.stopServer = function (callback) {
   if (!server) return callback(new Error('cannot stop an undefined server'));
+  if (!server.listening) return callback(null);
   server.close(function (err) {
     if (ERR(err, callback)) return;
     callback(null);
@@ -1761,11 +1870,35 @@ if (config.startServer) {
           serviceName: 'prairielearn',
         });
 
+        // Start capturing CPU and memory profiles as soon as possible.
+        if (config.pyroscopeEnabled) {
+          const Pyroscope = require('@pyroscope/nodejs');
+          Pyroscope.init({
+            appName: 'prairielearn',
+            serverAddress: config.pyroscopeServerAddress,
+            authToken: config.pyroscopeAuthToken,
+            tags: {
+              instanceId: config.instanceId,
+              ...(config.pyroscopeTags ?? {}),
+            },
+          });
+          Pyroscope.start();
+        }
+
         // Same with Sentry configuration.
         if (config.sentryDsn) {
+          const integrations = [];
+          if (config.sentryTracesSampleRate && config.sentryProfilesSampleRate) {
+            integrations.push(new ProfilingIntegration());
+          }
+
           await Sentry.init({
             dsn: config.sentryDsn,
             environment: config.sentryEnvironment,
+            integrations,
+            tracesSampleRate: config.sentryTracesSampleRate,
+            // This is relative to `tracesSampleRate`.
+            profilesSampleRate: config.sentryProfilesSampleRate,
             beforeSend: (event) => {
               // This will be necessary until we can consume the following change:
               // https://github.com/chimurai/http-proxy-middleware/pull/823
@@ -1786,8 +1919,11 @@ if (config.startServer) {
         }
 
         if (config.logFilename) {
-          logger.addFileLogging(config.logFilename);
-          logger.verbose('activated file logging: ' + config.logFilename);
+          addFileLogging({ filename: config.logFilename });
+        }
+
+        if (config.logErrorFilename) {
+          addFileLogging({ filename: config.logErrorFilename, level: 'error' });
         }
       },
       async () => {
@@ -1812,41 +1948,10 @@ if (config.startServer) {
         }
       },
       async () => {
-        if (!config.hasAzure) return;
-
-        let OIDCStrategy = require('passport-azure-ad').OIDCStrategy;
-        const azureConfig = {
-          identityMetadata: config.azureIdentityMetadata,
-          clientID: config.azureClientID,
-          responseType: config.azureResponseType,
-          responseMode: config.azureResponseMode,
-          redirectUrl: config.azureRedirectUrl,
-          allowHttpForRedirectUrl: config.azureAllowHttpForRedirectUrl,
-          clientSecret: config.azureClientSecret,
-          validateIssuer: config.azureValidateIssuer,
-          isB2C: config.azureIsB2C,
-          issuer: config.azureIssuer,
-          passReqToCallback: config.azurePassReqToCallback,
-          scope: config.azureScope,
-          loggingLevel: config.azureLoggingLevel,
-          nonceLifetime: config.azureNonceLifetime,
-          nonceMaxAmount: config.azureNonceMaxAmount,
-          useCookieInsteadOfSession: config.azureUseCookieInsteadOfSession,
-          cookieEncryptionKeys: config.azureCookieEncryptionKeys,
-          clockSkew: config.azureClockSkew,
-        };
-        passport.use(
-          new OIDCStrategy(azureConfig, function (
-            iss,
-            sub,
-            profile,
-            accessToken,
-            refreshToken,
-            done
-          ) {
-            return done(null, profile);
-          })
-        );
+        if (isEnterprise() && config.hasAzure) {
+          const { getAzureStrategy } = require('./ee/auth/azure/index');
+          passport.use(getAzureStrategy());
+        }
       },
       async () => {
         if (isEnterprise()) {
@@ -1865,8 +1970,15 @@ if (config.startServer) {
         };
         function idleErrorHandler(err) {
           logger.error('idle client error', err);
-          // https://github.com/PrairieLearn/PrairieLearn/issues/2396
-          process.exit(1);
+          Sentry.captureException(err, {
+            level: 'fatal',
+            tags: {
+              // This may have been set by `sql-db.js`. We include this in the
+              // Sentry tags to more easily debug idle client errors.
+              last_query: err?.data?.lastQuery ?? undefined,
+            },
+          });
+          Sentry.close().finally(() => process.exit(1));
         }
 
         logger.verbose(`Connecting to ${pgConfig.user}@${pgConfig.host}:${pgConfig.database}`);
@@ -1907,7 +2019,23 @@ if (config.startServer) {
         // of its sprocs, allowing us to update servers while old
         // servers are still running. See docs/dev-guide.md for
         // more info.
-        await sqldb.setRandomSearchSchemaAsync(config.instanceId);
+        //
+        // We use the combination of instance ID and port number to uniquely
+        // identify each server; in some cases, we're running multiple instances
+        // on the same physical host.
+        //
+        // The schema prefix should not exceed 28 characters; this is due to
+        // the underlying Postgres limit of 63 characters for schema names.
+        // Currently, EC2 instance IDs are 19 characters long, and we use
+        // 4-digit port numbers, so this will be safe (19+1+4=24). If either
+        // of those ever get longer, we have a little wiggle room. Nonetheless,
+        // we'll check to make sure we don't exceed the limit and fail fast if
+        // we do.
+        const schemaPrefix = `${config.instanceId}:${config.serverPort}`;
+        if (schemaPrefix.length > 28) {
+          throw new Error(`Schema prefix is too long: ${schemaPrefix}`);
+        }
+        await sqldb.setRandomSearchSchemaAsync(schemaPrefix);
       },
       function (callback) {
         sprocs.init(function (err) {
@@ -1923,12 +2051,27 @@ if (config.startServer) {
           callback(null);
         });
       },
-      function (callback) {
-        cron.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
+      async () => {
+        compiledAssets.init({
+          dev: config.devMode,
+          sourceDirectory: path.resolve(__dirname, 'assets'),
+          buildDirectory: path.resolve(__dirname, 'public/build'),
+          publicPath: '/build',
         });
       },
+      // We need to initialize these first, as the code callers require these
+      // to be set up.
+      function (callback) {
+        load.initEstimator('request', 1);
+        load.initEstimator('authed_request', 1);
+        load.initEstimator('python', 1, false);
+        load.initEstimator('python_worker_active', 1);
+        load.initEstimator('python_worker_idle', 1, false);
+        load.initEstimator('python_callback_waiting', 1);
+        callback(null);
+      },
+      async () => await codeCaller.init(),
+      async () => await assets.init(),
       (callback) => {
         redis.init((err) => {
           if (ERR(err, callback)) return;
@@ -1941,36 +2084,7 @@ if (config.startServer) {
           callback(null);
         });
       },
-      (callback) => {
-        externalGrader.init(function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      (callback) => {
-        if (!config.externalGradingEnableResults) return callback(null);
-        externalGraderResults.init((err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      async () => await assets.init(),
-      function (callback) {
-        load.initEstimator('request', 1);
-        load.initEstimator('authed_request', 1);
-        load.initEstimator('python', 1, false);
-        load.initEstimator('python_worker_active', 1);
-        load.initEstimator('python_worker_idle', 1, false);
-        load.initEstimator('python_callback_waiting', 1);
-        callback(null);
-      },
-      async () => {
-        await codeCaller.init();
-      },
-      async () => {
-        logger.verbose('Starting server...');
-        await module.exports.startServer();
-      },
+      async () => await freeformServer.init(),
       function (callback) {
         if (!config.devMode) return callback(null);
         module.exports.insertDevUser(function (err) {
@@ -1978,32 +2092,34 @@ if (config.startServer) {
           callback(null);
         });
       },
-      function (callback) {
-        socketServer.init(server, function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+      async () => {
+        logger.verbose('Starting server...');
+        await module.exports.startServer();
       },
+      async () => socketServer.init(server),
       function (callback) {
         externalGradingSocket.init(function (err) {
           if (ERR(err, callback)) return;
           callback(null);
         });
       },
-      async () => workspace.init(),
-      function (callback) {
-        serverJobs.init(function (err) {
+      (callback) => {
+        externalGrader.init(function (err) {
           if (ERR(err, callback)) return;
           callback(null);
         });
       },
-      function (callback) {
-        nodeMetrics.init();
-        callback(null);
-      },
+      async () => workspace.init(),
+      async () => serverJobs.init(),
+      async () => nodeMetrics.init(),
+      // These should be the last things to start before we actually start taking
+      // requests, as they may actually end up executing course code.
       async () => {
-        await freeformServer.init();
+        if (!config.externalGradingEnableResults) return;
+        await externalGraderResults.init();
       },
+      async () => cron.init(),
+      async () => lifecycleHooks.completeInstanceLaunch(),
     ],
     function (err, data) {
       if (err) {
@@ -2019,13 +2135,52 @@ if (config.startServer) {
           process.exit(0);
         }
 
-        process.on('SIGTERM', () => {
-          opentelemetry
-            .shutdown()
-            .catch((err) => logger.error('Error shutting down OpenTelemetry', err))
-            .finally(() => {
-              process.exit(0);
-            });
+        // SIGTERM can be used to gracefully shut down the process. This signal
+        // may come from another process, but we also send it to ourselves if
+        // we want to gracefully shut down. This is used below in the ASG
+        // lifecycle handler, and also within the "terminate" webhook.
+        process.once('SIGTERM', async () => {
+          // By this point, we should no longer be attached to the load balancer,
+          // so there's no point shutting down the HTTP server or the socket.io
+          // server.
+          //
+          // We use `allSettled()` here to ensure that all tasks can gracefully
+          // shut down, even if some of them fail.
+          logger.info('Shutting down async processing');
+          const results = await Promise.allSettled([
+            externalGraderResults.stop(),
+            cron.stop(),
+            serverJobs.stop(),
+          ]);
+          results.forEach((r) => {
+            if (r.status === 'rejected') {
+              logger.error('Error shutting down async processing', r.reason);
+              Sentry.captureException(r.reason);
+            }
+          });
+
+          try {
+            await lifecycleHooks.completeInstanceTermination();
+          } catch (err) {
+            logger.error('Error completing instance termination', err);
+            Sentry.captureException(err);
+          }
+
+          logger.info('Terminating...');
+          // Shut down OpenTelemetry exporting.
+          try {
+            opentelemetry.shutdown();
+          } catch (err) {
+            logger.error('Error shutting down OpenTelemetry', err);
+            Sentry.captureException(err);
+          }
+
+          // Flush all events to Sentry.
+          try {
+            await Sentry.flush();
+          } finally {
+            process.exit(0);
+          }
         });
       }
     }

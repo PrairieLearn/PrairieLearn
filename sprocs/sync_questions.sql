@@ -46,12 +46,35 @@ BEGIN
 
     WITH
     matched_rows AS (
-        SELECT src.qid AS src_qid, src.uuid AS src_uuid, dest.id AS dest_id -- matched_rows cols have underscores
+        -- DISTINCT ON is necessary to ensure that we only try to update one
+        -- row per qid. See comment below in ORDER BY for more details.
+        SELECT DISTINCT ON (src_qid)
+            src.qid AS src_qid,
+            src.uuid AS src_uuid,
+            dest.id AS dest_id
         FROM disk_questions AS src LEFT JOIN questions AS dest ON (
             dest.course_id = syncing_course_id
-            AND (src.uuid = dest.uuid
-                 OR ((src.uuid IS NULL OR dest.uuid IS NULL)
-                     AND src.qid = dest.qid AND dest.deleted_at IS NULL)))
+            AND (
+                src.uuid = dest.uuid
+                OR (
+                    (src.uuid IS NULL OR dest.uuid IS NULL)
+                    AND src.qid = dest.qid AND dest.deleted_at IS NULL
+                )
+            )
+        )
+        ORDER BY
+            -- This ORDER BY clause is necessary for DISTINCT ON
+            src_qid,
+            -- Together with the use of DISTINCT ON, this ORDER BY clause
+            -- ensures that, when given the choice between matching based on
+            -- qid or uuid, we prefer matching based on uuid. This avoids a
+            -- scenario where we try to insert a new row with a UUID that's
+            -- already in use in another row.
+            --
+            -- See https://github.com/PrairieLearn/PrairieLearn/issues/6539 for
+            -- a case where this occurred, including a description of how to
+            -- reproduce it.
+            (src.uuid = dest.uuid) DESC NULLS LAST
     ),
     deactivate_unmatched_dest_rows AS (
         UPDATE questions AS dest
@@ -136,7 +159,6 @@ BEGIN
         workspace_args = src.data->>'workspace_args',
         workspace_home = src.data->>'workspace_home',
         workspace_graded_files = jsonb_array_to_text_array(src.data->'workspace_graded_files'),
-        workspace_sync_ignore = jsonb_array_to_text_array(src.data->'workspace_sync_ignore'),
         workspace_url_rewrite = (src.data->>'workspace_url_rewrite')::boolean,
         workspace_enable_networking = (src.data->>'workspace_enable_networking')::boolean,
         workspace_environment = (src.data->>'workspace_environment')::jsonb,

@@ -1,5 +1,29 @@
 # @prairielearn/opentelemetry
 
+## 1.7.0
+
+### Minor Changes
+
+- ee0c530b5: Export `getCounter` and all similar functions
+
+## 1.5.2
+
+### Patch Changes
+
+- 2b18ac41b: Upgrade all dependencies
+
+## 1.5.1
+
+### Patch Changes
+
+- 4622066e7: Upgrade all dependencies
+
+## 1.5.0
+
+### Minor Changes
+
+- 2ff1f1086: Add support for Jaeger exporter
+
 ## 1.4.1
 
 ### Patch Changes

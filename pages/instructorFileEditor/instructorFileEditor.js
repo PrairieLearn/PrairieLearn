@@ -3,14 +3,13 @@ const express = require('express');
 const router = express.Router();
 const async = require('async');
 const error = require('../../prairielib/lib/error');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 const fs = require('fs-extra');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const debug = require('debug')('prairielearn:instructorFileEditor');
 const { callbackify } = require('util');
-const logger = require('../../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const serverJobs = require('../../lib/server-jobs');
 const namedLocks = require('../../lib/named-locks');
 const syncFromDisk = require('../../sync/syncFromDisk');
@@ -22,12 +21,14 @@ const { default: AnsiUp } = require('ansi_up');
 const sha256 = require('crypto-js/sha256');
 const b64Util = require('../../lib/base64-util');
 const fileStore = require('../../lib/file-store');
-const isBinaryFile = require('isbinaryfile').isBinaryFile;
+const { isBinaryFile } = require('isbinaryfile');
+const modelist = require('ace-code/src/ext/modelist');
 const { decodePath } = require('../../lib/uri-util');
 const chunks = require('../../lib/chunks');
 const { idsEqual } = require('../../lib/id');
+const { contains, getPaths } = require('../../lib/instructorFiles');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/*', (req, res, next) => {
   if (!res.locals.authz_data.has_course_permission_edit) {
@@ -67,31 +68,8 @@ router.get('/*', (req, res, next) => {
     dirName: path.dirname(workingPath),
     fileName: path.basename(workingPath),
     fileNameForDisplay: path.normalize(workingPath),
+    aceMode: modelist.getModeForPath(workingPath).mode,
   };
-
-  const ext = path.extname(workingPath);
-  // If you add to this list, make sure the corresponding list in instructorFileBrowser.js is consistent.
-  const extensionModeMap = {
-    '.json': 'json',
-    '.html': 'html',
-    '.py': 'python',
-    '.txt': 'text',
-    '.md': 'markdown',
-    '.mustache': 'text',
-    '.css': 'css',
-    '.csv': 'text',
-    '.js': 'javascript',
-    '.m': 'matlab',
-    '.c': 'c_cpp',
-    '.cpp': 'c_cpp',
-    '.h': 'c_cpp',
-  };
-  const fileEditMode = extensionModeMap[ext];
-  if (fileEditMode) {
-    fileEdit.aceMode = fileEditMode;
-  } else {
-    debug(`Could not find an ace mode to match extension: ${ext}`);
-  }
 
   // Do not allow users to edit the exampleCourse
   if (res.locals.course.example_course) {
@@ -109,7 +87,7 @@ router.get('/*', (req, res, next) => {
   debug(
     `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`
   );
-  if (relPath.split(path.sep)[0] === '..' || path.isAbsolute(relPath)) {
+  if (!contains(fileEdit.coursePath, fullPath)) {
     return next(
       error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
         locals: res.locals,
@@ -219,9 +197,12 @@ router.get('/*', (req, res, next) => {
         fileEdit.origHash = fileEdit.diskHash;
       }
 
-      debug('Render');
-      res.locals.fileEdit = fileEdit;
-      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      getPaths(req, res, (err, paths) => {
+        if (ERR(err, next)) return;
+        res.locals.fileEdit = fileEdit;
+        res.locals.fileEdit.paths = paths;
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      });
     }
   );
 });
@@ -271,7 +252,7 @@ router.post('/*', (req, res, next) => {
   debug(
     `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`
   );
-  if (relPath.split(path.sep)[0] === '..' || path.isAbsolute(relPath)) {
+  if (!contains(fileEdit.coursePath, fullPath)) {
     return next(
       error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
         locals: res.locals,

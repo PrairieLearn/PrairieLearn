@@ -1,14 +1,17 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const express = require('express');
-const router = express.Router();
 const async = require('async');
+const path = require('path');
+const { callbackify } = require('util');
+const sqldb = require('@prairielearn/postgres');
 const error = require('../../prairielib/lib/error');
 const question = require('../../lib/question');
-const sqldb = require('../../prairielib/lib/sql-db');
-const path = require('path');
+const issues = require('../../lib/issues');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const logPageView = require('../../middlewares/logPageView')(path.basename(__filename, '.js'));
+
+const router = express.Router();
 
 function processSubmission(req, res, callback) {
   let variant_id, submitted_answer;
@@ -80,36 +83,25 @@ function processSubmission(req, res, callback) {
   );
 }
 
-function processIssue(req, res, callback) {
+async function processIssue(req, res, callback) {
   const description = req.body.description;
   if (!_.isString(description) || description.length === 0) {
     return callback(new Error('A description of the issue must be provided'));
   }
 
-  const variant_id = req.body.__variant_id;
-  sqldb.callOneRow(
-    'variants_ensure_question',
-    [variant_id, res.locals.question.id],
-    (err, _result) => {
-      if (ERR(err, callback)) return;
-
-      const course_data = _.pick(res.locals, ['variant', 'question', 'course_instance', 'course']);
-      const params = [
-        variant_id,
-        description, // student message
-        'instructor-reported issue', // instructor message
-        true, // manually_reported
-        true, // course_caused
-        course_data,
-        {}, // system_data
-        res.locals.authn_user.user_id,
-      ];
-      sqldb.call('issues_insert_for_variant', params, (err) => {
-        if (ERR(err, callback)) return;
-        callback(null, variant_id);
-      });
-    }
-  );
+  const variantId = req.body.__variant_id;
+  await sqldb.callOneRowAsync('variants_ensure_question', [variantId, res.locals.question.id]);
+  await issues.insertIssue({
+    variantId,
+    studentMessage: description,
+    instructorMessage: 'instructor-reported issue',
+    manuallyReported: true,
+    courseCaused: true,
+    courseData: _.pick(res.locals, ['variant', 'question', 'course_instance', 'course']),
+    systemData: {},
+    authnUserId: res.locals.authn_user.user_id,
+  });
+  return variantId;
 }
 
 router.post('/', function (req, res, next) {
@@ -125,7 +117,7 @@ router.post('/', function (req, res, next) {
       );
     });
   } else if (req.body.__action === 'report_issue') {
-    processIssue(req, res, function (err, variant_id) {
+    callbackify(processIssue)(req, res, function (err, variant_id) {
       if (ERR(err, next)) return;
       res.redirect(
         res.locals.urlPrefix +
@@ -143,6 +135,24 @@ router.post('/', function (req, res, next) {
       })
     );
   }
+});
+
+router.get('/variant/:variant_id/submission/:submission_id', function (req, res, next) {
+  question.renderPanelsForSubmission(
+    req.params.submission_id,
+    res.locals.question.id,
+    null, // instance_question_id,
+    req.params.variant_id,
+    res.locals.urlPrefix,
+    null, // questionContext
+    null, // csrfToken
+    null, // authorizedEdit
+    false, // renderScorePanels
+    (err, results) => {
+      if (ERR(err, next)) return;
+      res.send({ submissionPanel: results.submissionPanel });
+    }
+  );
 });
 
 router.get('/', function (req, res, next) {

@@ -1,5 +1,6 @@
 CREATE FUNCTION
     issues_select_with_filter (
+        course_id bigint,
         filter_is_open boolean,
         filter_is_closed boolean,
         filter_manually_reported boolean,
@@ -18,7 +19,8 @@ AS $$
         LEFT JOIN questions AS q ON (q.id = i.question_id)
         LEFT JOIN users AS u ON (u.user_id = i.user_id)
     WHERE
-        ((filter_is_open::boolean IS NULL) OR (i.open = filter_is_open::boolean))
+        i.course_id = issues_select_with_filter.course_id
+        AND ((filter_is_open::boolean IS NULL) OR (i.open = filter_is_open::boolean))
         AND ((filter_is_closed::boolean IS NULL) OR (i.open != filter_is_closed::boolean))
         AND ((filter_manually_reported::boolean IS NULL) OR (i.manually_reported = filter_manually_reported::boolean))
         AND ((filter_automatically_reported::boolean IS NULL) OR (i.manually_reported != filter_automatically_reported::boolean))

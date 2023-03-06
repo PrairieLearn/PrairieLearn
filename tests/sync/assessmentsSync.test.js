@@ -1,16 +1,16 @@
+// @ts-check
 const chaiAsPromised = require('chai-as-promised');
 const chai = require('chai');
 chai.use(chaiAsPromised);
 const fs = require('fs-extra');
 const path = require('path');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 const { idsEqual } = require('../../lib/id');
 
 const util = require('./util');
 const helperDb = require('../helperDb');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 const { assert } = chai;
 
 /**
@@ -173,6 +173,10 @@ describe('Assessment syncing', () => {
             },
           ],
         },
+        {
+          points: 7,
+          id: util.MANUAL_GRADING_QUESTION_ID,
+        },
       ],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
@@ -180,20 +184,32 @@ describe('Assessment syncing', () => {
 
     const syncedData = await getSyncedAssessmentData('newexam');
     assert.lengthOf(syncedData.zones, 1);
-    assert.lengthOf(syncedData.alternative_groups, 1);
-    assert.lengthOf(syncedData.assessment_questions, 2);
+    assert.lengthOf(syncedData.alternative_groups, 2);
+    assert.lengthOf(syncedData.assessment_questions, 3);
 
     const firstAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.QUESTION_ID
     );
     assert.equal(firstAssessmentQuestion.max_points, 10);
+    assert.equal(firstAssessmentQuestion.max_auto_points, 10);
     assert.deepEqual(firstAssessmentQuestion.points_list, [10]);
+    assert.equal(firstAssessmentQuestion.max_manual_points, 0);
 
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID
     );
     assert.equal(secondAssessmentQuestion.max_points, 5);
+    assert.equal(secondAssessmentQuestion.max_auto_points, 5);
     assert.deepEqual(secondAssessmentQuestion.points_list, [5]);
+    assert.equal(secondAssessmentQuestion.max_manual_points, 0);
+
+    const thirdAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID
+    );
+    assert.equal(thirdAssessmentQuestion.max_points, 7);
+    assert.equal(thirdAssessmentQuestion.max_auto_points, 0);
+    assert.deepEqual(thirdAssessmentQuestion.points_list, [7]);
+    assert.equal(thirdAssessmentQuestion.max_manual_points, 7);
   });
 
   it('syncs alternatives in a Homework zone', async () => {
@@ -216,6 +232,10 @@ describe('Assessment syncing', () => {
             },
           ],
         },
+        {
+          points: 7,
+          id: util.MANUAL_GRADING_QUESTION_ID,
+        },
       ],
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
@@ -223,20 +243,268 @@ describe('Assessment syncing', () => {
 
     const syncedData = await getSyncedAssessmentData('newexam');
     assert.lengthOf(syncedData.zones, 1);
-    assert.lengthOf(syncedData.alternative_groups, 1);
-    assert.lengthOf(syncedData.assessment_questions, 2);
+    assert.lengthOf(syncedData.alternative_groups, 2);
+    assert.lengthOf(syncedData.assessment_questions, 3);
 
     const firstAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.QUESTION_ID
     );
     assert.equal(firstAssessmentQuestion.init_points, 10);
     assert.equal(firstAssessmentQuestion.max_points, 20);
+    assert.equal(firstAssessmentQuestion.max_auto_points, 20);
+    assert.equal(firstAssessmentQuestion.max_manual_points, 0);
 
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID
     );
     assert.equal(secondAssessmentQuestion.init_points, 5);
     assert.equal(secondAssessmentQuestion.max_points, 15);
+    assert.equal(secondAssessmentQuestion.max_auto_points, 15);
+    assert.equal(secondAssessmentQuestion.max_manual_points, 0);
+
+    const thirdAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID
+    );
+    assert.equal(thirdAssessmentQuestion.init_points, 7);
+    assert.equal(thirdAssessmentQuestion.max_points, 7);
+    assert.equal(thirdAssessmentQuestion.max_auto_points, 0);
+    assert.equal(thirdAssessmentQuestion.max_manual_points, 7);
+  });
+
+  it('syncs auto and manual points in an Exam zone', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones.push({
+      title: 'zone 1',
+      questions: [
+        {
+          autoPoints: 10,
+          manualPoints: 3,
+          alternatives: [
+            {
+              id: util.QUESTION_ID,
+            },
+            {
+              id: util.ALTERNATIVE_QUESTION_ID,
+              autoPoints: 5,
+            },
+          ],
+        },
+        {
+          autoPoints: 1,
+          manualPoints: 7,
+          id: util.MANUAL_GRADING_QUESTION_ID,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('newexam');
+    assert.lengthOf(syncedData.zones, 1);
+    assert.lengthOf(syncedData.alternative_groups, 2);
+    assert.lengthOf(syncedData.assessment_questions, 3);
+
+    const firstAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.QUESTION_ID
+    );
+    assert.equal(firstAssessmentQuestion.max_points, 13);
+    assert.equal(firstAssessmentQuestion.max_auto_points, 10);
+    assert.deepEqual(firstAssessmentQuestion.points_list, [13]);
+    assert.equal(firstAssessmentQuestion.max_manual_points, 3);
+
+    const secondAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID
+    );
+    assert.equal(secondAssessmentQuestion.max_points, 8);
+    assert.equal(secondAssessmentQuestion.max_auto_points, 5);
+    assert.deepEqual(secondAssessmentQuestion.points_list, [8]);
+    assert.equal(secondAssessmentQuestion.max_manual_points, 3);
+
+    const thirdAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID
+    );
+    assert.equal(thirdAssessmentQuestion.max_points, 8);
+    assert.equal(thirdAssessmentQuestion.max_auto_points, 1);
+    assert.deepEqual(thirdAssessmentQuestion.points_list, [8]);
+    assert.equal(thirdAssessmentQuestion.max_manual_points, 7);
+  });
+
+  it('syncs auto and manual points in a Homework zone', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones.push({
+      title: 'zone 1',
+      questions: [
+        {
+          maxAutoPoints: 20,
+          autoPoints: 10,
+          manualPoints: 3,
+          alternatives: [
+            {
+              id: util.QUESTION_ID,
+            },
+            {
+              id: util.ALTERNATIVE_QUESTION_ID,
+              maxAutoPoints: 15,
+              autoPoints: 5,
+            },
+          ],
+        },
+        {
+          autoPoints: 1,
+          manualPoints: 7,
+          id: util.MANUAL_GRADING_QUESTION_ID,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['hwwithmanual1'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('hwwithmanual1');
+    assert.lengthOf(syncedData.zones, 1);
+    assert.lengthOf(syncedData.alternative_groups, 2);
+    assert.lengthOf(syncedData.assessment_questions, 3);
+
+    const firstAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.QUESTION_ID
+    );
+    assert.equal(firstAssessmentQuestion.init_points, 13);
+    assert.equal(firstAssessmentQuestion.max_points, 23);
+    assert.equal(firstAssessmentQuestion.max_auto_points, 20);
+    assert.equal(firstAssessmentQuestion.max_manual_points, 3);
+
+    const secondAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID
+    );
+    assert.equal(secondAssessmentQuestion.init_points, 8);
+    assert.equal(secondAssessmentQuestion.max_points, 18);
+    assert.equal(secondAssessmentQuestion.max_auto_points, 15);
+    assert.equal(secondAssessmentQuestion.max_manual_points, 3);
+
+    const thirdAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID
+    );
+    assert.equal(thirdAssessmentQuestion.init_points, 8);
+    assert.equal(thirdAssessmentQuestion.max_points, 8);
+    assert.equal(thirdAssessmentQuestion.max_auto_points, 1);
+    assert.equal(thirdAssessmentQuestion.max_manual_points, 7);
+  });
+
+  it('syncs point arrays in an Exam zone', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones.push({
+      title: 'zone 1',
+      questions: [
+        {
+          points: [10, 7, 5, 2, 1],
+          alternatives: [
+            {
+              id: util.QUESTION_ID,
+            },
+            {
+              id: util.ALTERNATIVE_QUESTION_ID,
+              points: [5, 3],
+            },
+          ],
+        },
+        {
+          points: [7, 6, 5],
+          id: util.MANUAL_GRADING_QUESTION_ID,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('newexam');
+    assert.lengthOf(syncedData.zones, 1);
+    assert.lengthOf(syncedData.alternative_groups, 2);
+    assert.lengthOf(syncedData.assessment_questions, 3);
+
+    const firstAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.QUESTION_ID
+    );
+    assert.equal(firstAssessmentQuestion.max_points, 10);
+    assert.equal(firstAssessmentQuestion.max_auto_points, 10);
+    assert.deepEqual(firstAssessmentQuestion.points_list, [10, 7, 5, 2, 1]);
+    assert.equal(firstAssessmentQuestion.max_manual_points, 0);
+
+    const secondAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID
+    );
+    assert.equal(secondAssessmentQuestion.max_points, 5);
+    assert.equal(secondAssessmentQuestion.max_auto_points, 5);
+    assert.deepEqual(secondAssessmentQuestion.points_list, [5, 3]);
+    assert.equal(secondAssessmentQuestion.max_manual_points, 0);
+
+    const thirdAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID
+    );
+    assert.equal(thirdAssessmentQuestion.max_points, 7);
+    assert.equal(thirdAssessmentQuestion.max_auto_points, 0);
+    assert.deepEqual(thirdAssessmentQuestion.points_list, [7, 6, 5]);
+    assert.equal(thirdAssessmentQuestion.max_manual_points, 7);
+  });
+
+  it('syncs autoPoint arrays in an Exam zone', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Exam');
+    assessment.zones.push({
+      title: 'zone 1',
+      questions: [
+        {
+          autoPoints: [10, 7, 5, 2, 1],
+          manualPoints: 8,
+          alternatives: [
+            {
+              id: util.QUESTION_ID,
+            },
+            {
+              id: util.ALTERNATIVE_QUESTION_ID,
+              autoPoints: [5, 3],
+            },
+          ],
+        },
+        {
+          autoPoints: [7, 6, 5],
+          manualPoints: 3,
+          id: util.MANUAL_GRADING_QUESTION_ID,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedData = await getSyncedAssessmentData('newexam');
+    assert.lengthOf(syncedData.zones, 1);
+    assert.lengthOf(syncedData.alternative_groups, 2);
+    assert.lengthOf(syncedData.assessment_questions, 3);
+
+    const firstAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.QUESTION_ID
+    );
+    assert.equal(firstAssessmentQuestion.max_points, 18);
+    assert.equal(firstAssessmentQuestion.max_auto_points, 10);
+    assert.deepEqual(firstAssessmentQuestion.points_list, [18, 15, 13, 10, 9]);
+    assert.equal(firstAssessmentQuestion.max_manual_points, 8);
+
+    const secondAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID
+    );
+    assert.equal(secondAssessmentQuestion.max_points, 13);
+    assert.equal(secondAssessmentQuestion.max_auto_points, 5);
+    assert.deepEqual(secondAssessmentQuestion.points_list, [13, 11]);
+    assert.equal(secondAssessmentQuestion.max_manual_points, 8);
+
+    const thirdAssessmentQuestion = syncedData.assessment_questions.find(
+      (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID
+    );
+    assert.equal(thirdAssessmentQuestion.max_points, 10);
+    assert.equal(thirdAssessmentQuestion.max_auto_points, 7);
+    assert.deepEqual(thirdAssessmentQuestion.points_list, [10, 9, 8]);
+    assert.equal(thirdAssessmentQuestion.max_manual_points, 3);
   });
 
   it('reuses assessment questions when questions are removed and added again', async () => {
@@ -391,7 +659,7 @@ describe('Assessment syncing', () => {
     assert.isTrue(foundManager.can_assign_roles_during_assessment);
 
     const foundContributor = syncedRoles.find((role) => role.role_name === 'Contributor');
-    assert.notEqual(foundContributor !== undefined);
+    assert.isOk(foundContributor);
     assert.equal(foundContributor.minimum, 0);
     assert.equal(foundContributor.maximum, null);
     assert.isFalse(foundContributor.can_assign_roles_at_start);
@@ -435,7 +703,7 @@ describe('Assessment syncing', () => {
 
     // Check group roles
     const syncedRoles = await util.dumpTable('group_roles');
-    assert(syncedRoles.length === 2);
+    assert.isTrue(syncedRoles.length === 2);
 
     const foundRecorder = syncedRoles.find((role) => role.role_name === 'Recorder');
     const foundContributor = syncedRoles.find((role) => role.role_name === 'Contributor');
@@ -453,7 +721,7 @@ describe('Assessment syncing', () => {
       );
     const firstQuestionRecorderPermission = getPermission(foundRecorder, firstAssessmentQuestion);
     assert.notEqual(firstQuestionRecorderPermission, undefined);
-    assert(
+    assert.isTrue(
       firstQuestionRecorderPermission.can_view && firstQuestionRecorderPermission.can_submit,
       'recorder should have permission to view and submit first question'
     );
@@ -463,14 +731,14 @@ describe('Assessment syncing', () => {
       firstAssessmentQuestion
     );
     assert.notEqual(firstQuestionContributorPermission, undefined);
-    assert(
+    assert.isTrue(
       firstQuestionContributorPermission.can_view && !firstQuestionContributorPermission.can_submit,
       'contributor should only have permission to view first question'
     );
 
     const secondQuestionRecorderPermission = getPermission(foundRecorder, secondAssessmentQuestion);
     assert.notEqual(secondQuestionRecorderPermission, undefined);
-    assert(
+    assert.isTrue(
       secondQuestionRecorderPermission.can_view && secondQuestionRecorderPermission.can_submit,
       'recorder should have permission to view and submit second question'
     );
@@ -479,8 +747,8 @@ describe('Assessment syncing', () => {
       foundContributor,
       secondAssessmentQuestion
     );
-    assert.notEqual(secondQuestionContributorPermission);
-    assert(
+    assert.isOk(secondQuestionContributorPermission);
+    assert.isTrue(
       !secondQuestionContributorPermission.can_view &&
         !secondQuestionContributorPermission.can_submit,
       'contributor should not be able to view or submit second question'
@@ -706,7 +974,7 @@ describe('Assessment syncing', () => {
       (aset) => aset.name === missingAssessmentSetName
     );
     assert.isOk(syncedAssessmentSet);
-    assert(
+    assert.isTrue(
       syncedAssessmentSet.heading && syncedAssessmentSet.heading.length > 0,
       'assessment set should not have empty heading'
     );
@@ -820,7 +1088,7 @@ describe('Assessment syncing', () => {
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.match(
       syncedAssessment.sync_errors,
-      /Cannot specify "maxPoints" for a question in an "Exam" assessment/
+      /Cannot specify "maxPoints" or "maxAutoPoints" for a question in an "Exam" assessment/
     );
   });
 
@@ -840,7 +1108,7 @@ describe('Assessment syncing', () => {
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.match(
       syncedAssessment.sync_errors,
-      /Must specify "points" for a question in an "Exam" assessment/
+      /Must specify "points", "autoPoints" or "manualPoints" for a question/
     );
   });
 
@@ -860,7 +1128,73 @@ describe('Assessment syncing', () => {
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.match(
       syncedAssessment.sync_errors,
-      /Must specify "points" for a question in a "Homework" assessment/
+      /Must specify "points", "autoPoints" or "manualPoints" for a question/
+    );
+  });
+
+  it('records an error if a question specifies points and autoPoints', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 5,
+          autoPoints: 5,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(
+      syncedAssessment.sync_errors,
+      /Cannot specify "points" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified/
+    );
+  });
+
+  it('records an error if a question specifies points and manualPoints', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 5,
+          manualPoints: 5,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(
+      syncedAssessment.sync_errors,
+      /Cannot specify "points" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified/
+    );
+  });
+
+  it('records an error if a question specifies maxPoints and autoPoints', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          maxPoints: 15,
+          autoPoints: 5,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(
+      syncedAssessment.sync_errors,
+      /Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified/
     );
   });
 
@@ -882,7 +1216,7 @@ describe('Assessment syncing', () => {
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.match(
       syncedAssessment.sync_errors,
-      /Cannot specify "points" as a list for a question in a "Homework" assessment/
+      /Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment/
     );
   });
 
@@ -1118,6 +1452,7 @@ describe('Assessment syncing', () => {
 
   it('creates entry in the database in the case of invalid JSON', async () => {
     const courseData = util.getCourseData();
+    // @ts-expect-error
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = 'lol not valid json';
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessmentSets = await util.dumpTable('assessment_sets');
@@ -1236,7 +1571,7 @@ describe('Assessment syncing', () => {
       (a) => a.tid === 'repeatedAssessment' && a.deleted_at == null
     );
     assert.equal(syncedAssessment.uuid, newAssessment.uuid);
-    assert.match(syncedAssessment.sync_errors, /should have required property 'title'/);
+    assert.match(syncedAssessment.sync_errors, /must have required property 'title'/);
 
     // check that the old deleted assessment does not have any errors
     const deletedAssessment = syncedAssessments.find(
@@ -1299,5 +1634,48 @@ describe('Assessment syncing', () => {
       syncedAssessment.sync_errors,
       `"multipleInstance" cannot be used for Homework-type assessments`
     );
+  });
+
+  // https://github.com/PrairieLearn/PrairieLearn/issues/6539
+  it('handles unique sequence of renames and duplicate UUIDs', async () => {
+    const courseData = util.getCourseData();
+
+    // Start with a clean slate.
+    const courseInstanceData = courseData.courseInstances[util.COURSE_INSTANCE_ID];
+    courseInstanceData.assessments = {};
+
+    // Write and sync a single assessment.
+    const originalAssessment = makeAssessment(courseData);
+    originalAssessment.uuid = '0e8097aa-b554-4908-9eac-d46a78d6c249';
+    courseInstanceData.assessments['a'] = originalAssessment;
+    const courseDir = await util.writeAndSyncCourseData(courseData);
+
+    // Now "move" the above assessment to a new directory AND add another with the
+    // same UUID.
+    delete courseInstanceData.assessments['a'];
+    courseInstanceData.assessments['b'] = originalAssessment;
+    courseInstanceData.assessments['c'] = originalAssessment;
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+    // Now "fix" the duplicate UUID.
+    courseInstanceData.assessments['c'] = {
+      ...originalAssessment,
+      uuid: '0e3097ba-b554-4908-9eac-d46a78d6c249',
+    };
+    await util.overwriteAndSyncCourseData(courseData, courseDir);
+
+    const assessments = await util.dumpTable('assessments');
+
+    // Original assessment should not exist.
+    const originalAssessmentRow = assessments.find((a) => a.tid === 'a');
+    assert.isUndefined(originalAssessmentRow);
+
+    // New assessments should exist and have the correct UUIDs.
+    const newAssessmentRow1 = assessments.find((a) => a.tid === 'b' && a.deleted_at === null);
+    assert.isNull(newAssessmentRow1.deleted_at);
+    assert.equal(newAssessmentRow1.uuid, '0e8097aa-b554-4908-9eac-d46a78d6c249');
+    const newAssessmentRow2 = assessments.find((a) => a.tid === 'c' && a.deleted_at === null);
+    assert.isNull(newAssessmentRow2.deleted_at);
+    assert.equal(newAssessmentRow2.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
   });
 });
