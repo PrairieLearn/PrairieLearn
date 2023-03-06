@@ -53,9 +53,10 @@ describe('Test group based assessments with custom group roles from student side
         if (ERR(err, callback)) return;
         assert.lengthOf(result.rows, 1);
         assert.notEqual(result.rows[0].id, undefined);
+        assert.equal(result.rows[0].has_roles, false);
         locals.assessment_id_without_roles = result.rows[0].id;
         locals.assessmentUrlWithoutRoles =
-          locals.courseInstanceUrl + '/assessment/' + locals.assessment_id;
+          locals.courseInstanceUrl + '/assessment/' + locals.assessment_id_without_roles;
         callback(null);
       });
     });
@@ -1342,8 +1343,8 @@ describe('Test group based assessments with custom group roles from student side
       locals.$ = cheerio.load(page);
     });
     it('group role table is not visible', function () {
-      // elemList = locals.$('#role-select-form').find('tr');
-      // assert.lengthOf(elemList, 0);
+      elemList = locals.$('#role-select-form').find('tr');
+      assert.lengthOf(elemList, 0);
     });
   });
 });

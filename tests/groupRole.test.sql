@@ -13,7 +13,8 @@ WHERE
 
 -- BLOCK select_group_work_assessment_without_roles
 SELECT
-  a.id
+  a.id,
+  gc.has_roles
 FROM
   assessments AS a
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
