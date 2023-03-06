@@ -9,7 +9,6 @@ import re
 import unicodedata
 import uuid
 from enum import Enum
-from itertools import chain
 from typing import (
     Any,
     Callable,
@@ -453,19 +452,13 @@ def from_json(v):
 
 
 def inner_html(element: lxml.html.HtmlElement) -> str:
-    """
-    Gets the inner HTML of an element.
-    """
-    inner_text = "" if element.text is None else html.escape(element.text)
-    return "".join(
-        chain(
-            (inner_text,),
-            (
-                lxml.html.tostring(child, method="html").decode("utf-8")
-                for child in element
-            ),
-        )
-    )
+    inner = element.text
+    if inner is None:
+        inner = ""
+    inner = html.escape(str(inner))
+    for child in element:
+        inner += lxml.html.tostring(child, method="html").decode("utf-8")
+    return inner
 
 
 def compat_get(object, attrib, default):
