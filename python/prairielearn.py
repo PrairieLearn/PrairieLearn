@@ -75,6 +75,7 @@ def get_unit_registry() -> UnitRegistry:
     """Get a unit registry using cache folder valid on production machines."""
     pid = os.getpid()
     cache_dir = f"/tmp/pint_{pid}"
+
     return UnitRegistry(cache_folder=cache_dir)
 
 
