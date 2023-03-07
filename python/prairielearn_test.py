@@ -75,12 +75,19 @@ def test_networkx_serialization(networkx_graph: Any) -> None:
     assert nx.utils.edges_equal(networkx_graph.edges(), decoded_json_object.edges())
 
 
-def test_inner_html() -> None:
-    e = lxml.html.fragment_fromstring("<div>test</div>")
-    assert pl.inner_html(e) == "test"
-
-    e = lxml.html.fragment_fromstring("<div>test&gt;test</div>")
-    assert pl.inner_html(e) == "test&gt;test"
+@pytest.mark.parametrize(
+    "inner_html_string",
+    [
+        "test",
+        "test&gt;test",
+        "some loose text <pl>other <b>bold</b> text</pl>"
+        "some <p> other <b>words</b> are </p> here",
+        '<p>Some flavor text.</p> <pl-thing some-attribute="4">answers</pl-thing>',
+    ],
+)
+def test_inner_html(inner_html_string: str) -> None:
+    e = lxml.html.fragment_fromstring(f"<div>{inner_html_string}</div>")
+    assert pl.inner_html(e) == inner_html_string
 
 
 @pytest.mark.parametrize(
