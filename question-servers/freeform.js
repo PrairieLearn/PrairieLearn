@@ -952,6 +952,7 @@ module.exports = {
     }
 
     let result, output;
+    const start = Date.now();
     try {
       ({ result, output } = await module.exports.execPythonServer(
         codeCaller,
@@ -970,6 +971,8 @@ module.exports = {
         })
       );
       return { courseIssues, data };
+    } finally {
+      console.log(`Processing question in ${phase} (${data.panel}) took ${Date.now() - start}ms`);
     }
 
     if (_.isString(output) && output.length > 0) {
