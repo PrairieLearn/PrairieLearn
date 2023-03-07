@@ -22,19 +22,34 @@
 </style>
 
 <p>
-  PrairieLearn now has a new <code class="user-output">pl-units-input</code> element, thanks to the efforts of
-  <a href="https://github.com/nealterrell">Eliot Robson</a> (UIUC).
+  PrairieLearn now has a new <code class="user-output">pl-units-input</code> element, due to
+  <a href="https://github.com/eliotwrobson">Eliot Robson</a> (UIUC).
 </p>
 
 <p>
   This element can be used to create problems where students must input a quantity with an accompanying unit.
-  By default, comparisons to a reference solution can be performed with absolute tolerances in a reference unit.
+  By default, input of the same dimensionality as the reference solution is automatically converted and compared.
 </p>
 
-<p>For more information, see the <a href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-units-input-element">pl-matching documentation</a>. </p>
+<img class="border rounded" src="pl-units-input.png" width="800px">
 
-<hr class="mt-5">
-<p class="text-right small">
-  Want to help make PrairieLearn better? It's open source and <a
-    href="https://github.com/PrairieLearn/PrairieLearn">contributions are welcome!</a>
+<p>
+  Additional comparison methods are available without this automated conversion, along with other customization
+  options. The code that generates the above question is:
 </p>
+
+<div class="code-block rounded">
+<pre>&lt;pl-units-input answers-name=&quot;c_1&quot; correct-answer=&quot;1m&quot; atol=&quot;1cm&quot; &gt; &lt;/pl-units-input &gt;</pre>
+
+  <p>For more information, see the <a
+      href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-units-input-element">pl-units-input
+      documentation</a>
+    or the <a
+      href="https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/unitsInput">pl-units-input
+      example question</a>. </p>
+
+  <hr class="mt-5">
+  <p class="text-right small">
+    Want to help make PrairieLearn better? It's open source and <a
+      href="https://github.com/PrairieLearn/PrairieLearn">contributions are welcome!</a>
+  </p>
