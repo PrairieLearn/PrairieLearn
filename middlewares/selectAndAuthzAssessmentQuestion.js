@@ -1,11 +1,10 @@
 var _ = require('lodash');
 const util = require('util');
 
-var sqldb = require('../prairielib/lib/sql-db');
-var sqlLoader = require('../prairielib/lib/sql-loader');
+var sqldb = require('@prairielearn/postgres');
 var error = require('../prairielib/lib/error');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+var sql = sqldb.loadSqlEquiv(__filename);
 
 module.exports = util.callbackify(async (req, res) => {
   var params = {

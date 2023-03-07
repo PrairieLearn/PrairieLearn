@@ -3,14 +3,13 @@ const express = require('express');
 const router = express.Router();
 const async = require('async');
 const error = require('../../prairielib/lib/error');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 const fs = require('fs-extra');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const debug = require('debug')('prairielearn:instructorFileEditor');
 const { callbackify } = require('util');
-const logger = require('../../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const serverJobs = require('../../lib/server-jobs');
 const namedLocks = require('../../lib/named-locks');
 const syncFromDisk = require('../../sync/syncFromDisk');
@@ -29,7 +28,7 @@ const chunks = require('../../lib/chunks');
 const { idsEqual } = require('../../lib/id');
 const { contains, getPaths } = require('../../lib/instructorFiles');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/*', (req, res, next) => {
   if (!res.locals.authz_data.has_course_permission_edit) {

@@ -2,15 +2,14 @@ var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
 
-var sqldb = require('../../prairielib/lib/sql-db');
-var sqlLoader = require('../../prairielib/lib/sql-loader');
+var sqldb = require('@prairielearn/postgres');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+var sql = sqldb.loadSqlEquiv(__filename);
 
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const error = require('../../prairielib/lib/error');
-const logger = require('../../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const { CourseInstanceAddEditor } = require('../../lib/editors');
 const { idsEqual } = require('../../lib/id');
 

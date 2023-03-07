@@ -78,6 +78,26 @@
                 <% } %>
               </td>
             </tr>
+            <tr>
+              <th>Statistics</th>
+              <td colspan="2">
+                <% if (assessment_instance.include_in_statistics) { %>
+                    Included
+                    <a tabindex="0" class="btn btn-xs" role="button"
+                        data-toggle="popover" data-trigger="focus" data-container="body"
+                        data-html="true" title="Included in statistics"
+                        data-content="This assessment is included in the calculation of assessment and question statistics"
+                    ><i class="fa fa-question-circle"></i></a>
+                <% } else { %>
+                  Not included
+                  <a tabindex="0" class="btn btn-xs" role="button"
+                      data-toggle="popover" data-trigger="focus" data-container="body"
+                      data-html="true" title="Not included in statistics"
+                      data-content="This assessment is not included in the calculation of assessment and question statistics because it was created by a course staff member"
+                  ><i class="fa fa-question-circle"></i></a>
+                <% } %>
+              </td>
+            </tr>
             <tr><th>Date started</th><td colspan="2"><%= assessment_instance_date_formatted %></td></tr>
             <tr><th>Duration</th><td colspan="2"><%= assessment_instance_duration %></td></tr>
           </tbody>

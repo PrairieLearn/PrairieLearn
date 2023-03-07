@@ -1,4 +1,11 @@
-CREATE TYPE enum_workspace_host_state AS enum ('launching', 'ready', 'draining', 'unhealthy', 'terminating', 'terminated');
+CREATE TYPE enum_workspace_host_state AS enum(
+  'launching',
+  'ready',
+  'draining',
+  'unhealthy',
+  'terminating',
+  'terminated'
+);
 
 ALTER TABLE workspace_hosts
 ADD COLUMN state enum_workspace_host_state,

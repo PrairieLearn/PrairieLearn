@@ -4,11 +4,10 @@ const { assert } = require('chai');
 
 const config = require('../lib/config');
 const helperServer = require('./helperServer');
-const sqldb = require('../prairielib/lib/sql-db');
-const sqlLoader = require('../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 const locals = {};
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';

@@ -156,11 +156,27 @@ A minimal `question.html` for an externally graded workspace should look somethi
 </pl-submission-panel>
 ```
 
-### Creating files in the workspace home directory
+## Creating files in the workspace home directory
 
 Workspace questions can optionally include a `workspace/` subdirectory within the regular [PrairieLearn question directory structure](../question.md#directory-structure). If this `workspace/` subdirectory exists, its contents will be copied into the home directory of the student's workspace container, as configured in the `home` setting in `info.json`.
 
-Questions using workspaces can also be randomized, i.e., include files that contain random and dynamic content. This is done using [the `server.py` file in the question directory](../question.md#question-serverpy). In addition to other random parameters that can be created for the question page itself, the `_workspace_files` parameter can also be set, containing an array of files to be created. Each element of the array must include a `name` property, containing the file name (which can include a path with directories), and either a `contents` property, containing the contents of the file, or a `questionFile` property, pointing to an existing file in a different location in the question directory. For example:
+Questions using workspaces can also be randomized, i.e., include files that contain random and dynamic content. This may be done in two ways: using mustache-based template files or using [the `server.py` file in the question directory](../question.md#question-serverpy). For template files, a workspace question can optionally include a `workspaceTemplates/` subdirectory within the regular question directory structure. The contents will be copied into the home directory of the student's workspace container, as with the `workspace/` directory. However, files within this directory may include mustache tags (e.g., `{{params.value}}`), which will be replaced with the equivalent values set by `server.py`. File names may optionally include the `.mustache` extension, and the file will be renamed before being presented to the student. For example, if `server.py` sets `data["params"]["starting_value"]` to `17`, then if the file `main.py.mustache` inside `workspaceTemplates` has the following content:
+
+```txt
+# ...
+starting_value = {{params.starting_value}}
+# ...
+```
+
+Then a file with name `main.py` will be presented to the student, with the rendered content:
+
+```py
+# ...
+starting_value = 17
+# ...
+```
+
+For more fine-tuned randomized files, the `_workspace_files` parameter can also be set in `server.py`, containing an array of potentially dynamic files to be created in the workspace home directory. Each element of the array must include a `name` property, containing the file name (which can include a path with directories), and either a `contents` property, containing the contents of the file, or a `questionFile` property, pointing to an existing file in a different location in the question directory. For example:
 
 ```py
 def generate(data):
@@ -193,7 +209,21 @@ def generate(data):
     ]
 ```
 
-By default, `contents` is expected to be a string in UTF-8 format. To provide binary content, the value must be encoded using base64 or hex, as shown in the example above. In this case, the `encoding` property must also be provided. Only one of `questionFile` and `contents` may be provided. If neither `questionFile` nor `contents` are provided, an empty file is created. If a file name is found in both the dynamic list above and in the `workspace/` directory, the dynamic content is used.
+By default, `contents` is expected to be a string in UTF-8 format. To provide binary content, the value must be encoded using base64 or hex, as shown in the example above. In this case, the `encoding` property must also be provided. Only one of `questionFile` and `contents` may be provided. If neither `questionFile` nor `contents` are provided, an empty file is created.
+
+If a file name appears in multiple locations, the following precedence takes effect:
+
+- Dynamic content from `_workspace_files` has highest precedence;
+
+- Files in the `workspaceTemplate/` directory are considered next;
+
+- Files in the `workspace/` directory are considered last.
+
+## Custom workspace images
+
+You can build custom workspace images if you want to use a specific browser-based editor or if you need to install specific dependencies for use by students.
+
+If you're using your own editor, you must ensure that it frequently autosaves any work and persists it to disk. We make every effort to ensure reliable execution of workspaces, but an occasional hardware failure or other issue may result in the unexpected termination of a workspace. Students will be able to quickly reboot their workspace to start it on a new underlying host, but their work may be lost if it isn't frequently and automatically saved by your workspace code.
 
 ## Running locally (on Docker)
 

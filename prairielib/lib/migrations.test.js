@@ -1,6 +1,8 @@
 // @ts-check
-/* eslint-env jest */
 
+const chai = require('chai');
+const chaiAsPromised = require('chai-as-promised');
+chai.use(chaiAsPromised);
 const path = require('path');
 const tmp = require('tmp-promise');
 const fs = require('fs-extra');
@@ -10,6 +12,8 @@ const {
   sortMigrationFiles,
   getMigrationsToExecute,
 } = require('./migrations');
+
+const { assert } = chai;
 
 async function withMigrationFiles(files, fn) {
   await tmp.withDir(
@@ -27,7 +31,8 @@ describe('migrations', () => {
   describe('readAndValidateMigrationsFromDirectory', () => {
     it('handles migrations without a timestamp', async () => {
       await withMigrationFiles(['001_testing.sql'], async (tmpDir) => {
-        await expect(readAndValidateMigrationsFromDirectory(tmpDir)).rejects.toThrow(
+        await assert.isRejected(
+          readAndValidateMigrationsFromDirectory(tmpDir),
           'Invalid migration filename: 001_testing.sql'
         );
       });
@@ -37,7 +42,8 @@ describe('migrations', () => {
       await withMigrationFiles(
         ['20220101010101_testing.sql', '20220101010101_testing_again.sql'],
         async (tmpDir) => {
-          await expect(readAndValidateMigrationsFromDirectory(tmpDir)).rejects.toThrow(
+          await assert.isRejected(
+            readAndValidateMigrationsFromDirectory(tmpDir),
             'Duplicate migration timestamp'
           );
         }
@@ -47,7 +53,7 @@ describe('migrations', () => {
 
   describe('sortMigrationFiles', () => {
     it('sorts by timestamp', () => {
-      expect(
+      assert.deepEqual(
         sortMigrationFiles([
           {
             filename: '20220101010103_testing_3.sql',
@@ -61,21 +67,22 @@ describe('migrations', () => {
             filename: '20220101010102_testing_2.sql',
             timestamp: '20220101010102',
           },
-        ])
-      ).toEqual([
-        {
-          filename: '20220101010101_testing_1.sql',
-          timestamp: '20220101010101',
-        },
-        {
-          filename: '20220101010102_testing_2.sql',
-          timestamp: '20220101010102',
-        },
-        {
-          filename: '20220101010103_testing_3.sql',
-          timestamp: '20220101010103',
-        },
-      ]);
+        ]),
+        [
+          {
+            filename: '20220101010101_testing_1.sql',
+            timestamp: '20220101010101',
+          },
+          {
+            filename: '20220101010102_testing_2.sql',
+            timestamp: '20220101010102',
+          },
+          {
+            filename: '20220101010103_testing_3.sql',
+            timestamp: '20220101010103',
+          },
+        ]
+      );
     });
   });
 
@@ -87,7 +94,7 @@ describe('migrations', () => {
           timestamp: '20220101010101',
         },
       ];
-      expect(getMigrationsToExecute(migrationFiles, [])).toEqual(migrationFiles);
+      assert.deepEqual(getMigrationsToExecute(migrationFiles, []), migrationFiles);
     });
 
     it('handles case where subset of migrations have been executed', () => {
@@ -113,7 +120,7 @@ describe('migrations', () => {
           timestamp: '20220101010102',
         },
       ];
-      expect(getMigrationsToExecute(migrationFiles, executedMigrations)).toEqual([
+      assert.deepEqual(getMigrationsToExecute(migrationFiles, executedMigrations), [
         { timestamp: '20220101010103', filename: '20220101010103_testing_3.sql' },
       ]);
     });

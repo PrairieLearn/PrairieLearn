@@ -1,10 +1,9 @@
 const ERR = require('async-stacktrace');
 
-const logger = require('../lib/logger');
-const sqldb = require('../prairielib/lib/sql-db');
-const sqlLoader = require('../prairielib/lib/sql-loader');
+const { logger } = require('@prairielearn/logger');
+const sqldb = require('@prairielearn/postgres');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 module.exports = function (pageType) {
   return function (req, res, next) {
