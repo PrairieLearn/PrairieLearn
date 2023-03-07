@@ -31,6 +31,7 @@
 <p>
   This element can be used to create problems where students must input a quantity with an accompanying unit.
   By default, input of the same dimensionality as the reference solution is automatically converted and compared.
+  For example, if the correct answer is <code>1 meter</code>, submissions like <code>100 cm</code> or <code>1000 mm</code> are also accepted.
 </p>
 
 <img class="border rounded" src="pl-units-input.png" width="800px">
@@ -41,8 +42,7 @@
 <img class="border rounded" src="pl-units-input-correct.png" width="400px">
 <img class="border rounded" src="pl-units-input-correct-2.png" width="400px">
 
-<p>Note in the following example that the provided submission had incorrect dimensionality, and no comparison could be
-  performed.</p>
+<p>In the following example, the student used an incompatible unit (<code>cm^3</code> instead of <code>m</code>), resulting in an answer tagged as incorrect.</p>
 
 
 <img class="border rounded" src="pl-units-input-incorrect.png" width="600px">
