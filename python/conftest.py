@@ -111,4 +111,5 @@ def question_data() -> QuestionData:
         "panel": "question",
         "extensions": dict(),
         "num_valid_submissions": 0,
+        "manual_grading": False,
     }

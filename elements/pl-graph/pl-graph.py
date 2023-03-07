@@ -47,10 +47,14 @@ def graphviz_from_adj_matrix(
     )
     input_param_name = pl.get_string_attrib(element, "params-name", input_param_matrix)
 
+    # Exception to make typechecker happy.
+    if input_param_name is None:
+        raise ValueError('"params-name" is a required attribute.')
+
     input_label = pl.get_string_attrib(
         element, "params-name-labels", PARAMS_NAME_LABELS_DEFAULT
     )
-    negative_weights = pl.get_string_attrib(
+    negative_weights = pl.get_boolean_attrib(
         element, "negative-weights", NEGATIVE_WEIGHTS_DEFAULT
     )
 
