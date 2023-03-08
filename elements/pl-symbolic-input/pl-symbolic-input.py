@@ -1,7 +1,7 @@
 import random
 from enum import Enum
 from html import escape
-from typing import Tuple, Union
+from typing import Union
 
 import chevron
 import lxml.html
@@ -312,7 +312,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     else:
         a_tru_sympy = phs.json_to_sympy(a_tru, allow_complex=allow_complex)
 
-    def grade_function(a_sub: Union[str, phs.SympyJson]) -> Tuple[bool, None]:
+    def grade_function(a_sub: Union[str, phs.SympyJson]) -> tuple[bool, None]:
         # Parse submitted answer
         if isinstance(a_sub, str):
             # this is for backward-compatibility

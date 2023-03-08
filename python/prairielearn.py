@@ -12,14 +12,13 @@ from enum import Enum
 from typing import (
     Any,
     Callable,
-    Dict,
     Literal,
     Optional,
-    Tuple,
     Type,
     TypedDict,
     TypeVar,
     Union,
+    overload,
 )
 
 import colors
@@ -29,6 +28,7 @@ import numpy as np
 import pandas
 import sympy
 import to_precision
+from pint import UnitRegistry
 from python_helper_sympy import convert_string_to_sympy, json_to_sympy, sympy_to_json
 from typing_extensions import NotRequired, assert_never
 
@@ -50,30 +50,39 @@ class PartialScore(TypedDict):
 class QuestionData(TypedDict):
     "A class with type signatures for the data dictionary"
 
-    params: Dict[str, Any]
-    correct_answers: Dict[str, Any]
-    submitted_answers: Dict[str, Any]
-    format_errors: Dict[str, Any]
-    partial_scores: Dict[str, PartialScore]
+    params: dict[str, Any]
+    correct_answers: dict[str, Any]
+    submitted_answers: dict[str, Any]
+    format_errors: dict[str, Any]
+    partial_scores: dict[str, PartialScore]
     score: float
-    feedback: Dict[str, Any]
+    feedback: dict[str, Any]
     variant_seed: str
-    options: Dict[str, Any]
-    raw_submitted_answers: Dict[str, Any]
+    options: dict[str, Any]
+    raw_submitted_answers: dict[str, Any]
     editable: bool
     panel: Literal["question", "submission", "answer"]
-    extensions: Dict[str, Any]
+    extensions: dict[str, Any]
     num_valid_submissions: int
+    manual_grading: bool
 
 
 class ElementTestData(QuestionData):
     test_type: Literal["correct", "incorrect", "invalid"]
 
 
+def get_unit_registry() -> UnitRegistry:
+    """Get a unit registry using cache folder valid on production machines."""
+
+    pid = os.getpid()
+    cache_dir = f"/tmp/pint_{pid}"
+    return UnitRegistry(cache_folder=cache_dir)
+
+
 def grade_answer_parameterized(
     data: QuestionData,
     question_name: str,
-    grade_function: Callable[[Any], Tuple[Union[bool, float], Optional[str]]],
+    grade_function: Callable[[Any], tuple[Union[bool, float], Optional[str]]],
     weight: int = 1,
 ) -> None:
     """
@@ -117,7 +126,7 @@ def grade_answer_parameterized(
 
 def determine_score_params(
     score: float,
-) -> Tuple[Literal["correct", "partial", "incorrect"], Union[bool, float]]:
+) -> tuple[Literal["correct", "partial", "incorrect"], Union[bool, float]]:
     """
     Determine appropriate key and value for display on the frontend given the
     score for a particular question. For elements following PrairieLearn
@@ -449,7 +458,7 @@ def from_json(v):
     return v
 
 
-def inner_html(element):
+def inner_html(element: lxml.html.HtmlElement) -> str:
     inner = element.text
     if inner is None:
         inner = ""
@@ -466,7 +475,7 @@ def compat_get(object, attrib, default):
     return old_attrib in object
 
 
-def compat_array(arr):
+def compat_array(arr: list[str]) -> list[str]:
     new_arr = []
     for i in arr:
         new_arr.append(i)
@@ -474,7 +483,11 @@ def compat_array(arr):
     return new_arr
 
 
-def check_attribs(element, required_attribs, optional_attribs):
+def check_attribs(
+    element: lxml.html.HtmlElement,
+    required_attribs: list[str],
+    optional_attribs: list[str],
+) -> None:
     for name in required_attribs:
         if not has_attrib(element, name):
             raise Exception('Required attribute "%s" missing' % name)
@@ -521,7 +534,7 @@ def _get_attrib(element, name, *args):
     raise Exception('Attribute "%s" missing and no default is available' % name)
 
 
-def has_attrib(element, name):
+def has_attrib(element: lxml.html.HtmlElement, name: str) -> bool:
     """value = has_attrib(element, name)
 
     Returns true if the element has an attribute of that name,
@@ -529,6 +542,24 @@ def has_attrib(element, name):
     """
     old_name = name.replace("-", "_")
     return name in element.attrib or old_name in element.attrib
+
+
+# Order here matters, as we want to override the case where the args is omitted
+@overload
+def get_string_attrib(element: lxml.html.HtmlElement, name: str) -> str:
+    ...
+
+
+@overload
+def get_string_attrib(element: lxml.html.HtmlElement, name: str, *args: str) -> str:
+    ...
+
+
+@overload
+def get_string_attrib(
+    element: lxml.html.HtmlElement, name: str, *args: None
+) -> Optional[str]:
+    ...
 
 
 def get_string_attrib(element, name, *args):
@@ -540,6 +571,24 @@ def get_string_attrib(element, name, *args):
     """
     (str_val, is_default) = _get_attrib(element, name, *args)
     return str_val
+
+
+# Order here matters, as we want to override the case where the args is omitted
+@overload
+def get_boolean_attrib(element: lxml.html.HtmlElement, name: str) -> bool:
+    ...
+
+
+@overload
+def get_boolean_attrib(element: lxml.html.HtmlElement, name: str, *args: bool) -> bool:
+    ...
+
+
+@overload
+def get_boolean_attrib(
+    element: lxml.html.HtmlElement, name: str, *args: None
+) -> Optional[bool]:
+    ...
 
 
 def get_boolean_attrib(element, name, *args):
@@ -575,6 +624,24 @@ def get_boolean_attrib(element, name, *args):
         return False
     else:
         raise Exception('Attribute "%s" must be a boolean value: %s' % (name, val))
+
+
+# Order here matters, as we want to override the case where the args is omitted
+@overload
+def get_integer_attrib(element: lxml.html.HtmlElement, name: str) -> int:
+    ...
+
+
+@overload
+def get_integer_attrib(element: lxml.html.HtmlElement, name: str, *args: int) -> int:
+    ...
+
+
+@overload
+def get_integer_attrib(
+    element: lxml.html.HtmlElement, name: str, *args: None
+) -> Optional[int]:
+    ...
 
 
 def get_integer_attrib(element, name, *args):
