@@ -1,6 +1,10 @@
 build:
 	@yarn turbo run build
 	@node packages/compiled-assets/dist/cli.js build ./assets ./public/build
+deps:
+	@yarn
+	@pip3 install -qr images/plbase/python-requirements.txt
+	@make build
 
 dev:
 	@yarn turbo run dev

@@ -52,6 +52,9 @@ python3.6 --version   # should return "Python 3.6" or higher
 ```sh
 cd PrairieLearn/images/plbase
 python3 -m pip install -r python-requirements.txt
+
+# Alternatively, use the following command to transpile packages and update Node/Python libraries:
+make deps
 ```
 
 - Create the database (one time only):
@@ -103,6 +106,6 @@ cd PrairieLearn
 node server
 ```
 
-This should end with `PrairieLearn server ready` and will remain running in the foreground, so this terminal can't be used for anything else. Stopping or restarting the server can be done with `Crtl-C`.
+This should end with `PrairieLearn server ready` and will remain running in the foreground, so this terminal can't be used for anything else. Stopping or restarting the server can be done with `Ctrl-C`.
 
 - In a web-browswer go to [http://localhost:3000](http://localhost:3000)
