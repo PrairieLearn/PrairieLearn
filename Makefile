@@ -3,7 +3,7 @@ build:
 	@node packages/compiled-assets/dist/cli.js build ./assets ./public/build
 deps:
 	@yarn
-	@pip3 install -qr images/plbase/python-requirements.txt
+	@pip3 install -qr images/plbase/python-requirements.txt --root-user-action=ignore
 	@make build
 
 dev:
