@@ -64,7 +64,7 @@ describe('Test group based assessments with custom group roles from student side
       const params = {
         assessment_id: locals.assessment_id,
       };
-      sqldb.query(sql.get_assessment_group_roles, params, function (err, result) {
+      sqldb.query(sql.select_assessment_group_roles, params, function (err, result) {
         if (ERR(err, callback)) return;
         assert.lengthOf(result.rows, 4);
         locals.groupRoles = result.rows;
@@ -96,18 +96,17 @@ describe('Test group based assessments with custom group roles from student side
       sqldb.query(sql.generate_and_enroll_4_users, [], function (err, result) {
         if (ERR(err, callback)) return;
         assert.lengthOf(result.rows, 4);
-        locals.studentUsers = result.rows.slice(0, 4);
-        locals.groupCreator = locals.studentUsers[0];
+        locals.studentUsers = result.rows;
         assert.lengthOf(locals.studentUsers, 4);
         callback(null);
       });
     });
 
     it('should switch current user to the group creator', function () {
-      config.authUid = locals.groupCreator.uid;
-      config.authName = locals.groupCreator.name;
+      config.authUid = locals.studentUsers[0].uid;
+      config.authName = locals.studentUsers[0].name;
       config.authUin = '00000001';
-      config.userId = locals.groupCreator.user_id;
+      config.userId = locals.studentUsers[0].user_id;
     });
   });
 
@@ -154,6 +153,11 @@ describe('Test group based assessments with custom group roles from student side
     it('should parse', function () {
       locals.$ = cheerio.load(page);
     });
+    it('should update locals with role updates', function () {
+      locals.roleUpdates = [
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+      ];
+    });
   });
 
   describe('4. the group information after 1 user join the group', function () {
@@ -162,18 +166,17 @@ describe('Test group based assessments with custom group roles from student side
       locals.joinCode = elemList.text();
       assert.lengthOf(locals.joinCode, locals.$('#group-name').text().length + 1 + 4);
     });
-    it('should have user set to manager role in the database', function (callback) {
+    it('should have correct role configuration in the database', function (callback) {
       var params = {
         assessment_id: locals.assessment_id,
-        user_id: config.userId,
       };
-      sqldb.query(sql.get_current_user_roles, params, function (err, result) {
+      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
         if (ERR(err, callback)) return;
-        let userRoles = result.rows;
-        assert.lengthOf(userRoles, 1);
-        assert.equal(userRoles[0].role_name, locals.manager.role_name);
-        assert.equal(userRoles[0].role_id, locals.manager.role_id);
-        locals.currentRoleIds = [userRoles[0].id];
+        const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+          user_id: groupUserId,
+          group_role_id: roleId,
+        }));
+        assert.sameDeepMembers(expected, result.rows);
         callback(null);
       });
     });
@@ -190,7 +193,7 @@ describe('Test group based assessments with custom group roles from student side
       assert.lengthOf(elemList, 1);
 
       elemList = elemList.next();
-      assert.equal(elemList.text().trim(), 'Manager');
+      assert.equal(elemList.text().trim(), locals.manager.role_name);
     });
     it('should not be able to start assessment', function () {
       elemList = locals.$('#start-assessment');
@@ -205,12 +208,9 @@ describe('Test group based assessments with custom group roles from student side
     it('should not be able to select the contributor role', function () {
       elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
       assert.lengthOf(elemList, 1);
-
-      // Get label of checkbox
       elemList = elemList.next();
-      assert.equal(elemList.text().trim(), 'Contributor');
+      assert.equal(elemList.text().trim(), locals.contributor.role_name);
     });
-    // FIXME: (Cale) I don't know if we necessarily need this test here
     it('should be missing 1 more group members to start', function () {
       elemList = locals.$('.text-center:contains(1 more)');
       assert.lengthOf(elemList, 1);
@@ -239,6 +239,9 @@ describe('Test group based assessments with custom group roles from student side
         }
       );
     });
+    it('should update locals with role updates', function () {
+      locals.roleUpdates = [];
+    });
     it('should load assessment page successfully', function (callback) {
       request(locals.assessmentUrl, function (error, response, body) {
         if (ERR(error, callback)) return;
@@ -249,15 +252,17 @@ describe('Test group based assessments with custom group roles from student side
         callback(null);
       });
     });
-    it('should not have a role for user 1', function (callback) {
+    it('should have correct role configuration in the database', function (callback) {
       var params = {
         assessment_id: locals.assessment_id,
-        user_id: config.userId,
       };
-      sqldb.query(sql.get_current_user_roles, params, function (err, result) {
+      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
         if (ERR(err, callback)) return;
-        let userRoles = result.rows;
-        assert.lengthOf(userRoles, 0);
+        const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+          user_id: groupUserId,
+          group_role_id: roleId,
+        }));
+        assert.sameDeepMembers(expected, result.rows);
         callback(null);
       });
     });
@@ -282,19 +287,22 @@ describe('Test group based assessments with custom group roles from student side
     it('should parse', function () {
       locals.$ = cheerio.load(page);
     });
-    // The tests below copy the previous test section
-    it('should have user set to manager role in the database', function (callback) {
+    it('should update locals with role updates', function () {
+      locals.roleUpdates = [
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+      ];
+    });
+    it('should have correct role configuration in the database', function (callback) {
       var params = {
         assessment_id: locals.assessment_id,
-        user_id: config.userId,
       };
-      sqldb.query(sql.get_current_user_roles, params, function (err, result) {
+      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
         if (ERR(err, callback)) return;
-        let userRoles = result.rows;
-        assert.lengthOf(userRoles, 1);
-        assert.equal(userRoles[0].role_name, locals.manager.role_name);
-        assert.equal(userRoles[0].role_id, locals.manager.role_id);
-        assert.equal(locals.currentRoleIds[0], userRoles[0].id);
+        const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+          user_id: groupUserId,
+          group_role_id: roleId,
+        }));
+        assert.sameDeepMembers(expected, result.rows);
         callback(null);
       });
     });
@@ -370,7 +378,7 @@ describe('Test group based assessments with custom group roles from student side
       var params = {
         assessment_id: locals.assessment_id,
       };
-      sqldb.query(sql.get_group_roles, params, function (err, result) {
+      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
         if (ERR(err, callback)) return;
         const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
           user_id: groupUserId,
@@ -466,7 +474,7 @@ describe('Test group based assessments with custom group roles from student side
       var params = {
         assessment_id: locals.assessment_id,
       };
-      sqldb.query(sql.get_group_roles, params, function (err, result) {
+      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
         if (ERR(err, callback)) return;
         const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
           user_id: groupUserId,
@@ -475,14 +483,6 @@ describe('Test group based assessments with custom group roles from student side
         assert.sameDeepMembers(expected, result.rows);
         callback(null);
       });
-    });
-    it('should update locals with role updates', function () {
-      locals.roleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].user_id },
-        { roleId: locals.contributor.id, groupUserId: locals.studentUsers[3].user_id },
-      ];
     });
   });
 
@@ -536,6 +536,14 @@ describe('Test group based assessments with custom group roles from student side
     it('should parse', function () {
       locals.$ = cheerio.load(page);
     });
+    it('should update locals with role updates', function () {
+      locals.roleUpdates = [
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].user_id },
+        { roleId: locals.contributor.id, groupUserId: locals.studentUsers[3].user_id },
+      ];
+    });
   });
 
   describe('11. the group information after 4 users join the group', function () {
@@ -555,7 +563,7 @@ describe('Test group based assessments with custom group roles from student side
       var params = {
         assessment_id: locals.assessment_id,
       };
-      sqldb.query(sql.get_group_roles, params, function (err, result) {
+      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
         if (ERR(err, callback)) return;
         const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
           user_id: groupUserId,
@@ -678,7 +686,7 @@ describe('Test group based assessments with custom group roles from student side
       var params = {
         assessment_id: locals.assessment_id,
       };
-      sqldb.query(sql.get_group_roles, params, function (err, result) {
+      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
         if (ERR(err, callback)) return;
         // We expect the db to have all role updates, including the assigner role
         locals.roleUpdates.push(locals.assignerRoleUpdate);
@@ -731,7 +739,6 @@ describe('Test group based assessments with custom group roles from student side
       elemList = locals.$('#role-select-form').find('tr').find('input:checked');
       assert.lengthOf(elemList, 0);
 
-      // [Manager, Recorder, Recorder, Reflector]
       locals.roleUpdates = [
         { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
         { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
@@ -786,7 +793,7 @@ describe('Test group based assessments with custom group roles from student side
       var params = {
         assessment_id: locals.assessment_id,
       };
-      sqldb.query(sql.get_group_roles, params, function (err, result) {
+      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
         if (ERR(err, callback)) return;
         const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
           user_id: groupUserId,
@@ -884,7 +891,7 @@ describe('Test group based assessments with custom group roles from student side
       var params = {
         assessment_id: locals.assessment_id,
       };
-      sqldb.query(sql.get_group_roles, params, function (err, result) {
+      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
         if (ERR(err, callback)) return;
         const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
           user_id: groupUserId,
@@ -970,7 +977,6 @@ describe('Test group based assessments with custom group roles from student side
       locals.$ = cheerio.load(page);
     });
     it('should update locals with roles updates', function () {
-      // TODO: Should we find a way to not hard-code this in?
       locals.roleUpdates = [
         { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
         { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
@@ -1015,7 +1021,7 @@ describe('Test group based assessments with custom group roles from student side
       var params = {
         assessment_id: locals.assessment_id,
       };
-      sqldb.query(sql.get_group_roles, params, function (err, result) {
+      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
         if (ERR(err, callback)) return;
         const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
           user_id: groupUserId,
@@ -1091,13 +1097,6 @@ describe('Test group based assessments with custom group roles from student side
     it('should parse', function () {
       locals.$ = cheerio.load(page);
     });
-    // it('should update locals with roles updates', function () {
-    //   // Role ID 3 could either go to user_id 2 or 3
-    //   locals.roleUpdates = [
-    // { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-    // { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-    //   ];
-    // });
     it('should be able to switch user', function (callback) {
       let student = locals.studentUsers[0];
       config.authUid = student.uid;
@@ -1146,7 +1145,7 @@ describe('Test group based assessments with custom group roles from student side
         { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
       ];
       // Assert that the reflector role is given to either first or second user
-      sqldb.query(sql.get_group_roles, params, function (err, result) {
+      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
         if (ERR(err, callback)) return;
         assert.lengthOf(result.rows, 3);
         // Get all roles for first user
@@ -1244,7 +1243,7 @@ describe('Test group based assessments with custom group roles from student side
       var params = {
         assessment_id: locals.assessment_id,
       };
-      sqldb.query(sql.get_group_roles, params, function (err, result) {
+      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
         if (ERR(err, callback)) return;
         const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
           user_id: groupUserId,
@@ -1343,7 +1342,7 @@ describe('Test group based assessments with custom group roles from student side
       locals.$ = cheerio.load(page);
     });
     it('group role table is not visible', function () {
-      elemList = locals.$('#role-select-form').find('tr');
+      elemList = locals.$('#role-select-form');
       assert.lengthOf(elemList, 0);
     });
   });

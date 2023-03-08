@@ -25,19 +25,7 @@ WHERE
   AND a.group_work is TRUE
   AND gc.has_roles is FALSE;
 
--- BLOCK get_current_user_roles
-SELECT
-  gr.id,
-  gr.role_name,
-  gr.can_assign_roles_at_start
-FROM
-  group_roles as gr
-  JOIN group_user_roles as gu ON gr.id = gu.group_role_id
-WHERE
-  gr.assessment_id = $assessment_id
-  AND gu.user_id = $user_id;
-
--- BLOCK get_assessment_group_roles
+-- BLOCK select_assessment_group_roles
 SELECT
   gr.id,
   gr.role_name
@@ -46,7 +34,7 @@ FROM
 WHERE
   gr.assessment_id = $assessment_id;
 
--- BLOCK get_group_roles
+-- BLOCK select_group_user_roles
 SELECT
   gur.user_id,
   gur.group_role_id
@@ -56,22 +44,6 @@ FROM
   JOIN group_configs AS gc ON gc.id = gr.group_config_id
 WHERE
   gc.assessment_id = $assessment_id;
-
--- BLOCK select_group_config
-SELECT
-  minimum,
-  maximum
-FROM
-  group_configs
-WHERE
-  assessment_id = $assessment_id
-  AND deleted_at IS NULL;
-
--- BLOCK select_student_user
-SELECT
-  count(*) as result
-FROM
-  users AS u;
 
 -- BLOCK generate_and_enroll_4_users
 SELECT
@@ -85,16 +57,3 @@ FROM
   LEFT JOIN pl_courses AS c ON (c.id = ci.course_id)
 ORDER BY
   user_id;
-
--- BLOCK select_all_user_in_group
-SELECT
-  group_id,
-  user_id
-FROM
-  group_users;
-
--- BLOCK select_all_assessment_instance
-SELECT
-  ai.*
-FROM
-  assessment_instances AS ai;
