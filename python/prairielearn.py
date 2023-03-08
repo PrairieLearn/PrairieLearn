@@ -12,11 +12,8 @@ from enum import Enum
 from typing import (
     Any,
     Callable,
-    Dict,
-    List,
     Literal,
     Optional,
-    Tuple,
     Type,
     TypedDict,
     TypeVar,
@@ -53,19 +50,19 @@ class PartialScore(TypedDict):
 class QuestionData(TypedDict):
     "A class with type signatures for the data dictionary"
 
-    params: Dict[str, Any]
-    correct_answers: Dict[str, Any]
-    submitted_answers: Dict[str, Any]
-    format_errors: Dict[str, Any]
-    partial_scores: Dict[str, PartialScore]
+    params: dict[str, Any]
+    correct_answers: dict[str, Any]
+    submitted_answers: dict[str, Any]
+    format_errors: dict[str, Any]
+    partial_scores: dict[str, PartialScore]
     score: float
-    feedback: Dict[str, Any]
+    feedback: dict[str, Any]
     variant_seed: str
-    options: Dict[str, Any]
-    raw_submitted_answers: Dict[str, Any]
+    options: dict[str, Any]
+    raw_submitted_answers: dict[str, Any]
     editable: bool
     panel: Literal["question", "submission", "answer"]
-    extensions: Dict[str, Any]
+    extensions: dict[str, Any]
     num_valid_submissions: int
     manual_grading: bool
 
@@ -85,7 +82,7 @@ def get_unit_registry() -> UnitRegistry:
 def grade_answer_parameterized(
     data: QuestionData,
     question_name: str,
-    grade_function: Callable[[Any], Tuple[Union[bool, float], Optional[str]]],
+    grade_function: Callable[[Any], tuple[Union[bool, float], Optional[str]]],
     weight: int = 1,
 ) -> None:
     """
@@ -129,7 +126,7 @@ def grade_answer_parameterized(
 
 def determine_score_params(
     score: float,
-) -> Tuple[Literal["correct", "partial", "incorrect"], Union[bool, float]]:
+) -> tuple[Literal["correct", "partial", "incorrect"], Union[bool, float]]:
     """
     Determine appropriate key and value for display on the frontend given the
     score for a particular question. For elements following PrairieLearn
@@ -478,7 +475,7 @@ def compat_get(object, attrib, default):
     return old_attrib in object
 
 
-def compat_array(arr: List[str]) -> List[str]:
+def compat_array(arr: list[str]) -> list[str]:
     new_arr = []
     for i in arr:
         new_arr.append(i)
@@ -488,8 +485,8 @@ def compat_array(arr: List[str]) -> List[str]:
 
 def check_attribs(
     element: lxml.html.HtmlElement,
-    required_attribs: List[str],
-    optional_attribs: List[str],
+    required_attribs: list[str],
+    optional_attribs: list[str],
 ) -> None:
     for name in required_attribs:
         if not has_attrib(element, name):
