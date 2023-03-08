@@ -891,7 +891,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
       .each((_, use) => {
         // Find and create a new copy to link to
         let refLink = use.getAttribute('xlink:href');
-        let refElement = $(refLink)[0];
+        let refElement = $(svg).find(refLink)[0];
         let replacement = $(refElement.outerHTML)[0];
 
         // Copy over any attributes on the link

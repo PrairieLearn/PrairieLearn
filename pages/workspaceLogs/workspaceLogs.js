@@ -6,13 +6,12 @@ const AWS = require('aws-sdk');
 
 const config = require('../../lib/config');
 const error = require('../../prairielib/lib/error');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
 const { WorkspaceLogs, WorkspaceVersionLogs } = require('./workspaceLogs.html');
 const fetch = require('node-fetch').default;
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 /**
  * Given a list of workspace logs for a specific version sorted by date in
@@ -84,11 +83,12 @@ async function loadLogsForWorkspaceVersion(workspaceId, version) {
   // If the current workspace version matches the requested version, we can
   // reach out to the workspace host directly to get the remaining logs. Otherwise,
   // they should have been flushed to S3 already.
-  if (workspace.is_current_version) {
+  if (workspace.state === 'running' && workspace.is_current_version && workspace.hostname) {
     const res = await fetch(`http://${workspace.hostname}/`, {
       method: 'POST',
       body: JSON.stringify({ workspace_id: workspaceId, action: 'getLogs' }),
       headers: { 'Content-Type': 'application/json' },
+      signal: AbortSignal.timeout(30_000),
     });
     if (res.ok) {
       logParts.push(await res.text());

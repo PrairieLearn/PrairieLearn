@@ -1,16 +1,18 @@
 function confirmOnUnload() {
   const form = $('form.question-form');
   const getForm = () =>
-    form.find(':not([name="__variant_id"]):not([name="__csrf_token"])').serialize();
+    form
+      .find(':not([name="__variant_id"]):not([name="__csrf_token"]):not([data-skip-unload-check])')
+      .serialize();
 
   // Set form state on load and submit
   var initialForm = getForm();
-  form.submit(() => {
+  form.on('submit', () => {
     initialForm = getForm();
   });
 
   // Check form state on unload
-  $(window).bind('beforeunload', (e) => {
+  $(window).on('beforeunload', (e) => {
     const isSameForm = initialForm == getForm();
 
     // allowQuestionUnload: pages/partials/countdown.ejs
@@ -48,7 +50,7 @@ function disableOnSubmit() {
   });
 }
 
-$(document).ready(() => {
+$(() => {
   confirmOnUnload();
   disableOnSubmit();
 });

@@ -7,3 +7,6 @@
 
 # Format Python files with black + isort
 b5ee36cebacd8c3192dd0e2457ab472cc185a055
+
+# Format SQL files with sql-formatter
+890fb860c0cada3c8a77206858cc5f3de8bb5c81

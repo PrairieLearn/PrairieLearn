@@ -55,10 +55,14 @@ import matplotlib
 import matplotlib.font_manager
 import nltk
 import numpy
+import pint
 import prairielearn
 import sklearn
 
 matplotlib.use("PDF")
+
+# Construct initial unit registry to create initial cache file.
+prairielearn.get_unit_registry()
 
 
 # This function tries to convert a python object to valid JSON. If an exception
@@ -80,12 +84,10 @@ def worker_loop():
 
     # file descriptor 3 is for output data
     with open(3, "w", encoding="utf-8") as outf:
-
         # Infinite loop where we wait for an input command, do it, and
         # return the results. The caller should terminate us with a
         # SIGTERM.
         while True:
-
             # wait for a single line of input
             json_inp = sys.stdin.readline()
             # unpack the input line as JSON

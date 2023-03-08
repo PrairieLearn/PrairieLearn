@@ -8,7 +8,7 @@
     <script src="<%= node_modules_asset_path('tablesorter/dist/js/jquery.tablesorter.widgets.min.js') %>"></script>
   </head>
   <body>
-    <%- include('../partials/navbar', {navPage: 'adminQueries'}); %>
+    <%- include('../partials/navbar', {navPage: 'admin', navSubPage: 'queries'}); %>
 
     <%
       // hide *_id columns if we are going to hide them later
@@ -28,7 +28,7 @@
               %> <th><%= col %></th> <%
           }
       }
-      
+
       function render(row, col) {
           let tdAttributes = '';
           if (('_sortval_' + col) in row) {
@@ -130,7 +130,7 @@
           <%= error %>
         </p>
         <% } %>
-        
+
         <% if (result != null) { %>
         <div class="table-responsive">
           <table class="table table-sm table-hover table-striped tablesorter">
@@ -152,7 +152,7 @@
               </tr>
               <% }); %>
             </tbody>
-            
+
           </table>
         </div>
         <% } %>

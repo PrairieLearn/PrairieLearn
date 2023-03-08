@@ -76,9 +76,16 @@
                     });
                 <% } %>
 
-                let showHelpElement = $("#help-<%= fileEdit.uuid %>-button");
-                showHelpElement.click(() => {
-                    showHelpElement.text(showHelpElement.text() == "Show help" ? "Hide help" : "Show help");
+                const helpBox = $('#help-<%= fileEdit.uuid %>');
+                const helpButton =  $('#help-<%= fileEdit.uuid %>-button');
+                const helpButtonLabel = $('#help-<%= fileEdit.uuid %>-button-label');
+                helpBox.on('hide.bs.collapse', function () {
+                    helpButtonLabel.text('Show help');
+                    helpButton.attr('aria-expanded', 'false');
+                });
+                helpBox.on('show.bs.collapse', function () {
+                    helpButtonLabel.text('Hide help');
+                    helpButton.attr('aria-expanded', 'true');
                 });
             });
         </script>
@@ -87,28 +94,50 @@
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
 
             <div class="card mb-4">
-                <div class="card-header">
+                <div class="card-header bg-primary">
                     <div class="row align-items-center justify-content-between">
                         <div class="col-auto">
-                            <span class="text-monospace font-weight-bolder"><%= fileEdit.fileNameForDisplay %></span>
+                            <span class="text-monospace text-white d-flex">
+                              <% fileEdit.paths.branch.forEach((dir, key, arr) => { %>
+                                <% if (dir.canView) { %>
+                                  <% if (!(Object.is(arr.length - 1, key))) { %>
+                                    <a class="text-white" href="<%= fileEdit.paths.urlPrefix %>/file_view/<%= dir.encodedPath %>"><%= dir.name %></a>
+                                  <% } else { %>
+                                    <a class="text-white" href="<%= fileEdit.paths.urlPrefix %>/file_edit/<%= dir.encodedPath %>"><%= dir.name %></a>
+                                  <% } %>
+                                <% } else { %>
+                                  <span><%= dir.name %></span>
+                                <% } %>
+                                <% if (!(Object.is(arr.length - 1, key))) { %>
+                                <span class="mx-2">/</span>
+                                <% } %>
+                              <% }); %>
+                            </span>
                         </div>
                         <div class="col-auto collapse <% if ((!fileEdit.failedPush) && (!fileEdit.alertChoice)) { %>show<% } %>" id="buttons-<%= fileEdit.uuid %>">
-                            <a class="btn btn-secondary" data-toggle="collapse" href="#help-<%= fileEdit.uuid %>" role="button" id="help-<%= fileEdit.uuid %>-button">Show help</a>
-                            <button id="file-editor-<%= fileEdit.uuid %>-save-button" name="__action" value="save_and_sync" class="btn btn-primary" disabled>Save and sync</button>
+                            <a id="help-<%= fileEdit.uuid %>-button"
+                               class="btn btn-light btn-sm"
+                               data-toggle="collapse" href="#help-<%= fileEdit.uuid %>"
+                               role="button" aria-expanded="false">
+                                <i class="far fa-question-circle" aria-hidden="true"></i>
+                                <span id="help-<%= fileEdit.uuid %>-button-label">Show help</span>
+                            </a>
+                            <button id="file-editor-<%= fileEdit.uuid %>-save-button" name="__action" value="save_and_sync" class="btn btn-light btn-sm" disabled>
+                                <i class="fas fa-save" aria-hidden="true"></i>
+                                Save and sync
+                            </button>
                         </div>
                     </div>
                 </div>
-                <div class="card-body row collapse" id="help-<%= fileEdit.uuid %>">
-                    <div class="container-fluid">
-                        <p>
-                            You are editing the file <code><%= fileEdit.fileNameForDisplay %></code>. To save changes, click <strong>Save and sync</strong> or use <strong>Ctrl-S</strong> (Windows/Linux) or <strong>Cmd-S</strong> (Mac).
-                            <% if (config.fileEditorUseGit) { %>
-                            Doing so will write your changes to disk, will push them to the remote GitHub repository, and will sync them to the database.
-                            <% } else { %>
-                            Doing so will write your changes to disk and will sync them to your local database. You will need to push these changes to the GitHub respository manually (i.e., not in PrairieLearn), if desired.
-                            <% } %>
-                            If you reload or navigate away from this page, any unsaved changes will be lost.
-                        </p>
+                <div class="collapse" id="help-<%= fileEdit.uuid %>">
+                    <div class="card-body">
+                        You are editing the file <code><%= fileEdit.fileNameForDisplay %></code>. To save changes, click <strong>Save and sync</strong> or use <strong>Ctrl-S</strong> (Windows/Linux) or <strong>Cmd-S</strong> (Mac).
+                        <% if (config.fileEditorUseGit) { %>
+                        Doing so will write your changes to disk, will push them to the remote GitHub repository, and will sync them to the database.
+                        <% } else { %>
+                        Doing so will write your changes to disk and will sync them to your local database. You will need to push these changes to the GitHub respository manually (i.e., not in PrairieLearn), if desired.
+                        <% } %>
+                        If you reload or navigate away from this page, any unsaved changes will be lost.
                     </div>
                 </div>
                 <div class="card-body p-0 row">

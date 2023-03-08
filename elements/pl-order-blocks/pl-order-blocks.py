@@ -187,12 +187,13 @@ def prepare(element_html, data):
         if grading_method == "ranking":
             tag = str(index)
 
-        if tag in used_tags:
-            raise Exception(
-                f'Tag "{tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.'
-            )
-        else:
-            used_tags.add(tag)
+        if is_correct:
+            if tag in used_tags:
+                raise Exception(
+                    f'Tag "{tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.'
+                )
+            else:
+                used_tags.add(tag)
 
         if check_indentation is False and answer_indent is not None:
             raise Exception(
@@ -288,6 +289,8 @@ def prepare(element_html, data):
         random.shuffle(mcq_options)
     elif source_blocks_order == "ordered":
         mcq_options.sort(key=lambda a: a["index"])
+    elif source_blocks_order == "alphabetized":
+        mcq_options.sort(key=lambda a: a["inner_html"])
     else:
         raise Exception(
             'The specified option for the "source-blocks-order" attribute is invalid.'

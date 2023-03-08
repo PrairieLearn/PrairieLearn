@@ -1,5 +1,4 @@
 import json
-from typing import List
 
 import pytest
 import python_helper_sympy as phs
@@ -28,9 +27,16 @@ class TestSympy:
         "atan(m)",
         "arctan2(m, n)",
         "atan2(m, n)",
+        "csc(m)",
+        "sec(m)",
+        "cot(m)",
+        "ln(m)",
+        "atanh(m)",
+        "asinh(m)",
+        "acosh(m)",
     ]
 
-    EXPR_LIST: List = [
+    EXPR_LIST: list = [
         M * N,
         M + 1,
         M * M + N * N + 4 * N,
@@ -49,6 +55,13 @@ class TestSympy:
         sympy.atan(M),
         sympy.atan2(M, N),
         sympy.atan2(M, N),
+        sympy.csc(M),
+        sympy.sec(M),
+        sympy.cot(M),
+        sympy.log(M),
+        sympy.atanh(M),
+        sympy.asinh(M),
+        sympy.acosh(M),
     ]
 
     @pytest.mark.parametrize("a_sub, sympy_ref", zip(EXPR_STRINGS, EXPR_LIST))
@@ -159,7 +172,7 @@ class TestExceptions:
             (INVALID_COMMENT_CASES, 'must not contain the character "#"'),
         ],
     )
-    def test_invalid_format(self, a_sub_list: List[str], target_string: str) -> None:
+    def test_invalid_format(self, a_sub_list: list[str], target_string: str) -> None:
         for a_sub in a_sub_list:
             format_error = phs.validate_string_as_sympy(
                 a_sub, self.VARIABLES, allow_complex=False, allow_trig_functions=False

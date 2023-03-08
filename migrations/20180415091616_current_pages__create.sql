@@ -1,4 +1,5 @@
-CREATE TABLE current_pages (
+CREATE TABLE
+  current_pages (
     id bigserial PRIMARY KEY,
     date timestamp with time zone NOT NULL DEFAULT now(),
     user_id BIGINT UNIQUE NOT NULL REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
@@ -10,6 +11,6 @@ CREATE TABLE current_pages (
     variant_id BIGINT REFERENCES variants ON DELETE CASCADE ON UPDATE CASCADE,
     page_type TEXT,
     path TEXT
-);
+  );
 
 CREATE INDEX current_pages_date_idx ON current_pages (date);
