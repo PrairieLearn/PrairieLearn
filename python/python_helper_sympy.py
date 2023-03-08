@@ -1,15 +1,6 @@
 import ast
 from dataclasses import dataclass
-from typing import (
-    Any,
-    Callable,
-    Literal,
-    Optional,
-    Type,
-    TypedDict,
-    Union,
-    cast,
-)
+from typing import Any, Callable, Literal, Optional, Type, TypedDict, Union, cast
 
 import sympy
 
