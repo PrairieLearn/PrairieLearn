@@ -82,6 +82,6 @@ cd PrairieLearn
 node server
 ```
 
-This should end with `PrairieLearn server ready` and will remain running in the foreground, so this terminal can't be used for anything else. Stopping or restarting the server can be done with `Ctrl-C`.
+This should end with `PrairieLearn server ready` and will remain running in the foreground, so this terminal can't be used for anything else. To stop the server use `Ctrl-C`, and to restart it repeat the `node server` command above.
 
-- In a web-browswer go to [http://localhost:3000](http://localhost:3000)
+- In a web-browser go to [http://localhost:3000](http://localhost:3000).
