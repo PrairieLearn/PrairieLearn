@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { decodePath } = require('../../lib/uri-util');
-const error = require('../../prairielib/error');
+const error = require('@prairielearn/error');
 
 router.get('/*', function (req, res, next) {
   if (!res.locals.authz_data.has_course_permission_view) {

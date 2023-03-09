@@ -7,7 +7,7 @@ const _ = require('lodash');
 const sqldb = require('@prairielearn/postgres');
 const schemas = require('../schemas');
 const jsonLoad = require('../lib/json-load');
-const namedLocks = require('../lib/named-locks');
+const namedLocks = require('@prairielearn/named-locks');
 
 async function loadNewsItems() {
   const news_items = [];
