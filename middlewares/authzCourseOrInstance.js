@@ -7,7 +7,7 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 
 const moment = require('moment');
 const config = require('../lib/config');
-const error = require('../prairielib/error');
+const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 const { idsEqual } = require('../lib/id');
 
