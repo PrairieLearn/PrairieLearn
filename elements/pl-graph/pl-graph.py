@@ -1,4 +1,3 @@
-import chevron
 import lxml.html
 import networkx as nx
 import numpy as np
@@ -185,5 +184,4 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     translated_dotcode = pygraphviz.AGraph(string=graphviz_data)
     svg = translated_dotcode.draw(format="svg", prog=engine).decode("utf-8", "strict")
 
-    with open("pl-graph.mustache") as f:
-        return chevron.render(f, {"svg": svg}).strip()
+    return f'<div class="pl-graph">{svg}</div>'

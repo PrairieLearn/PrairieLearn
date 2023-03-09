@@ -6,6 +6,6 @@
   margin-bottom: 1rem;
 }
 
-.pl-graph > * {
+.pl-graph > svg {
   margin: auto;
 }
