@@ -30,6 +30,7 @@ const qidsExampleCourse = [
   'demo/matrixComplexAlgebra',
   'demo/randomCheckbox',
   'demo/randomDataFrame',
+  'demo/randomFakeData',
   'demo/randomMultipleChoice',
   'demo/randomPlot',
   'demo/randomSymbolic',
