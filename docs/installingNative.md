@@ -30,7 +30,7 @@ make deps
 # Alternatively, you can run each step individually:
 yarn
 make build
-python3 -m pip install -r images/plbase/python-requirements.txt
+make python-deps
 ```
 
 - Create the database (one time only):
