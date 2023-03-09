@@ -3,7 +3,7 @@ const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
 
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 
 const github = require('../../lib/github');
