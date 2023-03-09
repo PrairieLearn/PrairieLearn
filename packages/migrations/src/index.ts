@@ -1,12 +1,10 @@
 import fs from 'fs-extra';
 import path from 'path';
 
-// @ts-expect-error -- Update import once https://github.com/PrairieLearn/PrairieLearn/pull/7294 lands
-import namedLocks from '../../../lib/named-locks';
+import * as namedLocks from '@prairielearn/named-locks';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
-// @ts-expect-error -- Update import once https://github.com/PrairieLearn/PrairieLearn/pull/7293 lands
-import error from '../../../prairielib/lib/error';
+import * as error from '@prairielearn/error';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
