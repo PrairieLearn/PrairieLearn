@@ -4,15 +4,15 @@ const _ = require('lodash');
 const async = require('async');
 const moment = require('moment');
 const express = require('express');
-const router = express.Router();
 const sqldb = require('@prairielearn/postgres');
+const { DockerName } = require('@prairielearn/docker-utils');
 const error = require('@prairielearn/error');
 
 const syncHelpers = require('../shared/syncHelpers');
 const config = require('../../lib/config');
-const dockerUtil = require('../../lib/dockerUtil');
 
 const sql = sqldb.loadSqlEquiv(__filename);
+const router = express.Router();
 
 router.get('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_permission_edit) {
@@ -33,7 +33,7 @@ router.get('/', function (req, res, next) {
         async.each(
           res.locals.images,
           (image, callback) => {
-            var repository = new dockerUtil.DockerName(image.image);
+            var repository = new DockerName(image.image);
             image.tag = repository.getTag() || 'latest (implied)';
             // Default to get overwritten later
             image.pushed_at = null;
