@@ -17,13 +17,10 @@ docker run -it --rm -p 3000:3000 -w /PrairieLearn -v /path/to/PrairieLearn:/Prai
 
 # You can now run the following commands inside the container:
 
-# Install Node packages.
-# Repeat after switching branches or pulling new code.
-yarn
-
-# Transpile code in the `packages/` directory.
-# Repeat after switching branches, pulling new code, or editing JS/TS in `packages/`.
-make build
+# Install Node packages and Python dependencies, and transpile code in the `packages/` directory.
+# Repeat after switching branches, pulling new code, or editing Python dependencies in `plbase` image.
+# If editing code in `packages/`, you should also repeat either this command or `make build`.
+make deps
 
 # Run the PrairieLearn server.
 make start
