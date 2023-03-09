@@ -9,9 +9,9 @@ const { exec } = require('child_process');
 const path = require('path');
 const byline = require('byline');
 const Sentry = require('@prairielearn/sentry');
-
 const sqldb = require('@prairielearn/postgres');
 const sanitizeObject = require('../prairielib/lib/util').sanitizeObject;
+const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 
 const globalLogger = require('./lib/logger');
 const jobLogger = require('./lib/jobLogger');
@@ -22,7 +22,6 @@ const lifecycle = require('./lib/lifecycle');
 const pullImages = require('./lib/pullImages');
 const receiveFromQueue = require('./lib/receiveFromQueue');
 const timeReporter = require('./lib/timeReporter');
-const dockerUtil = require('./lib/dockerUtil');
 const load = require('./lib/load');
 
 // catch SIGTERM and exit after waiting for all current jobs to finish
@@ -256,7 +255,7 @@ function initDocker(info, callback) {
       (callback) => {
         if (config.cacheImageRegistry) {
           logger.info('Authenticating to docker');
-          dockerUtil.setupDockerAuth((err, auth) => {
+          setupDockerAuth(config.cacheImageRegistry, (err, auth) => {
             if (ERR(err, callback)) return;
             dockerAuth = auth;
             callback(null);
@@ -267,9 +266,9 @@ function initDocker(info, callback) {
       },
       async () => {
         logger.info(`Pulling latest version of "${image}" image`);
-        var repository = new dockerUtil.DockerName(image);
+        var repository = new DockerName(image);
         if (config.cacheImageRegistry) {
-          repository.registry = config.cacheImageRegistry;
+          repository.setRegistry(config.cacheImageRegistry);
         }
         const params = {
           fromImage: repository.getRegistryRepo(),
@@ -415,9 +414,9 @@ function runJob(info, callback) {
 
   logger.info('Launching Docker container to run grading job');
 
-  var repository = new dockerUtil.DockerName(image);
+  var repository = new DockerName(image);
   if (config.cacheImageRegistry) {
-    repository.registry = config.cacheImageRegistry;
+    repository.setRegistry(config.cacheImageRegistry);
   }
   const runImage = repository.getCombined();
   logger.info(`Run image: ${runImage}`);
