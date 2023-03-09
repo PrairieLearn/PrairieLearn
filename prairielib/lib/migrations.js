@@ -4,7 +4,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const async = require('async');
 
-const namedLocks = require('../../lib/named-locks');
+const namedLocks = require('@prairielearn/named-locks');
 const { logger } = require('@prairielearn/logger');
 const sqldb = require('@prairielearn/postgres');
 const error = require('../lib/error');
