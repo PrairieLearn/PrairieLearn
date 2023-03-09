@@ -149,6 +149,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         missing_input = False
         feedback = None
         a_sub = None
+        a_sub_raw = None
         raw_submitted_answer = None
 
         if parse_error is None and name in data["submitted_answers"]:
@@ -160,6 +161,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     allow_trig_functions=False,
                 )
             )
+            a_sub_raw = data["raw_submitted_answers"].get(name, None)
+
             if name in data["partial_scores"]:
                 feedback = data["partial_scores"][name].get("feedback")
         elif name not in data["submitted_answers"]:
@@ -190,6 +193,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             display.value: True,
             "error": parse_error or missing_input,
             "a_sub": a_sub,
+            "a_sub_raw": a_sub_raw,
             "feedback": feedback,
             "raw_submitted_answer": raw_submitted_answer,
         }
