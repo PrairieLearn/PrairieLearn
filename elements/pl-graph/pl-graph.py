@@ -1,5 +1,3 @@
-import json
-
 import chevron
 import lxml.html
 import networkx as nx
@@ -35,7 +33,6 @@ def graphviz_from_networkx(
 def graphviz_from_adj_matrix(
     element: lxml.html.HtmlElement, data: pl.QuestionData
 ) -> str:
-
     # Legacy input with passthrough
     input_param_matrix = pl.get_string_attrib(
         element, "params-name-matrix", PARAMS_NAME_DEFAULT
@@ -183,19 +180,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # Read the contents of this element as the data to render
         # we dump the string to json to ensure that newlines are
         # properly encoded
-        graphviz_data = str(element.text)
-
+        graphviz_data = element.text
 
     translated_dotcode = pygraphviz.AGraph(string=graphviz_data)
     svg = translated_dotcode.draw(format="svg", prog=engine).decode("utf-8", "strict")
 
-    html_params = {
-        "uuid": pl.get_uuid(),
-        "workerURL": "/node_modules/viz.js/full.render.js",
-        "data": graphviz_data,
-        "engine": engine,
-        "svg": svg
-    }
+    html_params = {"uuid": pl.get_uuid(), "svg": svg}
 
     with open("pl-graph.mustache") as f:
         return chevron.render(f, html_params).strip()
