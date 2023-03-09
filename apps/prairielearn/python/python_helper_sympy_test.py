@@ -54,7 +54,7 @@ class TestSympy:
     ]
 
     EXPR_PAIRS = [
-        ("n log^2 2n", N * (sympy.log(2*N)**2)),
+        ("n log^2 2n", N * (sympy.log(2 * N) ** 2)),
         ("e^(pi * i)", -1),
         ("infty", sympy.oo),
         ("infty", sympy.oo + 99),
