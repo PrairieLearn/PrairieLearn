@@ -1,11 +1,8 @@
 .pl-graph {
   display: flex;
   flex-direction: column;
-  overflow-x: scroll;
+  overflow-x: auto;
   width: 100%;
   margin-bottom: 1rem;
-}
-
-.pl-graph > * {
-  margin: auto;
+  align-items: center;
 }
