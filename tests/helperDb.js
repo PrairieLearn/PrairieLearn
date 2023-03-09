@@ -5,8 +5,7 @@ const _ = require('lodash');
 const util = require('util');
 
 const sqldb = require('@prairielearn/postgres');
-const migrations = require('../prairielib/lib/migrations');
-const { SCHEMA_MIGRATIONS_PATH } = require('@prairielearn/migrations');
+const { init: initMigrations, SCHEMA_MIGRATIONS_PATH } = require('@prairielearn/migrations');
 const sprocs = require('../sprocs');
 const namedLocks = require('@prairielearn/named-locks');
 
@@ -36,7 +35,7 @@ async function runMigrationsAndSprocs(dbName, mochaThis, runMigrations) {
   await namedLocks.init(pgConfig, idleErrorHandler);
 
   if (runMigrations) {
-    await util.promisify(migrations.init)(
+    await initMigrations(
       [path.join(__dirname, '..', 'migrations'), SCHEMA_MIGRATIONS_PATH],
       'prairielearn'
     );

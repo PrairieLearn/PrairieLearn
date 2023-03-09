@@ -1,21 +1,18 @@
-// @ts-check
+import chai, { assert } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
+import path from 'path';
+import tmp from 'tmp-promise';
+import fs from 'fs-extra';
 
-const chai = require('chai');
-const chaiAsPromised = require('chai-as-promised');
-chai.use(chaiAsPromised);
-const path = require('path');
-const tmp = require('tmp-promise');
-const fs = require('fs-extra');
-
-const {
+import {
   readAndValidateMigrationsFromDirectory,
   sortMigrationFiles,
   getMigrationsToExecute,
-} = require('./migrations');
+} from './migrations';
 
-const { assert } = chai;
+chai.use(chaiAsPromised);
 
-async function withMigrationFiles(files, fn) {
+async function withMigrationFiles(files: string[], fn: (tmpDir: string) => Promise<void>) {
   await tmp.withDir(
     async function (tmpDir) {
       for (const file of files) {
@@ -56,28 +53,34 @@ describe('migrations', () => {
       assert.deepEqual(
         sortMigrationFiles([
           {
+            directory: 'migrations',
             filename: '20220101010103_testing_3.sql',
             timestamp: '20220101010103',
           },
           {
+            directory: 'migrations',
             filename: '20220101010101_testing_1.sql',
             timestamp: '20220101010101',
           },
           {
+            directory: 'migrations',
             filename: '20220101010102_testing_2.sql',
             timestamp: '20220101010102',
           },
         ]),
         [
           {
+            directory: 'migrations',
             filename: '20220101010101_testing_1.sql',
             timestamp: '20220101010101',
           },
           {
+            directory: 'migrations',
             filename: '20220101010102_testing_2.sql',
             timestamp: '20220101010102',
           },
           {
+            directory: 'migrations',
             filename: '20220101010103_testing_3.sql',
             timestamp: '20220101010103',
           },
@@ -90,6 +93,7 @@ describe('migrations', () => {
     it('handles the case of no executed migrations', () => {
       const migrationFiles = [
         {
+          directory: 'migrations',
           filename: '001_testing.sql',
           timestamp: '20220101010101',
         },
@@ -100,14 +104,17 @@ describe('migrations', () => {
     it('handles case where subset of migrations have been executed', () => {
       const migrationFiles = [
         {
+          directory: 'migrations',
           filename: '20220101010101_testing_1.sql',
           timestamp: '20220101010101',
         },
         {
+          directory: 'migrations',
           filename: '20220101010102_testing_2.sql',
           timestamp: '20220101010102',
         },
         {
+          directory: 'migrations',
           filename: '20220101010103_testing_3.sql',
           timestamp: '20220101010103',
         },
@@ -121,7 +128,11 @@ describe('migrations', () => {
         },
       ];
       assert.deepEqual(getMigrationsToExecute(migrationFiles, executedMigrations), [
-        { timestamp: '20220101010103', filename: '20220101010103_testing_3.sql' },
+        {
+          directory: 'migrations',
+          timestamp: '20220101010103',
+          filename: '20220101010103_testing_3.sql',
+        },
       ]);
     });
   });
