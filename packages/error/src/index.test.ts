@@ -7,7 +7,6 @@ describe('make', () => {
     const err = make(404, 'Not Found');
     assert.equal(err.status, 404);
     assert.equal(err.message, 'Not Found');
-    assert.isUndefined(err.data);
   });
 
   it('makes an error with data', () => {

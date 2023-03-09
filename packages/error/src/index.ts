@@ -1,18 +1,22 @@
 import _ from 'lodash';
 
 interface ErrorWithData extends Error {
-  data?: any;
+  data: any;
 }
 
-interface ErrorWithStatus extends ErrorWithData {
+interface ErrorWithStatus extends Error {
   status: number;
 }
+
+interface ErrorWithStatusAndData extends ErrorWithData, ErrorWithStatus {}
 
 // TODO: rename all functions include "error" in the name so that they can
 // be more easily imported as named imports.
 
-export function make(status: number, message: string, data?: any): ErrorWithStatus {
-  const err = new Error(message) as ErrorWithStatus;
+export function make(status: number, message: string): ErrorWithStatus;
+export function make(status: number, message: string, data: any): ErrorWithStatusAndData;
+export function make(status: number, message: string, data?: any): ErrorWithStatusAndData {
+  const err = new Error(message) as ErrorWithStatusAndData;
   err.status = status;
   if (data) err.data = data;
   return err;
