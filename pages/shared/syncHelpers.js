@@ -17,7 +17,7 @@ const util = require('util');
 const chunks = require('../../lib/chunks');
 const debug = require('debug')('prairielearn:syncHelpers');
 
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 
 const docker = new Docker();
 

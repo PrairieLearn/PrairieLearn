@@ -6,8 +6,8 @@ const moment = require('moment');
 const express = require('express');
 const sqldb = require('@prairielearn/postgres');
 const { DockerName } = require('@prairielearn/docker-utils');
+const error = require('@prairielearn/error');
 
-const error = require('../../prairielib/lib/error');
 const syncHelpers = require('../shared/syncHelpers');
 const config = require('../../lib/config');
 

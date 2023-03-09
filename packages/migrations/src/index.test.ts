@@ -1,21 +1,18 @@
-// @ts-check
+import chai, { assert } from 'chai';
+import chaiAsPromised from 'chai-as-promised';
+import path from 'path';
+import tmp from 'tmp-promise';
+import fs from 'fs-extra';
 
-const chai = require('chai');
-const chaiAsPromised = require('chai-as-promised');
-chai.use(chaiAsPromised);
-const path = require('path');
-const tmp = require('tmp-promise');
-const fs = require('fs-extra');
-
-const {
+import {
   readAndValidateMigrationsFromDirectory,
   sortMigrationFiles,
   getMigrationsToExecute,
-} = require('./migrations');
+} from './index';
 
-const { assert } = chai;
+chai.use(chaiAsPromised);
 
-async function withMigrationFiles(files, fn) {
+async function withMigrationFiles(files: string[], fn: (tmpDir: string) => Promise<void>) {
   await tmp.withDir(
     async function (tmpDir) {
       for (const file of files) {
