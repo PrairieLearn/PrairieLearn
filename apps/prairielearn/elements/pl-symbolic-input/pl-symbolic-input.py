@@ -214,25 +214,24 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     elif data["panel"] == "answer":
         a_tru = data["correct_answers"].get(name)
-        if a_tru is not None:
-            if isinstance(a_tru, str):
-                # this is so instructors can specify the true answer simply as a string
-                a_tru = phs.convert_string_to_sympy(
-                    a_tru,
-                    variables,
-                    allow_complex=allow_complex,
-                    custom_functions=custom_functions,
-                )
-            else:
-                a_tru = phs.json_to_sympy(a_tru, allow_complex=allow_complex)
-            a_tru = a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit))
-            html_params = {"answer": True, "label": label, "a_tru": sympy.latex(a_tru)}
-            with open(
-                SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8"
-            ) as f:
-                return chevron.render(f, html_params).strip()
-        else:
+        if a_tru is None:
             return ""
+
+        elif isinstance(a_tru, str):
+            # this is so instructors can specify the true answer simply as a string
+            a_tru = phs.convert_string_to_sympy(
+                a_tru,
+                variables,
+                allow_complex=allow_complex,
+                custom_functions=custom_functions,
+            )
+        else:
+            a_tru = phs.json_to_sympy(a_tru, allow_complex=allow_complex)
+
+        a_tru = a_tru.subs(sympy.I, sympy.Symbol(imaginary_unit))
+        html_params = {"answer": True, "label": label, "a_tru": sympy.latex(a_tru)}
+        with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+            return chevron.render(f, html_params).strip()
 
     assert_never(data["panel"])
 
@@ -280,7 +279,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         data["submitted_answers"][name] = None
         return
 
-    # TODO make this assumption retrieval code cleaner
+    # Retrieve variable assumptions encoded in correct answer
     assumptions_dict = None
     a_tru = data["correct_answers"].get(name, {})
     if isinstance(a_tru, dict):
