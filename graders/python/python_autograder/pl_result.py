@@ -18,7 +18,7 @@ class PLTestResult(unittest.TestResult):
         "Look at the traceback below to help debug your code:\n"
     )
     grader_error_message = (
-        "There was a grader error while grading your code.\n\n"
+        "The grader encountered an error while grading your code.\n\n"
         "The associated traceback is:\n"
     )
 
