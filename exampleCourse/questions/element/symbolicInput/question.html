@@ -125,11 +125,11 @@
     <div class="card-body">
         <pl-question-panel>
             <p>
-                Submit $f(1) + g(x)$.
+                Submit $f(1) + sgn(x)$.
             </p>
         </pl-question-panel>
-        <pl-symbolic-input answers-name="custom_function" variables="x" custom-functions="f,g"
-            correct-answer="f(1) + g(x)"></pl-symbolic-input>
+        <pl-symbolic-input answers-name="custom_function" variables="x" custom-functions="f,sgn"
+            correct-answer="f(1) + sgn(x)"></pl-symbolic-input>
     </div>
 </div>
 
@@ -140,10 +140,9 @@
     <div class="card-body">
         <pl-question-panel>
             <p>
-                Submit $f(y) + g(b) + a$.
+                Submit $sgn(y) * f(y)$.
             </p>
         </pl-question-panel>
-        <pl-symbolic-input answers-name="custom_function_2" variables="a,y,b"
-            custom-functions="f,g"></pl-symbolic-input>
+        <pl-symbolic-input answers-name="custom_function_2" variables="y" custom-functions="sgn,f"></pl-symbolic-input>
     </div>
 </div>
