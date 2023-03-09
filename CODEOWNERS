@@ -6,6 +6,7 @@
 /elements/pl-order-blocks @SethPoulsen
 /elements/pl-python-variable @nicknytko @eliotwrobson
 /elements/pl-rich-text-editor @jonatanschroeder
+/elements/pl-units-input @eliotwrobson
 
 /graders/c @jonatanschroeder
 /graders/java @jonatanschroeder

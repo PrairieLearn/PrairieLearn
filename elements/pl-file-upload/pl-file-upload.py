@@ -2,14 +2,13 @@ import csv
 import hashlib
 import json
 from io import StringIO
-from typing import List
 
 import chevron
 import lxml.html
 import prairielearn as pl
 
 
-def get_file_names_as_array(raw_file_names: str) -> List[str]:
+def get_file_names_as_array(raw_file_names: str) -> list[str]:
     reader = csv.reader(
         StringIO(raw_file_names),
         delimiter=",",
