@@ -18,7 +18,7 @@ def generate(data):
     # Once sorted, the first birthday belongs to the youngest employee
     birthdays = sorted(birthdays)
 
-    data["params"]["employees"] = []
+    employees = []
 
     for alias, birthday in zip(
         ["youngest", "employee1", "employee2", "employee3"], birthdays
@@ -26,9 +26,9 @@ def generate(data):
         name = fake.name()
         data["params"][alias] = name
         # Store in array to facilitate rendering list of employees in question.html template
-        data["params"]["employees"].append(
-            {"name": name, "birthday": birthday.strftime("%B %d, %Y")}
-        )
+        employees.append({"name": name, "birthday": birthday.strftime("%B %d, %Y")})
 
-    random.shuffle(data["params"]["employees"])
+    random.shuffle(employees)
+
+    data["params"]["employees"] = employees
     data["params"]["company"] = fake.company()
