@@ -8,7 +8,7 @@ const archiver = require('archiver');
 const csvMaker = require('../../lib/csv-maker');
 const { paginateQuery } = require('../../lib/paginate');
 const sanitizeName = require('../../lib/sanitize-name');
-const error = require('../../prairielib/error');
+const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 
 const sql = sqldb.loadSqlEquiv(__filename);

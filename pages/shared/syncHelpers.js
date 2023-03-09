@@ -12,7 +12,7 @@ const chunks = require('../../lib/chunks');
 const dockerUtil = require('../../lib/dockerUtil');
 const debug = require('debug')('prairielearn:syncHelpers');
 
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 
 module.exports.pullAndUpdate = function (locals, callback) {
   const options = {
