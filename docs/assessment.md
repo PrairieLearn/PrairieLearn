@@ -299,9 +299,9 @@ You can add a `text` property to your `infoAssessment.json`, which can be used t
 
 See the [`clientFiles` and `serverFiles`](clientServerFiles.md) page for details about making files available to users.
 
-## Student-attached files
+## Student-attached personal notes
 
-Students can attach files to assessments, either by uploading them or by pasting the file contents as text. This can be done on the assessment overview page, or on individual question pages. These files can be viewed by the student anytime they can view the assessment.
+Students can attach files to assessments as personal notes, either by uploading them or by pasting the file contents as text. This can be done on the assessment overview page, or on individual question pages. These files can be viewed by the student anytime they can view the assessment.
 
 The purpose of this is to allow students to take extra notes during exams, for later review. For example, if a student has a Matlab script that they used to solve a question, they could attach it to that question so they can review it later.
 
