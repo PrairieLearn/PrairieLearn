@@ -1,4 +1,4 @@
-# Installing natively
+# Running natively
 
 _WARNING:_ The recommended setup for PrairieLearn development is [within Docker](installingLocal.md). The setup described on this page is not recommended or supported.
 
