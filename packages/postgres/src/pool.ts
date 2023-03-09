@@ -882,4 +882,16 @@ export class PostgresPool {
    * Generate, set, and return a random schema name.
    */
   setRandomSearchSchema = callbackify(this.setRandomSearchSchemaAsync);
+
+  get totalCount() {
+    return this.pool?.totalCount ?? 0;
+  }
+
+  get idleCount() {
+    return this.pool?.idleCount ?? 0;
+  }
+
+  get waitingCount() {
+    return this.pool?.waitingCount ?? 0;
+  }
 }

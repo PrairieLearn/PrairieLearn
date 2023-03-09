@@ -1776,17 +1776,17 @@ module.exports.startServer = async () => {
   });
   server.on('connection', () => connectionCounter.add(1));
 
-  const activeConnectionsGauge = opentelemetry.getObservableGauge(
+  opentelemetry.createObservableRangeGauge(
     meter,
     'http.connections.active',
     {
       unit: opentelemetry.ValueType.INT,
+      interval: 1000,
+    },
+    () => {
+      return util.promisify(server.getConnections.bind(server))();
     }
   );
-  activeConnectionsGauge.addCallback(async (observableResult) => {
-    const count = await util.promisify(server.getConnections.bind(server))();
-    observableResult.observe(count);
-  });
 
   server.timeout = config.serverTimeout;
   server.keepAliveTimeout = config.serverKeepAliveTimeout;
@@ -2003,6 +2003,53 @@ if (config.startServer) {
             process.exit(0);
           }
         }
+      },
+      async () => {
+        // Collect metrics on our Postgres connection pools.
+        const meter = opentelemetry.metrics.getMeter('prairielearn');
+
+        const pools = [
+          {
+            name: 'default',
+            pool: sqldb.defaultPool,
+          },
+          {
+            name: 'named-locks',
+            pool: namedLocks.pool,
+          },
+        ];
+
+        pools.forEach(({ name, pool }) => {
+          opentelemetry.createObservableRangeGauge(
+            meter,
+            `postgres.pool.${name}.total`,
+            {
+              unit: opentelemetry.ValueType.INT,
+              interval: 1000,
+            },
+            () => pool.totalCount
+          );
+
+          opentelemetry.createObservableRangeGauge(
+            meter,
+            `postgres.pool.${name}.idle`,
+            {
+              unit: opentelemetry.ValueType.INT,
+              interval: 1000,
+            },
+            () => pool.idleCount
+          );
+
+          opentelemetry.createObservableRangeGauge(
+            meter,
+            `postgres.pool.${name}.waiting`,
+            {
+              unit: opentelemetry.ValueType.INT,
+              interval: 1000,
+            },
+            () => pool.waitingCount
+          );
+        });
       },
       async () => {
         // We create and activate a random DB schema name
