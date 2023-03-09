@@ -7,7 +7,7 @@ const util = require('util');
 const sqldb = require('@prairielearn/postgres');
 const migrations = require('../prairielib/lib/migrations');
 const sprocs = require('../sprocs');
-const namedLocks = require('../lib/named-locks');
+const namedLocks = require('@prairielearn/named-locks');
 
 const POSTGRES_USER = 'postgres';
 const POSTGRES_HOST = 'localhost';
