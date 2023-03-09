@@ -5,7 +5,7 @@ const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const sanitizeName = require('../../lib/sanitize-name');
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const groupUpdate = require('../../lib/group-update');
 const sqldb = require('@prairielearn/postgres');
 

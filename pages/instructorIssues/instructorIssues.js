@@ -5,7 +5,7 @@ const express = require('express');
 const router = express.Router();
 const SearchString = require('search-string');
 
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const paginate = require('../../lib/paginate');
 const sqldb = require('@prairielearn/postgres');
 const { idsEqual } = require('../../lib/id');
