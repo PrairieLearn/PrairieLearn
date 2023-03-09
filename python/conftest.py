@@ -81,7 +81,7 @@ def r_types_dataframe() -> pd.DataFrame:
             # TODO adding in complex numbers won't deserialize correctly, fix this (somehow?)
             # "complex": complex(1, 2),
             # Series
-            "numeric-list": pd.Series([1.0] * 3).astype("float64"),
+            "numeric-list": pd.Series([1.0] * 3, dtype="float64"),
             "integer-list": pd.Series([1] * 3, dtype="int64"),
             # "complex-list": pd.Series(np.array([1, 2, 3]) + np.array([4, 5, 6]) *1j).astype("complex128"),
             "character-list": pd.Series(["hello", "world", "stat"]),
@@ -111,4 +111,5 @@ def question_data() -> QuestionData:
         "panel": "question",
         "extensions": dict(),
         "num_valid_submissions": 0,
+        "manual_grading": False,
     }

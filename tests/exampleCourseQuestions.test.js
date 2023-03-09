@@ -61,6 +61,7 @@ const qidsExampleCourse = [
   'element/stringInput',
   'element/symbolicInput',
   'element/bigOInput',
+  'element/unitsInput',
   // FIXME: 'element/threeJS',
   'element/variableOutput',
   'element/orderBlocks',

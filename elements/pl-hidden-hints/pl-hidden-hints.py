@@ -1,8 +1,9 @@
 import math
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import chevron
-import lxml
+import lxml.etree
+import lxml.html
 import prairielearn as pl
 
 # Based on the original hidden-hint element by Jason Xia
@@ -16,7 +17,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     pl.check_attribs(element, [], [])
 
     # Parse hints from frontend
-    hints: List[Tuple[int, int, Optional[str], str]] = []
+    hints: list[tuple[int, int, Optional[str], str]] = []
 
     # Use position so that hints appear in order if show-after-submission values are equal.
     for position, child in enumerate(element):

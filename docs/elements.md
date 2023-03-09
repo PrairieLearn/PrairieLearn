@@ -28,6 +28,8 @@ PrairieLearn presently provides the following templated **input field** elements
   representing asymptotic input.
 - [`pl-string-input`](#pl-string-input-element): Fill in a **string** value
   such as "Illinois", "GATTACA", "computer", and so on.
+- [`pl-units-input`](#pl-units-input-element): Fill in a **number** and a **unit**
+  such as "1.5 m", "14 ms", "6.3 ft", and so on.
 - [`pl-matching`](#pl-matching-element): Select a matching option for each entry in
   a group.
 - [`pl-matrix-component-input`](#pl-matrix-component-input-element): Fill in
@@ -718,6 +720,52 @@ def generate(data):
 - [`pl-symbolic-input` for mathematical expression input](#pl-symbolic-input-element)
 - [`pl-integer-input` for integer input](#pl-integer-input-element)
 - [`pl-number-input` for numeric input](#pl-number-input-element)
+
+---
+
+### `pl-units-input` element
+
+Fill in the blank field that allows for **numeric** input and accompanying **units**.
+
+#### Sample element
+
+**question.html**
+
+```html
+<pl-units-input answers-name="c_1" correct-answer="1m" atol="1cm"></pl-units-input>
+```
+
+#### Customizations
+
+| Attribute                  | Type                                         | Default      | Description                                                                                                                                                                                                                                                                                                                   |
+| -------------------------- | -------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name`             | string                                       | -            | Variable name to store data in.                                                                                                                                                                                                                                                                                               |
+| `weight`                   | integer                                      | 1            | Weight to use when computing a weighted average score over elements.                                                                                                                                                                                                                                                          |
+| `correct-answer`           | string                                       | special      | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                                                                                                                                                                              |
+| `label`                    | text                                         | -            | A prefix to display before the input box (e.g., `label="$F =$"`).                                                                                                                                                                                                                                                             |
+| `suffix`                   | text                                         | -            | A suffix to display after the input box (e.g., `suffix="$\rm m/s^2$"`).                                                                                                                                                                                                                                                       |
+| `display`                  | "block" or "inline"                          | "inline"     | How to display the input field.                                                                                                                                                                                                                                                                                               |
+| `grading-mode`             | "with-units", "exact-units", or "only-units" | "with-units" | How to grade student submission. "only-units" only checks for the units input by the student. "exact-units" asks for a quantity with a specified unit. "with-units" is similar to "exact-units", but will automatically convert the units used by the given answer if possible.                                               |
+| `comparison`               | "exact", "sigfig", "decdig" or "relabs"      | "sigfig"     | How to grade. "relabs" uses relative ("rtol") and absolute ("atol") tolerances. "sigfig" use "digits" significant digits. "decdig" uses "digits" after decimal place, "exact" uses `==` and should only be used for integers. Attribute can only be set if `grading-mode=exact-units`                                         |
+| `rtol`                     | number                                       | 1e-2         | Relative tolerance for `comparison="relabs"` and `grading-mode=exact-units`.                                                                                                                                                                                                                                                  |
+| `atol`                     | string                                       | 1e-8         | Absolute tolerance for `comparison="relabs"` and `grading-mode=with-units`. Required and must include units when `grading-mode=with-units`.                                                                                                                                                                                   |
+| `digits`                   | integer                                      | 2            | Number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.                                                                                                                                                                                                                                     |
+| `allow-blank`              | boolean                                      | false        | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                                                                                                                                                                              |
+| `blank-value`              | string                                       | ""           | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is true. Must follow the same format as an expected user input.                                                                                                                                                                         |
+| `size`                     | integer                                      | 35           | Size of the input box.                                                                                                                                                                                                                                                                                                        |
+| `show-help-text`           | boolean                                      | true         | Show the question mark at the end of the input displaying required input parameters.                                                                                                                                                                                                                                          |
+| `placeholder`              | string                                       | -            | String to override default placeholder text. The default placeholder gives information about the comparison type used.                                                                                                                                                                                                        |
+| `magnitude-partial-credit` | float                                        | -            | Fraction of partial credit given to answers of correct magnitude and incorrect units when `grading-mode=exact-units`. Remaining fraction of credit given when units are correct but magnitude is incorrect. Must be between 0.0 and 1.0. Partial credit is disabled if this is not set.                                       |
+| `allow-feedback`           | boolean                                      | true         | Whether to show detailed feedback from the autograder for incorrect answers (for example, stating whether a unit or magnitude specifically is incorrect). Feedback varies based on `grading-mode`.                                                                                                                            |
+| `custom-format`            | string                                       | -            | Custom format specifier to use when formatting the submitted and correct answer after processing. By default, uses standard string conversion. A full description of the format can be found [on the Pint documentation page](https://pint.readthedocs.io/en/stable/getting/tutorial.html?highlight=print#string-formatting). |
+
+#### Details
+
+This element uses [Pint](https://pint.readthedocs.io/en/stable/index.html) to parse and represent units. Any units allowed by Pint are supported by this element. To obtain a `Pint` unit registry, question code can use `pl.get_unit_registry()` to construct a default unit registry. This is recommended over constructing a registry using the constructor provided by `Pint` (as this does not use caching and is slower).
+
+#### Example implementations
+
+- [element/unitsInput]
 
 ---
 
@@ -2326,6 +2374,7 @@ The provided `script-name` corresponds to a file located within the director for
 [element/matrixlatex]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/matrixLatex
 [element/multiplechoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/multipleChoice
 [element/numberinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/numberInput
+[element/unitsinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/unitsInput
 [element/orderblocks]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocks
 [element/overlay]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/overlay
 [element/panels]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/panels

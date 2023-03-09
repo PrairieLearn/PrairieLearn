@@ -1,11 +1,7 @@
 -- BLOCK select_instance_questions
 SELECT
   iq.*,
-  (
-    (lag(z.id) OVER w) IS DISTINCT
-    FROM
-      z.id
-  ) AS start_new_zone,
+  ((lag(z.id) OVER w) IS DISTINCT FROM z.id) AS start_new_zone,
   z.id AS zone_id,
   z.title AS zone_title,
   q.title AS question_title,

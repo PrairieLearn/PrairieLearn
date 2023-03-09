@@ -13,10 +13,8 @@ CREATE TABLE
     UNIQUE (course_permission_id, course_instance_id)
   );
 
-/*
-Give course_permissions with course_role of at least 'None' to all users with
-enrollments of role Instructor.
- */
+-- Give course_permissions with course_role of at least 'None' to all users with
+-- enrollments of role Instructor.
 INSERT INTO
   course_permissions (user_id, course_id, course_role)
 SELECT
@@ -37,10 +35,8 @@ GROUP BY
   ci.course_id
 ON CONFLICT DO NOTHING;
 
-/*
-Give course_instance_permissions with course_instance_role 'Student Data Editor'
-to all users with enrollments of role Instructor.
- */
+-- Give course_instance_permissions with course_instance_role 'Student Data Editor'
+-- to all users with enrollments of role Instructor.
 INSERT INTO
   course_instance_permissions (
     course_instance_id,
