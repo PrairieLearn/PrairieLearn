@@ -1,7 +1,7 @@
 import json
 import math
 from enum import Enum
-from typing import Any, Callable, Dict, Optional, Tuple, cast
+from typing import Any, Callable, Optional, cast
 
 import lxml.html
 import networkx as nx
@@ -245,7 +245,7 @@ def test_grade_answer_parametrized_correct(
     good_feedback = "you did good"
     bad_feedback = "that's terrible"
 
-    def grading_function(submitted_answer: str) -> Tuple[bool, Optional[str]]:
+    def grading_function(submitted_answer: str) -> tuple[bool, Optional[str]]:
         if submitted_answer in {"a", "b", "c", "d", "<>"}:
             return True, good_feedback
         return False, bad_feedback
@@ -290,8 +290,8 @@ def test_grade_answer_parametrized_key_error_blank(
 
     question_data["submitted_answers"] = {question_name: "True"}
 
-    def grading_function(_: str) -> Tuple[bool, Optional[str]]:
-        decoy_dict: Dict[str, str] = dict()
+    def grading_function(_: str) -> tuple[bool, Optional[str]]:
+        decoy_dict: dict[str, str] = dict()
         decoy_dict["junk"]  # This is to throw a key error
         return (True, None)
 
