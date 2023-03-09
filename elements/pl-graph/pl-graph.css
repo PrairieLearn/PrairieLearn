@@ -4,5 +4,8 @@
   overflow-x: auto;
   width: 100%;
   margin-bottom: 1rem;
-  align-items: center;
+}
+
+.pl-graph > * {
+  margin: auto;
 }
