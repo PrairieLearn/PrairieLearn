@@ -185,7 +185,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     translated_dotcode = pygraphviz.AGraph(string=graphviz_data)
     svg = translated_dotcode.draw(format="svg", prog=engine).decode("utf-8", "strict")
 
-    html_params = {"uuid": pl.get_uuid(), "svg": svg}
-
     with open("pl-graph.mustache") as f:
-        return chevron.render(f, html_params).strip()
+        return chevron.render(f, {"svg": svg}).strip()
