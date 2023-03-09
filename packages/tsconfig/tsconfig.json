@@ -12,6 +12,6 @@
     "noUnusedParameters": true,
     // Checking the types for *all* our dependencies is unnecessarily slow in
     // CI, so we'll only check the types our code actually refers to.
-    "skipLibCheck": true,
+    "skipLibCheck": true
   }
 }
