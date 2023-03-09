@@ -3,14 +3,12 @@ import random
 
 from faker import Faker
 
-fake = Faker()
-
 
 def formatDate(date):
     return date.strftime("%B %d, %Y")
 
 
-def appendEmployee(data, alias, birthdays):
+def appendEmployee(data, fake, alias, birthdays):
     name = fake.name()
     birthday = formatDate(birthdays.pop(0))
     data["params"][alias] = name
@@ -20,6 +18,7 @@ def appendEmployee(data, alias, birthdays):
 
 
 def generate(data):
+    fake = Faker()
     # Start with `set` to ensure uniqueness
     birthdays = set()
 
@@ -30,12 +29,12 @@ def generate(data):
         )
 
     # Once sorted, the first birthday belongs to the youngest employee
-    birthdays = sorted(list(birthdays))
+    birthdays = sorted(birthdays)
 
     data["params"]["employees"] = []
-    appendEmployee(data, "youngest", birthdays)
-    appendEmployee(data, "employee1", birthdays)
-    appendEmployee(data, "employee2", birthdays)
-    appendEmployee(data, "employee3", birthdays)
+    appendEmployee(data, fake, "youngest", birthdays)
+    appendEmployee(data, fake, "employee1", birthdays)
+    appendEmployee(data, fake, "employee2", birthdays)
+    appendEmployee(data, fake, "employee3", birthdays)
     random.shuffle(data["params"]["employees"])
     data["params"]["company"] = fake.company()
