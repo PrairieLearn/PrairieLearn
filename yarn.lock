@@ -3558,7 +3558,6 @@ __metadata:
     unist-util-visit: ^2.0.3
     unzipper: ^0.10.11
     uuid: ^9.0.0
-    viz.js: ^2.1.2
     winston: ^3.8.2
     winston-aws-cloudwatch: ^3.0.0
     xml2js: ^0.4.23
@@ -14020,13 +14019,6 @@ __metadata:
     unist-util-stringify-position: ^2.0.0
     vfile-message: ^2.0.0
   checksum: ee5726e10d170472cde778fc22e0f7499caa096eb85babea5d0ce0941455b721037ee1c9e6ae506ca2803250acd313d0f464328ead0b55cfe7cb6315f1b462d6
-  languageName: node
-  linkType: hard
-
-"viz.js@npm:^2.1.2":
-  version: 2.1.2
-  resolution: "viz.js@npm:2.1.2"
-  checksum: 299e5a8519a472e0e98197c5f39c0ca6f3f6c4642b6ae007ed888fea998d82455c7ae0118d09cb888bfd2c46ebe3b03d7ce321a4eef1c822a5f5719d3a6ef3bb
   languageName: node
   linkType: hard
 
