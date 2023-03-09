@@ -1,33 +1,65 @@
 const ERR = require('async-stacktrace');
 const async = require('async');
-const path = require('path');
 const AWS = require('aws-sdk');
 const _ = require('lodash');
-const configLib = require('../../prairielib/lib/config');
 
 const logger = require('./logger');
-
-const configDir = path.resolve(__dirname, '..', 'config');
 
 const config = module.exports;
 const exportedConfig = (config.config = {});
 const MetadataService = new AWS.MetadataService();
 
+const defaultConfig = {
+  maxConcurrentJobs: 5,
+  useDatabase: false,
+  useEc2MetadataService: true,
+  useCloudWatchLogging: false,
+  useConsoleLoggingForJobs: true,
+  useImagePreloading: false,
+  useHealthCheck: true,
+  cacheImageRegistry: null,
+  parallelInitPulls: 5,
+  lifecycleHeartbeatIntervalMS: 300000,
+  globalLogGroup: 'grading-instances-debug',
+  jobLogGroup: 'grading-jobs-debug',
+  reportLoad: false,
+  reportIntervalSec: 10,
+  healthCheckPort: 4000,
+  healthCheckInterval: 30000,
+  jobsQueueName: 'grading_jobs_dev',
+  jobsQueueUrl: null,
+  resultsQueueName: 'grading_results_dev',
+  resultsQueueUrl: null,
+  defaultTimeout: 30,
+  timeoutOverhead: 300,
+  postgresqlHost: 'localhost',
+  postgresqlDatabase: 'postgres',
+  postgresqlUser: null,
+  postgresqlPassword: null,
+  postgresqlPoolSize: 2,
+  postgresqlIdleTimeoutMillis: 30000,
+};
+
+const productionConfig = {
+  useDatabase: true,
+  useEc2MetadataService: true,
+  useCloudWatchLogging: true,
+  useConsoleLoggingForJobs: false,
+  useImagePreloading: true,
+  reportLoad: true,
+};
+
 config.loadConfig = function (callback) {
   // Determine what environment we're running in
-  const env = (exportedConfig.env = process.env.NODE_ENV || 'development');
-  exportedConfig.isProduction = exportedConfig.env === 'production';
-  exportedConfig.isDevelopment = exportedConfig.env === 'development';
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  _.assign(exportedConfig, {
+    ...defaultConfig,
+    ...(isProduction ? productionConfig : {}),
+  });
 
   async.series(
     [
-      (callback) => {
-        configLib.loadConfigForEnvironment(configDir, env, (err, loadedConfig) => {
-          if (ERR(err, callback)) return;
-          _.assign(exportedConfig, loadedConfig);
-          callback(null);
-        });
-      },
       (callback) => {
         MetadataService.request('/latest/dynamic/instance-identity/document', (err, document) => {
           if (ERR(err, callback)) return;
