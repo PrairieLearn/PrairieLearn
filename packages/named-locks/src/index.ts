@@ -1,17 +1,24 @@
-// @ts-check
-const util = require('util');
+import util from 'util';
+import { PostgresPool, PoolClient } from '@prairielearn/postgres';
+import { PoolConfig } from 'pg';
 
-const { loadSqlEquiv, PostgresPool } = require('@prairielearn/postgres');
+interface Lock {
+  client: PoolClient;
+}
 
-const sql = loadSqlEquiv(__filename);
+interface LockOptions {
+  /** How many milliseconds to wait (anything other than a positive number means forever) */
+  timeout?: number;
+}
 
-/** @typedef {import('@prairielearn/postgres').PoolClient} PoolClient */
-/** @typedef {{ client: PoolClient }} Lock */
-
-/**
- * @typedef {Object} LockOptions
- * @property {number} [timeout] - How many milliseconds to wait (anything other than a positive number means forever)
- */
+type InternalLockOptions =
+  | {
+      wait: false;
+    }
+  | {
+      wait: true;
+      timeout: number;
+    };
 
 /*
  * The functions here all identify locks by "name", which is a plain
@@ -56,26 +63,28 @@ const sql = loadSqlEquiv(__filename);
  * can lead to deadlocks.
  */
 
-let pool = new PostgresPool();
+const pool = new PostgresPool();
 
 /**
  * Initializes a new {@link PostgresPool} that will be used to acquire named locks.
- *
- * @param {import('pg').PoolConfig} pgConfig
- * @param {(error: Error, client: import("pg").PoolClient) => void} idleErrorHandler - A handler for async errors
- * @returns {Promise<void>}
  */
-module.exports.init = async function (pgConfig, idleErrorHandler) {
+export async function init(
+  pgConfig: PoolConfig,
+  idleErrorHandler: (error: Error, client: PoolClient) => void
+) {
   await pool.initAsync(pgConfig, idleErrorHandler);
-  await pool.queryAsync(sql.ensure_named_locks_table, {});
-};
+  await pool.queryAsync(
+    'CREATE TABLE IF NOT EXISTS named_locks (id bigserial PRIMARY KEY, name text NOT NULL UNIQUE);',
+    {}
+  );
+}
 
 /**
  * Shuts down the database connection pool that was used to acquire locks.
  */
-module.exports.close = async function () {
+export async function close() {
   await pool.closeAsync();
-};
+}
 
 /**
  * Try to acquire a lock and either succeed if it's available or
@@ -83,22 +92,21 @@ module.exports.close = async function () {
  * must later be released by releaseLock(). If a lock is not acquired
  * (it is null) then releaseLock() should not be called.
  *
- * @param {string} name The name of the lock to acquire.
- * @returns {Promise<Lock | null>}
+ * @param name The name of the lock to acquire.
  */
-module.exports.tryLockAsync = async function (name) {
+export async function tryLockAsync(name: string): Promise<Lock | null> {
   return getLock(name, { wait: false });
-};
+}
 
-module.exports.tryLock = util.callbackify(module.exports.tryLockAsync);
+export const tryLock = util.callbackify(tryLockAsync);
 
 /**
  * Wait until a lock can be successfully acquired.
  *
- * @param {string} name The name of the lock to acquire.
- * @param {LockOptions} options
+ * @param name The name of the lock to acquire.
+ * @param options
  */
-module.exports.waitLockAsync = async function (name, options) {
+export async function waitLockAsync(name: string, options: LockOptions): Promise<Lock> {
   const internalOptions = {
     wait: true,
     timeout: options.timeout || 0,
@@ -107,51 +115,52 @@ module.exports.waitLockAsync = async function (name, options) {
   const lock = await getLock(name, internalOptions);
   if (lock == null) throw new Error(`failed to acquire lock: ${name}`);
   return lock;
-};
+}
 
-module.exports.waitLock = util.callbackify(module.exports.waitLockAsync);
+export const waitLock = util.callbackify(waitLockAsync);
 
 /**
  * Release a lock.
  *
- * @param {Lock} lock - The previously acquired lock.
+ * @param lock A previously-acquired lock.
  */
-module.exports.releaseLockAsync = async function (lock) {
+export async function releaseLockAsync(lock: Lock) {
   if (lock == null) throw new Error('lock is null');
   await pool.endTransactionAsync(lock.client, null);
-};
+}
 
-module.exports.releaseLock = util.callbackify(module.exports.releaseLockAsync);
+export const releaseLock = util.callbackify(releaseLockAsync);
 
 /**
  * Acquires the given lock, executes the provided function with the lock held,
  * and releases the lock once the function has executed.
- *
- * @template T
- * @param {string} name
- * @param {LockOptions} options
- * @param {() => Promise<T>} func
- * @returns {Promise<T>}
  */
-module.exports.doWithLock = async function (name, options, func) {
-  const lock = await module.exports.waitLockAsync(name, options);
+export async function doWithLock<T>(
+  name: string,
+  options: LockOptions,
+  func: () => Promise<T>
+): Promise<T> {
+  const lock = await waitLockAsync(name, options);
   try {
     return await func();
   } finally {
-    await module.exports.releaseLockAsync(lock);
+    await releaseLockAsync(lock);
   }
-};
+}
 
 /**
  * Internal helper function to get a lock with optional
  * waiting. Do not call directly, but use tryLock() or waitLock()
  * instead.
  *
- * @param {string} name The name of the lock to acquire.
- * @param {{ wait?: boolean, timeout?: number }} options Optional parameters.
+ * @param name The name of the lock to acquire.
+ * @param options Optional parameters.
  */
-async function getLock(name, options = {}) {
-  await pool.queryAsync(sql.ensure_named_lock_row, { name });
+async function getLock(name: string, options: InternalLockOptions) {
+  await pool.queryAsync(
+    'INSERT INTO named_locks (name) VALUES ($name) ON CONFLICT (name) DO NOTHING;',
+    { name }
+  );
 
   const client = await pool.beginTransactionAsync();
 
@@ -182,7 +191,7 @@ async function getLock(name, options = {}) {
   } catch (err) {
     // Something went wrong, so we end the transaction and re-throw the
     // error.
-    await pool.endTransactionAsync(client, err);
+    await pool.endTransactionAsync(client, err as Error);
     throw err;
   }
 

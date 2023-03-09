@@ -13,20 +13,13 @@ class PLTestResult(unittest.TestResult):
     """
 
     error_message = (
-        "The grading code failed -- sorry about that!\n\n"
-        "This may be an issue with your code.\nIf so, you can "
-        "take a look at the traceback below to help debug.\n"
-        "If you believe this is an issue with the grading code,\n"
-        "please notify the course staff.\n\n"
-        "The error traceback is below:\n"
+        "There was an error while grading your code.\n\n"
+        "Review the question text to ensure your code matches\nthe expected requirements, such as variable names,\nfunction names, and parameters.\n\n"
+        "Look at the traceback below to help debug your code:\n"
     )
-
-    major_error_message = (
-        "The grading code was not able to run.\n"
-        "Please notify the course staff "
-        "and include this entire message,\n"
-        "including the traceback below.\n\n"
-        "The error traceback is:\n"
+    grader_error_message = (
+        "The grader encountered an error while grading your code.\n\n"
+        "The associated traceback is:\n"
     )
 
     def __init__(self):
@@ -100,28 +93,29 @@ class PLTestResult(unittest.TestResult):
                 ipynb_key=Feedback.test.ipynb_key,
             )
         else:
-            tr_list = traceback.format_exception(*err)
-            test_id = test.id().split()[0]
-            if not test_id.startswith("test"):
-                # Error in setup code -- not recoverable
+            tr_message = ''.join(traceback.format_exception(*err))
+
+            if isinstance(test, unittest.suite._ErrorHolder):
+                # Error occurred outside of a test case, like in setup code for example
+                # We can't really recover from this
+
                 self.done_grading = True
                 self.grading_succeeded = False
-                self.results = []
-                self.results.append(
+                self.results = [
                     {
                         "name": "Internal Grading Error",
                         "filename": "error",
                         "max_points": 1,
                         "points": 0,
                     }
-                )
+                ]
                 Feedback.set_name("error")
-                Feedback.add_feedback(self.major_error_message + "".join(tr_list))
+                Feedback.add_feedback(self.grader_error_message + tr_message)
             else:
                 # Error in a single test -- keep going
                 unittest.TestResult.addError(self, test, err)
                 self.results[-1]["points"] = 0
-                Feedback.add_feedback(self.error_message + "".join(tr_list))
+                Feedback.add_feedback(self.error_message + tr_message)
 
     def addFailure(self, test, err):
         unittest.TestResult.addFailure(self, test, err)

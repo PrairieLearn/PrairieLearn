@@ -570,7 +570,7 @@ function runJob(info, callback) {
           });
         } else {
           if (results.timedOut) {
-            results.message = `Your grading job did not complete within the time limit of ${timeout} seconds. Please fix your code before submitting again.`;
+            results.message = `Your grading job did not complete within the time limit of ${timeout} seconds.\nPlease fix your code before submitting again.`;
           }
           results.results = null;
           callback(null);

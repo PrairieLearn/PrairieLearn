@@ -2482,6 +2482,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/named-locks@^1.0.0, @prairielearn/named-locks@workspace:packages/named-locks":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/named-locks@workspace:packages/named-locks"
+  dependencies:
+    "@prairielearn/postgres": ^1.2.0
+    "@prairielearn/tsconfig": "*"
+    "@types/node": ^18.14.2
+    typescript: ^4.9.4
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/opentelemetry@^1.0.0, @prairielearn/opentelemetry@workspace:packages/opentelemetry":
   version: 0.0.0-use.local
   resolution: "@prairielearn/opentelemetry@workspace:packages/opentelemetry"
@@ -2518,7 +2529,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/postgres@^1.0.0, @prairielearn/postgres@workspace:packages/postgres":
+"@prairielearn/postgres@^1.0.0, @prairielearn/postgres@^1.2.0, @prairielearn/postgres@workspace:packages/postgres":
   version: 0.0.0-use.local
   resolution: "@prairielearn/postgres@workspace:packages/postgres"
   dependencies:
@@ -3098,6 +3109,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/memorystream@npm:^0.3.1":
+  version: 0.3.1
+  resolution: "@types/memorystream@npm:0.3.1"
+  dependencies:
+    "@types/node": "*"
+  checksum: ee1d4cb6838bb772e4118aa0797bd0d8a3a471076f83cad3ff1fd539e5f63e9bd7b0374406f05de1e3d1fcd41a7e8d0e0d0ea49616c854a5c872fe3a0df84468
+  languageName: node
+  linkType: hard
+
 "@types/mime@npm:*, @types/mime@npm:^3.0.1":
   version: 3.0.1
   resolution: "@types/mime@npm:3.0.1"
@@ -3136,10 +3156,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=12.12.47, @types/node@npm:>=13.7.0, @types/node@npm:^18.11.18, @types/node@npm:^18.14.2":
-  version: 18.14.4
-  resolution: "@types/node@npm:18.14.4"
-  checksum: 3f2f625777747b9f87e793eea5a8bbf1ac2c828846bda5811d07a457d55cfe6762239779759de61e7b7e917632b9ceee3f7ffd2a024117e7ec364dc1b4eb8d55
+"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=12.12.47, @types/node@npm:>=13.7.0, @types/node@npm:^18.14.2":
+  version: 18.14.2
+  resolution: "@types/node@npm:18.14.2"
+  checksum: 53c07e721f6ae33de71306f6a0b75dae6066a4f55bd5484c93bd59ff25f0c5f004ceafeef509a4d0cb9e24a247efc34d50489bcc1b05a53ecc68e2fc088e65cb
   languageName: node
   linkType: hard
 
@@ -3147,6 +3167,13 @@ __metadata:
   version: 12.20.55
   resolution: "@types/node@npm:12.20.55"
   checksum: e4f86785f4092706e0d3b0edff8dca5a13b45627e4b36700acd8dfe6ad53db71928c8dee914d4276c7fd3b6ccd829aa919811c9eb708a2c8e4c6eb3701178c37
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^18.11.18":
+  version: 18.14.4
+  resolution: "@types/node@npm:18.14.4"
+  checksum: 3f2f625777747b9f87e793eea5a8bbf1ac2c828846bda5811d07a457d55cfe6762239779759de61e7b7e917632b9ceee3f7ffd2a024117e7ec364dc1b4eb8d55
   languageName: node
   linkType: hard
 
@@ -3348,6 +3375,7 @@ __metadata:
     "@prairielearn/bind-mount": ^1.0.0
     "@prairielearn/compiled-assets": ^1.0.0
     "@prairielearn/html": ^2.0.0
+    "@prairielearn/named-locks": ^1.0.0
     "@prairielearn/opentelemetry": ^1.0.0
     "@prairielearn/postgres": ^1.0.0
     "@prairielearn/prettier-plugin-sql": "workspace:*"
@@ -3366,6 +3394,7 @@ __metadata:
     "@types/fs-extra": ^11.0.1
     "@types/lodash": ^4.14.191
     "@types/loopbench": ^1.2.1
+    "@types/memorystream": ^0.3.1
     "@types/mime": ^3.0.1
     "@types/mocha": ^10.0.1
     "@types/node": ^18.14.2
