@@ -17,7 +17,7 @@ docker run -it --rm -p 3000:3000 -w /PrairieLearn -v /path/to/PrairieLearn:/Prai
 
 # You can now run the following commands inside the container:
 
-# Install Node packages and Pythong dependencies, and transpile code in the `packages/` directory.
+# Install Node packages and Python dependencies, and transpile code in the `packages/` directory.
 # Repeat after switching branches, pulling new code, or editing Python dependencies in `plbase` image.
 # If editing code in `packages/`, you should also repeat either this command or `make build`.
 make deps
