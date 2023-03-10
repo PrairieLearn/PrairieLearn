@@ -28,8 +28,8 @@ BASE_DEFAULT = 10
 INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-integer-input.mustache"
 
 
-def is_not_within_limits(n: int) -> bool:
-    return n > 2**53 - 1 or n < -((2**53) - 1)
+def is_within_limits(n: int) -> bool:
+    return -((2**53) - 1) <= n <= 2**53 - 1
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -224,7 +224,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     if a_sub.strip() == "":
         if pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT):
-            a_sub = pl.get_integer_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
+            a_sub = str(pl.get_integer_attrib(element, "blank-value", BLANK_VALUE_DEFAULT))
         else:
             opts = {
                 "format_error": True,
@@ -254,10 +254,15 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             ).strip()
         data["format_errors"][name] = format_str
         data["submitted_answers"][name] = None
-    elif is_not_within_limits(a_sub_parsed):
-        data["submitted_answers"][name] = a_sub
-    else:
-        data["submitted_answers"][name] = pl.to_json(a_sub_parsed)
+        return
+
+    data["submitted_answers"][name] = a_sub
+
+
+    #elif not is_within_limits(a_sub_parsed):
+    #    data["submitted_answers"][name] = a_sub
+    #else:
+    #    data["submitted_answers"][name] = pl.to_json(a_sub_parsed)
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
