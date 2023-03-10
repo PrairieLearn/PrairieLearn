@@ -1,12 +1,12 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
-const error = require('../../prairielib/error');
+const error = require('@prairielearn/error');
 
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const { FileDeleteEditor, FileRenameEditor, FileUploadEditor } = require('../../lib/editors');
-const logger = require('../../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const fs = require('fs-extra');
 const async = require('async');
 const hljs = require('highlight.js');

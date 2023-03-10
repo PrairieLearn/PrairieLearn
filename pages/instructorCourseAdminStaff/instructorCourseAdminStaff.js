@@ -3,8 +3,8 @@ const express = require('express');
 const router = express.Router();
 const async = require('async');
 
-const logger = require('../../lib/logger');
-const error = require('../../prairielib/lib/error');
+const { logger } = require('@prairielearn/logger');
+const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 const { idsEqual } = require('../../lib/id');
 

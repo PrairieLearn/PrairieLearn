@@ -2,14 +2,14 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const async = require('async');
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const question = require('../../lib/question');
 const sqldb = require('@prairielearn/postgres');
 const fs = require('fs-extra');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const logger = require('../../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const {
   QuestionRenameEditor,
   QuestionDeleteEditor,

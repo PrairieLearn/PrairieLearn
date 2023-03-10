@@ -449,10 +449,11 @@ export class PostgresPool {
    * The transaction will be rolled back if the function throws an error, and
    * will be committed otherwise.
    */
-  async runInTransactionAsync(fn: (client: pg.PoolClient) => Promise<void>): Promise<void> {
+  async runInTransactionAsync<T>(fn: (client: pg.PoolClient) => Promise<T>): Promise<T> {
     const client = await this.beginTransactionAsync();
+    let result: T;
     try {
-      await this.alsClient.run(client, () => fn(client));
+      result = await this.alsClient.run(client, () => fn(client));
     } catch (err: any) {
       await this.endTransactionAsync(client, err);
       throw err;
@@ -462,6 +463,8 @@ export class PostgresPool {
     // because we don't want an error thrown by it to trigger *another* call
     // to `endTransactionAsync` in the `catch` block.
     await this.endTransactionAsync(client, null);
+
+    return result;
   }
 
   /**

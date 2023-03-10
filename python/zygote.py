@@ -55,10 +55,14 @@ import matplotlib
 import matplotlib.font_manager
 import nltk
 import numpy
+import pint
 import prairielearn
 import sklearn
 
 matplotlib.use("PDF")
+
+# Construct initial unit registry to create initial cache file.
+prairielearn.get_unit_registry()
 
 
 # This function tries to convert a python object to valid JSON. If an exception

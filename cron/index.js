@@ -8,9 +8,9 @@ const { trace, context, suppressTracing, SpanStatusCode } = require('@prairielea
 
 const config = require('../lib/config');
 const { isEnterprise } = require('../lib/license');
-const logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const { sleep } = require('../lib/sleep');
-const namedLocks = require('../lib/named-locks');
+const namedLocks = require('@prairielearn/named-locks');
 
 const sqldb = require('@prairielearn/postgres');
 

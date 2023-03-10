@@ -3,11 +3,8 @@ const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
 const { Router } = require('express');
 const passport = require('passport');
-const util = require('util');
 
-const sqldb = require('@prairielearn/postgres');
-const config = require('../../../lib/config');
-const csrf = require('../../../lib/csrf');
+const authnLib = require('../../../lib/authn');
 
 const { strategy } = require('./index');
 const { SamlTest } = require('./router.html');
@@ -32,16 +29,31 @@ router.get('/login', (req, res, next) => {
   })(req, res, next);
 });
 
+function authenticate(req, res) {
+  return new Promise((resolve, reject) => {
+    passport.authenticate(
+      'saml',
+      {
+        failureRedirect: '/pl',
+        session: false,
+      },
+      (err, user) => {
+        if (err) {
+          reject(err);
+        } else if (!user) {
+          reject(new Error('Login failed'));
+        } else {
+          resolve(user);
+        }
+      }
+    )(req, res);
+  });
+}
+
 router.post(
   '/callback',
   asyncHandler(async (req, res) => {
-    // This will write the resolved user to `req.user`.
-    await util.promisify(
-      passport.authenticate('saml', {
-        failureRedirect: '/pl',
-        session: false,
-      })
-    )(req, res);
+    const user = await authenticate(req, res);
 
     // Fetch this institution's attribute mappings.
     const institutionId = req.params.institution_id;
@@ -51,24 +63,20 @@ router.post(
     const nameAttribute = institutionSamlProvider.name_attribute;
 
     // Read the appropriate attributes.
-    // @ts-expect-error `attributes` is not defined on the type.
-    const authUid = req.user.attributes[uidAttribute];
-    // @ts-expect-error `attributes` is not defined on the type.
-    const authUin = req.user.attributes[uinAttribute];
-    // @ts-expect-error `attributes` is not defined on the type.
-    const authName = req.user.attributes[nameAttribute];
+    const authnUid = user.attributes[uidAttribute];
+    const authnUin = user.attributes[uinAttribute];
+    const authnName = user.attributes[nameAttribute];
 
     if (req.body.RelayState === 'test') {
       res.send(
         SamlTest({
-          uid: authUid,
-          uin: authUin,
-          name: authName,
+          uid: authnUid,
+          uin: authnUin,
+          name: authnName,
           uidAttribute,
           uinAttribute,
           nameAttribute,
-          // @ts-expect-error `attributes` is not defined on the type.
-          attributes: req.user.attributes,
+          attributes: user.attributes,
           resLocals: res.locals,
         })
       );
@@ -79,29 +87,21 @@ router.post(
     if (!uidAttribute || !uinAttribute || !nameAttribute) {
       throw new Error('Missing one or more SAML attribute mappings');
     }
-    if (!authUid || !authUin || !authName) {
+    if (!authnUid || !authnUin || !authnName) {
       throw new Error('Missing one or more SAML attributes');
     }
 
-    const params = [authUid, authName, authUin, 'SAML', institutionId];
-    const userRes = await sqldb.callAsync('users_select_or_insert', params);
-    const tokenData = {
-      user_id: userRes.rows[0].user_id,
-      authn_provider_name: 'SAML',
+    let authnParams = {
+      uid: authnUid,
+      name: authnName,
+      uin: authnUin,
+      provider: 'SAML',
     };
-    const pl_authn = csrf.generateToken(tokenData, config.secretKey);
-    res.cookie('pl_authn', pl_authn, {
-      maxAge: config.authnCookieMaxAgeMilliseconds,
-      httpOnly: true,
-      secure: true,
-    });
 
-    let redirUrl = res.locals.homeUrl;
-    if ('preAuthUrl' in req.cookies) {
-      redirUrl = req.cookies.preAuthUrl;
-      res.clearCookie('preAuthUrl');
-    }
-    res.redirect(redirUrl);
+    await authnLib.loadUser(req, res, authnParams, {
+      pl_authn_cookie: true,
+      redirect: true,
+    });
   })
 );
 

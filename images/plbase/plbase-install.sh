@@ -6,7 +6,7 @@ yum update -y
 amazon-linux-extras install -y \
     vim \
     docker \
-    postgresql11 \
+    postgresql14 \
     redis4.0
 
 # Notes:

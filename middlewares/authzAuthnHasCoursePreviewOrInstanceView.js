@@ -1,4 +1,4 @@
-const error = require('../prairielib/error');
+const error = require('@prairielearn/error');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
