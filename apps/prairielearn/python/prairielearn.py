@@ -1650,7 +1650,7 @@ def get_uuid() -> str:
     return random_char + uuid_string[1:]
 
 
-def escape_unicode_string(string):
+def escape_unicode_string(string: str) -> str:
     """
     escape_unicode_string(string)
 
