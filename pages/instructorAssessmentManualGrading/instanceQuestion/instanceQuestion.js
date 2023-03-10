@@ -8,7 +8,8 @@ const path = require('path');
 
 const question = require('../../../lib/question');
 const manualGrading = require('../../../lib/manualGrading');
-const error = require('../../../prairielib/lib/error');
+
+const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 
 const sql = sqldb.loadSqlEquiv(__filename);

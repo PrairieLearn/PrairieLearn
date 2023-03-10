@@ -1,6 +1,3 @@
-import json
-
-import chevron
 import lxml.html
 import networkx as nx
 import numpy as np
@@ -23,13 +20,11 @@ DIRECTED_DEFAULT = True
 def graphviz_from_networkx(
     element: lxml.html.HtmlElement, data: pl.QuestionData
 ) -> str:
-    engine = pl.get_string_attrib(element, "engine", ENGINE_DEFAULT)
     input_param_name = pl.get_string_attrib(element, "params-name")
 
     networkx_graph = pl.from_json(data["params"][input_param_name])
 
     G = nx.nx_agraph.to_agraph(networkx_graph)
-    G.layout(engine)
 
     return G.string()
 
@@ -37,10 +32,6 @@ def graphviz_from_networkx(
 def graphviz_from_adj_matrix(
     element: lxml.html.HtmlElement, data: pl.QuestionData
 ) -> str:
-    # Get matrix attributes
-
-    engine = pl.get_string_attrib(element, "engine", ENGINE_DEFAULT)
-
     # Legacy input with passthrough
     input_param_matrix = pl.get_string_attrib(
         element, "params-name-matrix", PARAMS_NAME_DEFAULT
@@ -124,7 +115,6 @@ def graphviz_from_adj_matrix(
             else:
                 G.add_edge(out_node, in_node)
 
-    G.layout(engine)
     return G.string()
 
 
@@ -182,21 +172,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     if input_param_name is not None:
         if input_type in matrix_backends:
-            graphviz_data = json.dumps(matrix_backends[input_type](element, data))
+            graphviz_data = matrix_backends[input_type](element, data)
         else:
             raise ValueError(f'Unknown graph type "{input_type}".')
     else:
         # Read the contents of this element as the data to render
         # we dump the string to json to ensure that newlines are
         # properly encoded
-        graphviz_data = json.dumps(str(element.text))
+        graphviz_data = element.text
 
-    html_params = {
-        "uuid": pl.get_uuid(),
-        "workerURL": "/node_modules/viz.js/full.render.js",
-        "data": graphviz_data,
-        "engine": engine,
-    }
+    translated_dotcode = pygraphviz.AGraph(string=graphviz_data)
+    svg = translated_dotcode.draw(format="svg", prog=engine).decode("utf-8", "strict")
 
-    with open("pl-graph.mustache") as f:
-        return chevron.render(f, html_params).strip()
+    return f'<div class="pl-graph">{svg}</div>'

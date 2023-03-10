@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const async = require('async');
 
-const error = require('../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const { logger } = require('@prairielearn/logger');
 const sqldb = require('@prairielearn/postgres');
 

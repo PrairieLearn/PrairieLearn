@@ -4,7 +4,7 @@ const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const regrading = require('../../lib/regrading');
 const assessment = require('../../lib/assessment');
 const sqldb = require('@prairielearn/postgres');
