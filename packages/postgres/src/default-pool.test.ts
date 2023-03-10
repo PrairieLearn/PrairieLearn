@@ -7,12 +7,16 @@ import * as pgPool from './default-pool';
  * pool's exports.
  */
 const HIDDEN_PROPERTIES = new Set([
+  // Private members
   'pool',
   'alsClient',
   'searchSchema',
+  '_queryCount',
+  // Getters
   'totalCount',
   'idleCount',
   'waitingCount',
+  'queryCount',
 ]);
 
 describe('sqldb', () => {
