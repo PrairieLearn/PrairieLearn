@@ -41,7 +41,8 @@
                 {"id": "element/matrixLatex",              "points": 2, "maxPoints": 10},
                 {"id": "element/graph",                    "points": 2, "maxPoints": 10},
                 {"id": "element/overlay",                  "points": 2, "maxPoints": 10},
-                {"id": "element/xssSafe",                  "points": 2}
+                {"id": "element/xssSafe",                  "points": 2},
+                {"id": "element/card",                     "points": 2, "maxPoints": 10}
             ]
         },
         {
