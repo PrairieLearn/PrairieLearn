@@ -26,6 +26,13 @@ const WorkspaceSchema = z.object({
   workspace_host_id: z.string().nullable(),
 });
 
+const WorkspaceLogsSchema = z.object({
+  id: z.string(),
+  workspace_id: z.string(),
+  state: z.string().nullable(),
+  message: z.string().nullable(),
+});
+
 async function insertWorkspaceHost(id, state = 'launching') {
   return sqldb.queryValidatedOneRow(
     'INSERT INTO workspace_hosts (id, instance_id, state) VALUES ($id, $instance_id, $state) RETURNING *;',
@@ -66,8 +73,25 @@ async function selectWorkspace(id) {
   );
 }
 
-async function getWorkspaceHostLogs() {
-  return sqldb.queryValidatedRows('SELECT * FROM workspace_host_logs', {}, WorkspaceHostLogsSchema);
+/**
+ * Returns the workspace host logs for the given host.
+ *
+ * @param {string | number} id
+ */
+async function getWorkspaceHostLogs(id) {
+  return sqldb.queryValidatedRows(
+    'SELECT * FROM workspace_host_logs WHERE workspace_host_id = $id;',
+    { id },
+    WorkspaceHostLogsSchema
+  );
+}
+
+async function getWorkspaceLogs(id) {
+  return sqldb.queryValidatedRows(
+    'SELECT * FROM workspace_logs WHERE workspace_id = $id;',
+    { id },
+    WorkspaceLogsSchema
+  );
 }
 
 describe('workspaceHost utilities', function () {
@@ -87,7 +111,7 @@ describe('workspaceHost utilities', function () {
 
       await workspaceHostUtils.markWorkspaceHostUnhealthy('1', 'test');
 
-      const logs = await getWorkspaceHostLogs();
+      const logs = await getWorkspaceHostLogs(1);
       assert.lengthOf(logs, 1);
 
       const log = logs[0];
@@ -266,10 +290,9 @@ describe('workspaceHost utilities', function () {
         instanceIds
       );
 
-      assert.lengthOf(workspaces, 2);
-
       // Only the workspaces on hosts 2 and 3 should have been stopped;
       // host 1 is still launching.
+      assert.lengthOf(workspaces, 2);
       assert.isUndefined(workspaces.find((w) => w.workspace_id === workspace1.id));
       assert.isDefined(
         workspaces.find((w) => w.workspace_id === workspace2.id && w.state === 'stopped')
@@ -277,6 +300,28 @@ describe('workspaceHost utilities', function () {
       assert.isDefined(
         workspaces.find((w) => w.workspace_id === workspace3.id && w.state === 'stopped')
       );
+
+      const hostLogs1 = await getWorkspaceHostLogs(1);
+      assert.lengthOf(hostLogs1, 0);
+
+      const hostLogs2 = await getWorkspaceHostLogs(2);
+      assert.lengthOf(hostLogs2, 1);
+      assert.equal(hostLogs2[0].message, 'Host instance was not found');
+
+      const hostLogs3 = await getWorkspaceHostLogs(3);
+      assert.lengthOf(hostLogs3, 1);
+      assert.equal(hostLogs3[0].message, 'Host instance was not found');
+
+      const workspaceLogs1 = await getWorkspaceLogs(1);
+      assert.lengthOf(workspaceLogs1, 0);
+
+      const workspaceLogs2 = await getWorkspaceLogs(2);
+      assert.lengthOf(workspaceLogs2, 1);
+      assert.equal(workspaceLogs2[0].message, 'Host instance was not found');
+
+      const workspaceLogs3 = await getWorkspaceLogs(3);
+      assert.lengthOf(workspaceLogs3, 1);
+      assert.equal(workspaceLogs3[0].message, 'Host instance was not found');
     });
   });
 });
