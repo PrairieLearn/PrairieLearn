@@ -2,7 +2,7 @@ var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
 
-var error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 var sqldb = require('@prairielearn/postgres');
 
 const chunks = require('../../lib/chunks');

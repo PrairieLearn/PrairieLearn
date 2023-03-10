@@ -2,7 +2,7 @@ var ERR = require('async-stacktrace');
 var _ = require('lodash');
 
 var sqldb = require('@prairielearn/postgres');
-var error = require('../prairielib/lib/error');
+const error = require('@prairielearn/error');
 
 var sql = sqldb.loadSqlEquiv(__filename);
 

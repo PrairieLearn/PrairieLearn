@@ -5,7 +5,7 @@ var path = require('path');
 var debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const { checkPasswordOrRedirect } = require('../../middlewares/studentAssessmentAccess');
-var error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 var assessment = require('../../lib/assessment');
 var sqldb = require('@prairielearn/postgres');
 var groupAssessmentHelper = require('../../lib/groups');

@@ -8,7 +8,7 @@ const _ = require('lodash');
 
 const assessment = require('../../lib/assessment');
 const studentAssessmentInstance = require('../shared/studentAssessmentInstance');
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 var groupAssessmentHelper = require('../../lib/groups');
 
