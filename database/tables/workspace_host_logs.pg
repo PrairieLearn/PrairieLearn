@@ -1,5 +1,5 @@
 columns
-    date: timestamp with time zone default now()
+    date: timestamp with time zone not null default now()
     id: bigint not null default nextval('workspace_host_logs_id_seq'::regclass)
     message: text
     state: enum_workspace_host_state
