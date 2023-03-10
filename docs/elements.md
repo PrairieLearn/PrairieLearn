@@ -1970,18 +1970,18 @@ Displays question content within a card-styled component. Optionally displays a 
 
 #### Customizations
 
-| Attribute        | Type   | Default | Description                             |
-| ---------------- | ------ | ------- | --------------------------------------- |
-| `header`         | string | -       | Contents of the card header             |
-| `title`          | string | -       | Contents of the card title              |
-| `subtitle`       | string | -       | Contents of the card subtitle           |
-| `contents`       | string | -       | Raw contents of the card body           |
-| `footer`         | string | -       | Contents of the card footer             |
-| `img-top-src`    | string | -       | Source URL for the top image            |
-| `img-top-alt`    | string | -       | Alternative text for the top image      |
-| `img-bottom-src` | string | -       | Source URL for the bottom image         |
-| `img-bottom-alt` | string | -       | Alternative text for the bottom image   |
-| `width`          |"25%", "50%", "75%", or "auto" | auto    | Width of the card |
+| Attribute        | Type                           | Default | Description                           |
+| ---------------- | ------------------------------ | ------- | ------------------------------------- |
+| `header`         | string                         | -       | Contents of the card header           |
+| `title`          | string                         | -       | Contents of the card title            |
+| `subtitle`       | string                         | -       | Contents of the card subtitle         |
+| `contents`       | string                         | -       | Raw contents of the card body         |
+| `footer`         | string                         | -       | Contents of the card footer           |
+| `img-top-src`    | string                         | -       | Source URL for the top image          |
+| `img-top-alt`    | string                         | -       | Alternative text for the top image    |
+| `img-bottom-src` | string                         | -       | Source URL for the bottom image       |
+| `img-bottom-alt` | string                         | -       | Alternative text for the bottom image |
+| `width`          | "25%", "50%", "75%", or "auto" | auto    | Width of the card                     |
 
 #### Details
 
