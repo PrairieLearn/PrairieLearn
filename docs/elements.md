@@ -67,6 +67,7 @@ images, files, and code display. The following **decorative** elements are avail
 - [`pl-external-grader-variables`](#pl-external-grader-variables-element): Displays expected and given variables for externally graded questions.
 - [`pl-xss-safe`](#pl-xss-safe-element): Removes potentially unsafe code from HTML code.
 - [`pl-file-preview`](#pl-file-preview-element): Displays a preview of submitted files.
+- [`pl-card`](#pl-card-element): Displays content within a card-styled component.
 
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
@@ -1650,8 +1651,7 @@ ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 
 ### `pl-graph` element
 
-Using the [viz.js](https://github.com/mdaines/viz.js/) library, create
-Graphviz DOT visualizations.
+Using the [PyGraphviz](https://pygraphviz.github.io/) library, create Graphviz DOT visualizations.
 
 #### Sample elements
 
@@ -1756,7 +1756,7 @@ For a full implementation, check out the `edge-inc-matrix` extension in the exam
 
 #### See also
 
-- [External: `viz.js` graphing library](https://github.com/mdaines/viz.js/)
+- [External: the DOT language reference](https://graphviz.org/doc/info/lang.html)
 - [`pl-figure` for displaying static or dynamically generated graphics.](#pl-figure-element)
 - [`pl-file-download` for allowing either static or dynamically generated files to be downloaded.](#pl-file-download-element)
 
@@ -1949,6 +1949,46 @@ Note that only one of the attributes `source-file-name`, `submitted-file-name` o
 #### See also
 
 - [`pl-file-editor` to provide an in-browser code environment](#pl-file-editor-element)
+
+### `pl-card` element
+
+Displays question content within a card-styled component. Optionally displays a header, footer, and/or image via tag attributes.
+
+#### Sample element
+
+```html
+<pl-card
+  header="Header"
+  title="Title"
+  width="50%"
+  img-bottom-src="https://via.placeholder.com/720x480"
+>
+  <pl-question-panel> This card is 50% width and has a bottom image. </pl-question-panel>
+</pl-card>
+```
+
+#### Customizations
+
+| Attribute        | Type                           | Default | Description                            |
+| ---------------- | ------------------------------ | ------- | -------------------------------------- |
+| `header`         | string                         | -       | Contents of the card header.           |
+| `title`          | string                         | -       | Contents of the card title.            |
+| `subtitle`       | string                         | -       | Contents of the card subtitle.         |
+| `contents`       | string                         | -       | Raw contents of the card body.         |
+| `footer`         | string                         | -       | Contents of the card footer.           |
+| `img-top-src`    | string                         | -       | Source URL for the top image.          |
+| `img-top-alt`    | string                         | -       | Alternative text for the top image.    |
+| `img-bottom-src` | string                         | -       | Source URL for the bottom image.       |
+| `img-bottom-alt` | string                         | -       | Alternative text for the bottom image. |
+| `width`          | "25%", "50%", "75%", or "auto" | "auto"  | Width of the card.                     |
+
+#### Details
+
+The `pl-card` attributes mirror the options of [Bootstrap 4 cards](https://getbootstrap.com/docs/4.6/components/card/).
+
+#### Example implementations
+
+- [element/card]
 
 ---
 
@@ -2386,6 +2426,7 @@ The provided `script-name` corresponds to a file located within the director for
 [element/threejs]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/threeJS
 [element/variableoutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/variableOutput
 [element/xsssafe]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/xssSafe
+[element/card]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/card
 
 <!-- Advanced uses of PL features -->
 

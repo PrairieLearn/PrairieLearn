@@ -6,6 +6,7 @@ const fetch = require('node-fetch').default;
 const { logger } = require('@prairielearn/logger');
 
 const config = require('../lib/config');
+const workspaceHelper = require('../lib/workspace');
 
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -78,8 +79,15 @@ async function checkDBConsistency() {
   const not_in_ec2 = set_difference(db_hosts_nonterminated, running_host_set);
   if (not_in_ec2.size > 0) {
     logger.info('Terminating hosts that are not running in EC2', Array.from(not_in_ec2));
-    await sqldb.queryAsync(sql.set_terminated_hosts_if_not_launching, {
+    const result = await sqldb.queryAsync(sql.set_terminated_hosts_if_not_launching, {
       instances: Array.from(not_in_ec2),
+    });
+    result.rows.forEach((row) => {
+      workspaceHelper.emitMessageForWorkspace(row.workspace_id, 'change:state', {
+        workspace_id: row.workspace_id,
+        state: row.state,
+        message: row.message,
+      });
     });
   }
 }
