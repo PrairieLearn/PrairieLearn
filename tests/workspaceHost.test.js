@@ -171,4 +171,76 @@ describe('workspaceHost utilities', function () {
       assert.equal(host4.state, 'ready');
     });
   });
+
+  describe('findTerminableWorkspaceHosts', () => {
+    it('marks draining host with zero load as terminating', async () => {
+      const host = await insertWorkspaceHost(1, 'draining');
+
+      const hosts = await workspaceHostUtils.findTerminableWorkspaceHosts(0, 0);
+
+      assert.lengthOf(hosts, 1);
+      assert.isDefined(hosts.find((h) => h.instance_id === host.instance_id));
+    });
+
+    it('marks unhealthy host with zero load as terminating', async () => {
+      const host1 = await insertWorkspaceHost(1, 'unhealthy');
+
+      const hosts = await workspaceHostUtils.findTerminableWorkspaceHosts(0, 0);
+
+      assert.lengthOf(hosts, 1);
+      assert.isDefined(hosts.find((h) => h.instance_id === host1.instance_id));
+    });
+
+    it('marks unhealthy host that exceeded timeout as terminating', async () => {
+      const host1 = await insertWorkspaceHost(1, 'unhealthy');
+      await sqldb.queryAsync(
+        "UPDATE workspace_hosts SET unhealthy_at = NOW() - INTERVAL '1 hour', load_count = 5 WHERE id = $id;",
+        { id: host1.id }
+      );
+
+      const host2 = await insertWorkspaceHost(2, 'unhealthy');
+      await sqldb.queryAsync(
+        "UPDATE workspace_hosts SET unhealthy_at = NOW() - INTERVAL '10 seconds', load_count = 5 WHERE id = $id;",
+        { id: host2.id }
+      );
+
+      const hosts = await workspaceHostUtils.findTerminableWorkspaceHosts(60, 0);
+
+      // Only the first host should have been terminated; the second one hasn't
+      // exceeded the unhealthy timeout yet.
+      assert.lengthOf(hosts, 1);
+      assert.isDefined(hosts.find((h) => h.instance_id === host1.instance_id));
+      assert.isUndefined(hosts.find((h) => h.instance_id === host2.instance_id));
+    });
+
+    it('marks launching host that exceeded timeout as terminating', async () => {
+      const host1 = await insertWorkspaceHost(1, 'launching');
+      await sqldb.queryAsync(
+        "UPDATE workspace_hosts SET launched_at = NOW() - INTERVAL '1 hour', load_count = 5 WHERE id = $id;",
+        { id: host1.id }
+      );
+
+      const host2 = await insertWorkspaceHost(2, 'launching');
+      await sqldb.queryAsync(
+        "UPDATE workspace_hosts SET launched_at = NOW() - INTERVAL '10 seconds', load_count = 5 WHERE id = $id;",
+        { id: host2.id }
+      );
+
+      const hosts = await workspaceHostUtils.findTerminableWorkspaceHosts(0, 60);
+
+      // Only the first host should have been terminated; the second one hasn't
+      // exceeded the launching timeout yet.
+      assert.lengthOf(hosts, 1);
+      assert.isDefined(hosts.find((h) => h.instance_id === host1.instance_id));
+      assert.isUndefined(hosts.find((h) => h.instance_id === host2.instance_id));
+    });
+
+    it('returns already-terminating hosts', async () => {
+      await insertWorkspaceHost(1, 'terminating');
+
+      const hosts = await workspaceHostUtils.findTerminableWorkspaceHosts(0, 0);
+
+      assert.lengthOf(hosts, 1);
+    });
+  });
 });

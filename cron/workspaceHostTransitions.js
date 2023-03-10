@@ -95,13 +95,13 @@ async function checkDBConsistency() {
 
 async function terminateHosts() {
   const ec2 = new AWS.EC2();
-  const params = [config.workspaceHostUnhealthyTimeoutSec, config.workspaceHostLaunchTimeoutSec];
-  const hosts =
-    (await sqldb.callAsync('workspace_hosts_find_terminable', params)).rows[0].terminable_hosts ||
-    [];
+  const hosts = await workspaceHostUtils.findTerminableWorkspaceHosts(
+    config.workspaceHostUnhealthyTimeoutSec,
+    config.workspaceHostLaunchTimeoutSec
+  );
   if (hosts.length > 0) {
     logger.info('Found terminable hosts', hosts);
-    await ec2.terminateInstances({ InstanceIds: hosts }).promise();
+    await ec2.terminateInstances({ InstanceIds: hosts.map((h) => h.instance_id) }).promise();
   }
 }
 
