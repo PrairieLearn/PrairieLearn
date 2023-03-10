@@ -79,4 +79,8 @@ SELECT
   tw.state,
   'Host instance was not found'
 FROM
-  terminated_workspaces AS tw;
+  terminated_workspaces AS tw
+RETURNING
+  workspace_id,
+  state,
+  message;
