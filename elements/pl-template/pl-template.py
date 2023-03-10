@@ -5,7 +5,8 @@ from itertools import chain
 from typing import Any, cast
 
 import chevron
-import lxml
+import lxml.etree
+import lxml.html
 import prairielearn as pl
 
 
