@@ -1,8 +1,10 @@
 const AWS = require('aws-sdk');
 const { callbackify } = require('util');
+const sqldb = require('@prairielearn/postgres');
 
 const config = require('../../lib/config');
-const sqldb = require('@prairielearn/postgres');
+const workspaceHostUtils = require('../../lib/workspaceHost');
+
 const sql = sqldb.loadSqlEquiv(__filename);
 
 module.exports.run = callbackify(async () => {
@@ -157,10 +159,8 @@ async function handleWorkspaceAutoscaling(stats) {
     let needed = desired_hosts - (ready_hosts + launching_hosts);
     // First thing we can try is to "re-capture" draining hosts to be ready.
     // This is very cheap to do because we don't need to call out to AWS.
-    const recaptured_hosts =
-      (await sqldb.callAsync('workspace_hosts_recapture_draining', [needed])).rows[0]
-        .recaptured_hosts || 0;
-    needed -= recaptured_hosts;
+    const recapturedHostCount = await workspaceHostUtils.recaptureDrainingWorkspaceHosts(needed);
+    needed -= recapturedHostCount;
     if (needed > 0) {
       // We couldn't get enough hosts, so lets spin up some more and insert them into the DB.
       const ec2 = new AWS.EC2();

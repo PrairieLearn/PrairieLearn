@@ -1,10 +1,17 @@
 // @ts-check
 const { assert } = require('chai');
+const { v4: uuidv4 } = require('uuid');
 const { z } = require('zod');
 const sqldb = require('@prairielearn/postgres');
 
 const workspaceHostUtils = require('../lib/workspaceHost');
 const helperDb = require('./helperDb');
+
+const WorkspaceHostSchema = z.object({
+  id: z.string(),
+  instance_id: z.string(),
+  state: z.string(),
+});
 
 const WorkspaceHostLogsSchema = z.object({
   id: z.string(),
@@ -19,13 +26,14 @@ const WorkspaceSchema = z.object({
 });
 
 async function insertWorkspaceHost(id, state = 'launching') {
-  await sqldb.queryAsync(
-    'INSERT INTO workspace_hosts (id, instance_id, state) VALUES ($id, $instance_id, $state);',
+  return sqldb.queryValidatedOneRow(
+    'INSERT INTO workspace_hosts (id, instance_id, state) VALUES ($id, $instance_id, $state) RETURNING *;',
     {
       id,
-      instance_id: 'i-1234567890abcdef0',
+      instance_id: uuidv4(),
       state,
-    }
+    },
+    WorkspaceHostSchema
   );
 }
 
@@ -108,6 +116,29 @@ describe('workspaceHost utilities', function () {
 
       const workspace = await selectWorkspace('1');
       assert.isNull(workspace.workspace_host_id);
+    });
+  });
+
+  describe('recaptureDrainingWorkspaceHosts', () => {
+    it('recaptures the specified number of draining hosts', async () => {
+      await insertWorkspaceHost(1, 'draining');
+      await insertWorkspaceHost(2, 'draining');
+      await insertWorkspaceHost(3, 'draining');
+      await insertWorkspaceHost(4, 'draining');
+
+      const recaptured = await workspaceHostUtils.recaptureDrainingWorkspaceHosts(2);
+      assert.equal(recaptured, 2);
+    });
+
+    it("doesn't recapture a host that is not draining", async () => {
+      await insertWorkspaceHost(1, 'launching');
+      await insertWorkspaceHost(2, 'ready');
+      await insertWorkspaceHost(3, 'unhealthy');
+      await insertWorkspaceHost(4, 'terminating');
+      await insertWorkspaceHost(5, 'terminated');
+
+      const recaptured = await workspaceHostUtils.recaptureDrainingWorkspaceHosts(1);
+      assert.equal(recaptured, 0);
     });
   });
 });
