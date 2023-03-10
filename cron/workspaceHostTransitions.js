@@ -7,6 +7,7 @@ const { logger } = require('@prairielearn/logger');
 
 const config = require('../lib/config');
 const workspaceHelper = require('../lib/workspace');
+const workspaceHostUtils = require('../lib/workspaceHost');
 
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -123,9 +124,7 @@ async function checkHealth() {
 
     if (!healthy) {
       logger.info(`Host ${host.hostname} (${host.instance_id}) is unhealthy!`);
-      await sqldb.queryAsync(sql.set_host_unhealthy, {
-        instance_id: host.instance_id,
-      });
+      await workspaceHostUtils.markWorkspaceHostUnhealthy(host.instance_id, 'Failed health check');
     }
   });
 }

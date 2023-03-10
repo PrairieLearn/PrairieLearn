@@ -25,11 +25,22 @@ BEGIN
 
     -- Update hosts to be 'terminating'
     -- Set state_changed_at if they weren't already 'terminating'
-    UPDATE workspace_hosts AS wh
-    SET state = 'terminating',
-        state_changed_at = CASE WHEN wh.state = 'terminating' THEN wh.state_changed_at ELSE NOW() END
-    FROM tmp_terminable_hosts AS th
-    WHERE wh.id = th.id;
+    WITH updated_workspace_hosts AS (
+      UPDATE workspace_hosts AS wh
+      SET state = 'terminating',
+          state_changed_at = CASE WHEN wh.state = 'terminating' THEN wh.state_changed_at ELSE NOW() END
+      FROM tmp_terminable_hosts AS th
+      WHERE wh.id = th.id
+      RETURNING wh.id, wh.state
+    )
+    INSERT INTO workspace_host_logs (workspace_host_id, state, message)
+    SELECT
+      wh.id,
+      wh.state,
+      -- TODO: use more precise message here?
+      'Terminating host'
+    FROM
+      updated_workspace_hosts AS wh;
 
     -- Save our terminating hosts
     SELECT array_agg(th.instance_id)

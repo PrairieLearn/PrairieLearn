@@ -154,7 +154,6 @@ module.exports.init = function (callback) {
       'group_info.sql',
       'groups_uid_list.sql',
       'workspace_loads_current.sql',
-      'workspace_hosts_assign_workspace.sql',
       'workspace_hosts_recapture_draining.sql',
       'workspace_hosts_drain_extra.sql',
       'workspace_hosts_find_terminable.sql',

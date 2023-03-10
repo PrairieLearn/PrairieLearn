@@ -18,31 +18,6 @@ WHERE
   wh.state = 'ready'
   OR wh.state = 'draining';
 
--- BLOCK set_host_unhealthy
-WITH
-  updated_workspace_hosts AS (
-    UPDATE workspace_hosts AS wh
-    SET
-      state = 'unhealthy',
-      unhealthy_at = NOW(),
-      unhealthy_reason = 'health check failed'
-    WHERE
-      wh.instance_id = $instance_id
-      AND wh.state IN ('launching', 'ready', 'draining')
-    RETURNING
-      wh.id,
-      wh.state,
-      wh.unhealthy_reason
-  )
-INSERT INTO
-  workspace_host_logs (workspace_host_id, state, message)
-SELECT
-  wh.id,
-  wh.state,
-  wh.unhealthy_reason
-FROM
-  updated_workspace_hosts AS wh;
-
 -- BLOCK add_terminating_hosts
 INSERT INTO
   workspace_hosts (state, state_changed_at, instance_id)
@@ -70,7 +45,18 @@ WITH
       )
       AND wh.state != 'launching'
     RETURNING
-      wh.id
+      wh.id,
+      wh.state
+  ),
+  logs AS (
+    INSERT INTO
+      workspace_host_logs (workspace_host_id, state, message)
+    SELECT
+      wh.id,
+      wh.state,
+      'Host instance was not found'
+    FROM
+      terminated_workspace_hosts AS wh
   ),
   terminated_workspaces AS (
     UPDATE workspaces AS w

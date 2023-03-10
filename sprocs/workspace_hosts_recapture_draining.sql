@@ -25,6 +25,14 @@ BEGIN
             wh.id = fdh.id
             AND wh.state = 'draining'
         RETURNING wh.*
+    ),
+    logs AS (
+        INSERT INTO workspace_host_logs (workspace_host_id, state, message)
+        SELECT
+            wh.id,
+            wh.state,
+            'Recaptured host'
+        FROM updated_draining_hosts AS wh
     )
     SELECT count(*) INTO recaptured_hosts FROM updated_draining_hosts;
 END;
