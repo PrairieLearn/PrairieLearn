@@ -1,6 +1,7 @@
 import copy
 import os
 from enum import Enum
+from itertools import chain
 from typing import Any, cast
 
 import chevron
@@ -20,12 +21,31 @@ PARENT_DIRECTORY_CHOICE_DEFAULT = ParentDirectoryEnum.SERVER_FILES_COURSE
 SUBDIRECTORY_DEFAULT = ""
 WARN_UNDEFINED_DEFAULT = True
 TRIM_WHITESPACE_DEFAULT = True
+VALIDATE_OUTPUT_DEFAULT = True
+
+ALLOWED_PL_TAGS = {"pl-template", "pl-variable"}
+
+
+def check_tags(element_html: str) -> None:
+    element_list = lxml.html.fragments_fromstring(element_html)
+
+    for e in chain.from_iterable(element.iter() for element in element_list):
+        if e.tag.startswith("pl-") and e.tag not in ALLOWED_PL_TAGS:
+            print(
+                f'WARNING: Element "{e.tag}" may not work correctly when used inside of "pl-template" element.'
+            )
+            print('Set validate-output="False" to disable this warning.')
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["file-name"]
-    optional_attribs = ["subdirectory", "parent-directory", "warn-undefined"]
+    optional_attribs = [
+        "subdirectory",
+        "parent-directory",
+        "warn-undefined",
+        "validate-output",
+    ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     # Load in entries from data dict. Allows filling templates with entries from data['params'], for example.
@@ -108,7 +128,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "warn-undefined", WARN_UNDEFINED_DEFAULT
     )
 
+    validate_output = pl.get_boolean_attrib(
+        element, "validate-output", VALIDATE_OUTPUT_DEFAULT
+    )
+
     file_path = os.path.join(parent_directory, subdirectory, file_name)
 
     with open(file_path, "r") as f:
-        return chevron.render(f, variable_dict, warn=warn_undefined)
+        res = chevron.render(f, variable_dict, warn=warn_undefined)
+
+    if validate_output:
+        check_tags(res)
+
+    return res
