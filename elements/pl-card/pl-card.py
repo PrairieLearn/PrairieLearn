@@ -1,3 +1,5 @@
+from typing import Any
+
 import chevron
 import lxml.html
 import prairielearn as pl
@@ -52,7 +54,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     content = pl.inner_html(element)
 
-    html_params = {
+    html_params: dict[str, Any] = {
         "header": header,
         "subtitle": subtitle,
         "footer": footer,
