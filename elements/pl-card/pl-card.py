@@ -47,6 +47,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
     width = pl.get_string_attrib(element, "width", WIDTH_DEFAULT)
 
+    if width not in {"25%", "50%", "75%", "auto"}:
+        raise ValueError(f"Invalid width: {width}.")
+
     content = pl.inner_html(element)
 
     html_params = {
@@ -57,7 +60,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "img-top-alt": img_top_alt,
         "img-bottom-src": img_bottom_src,
         "img-bottom-alt": img_bottom_alt,
-        "width": width.strip("%"),
+        "width": width.removesuffix("%"),
         "content": content,
     }
     # due to linked workaround, empty titles will still trigger {{#title}},
