@@ -1650,8 +1650,7 @@ ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 
 ### `pl-graph` element
 
-Using the [viz.js](https://github.com/mdaines/viz.js/) library, create
-Graphviz DOT visualizations.
+Using the [PyGraphviz](https://pygraphviz.github.io/) library, create Graphviz DOT visualizations.
 
 #### Sample elements
 
@@ -1756,7 +1755,6 @@ For a full implementation, check out the `edge-inc-matrix` extension in the exam
 
 #### See also
 
-- [External: `viz.js` graphing library](https://github.com/mdaines/viz.js/)
 - [`pl-figure` for displaying static or dynamically generated graphics.](#pl-figure-element)
 - [`pl-file-download` for allowing either static or dynamically generated files to be downloaded.](#pl-file-download-element)
 
