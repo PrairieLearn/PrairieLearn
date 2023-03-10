@@ -2049,6 +2049,17 @@ if (config.startServer) {
             },
             () => pool.waitingCount
           );
+
+          const queryCounter = opentelemetry.getObservableCounter(
+            meter,
+            `postgres.pool.${name}.query.count`,
+            {
+              valueType: opentelemetry.ValueType.INT,
+            }
+          );
+          queryCounter.addCallback((observableResult) => {
+            observableResult.observe(pool.queryCount);
+          });
         });
       },
       async () => {
