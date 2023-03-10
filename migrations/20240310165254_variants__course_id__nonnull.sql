@@ -13,7 +13,7 @@ BEGIN
         ALTER COLUMN course_id
         SET NOT NULL;
     ELSE
-        RAISE EXCEPTION 'NULL Rows exist in column, unable to add NOT NULL constraint';
+        RAISE EXCEPTION 'NULL row(s) exist in column, unable to add NOT NULL constraint';
     END IF;
 END;
 $$;
