@@ -24,6 +24,8 @@ import subprocess
 import sys
 from inspect import signature
 
+import zygote_utils as zu
+
 saved_path = copy.copy(sys.path)
 
 drop_privileges = os.environ.get("DROP_PRIVILEGES", False)
@@ -73,7 +75,7 @@ prairielearn.get_unit_registry()
 # debug the problem.
 def try_dumps(obj, sort_keys=False, allow_nan=False):
     try:
-        prairielearn.all_integers_within_limits(obj)
+        zu.all_integers_within_limits(obj)
         return json.dumps(obj, sort_keys=sort_keys, allow_nan=allow_nan)
     except Exception as err:
         print(f"Error: {err}\n When converting this object to json:\n{obj}\n")

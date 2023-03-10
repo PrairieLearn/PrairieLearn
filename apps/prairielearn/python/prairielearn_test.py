@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 import prairielearn as pl
 import pytest
+import zygote_utils as zu
 from pytest_lazyfixture import lazy_fixture
 
 
@@ -338,7 +339,7 @@ def test_get_uuid() -> None:
 )
 def test_all_integers_within_limits_no_exception(item: Any) -> None:
     try:
-        pl.all_integers_within_limits(item)
+        zu.all_integers_within_limits(item)
     except Exception as err:
         assert False, err
 
@@ -354,4 +355,4 @@ def test_all_integers_within_limits_no_exception(item: Any) -> None:
 )
 def test_all_integers_within_limits_raise_exception(item: Any) -> None:
     with pytest.raises(ValueError):
-        pl.all_integers_within_limits(item)
+        zu.all_integers_within_limits(item)
