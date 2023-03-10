@@ -73,9 +73,10 @@ prairielearn.get_unit_registry()
 # debug the problem.
 def try_dumps(obj, sort_keys=False, allow_nan=False):
     try:
+        prairielearn.all_integers_within_limits(obj)
         return json.dumps(obj, sort_keys=sort_keys, allow_nan=allow_nan)
-    except Exception:
-        print(f"Error converting this object to json:\n{obj}\n")
+    except Exception as err:
+        print(f"Error: {err}\n When converting this object to json:\n{obj}\n")
         raise
 
 

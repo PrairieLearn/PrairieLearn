@@ -29,9 +29,13 @@ def generate(data):
     data["correct_answers"]["c_1"] = c
     data["correct_answers"]["c_2"] = c
     data["correct_answers"]["c_3"] = c
-    data["correct_answers"]["c_4"] = c
-    data["correct_answers"]["c_5"] = c
-    data["correct_answers"]["c_7"] = c16
+    data["correct_answers"]["c_4"] = str(c)
+    data["correct_answers"]["c_5"] = str(c)
+    data["correct_answers"]["c_7"] = str(c16)
+
+    c_8 = "9007199254740991999"
+    data["correct_answers"]["c_8"] = c_8
+    data["params"]["c_8"] = c_8
 
     d = 16
     data["params"]["d"] = d

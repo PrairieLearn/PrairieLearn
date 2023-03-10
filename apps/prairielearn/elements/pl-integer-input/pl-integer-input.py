@@ -28,10 +28,6 @@ BASE_DEFAULT = 10
 INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-integer-input.mustache"
 
 
-def is_within_limits(n: int) -> bool:
-    return -((2**53) - 1) <= n <= 2**53 - 1
-
-
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["answers-name"]
@@ -66,15 +62,14 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     else:
         correct_answer = pl.from_json(data["correct_answers"].get(name, None))
 
-
     # Test conversion, but leave as string so proper value is shown on answer panel
-    try:
-        if not isinstance(correct_answer, int):
-            correct_answer = int(str(correct_answer), base)
-    except Exception:
-        raise ValueError(
-            f"Correct answer is not a valid base {base} integer: {correct_answer}"
-        )
+    if correct_answer is not None:
+        try:
+            int(str(correct_answer), base)
+        except Exception:
+            raise ValueError(
+                f"Correct answer is not a valid base {base} integer: {correct_answer}"
+            )
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
