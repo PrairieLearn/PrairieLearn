@@ -7,6 +7,7 @@ columns
 
 indexes
     workspace_host_logs_pkey: PRIMARY KEY (id) USING btree (id)
+    workspace_host_logs_workspace_host_id_idx: USING btree (workspace_host_id)
 
 foreign-key constraints
     workspace_host_logs_workspace_host_id_fkey: FOREIGN KEY (workspace_host_id) REFERENCES workspace_hosts(id) ON UPDATE CASCADE ON DELETE CASCADE
