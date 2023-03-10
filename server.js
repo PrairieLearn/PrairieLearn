@@ -1776,7 +1776,7 @@ module.exports.startServer = async () => {
   });
   server.on('connection', () => connectionCounter.add(1));
 
-  opentelemetry.createObservableRangeGauge(
+  opentelemetry.createObservableValueGauges(
     meter,
     'http.connections.active',
     {
@@ -2020,7 +2020,7 @@ if (config.startServer) {
         ];
 
         pools.forEach(({ name, pool }) => {
-          opentelemetry.createObservableRangeGauge(
+          opentelemetry.createObservableValueGauges(
             meter,
             `postgres.pool.${name}.total`,
             {
@@ -2030,7 +2030,7 @@ if (config.startServer) {
             () => pool.totalCount
           );
 
-          opentelemetry.createObservableRangeGauge(
+          opentelemetry.createObservableValueGauges(
             meter,
             `postgres.pool.${name}.idle`,
             {
@@ -2040,7 +2040,7 @@ if (config.startServer) {
             () => pool.idleCount
           );
 
-          opentelemetry.createObservableRangeGauge(
+          opentelemetry.createObservableValueGauges(
             meter,
             `postgres.pool.${name}.waiting`,
             {

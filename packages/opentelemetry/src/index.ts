@@ -11,6 +11,6 @@ export {
   getObservableCounter,
   getObservableUpDownCounter,
   getObservableGauge,
-  createObservableRangeGauge,
-  CreateObservableRangeGaugeOptions,
+  createObservableValueGauges,
+  createObservableValueGaugesOptions,
 } from './metrics';

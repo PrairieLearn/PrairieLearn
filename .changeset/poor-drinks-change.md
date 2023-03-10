@@ -2,4 +2,4 @@
 '@prairielearn/opentelemetry': minor
 ---
 
-Add `createObservableRangeGauge()` function
+Add `createObservableValueGauges()` function

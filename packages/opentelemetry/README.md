@@ -103,13 +103,13 @@ await instrumentedWithMetrics(meter, 'operation.name', async () => {
 });
 ```
 
-To capture statistics about a constantly changing value (for instance, the size of a database connection pool), you can use `createObservableRangeGauge`. This will "observe" your chosen value on a regular interval and collect the min/max/average of that value for each metrics collection interval.
+To capture statistics about a constantly changing value (for instance, the size of a database connection pool), you can use `createObservableValueGauges`. This will "observe" your chosen value on a regular interval and collect the min/max/average of that value for each metrics collection interval.
 
 ```ts
-import { metrics, createObservableRangeGauge } from '@prairielearn/opentelemetry';
+import { metrics, createObservableValueGauges } from '@prairielearn/opentelemetry';
 
 const meter = metrics.getMeter('meter-name');
-createObservableRangeGauge(
+createObservableValueGauges(
   meter,
   'db.pool.size',
   {
