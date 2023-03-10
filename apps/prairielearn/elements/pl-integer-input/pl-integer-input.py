@@ -62,19 +62,19 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if correct_answer is not None:
         if name in data["correct_answers"]:
             raise ValueError(f"Duplicate correct_answers variable name: {name}")
-        # Test conversion, but leave as string so proper value is shown on answer panel
         data["correct_answers"][name] = correct_answer
-
-    if correct_answer is None:
+    else:
         correct_answer = pl.from_json(data["correct_answers"].get(name, None))
-    if correct_answer is not None:
-        try:
-            if not isinstance(correct_answer, int):
-                correct_answer = int(str(correct_answer), base)
-        except Exception:
-            raise ValueError(
-                f"Correct answer is not a valid base {base} integer: {correct_answer}"
-            )
+
+
+    # Test conversion, but leave as string so proper value is shown on answer panel
+    try:
+        if not isinstance(correct_answer, int):
+            correct_answer = int(str(correct_answer), base)
+    except Exception:
+        raise ValueError(
+            f"Correct answer is not a valid base {base} integer: {correct_answer}"
+        )
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -224,7 +224,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     if a_sub.strip() == "":
         if pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT):
-            a_sub = str(pl.get_integer_attrib(element, "blank-value", BLANK_VALUE_DEFAULT))
+            a_sub = str(
+                pl.get_integer_attrib(element, "blank-value", BLANK_VALUE_DEFAULT)
+            )
         else:
             opts = {
                 "format_error": True,
@@ -257,12 +259,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         return
 
     data["submitted_answers"][name] = a_sub
-
-
-    #elif not is_within_limits(a_sub_parsed):
-    #    data["submitted_answers"][name] = a_sub
-    #else:
-    #    data["submitted_answers"][name] = pl.to_json(a_sub_parsed)
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
