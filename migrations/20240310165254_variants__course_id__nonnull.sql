@@ -6,9 +6,17 @@ ADD CONSTRAINT variants_course_id_not_null CHECK (course_id IS NOT NULL) NOT VAL
 
 ALTER TABLE variants VALIDATE CONSTRAINT variants_course_id_not_null;
 
-ALTER TABLE variants -- TODO: add an IF statement to only run this if the prior statment succeeds?
-ALTER COLUMN course_id
-SET NOT NULL;
+DO $$
+BEGIN
+    IF (SELECT convalidated FROM pg_constraint WHERE conname = 'variants_course_id_not_null') THEN
+        ALTER TABLE variants
+        ALTER COLUMN course_id
+        SET NOT NULL;
+    ELSE
+        RAISE EXCEPTION 'NULL Rows exist in column, unable to add NOT NULL constraint';
+    END IF;
+END;
+$$;
 
 ALTER TABLE variants
 DROP CONSTRAINT variants_course_id_not_null;
