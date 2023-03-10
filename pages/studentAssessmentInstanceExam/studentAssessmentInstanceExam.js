@@ -4,7 +4,7 @@ const express = require('express');
 const router = express.Router();
 const _ = require('lodash');
 
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const assessment = require('../../lib/assessment');
 const studentAssessmentInstance = require('../shared/studentAssessmentInstance');
 const sqldb = require('@prairielearn/postgres');

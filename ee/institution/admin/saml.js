@@ -3,7 +3,7 @@ const { Router } = require('express');
 const asyncHandler = require('express-async-handler');
 const pem = require('pem');
 
-const error = require('../../../prairielib/error');
+const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 const { InstitutionAdminSaml } = require('./saml.html');
 const {

@@ -5,7 +5,7 @@ const router = express.Router();
 const AWS = require('aws-sdk');
 
 const config = require('../../lib/config');
-const error = require('../../prairielib/error');
+const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 
 const sql = sqldb.loadSqlEquiv(__filename);

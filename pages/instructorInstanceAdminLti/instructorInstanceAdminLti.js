@@ -4,7 +4,7 @@ var express = require('express');
 var router = express.Router();
 
 const { getCourseOwners } = require('../../lib/course');
-var error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 var sqldb = require('@prairielearn/postgres');
 
 var sql = sqldb.loadSqlEquiv(__filename);
