@@ -166,6 +166,22 @@ describe('workspaceHost utilities', function () {
 
       const recaptured = await workspaceHostUtils.recaptureDrainingWorkspaceHosts(2);
       assert.equal(recaptured, 2);
+
+      const hostLogs1 = await getWorkspaceHostLogs(1);
+      assert.lengthOf(hostLogs1, 1);
+      assert.equal(hostLogs1[0].state, 'ready');
+      assert.equal(hostLogs1[0].message, 'Recaptured draining host');
+
+      const hostLogs2 = await getWorkspaceHostLogs(2);
+      assert.lengthOf(hostLogs2, 1);
+      assert.equal(hostLogs2[0].state, 'ready');
+      assert.equal(hostLogs2[0].message, 'Recaptured draining host');
+
+      const hostLogs3 = await getWorkspaceHostLogs(3);
+      assert.lengthOf(hostLogs3, 0);
+
+      const hostLogs4 = await getWorkspaceHostLogs(4);
+      assert.lengthOf(hostLogs4, 0);
     });
 
     it("doesn't recapture a host that is not draining", async () => {
@@ -199,6 +215,20 @@ describe('workspaceHost utilities', function () {
       assert.equal(host2.state, 'draining');
       assert.equal(host3.state, 'ready');
       assert.equal(host4.state, 'ready');
+
+      const hostLogs1 = await getWorkspaceHostLogs(1);
+      assert.lengthOf(hostLogs1, 1);
+      assert.equal(hostLogs1[0].message, 'Draining extra host');
+
+      const hostLogs2 = await getWorkspaceHostLogs(2);
+      assert.lengthOf(hostLogs2, 1);
+      assert.equal(hostLogs2[0].message, 'Draining extra host');
+
+      const hostLogs3 = await getWorkspaceHostLogs(3);
+      assert.lengthOf(hostLogs3, 0);
+
+      const hostLogs4 = await getWorkspaceHostLogs(4);
+      assert.lengthOf(hostLogs4, 0);
     });
   });
 
@@ -207,18 +237,25 @@ describe('workspaceHost utilities', function () {
       const host = await insertWorkspaceHost(1, 'draining');
 
       const hosts = await workspaceHostUtils.findTerminableWorkspaceHosts(0, 0);
+      const hostLogs = await getWorkspaceHostLogs(1);
 
       assert.lengthOf(hosts, 1);
       assert.isDefined(hosts.find((h) => h.instance_id === host.instance_id));
+
+      assert.lengthOf(hostLogs, 1);
+      assert.equal(hostLogs[0].message, 'Terminating host');
     });
 
     it('marks unhealthy host with zero load as terminating', async () => {
-      const host1 = await insertWorkspaceHost(1, 'unhealthy');
+      const host = await insertWorkspaceHost(1, 'unhealthy');
 
       const hosts = await workspaceHostUtils.findTerminableWorkspaceHosts(0, 0);
-
       assert.lengthOf(hosts, 1);
-      assert.isDefined(hosts.find((h) => h.instance_id === host1.instance_id));
+      assert.isDefined(hosts.find((h) => h.instance_id === host.instance_id));
+
+      const hostLogs = await getWorkspaceHostLogs(1);
+      assert.lengthOf(hostLogs, 1);
+      assert.equal(hostLogs[0].message, 'Terminating host');
     });
 
     it('marks unhealthy host that exceeded timeout as terminating', async () => {
@@ -234,13 +271,19 @@ describe('workspaceHost utilities', function () {
         { id: host2.id }
       );
 
-      const hosts = await workspaceHostUtils.findTerminableWorkspaceHosts(60, 0);
-
-      // Only the first host should have been terminated; the second one hasn't
+      // Only the first host should be terminated; the second one hasn't
       // exceeded the unhealthy timeout yet.
+      const hosts = await workspaceHostUtils.findTerminableWorkspaceHosts(60, 0);
       assert.lengthOf(hosts, 1);
       assert.isDefined(hosts.find((h) => h.instance_id === host1.instance_id));
       assert.isUndefined(hosts.find((h) => h.instance_id === host2.instance_id));
+
+      const hostLogs1 = await getWorkspaceHostLogs(1);
+      assert.lengthOf(hostLogs1, 1);
+      assert.equal(hostLogs1[0].message, 'Terminating host');
+
+      const hostLogs2 = await getWorkspaceHostLogs(2);
+      assert.lengthOf(hostLogs2, 0);
     });
 
     it('marks launching host that exceeded timeout as terminating', async () => {
@@ -256,21 +299,30 @@ describe('workspaceHost utilities', function () {
         { id: host2.id }
       );
 
-      const hosts = await workspaceHostUtils.findTerminableWorkspaceHosts(0, 60);
-
-      // Only the first host should have been terminated; the second one hasn't
+      // Only the first host should be terminated; the second one hasn't
       // exceeded the launching timeout yet.
+      const hosts = await workspaceHostUtils.findTerminableWorkspaceHosts(0, 60);
       assert.lengthOf(hosts, 1);
       assert.isDefined(hosts.find((h) => h.instance_id === host1.instance_id));
       assert.isUndefined(hosts.find((h) => h.instance_id === host2.instance_id));
+
+      const hostLogs1 = await getWorkspaceHostLogs(1);
+      assert.lengthOf(hostLogs1, 1);
+      assert.equal(hostLogs1[0].message, 'Terminating host');
+
+      const hostLogs2 = await getWorkspaceHostLogs(2);
+      assert.lengthOf(hostLogs2, 0);
     });
 
     it('returns already-terminating hosts', async () => {
       await insertWorkspaceHost(1, 'terminating');
 
       const hosts = await workspaceHostUtils.findTerminableWorkspaceHosts(0, 0);
-
       assert.lengthOf(hosts, 1);
+
+      // This host was already terminating, so there shouldn't be any logs.
+      const hostLogs = await getWorkspaceHostLogs(1);
+      assert.lengthOf(hostLogs, 0);
     });
   });
 
@@ -285,10 +337,11 @@ describe('workspaceHost utilities', function () {
       const workspace2 = await insertWorkspace(2, 2);
       const workspace3 = await insertWorkspace(3, 3);
 
-      const instanceIds = [host1.instance_id, host2.instance_id, host3.instance_id];
-      const workspaces = await workspaceHostUtils.terminateWorkspaceHostsIfNotLaunching(
-        instanceIds
-      );
+      const workspaces = await workspaceHostUtils.terminateWorkspaceHostsIfNotLaunching([
+        host1.instance_id,
+        host2.instance_id,
+        host3.instance_id,
+      ]);
 
       // Only the workspaces on hosts 2 and 3 should have been stopped;
       // host 1 is still launching.
