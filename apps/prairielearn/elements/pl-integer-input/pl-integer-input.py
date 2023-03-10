@@ -25,6 +25,8 @@ SHOW_HELP_TEXT_DEFAULT = True
 ALLOW_BLANK_DEFAULT = False
 BLANK_VALUE_DEFAULT = 0
 BASE_DEFAULT = 10
+SHOW_SCORE_DEFAULT = True
+
 INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-integer-input.mustache"
 
 
@@ -43,6 +45,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "allow-blank",
         "blank-value",
         "placeholder",
+        "show-score",
     ]
 
     pl.check_attribs(element, required_attribs, optional_attribs)
@@ -81,6 +84,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     size = pl.get_integer_attrib(element, "size", SIZE_DEFAULT)
     base = pl.get_integer_attrib(element, "base", BASE_DEFAULT)
     show_info = pl.get_boolean_attrib(element, "show-help-text", SHOW_HELP_TEXT_DEFAULT)
+    show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
 
     if data["panel"] == "question":
         editable = data["editable"]
@@ -121,7 +125,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         score = data["partial_scores"].get(name, {"score": None}).get("score", None)
 
-        if score is not None:
+        if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
@@ -170,7 +174,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         score = data["partial_scores"].get(name, {"score": None}).get("score", None)
 
-        if score is not None:
+        if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
@@ -251,9 +255,10 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             ).strip()
         data["format_errors"][name] = format_str
         data["submitted_answers"][name] = None
-        return
-
-    data["submitted_answers"][name] = a_sub
+    elif not pl.is_within_limits(a_sub_parsed):
+        data["submitted_answers"][name] = a_sub
+    else:
+        data["submitted_answers"][name] = a_sub_parsed
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:

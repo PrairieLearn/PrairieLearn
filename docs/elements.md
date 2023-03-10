@@ -531,7 +531,8 @@ def generate(data):
 | `display`        | "block" or "inline" | "inline" | How to display the input field.                                                                                                                              |
 | `size`           | integer             | 35       | Size of the input box.                                                                                                                                       |
 | `show-help-text` | boolean             | true     | Show the question mark at the end of the input displaying required input parameters.                                                                         |
-| `placeholder`    | string              | None     | Custom placeholder text. If not set, defaults to "integer" if `base` is 10, otherwise "integer in base <base>".                                              |
+| `placeholder`    | string              | None     | Custom placeholder text. If not set, defaults to "integer" if `base` is 10, otherwise "integer in base `base`".                                              |
+| `show-score`     | boolean             | true     | Whether to show the score badge next to this element.                                                                                                        |
 
 #### Specifying a non-trivial base
 
