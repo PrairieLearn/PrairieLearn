@@ -304,7 +304,7 @@ module.exports.initExpress = function () {
       logger.error(`Error proxying workspace request: ${err}`, {
         err,
         url: req.url,
-        originalUrl: req.url,
+        originalUrl: req.originalUrl,
       });
       // Check to make sure we weren't already in the middle of sending a
       // response before replying with an error 500
@@ -338,7 +338,7 @@ module.exports.initExpress = function () {
   app.use('/pl/workspace/:workspace_id/container', [
     cookieParser(),
     (req, res, next) => {
-      // Needed for workspaceAuthRouter and `selectAndValidateWorkspace` middleware.
+      // Needed for workspaceAuthRouter.
       res.locals.workspace_id = req.params.workspace_id;
       next();
     },
