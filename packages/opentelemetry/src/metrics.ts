@@ -124,7 +124,7 @@ export async function createObservableRangeGauge(
   const intervalId = setInterval(() => {
     Promise.resolve(observe())
       .then((value) => {
-        min = Math.min(min, value);
+        min = (count == 0 ? value : Math.min(min, value));
         max = Math.max(max, value);
         sum += value;
         count += 1;
