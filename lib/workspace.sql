@@ -145,10 +145,9 @@ WITH
       *
   )
 INSERT INTO
-  workspace_logs (date, workspace_id, version, state, message)
+  workspace_logs (workspace_id, version, state, message)
 VALUES
   (
-    now(),
     $workspace_id,
     (
       SELECT
@@ -173,10 +172,9 @@ WITH
       w.version
   )
 INSERT INTO
-  workspace_logs (date, workspace_id, version, message)
+  workspace_logs (workspace_id, version, message)
 VALUES
   (
-    now(),
     $workspace_id,
     (
       SELECT

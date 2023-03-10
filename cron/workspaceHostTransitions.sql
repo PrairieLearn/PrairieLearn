@@ -72,12 +72,11 @@ WITH
       w.*
   )
 INSERT INTO
-  workspace_logs (date, workspace_id, version, state, message)
+  workspace_logs (workspace_id, version, state, message)
 SELECT
-  now(),
   tw.id,
   tw.version,
   tw.state,
-  'Host was terminated'
+  'Host instance was not found'
 FROM
   terminated_workspaces AS tw;
