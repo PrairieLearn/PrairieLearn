@@ -1755,6 +1755,7 @@ For a full implementation, check out the `edge-inc-matrix` extension in the exam
 
 #### See also
 
+- [External: the DOT language reference](https://graphviz.org/doc/info/lang.html)
 - [`pl-figure` for displaying static or dynamically generated graphics.](#pl-figure-element)
 - [`pl-file-download` for allowing either static or dynamically generated files to be downloaded.](#pl-file-download-element)
 
