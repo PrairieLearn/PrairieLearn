@@ -1,17 +1,7 @@
 {
   "controller": "pl-graph.py",
   "dependencies": {
-    "nodeModulesScripts": [
-      "viz.js/viz.js"
-    ],
-    "elementScripts": [
-      "pl-graph.js"
-    ],
-    "elementStyles": [
-      "pl-graph.css"
-    ]
+    "elementStyles": ["pl-graph.css"]
   },
-  "additionalNames": [
-    "pl-graphviz-render"
-  ]
+  "additionalNames": ["pl-graphviz-render"]
 }
