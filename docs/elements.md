@@ -1981,7 +1981,7 @@ Displays question content within a card-styled component. Optionally displays a 
 | `img-top-alt`    | string | -       | Alternative text for the top image      |
 | `img-bottom-src` | string | -       | Source URL for the bottom image         |
 | `img-bottom-alt` | string | -       | Alternative text for the bottom image   |
-| `width`          | string | auto    | Width of the card (25%, 50%, 75%, auto) |
+| `width`          |"25%", "50%", "75%", or "auto" | auto    | Width of the card |
 
 #### Details
 
