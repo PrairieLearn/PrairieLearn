@@ -137,7 +137,11 @@ export async function createObservableRangeGauge(
 
   const minGauge = getObservableGauge(meter, `${name}.min`, metricOptions);
   const maxGauge = getObservableGauge(meter, `${name}.max`, metricOptions);
-  const averageGauge = getObservableGauge(meter, `${name}.avg`, metricOptions);
+  const averageGauge = getObservableGauge(meter, `${name}.avg`, {
+    ...metricOptions,
+    // Average is always a double, even if the observed value is an int.
+    valueType: ValueType.DOUBLE,
+  });
 
   minGauge.addCallback((observableResult) => {
     observableResult.observe(min);

@@ -1772,7 +1772,7 @@ module.exports.startServer = async () => {
   const meter = opentelemetry.metrics.getMeter('prairielearn');
 
   const connectionCounter = opentelemetry.getCounter(meter, 'http.connections', {
-    unit: opentelemetry.ValueType.INT,
+    valueType: opentelemetry.ValueType.INT,
   });
   server.on('connection', () => connectionCounter.add(1));
 
@@ -1780,7 +1780,7 @@ module.exports.startServer = async () => {
     meter,
     'http.connections.active',
     {
-      unit: opentelemetry.ValueType.INT,
+      valueType: opentelemetry.ValueType.INT,
       interval: 1000,
     },
     () => {
@@ -2024,7 +2024,7 @@ if (config.startServer) {
             meter,
             `postgres.pool.${name}.total`,
             {
-              unit: opentelemetry.ValueType.INT,
+              valueType: opentelemetry.ValueType.INT,
               interval: 1000,
             },
             () => pool.totalCount
@@ -2034,7 +2034,7 @@ if (config.startServer) {
             meter,
             `postgres.pool.${name}.idle`,
             {
-              unit: opentelemetry.ValueType.INT,
+              valueType: opentelemetry.ValueType.INT,
               interval: 1000,
             },
             () => pool.idleCount
@@ -2044,7 +2044,7 @@ if (config.startServer) {
             meter,
             `postgres.pool.${name}.waiting`,
             {
-              unit: opentelemetry.ValueType.INT,
+              valueType: opentelemetry.ValueType.INT,
               interval: 1000,
             },
             () => pool.waitingCount
