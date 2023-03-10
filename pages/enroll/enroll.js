@@ -5,7 +5,7 @@ var router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-var error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 var sqldb = require('@prairielearn/postgres');
 
 var sql = sqldb.loadSqlEquiv(__filename);
