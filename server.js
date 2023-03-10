@@ -340,11 +340,6 @@ module.exports.initExpress = function () {
     (req, res, next) => {
       // Needed for workspaceAuthRouter.
       res.locals.workspace_id = req.params.workspace_id;
-
-      // Needed for logs; this will retain the original URL if we end up
-      // rewriting the URL in `pathRewrite` above.
-      req.originalUrl = req.url;
-
       next();
     },
     workspaceAuthRouter,
