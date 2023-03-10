@@ -125,6 +125,8 @@ export class PostgresPool {
    */
   private alsClient: AsyncLocalStorage<pg.PoolClient> = new AsyncLocalStorage();
   private searchSchema: string | null = null;
+  /** Tracks the total number of queries executed by this pool. */
+  private _queryCount = 0;
 
   /**
    * Creates a new connection pool and attempts to connect to the database.
@@ -262,6 +264,7 @@ export class PostgresPool {
     sql: string,
     params: Params
   ): Promise<pg.QueryResult> {
+    this._queryCount += 1;
     debug('queryWithClient()', 'sql:', debugString(sql));
     debug('queryWithClient()', 'params:', debugParams(params));
     const { processedSql, paramsArray } = paramsToArray(sql, params);
@@ -882,4 +885,24 @@ export class PostgresPool {
    * Generate, set, and return a random schema name.
    */
   setRandomSearchSchema = callbackify(this.setRandomSearchSchemaAsync);
+
+  /** The number of established connections. */
+  get totalCount() {
+    return this.pool?.totalCount ?? 0;
+  }
+
+  /** The number of idle connections. */
+  get idleCount() {
+    return this.pool?.idleCount ?? 0;
+  }
+
+  /** The number of queries waiting for a connection to become available. */
+  get waitingCount() {
+    return this.pool?.waitingCount ?? 0;
+  }
+
+  /** The total number of queries that have been executed by this pool. */
+  get queryCount() {
+    return this._queryCount;
+  }
 }
