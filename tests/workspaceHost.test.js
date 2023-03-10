@@ -22,6 +22,7 @@ const WorkspaceHostLogsSchema = z.object({
 
 const WorkspaceSchema = z.object({
   id: z.string(),
+  state: z.string(),
   workspace_host_id: z.string().nullable(),
 });
 
@@ -37,11 +38,16 @@ async function insertWorkspaceHost(id, state = 'launching') {
   );
 }
 
-async function insertWorkspace(id) {
-  await sqldb.queryAsync('INSERT INTO workspaces (id, state) VALUES ($id, $state);', {
-    id,
-    state: 'launching',
-  });
+async function insertWorkspace(id, hostId = null) {
+  return sqldb.queryValidatedOneRow(
+    'INSERT INTO workspaces (id, state, workspace_host_id) VALUES ($id, $state, $workspace_host_id) RETURNING *;',
+    {
+      id,
+      state: 'launching',
+      workspace_host_id: hostId,
+    },
+    WorkspaceSchema
+  );
 }
 
 async function selectWorkspaceHost(id) {
@@ -241,6 +247,36 @@ describe('workspaceHost utilities', function () {
       const hosts = await workspaceHostUtils.findTerminableWorkspaceHosts(0, 0);
 
       assert.lengthOf(hosts, 1);
+    });
+  });
+
+  describe('terminateWorkspaceHostsIfNotLaunching', () => {
+    it('terminates hosts that are not launching', async () => {
+      const host1 = await insertWorkspaceHost(1, 'launching');
+      const host2 = await insertWorkspaceHost(2, 'ready');
+      const host3 = await insertWorkspaceHost(3, 'unhealthy');
+
+      // Place a workspace on each host.
+      const workspace1 = await insertWorkspace(1, 1);
+      const workspace2 = await insertWorkspace(2, 2);
+      const workspace3 = await insertWorkspace(3, 3);
+
+      const instanceIds = [host1.instance_id, host2.instance_id, host3.instance_id];
+      const workspaces = await workspaceHostUtils.terminateWorkspaceHostsIfNotLaunching(
+        instanceIds
+      );
+
+      assert.lengthOf(workspaces, 2);
+
+      // Only the workspaces on hosts 2 and 3 should have been stopped;
+      // host 1 is still launching.
+      assert.isUndefined(workspaces.find((w) => w.workspace_id === workspace1.id));
+      assert.isDefined(
+        workspaces.find((w) => w.workspace_id === workspace2.id && w.state === 'stopped')
+      );
+      assert.isDefined(
+        workspaces.find((w) => w.workspace_id === workspace3.id && w.state === 'stopped')
+      );
     });
   });
 });

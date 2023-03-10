@@ -219,3 +219,58 @@ SELECT
   instance_id
 FROM
   terminable_hosts;
+
+-- BLOCK terminate_hosts_if_not_launching
+WITH
+  terminated_workspace_hosts AS (
+    UPDATE workspace_hosts AS wh
+    SET
+      state = 'terminated',
+      terminated_at = NOW()
+    WHERE
+      wh.instance_id IN (
+        SELECT
+          UNNEST($instance_ids)
+      )
+      AND wh.state != 'launching'
+    RETURNING
+      wh.id,
+      wh.state
+  ),
+  logs AS (
+    INSERT INTO
+      workspace_host_logs (workspace_host_id, state, message)
+    SELECT
+      wh.id,
+      wh.state,
+      'Host instance was not found'
+    FROM
+      terminated_workspace_hosts AS wh
+  ),
+  terminated_workspaces AS (
+    UPDATE workspaces AS w
+    SET
+      state = 'stopped',
+      stopped_at = NOW(),
+      state_updated_at = NOW()
+    FROM
+      terminated_workspace_hosts AS twh
+    WHERE
+      twh.id = w.workspace_host_id
+      AND w.state != 'stopped'
+    RETURNING
+      w.*
+  )
+INSERT INTO
+  workspace_logs (workspace_id, version, state, message)
+SELECT
+  tw.id,
+  tw.version,
+  tw.state,
+  'Host instance was not found'
+FROM
+  terminated_workspaces AS tw
+RETURNING
+  workspace_id,
+  state,
+  message;
