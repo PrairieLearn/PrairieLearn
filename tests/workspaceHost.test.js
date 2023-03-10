@@ -44,6 +44,14 @@ async function insertWorkspace(id) {
   });
 }
 
+async function selectWorkspaceHost(id) {
+  return sqldb.queryValidatedOneRow(
+    'SELECT * FROM workspace_hosts WHERE id = $id;',
+    { id },
+    WorkspaceHostSchema
+  );
+}
+
 async function selectWorkspace(id) {
   return sqldb.queryValidatedOneRow(
     'SELECT * FROM workspaces WHERE id = $id;',
@@ -139,6 +147,28 @@ describe('workspaceHost utilities', function () {
 
       const recaptured = await workspaceHostUtils.recaptureDrainingWorkspaceHosts(1);
       assert.equal(recaptured, 0);
+    });
+  });
+
+  describe('drainExtraWorkspaceHosts', () => {
+    it('drains the specified number of hosts', async () => {
+      await insertWorkspaceHost(1, 'ready');
+      await insertWorkspaceHost(2, 'ready');
+      await insertWorkspaceHost(3, 'ready');
+      await insertWorkspaceHost(4, 'ready');
+
+      await workspaceHostUtils.drainExtraWorkspaceHosts(2);
+
+      const host1 = await selectWorkspaceHost('1');
+      const host2 = await selectWorkspaceHost('2');
+      const host3 = await selectWorkspaceHost('3');
+      const host4 = await selectWorkspaceHost('4');
+
+      // The oldest hosts should be marked as draining.
+      assert.equal(host1.state, 'draining');
+      assert.equal(host2.state, 'draining');
+      assert.equal(host3.state, 'ready');
+      assert.equal(host4.state, 'ready');
     });
   });
 });

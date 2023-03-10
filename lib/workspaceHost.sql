@@ -115,3 +115,40 @@ SELECT
   count(*) AS recaptured_hosts
 FROM
   updated_draining_hosts;
+
+-- BLOCK drain_extra_hosts
+WITH
+  extra_hosts AS (
+    SELECT
+      *
+    FROM
+      workspace_hosts AS wh
+    WHERE
+      wh.state = 'ready'
+    ORDER BY
+      wh.launched_at,
+      wh.id
+    LIMIT
+      $surplus
+  ),
+  updated_workspace_hosts AS (
+    UPDATE workspace_hosts AS wh
+    SET
+      state = 'draining',
+      state_changed_at = NOW()
+    FROM
+      extra_hosts AS e
+    WHERE
+      wh.id = e.id
+    RETURNING
+      wh.id,
+      wh.state
+  )
+INSERT INTO
+  workspace_host_logs (workspace_host_id, state, message)
+SELECT
+  wh.id,
+  wh.state,
+  'Draining extra host'
+FROM
+  updated_workspace_hosts AS wh;

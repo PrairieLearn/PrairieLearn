@@ -1,3 +1,4 @@
+// @ts-check
 const AWS = require('aws-sdk');
 const { callbackify } = require('util');
 const sqldb = require('@prairielearn/postgres');
@@ -178,6 +179,6 @@ async function handleWorkspaceAutoscaling(stats) {
     }
   } else if (desired_hosts < ready_hosts) {
     const surplus = ready_hosts - desired_hosts;
-    await sqldb.callAsync('workspace_hosts_drain_extra', [surplus]);
+    await workspaceHostUtils.drainExtraWorkspaceHosts(surplus);
   }
 }
