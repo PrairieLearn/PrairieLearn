@@ -2519,7 +2519,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/named-locks@workspace:packages/named-locks"
   dependencies:
-    "@prairielearn/postgres": ^1.2.0
+    "@prairielearn/postgres": ^1.3.0
     "@prairielearn/tsconfig": "*"
     "@types/node": ^18.14.2
     typescript: ^4.9.4
@@ -2562,7 +2562,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/postgres@^1.0.0, @prairielearn/postgres@^1.2.0, @prairielearn/postgres@workspace:packages/postgres":
+"@prairielearn/postgres@^1.0.0, @prairielearn/postgres@^1.2.0, @prairielearn/postgres@^1.3.0, @prairielearn/postgres@workspace:packages/postgres":
   version: 0.0.0-use.local
   resolution: "@prairielearn/postgres@workspace:packages/postgres"
   dependencies:
