@@ -17,7 +17,7 @@
         <td>History:</td>
         <td><%- include('../partials/questionAwardedPoints', {awarded_points: instance_question.variants_points_list, init_points: assessment_question.init_points});  %></td>
       </tr>
-      <% } else { %>
+      <% } else if (assessment_question.max_auto_points) { %>
       <tr>
         <td>Available points:</td>
         <td><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, currentWeight: instance_question.points_list_original[instance_question.number_attempts] - assessment_question.max_manual_points, points_list: instance_question.points_list.map((p) => (p - assessment_question.max_manual_points)), highest_submission_score: instance_question.highest_submission_score}); %></td>

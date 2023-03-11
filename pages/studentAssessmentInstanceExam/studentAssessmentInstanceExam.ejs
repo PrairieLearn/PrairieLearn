@@ -166,11 +166,11 @@
 
         <table class="table table-sm table-hover" data-testid="assessment-questions">
           <thead>
-            <% if (has_auto_grading_question && has_manual_grading_question) { %>
+            <% if (has_auto_grading_question && has_manual_grading_question && assessment.allow_real_time_grading) { %>
             <tr>
               <th rowspan="2">Question</th>
               <th class="text-center" rowspan="2">Submission status</th>
-              <th class="text-center" colspan="<%= assessment.allow_real_time_grading ? 3 : 1 %>">Auto-grading</th>
+              <th class="text-center" colspan="3">Auto-grading</th>
               <th class="text-center" rowspan="2">Manual grading points</th>
               <th class="text-center" rowspan="2">Total points</th>
             </tr>
@@ -193,6 +193,10 @@
                 Awarded points
                 <%- include('../partials/examQuestionHelpAwardedPoints'); %>
               </th>
+            <% } else if (has_auto_grading_question && has_manual_grading_question) { %>
+              <th class="text-center">Auto-grading points</th>
+              <th class="text-center">Manual grading points</th>
+              <th class="text-center">Total points</th>
             <% } else { %>
               <th class="text-center">Points</th>
             <% } %>

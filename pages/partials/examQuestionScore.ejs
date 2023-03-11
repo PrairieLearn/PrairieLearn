@@ -1,5 +1,5 @@
 <span class="align-middle">
-  <% if (!['correct', 'incorrect', 'complete'].includes(instance_question.status)) { %>
+  <% if (!['correct', 'incorrect', 'complete'].includes(instance_question.status) || (!instance_question.max_auto_points && instance_question.max_manual_points)) { %>
     &mdash;
   <% } else if (instance_question.highest_submission_score >= 1) { %>
   <span class="badge badge-success"><%= Math.floor(instance_question.highest_submission_score * 100) %>%</span>
