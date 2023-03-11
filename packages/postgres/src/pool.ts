@@ -1,10 +1,13 @@
 import _ from 'lodash';
 import pg, { QueryResult } from 'pg';
+import Cursor from 'pg-cursor';
 import path from 'node:path';
 import debugFactory from 'debug';
 import { callbackify } from 'node:util';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { z } from 'zod';
+
+import { iterateCursor, iterateValidatedCursor } from './cursor';
 
 type Params = Record<string, any> | any[];
 
@@ -112,6 +115,17 @@ function escapeIdentifier(identifier: string): string {
   // https://github.com/brianc/node-postgres/issues/1978
   // https://www.postgresql.org/docs/12/sql-syntax-lexical.html
   return pg.Client.prototype.escapeIdentifier(identifier);
+}
+
+function enhanceError(err: Error, sql: string, params: Params): Error {
+  // TODO: why do we do this?
+  const sqlError = JSON.parse(JSON.stringify(err));
+  sqlError.message = err.message;
+  return addDataToError(err, {
+    sqlError: sqlError,
+    sql: sql,
+    sqlParams: params,
+  });
 }
 
 export class PostgresPool {
@@ -274,14 +288,7 @@ export class PostgresPool {
       debug('queryWithClient() success', 'rowCount:', result.rowCount);
       return result;
     } catch (err: any) {
-      // TODO: why do we do this?
-      const sqlError = JSON.parse(JSON.stringify(err));
-      sqlError.message = err.message;
-      throw addDataToError(err, {
-        sqlError: sqlError,
-        sql: sql,
-        sqlParams: params,
-      });
+      throw enhanceError(err, sql, params);
     }
   }
 
@@ -828,6 +835,48 @@ export class PostgresPool {
       return null;
     } else {
       return model.parse(results.rows[0]);
+    }
+  }
+
+  async queryCursorWithClient(
+    client: pg.PoolClient,
+    sql: string,
+    params: Record<string, any>
+  ): Promise<Cursor> {
+    this._queryCount += 1;
+    debug('queryCursorWithClient()', 'sql:', debugString(sql));
+    debug('queryCursorWithClient()', 'params:', debugParams(params));
+    const { processedSql, paramsArray } = paramsToArray(sql, params);
+    lastQueryMap.set(client, processedSql);
+    return client.query(new Cursor(processedSql, paramsArray));
+  }
+
+  async *queryCursor(sql: string, params: Record<string, any>, batchSize: number) {
+    const client = await this.getClientAsync();
+    const cursor = await this.queryCursorWithClient(client, sql, params);
+    try {
+      yield* iterateCursor(cursor, batchSize);
+    } catch (err: any) {
+      throw enhanceError(err, sql, params);
+    } finally {
+      client.release();
+    }
+  }
+
+  async *queryValidatedCursor<Model extends z.ZodTypeAny>(
+    sql: string,
+    params: Params,
+    batchSize: number,
+    model: Model
+  ) {
+    const client = await this.getClientAsync();
+    const cursor = await this.queryCursorWithClient(client, sql, params);
+    try {
+      yield* iterateValidatedCursor(cursor, batchSize, model);
+    } catch (err: any) {
+      throw enhanceError(err, sql, params);
+    } finally {
+      client.release();
     }
   }
 

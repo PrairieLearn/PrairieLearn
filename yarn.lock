@@ -2571,7 +2571,9 @@ __metadata:
     "@types/lodash": ^4.14.191
     "@types/mocha": ^10.0.1
     "@types/node": ^18.14.2
+    "@types/pg-cursor": ^2.7.0
     mocha: ^10.2.0
+    pg-cursor: ^2.9.0
     ts-node: ^10.9.1
     typescript: ^4.9.4
     zod: ^3.20.6
@@ -3249,6 +3251,16 @@ __metadata:
   dependencies:
     "@types/node": "*"
   checksum: af5ff69ebf533c1fc464b14da63ada3d124aa67858a9443e7504a8da063693454b3705312d48fa228e9ae39da4bb04155e7781528dab0f6a226effa25e20a146
+  languageName: node
+  linkType: hard
+
+"@types/pg-cursor@npm:^2.7.0":
+  version: 2.7.0
+  resolution: "@types/pg-cursor@npm:2.7.0"
+  dependencies:
+    "@types/node": "*"
+    "@types/pg": "*"
+  checksum: 8d22a3aa22ab553097781842d8340c9ac19ddc02e99a14744883f95b7392871e3e16f4571259a87c3e90c8a89e8bc1537c4eff47d9caff173dbd506df28a5281
   languageName: node
   linkType: hard
 
@@ -11215,6 +11227,15 @@ __metadata:
   version: 2.5.0
   resolution: "pg-connection-string@npm:2.5.0"
   checksum: a6f3a068f7c9416a5b33a326811caf0dfaaee045c225b7c628b4c9b4e9a2b25bdd12a21e4c48940e1000ea223a4e608ca122d2ff3dd08c8b1db0fc9f5705133a
+  languageName: node
+  linkType: hard
+
+"pg-cursor@npm:^2.9.0":
+  version: 2.9.0
+  resolution: "pg-cursor@npm:2.9.0"
+  peerDependencies:
+    pg: ^8
+  checksum: 8f83c6b35ecee707c220288577cc864484c4c4fb08e9d0bb6901d2dc376ab8966d4c4e5e58b9b4c551dcf0470182d0f9a0e37761f9eca3beeadea4c064835958
   languageName: node
   linkType: hard
 
