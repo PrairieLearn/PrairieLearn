@@ -19,7 +19,9 @@
     "@types/debug": "^4.1.7",
     "@types/lodash": "^4.14.191",
     "@types/pg-cursor": "^2.7.0",
+    "pg": "^8.10.0",
     "pg-cursor": "^2.9.0",
+    "pg-pool": "^3.6.0",
     "zod": "^3.20.6"
   }
 }
