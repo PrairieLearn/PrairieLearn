@@ -629,7 +629,7 @@ describe('Manual Grading', function () {
       );
     });
 
-    describe('Submit a grade using percentage', () => {
+    describe('Submit a grade using percentage (whole)', () => {
       step('submit a grade using percentage', async () => {
         setUser(mockStaff[2]);
         score_percent = 30;
@@ -641,7 +641,31 @@ describe('Manual Grading', function () {
       checkGradingResults(mockStaff[0], mockStaff[2]);
     });
 
-    describe('Submit a grade using points', () => {
+    describe('Submit a grade using percentage (float)', () => {
+      step('submit a grade using percentage', async () => {
+        setUser(mockStaff[2]);
+        score_percent = 20.5;
+        score_points = (score_percent * 6) / 100;
+        feedback_note = 'Test feedback note';
+        await submitGradeForm('percentage');
+      });
+
+      checkGradingResults(mockStaff[0], mockStaff[2]);
+    });
+
+    describe('Submit a grade using points (whole)', () => {
+      step('submit a grade using points', async () => {
+        setUser(mockStaff[1]);
+        score_points = 4;
+        score_percent = Math.round((score_points / 6) * 10000) / 100;
+        feedback_note = 'Test feedback note updated';
+        await submitGradeForm('points');
+      });
+
+      checkGradingResults(mockStaff[0], mockStaff[1]);
+    });
+
+    describe('Submit a grade using points (float)', () => {
       step('submit a grade using points', async () => {
         setUser(mockStaff[1]);
         score_points = 4.25;
