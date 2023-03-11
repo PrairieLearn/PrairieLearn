@@ -7,9 +7,11 @@ import { callbackify } from 'node:util';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { z } from 'zod';
 
-import { iterateCursor, iterateValidatedCursor } from './cursor';
+export type Params = Record<string, any> | any[];
 
-type Params = Record<string, any> | any[];
+export interface CursorIterator<T> {
+  iterate: (batchSize: number) => AsyncGenerator<T[]>;
+}
 
 const debug = debugFactory('prairielib:' + path.basename(__filename, '.js'));
 const lastQueryMap: WeakMap<pg.PoolClient, string> = new WeakMap();
@@ -697,7 +699,7 @@ export class PostgresPool {
    */
   async queryValidatedRows<Model extends z.ZodTypeAny>(
     query: string,
-    params: Record<string, any>,
+    params: Params,
     model: Model
   ): Promise<z.infer<Model>[]> {
     const results = await this.queryAsync(query, params);
@@ -710,7 +712,7 @@ export class PostgresPool {
    */
   async queryValidatedOneRow<Model extends z.ZodTypeAny>(
     query: string,
-    params: Record<string, any>,
+    params: Params,
     model: Model
   ): Promise<z.infer<Model>> {
     const results = await this.queryOneRowAsync(query, params);
@@ -724,7 +726,7 @@ export class PostgresPool {
    */
   async queryValidatedZeroOrOneRow<Model extends z.ZodTypeAny>(
     query: string,
-    params: Record<string, any>,
+    params: Params,
     model: Model
   ): Promise<z.infer<Model> | null> {
     const results = await this.queryZeroOrOneRowAsync(query, params);
@@ -742,7 +744,7 @@ export class PostgresPool {
    */
   async queryValidatedSingleColumnRows<Model extends z.ZodTypeAny>(
     query: string,
-    params: Record<string, any>,
+    params: Params,
     model: Model
   ): Promise<z.infer<Model>[]> {
     const results = await this.queryAsync(query, params);
@@ -761,7 +763,7 @@ export class PostgresPool {
    */
   async queryValidatedSingleColumnOneRow<Model extends z.ZodTypeAny>(
     query: string,
-    params: Record<string, any>,
+    params: Params,
     model: Model
   ): Promise<z.infer<Model>> {
     const results = await this.queryOneRowAsync(query, params);
@@ -779,7 +781,7 @@ export class PostgresPool {
    */
   async queryValidatedSingleColumnZeroOrOneRow<Model extends z.ZodTypeAny>(
     query: string,
-    params: Record<string, any>,
+    params: Params,
     model: Model
   ): Promise<z.infer<Model> | null> {
     const results = await this.queryZeroOrOneRowAsync(query, params);
@@ -838,11 +840,7 @@ export class PostgresPool {
     }
   }
 
-  async queryCursorWithClient(
-    client: pg.PoolClient,
-    sql: string,
-    params: Record<string, any>
-  ): Promise<Cursor> {
+  async queryCursorWithClient(client: pg.PoolClient, sql: string, params: Params): Promise<Cursor> {
     this._queryCount += 1;
     debug('queryCursorWithClient()', 'sql:', debugString(sql));
     debug('queryCursorWithClient()', 'params:', debugParams(params));
@@ -851,33 +849,41 @@ export class PostgresPool {
     return client.query(new Cursor(processedSql, paramsArray));
   }
 
-  async *queryCursor(sql: string, params: Record<string, any>, batchSize: number) {
-    const client = await this.getClientAsync();
-    const cursor = await this.queryCursorWithClient(client, sql, params);
-    try {
-      yield* iterateCursor(cursor, batchSize);
-    } catch (err: any) {
-      throw enhanceError(err, sql, params);
-    } finally {
-      client.release();
-    }
-  }
-
-  async *queryValidatedCursor<Model extends z.ZodTypeAny>(
+  async queryCursor<Model extends z.ZodTypeAny>(
     sql: string,
     params: Params,
-    batchSize: number,
-    model: Model
-  ) {
+    model?: Model
+  ): Promise<CursorIterator<z.infer<Model>>> {
     const client = await this.getClientAsync();
     const cursor = await this.queryCursorWithClient(client, sql, params);
-    try {
-      yield* iterateValidatedCursor(cursor, batchSize, model);
-    } catch (err: any) {
-      throw enhanceError(err, sql, params);
-    } finally {
-      client.release();
-    }
+
+    let iterateCalled = false;
+    return {
+      iterate: async function* (batchSize: number) {
+        if (iterateCalled) {
+          throw new Error('iterate() called multiple times');
+        }
+
+        try {
+          while (true) {
+            const rows = await cursor.read(batchSize);
+            if (rows.length === 0) {
+              break;
+            }
+
+            if (model) {
+              yield z.array(model).parse(rows);
+            } else {
+              yield rows;
+            }
+          }
+        } catch (err: any) {
+          throw enhanceError(err, sql, params);
+        } finally {
+          client.release();
+        }
+      },
+    };
   }
 
   /**
