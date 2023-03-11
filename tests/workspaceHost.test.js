@@ -99,6 +99,10 @@ describe('workspaceHost utilities', function () {
     await helperDb.before.call(this);
   });
 
+  after(async () => {
+    await helperDb.after.call(this);
+  });
+
   beforeEach(async () => {
     await sqldb.queryAsync('DELETE FROM workspaces;', {});
     await sqldb.queryAsync('DELETE FROM workspace_hosts;', {});
