@@ -2,7 +2,7 @@ import copy
 import os
 from enum import Enum
 from itertools import chain
-from typing import Any, cast
+from typing import Any
 
 import chevron
 import lxml.etree
@@ -20,7 +20,7 @@ class ParentDirectoryEnum(Enum):
 
 PARENT_DIRECTORY_CHOICE_DEFAULT = ParentDirectoryEnum.SERVER_FILES_COURSE
 SUBDIRECTORY_DEFAULT = ""
-WARN_UNDEFINED_DEFAULT = True
+WARN_UNDEFINED_DEFAULT = False
 TRIM_WHITESPACE_DEFAULT = True
 VALIDATE_OUTPUT_DEFAULT = True
 
@@ -50,7 +50,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     # Load in entries from data dict. Allows filling templates with entries from data['params'], for example.
-    variable_dict = cast(dict[str, Any], copy.deepcopy(data))
+    variable_dict: dict[str, Any] = {"params": copy.deepcopy(data["params"])}
     options_dict = data["options"]
 
     for child in element:
