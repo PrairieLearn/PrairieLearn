@@ -23,7 +23,7 @@ nav:
   - 'Creating content in the browser': 'getStarted.md'
   - 'Workshop': 'workshop/index.md'
 - User Guide:
-  - 'Installing and running PL locally': 'installing.md'
+  - 'Installing and running locally': 'installing.md'
   - 'Syncing course content': 'sync.md'
   - 'Course configuration': 'course.md'
   - 'Course instance configuration': 'courseInstance.md'
@@ -48,8 +48,8 @@ nav:
   - 'API': 'api.md'  
 - Developer Guide:
   - 'Developer guide': 'dev-guide.md'
-  - 'Installing with local source': 'installingLocal.md'
-  - 'Installing natively': 'installingNative.md'
+  - 'Running in Docker with local source': 'installingLocal.md'
+  - 'Running natively': 'installingNative.md'
   - 'Server configuration': 'configJson.md'
   - 'Question element writing': 'devElements.md'
   - 'Element extensions': 'elementExtensions.md'

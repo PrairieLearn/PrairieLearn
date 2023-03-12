@@ -1,23 +1,11 @@
 import ast
 from dataclasses import dataclass
-from typing import (
-    Any,
-    Callable,
-    Dict,
-    List,
-    Literal,
-    Optional,
-    Tuple,
-    Type,
-    TypedDict,
-    Union,
-    cast,
-)
+from typing import Any, Callable, Literal, Optional, Type, TypedDict, Union, cast
 
 import sympy
 
-SympyMapT = Dict[str, Union[Callable, sympy.Basic]]
-ASTWhitelistT = Tuple[Type[ast.AST], ...]
+SympyMapT = dict[str, Union[Callable, sympy.Basic]]
+ASTWhitelistT = tuple[Type[ast.AST], ...]
 
 
 class SympyJson(TypedDict):
@@ -25,7 +13,7 @@ class SympyJson(TypedDict):
 
     _type: Literal["sympy"]
     _value: str
-    _variables: List[str]
+    _variables: list[str]
 
 
 class LocalsForEval(TypedDict):
@@ -342,7 +330,7 @@ def evaluate(expr: str, locals_for_eval: LocalsForEval) -> sympy.Expr:
 
 def convert_string_to_sympy(
     expr: str,
-    variables: Optional[List[str]],
+    variables: Optional[list[str]],
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
@@ -448,7 +436,7 @@ def json_to_sympy(
 
 def validate_string_as_sympy(
     expr: str,
-    variables: Optional[List[str]],
+    variables: Optional[list[str]],
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
@@ -541,7 +529,7 @@ def validate_string_as_sympy(
     return None
 
 
-def get_variables_list(variables_string: Optional[str]) -> List[str]:
+def get_variables_list(variables_string: Optional[str]) -> list[str]:
     if variables_string is None:
         return []
 

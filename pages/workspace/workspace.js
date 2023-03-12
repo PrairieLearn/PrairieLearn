@@ -9,15 +9,13 @@ const config = require('../../lib/config');
 const workspaceHelper = require('../../lib/workspace');
 
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 
 const { Workspace } = require('./workspace.html');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', (_req, res, _next) => {
-  res.locals.workspaceHeartbeatIntervalSec = config.workspaceHeartbeatIntervalSec;
-
   let navTitle;
   if (res.locals.assessment == null) {
     // instructor preview
@@ -33,6 +31,8 @@ router.get('/', (_req, res, _next) => {
     Workspace({
       navTitle,
       showLogs: res.locals.authn_is_administrator || res.locals.authn_is_instructor,
+      heartbeatIntervalSec: config.workspaceHeartbeatIntervalSec,
+      visibilityTimeoutSec: config.workspaceVisibilityTimeoutSec,
       resLocals: res.locals,
     })
   );

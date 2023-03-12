@@ -36,17 +36,6 @@ BEGIN
     IF instance_question_id IS NOT NULL THEN
         PERFORM instance_questions_lock(instance_question_id);
 
-        -- This handles the race condition where we simultaneously start generating
-        -- two variants for the same instance question. If we're the second one
-        -- to try and insert a variant, just pull the existing variant back out of
-        -- the database and use that instead.
-        existing_variant := instance_questions_select_variant(instance_question_id, require_open);
-        IF existing_variant IS NOT NULL THEN
-            SELECT variants_select((existing_variant->>'id')::bigint, real_question_id, instance_question_id)
-            INTO variant;
-            RETURN;
-        END IF;
-
         SELECT           q.id,          g.id,    u.user_id,                  ai.id,                   ci.id
         INTO real_question_id, real_group_id, real_user_id, assessment_instance_id, real_course_instance_id
         FROM
@@ -62,6 +51,17 @@ BEGIN
             iq.id = instance_question_id;
 
         IF NOT FOUND THEN RAISE EXCEPTION 'instance_question not found'; END IF;
+
+        -- This handles the race condition where we simultaneously start generating
+        -- two variants for the same instance question. If we're the second one
+        -- to try and insert a variant, just pull the existing variant back out of
+        -- the database and use that instead.
+        existing_variant := instance_questions_select_variant(instance_question_id, require_open);
+        IF existing_variant IS NOT NULL THEN
+            SELECT variants_select((existing_variant->>'id')::bigint, real_question_id, instance_question_id)
+            INTO variant;
+            RETURN;
+        END IF;
 
         PERFORM instance_questions_ensure_open(instance_question_id);
         PERFORM assessment_instances_ensure_open(assessment_instance_id);

@@ -3,7 +3,7 @@ const express = require('express');
 const router = express.Router();
 const debug = require('debug')('prairielearn:instructorAssessment');
 
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const scoreUpload = require('../../lib/score-upload');
 const sqldb = require('@prairielearn/postgres');
 
