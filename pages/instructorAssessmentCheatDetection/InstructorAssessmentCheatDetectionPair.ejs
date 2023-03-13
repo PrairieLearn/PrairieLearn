@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    <%- include('../partials/head', {pageTitle: 'cheat_detection'}); %>
+    <%- include('../partials/head', {pageTitle: 'cheat_detection_pair'}); %>
     <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
     <script src="<%= node_modules_asset_path('d3/dist/d3.min.js') %>"></script>
     <script src="<%= asset_path('localscripts/histogram.js') %>"></script>
@@ -229,14 +229,11 @@
             let table_body = $("tbody#table-body");
 
             // append rows
-            //<a href="<%= urlPrefix %>/cheat_detection_pair/">cheat_detection_pair</a>
             for (let i=0; i<5; i++) {
-              console.log("<%= urlPrefix %>")
-              console.log("hello")
-
-              let tr = $("<tr role=\"row\" class=\"even\" data-href=\"" +window.location.href+ "_pair\"></tr>");   // localhost:3000/cheat_detection_pair             localhost:3000/pl/.....
+              let tr = $("<tr role=\"row\" class=\"even\" data-href=\"/pl/course_instance/2/instructor/assessment/30/file_view\"></tr>"); //original
+              //let tr = $("<tr role=\"row\" class=\"even\" data-href=\"<%= urlPrefix %>/cheat_detection_pair\"></tr>");   // localhost:3000/cheat_detection_pair             localhost:3000/pl/.....
               tr.append($("<td>"+(i+1)+"</td>"));
-              tr.append($("<td>"+"100%"+"</td>")); 
+              tr.append($("<td>"+"100%"+"</td>"));
               tr.append($("<td>"+data[i].student1+"</td>"));
               tr.append($("<td>"+data[i].student2+"</td>"));
               highlightSimilarityScore(data[i].rule1_prob, tr)
