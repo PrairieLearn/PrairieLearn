@@ -1,5 +1,5 @@
 import AWS from 'aws-sdk';
-import moment from 'moment';
+import { fromUnixTime, subHours, isBefore } from 'date-fns';
 import util from 'util';
 import { logger } from '@prairielearn/logger';
 
@@ -39,7 +39,7 @@ export async function setupDockerAuthAsync(
   if (
     dockerAuthData &&
     dockerAuthDataExpiresAt &&
-    moment().isBefore(moment(dockerAuthDataExpiresAt).subtract(1, 'hour'))
+    isBefore(new Date(), subHours(fromUnixTime(dockerAuthDataExpiresAt), 1))
   ) {
     logger.info('Using cached ECR authorization token');
     return dockerAuthData;
