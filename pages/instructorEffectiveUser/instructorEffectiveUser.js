@@ -11,7 +11,8 @@ var sqldb = require('@prairielearn/postgres');
 
 var sql = sqldb.loadSqlEquiv(__filename);
 
-const { formatISO, parseISO, isValid } = require('date-fns');
+const { parseISO, isValid } = require('date-fns');
+const { format, utcToZonedTime } = require('date-fns-tz');
 
 router.get('/', function (req, res, next) {
   if (
@@ -43,7 +44,20 @@ router.get('/', function (req, res, next) {
     if (res.locals.ipaddress.substr(0, 7) === '::ffff:') {
       res.locals.ipaddress = res.locals.ipaddress.substr(7);
     }
-    res.locals.req_date_for_display = formatISO(res.locals.req_date);
+    res.locals.true_req_date_for_display = format(
+      utcToZonedTime(res.locals.true_req_date, res.locals.course_instance.display_timezone),
+      "yyyy-MM-dd'T'HH:mm:ss.SSSxxx",
+      {
+        timeZone: res.locals.course_instance.display_timezone,
+      }
+    );
+    res.locals.req_date_for_display = format(
+      utcToZonedTime(res.locals.req_date, res.locals.course_instance.display_timezone),
+      "yyyy-MM-dd'T'HH:mm:ss.SSSxxx",
+      {
+        timeZone: res.locals.course_instance.display_timezone,
+      }
+    );
 
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   });
