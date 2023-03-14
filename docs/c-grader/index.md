@@ -332,13 +332,13 @@ If your application explicitly needs to keep any of the restricted environments 
 
 ### Identifying dangling pointers, memory leaks and similar issues
 
-A major concern when testing C/C++ code is to identify cases of memory leaks, use-after-free cases, access to memory out of bounds and similar issues. The [AddressSanitizer](https://github.com/google/sanitizers/wiki/AddressSanitizer) library can be used for this purpose in this autograder.
+A major concern when testing C/C++ code is to identify cases of dangling pointers and memory leaks. The [AddressSanitizer](https://github.com/google/sanitizers/wiki/AddressSanitizer) library can be used for this purpose in this autograder. In particular, it is able to detect: use-after-free and use-after-return; out-of-bounds access in heap, stack and global arrays; and memory leaks.
 
 To add this library to the code, add the following flags to the compilation code:
 
 ```python
 self.compile_file(...,
-    flags="-fsanitize=address -static-libasan -g")
+    flags="-fsanitize=address -static-libasan")
 ```
 
 By default, the flags above will cause the application to abort immediately when an invalid memory access is identified, or before exiting in case of memory leaks. If you are using the autograder workflow that checks the program's standard output, this functionality should capture the majority of cases, though you may want to include some reject strings that capture memory leaks.
