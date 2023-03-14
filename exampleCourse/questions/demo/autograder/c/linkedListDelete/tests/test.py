@@ -1,14 +1,10 @@
 #! /usr/bin/python3
-import math
-import sys
 
 import cgrader
-import sympy
 
 
 class TestGrader(cgrader.CGrader):
     def tests(self):
-
         self.test_compile_file(
             "deletefirst.c",
             "main",
