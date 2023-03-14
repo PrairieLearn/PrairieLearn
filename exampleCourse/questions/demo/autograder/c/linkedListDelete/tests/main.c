@@ -1,20 +1,9 @@
-/* #include <stdio.h> */
 #include <stdlib.h>
-/* #include <unistd.h> */
-/* #include <sys/types.h> */
-/* #include <sys/stat.h> */
-/* #include <fcntl.h> */
-/* #include <malloc.h> */
 #include <check.h>
 #include <time.h>
 #include <sanitizer/asan_interface.h>
 
 #include "list.h"
-
-int malloc_error_should_abort = 1;
-int num_errors = 0;
-
-const char* __asan_default_options() { return "detect_leaks=0"; }
 
 static void asan_abort_hook(const char *msg) {
   ck_abort_msg("Detected an error in the use of pointers and dynamic allocation. This is \n"
@@ -64,7 +53,11 @@ START_TEST(test_with_elements) {
                   i, original_values[i], nodes[i]->value);
     ck_assert_msg(nodes[i]->next == nodes[i+1],
                   "Next pointer of node at position %d has been modified.", i);
+    // Frees node to avoid a memory leak detected in the test
+    free(nodes[i]);
   }
+  // Frees list to avoid a memory leak detected in the test
+  free(list);
 }
 
 int main(int argc, char *argv[]) {

@@ -3,7 +3,6 @@
 struct node {
   int value;
   struct node *next;
-  int buncha_stuff[100];
 };
 
 struct list {
