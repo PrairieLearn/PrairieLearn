@@ -119,4 +119,4 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     language = "" if no_highlight else ' language="python"'
 
-    return f'<pl-code{language} copy_code_button="{copy_code_button}">{prefix}{var_string}{suffix}</pl-code>'
+    return f'<pl-code{language} copy-code-button="{copy_code_button}">{prefix}{var_string}{suffix}</pl-code>'
