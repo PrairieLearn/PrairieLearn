@@ -11,7 +11,7 @@ var sqldb = require('@prairielearn/postgres');
 
 var sql = sqldb.loadSqlEquiv(__filename);
 
-const moment = require('moment');
+const { formatISO, parseISO, isValid } = require('date-fns');
 
 router.get('/', function (req, res, next) {
   if (
@@ -43,7 +43,7 @@ router.get('/', function (req, res, next) {
     if (res.locals.ipaddress.substr(0, 7) === '::ffff:') {
       res.locals.ipaddress = res.locals.ipaddress.substr(7);
     }
-    res.locals.req_date_for_display = moment(res.locals.req_date).toISOString(true);
+    res.locals.req_date_for_display = formatISO(res.locals.req_date);
 
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   });
@@ -93,8 +93,8 @@ router.post('/', function (req, res, next) {
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'changeDate') {
     debug(`POST: req.body.pl_requested_date = ${req.body.pl_requested_date}`);
-    let date = moment(req.body.pl_requested_date, moment.ISO_8601);
-    if (!date.isValid()) {
+    let date = parseISO(req.body.pl_requested_date);
+    if (!isValid(date)) {
       return next(error.make(400, `invalid requested date: ${req.body.pl_requested_date}`));
     }
     res.cookie('pl_requested_date', date.toISOString(), {
