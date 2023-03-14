@@ -374,7 +374,7 @@ If you want to identify the status of individual pointers to check if they have 
   ck_assert_msg(!__asan_region_is_poisoned(new_node, sizeof(struct node)), "Node was not allocated with appropriate size");
 ```
 
-It is also possible to [set specific flags](https://github.com/google/sanitizers/wiki/AddressSanitizerFlags) to change the behaviour of AddressSanitizer. For example, to disable the memory leak check, addthe following function:
+It is also possible to [set specific flags](https://github.com/google/sanitizers/wiki/AddressSanitizerFlags) to change the behaviour of AddressSanitizer. For example, to disable the memory leak check, add the following function:
 
 ```c
 const char *__asan_default_options() {
