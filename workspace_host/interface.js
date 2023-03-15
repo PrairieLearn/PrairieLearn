@@ -20,8 +20,8 @@ const bodyParser = require('body-parser');
 const Sentry = require('@prairielearn/sentry');
 const fg = require('fast-glob');
 const { filesize } = require('filesize');
+const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 
-const dockerUtil = require('../lib/dockerUtil');
 const awsHelper = require('../lib/aws');
 const socketServer = require('../lib/socket-server'); // must load socket server before workspace
 const workspaceHelper = require('../lib/workspace');
@@ -539,8 +539,8 @@ async function _getWorkspaceSettingsAsync(workspace_id) {
   };
 
   if (config.cacheImageRegistry) {
-    const repository = new dockerUtil.DockerName(settings.workspace_image);
-    repository.registry = config.cacheImageRegistry;
+    const repository = new DockerName(settings.workspace_image);
+    repository.setRegistry(config.cacheImageRegistry);
     const newImage = repository.getCombined();
     logger.info(`Using ${newImage} for ${settings.workspace_image}`);
     settings.workspace_image = newImage;
@@ -554,7 +554,7 @@ function _pullImage(workspace, callback) {
   const workspace_image = workspace.settings.workspace_image;
   if (config.workspacePullImagesFromDockerHub) {
     logger.info(`Pulling docker image: ${workspace_image}`);
-    dockerUtil.setupDockerAuth((err, auth) => {
+    setupDockerAuth(config.cacheImageRegistry, (err, auth) => {
       if (ERR(err, callback)) return;
 
       let percentDisplayed = false;
@@ -957,7 +957,13 @@ async function sendLogs(workspaceId, res) {
   try {
     const workspace = await _getWorkspaceAsync(workspaceId);
     const container = await _getDockerContainerByLaunchUuid(workspace.launch_uuid);
-    const logs = await container.logs({ stdout: true, stderr: true, timestamps: true });
+    const logs = await container.logs({
+      stdout: true,
+      stderr: true,
+      timestamps: true,
+      // This should give us a reasonable bound on the worst-case performance.
+      tail: 50000,
+    });
     const parsedLogs = parseDockerLogs(logs);
     res.status(200).send(parsedLogs);
   } catch (err) {
@@ -991,7 +997,13 @@ async function flushLogsToS3(container) {
   // date for ordering of logs from different versions.
   const startedAt = containerInfo.State.StartedAt;
 
-  const logs = await container.logs({ stdout: true, stderr: true, timestamps: true });
+  const logs = await container.logs({
+    stdout: true,
+    stderr: true,
+    timestamps: true,
+    // This should give us a reasonable bound on the worst-case performance.
+    tail: 50000,
+  });
   const parsedLogs = parseDockerLogs(logs);
 
   const key = `${workspaceId}/${version}/${startedAt}.log`;

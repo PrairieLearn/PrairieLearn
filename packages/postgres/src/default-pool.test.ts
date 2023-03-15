@@ -3,35 +3,39 @@ import { PostgresPool } from './pool';
 import * as pgPool from './default-pool';
 
 /**
- * Returns true if the property on `PostgresPool` should be considered
- * hidden - that is, if it should be available on the module's exports.
+ * Properties on {@link PostgresPool} that should not be available on the default
+ * pool's exports.
  */
-function isHiddenProperty(property: string) {
-  switch (property) {
-    case 'pool':
-    case 'alsClient':
-    case 'searchSchema':
-      return true;
-    default:
-      return false;
-  }
-}
+const HIDDEN_PROPERTIES = new Set([
+  // Private members
+  'pool',
+  'alsClient',
+  'searchSchema',
+  '_queryCount',
+  // Getters
+  'totalCount',
+  'idleCount',
+  'waitingCount',
+  'queryCount',
+]);
 
 describe('sqldb', () => {
   it('exports the full PostgresPool interface', () => {
     const pool = new PostgresPool();
 
     Object.getOwnPropertyNames(pool)
-      .filter((n) => !isHiddenProperty(n))
+      .filter((n) => !HIDDEN_PROPERTIES.has(n))
       .forEach((prop) => {
         assert.property(pgPool, prop);
         assert.ok((pgPool as any)[prop]);
       });
 
-    Object.getOwnPropertyNames(Object.getPrototypeOf(pool)).forEach((prop) => {
-      assert.property(pgPool, prop);
-      assert.ok((pgPool as any)[prop]);
-    });
+    Object.getOwnPropertyNames(Object.getPrototypeOf(pool))
+      .filter((n) => !HIDDEN_PROPERTIES.has(n))
+      .forEach((prop) => {
+        assert.property(pgPool, prop);
+        assert.ok((pgPool as any)[prop]);
+      });
   });
 
   it('should not have extra properties', () => {

@@ -1,6 +1,11 @@
 build:
 	@yarn turbo run build
 	@node packages/compiled-assets/dist/cli.js build ./assets ./public/build
+python-deps:
+	@python3 -m pip install -r images/plbase/python-requirements.txt --root-user-action=ignore
+deps:
+	@yarn
+	@make python-deps build
 
 dev:
 	@yarn turbo run dev
@@ -34,9 +39,9 @@ test-prairielearn: start-support
 test-prairielearn-serial: start-support
 	@yarn mocha "tests/**/*.test.{js,mjs}"
 test-prairielib:
-	@yarn jest prairielib/
+	@yarn mocha "prairielib/**/*.test.{js,mjs}"
 test-grader-host:
-	@yarn jest grader_host/
+	@yarn mocha "grader_host/**/*.test.{js,mjs}"
 test-workspace-host:
 	@yarn mocha "workspace_host/**/*.test.{js,mjs}"
 test-packages:

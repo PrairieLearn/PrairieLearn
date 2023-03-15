@@ -1,6 +1,7 @@
 import { PostgresPool } from './pool';
 
 const defaultPool = new PostgresPool();
+export { defaultPool };
 
 // We re-expose all functions from the default pool here to account for the
 // default case of a shared global pool of clients. If someone want to create

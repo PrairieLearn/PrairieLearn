@@ -44,12 +44,10 @@
     <div class="pr-1">QID:</div>
     <div>
       <% if (locals.course_instance) { %>
-      <a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/question/<%= question.id %>?variant_seed=<%= variant.variant_seed %>">
+      <a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/question/<%= question.id %>?variant_seed=<%= variant.variant_seed %>"><%= question.qid %></a>
       <% } else { %>
-      <a href="<%= plainUrlPrefix %>/course/<%= course.id %>/question/<%= question.id %>?variant_seed=<%= variant.variant_seed %>">
+      <a href="<%= plainUrlPrefix %>/course/<%= course.id %>/question/<%= question.id %>?variant_seed=<%= variant.variant_seed %>"><%= question.qid %></a>
       <% } %>
-        <%= question.qid %>
-      </a>
     </div>
   </div>
     <div class="d-flex flex-wrap">
