@@ -1,3 +1,5 @@
+import numbers
+
 import lxml.html
 import numpy as np
 import prairielearn as pl
@@ -36,7 +38,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # back to a standard type (otherwise, do nothing)
     var_data = pl.from_json(var_data)
 
-    if not isinstance(var_data, np.number):
+    if not isinstance(var_data, numbers.Number):
         var_data = np.array(var_data)
         # Check if numpy array type is numeric (integer, float or complex)
         if np.issubdtype(var_data.dtype, np.number):

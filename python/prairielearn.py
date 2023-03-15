@@ -4,6 +4,7 @@ import importlib
 import importlib.util
 import json
 import math
+import numbers
 import os
 import re
 import unicodedata
@@ -940,15 +941,15 @@ def string_from_2darray(A, language="python", presentation_type="f", digits=2):
     return result
 
 
-def string_from_number_sigfig(a: np.number, digits: int = 2) -> str:
+def string_from_number_sigfig(a: numbers.Number, digits: int = 2) -> str:
     """_string_from_complex_sigfig(a, digits=2)
 
     This function assumes that "a" is of type float or complex. It returns "a"
     as a string in which the number, or both the real and imaginary parts of the
     number, have digits significant digits.
     """
-    if np.iscomplexobj(a):
-        return _string_from_complex_sigfig(cast(complex, a), digits=digits)
+    if isinstance(a, complex):
+        return _string_from_complex_sigfig(a, digits=digits)
     else:
         return to_precision.to_precision(a, digits)
 
@@ -1492,7 +1493,7 @@ def string_to_2darray(s, allow_complex=True):
 
 
 def latex_from_2darray(
-    A: Union[np.number, np.ndarray],
+    A: Union[numbers.Number, np.ndarray],
     presentation_type: str = "f",
     digits: int = 2,
 ) -> str:
@@ -1512,7 +1513,7 @@ def latex_from_2darray(
     Otherwise, each number is formatted as '{:.{digits}{presentation_type}}'.
     """
     # if A is a scalar
-    if isinstance(A, np.number):
+    if isinstance(A, numbers.Number):
         if presentation_type == "sigfig":
             return string_from_number_sigfig(A, digits=digits)
         else:
