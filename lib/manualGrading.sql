@@ -150,8 +150,8 @@ SELECT
 FROM
   assessment_questions
 WHERE
-  id = $assessment_question_id FOR
-UPDATE;
+  id = $assessment_question_id
+FOR UPDATE;
 
 -- BLOCK insert_rubric
 INSERT INTO
