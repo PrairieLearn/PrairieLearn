@@ -80,8 +80,8 @@ SELECT
 FROM
   assessments AS a
 WHERE
-  a.id = $assessment_id FOR
-UPDATE;
+  a.id = $assessment_id
+FOR UPDATE;
 
 -- BLOCK select_assessment_needs_statisics_update
 SELECT
