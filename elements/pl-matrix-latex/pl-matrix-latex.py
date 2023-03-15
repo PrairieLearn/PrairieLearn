@@ -36,17 +36,17 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # back to a standard type (otherwise, do nothing)
     var_data = pl.from_json(var_data)
 
-    if not np.isscalar(var_data):
+    if not isinstance(var_data, np.number):
         var_data = np.array(var_data)
         # Check if numpy array type is numeric (integer, float or complex)
         if np.issubdtype(var_data.dtype, np.number):
             # Check shape of variable
             if var_data.ndim != 2:
-                raise Exception(
+                raise ValueError(
                     f'Value in data["params"] for variable {var_name} in pl-matrix-latex element must be 2D array or scalar'
                 )
         else:
-            raise Exception(
+            raise ValueError(
                 f'Value in data["params"] for variable {var_name} in pl-matrix-latex element must be numeric'
             )
 

@@ -2,7 +2,7 @@ import math
 import random
 from enum import Enum
 from html import escape
-from typing import Literal
+from typing import Literal, Optional
 
 import chevron
 import lxml.html
@@ -97,8 +97,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # Get true answer
         a_tru = pl.from_json(data["correct_answers"].get(name, None))
         if a_tru is None:
-            m = pl.get_integer_attrib(element, "rows", None)
-            n = pl.get_integer_attrib(element, "columns", None)
+            # No need for defaults here, the later function call will fail otherwise.
+            m = pl.get_integer_attrib(element, "rows")
+            n = pl.get_integer_attrib(element, "columns")
         else:
             if np.isscalar(a_tru):
                 raise ValueError(
@@ -222,8 +223,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             if a_tru is not None and len(a_tru.shape) == 2:
                 m, n = np.shape(a_tru)
             else:
-                m = pl.get_integer_attrib(element, "rows", None)
-                n = pl.get_integer_attrib(element, "columns", None)
+                m = pl.get_integer_attrib(element, "rows")
+                n = pl.get_integer_attrib(element, "columns")
 
         if parse_error is None and name in data["submitted_answers"]:
             # Get submitted answer, raising an exception if it does not exist
@@ -320,8 +321,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # Get dimensions of the input matrix
     a_tru = pl.from_json(data["correct_answers"].get(name, None))
     if a_tru is None:
-        m = pl.get_integer_attrib(element, "rows", None)
-        n = pl.get_integer_attrib(element, "columns", None)
+        m = pl.get_integer_attrib(element, "rows")
+        n = pl.get_integer_attrib(element, "columns")
     else:
         a_tru = np.array(a_tru)
         if a_tru.ndim != 2:
@@ -345,12 +346,10 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             )
             if value is not None:
                 A[i, j] = value
-                data["submitted_answers"][each_entry_name] = newdata[
-                    "submitted_answers"
-                ]
+                data["submitted_answers"][each_entry_name] = newdata.get("submitted_answers")
             else:
                 invalid_format = True
-                data["format_errors"][each_entry_name] = newdata["format_errors"]
+                data["format_errors"][each_entry_name] = newdata.get("format_errors")
                 data["submitted_answers"][each_entry_name] = None
 
     if invalid_format:
@@ -508,7 +507,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
 
 def createTableForHTMLDisplay(
-    m: int, n: int, name: str, label: str, data: pl.QuestionData, format: FormatTypes
+    m: int, n: int, name: str, label: Optional[str], data: pl.QuestionData, format: FormatTypes
 ) -> str:
     editable = data["editable"]
 

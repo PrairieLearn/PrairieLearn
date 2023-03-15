@@ -12,6 +12,7 @@ from enum import Enum
 
 from typing import (
     Any,
+    cast,
     Callable,
     Literal,
     Optional,
@@ -948,12 +949,12 @@ def string_from_number_sigfig(a: np.number, digits: int = 2) -> str:
     number, have digits significant digits.
     """
     if np.iscomplexobj(a):
-        return _string_from_complex_sigfig(a, digits=digits)
+        return _string_from_complex_sigfig(cast(complex, a), digits=digits)
     else:
         return to_precision.to_precision(a, digits)
 
 
-def _string_from_complex_sigfig(a, digits=2):
+def _string_from_complex_sigfig(a: complex, digits: int=2) -> str:
     """_string_from_complex_sigfig(a, digits=2)
 
     This function assumes that "a" is a complex number. It returns "a" as a string
@@ -963,8 +964,9 @@ def _string_from_complex_sigfig(a, digits=2):
     im = to_precision.to_precision(np.abs(a.imag), digits)
     if a.imag >= 0:
         return "{:s}+{:s}j".format(re, im)
-    elif a.imag < 0:
-        return "{:s}-{:s}j".format(re, im)
+
+    # a.imag < 0:
+    return "{:s}-{:s}j".format(re, im)
 
 
 def numpy_to_matlab_sf(A, ndigits=2):
@@ -1093,8 +1095,8 @@ def string_to_number(s, allow_complex=True):
         return None
 
 
-class StringFractionData(TypedDict):
-    submitted_answers: Optional[dict[str, Any]]
+class StringFractionData(TypedDict, total=False):
+    submitted_answers: dict[str, Any]
     format_errors: str
 
 def string_fraction_to_number(a_sub:Optional[str], allow_fractions:bool=True, allow_complex:bool=True) -> tuple[Optional[np.number], StringFractionData]:
@@ -1112,7 +1114,7 @@ def string_fraction_to_number(a_sub:Optional[str], allow_fractions:bool=True, al
     If parsing failed, the first entry will be 'None' and the "data" entry will
     contain a 'format_errors' key.
     """
-    data = {}
+    data: StringFractionData = {}
     value = None
 
     if a_sub is None:
@@ -1508,7 +1510,7 @@ def latex_from_2darray(
     Otherwise, each number is formatted as '{:.{digits}{presentation_type}}'.
     """
     # if A is a scalar
-    if np.isscalar(A):
+    if isinstance(A, np.number):
         if presentation_type == "sigfig":
             return string_from_number_sigfig(A, digits=digits)
         else:
@@ -1516,13 +1518,14 @@ def latex_from_2darray(
                 A, digits=digits, presentation_type=presentation_type
             )
 
+    # Using Any annotation here because of weird Pyright-isms.
     if presentation_type == "sigfig":
-        formatter = {
+        formatter: Any = {
             "float_kind": lambda x: to_precision.to_precision(x, digits),
             "complex_kind": lambda x: _string_from_complex_sigfig(x, digits),
         }
     else:
-        formatter = {
+        formatter: Any = {
             "float_kind": lambda x: "{:.{digits}{presentation_type}}".format(
                 x, digits=digits, presentation_type=presentation_type
             ),
