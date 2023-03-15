@@ -346,7 +346,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             )
             if value is not None:
                 A[i, j] = value
-                data["submitted_answers"][each_entry_name] = newdata.get("submitted_answers")
+                data["submitted_answers"][each_entry_name] = newdata.get(
+                    "submitted_answers"
+                )
             else:
                 invalid_format = True
                 data["format_errors"][each_entry_name] = newdata.get("format_errors")
@@ -507,7 +509,12 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
 
 def createTableForHTMLDisplay(
-    m: int, n: int, name: str, label: Optional[str], data: pl.QuestionData, format: FormatTypes
+    m: int,
+    n: int,
+    name: str,
+    label: Optional[str],
+    data: pl.QuestionData,
+    format: FormatTypes,
 ) -> str:
     editable = data["editable"]
 

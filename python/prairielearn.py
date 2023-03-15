@@ -954,7 +954,7 @@ def string_from_number_sigfig(a: np.number, digits: int = 2) -> str:
         return to_precision.to_precision(a, digits)
 
 
-def _string_from_complex_sigfig(a: complex, digits: int=2) -> str:
+def _string_from_complex_sigfig(a: complex, digits: int = 2) -> str:
     """_string_from_complex_sigfig(a, digits=2)
 
     This function assumes that "a" is a complex number. It returns "a" as a string
@@ -1099,7 +1099,10 @@ class StringFractionData(TypedDict, total=False):
     submitted_answers: dict[str, Any]
     format_errors: str
 
-def string_fraction_to_number(a_sub:Optional[str], allow_fractions:bool=True, allow_complex:bool=True) -> tuple[Optional[np.number], StringFractionData]:
+
+def string_fraction_to_number(
+    a_sub: Optional[str], allow_fractions: bool = True, allow_complex: bool = True
+) -> tuple[Optional[np.number], StringFractionData]:
     """string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True)
 
     Parses a string containing a decimal number with support for answers expressing
