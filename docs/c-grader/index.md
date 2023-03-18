@@ -334,39 +334,25 @@ If your application explicitly needs to keep any of the restricted environments 
 
 A major concern when testing C/C++ code is to identify cases of dangling pointers and memory leaks. The [AddressSanitizer](https://github.com/google/sanitizers/wiki/AddressSanitizer) library can be used for this purpose in this autograder. In particular, it is able to detect: use-after-free and use-after-return; out-of-bounds access in heap, stack and global arrays; and memory leaks.
 
-To add this library to the code, add the following flags to the compilation code:
+To add this library to the code, add the following option to the compilation function (`compile_file`, `test_compile_file` or `link_object_files`):
 
 ```python
-self.compile_file(...,
-    flags="-fsanitize=address -static-libasan")
+self.compile_file(..., enable_asan=True)
 ```
 
-By default, the flags above will cause the application to abort immediately when an invalid memory access is identified, or before exiting in case of memory leaks. If you are using the autograder workflow that checks the program's standard output, this functionality should capture the majority of cases, though you may want to include some reject strings that capture memory leaks.
+By default, the options above will compile the code with flags that will cause the application to abort immediately when an invalid memory access is identified, or before exiting in case of memory leaks. If you are using the autograder workflow that checks the program's standard output, this functionality should capture the majority of cases, though you may want to include some reject strings that capture memory leaks.
 
-If you need more fine-tuned control over when and where these memory access problems happen, you can use the ASAN interface to provide further control. This is particularly necessary in the check-based workflow, so that valid information is provided to students instead of a general exit error message. To set up a callback to be called when such a problem is found, you may use the `__asan_set_error_report_callback` function. For example, for a check-based workflow, you can use:
+If you are using the check-based workflow, note that while the setup above will cause the tests to fail in these scenarios, it may not provide a useful message to students. To provide a more detailed feedback to students in this case, you may add the following call in your main function:
 
 ```c
-#include <sanitizer/asan_interface.h>
-
-static void asan_abort_hook(const char *msg) {
-  ck_abort_msg("Detected an error in the use of pointers and dynamic allocation. This is \n"
-               "typically related to the use of values in the heap (malloc and friends) \n"
-               "after free or beyond their allocated area, or freeing a value not in the heap.\n"
-               "Details:\n\n%s", msg);
-}
-
-// ...
-
 int main(int argc, char *argv[]) {
 
-  __asan_set_error_report_callback(asan_abort_hook);
-
-  // ...
-}
+  pl_setup_asan_hooks();
+  Suite *s = suite_create(...
 
 ```
 
-If you want to identify the status of individual pointers to check if they have been correctly allocated, you can use `__asan_address_is_poisoned` or `__asan_region_is_poisoned`:
+If you need more fine-tuned control over when and where these memory access problems happen, you can use the ASAN interface to provide further control. For example, if you want to identify the status of individual pointers to check if they have been correctly allocated, you can use `__asan_address_is_poisoned` or `__asan_region_is_poisoned`:
 
 ```c
   ck_assert_msg(__asan_address_is_poisoned(deleted_node), "Deleted node has not been freed");

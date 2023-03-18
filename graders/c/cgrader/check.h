@@ -10,10 +10,15 @@
 #include <unistd.h>
 #include <errno.h>
 #include <sys/mman.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sanitizer/asan_interface.h>
 
 #define CORRECT_FINAL_CHECK 0xDEADBEEF
 
 static long *plcheck_final_check = NULL;
+char sanitizer_output[200] = "";
 
 static inline void pl_fixture_sandbox_setup(void) {
 
@@ -73,10 +78,17 @@ static inline void pl_fixture_sandbox_setup(void) {
   // Clear all environment variables, including those used to configure libcheck
   clearenv();
 #endif
+
+  if (*sanitizer_output) {
+    mkstemp(sanitizer_output);
+    __sanitizer_set_report_path(sanitizer_output);
+  }
 }
 
 static inline void pl_fixture_sandbox_teardown(void) {
 
+  if (*sanitizer_output)
+    __lsan_do_leak_check();
   *plcheck_final_check = CORRECT_FINAL_CHECK;
 }
 
@@ -86,3 +98,33 @@ static inline TCase *pl_tcase_add_sandbox_fixtures(TCase *tc) {
 }
 
 #define tcase_create(name) (pl_tcase_add_sandbox_fixtures(tcase_create(name)))
+
+static void pl_asan_abort_hook(const char *msg) {
+  ck_abort_msg("Detected an error in the use of pointers and dynamic allocation. "
+               "Details:\n%.2048s%s", msg, strlen(msg) > 2048 ? "\n..." : "");
+}
+
+static void pl_asan_death_hook(void) {
+
+  char filename[200];
+  struct stat st;
+  char msg[2049];
+  int size;
+
+  sprintf(filename, "%s.%d", sanitizer_output, getpid());
+  int fd = open(filename, O_RDONLY | O_EXCL);
+  if (fd < 0 || (size = read(fd, msg, 2048)) <= 0) {
+    ck_abort_msg("Detected a memory leak or similar issue. No details available.");
+  }
+  msg[size] = 0;
+  close(fd);
+  ck_abort_msg("Detected a memory leak or similar issue. Details:\n%s", msg);
+}
+
+static inline void pl_setup_asan_hooks(void) {
+
+  __sanitizer_set_death_callback(pl_asan_death_hook);
+  __asan_set_error_report_callback(pl_asan_abort_hook);
+  strcpy(sanitizer_output, "/tmp/sanitizer.XXXXXX");
+}
+

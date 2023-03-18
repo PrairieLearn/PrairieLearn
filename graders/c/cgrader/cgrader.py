@@ -86,12 +86,15 @@ class CGrader:
         add_warning_result_msg=True,
         ungradable_if_failed=True,
         return_objects=False,
+        enable_asan=False,
     ):
         cflags = flags
         if cflags and not isinstance(cflags, list):
             cflags = shlex.split(cflags)
         elif not cflags:
             cflags = []
+        if enable_asan:
+            cflags.extend(["-fsanitize=address", "-static-libasan"])
 
         if not add_c_file:
             add_c_file = []
@@ -147,6 +150,7 @@ class CGrader:
                 pkg_config_flags=pkg_config_flags,
                 add_warning_result_msg=add_warning_result_msg,
                 ungradable_if_failed=ungradable_if_failed,
+                enable_asan=enable_asan,
             )
         return (out, std_obj_files + objs) if return_objects else out
 
@@ -160,11 +164,14 @@ class CGrader:
         pkg_config_flags=None,
         add_warning_result_msg=True,
         ungradable_if_failed=True,
+        enable_asan=False,
     ):
         if flags and not isinstance(flags, list):
             flags = shlex.split(flags)
         elif not flags:
             flags = []
+        if enable_asan:
+            flags.extend(["-fsanitize=address", "-static-libasan"])
 
         if not student_obj_files:
             student_obj_files = []
@@ -223,6 +230,7 @@ class CGrader:
         name="Compilation",
         add_warning_result_msg=True,
         ungradable_if_failed=True,
+        enable_asan=False,
     ):
         if not add_c_file:
             add_c_file = []
@@ -243,6 +251,7 @@ class CGrader:
             add_warning_result_msg=add_warning_result_msg,
             ungradable_if_failed=ungradable_if_failed,
             return_objects=True,
+            enable_asan=enable_asan,
         )
         success = (
             os.path.isfile(exec_file)
@@ -475,6 +484,7 @@ class CGrader:
             },
             sandboxed=sandboxed,
         )
+
         print(out)  # Printing so it shows in the grading job log
 
         # Copy log file to results directory so it becomes available to the instructor after execution
