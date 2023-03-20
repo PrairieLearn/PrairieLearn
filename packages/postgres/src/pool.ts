@@ -898,9 +898,12 @@ export class PostgresPool {
     let iterateCalled = false;
     return {
       iterate: async function* (batchSize: number) {
+        // Safety check: if someone calls iterate multiple times, they're
+        // definitely doing something wrong.
         if (iterateCalled) {
           throw new Error('iterate() called multiple times');
         }
+        iterateCalled = true;
 
         try {
           while (true) {
