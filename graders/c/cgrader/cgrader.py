@@ -478,6 +478,7 @@ class CGrader:
         print(out)  # Printing so it shows in the grading job log
 
         # Copy log file to results directory so it becomes available to the instructor after execution
+        out = self.run_command(["mkdir", "-p", "/grade/results"], sandboxed=False)
         out = self.run_command(
             ["cp", log_file, "/grade/results/check_log.xml", "--backup=numbered"],
             sandboxed=False,

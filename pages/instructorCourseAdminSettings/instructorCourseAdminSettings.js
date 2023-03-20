@@ -8,7 +8,7 @@ const async = require('async');
 const ERR = require('async-stacktrace');
 const { CourseInfoEditor } = require('../../lib/editors');
 const { logger } = require('@prairielearn/logger');
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 
 router.get('/', function (req, res, next) {
   debug('GET /');

@@ -4,7 +4,7 @@ const asyncHandler = require('express-async-handler');
 const router = express.Router();
 const csvStringify = require('../../lib/nonblocking-csv-stringify');
 
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const sanitizeName = require('../../lib/sanitize-name');
 const sqldb = require('@prairielearn/postgres');
 const assessment = require('../../lib/assessment');

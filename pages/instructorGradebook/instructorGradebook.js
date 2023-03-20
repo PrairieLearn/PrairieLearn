@@ -5,7 +5,7 @@ var express = require('express');
 var router = express.Router();
 
 const { getCourseOwners } = require('../../lib/course');
-var error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const sanitizeName = require('../../lib/sanitize-name');
 var sqldb = require('@prairielearn/postgres');
 
