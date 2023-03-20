@@ -40,6 +40,7 @@ INVALID_SYMBOLS = frozenset(
         "__lsan_unregister_root_region",
     )
 )
+INVALID_PRIMITIVES = frozenset(("no_sanitize",))
 
 ASAN_FLAGS = ("-fsanitize=address", "-static-libasan", "-g", "-O0")
 
@@ -149,10 +150,23 @@ class CGrader:
             obj_file = re.sub(r"\.[^.]*$", "", std_c_file) + ".o"
             std_obj_files.append(obj_file)
             out += self.run_command(
-                [compiler, "-c", std_c_file, "-o", obj_file] + cflags, sandboxed=False
+                [compiler, "-save-temps", "-c", std_c_file, "-o", obj_file] + cflags,
+                sandboxed=False,
             )
             # Identify references to functions intended to disable sanitizers from object file
             if os.path.isfile(obj_file):
+                with open(re.sub(r"\.[^.]*$", "", std_c_file) + ".i", "r") as f:
+                    preprocessed_text = f.read()
+                    found_primitives = {
+                        s for s in INVALID_PRIMITIVES if s in preprocessed_text
+                    }
+                if found_primitives:
+                    out += (
+                        "\n\033[31mThe following unauthorized primitives were found in the provided code:\n\t"
+                        + ", ".join(found_primitives)
+                        + "\033[0m"
+                    )
+                    os.unlink(obj_file)
                 symbols = self.run_command(
                     ["nm", "-j", obj_file], sandboxed=False
                 ).splitlines()
@@ -481,6 +495,7 @@ class CGrader:
         self.result["tests"].append(test)
         self.result["points"] += points
         self.result["max_points"] += max_points
+
         if field is not None:
             if "partial_scores" not in self.result:
                 self.result["partial_scores"] = {}
