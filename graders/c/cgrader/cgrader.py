@@ -38,6 +38,9 @@ INVALID_SYMBOLS = frozenset(
         "__lsan_ignore_object",
         "__lsan_register_root_region",
         "__lsan_unregister_root_region",
+        "__sanitizer_set_death_callback",
+        "__sanitizer_set_report_path",
+        "__sanitizer_sandbox_on_notify",
     )
 )
 INVALID_PRIMITIVES = frozenset(("no_sanitize", "disable_sanitizer_instrumentation"))
