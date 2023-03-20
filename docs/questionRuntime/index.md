@@ -4,17 +4,13 @@ This page is meant for discussion of details related to the Python environment t
 
 ## General information
 
-All `server.py` files for questions are executed in a Docker container created from the `prairielearn/prairielearn` image. This image includes the Python version that is bundled with the [latest version of Miniconda](https://docs.conda.io/en/latest/miniconda.html), as well as the packages in [`images/plbase/python-requirements.txt`](https://github.com/PrairieLearn/PrairieLearn/blob/master/images/plbase/python-requirements.txt). The following are basic ways to get additional information about the Python environment.
+All `server.py` files for questions are executed in a Docker container created from the `prairielearn/prairielearn` image. This image includes the Python version that is bundled with the [latest version of Miniconda](https://docs.conda.io/en/latest/miniconda.html), as well as the packages in [`images/plbase/python-requirements.txt`](https://github.com/PrairieLearn/PrairieLearn/blob/master/images/plbase/python-requirements.txt). The only packages guaranteed to be installed are those listed in the requirements file.
 
-- To see which packages are installed, run `pip list` in the docker container.
+To run a command line version of this Python environment, you may start it with the following command:
 
-- To run a command line version of this Python environment, you may start it with the following command:
-
-  ```
-  docker run -it --rm prairielearn/prairielearn /bin/bash
-  ```
-
-- To access files on the disk or in `serverFilesCourse` within `server.py`, get the directory from `data["options"]["question_path"]` and similar entries from the `data["options"]` dictionary.
+```
+docker run -it --rm prairielearn/prairielearn /bin/bash
+```
 
 ## Installing libraries in your course
 
