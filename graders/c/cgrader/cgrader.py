@@ -14,30 +14,35 @@ DATAFILE = "/grade/data/data.json"
 SB_USER = "sbuser"
 
 # List of symbols that are not allowed to be used in student code
-INVALID_SYMBOLS = [
-    "__asan_default_options",
-    "__asan_on_error",
-    "__asan_malloc_hook",
-    "__asan_free_hook",
-    "__asan_unpoison_memory_region",
-    "__asan_set_error_exit_code",
-    "__asan_set_death_callback",
-    "__asan_set_error_report_callback",
-    "__msan_default_options",
-    "__msan_malloc_hook",
-    "__msan_free_hook",
-    "__msan_unpoison",
-    "__msan_unpoison_string",
-    "__msan_set_exit_code",
-    "__lsan_is_turned_off",
-    "__lsan_default_suppressions",
-    "__lsan_do_leak_check",
-    "__lsan_disable",
-    "__lsan_enable",
-    "__lsan_ignore_object",
-    "__lsan_register_root_region",
-    "__lsan_unregister_root_region",
-]
+INVALID_SYMBOLS = frozenset(
+    (
+        "__asan_default_options",
+        "__asan_on_error",
+        "__asan_malloc_hook",
+        "__asan_free_hook",
+        "__asan_unpoison_memory_region",
+        "__asan_set_error_exit_code",
+        "__asan_set_death_callback",
+        "__asan_set_error_report_callback",
+        "__msan_default_options",
+        "__msan_malloc_hook",
+        "__msan_free_hook",
+        "__msan_unpoison",
+        "__msan_unpoison_string",
+        "__msan_set_exit_code",
+        "__lsan_is_turned_off",
+        "__lsan_default_suppressions",
+        "__lsan_do_leak_check",
+        "__lsan_disable",
+        "__lsan_enable",
+        "__lsan_ignore_object",
+        "__lsan_register_root_region",
+        "__lsan_unregister_root_region",
+    )
+)
+
+ASAN_FLAGS = ("-fsanitize=address", "-static-libasan", "-g", "-O0")
+
 
 TIMEOUT_MESSAGE = """
 
@@ -120,7 +125,7 @@ class CGrader:
         elif not cflags:
             cflags = []
         if enable_asan:
-            cflags.extend(["-fsanitize=address", "-static-libasan", "-g", "-O0"])
+            cflags.extend(ASAN_FLAGS)
 
         if not add_c_file:
             add_c_file = []
@@ -151,10 +156,10 @@ class CGrader:
                 symbols = self.run_command(
                     ["nm", "-j", obj_file], sandboxed=False
                 ).splitlines()
-                found_symbols = [s for s in INVALID_SYMBOLS if s in symbols]
-                if any(found_symbols):
+                found_symbols = INVALID_SYMBOLS & set(symbols)
+                if found_symbols:
                     out += (
-                        "\n\033[31mThe following unauthorized functions and variables were found in the provided code:\n\t"
+                        "\n\033[31mThe following unauthorized function(s) and/or variable(s) were found in the provided code:\n\t"
                         + ", ".join(found_symbols)
                         + "\033[0m"
                     )
@@ -210,7 +215,7 @@ class CGrader:
         elif not flags:
             flags = []
         if enable_asan:
-            flags.extend(["-fsanitize=address", "-static-libasan", "-g"])
+            flags.extend(ASAN_FLAGS)
 
         if not student_obj_files:
             student_obj_files = []
