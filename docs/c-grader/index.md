@@ -353,6 +353,7 @@ int main(int argc, char *argv[]) {
 
   pl_setup_asan_hooks();
   Suite *s = suite_create(...);
+  // ...
 }
 ```
 
