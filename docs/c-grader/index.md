@@ -352,7 +352,7 @@ If you are using the check-based workflow, note that while the setup above will 
 int main(int argc, char *argv[]) {
 
   pl_setup_asan_hooks();
-  Suite *s = suite_create(...
+  Suite *s = suite_create(...);
 
 ```
 
