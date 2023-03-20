@@ -119,6 +119,15 @@ class CGrader:
             out += self.run_command(
                 [compiler, "-c", std_c_file, "-o", obj_file] + cflags, sandboxed=False
             )
+            # Remove functions intended to disable sanitizers from object file
+            out += self.run_command(
+                [
+                    "objcopy",
+                    "--strip-symbols=/cgrader/invalid_student_symbols.txt",
+                    obj_file,
+                ],
+                sandboxed=False,
+            )
             std_obj_files.append(obj_file)
 
         if all(os.path.isfile(obj) for obj in std_obj_files):
