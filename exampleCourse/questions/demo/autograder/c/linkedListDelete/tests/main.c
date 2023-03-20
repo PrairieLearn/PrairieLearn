@@ -1,16 +1,8 @@
 #include <stdlib.h>
 #include <check.h>
 #include <time.h>
-#include <sanitizer/asan_interface.h>
 
 #include "list.h"
-
-static void asan_abort_hook(const char *msg) {
-  ck_abort_msg("Detected an error in the use of pointers and dynamic allocation. This is \n"
-               "typically related to the use of values in the heap (malloc and friends) \n"
-               "after free or beyond their allocated area, or freeing a value not in the heap.\n"
-               "Details:\n\n%s", msg);
-}
 
 START_TEST(test_empty_list) {
 
@@ -62,7 +54,7 @@ START_TEST(test_with_elements) {
 
 int main(int argc, char *argv[]) {
 
-  __asan_set_error_report_callback(asan_abort_hook);
+  pl_setup_asan_hooks();
   srandom(time(NULL));
 
   Suite *s = suite_create("Linked list");

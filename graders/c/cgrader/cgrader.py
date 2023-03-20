@@ -161,7 +161,8 @@ class CGrader:
             if os.path.isfile(obj_file):
                 # These primitives are checked in the .i file (the
                 # preprocessed C file), which will have any #define
-                # and #include primitives already expanded and comments removed
+                # and #include primitives already expanded and
+                # comments removed
                 with open(pathlib.Path(std_c_file).with_suffix(".i"), "r") as f:
                     preprocessed_text = f.read()
                     found_primitives = {

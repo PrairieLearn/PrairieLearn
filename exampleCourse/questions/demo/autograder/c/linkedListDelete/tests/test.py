@@ -9,9 +9,10 @@ class TestGrader(cgrader.CGrader):
             "deletefirst.c",
             "main",
             add_c_file="/grade/tests/main.c",
-            flags="-I/grade/tests -fsanitize=address -static-libasan -g",
+            flags="-I/grade/tests",
             pkg_config_flags="check",
             points=0,
+            enable_asan=True,
         )
         self.run_check_suite("./main", use_iteration=True)
 
