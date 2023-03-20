@@ -2,6 +2,7 @@
 
 import json
 import os
+import pathlib
 import re
 import shlex
 import subprocess
@@ -150,7 +151,7 @@ class CGrader:
         std_obj_files = []
         objs = []
         for std_c_file in c_file if isinstance(c_file, list) else [c_file]:
-            obj_file = re.sub(r"\.[^.]*$", "", std_c_file) + ".o"
+            obj_file = pathlib.Path(std_c_file).with_suffix(".o")
             std_obj_files.append(obj_file)
             out += self.run_command(
                 [compiler, "-save-temps", "-c", std_c_file, "-o", obj_file] + cflags,
@@ -158,7 +159,10 @@ class CGrader:
             )
             # Identify references to functions intended to disable sanitizers from object file
             if os.path.isfile(obj_file):
-                with open(re.sub(r"\.[^.]*$", "", std_c_file) + ".i", "r") as f:
+                # These primitives are checked in the .i file (the
+                # preprocessed C file), which will have any #define
+                # and #include primitives already expanded and comments removed
+                with open(pathlib.Path(std_c_file).with_suffix(".i"), "r") as f:
                     preprocessed_text = f.read()
                     found_primitives = {
                         s for s in INVALID_PRIMITIVES if s in preprocessed_text
@@ -170,6 +174,9 @@ class CGrader:
                         + "\033[0m"
                     )
                     os.unlink(obj_file)
+                # nm -j will list any references to global symbols in
+                # the object file, either from function definitions or
+                # function calls.
                 symbols = self.run_command(
                     ["nm", "-j", obj_file], sandboxed=False
                 ).splitlines()
@@ -185,7 +192,7 @@ class CGrader:
         if all(os.path.isfile(obj) for obj in std_obj_files):
             # Add new C files that maybe overwrite some existing functions.
             for added_c_file in add_c_file:
-                obj_file = re.sub(r"\.[^.]*$", "", added_c_file) + ".o"
+                obj_file = pathlib.Path(added_c_file).with_suffix(".o")
                 out += self.run_command(
                     [compiler, "-c", added_c_file, "-o", obj_file] + cflags,
                     sandboxed=False,

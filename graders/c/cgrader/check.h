@@ -18,7 +18,7 @@
 #define CORRECT_FINAL_CHECK 0xDEADBEEF
 
 static long *plcheck_final_check = NULL;
-char sanitizer_output[200] = "";
+static char sanitizer_output[200] = "";
 
 static inline void pl_fixture_sandbox_setup(void) {
 
@@ -99,11 +99,15 @@ static inline TCase *pl_tcase_add_sandbox_fixtures(TCase *tc) {
 
 #define tcase_create(name) (pl_tcase_add_sandbox_fixtures(tcase_create(name)))
 
+// This function will be called when AddressSanitizer detects a
+// problem (e.g., dangling pointer, out-of-bounds access, etc.).
 static void pl_asan_abort_hook(const char *msg) {
   ck_abort_msg("Detected an error in the use of pointers and dynamic allocation. "
                "Details:\n%.2048s%s", msg, strlen(msg) > 2048 ? "\n..." : "");
 }
 
+// This function will be called when LeakSanitizer detects a problem
+// (i.e., a memory leak).
 static void pl_asan_death_hook(void) {
 
   char filename[200];
