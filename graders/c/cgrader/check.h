@@ -128,3 +128,7 @@ static inline void pl_setup_asan_hooks(void) {
   strcpy(sanitizer_output, "/tmp/sanitizer.XXXXXX");
 }
 
+// Create a function for default options so that a student version of the same function is overwritten.
+const char *__asan_default_options(void) {
+  return "";
+}

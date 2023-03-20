@@ -340,7 +340,11 @@ To add this library to the code, add the following option to the compilation fun
 self.compile_file(..., enable_asan=True)
 ```
 
-By default, the options above will compile the code with flags that will cause the application to abort immediately when an invalid memory access is identified, or before exiting in case of memory leaks. If you are using the autograder workflow that checks the program's standard output, this functionality should capture the majority of cases, though you may want to include some reject strings that capture memory leaks.
+By default, the options above will compile the code with flags that will cause the application to abort immediately when an invalid memory access is identified, or before exiting in case of memory leaks. If you are using the autograder workflow that checks the program's standard output, this functionality should capture the majority of cases, though you may want to include some reject strings that capture memory leaks. For example:
+
+```python
+self.test_run(..., reject_output=['AddressSanitizer'])
+```
 
 If you are using the check-based workflow, note that while the setup above will cause the tests to fail in these scenarios, it may not provide a useful message to students. To provide a more detailed feedback to students in this case, you are strongly encouraged to add a call to `pl_setup_asan_hooks()` at the start of your main function, like this:
 
@@ -360,12 +364,10 @@ If you need more fine-tuned control over when and where these memory access prob
   ck_assert_msg(!__asan_region_is_poisoned(new_node, sizeof(struct node)), "Node was not allocated with appropriate size");
 ```
 
-It is also possible to [set specific flags](https://github.com/google/sanitizers/wiki/AddressSanitizerFlags) to change the behaviour of AddressSanitizer. For example, to disable the memory leak check, add the following function:
+It is also possible to [set specific flags](https://github.com/google/sanitizers/wiki/AddressSanitizerFlags) to change the behaviour of AddressSanitizer, by setting the environment variable `ASAN_OPTIONS` when calling `run_check_suite`. For example, to disable the memory leak check, you may use:
 
-```c
-const char *__asan_default_options() {
-  return "detect_leaks=0";
-}
+```python
+self.run_check_suite("./main", env={"ASAN_OPTIONS": "detect_leaks=0"})
 ```
 
 ### Running a command without creating a test

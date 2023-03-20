@@ -94,7 +94,7 @@ class CGrader:
         elif not cflags:
             cflags = []
         if enable_asan:
-            cflags.extend(["-fsanitize=address", "-static-libasan"])
+            cflags.extend(["-fsanitize=address", "-static-libasan", "-g"])
 
         if not add_c_file:
             add_c_file = []
@@ -171,7 +171,7 @@ class CGrader:
         elif not flags:
             flags = []
         if enable_asan:
-            flags.extend(["-fsanitize=address", "-static-libasan"])
+            flags.extend(["-fsanitize=address", "-static-libasan", "-g"])
 
         if not student_obj_files:
             student_obj_files = []
@@ -460,30 +460,31 @@ class CGrader:
         use_iteration=False,
         sandboxed=False,
         use_malloc_debug=False,
+        env=None,
     ):
         if not args:
             args = []
         if not isinstance(args, list):
             args = [args]
 
+        if not env:
+            env = {}
+        env["TEMP"] = "/tmp"
+
         log_file_dir = tempfile.mkdtemp()
         log_file = os.path.join(log_file_dir, "tests.xml")
+        env["CK_XML_LOG_FILE_NAME"] = log_file
+
         if sandboxed:
             self.change_mode(log_file_dir, "777", change_parent=False)
+        else:
+            env["SANDBOX_UID"] = self.run_command("id -u")
+            env["SANDBOX_GID"] = self.run_command("id -g")
 
-        out = self.run_command(
-            [exec_file] + args,
-            env={
-                "CK_XML_LOG_FILE_NAME": log_file,
-                "TEMP": "/tmp",
-                "SANDBOX_UID": self.run_command("id -u") if not sandboxed else "",
-                "SANDBOX_GID": self.run_command("id -g") if not sandboxed else "",
-                "LD_PRELOAD": "/lib/x86_64-linux-gnu/libc_malloc_debug.so"
-                if use_malloc_debug
-                else "",
-            },
-            sandboxed=sandboxed,
-        )
+        if use_malloc_debug:
+            env["LD_PRELOAD"] = "/lib/x86_64-linux-gnu/libc_malloc_debug.so"
+
+        out = self.run_command([exec_file] + args, env=env, sandboxed=sandboxed)
 
         print(out)  # Printing so it shows in the grading job log
 
