@@ -4,19 +4,17 @@ This page is meant for discussion of details related to the Python environment t
 
 ## General information
 
-All `server.py` files for questions are executed in a Docker container created from the `prairielearn/prairielearn` image. This image includes the Python version that is bundled with the [latest version of Miniconda](https://docs.conda.io/en/latest/miniconda.html), as well as the packages in [`images/plbase/python-requirements.txt`](https://github.com/PrairieLearn/PrairieLearn/blob/master/images/plbase/python-requirements.txt).
+All `server.py` files for questions are executed in a Docker container created from the `prairielearn/prairielearn` image. This image includes the Python version that is bundled with the [latest version of Miniconda](https://docs.conda.io/en/latest/miniconda.html), as well as the packages in [`images/plbase/python-requirements.txt`](https://github.com/PrairieLearn/PrairieLearn/blob/master/images/plbase/python-requirements.txt). The following are basic ways to get additional information about the Python environment.
 
-### FAQ
+- To see which packages are installed, run `pip list` in the docker container.
 
-1. To see which packages are installed, run `pip list` in the docker container.
+- To run a command line version of this Python environment, you may start it with the following command:
 
-2. To run a command line version of this Python environment, you may start it with the following command:
+  ```
+  docker run -it --rm prairielearn/prairielearn /bin/bash
+  ```
 
-   ```
-   docker run -it --rm prairielearn/prairielearn /bin/bash
-   ```
-
-3. To access files on the disk or in `serverFilesCourse` within `server.py`, get the directory from `data["options"]["question_path"]` and similar entries from the `data["options"]` dictionary.
+- To access files on the disk or in `serverFilesCourse` within `server.py`, get the directory from `data["options"]["question_path"]` and similar entries from the `data["options"]` dictionary.
 
 ## Installing libraries in your course
 
@@ -24,20 +22,17 @@ The quickest way to add custom libraries is to install them directly to your cou
 
 1. Check out a copy of your course locally with Git, and make sure the main branch is up-to-date.
 2. Locate the package that you would like to install. You can find a list of all the available Python libraries at the [Python Package Index](https://pypi.org).
-3. Install the package to your courses's `serverFileCourse` directory. You can use the command
+3. Install the package to your course's `serverFileCourse` directory with the following command. Make sure to replace `<path-to-course>` and `<library>` with the absolute path to the course on your local computer and the library you wish to install, respectively.
    ```
    docker run -it --rm -v <path-to-course>:/course prairielearn/prairielearn pip3 install --target /course/serverFilesCourse <library>
    ```
-   replacing `<path-to-course>` and `<library>` with the absolute path to the course on your local computer, and the library you wish to install.
 4. Using Git, commit and push the new files that are now in your `serverFilesCourse` directory.
 
 After these steps, you should be able to `import` the library as normal in your `server.py` files.
 
 ## Adding libraries to PrairieLearn
 
-In general, adding a library as a dependency in PrairieLearn is only done in cases where the library has common utility, or local installation is infeasible (due to large size or too many other dependencies). **Please** make sure to attempt to install locally before submitting a pull request. Some discussion on Slack in the (`#pl-help`) channel to find alternative solutions is also recommended.
-
-If the library itself is very large or instaling it to your course is otherwise somehow infeasible, the other option is to create a pull request to add the library to PrairieLearn itself. This process will definitely take more time, as your change will have to be merged and then deployed to the live server. So, only use this in cases where the first option did not work.
+If a library is very large or requires specific dependencies, it may be infeasible to install a it directly in your course. In that case, you can open a pull request to add it to PrairieLearn's built-in dependencies. This should be used as a last resort and is subject to maintainer approval. Note that this process will take more time, as your change will have to be reviewed, merged, and deployed. So, only use this in cases where installing directly in your course did not work.
 
 ### Locate the library and version on PyPI
 
