@@ -1,3 +1,0 @@
-__lsan_is_turned_off
-__lsan_default_suppressions
-__asan_default_options

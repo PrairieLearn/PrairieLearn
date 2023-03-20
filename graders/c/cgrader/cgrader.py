@@ -13,6 +13,32 @@ CODEBASE = "/grade/student"
 DATAFILE = "/grade/data/data.json"
 SB_USER = "sbuser"
 
+# List of symbols that are not allowed to be used in student code
+INVALID_SYMBOLS = [
+    "__asan_default_options",
+    "__asan_on_error",
+    "__asan_malloc_hook",
+    "__asan_free_hook",
+    "__asan_unpoison_memory_region",
+    "__asan_set_error_exit_code",
+    "__asan_set_death_callback",
+    "__asan_set_error_report_callback",
+    "__msan_default_options",
+    "__msan_malloc_hook",
+    "__msan_free_hook",
+    "__msan_unpoison",
+    "__msan_unpoison_string",
+    "__msan_set_exit_code",
+    "__lsan_is_turned_off",
+    "__lsan_default_suppressions",
+    "__lsan_do_leak_check",
+    "__lsan_disable",
+    "__lsan_enable",
+    "__lsan_ignore_object",
+    "__lsan_register_root_region",
+    "__lsan_unregister_root_region",
+]
+
 TIMEOUT_MESSAGE = """
 
 TIMEOUT! Typically this means the program took too long,
@@ -94,7 +120,7 @@ class CGrader:
         elif not cflags:
             cflags = []
         if enable_asan:
-            cflags.extend(["-fsanitize=address", "-static-libasan", "-g"])
+            cflags.extend(["-fsanitize=address", "-static-libasan", "-g", "-O0"])
 
         if not add_c_file:
             add_c_file = []
@@ -116,19 +142,23 @@ class CGrader:
         objs = []
         for std_c_file in c_file if isinstance(c_file, list) else [c_file]:
             obj_file = re.sub(r"\.[^.]*$", "", std_c_file) + ".o"
+            std_obj_files.append(obj_file)
             out += self.run_command(
                 [compiler, "-c", std_c_file, "-o", obj_file] + cflags, sandboxed=False
             )
-            # Remove functions intended to disable sanitizers from object file
-            out += self.run_command(
-                [
-                    "objcopy",
-                    "--strip-symbols=/cgrader/invalid_student_symbols.txt",
-                    obj_file,
-                ],
-                sandboxed=False,
-            )
-            std_obj_files.append(obj_file)
+            # Identify references to functions intended to disable sanitizers from object file
+            if os.path.isfile(obj_file):
+                symbols = self.run_command(
+                    ["nm", "-j", obj_file], sandboxed=False
+                ).splitlines()
+                found_symbols = [s for s in INVALID_SYMBOLS if s in symbols]
+                if any(found_symbols):
+                    out += (
+                        "\n\033[31mThe following unauthorized functions and variables were found in the provided code:\n\t"
+                        + ", ".join(found_symbols)
+                        + "\033[0m"
+                    )
+                    os.unlink(obj_file)
 
         if all(os.path.isfile(obj) for obj in std_obj_files):
             # Add new C files that maybe overwrite some existing functions.
@@ -455,6 +485,7 @@ class CGrader:
                     "max_points": max_points,
                 }
             else:
+
                 self.result["partial_scores"][field]["points"] += points
                 self.result["partial_scores"][field]["max_points"] += max_points
         return test
