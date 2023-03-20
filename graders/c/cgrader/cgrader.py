@@ -40,7 +40,7 @@ INVALID_SYMBOLS = frozenset(
         "__lsan_unregister_root_region",
     )
 )
-INVALID_PRIMITIVES = frozenset(("no_sanitize",))
+INVALID_PRIMITIVES = frozenset(("no_sanitize", "disable_sanitizer_instrumentation"))
 
 ASAN_FLAGS = ("-fsanitize=address", "-static-libasan", "-g", "-O0")
 
