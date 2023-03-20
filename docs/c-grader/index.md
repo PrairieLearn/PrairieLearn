@@ -353,7 +353,7 @@ int main(int argc, char *argv[]) {
 
   pl_setup_asan_hooks();
   Suite *s = suite_create(...);
-
+}
 ```
 
 If you need more fine-tuned control over when and where these memory access problems happen, you can use the ASAN interface to provide further control. For example, if you want to identify the status of individual pointers to check if they have been correctly allocated, you can use `__asan_address_is_poisoned` or `__asan_region_is_poisoned`:
