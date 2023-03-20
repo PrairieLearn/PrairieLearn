@@ -64,6 +64,7 @@ export const callValidatedOneRow = defaultPool.callValidatedOneRow.bind(defaultP
 export const callValidatedZeroOrOneRow = defaultPool.callValidatedZeroOrOneRow.bind(defaultPool);
 export const queryCursorWithClient = defaultPool.queryCursorWithClient.bind(defaultPool);
 export const queryCursor = defaultPool.queryCursor.bind(defaultPool);
+export const queryValidatedCursor = defaultPool.queryValidatedCursor.bind(defaultPool);
 export const setSearchSchema = defaultPool.setSearchSchema.bind(defaultPool);
 export const getSearchSchema = defaultPool.getSearchSchema.bind(defaultPool);
 export const setRandomSearchSchema = defaultPool.setRandomSearchSchema.bind(defaultPool);

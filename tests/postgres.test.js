@@ -1,7 +1,7 @@
 // @ts-check
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
-const { queryAsync, queryCursor } = require('@prairielearn/postgres');
+const { queryAsync, queryCursor, queryValidatedCursor } = require('@prairielearn/postgres');
 const { z, ZodError } = require('zod');
 
 chai.use(chaiAsPromised);
@@ -61,7 +61,7 @@ describe('@prairielearn/postgres', function () {
       const WorkspaceSchema = z.object({
         id: z.string(),
       });
-      const cursor = await queryCursor(
+      const cursor = await queryValidatedCursor(
         'SELECT * FROM workspaces ORDER BY id ASC;',
         {},
         WorkspaceSchema
@@ -80,7 +80,7 @@ describe('@prairielearn/postgres', function () {
       const BadWorkspaceSchema = z.object({
         badProperty: z.string(),
       });
-      const cursor = await queryCursor(
+      const cursor = await queryValidatedCursor(
         'SELECT * FROM workspaces ORDER BY id ASC;',
         {},
         BadWorkspaceSchema

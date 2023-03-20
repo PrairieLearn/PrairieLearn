@@ -176,14 +176,14 @@ You can optionally pass a Zod schema to parse and validate each row:
 
 ```ts
 import { z } from 'zod';
-import { queryCursor } from '@prairielearn/postgres';
+import { queryValidatedCursor } from '@prairielearn/postgres';
 
 const UserSchema = z.object({
   id: z.string(),
   name: z.string(),
 });
 
-const cursor = await queryCursor(sql.select_all_users, {}, UserSchema);
+const cursor = await queryValidatedCursor(sql.select_all_users, {}, UserSchema);
 for await (const users of cursor.iterate(100)) {
   for (const user of users) {
     console.log(user);
