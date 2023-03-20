@@ -516,7 +516,6 @@ class CGrader:
                     "max_points": max_points,
                 }
             else:
-
                 self.result["partial_scores"][field]["points"] += points
                 self.result["partial_scores"][field]["max_points"] += max_points
         return test
