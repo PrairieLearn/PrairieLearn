@@ -7,7 +7,8 @@
         "node": ">=16.0.0"
     },
     "scripts": {
-        "release": "turbo run build && changeset publish"
+        "release": "turbo run build && changeset publish",
+        "version": "changeset version && yarn"
     },
     "dependencies": {
         "@aws-sdk/client-auto-scaling": "^3.282.0",
