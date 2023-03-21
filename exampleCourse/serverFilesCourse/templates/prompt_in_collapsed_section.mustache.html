@@ -1,6 +1,6 @@
 <pl-template
   file-name="templates/collapsible_section.mustache.html"
-  parent-directory="server-files-course"
+  directory="server-files-course"
   warn-undefined="False"
 >
   <pl-variable name="section_name"
@@ -13,7 +13,7 @@
   <pl-variable name="section_body">
     <pl-template
       file-name="{{prompt_path}}"
-      parent-directory="{{parent_directory}}{{^parent_directory}}server-files-course{{/parent_directory}}"
+      directory="{{parent_directory}}{{^parent_directory}}server-files-course{{/parent_directory}}"
       warn-undefined="False"
     >
     </pl-template>
