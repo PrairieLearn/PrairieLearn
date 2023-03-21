@@ -1,135 +1,106 @@
-const ERR = require('async-stacktrace');
-const _ = require('lodash');
+const asyncHandler = require('express-async-handler');
 const express = require('express');
-const router = express.Router();
-const async = require('async');
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-
+const { pipeline } = require('node:stream/promises');
+const { stringify } = require('@prairielearn/csv');
 const error = require('@prairielearn/error');
-const csvStringify = require('../../lib/nonblocking-csv-stringify');
-const sanitizeName = require('../../lib/sanitize-name');
 const sqldb = require('@prairielearn/postgres');
 
+const sanitizeName = require('../../lib/sanitize-name');
+
+const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
-const filenames = function (locals) {
+const setFilenames = function (locals) {
   const prefix = sanitizeName.questionFilenamePrefix(locals.question, locals.course);
-  return {
-    questionStatsCsvFilename: prefix + 'stats.csv',
-  };
+  locals.questionStatsCsvFilename = prefix + 'stats.csv';
 };
 
-router.get('/', function (req, res, next) {
-  async.series(
-    [
-      (callback) => {
-        debug('set filenames');
-        _.assign(res.locals, filenames(res.locals));
-        callback(null);
-      },
-      (callback) => {
-        sqldb.query(
-          sql.assessment_question_stats,
-          { question_id: res.locals.question.id },
-          function (err, result) {
-            if (ERR(err, callback)) return;
-            res.locals.assessment_stats = result.rows;
-            callback(null);
-          }
-        );
-      },
-      (callback) => {
-        res.locals.question_attempts_histogram = null;
-        res.locals.question_attempts_before_giving_up_histogram = null;
-        res.locals.question_attempts_histogram_hw = null;
-        res.locals.question_attempts_before_giving_up_histogram_hw = null;
-        // res.locals.question_attempts_histogram = res.locals.result.question_attempts_histogram;
-        // res.locals.question_attempts_before_giving_up_histogram = res.locals.result.question_attempts_before_giving_up_histogram;
-        // res.locals.question_attempts_histogram_hw = res.locals.result.question_attempts_histogram_hw;
-        // res.locals.question_attempts_before_giving_up_histogram_hw = res.locals.result.question_attempts_before_giving_up_histogram_hw;
-        callback(null);
-      },
-    ],
-    (err) => {
-      if (ERR(err, next)) return;
-      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    }
-  );
-});
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    setFilenames(res.locals);
+    const statsResult = await sqldb.queryAsync(sql.assessment_question_stats, {
+      question_id: res.locals.question.id,
+    });
+    res.locals.assessment_stats = statsResult.rows;
 
-router.get('/:filename', function (req, res, next) {
-  _.assign(res.locals, filenames(res.locals));
+    res.locals.question_attempts_histogram = null;
+    res.locals.question_attempts_before_giving_up_histogram = null;
+    res.locals.question_attempts_histogram_hw = null;
+    res.locals.question_attempts_before_giving_up_histogram_hw = null;
+    // res.locals.question_attempts_histogram = res.locals.result.question_attempts_histogram;
+    // res.locals.question_attempts_before_giving_up_histogram = res.locals.result.question_attempts_before_giving_up_histogram;
+    // res.locals.question_attempts_histogram_hw = res.locals.result.question_attempts_histogram_hw;
+    // res.locals.question_attempts_before_giving_up_histogram_hw = res.locals.result.question_attempts_before_giving_up_histogram_hw;
 
-  if (req.params.filename === res.locals.questionStatsCsvFilename) {
-    sqldb.query(
-      sql.assessment_question_stats,
-      { question_id: res.locals.question.id },
-      function (err, result) {
-        if (ERR(err, next)) return;
-        var questionStatsList = result.rows;
-        var csvData = [];
-        var csvHeaders = [
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  })
+);
+
+router.get(
+  '/:filename',
+  asyncHandler(async (req, res) => {
+    setFilenames(res.locals);
+
+    if (req.params.filename === res.locals.questionStatsCsvFilename) {
+      const cursor = await sqldb.queryCursor(sql.assessment_question_stats, {
+        question_id: res.locals.question.id,
+      });
+
+      const stringifier = stringify({
+        header: true,
+        columns: [
           'Course',
           'Instance',
           'Assessment',
           'Question number',
           'QID',
           'Question title',
-        ];
-        Object.keys(res.locals.stat_descriptions).forEach((key) => {
-          csvHeaders.push(res.locals.stat_descriptions[key].non_html_title);
-        });
+          ...Object.values(res.locals.stat_descriptions).map((d) => d.non_html_title),
+        ],
+        transform(row) {
+          return [
+            row.course_short_name,
+            row.course_instance_short_name,
+            row.assessment_label,
+            row.assessment_question_number,
+            row.qid,
+            row.question_title,
+            row.mean_question_score,
+            row.question_score_variance,
+            row.discrimination,
+            row.some_submission_perc,
+            row.some_perfect_submission_perc,
+            row.some_nonzero_submission_perc,
+            row.average_first_submission_score,
+            row.first_submission_score_variance,
+            row.first_submission_score_hist,
+            row.average_last_submission_score,
+            row.last_submission_score_variance,
+            row.last_submission_score_hist,
+            row.average_max_submission_score,
+            row.max_submission_score_variance,
+            row.max_submission_score_hist,
+            row.average_average_submission_score,
+            row.average_submission_score_variance,
+            row.average_submission_score_hist,
+            row.submission_score_array_averages,
+            row.incremental_submission_score_array_averages,
+            row.incremental_submission_points_array_averages,
+            row.average_number_submissions,
+            row.number_submissions_variance,
+            row.number_submissions_hist,
+            row.quintile_question_scores,
+          ];
+        },
+      });
 
-        csvData.push(csvHeaders);
+      res.attachment(req.params.filename);
+      await pipeline(cursor.stream(100), stringifier, res);
+    } else {
+      throw error.make(404, 'Unknown filename: ' + req.params.filename);
+    }
+  })
+);
 
-        _(questionStatsList).each(function (questionStats) {
-          var questionStatsData = [];
-          questionStatsData.push(questionStats.course_short_name);
-          questionStatsData.push(questionStats.course_instance_short_name);
-          questionStatsData.push(questionStats.assessment_label);
-          questionStatsData.push(questionStats.assessment_question_number);
-          questionStatsData.push(questionStats.qid);
-          questionStatsData.push(questionStats.question_title);
-          questionStatsData.push(questionStats.mean_question_score);
-          questionStatsData.push(questionStats.question_score_variance);
-          questionStatsData.push(questionStats.discrimination);
-          questionStatsData.push(questionStats.some_submission_perc);
-          questionStatsData.push(questionStats.some_perfect_submission_perc);
-          questionStatsData.push(questionStats.some_nonzero_submission_perc);
-          questionStatsData.push(questionStats.average_first_submission_score);
-          questionStatsData.push(questionStats.first_submission_score_variance);
-          questionStatsData.push(questionStats.first_submission_score_hist);
-          questionStatsData.push(questionStats.average_last_submission_score);
-          questionStatsData.push(questionStats.last_submission_score_variance);
-          questionStatsData.push(questionStats.last_submission_score_hist);
-          questionStatsData.push(questionStats.average_max_submission_score);
-          questionStatsData.push(questionStats.max_submission_score_variance);
-          questionStatsData.push(questionStats.max_submission_score_hist);
-          questionStatsData.push(questionStats.average_average_submission_score);
-          questionStatsData.push(questionStats.average_submission_score_variance);
-          questionStatsData.push(questionStats.average_submission_score_hist);
-          questionStatsData.push(questionStats.submission_score_array_averages);
-          questionStatsData.push(questionStats.incremental_submission_score_array_averages);
-          questionStatsData.push(questionStats.incremental_submission_points_array_averages);
-          questionStatsData.push(questionStats.average_number_submissions);
-          questionStatsData.push(questionStats.number_submissions_variance);
-          questionStatsData.push(questionStats.number_submissions_hist);
-          questionStatsData.push(questionStats.quintile_question_scores);
-
-          _(questionStats.quintile_scores).each(function (perc) {
-            questionStatsData.push(perc);
-          });
-
-          csvData.push(questionStatsData);
-        });
-
-        res.attachment(req.params.filename);
-        csvStringify(csvData).pipe(res);
-      }
-    );
-  } else {
-    next(error.make(404, 'Unknown filename: ' + req.params.filename));
-  }
-});
 module.exports = router;

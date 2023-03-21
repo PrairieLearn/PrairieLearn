@@ -1,16 +1,16 @@
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
-const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
-const router = express.Router();
+const { pipeline } = require('node:stream/promises');
 const asyncHandler = require('express-async-handler');
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
+const { stringify } = require('@prairielearn/csv');
 
 const sanitizeName = require('../../lib/sanitize-name');
 const ltiOutcomes = require('../../lib/ltiOutcomes');
 const assessment = require('../../lib/assessment');
 
+const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const logCsvFilename = (locals) => {
@@ -68,38 +68,34 @@ router.get(
   '/:filename',
   asyncHandler(async (req, res, next) => {
     if (req.params.filename === logCsvFilename(res.locals)) {
-      const log = await assessment.selectAssessmentInstanceLog(
+      const cursor = await assessment.selectAssessmentInstanceLogCursor(
         res.locals.assessment_instance.id,
         false
       );
-      const csvHeaders = [
-        'Time',
-        'Auth user',
-        'Event',
-        'Instructor question',
-        'Student question',
-        'Data',
-      ];
-      const csvData = _.map(log, (row) => {
-        return [
-          row.date_iso8601,
-          row.auth_user_uid,
-          row.event_name,
-          row.instructor_question_number == null
-            ? null
-            : 'I-' + row.instructor_question_number + ' (' + row.qid + ')',
-          row.student_question_number == null
-            ? null
-            : 'S-' +
-              row.student_question_number +
-              (row.variant_number == null ? '' : '#' + row.variant_number),
-          row.data == null ? null : JSON.stringify(row.data),
-        ];
+
+      const stringifier = stringify({
+        header: true,
+        columns: ['Time', 'Auth user', 'Event', 'Instructor question', 'Student question', 'Data'],
+        transform(row) {
+          return [
+            row.date_iso8601,
+            row.auth_user_uid,
+            row.event_name,
+            row.instructor_question_number == null
+              ? null
+              : 'I-' + row.instructor_question_number + ' (' + row.qid + ')',
+            row.student_question_number == null
+              ? null
+              : 'S-' +
+                row.student_question_number +
+                (row.variant_number == null ? '' : '#' + row.variant_number),
+            row.data == null ? null : JSON.stringify(row.data),
+          ];
+        },
       });
-      csvData.splice(0, 0, csvHeaders);
 
       res.attachment(req.params.filename);
-      csvStringify(csvData).pipe(res);
+      await pipeline(cursor.stream(100), stringifier, res);
     } else {
       next(error.make(404, 'Unknown filename: ' + req.params.filename));
     }

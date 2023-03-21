@@ -1,14 +1,14 @@
-const _ = require('lodash');
 const asyncHandler = require('express-async-handler');
 const express = require('express');
-const router = express.Router();
-const csvStringify = require('../../lib/nonblocking-csv-stringify');
-
+const { pipeline } = require('node:stream/promises');
 const error = require('@prairielearn/error');
-const sanitizeName = require('../../lib/sanitize-name');
 const sqldb = require('@prairielearn/postgres');
+const { stringify } = require('@prairielearn/csv');
+
+const sanitizeName = require('../../lib/sanitize-name');
 const assessment = require('../../lib/assessment');
 
+const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const setFilenames = function (locals) {
@@ -60,70 +60,61 @@ router.get(
   asyncHandler(async (req, res) => {
     setFilenames(res.locals);
     if (req.params.filename === res.locals.questionStatsCsvFilename) {
-      const questionStatsList = (
-        await sqldb.queryAsync(sql.questions, {
-          assessment_id: res.locals.assessment.id,
-          course_id: res.locals.course.id,
-        })
-      ).rows;
-      const csvData = [];
-      const csvHeaders = [
-        'Course',
-        'Instance',
-        'Assessment',
-        'Question number',
-        'QID',
-        'Question title',
-      ];
-      Object.keys(res.locals.stat_descriptions).forEach((key) => {
-        csvHeaders.push(res.locals.stat_descriptions[key].non_html_title);
+      const cursor = await sqldb.queryCursor(sql.questions, {
+        assessment_id: res.locals.assessment.id,
+        course_id: res.locals.course.id,
       });
 
-      csvData.push(csvHeaders);
-
-      _(questionStatsList).each(function (questionStats) {
-        var questionStatsData = [];
-        questionStatsData.push(questionStats.course_short_name);
-        questionStatsData.push(questionStats.course_instance_short_name);
-        questionStatsData.push(questionStats.assessment_label);
-        questionStatsData.push(questionStats.assessment_question_number);
-        questionStatsData.push(questionStats.qid);
-        questionStatsData.push(questionStats.question_title);
-        questionStatsData.push(questionStats.mean_question_score);
-        questionStatsData.push(questionStats.question_score_variance);
-        questionStatsData.push(questionStats.discrimination);
-        questionStatsData.push(questionStats.some_submission_perc);
-        questionStatsData.push(questionStats.some_perfect_submission_perc);
-        questionStatsData.push(questionStats.some_nonzero_submission_perc);
-        questionStatsData.push(questionStats.average_first_submission_score);
-        questionStatsData.push(questionStats.first_submission_score_variance);
-        questionStatsData.push(questionStats.first_submission_score_hist);
-        questionStatsData.push(questionStats.average_last_submission_score);
-        questionStatsData.push(questionStats.last_submission_score_variance);
-        questionStatsData.push(questionStats.last_submission_score_hist);
-        questionStatsData.push(questionStats.average_max_submission_score);
-        questionStatsData.push(questionStats.max_submission_score_variance);
-        questionStatsData.push(questionStats.max_submission_score_hist);
-        questionStatsData.push(questionStats.average_average_submission_score);
-        questionStatsData.push(questionStats.average_submission_score_variance);
-        questionStatsData.push(questionStats.average_submission_score_hist);
-        questionStatsData.push(questionStats.submission_score_array_averages);
-        questionStatsData.push(questionStats.incremental_submission_score_array_averages);
-        questionStatsData.push(questionStats.incremental_submission_points_array_averages);
-        questionStatsData.push(questionStats.average_number_submissions);
-        questionStatsData.push(questionStats.number_submissions_variance);
-        questionStatsData.push(questionStats.number_submissions_hist);
-        questionStatsData.push(questionStats.quintile_question_scores);
-
-        _(questionStats.quintile_scores).each(function (perc) {
-          questionStatsData.push(perc);
-        });
-
-        csvData.push(questionStatsData);
+      const stringifier = stringify({
+        header: true,
+        columns: [
+          'Course',
+          'Instance',
+          'Assessment',
+          'Question number',
+          'QID',
+          'Question title',
+          ...Object.values(res.locals.stat_descriptions).map((d) => d.non_html_title),
+        ],
+        transform(row) {
+          return [
+            row.course_short_name,
+            row.course_instance_short_name,
+            row.assessment_label,
+            row.assessment_question_number,
+            row.qid,
+            row.question_title,
+            row.mean_question_score,
+            row.question_score_variance,
+            row.discrimination,
+            row.some_submission_perc,
+            row.some_perfect_submission_perc,
+            row.some_nonzero_submission_perc,
+            row.average_first_submission_score,
+            row.first_submission_score_variance,
+            row.first_submission_score_hist,
+            row.average_last_submission_score,
+            row.last_submission_score_variance,
+            row.last_submission_score_hist,
+            row.average_max_submission_score,
+            row.max_submission_score_variance,
+            row.max_submission_score_hist,
+            row.average_average_submission_score,
+            row.average_submission_score_variance,
+            row.average_submission_score_hist,
+            row.submission_score_array_averages,
+            row.incremental_submission_score_array_averages,
+            row.incremental_submission_points_array_averages,
+            row.average_number_submissions,
+            row.number_submissions_variance,
+            row.number_submissions_hist,
+            row.quintile_question_scores,
+          ];
+        },
       });
 
       res.attachment(req.params.filename);
-      csvStringify(csvData).pipe(res);
+      await pipeline(cursor.stream(100), stringifier, res);
     } else {
       throw error.make(404, 'Unknown filename: ' + req.params.filename);
     }
