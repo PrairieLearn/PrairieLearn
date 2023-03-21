@@ -2,7 +2,7 @@ import copy
 import os
 from enum import Enum
 from itertools import chain
-from typing import cast, Any
+from typing import Any, cast
 
 import chevron
 import lxml.etree
