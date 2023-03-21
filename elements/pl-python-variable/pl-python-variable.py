@@ -22,6 +22,7 @@ TEXT_DEFAULT = False
 SHOW_HEADER_DEFAULT = True
 SHOW_INDEX_DEFAULT = True
 SHOW_DIMENSIONS_DEFAULT = True
+COPY_CODE_BUTTON_DEFAULT = False
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -35,6 +36,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             "suffix",
             "prefix-newline",
             "suffix-newline",
+            "copy-code-button",
             # Pretty print parameters
             "indent",
             "depth",
@@ -106,6 +108,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     suffix_newline = pl.get_boolean_attrib(
         element, "suffix-newline", SUFFIX_NEWLINE_DEFAULT
     )
+    copy_code_button = pl.get_boolean_attrib(
+        element, "copy-code-button", COPY_CODE_BUTTON_DEFAULT
+    )
 
     if prefix_newline:
         prefix += "\n"
@@ -114,4 +119,4 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     language = "" if no_highlight else ' language="python"'
 
-    return f"<pl-code{language}>{prefix}{var_string}{suffix}</pl-code>"
+    return f'<pl-code{language} copy-code-button="{copy_code_button}">{prefix}{var_string}{suffix}</pl-code>'
