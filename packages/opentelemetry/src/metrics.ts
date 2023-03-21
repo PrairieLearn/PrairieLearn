@@ -91,3 +91,77 @@ export async function instrumentedWithMetrics<T>(
     histogram.record(performance.now() - start);
   }
 }
+
+export interface createObservableValueGaugesOptions extends MetricOptions {
+  interval: number;
+}
+
+/**
+ * Creates a set of gauges that track the min, max, and average of a value over
+ * time. The value is observed on a regular interval.
+ *
+ * The provided {@link name} is used as the base name for the three gauges. The
+ * names of the individual gauges are:
+ *
+ * - `${name}.min`
+ * - `${name}.max`
+ * - `${name}.avg`
+ */
+export async function createObservableValueGauges(
+  meter: Meter,
+  name: string,
+  options: createObservableValueGaugesOptions,
+  observe: () => number
+) {
+  const { interval, ...metricOptions } = options;
+
+  let min = 0;
+  let max = 0;
+  let sum = 0;
+  let count = 0;
+
+  // Observe the value on a regular interval. Black-hole any errors.
+  const intervalId = setInterval(() => {
+    Promise.resolve(observe())
+      .then((value) => {
+        min = count == 0 ? value : Math.min(min, value);
+        max = Math.max(max, value);
+        sum += value;
+        count += 1;
+      })
+      .catch(() => {});
+  }, interval);
+
+  // Don't let this keep the process alive.
+  intervalId.unref();
+
+  const minGauge = getObservableGauge(meter, `${name}.min`, metricOptions);
+  const maxGauge = getObservableGauge(meter, `${name}.max`, metricOptions);
+  const averageGauge = getObservableGauge(meter, `${name}.avg`, {
+    ...metricOptions,
+    // Average is always a double, even if the observed value is an int.
+    valueType: ValueType.DOUBLE,
+  });
+
+  minGauge.addCallback((observableResult) => {
+    observableResult.observe(min);
+
+    min = 0;
+  });
+
+  maxGauge.addCallback((observableResult) => {
+    observableResult.observe(max);
+
+    max = 0;
+  });
+
+  averageGauge.addCallback((observableResult) => {
+    const avg = sum / count;
+    observableResult.observe(avg);
+
+    sum = 0;
+    count = 0;
+  });
+
+  return { minGauge, maxGauge, averageGauge, stop: () => clearInterval(intervalId) };
+}

@@ -9,7 +9,7 @@ const workspaceUtils = require('@prairielearn/workspace-utils');
 const config = require('../../lib/config');
 
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 
 const { Workspace } = require('./workspace.html');
 

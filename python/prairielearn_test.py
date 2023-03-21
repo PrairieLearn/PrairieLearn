@@ -1,7 +1,7 @@
 import json
 import math
 from enum import Enum
-from typing import Any, Callable, Dict, Optional, Tuple, cast
+from typing import Any, Callable, Optional, cast
 
 import lxml.html
 import networkx as nx
@@ -75,12 +75,19 @@ def test_networkx_serialization(networkx_graph: Any) -> None:
     assert nx.utils.edges_equal(networkx_graph.edges(), decoded_json_object.edges())
 
 
-def test_inner_html() -> None:
-    e = lxml.html.fragment_fromstring("<div>test</div>")
-    assert pl.inner_html(e) == "test"
-
-    e = lxml.html.fragment_fromstring("<div>test&gt;test</div>")
-    assert pl.inner_html(e) == "test&gt;test"
+@pytest.mark.parametrize(
+    "inner_html_string",
+    [
+        "test",
+        "test&gt;test",
+        "some loose text <pl>other <b>bold</b> text</pl>"
+        "some <p> other <b>words</b> are </p> here",
+        '<p>Some flavor text.</p> <pl-thing some-attribute="4">answers</pl-thing>',
+    ],
+)
+def test_inner_html(inner_html_string: str) -> None:
+    e = lxml.html.fragment_fromstring(f"<div>{inner_html_string}</div>")
+    assert pl.inner_html(e) == inner_html_string
 
 
 @pytest.mark.parametrize(
@@ -238,7 +245,7 @@ def test_grade_answer_parametrized_correct(
     good_feedback = "you did good"
     bad_feedback = "that's terrible"
 
-    def grading_function(submitted_answer: str) -> Tuple[bool, Optional[str]]:
+    def grading_function(submitted_answer: str) -> tuple[bool, Optional[str]]:
         if submitted_answer in {"a", "b", "c", "d", "<>"}:
             return True, good_feedback
         return False, bad_feedback
@@ -283,8 +290,8 @@ def test_grade_answer_parametrized_key_error_blank(
 
     question_data["submitted_answers"] = {question_name: "True"}
 
-    def grading_function(_: str) -> Tuple[bool, Optional[str]]:
-        decoy_dict: Dict[str, str] = dict()
+    def grading_function(_: str) -> tuple[bool, Optional[str]]:
+        decoy_dict: dict[str, str] = dict()
         decoy_dict["junk"]  # This is to throw a key error
         return (True, None)
 

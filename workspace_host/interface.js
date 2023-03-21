@@ -19,8 +19,8 @@ const asyncHandler = require('express-async-handler');
 const bodyParser = require('body-parser');
 const Sentry = require('@prairielearn/sentry');
 const workspaceUtils = require('@prairielearn/workspace-utils');
+const { DockerName, setupDockerAuthAsync } = require('@prairielearn/docker-utils');
 
-const dockerUtil = require('../lib/dockerUtil');
 const awsHelper = require('../lib/aws');
 const socketServer = require('../lib/socket-server'); // must load socket server before workspace
 const { logger } = require('@prairielearn/logger');
@@ -529,8 +529,8 @@ async function _getWorkspaceSettingsAsync(workspace_id) {
   };
 
   if (config.cacheImageRegistry) {
-    const repository = new dockerUtil.DockerName(settings.workspace_image);
-    repository.registry = config.cacheImageRegistry;
+    const repository = new DockerName(settings.workspace_image);
+    repository.setRegistry(config.cacheImageRegistry);
     const newImage = repository.getCombined();
     logger.info(`Using ${newImage} for ${settings.workspace_image}`);
     settings.workspace_image = newImage;
@@ -548,7 +548,7 @@ async function _pullImage(workspace) {
   await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Checking image');
   const workspace_image = workspace.settings.workspace_image;
   logger.info(`Pulling docker image: ${workspace_image}`);
-  const auth = await dockerUtil.setupDockerAuthAsync();
+  const auth = await setupDockerAuthAsync(config.cacheImageRegistry);
 
   let percentDisplayed = false;
   let stream;

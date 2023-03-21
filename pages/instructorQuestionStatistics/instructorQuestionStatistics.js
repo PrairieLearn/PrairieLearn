@@ -6,7 +6,7 @@ const async = require('async');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const sanitizeName = require('../../lib/sanitize-name');
 const sqldb = require('@prairielearn/postgres');

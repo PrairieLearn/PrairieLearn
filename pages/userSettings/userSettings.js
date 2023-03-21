@@ -4,7 +4,7 @@ const router = express.Router();
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 
 const sql = sqldb.loadSqlEquiv(__filename);

@@ -2,17 +2,17 @@ const ERR = require('async-stacktrace');
 const AWS = require('aws-sdk');
 const _ = require('lodash');
 const async = require('async');
-const moment = require('moment');
+const { formatISO } = require('date-fns');
 const express = require('express');
-const router = express.Router();
 const sqldb = require('@prairielearn/postgres');
-const error = require('../../prairielib/lib/error');
+const { DockerName } = require('@prairielearn/docker-utils');
+const error = require('@prairielearn/error');
 
 const syncHelpers = require('../shared/syncHelpers');
 const config = require('../../lib/config');
-const dockerUtil = require('../../lib/dockerUtil');
 
 const sql = sqldb.loadSqlEquiv(__filename);
+const router = express.Router();
 
 router.get('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_permission_edit) {
@@ -33,7 +33,7 @@ router.get('/', function (req, res, next) {
         async.each(
           res.locals.images,
           (image, callback) => {
-            var repository = new dockerUtil.DockerName(image.image);
+            var repository = new DockerName(image.image);
             image.tag = repository.getTag() || 'latest (implied)';
             // Default to get overwritten later
             image.pushed_at = null;
@@ -68,7 +68,7 @@ router.get('/', function (req, res, next) {
                 _.get(res.locals.ecrInfo[repoName], 'imageSizeInBytes', 0) / (1000 * 1000);
               var pushed_at = _.get(res.locals.ecrInfo[repoName], 'imagePushedAt', null);
               if (pushed_at) {
-                image.pushed_at = moment.utc(pushed_at).format();
+                image.pushed_at = formatISO(pushed_at);
               } else {
                 res.locals.imageSyncNeeded = true;
                 image.imageSyncNeeded = true;
