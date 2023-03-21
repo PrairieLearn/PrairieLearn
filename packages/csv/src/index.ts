@@ -8,8 +8,8 @@ export { stringify, Stringifier };
  * Streaming transform from an array of objects to a CSV that doesn't
  * block the event loop.
  */
-export function stringifyNonblocking(data: any[]): Stringifier {
-  const stringifier = new Stringifier({});
+export function stringifyNonblocking(data: any[], options: StringifierOptions = {}): Stringifier {
+  const stringifier = new Stringifier(options);
 
   process.nextTick(function () {
     let j = 0;
@@ -36,6 +36,15 @@ interface StringifyOptions<T = any, U = any>
   transform?: TransformHandler<T, U>;
 }
 
+/**
+ * Transforms an object stream into a CSV stream.
+ *
+ * This is a thin wrapper around `stringify` from the `csv-stringify` package
+ * with added support for transforming the input stream.
+ *
+ * Works best when combined with the `pipeline` function from
+ * `node:stream/promises`, which will help ensure that errors are handled properly.
+ */
 export function stringifyStream<T = any, U = any>(
   options: StringifyOptions<T, U> = {}
 ): NodeJS.ReadWriteStream {
