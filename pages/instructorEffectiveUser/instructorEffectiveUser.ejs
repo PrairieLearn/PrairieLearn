@@ -20,7 +20,7 @@
           <p><strong>Authenticated course instance role:</strong> <%= authz_data.authn_course_instance_role %></p>
           <% } %>
           <p><strong>Authenticated mode:</strong> <%= authz_data.authn_mode %></p>
-          <p><strong>Authenticated date:</strong> <%= req_date_for_display %></p>
+          <p><strong>Authenticated date:</strong> <%= true_req_date_for_display %></p>
 
           <p><form id="resetForm" method="POST">
             <input type="hidden" name="__action" value="reset">

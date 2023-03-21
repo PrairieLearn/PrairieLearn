@@ -1,6 +1,6 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
-const moment = require('moment');
+const { parseISO, formatDistance } = require('date-fns');
 const express = require('express');
 const router = express.Router();
 const SearchString = require('search-string');
@@ -140,7 +140,9 @@ router.get('/', function (req, res, next) {
 
       result.rows.forEach((row) => {
         // Add human-readable relative dates to each row
-        row.relative_date = moment(row.formatted_date).from(row.now_date);
+        row.relative_date = formatDistance(parseISO(row.formatted_date), parseISO(row.now_date), {
+          addSuffix: true,
+        });
 
         if (row.assessment) {
           if (!row.course_instance_id) {
