@@ -12,7 +12,7 @@ export function nonblockingStringify(data: any[]): Stringifier {
   process.nextTick(function () {
     let j = 0;
     function loop() {
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < 100; i++) {
         if (j < data.length) {
           stringifier.write(data[j]);
           j += 1;
