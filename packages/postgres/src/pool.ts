@@ -1,12 +1,17 @@
 import _ from 'lodash';
 import pg, { QueryResult } from 'pg';
+import Cursor from 'pg-cursor';
 import path from 'node:path';
 import debugFactory from 'debug';
 import { callbackify } from 'node:util';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { z } from 'zod';
 
-type Params = Record<string, any> | any[];
+export type QueryParams = Record<string, any> | any[];
+
+export interface CursorIterator<T> {
+  iterate: (batchSize: number) => AsyncGenerator<T[]>;
+}
 
 const debug = debugFactory('prairielib:' + path.basename(__filename, '.js'));
 const lastQueryMap: WeakMap<pg.PoolClient, string> = new WeakMap();
@@ -44,7 +49,7 @@ function debugString(s: string): string {
 /**
  * Formats a set of params for debugging.
  */
-function debugParams(params: Params): string {
+function debugParams(params: QueryParams): string {
   let s;
   try {
     s = JSON.stringify(params);
@@ -58,7 +63,10 @@ function debugParams(params: Params): string {
  * Given an SQL string and params, creates an array of params and an SQL string
  * with any named dollar-sign placeholders replaced with parameters.
  */
-function paramsToArray(sql: string, params: Params): { processedSql: string; paramsArray: any } {
+function paramsToArray(
+  sql: string,
+  params: QueryParams
+): { processedSql: string; paramsArray: any } {
   if (typeof sql !== 'string') throw new Error('SQL must be a string');
   if (Array.isArray(params)) {
     return {
@@ -112,6 +120,22 @@ function escapeIdentifier(identifier: string): string {
   // https://github.com/brianc/node-postgres/issues/1978
   // https://www.postgresql.org/docs/12/sql-syntax-lexical.html
   return pg.Client.prototype.escapeIdentifier(identifier);
+}
+
+function enhanceError(err: Error, sql: string, params: QueryParams): Error {
+  // Copy the error so we don't end up with a circular reference in the
+  // final error.
+  const sqlError = { ...err };
+
+  // `message` is a non-enumerable property, so we need to copy it manually to
+  // the error object.
+  sqlError.message = err.message;
+
+  return addDataToError(err, {
+    sqlError: sqlError,
+    sql: sql,
+    sqlParams: params,
+  });
 }
 
 export class PostgresPool {
@@ -262,7 +286,7 @@ export class PostgresPool {
   async queryWithClientAsync(
     client: pg.PoolClient,
     sql: string,
-    params: Params
+    params: QueryParams
   ): Promise<pg.QueryResult> {
     this._queryCount += 1;
     debug('queryWithClient()', 'sql:', debugString(sql));
@@ -274,14 +298,7 @@ export class PostgresPool {
       debug('queryWithClient() success', 'rowCount:', result.rowCount);
       return result;
     } catch (err: any) {
-      // TODO: why do we do this?
-      const sqlError = JSON.parse(JSON.stringify(err));
-      sqlError.message = err.message;
-      throw addDataToError(err, {
-        sqlError: sqlError,
-        sql: sql,
-        sqlParams: params,
-      });
+      throw enhanceError(err, sql, params);
     }
   }
 
@@ -297,7 +314,7 @@ export class PostgresPool {
   async queryWithClientOneRowAsync(
     client: pg.PoolClient,
     sql: string,
-    params: Params
+    params: QueryParams
   ): Promise<pg.QueryResult> {
     debug('queryWithClientOneRow()', 'sql:', debugString(sql));
     debug('queryWithClientOneRow()', 'params:', debugParams(params));
@@ -326,7 +343,7 @@ export class PostgresPool {
   async queryWithClientZeroOrOneRowAsync(
     client: pg.PoolClient,
     sql: string,
-    params: Params
+    params: QueryParams
   ): Promise<QueryResult> {
     debug('queryWithClientZeroOrOneRow()', 'sql:', debugString(sql));
     debug('queryWithClientZeroOrOneRow()', 'params:', debugParams(params));
@@ -473,7 +490,7 @@ export class PostgresPool {
   /**
    * Executes a query with the specified parameters.
    */
-  async queryAsync(sql: string, params: Params): Promise<QueryResult> {
+  async queryAsync(sql: string, params: QueryParams): Promise<QueryResult> {
     debug('query()', 'sql:', debugString(sql));
     debug('query()', 'params:', debugParams(params));
     const client = await this.getClientAsync();
@@ -496,7 +513,7 @@ export class PostgresPool {
    * Executes a query with the specified parameters. Errors if the query does
    * not return exactly one row.
    */
-  async queryOneRowAsync(sql: string, params: Params): Promise<pg.QueryResult> {
+  async queryOneRowAsync(sql: string, params: QueryParams): Promise<pg.QueryResult> {
     debug('queryOneRow()', 'sql:', debugString(sql));
     debug('queryOneRow()', 'params:', debugParams(params));
     const result = await this.queryAsync(sql, params);
@@ -520,7 +537,7 @@ export class PostgresPool {
    * Executes a query with the specified parameters. Errors if the query
    * returns more than one row.
    */
-  async queryZeroOrOneRowAsync(sql: string, params: Params): Promise<pg.QueryResult> {
+  async queryZeroOrOneRowAsync(sql: string, params: QueryParams): Promise<pg.QueryResult> {
     debug('queryZeroOrOneRow()', 'sql:', debugString(sql));
     debug('queryZeroOrOneRow()', 'params:', debugParams(params));
     const result = await this.queryAsync(sql, params);
@@ -685,12 +702,12 @@ export class PostgresPool {
   callWithClientZeroOrOneRow = callbackify(this.callWithClientZeroOrOneRowAsync);
 
   /**
-   * Wrapper around {@link queryAsync} that validates that the returned data
-   * matches the given validation model. Returns only the rows of the query.
+   * Wrapper around {@link queryAsync} that parses the resulting rows with the
+   * given Zod schema. Returns only the rows of the query.
    */
   async queryValidatedRows<Model extends z.ZodTypeAny>(
     query: string,
-    params: Record<string, any>,
+    params: QueryParams,
     model: Model
   ): Promise<z.infer<Model>[]> {
     const results = await this.queryAsync(query, params);
@@ -698,12 +715,12 @@ export class PostgresPool {
   }
 
   /**
-   * Wrapper around {@link queryOneRowAsync} that validates that the returned data
-   * matches the given validation model. Returns only a single row of the query.
+   * Wrapper around {@link queryOneRowAsync} that parses the resulting row with
+   * the given Zod schema. Returns only a single row of the query.
    */
   async queryValidatedOneRow<Model extends z.ZodTypeAny>(
     query: string,
-    params: Record<string, any>,
+    params: QueryParams,
     model: Model
   ): Promise<z.infer<Model>> {
     const results = await this.queryOneRowAsync(query, params);
@@ -711,13 +728,12 @@ export class PostgresPool {
   }
 
   /**
-   * Wrapper around {@link queryZeroOrOneRowAsync} that validates that the
-   * returned data matches the given validation model, if it return anything.
-   * Returns either the single row of the query or `null`.
+   * Wrapper around {@link queryZeroOrOneRowAsync} that parses the resulting row
+   * (if any) with the given Zod schema. Returns either a single row or `null`.
    */
   async queryValidatedZeroOrOneRow<Model extends z.ZodTypeAny>(
     query: string,
-    params: Record<string, any>,
+    params: QueryParams,
     model: Model
   ): Promise<z.infer<Model> | null> {
     const results = await this.queryZeroOrOneRowAsync(query, params);
@@ -730,12 +746,12 @@ export class PostgresPool {
 
   /**
    * Wrapper around {@link queryAsync} that validates that only one column is
-   * returned and the data in it matches the given validation model. Returns only
+   * returned and parses the data in it with the given Zod schema. Returns only
    * the single column of the query as an array.
    */
   async queryValidatedSingleColumnRows<Model extends z.ZodTypeAny>(
     query: string,
-    params: Record<string, any>,
+    params: QueryParams,
     model: Model
   ): Promise<z.infer<Model>[]> {
     const results = await this.queryAsync(query, params);
@@ -749,12 +765,12 @@ export class PostgresPool {
 
   /**
    * Wrapper around {@link queryOneRowAsync} that validates that only one column
-   * is returned and the data in it matches the given validation model. Returns
+   * is returned and parses the data in it with the given Zod schema. Returns
    * only the single entry.
    */
   async queryValidatedSingleColumnOneRow<Model extends z.ZodTypeAny>(
     query: string,
-    params: Record<string, any>,
+    params: QueryParams,
     model: Model
   ): Promise<z.infer<Model>> {
     const results = await this.queryOneRowAsync(query, params);
@@ -767,12 +783,12 @@ export class PostgresPool {
 
   /**
    * Wrapper around {@link queryZeroOrOneRowAsync} that validates that only one
-   * column is returned and the data in it matches the given validation model, if
-   * it return anything. Returns either the single row of the query or `null`.
+   * column is returned and parses the data in it (if any) with the given Zod
+   * schema. Returns either the single row of the query or `null`.
    */
   async queryValidatedSingleColumnZeroOrOneRow<Model extends z.ZodTypeAny>(
     query: string,
-    params: Record<string, any>,
+    params: QueryParams,
     model: Model
   ): Promise<z.infer<Model> | null> {
     const results = await this.queryZeroOrOneRowAsync(query, params);
@@ -788,8 +804,8 @@ export class PostgresPool {
   }
 
   /**
-   * Wrapper around {@link callAsync} that validates that the returned data
-   * matches the given validation model. Returns only the rows.
+   * Wrapper around {@link callAsync} that parses the resulting rows with the
+   * given Zod schema. Returns only the rows.
    */
   async callValidatedRows<Model extends z.ZodTypeAny>(
     sprocName: string,
@@ -801,8 +817,8 @@ export class PostgresPool {
   }
 
   /**
-   * Wrapper around {@link callOneRowAsync} that validates that the returned data
-   * matches the given validation model. Returns only a single row.
+   * Wrapper around {@link callOneRowAsync} that parses the resulting rows with
+   * the given Zod schema. Returns only a single row.
    */
   async callValidatedOneRow<Model extends z.ZodTypeAny>(
     sprocName: string,
@@ -814,9 +830,8 @@ export class PostgresPool {
   }
 
   /**
-   * Wrapper around {@link callZeroOrOneRowAsync} that validates that the
-   * returned data matches the given validation model, if it return anything.
-   * Returns at most a single row.
+   * Wrapper around {@link callZeroOrOneRowAsync} that parses the resulting row
+   * (if any) with the given Zod schema. Returns at most a single row.
    */
   async callValidatedZeroOrOneRow<Model extends z.ZodTypeAny>(
     sprocName: string,
@@ -829,6 +844,87 @@ export class PostgresPool {
     } else {
       return model.parse(results.rows[0]);
     }
+  }
+
+  /**
+   * Returns a {@link Cursor} for the given query. The cursor can be used to
+   * read results in batches, which is useful for large result sets.
+   */
+  async queryCursorWithClient(
+    client: pg.PoolClient,
+    sql: string,
+    params: QueryParams
+  ): Promise<Cursor> {
+    this._queryCount += 1;
+    debug('queryCursorWithClient()', 'sql:', debugString(sql));
+    debug('queryCursorWithClient()', 'params:', debugParams(params));
+    const { processedSql, paramsArray } = paramsToArray(sql, params);
+    lastQueryMap.set(client, processedSql);
+    return client.query(new Cursor(processedSql, paramsArray));
+  }
+
+  /**
+   * Returns an {@link CursorIterator} that can be used to iterate over the
+   * results of the query in batches, which is useful for large result sets.
+   */
+  async queryCursor<Model extends z.ZodTypeAny>(
+    sql: string,
+    params: QueryParams
+  ): Promise<CursorIterator<z.infer<Model>>> {
+    return this.queryValidatedCursorInternal(sql, params);
+  }
+
+  /**
+   * Returns an {@link CursorIterator} that can be used to iterate over the
+   * results of the query in batches, which is useful for large result sets.
+   * Each row will be parsed by the given Zod schema.
+   */
+  async queryValidatedCursor<Model extends z.ZodTypeAny>(
+    sql: string,
+    params: QueryParams,
+    model: Model
+  ): Promise<CursorIterator<z.infer<Model>>> {
+    return this.queryValidatedCursorInternal(sql, params, model);
+  }
+
+  private async queryValidatedCursorInternal<Model extends z.ZodTypeAny>(
+    sql: string,
+    params: QueryParams,
+    model?: Model
+  ): Promise<CursorIterator<z.infer<Model>>> {
+    const client = await this.getClientAsync();
+    const cursor = await this.queryCursorWithClient(client, sql, params);
+
+    let iterateCalled = false;
+    return {
+      iterate: async function* (batchSize: number) {
+        // Safety check: if someone calls iterate multiple times, they're
+        // definitely doing something wrong.
+        if (iterateCalled) {
+          throw new Error('iterate() called multiple times');
+        }
+        iterateCalled = true;
+
+        try {
+          while (true) {
+            const rows = await cursor.read(batchSize);
+            if (rows.length === 0) {
+              break;
+            }
+
+            if (model) {
+              yield z.array(model).parse(rows);
+            } else {
+              yield rows;
+            }
+          }
+        } catch (err: any) {
+          throw enhanceError(err, sql, params);
+        } finally {
+          client.release();
+        }
+      },
+    };
   }
 
   /**
