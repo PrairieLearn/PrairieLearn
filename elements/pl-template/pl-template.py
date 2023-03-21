@@ -2,7 +2,7 @@ import copy
 import os
 from enum import Enum
 from itertools import chain
-from typing import Any
+from typing import cast, Any
 
 import chevron
 import lxml.etree
@@ -28,7 +28,7 @@ ALLOWED_PL_TAGS = frozenset(("pl-template", "pl-variable", "pl-code", "pl-card")
 
 
 def check_tags(element_html: str) -> None:
-    element_list = lxml.html.fragments_fromstring(element_html)
+    element_list = cast(list, lxml.html.fragments_fromstring(element_html))
 
     # First element can be a string, remove since there's nothing to check.
     if isinstance(element_list[0], str):
