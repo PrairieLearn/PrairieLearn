@@ -937,7 +937,14 @@ export class PostgresPool {
             callback();
           },
         });
-        return Readable.from(iterator.iterate(batchSize)).pipe(transform);
+
+        const stream = Readable.from(iterator.iterate(batchSize));
+        // Node streams don't automatically propagate errors, so we need to
+        // manually forward them to the transform stream.
+        stream.on('error', (err) => {
+          transform.destroy(err);
+        });
+        return stream.pipe(transform);
       },
     };
     return iterator;

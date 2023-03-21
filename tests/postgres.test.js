@@ -140,7 +140,7 @@ describe('@prairielearn/postgres', function () {
       assert.lengthOf(allRows, 4);
     });
 
-    it.only('emits an error when validation fails', async () => {
+    it('emits an error when validation fails', async () => {
       const BadWorkspaceSchema = z.object({
         badProperty: z.string(),
       });
@@ -150,15 +150,10 @@ describe('@prairielearn/postgres', function () {
         BadWorkspaceSchema
       );
       const stream = cursor.stream(1);
-      stream.once('error', (error) => {
-        console.error('stream error', error);
-      });
 
       async function readAllRows() {
         const allRows = [];
-        console.log('reading');
         for await (const row of stream) {
-          console.log('got row', row);
           allRows.push(row);
         }
         return allRows;
@@ -166,7 +161,7 @@ describe('@prairielearn/postgres', function () {
 
       const maybeError = await readAllRows().catch((err) => err);
       assert.instanceOf(maybeError, ZodError);
-      assert.lengthOf(maybeError.errors, 4);
+      assert.lengthOf(maybeError.errors, 1);
     });
   });
 });
