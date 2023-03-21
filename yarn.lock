@@ -2437,6 +2437,7 @@ __metadata:
     csv-stringify: ^6.3.0
     mocha: ^10.2.0
     multipipe: ^4.0.0
+    stream-transform: ^3.2.2
     ts-node: ^10.9.1
     typescript: ^4.9.4
   languageName: unknown
@@ -12977,6 +12978,13 @@ __metadata:
   dependencies:
     mixme: ^0.5.1
   checksum: 26ce872a6812d5c784fa1f042bfd403644bc1c019f64627b5012c4544830a5570bef98b47225b38120c5878b326f3d1a213cd999a2285c98b536e5e202ca5bdf
+  languageName: node
+  linkType: hard
+
+"stream-transform@npm:^3.2.2":
+  version: 3.2.2
+  resolution: "stream-transform@npm:3.2.2"
+  checksum: bc368a623b65f91d4d7faff90c46b740401fddedd79a4b325e5f9319d227894a84aca0e459d92177a679d5006d7ada3f46ebb514a1712da60b2e8beca54111c4
   languageName: node
   linkType: hard
 

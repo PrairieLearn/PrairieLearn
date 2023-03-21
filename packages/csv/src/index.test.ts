@@ -45,4 +45,37 @@ describe('stringify', () => {
     const csv = await streamToString(csvStream);
     assert.equal(csv, '2,3\n3,4\n4,5\n');
   });
+
+  it('stringifies a stream with keyed columns and a transform', async () => {
+    const stream = Readable.from([
+      { a: 1, b: 1 },
+      { a: 2, b: 2 },
+      { a: 3, b: 3 },
+    ]);
+    const stringifier = stringify({
+      header: true,
+      columns: [
+        { key: 'a', header: 'first' },
+        { key: 'b', header: 'second' },
+      ],
+      transform: (row) => [row.a + 1, row.b + 2],
+    });
+    const csv = await streamToString(stream.pipe(stringifier));
+    assert.equal(csv, 'first,second\n2,3\n3,4\n4,5\n');
+  });
+
+  it('stringifies a stream with named columns and a transform', async () => {
+    const stream = Readable.from([
+      { a: 1, b: 1 },
+      { a: 2, b: 2 },
+      { a: 3, b: 3 },
+    ]);
+    const stringifier = stringify({
+      header: true,
+      columns: ['first', 'second'],
+      transform: (row) => [row.a + 1, row.b + 2],
+    });
+    const csv = await streamToString(stream.pipe(stringifier));
+    assert.equal(csv, 'first,second\n2,3\n3,4\n4,5\n');
+  });
 });

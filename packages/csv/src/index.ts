@@ -1,5 +1,5 @@
-import { Transform } from 'node:stream';
 import { Stringifier, Options as StringifierOptions } from 'csv-stringify';
+import { transform, Handler as TransformHandler } from 'stream-transform';
 import multipipe from 'multipipe';
 
 /**
@@ -29,30 +29,17 @@ export function nonblockingStringify(data: any[]): Stringifier {
   return stringifier;
 }
 
-type TransformFunction<T, U> = (chunk: T) => U;
-
 interface StringifyOptions<T = any, U = any>
   extends Pick<StringifierOptions, 'columns' | 'header'> {
-  transform?: TransformFunction<T, U>;
+  transform?: TransformHandler<T, U>;
 }
 
 export function stringify<T = any, U = any>(
   options: StringifyOptions<T, U> = {}
 ): NodeJS.ReadWriteStream {
-  const { transform, ...stringifierOptions } = options;
+  const { transform: _transform, ...stringifierOptions } = options;
   const stringifier = new Stringifier(stringifierOptions);
-
-  if (!transform) {
-    return stringifier;
-  }
-
-  const transformStream = new Transform({
-    objectMode: true,
-    transform(chunk, _encoding, callback) {
-      this.push(transform(chunk));
-      callback();
-    },
-  });
-  // TODO: use native `node:stream/compose` once it's stable.
-  return multipipe([transformStream, stringifier]);
+  if (!_transform) return stringifier;
+  // TODO: use native `node:stream#compose` once it's stable.
+  return multipipe(transform(_transform), stringifier);
 }

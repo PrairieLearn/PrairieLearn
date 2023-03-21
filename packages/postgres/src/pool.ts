@@ -939,9 +939,7 @@ export class PostgresPool {
           },
         });
 
-        // We use `multipipe` instead of `pipe` to ensure correct error handling
-        // and cleanup.
-        // TODO: use native `node:stream/compose` once it's stable.
+        // TODO: use native `node:stream#compose` once it's stable.
         return multipipe(Readable.from(iterator.iterate(batchSize)), transform);
       },
     };
