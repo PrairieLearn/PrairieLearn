@@ -1,16 +1,11 @@
-// @ts-check
-
-const { Transform, pipeline } = require('node:stream');
-const Stringifier = require('csv-stringify').Stringifier;
+import { Transform, pipeline } from 'node:stream';
+import { Stringifier } from 'csv-stringify';
 
 /**
  * Streaming transform from an array of objects to a CSV that doesn't
  * block the event loop.
- *
- * @param {any[]} data Array of objects to be transformed to CSV
- * @returns {import('csv-stringify').Stringifier}
  */
-function nonblockingStringify(data) {
+export function nonblockingStringify(data: any[]): Stringifier {
   const stringifier = new Stringifier({});
 
   process.nextTick(function () {
@@ -33,7 +28,9 @@ function nonblockingStringify(data) {
   return stringifier;
 }
 
-function stringify(transform) {
+type TransformFunction<T, U> = (chunk: T) => U;
+
+export function stringify<T = any, U = any>(transform?: TransformFunction<T, U>): Stringifier {
   const stringifier = new Stringifier({});
   if (!transform) {
     return stringifier;
@@ -41,12 +38,10 @@ function stringify(transform) {
 
   const transformStream = new Transform({
     objectMode: true,
-    transform(chunk, encoding, callback) {
+    transform(chunk, _encoding, callback) {
       this.push(transform(chunk));
       callback();
     },
   });
   return pipeline(transformStream, stringifier);
 }
-
-module.exports = nonblockingStringify;

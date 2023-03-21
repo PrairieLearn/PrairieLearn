@@ -1,21 +1,22 @@
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
-const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
 const asyncHandler = require('express-async-handler');
-const router = express.Router();
 const { default: AnsiUp } = require('ansi_up');
-const ansiUp = new AnsiUp();
-
-const sanitizeName = require('../../lib/sanitize-name');
-const sqldb = require('@prairielearn/postgres');
-
 const error = require('@prairielearn/error');
 const debug = require('debug')('prairielearn:instructorAssessments');
 const { logger } = require('@prairielearn/logger');
+const { stringify } = require('csv-stringify');
+
+const csvStringify = require('../../lib/nonblocking-csv-stringify');
+const sanitizeName = require('../../lib/sanitize-name');
+const sqldb = require('@prairielearn/postgres');
+
 const { AssessmentAddEditor } = require('../../lib/editors');
 const assessment = require('../../lib/assessment');
 
+const router = express.Router();
+const ansiUp = new AnsiUp();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const csvFilename = (locals) => {
@@ -89,15 +90,13 @@ router.get(
       // update assessment statistics if needed
       assessment.updateAssessmentStatisticsForCourseInstance(res.locals.course_instance.id);
 
-      var params = {
+      const cursor = await sqldb.queryCursor(sql.select_assessments, {
         course_instance_id: res.locals.course_instance.id,
         authz_data: res.locals.authz_data,
         req_date: res.locals.req_date,
         assessments_group_by: res.locals.course_instance.assessments_group_by,
-      };
-      const result = await sqldb.queryAsync(sql.select_assessments, params);
+      });
 
-      var assessmentStats = result.rows;
       var csvHeaders = [
         'Course',
         'Instance',
@@ -128,6 +127,7 @@ router.get(
         'Hist10',
       ];
       var csvData = [];
+      var assessmentStats = result.rows;
       _(assessmentStats).each(function (assessmentStat) {
         var csvRow = [
           res.locals.course.short_name,

@@ -6,7 +6,7 @@ import debugFactory from 'debug';
 import { callbackify } from 'node:util';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { z } from 'zod';
-import { Readable, Transform } from 'node:stream';
+import { Readable, Transform, pipeline } from 'node:stream';
 
 export type QueryParams = Record<string, any> | any[];
 
@@ -938,13 +938,9 @@ export class PostgresPool {
           },
         });
 
-        const stream = Readable.from(iterator.iterate(batchSize));
-        // Node streams don't automatically propagate errors, so we need to
-        // manually forward them to the transform stream.
-        stream.on('error', (err) => {
-          transform.destroy(err);
-        });
-        return stream.pipe(transform);
+        // We use `pipeline` instead of `pipe` to ensure correct error handling
+        // and cleanup.
+        return pipeline(Readable.from(iterator.iterate(batchSize)), transform);
       },
     };
     return iterator;

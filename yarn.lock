@@ -2426,6 +2426,20 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/csv@workspace:^, @prairielearn/csv@workspace:packages/csv":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/csv@workspace:packages/csv"
+  dependencies:
+    "@prairielearn/tsconfig": "*"
+    "@types/mocha": ^10.0.1
+    "@types/node": ^18.14.2
+    csv-stringify: ^6.3.0
+    mocha: ^10.2.0
+    ts-node: ^10.9.1
+    typescript: ^4.9.4
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/docker-utils@workspace:packages/docker-utils":
   version: 0.0.0-use.local
   resolution: "@prairielearn/docker-utils@workspace:packages/docker-utils"
@@ -3414,6 +3428,7 @@ __metadata:
     "@octokit/rest": ^19.0.7
     "@prairielearn/bind-mount": ^1.0.0
     "@prairielearn/compiled-assets": ^1.0.0
+    "@prairielearn/csv": "workspace:^"
     "@prairielearn/error": "workspace:^"
     "@prairielearn/html": ^2.0.0
     "@prairielearn/named-locks": ^1.0.0
@@ -5408,6 +5423,13 @@ __metadata:
   version: 6.2.4
   resolution: "csv-stringify@npm:6.2.4"
   checksum: 12d8ab299735ad6c1ca90b37d900d66ef0fcc4289f565df7c67cbeed33f2de56daeae19094a215aa7d3bde8877c0a105f1aeb531e4f582d7561f213b0680c99d
+  languageName: node
+  linkType: hard
+
+"csv-stringify@npm:^6.3.0":
+  version: 6.3.0
+  resolution: "csv-stringify@npm:6.3.0"
+  checksum: d2503ad298b6f432bae5932af365fb1a5f8f51b31a170d8e1c0735cb89193cb665976754612800c3302570bf7086749d60a30d97d820cc3a7c9b7cd4a49fd311
   languageName: node
   linkType: hard
 
