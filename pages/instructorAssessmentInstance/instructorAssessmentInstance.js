@@ -76,20 +76,20 @@ router.get(
       const stringifier = stringifyStream({
         header: true,
         columns: ['Time', 'Auth user', 'Event', 'Instructor question', 'Student question', 'Data'],
-        transform(row) {
+        transform(record) {
           return [
-            row.date_iso8601,
-            row.auth_user_uid,
-            row.event_name,
-            row.instructor_question_number == null
+            record.date_iso8601,
+            record.auth_user_uid,
+            record.event_name,
+            record.instructor_question_number == null
               ? null
-              : 'I-' + row.instructor_question_number + ' (' + row.qid + ')',
-            row.student_question_number == null
+              : 'I-' + record.instructor_question_number + ' (' + record.qid + ')',
+            record.student_question_number == null
               ? null
               : 'S-' +
-                row.student_question_number +
-                (row.variant_number == null ? '' : '#' + row.variant_number),
-            row.data == null ? null : JSON.stringify(row.data),
+                record.student_question_number +
+                (record.variant_number == null ? '' : '#' + record.variant_number),
+            record.data == null ? null : JSON.stringify(record.data),
           ];
         },
       });

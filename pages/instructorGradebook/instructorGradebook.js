@@ -97,9 +97,9 @@ router.get(
       const stringifier = stringifyStream({
         header: true,
         columns: ['UID', 'UIN', 'Name', 'Role', ...assessmentsResult.rows.map((a) => a.label)],
-        transform(row) {
-          const score_percs = _.map(row.scores, (s) => s.score_perc);
-          return [row.uid, row.uin, row.user_name, row.role].concat(score_percs);
+        transform(record) {
+          const score_percs = _.map(record.scores, (s) => s.score_perc);
+          return [record.uid, record.uin, record.user_name, record.role].concat(score_percs);
         },
       });
 

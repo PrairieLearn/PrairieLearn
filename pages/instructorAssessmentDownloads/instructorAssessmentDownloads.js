@@ -65,12 +65,12 @@ router.get('/', function (req, res, next) {
  * format that the CSV `stringify()` function expects.
  *
  * @param {[string, string][]} columns
- * @param {(row: any) => any} [transform]
+ * @param {(record: any) => any} [transform]
  */
-function stringifyWithColumns(columns, transform) {
+function stringifyWithColumns(columns, transform = undefined) {
   return stringifyStream({
     header: true,
-    columns: columns.map(([header, key]) => ({ header, key })),
+    columns: columns.map(([header, key]) => ({ header, key: key ?? header })),
     transform,
   });
 }
@@ -221,14 +221,23 @@ router.get(
         ['params', 'params'],
         ['true_answer', 'true_answer'],
         ['submitted_answer', 'submitted_answer'],
-        ['old_partial_scores', 'partial_scores'],
-        ['partial_scores', null],
-        ['score_perc', null],
-        ['feedback', null],
+        ['old_partial_scores', 'old_partial_scores'],
+        ['partial_scores', 'partial_scores'],
+        ['score_perc', 'score_perc'],
+        ['feedback', 'feedback'],
       ]);
 
       res.attachment(req.params.filename);
-      await pipeline(cursor.stream(100), stringifyWithColumns(columns), res);
+      const stringifier = stringifyWithColumns(columns, (record) => {
+        return {
+          ...record,
+          // Add empty columns for the user to put data in.
+          partial_scores: '',
+          score_perc: '',
+          feedback: '',
+        };
+      });
+      await pipeline(cursor.stream(100), stringifier, res);
     } else if (
       req.params.filename === res.locals.allSubmissionsCsvFilename ||
       req.params.filename === res.locals.finalSubmissionsCsvFilename ||

@@ -1,4 +1,3 @@
-const _ = require('lodash');
 const express = require('express');
 const asyncHandler = require('express-async-handler');
 const router = express.Router();
@@ -172,11 +171,6 @@ router.get(
       });
       const scoresByDay = histByDateResult.rows;
 
-      const csvHeaders = ['Date'];
-      _(scoresByDay).each(function (day) {
-        csvHeaders.push(day.date_formatted);
-      });
-
       const numDays = scoresByDay.length;
       const numGroups = scoresByDay[0].histogram.length;
 
@@ -201,7 +195,6 @@ router.get(
         }
         csvData.push(groupData);
       }
-      csvData.splice(0, 0, csvHeaders);
 
       res.attachment(req.params.filename);
       stringify(csvData, {

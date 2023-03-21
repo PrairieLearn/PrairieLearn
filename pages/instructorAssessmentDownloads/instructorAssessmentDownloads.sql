@@ -175,7 +175,7 @@ SELECT DISTINCT
   v.params,
   v.true_answer,
   (s.submitted_answer - '_files') AS submitted_answer,
-  s.partial_scores,
+  s.partial_scores AS old_partial_scores,
   ai.group_name,
   ai.uid_list
 FROM
