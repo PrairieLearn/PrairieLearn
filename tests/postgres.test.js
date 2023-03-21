@@ -57,6 +57,29 @@ describe('@prairielearn/postgres', function () {
       assert.lengthOf(rowBatches[0], 4);
     });
 
+    it('handles errors', async () => {
+      const cursor = await queryCursor('NOT VALID SQL', { foo: 'bar' });
+
+      async function readAllRows() {
+        const allRows = [];
+        for await (const rows of cursor.iterate(10)) {
+          allRows.push(...rows);
+        }
+        return allRows;
+      }
+
+      const maybeError = await readAllRows().catch((err) => err);
+      assert.instanceOf(maybeError, Error);
+      assert.match(maybeError.message, /syntax error/);
+      assert.isDefined(maybeError.data);
+      assert.equal(maybeError.data.sql, 'NOT VALID SQL');
+      assert.deepEqual(maybeError.data.sqlParams, { foo: 'bar' });
+      assert.isDefined(maybeError.data.sqlError);
+      assert.equal(maybeError.data.sqlError.severity, 'ERROR');
+    });
+  });
+
+  describe('queryValidatedCursor', () => {
     it('validates with provided schema', async () => {
       const WorkspaceSchema = z.object({
         id: z.string(),
@@ -99,25 +122,51 @@ describe('@prairielearn/postgres', function () {
       assert.lengthOf(maybeError.errors, 4);
     });
 
-    it('handles errors', async () => {
-      const cursor = await queryCursor('NOT VALID SQL', { foo: 'bar' });
+    it('returns a stream', async () => {
+      const WorkspaceSchema = z.object({
+        id: z.string(),
+      });
+      const cursor = await queryValidatedCursor(
+        'SELECT * FROM workspaces ORDER BY id ASC;',
+        {},
+        WorkspaceSchema
+      );
+      const stream = cursor.stream(1);
+      const allRows = [];
+      for await (const row of stream) {
+        allRows.push(row);
+      }
+
+      assert.lengthOf(allRows, 4);
+    });
+
+    it.only('emits an error when validation fails', async () => {
+      const BadWorkspaceSchema = z.object({
+        badProperty: z.string(),
+      });
+      const cursor = await queryValidatedCursor(
+        'SELECT * FROM workspaces ORDER BY id ASC;',
+        {},
+        BadWorkspaceSchema
+      );
+      const stream = cursor.stream(1);
+      stream.once('error', (error) => {
+        console.error('stream error', error);
+      });
 
       async function readAllRows() {
         const allRows = [];
-        for await (const rows of cursor.iterate(10)) {
-          allRows.push(...rows);
+        console.log('reading');
+        for await (const row of stream) {
+          console.log('got row', row);
+          allRows.push(row);
         }
         return allRows;
       }
 
       const maybeError = await readAllRows().catch((err) => err);
-      assert.instanceOf(maybeError, Error);
-      assert.match(maybeError.message, /syntax error/);
-      assert.isDefined(maybeError.data);
-      assert.equal(maybeError.data.sql, 'NOT VALID SQL');
-      assert.deepEqual(maybeError.data.sqlParams, { foo: 'bar' });
-      assert.isDefined(maybeError.data.sqlError);
-      assert.equal(maybeError.data.sqlError.severity, 'ERROR');
+      assert.instanceOf(maybeError, ZodError);
+      assert.lengthOf(maybeError.errors, 4);
     });
   });
 });
