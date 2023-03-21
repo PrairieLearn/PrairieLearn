@@ -82,3 +82,18 @@ The `pl-code` element can also be used to show output of a terminal command usin
 </pl-question-panel>
 </div>
 </div>
+
+<div class="card my-2">
+<div class="card-body">
+<pl-question-panel>
+<markdown>
+Combined with the Python `pprint` module, the `pl-code` element can be used to display complex Python objects that cannot be JSON serialized
+easily. In particular, we used the `pprint.pformat()` function to generate the string to display below.
+</markdown>
+<pl-code language="python" copy-code-button="True">
+my_object = \
+{{params.my_object_string}}
+</pl-code>
+</pl-question-panel>
+</div>
+</div>
