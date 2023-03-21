@@ -411,11 +411,7 @@ ORDER BY
   ),
   qid,
   filename,
-  submission_id
-LIMIT
-  $limit
-OFFSET
-  $offset;
+  submission_id;
 
 -- BLOCK assessment_instance_files
 WITH
@@ -556,11 +552,7 @@ ORDER BY
   assessment_instance_number,
   qid,
   variant_number,
-  date
-LIMIT
-  $limit
-OFFSET
-  $offset;
+  date;
 
 -- BLOCK group_configs
 SELECT
