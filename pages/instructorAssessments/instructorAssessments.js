@@ -1,5 +1,4 @@
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
 const express = require('express');
 const asyncHandler = require('express-async-handler');
 const { default: AnsiUp } = require('ansi_up');
