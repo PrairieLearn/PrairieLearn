@@ -1,6 +1,6 @@
-# The Python Environment for Questions
+# Question runtime environment
 
-This page is meant for discussion of details related to the Python environment that questions are run in, along with how to work within this environment for question development. Are you creating questions and finding that PrairieLearn does not have the Python libraries you need? Don't panic! There are a few different options you have for getting the necessary libraries installed that will be discussed below.
+Since PrairieLearn executes your question code in an environment that is not fully user-controlled, it can be useful to have an understanding of exactly how PrairieLearn executes your code. This page discusses the environment where your code is executed in, including which third-party libraries are available and how to install your own.
 
 ## General information
 
