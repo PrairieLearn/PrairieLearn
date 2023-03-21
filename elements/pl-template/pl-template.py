@@ -23,11 +23,16 @@ WARN_UNDEFINED_DEFAULT = False
 TRIM_WHITESPACE_DEFAULT = True
 VALIDATE_OUTPUT_DEFAULT = True
 
-ALLOWED_PL_TAGS = {"pl-template", "pl-variable", "pl-code", "pl-card"}
+# These elements should be display only
+ALLOWED_PL_TAGS = frozenset(("pl-template", "pl-variable", "pl-code", "pl-card"))
 
 
 def check_tags(element_html: str) -> None:
     element_list = lxml.html.fragments_fromstring(element_html)
+
+    # First element can be a string, remove since there's nothing to check.
+    if isinstance(element_list[0], str):
+        element_list.pop(0)
 
     for e in chain.from_iterable(element.iter() for element in element_list):
         if (
