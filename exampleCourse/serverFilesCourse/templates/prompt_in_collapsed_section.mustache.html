@@ -1,13 +1,21 @@
-<pl-template file-name="collapsible_section.mustache.html" parent-directory="server-files-course"
-    subdirectory="templates" warn-undefined="False">
-    <pl-variable name="section_name">{{section_name}}{{^section_name}}Prompt{{/section_name}}</pl-variable>
-    <pl-variable name="section_header">{{section_header}}{{^section_header}}Click To Show The
-        Prompt{{/section_header}}</pl-variable>
-    <pl-variable name="show">{{show}}</pl-variable>
-    <pl-variable name="section_body">
-        <pl-template file-name="{{prompt_path}}"
-            parent-directory="{{parent_directory}}{{^parent_directory}}server-files-course{{/parent_directory}}"
-            subdirectory="{{subdirectory}}" warn-undefined="False">
-        </pl-template>
-    </pl-variable>
+<pl-template
+  file-name="templates/collapsible_section.mustache.html"
+  parent-directory="server-files-course"
+  warn-undefined="False"
+>
+  <pl-variable name="section_name"
+    >{{section_name}}{{^section_name}}Prompt{{/section_name}}</pl-variable
+  >
+  <pl-variable name="section_header"
+    >{{section_header}}{{^section_header}}Click To Show The Prompt{{/section_header}}</pl-variable
+  >
+  <pl-variable name="show">{{show}}</pl-variable>
+  <pl-variable name="section_body">
+    <pl-template
+      file-name="{{prompt_path}}"
+      parent-directory="{{parent_directory}}{{^parent_directory}}server-files-course{{/parent_directory}}"
+      warn-undefined="False"
+    >
+    </pl-template>
+  </pl-variable>
 </pl-template>

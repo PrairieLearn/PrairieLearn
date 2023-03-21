@@ -1,25 +1,32 @@
-<h5>This page shows has example uses of the <code>pl-template</code>
+<p>
+  This page shows has example uses of the <code>pl-template</code>
   element, including uses of recursive templates.
-</h5>
+</p>
 
-<hr>
+<hr />
 
-<pl-template file-name="outerTemplate.mustache" subdirectory="templates">
+<pl-template file-name="templates/outerTemplate.mustache">
   <pl-variable name="is-open">True</pl-variable>
-  <pl-variable name="problem-statement" parent-directory="question" subdirectory="serverFilesQuestion"
-    file-name="statement.html"></pl-variable>
+  <pl-variable
+    name="problem-statement"
+    parent-directory="question"
+    file-name="serverFilesQuestion/statement.html"
+  ></pl-variable>
 </pl-template>
 
-<hr>
+<hr />
 
-<pl-template file-name="cardTemplate.mustache" parent-directory="question" subdirectory="serverFilesQuestion">
+<pl-template file-name="serverFilesQuestion/cardTemplate.mustache" parent-directory="question">
   <pl-variable name="header"><b>A bolded card header</b></pl-variable>
 </pl-template>
 
-<hr>
+<hr />
 
-<pl-template file-name="prompt_in_collapsed_section.mustache.html" parent-directory="server-files-course"
-  subdirectory="templates" warn-undefined="False">
+<pl-template
+  file-name="templates/prompt_in_collapsed_section.mustache.html"
+  parent-directory="server-files-course"
+  warn-undefined="False"
+>
   <pl-variable name="section_name">ExplainPrompt</pl-variable>
   <pl-variable name="section_header">Click To Hide The Prompt</pl-variable>
   <pl-variable name="prompt_path">pre_code_prompt.html</pl-variable>
@@ -27,10 +34,13 @@
   <pl-variable name="show">True</pl-variable>
 </pl-template>
 
-<hr>
+<hr />
 
-<pl-template file-name="prompt_in_collapsed_section.mustache.html" parent-directory="server-files-course"
-  subdirectory="templates" warn-undefined="False">
+<pl-template
+  file-name="templates/prompt_in_collapsed_section.mustache.html"
+  parent-directory="server-files-course"
+  warn-undefined="False"
+>
   <pl-variable name="section_name">ProgrammingPrompt</pl-variable>
   <pl-variable name="section_header">Click To Show The Prompt For The Program</pl-variable>
   <pl-variable name="prompt_path">quadratic_formula_prompt.html</pl-variable>

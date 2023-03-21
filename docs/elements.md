@@ -2012,12 +2012,6 @@ Displays boilerplate HTML from templates in a reusable way.
 </pl-template>
 ```
 
-    QUESTION = "question_path"
-    CLIENT_FILES_QUESTION = "client_files_question_path"
-    CLIENT_FILES_COURSE = "client_files_course_path"
-    SERVER_FILES_COURSE = "server_files_course_path"
-    COURSE_EXTENSIONS = "course_extensions_path"
-
 #### Customizations
 
 | Attribute          | Type                                                                                                   | Default               | Description                                                                                                    |
@@ -2040,7 +2034,7 @@ Inside the `pl-template` element, variables for use in rendering the template ma
 
 #### Details
 
-Because of the way that elements are rendered in PrairieLearn, templates should only contain other decorative elements. In particular, **this element will not work correctly with elements that have a graded component.** When rendering a template, all entries from `data["params"]` are included as available variables and may be used when the template is rendered. Templates may also be used recursively.
+Because of the way that elements are rendered in PrairieLearn, templates should only contain other decorative elements. In particular, **this element will not work correctly with elements that accept and/or grade student input.** When rendering a template, all entries from `data["params"]` are included as available variables and may be used when the template is rendered. Templates may also be used recursively.
 
 #### Example implementations
 
