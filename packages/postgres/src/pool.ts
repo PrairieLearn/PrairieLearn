@@ -6,13 +6,14 @@ import debugFactory from 'debug';
 import { callbackify } from 'node:util';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { z } from 'zod';
-import { Readable, Transform, pipeline } from 'node:stream';
+import { Readable, Transform } from 'node:stream';
+import multipipe from 'multipipe';
 
 export type QueryParams = Record<string, any> | any[];
 
 export interface CursorIterator<T> {
   iterate: (batchSize: number) => AsyncGenerator<T[]>;
-  stream: (batchSize: number) => Readable;
+  stream: (batchSize: number) => NodeJS.ReadWriteStream;
 }
 
 const debug = debugFactory('prairielib:' + path.basename(__filename, '.js'));
@@ -938,9 +939,10 @@ export class PostgresPool {
           },
         });
 
-        // We use `pipeline` instead of `pipe` to ensure correct error handling
+        // We use `multipipe` instead of `pipe` to ensure correct error handling
         // and cleanup.
-        return pipeline(Readable.from(iterator.iterate(batchSize)), transform);
+        // TODO: use native `node:stream/compose` once it's stable.
+        return multipipe(Readable.from(iterator.iterate(batchSize)), transform);
       },
     };
     return iterator;

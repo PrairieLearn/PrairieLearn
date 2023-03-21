@@ -2432,9 +2432,11 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "*"
     "@types/mocha": ^10.0.1
+    "@types/multipipe": ^3.0.1
     "@types/node": ^18.14.2
     csv-stringify: ^6.3.0
     mocha: ^10.2.0
+    multipipe: ^4.0.0
     ts-node: ^10.9.1
     typescript: ^4.9.4
   languageName: unknown
@@ -2584,9 +2586,11 @@ __metadata:
     "@types/debug": ^4.1.7
     "@types/lodash": ^4.14.191
     "@types/mocha": ^10.0.1
+    "@types/multipipe": ^3.0.1
     "@types/node": ^18.14.2
     "@types/pg-cursor": ^2.7.0
     mocha: ^10.2.0
+    multipipe: ^4.0.0
     pg: ^8.10.0
     pg-cursor: ^2.9.0
     pg-pool: ^3.6.0
@@ -3194,6 +3198,15 @@ __metadata:
   version: 0.7.31
   resolution: "@types/ms@npm:0.7.31"
   checksum: daadd354aedde024cce6f5aa873fefe7b71b22cd0e28632a69e8b677aeb48ae8caa1c60e5919bb781df040d116b01cb4316335167a3fc0ef6a63fa3614c0f6da
+  languageName: node
+  linkType: hard
+
+"@types/multipipe@npm:^3.0.1":
+  version: 3.0.1
+  resolution: "@types/multipipe@npm:3.0.1"
+  dependencies:
+    "@types/node": "*"
+  checksum: c9f068165f0e01a748a1fff91f5750d2cd1cc207e709298b9fe590709eb036263c40f0bff1154db2a844cf6cef5b78123ffddad64f103640c4e7644d971d421b
   languageName: node
   linkType: hard
 
@@ -6202,7 +6215,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"duplexer2@npm:~0.1.4":
+"duplexer2@npm:^0.1.2, duplexer2@npm:~0.1.4":
   version: 0.1.4
   resolution: "duplexer2@npm:0.1.4"
   dependencies:
@@ -10384,6 +10397,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"multipipe@npm:^4.0.0":
+  version: 4.0.0
+  resolution: "multipipe@npm:4.0.0"
+  dependencies:
+    duplexer2: ^0.1.2
+    object-assign: ^4.1.0
+  checksum: 5a494ec2ce5bfdb389882ca595e3c4a33cae6c90dad879db2e3aa9a94484d8b164b0fb7b58ccf7593ae7e8c6213fd3f53a736b2c98e4f14c5ed1d38debc33f98
+  languageName: node
+  linkType: hard
+
 "mustache@npm:^4.2.0":
   version: 4.2.0
   resolution: "mustache@npm:4.2.0"
@@ -10771,7 +10794,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"object-assign@npm:^4, object-assign@npm:^4.1.1":
+"object-assign@npm:^4, object-assign@npm:^4.1.0, object-assign@npm:^4.1.1":
   version: 4.1.1
   resolution: "object-assign@npm:4.1.1"
   checksum: fcc6e4ea8c7fe48abfbb552578b1c53e0d194086e2e6bbbf59e0a536381a292f39943c6e9628af05b5528aa5e3318bb30d6b2e53cadaf5b8fe9e12c4b69af23f
