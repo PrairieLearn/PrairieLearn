@@ -4,7 +4,7 @@ const { pipeline } = require('node:stream/promises');
 const asyncHandler = require('express-async-handler');
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
-const { stringify } = require('@prairielearn/csv');
+const { stringifyStream } = require('@prairielearn/csv');
 
 const sanitizeName = require('../../lib/sanitize-name');
 const ltiOutcomes = require('../../lib/ltiOutcomes');
@@ -73,7 +73,7 @@ router.get(
         false
       );
 
-      const stringifier = stringify({
+      const stringifier = stringifyStream({
         header: true,
         columns: ['Time', 'Auth user', 'Event', 'Instructor question', 'Student question', 'Data'],
         transform(row) {

@@ -1,7 +1,7 @@
 const asyncHandler = require('express-async-handler');
 const express = require('express');
 const { pipeline } = require('node:stream/promises');
-const { stringify } = require('@prairielearn/csv');
+const { stringifyStream } = require('@prairielearn/csv');
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 
@@ -47,7 +47,7 @@ router.get(
         question_id: res.locals.question.id,
       });
 
-      const stringifier = stringify({
+      const stringifier = stringifyStream({
         header: true,
         columns: [
           'Course',

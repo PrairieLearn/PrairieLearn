@@ -2,7 +2,7 @@ const _ = require('lodash');
 const express = require('express');
 const asyncHandler = require('express-async-handler');
 const router = express.Router();
-const { stringify } = require('csv-stringify');
+const { stringify } = require('@prairielearn/csv');
 
 const error = require('@prairielearn/error');
 const sanitizeName = require('../../lib/sanitize-name');

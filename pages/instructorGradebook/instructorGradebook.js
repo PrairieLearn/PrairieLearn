@@ -2,7 +2,7 @@ const ERR = require('async-stacktrace');
 const asyncHandler = require('express-async-handler');
 const _ = require('lodash');
 const express = require('express');
-const { stringify } = require('@prairielearn/csv');
+const { stringifyStream } = require('@prairielearn/csv');
 const { pipeline } = require('node:stream/promises');
 
 const error = require('@prairielearn/error');
@@ -94,7 +94,7 @@ router.get(
       const assessmentsResult = await sqldb.queryAsync(sql.course_assessments, params);
       const userScoresCursor = await sqldb.queryCursor(sql.user_scores, params);
 
-      const stringifier = stringify({
+      const stringifier = stringifyStream({
         header: true,
         columns: ['UID', 'UIN', 'Name', 'Role', ...assessmentsResult.rows.map((a) => a.label)],
         transform(row) {

@@ -5,7 +5,7 @@ const fsPromises = require('fs').promises;
 const path = require('path');
 const _ = require('lodash');
 const hljs = require('highlight.js');
-const { stringify } = require('csv-stringify');
+const { stringify } = require('@prairielearn/csv');
 
 const jsonLoad = require('../../lib/json-load');
 const sqldb = require('@prairielearn/postgres');

@@ -5,7 +5,7 @@ const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const archiver = require('archiver');
-const { stringify } = require('@prairielearn/csv');
+const { stringifyStream } = require('@prairielearn/csv');
 const { pipeline } = require('node:stream/promises');
 
 const sanitizeName = require('../../lib/sanitize-name');
@@ -68,7 +68,7 @@ router.get('/', function (req, res, next) {
  * @param {(row: any) => any} [transform]
  */
 function stringifyWithColumns(columns, transform) {
-  return stringify({
+  return stringifyStream({
     header: true,
     columns: columns.map(([header, key]) => ({ header, key })),
     transform,

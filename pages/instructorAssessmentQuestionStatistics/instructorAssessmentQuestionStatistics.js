@@ -3,7 +3,7 @@ const express = require('express');
 const { pipeline } = require('node:stream/promises');
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
-const { stringify } = require('@prairielearn/csv');
+const { stringifyStream } = require('@prairielearn/csv');
 
 const sanitizeName = require('../../lib/sanitize-name');
 const assessment = require('../../lib/assessment');
@@ -65,7 +65,7 @@ router.get(
         course_id: res.locals.course.id,
       });
 
-      const stringifier = stringify({
+      const stringifier = stringifyStream({
         header: true,
         columns: [
           'Course',

@@ -5,7 +5,7 @@ const { default: AnsiUp } = require('ansi_up');
 const error = require('@prairielearn/error');
 const debug = require('debug')('prairielearn:instructorAssessments');
 const { logger } = require('@prairielearn/logger');
-const { stringify } = require('@prairielearn/csv');
+const { stringifyStream } = require('@prairielearn/csv');
 const sqldb = require('@prairielearn/postgres');
 const { pipeline } = require('node:stream/promises');
 
@@ -95,7 +95,7 @@ router.get(
         assessments_group_by: res.locals.course_instance.assessments_group_by,
       });
 
-      const stringifier = stringify({
+      const stringifier = stringifyStream({
         header: true,
         columns: [
           'Course',

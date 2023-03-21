@@ -1,12 +1,14 @@
-import { Stringifier, Options as StringifierOptions } from 'csv-stringify';
+import { stringify, Stringifier, Options as StringifierOptions } from 'csv-stringify';
 import { transform, Handler as TransformHandler } from 'stream-transform';
 import multipipe from 'multipipe';
+
+export { stringify, Stringifier };
 
 /**
  * Streaming transform from an array of objects to a CSV that doesn't
  * block the event loop.
  */
-export function nonblockingStringify(data: any[]): Stringifier {
+export function stringifyNonblocking(data: any[]): Stringifier {
   const stringifier = new Stringifier({});
 
   process.nextTick(function () {
@@ -34,7 +36,7 @@ interface StringifyOptions<T = any, U = any>
   transform?: TransformHandler<T, U>;
 }
 
-export function stringify<T = any, U = any>(
+export function stringifyStream<T = any, U = any>(
   options: StringifyOptions<T, U> = {}
 ): NodeJS.ReadWriteStream {
   const { transform: _transform, ...stringifierOptions } = options;
