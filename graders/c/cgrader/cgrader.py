@@ -123,6 +123,7 @@ class CGrader:
         ungradable_if_failed=True,
         return_objects=False,
         enable_asan=False,
+        reject_symbols=None,
     ):
         cflags = flags
         if cflags and not isinstance(cflags, list):
@@ -170,7 +171,7 @@ class CGrader:
                     }
                 if found_primitives:
                     out += (
-                        "\n\033[31mThe following unauthorized primitives were found in the provided code:\n\t"
+                        "\n\033[31mThe following unauthorized primitives were found in the submitted code:\n\t"
                         + ", ".join(found_primitives)
                         + "\033[0m"
                     )
@@ -181,10 +182,12 @@ class CGrader:
                 symbols = self.run_command(
                     ["nm", "-j", obj_file], sandboxed=False
                 ).splitlines()
-                found_symbols = INVALID_SYMBOLS & set(symbols)
+                found_symbols = (INVALID_SYMBOLS | set(reject_symbols or {})) & set(
+                    symbols
+                )
                 if found_symbols:
                     out += (
-                        "\n\033[31mThe following unauthorized function(s) and/or variable(s) were found in the provided code:\n\t"
+                        "\n\033[31mThe following unauthorized function(s) and/or variable(s) were found in the submitted code:\n\t"
                         + ", ".join(found_symbols)
                         + "\033[0m"
                     )
@@ -300,6 +303,7 @@ class CGrader:
         add_warning_result_msg=True,
         ungradable_if_failed=True,
         enable_asan=False,
+        reject_symbols=None,
     ):
         if not add_c_file:
             add_c_file = []
@@ -321,6 +325,7 @@ class CGrader:
             ungradable_if_failed=ungradable_if_failed,
             return_objects=True,
             enable_asan=enable_asan,
+            reject_symbols=reject_symbols,
         )
         success = (
             os.path.isfile(exec_file)
