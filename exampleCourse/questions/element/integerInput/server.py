@@ -39,3 +39,7 @@ def generate(data):
     d = 16
     data["params"]["d"] = d
     data["correct_answers"]["c_8"] = pl.to_json(np.int64(d), np_encoding_version=2)
+
+def grade(data):
+    for entry in data["submitted_answers"]:
+        print(entry, type(entry))
