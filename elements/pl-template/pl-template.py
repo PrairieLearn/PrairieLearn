@@ -1,6 +1,5 @@
 import copy
 import os
-from enum import Enum
 from itertools import chain
 from typing import Any, cast
 
@@ -8,7 +7,6 @@ import chevron
 import lxml.etree
 import lxml.html
 import prairielearn as pl
-
 
 WARN_UNDEFINED_DEFAULT = False
 TRIM_WHITESPACE_DEFAULT = True
