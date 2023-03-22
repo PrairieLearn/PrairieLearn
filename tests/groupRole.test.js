@@ -1,17 +1,17 @@
-const ERR = require('async-stacktrace');
+const assert = require('chai').assert;
+const cheerio = require('cheerio');
+const fetch = require('node-fetch').default;
+const path = require('path');
+const { step } = require('mocha-steps');
 
 const config = require('../lib/config');
-const path = require('path');
-var assert = require('chai').assert;
-var request = require('request');
-var cheerio = require('cheerio');
+const sqldb = require('@prairielearn/postgres');
+const sql = sqldb.loadSqlEquiv(__filename);
 
-var sqldb = require('@prairielearn/postgres');
-var sql = sqldb.loadSqlEquiv(__filename);
+const helperServer = require('./helperServer');
+const { URLSearchParams } = require('url');
 
-var helperServer = require('./helperServer');
-
-let page, elemList;
+let elemList;
 const locals = {};
 locals.helperClient = require('./helperClient');
 locals.siteUrl = 'http://localhost:' + config.serverPort;
@@ -24,85 +24,70 @@ const storedConfig = {};
 
 describe('Test group based assessments with custom group roles from student side', function () {
   this.timeout(20000);
-  before('set authenticated user', function (callback) {
+  before('set authenticated user', function () {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
-    callback(null);
   });
   before('set up testing server', helperServer.before(locals.courseDir));
   after('shut down testing server', helperServer.after);
-  after('unset authenticated user', function (callback) {
+  after('unset authenticated user', function () {
     Object.assign(config, storedConfig);
-    callback(null);
   });
 
   describe('1. the database', function () {
-    it('should contain a group-based homework assessment with roles', function (callback) {
-      sqldb.query(sql.select_group_work_assessment_with_roles, [], function (err, result) {
-        if (ERR(err, callback)) return;
-        assert.lengthOf(result.rows, 1);
-        assert.notEqual(result.rows[0].id, undefined);
-        locals.assessment_id = result.rows[0].id;
-        locals.assessmentUrl = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id;
-        callback(null);
-      });
+    step('should contain a group-based homework assessment with roles', async function () {
+      const result = await sqldb.queryAsync(sql.select_group_work_assessment_with_roles, []);
+      assert.lengthOf(result.rows, 1);
+      assert.notEqual(result.rows[0].id, undefined);
+      locals.assessment_id = result.rows[0].id;
+      locals.assessmentUrl = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id;
     });
-    it('should contain a group-based homework assessment without roles', function (callback) {
-      sqldb.query(sql.select_group_work_assessment_without_roles, [], function (err, result) {
-        if (ERR(err, callback)) return;
-        assert.lengthOf(result.rows, 1);
-        assert.notEqual(result.rows[0].id, undefined);
-        assert.equal(result.rows[0].has_roles, false);
-        locals.assessment_id_without_roles = result.rows[0].id;
-        locals.assessmentUrlWithoutRoles =
-          locals.courseInstanceUrl + '/assessment/' + locals.assessment_id_without_roles;
-        callback(null);
-      });
+    step('should contain a group-based homework assessment without roles', async function () {
+      const result = await sqldb.queryAsync(sql.select_group_work_assessment_without_roles, []);
+      assert.lengthOf(result.rows, 1);
+      assert.notEqual(result.rows[0].id, undefined);
+      assert.equal(result.rows[0].has_roles, false);
+      locals.assessment_id_without_roles = result.rows[0].id;
+      locals.assessmentUrlWithoutRoles =
+        locals.courseInstanceUrl + '/assessment/' + locals.assessment_id_without_roles;
     });
-    it('should contain the 4 roles for the assessment', function (callback) {
+    step('should contain the 4 roles for the assessment', async function () {
       const params = {
         assessment_id: locals.assessment_id,
       };
-      sqldb.query(sql.select_assessment_group_roles, params, function (err, result) {
-        if (ERR(err, callback)) return;
-        assert.lengthOf(result.rows, 4);
-        locals.groupRoles = result.rows;
+      const result = await sqldb.queryAsync(sql.select_assessment_group_roles, params);
+      assert.lengthOf(result.rows, 4);
+      locals.groupRoles = result.rows;
 
-        // Store roles by name for later tests
-        const manager = result.rows.find((row) => row.role_name === 'Manager');
-        assert.isDefined(manager);
+      // Store roles by name for later tests
+      const manager = result.rows.find((row) => row.role_name === 'Manager');
+      assert.isDefined(manager);
 
-        const recorder = result.rows.find((row) => row.role_name === 'Recorder');
-        assert.isDefined(recorder);
+      const recorder = result.rows.find((row) => row.role_name === 'Recorder');
+      assert.isDefined(recorder);
 
-        const reflector = result.rows.find((row) => row.role_name === 'Reflector');
-        assert.isDefined(reflector);
+      const reflector = result.rows.find((row) => row.role_name === 'Reflector');
+      assert.isDefined(reflector);
 
-        const contributor = result.rows.find((row) => row.role_name === 'Contributor');
-        assert.isDefined(contributor);
+      const contributor = result.rows.find((row) => row.role_name === 'Contributor');
+      assert.isDefined(contributor);
 
-        locals.manager = manager;
-        locals.recorder = recorder;
-        locals.reflector = reflector;
-        locals.contributor = contributor;
-        callback(null);
-      });
+      locals.manager = manager;
+      locals.recorder = recorder;
+      locals.reflector = reflector;
+      locals.contributor = contributor;
     });
   });
 
   describe('2. get 4 student user', function () {
-    it('should insert/get 4 users into/from the DB', function (callback) {
-      sqldb.query(sql.generate_and_enroll_4_users, [], function (err, result) {
-        if (ERR(err, callback)) return;
-        assert.lengthOf(result.rows, 4);
-        locals.studentUsers = result.rows;
-        assert.lengthOf(locals.studentUsers, 4);
-        callback(null);
-      });
+    step('should insert/get 4 users into/from the DB', async function () {
+      const result = await sqldb.queryAsync(sql.generate_and_enroll_4_users, []);
+      assert.lengthOf(result.rows, 4);
+      locals.studentUsers = result.rows;
     });
 
-    it('should switch current user to the group creator', function () {
+    step('should switch current user to the group creator', function () {
       config.authUid = locals.studentUsers[0].uid;
       config.authName = locals.studentUsers[0].name;
       config.authUin = '00000001';
@@ -111,49 +96,33 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   describe('3. POST to assessment page to create group', function () {
-    it('should load assessment page successfully', function (callback) {
-      request(locals.assessmentUrl, function (error, response, body) {
-        if (ERR(error, callback)) return;
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-        }
-        page = body;
-        callback(null);
-      });
+    step('should load assessment page successfully', async function () {
+      const res = await fetch(locals.assessmentUrl);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
+    step('should have a CSRF token', function () {
       elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 2);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
     });
-    it('should be able to create a group', function (callback) {
+    step('should be able to create a group', async function () {
       locals.group_name = 'groupBB';
-      var form = {
+      const form = {
         __action: 'create_group',
         __csrf_token: locals.__csrf_token,
         groupName: locals.group_name,
       };
-      request.post(
-        { url: locals.assessmentUrl, form: form, followAllRedirects: true },
-        function (error, response, body) {
-          if (ERR(error, callback)) return;
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        }
-      );
+      const res = await fetch(locals.assessmentUrl, {
+        method: 'POST',
+        body: new URLSearchParams(form),
+      });
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
-    });
-    it('should update locals with role updates', function () {
+    step('should update locals with role updates', function () {
       locals.roleUpdates = [
         { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
       ];
@@ -161,443 +130,329 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   describe('4. the group information after 1 user join the group', function () {
-    it('should contain the 4-character join code', function () {
+    step('should contain the 4-character join code', function () {
       elemList = locals.$('#join-code');
       locals.joinCode = elemList.text();
       assert.lengthOf(locals.joinCode, locals.$('#group-name').text().length + 1 + 4);
     });
-    it('should have correct role configuration in the database', function (callback) {
-      var params = {
+    step('should have correct role configuration in the database', async function () {
+      const params = {
         assessment_id: locals.assessment_id,
       };
-      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
-        if (ERR(err, callback)) return;
-        const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
-          user_id: groupUserId,
-          group_role_id: roleId,
-        }));
-        assert.sameDeepMembers(expected, result.rows);
-        callback(null);
-      });
+      const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
+      const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+        user_id: groupUserId,
+        group_role_id: roleId,
+      }));
+      assert.sameDeepMembers(expected, result.rows);
     });
-    it('group role table is visible and has one user in it', function () {
+    step('group role table is visible and has one user in it', function () {
       elemList = locals.$('#role-select-form').find('tr');
       assert.lengthOf(elemList, 2);
     });
-    it('should contain four textboxes per table row', function () {
+    step('should contain four textboxes per table row', function () {
       elemList = locals.$('#role-select-form').find('tr').eq(1).find('input');
       assert.lengthOf(elemList, 4);
     });
-    it('should have only manager role checked in the role table', function () {
+    step('should have only manager role checked in the role table', function () {
       elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:checked');
       assert.lengthOf(elemList, 1);
 
       elemList = elemList.next();
       assert.equal(elemList.text().trim(), locals.manager.role_name);
     });
-    it('should not be able to start assessment', function () {
+    step('should not be able to start assessment', function () {
       elemList = locals.$('#start-assessment');
       assert.isTrue(elemList.is(':disabled'));
     });
-    it('should display error for too few recorders/reflectors', function () {
+    step('should display error for too few recorders/reflectors', function () {
       elemList = locals.$('.alert:contains(Recorder has too few assignments)');
       assert.lengthOf(elemList, 1);
       elemList = locals.$('.alert:contains(Reflector has too few assignments)');
       assert.lengthOf(elemList, 1);
     });
-    it('should not be able to select the contributor role', function () {
+    step('should not be able to select the contributor role', function () {
       elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
       assert.lengthOf(elemList, 1);
       elemList = elemList.next();
       assert.equal(elemList.text().trim(), locals.contributor.role_name);
     });
-    it('should be missing 1 more group members to start', function () {
+    step('should be missing 1 more group members to start', function () {
       elemList = locals.$('.text-center:contains(1 more)');
       assert.lengthOf(elemList, 1);
     });
   });
 
   describe('5. the group information after 1 user leaves and rejoins the group', function () {
-    it('should be able to leave the group', function (callback) {
-      var form = {
+    step('should be able to leave the group', async function () {
+      const form = {
         __action: 'leave_group',
         __csrf_token: locals.__csrf_token,
       };
-      request.post(
-        {
-          url: locals.assessmentUrl,
-          form: form,
-          followAllRedirects: true,
-        },
-        function (error, response, body) {
-          if (ERR(error, callback)) return;
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        }
-      );
-    });
-    it('should update locals with role updates', function () {
-      locals.roleUpdates = [];
-    });
-    it('should load assessment page successfully', function (callback) {
-      request(locals.assessmentUrl, function (error, response, body) {
-        if (ERR(error, callback)) return;
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-        }
-        page = body;
-        callback(null);
+      const res = await fetch(locals.assessmentUrl, {
+        method: 'POST',
+        body: new URLSearchParams(form),
       });
+      assert.isOk(res.ok);
     });
-    it('should have correct role configuration in the database', function (callback) {
-      var params = {
+    step('should load assessment page successfully', async function () {
+      const res = await fetch(locals.assessmentUrl);
+      assert.isOk(res.ok);
+    });
+    step('should have correct role configuration in the database', async function () {
+      const params = {
         assessment_id: locals.assessment_id,
       };
-      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
-        if (ERR(err, callback)) return;
-        const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
-          user_id: groupUserId,
-          group_role_id: roleId,
-        }));
-        assert.sameDeepMembers(expected, result.rows);
-        callback(null);
-      });
+      const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
+      // Since there are no users currently in the group, there must be no role assignments
+      assert.lengthOf(result.rows, 0);
     });
-    it('should be able to join group', function (callback) {
-      var form = {
+    step('should be able to join group', async function () {
+      const form = {
         __action: 'join_group',
         __csrf_token: locals.__csrf_token,
         join_code: locals.joinCode,
       };
-      request.post(
-        { url: locals.assessmentUrl, form: form, followAllRedirects: true },
-        function (error, response, body) {
-          if (ERR(error, callback)) return;
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        }
-      );
+      const res = await fetch(locals.assessmentUrl, {
+        method: 'POST',
+        body: new URLSearchParams(form),
+      });
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
-    });
-    it('should update locals with role updates', function () {
-      locals.roleUpdates = [
+    step('should have correct role configuration in the database', async function () {
+      const expectedRoleUpdates = [
         { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
       ];
-    });
-    it('should have correct role configuration in the database', function (callback) {
-      var params = {
+      const expected = expectedRoleUpdates.map(({ roleId, groupUserId }) => ({
+        user_id: groupUserId,
+        group_role_id: roleId,
+      }));
+
+      const params = {
         assessment_id: locals.assessment_id,
       };
-      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
-        if (ERR(err, callback)) return;
-        const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
-          user_id: groupUserId,
-          group_role_id: roleId,
-        }));
-        assert.sameDeepMembers(expected, result.rows);
-        callback(null);
-      });
+      const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
+      assert.sameDeepMembers(expected, result.rows);
     });
-    it('group role table is visible and has one user in it', function () {
+    step('group role table is visible and has one user in it', function () {
       elemList = locals.$('#role-select-form').find('tr');
       assert.lengthOf(elemList, 2);
     });
   });
 
   describe('6. the second user can join the group using code', function () {
-    it('should be able to switch user', function () {
+    step('should be able to switch user', function () {
       let student = locals.studentUsers[1];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000002';
       config.userId = student.user_id;
     });
-    it('should load assessment page successfully', function (callback) {
-      request(locals.assessmentUrl, function (error, response, body) {
-        if (ERR(error, callback)) return;
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-        }
-        page = body;
-        callback(null);
-      });
+    step('should load assessment page successfully', async function () {
+      const res = await fetch(locals.assessmentUrl);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
+    step('should have a CSRF token', function () {
       elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 2);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
     });
-    it('should be able to join group', function (callback) {
-      var form = {
+    step('should be able to join group', async function () {
+      const form = {
         __action: 'join_group',
         __csrf_token: locals.__csrf_token,
         join_code: locals.joinCode,
       };
-      request.post(
-        { url: locals.assessmentUrl, form: form, followAllRedirects: true },
-        function (error, response, body) {
-          if (ERR(error, callback)) return;
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        }
-      );
-    });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
-    });
-    it('should update locals with role updates', function () {
-      locals.roleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-      ];
+      const res = await fetch(locals.assessmentUrl, {
+        method: 'POST',
+        body: new URLSearchParams(form),
+      });
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
   });
 
   describe('7. the group information after 2 users join the group', function () {
-    it('should not be able to start assessment', function () {
+    step('should not be able to start assessment', function () {
       elemList = locals.$('#start-assessment');
       assert.isTrue(elemList.is(':disabled'));
     });
-    it('should have correct role configuration in the database', function (callback) {
-      var params = {
+    step('should have correct role configuration in the database', async function () {
+      const expectedRoleUpdates = [
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+      ];
+      const expected = expectedRoleUpdates.map(({ roleId, groupUserId }) => ({
+        user_id: groupUserId,
+        group_role_id: roleId,
+      }));
+      const params = {
         assessment_id: locals.assessment_id,
       };
-      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
-        if (ERR(err, callback)) return;
-        const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
-          user_id: groupUserId,
-          group_role_id: roleId,
-        }));
-        assert.sameDeepMembers(expected, result.rows);
-        callback(null);
-      });
+      const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
+      assert.sameDeepMembers(expected, result.rows);
     });
-    it('should not render the group role table', function () {
+    step('should not render the group role table', function () {
       elemList = locals.$('#role-select-form').find('tr');
       assert.lengthOf(elemList, 0);
     });
-    it('should display error for too few reflectors', function () {
+    step('should display error for too few reflectors', function () {
       elemList = locals.$('.alert:contains(Reflector has too few assignments)');
       assert.lengthOf(elemList, 1);
     });
   });
 
   describe('8. the third user can join group using code', function () {
-    it('should be able to switch user', function (callback) {
+    step('should be able to switch user', function () {
       let student = locals.studentUsers[2];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000003';
       config.userId = student.user_id;
-      callback(null);
     });
-    it('should load assessment page successfully', function (callback) {
-      request(locals.assessmentUrl, function (error, response, body) {
-        if (ERR(error, callback)) return;
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-        }
-        page = body;
-        callback(null);
-      });
+    step('should load assessment page successfully', async function () {
+      const res = await fetch(locals.assessmentUrl);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
+    step('should have a CSRF token', function () {
       elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 2);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
     });
-    it('should be able to join group', function (callback) {
-      var form = {
+    step('should be able to join group', async function () {
+      const form = {
         __action: 'join_group',
         __csrf_token: locals.__csrf_token,
         join_code: locals.joinCode,
       };
-      request.post(
-        { url: locals.assessmentUrl, form: form, followAllRedirects: true },
-        function (error, response, body) {
-          if (ERR(error, callback)) return;
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        }
-      );
-    });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
-    });
-    it('should update locals with role updates', function () {
-      locals.roleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].user_id },
-      ];
+      const res = await fetch(locals.assessmentUrl, {
+        method: 'POST',
+        body: new URLSearchParams(form),
+      });
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
   });
 
   describe('9. the group information after 3 users join the group', function () {
-    it('should not be able to start assessment', function () {
+    step('should not be able to start assessment', function () {
       elemList = locals.$('#start-assessment');
       assert.isTrue(elemList.is(':disabled'));
     });
-    it('should not render the group role table', function () {
+    step('should not render the group role table', function () {
       elemList = locals.$('#role-select-form').find('tr');
       assert.lengthOf(elemList, 0);
     });
-    it('should display error for too few reflectors', function () {
+    step('should display error for too few reflectors', function () {
       elemList = locals.$('.alert:contains(Reflector has too few assignments)');
       assert.lengthOf(elemList, 1);
     });
-    it('should have correct role configuration in the database', function (callback) {
-      var params = {
+    step('should have correct role configuration in the database', async function () {
+      const expectedRoleUpdates = [
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].user_id },
+      ];
+      const expected = expectedRoleUpdates.map(({ roleId, groupUserId }) => ({
+        user_id: groupUserId,
+        group_role_id: roleId,
+      }));
+      const params = {
         assessment_id: locals.assessment_id,
       };
-      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
-        if (ERR(err, callback)) return;
-        const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
-          user_id: groupUserId,
-          group_role_id: roleId,
-        }));
-        assert.sameDeepMembers(expected, result.rows);
-        callback(null);
-      });
+      const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
+      assert.sameDeepMembers(expected, result.rows);
     });
   });
 
   describe('10. the fourth user can join group using code', function () {
-    it('should be able to switch user', function (callback) {
+    step('should be able to switch user', function () {
       let student = locals.studentUsers[3];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000004';
       config.userId = student.user_id;
-      callback(null);
     });
-    it('should load assessment page successfully', function (callback) {
-      request(locals.assessmentUrl, function (error, response, body) {
-        if (ERR(error, callback)) return;
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-        }
-        page = body;
-        callback(null);
-      });
+    step('should load assessment page successfully', async function () {
+      const res = await fetch(locals.assessmentUrl);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
+    step('should have a CSRF token', function () {
       elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 2);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
     });
-    it('should be able to join group', function (callback) {
-      var form = {
+    step('should be able to join group', async function () {
+      const form = {
         __action: 'join_group',
         __csrf_token: locals.__csrf_token,
         join_code: locals.joinCode,
       };
-      request.post(
-        { url: locals.assessmentUrl, form: form, followAllRedirects: true },
-        function (error, response, body) {
-          if (ERR(error, callback)) return;
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        }
-      );
+      const res = await fetch(locals.assessmentUrl, {
+        method: 'POST',
+        body: new URLSearchParams(form),
+      });
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
+  });
+
+  describe('11. the group information after 4 users join the group', function () {
+    step('should not be able to start assessment', function () {
+      elemList = locals.$('#start-assessment');
+      assert.isTrue(elemList.is(':disabled'));
     });
-    it('should update locals with role updates', function () {
-      locals.roleUpdates = [
+    step('should display error for too few reflectors', function () {
+      elemList = locals.$('.alert:contains(Reflector has too few assignments)');
+      assert.lengthOf(elemList, 1);
+    });
+    step('should not render the group role table', function () {
+      elemList = locals.$('#role-select-form').find('tr');
+      assert.lengthOf(elemList, 0);
+    });
+    step('should have correct role configuration in the database', async function () {
+      const expectedRoleUpdates = [
         { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
         { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
         { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].user_id },
         { roleId: locals.contributor.id, groupUserId: locals.studentUsers[3].user_id },
       ];
-    });
-  });
-
-  describe('11. the group information after 4 users join the group', function () {
-    it('should not be able to start assessment', function () {
-      elemList = locals.$('#start-assessment');
-      assert.isTrue(elemList.is(':disabled'));
-    });
-    it('should display error for too few reflectors', function () {
-      elemList = locals.$('.alert:contains(Reflector has too few assignments)');
-      assert.lengthOf(elemList, 1);
-    });
-    it('should not render the group role table', function () {
-      elemList = locals.$('#role-select-form').find('tr');
-      assert.lengthOf(elemList, 0);
-    });
-    it('should have correct role configuration in the database', function (callback) {
-      var params = {
+      const expected = expectedRoleUpdates.map(({ roleId, groupUserId }) => ({
+        user_id: groupUserId,
+        group_role_id: roleId,
+      }));
+      const params = {
         assessment_id: locals.assessment_id,
       };
-      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
-        if (ERR(err, callback)) return;
-        const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
-          user_id: groupUserId,
-          group_role_id: roleId,
-        }));
-        assert.sameDeepMembers(expected, result.rows);
-        callback(null);
-      });
+      const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
+      assert.sameDeepMembers(expected, result.rows);
     });
   });
 
   describe('12. switch back to the first user', function () {
-    it('should be able to switch user', function (callback) {
+    step('should be able to switch user', function () {
       let student = locals.studentUsers[0];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000001';
       config.userId = student.user_id;
-      callback(null);
     });
-    it('should load assessment page successfully', function (callback) {
-      request(locals.assessmentUrl, function (error, response, body) {
-        if (ERR(error, callback)) return;
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-        }
-        page = body;
-        callback(null);
-      });
+    step('should load assessment page successfully', async function () {
+      const res = await fetch(locals.assessmentUrl);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
+    step('should have a CSRF token', function () {
       elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 2);
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -607,12 +462,12 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   describe('13. the role assigner can re-assign roles to valid configuration', function () {
-    it('group role table is visible and has four users in it', function () {
+    step('group role table is visible and has four users in it', function () {
       elemList = locals.$('#role-select-form').find('tr');
       // Header row and four user rows
       assert.lengthOf(elemList, 5);
     });
-    it('should edit role table to correct configuration', function () {
+    step('should edit role table to correct configuration', function () {
       // Uncheck all of the inputs
       const roleIds = locals.groupRoles.map((role) => role.id);
       const userIds = locals.studentUsers.map((user) => user.user_id);
@@ -646,59 +501,42 @@ describe('Test group based assessments with custom group roles from student side
       elemList = locals.$('#role-select-form').find('tr').find('input:checked');
       assert.lengthOf(elemList, 3);
     });
-    it('should press submit button to perform the role updates', function (callback) {
+    step('should press submit button to perform the role updates', async function () {
       // Grab IDs of checkboxes to construct update request
       const checkedElementIds = {};
       for (let i = 0; i < elemList.length; i++) {
         checkedElementIds[elemList[i.toString()].attribs.id] = 'on';
       }
-      var form = {
+      const form = {
         __action: 'update_group_roles',
         __csrf_token: locals.__csrf_token,
         ...checkedElementIds,
       };
-      request.post(
-        { url: locals.assessmentUrl, form: form, followAllRedirects: true },
-        function (error, response, body) {
-          if (ERR(error, callback)) return;
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        }
-      );
-    });
-    it('should reload assessment page successfully', function (callback) {
-      request(locals.assessmentUrl, function (error, response, body) {
-        if (ERR(error, callback)) return;
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-        }
-        page = body;
-        callback(null);
+      const res = await fetch(locals.assessmentUrl, {
+        method: 'POST',
+        body: new URLSearchParams(form),
       });
+      assert.isOk(res.ok);
     });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
+    step('should reload assessment page successfully', async function () {
+      const res = await fetch(locals.assessmentUrl);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
-    it('should have correct role configuration in the database', function (callback) {
-      var params = {
+    step('should have correct role configuration in the database', async function () {
+      const params = {
         assessment_id: locals.assessment_id,
       };
-      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
-        if (ERR(err, callback)) return;
-        // We expect the db to have all role updates, including the assigner role
-        locals.roleUpdates.push(locals.assignerRoleUpdate);
-        const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
-          user_id: groupUserId,
-          group_role_id: roleId,
-        }));
-        assert.sameDeepMembers(expected, result.rows);
-        callback(null);
-      });
+      const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
+      // We expect the db to have all role updates, including the assigner role
+      locals.roleUpdates.push(locals.assignerRoleUpdate);
+      const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+        user_id: groupUserId,
+        group_role_id: roleId,
+      }));
+      assert.sameDeepMembers(expected, result.rows);
     });
-    it('should have correct roles checked in the table', function () {
+    step('should have correct roles checked in the table', function () {
       elemList = locals.$('#role-select-form').find('tr').find('input:checked');
       assert.lengthOf(elemList, 4);
 
@@ -709,24 +547,24 @@ describe('Test group based assessments with custom group roles from student side
         assert.isDefined(elemList['0'].attribs.checked);
       });
     });
-    it('should have no errors displayed', function () {
+    step('should have no errors displayed', function () {
       elemList = locals.$('.alert:contains(has too few assignments)');
       assert.lengthOf(elemList, 0);
       elemList = locals.$('.alert:contains(has too many assignments)');
       assert.lengthOf(elemList, 0);
     });
-    it('should be able to start assessment', function () {
+    step('should be able to start assessment', function () {
       elemList = locals.$('#start-assessment');
       assert.isFalse(elemList.is(':disabled'));
     });
-    it('should be able to select the contributor role', function () {
+    step('should be able to select the contributor role', function () {
       elemList = locals.$('#role-select-form').find('tr').eq(1).find('input:disabled');
       assert.lengthOf(elemList, 0);
     });
   });
 
   describe('14. invalid role configuration - too many students in one role', function () {
-    it('should edit role table to correct configuration', function () {
+    step('should edit role table to correct configuration', function () {
       // Uncheck all of the inputs
       const roleIds = locals.groupRoles.map((role) => role.id);
       const userIds = locals.studentUsers.map((user) => user.user_id);
@@ -753,57 +591,40 @@ describe('Test group based assessments with custom group roles from student side
       elemList = locals.$('#role-select-form').find('tr').find('input:checked');
       assert.lengthOf(elemList, 4);
     });
-    it('should press submit button to perform the role updates', function (callback) {
+    step('should press submit button to perform the role updates', async function () {
       // Grab IDs of checkboxes to construct update request
       const checkedElementIds = {};
       for (let i = 0; i < elemList.length; i++) {
         checkedElementIds[elemList[i.toString()].attribs.id] = 'on';
       }
-      var form = {
+      const form = {
         __action: 'update_group_roles',
         __csrf_token: locals.__csrf_token,
         ...checkedElementIds,
       };
-      request.post(
-        { url: locals.assessmentUrl, form: form, followAllRedirects: true },
-        function (error, response, body) {
-          if (ERR(error, callback)) return;
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        }
-      );
-    });
-    it('should reload assessment page successfully', function (callback) {
-      request(locals.assessmentUrl, function (error, response, body) {
-        if (ERR(error, callback)) return;
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-        }
-        page = body;
-        callback(null);
+      const res = await fetch(locals.assessmentUrl, {
+        method: 'POST',
+        body: new URLSearchParams(form),
       });
+      assert.isOk(res.ok);
     });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
+    step('should reload assessment page successfully', async function () {
+      const res = await fetch(locals.assessmentUrl);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
-    it('should have correct role configuration in the database', function (callback) {
-      var params = {
+    step('should have correct role configuration in the database', async function () {
+      const params = {
         assessment_id: locals.assessment_id,
       };
-      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
-        if (ERR(err, callback)) return;
-        const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
-          user_id: groupUserId,
-          group_role_id: roleId,
-        }));
-        assert.sameDeepMembers(expected, result.rows);
-        callback(null);
-      });
+      const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
+      const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+        user_id: groupUserId,
+        group_role_id: roleId,
+      }));
+      assert.sameDeepMembers(expected, result.rows);
     });
-    it('should have correct roles checked in the table', function () {
+    step('should have correct roles checked in the table', function () {
       elemList = locals.$('#role-select-form').find('tr').find('input:checked');
       assert.lengthOf(elemList, 4);
 
@@ -814,14 +635,14 @@ describe('Test group based assessments with custom group roles from student side
         assert.isDefined(elemList['0'].attribs.checked);
       });
     });
-    it('should display error for too many recorders', function () {
+    step('should display error for too many recorders', function () {
       elemList = locals.$('.alert:contains(Recorder has too many assignments)');
       assert.lengthOf(elemList, 1);
     });
   });
 
   describe('15. invalid role configuration - one student has too many roles', function () {
-    it('should edit role table to correct configuration', function () {
+    step('should edit role table to correct configuration', function () {
       // Uncheck all of the inputs
       const roleIds = locals.groupRoles.map((role) => role.id);
       const userIds = locals.studentUsers.map((user) => user.user_id);
@@ -851,57 +672,40 @@ describe('Test group based assessments with custom group roles from student side
       elemList = locals.$('#role-select-form').find('tr').find('input:checked');
       assert.lengthOf(elemList, 5);
     });
-    it('should press submit button to perform the role updates', function (callback) {
+    step('should press submit button to perform the role updates', async function () {
       // Grab IDs of checkboxes to construct update request
       const checkedElementIds = {};
       for (let i = 0; i < elemList.length; i++) {
         checkedElementIds[elemList[i.toString()].attribs.id] = 'on';
       }
-      var form = {
+      const form = {
         __action: 'update_group_roles',
         __csrf_token: locals.__csrf_token,
         ...checkedElementIds,
       };
-      request.post(
-        { url: locals.assessmentUrl, form: form, followAllRedirects: true },
-        function (error, response, body) {
-          if (ERR(error, callback)) return;
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        }
-      );
-    });
-    it('should reload assessment page successfully', function (callback) {
-      request(locals.assessmentUrl, function (error, response, body) {
-        if (ERR(error, callback)) return;
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-        }
-        page = body;
-        callback(null);
+      const res = await fetch(locals.assessmentUrl, {
+        method: 'POST',
+        body: new URLSearchParams(form),
       });
+      assert.isOk(res.ok);
     });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
+    step('should reload assessment page successfully', async function () {
+      const res = await fetch(locals.assessmentUrl);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
-    it('should have correct role configuration in the database', function (callback) {
-      var params = {
+    step('should have correct role configuration in the database', async function () {
+      const params = {
         assessment_id: locals.assessment_id,
       };
-      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
-        if (ERR(err, callback)) return;
-        const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
-          user_id: groupUserId,
-          group_role_id: roleId,
-        }));
-        assert.sameDeepMembers(expected, result.rows);
-        callback(null);
-      });
+      const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
+      const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+        user_id: groupUserId,
+        group_role_id: roleId,
+      }));
+      assert.sameDeepMembers(expected, result.rows);
     });
-    it('should have correct roles checked in the table', function () {
+    step('should have correct roles checked in the table', function () {
       elemList = locals.$('#role-select-form').find('tr').find('input:checked');
       assert.lengthOf(elemList, 5);
 
@@ -912,39 +716,30 @@ describe('Test group based assessments with custom group roles from student side
         assert.isDefined(elemList['0'].attribs.checked);
       });
     });
-    it('should display error for a student having too many roles', function () {
+    step('should display error for a student having too many roles', function () {
       elemList = locals.$('.alert:contains(too many roles)');
       assert.lengthOf(elemList, 1);
     });
-    it('should not be able to start assessment', function () {
+    step('should not be able to start assessment', function () {
       elemList = locals.$('#start-assessment');
       assert.isTrue(elemList.is(':disabled'));
     });
   });
 
   describe('16. switch to the fourth user and leave the group', function () {
-    it('should be able to switch user', function (callback) {
+    step('should be able to switch user', function () {
       let student = locals.studentUsers[3];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000004';
       config.userId = student.user_id;
-      callback(null);
     });
-    it('should load assessment page successfully', function (callback) {
-      request(locals.assessmentUrl, function (error, response, body) {
-        if (ERR(error, callback)) return;
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-        }
-        page = body;
-        callback(null);
-      });
+    step('should load assessment page successfully', async function () {
+      const res = await fetch(locals.assessmentUrl);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
+    step('should have a CSRF token', function () {
       // The only element with CSRF token is to leave the group
       elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 1);
@@ -952,31 +747,19 @@ describe('Test group based assessments with custom group roles from student side
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
     });
-    it('should be able to leave the group', function (callback) {
-      var form = {
+    step('should be able to leave the group', async function () {
+      const form = {
         __action: 'leave_group',
         __csrf_token: locals.__csrf_token,
       };
-      request.post(
-        {
-          url: locals.assessmentUrl,
-          form: form,
-          followAllRedirects: true,
-        },
-        function (error, response, body) {
-          if (ERR(error, callback)) return;
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        }
-      );
+      const res = await fetch(locals.assessmentUrl, {
+        method: 'POST',
+        body: new URLSearchParams(form),
+      });
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
-    });
-    it('should update locals with roles updates', function () {
+    step('should update locals with roles updates', function () {
       locals.roleUpdates = [
         { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
         { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
@@ -986,28 +769,19 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   describe('17. switch back to the first user', function () {
-    it('should be able to switch user', function (callback) {
+    step('should be able to switch user', function () {
       let student = locals.studentUsers[0];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000001';
       config.userId = student.user_id;
-      callback(null);
     });
-    it('should load assessment page successfully', function (callback) {
-      request(locals.assessmentUrl, function (error, response, body) {
-        if (ERR(error, callback)) return;
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-        }
-        page = body;
-        callback(null);
-      });
+    step('should load assessment page successfully', async function () {
+      const res = await fetch(locals.assessmentUrl);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
+    step('should have a CSRF token', function () {
       elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 3);
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -1017,21 +791,18 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   describe('18. non-required roles are dropped when user leaves group', function () {
-    it('should have correct role configuration in the database', function (callback) {
-      var params = {
+    step('should have correct role configuration in the database', async function () {
+      const params = {
         assessment_id: locals.assessment_id,
       };
-      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
-        if (ERR(err, callback)) return;
-        const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
-          user_id: groupUserId,
-          group_role_id: roleId,
-        }));
-        assert.sameDeepMembers(expected, result.rows);
-        callback(null);
-      });
+      const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
+      const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+        user_id: groupUserId,
+        group_role_id: roleId,
+      }));
+      assert.sameDeepMembers(expected, result.rows);
     });
-    it('should have correct roles checked in the table', function () {
+    step('should have correct roles checked in the table', function () {
       elemList = locals.$('#role-select-form').find('tr').find('input:checked');
       assert.lengthOf(elemList, 3);
 
@@ -1045,80 +816,50 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   describe('19. switch to user 3, leave, switch back to first user', function () {
-    it('should be able to switch user', function (callback) {
+    step('should be able to switch user', function () {
       let student = locals.studentUsers[2];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000003';
       config.userId = student.user_id;
-      callback(null);
     });
-    it('should load assessment page successfully', function (callback) {
-      request(locals.assessmentUrl, function (error, response, body) {
-        if (ERR(error, callback)) return;
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-        }
-        page = body;
-        callback(null);
-      });
+    step('should load assessment page successfully', async function () {
+      const res = await fetch(locals.assessmentUrl);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
+    step('should have a CSRF token', function () {
       elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 2);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
     });
-    it('should be able to leave the group', function (callback) {
-      var form = {
+    step('should be able to leave the group', async function () {
+      const form = {
         __action: 'leave_group',
         __csrf_token: locals.__csrf_token,
       };
-      request.post(
-        {
-          url: locals.assessmentUrl,
-          form: form,
-          followAllRedirects: true,
-        },
-        function (error, response, body) {
-          if (ERR(error, callback)) return;
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        }
-      );
+      const res = await fetch(locals.assessmentUrl, {
+        method: 'POST',
+        body: new URLSearchParams(form),
+      });
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
-    });
-    it('should be able to switch user', function (callback) {
+    step('should be able to switch user', function () {
       let student = locals.studentUsers[0];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000001';
       config.userId = student.user_id;
-      callback(null);
     });
-    it('should load assessment page successfully', function (callback) {
-      request(locals.assessmentUrl, function (error, response, body) {
-        if (ERR(error, callback)) return;
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-        }
-        page = body;
-        callback(null);
-      });
+    step('should load assessment page successfully', async function () {
+      const res = await fetch(locals.assessmentUrl);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
+    step('should have a CSRF token', function () {
       elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 3);
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -1128,8 +869,8 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   describe('20. required roles are reorganized when user leaves group', function () {
-    it('should have correct role configuration in the database', function (callback) {
-      var params = {
+    step('should have correct role configuration in the database', async function () {
+      const params = {
         assessment_id: locals.assessment_id,
       };
       // Reflector is given to the first user
@@ -1145,27 +886,23 @@ describe('Test group based assessments with custom group roles from student side
         { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
       ];
       // Assert that the reflector role is given to either first or second user
-      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
-        if (ERR(err, callback)) return;
-        assert.lengthOf(result.rows, 3);
-        // Get all roles for first user
-        const firstUserRoleUpdates = result.rows.filter(
-          (row) => row.user_id === locals.studentUsers[0].user_id
-        );
-        assert.isTrue(firstUserRoleUpdates.length === 1 || firstUserRoleUpdates.length === 2);
-        const roleUpdates = firstUserRoleUpdates.length === 2 ? roleUpdates1 : roleUpdates2;
-        const expected = roleUpdates.map(({ roleId, groupUserId }) => ({
-          user_id: groupUserId,
-          group_role_id: roleId,
-        }));
+      const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
+      assert.lengthOf(result.rows, 3);
+      // Get all roles for first user
+      const firstUserRoleUpdates = result.rows.filter(
+        (row) => row.user_id === locals.studentUsers[0].user_id
+      );
+      assert.isTrue(firstUserRoleUpdates.length === 1 || firstUserRoleUpdates.length === 2);
+      const roleUpdates = firstUserRoleUpdates.length === 2 ? roleUpdates1 : roleUpdates2;
+      const expected = roleUpdates.map(({ roleId, groupUserId }) => ({
+        user_id: groupUserId,
+        group_role_id: roleId,
+      }));
 
-        assert.sameDeepMembers(expected, result.rows);
-        locals.roleUpdates = roleUpdates;
-        callback(null);
-      });
-      locals.roleUpdates = roleUpdates1;
+      assert.sameDeepMembers(expected, result.rows);
+      locals.roleUpdates = roleUpdates;
     });
-    it('should have correct roles checked in the table', function () {
+    step('should have correct roles checked in the table', function () {
       elemList = locals.$('#role-select-form').find('tr').find('input:checked');
       assert.lengthOf(elemList, 3);
       locals.roleUpdates.forEach(({ roleId, groupUserId }) => {
@@ -1178,59 +915,38 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   describe('21. leave group as user 1 and switch to user 2', function () {
-    it('should be able to leave the group', function (callback) {
-      var form = {
+    step('should be able to leave the group', async function () {
+      const form = {
         __action: 'leave_group',
         __csrf_token: locals.__csrf_token,
       };
-      request.post(
-        {
-          url: locals.assessmentUrl,
-          form: form,
-          followAllRedirects: true,
-        },
-        function (error, response, body) {
-          if (ERR(error, callback)) return;
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        }
-      );
+      const res = await fetch(locals.assessmentUrl, {
+        method: 'POST',
+        body: new URLSearchParams(form),
+      });
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
-    });
-    it('should update locals with roles updates', function () {
+    step('should update locals with roles updates', function () {
       locals.roleUpdates = [
         { roleId: locals.manager.id, groupUserId: locals.studentUsers[1].user_id },
         { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
         { roleId: locals.reflector.id, groupUserId: locals.studentUsers[1].user_id },
       ];
     });
-    it('should be able to switch user', function (callback) {
+    step('should be able to switch user', function () {
       let student = locals.studentUsers[1];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000002';
       config.userId = student.user_id;
-      callback(null);
     });
-    it('should load assessment page successfully', function (callback) {
-      request(locals.assessmentUrl, function (error, response, body) {
-        if (ERR(error, callback)) return;
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-        }
-        page = body;
-        callback(null);
-      });
+    step('should load assessment page successfully', async function () {
+      const res = await fetch(locals.assessmentUrl);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
+    step('should have a CSRF token', function () {
       elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 2);
       assert.nestedProperty(elemList[0], 'attribs.value');
@@ -1238,22 +954,20 @@ describe('Test group based assessments with custom group roles from student side
       assert.isString(locals.__csrf_token);
     });
   });
+
   describe('22. role with assigner privileges is reassigned upon group leave', function () {
-    it('should have correct role configuration in the database', function (callback) {
-      var params = {
+    step('should have correct role configuration in the database', async function () {
+      const params = {
         assessment_id: locals.assessment_id,
       };
-      sqldb.query(sql.select_group_user_roles, params, function (err, result) {
-        if (ERR(err, callback)) return;
-        const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
-          user_id: groupUserId,
-          group_role_id: roleId,
-        }));
-        assert.sameDeepMembers(expected, result.rows);
-        callback(null);
-      });
+      const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
+      const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+        user_id: groupUserId,
+        group_role_id: roleId,
+      }));
+      assert.sameDeepMembers(expected, result.rows);
     });
-    it('should have correct roles checked in the table', function () {
+    step('should have correct roles checked in the table', function () {
       elemList = locals.$('#role-select-form').find('tr').find('input:checked');
       assert.lengthOf(elemList, 3);
 
@@ -1264,84 +978,59 @@ describe('Test group based assessments with custom group roles from student side
         assert.isDefined(elemList['0'].attribs.checked);
       });
     });
-    it('group role table is visible and has one user in it', function () {
+    step('group role table is visible and has one user in it', function () {
       elemList = locals.$('#role-select-form').find('tr');
       assert.lengthOf(elemList, 2);
     });
   });
 
   describe('23. assessments without roles do not show the role selection table', function () {
-    it('should be able to switch user', function (callback) {
+    step('should be able to switch user', function () {
       let student = locals.studentUsers[0];
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000001';
       config.userId = student.user_id;
-      callback(null);
     });
-    it('should load assessment page successfully', function (callback) {
-      request(locals.assessmentUrl, function (error, response, body) {
-        if (ERR(error, callback)) return;
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-        }
-        page = body;
-        callback(null);
-      });
+    step('should load assessment page successfully', async function () {
+      const res = await fetch(locals.assessmentUrl);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
+    step('should have a CSRF token', function () {
       elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 2);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
     });
-    it('should load new assessment page successfully', function (callback) {
-      request(locals.assessmentUrlWithoutRoles, function (error, response, body) {
-        if (ERR(error, callback)) return;
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode, { response, body }));
-        }
-        page = body;
-        callback(null);
-      });
+    step('should load new assessment page successfully', async function () {
+      const res = await fetch(locals.assessmentUrlWithoutRoles);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
-    });
-    it('should have a CSRF token', function () {
+    step('should have a CSRF token', function () {
       elemList = locals.$('form input[name="__csrf_token"]');
       assert.lengthOf(elemList, 2);
       assert.nestedProperty(elemList[0], 'attribs.value');
       locals.__csrf_token = elemList[0].attribs.value;
       assert.isString(locals.__csrf_token);
     });
-    it('should be able to create a group', function (callback) {
+    step('should be able to create a group', async function () {
       locals.group_name = 'groupAA';
-      var form = {
+      const form = {
         __action: 'create_group',
         __csrf_token: locals.__csrf_token,
         groupName: locals.group_name,
       };
-      request.post(
-        { url: locals.assessmentUrlWithoutRoles, form: form, followAllRedirects: true },
-        function (error, response, body) {
-          if (ERR(error, callback)) return;
-          if (response.statusCode !== 200) {
-            return callback(new Error('bad status: ' + response.statusCode));
-          }
-          page = body;
-          callback(null);
-        }
-      );
+      const res = await fetch(locals.assessmentUrlWithoutRoles, {
+        method: 'POST',
+        body: new URLSearchParams(form),
+      });
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
-    it('should parse', function () {
-      locals.$ = cheerio.load(page);
-    });
-    it('group role table is not visible', function () {
+    step('group role table is not visible', function () {
       elemList = locals.$('#role-select-form');
       assert.lengthOf(elemList, 0);
     });
