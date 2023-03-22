@@ -1,7 +1,7 @@
 Here is some text at the top of the template.
 <pl-template
   file-name="templates/collapsible_section.mustache.html"
-  directory="server-files-course"
+  directory="serverFilesCourse"
   warn-undefined="False"
 >
   <pl-variable name="section_name"
@@ -14,7 +14,7 @@ Here is some text at the top of the template.
   <pl-variable name="section_body">
     <pl-template
       file-name="{{prompt_path}}"
-      directory="{{parent_directory}}{{^parent_directory}}server-files-course{{/parent_directory}}"
+      directory="{{parent_directory}}{{^parent_directory}}serverFilesCourse{{/parent_directory}}"
       warn-undefined="False"
     >
     </pl-template>

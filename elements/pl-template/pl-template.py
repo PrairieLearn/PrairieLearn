@@ -10,15 +10,6 @@ import lxml.html
 import prairielearn as pl
 
 
-class ParentDirectoryEnum(Enum):
-    QUESTION = "question_path"
-    CLIENT_FILES_QUESTION = "client_files_question_path"
-    CLIENT_FILES_COURSE = "client_files_course_path"
-    SERVER_FILES_COURSE = "server_files_course_path"
-    COURSE_EXTENSIONS = "course_extensions_path"
-
-
-PARENT_DIRECTORY_CHOICE_DEFAULT = ParentDirectoryEnum.SERVER_FILES_COURSE
 WARN_UNDEFINED_DEFAULT = False
 TRIM_WHITESPACE_DEFAULT = True
 VALIDATE_OUTPUT_DEFAULT = True
@@ -46,6 +37,30 @@ def check_tags(element_html: str) -> None:
             print('Set validate-output="False" to disable this warning.')
 
 
+def get_file_path(data: pl.QuestionData, element: lxml.html.HtmlElement) -> str:
+    parent_dir_dict = {
+        "question": "question_path",
+        "clientFilesQuestion": "client_files_question_path",
+        "clientFilesCourse": "client_files_course_path",
+        "serverFilesCourse": "server_files_course_path",
+        "courseExtensions": "course_extensions_path",
+    }
+
+    dir_choice = pl.get_string_attrib(
+        element,
+        "directory",
+        "serverFilesCourse",
+    )
+
+    if dir_choice not in parent_dir_dict:
+        raise ValueError(f"Invalid directory choice: {dir_choice}")
+
+    file_directory = data["options"][parent_dir_dict[dir_choice]]
+    file_name = pl.get_string_attrib(element, "file-name")
+
+    return os.path.join(file_directory, file_name)
+
+
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["file-name"]
@@ -58,7 +73,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     # Load in entries from data dict. Allows filling templates with entries from data['params'].
     variable_dict: dict[str, Any] = {"params": copy.deepcopy(data["params"])}
-    options_dict = data["options"]
 
     for child in element:
         if child.tag == "pl-variable":
@@ -82,22 +96,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 )
 
             elif has_template_file:
-                variable_file_name = pl.get_string_attrib(child, "file-name")
-
-                variable_parent_directory_choice = pl.get_enum_attrib(
-                    child,
-                    "directory",
-                    ParentDirectoryEnum,
-                    PARENT_DIRECTORY_CHOICE_DEFAULT,
-                )
-
-                variable_parent_directory = options_dict[
-                    variable_parent_directory_choice.value
-                ]
-
-                file_path = os.path.join(variable_parent_directory, variable_file_name)
-
-                with open(file_path, "r") as f:
+                with open(get_file_path(data, child), "r") as f:
                     variable_dict[name] = f.read()
 
             else:
@@ -114,15 +113,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 f'Tags inside of pl-template must be pl-variable, not "{child.tag}".'
             )
 
-    parent_directory_choice = pl.get_enum_attrib(
-        element,
-        "directory",
-        ParentDirectoryEnum,
-        PARENT_DIRECTORY_CHOICE_DEFAULT,
-    )
-    parent_directory = options_dict[parent_directory_choice.value]
-
-    file_name = pl.get_string_attrib(element, "file-name")
     warn_undefined = pl.get_boolean_attrib(
         element, "warn-undefined", WARN_UNDEFINED_DEFAULT
     )
@@ -131,9 +121,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "validate-output", VALIDATE_OUTPUT_DEFAULT
     )
 
-    file_path = os.path.join(parent_directory, file_name)
-
-    with open(file_path, "r") as f:
+    with open(get_file_path(data, element), "r") as f:
         res = chevron.render(f, variable_dict, warn=warn_undefined)
 
     if validate_output:
