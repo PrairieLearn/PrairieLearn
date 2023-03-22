@@ -1808,5 +1808,5 @@ def index2key(i):
     return key
 
 
-def is_within_limits(n: int) -> bool:
+def is_int_json_serializable(n: int) -> bool:
     return -((2**53) - 1) <= n <= 2**53 - 1

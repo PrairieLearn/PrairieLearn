@@ -339,7 +339,7 @@ def test_get_uuid() -> None:
 )
 def test_all_integers_within_limits_no_exception(item: Any) -> None:
     try:
-        zu.all_integers_within_limits(item)
+        zu.assert_all_integers_within_limits(item)
     except Exception as err:
         assert False, err
 
@@ -355,4 +355,4 @@ def test_all_integers_within_limits_no_exception(item: Any) -> None:
 )
 def test_all_integers_within_limits_raise_exception(item: Any) -> None:
     with pytest.raises(ValueError):
-        zu.all_integers_within_limits(item)
+        zu.assert_all_integers_within_limits(item)

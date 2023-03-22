@@ -255,7 +255,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             ).strip()
         data["format_errors"][name] = format_str
         data["submitted_answers"][name] = None
-    elif not pl.is_within_limits(a_sub_parsed):
+    elif not pl.is_int_json_serializable(a_sub_parsed):
         data["submitted_answers"][name] = a_sub
     else:
         data["submitted_answers"][name] = a_sub_parsed

@@ -3,7 +3,7 @@ from typing import Any
 import prairielearn as pl
 
 
-def all_integers_within_limits(item: Any) -> None:
+def assert_all_integers_within_limits(item: Any) -> None:
     """Raise an exception if the input item contains any oversized integers."""
     item_stack = [item]
 
@@ -11,7 +11,7 @@ def all_integers_within_limits(item: Any) -> None:
         next_item = item_stack.pop()
 
         if isinstance(next_item, int):
-            if not pl.is_within_limits(next_item):
+            if not pl.is_int_json_serializable(next_item):
                 raise ValueError(
                     f"Data structure contains oversized integer: {next_item}"
                 )
