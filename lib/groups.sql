@@ -69,12 +69,7 @@ WITH
       cg.id
     FROM
       create_group AS cg,
-      (
-        SELECT
-          *
-        FROM
-          get_role
-      ) as gr
+      get_role as gr
   )
 INSERT INTO
   group_logs (authn_user_id, user_id, group_id, action)
@@ -107,9 +102,9 @@ WHERE
   AND gc.deleted_at IS NULL
   -- BLOCK get_group_roles
 SELECT
-  gr.id::INTEGER,
+  gr.id,
   gr.role_name,
-  COUNT(gu.user_id)::INTEGER AS count,
+  COUNT(gu.user_id) AS count,
   gr.maximum,
   gr.minimum
 FROM
