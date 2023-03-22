@@ -28,14 +28,14 @@ def generate(data):
     # Release correct answer
     data["correct_answers"]["c_1"] = c
     data["correct_answers"]["c_2"] = c
-    data["correct_answers"]["c_3"] = str(c)
     data["correct_answers"]["c_4"] = str(c)
-    data["correct_answers"]["c_6"] = str(c16)
+    data["correct_answers"]["c_5"] = str(c)
+    data["correct_answers"]["c_7"] = str(c16)
 
-    c_7 = "9007199254740991999"
-    data["correct_answers"]["c_7"] = c_7
-    data["params"]["c_7"] = c_7
+    c_large = "9007199254740991999"
+    data["correct_answers"]["c_large"] = c_large
+    data["params"]["c_large"] = c_large
 
     d = 16
     data["params"]["d"] = d
-    data["correct_answers"]["c_8"] = pl.to_json(np.int64(d), np_encoding_version=2)
+    data["correct_answers"]["c_np"] = pl.to_json(np.int64(d), np_encoding_version=2)
