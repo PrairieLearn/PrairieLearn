@@ -75,7 +75,7 @@ prairielearn.get_unit_registry()
 # debug the problem.
 def try_dumps(obj, sort_keys=False, allow_nan=False):
     try:
-        zu.all_integers_within_limits(obj)
+        zu.assert_all_integers_within_limits(obj)
         return json.dumps(obj, sort_keys=sort_keys, allow_nan=allow_nan)
     except Exception:
         print(f"Error converting this object to json:\n{obj}\n")
