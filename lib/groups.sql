@@ -93,7 +93,8 @@ FROM
   JOIN groups as g ON gu.group_id = g.id
 WHERE
   g.id = $group_id
-  -- BLOCK get_group_roles
+
+-- BLOCK get_group_roles
 WITH
   get_assessment_id AS (
     SELECT
@@ -131,7 +132,7 @@ FROM
       group_user_roles
     WHERE
       group_id = $group_id
-  ) AS gu ON gu.group_role_id = gr.id
+  ) AS gur ON gur.group_role_id = gr.id
 GROUP BY
   gr.id,
   maximum,
