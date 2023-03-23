@@ -5,30 +5,12 @@ const axe = require('axe-core');
 const jsdom = require('jsdom');
 const fetch = require('node-fetch').default;
 const { A11yError } = require('@sa11y/format');
-const cheerio = require('cheerio');
 
 const config = require('../../lib/config');
 const helperServer = require('../helperServer');
 
 const SITE_URL = 'http://localhost:' + config.serverPort;
 const EXAMPLE_COURSE_DIR = path.resolve(__dirname, '..', '..', 'exampleCourse');
-
-/**
- * Loads the given URL into a Cheerio object.
- *
- * @param {string} url
- * @returns {Promise<cheerio.Root>}
- */
-async function loadPageCheerio(url) {
-  const text = await fetch(url).then((res) => {
-    if (!res.ok) {
-      throw new Error(`Error loading page: ${res.status}`);
-    }
-    return res.text();
-  });
-
-  return cheerio.load(text);
-}
 
 /**
  * Loads the given URL into a JSDOM object.
@@ -55,31 +37,6 @@ async function checkPage(url) {
   const page = await loadPageJsdom(SITE_URL + url);
   const results = await axe.run(page.window.document.documentElement);
   A11yError.checkAndThrow(results.violations);
-}
-
-async function getExampleCourseContext() {
-  const $ = await loadPageCheerio(SITE_URL);
-
-  const courseLink = $('td a:contains("XC 101: Example Course")');
-  const courseLinkHref = courseLink.attr('href');
-  const courseIdMatch = courseLinkHref.match(/course\/(\d+)/);
-  if (!courseIdMatch) {
-    throw new Error(`Could not find course ID in link: ${courseLinkHref}`);
-  }
-  const courseId = courseIdMatch[1];
-
-  const courseInstanceLink = courseLink.parents('tr').find('td a:contains("Spring 2015")');
-  const courseInstanceLinkHref = courseInstanceLink.attr('href');
-  const courseInstanceIdMatch = courseInstanceLinkHref.match(/course_instance\/(\d+)/);
-  if (!courseInstanceIdMatch) {
-    throw new Error(`Could not find course instance ID in link: ${courseInstanceLinkHref}`);
-  }
-  const courseInstanceId = courseInstanceIdMatch[1];
-
-  return {
-    courseId,
-    courseInstanceId,
-  };
 }
 
 // These are meant to be a representative sample of pages from across the site.
@@ -143,14 +100,6 @@ const pages = [
 describe('accessibility', () => {
   before('set up testing server', helperServer.before(EXAMPLE_COURSE_DIR));
   after('shut down testing server', helperServer.after);
-
-  // We need to get data about database IDs, and we also need to add a small
-  // amount of state to the server, e.g. assessment instances.
-  before('prepare context', async () => {
-    console.log('running hook');
-    const { courseId, courseInstanceId } = await getExampleCourseContext();
-    console.log(courseId, courseInstanceId);
-  });
 
   pages.forEach((page) => {
     // let title = typeof page === 'string' ? page : page.title;
