@@ -836,7 +836,7 @@ module.exports.initExpress = function () {
         res.locals.navSubPage = 'cheat_detection_pair';
         next();
       },
-      require('./pages/instructorAssessmentCheatDetection/instructorAssessmentCheatDetection'),
+      require('./pages/instructorAssessmentCheatDetectionPair/instructorAssessmentCheatDetectionPair'),
     ]
   );
   app.use(
