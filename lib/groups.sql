@@ -1,4 +1,4 @@
--- BLOCK get_config_info
+-- BLOCK get_group_config
 SELECT
   gc.*
 FROM
@@ -85,22 +85,21 @@ FROM
 SELECT DISTINCT
   u.uid,
   u.user_id,
-  gu.group_id,
   g.name AS group_name,
   g.join_code
 FROM
-  assessments AS a
-  JOIN group_configs AS gc ON gc.assessment_id = a.id
-  JOIN groups AS g ON g.group_config_id = gc.id
-  JOIN group_users AS gu ON gu.group_id = g.id
-  JOIN group_users AS gu2 ON gu2.group_id = gu.group_id
-  JOIN users AS u ON u.user_id = gu2.user_id
+  group_users AS gu
+  JOIN users as u ON u.user_id = gu.user_id
+  JOIN groups as g ON gu.group_id = g.id
 WHERE
-  a.id = $assessment_id
-  AND gu.user_id = $user_id
-  AND g.deleted_at IS NULL
-  AND gc.deleted_at IS NULL
+  g.id = $group_id
+
   -- BLOCK get_group_roles
+WITH get_assessment_id AS (
+  SELECT gc.assessment_id
+  FROM group_configs AS gc
+  JOIN groups AS g ON g.group_config_id = gc.id
+)
 SELECT
   gr.id,
   gr.role_name,
@@ -114,7 +113,7 @@ FROM
     FROM
       group_roles
     WHERE
-      assessment_id = $assessment_id
+      assessment_id = (SELECT * FROM get_assessment_id)
   ) AS gr
   LEFT JOIN (
     SELECT
@@ -152,3 +151,14 @@ FROM
   JOIN group_roles gr ON gu.group_role_id = gr.id
 WHERE
   gu.group_id = $group_id;
+
+-- BLOCK get_group_id
+SELECT
+  g.id
+FROM
+  groups as g
+  JOIN group_configs AS gc ON g.group_config_id = gc.id
+  JOIN group_users AS gu ON gu.group_id = g.id
+WHERE
+  gc.assessment_id = $assessment_id
+  AND gu.user_id = $user_id;
