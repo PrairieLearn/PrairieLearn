@@ -1,3 +1,4 @@
+// @ts-check
 var ERR = require('async-stacktrace');
 var async = require('async');
 var fs = require('fs');
@@ -66,8 +67,9 @@ var update = function (locals, callback) {
                       oldHash: 'HEAD~1',
                       newHash: 'HEAD',
                     },
-                    (err) => {
+                    (err, chunkChanges) => {
                       if (ERR(err, callback)) return;
+                      chunks.logChunkChangesToJob(chunkChanges, job);
                       callback(null);
                     }
                   );
