@@ -1,4 +1,4 @@
-FROM prairielearn/plbase
+FROM prairielearn/plbase:alpine
 
 ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
 
