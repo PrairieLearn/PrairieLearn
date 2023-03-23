@@ -25,40 +25,35 @@ router.get('/', async function (req, res, next) {
     // students to create and start a new assessment instance.
     if (!checkPasswordOrRedirect(req, res)) return;
     if (res.locals.assessment.group_work) {
-      const groupInfo = await groupAssessmentHelper.getGroupInfo(
-        res.locals.assessment.id,
-        res.locals.user.user_id
-      );
-      res.locals.permissions = groupInfo.permissions;
-      res.locals.minSize = groupInfo.minSize;
-      res.locals.maxSize = groupInfo.maxSize;
-      res.locals.groupSize = groupInfo.groupSize;
-      res.locals.needsize = groupInfo.needsize;
-      res.locals.hasRoles = groupInfo.hasRoles;
-      res.locals.groupMembers = groupInfo.groupMembers;
-      res.locals.joinCode = groupInfo.joinCode;
-      res.locals.minimumSizeMet = groupInfo.minimumSizeMet;
-      res.locals.start = groupInfo.start;
-      res.locals.used_join_code = groupInfo.usedJoinCode;
-      res.locals.validationErrors = groupInfo.validationErrors;
-      res.locals.disabledRoles = groupInfo.disabledRoles;
-      res.locals.group_roles = groupInfo.groupRoles;
-      res.locals.rolesAreBalanced = groupInfo.rolesAreBalanced;
+      
+      // Get the group config info
+      const groupConfig = await groupAssessmentHelper.getGroupConfig(res.locals.assessment.id);
+      res.locals.groupConfig = groupConfig;
 
-      if (groupInfo.hasRoles) {
-        if (groupInfo.isGroupMember) {
-          const permissions = await groupAssessmentHelper.getAssessmentLevelPermissions(
+      // Check whether the user is currently in a group in the current assessment by trying to get a group_id
+      const groupId = await groupAssessmentHelper.getGroupId(res.locals.assessment.id, res.locals.user.user_id);
+
+      if (groupId === undefined) {
+        res.locals.notInGroup = true;
+      } else {
+        const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);
+        res.locals.groupSize = groupInfo.groupSize;
+        res.locals.groupMembers = groupInfo.groupMembers;
+        res.locals.joinCode = groupInfo.joinCode;
+        res.locals.groupName = groupInfo.groupName;
+        res.locals.start = groupInfo.start;
+        res.locals.rolesInfo = groupInfo.rolesInfo;
+
+        if (groupConfig.hasRoles) {
+          const result = await groupAssessmentHelper.getAssessmentLevelPermissions(
             res.locals.assessment.id,
             res.locals.user.user_id
           );
-          res.locals.can_view_role_table = permissions.can_assign_roles_at_start;
-          res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-        } else {
-          res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+          res.locals.canViewRoleTable = result.can_assign_roles_at_start;
         }
-      } else {
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       }
+
+      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     } else {
       res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     }
