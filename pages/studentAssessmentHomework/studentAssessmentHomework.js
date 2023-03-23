@@ -149,14 +149,15 @@ router.post('/', async function (req, res, next) {
       res.locals.assessment.id,
       res.locals.user.user_id,
       res.locals.authn_user.user_id,
-      function (err, succeeded, permissions) {
+      function (err, succeeded, groupConfig) {
         if (ERR(err, next)) return err;
         if (succeeded) {
           res.redirect(req.originalUrl);
         } else {
-          res.locals.permissions = permissions;
+          res.locals.groupConfig = groupConfig;
           res.locals.groupSize = 0;
           res.locals.used_join_code = req.body.join_code;
+          res.locals.notInGroup = true;
           res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         }
       }
@@ -167,7 +168,7 @@ router.post('/', async function (req, res, next) {
       res.locals.assessment.id,
       res.locals.user.user_id,
       res.locals.authn_user.user_id,
-      function (err, succeeded, uniqueGroupName, invalidGroupName, permissions) {
+      function (err, succeeded, uniqueGroupName, invalidGroupName, groupConfig) {
         if (ERR(err, next)) return;
         if (succeeded) {
           res.redirect(req.originalUrl);
@@ -177,7 +178,8 @@ router.post('/', async function (req, res, next) {
           } else {
             res.locals.uniqueGroupName = uniqueGroupName;
           }
-          res.locals.permissions = permissions;
+          res.locals.notInGroup = true;
+          res.locals.groupConfig = groupConfig;
           res.locals.groupSize = 0;
           res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         }

@@ -71,25 +71,39 @@ router.get('/', function (req, res, next) {
           res.locals.assessment_text_templated = assessment_text_templated;
           debug('rendering EJS');
           if (res.locals.assessment.group_work) {
-            const groupInfo = await groupAssessmentHelper.getGroupInfo(
+            // Get the group config info
+            const groupConfig = await groupAssessmentHelper.getGroupConfig(
+              res.locals.assessment.id
+            );
+            res.locals.groupConfig = groupConfig;
+
+            // Check whether the user is currently in a group in the current assessment by trying to get a group_id
+            const groupId = await groupAssessmentHelper.getGroupId(
               res.locals.assessment.id,
               res.locals.user.user_id
             );
-            res.locals.permissions = groupInfo.permissions;
-            res.locals.minsize = groupInfo.minSize;
-            res.locals.maxsize = groupInfo.maxSize;
-            res.locals.groupsize = groupInfo.groupSize;
-            res.locals.needsize = groupInfo.needsize;
-            res.locals.hasRoles = groupInfo.hasRoles;
-            res.locals.groupMembers = groupInfo.groupMembers;
-            res.locals.rolesInfo = groupInfo.rolesInfo;
-            if (!groupInfo.isGroupMember) {
+
+            if (groupId === undefined) {
               return next(error.make(403, 'Not a group member', res.locals));
             } else {
+              res.locals.notInGroup = false;
+              const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);
+              res.locals.groupSize = groupInfo.groupSize;
+              res.locals.groupMembers = groupInfo.groupMembers;
               res.locals.joinCode = groupInfo.joinCode;
+              res.locals.groupName = groupInfo.groupName;
               res.locals.start = groupInfo.start;
-              res.locals.used_join_code = groupInfo.usedJoinCode;
+              res.locals.rolesInfo = groupInfo.rolesInfo;
+
+              if (groupConfig.has_roles) {
+                const result = await groupAssessmentHelper.getAssessmentLevelPermissions(
+                  res.locals.assessment.id,
+                  res.locals.user.user_id
+                );
+                res.locals.canViewRoleTable = result.can_assign_roles_at_start;
+              }
             }
+
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
           } else {
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
