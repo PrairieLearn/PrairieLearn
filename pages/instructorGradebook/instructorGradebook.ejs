@@ -157,7 +157,7 @@
   </style>
   <body>
     <%- include('../partials/navbar'); %>
-    <div id="content" class="container-fluid">
+    <main id="content" class="container-fluid">
       <%- include('../partials/courseInstanceSyncErrorsAndWarnings'); %>
 
       <% if (!authz_data.has_course_instance_permission_view) { %>
@@ -268,7 +268,7 @@
           </div>
         </div>
       <% } %>
-    </div>
+      </main>
     <!-- needed for tests since we can't grab it out of javascript -->
     <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>"
   </body>

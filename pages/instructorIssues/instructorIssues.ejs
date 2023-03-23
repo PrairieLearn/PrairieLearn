@@ -11,7 +11,7 @@
   </head>
   <body>
     <%- include('../partials/navbar'); %>
-    <div id="content" class="container-fluid">
+    <main id="content" class="container-fluid">
       <%- include('../partials/courseSyncErrorsAndWarnings'); %>
       <% if (authz_data.has_course_permission_edit) { %>
       <div class="modal fade" id="closeAllIssuesModal" tabindex="-1" role="dialog" aria-labelledby="closeAllIssuesModalLabel">
@@ -241,6 +241,6 @@
         <% } %>
 
       </div>
-    </div>
+    </main>
   </body>
 </html>

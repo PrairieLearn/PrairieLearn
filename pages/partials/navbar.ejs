@@ -16,7 +16,7 @@
 <% } %>
 
 <div class="mb-4">
-<nav class="navbar navbar-dark bg-dark navbar-expand-md">
+<nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
   <a class="navbar-brand" href="<%= homeUrl %>">
     <span class="navbar-brand-label">PrairieLearn</span>
     <span class="navbar-brand-hover-label text-secondary">Go home <i class="fa fa-angle-right" aria-hidden="true"></i></span>
@@ -510,8 +510,10 @@ const navPagesTabs = {
 // If navPage matches any of the keys in navPagesTabs, include the page given by its value
 if (typeof navPage != 'undefined' && navPagesTabs.hasOwnProperty(navPage)) { %>
     <!-- Instructor navigation tabs -->
-    <ul class="nav nav-tabs pl-nav-tabs-bar pt-2 px-3 bg-light">
-        <%- include(navPagesTabs[navPage]); %>
-    </ul>
+    <nav>
+        <ul class="nav nav-tabs pl-nav-tabs-bar pt-2 px-3 bg-light">
+            <%- include(navPagesTabs[navPage]); %>
+        </ul>
+    </nav>
 <% } %>
 </div>

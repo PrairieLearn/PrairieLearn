@@ -10,7 +10,7 @@
       });
     </script>
     <%- include('../partials/navbar'); %>
-    <div id="content" class="container-fluid">
+    <main id="content" class="container-fluid">
       <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
       <% if (authz_data.has_course_instance_permission_edit) { %>
@@ -96,6 +96,6 @@
 
       </div>
 
-    </div>
+    </main>
   </body>
 </html>
