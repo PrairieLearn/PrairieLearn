@@ -1,20 +1,15 @@
 #!/bin/bash
 set -ex
 
-yum update -y
-
-amazon-linux-extras install -y \
-    vim \
-    docker \
-    postgresql14 \
-    redis4.0
+dnf update -y
 
 # Notes:
 # - `gcc-c++` is needed to build the native bindings in `packages/bind-mount`
 # - `libjpeg-devel` is needed by the Pillow package
 # - `procps-ng` is needed for the `pkill` executable, which is used by `zygote.py`
 # - `texlive` and `texlive-dvipng` are needed for matplotlib LaTeX labels
-yum -y install \
+dnf -y install \
+    docker \
     dos2unix \
     emacs-nox \
     gcc \
@@ -28,13 +23,16 @@ yum -y install \
     make \
     man \
     openssl \
-    postgresql-contrib \
-    postgresql-server \
+    postgresql15 \
+    postgresql15-server \
+    postgresql15-contrib \
     procps-ng \
+    redis6 \
     tar \
     texlive \
     texlive-dvipng \
-    tmux
+    tmux \
+    vim
 
 
 echo "installing node via nvm"
@@ -76,7 +74,7 @@ else
 fi
 
 # Clear various caches to minimize the final image size.
-yum clean all
+dnf clean all
 conda clean --all
 nvm cache clear
 rm Miniforge3-Linux-${arch}.sh
