@@ -92,7 +92,7 @@ FROM
   JOIN users as u ON u.user_id = gu.user_id
   JOIN groups as g ON gu.group_id = g.id
 WHERE
-  g.id = $group_id
+  g.id = $group_id;
 
 -- BLOCK get_group_roles
 WITH
@@ -108,7 +108,7 @@ WITH
 SELECT
   gr.id,
   gr.role_name,
-  COUNT(gu.user_id) AS count,
+  COUNT(gur.user_id) AS count,
   gr.maximum,
   gr.minimum
 FROM
