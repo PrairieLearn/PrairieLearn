@@ -20,8 +20,6 @@ yum -y install \
     gcc \
     gcc-c++ \
     git \
-    graphviz \
-    graphviz-devel \
     ImageMagick \
     libjpeg-devel \
     lsof \
@@ -54,6 +52,17 @@ for f in /nvm/current/bin/* ; do ln -s $f /usr/local/bin/`basename $f` ; done
 echo "setting up postgres..."
 mkdir /var/postgres && chown postgres:postgres /var/postgres
 su postgres -c "initdb -D /var/postgres"
+
+echo "installing graphviz..."
+cd /
+curl -LO https://gitlab.com/api/v4/projects/4207231/packages/generic/graphviz-releases/7.1.0/graphviz-7.1.0.tar.gz
+# Untar the above file to /graphviz
+tar -xzf graphviz-7.1.0.tar.gz
+cd graphviz-7.1.0
+./configure
+make
+make install
+
 
 echo "setting up conda..."
 cd /
