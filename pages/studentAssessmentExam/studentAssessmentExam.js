@@ -105,7 +105,7 @@ router.get('/', async function (req, res, next) {
   }
 });
 
-router.post('/', function (req, res, next) {
+router.post('/', async function (req, res, next) {
   if (res.locals.assessment.type !== 'Exam') return next();
 
   // No, you do not need to verify authz_result.authorized_edit (indeed, this flag exists
@@ -178,16 +178,13 @@ router.post('/', function (req, res, next) {
       }
     );
   } else if (req.body.__action === 'update_group_roles') {
-    groupAssessmentHelper.updateGroupRoles(
+    await groupAssessmentHelper.updateGroupRoles(
       req.body,
       res.locals.assessment.id,
       res.locals.user.user_id,
-      res.locals.authn_user.user_id,
-      function (err) {
-        if (ERR(err, next)) return;
-        res.redirect(req.originalUrl);
-      }
+      res.locals.authn_user.user_id
     );
+    res.redirect(req.originalUrl);
   } else if (req.body.__action === 'leave_group') {
     groupAssessmentHelper.leaveGroup(
       res.locals.assessment.id,
