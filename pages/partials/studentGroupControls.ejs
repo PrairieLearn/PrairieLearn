@@ -87,7 +87,7 @@
     <button id="start-assessment" type="submit" class="btn btn-primary" disabled>Start assessment</button>
   </form>
   <% } %>
-  <% if (mingroupConfig.minimumSize - groupSize > 0) { %>
+  <% if (groupConfig.minimumSize - groupSize > 0) { %>
   <p class="text-center">
     * Minimum group size is <%= groupConfig.minimum %>. You need at least <%= groupConfig.minimum - groupSize %> more group member(s) to start.
   </p>

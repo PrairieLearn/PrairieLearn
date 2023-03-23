@@ -99,6 +99,7 @@ WITH get_assessment_id AS (
   SELECT gc.assessment_id
   FROM group_configs AS gc
   JOIN groups AS g ON g.group_config_id = gc.id
+  WHERE g.id = $group_id
 )
 SELECT
   gr.id,

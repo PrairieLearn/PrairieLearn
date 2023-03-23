@@ -15,7 +15,7 @@
           <p class="lead text-center">
             <strong><%= assessment_set.name %> <%= assessment.number %>: <%= assessment.title %></strong> for <strong><%= course.short_name %></strong>
           </p>
-          <%- include('../partials/studentGroupControls.ejs', {groupSize: groupSize}); %>
+          <%- include('../partials/studentGroupControls.ejs'); %>
         </div>
       </div>
     </div>

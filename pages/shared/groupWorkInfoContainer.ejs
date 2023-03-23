@@ -53,7 +53,7 @@
       <% } %>
       <span id='group-member'><b>Group members: </b></span>
       <% groupMembers.forEach(function(user) {%>
-      <% if (hasRoles) { %>
+      <% if (groupConfig.has_roles) { %>
         <li><%= user.uid %> - <%= rolesInfo.roleAssignments[user.uid] ? rolesInfo.roleAssignments[user.uid].join(", ") : "None"%></li>
       <% } else { %>
         <li><%= user.uid %></li>

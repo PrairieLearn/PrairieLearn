@@ -57,6 +57,7 @@ router.get('/', async function (req, res, next) {
       if (groupId === undefined) {
         res.locals.notInGroup = true;
       } else {
+        res.locals.notInGroup = false;
         const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);
         res.locals.groupSize = groupInfo.groupSize;
         res.locals.groupMembers = groupInfo.groupMembers;
@@ -65,7 +66,7 @@ router.get('/', async function (req, res, next) {
         res.locals.start = groupInfo.start;
         res.locals.rolesInfo = groupInfo.rolesInfo;
 
-        if (groupConfig.hasRoles) {
+        if (groupConfig.has_roles) {
           const result = await groupAssessmentHelper.getAssessmentLevelPermissions(
             res.locals.assessment.id,
             res.locals.user.user_id
