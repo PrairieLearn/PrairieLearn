@@ -9,9 +9,6 @@ dnf update -y
 # - `procps-ng` is needed for the `pkill` executable, which is used by `zygote.py`
 # - `texlive` and `texlive-dvipng` are needed for matplotlib LaTeX labels
 dnf -y install \
-    docker \
-    dos2unix \
-    emacs-nox \
     gcc \
     gcc-c++ \
     git \
@@ -21,7 +18,6 @@ dnf -y install \
     libjpeg-devel \
     lsof \
     make \
-    man \
     openssl \
     postgresql15 \
     postgresql15-server \
@@ -31,9 +27,7 @@ dnf -y install \
     tar \
     texlive \
     texlive-dvipng \
-    tmux \
-    vim
-
+    tmux
 
 echo "installing node via nvm"
 git clone https://github.com/creationix/nvm.git /nvm

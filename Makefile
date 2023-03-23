@@ -14,15 +14,12 @@ start: start-support
 	@node server.js
 start-nodemon: start-support
 	@yarn nodemon server.js
-start-workspace-host: start-support kill-running-workspaces
+start-workspace-host: start-support
 	@node workspace_host/interface.js
-start-workspace-host-nodemon: start-support kill-running-workspaces
+start-workspace-host-nodemon: start-support
 	@yarn nodemon --config workspace_host/nodemon.json workspace_host/interface.js
 start-executor:
 	@node executor.js
-
-kill-running-workspaces:
-	@docker/kill_running_workspaces.sh
 
 start-support: start-postgres start-redis start-s3rver
 start-postgres:
