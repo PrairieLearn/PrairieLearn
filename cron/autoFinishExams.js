@@ -2,11 +2,11 @@
 var ERR = require('async-stacktrace');
 var async = require('async');
 
-var error = require('../prairielib/lib/error');
+const error = require('@prairielearn/error');
 var config = require('../lib/config');
-var logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 var assessment = require('../lib/assessment');
-var sqldb = require('../prairielib/lib/sql-db');
+var sqldb = require('@prairielearn/postgres');
 
 /**
  * This cron job runs periodically to check for any exams that need to be
@@ -28,7 +28,7 @@ module.exports.run = function (callback) {
       examList,
       function (examItem, callback) {
         logger.verbose('autoFinishExams: finishing ' + examItem.assessment_instance_id, examItem);
-        // Grading was performed by the syste.
+        // Grading was performed by the system.
         const authn_user_id = null;
         // Don't require the assessment to be open. This is important to
         // ensure we correctly handle the case where the PrairieLearn process

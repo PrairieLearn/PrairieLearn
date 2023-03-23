@@ -2,6 +2,8 @@
 <script>
   $(function() {
     var variantId = '<%= variant.id %>';
+    var questionId = '<%= question.id %>';
+    var instanceQuestionId = <%- JSON.stringify(locals.instance_question?.id ?? null) %>;
     var variantToken = '<%= variantToken %>';
     var urlPrefix = '<%= urlPrefix %>';
     var questionContext = '<%= question_context %>';
@@ -17,8 +19,9 @@
 
       var status = $(elem).data('grading-job-status');
       var submissionId = $(elem).attr('id').replace('submission-', '');
-      updateStatus(submissionId, status);
-      if (status !== 'graded' && status !== 'canceled') {
+      updateStatus({id: submissionId, grading_job_status: status});
+      // Grading is not pending if it's done, or it's save-only, or has been canceled
+      if (status !== 'graded' && status !== 'none' && status !== 'canceled') {
         gradingPending = true;
       }
     });
@@ -65,6 +68,8 @@
       var wasModalOpen = ($('#submissionInfoModal-' + submissionId).data('bs.modal') || {})._isShown;
       $('#submissionInfoModal-' + submissionId).modal('hide');
       socket.emit('getResults', {
+        question_id: questionId,
+        instance_question_id: instanceQuestionId,
         variant_id: variantId,
         variant_token: variantToken,
         submission_id: submissionId,
@@ -83,6 +88,7 @@
           $('#submission-' + submissionId).replaceWith(function() {
             return $(msg.submissionPanel).fadeIn('slow');
           });
+          MathJax.typesetPromise();
           // Restore modal state if need be
           if (wasModalOpen) {
             $('#submissionInfoModal-' + submissionId).modal('show');

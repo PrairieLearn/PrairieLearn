@@ -3,12 +3,11 @@ const async = require('async');
 const fs = require('fs-extra');
 const path = require('path');
 const Ajv = require('ajv').default;
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
 const globalLogger = require('./logger');
 const config = require('./config').config;
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 let messageSchema = null;
 
@@ -75,10 +74,8 @@ module.exports = function (sqs, queueUrl, receiveCallback, doneCallback) {
       },
       (callback) => {
         const timeout = parsedMessage.timeout || config.defaultTimeout;
-        // Add additional time to account for work that PG has to do:
-        // downloading/uploading files, etc. This wasn't scientifically
-        // chosen at all.
-        const newTimeout = timeout + 10;
+        // Add additional time to account for pulling the image, downloading/uploading files, etc.
+        const newTimeout = timeout + config.timeoutOverhead;
         const visibilityParams = {
           QueueUrl: queueUrl,
           ReceiptHandle: receiptHandle,

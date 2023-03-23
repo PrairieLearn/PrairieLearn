@@ -93,7 +93,7 @@ Before you start creating your assessments, make sure you have at least 4 questi
 - Homework submitted at the deadline receive 100% credit. Homework submitted up to 4 days late receive 70% credit. Homework submitted at least 2 days before the deadline get 5% bonus.
 - Include two zones: one for easy questions, where each question has `"maxPoints": 5` and another one for more advanced questions, with `"maxPoints": 3`
 
-[Assessment template](https://www.prairielearn.org/pl/course_instance/4970/assessment/2316937) from the Example Course
+[Assessment template](https://us.prairielearn.com/pl/course_instance/4970/assessment/2316937) from the Example Course
 
 ### Configuration 2: Synchronous online exam without proctoring tool
 
@@ -116,7 +116,7 @@ Before you start creating your assessments, make sure you have at least 4 questi
 - Choose `startDate` and `endDate` to allow for a 1-hour window (this could be your lecture time). In `allowAccess`, set a time limit of 50 minutes. This gives extra 10-minutes for possible delays.
 - Add a password
 
-[Assessment template](https://www.prairielearn.org/pl/course_instance/4970/assessment/2316935) from the Example Course
+[Assessment template](https://us.prairielearn.com/pl/course_instance/4970/assessment/2316935) from the Example Course
 
 ### Configuration 3: Practice exams
 
@@ -125,11 +125,11 @@ Before you start creating your assessments, make sure you have at least 4 questi
 - Disable honor code message
 - You may want to adjust the `startDate` and `endDate` to give students more opportunity for practice
 
-[Assessment template](https://www.prairielearn.org/pl/course_instance/4970/assessment/1981282) from the Example Course
+[Assessment template](https://us.prairielearn.com/pl/course_instance/4970/assessment/1981282) from the Example Course
 
 ### Configuration 4: Synchronous exam using PrairieTest
 
-When using [PrairieTest](https://www.prairietest.org/pt/docs/staff) to schedule and deliver PrairieLearn exams, you need to using the following configuration:
+When using [PrairieTest](https://us.prairietest.com/pt/docs/staff) to schedule and deliver PrairieLearn exams, you need to using the following configuration:
 
 - Start from `Configuration 2`
 - Remove `startDate` and `endDate` from `allowAccess`. Instead use:
@@ -147,4 +147,4 @@ You will be able to find the `examUuid` in the CBTF scheduler app.
 ## Homework 2
 
 Continue creating questions using the elements highlighted in lesson 1.
-You can also create one assessment. What options do you think will be useful for your course? You can take a look at different types of assessments in the [example course](https://www.prairielearn.org/pl/course_instance/4970/)
+You can also create one assessment. What options do you think will be useful for your course? You can take a look at different types of assessments in the [example course](https://us.prairielearn.com/pl/course_instance/4970/)

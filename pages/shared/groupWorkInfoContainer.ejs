@@ -6,7 +6,15 @@
     <% if (permissions.student_authz_join) { %>
       <h6 style="display:inline"><b>Join code: </b></h6>
       <p style="display:inline" id='join-code'><%= join_code %></p><br><br>
-      <p>This is a group assessment. Use your join code to invite others to join the group.</p>
+      <p>
+        <% if (permissions.minimum > 1) { %>
+        This is a group assessment. Use your join code to invite others to join the group.
+        A group must have <% if (permissions.maximum) { %>between <%= permissions.minimum %> and <%= permissions.maximum %><% } else { %>at least <%= permissions.minimum %><% } %> students.
+        <% } else { %>
+        This assessment can be done individually or in groups. Use your join code if you wish to invite others to join the group.
+        <% if (permissions.maximum) { %>A group must have no more than <%= permissions.maximum %> students.<% } %>
+        <% } %>
+      </p>
     <% } %>
     </div>
     <div class="col-sm bg-light py-4 px-4 border">
@@ -45,7 +53,7 @@
       <% } %>
       <span id='group-member'><b>Group members: </b></span>
       <% group_info.forEach(function(row) {%>
-      <li><%= row.uid %></li>
+      <li><%= row.user_name %> (<%= row.uid %>)</li>
       <% }); %>
     </div>
   </div>

@@ -3,7 +3,7 @@ const async = require('async');
 const AWS = require('aws-sdk');
 
 const config = require('../lib/config');
-const logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const opsbot = require('../lib/opsbot');
 
 // After loading the queue url for the first time, we'll cache it here
@@ -50,7 +50,7 @@ module.exports.run = (callback) => {
           if (ERR(err, callback)) return;
           if (res.statusCode !== 200) {
             logger.error(
-              'Error posting external grading dead letters to slack [status code ${res.statusCode}]',
+              `Error posting external grading dead letters to slack [status code ${res.statusCode}]`,
               body
             );
           }

@@ -11,11 +11,10 @@ const _ = require('lodash');
 
 const csrf = require('../../lib/csrf');
 const config = require('../../lib/config');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
-const error = require('../../prairielib/lib/error');
+const sqldb = require('@prairielearn/postgres');
+const error = require('@prairielearn/error');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+var sql = sqldb.loadSqlEquiv(__filename);
 
 var load_default_config = function (res, _req) {
   var defobj = plist.parse(fs.readFileSync(__dirname + '/seb-default-exam.seb', 'utf8'));

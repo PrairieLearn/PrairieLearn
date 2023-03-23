@@ -2,8 +2,8 @@
  * Recursively traverse an object and replace null bytes (\u0000) with the
  * literal string "\u0000". This produces a new object and does not modify the
  * provided object.
- * @param  {Object} obj The object to be sanitized.
- * @return {Object}     The sanitized object.
+ * @param  {Object} value The object to be sanitized.
+ * @return {Object} The sanitized object.
  */
 module.exports.sanitizeObject = function sanitizeObject(value) {
   if (value === null) {
@@ -33,4 +33,32 @@ module.exports.sanitizeObject = function sanitizeObject(value) {
  */
 module.exports.escapeRegExp = function escapeRegExp(string) {
   return string.replace(/[.*+\-?^${}()|[\]\\/]/g, '\\$&');
+};
+
+/**
+ * Recursively truncates all strings in a value to a maximum length.
+ *
+ * @template T
+ * @param {T} value
+ * @param {number} maxLength
+ * @returns {T}
+ */
+module.exports.recursivelyTruncateStrings = function recursivelyTruncateStrings(value, maxLength) {
+  if (value === null) {
+    return null;
+  } else if (typeof value === 'string') {
+    if (value.length <= maxLength) {
+      return value;
+    }
+    return value.substring(0, maxLength) + '...[truncated]';
+  } else if (Array.isArray(value)) {
+    return value.map((value) => recursivelyTruncateStrings(value, maxLength));
+  } else if (typeof value === 'object') {
+    return Object.entries(value).reduce((acc, [key, value]) => {
+      acc[key] = recursivelyTruncateStrings(value, maxLength);
+      return acc;
+    }, {});
+  } else {
+    return value;
+  }
 };

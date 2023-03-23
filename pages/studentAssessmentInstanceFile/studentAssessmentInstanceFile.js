@@ -2,12 +2,11 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 
-const error = require('../../prairielib/error');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
-const sqldb = require('../../prairielib/lib/sql-db');
+const error = require('@prairielearn/error');
+const sqldb = require('@prairielearn/postgres');
 const fileStore = require('../../lib/file-store');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get(
   '/:unsafe_file_id/:unsafe_display_filename',

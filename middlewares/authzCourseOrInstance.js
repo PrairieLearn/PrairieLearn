@@ -5,14 +5,13 @@ const async = require('async');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-const moment = require('moment');
+const { parseISO, isValid } = require('date-fns');
 const config = require('../lib/config');
-const error = require('../prairielib/error');
-const sqldb = require('../prairielib/sql-db');
-const sqlLoader = require('../prairielib/sql-loader');
+const error = require('@prairielearn/error');
+const sqldb = require('@prairielearn/postgres');
 const { idsEqual } = require('../lib/id');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 module.exports = function (req, res, next) {
   const isCourseInstance = Boolean(req.params.course_instance_id);
@@ -53,6 +52,7 @@ module.exports = function (req, res, next) {
 
           // Now that we know the user has access, parse the authz data
           res.locals.course = result.rows[0].course;
+          res.locals.institution = result.rows[0].institution;
           const authn_courses = result.rows[0].courses || [];
           const authn_course_instances = result.rows[0].course_instances || [];
           const permissions_course = result.rows[0].permissions_course;
@@ -249,6 +249,21 @@ module.exports = function (req, res, next) {
                   `<p>You have tried to change the effective user to one with uid ` +
                   `<code>${req.cookies.pl_requested_uid}</code>, when no such user exists. ` +
                   `All requested changes to the effective user have been removed.</p>`;
+
+                if (config.devMode && is_administrator) {
+                  err.info +=
+                    `<div class="alert alert-warning" role="alert"><p>In Development Mode, ` +
+                    `<a href="/pl/administrator/query/select_or_insert_user">go here to add the user</a> ` +
+                    ` first and then try the emulation again.</p>`;
+                  if (isCourseInstance) {
+                    err.info +=
+                      `<p>To auto-generate many users for testing, see ` +
+                      `<a href="/pl/administrator/query/generate_and_enroll_users">Generate random users ` +
+                      `and enroll them in a course instance<a> <br>` +
+                      `(Hint your course_instance_id is <strong>${res.locals.course_instance.id}</strong>)</p>`;
+                  }
+                  err.info += `</div>`;
+                }
                 return callback(err);
               }
 
@@ -283,8 +298,8 @@ module.exports = function (req, res, next) {
           (callback) => {
             let req_date = res.locals.req_date;
             if (req.cookies.pl_requested_date) {
-              req_date = moment(req.cookies.pl_requested_date, moment.ISO_8601);
-              if (!req_date.isValid()) {
+              req_date = parseISO(req.cookies.pl_requested_date);
+              if (!isValid(req_date)) {
                 debug(`requested date is invalid: ${req.cookies.pl_requested_date}, ${req_date}`);
                 overrides.forEach((override) => {
                   debug(`clearing cookie: ${override.cookie}`);

@@ -2,7 +2,7 @@ var ERR = require('async-stacktrace');
 var path = require('path');
 var _ = require('lodash');
 
-var error = require('../prairielib/lib/error');
+const error = require('@prairielearn/error');
 var chunks = require('../lib/chunks');
 var filePaths = require('../lib/file-paths');
 var requireFrontend = require('../lib/require-frontend');

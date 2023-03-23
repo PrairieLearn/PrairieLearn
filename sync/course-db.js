@@ -7,14 +7,12 @@ const jju = require('jju');
 const Ajv = require('ajv').default;
 const betterAjvErrors = require('better-ajv-errors').default;
 const { parseISO, isValid, isAfter, isFuture } = require('date-fns');
-const { default: chalkDefault } = require('chalk');
+const { chalk } = require('../lib/chalk');
 
 const schemas = require('../schemas');
 const infofile = require('./infofile');
 const jsonLoad = require('../lib/json-load');
 const perf = require('./performance')('course-db');
-
-const chalk = new chalkDefault.constructor({ enabled: true, level: 3 });
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv({ allErrors: true });
@@ -281,17 +279,26 @@ const FILE_UUID_REGEX =
 /**
  * @typedef {Object} QuestionAlternative
  * @property {number | number[]} points
- * @property {number | number[]} maxPoints
+ * @property {number | number[]} autoPoints
+ * @property {number} maxPoints
+ * @property {number} manualPoints
+ * @property {number} maxAutoPoints
  * @property {string} id
  * @property {boolean} forceMaxPoints
  * @property {number} triesPerVariant
+ * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
+ * @property {string[]} canView
+ * @property {string[]} canSubmit
  */
 
 /**
  * @typedef {Object} ZoneQuestion
  * @property {number | number[]} points
- * @property {number | number[]} maxPoints
+ * @property {number | number[]} autoPoints
+ * @property {number} maxPoints
+ * @property {number} manualPoints
+ * @property {number} maxAutoPoints
  * @property {string} [id]
  * @property {boolean} forceMaxPoints
  * @property {QuestionAlternative[]} [alternatives]
@@ -371,7 +378,6 @@ const FILE_UUID_REGEX =
  * @property {string} home
  * @property {string} args
  * @property {string[]} gradedFiles
- * @property {string[]} syncIgnore
  * @property {string} rewriteUrl
  * @property {boolean} enableNetworking
  * @property {Record<string, string | null>} environment
@@ -620,8 +626,7 @@ module.exports.loadInfoFile = async function ({
     }
 
     // Validate file against schema
-    /** @type {import('ajv').ValidateFunction<T>} */
-    const validate = ajv.compile(schema);
+    const validate = /** @type {import('ajv').ValidateFunction<T>} */ (ajv.compile(schema));
     try {
       const valid = validate(json);
       if (!valid) {
@@ -1075,36 +1080,35 @@ async function validateAssessment(assessment, questions) {
   };
   (assessment.zones || []).forEach((zone) => {
     (zone.questions || []).map((zoneQuestion) => {
-      if (
-        !allowRealTimeGrading &&
-        Array.isArray(zoneQuestion.points) &&
-        zoneQuestion.points.length > 1
-      ) {
+      /** @type {number | number[]} */
+      const autoPoints = zoneQuestion.autoPoints ?? zoneQuestion.points;
+      if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
         errors.push(
           `Cannot specify an array of multiple point values for a question if real-time grading is disabled`
         );
       }
       // We'll normalize either single questions or alternative groups
       // to make validation easier
-      /** @type {{ points: number | number[], maxPoints: number | number[] }[]} */
+      /** @type {{ points: number | number[], autoPoints: number | number[], maxPoints: number, maxAutoPoints: number, manualPoints: number }[]} */
       let alternatives = [];
       if ('alternatives' in zoneQuestion && 'id' in zoneQuestion) {
         errors.push('Cannot specify both "alternatives" and "id" in one question');
       } else if ('alternatives' in zoneQuestion) {
         zoneQuestion.alternatives.forEach((alternative) => checkAndRecordQid(alternative.id));
         alternatives = zoneQuestion.alternatives.map((alternative) => {
-          if (
-            !allowRealTimeGrading &&
-            Array.isArray(alternative.points) &&
-            alternative.points.length > 1
-          ) {
+          /** @type {number | number[]} */
+          const autoPoints = alternative.autoPoints ?? alternative.points;
+          if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
             errors.push(
               `Cannot specify an array of multiple point values for an alternative if real-time grading is disabled`
             );
           }
           return {
-            points: alternative.points || zoneQuestion.points,
-            maxPoints: alternative.maxPoints || zoneQuestion.maxPoints,
+            points: alternative.points ?? zoneQuestion.points,
+            maxPoints: alternative.maxPoints ?? zoneQuestion.maxPoints,
+            maxAutoPoints: alternative.maxAutoPoints ?? zoneQuestion.maxAutoPoints,
+            autoPoints: alternative.autoPoints ?? zoneQuestion.autoPoints,
+            manualPoints: alternative.manualPoints ?? zoneQuestion.manualPoints,
           };
         });
       } else if ('id' in zoneQuestion) {
@@ -1113,6 +1117,9 @@ async function validateAssessment(assessment, questions) {
           {
             points: zoneQuestion.points,
             maxPoints: zoneQuestion.maxPoints,
+            maxAutoPoints: zoneQuestion.maxAutoPoints,
+            autoPoints: zoneQuestion.autoPoints,
+            manualPoints: zoneQuestion.manualPoints,
           },
         ];
       } else {
@@ -1120,21 +1127,44 @@ async function validateAssessment(assessment, questions) {
       }
 
       alternatives.forEach((alternative) => {
+        if (
+          alternative.points === undefined &&
+          alternative.autoPoints === undefined &&
+          alternative.manualPoints === undefined
+        ) {
+          errors.push('Must specify "points", "autoPoints" or "manualPoints" for a question');
+        }
+        if (
+          alternative.points !== undefined &&
+          (alternative.autoPoints !== undefined ||
+            alternative.manualPoints !== undefined ||
+            alternative.maxAutoPoints !== undefined)
+        ) {
+          errors.push(
+            'Cannot specify "points" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified'
+          );
+        }
         if (assessment.type === 'Exam') {
-          if (alternative.maxPoints !== undefined) {
-            errors.push('Cannot specify "maxPoints" for a question in an "Exam" assessment');
-          }
-          if (alternative.points === undefined) {
-            errors.push('Must specify "points" for a question in an "Exam" assessment');
+          if (alternative.maxPoints !== undefined || alternative.maxAutoPoints !== undefined) {
+            errors.push(
+              'Cannot specify "maxPoints" or "maxAutoPoints" for a question in an "Exam" assessment'
+            );
           }
         }
         if (assessment.type === 'Homework') {
-          if (alternative.points === undefined) {
-            errors.push('Must specify "points" for a question in a "Homework" assessment');
-          }
-          if (Array.isArray(alternative.points)) {
+          if (
+            alternative.maxPoints !== undefined &&
+            (alternative.autoPoints !== undefined ||
+              alternative.manualPoints !== undefined ||
+              alternative.maxAutoPoints !== undefined)
+          ) {
             errors.push(
-              'Cannot specify "points" as a list for a question in a "Homework" assessment'
+              'Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified'
+            );
+          }
+          if (Array.isArray(alternative.autoPoints ?? alternative.points)) {
+            errors.push(
+              'Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment'
             );
           }
         }
@@ -1242,6 +1272,13 @@ module.exports.loadQuestions = async function (coursePath) {
     validate: validateQuestion,
     recursive: true,
   });
+  // Don't allow questions to start with '@', because it will be used to
+  // reference questions outside the course once question sharing is implemented.
+  for (let qid in questions) {
+    if (qid[0] === '@') {
+      infofile.addError(questions[qid], `Question IDs are not allowed to begin with '@'`);
+    }
+  }
   checkDuplicateUUIDs(
     questions,
     (uuid, ids) => `UUID "${uuid}" is used in other questions: ${ids.join(', ')}`

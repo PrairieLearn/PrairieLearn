@@ -1,0 +1,17 @@
+{
+  "name": "@prairielearn/named-locks",
+  "version": "1.1.0",
+  "main": "./dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "*",
+    "@types/node": "^18.14.2",
+    "typescript": "^4.9.4"
+  },
+  "dependencies": {
+    "@prairielearn/postgres": "^1.3.0"
+  }
+}

@@ -1,5 +1,4 @@
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
 const assert = require('chai').assert;
 const fs = require('fs-extra');
 const path = require('path');
@@ -7,18 +6,16 @@ const async = require('async');
 const ncp = require('ncp');
 const cheerio = require('cheerio');
 const { exec } = require('child_process');
-const requestp = require('request-promise-native');
+const fetch = require('node-fetch').default;
 const klaw = require('klaw');
 const tmp = require('tmp');
 
 const config = require('../lib/config');
-const sqldb = require('../prairielib/lib/sql-db');
-const sqlLoader = require('../prairielib/lib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sqldb = require('@prairielearn/postgres');
+const sql = sqldb.loadSqlEquiv(__filename);
 const helperServer = require('./helperServer');
 
 const locals = {};
-let page, elemList;
 
 const courseTemplateDir = path.join(__dirname, 'testFileEditor', 'courseTemplate');
 
@@ -145,10 +142,10 @@ const testEditData = [
     button: 'changeAidButton',
     form: 'change-id-form',
     data: {
-      id: 'newAssessment',
+      id: 'newAssessment/nested',
     },
     action: 'change_id',
-    info: 'courseInstances/Fa18/assessments/newAssessment/infoAssessment.json',
+    info: 'courseInstances/Fa18/assessments/newAssessment/nested/infoAssessment.json',
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -157,7 +154,30 @@ const testEditData = [
       'questions/test/question/info.json',
       'questions/test/question/question.html',
       'questions/test/question/server.py',
-      'courseInstances/Fa18/assessments/newAssessment/infoAssessment.json',
+      'courseInstances/Fa18/assessments/newAssessment/nested/infoAssessment.json',
+    ]),
+  },
+  // This second rename specifically tests the case where an existing assessment
+  // is renamed such that it leaves behind an empty directory. We want to make
+  // sure that that empty directory is cleaned up and not treated as an actual
+  // assessment during sync.
+  {
+    button: 'changeAidButton',
+    form: 'change-id-form',
+    data: {
+      id: 'newAssessmentNotNested',
+    },
+    action: 'change_id',
+    info: 'courseInstances/Fa18/assessments/newAssessmentNotNested/infoAssessment.json',
+    files: new Set([
+      'README.md',
+      'infoCourse.json',
+      'courseInstances/Fa18/infoCourseInstance.json',
+      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
+      'questions/test/question/info.json',
+      'questions/test/question/question.html',
+      'questions/test/question/server.py',
+      'courseInstances/Fa18/assessments/newAssessmentNotNested/infoAssessment.json',
     ]),
   },
   {
@@ -320,7 +340,7 @@ describe('test course editor', function () {
   });
 });
 
-function getFiles(options, callback) {
+async function getFiles(options) {
   let files = new Set([]);
 
   const ignoreHidden = (item) => {
@@ -348,12 +368,14 @@ function getFiles(options, callback) {
     }
   });
 
-  walker.on('error', (err) => {
-    if (ERR(err, callback)) return;
-  });
+  return new Promise((resolve, reject) => {
+    walker.on('error', (err) => {
+      reject(err);
+    });
 
-  walker.on('end', () => {
-    callback(null, files);
+    walker.on('end', () => {
+      resolve(files);
+    });
   });
 }
 
@@ -361,14 +383,16 @@ function testEdit(params) {
   describe(`GET to ${params.url}`, () => {
     if (params.url) {
       it('should load successfully', async () => {
-        page = await requestp(params.url);
-        locals.$ = cheerio.load(page);
+        const res = await fetch(params.url);
+        assert.isOk(res.ok);
+        locals.$ = cheerio.load(await res.text());
       });
     }
     it('should have a CSRF token', () => {
       if (params.button) {
-        elemList = locals.$(`button[id="${params.button}"]`);
+        let elemList = locals.$(`button[id="${params.button}"]`);
         assert.lengthOf(elemList, 1);
+
         const $ = cheerio.load(elemList[0].attribs['data-content']);
         elemList = $(`form[name="${params.form}"] input[name="__csrf_token"]`);
         assert.lengthOf(elemList, 1);
@@ -376,7 +400,7 @@ function testEdit(params) {
         locals.__csrf_token = elemList[0].attribs.value;
         assert.isString(locals.__csrf_token);
       } else {
-        elemList = locals.$(`form[name="${params.form}"] input[name="__csrf_token"]`);
+        let elemList = locals.$(`form[name="${params.form}"] input[name="__csrf_token"]`);
         assert.lengthOf(elemList, 1);
         assert.nestedProperty(elemList[0], 'attribs.value');
         locals.__csrf_token = elemList[0].attribs.value;
@@ -387,28 +411,32 @@ function testEdit(params) {
 
   describe(`POST to ${params.url} with action ${params.action}`, function () {
     it('should load successfully', async () => {
-      const options = {
-        url: params.url || locals.url,
-        followAllRedirects: true,
-        resolveWithFullResponse: true,
-      };
-      options.form = {
+      const form = {
         __action: params.action,
         __csrf_token: locals.__csrf_token,
+        ...(params?.data ?? {}),
       };
-      if (params.data) {
-        options.form = { ...options.form, ...params.data };
-      }
-      page = await requestp.post(options);
-      locals.url = page.request.href;
-      locals.$ = cheerio.load(page.body);
+      const res = await fetch(params.url || locals.url, {
+        method: 'POST',
+        body: new URLSearchParams(form),
+      });
+      assert.isOk(res.ok);
+      locals.url = res.url;
+      locals.$ = cheerio.load(await res.text());
     });
   });
 
   waitForJobSequence(locals, 'Success');
 
-  describe(`pull in dev and verify contents`, function () {
-    it('should pull', function (callback) {
+  describe('validate', () => {
+    it('should not have any sync warnings or errors', async () => {
+      const results = await sqldb.queryAsync(sql.select_sync_warnings_and_errors, {
+        course_path: courseLiveDir,
+      });
+      assert.isEmpty(results.rows);
+    });
+
+    it('should pull into dev directory', function (callback) {
       const execOptions = {
         cwd: courseDevDir,
         env: process.env,
@@ -418,13 +446,12 @@ function testEdit(params) {
         callback(null);
       });
     });
-    it('should match contents', function (callback) {
-      getFiles({ baseDir: courseDevDir }, (err, files) => {
-        if (ERR(err, callback)) return;
-        if (_.isEqual(files, params.files)) callback(null);
-        else callback(new Error(`files do not match`));
-      });
+
+    it('should have correct contents', async () => {
+      const files = await getFiles({ baseDir: courseDevDir });
+      assert.sameMembers([...files], [...params.files]);
     });
+
     if (params.info) {
       it('should have a uuid', function () {
         const infoJson = JSON.parse(fs.readFileSync(path.join(courseDevDir, params.info), 'utf-8'));

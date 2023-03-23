@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const async = require('async');
 const _ = require('lodash');
@@ -7,18 +8,19 @@ const { trace, context, suppressTracing, SpanStatusCode } = require('@prairielea
 
 const config = require('../lib/config');
 const { isEnterprise } = require('../lib/license');
-const logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
+const { sleep } = require('../lib/sleep');
+const namedLocks = require('@prairielearn/named-locks');
 
-const namedLocks = require('../lib/named-locks');
-var sqldb = require('../prairielib/lib/sql-db');
-var sqlLoader = require('../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 // jobTimeouts meaning (used by stop()):
 //     Timeout object = timeout is running and can be canceled
 //     0 = job is currently running
 //     -1 = stop requested
+/** @type {Record<number | string, number | NodeJS.Timeout>} */
 const jobTimeouts = {};
 
 // Cron jobs are protected by two layers:
@@ -29,11 +31,11 @@ const jobTimeouts = {};
 // the jobs will still only run at the required frequency.
 
 module.exports = {
-  init(callback) {
+  init() {
     debug(`init()`);
     if (!config.cronActive) {
       logger.verbose('cronActive is false, skipping cron initialization');
-      return callback(null);
+      return;
     }
 
     module.exports.jobs = [
@@ -85,11 +87,6 @@ module.exports = {
           config.cronIntervalCalculateAssessmentQuestionStatsSec,
       },
       {
-        name: 'calculateAssessmentMode',
-        module: require('./calculateAssessmentMode'),
-        intervalSec: 'daily',
-      },
-      {
         name: 'workspaceTimeoutStop',
         module: require('./workspaceTimeoutStop'),
         intervalSec:
@@ -107,6 +104,11 @@ module.exports = {
         intervalSec:
           config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostTransitionsSec,
       },
+      {
+        name: 'cleanTimeSeries',
+        module: require('./cleanTimeSeries'),
+        intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalCleanTimeSeriesSec,
+      },
     ];
 
     if (isEnterprise()) {
@@ -115,7 +117,31 @@ module.exports = {
         module: require('../ee/cron/workspaceHostLoads'),
         intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostLoadsSec,
       });
+
+      module.exports.jobs.push({
+        name: 'chunksHostAutoScaling',
+        module: require('../ee/cron/chunksHostAutoScaling'),
+        intervalSec:
+          config.cronOverrideAllIntervalsSec || config.cronIntervalChunksHostAutoScalingSec,
+      });
     }
+
+    const enabledJobs = config.cronEnabledJobs;
+    const disabledJobs = config.cronDisabledJobs;
+
+    if (enabledJobs && disabledJobs) {
+      throw new Error('Cannot set both cronEnabledJobs and cronDisabledJobs');
+    }
+
+    module.exports.jobs = module.exports.jobs.filter((job) => {
+      if (enabledJobs) {
+        return enabledJobs.includes(job.name);
+      } else if (disabledJobs) {
+        return !disabledJobs.includes(job.name);
+      } else {
+        return true;
+      }
+    });
 
     logger.verbose(
       'initializing cron',
@@ -124,40 +150,33 @@ module.exports = {
 
     const jobsByPeriodSec = _.groupBy(module.exports.jobs, 'intervalSec');
     _.forEach(jobsByPeriodSec, (jobsList, intervalSec) => {
+      const intervalSecNum = Number.parseInt(intervalSec);
       if (intervalSec === 'daily') {
         this.queueDailyJobs(jobsList);
-      } else if (intervalSec > 0) {
+      } else if (Number.isNaN(intervalSecNum)) {
+        throw new Error(`Invalid cron interval: ${intervalSec}`);
+      } else if (intervalSecNum > 0) {
         this.queueJobs(jobsList, intervalSec);
       } // zero or negative intervalSec jobs are not run
     });
-    callback(null);
   },
 
-  stop(callback) {
-    debug(`stop()`);
-    _.forEach(jobTimeouts, (timeout, interval) => {
-      if (!_.isInteger(timeout)) {
-        // current pending timeout, which can be canceled
-        debug(`stop(): clearing timeout for ${interval}`);
+  async stop() {
+    Object.entries(jobTimeouts).forEach(([interval, timeout]) => {
+      if (typeof timeout !== 'number') {
+        // This is a pending timeout, which can be canceled.
         clearTimeout(timeout);
         delete jobTimeouts[interval];
       } else if (timeout === 0) {
-        // job is currently running, request that it stop
-        debug(`stop(): requesting stop for ${interval}`);
+        // Job is currently running; request that it stop.
         jobTimeouts[interval] = -1;
       }
     });
 
-    function check() {
-      if (_.isEmpty(jobTimeouts)) {
-        debug(`stop(): all jobs stopped`);
-        callback(null);
-      } else {
-        debug(`stop(): waiting for ${_.size(jobTimeouts)} jobs to stop`);
-        setTimeout(check, 100);
-      }
+    // Wait until all jobs have finished.
+    while (Object.keys(jobTimeouts).length > 0) {
+      await sleep(100);
     }
-    check();
   },
 
   queueJobs(jobsList, intervalSec) {
@@ -185,7 +204,7 @@ module.exports = {
     debug(`queueDailyJobs()`);
     const that = this;
     function timeToNextMS() {
-      const now = new Date();
+      const now = Date.now();
       const midnight = new Date(now).setHours(0, 0, 0, 0);
       const sinceMidnightMS = now - midnight;
       const cronDailyMS = config.cronDailySec * 1000;
@@ -251,11 +270,11 @@ module.exports = {
 
                   span.recordException(err);
                   span.setStatus({
-                    status: SpanStatusCode.ERROR,
+                    code: SpanStatusCode.ERROR,
                     message: err.message,
                   });
                 } else {
-                  span.setStatus({ status: SpanStatusCode.OK });
+                  span.setStatus({ code: SpanStatusCode.OK });
                 }
 
                 // resolve no matter what so that we run all jobs even if one fails
@@ -357,10 +376,10 @@ module.exports = {
   runJob(job, cronUuid, callback) {
     debug(`runJob(): ${job.name}`);
     logger.verbose('cron: starting ' + job.name, { cronUuid });
-    var startTime = new Date();
+    var startTime = Date.now();
     job.module.run((err) => {
       if (ERR(err, callback)) return;
-      var endTime = new Date();
+      var endTime = Date.now();
       var elapsedTimeMS = endTime - startTime;
       debug(`runJob(): ${job.name}: success, duration ${elapsedTimeMS} ms`);
       logger.verbose('cron: ' + job.name + ' success', {

@@ -1,4 +1,4 @@
-var error = require('../prairielib/error');
+const error = require('@prairielearn/error');
 
 module.exports = function (req, res, next) {
   if (!res.locals.authz_data.has_course_permission_preview) {

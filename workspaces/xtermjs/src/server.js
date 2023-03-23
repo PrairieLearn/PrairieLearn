@@ -101,6 +101,8 @@ app.ws('/', (ws, req) => {
       term.write(val.value);
     } else if (val.event === 'resize') {
       term.resize(val.value.cols, val.value.rows);
+    } else if (val.event === 'heartbeat') {
+      // do nothing
     }
   });
   ws.on('close', (msg) => {

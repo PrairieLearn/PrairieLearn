@@ -2,11 +2,11 @@
 const { Router } = require('express');
 const asyncHandler = require('express-async-handler');
 
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const config = require('../../lib/config');
+const sqldb = require('@prairielearn/postgres');
 const { isEnterprise } = require('../../lib/license');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 const router = Router();
 
 router.get(
@@ -50,6 +50,8 @@ router.get(
         })
         .filter(Boolean);
     }
+
+    res.locals.hasAzure = config.hasAzure && isEnterprise();
 
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   })

@@ -34,7 +34,7 @@
         },
         "redisUrl": {
             "description": "The url for connecting to Redis.",
-            "type": "string"
+            "type": ["string", "null"]
         },
         "logFilename": {
             "description": "Filename to use for server logging.",
@@ -142,10 +142,6 @@
         },
         "instanceId": {
             "description": "The default instanceId to use for this server. Will be replaced by the auto-detected EC2 instanceId if running inside EC2.",
-            "type": "string"
-        },
-        "instanceIdEc2Override": {
-            "description": "The instanceId that will be used if we are running inside EC2. Will override any auto-detected instanceId.",
             "type": "string"
         },
         "hasShib": {

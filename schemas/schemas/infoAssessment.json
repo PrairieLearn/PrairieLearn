@@ -343,7 +343,16 @@
                 "points": {
                     "$ref": "#/definitions/points"
                 },
+                "autoPoints": {
+                    "$ref": "#/definitions/points"
+                },
                 "maxPoints": {
+                    "$ref": "#/definitions/pointsSingle"
+                },
+                "maxAutoPoints": {
+                    "$ref": "#/definitions/pointsSingle"
+                },
+                "manualPoints": {
                     "$ref": "#/definitions/pointsSingle"
                 },
                 "id": {
@@ -409,7 +418,16 @@
                 "points": {
                     "$ref": "#/definitions/points"
                 },
+                "autoPoints": {
+                    "$ref": "#/definitions/points"
+                },
                 "maxPoints": {
+                    "$ref": "#/definitions/pointsSingle"
+                },
+                "maxAutoPoints": {
+                    "$ref": "#/definitions/pointsSingle"
+                },
+                "manualPoints": {
                     "$ref": "#/definitions/pointsSingle"
                 },
                 "id": {
@@ -447,7 +465,7 @@
             "description": "A single point value.",
             "type": "number",
             "minimum": 0,
-            "default": 1
+            "default": 0
         },
         "pointsList": {
             "description": "An array of point values.",

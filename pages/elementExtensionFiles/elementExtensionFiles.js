@@ -2,8 +2,11 @@ const path = require('path');
 const express = require('express');
 const router = express.Router({ mergeParams: true });
 const _ = require('lodash');
+const ERR = require('async-stacktrace');
 
+const error = require('@prairielearn/error');
 const config = require('../../lib/config');
+const chunks = require('../../lib/chunks');
 
 /**
  * Serves scripts and styles for element extensions. Only serves .js and .css files, or any
@@ -20,10 +23,8 @@ router.get('/*', function (req, res, next) {
     pathSpl[2] === CLIENT_FOLDER ||
     _.some(FILE_TYPE_EXTENSION_WHITELIST, (extension) => filename.endsWith(extension));
   if (!valid) {
-    res.status(404);
-    const err = new Error('Unable to serve that file');
-    err.status = 404;
-    return next(err);
+    next(error.make(404, 'Unable to serve that file'));
+    return;
   }
 
   // If the route includes a `cachebuster` param, we'll set the `immutable`
@@ -42,11 +43,16 @@ router.get('/*', function (req, res, next) {
     res.removeHeader('Cache-Control');
   }
 
-  let elementFilesDir = path.join(res.locals.course.path, 'elementExtensions');
-  res.sendFile(filename, {
-    root: elementFilesDir,
-    immutable: isCached,
-    maxAge: isCached ? '31536000s' : 0,
+  const coursePath = chunks.getRuntimeDirectoryForCourse(res.locals.course);
+  chunks.ensureChunksForCourse(res.locals.course.id, { type: 'elementExtensions' }, (err) => {
+    if (ERR(err, next)) return;
+
+    const elementFilesDir = path.join(coursePath, 'elementExtensions');
+    res.sendFile(filename, {
+      root: elementFilesDir,
+      immutable: isCached,
+      maxAge: isCached ? '31536000s' : 0,
+    });
   });
 });
 

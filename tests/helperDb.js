@@ -4,10 +4,10 @@ const path = require('path');
 const _ = require('lodash');
 const util = require('util');
 
-const sqldb = require('../prairielib/lib/sql-db');
-const migrations = require('../prairielib/lib/migrations');
+const sqldb = require('@prairielearn/postgres');
+const migrations = require('@prairielearn/migrations');
 const sprocs = require('../sprocs');
-const namedLocks = require('../lib/named-locks');
+const namedLocks = require('@prairielearn/named-locks');
 
 const POSTGRES_USER = 'postgres';
 const POSTGRES_HOST = 'localhost';
@@ -35,8 +35,7 @@ async function runMigrationsAndSprocs(dbName, mochaThis, runMigrations) {
   await namedLocks.init(pgConfig, idleErrorHandler);
 
   if (runMigrations) {
-    // @ts-expect-error
-    await util.promisify(migrations.init)(path.join(__dirname, '..', 'migrations'), 'prairielearn');
+    await migrations.init(path.join(__dirname, '..', 'migrations'), 'prairielearn');
   }
 
   await sqldb.setRandomSearchSchemaAsync('test');

@@ -19,6 +19,19 @@ BEGIN
             JOIN assessments AS a ON (a.id = ai.assessment_id)
         WHERE
             a.type = 'Exam'
+            -- Only consider assessment instances that were modified "recently";
+            -- we have an index on `modified_at`, so this lets us avoid doing a
+            -- sequential scan on the entire `assessment_instances` table.
+            --
+            -- "Recently" is defined as twice the `age_mins` value. This should
+            -- ensure that any given assessment instance recieves ample attempts
+            -- at being finished, even in the unlikely scenario that PrairieLearn
+            -- crashes multiple times while tring to finish it.
+            --
+            -- Note that this relies on the frequency of the `autoFinishExams`
+            -- cron job being sufficiently less than `age_mins`. This is true
+            -- by default.
+            AND ai.modified_at > (CURRENT_TIMESTAMP - make_interval(mins => age_mins * 2))
             AND (
                 (ai.open AND ai.auto_close)
                 OR
@@ -37,28 +50,8 @@ BEGIN
             CONTINUE;
         END IF;
 
-        -- find the oldest submission information
-        SELECT s.date
-        INTO last_active_date
-        FROM
-            instance_questions AS iq
-            JOIN variants AS v ON (v.instance_question_id = iq.id)
-            JOIN submissions AS s ON (s.variant_id = v.id)
-        WHERE
-            iq.assessment_instance_id = assessment_instance.id
-        ORDER BY
-            s.id, s.date DESC
-        LIMIT 1;
-
-        -- if we didn't get anything from submissions then use exam start date
-        last_active_date := coalesce(last_active_date, assessment_instance.date);
-
-        -- only keep assessment_instances with no recent activity
-        IF assessment_instance.date_limit IS NOT NULL THEN
-            CONTINUE WHEN current_timestamp - assessment_instance.date_limit < '1 minute';
-        ELSE
-            CONTINUE WHEN current_timestamp - last_active_date < make_interval(mins => age_mins);
-        END IF;
+        -- Skip any assessment instances with recent activity.
+        CONTINUE WHEN CURRENT_TIMESTAMP - assessment_instance.modified_at < make_interval(mins => age_mins);
 
         RETURN NEXT;
     END LOOP;
