@@ -1,15 +1,15 @@
-<% if (groupSize == 0) { %>
-  <% if (!permissions.student_authz_join && !permissions.student_authz_create) { %>
+<% if (notInGroup) { %>
+  <% if (!groupConfig.student_authz_join && !groupConfig.student_authz_create) { %>
     <p class="text-center">
       This is a group homework. Please wait for the instructor to assign groups.
    </p>
   <% } else { %>
 <p class="text-center">
-  <% if (permissions.minimum > 1) { %>
+  <% if (groupConfig.minimum > 1) { %>
   This is a group assessment.
-  A group must have <% if (permissions.maximum) { %>between <%= permissions.minimum %> and <%= permissions.maximum %><% } else { %>at least <%= permissions.minimum %><% } %> students.
+  A group must have <% if (groupConfig.maximum) { %>between <%= groupConfig.minimum %> and <%= groupConfig.maximum %><% } else { %>at least <%= groupConfig.minimum %><% } %> students.
   <% } else { %>
-  This assessment can be done individually or in groups. <% if (permissions.maximum) { %>A group must have no more than <%= permissions.maximum %> students.<% } %>
+  This assessment can be done individually or in groups. <% if (groupConfig.maximum) { %>A group must have no more than <%= groupConfig.maximum %> students.<% } %>
   <br/>To work individually, you must also create a group, but you don't need to share your join code.
   <% } %>
 </p>
@@ -29,16 +29,16 @@
   </div>
 <% } %>
 
-<%- include('../shared/groupWorkInitial.ejs', {permissions: permissions}); %>
+<%- include('../shared/groupWorkInitial.ejs', {groupConfig: groupConfig}); %>
 <% } %>
 <% } else {%>
-  <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: permissions, groupMembers: groupMembers}); %>
-  <% if (hasRoles && !rolesInfo.rolesAreBalanced) { %>
-    <div class="alert alert-danger my-2" role="alert">
-      A user has too many roles. Every student should be assigned to exactly <strong>one</strong> role with group size <strong><%= groupSize %></strong> 
-    </div>
-  <% } %>
-  <% if (hasRoles) { %>
+  <%- include('../shared/groupWorkInfoContainer.ejs', {groupConfig: groupConfig, groupMembers: groupMembers, groupName: groupName}); %>
+  <% if (groupConfig.has_roles) { %>
+    <% if (!rolesInfo.rolesAreBalanced) { %>
+      <div class="alert alert-danger my-2" role="alert">
+        A user has too many roles. Every student should be assigned to exactly <strong>one</strong> role with group size <strong><%= groupSize %></strong> 
+      </div>
+    <% } %>
     <% if (typeof rolesInfo.validationErrors !== 'undefined' && rolesInfo.validationErrors.length > 0) { %>
       <% rolesInfo.validationErrors.forEach(function ({ role_id, role_name, count, minimum, maximum }) { %>
         <div class="alert alert-danger my-2" role="alert">
@@ -87,9 +87,9 @@
     <button id="start-assessment" type="submit" class="btn btn-primary" disabled>Start assessment</button>
   </form>
   <% } %>
-  <% if (minSize - groupSize > 0) { %>
+  <% if (mingroupConfig.minimumSize - groupSize > 0) { %>
   <p class="text-center">
-    * Minimum group size is <%= minSize %>. You need at least <%= minSize - groupSize %> more group member(s) to start.
+    * Minimum group size is <%= groupConfig.minimum %>. You need at least <%= groupConfig.minimum - groupSize %> more group member(s) to start.
   </p>
   <% } %>
 <% } %>
