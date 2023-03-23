@@ -27,7 +27,6 @@ async function loadPageCheerio(url) {
     return res.text();
   });
 
-  console.log(text);
   return cheerio.load(text);
 }
 
@@ -56,7 +55,6 @@ async function checkPage(url) {
   const page = await loadPageJsdom(SITE_URL + url);
   const results = await axe.run(page.window.document.documentElement);
   A11yError.checkAndThrow(results.violations);
-  // reportViolations(url, results);
 }
 
 async function getExampleCourseContext() {
