@@ -93,14 +93,17 @@ FROM
   JOIN groups as g ON gu.group_id = g.id
 WHERE
   g.id = $group_id
-
   -- BLOCK get_group_roles
-WITH get_assessment_id AS (
-  SELECT gc.assessment_id
-  FROM group_configs AS gc
-  JOIN groups AS g ON g.group_config_id = gc.id
-  WHERE g.id = $group_id
-)
+WITH
+  get_assessment_id AS (
+    SELECT
+      gc.assessment_id
+    FROM
+      group_configs AS gc
+      JOIN groups AS g ON g.group_config_id = gc.id
+    WHERE
+      g.id = $group_id
+  )
 SELECT
   gr.id,
   gr.role_name,
@@ -114,7 +117,12 @@ FROM
     FROM
       group_roles
     WHERE
-      assessment_id = (SELECT * FROM get_assessment_id)
+      assessment_id = (
+        SELECT
+          *
+        FROM
+          get_assessment_id
+      )
   ) AS gr
   LEFT JOIN (
     SELECT

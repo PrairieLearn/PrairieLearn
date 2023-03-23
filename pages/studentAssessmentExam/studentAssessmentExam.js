@@ -25,13 +25,15 @@ router.get('/', async function (req, res, next) {
     // students to create and start a new assessment instance.
     if (!checkPasswordOrRedirect(req, res)) return;
     if (res.locals.assessment.group_work) {
-      
       // Get the group config info
       const groupConfig = await groupAssessmentHelper.getGroupConfig(res.locals.assessment.id);
       res.locals.groupConfig = groupConfig;
 
       // Check whether the user is currently in a group in the current assessment by trying to get a group_id
-      const groupId = await groupAssessmentHelper.getGroupId(res.locals.assessment.id, res.locals.user.user_id);
+      const groupId = await groupAssessmentHelper.getGroupId(
+        res.locals.assessment.id,
+        res.locals.user.user_id
+      );
 
       if (groupId === undefined) {
         res.locals.notInGroup = true;
