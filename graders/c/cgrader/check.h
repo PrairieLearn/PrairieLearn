@@ -79,16 +79,20 @@ static inline void pl_fixture_sandbox_setup(void) {
   clearenv();
 #endif
 
+#ifdef __SANITIZE_ADDRESS__
   if (*sanitizer_output) {
     mkstemp(sanitizer_output);
     __sanitizer_set_report_path(sanitizer_output);
   }
+#endif
 }
 
 static inline void pl_fixture_sandbox_teardown(void) {
 
+#ifdef __SANITIZE_ADDRESS__
   if (*sanitizer_output)
     __lsan_do_leak_check();
+#endif
   *plcheck_final_check = CORRECT_FINAL_CHECK;
 }
 
@@ -98,6 +102,8 @@ static inline TCase *pl_tcase_add_sandbox_fixtures(TCase *tc) {
 }
 
 #define tcase_create(name) (pl_tcase_add_sandbox_fixtures(tcase_create(name)))
+
+#ifdef __SANITIZE_ADDRESS__
 
 // This function will be called when AddressSanitizer detects a
 // problem (e.g., dangling pointer, out-of-bounds access, etc.).
@@ -131,3 +137,5 @@ static inline void pl_setup_asan_hooks(void) {
   __asan_set_error_report_callback(pl_asan_abort_hook);
   strcpy(sanitizer_output, "/tmp/sanitizer.XXXXXX");
 }
+
+#endif
