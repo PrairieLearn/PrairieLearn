@@ -2,7 +2,7 @@ const ERR = require('async-stacktrace');
 const AWS = require('aws-sdk');
 const _ = require('lodash');
 const async = require('async');
-const moment = require('moment');
+const { formatISO } = require('date-fns');
 const express = require('express');
 const sqldb = require('@prairielearn/postgres');
 const { DockerName } = require('@prairielearn/docker-utils');
@@ -68,7 +68,7 @@ router.get('/', function (req, res, next) {
                 _.get(res.locals.ecrInfo[repoName], 'imageSizeInBytes', 0) / (1000 * 1000);
               var pushed_at = _.get(res.locals.ecrInfo[repoName], 'imagePushedAt', null);
               if (pushed_at) {
-                image.pushed_at = moment.utc(pushed_at).format();
+                image.pushed_at = formatISO(pushed_at);
               } else {
                 res.locals.imageSyncNeeded = true;
                 image.imageSyncNeeded = true;
