@@ -2,7 +2,6 @@ import os
 from html import escape, unescape
 from typing import Any, Generator, Iterable, Optional, Type
 
-from code_utils import parse_highlight_lines
 import chevron
 import lxml.html
 import prairielearn as pl
@@ -11,6 +10,8 @@ import pygments.formatters
 import pygments.lexer
 import pygments.lexers
 import pygments.util
+from code_utils import parse_highlight_lines
+from colors import get_css_color
 from pygments.styles import STYLE_MAP, get_style_by_name
 from pygments.token import Token
 from pygments_ansi_color import color_tokens
@@ -93,11 +94,15 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
         Based on code at https://github.com/pygments/pygments/blob/master/pygments/formatters/html.py#L596-L601
         """
         return f"""
-            color: {self.style.line_number_color};
-            background-color: {self.style.line_number_background_color};
+            color: {get_css_color("black")};
+            background-color: {get_css_color("lightgray")};
             padding-left: 5px;
             padding-right: 5px;
+            margin-right: 5px;
+            -webkit-touch-callout: none;
             -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
         """
