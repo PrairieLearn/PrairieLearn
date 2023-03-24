@@ -30,7 +30,7 @@ def generate(data):
     data["correct_answers"]["c_2"] = c
     data["correct_answers"]["c_4"] = str(c)
     data["correct_answers"]["c_5"] = str(c)
-    data["correct_answers"]["c_7"] = str(c16)
+    data["correct_answers"]["c_7"] = c16
 
     c_large = "9007199254740991999"
     data["correct_answers"]["c_large"] = c_large
