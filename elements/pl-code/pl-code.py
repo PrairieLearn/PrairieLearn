@@ -23,6 +23,7 @@ HIGHLIGHT_LINES_DEFAULT = None
 HIGHLIGHT_LINES_COLOR_DEFAULT = "#b3d7ff"
 DIRECTORY_DEFAULT = "."
 COPY_CODE_BUTTON_DEFAULT = False
+SHOW_LINE_NUMBERS_DEFAULT = False
 
 # These are the same colors used in pl-external-grader-result
 ANSI_COLORS = {
@@ -51,7 +52,7 @@ class NoHighlightingLexer(pygments.lexer.Lexer):
     want to run it through the highlighter for styling and code escaping.
     """
 
-    def __init__(self, **options: dict[str, Any]) -> None:
+    def __init__(self, **options: Any) -> None:
         pygments.lexer.Lexer.__init__(self, **options)
         self.compress = options.get("compress", "")
 
@@ -65,7 +66,7 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
     with highlighted lines.
     """
 
-    def __init__(self, **options: dict[str, Any]) -> None:
+    def __init__(self, **options: Any) -> None:
         pygments.formatters.HtmlFormatter.__init__(self, **options)
         self.hl_color = options.get("hl_color", HIGHLIGHT_LINES_COLOR_DEFAULT)
 
@@ -84,6 +85,22 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
             else:
                 yield 1, value
 
+    @property
+    def _linenos_style(self) -> str:
+        """
+        Change style used to wrap tags associated with line numbers to avoid them being picked up when copying.
+        Based on code at https://github.com/pygments/pygments/blob/master/pygments/formatters/html.py#L596-L601
+        """
+        return f"""
+            color: {self.style.line_number_color};
+            background-color: {self.style.line_number_background_color};
+            padding-left: 5px;
+            padding-right: 5px;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        """
+
 
 def parse_highlight_lines(highlight_lines: str) -> Optional[list[int]]:
     """
@@ -93,22 +110,21 @@ def parse_highlight_lines(highlight_lines: str) -> Optional[list[int]]:
     lines = []
     components = highlight_lines.split(",")
     for component in components:
-        component = component.strip()
+        component = component.replace(" ", "").split("-")
         try:
-            line = int(component)
-            lines.append(line)
-        except ValueError:
+            if len(component) == 1:
+                line = int(component[0])
+                lines.append(line)
             # Try parsing as "##-###"
-            numbers = component.split("-")
-            if len(numbers) != 2:
-                return None
-            try:
-                start = int(numbers[0])
-                end = int(numbers[1])
+            elif len(component) == 2:
+                start = int(component[0])
+                end = int(component[1])
                 lines.extend(range(start, end + 1))
-
-            except ValueError:
+            else:
                 return None
+        except ValueError:
+            return None
+
     return lines
 
 
@@ -144,6 +160,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "highlight-lines-color",
         "copy-code-button",
         "style",
+        "show-line-numbers",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -202,6 +219,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "highlight-lines-color", HIGHLIGHT_LINES_COLOR_DEFAULT
     )
 
+    show_line_numbers = pl.get_boolean_attrib(
+        element, "show-line-numbers", SHOW_LINE_NUMBERS_DEFAULT
+    )
+
     # The no-highlight option is deprecated, but supported for backwards compatibility
     if pl.get_boolean_attrib(element, "no-highlight", NO_HIGHLIGHT_DEFAULT):
         language = None
@@ -248,9 +269,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "prestyles": "padding: 0.5rem; margin-bottom: 0px",
         "noclasses": True,
     }
+
     if highlight_lines is not None:
         formatter_opts["hl_lines"] = parse_highlight_lines(highlight_lines)
         formatter_opts["hl_color"] = highlight_lines_color
+
+    if show_line_numbers:
+        formatter_opts["linenos"] = "inline"
+
     formatter = HighlightingHtmlFormatter(**formatter_opts)
 
     code = pygments.highlight(unescape(code), lexer, formatter)
