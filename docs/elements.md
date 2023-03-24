@@ -1227,6 +1227,8 @@ The `pl-code` element uses the _Pygments_ library for syntax highlighting. It su
 
 The HTML specification disallows inserting special characters onto the page (i.e. `<`, `>`, `&`), and using these characters with inline code may break rendering. To fix this, either escape the characters (`&lt;`, `&gt;`, `&amp;`, more [here](https://www.freeformatter.com/html-entities.html)), or load code snippets from external files into `pl-code` with `source-file-name` attribute.
 
+Manually copying and pasting code from `pl-code` with line numbers enabled can add extra newlines. To ensure code can be copied correctly in these cases, set `copy-code-button="True"`.
+
 #### Example implementations
 
 - [element/code]
