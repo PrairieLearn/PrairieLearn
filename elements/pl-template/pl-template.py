@@ -13,9 +13,7 @@ TRIM_WHITESPACE_DEFAULT = True
 VALIDATE_OUTPUT_DEFAULT = True
 
 # These elements should be display only
-ALLOWED_PL_TAGS = frozenset(
-    ("pl-template", "pl-variable", "pl-code", "pl-card", "markdown")
-)
+ALLOWED_PL_TAGS = frozenset(("pl-template", "pl-variable", "pl-code", "pl-card"))
 
 
 def check_tags(element_html: str) -> None:
@@ -26,15 +24,16 @@ def check_tags(element_html: str) -> None:
         element_list.pop(0)
 
     for e in chain.from_iterable(element.iter() for element in element_list):
-        if (
-            e.tag is not lxml.etree.Comment
-            and e.tag.startswith("pl-")
-            and e.tag not in ALLOWED_PL_TAGS
-        ):
-            print(
-                f'WARNING: Element "{e.tag}" may not work correctly when used inside of "pl-template" element.'
-            )
-            print('Set validate-output="False" to disable this warning.')
+        if e.tag is not lxml.etree.Comment:
+            is_tag_invald = (
+                e.tag.startswith("pl-") and e.tag not in ALLOWED_PL_TAGS
+            ) or e.tag == "markdown"
+
+            if is_tag_invald:
+                print(
+                    f'WARNING: Element "{e.tag}" may not work correctly when used inside of "pl-template" element.'
+                )
+                print('Set validate-output="False" to disable this warning.')
 
 
 def get_file_path(data: pl.QuestionData, element: lxml.html.HtmlElement) -> str:
