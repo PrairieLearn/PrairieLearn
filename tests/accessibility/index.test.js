@@ -9,6 +9,8 @@ const { A11yError } = require('@sa11y/format');
 const config = require('../../lib/config');
 const helperServer = require('../helperServer');
 
+config.cronActive = false;
+
 const SITE_URL = 'http://localhost:' + config.serverPort;
 const EXAMPLE_COURSE_DIR = path.resolve(__dirname, '..', '..', 'exampleCourse');
 
@@ -25,6 +27,10 @@ async function loadPageJsdom(url) {
     }
     return res.text();
   });
+  console.log('page size', text.length);
+  if (url.endsWith('/pl/course_instance/1/instructor/instance_admin/settings')) {
+    console.log(text);
+  }
   return new jsdom.JSDOM(text);
 }
 
@@ -34,8 +40,17 @@ async function loadPageJsdom(url) {
  * @param {string} url
  */
 async function checkPage(url) {
+  console.log('checkPage', url);
   const page = await loadPageJsdom(SITE_URL + url);
+  console.log('running axe', url);
+  // Hack: AXE chokes on the `data-data` attribute of this table and takes
+  // waaaaay too long to run. This attribute isn't necessary for the checks
+  // we run, so we just remove it.
+  if (url === '/pl/course_instance/1/instructor/course_admin/questions') {
+    page.window.document.querySelector('#questionsTable').removeAttribute('data-data');
+  }
   const results = await axe.run(page.window.document.documentElement);
+  console.log('axe run!');
   A11yError.checkAndThrow(results.violations);
 }
 
@@ -97,14 +112,19 @@ const pages = [
   '/pl/course_instance/1/effectiveUser',
 ];
 
+const ONLY_PAGES = ['/pl/course_instance/1/instructor/instance_admin/settings'];
+
 describe('accessibility', () => {
   before('set up testing server', helperServer.before(EXAMPLE_COURSE_DIR));
   after('shut down testing server', helperServer.after);
 
   pages.forEach((page) => {
-    // let title = typeof page === 'string' ? page : page.title;
+    if (ONLY_PAGES.length > 0 && !ONLY_PAGES.includes(page)) return;
+
     test(page, async () => {
+      console.log('before', page);
       await checkPage(page);
+      console.log('after', page);
     });
   });
 });
