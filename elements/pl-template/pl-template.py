@@ -13,7 +13,9 @@ TRIM_WHITESPACE_DEFAULT = True
 VALIDATE_OUTPUT_DEFAULT = True
 
 # These elements should be display only
-ALLOWED_PL_TAGS = frozenset(("pl-template", "pl-variable", "pl-code", "pl-card"))
+ALLOWED_PL_TAGS = frozenset(
+    ("pl-template", "pl-variable", "pl-code", "pl-card", "markdown")
+)
 
 
 def check_tags(element_html: str) -> None:
