@@ -19,7 +19,10 @@
         "port": 3939,
         "args": "",
         "rewriteUrl": false,
-        "home": "/home/rstudio/workspace"
+        "home": "/home/rstudio/workspace",
+        "gradedFiles": [
+          "student.R"
+        ]
     },
     "gradingMethod": "External",
     "externalGradingOptions": {
