@@ -103,6 +103,8 @@ static inline TCase *pl_tcase_add_sandbox_fixtures(TCase *tc) {
 
 #define tcase_create(name) (pl_tcase_add_sandbox_fixtures(tcase_create(name)))
 
+#ifdef __SANITIZE_ADDRESS__
+
 // This function will be called when AddressSanitizer detects a
 // problem (e.g., dangling pointer, out-of-bounds access, etc.).
 static void pl_asan_abort_hook(const char *msg) {
@@ -131,9 +133,9 @@ static void pl_asan_death_hook(void) {
 
 static inline void pl_setup_asan_hooks(void) {
 
-#ifdef __SANITIZE_ADDRESS__
   __sanitizer_set_death_callback(pl_asan_death_hook);
   __asan_set_error_report_callback(pl_asan_abort_hook);
   strcpy(sanitizer_output, "/tmp/sanitizer.XXXXXX");
-#endif
 }
+
+#endif
