@@ -133,7 +133,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "params-name-labels",
         "params-type",
         "negative-weights",
-        "show-warnings",
+        "log-warnings",
     ]
 
     # Load attributes from extensions if they have any
