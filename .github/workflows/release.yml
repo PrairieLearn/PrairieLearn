@@ -35,9 +35,10 @@ jobs:
         id: changesets
         uses: changesets/action@v1
         with:
-          # We need to run `yarn` after `changeset version` to update `yarn.lock`
-          # https://github.com/changesets/action/issues/170
-          version: yarn changeset version && yarn
+          # This invokes the `version` script in `package.json`, which will run
+          # `changeset version` and then `yarn`. We need to run `yarn` in order
+          # to update `yarn.lock`:  https://github.com/changesets/action/issues/170
+          version: yarn version
           # This invokes the `release` script in `package.json`, which will build
           # all the packages and then invoke `changeset publish`.
           publish: yarn release

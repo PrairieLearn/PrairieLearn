@@ -200,10 +200,11 @@ module.exports.pullAndUpdate = function (locals, callback) {
                   oldHash: startGitHash,
                   newHash: endGitHash,
                 },
-                (err) => {
+                (err, chunkChanges) => {
                   if (err) {
                     job.fail(err);
                   } else {
+                    chunks.logChunkChangesToJob(chunkChanges, job);
                     checkJsonErrors();
                   }
                 }
