@@ -88,7 +88,9 @@ include = [
     "./apps/prairielearn/python/prairielearn.py",
     "./apps/prairielearn/python/prairielearn_test.py",
     "./apps/prairielearn/python/python_helper_sympy.py",
-    "./apps/prairielearn/python/python_helper_sympy_test.py"
+    "./apps/prairielearn/python/python_helper_sympy_test.py",
+    "./apps/prairielearn/python/zygote_utils.py",
+    "./apps/prairielearn/python/zygote_utils_test.py",
 ]
 extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.9"
