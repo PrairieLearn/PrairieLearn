@@ -93,7 +93,7 @@ class PLTestResult(unittest.TestResult):
                 ipynb_key=Feedback.test.ipynb_key,
             )
         else:
-            tr_message = ''.join(traceback.format_exception(*err))
+            tr_message = "".join(traceback.format_exception(*err))
 
             if isinstance(test, unittest.suite._ErrorHolder):
                 # Error occurred outside of a test case, like in setup code for example

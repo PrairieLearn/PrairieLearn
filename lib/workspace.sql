@@ -21,8 +21,8 @@ SELECT
 FROM
   workspaces
 WHERE
-  id = $workspace_id FOR
-UPDATE;
+  id = $workspace_id
+FOR UPDATE;
 
 -- BLOCK select_workspace_data
 SELECT

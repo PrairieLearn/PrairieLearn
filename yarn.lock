@@ -2435,8 +2435,8 @@ __metadata:
     "@types/mocha": ^10.0.1
     "@types/node": ^18.11.18
     aws-sdk: ^2.1327.0
+    date-fns: ^2.29.3
     mocha: ^10.2.0
-    moment: ^2.29.4
     ts-node: ^10.9.1
     typescript: ^4.9.5
   languageName: unknown
@@ -2519,7 +2519,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/named-locks@workspace:packages/named-locks"
   dependencies:
-    "@prairielearn/postgres": ^1.2.0
+    "@prairielearn/postgres": ^1.3.0
     "@prairielearn/tsconfig": "*"
     "@types/node": ^18.14.2
     typescript: ^4.9.4
@@ -2562,7 +2562,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/postgres@^1.0.0, @prairielearn/postgres@^1.2.0, @prairielearn/postgres@workspace:packages/postgres":
+"@prairielearn/postgres@^1.0.0, @prairielearn/postgres@^1.2.0, @prairielearn/postgres@^1.3.0, @prairielearn/postgres@workspace:packages/postgres":
   version: 0.0.0-use.local
   resolution: "@prairielearn/postgres@workspace:packages/postgres"
   dependencies:
@@ -2571,7 +2571,11 @@ __metadata:
     "@types/lodash": ^4.14.191
     "@types/mocha": ^10.0.1
     "@types/node": ^18.14.2
+    "@types/pg-cursor": ^2.7.0
     mocha: ^10.2.0
+    pg: ^8.10.0
+    pg-cursor: ^2.9.0
+    pg-pool: ^3.6.0
     ts-node: ^10.9.1
     typescript: ^4.9.4
     zod: ^3.20.6
@@ -2585,7 +2589,7 @@ __metadata:
     "@prairielearn/tsconfig": "*"
     "@types/node": ^18.14.2
     "@types/prettier": ^2.7.2
-    sql-formatter: ^12.1.2
+    sql-formatter: ^12.1.3
     typescript: ^4.9.4
   languageName: unknown
   linkType: soft
@@ -3252,6 +3256,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/pg-cursor@npm:^2.7.0":
+  version: 2.7.0
+  resolution: "@types/pg-cursor@npm:2.7.0"
+  dependencies:
+    "@types/node": "*"
+    "@types/pg": "*"
+  checksum: 8d22a3aa22ab553097781842d8340c9ac19ddc02e99a14744883f95b7392871e3e16f4571259a87c3e90c8a89e8bc1537c4eff47d9caff173dbd506df28a5281
+  languageName: node
+  linkType: hard
+
 "@types/pg-pool@npm:2.0.3":
   version: 2.0.3
   resolution: "@types/pg-pool@npm:2.0.3"
@@ -3468,6 +3482,7 @@ __metadata:
     csvtojson: ^2.0.10
     d3: ^7.8.2
     date-fns: ^2.29.3
+    date-fns-tz: ^2.0.0
     debug: ^4.3.4
     delay: ^5.0.0
     detect-mocha: ^0.1.0
@@ -3518,7 +3533,6 @@ __metadata:
     mime: ^3.0.0
     mocha: ^10.2.0
     mocha-steps: ^1.3.0
-    moment: ^2.29.4
     multer: ^1.4.5-lts.1
     mustache: ^4.2.0
     ncp: ^2.0.0
@@ -5757,6 +5771,15 @@ __metadata:
     whatwg-mimetype: ^2.2.0
     whatwg-url: ^7.0.0
   checksum: dc4bd9621df0dff336d7c4c0517c792488ef3cf11cd37e72ab80f3a7f0a0aa14bad677ac97cf22c87c6eb9518e58b98590e1c8c756b56240940f0e470c81612e
+  languageName: node
+  linkType: hard
+
+"date-fns-tz@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "date-fns-tz@npm:2.0.0"
+  peerDependencies:
+    date-fns: ">=2.0.0"
+  checksum: a6553603a9d26dd9669326c99a58a2335ac550bc060c74b86a5ad9e1de73c9d4e3e5236f0f552f990e616e4e8dcc2b6a637913a04d2e04396e6a9f8ae83c73da
   languageName: node
   linkType: hard
 
@@ -10291,7 +10314,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"moment@npm:^2.19.3, moment@npm:^2.29.4":
+"moment@npm:^2.19.3":
   version: 2.29.4
   resolution: "moment@npm:2.29.4"
   checksum: 0ec3f9c2bcba38dc2451b1daed5daded747f17610b92427bebe1d08d48d8b7bdd8d9197500b072d14e326dd0ccf3e326b9e3d07c5895d3d49e39b6803b76e80e
@@ -11218,6 +11241,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"pg-cursor@npm:^2.9.0":
+  version: 2.9.0
+  resolution: "pg-cursor@npm:2.9.0"
+  peerDependencies:
+    pg: ^8
+  checksum: 8f83c6b35ecee707c220288577cc864484c4c4fb08e9d0bb6901d2dc376ab8966d4c4e5e58b9b4c551dcf0470182d0f9a0e37761f9eca3beeadea4c064835958
+  languageName: node
+  linkType: hard
+
 "pg-int8@npm:1.0.1":
   version: 1.0.1
   resolution: "pg-int8@npm:1.0.1"
@@ -11225,12 +11257,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg-pool@npm:^3.5.2":
-  version: 3.5.2
-  resolution: "pg-pool@npm:3.5.2"
+"pg-pool@npm:^3.6.0":
+  version: 3.6.0
+  resolution: "pg-pool@npm:3.6.0"
   peerDependencies:
     pg: ">=8.0"
-  checksum: a5d029200257671f0c17ca54b9ab6213e2060e64e5cc792b78edd50ab471a26cd364890d05d546d9296949e079e943821cf2ceb4d488f4e6a6789fb781a628bf
+  checksum: f3fe050fbfe27406369340c4c26efcbe21a388ace085a876453de0ea496a315c38b2dc739ac97d4767a359e911da2ec4810467f72601eeec8ad540e58b27987c
   languageName: node
   linkType: hard
 
@@ -11254,14 +11286,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pg@npm:^8.9.0":
-  version: 8.9.0
-  resolution: "pg@npm:8.9.0"
+"pg@npm:^8.10.0, pg@npm:^8.9.0":
+  version: 8.10.0
+  resolution: "pg@npm:8.10.0"
   dependencies:
     buffer-writer: 2.0.0
     packet-reader: 1.0.0
     pg-connection-string: ^2.5.0
-    pg-pool: ^3.5.2
+    pg-pool: ^3.6.0
     pg-protocol: ^1.6.0
     pg-types: ^2.1.0
     pgpass: 1.x
@@ -11270,7 +11302,7 @@ __metadata:
   peerDependenciesMeta:
     pg-native:
       optional: true
-  checksum: dfd158955318f9ffb9428eaada29f3ee98b9eb07e87ed4b56589a19984d109f23bb8f88db78b7d7f870553e5b75ca0d58d0ed55755a8c6aed5df44e038c1d529
+  checksum: c6be78f2e823f2ae3c618c8e54a6622592dd71b556fb665d7eaedcbcc2fa5d210a8bcf519401e72526a65b9d797f19b772f48f29b9d9f31e98dd526fd27d61e0
   languageName: node
   linkType: hard
 
@@ -12816,15 +12848,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sql-formatter@npm:^12.1.2":
-  version: 12.1.2
-  resolution: "sql-formatter@npm:12.1.2"
+"sql-formatter@npm:^12.1.3":
+  version: 12.1.3
+  resolution: "sql-formatter@npm:12.1.3"
   dependencies:
     argparse: ^2.0.1
     nearley: ^2.20.1
   bin:
     sql-formatter: bin/sql-formatter-cli.cjs
-  checksum: 59e3f9688a82f20918fe1a91c505edafa1459e9b2ef61a801ef1235ec06654a69fb7bb57748aeab80fe2b756046b250297c9979ba73e02adc5e9a72d38d129fd
+  checksum: c4fa05ec92d3cf431d2b9056c766fa8d14df5a8996eb1593616087f57f3dcb566fca72a49e98adf7ad0826b828606ab449f51605d5d511367260780b02e0a6f2
   languageName: node
   linkType: hard
 
