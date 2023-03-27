@@ -11,7 +11,7 @@ import prairielearn as pl
 
 WARN_UNDEFINED_DEFAULT = False
 TRIM_WHITESPACE_DEFAULT = True
-VALIDATE_OUTPUT_DEFAULT = True
+LOG_WARNINGS_DEFAULT = True
 
 # These elements should be display only
 ALLOWED_PL_TAGS = frozenset(("pl-template", "pl-variable", "pl-code", "pl-card"))
@@ -66,7 +66,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     optional_attribs = [
         "directory",
         "warn-undefined",
-        "validate-output",
+        "log-warnings",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -116,14 +116,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "warn-undefined", WARN_UNDEFINED_DEFAULT
     )
 
-    validate_output = pl.get_boolean_attrib(
-        element, "validate-output", VALIDATE_OUTPUT_DEFAULT
-    )
+    log_warnings = pl.get_boolean_attrib(element, "log-warnings", LOG_WARNINGS_DEFAULT)
 
     with open(get_file_path(data, element), "r") as f:
         res = chevron.render(f, variable_dict, warn=warn_undefined)
 
-    if validate_output:
+    if log_warnings:
         check_tags(res)
 
     return res
