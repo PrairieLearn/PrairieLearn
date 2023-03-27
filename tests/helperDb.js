@@ -23,7 +23,8 @@ const postgresTestUtils = sqldb.makePostgresTestUtils({
   prepareAfterReset: async (client) => {
     // This is the sole piece of database state that's actually created in a
     // migration (`153_institutions__create`) - when we TRUNCATE the `institutions`
-    // table above, we lose the default institution, so we add it back here.
+    // table when resetting the database, we lose the default institution, so we
+    // add it back here.
     await client.query(
       "INSERT INTO institutions (id, long_name, short_name) VALUES (1, 'Default', 'Default') ON CONFLICT DO NOTHING;"
     );
