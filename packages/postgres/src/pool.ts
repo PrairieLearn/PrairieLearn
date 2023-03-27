@@ -470,19 +470,39 @@ export class PostgresPool {
    * will be committed otherwise.
    */
   async runInTransactionAsync<T>(fn: (client: pg.PoolClient) => Promise<T>): Promise<T> {
-    const client = await this.beginTransactionAsync();
+    // Check if we're already inside a transaction. If so, we won't start another one,
+    // as Postgres doesn't support nested transactions.
+    let client = this.alsClient.getStore();
+    const isNestedTransaction = client !== undefined;
+    if (!client) {
+      client = await this.beginTransactionAsync();
+    }
+
+    // We reassign to a separate variable here so that TypeScript can reason
+    // about the fact that `client` will always be defined by this point.
+    const transactionClient = client;
+
     let result: T;
     try {
-      result = await this.alsClient.run(client, () => fn(client));
+      result = await this.alsClient.run(transactionClient, () => fn(transactionClient));
     } catch (err: any) {
-      await this.endTransactionAsync(client, err);
+      if (!isNestedTransaction) {
+        // If we're inside another transaction, we assume that the root transaction
+        // will catch this error and roll back the transaction.
+        await this.endTransactionAsync(transactionClient, err);
+      }
       throw err;
     }
 
-    // Note that we don't invoke `endTransactionAsync` inside the `try` block
-    // because we don't want an error thrown by it to trigger *another* call
-    // to `endTransactionAsync` in the `catch` block.
-    await this.endTransactionAsync(client, null);
+    if (!isNestedTransaction) {
+      // If we're inside another transaction; don't commit it prematurely. Allow
+      // the root transaction to commit it instead.
+      //
+      // Note that we don't invoke `endTransactionAsync` inside the `try` block
+      // because we don't want an error thrown by it to trigger *another* call
+      // to `endTransactionAsync` in the `catch` block.
+      await this.endTransactionAsync(transactionClient, null);
+    }
 
     return result;
   }
