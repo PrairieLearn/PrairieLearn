@@ -161,7 +161,13 @@ module.exports.createTemplate = async function createTemplate() {
   await createFullDatabase(POSTGRES_DATABASE_TEMPLATE, true);
 };
 
+/**
+ * @this {import('mocha').Context}
+ */
 module.exports.dropTemplate = async function dropTemplate() {
+  // long timeout because DROP DATABASE might take a long time to error
+  // if other processes have an open connection to that database
+  this.timeout?.(20000);
   await closeSql();
   await postgresTestUtils.dropDatabase({
     database: POSTGRES_DATABASE_TEMPLATE,
