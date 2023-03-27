@@ -1,7 +1,6 @@
 // @ts-check
 const pg = require('pg');
 const path = require('path');
-const _ = require('lodash');
 const util = require('util');
 
 const sqldb = require('@prairielearn/postgres');
