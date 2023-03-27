@@ -15,7 +15,7 @@ BEGIN
         pl_courses AS c
     WHERE
         c.id = course_id
-    FOR UPDATE;
+    FOR NO KEY UPDATE;
 
     IF NOT FOUND THEN
         RAISE EXCEPTION 'no such course, id: %', course_id;
