@@ -64,14 +64,6 @@ async function runMigrationsAndSprocs(dbName, runMigrations) {
   await sqldb.closeAsync();
 }
 
-async function createFullDatabase(dbName, dropFirst) {
-  await postgresTestUtils.createDatabase({
-    dropExistingDatabase: dropFirst,
-    configurePool: true,
-    prepare: () => runMigrationsAndSprocs(dbName, true),
-  });
-}
-
 /**
  *
  * @param {string} dbName
@@ -81,6 +73,7 @@ async function createFullDatabase(dbName, dropFirst) {
 async function createFromTemplate(dbName, dbTemplateName, dropFirst) {
   await postgresTestUtils.createDatabase({
     dropExistingDatabase: dropFirst,
+    database: dbName,
     templateDatabase: dbTemplateName,
     configurePool: true,
     prepare: () => runMigrationsAndSprocs(dbName, false),
@@ -158,7 +151,12 @@ module.exports.after = async function after() {
 };
 
 module.exports.createTemplate = async function createTemplate() {
-  await createFullDatabase(POSTGRES_DATABASE_TEMPLATE, true);
+  await postgresTestUtils.createDatabase({
+    dropExistingDatabase: true,
+    database: POSTGRES_DATABASE_TEMPLATE,
+    configurePool: false,
+    prepare: () => runMigrationsAndSprocs(POSTGRES_DATABASE_TEMPLATE, true),
+  });
 };
 
 /**

@@ -16,8 +16,9 @@ export interface PostgresTestUtilsOptions {
 
 interface CreateDatabaseOptions {
   dropExistingDatabase?: boolean;
-  configurePool?: boolean;
+  database?: string;
   templateDatabase?: string;
+  configurePool?: boolean;
   prepare?: (client: pg.Client) => Promise<void>;
 }
 
@@ -41,7 +42,7 @@ async function createDatabase(
   await client.connect();
 
   const escapedDatabase = client.escapeIdentifier(
-    getDatabaseNameForCurrentMochaWorker(options.database)
+    createOptions.database ?? getDatabaseNameForCurrentMochaWorker(options.database)
   );
   if (dropExistingDatabase ?? true) {
     await client.query(`DROP DATABASE IF EXISTS ${escapedDatabase}`);
