@@ -151,7 +151,7 @@ FROM
   assessment_questions
 WHERE
   id = $assessment_question_id
-FOR UPDATE;
+FOR NO KEY UPDATE;
 
 -- BLOCK insert_rubric
 INSERT INTO
@@ -287,10 +287,13 @@ SELECT
   gir.*
 FROM
   rubric_gradings_to_review AS rgr
+  JOIN instance_questions AS iq ON (iq.id = rgr.instance_question_id)
   LEFT JOIN grading_items_to_review AS gir ON (gir.rubric_grading_id = rgr.id)
 WHERE
   rgr.rubric_settings_changed IS NOT FALSE
-  OR gir.rubric_items_changed IS NOT FALSE;
+  OR gir.rubric_items_changed IS NOT FALSE
+FOR NO KEY UPDATE OF
+  iq;
 
 -- BLOCK tag_for_manual_grading
 UPDATE instance_questions iq
@@ -400,7 +403,9 @@ ORDER BY
   s.date DESC,
   ai.number DESC
 LIMIT
-  1;
+  1
+FOR NO KEY UPDATE OF
+  iq;
 
 -- BLOCK insert_grading_job
 INSERT INTO
