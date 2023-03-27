@@ -474,13 +474,7 @@ export class PostgresPool {
     // as Postgres doesn't support nested transactions.
     let client = this.alsClient.getStore();
     const isNestedTransaction = client !== undefined;
-    if (!client) {
-      client = await this.beginTransactionAsync();
-    }
-
-    // We reassign to a separate variable here so that TypeScript can reason
-    // about the fact that `client` will always be defined by this point.
-    const transactionClient = client;
+    const transactionClient = client ?? await this.beginTransactionAsync();
 
     let result: T;
     try {
