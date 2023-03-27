@@ -4,17 +4,25 @@ import multipipe from 'multipipe';
 
 export { stringify, Stringifier };
 
+export interface StringifyNonblockingOptions extends StringifierOptions {
+  batchSize?: number;
+}
+
 /**
  * Streaming transform from an array of objects to a CSV that doesn't
  * block the event loop.
  */
-export function stringifyNonblocking(data: any[], options: StringifierOptions = {}): Stringifier {
-  const stringifier = new Stringifier(options);
+export function stringifyNonblocking(
+  data: any[],
+  options: StringifyNonblockingOptions = {}
+): Stringifier {
+  const { batchSize = 100, ...stringifierOptions } = options;
+  const stringifier = new Stringifier(stringifierOptions);
 
   process.nextTick(function () {
     let j = 0;
     function loop() {
-      for (let i = 0; i < 100; i++) {
+      for (let i = 0; i < batchSize; i++) {
         if (j < data.length) {
           stringifier.write(data[j]);
           j += 1;
