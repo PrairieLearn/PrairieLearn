@@ -100,6 +100,15 @@ module.exports.initExpress = function () {
     }
   }
 
+  const meter = opentelemetry.metrics.getMeter('prairielearn');
+  const requestCounter = opentelemetry.getCounter(meter, 'request.count', {
+    valueType: opentelemetry.ValueType.INT,
+  });
+  app.use((req, res, next) => {
+    requestCounter.add(1);
+    next();
+  });
+
   // Set res.locals variables first, so they will be available on
   // all pages including the error page (which we could jump to at
   // any point.
@@ -473,6 +482,7 @@ module.exports.initExpress = function () {
   // load accounting for authenticated accesses
   app.use(function (req, res, next) {
     load.startJob('authed_request', res.locals.response_id);
+    requestCounter.add(1);
     next();
   });
   app.use(function (req, res, next) {
@@ -484,6 +494,8 @@ module.exports.initExpress = function () {
         });
       }
       load.endJob('authed_request', res.locals.response_id);
+
+      const duration = Date.now() - res.locals.true_req_date;
     });
     next();
   });
