@@ -7,10 +7,11 @@ const POSTGRES_HOST = 'localhost';
 const POSTGRES_DATABASE = 'postgres';
 
 export interface PostgresTestUtilsOptions {
+  database: string;
   user?: string;
   host?: string;
+  poolConfig?: Pick<pg.PoolConfig, 'max' | 'idleTimeoutMillis'>;
   defaultDatabase?: string;
-  database: string;
   prepareAfterReset?: (client: pg.Client) => Promise<void>;
 }
 
@@ -30,11 +31,14 @@ interface DropDatabaseOptions {
 
 async function createDatabase(
   options: PostgresTestUtilsOptions,
-  createOptions: CreateDatabaseOptions = {}
+  {
+    dropExistingDatabase = true,
+    configurePool = true,
+    database,
+    templateDatabase,
+    prepare,
+  }: CreateDatabaseOptions = {}
 ): Promise<void> {
-  const dropExistingDatabase = createOptions.dropExistingDatabase ?? true;
-  const configurePool = createOptions.configurePool ?? true;
-
   const client = new pg.Client({
     ...getPoolConfig(options),
     database: options.defaultDatabase ?? POSTGRES_DATABASE,
@@ -42,14 +46,14 @@ async function createDatabase(
   await client.connect();
 
   const escapedDatabase = client.escapeIdentifier(
-    createOptions.database ?? getDatabaseNameForCurrentMochaWorker(options.database)
+    database ?? getDatabaseNameForCurrentMochaWorker(options.database)
   );
   if (dropExistingDatabase ?? true) {
     await client.query(`DROP DATABASE IF EXISTS ${escapedDatabase}`);
   }
 
-  if (createOptions.templateDatabase) {
-    const escapedTemplateDatabase = client.escapeIdentifier(createOptions.templateDatabase);
+  if (templateDatabase) {
+    const escapedTemplateDatabase = client.escapeIdentifier(templateDatabase);
     await client.query(`CREATE DATABASE ${escapedDatabase} TEMPLATE ${escapedTemplateDatabase}`);
   } else {
     await client.query(`CREATE DATABASE ${escapedDatabase}`);
@@ -57,7 +61,7 @@ async function createDatabase(
 
   await client.end();
 
-  await createOptions.prepare?.(client);
+  await prepare?.(client);
 
   if (configurePool) {
     await defaultPool.initAsync(
@@ -65,9 +69,10 @@ async function createDatabase(
         user: options.user ?? POSTGRES_USER,
         host: options.host ?? POSTGRES_HOST,
         database: getDatabaseNameForCurrentMochaWorker(options.database),
-        // TODO: make these configurable?
+        // Offer sensible default, but these can be overridden by `options.poolConfig`.
         max: 10,
         idleTimeoutMillis: 30000,
+        ...(options.poolConfig ?? {}),
       },
       (err) => {
         throw err;
@@ -98,15 +103,15 @@ async function resetDatabase(options: PostgresTestUtilsOptions): Promise<void> {
 
 async function dropDatabase(
   options: PostgresTestUtilsOptions,
-  dropOptions: DropDatabaseOptions = {}
+  { closePool = true, force = false, database }: DropDatabaseOptions = {}
 ): Promise<void> {
-  if (dropOptions.closePool ?? true) {
+  if (closePool) {
     await defaultPool.closeAsync();
   }
 
-  const database = dropOptions.database ?? getDatabaseNameForCurrentMochaWorker(options.database);
-  if ('PL_KEEP_TEST_DB' in process.env && !(dropOptions.force ?? false)) {
-    console.log(`PL_KEEP_TEST_DB enviroment variable set, not dropping database ${database}`);
+  const databaseName = database ?? getDatabaseNameForCurrentMochaWorker(options.database);
+  if ('PL_KEEP_TEST_DB' in process.env && !force) {
+    console.log(`PL_KEEP_TEST_DB environment variable set, not dropping database ${databaseName}`);
     return;
   }
 
@@ -115,7 +120,7 @@ async function dropDatabase(
     database: options.defaultDatabase ?? POSTGRES_DATABASE,
   });
   await client.connect();
-  await client.query(`DROP DATABASE IF EXISTS ${client.escapeIdentifier(database)}`);
+  await client.query(`DROP DATABASE IF EXISTS ${client.escapeIdentifier(databaseName)}`);
   await client.end();
 }
 
