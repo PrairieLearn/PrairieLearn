@@ -474,7 +474,7 @@ export class PostgresPool {
     // as Postgres doesn't support nested transactions.
     let client = this.alsClient.getStore();
     const isNestedTransaction = client !== undefined;
-    const transactionClient = client ?? await this.beginTransactionAsync();
+    const transactionClient = client ?? (await this.beginTransactionAsync());
 
     let result: T;
     try {
