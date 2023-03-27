@@ -2013,12 +2013,12 @@ Displays boilerplate HTML from templates in a reusable way.
 
 #### Customizations
 
-| Attribute         | Type                                                                                            | Default             | Description                                                                                                    |
-| ----------------- | ----------------------------------------------------------------------------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `file-name`       | string                                                                                          | -                   | File name of the outer template to use.                                                                        |
-| `directory`       | `question`, `clientFilesQuestion`, `clientFilesCourse`, `serverFilesCourse`, `courseExtensions` | `serverFilesCourse` | Parent directory to locate `file-name`.                                                                        |
-| `warn-undefined`  | boolean                                                                                         | false               | Whether to print a warning when rendering templates with undefined variables. Useful for debugging.            |
-| `validate-output` | boolean                                                                                         | true                | Whether to raise warnings if a rendered template contains elements which are not guaranteed to work correctly. |
+| Attribute        | Type                                                                                            | Default             | Description                                                                                                  |
+| ---------------- | ----------------------------------------------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `file-name`      | string                                                                                          | -                   | File name of the outer template to use.                                                                      |
+| `directory`      | `question`, `clientFilesQuestion`, `clientFilesCourse`, `serverFilesCourse`, `courseExtensions` | `serverFilesCourse` | Parent directory to locate `file-name`.                                                                      |
+| `warn-undefined` | boolean                                                                                         | false               | Whether to print a warning when rendering templates with undefined variables. Useful for debugging.          |
+| `log-warnings`   | boolean                                                                                         | true                | Whether to log warnings if a rendered template contains elements which are not guaranteed to work correctly. |
 
 Inside the `pl-template` element, variables for use in rendering the template may be specified with a `pl-variable` tag. Each `pl-variable` tag can be used to define a variable from a file or with the contents of the tag (but not both). Note that recursion is **not** applied to data in `pl-variable`. The `pl-variable` tag supports the following attributes:
 

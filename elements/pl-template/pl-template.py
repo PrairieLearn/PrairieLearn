@@ -1,5 +1,6 @@
 import copy
 import os
+import warnings
 from itertools import chain
 from typing import Any, cast
 
@@ -30,10 +31,9 @@ def check_tags(element_html: str) -> None:
             ) or e.tag == "markdown"
 
             if is_tag_invald:
-                print(
-                    f'WARNING: Element "{e.tag}" may not work correctly when used inside of "pl-template" element.'
+                warnings.warn(
+                    f'Element "{e.tag}" may not work correctly when used inside of "pl-template" element.'
                 )
-                print('Set validate-output="False" to disable this warning.')
 
 
 def get_file_path(data: pl.QuestionData, element: lxml.html.HtmlElement) -> str:
