@@ -1,10 +1,12 @@
 columns
     group_id: bigint not null
     group_role_id: bigint not null
+    id: bigserial not null
     user_id: bigint not null
 
 indexes
-    group_user_roles_pkey: PRIMARY KEY (group_id, user_id, group_role_id) USING btree (group_id, user_id, group_role_id)
+    group_user_roles_pkey: PRIMARY KEY (id) USING btree (id)
+    group_user_roles_group_id_user_id_group_role_id_key: UNIQUE (group_id, user_id, group_role_id) USING btree (group_id, user_id, group_role_id)
     group_user_roles_group_id_key: USING btree (group_id)
     group_user_roles_group_role_id_key: USING btree (group_role_id)
     group_user_roles_user_id_key: USING btree (user_id)
