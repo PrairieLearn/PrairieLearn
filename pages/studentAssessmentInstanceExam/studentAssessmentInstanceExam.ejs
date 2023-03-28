@@ -73,7 +73,7 @@
         </div>
 
         <div class="card-body">
-          <% if (!assessment.allow_real_time_grading) { %>
+          <% if (!assessment.allow_real_time_grading && assessment_instance.open) { %>
             <div class="alert alert-warning">
               This assessment will only be graded after it is finished. You should save answers for all questions and your exam will be graded later. You can use the <span class="badge badge-outline badge-light">Finish assessment</span> button below to finish and calculate your final grade.
             </div>
