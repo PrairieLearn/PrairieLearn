@@ -1208,8 +1208,7 @@ async function validateAssessment(assessment, questions) {
     });
   });
 
-  // TODO: Better variable names?
-  // TODO: Better error messages
+  // Ensure at least one role can assign roles before and during an assessment
   if (assessment.groupRoles) {
     let foundCanAssignRolesAtStart = false;
     let foundCanAssignRolesDuringAssessment = false;

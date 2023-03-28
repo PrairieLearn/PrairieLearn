@@ -1,5 +1,6 @@
 const util = require('util');
 const ERR = require('async-stacktrace');
+const asyncHandler = require('express-async-handler');
 const express = require('express');
 const router = express.Router();
 const path = require('path');
@@ -34,17 +35,21 @@ const ensureUpToDate = (locals, callback) => {
     });
   });
 };
+const ensureUpToDateAsync = async (locals) => {
+  await util.promisify(ensureUpToDate)(locals);
+};
 
-router.get('/', function (req, res, next) {
-  debug('GET');
-  if (res.locals.assessment.type !== 'Homework') return next();
-  debug('is Homework');
+router.get(
+  '/',
+  asyncHandler(async function (req, res, next) {
+    debug('GET');
+    if (res.locals.assessment.type !== 'Homework') return next();
+    debug('is Homework');
 
-  ensureUpToDate(res.locals, async (err) => {
-    if (ERR(err, next)) return;
+    await ensureUpToDateAsync(res.locals);
 
     debug('selecting questions');
-    var params = {
+    const params = {
       assessment_instance_id: res.locals.assessment_instance.id,
       user_id: res.locals.user.user_id,
     };
@@ -67,6 +72,7 @@ router.get('/', function (req, res, next) {
       res.locals.urlPrefix
     );
     res.locals.assessment_text_templated = assessment_text_templated;
+
     debug('rendering EJS');
     if (res.locals.assessment.group_work) {
       // Get the group config info
@@ -101,8 +107,8 @@ router.get('/', function (req, res, next) {
       }
     }
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-  });
-});
+  })
+);
 
 router.post('/', function (req, res, next) {
   if (res.locals.assessment.type !== 'Homework') return next();
