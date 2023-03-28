@@ -161,6 +161,18 @@ self.link_object_files(["student_file1_nomain.o", "student_file2.o"],
 
 The `link_object_files` also accepts arguments like `flags`, `pkg_config_flags`, `add_warning_result_msg=False` and `ungradable_if_failed=False`, as described above.
 
+For questions where students are not allowed to use a specific set of functions or global variables (e.g., students are not allowed to use the `system` library call), it is possible to reject a specific set of symbols. This option will cause an error similar to a compilation error if any of these symbols is referenced in the code. Only student files are checked against this list of symbols, so they can still be used in instructor code.
+
+```python
+self.compile_file(
+    ["student_file1.c", "student_file2.c"],
+    "executable",
+    add_c_file=["/grade/tests/question_file1.c", "/grade/tests/question_file2.c"],
+    flags=["-I/grade/tests", "-I/grade/student", "-lrt"],
+    reject_symbols=["system", "vfork", "clone", "clone3", "posix_spawn", "posix_spawnp"],
+)
+```
+
 For `self.test_compile_file()`, the results of the compilation will show up as a test named "Compilation", worth one point. To change the name and/or points, set the `name` or `points` argument as follows:
 
 ```python
