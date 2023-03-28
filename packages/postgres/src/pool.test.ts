@@ -1,21 +1,21 @@
-// @ts-check
-const chai = require('chai');
-const chaiAsPromised = require('chai-as-promised');
-const { queryAsync, queryCursor, queryValidatedCursor } = require('@prairielearn/postgres');
-const { z, ZodError } = require('zod');
+import chai from 'chai';
+import chaiAsPromised from 'chai-as-promised';
+import { z, ZodError } from 'zod';
+
+import { queryAsync, queryCursor, queryValidatedCursor } from './default-pool';
+import { makePostgresTestUtils } from './test-utils';
 
 chai.use(chaiAsPromised);
 const { assert } = chai;
 
-const helperDb = require('./helperDb');
+const postgresTestUtils = makePostgresTestUtils({
+  database: 'prairielearn_postgres',
+});
 
-// TODO: move this into the `@prairielearn/postgres` package once the database
-// helpers are in a shared package.
 describe('@prairielearn/postgres', function () {
   before(async () => {
-    await helperDb.before.call(this);
-
-    // We use workspaces as a test case because they are a simple table.
+    await postgresTestUtils.createDatabase();
+    await queryAsync('CREATE TABLE workspaces (id BIGSERIAL PRIMARY KEY, state TEXT);', {});
     await queryAsync("INSERT INTO workspaces (id, state) VALUES (1,'uninitialized');", {});
     await queryAsync("INSERT INTO workspaces (id, state) VALUES (2, 'stopped');", {});
     await queryAsync("INSERT INTO workspaces (id, state) VALUES (3, 'launching');", {});
@@ -23,7 +23,7 @@ describe('@prairielearn/postgres', function () {
   });
 
   after(async () => {
-    await helperDb.after.call(this);
+    await postgresTestUtils.dropDatabase();
   });
 
   describe('queryCursor', () => {
@@ -71,7 +71,7 @@ describe('@prairielearn/postgres', function () {
         allRows.push(...rows);
       }
       assert.lengthOf(allRows, 4);
-      const workspace = /** @type{any} */ (allRows[0]);
+      const workspace = allRows[0] as any;
       assert.equal(workspace.id, '1');
       assert.isUndefined(workspace.state);
     });

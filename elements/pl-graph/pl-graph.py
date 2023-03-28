@@ -1,3 +1,5 @@
+import warnings
+
 import lxml.html
 import networkx as nx
 import numpy as np
@@ -15,6 +17,7 @@ WEIGHTS_DIGITS_DEFAULT = 2
 WEIGHTS_PRESENTATION_TYPE_DEFAULT = "f"
 NEGATIVE_WEIGHTS_DEFAULT = False
 DIRECTED_DEFAULT = True
+LOG_WARNINGS_DEFAULT = True
 
 
 def graphviz_from_networkx(
@@ -130,6 +133,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "params-name-labels",
         "params-type",
         "negative-weights",
+        "log-warnings",
     ]
 
     # Load attributes from extensions if they have any
@@ -156,6 +160,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # Get attribs
     element = lxml.html.fragment_fromstring(element_html)
     engine = pl.get_string_attrib(element, "engine", ENGINE_DEFAULT)
+    log_warnings = pl.get_boolean_attrib(element, "log-warnings", LOG_WARNINGS_DEFAULT)
 
     # Legacy input with passthrough
     input_param_matrix = pl.get_string_attrib(
@@ -182,6 +187,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         graphviz_data = element.text
 
     translated_dotcode = pygraphviz.AGraph(string=graphviz_data)
-    svg = translated_dotcode.draw(format="svg", prog=engine).decode("utf-8", "strict")
+
+    with warnings.catch_warnings():
+        # Only apply ignore filter if we enable hiding warnings
+        if not log_warnings:
+            warnings.simplefilter("ignore")
+        svg = translated_dotcode.draw(format="svg", prog=engine).decode(
+            "utf-8", "strict"
+        )
 
     return f'<div class="pl-graph">{svg}</div>'
