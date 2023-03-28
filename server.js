@@ -946,7 +946,10 @@ module.exports.initExpress = function () {
   // Submission files
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/submission/:submission_id/file',
-    [require('./pages/submissionFile/submissionFile')]
+    [
+      require('./middlewares/selectAndAuthzInstanceQuestion'),
+      require('./pages/submissionFile/submissionFile'),
+    ]
   );
 
   app.use(
@@ -1366,19 +1369,19 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion',
-    [require('./pages/clientFilesQuestion/clientFilesQuestion')]
+    require('./pages/clientFilesQuestion/clientFilesQuestion')
   );
 
   // generatedFiles
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/generatedFilesQuestion',
-    [require('./pages/generatedFilesQuestion/generatedFilesQuestion')]
+    require('./pages/generatedFilesQuestion/generatedFilesQuestion')
   );
 
   // Submission files
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/submission/:submission_id/file',
-    [require('./pages/submissionFile/submissionFile')]
+    require('./pages/submissionFile/submissionFile')
   );
 
   // legacy client file paths
