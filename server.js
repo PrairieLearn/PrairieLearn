@@ -1378,19 +1378,14 @@ module.exports.initExpress = function () {
   // Submission files
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/submission/:submission_id/file',
-    [
-      require('./middlewares/studentAssessmentAccess'),
-      require('./pages/submissionFile/submissionFile'),
-    ]
+    [require('./pages/submissionFile/submissionFile')]
   );
 
   // legacy client file paths
   app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/file', [
-    require('./middlewares/studentAssessmentAccess'),
     require('./pages/legacyQuestionFile/legacyQuestionFile'),
   ]);
   app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/text', [
-    require('./middlewares/studentAssessmentAccess'),
     require('./pages/legacyQuestionText/legacyQuestionText'),
   ]);
 
