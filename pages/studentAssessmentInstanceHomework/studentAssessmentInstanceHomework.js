@@ -40,7 +40,7 @@ router.get('/', function (req, res, next) {
   if (res.locals.assessment.type !== 'Homework') return next();
   debug('is Homework');
 
-  ensureUpToDate(res.locals, (err) => {
+  ensureUpToDate(res.locals, async (err) => {
     if (ERR(err, next)) return;
 
     debug('selecting questions');
@@ -48,69 +48,59 @@ router.get('/', function (req, res, next) {
       assessment_instance_id: res.locals.assessment_instance.id,
       user_id: res.locals.user.user_id,
     };
-    sqldb.query(sql.get_questions, params, function (err, result) {
-      if (ERR(err, next)) return;
-      res.locals.questions = result.rows;
-      debug('number of questions:', res.locals.questions.length);
+    const result = await sqldb.queryAsync(sql.get_questions, params);
+    res.locals.questions = result.rows;
+    debug('number of questions:', res.locals.questions.length);
 
-      res.locals.has_manual_grading_question = _.some(
-        res.locals.questions,
-        (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading
+    res.locals.has_manual_grading_question = _.some(
+      res.locals.questions,
+      (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading
+    );
+    res.locals.has_auto_grading_question = _.some(
+      res.locals.questions,
+      (q) => q.max_auto_points || q.auto_points || !q.max_points
+    );
+
+    debug('rendering assessment text');
+    const assessment_text_templated = assessment.renderText(
+      res.locals.assessment,
+      res.locals.urlPrefix
+    );
+    res.locals.assessment_text_templated = assessment_text_templated;
+    debug('rendering EJS');
+    if (res.locals.assessment.group_work) {
+      // Get the group config info
+      const groupConfig = await groupAssessmentHelper.getGroupConfig(res.locals.assessment.id);
+      res.locals.groupConfig = groupConfig;
+
+      // Check whether the user is currently in a group in the current assessment by trying to get a group_id
+      const groupId = await groupAssessmentHelper.getGroupId(
+        res.locals.assessment.id,
+        res.locals.user.user_id
       );
-      res.locals.has_auto_grading_question = _.some(
-        res.locals.questions,
-        (q) => q.max_auto_points || q.auto_points || !q.max_points
-      );
 
-      debug('rendering assessment text');
-      assessment.renderText(
-        res.locals.assessment,
-        res.locals.urlPrefix,
-        async function (err, assessment_text_templated) {
-          if (ERR(err, next)) return;
-          res.locals.assessment_text_templated = assessment_text_templated;
-          debug('rendering EJS');
-          if (res.locals.assessment.group_work) {
-            // Get the group config info
-            const groupConfig = await groupAssessmentHelper.getGroupConfig(
-              res.locals.assessment.id
-            );
-            res.locals.groupConfig = groupConfig;
+      if (groupId === undefined) {
+        return next(error.make(403, 'Not a group member', res.locals));
+      } else {
+        res.locals.notInGroup = false;
+        const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);
+        res.locals.groupSize = groupInfo.groupSize;
+        res.locals.groupMembers = groupInfo.groupMembers;
+        res.locals.joinCode = groupInfo.joinCode;
+        res.locals.groupName = groupInfo.groupName;
+        res.locals.start = groupInfo.start;
+        res.locals.rolesInfo = groupInfo.rolesInfo;
 
-            // Check whether the user is currently in a group in the current assessment by trying to get a group_id
-            const groupId = await groupAssessmentHelper.getGroupId(
-              res.locals.assessment.id,
-              res.locals.user.user_id
-            );
-
-            if (groupId === undefined) {
-              return next(error.make(403, 'Not a group member', res.locals));
-            } else {
-              res.locals.notInGroup = false;
-              const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);
-              res.locals.groupSize = groupInfo.groupSize;
-              res.locals.groupMembers = groupInfo.groupMembers;
-              res.locals.joinCode = groupInfo.joinCode;
-              res.locals.groupName = groupInfo.groupName;
-              res.locals.start = groupInfo.start;
-              res.locals.rolesInfo = groupInfo.rolesInfo;
-
-              if (groupConfig.has_roles) {
-                const result = await groupAssessmentHelper.getAssessmentLevelPermissions(
-                  res.locals.assessment.id,
-                  res.locals.user.user_id
-                );
-                res.locals.canViewRoleTable = result.can_assign_roles_at_start;
-              }
-            }
-
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-          } else {
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-          }
+        if (groupConfig.has_roles) {
+          const result = await groupAssessmentHelper.getAssessmentLevelPermissions(
+            res.locals.assessment.id,
+            res.locals.user.user_id
+          );
+          res.locals.canViewRoleTable = result.can_assign_roles_at_start;
         }
-      );
-    });
+      }
+    }
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   });
 });
 

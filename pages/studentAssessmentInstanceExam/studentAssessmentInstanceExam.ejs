@@ -130,7 +130,7 @@
               </div>
             <% } %>
             <% if (assessment.group_work) { %>
-              <%- include('../shared/groupWorkInfoContainer.ejs', {permissions: groupInfo[0], groupInfo: groupInfo}); %>
+              <%- include('../shared/groupWorkInfoContainer.ejs', {groupConfig: groupConfig, groupInfo: groupMembers}); %>
             <% } %>
           </div>
 

@@ -1,5 +1,6 @@
 const util = require('util');
 const ERR = require('async-stacktrace');
+const asyncHandler = require('express-async-handler');
 const express = require('express');
 const router = express.Router();
 const _ = require('lodash');
@@ -100,15 +101,16 @@ router.post('/', function (req, res, next) {
   }
 });
 
-router.get('/', function (req, res, next) {
-  if (res.locals.assessment.type !== 'Exam') return next();
+router.get(
+  '/',
+  asyncHandler(async (req, res, next) => {
+    if (res.locals.assessment.type !== 'Exam') return next();
 
-  var params = {
-    assessment_instance_id: res.locals.assessment_instance.id,
-    user_id: res.locals.user.user_id,
-  };
-  sqldb.query(sql.select_instance_questions, params, function (err, result) {
-    if (ERR(err, next)) return;
+    const params = {
+      assessment_instance_id: res.locals.assessment_instance.id,
+      user_id: res.locals.user.user_id,
+    };
+    const result = await sqldb.queryAsync(sql.select_instance_questions, params);
     res.locals.instance_questions = result.rows;
 
     res.locals.has_manual_grading_question = _.some(
@@ -119,68 +121,51 @@ router.get('/', function (req, res, next) {
       res.locals.instance_questions,
       (q) => q.max_auto_points || q.auto_points || !q.max_points
     );
-
-    assessment.renderText(
+    const assessment_text_templated = assessment.renderText(
       res.locals.assessment,
-      res.locals.urlPrefix,
-      function (err, assessment_text_templated) {
-        if (ERR(err, next)) return;
-        res.locals.assessment_text_templated = assessment_text_templated;
+      res.locals.urlPrefix
+    );
+    res.locals.assessment_text_templated = assessment_text_templated;
 
-        res.locals.showTimeLimitExpiredModal = req.query.timeLimitExpired === 'true';
-        res.locals.savedAnswers = 0;
-        res.locals.suspendedSavedAnswers = 0;
-        res.locals.instance_questions.forEach((question) => {
-          if (question.status === 'saved') {
-            if (question.allow_grade_left_ms > 0) {
-              res.locals.suspendedSavedAnswers++;
-            } else {
-              res.locals.savedAnswers++;
-            }
-          }
-        });
-        if (res.locals.assessment.group_work) {
-          groupAssessmentHelper.getGroupInfo(
-            res.locals.assessment.id,
-            res.locals.user.user_id,
-            function (
-              err,
-              groupMember,
-              permissions,
-              minsize,
-              maxsize,
-              groupsize,
-              needsize,
-              hasRoles,
-              group_info,
-              join_code,
-              start,
-              used_join_code
-            ) {
-              if (ERR(err, next)) return;
-              res.locals.permissions = permissions;
-              res.locals.minsize = minsize;
-              res.locals.maxsize = maxsize;
-              res.locals.groupsize = groupsize;
-              res.locals.needsize = needsize;
-              res.locals.hasRoles = hasRoles;
-              res.locals.group_info = group_info;
-              if (!groupMember) {
-                return next(error.make(403, 'Not a group member', res.locals));
-              } else {
-                res.locals.join_code = join_code;
-                res.locals.start = start;
-                res.locals.used_join_code = used_join_code;
-              }
-              res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-            }
-          );
+    res.locals.showTimeLimitExpiredModal = req.query.timeLimitExpired === 'true';
+    res.locals.savedAnswers = 0;
+    res.locals.suspendedSavedAnswers = 0;
+    res.locals.instance_questions.forEach((question) => {
+      if (question.status === 'saved') {
+        if (question.allow_grade_left_ms > 0) {
+          res.locals.suspendedSavedAnswers++;
         } else {
-          res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+          res.locals.savedAnswers++;
         }
       }
-    );
-  });
-});
+    });
+    if (res.locals.assessment.group_work) {
+      // Get the group config info
+      const groupConfig = await groupAssessmentHelper.getGroupConfig(res.locals.assessment.id);
+      res.locals.groupConfig = groupConfig;
+
+      // Check whether the user is currently in a group in the current assessment by trying to get a group_id
+      const groupId = await groupAssessmentHelper.getGroupId(
+        res.locals.assessment.id,
+        res.locals.user.user_id
+      );
+
+      if (groupId === undefined) {
+        return next(error.make(403, 'Not a group member', res.locals));
+      } else {
+        res.locals.notInGroup = false;
+        const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);
+        res.locals.groupSize = groupInfo.groupSize;
+        res.locals.groupMembers = groupInfo.groupMembers;
+        res.locals.joinCode = groupInfo.joinCode;
+        res.locals.groupName = groupInfo.groupName;
+        res.locals.start = groupInfo.start;
+        res.locals.rolesInfo = groupInfo.rolesInfo;
+        res.locals.used_join_code = req.body.used_join_code;
+      }
+    }
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  })
+);
 
 module.exports = router;

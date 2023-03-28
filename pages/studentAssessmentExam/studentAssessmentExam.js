@@ -71,33 +71,34 @@ router.get(
         // students to create and start a new assessment instance.
         if (!checkPasswordOrRedirect(req, res)) return;
         if (res.locals.assessment.group_work) {
-          const groupInfo = await groupAssessmentHelper.getGroupInfo(
+          // Get the group config info
+          const groupConfig = await groupAssessmentHelper.getGroupConfig(res.locals.assessment.id);
+          res.locals.groupConfig = groupConfig;
+
+          // Check whether the user is currently in a group in the current assessment by trying to get a group_id
+          const groupId = await groupAssessmentHelper.getGroupId(
             res.locals.assessment.id,
             res.locals.user.user_id
           );
-          res.locals.permissions = groupInfo.permissions;
-          res.locals.minSize = groupInfo.minSize;
-          res.locals.groupSize = groupInfo.groupSize;
-          res.locals.maxSize = groupInfo.maxSize;
-          res.locals.groupSize = groupInfo.groupSize;
-          res.locals.hasRoles = groupInfo.hasRoles;
-          res.locals.groupMembers = groupInfo.groupMembers;
-          res.locals.joinCode = groupInfo.joinCode;
-          res.locals.start = groupInfo.start;
-          res.locals.usedJoinCode = groupInfo.usedJoinCode;
 
-          if (groupInfo.hasRoles) {
-            if (groupInfo.isGroupMember) {
-              res.locals.rolesInfo = groupInfo.rolesInfo;
-              res.locals.validationErrors = groupInfo.rolesInfo.validationErrors;
-              res.locals.disabledRoles = groupInfo.rolesInfo.disabledRoles;
-              res.locals.group_roles = groupInfo.rolesInfo.groupRoles;
-              res.locals.rolesAreBalanced = groupInfo.rolesInfo.rolesAreBalanced;
-              const permissions = await groupAssessmentHelper.getAssessmentLevelPermissions(
+          if (groupId === undefined) {
+            res.locals.notInGroup = true;
+          } else {
+            res.locals.notInGroup = false;
+            const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);
+            res.locals.groupSize = groupInfo.groupSize;
+            res.locals.groupMembers = groupInfo.groupMembers;
+            res.locals.joinCode = groupInfo.joinCode;
+            res.locals.groupName = groupInfo.groupName;
+            res.locals.start = groupInfo.start;
+            res.locals.rolesInfo = groupInfo.rolesInfo;
+
+            if (groupConfig.has_roles) {
+              const result = await groupAssessmentHelper.getAssessmentLevelPermissions(
                 res.locals.assessment.id,
                 res.locals.user.user_id
               );
-              res.locals.can_view_role_table = permissions.can_assign_roles_at_start;
+              res.locals.canViewRoleTable = result.can_assign_roles_at_start;
             }
           }
         }
@@ -149,14 +150,15 @@ router.post(
         res.locals.assessment.id,
         res.locals.user.user_id,
         res.locals.authn_user.user_id,
-        function (err, succeeded, permissions) {
+        function (err, succeeded, groupConfig) {
           if (ERR(err, next)) return err;
           if (succeeded) {
             res.redirect(req.originalUrl);
           } else {
-            res.locals.permissions = permissions;
-            res.locals.groupsize = 0;
+            res.locals.groupConfig = groupConfig;
+            res.locals.groupSize = 0;
             res.locals.used_join_code = req.body.join_code;
+            res.locals.notInGroup = true;
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
           }
         }
