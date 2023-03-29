@@ -8,9 +8,9 @@ DROP COLUMN IF EXISTS group_role_id;
 CREATE TABLE IF NOT EXISTS
   group_user_roles (
     id BIGSERIAL,
-    group_id BIGINT REFERENCES groups (id),
-    user_id BIGINT REFERENCES users (user_id),
-    group_role_id BIGINT REFERENCES group_roles (id),
+    group_id BIGINT NOT NULL REFERENCES groups (id),
+    user_id BIGINT NOT NULL REFERENCES users (user_id),
+    group_role_id BIGINT NOT NULL REFERENCES group_roles (id),
     PRIMARY KEY (id)
   );
 
