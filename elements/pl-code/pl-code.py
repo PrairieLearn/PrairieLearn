@@ -11,7 +11,6 @@ import pygments.lexer
 import pygments.lexers
 import pygments.util
 from code_utils import parse_highlight_lines
-from colors import get_css_color
 from pygments.styles import STYLE_MAP, get_style_by_name
 from pygments.token import Token
 from pygments_ansi_color import color_tokens
