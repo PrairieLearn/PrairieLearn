@@ -26,6 +26,8 @@ HIGHLIGHT_LINES_COLOR_DEFAULT = "#b3d7ff"
 DIRECTORY_DEFAULT = "."
 COPY_CODE_BUTTON_DEFAULT = False
 SHOW_LINE_NUMBERS_DEFAULT = False
+LINE_NUMBER_COLOR_DEFAULT = "black"
+LINE_NUMBER_BACKGROUND_COLOR_DEFAULT = "lightgray"
 
 # These are the same colors used in pl-external-grader-result
 ANSI_COLORS = {
@@ -68,10 +70,6 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
     with highlighted lines.
     """
 
-    def __init__(self, **options: Any) -> None:
-        pygments.formatters.HtmlFormatter.__init__(self, **options)
-        self.hl_color = options.get("hl_color", HIGHLIGHT_LINES_COLOR_DEFAULT)
-
     def _highlight_lines(
         self, tokensource: Iterable[tuple[int, str]]
     ) -> Generator[tuple[int, str], None, None]:
@@ -83,7 +81,7 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
             if t != 1:
                 yield t, value
             if i + 1 in self.hl_lines:  # i + 1 because Python indexes start at 0
-                yield 1, f'<span class="pl-code-highlighted-line" style="background-color: {self.hl_color}">{value}</span>'
+                yield 1, f'<span class="pl-code-highlighted-line" style="background-color: {self.style.hl_color}">{value}</span>'
             else:
                 yield 1, value
 
@@ -94,8 +92,8 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
         Based on code at https://github.com/pygments/pygments/blob/master/pygments/formatters/html.py#L596-L601
         """
         return f"""
-            color: {get_css_color("black")};
-            background-color: {get_css_color("lightgray")};
+            color: {self.style.line_number_color};
+            background-color: {self.style.line_number_background_color};
             padding-left: 5px;
             padding-right: 5px;
             margin-right: 5px;
@@ -141,6 +139,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "copy-code-button",
         "style",
         "show-line-numbers",
+        "line-number-color",
+        "line-number-background-color",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -195,12 +195,19 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     highlight_lines = pl.get_string_attrib(
         element, "highlight-lines", HIGHLIGHT_LINES_DEFAULT
     )
-    highlight_lines_color = pl.get_string_attrib(
+    highlight_lines_color = pl.get_color_attrib(
         element, "highlight-lines-color", HIGHLIGHT_LINES_COLOR_DEFAULT
     )
 
     show_line_numbers = pl.get_boolean_attrib(
         element, "show-line-numbers", SHOW_LINE_NUMBERS_DEFAULT
+    )
+
+    line_number_color_choice = pl.get_color_attrib(
+        element, "line-number-color", LINE_NUMBER_COLOR_DEFAULT
+    )
+    line_number_background_color_choice = pl.get_color_attrib(
+        element, "line-number-background-color", LINE_NUMBER_BACKGROUND_COLOR_DEFAULT
     )
 
     # The no-highlight option is deprecated, but supported for backwards compatibility
@@ -239,9 +246,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     pygments_style = get_style_by_name(style)
 
-    class CustomStyleWithAnsiColors(pygments_style):  # type: ignore
+    class CustomStyleWithAnsiColors(pygments_style):
         styles = dict(pygments_style.styles)
         styles.update(color_tokens(ANSI_COLORS, ANSI_COLORS))
+
+        line_number_color = line_number_color_choice
+        line_number_background_color = line_number_background_color_choice
+        hl_color = highlight_lines_color
 
     formatter_opts = {
         "style": CustomStyleWithAnsiColors,
@@ -252,7 +263,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     if highlight_lines is not None:
         formatter_opts["hl_lines"] = parse_highlight_lines(highlight_lines)
-        formatter_opts["hl_color"] = highlight_lines_color
 
     if show_line_numbers:
         formatter_opts["linenos"] = "inline"

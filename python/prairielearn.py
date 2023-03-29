@@ -688,6 +688,17 @@ def get_float_attrib(element, name, *args):
     return float_val
 
 
+# Order here matters, as we want to override the case where the args is omitted
+@overload
+def get_color_attrib(element: lxml.html.HtmlElement, name: str) -> str:
+    ...
+
+
+@overload
+def get_color_attrib(element: lxml.html.HtmlElement, name: str, *args: str) -> str:
+    ...
+
+
 def get_color_attrib(element, name, *args):
     """value = get_color_attrib(element, name, default)
 
