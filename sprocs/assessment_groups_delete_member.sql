@@ -20,7 +20,7 @@ BEGIN
         gc.assessment_id = assessment_groups_delete_member.assessment_id
         AND g.id = arg_group_id
         AND g.deleted_at IS NULL
-    FOR UPDATE of g;
+    FOR NO KEY UPDATE of g;
 
     IF NOT FOUND THEN
         RAISE EXCEPTION 'The user does not belong to the assessment';
