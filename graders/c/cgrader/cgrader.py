@@ -164,11 +164,18 @@ class CGrader:
                 # preprocessed C file), which will have any #define
                 # and #include primitives already expanded and
                 # comments removed
-                with open(pathlib.Path(std_c_file).with_suffix(".i"), "r") as f:
-                    preprocessed_text = f.read()
-                    found_primitives = {
-                        s for s in INVALID_PRIMITIVES if s in preprocessed_text
-                    }
+                found_primitives = None
+                preprocessed_file = pathlib.Path(std_c_file).with_suffix(".i")
+                if not os.path.isfile(preprocessed_file):
+                    preprocessed_file = pathlib.Path(std_c_file).with_suffix(".ii")
+                if not os.path.isfile(preprocessed_file):
+                    preprocessed_file = pathlib.Path(std_c_file).with_suffix(".mi")
+                if os.path.isfile(preprocessed_file):
+                    with open(preprocessed_file, "r") as f:
+                        preprocessed_text = f.read()
+                        found_primitives = {
+                            s for s in INVALID_PRIMITIVES if s in preprocessed_text
+                        }
                 if found_primitives:
                     out += (
                         "\n\033[31mThe following unauthorized primitives were found in the submitted code:\n\t"
