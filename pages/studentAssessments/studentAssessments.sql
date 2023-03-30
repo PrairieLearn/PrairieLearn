@@ -98,10 +98,10 @@ WITH
       aa.active AS active,
       aa.access_rules,
       aa.show_closed_assessment_score,
-      coalesce(ai1.id, ai2.id) AS assessment_instance_id,
-      coalesce(ai1.number, ai2.number) AS assessment_instance_number,
-      coalesce(ai1.score_perc, ai2.score_perc) AS assessment_instance_score_perc,
-      coalesce(ai1.open, ai2.open) AS assessment_instance_open,
+      ai.id AS assessment_instance_id,
+      ai.number AS assessment_instance_number,
+      ai.score_perc AS assessment_instance_score_perc,
+      ai.open AS assessment_instance_open,
       am.id AS assessment_module_id,
       am.name AS assessment_module_name,
       am.heading AS assessment_module_heading,
@@ -120,18 +120,19 @@ WITH
       FULL JOIN assessments AS a ON (gc.assessment_id = a.id)
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-      -- We join assessment_instances twice, once on user_id and once on
-      -- group_id. We used to have these combined with AND (ai.user_id =
-      -- $user_id OR ai.group_id = gu.group_id) but this was triggering a bad
-      -- query plan for some course instances.
-      LEFT JOIN assessment_instances AS ai1 ON (
-        ai1.assessment_id = a.id
-        AND ai1.user_id = $user_id
-      )
-      LEFT JOIN assessment_instances AS ai2 ON (
-        ai2.assessment_id = a.id
-        AND ai2.group_id = gu.group_id
-      )
+      -- We use a subquery to find assessment instances by either user_id or
+      -- group_id. We use to do this with AND (ai.user_id = $user_id OR
+      -- ai.group_id = gu.group_id) but this was triggering a bad query plan for
+      -- some course instances. Having separate SELECTs for user_id and group_id
+      -- allows the query planner to utilize the two separate indexes we have
+      -- for user_id and group_id.
+      LEFT JOIN LATERAL (
+        SELECT * FROM assessment_instances AS ai1
+        WHERE ai1.assessment_id = a.id AND ai1.user_id = $user_id
+        UNION
+        SELECT * FROM assessment_instances AS ai2
+        WHERE ai2.assessment_id = a.id AND ai2.group_id = gu.group_id
+      ) AS ai ON (TRUE)
       LEFT JOIN LATERAL authz_assessment (a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
       LEFT JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
     WHERE
