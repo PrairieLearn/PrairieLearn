@@ -82,8 +82,8 @@
           <table class="table table-sm table-hover">
             <thead>
               <tr>
-                <th style="width: 1%"></th>
-                <th></th>
+                <th style="width: 1%"><span class="sr-only">Label</span></th>
+                <th><span class="sr-only">Title</span></th>
                 <th>AID</th>
                 <th class="text-center">Students</th>
                 <th class="text-center">Scores</th>
@@ -117,7 +117,7 @@
                   <% } %>
                   <a href="<%= urlPrefix %>/assessment/<%= row.id %>/"><%= row.title %>
                   <% if (row.group_work) { %>
-                    <i class="fas fa-users"></i>
+                    <i class="fas fa-users" aria-hidden="true"></i>
                   <% } %></a>
                   <%- include('../partials/issueBadge', {count: row.open_issue_count}); %>
                 </td>

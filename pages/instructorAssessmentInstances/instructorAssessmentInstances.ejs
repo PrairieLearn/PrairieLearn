@@ -221,7 +221,9 @@
                   data-sorter="detailsLinkSorter"
                   data-formatter="detailsLinkFormatter"
                   data-class="align-middle sticky-column text-nowrap"
-                  data-switchable="false"></th>
+                  data-switchable="false">
+                <span class="sr-only">Assessment instance</span>
+              </th>
               <% if (assessment.group_work) { %>
               <th data-field="group_name"
                   data-visible="false"
@@ -317,14 +319,16 @@
                   data-formatter="actionButtonFormatter"
                   data-class="text-center align-middle"
                   data-switchable="false"
-                  data-search-formatter="false"></th>
+                  data-search-formatter="false">
+                <span class="sr-only">Actions</span>
+              </th>
             </tr>
           </thead>
         </table>
 
         <div class="spinning-wheel card-body spinner-border"><span class="sr-only">Loading...</span></div>
 
-        <div class="modal fade" id="role-help" tabindex="-1" role="dialog" aria-labelledby="role-hel-title">
+        <div class="modal fade" id="role-help" tabindex="-1" role="dialog" aria-labelledby="role-help-title">
           <div class="modal-dialog modal-lg" role="document">
             <div class="modal-content">
               <div class="modal-header">

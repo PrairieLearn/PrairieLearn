@@ -18,8 +18,8 @@
         <table class="table table-sm table-hover">
           <thead>
             <tr>
-              <th style="width: 1%"></th>
-              <th></th>
+              <th style="width: 1%"><span class="sr-only">Label</span></th>
+              <th><span class="sr-only">Title</span></th>
               <th class="text-center">Score</th>
             </tr>
           </thead>
@@ -43,7 +43,7 @@
               <td class="align-middle">
                 <%= row.title %>
                 <% if (row.assessment_group_work) { %>
-                  <i class="fas fa-users" aria-label="Group work"></i>
+                  <i class="fas fa-users" aria-hidden="true"></i>
                 <% } %>
               </td>
               <td class="text-center align-middle">
