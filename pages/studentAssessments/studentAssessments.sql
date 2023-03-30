@@ -127,11 +127,21 @@ WITH
       -- allows the query planner to utilize the two separate indexes we have
       -- for user_id and group_id.
       LEFT JOIN LATERAL (
-        SELECT * FROM assessment_instances AS ai1
-        WHERE ai1.assessment_id = a.id AND ai1.user_id = $user_id
+        SELECT
+          *
+        FROM
+          assessment_instances AS ai1
+        WHERE
+          ai1.assessment_id = a.id
+          AND ai1.user_id = $user_id
         UNION
-        SELECT * FROM assessment_instances AS ai2
-        WHERE ai2.assessment_id = a.id AND ai2.group_id = gu.group_id
+        SELECT
+          *
+        FROM
+          assessment_instances AS ai2
+        WHERE
+          ai2.assessment_id = a.id
+          AND ai2.group_id = gu.group_id
       ) AS ai ON (TRUE)
       LEFT JOIN LATERAL authz_assessment (a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
       LEFT JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
