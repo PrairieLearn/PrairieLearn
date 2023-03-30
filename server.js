@@ -62,8 +62,9 @@ const lifecycleHooks = require('./lib/lifecycle-hooks');
 
 process.on('warning', (e) => console.warn(e));
 
-// If there is only one argument, legacy it into the config option
-if (argv['_'].length === 1) {
+// If there is only one argument and `server.js` is being executed directly,
+// legacy it into the config option.
+if (argv['_'].length === 1 && require.main === module) {
   argv['config'] = argv['_'][0];
   argv['_'] = [];
 }
@@ -1832,7 +1833,7 @@ module.exports.insertDevUser = function (callback) {
   });
 };
 
-if (config.startServer) {
+if (config.startServer && require.main === module) {
   async.series(
     [
       async () => {
