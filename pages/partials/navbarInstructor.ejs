@@ -58,7 +58,7 @@
                 <a class="nav-link <% if (navPage == "assessment") { %>active<% } %>" href="<%= urlPrefix %>/assessment/<%= assessment.id %>" role="button">
                     <%= assessment_label %>
                 </a>
-                <a class="nav-link dropdown-toggle dropdown-toggle-split" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <a class="nav-link dropdown-toggle dropdown-toggle-split" href="#" id="navbarDropdownMenuLink" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" aria-label="Change assessment">
                 </a>
                 <% if (typeof assessments != 'undefined') { %>
                     <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink" id="navbarDropwdownMenuInstructorAssessment">

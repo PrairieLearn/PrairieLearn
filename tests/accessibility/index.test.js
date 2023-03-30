@@ -15,6 +15,33 @@ const SITE_URL = 'http://localhost:' + config.serverPort;
 const EXAMPLE_COURSE_DIR = path.resolve(__dirname, '..', '..', 'exampleCourse');
 
 /**
+ * Several pages have very large DOMs or attributes that AXE runs very slow on.
+ * None of these elements have accessibility components, so we'll special-case these
+ * and remove them before running AXE.
+ *
+ * @param {import('jsdom').JSDOM} page
+ */
+function cleanLargePages(url, page) {
+  if (url === '/pl/course_instance/1/instructor/course_admin/questions') {
+    // This attribute is very large, which somehow corresponds to a long running
+    // time for AXE. It's irrelevant for our checks, so we just remove it.
+    page.window.document.querySelector('#questionsTable').removeAttribute('data-data');
+  }
+
+  if (
+    url === '/pl/course_instance/1/instructor/instance_admin/settings' ||
+    url === '/pl/course_instance/1/instructor/assessment/1/settings'
+  ) {
+    // The SVG for the QR code contains many elements, which in turn makes AXE
+    // run very slow. We don't need to check the accessibility of the QR code
+    // itself, so we'll remove the children.
+    page.window.document
+      .querySelectorAll('#js-student-link-qrcode svg > *')
+      .forEach((e) => e.remove());
+  }
+}
+
+/**
  * Loads the given URL into a JSDOM object.
  *
  * @param {string} url
@@ -27,10 +54,6 @@ async function loadPageJsdom(url) {
     }
     return res.text();
   });
-  console.log('page size', text.length);
-  if (url.endsWith('/pl/course_instance/1/instructor/instance_admin/settings')) {
-    console.log(text);
-  }
   return new jsdom.JSDOM(text);
 }
 
@@ -40,17 +63,9 @@ async function loadPageJsdom(url) {
  * @param {string} url
  */
 async function checkPage(url) {
-  console.log('checkPage', url);
   const page = await loadPageJsdom(SITE_URL + url);
-  console.log('running axe', url);
-  // Hack: AXE chokes on the `data-data` attribute of this table and takes
-  // waaaaay too long to run. This attribute isn't necessary for the checks
-  // we run, so we just remove it.
-  if (url === '/pl/course_instance/1/instructor/course_admin/questions') {
-    page.window.document.querySelector('#questionsTable').removeAttribute('data-data');
-  }
+  cleanLargePages(url, page);
   const results = await axe.run(page.window.document.documentElement);
-  console.log('axe run!');
   A11yError.checkAndThrow(results.violations);
 }
 
@@ -112,7 +127,8 @@ const pages = [
   '/pl/course_instance/1/effectiveUser',
 ];
 
-const ONLY_PAGES = ['/pl/course_instance/1/instructor/instance_admin/settings'];
+// const ONLY_PAGES = ['/pl/course_instance/1/instructor/assessment/1/settings'];
+const ONLY_PAGES = [];
 
 describe('accessibility', () => {
   before('set up testing server', helperServer.before(EXAMPLE_COURSE_DIR));
@@ -122,9 +138,7 @@ describe('accessibility', () => {
     if (ONLY_PAGES.length > 0 && !ONLY_PAGES.includes(page)) return;
 
     test(page, async () => {
-      console.log('before', page);
       await checkPage(page);
-      console.log('after', page);
     });
   });
 });

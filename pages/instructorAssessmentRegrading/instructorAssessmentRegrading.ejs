@@ -14,7 +14,7 @@
       <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
 
       <% if (authz_data.has_course_instance_permission_edit) { %>
-      <div class="modal fade" id="regradeAllAssessmentInstancesModal" tabindex="-1" role="dialog" aria-labelledby="regradeAllAssessmentInstances">
+      <div class="modal fade" id="regradeAllAssessmentInstancesModal" tabindex="-1" role="dialog" aria-labelledby="regradeAllAssessmentInstancesModalLabel">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
             <div class="modal-header">
@@ -68,7 +68,7 @@
                 <th>Description</th>
                 <th>User</th>
                 <th>Status</th>
-                <th></th>
+                <th><span class="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody>

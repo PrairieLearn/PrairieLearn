@@ -83,7 +83,7 @@
                         <span class="input-group">
                           <span readonly class="form-control form-control-sm"><%= studentLink %></span>
                           <div class="input-group-append">
-                            <button type="button" class="btn btn-sm btn-outline-secondary btn-copy" data-clipboard-text="<%= studentLink %>">
+                            <button type="button" class="btn btn-sm btn-outline-secondary btn-copy" data-clipboard-text="<%= studentLink %>" aria-label="Copy student link">
                               <i class="far fa-clipboard"></i>
                             </button>
                             <button type="button" title="Student Link QR Code"
@@ -109,7 +109,7 @@
                     <div class="col-auto">
                         <button class="btn btn-sm btn-primary" href="#" data-toggle="modal" data-target="#deleteCourseInstanceModal"><i class="fa fa-times" aria-hidden="true"></i> Delete this course instance</button>
                     </div>
-                    <div class="modal fade" id="deleteCourseInstanceModal" tabindex="-1" role="dialog" aria-labelledby="deleteCourseInstance">
+                    <div class="modal fade" id="deleteCourseInstanceModal" tabindex="-1" role="dialog" aria-labelledby="deleteCourseInstanceModalLabel">
                         <div class="modal-dialog" role="document">
                             <div class="modal-content">
                                 <div class="modal-header">
