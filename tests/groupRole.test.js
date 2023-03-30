@@ -894,6 +894,7 @@ describe('Test group based assessments with custom group roles from student side
 
   step('should have a CSRF token', function () {
     elemList = locals.$('form input[name="__csrf_token"]');
+    console.log(elemList)
     assert.lengthOf(elemList, 3);
     assert.nestedProperty(elemList[0], 'attribs.value');
     locals.__csrf_token = elemList[0].attribs.value;

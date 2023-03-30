@@ -194,15 +194,12 @@ router.post(
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'leave_group') {
-      groupAssessmentHelper.leaveGroup(
+      await groupAssessmentHelper.leaveGroup(
         res.locals.assessment.id,
         res.locals.user.user_id,
-        res.locals.authn_user.user_id,
-        function (err) {
-          if (ERR(err, next)) return;
-          res.redirect(req.originalUrl);
-        }
+        res.locals.authn_user.user_id
       );
+      res.redirect(req.originalUrl);
     } else {
       return next(
         error.make(400, 'unknown __action', {

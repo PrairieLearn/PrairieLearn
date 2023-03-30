@@ -162,6 +162,35 @@ FROM
 WHERE
   gu.group_id = $group_id;
 
+-- BLOCK get_user_with_non_required_role
+SELECT
+  gu.user_id,
+  gr.id AS group_role_id
+FROM
+  users u
+  JOIN group_user_roles gu ON u.user_id = gu.user_id
+  JOIN group_roles gr ON gu.group_role_id = gr.id
+WHERE
+  gu.group_id = $group_id
+  AND u.user_id != $user_id
+  AND gr.minimum = 0
+LIMIT
+  1;
+
+-- BLOCK update_group_user_role
+WITH
+  updated_group_role AS (
+    UPDATE group_user_roles
+    SET
+      group_role_id = $group_role_id
+    WHERE
+      group_id = $group_id
+      AND user_id = $assignee_id
+      AND group_role_id = $assignee_old_role_id
+  )
+SELECT
+  1;
+
 -- BLOCK get_group_id
 SELECT
   g.id
@@ -172,3 +201,77 @@ FROM
 WHERE
   gc.assessment_id = $assessment_id
   AND gu.user_id = $user_id;
+
+-- BLOCK get_user_roles
+SELECT
+  gu.group_role_id
+FROM
+  group_user_roles as gu
+WHERE
+  gu.group_id = $group_id
+  AND gu.user_id = $user_id;
+
+-- BLOCK get_user_required_roles
+SELECT
+  gu.group_role_id
+FROM
+  group_user_roles gu
+  JOIN group_roles gr ON gu.group_role_id = gr.id
+WHERE
+  gu.group_id = $group_id
+  AND gu.user_id = $user_id
+  AND gr.minimum > 0;
+
+-- BLOCK assign_user_roles
+WITH
+  assign_user_role AS (
+    INSERT INTO
+      group_user_roles (group_id, user_id, group_role_id)
+    VALUES
+      ($group_id, $assignee_id, $group_role_id)
+    ON CONFLICT (group_id, user_id, group_role_id) DO NOTHING
+  )
+SELECT
+  1;
+
+-- BLOCK delete_non_required_roles
+WITH
+  deleted_group_user_roles AS (
+    DELETE FROM group_user_roles gur
+    WHERE
+      group_id = $group_id
+      AND group_role_id IN (
+        SELECT
+          id
+        FROM
+          group_roles
+        WHERE
+          assessment_id = $assessment_id
+          AND minimum = 0
+      )
+  )
+SELECT
+  1;
+
+-- BLOCK delete_group_users
+WITH
+  deleted_group_users AS (
+    DELETE FROM group_users
+    WHERE
+      user_id = $user_id
+      AND group_id = $group_id
+  ),
+  deleted_group_user_roles AS (
+    DELETE FROM group_user_roles
+    WHERE
+      user_id = $user_id
+      AND group_id = $group_id
+  ),
+  create_log AS (
+    INSERT INTO
+      group_logs (authn_user_id, user_id, group_id, action)
+    VALUES
+      ($authn_user_id, $user_id, $group_id, 'leave')
+  )
+SELECT
+  1;

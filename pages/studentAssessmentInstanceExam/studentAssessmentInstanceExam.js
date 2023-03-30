@@ -13,7 +13,7 @@ var groupAssessmentHelper = require('../../lib/groups');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-router.post('/', function (req, res, next) {
+router.post('/', asyncHandler(async function (req, res, next) {
   if (res.locals.assessment.type !== 'Exam') return next();
   if (!res.locals.authz_result.authorized_edit) {
     return next(error.make(403, 'Not authorized', res.locals));
@@ -77,19 +77,16 @@ router.post('/', function (req, res, next) {
     );
   } else if (req.body.__action === 'leave_group') {
     if (!res.locals.authz_result.active) return next(error.make(400, 'Unauthorized request.'));
-    groupAssessmentHelper.leaveGroup(
+    await groupAssessmentHelper.leaveGroup(
       res.locals.assessment.id,
       res.locals.user.user_id,
-      res.locals.authn_user.user_id,
-      function (err) {
-        if (ERR(err, next)) return;
-        res.redirect(
-          '/pl/course_instance/' +
-            res.locals.course_instance.id +
-            '/assessment/' +
-            res.locals.assessment.id
-        );
-      }
+      res.locals.authn_user.user_id
+    );
+    res.redirect(
+      '/pl/course_instance/' +
+        res.locals.course_instance.id +
+        '/assessment/' +
+        res.locals.assessment.id
     );
   } else {
     next(
@@ -99,7 +96,7 @@ router.post('/', function (req, res, next) {
       })
     );
   }
-});
+}));
 
 router.get(
   '/',

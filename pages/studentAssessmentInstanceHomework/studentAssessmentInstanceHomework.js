@@ -110,51 +110,51 @@ router.get(
   })
 );
 
-router.post('/', function (req, res, next) {
-  if (res.locals.assessment.type !== 'Homework') return next();
-  if (!res.locals.authz_result.authorized_edit) {
-    return next(error.make(403, 'Not authorized', res.locals));
-  }
+router.post(
+  '/',
+  asyncHandler(async function (req, res, next) {
+    if (res.locals.assessment.type !== 'Homework') return next();
+    if (!res.locals.authz_result.authorized_edit) {
+      return next(error.make(403, 'Not authorized', res.locals));
+    }
 
-  if (req.body.__action === 'attach_file') {
-    util.callbackify(studentAssessmentInstance.processFileUpload)(req, res, function (err) {
-      if (ERR(err, next)) return;
-      res.redirect(req.originalUrl);
-    });
-  } else if (req.body.__action === 'attach_text') {
-    util.callbackify(studentAssessmentInstance.processTextUpload)(req, res, function (err) {
-      if (ERR(err, next)) return;
-      res.redirect(req.originalUrl);
-    });
-  } else if (req.body.__action === 'delete_file') {
-    util.callbackify(studentAssessmentInstance.processDeleteFile)(req, res, function (err) {
-      if (ERR(err, next)) return;
-      res.redirect(req.originalUrl);
-    });
-  } else if (req.body.__action === 'leave_group') {
-    if (!res.locals.authz_result.active) return next(error.make(400, 'Unauthorized request.'));
-    groupAssessmentHelper.leaveGroup(
-      res.locals.assessment.id,
-      res.locals.user.user_id,
-      res.locals.authn_user.user_id,
-      function (err) {
+    if (req.body.__action === 'attach_file') {
+      util.callbackify(studentAssessmentInstance.processFileUpload)(req, res, function (err) {
         if (ERR(err, next)) return;
-        res.redirect(
-          '/pl/course_instance/' +
-            res.locals.course_instance.id +
-            '/assessment/' +
-            res.locals.assessment.id
-        );
-      }
-    );
-  } else {
-    next(
-      error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      })
-    );
-  }
-});
+        res.redirect(req.originalUrl);
+      });
+    } else if (req.body.__action === 'attach_text') {
+      util.callbackify(studentAssessmentInstance.processTextUpload)(req, res, function (err) {
+        if (ERR(err, next)) return;
+        res.redirect(req.originalUrl);
+      });
+    } else if (req.body.__action === 'delete_file') {
+      util.callbackify(studentAssessmentInstance.processDeleteFile)(req, res, function (err) {
+        if (ERR(err, next)) return;
+        res.redirect(req.originalUrl);
+      });
+    } else if (req.body.__action === 'leave_group') {
+      if (!res.locals.authz_result.active) return next(error.make(400, 'Unauthorized request.'));
+      await groupAssessmentHelper.leaveGroup(
+        res.locals.assessment.id,
+        res.locals.user.user_id,
+        res.locals.authn_user.user_id
+      );
+      res.redirect(
+        '/pl/course_instance/' +
+          res.locals.course_instance.id +
+          '/assessment/' +
+          res.locals.assessment.id
+      );
+    } else {
+      next(
+        error.make(400, 'unknown __action', {
+          locals: res.locals,
+          body: req.body,
+        })
+      );
+    }
+  })
+);
 
 module.exports = router;
