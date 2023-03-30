@@ -121,11 +121,15 @@ const SKIP_ROUTES = [
   // This is not a real page.
   '/*',
 
+  // This page is not user-visible.
+  '/pl/webhooks/ping',
+
   // These routes just render JSON.
   /^\/pl\/api\/v1\//,
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/instances.json',
 
   // Static assets.
+  '/pl/static/elements/*',
   '/pl/static/cacheableElements/:cachebuster/*',
   '/pl/course/:course_id/cacheableElementExtensions/:cachebuster/*',
   '/pl/course/:course_id/cacheableElements/:cachebuster/*',
@@ -149,6 +153,7 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/generatedFilesQuestion/variant/:variant_id/*',
   '/pl/course_instance/:course_instance_id/instructor/instance_question/:instance_question_id/submission/:submission_id/file/*',
   '/pl/course_instance/:course_instance_id/instructor/news_item/:news_item_id/*',
+  '/pl/course_instance/:course_instance_id/instructor/question/:question_id/file_download/*',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/file/:filename',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/preview/file/:filename',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/preview/text/:filename',
@@ -156,6 +161,8 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/submission/:submission_id/file/*',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/text/:filename',
   '/pl/course_instance/:course_instance_id/news_item/:news_item_id/*',
+  '/pl/course/:course_id/clientFilesCourse/*',
+  '/pl/course/:course_id/course_admin/file_download/*',
   '/pl/course/:course_id/news_item/:news_item_id/*',
   '/pl/course/:course_id/question/:question_id/preview/text/:filename',
   '/pl/course/:course_id/question/:question_id/statistics/:filename',
@@ -169,12 +176,18 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id/time_remaining',
 
   // These pages just redirect to other pages and thus don't have to be tested.
+  '/pl/loadFromDisk',
   '/pl/oauth2login',
   '/pl/oauth2callback',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/next_ungraded',
+
+  // TODO: enable once the following PR is merged:
+  // https://github.com/PrairieLearn/PrairieLearn/pull/7382
+  '/pl/course/:course_id/effectiveUser',
 ];
 
-const ONLY_ROUTES = ['/pl/course_instance/:course_instance_id/effectiveUser'];
+// const ONLY_ROUTES = ['/pl/course_instance/:course_instance_id/effectiveUser'];
+const ONLY_ROUTES = [];
 
 function shouldSkipPath(path) {
   return SKIP_ROUTES.some((r) => {
@@ -263,10 +276,11 @@ describe('accessibility', () => {
     }
 
     if (failingEndpoints.length > 0) {
-      console.log('The following endpoints failed accessibility checks:');
+      console.log('The following endpoints failed accessibility checks:\n');
       failingEndpoints.forEach(([e, err]) => {
-        console.log(`  ${e.path}`);
+        console.log(e.path);
         console.log(err.message);
+        console.log('\n');
       });
     }
 
