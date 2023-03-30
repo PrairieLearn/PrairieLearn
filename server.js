@@ -1385,12 +1385,14 @@ module.exports.initExpress = function () {
   );
 
   // legacy client file paths
-  app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/file', [
-    require('./pages/legacyQuestionFile/legacyQuestionFile'),
-  ]);
-  app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/text', [
-    require('./pages/legacyQuestionText/legacyQuestionText'),
-  ]);
+  app.use(
+    '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/file',
+    require('./pages/legacyQuestionFile/legacyQuestionFile')
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/text',
+    require('./pages/legacyQuestionText/legacyQuestionText')
+  );
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
