@@ -18,16 +18,13 @@ const net = require('net');
 const asyncHandler = require('express-async-handler');
 const bodyParser = require('body-parser');
 const Sentry = require('@prairielearn/sentry');
-const fg = require('fast-glob');
-const { filesize } = require('filesize');
-const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
+const workspaceUtils = require('@prairielearn/workspace-utils');
+const { DockerName, setupDockerAuthAsync } = require('@prairielearn/docker-utils');
 
 const awsHelper = require('../lib/aws');
 const socketServer = require('../lib/socket-server'); // must load socket server before workspace
-const workspaceHelper = require('../lib/workspace');
 const { logger } = require('@prairielearn/logger');
 const LocalLock = require('../lib/local-lock');
-const { contains } = require('../lib/instructorFiles');
 
 const config = require('../lib/config');
 const sqldb = require('@prairielearn/postgres');
@@ -174,15 +171,8 @@ async
       logger.info(`Workspace server listening on port ${workspace_server_settings.port}`);
       callback(null);
     },
-    async () => {
-      socketServer.init(server);
-    },
-    (callback) => {
-      util.callbackify(workspaceHelper.init)((err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
-    },
+    async () => socketServer.init(server),
+    async () => workspaceUtils.init(socketServer.io),
     async () => {
       // Set up a periodic pruning of running containers
       async function pruneContainersTimeout() {
@@ -219,7 +209,7 @@ async
         if (ws.state === 'launching') {
           // We don't know what state the container is in, kill it and let the
           // user retry initializing it.
-          await workspaceHelper.updateState(ws.id, 'stopped', 'Status unknown');
+          await workspaceUtils.updateWorkspaceState(ws.id, 'stopped', 'Status unknown');
           await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
             workspace_id: ws.id,
             instance_id: workspace_server_settings.instance_id,
@@ -232,7 +222,7 @@ async
           }
         } else if (ws.state === 'running') {
           if (!ws.launch_uuid) {
-            await workspaceHelper.updateState(ws.id, 'stopped', 'Shutting down');
+            await workspaceUtils.updateWorkspaceState(ws.id, 'stopped', 'Shutting down');
             await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
               workspace_id: ws.id,
               instance_id: workspace_server_settings.instance_id,
@@ -549,112 +539,125 @@ async function _getWorkspaceSettingsAsync(workspace_id) {
   return settings;
 }
 
-function _pullImage(workspace, callback) {
-  workspaceHelper.updateMessage(workspace.id, 'Checking image');
-  const workspace_image = workspace.settings.workspace_image;
-  if (config.workspacePullImagesFromDockerHub) {
-    logger.info(`Pulling docker image: ${workspace_image}`);
-    setupDockerAuth(config.cacheImageRegistry, (err, auth) => {
-      if (ERR(err, callback)) return;
-
-      let percentDisplayed = false;
-      docker.pull(workspace_image, { authconfig: auth }, (err, stream) => {
-        if (err) {
-          logger.error(
-            `Error pulling "${workspace_image}" image; attempting to fall back to cached version.`,
-            err
-          );
-          return callback(null);
-        }
-        /*
-         * We monitor the pull progress to calculate the
-         * percentage complete. This is roughly "current / total",
-         * but as docker pulls new layers the "total" can
-         * increase, which would cause the percentage to
-         * decrease. To avoid this, we track a "base" value for
-         * both "current" and "total" and compute the percentage
-         * as an increment above these values. This ensures that
-         * our percentage starts at 0, ends at 100, and never
-         * decreases. It has the disadvantage that the percentage
-         * will tend to go faster at the start (when we only know
-         * about a few layers) and slow down at the end (when we
-         * know about all layers).
-         */
-
-        let progressDetails = {};
-        let current,
-          total = 0,
-          fraction = 0;
-        let currentBase, fractionBase;
-        let outputCount = 0;
-        let percentCache = -1,
-          dateCache = Date.now() - 1e6;
-        docker.modem.followProgress(
-          stream,
-          (err) => {
-            if (ERR(err, callback)) return;
-            if (percentDisplayed) {
-              const toDatabase = false;
-              workspaceHelper.updateMessage(workspace.id, `Pulling image (100%)`, toDatabase);
-            }
-            callback(null, workspace);
-          },
-          (output) => {
-            debug('Docker pull output: ', output);
-            if ('progressDetail' in output && output.progressDetail.total) {
-              // track different states (Download/Extract)
-              // separately by making them separate keys
-              const key = `${output.id}/${output.status}`;
-              progressDetails[key] = output.progressDetail;
-            }
-            current = Object.values(progressDetails).reduce(
-              (current, detail) => detail.current + current,
-              0
-            );
-            const newTotal = Object.values(progressDetails).reduce(
-              (total, detail) => detail.total + total,
-              0
-            );
-            if (outputCount <= 200) {
-              // limit progress initially to wait for most layers to be seen
-              current = Math.min(current, (outputCount / 200) * newTotal);
-            }
-            if (newTotal > total) {
-              total = newTotal;
-              currentBase = current;
-              fractionBase = fraction;
-            }
-            if (total > 0) {
-              outputCount++;
-              const fractionIncrement =
-                total > currentBase ? (current - currentBase) / (total - currentBase) : 0;
-              fraction = fractionBase + (1 - fractionBase) * fractionIncrement;
-              const percent = Math.floor(fraction * 100);
-              const date = Date.now();
-              const percentDelta = percent - percentCache;
-              const dateDeltaSec = (date - dateCache) / 1000;
-              if (percentDelta > 0 && dateDeltaSec >= config.workspacePercentMessageRateLimitSec) {
-                percentCache = percent;
-                dateCache = date;
-                percentDisplayed = true;
-                const toDatabase = false;
-                workspaceHelper.updateMessage(
-                  workspace.id,
-                  `Pulling image (${percent}%)`,
-                  toDatabase
-                );
-              }
-            }
-          }
-        );
-      });
-    });
-  } else {
+async function _pullImage(workspace) {
+  if (!config.workspacePullImagesFromDockerHub) {
     logger.info('Not pulling docker image');
-    callback(null, workspace);
+    return;
   }
+
+  await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Checking image');
+  const workspace_image = workspace.settings.workspace_image;
+  logger.info(`Pulling docker image: ${workspace_image}`);
+  const auth = await setupDockerAuthAsync(config.cacheImageRegistry);
+
+  let percentDisplayed = false;
+  let stream;
+  try {
+    stream = await docker.pull(workspace_image, { authconfig: auth });
+  } catch (err) {
+    logger.error(
+      `Error pulling "${workspace_image}" image; attempting to fall back to cached version.`,
+      err
+    );
+    return;
+  }
+
+  // We monitor the pull progress to calculate the
+  // percentage complete. This is roughly "current / total",
+  // but as docker pulls new layers the "total" can
+  // increase, which would cause the percentage to
+  // decrease. To avoid this, we track a "base" value for
+  // both "current" and "total" and compute the percentage
+  // as an increment above these values. This ensures that
+  // our percentage starts at 0, ends at 100, and never
+  // decreases. It has the disadvantage that the percentage
+  // will tend to go faster at the start (when we only know
+  // about a few layers) and slow down at the end (when we
+  // know about all layers).
+  let progressDetails = {};
+  let current = 0;
+  let total = 0;
+  let fraction = 0;
+  let currentBase;
+  let fractionBase;
+  let outputCount = 0;
+  let percentCache = -1;
+  let dateCache = Date.now() - 1e6;
+
+  await new Promise((resolve, reject) => {
+    docker.modem.followProgress(
+      stream,
+      (err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        if (!percentDisplayed) {
+          resolve();
+          return;
+        }
+
+        const toDatabase = false;
+        workspaceUtils
+          .updateWorkspaceMessage(workspace.id, `Pulling image (100%)`, toDatabase)
+          .catch((err) => {
+            logger.error('Error updating workspace message', err);
+            Sentry.captureException(err);
+          })
+          .then(resolve);
+      },
+      (output) => {
+        debug('Docker pull output: ', output);
+        if ('progressDetail' in output && output.progressDetail.total) {
+          // track different states (Download/Extract)
+          // separately by making them separate keys
+          const key = `${output.id}/${output.status}`;
+          progressDetails[key] = output.progressDetail;
+        }
+        current = Object.values(progressDetails).reduce(
+          (current, detail) => detail.current + current,
+          0
+        );
+        const newTotal = Object.values(progressDetails).reduce(
+          (total, detail) => detail.total + total,
+          0
+        );
+        if (outputCount <= 200) {
+          // limit progress initially to wait for most layers to be seen
+          current = Math.min(current, (outputCount / 200) * newTotal);
+        }
+        if (newTotal > total) {
+          total = newTotal;
+          currentBase = current;
+          fractionBase = fraction;
+        }
+        if (total > 0) {
+          outputCount++;
+          const fractionIncrement =
+            total > currentBase ? (current - currentBase) / (total - currentBase) : 0;
+          fraction = fractionBase + (1 - fractionBase) * fractionIncrement;
+          const percent = Math.floor(fraction * 100);
+          const date = Date.now();
+          const percentDelta = percent - percentCache;
+          const dateDeltaSec = (date - dateCache) / 1000;
+          if (percentDelta > 0 && dateDeltaSec >= config.workspacePercentMessageRateLimitSec) {
+            percentCache = percent;
+            dateCache = date;
+            percentDisplayed = true;
+            const toDatabase = false;
+            workspaceUtils
+              .updateWorkspaceMessage(workspace.id, `Pulling image (${percent}%)`, toDatabase)
+              .catch((err) => {
+                logger.error('Error updating workspace message', err);
+                Sentry.captureException(err);
+              });
+          }
+        }
+      }
+    );
+  });
 }
-const _pullImageAsync = util.promisify(_pullImage);
 
 function _createContainer(workspace, callback) {
   const localName = workspace.local_name;
@@ -793,14 +796,25 @@ function _createContainer(workspace, callback) {
 }
 const _createContainerAsync = util.promisify(_createContainer);
 
-function _startContainer(workspace, callback) {
-  workspaceHelper.updateMessage(workspace.id, 'Starting container');
-  workspace.container.start((err) => {
-    if (ERR(err, callback)) return;
-    callback(null, workspace);
+async function _startContainer(workspace) {
+  await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Starting container');
+  await workspace.container.start();
+}
+
+/**
+ * Wrapper around `updateWorkspaceState()` that will ensure any errors don't
+ * propagate to the caller. Useful during the initialization sequence when we
+ * would mark the host as unhealthy if an error occurred while updating the state.
+ * @param {*} workspaceId
+ * @param {*} state
+ * @param {*} message
+ */
+function safeUpdateWorkspaceState(workspaceId, state, message) {
+  workspaceUtils.updateWorkspaceState(workspaceId, state, message).catch((err) => {
+    logger.error('Error updating workspace state', err);
+    Sentry.captureException(err);
   });
 }
-const _startContainerAsync = util.promisify(_startContainer);
 
 // Called by the main server the first time a workspace is used by a user
 async function initSequenceAsync(workspace_id, useInitialZip, res) {
@@ -839,7 +853,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       workspace.settings = await _getWorkspaceSettingsAsync(workspace.id);
     } catch (err) {
       logger.error(`Error configuring workspace ${workspace_id}`, err);
-      workspaceHelper.updateState(
+      safeUpdateWorkspaceState(
         workspace_id,
         'stopped',
         `Error configuring workspace. Click "Reboot" to try again.`
@@ -848,11 +862,11 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
     }
 
     try {
-      await _pullImageAsync(workspace);
+      await _pullImage(workspace);
     } catch (err) {
       const image = workspace.settings.workspace_image;
       logger.error(`Error pulling image ${image} for workspace ${workspace_id}`, err);
-      workspaceHelper.updateState(
+      safeUpdateWorkspaceState(
         workspace_id,
         'stopped',
         `Error pulling image. Click "Reboot" to try again.`
@@ -861,7 +875,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
     }
 
     try {
-      workspaceHelper.updateMessage(workspace.id, 'Creating container');
+      await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Creating container');
       const hostname = `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`;
       await sqldb.queryAsync(sql.update_workspace_hostname, {
         workspace_id,
@@ -870,7 +884,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       workspace.container = await _createContainerAsync(workspace);
     } catch (err) {
       logger.error(`Error creating container for workspace ${workspace.id}`, err);
-      workspaceHelper.updateState(
+      safeUpdateWorkspaceState(
         workspace_id,
         'stopped',
         `Error creating container. Click "Reboot" to try again.`
@@ -879,13 +893,13 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
     }
 
     try {
-      await _startContainerAsync(workspace);
+      await _startContainer(workspace);
       await _checkServerAsync(workspace);
       debug(`init: container initialized for workspace_id=${workspace_id}`);
-      workspaceHelper.updateState(workspace_id, 'running', null);
+      await workspaceUtils.updateWorkspaceState(workspace_id, 'running', null);
     } catch (err) {
       logger.error(`Error starting container for workspace ${workspace.id}`, err);
-      workspaceHelper.updateState(
+      safeUpdateWorkspaceState(
         workspace_id,
         'stopped',
         `Error starting container. Click "Reboot" to try again.`
@@ -909,25 +923,19 @@ async function sendGradedFilesArchive(workspace_id, res) {
   const zipName = `${workspace.remote_name}-${timestamp}.zip`;
   const workspaceDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
 
-  const gradedFiles = (
-    await fg(workspaceSettings.workspace_graded_files, {
-      cwd: workspaceDir,
-      stats: true,
-      ...workspaceHelper.fastGlobDefaultOptions,
-    })
-  ).filter((file) => contains(workspaceDir, path.join(workspaceDir, file.path)));
-
-  if (gradedFiles.length > config.workspaceMaxGradedFilesCount) {
-    return res.status(500).send({
-      message: `Cannot submit more than ${config.workspaceMaxGradedFilesCount} files from the workspace.`,
-    });
-  }
-  if (_.sumBy(gradedFiles, (file) => file.stats.size) > config.workspaceMaxGradedFilesSize) {
-    return res.status(500).send({
-      message: `Workspace files exceed limit of ${filesize(config.workspaceMaxGradedFilesSize, {
-        base: 2,
-      })}.`,
-    });
+  let gradedFiles;
+  try {
+    gradedFiles = await workspaceUtils.getWorkspaceGradedFiles(
+      workspaceDir,
+      workspaceSettings.workspace_graded_files,
+      {
+        maxFiles: config.workspaceMaxGradedFilesCount,
+        maxSize: config.workspaceMaxGradedFilesSize,
+      }
+    );
+  } catch (err) {
+    res.status(500).send(err.message);
+    return;
   }
 
   // Stream the archive back to the client as it's generated.

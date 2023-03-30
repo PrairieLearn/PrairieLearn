@@ -24,13 +24,13 @@ BEGIN
         PERFORM ai.id
         FROM assessment_instances AS ai
         WHERE ai.id = assessment_instance_id
-        FOR UPDATE OF ai;
+        FOR NO KEY UPDATE OF ai;
     ELSE
         -- lock the variant
         PERFORM v.id
         FROM variants AS v
         WHERE v.id = variant_id
-        FOR UPDATE OF v;
+        FOR NO KEY UPDATE OF v;
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
