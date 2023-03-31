@@ -12,11 +12,14 @@ BEGIN
         ALTER TABLE variants
         ALTER COLUMN course_id
         SET NOT NULL;
+
+        ALTER TABLE variants
+        DROP CONSTRAINT variants_course_id_not_null;
     ELSE
+        ALTER TABLE variants
+        DROP CONSTRAINT variants_course_id_not_null;
+
         RAISE EXCEPTION 'NULL row(s) exist in column, unable to add NOT NULL constraint';
     END IF;
 END;
 $$;
-
-ALTER TABLE variants
-DROP CONSTRAINT variants_course_id_not_null;
