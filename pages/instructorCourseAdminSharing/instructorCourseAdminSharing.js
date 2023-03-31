@@ -70,10 +70,6 @@ router.post(
         sharing_set_id: req.body.sharing_set_id,
         course_sharing_id: req.body.course_sharing_id,
       });
-    } else if (req.body.__action === 'course_sharing_set_delete') {
-      // TODO: do we actually want to allow deleting the sharing with a course?
-      // In the future we want to do some fancy versioning stuff. How do we transition from allowing deletion
-      // to versioning questions?
     } else if (req.body.__action === 'choose_sharing_name') {
       await sqldb.queryZeroOrOneRowAsync(sql.choose_sharing_name, {
         sharing_name: req.body.course_sharing_name,

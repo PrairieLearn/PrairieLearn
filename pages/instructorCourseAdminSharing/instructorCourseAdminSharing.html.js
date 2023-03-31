@@ -168,42 +168,12 @@ const InstructorSharing = ({ sharing_name, sharing_id, sharing_sets, resLocals }
                           course_shared_with.course_id === null
                             ? ''
                             : html`
-                                <form
-                                  name="sharing-set-access-change-${sharing_set.id}-${course_shared_with.course_id}"
-                                  method="POST"
-                                  class="d-inline"
-                                >
-                                  <input
-                                    type="hidden"
-                                    name="__action"
-                                    value="course_sharing_set_delete"
-                                  />
-                                  <input
-                                    type="hidden"
-                                    name="__csrf_token"
-                                    value="${resLocals.__csrf_token}"
-                                  />
-                                  <input
-                                    type="hidden"
-                                    name="course_id"
-                                    value="${course_shared_with.course_id}"
-                                  />
-                                  <div
-                                    class="btn-group btn-group-sm"
-                                    role="group"
-                                    aria-label="Button group with nested dropdown"
-                                  >
-                                    <!-- TODO we don't actually want the main part to be a button! -->
-                                    <div class="btn-group btn-group-sm" role="group">
-                                      <div class="btn btn-sm btn-outline-primary">
-                                        ${course_shared_with.short_name}
-                                      </div>
-                                    </div>
-                                    <button type="submit" class="btn btn-sm btn-outline-primary">
-                                      <i class="fa fa-times"></i>
-                                    </button>
+                                <!-- TODO we don't actually want the main part to be a button! -->
+                                <div class="btn-group btn-group-sm" role="group">
+                                  <div class="btn btn-sm btn-outline-primary">
+                                    ${course_shared_with.short_name}
                                   </div>
-                                </form>
+                                </div>
                               `
                         )}
                         <form
