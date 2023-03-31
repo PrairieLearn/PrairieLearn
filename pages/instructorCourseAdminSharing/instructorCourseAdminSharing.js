@@ -71,6 +71,9 @@ router.post(
         course_sharing_id: req.body.course_sharing_id,
       });
     } else if (req.body.__action === 'choose_sharing_name') {
+      if (req.body.course_sharing_name.includes('/') || req.body.course_sharing_name.includes('@')) {
+        throw error.make(400, 'Course Sharing Name is not allowed to contain "/" or "@".');
+      }
       await sqldb.queryZeroOrOneRowAsync(sql.choose_sharing_name, {
         sharing_name: req.body.course_sharing_name,
         course_id: res.locals.course.id,

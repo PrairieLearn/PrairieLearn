@@ -35,7 +35,7 @@ async function setSharingName(courseId, name) {
   const response = await helperClient.fetchCheerio(sharingUrl);
 
   const token = response.$('#test_csrf_token').text();
-  await fetch(sharingUrl, {
+  return await fetch(sharingUrl, {
     method: 'POST',
     headers: { 'Content-type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
@@ -108,7 +108,11 @@ describe('Question Sharing', function () {
     );
 
     step('Fail if trying to set an invalid sharing name', async () => {
-      // TODO throw an exception in SQL, catch it, return an error
+      let res = await setSharingName(testCourseId, 'invalid@sharingname');
+      assert(res.status == 400);
+
+      res = await setSharingName(testCourseId, 'invalid / sharingname');
+      assert(res.status == 400);
     });
 
     step('Set test course sharing name', async () => {
