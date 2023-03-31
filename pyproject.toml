@@ -60,6 +60,7 @@ skip_glob = ["tools/*", "node_modules/*"]
 include = [
     "./elements/pl-answer-panel",
     "./elements/pl-big-o-input",
+    "./elements/pl-card",
     "./elements/pl-code",
     "./elements/pl-dataframe",
     "./elements/pl-external-grader-variables",
