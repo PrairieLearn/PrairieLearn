@@ -28,7 +28,7 @@
     urlSuffix:      '/course_admin/settings',
     iconClasses:    'fas fa-cog',
     tabLabel:       'Settings'}) %>
-<% if (config.questionSharingEnabled && course.question_sharing_enabled) { %>
+<% if (course.question_sharing_enabled) { %>
 <%- include('navTab', {
     activeSubPage:  'sharing',
     urlSuffix:      '/course_admin/sharing',

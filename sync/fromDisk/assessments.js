@@ -356,17 +356,6 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
   });
 
   if (importedQids.size > 0) {
-    if (!config.questionSharingEnabled) {
-      for (let qid of importedQids) {
-        importedQidAssessmentMap.get(qid).forEach((tid) => {
-          infofile.addError(
-            assessments[tid],
-            `You have attempted to import a question with '@', but question sharing is not enabled on this server.`
-          );
-        });
-      }
-    }
-
     let result = await sqldb.queryOneRowAsync(sql.get_course_info, { courseId: courseId });
     if (!result.rows[0].question_sharing_enabled) {
       for (let qid of importedQids) {
