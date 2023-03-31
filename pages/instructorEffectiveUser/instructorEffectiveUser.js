@@ -47,11 +47,12 @@ router.get('/', function (req, res, next) {
 
     // This page can be mounted under `/pl/course/...`, in which case we won't
     // have a course instance to get a display timezone from. In that case, we'll
-    // fall back to the course, and then to `UTC`. Note that in some other places
-    // we fall back to `America/Chicago` if neither the course nor the course
-    // instance has a timezone; UTC seems to make more sense here.
+    // fall back to the course, and then to the institution. All institutions must
+    // have a display timezone, so we're always guaranteed to have one.
     const displayTimezone =
-      res.locals.course_instance?.display_timezone ?? res.locals.course.display_timezone ?? 'UTC';
+      res.locals.course_instance?.display_timezone ??
+      res.locals.course.display_timezone ??
+      res.locals.institution.display_timezone;
 
     res.locals.true_req_date_for_display = format(
       utcToZonedTime(res.locals.true_req_date, displayTimezone),
