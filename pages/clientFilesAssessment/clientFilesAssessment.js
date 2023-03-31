@@ -2,7 +2,7 @@ const path = require('path');
 const express = require('express');
 const router = express.Router();
 
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const chunks = require('../../lib/chunks');
 const ERR = require('async-stacktrace');
 

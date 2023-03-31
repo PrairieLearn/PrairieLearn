@@ -39,7 +39,7 @@
       <% } %>
     </ul>
 
-    <%# User and logout %> 
+    <%# User and logout %>
     <%
     let displayedName;
     if (locals.authz_data) {
@@ -307,7 +307,7 @@
             <% } %>
           </a>
 
-          <%- include('logout'); %>
+          <a class="dropdown-item" href="<%= plainUrlPrefix %>/logout">Log out</a>
 
         </div>
       </li>

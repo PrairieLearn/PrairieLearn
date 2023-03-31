@@ -3,4 +3,14 @@ export { suppressTracing } from '@opentelemetry/core';
 
 export { init, shutdown } from './init';
 export { instrumented } from './tracing';
-export { instrumentedWithMetrics } from './metrics';
+export {
+  instrumentedWithMetrics,
+  getCounter,
+  getUpDownCounter,
+  getHistogram,
+  getObservableCounter,
+  getObservableUpDownCounter,
+  getObservableGauge,
+  createObservableValueGauges,
+  createObservableValueGaugesOptions,
+} from './metrics';

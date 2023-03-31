@@ -1,7 +1,7 @@
 import random
 from enum import Enum
 from html import escape
-from typing import Dict, Optional
+from typing import Optional
 
 import big_o_utils as bou
 import chevron
@@ -25,7 +25,7 @@ class DisplayType(Enum):
     BLOCK = "block"
 
 
-GRADE_FUNCTION_DICT: Dict[BigOType, bou.BigOGradingFunctionT] = {
+GRADE_FUNCTION_DICT: dict[BigOType, bou.BigOGradingFunctionT] = {
     BigOType.BIG_O: bou.grade_o_expression,
     BigOType.THETA: bou.grade_theta_expression,
     BigOType.OMEGA: bou.grade_omega_expression,

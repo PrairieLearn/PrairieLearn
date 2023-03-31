@@ -9,6 +9,7 @@ const { ProfilingIntegration } = require('@sentry/profiling-node');
 
 const ERR = require('async-stacktrace');
 const fs = require('fs');
+const util = require('util');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const favicon = require('serve-favicon');
@@ -32,7 +33,7 @@ const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const compiledAssets = require('@prairielearn/compiled-assets');
 
-const logger = require('./lib/logger');
+const { logger, addFileLogging } = require('@prairielearn/logger');
 const config = require('./lib/config');
 const load = require('./lib/load');
 const awsHelper = require('./lib/aws.js');
@@ -41,8 +42,8 @@ const externalGraderResults = require('./lib/externalGraderResults');
 const externalGradingSocket = require('./lib/externalGradingSocket');
 const workspace = require('./lib/workspace');
 const sqldb = require('@prairielearn/postgres');
-const migrations = require('./prairielib/lib/migrations');
-const error = require('./prairielib/error');
+const migrations = require('@prairielearn/migrations');
+const error = require('@prairielearn/error');
 const sprocs = require('./sprocs');
 const news_items = require('./news_items');
 const cron = require('./cron');
@@ -54,7 +55,7 @@ const cache = require('./lib/cache');
 const { LocalCache } = require('./lib/local-cache');
 const codeCaller = require('./lib/code-caller');
 const assets = require('./lib/assets');
-const namedLocks = require('./lib/named-locks');
+const namedLocks = require('@prairielearn/named-locks');
 const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
 const { enrichSentryScope } = require('./lib/sentry');
@@ -322,7 +323,7 @@ module.exports.initExpress = function () {
       logger.error(`Error proxying workspace request: ${err}`, {
         err,
         url: req.url,
-        originalUrl: req.url,
+        originalUrl: req.originalUrl,
       });
       // Check to make sure we weren't already in the middle of sending a
       // response before replying with an error 500
@@ -356,7 +357,7 @@ module.exports.initExpress = function () {
   app.use('/pl/workspace/:workspace_id/container', [
     cookieParser(),
     (req, res, next) => {
-      // Needed for workspaceAuthRouter and `selectAndValidateWorkspace` middleware.
+      // Needed for workspaceAuthRouter.
       res.locals.workspace_id = req.params.workspace_id;
       next();
     },
@@ -470,6 +471,9 @@ module.exports.initExpress = function () {
 
   app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
   app.use('/pl/login', require('./pages/authLogin/authLogin'));
+  if (config.devMode) {
+    app.use('/pl/dev_login', require('./pages/authLoginDev/authLoginDev'));
+  }
   // disable SEB until we can fix the mcrypt issues
   // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
   app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
@@ -1384,44 +1388,30 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion',
-    [
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./middlewares/studentAssessmentAccess'),
-      require('./pages/clientFilesQuestion/clientFilesQuestion'),
-    ]
+    require('./pages/clientFilesQuestion/clientFilesQuestion')
   );
 
   // generatedFiles
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/generatedFilesQuestion',
-    [
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./middlewares/studentAssessmentAccess'),
-      require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
-    ]
+    require('./pages/generatedFilesQuestion/generatedFilesQuestion')
   );
 
   // Submission files
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/submission/:submission_id/file',
-    [
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./middlewares/studentAssessmentAccess'),
-      require('./pages/submissionFile/submissionFile'),
-    ]
+    require('./pages/submissionFile/submissionFile')
   );
 
   // legacy client file paths
-  app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/file', [
-    require('./middlewares/selectAndAuthzInstanceQuestion'),
-    require('./middlewares/studentAssessmentAccess'),
-    require('./pages/legacyQuestionFile/legacyQuestionFile'),
-  ]);
-  app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/text', [
-    require('./middlewares/selectAndAuthzInstanceQuestion'),
-    require('./middlewares/studentAssessmentAccess'),
-    require('./pages/legacyQuestionText/legacyQuestionText'),
-  ]);
+  app.use(
+    '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/file',
+    require('./pages/legacyQuestionFile/legacyQuestionFile')
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/text',
+    require('./pages/legacyQuestionText/legacyQuestionText')
+  );
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
@@ -1782,6 +1772,27 @@ module.exports.startServer = async () => {
     throw new Error('unknown serverType: ' + config.serverType);
   }
 
+  // Capture metrics about the server, including the number of active connections
+  // and the total number of connections that have been started.
+  const meter = opentelemetry.metrics.getMeter('prairielearn');
+
+  const connectionCounter = opentelemetry.getCounter(meter, 'http.connections', {
+    valueType: opentelemetry.ValueType.INT,
+  });
+  server.on('connection', () => connectionCounter.add(1));
+
+  opentelemetry.createObservableValueGauges(
+    meter,
+    'http.connections.active',
+    {
+      valueType: opentelemetry.ValueType.INT,
+      interval: 1000,
+    },
+    () => {
+      return util.promisify(server.getConnections.bind(server))();
+    }
+  );
+
   server.timeout = config.serverTimeout;
   server.keepAliveTimeout = config.serverKeepAliveTimeout;
   server.listen(config.serverPort);
@@ -1913,8 +1924,11 @@ if (config.startServer) {
         }
 
         if (config.logFilename) {
-          logger.addFileLogging(config.logFilename);
-          logger.verbose('activated file logging: ' + config.logFilename);
+          addFileLogging({ filename: config.logFilename });
+        }
+
+        if (config.logErrorFilename) {
+          addFileLogging({ filename: config.logErrorFilename, level: 'error' });
         }
       },
       async () => {
@@ -1982,23 +1996,76 @@ if (config.startServer) {
 
         logger.verbose('Successfully connected to database');
       },
-      function (callback) {
+      async () => {
         // Using the `--migrate-and-exit` flag will override the value of
         // `config.runMigrations`. This allows us to use the same config when
         // running migrations as we do when we start the server.
-        if (!config.runMigrations && !argv['migrate-and-exit']) return callback(null);
-        migrations.init(path.join(__dirname, 'migrations'), 'prairielearn', function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
-      function (callback) {
-        if (argv['migrate-and-exit']) {
-          logger.info('option --migrate-and-exit passed, running DB setup and exiting');
-          process.exit(0);
-        } else {
-          callback(null);
+        if (config.runMigrations || argv['migrate-and-exit']) {
+          await migrations.init(path.join(__dirname, 'migrations'), 'prairielearn');
+
+          if (argv['migrate-and-exit']) {
+            logger.info('option --migrate-and-exit passed, running DB setup and exiting');
+            process.exit(0);
+          }
         }
+      },
+      async () => {
+        // Collect metrics on our Postgres connection pools.
+        const meter = opentelemetry.metrics.getMeter('prairielearn');
+
+        const pools = [
+          {
+            name: 'default',
+            pool: sqldb.defaultPool,
+          },
+          {
+            name: 'named-locks',
+            pool: namedLocks.pool,
+          },
+        ];
+
+        pools.forEach(({ name, pool }) => {
+          opentelemetry.createObservableValueGauges(
+            meter,
+            `postgres.pool.${name}.total`,
+            {
+              valueType: opentelemetry.ValueType.INT,
+              interval: 1000,
+            },
+            () => pool.totalCount
+          );
+
+          opentelemetry.createObservableValueGauges(
+            meter,
+            `postgres.pool.${name}.idle`,
+            {
+              valueType: opentelemetry.ValueType.INT,
+              interval: 1000,
+            },
+            () => pool.idleCount
+          );
+
+          opentelemetry.createObservableValueGauges(
+            meter,
+            `postgres.pool.${name}.waiting`,
+            {
+              valueType: opentelemetry.ValueType.INT,
+              interval: 1000,
+            },
+            () => pool.waitingCount
+          );
+
+          const queryCounter = opentelemetry.getObservableCounter(
+            meter,
+            `postgres.pool.${name}.query.count`,
+            {
+              valueType: opentelemetry.ValueType.INT,
+            }
+          );
+          queryCounter.addCallback((observableResult) => {
+            observableResult.observe(pool.queryCount);
+          });
+        });
       },
       async () => {
         // We create and activate a random DB schema name

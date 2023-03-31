@@ -56,14 +56,31 @@ WITH
       AND wh.state != 'launching'
     RETURNING
       wh.id
+  ),
+  terminated_workspaces AS (
+    UPDATE workspaces AS w
+    SET
+      state = 'stopped',
+      stopped_at = NOW(),
+      state_updated_at = NOW()
+    FROM
+      terminated_workspace_hosts AS twh
+    WHERE
+      twh.id = w.workspace_host_id
+      AND w.state != 'stopped'
+    RETURNING
+      w.*
   )
-UPDATE workspaces AS w
-SET
-  state = 'stopped',
-  stopped_at = NOW(),
-  state_updated_at = NOW()
+INSERT INTO
+  workspace_logs (workspace_id, version, state, message)
+SELECT
+  tw.id,
+  tw.version,
+  tw.state,
+  'Host instance was not found'
 FROM
-  terminated_workspace_hosts AS twh
-WHERE
-  twh.id = w.workspace_host_id
-  AND w.state != 'stopped';
+  terminated_workspaces AS tw
+RETURNING
+  workspace_id,
+  state,
+  message;

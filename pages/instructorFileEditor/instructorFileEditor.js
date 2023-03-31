@@ -2,16 +2,17 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const async = require('async');
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 const fs = require('fs-extra');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const debug = require('debug')('prairielearn:instructorFileEditor');
 const { callbackify } = require('util');
-const logger = require('../../lib/logger');
+const { logger } = require('@prairielearn/logger');
+const { contains } = require('@prairielearn/path-utils');
 const serverJobs = require('../../lib/server-jobs');
-const namedLocks = require('../../lib/named-locks');
+const namedLocks = require('@prairielearn/named-locks');
 const syncFromDisk = require('../../sync/syncFromDisk');
 const courseUtil = require('../../lib/courseUtil');
 const requireFrontend = require('../../lib/require-frontend');
@@ -26,7 +27,7 @@ const modelist = require('ace-code/src/ext/modelist');
 const { decodePath } = require('../../lib/uri-util');
 const chunks = require('../../lib/chunks');
 const { idsEqual } = require('../../lib/id');
-const { contains, getPaths } = require('../../lib/instructorFiles');
+const { getPaths } = require('../../lib/instructorFiles');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -1041,10 +1042,11 @@ function saveAndSync(fileEdit, locals, callback) {
                 oldHash: startGitHash,
                 newHash: endGitHash,
               },
-              (err) => {
+              (err, chunkChanges) => {
                 if (err) {
                   job.fail(err);
                 } else {
+                  chunks.logChunkChangesToJob(chunkChanges, job);
                   checkJsonErrors();
                 }
               }
