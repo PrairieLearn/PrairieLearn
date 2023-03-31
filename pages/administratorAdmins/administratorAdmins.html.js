@@ -54,7 +54,7 @@ function AdministratorAdmins({ admins, resLocals }) {
                   <tr>
                     <th>UID</th>
                     <th>Name</th>
-                    <th></th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
 

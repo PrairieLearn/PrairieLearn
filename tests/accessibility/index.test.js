@@ -35,7 +35,7 @@ function cleanLargePages(url, page) {
 
   if (
     url === '/pl/course_instance/1/instructor/instance_admin/settings' ||
-    url === '/pl/course_instance/1/instructor/assessment/1/settings'
+    /\/pl\/course_instance\/1\/instructor\/assessment\/\d+\/settings/.test(url)
   ) {
     // The SVG for the QR code contains many elements, which in turn makes AXE
     // run very slow. We don't need to check the accessibility of the QR code
@@ -113,8 +113,9 @@ const SKIP_ROUTES = [
   '/*',
 
   // Special-case: `express-list-endpoints` doesn't handle regexp routes well.
-  // This matches the serialized path for regexp routes.
-  '/ RegExp(/\\/pl\\/shibcallback/)',
+  // This matches the serialized path for regexp routes. Yes, there is a trailing
+  // space here.
+  '/ RegExp(/\\/pl\\/shibcallback/) ',
 
   // This page is not user-visible.
   '/pl/webhooks/ping',
@@ -205,6 +206,7 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/next_ungraded',
   '/pl/course_instance/:course_instance_id/instructor/loadFromDisk',
   '/pl/course_instance/:course_instance_id/loadFromDisk',
+  '/pl/course/:course_id/file_transfer/:file_transfer_id',
   '/pl/course/:course_id/loadFromDisk',
   '/pl/loadFromDisk',
   '/pl/oauth2callback',
@@ -223,7 +225,21 @@ const SKIP_ROUTES = [
 
   // TODO: add tests for workspace pages. These will require us to open a question
   // in order to create a workspace.
+  // TODO: open a question and create a workspace so we can test this page.
   /^\/pl\/workspace\//,
+
+  // TODO: run a query so we can test this page.
+  '/pl/administrator/query/:query',
+
+  // TODO: create an assessment instance and create an instance question so we can test these pages.
+  '/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id',
+  '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id',
+  '/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id',
+  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id',
+  '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/instance_question/:instance_question_id',
+
+  // TODO: submit an answer to a question so we can test this page.
+  '/pl/course_instance/:course_instance_id/instructor/grading_job/:job_id',
 ];
 
 // const ONLY_ROUTES = ['/pl/course_instance/:course_instance_id/effectiveUser'];
@@ -290,8 +306,6 @@ describe('accessibility', () => {
     const failingEndpoints = [];
 
     for (const endpoint of endpoints) {
-      console.log(endpoint);
-
       if (shouldSkipPath(endpoint.path)) {
         continue;
       }
@@ -319,27 +333,23 @@ describe('accessibility', () => {
       }
     }
 
-    let shouldFail = false;
+    /** @type {string[]} */
+    const errLines = [];
 
     if (missingParamsEndpoints.length > 0) {
-      console.log('The following endpoints are missing params:');
-      missingParamsEndpoints.forEach((e) => console.log(`  ${e.path}`));
-      shouldFail = true;
+      errLines.push('The following endpoints are missing params:');
+      missingParamsEndpoints.forEach((e) => errLines.push(`  ${e.path}`));
     }
 
     if (failingEndpoints.length > 0) {
-      console.log('The following endpoints failed accessibility checks:\n');
+      errLines.push('The following endpoints failed accessibility checks:\n');
       failingEndpoints.forEach(([e, err]) => {
-        console.log(e.path);
-        console.log(err.message);
-        console.log('\n');
+        errLines.push(e.path, err.message, '');
       });
-      shouldFail = true;
     }
 
-    if (shouldFail) {
-      // TODO: construct one big string for all the errors?
-      throw new Error('See logs for errors.');
+    if (errLines.length > 0) {
+      throw new Error(errLines.join('\n'));
     }
   });
 });
