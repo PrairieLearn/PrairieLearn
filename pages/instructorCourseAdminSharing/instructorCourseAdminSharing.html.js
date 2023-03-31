@@ -168,12 +168,9 @@ const InstructorSharing = ({ sharing_name, sharing_id, sharing_sets, resLocals }
                           course_shared_with.course_id === null
                             ? ''
                             : html`
-                                <!-- TODO we don't actually want the main part to be a button! -->
-                                <div class="btn-group btn-group-sm" role="group">
-                                  <div class="btn btn-sm btn-outline-primary">
-                                    ${course_shared_with.short_name}
-                                  </div>
-                                </div>
+                                <span class="badge color-gray1  ">
+                                  ${course_shared_with.short_name}
+                                </span>
                               `
                         )}
                         <form
