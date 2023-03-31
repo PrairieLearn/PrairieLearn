@@ -109,10 +109,10 @@ describe('Question Sharing', function () {
 
     step('Fail if trying to set an invalid sharing name', async () => {
       let res = await setSharingName(testCourseId, 'invalid@sharingname');
-      assert(res.status == 400);
+      assert(res.status === 400);
 
       res = await setSharingName(testCourseId, 'invalid / sharingname');
-      assert(res.status == 400);
+      assert(res.status === 400);
     });
 
     step('Set test course sharing name', async () => {
