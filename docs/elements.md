@@ -67,6 +67,7 @@ images, files, and code display. The following **decorative** elements are avail
 - [`pl-external-grader-variables`](#pl-external-grader-variables-element): Displays expected and given variables for externally graded questions.
 - [`pl-xss-safe`](#pl-xss-safe-element): Removes potentially unsafe code from HTML code.
 - [`pl-file-preview`](#pl-file-preview-element): Displays a preview of submitted files.
+- [`pl-card`](#pl-card-element): Displays content within a card-styled component.
 
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
@@ -1263,23 +1264,24 @@ def generate(data):
 
 #### Customizations
 
-| Attribute        | Type    | Default | Description                                                                                                                                                                                                                                                                 |
-| ---------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `params-name`    | string  | —       | The name of the key in `data['params']` to get a value from.                                                                                                                                                                                                                |
-| `prefix`         | string  | (empty) | Any prefix to append to the output in `text` mode.                                                                                                                                                                                                                          |
-| `prefix-newline` | boolean | false   | Add newline to the end of `prefix`.                                                                                                                                                                                                                                         |
-| `suffix`         | string  | (empty) | Any suffix to append to the output in `text` mode.                                                                                                                                                                                                                          |
-| `suffix-newline` | boolean | false   | Add newline before the start of `suffix`.                                                                                                                                                                                                                                   |
-| `indent`         | integer | 1       | Specifies the amount of indentation added for each nesting level when printing nested objects.                                                                                                                                                                              |
-| `depth`          | integer | -       | The number of nesting levels which may be printed; if the data structure being printed is too deep, the next contained level is replaced by ... By default, there is no constraint on the depth of the objects being formatted.                                             |
-| `width`          | integer | 80      | Specifies the desired maximum number of characters per line in the output. If a structure cannot be formatted within the width constraint, a best effort will be made.                                                                                                      |
-| `compact`        | boolean | false   | Impacts the way that long sequences (lists, tuples, sets, etc.) are formatted. If compact is false then each item of a sequence will be formatted on a separate line. If compact is true, as many items as will fit within the width will be formatted on each output line. |
-| `sort-dicts`     | boolean | true    | If true, dictionaries will be formatted with their keys sorted, otherwise they will display in insertion order.                                                                                                                                                             |
-| `no-highlight`   | boolean | false   | Disable syntax highlighting.                                                                                                                                                                                                                                                |
+| Attribute          | Type    | Default | Description                                                                                                                                                                                                                                                                 |
+| ------------------ | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `params-name`      | string  | —       | The name of the key in `data['params']` to get a value from.                                                                                                                                                                                                                |
+| `prefix`           | string  | (empty) | Any prefix to append to the output in `text` mode.                                                                                                                                                                                                                          |
+| `prefix-newline`   | boolean | false   | Add newline to the end of `prefix`.                                                                                                                                                                                                                                         |
+| `suffix`           | string  | (empty) | Any suffix to append to the output in `text` mode.                                                                                                                                                                                                                          |
+| `suffix-newline`   | boolean | false   | Add newline before the start of `suffix`.                                                                                                                                                                                                                                   |
+| `indent`           | integer | 1       | Specifies the amount of indentation added for each nesting level when printing nested objects.                                                                                                                                                                              |
+| `depth`            | integer | -       | The number of nesting levels which may be printed; if the data structure being printed is too deep, the next contained level is replaced by ... By default, there is no constraint on the depth of the objects being formatted.                                             |
+| `width`            | integer | 80      | Specifies the desired maximum number of characters per line in the output. If a structure cannot be formatted within the width constraint, a best effort will be made.                                                                                                      |
+| `compact`          | boolean | false   | Impacts the way that long sequences (lists, tuples, sets, etc.) are formatted. If compact is false then each item of a sequence will be formatted on a separate line. If compact is true, as many items as will fit within the width will be formatted on each output line. |
+| `sort-dicts`       | boolean | true    | If true, dictionaries will be formatted with their keys sorted, otherwise they will display in insertion order.                                                                                                                                                             |
+| `no-highlight`     | boolean | false   | Disable syntax highlighting.                                                                                                                                                                                                                                                |
+| `copy-code-button` | boolean | false   | Whether to include a button to copy the code displayed by this element.                                                                                                                                                                                                     |
 
 #### Details
 
-The element supports displaying Python objects via `repr()`, with support for more complex display options similar to the built-in pprint library. Objects to be displayed must be JSON serialized. For details about what objects can be serialized and how to do this with the provided `to_json` and `from_json` functions, see the [Question Writing documentation](question.md#question-data-storage).
+The element supports displaying Python objects via `repr()`, with support for more complex display options similar to the built-in `pprint` library. **Objects to be displayed must be serializable to JSON.** For details about what objects can be serialized and how to do this with the provided `to_json` and `from_json` functions, see the [Question Writing documentation](question.md#question-data-storage). To display objects that cannot be easily JSON serialized, please refer to the `pl-code` example question [element/code].
 
 Printing Pandas DataFrames with this element is deprecated. Please use the new [`pl-dataframe`](#pl-dataframe-element) element for this purpose.
 
@@ -1650,8 +1652,7 @@ ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 
 ### `pl-graph` element
 
-Using the [viz.js](https://github.com/mdaines/viz.js/) library, create
-Graphviz DOT visualizations.
+Using the [PyGraphviz](https://pygraphviz.github.io/) library, create Graphviz DOT visualizations.
 
 #### Sample elements
 
@@ -1722,6 +1723,7 @@ def generate(data):
 | `negative-weights`          | boolean | false              | Whether to recognize negative weights in an adjacency matrix. If set to false, then all weights at most 0 are ignored (not counted as an edge). If set to true, then all weights that are not `None` are recognized.                                                    |
 | `directed`                  | boolean | true               | Whether to treat edges in an adjacency matrix as directed or undirected. If set to false, then edges will be rendered as undirected. _The input adjacency matrix must be symmetric if this is set to false._                                                            |
 | `weights-presentation-type` | string  | `'f'`              | Number display format for the weights when using an adjacency matrix. If presentation-type is 'sigfig', each number is formatted using the to_precision module to digits significant figures. Otherwise, each number is formatted as `{:.{digits}{presentation-type}}`. |
+| `log-warnings`              | boolean | true               | Whether to log warnings that occur during Graphviz rendering.                                                                                                                                                                                                           |
 
 #### Details
 
@@ -1756,7 +1758,7 @@ For a full implementation, check out the `edge-inc-matrix` extension in the exam
 
 #### See also
 
-- [External: `viz.js` graphing library](https://github.com/mdaines/viz.js/)
+- [External: the DOT language reference](https://graphviz.org/doc/info/lang.html)
 - [`pl-figure` for displaying static or dynamically generated graphics.](#pl-figure-element)
 - [`pl-file-download` for allowing either static or dynamically generated files to be downloaded.](#pl-file-download-element)
 
@@ -1949,6 +1951,46 @@ Note that only one of the attributes `source-file-name`, `submitted-file-name` o
 #### See also
 
 - [`pl-file-editor` to provide an in-browser code environment](#pl-file-editor-element)
+
+### `pl-card` element
+
+Displays question content within a card-styled component. Optionally displays a header, footer, and/or image via tag attributes.
+
+#### Sample element
+
+```html
+<pl-card
+  header="Header"
+  title="Title"
+  width="50%"
+  img-bottom-src="https://via.placeholder.com/720x480"
+>
+  <pl-question-panel> This card is 50% width and has a bottom image. </pl-question-panel>
+</pl-card>
+```
+
+#### Customizations
+
+| Attribute        | Type                           | Default | Description                            |
+| ---------------- | ------------------------------ | ------- | -------------------------------------- |
+| `header`         | string                         | -       | Contents of the card header.           |
+| `title`          | string                         | -       | Contents of the card title.            |
+| `subtitle`       | string                         | -       | Contents of the card subtitle.         |
+| `contents`       | string                         | -       | Raw contents of the card body.         |
+| `footer`         | string                         | -       | Contents of the card footer.           |
+| `img-top-src`    | string                         | -       | Source URL for the top image.          |
+| `img-top-alt`    | string                         | -       | Alternative text for the top image.    |
+| `img-bottom-src` | string                         | -       | Source URL for the bottom image.       |
+| `img-bottom-alt` | string                         | -       | Alternative text for the bottom image. |
+| `width`          | "25%", "50%", "75%", or "auto" | "auto"  | Width of the card.                     |
+
+#### Details
+
+The `pl-card` attributes mirror the options of [Bootstrap 4 cards](https://getbootstrap.com/docs/4.6/components/card/).
+
+#### Example implementations
+
+- [element/card]
 
 ---
 
@@ -2386,6 +2428,7 @@ The provided `script-name` corresponds to a file located within the director for
 [element/threejs]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/threeJS
 [element/variableoutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/variableOutput
 [element/xsssafe]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/xssSafe
+[element/card]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/card
 
 <!-- Advanced uses of PL features -->
 

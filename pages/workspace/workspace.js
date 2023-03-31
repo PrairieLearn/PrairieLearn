@@ -4,9 +4,9 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const sqldb = require('@prairielearn/postgres');
+const workspaceUtils = require('@prairielearn/workspace-utils');
 
 const config = require('../../lib/config');
-const workspaceHelper = require('../../lib/workspace');
 
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const error = require('@prairielearn/error');
@@ -45,14 +45,18 @@ router.post(
 
     if (req.body.__action === 'reboot') {
       debug(`Rebooting workspace ${workspace_id}`);
-      await workspaceHelper.updateState(workspace_id, 'stopped', 'Rebooting container');
+      await workspaceUtils.updateWorkspaceState(workspace_id, 'stopped', 'Rebooting container');
       await sqldb.queryAsync(sql.update_workspace_rebooted_at_now, {
         workspace_id,
       });
       res.redirect(`/pl/workspace/${workspace_id}`);
     } else if (req.body.__action === 'reset') {
       debug(`Resetting workspace ${workspace_id}`);
-      await workspaceHelper.updateState(workspace_id, 'uninitialized', 'Resetting container');
+      await workspaceUtils.updateWorkspaceState(
+        workspace_id,
+        'uninitialized',
+        'Resetting container'
+      );
       await sqldb.queryAsync(sql.increment_workspace_version, { workspace_id });
       res.redirect(`/pl/workspace/${workspace_id}`);
     } else {
