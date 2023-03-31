@@ -3,10 +3,10 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 
-const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const error = require('@prairielearn/error');
+const path = require('path');
 const { v4: uuidv4 } = require('uuid');
-const error = require('../../prairielib/lib/error');
 const { InstructorSharing } = require('./instructorCourseAdminSharing.html');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
