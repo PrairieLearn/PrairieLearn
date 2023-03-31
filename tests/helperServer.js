@@ -41,7 +41,6 @@ module.exports = {
       courseDir = courseDirDefault;
     }
     return function (callback) {
-      console.log('starting...', courseDir);
       debug('before()');
       var that = this;
       let httpServer;

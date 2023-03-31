@@ -283,10 +283,10 @@ describe('accessibility', () => {
       }
     );
 
-    const calculationQuestionResult = await sqldb.queryOneRowAsync(
+    const codeElementQuestionResult = await sqldb.queryOneRowAsync(
       'SELECT id FROM questions WHERE qid = $qid',
       {
-        qid: 'demo/calculation',
+        qid: 'element/code',
       }
     );
 
@@ -294,7 +294,7 @@ describe('accessibility', () => {
       ...STATIC_ROUTE_PARAMS,
       news_item_id: firstNewsItemResult.rows[0].id,
       assessment_id: questionGalleryAssessmentResult.rows[0].id,
-      question_id: calculationQuestionResult.rows[0].id,
+      question_id: codeElementQuestionResult.rows[0].id,
     };
   });
   after('shut down testing server', helperServer.after);
