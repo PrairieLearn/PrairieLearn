@@ -175,7 +175,7 @@ SELECT DISTINCT
   v.params,
   v.true_answer,
   (s.submitted_answer - '_files') AS submitted_answer,
-  s.partial_scores,
+  s.partial_scores AS old_partial_scores,
   ai.group_name,
   ai.uid_list
 FROM
@@ -411,11 +411,7 @@ ORDER BY
   ),
   qid,
   filename,
-  submission_id
-LIMIT
-  $limit
-OFFSET
-  $offset;
+  submission_id;
 
 -- BLOCK assessment_instance_files
 WITH
@@ -556,11 +552,7 @@ ORDER BY
   assessment_instance_number,
   qid,
   variant_number,
-  date
-LIMIT
-  $limit
-OFFSET
-  $offset;
+  date;
 
 -- BLOCK group_configs
 SELECT

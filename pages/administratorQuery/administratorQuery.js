@@ -5,8 +5,8 @@ const fsPromises = require('fs').promises;
 const path = require('path');
 const _ = require('lodash');
 const hljs = require('highlight.js');
+const { stringify } = require('@prairielearn/csv');
 
-const csvMaker = require('../../lib/csv-maker');
 const jsonLoad = require('../../lib/json-load');
 const sqldb = require('@prairielearn/postgres');
 
@@ -57,7 +57,10 @@ router.get(
       res.send(res.locals.result.rows);
     } else if (req.query.format === 'csv') {
       res.attachment(req.params.query + '.csv');
-      res.send(await csvMaker.resultToCsvAsync(res.locals.result));
+      stringify(res.locals.result.rows, {
+        header: true,
+        columns: res.locals.result.columns,
+      }).pipe(res);
     } else {
       const recentQueryRuns = await sqldb.queryAsync(sql.select_recent_query_runs, {
         query_name: req.params.query,

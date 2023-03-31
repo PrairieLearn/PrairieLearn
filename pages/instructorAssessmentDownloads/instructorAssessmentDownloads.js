@@ -1,17 +1,20 @@
-const ERR = require('async-stacktrace');
+// @ts-check
+const asyncHandler = require('express-async-handler');
 const express = require('express');
 const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const archiver = require('archiver');
+const { stringifyStream } = require('@prairielearn/csv');
+const { pipeline } = require('node:stream/promises');
 
-const csvMaker = require('../../lib/csv-maker');
-const { paginateQuery } = require('../../lib/paginate');
 const sanitizeName = require('../../lib/sanitize-name');
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 
 const sql = sqldb.loadSqlEquiv(__filename);
+
+/** @typedef {[string, string][]} Columns */
 
 const setFilenames = function (locals) {
   const prefix = sanitizeName.assessmentFilenamePrefix(
@@ -57,136 +60,124 @@ router.get('/', function (req, res, next) {
   res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 });
 
-var sendInstancesCsv = function (res, req, columns, options, callback) {
-  var params = {
+/**
+ * Local abstraction to adapt our internal notion of columns to the columns
+ * format that the CSV `stringify()` function expects.
+ *
+ * @param {[string, string][]} columns
+ * @param {(record: any) => any} [transform]
+ */
+function stringifyWithColumns(columns, transform = undefined) {
+  return stringifyStream({
+    header: true,
+    columns: columns.map(([header, key]) => ({ header, key: key ?? header })),
+    transform,
+  });
+}
+
+async function sendInstancesCsv(res, req, columns, options) {
+  const result = await sqldb.queryCursor(sql.select_assessment_instances, {
     assessment_id: res.locals.assessment.id,
     highest_score: options.only_highest,
     group_work: options.group_work,
-  };
-  sqldb.query(sql.select_assessment_instances, params, function (err, result) {
-    if (ERR(err, callback)) return;
-
-    var rows = result.rows;
-    csvMaker.rowsToCsv(rows, columns, function (err, csv) {
-      if (ERR(err, callback)) return;
-      res.attachment(req.params.filename);
-      res.send(csv);
-    });
   });
-};
 
-router.get('/:filename', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_instance_permission_view) {
-    return next(error.make(403, 'Access denied (must be a student data viewer)'));
-  }
-  //
-  // NOTE: you could argue that some downloads should be restricted further to users with
-  // permission to view code (Course role: Viewer). For example, '*_all_submissions.csv'
-  // contains seed, params, true_answer, and so forth. We will ignore this for now.
-  //
+  res.attachment(req.params.filename);
+  await pipeline(result.stream(100), stringifyWithColumns(columns), res);
+}
 
-  setFilenames(res.locals);
+router.get(
+  '/:filename',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      throw error.make(403, 'Access denied (must be a student data viewer)');
+    }
+    //
+    // NOTE: you could argue that some downloads should be restricted further to users with
+    // permission to view code (Course role: Viewer). For example, '*_all_submissions.csv'
+    // contains seed, params, true_answer, and so forth. We will ignore this for now.
+    //
 
-  var assessmentName = res.locals.assessment_set.name + ' ' + res.locals.assessment.number;
-  const studentColumn = [
-    ['UID', 'uid'],
-    ['UIN', 'uin'],
-  ];
-  const usernameColumn = [['Username', 'username']];
-  const groupNameColumn = [
-    ['Group name', 'group_name'],
-    ['Usernames', 'uid_list'],
-  ];
-  const scoreColumn = [[assessmentName, 'score_perc']];
-  const pointColumn = [[assessmentName, 'points']];
-  const instanceColumn = [
-    ['Assessment', 'assessment_label'],
-    ['Instance', 'number'],
-    ['Started', 'date_formatted'],
-    ['Remaining', 'time_remaining'],
-    ['Score (%)', 'score_perc'],
-    ['Points', 'points'],
-    ['Max points', 'max_points'],
-    ['Duration (min)', 'duration_mins'],
-    ['Highest score', 'highest_score'],
-  ];
-  let scoresColumns = studentColumn.concat(scoreColumn);
-  let pointsColumns = studentColumn.concat(pointColumn);
-  let scoresGroupColumns = groupNameColumn.concat(scoreColumn);
-  let pointsGroupColumns = groupNameColumn.concat(pointColumn);
-  let scoresByUsernameColumns = usernameColumn.concat(scoreColumn);
-  let pointsByUsernameColumns = usernameColumn.concat(pointColumn);
-  let identityColumn = studentColumn.concat(
-    usernameColumn.concat([
-      ['Name', 'name'],
-      ['Role', 'role'],
-    ])
-  );
-  if (res.locals.assessment.group_work) {
-    identityColumn = groupNameColumn;
-  }
-  let instancesColumns = identityColumn.concat(instanceColumn);
+    setFilenames(res.locals);
 
-  if (req.params.filename === res.locals.scoresCsvFilename) {
-    sendInstancesCsv(res, req, scoresColumns, { only_highest: true }, (err) => {
-      if (ERR(err, next)) return;
-    });
-  } else if (req.params.filename === res.locals.scoresAllCsvFilename) {
-    sendInstancesCsv(res, req, scoresColumns, { only_highest: false }, (err) => {
-      if (ERR(err, next)) return;
-    });
-  } else if (req.params.filename === res.locals.scoresByUsernameCsvFilename) {
-    sendInstancesCsv(res, req, scoresByUsernameColumns, { only_highest: true }, (err) => {
-      if (ERR(err, next)) return;
-    });
-  } else if (req.params.filename === res.locals.scoresByUsernameAllCsvFilename) {
-    sendInstancesCsv(res, req, scoresByUsernameColumns, { only_highest: false }, (err) => {
-      if (ERR(err, next)) return;
-    });
-  } else if (req.params.filename === res.locals.pointsCsvFilename) {
-    sendInstancesCsv(res, req, pointsColumns, { only_highest: true }, (err) => {
-      if (ERR(err, next)) return;
-    });
-  } else if (req.params.filename === res.locals.pointsAllCsvFilename) {
-    sendInstancesCsv(res, req, pointsColumns, { only_highest: false }, (err) => {
-      if (ERR(err, next)) return;
-    });
-  } else if (req.params.filename === res.locals.pointsByUsernameCsvFilename) {
-    sendInstancesCsv(res, req, pointsByUsernameColumns, { only_highest: true }, (err) => {
-      if (ERR(err, next)) return;
-    });
-  } else if (req.params.filename === res.locals.pointsByUsernameAllCsvFilename) {
-    sendInstancesCsv(res, req, pointsByUsernameColumns, { only_highest: false }, (err) => {
-      if (ERR(err, next)) return;
-    });
-  } else if (req.params.filename === res.locals.instancesCsvFilename) {
-    sendInstancesCsv(
-      res,
-      req,
-      instancesColumns,
-      { only_highest: true, group_work: res.locals.assessment.group_work },
-      (err) => {
-        if (ERR(err, next)) return;
-      }
+    var assessmentName = res.locals.assessment_set.name + ' ' + res.locals.assessment.number;
+    /** @type {Columns} */
+    const studentColumn = [
+      ['UID', 'uid'],
+      ['UIN', 'uin'],
+    ];
+    /** @type {Columns} */
+    const usernameColumn = [['Username', 'username']];
+    /** @type {Columns} */
+    const groupNameColumn = [
+      ['Group name', 'group_name'],
+      ['Usernames', 'uid_list'],
+    ];
+    /** @type {Columns} */
+    const scoreColumn = [[assessmentName, 'score_perc']];
+    /** @type {Columns} */
+    const pointColumn = [[assessmentName, 'points']];
+    /** @type {Columns} */
+    const instanceColumn = [
+      ['Assessment', 'assessment_label'],
+      ['Instance', 'number'],
+      ['Started', 'date_formatted'],
+      ['Remaining', 'time_remaining'],
+      ['Score (%)', 'score_perc'],
+      ['Points', 'points'],
+      ['Max points', 'max_points'],
+      ['Duration (min)', 'duration_mins'],
+      ['Highest score', 'highest_score'],
+    ];
+    let scoresColumns = studentColumn.concat(scoreColumn);
+    let pointsColumns = studentColumn.concat(pointColumn);
+    let scoresGroupColumns = groupNameColumn.concat(scoreColumn);
+    let pointsGroupColumns = groupNameColumn.concat(pointColumn);
+    let scoresByUsernameColumns = usernameColumn.concat(scoreColumn);
+    let pointsByUsernameColumns = usernameColumn.concat(pointColumn);
+    let identityColumn = studentColumn.concat(
+      usernameColumn.concat([
+        ['Name', 'name'],
+        ['Role', 'role'],
+      ])
     );
-  } else if (req.params.filename === res.locals.instancesAllCsvFilename) {
-    sendInstancesCsv(
-      res,
-      req,
-      instancesColumns,
-      { only_highest: false, group_work: res.locals.assessment.group_work },
-      (err) => {
-        if (ERR(err, next)) return;
-      }
-    );
-  } else if (req.params.filename === res.locals.instanceQuestionsCsvFilename) {
-    let params = {
-      assessment_id: res.locals.assessment.id,
-      group_work: res.locals.assessment.group_work,
-    };
+    if (res.locals.assessment.group_work) {
+      identityColumn = groupNameColumn;
+    }
+    let instancesColumns = identityColumn.concat(instanceColumn);
 
-    sqldb.query(sql.select_instance_questions, params, function (err, result) {
-      if (ERR(err, next)) return;
+    if (req.params.filename === res.locals.scoresCsvFilename) {
+      await sendInstancesCsv(res, req, scoresColumns, { only_highest: true });
+    } else if (req.params.filename === res.locals.scoresAllCsvFilename) {
+      await sendInstancesCsv(res, req, scoresColumns, { only_highest: false });
+    } else if (req.params.filename === res.locals.scoresByUsernameCsvFilename) {
+      await sendInstancesCsv(res, req, scoresByUsernameColumns, { only_highest: true });
+    } else if (req.params.filename === res.locals.scoresByUsernameAllCsvFilename) {
+      await sendInstancesCsv(res, req, scoresByUsernameColumns, { only_highest: false });
+    } else if (req.params.filename === res.locals.pointsCsvFilename) {
+      await sendInstancesCsv(res, req, pointsColumns, { only_highest: true });
+    } else if (req.params.filename === res.locals.pointsAllCsvFilename) {
+      await sendInstancesCsv(res, req, pointsColumns, { only_highest: false });
+    } else if (req.params.filename === res.locals.pointsByUsernameCsvFilename) {
+      await sendInstancesCsv(res, req, pointsByUsernameColumns, { only_highest: true });
+    } else if (req.params.filename === res.locals.pointsByUsernameAllCsvFilename) {
+      await sendInstancesCsv(res, req, pointsByUsernameColumns, { only_highest: false });
+    } else if (req.params.filename === res.locals.instancesCsvFilename) {
+      await sendInstancesCsv(res, req, instancesColumns, {
+        only_highest: true,
+        group_work: res.locals.assessment.group_work,
+      });
+    } else if (req.params.filename === res.locals.instancesAllCsvFilename) {
+      await sendInstancesCsv(res, req, instancesColumns, {
+        only_highest: false,
+        group_work: res.locals.assessment.group_work,
+      });
+    } else if (req.params.filename === res.locals.instanceQuestionsCsvFilename) {
+      const cursor = await sqldb.queryCursor(sql.select_instance_questions, {
+        assessment_id: res.locals.assessment.id,
+        group_work: res.locals.assessment.group_work,
+      });
+
       const columns = identityColumn.concat([
         ['Assessment', 'assessment_label'],
         ['Assessment instance', 'assessment_instance_number'],
@@ -207,19 +198,15 @@ router.get('/:filename', function (req, res, next) {
         ['Assigned manual grader', 'assigned_grader'],
         ['Last manual grader', 'last_grader'],
       ]);
-      csvMaker.rowsToCsv(result.rows, columns, function (err, csv) {
-        if (ERR(err, next)) return;
-        res.attachment(req.params.filename);
-        res.send(csv);
+
+      res.attachment(req.params.filename);
+      await pipeline(cursor.stream(100), stringifyWithColumns(columns), res);
+    } else if (req.params.filename === res.locals.submissionsForManualGradingCsvFilename) {
+      const cursor = await sqldb.queryCursor(sql.submissions_for_manual_grading, {
+        assessment_id: res.locals.assessment.id,
+        group_work: res.locals.assessment.group_work,
       });
-    });
-  } else if (req.params.filename === res.locals.submissionsForManualGradingCsvFilename) {
-    let params = {
-      assessment_id: res.locals.assessment.id,
-      group_work: res.locals.assessment.group_work,
-    };
-    sqldb.query(sql.submissions_for_manual_grading, params, function (err, result) {
-      if (ERR(err, next)) return;
+
       // Replace user-friendly column names with upload-friendly names
       identityColumn = (res.locals.assessment.group_work ? groupNameColumn : studentColumn).map(
         (pair) => [pair[1], pair[1]]
@@ -234,38 +221,44 @@ router.get('/:filename', function (req, res, next) {
         ['params', 'params'],
         ['true_answer', 'true_answer'],
         ['submitted_answer', 'submitted_answer'],
-        ['old_partial_scores', 'partial_scores'],
-        ['partial_scores', null],
-        ['score_perc', null],
-        ['feedback', null],
+        ['old_partial_scores', 'old_partial_scores'],
+        ['partial_scores', 'partial_scores'],
+        ['score_perc', 'score_perc'],
+        ['feedback', 'feedback'],
       ]);
-      csvMaker.rowsToCsv(result.rows, columns, function (err, csv) {
-        if (ERR(err, next)) return;
-        res.attachment(req.params.filename);
-        res.send(csv);
+
+      res.attachment(req.params.filename);
+      const stringifier = stringifyWithColumns(columns, (record) => {
+        return {
+          ...record,
+          // Add empty columns for the user to put data in.
+          partial_scores: '',
+          score_perc: '',
+          feedback: '',
+        };
       });
-    });
-  } else if (
-    req.params.filename === res.locals.allSubmissionsCsvFilename ||
-    req.params.filename === res.locals.finalSubmissionsCsvFilename ||
-    req.params.filename === res.locals.bestSubmissionsCsvFilename
-  ) {
-    let include_all = req.params.filename === res.locals.allSubmissionsCsvFilename;
-    let include_final = req.params.filename === res.locals.finalSubmissionsCsvFilename;
-    let include_best = req.params.filename === res.locals.bestSubmissionsCsvFilename;
-    let params = {
-      assessment_id: res.locals.assessment.id,
-      include_all,
-      include_final,
-      include_best,
-      group_work: res.locals.assessment.group_work,
-    };
-    let submissionColumn = identityColumn;
-    if (res.locals.assessment.group_work) {
-      submissionColumn = identityColumn.concat([['SubmitStudent', 'submission_user']]);
-    }
-    sqldb.query(sql.assessment_instance_submissions, params, function (err, result) {
-      if (ERR(err, next)) return;
+      await pipeline(cursor.stream(100), stringifier, res);
+    } else if (
+      req.params.filename === res.locals.allSubmissionsCsvFilename ||
+      req.params.filename === res.locals.finalSubmissionsCsvFilename ||
+      req.params.filename === res.locals.bestSubmissionsCsvFilename
+    ) {
+      let include_all = req.params.filename === res.locals.allSubmissionsCsvFilename;
+      let include_final = req.params.filename === res.locals.finalSubmissionsCsvFilename;
+      let include_best = req.params.filename === res.locals.bestSubmissionsCsvFilename;
+
+      const cursor = await sqldb.queryCursor(sql.assessment_instance_submissions, {
+        assessment_id: res.locals.assessment.id,
+        include_all,
+        include_final,
+        include_best,
+        group_work: res.locals.assessment.group_work,
+      });
+
+      let submissionColumn = identityColumn;
+      if (res.locals.assessment.group_work) {
+        submissionColumn = identityColumn.concat([['SubmitStudent', 'submission_user']]);
+      }
       const columns = submissionColumn.concat([
         ['Assessment', 'assessment_label'],
         ['Assessment instance', 'assessment_instance_number'],
@@ -298,139 +291,105 @@ router.get('/:filename', function (req, res, next) {
         ['Manual points', 'manual_points'],
         ['Max manual points', 'max_manual_points'],
       ]);
-      csvMaker.rowsToCsv(result.rows, columns, function (err, csv) {
-        if (ERR(err, next)) return;
-        res.attachment(req.params.filename);
-        res.send(csv);
+
+      res.attachment(req.params.filename);
+      await pipeline(cursor.stream(100), stringifyWithColumns(columns), res);
+    } else if (req.params.filename === res.locals.filesForManualGradingZipFilename) {
+      const cursor = await sqldb.queryCursor(sql.files_for_manual_grading, {
+        assessment_id: res.locals.assessment.id,
+        group_work: res.locals.assessment.group_work,
       });
-    });
-  } else if (req.params.filename === res.locals.filesForManualGradingZipFilename) {
-    const params = {
-      assessment_id: res.locals.assessment.id,
-      group_work: res.locals.assessment.group_work,
-      limit: 100,
-    };
 
-    const archive = archiver('zip');
-    const dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replace(
-      ' ',
-      ''
-    );
-    const prefix = `${dirname}/`;
-    archive.append(null, { name: prefix });
-    res.attachment(req.params.filename);
-    archive.pipe(res);
-    paginateQuery(
-      sql.files_for_manual_grading,
-      params,
-      (row, callback) => {
-        const contents = row.contents != null ? row.contents : '';
-        archive.append(contents, { name: prefix + row.filename });
-        callback(null);
-      },
-      (err) => {
-        if (ERR(err, next)) return;
-        archive.finalize();
-      }
-    );
-  } else if (
-    req.params.filename === res.locals.allFilesZipFilename ||
-    req.params.filename === res.locals.finalFilesZipFilename ||
-    req.params.filename === res.locals.bestFilesZipFilename
-  ) {
-    const include_all = req.params.filename === res.locals.allFilesZipFilename;
-    const include_final = req.params.filename === res.locals.finalFilesZipFilename;
-    const include_best = req.params.filename === res.locals.bestFilesZipFilename;
-    const params = {
-      assessment_id: res.locals.assessment.id,
-      limit: 100,
-      include_all,
-      include_final,
-      include_best,
-      group_work: res.locals.assessment.group_work,
-    };
+      res.attachment(req.params.filename);
 
-    const archive = archiver('zip');
-    const dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replace(
-      ' ',
-      ''
-    );
-    const prefix = `${dirname}/`;
-    archive.append(null, { name: prefix });
-    res.attachment(req.params.filename);
-    archive.pipe(res);
-    paginateQuery(
-      sql.assessment_instance_files,
-      params,
-      (row, callback) => {
-        const contents = row.contents != null ? row.contents : '';
-        archive.append(contents, { name: prefix + row.filename });
-        callback(null);
-      },
-      (err) => {
-        if (ERR(err, next)) return;
-        archive.finalize();
+      const archive = archiver('zip');
+      const dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replace(
+        ' ',
+        ''
+      );
+      const prefix = `${dirname}/`;
+      archive.append(null, { name: prefix });
+      archive.pipe(res);
+
+      for await (const rows of cursor.iterate(100)) {
+        for (const row of rows) {
+          const contents = row.contents != null ? row.contents : '';
+          archive.append(contents, { name: prefix + row.filename });
+        }
       }
-    );
-  } else if (req.params.filename === res.locals.groupsCsvFilename) {
-    const params = {
-      assessment_id: res.locals.assessment.id,
-    };
-    sqldb.query(sql.group_configs, params, function (err, result) {
-      if (ERR(err, next)) return;
-      var columns = [
+      archive.finalize();
+    } else if (
+      req.params.filename === res.locals.allFilesZipFilename ||
+      req.params.filename === res.locals.finalFilesZipFilename ||
+      req.params.filename === res.locals.bestFilesZipFilename
+    ) {
+      const include_all = req.params.filename === res.locals.allFilesZipFilename;
+      const include_final = req.params.filename === res.locals.finalFilesZipFilename;
+      const include_best = req.params.filename === res.locals.bestFilesZipFilename;
+
+      const cursor = await sqldb.queryCursor(sql.assessment_instance_files, {
+        assessment_id: res.locals.assessment.id,
+        limit: 100,
+        include_all,
+        include_final,
+        include_best,
+        group_work: res.locals.assessment.group_work,
+      });
+
+      res.attachment(req.params.filename);
+
+      const archive = archiver('zip');
+      const dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replace(
+        ' ',
+        ''
+      );
+      const prefix = `${dirname}/`;
+      archive.append(null, { name: prefix });
+      archive.pipe(res);
+
+      for await (const rows of cursor.iterate(100)) {
+        for (const row of rows) {
+          const contents = row.contents != null ? row.contents : '';
+          archive.append(contents, { name: prefix + row.filename });
+        }
+      }
+      archive.finalize();
+    } else if (req.params.filename === res.locals.groupsCsvFilename) {
+      const cursor = await sqldb.queryCursor(sql.group_configs, {
+        assessment_id: res.locals.assessment.id,
+      });
+
+      /** @type {Columns} */
+      const columns = [
         ['groupName', 'name'],
         ['UID', 'uid'],
       ];
-      csvMaker.rowsToCsv(result.rows, columns, function (err, csv) {
-        if (ERR(err, next)) return;
-        res.attachment(req.params.filename);
-        res.send(csv);
+      res.attachment(req.params.filename);
+      await pipeline(cursor.stream(100), stringifyWithColumns(columns), res);
+    } else if (req.params.filename === res.locals.scoresGroupCsvFilename) {
+      await sendInstancesCsv(res, req, scoresGroupColumns, {
+        only_highest: true,
+        group_work: true,
       });
-    });
-  } else if (req.params.filename === res.locals.scoresGroupCsvFilename) {
-    sendInstancesCsv(
-      res,
-      req,
-      scoresGroupColumns,
-      { only_highest: true, group_work: true },
-      (err) => {
-        if (ERR(err, next)) return;
-      }
-    );
-  } else if (req.params.filename === res.locals.scoresGroupAllCsvFilename) {
-    sendInstancesCsv(
-      res,
-      req,
-      scoresGroupColumns,
-      { only_highest: false, group_work: true },
-      (err) => {
-        if (ERR(err, next)) return;
-      }
-    );
-  } else if (req.params.filename === res.locals.pointsGroupCsvFilename) {
-    sendInstancesCsv(
-      res,
-      req,
-      pointsGroupColumns,
-      { only_highest: true, group_work: true },
-      (err) => {
-        if (ERR(err, next)) return;
-      }
-    );
-  } else if (req.params.filename === res.locals.pointsGroupAllCsvFilename) {
-    sendInstancesCsv(
-      res,
-      req,
-      pointsGroupColumns,
-      { only_highest: false, group_work: true },
-      (err) => {
-        if (ERR(err, next)) return;
-      }
-    );
-  } else {
-    next(error.make(404, 'Unknown filename: ' + req.params.filename));
-  }
-});
+    } else if (req.params.filename === res.locals.scoresGroupAllCsvFilename) {
+      await sendInstancesCsv(res, req, scoresGroupColumns, {
+        only_highest: false,
+        group_work: true,
+      });
+    } else if (req.params.filename === res.locals.pointsGroupCsvFilename) {
+      await sendInstancesCsv(res, req, pointsGroupColumns, {
+        only_highest: true,
+        group_work: true,
+      });
+    } else if (req.params.filename === res.locals.pointsGroupAllCsvFilename) {
+      await sendInstancesCsv(res, req, pointsGroupColumns, {
+        only_highest: false,
+        group_work: true,
+      });
+    } else {
+      throw error.make(404, 'Unknown filename: ' + req.params.filename);
+    }
+  })
+);
 
 module.exports = router;
