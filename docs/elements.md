@@ -28,6 +28,8 @@ PrairieLearn presently provides the following templated **input field** elements
   representing asymptotic input.
 - [`pl-string-input`](#pl-string-input-element): Fill in a **string** value
   such as "Illinois", "GATTACA", "computer", and so on.
+- [`pl-units-input`](#pl-units-input-element): Fill in a **number** and a **unit**
+  such as "1.5 m", "14 ms", "6.3 ft", and so on.
 - [`pl-matching`](#pl-matching-element): Select a matching option for each entry in
   a group.
 - [`pl-matrix-component-input`](#pl-matrix-component-input-element): Fill in
@@ -65,6 +67,7 @@ images, files, and code display. The following **decorative** elements are avail
 - [`pl-external-grader-variables`](#pl-external-grader-variables-element): Displays expected and given variables for externally graded questions.
 - [`pl-xss-safe`](#pl-xss-safe-element): Removes potentially unsafe code from HTML code.
 - [`pl-file-preview`](#pl-file-preview-element): Displays a preview of submitted files.
+- [`pl-card`](#pl-card-element): Displays content within a card-styled component.
 
 **Conditional** elements are meant to improve the feedback and question structure.
 These elements conditionally render their content depending on the question state.
@@ -721,6 +724,52 @@ def generate(data):
 
 ---
 
+### `pl-units-input` element
+
+Fill in the blank field that allows for **numeric** input and accompanying **units**.
+
+#### Sample element
+
+**question.html**
+
+```html
+<pl-units-input answers-name="c_1" correct-answer="1m" atol="1cm"></pl-units-input>
+```
+
+#### Customizations
+
+| Attribute                  | Type                                         | Default      | Description                                                                                                                                                                                                                                                                                                                   |
+| -------------------------- | -------------------------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name`             | string                                       | -            | Variable name to store data in.                                                                                                                                                                                                                                                                                               |
+| `weight`                   | integer                                      | 1            | Weight to use when computing a weighted average score over elements.                                                                                                                                                                                                                                                          |
+| `correct-answer`           | string                                       | special      | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.                                                                                                                                                                                                                                              |
+| `label`                    | text                                         | -            | A prefix to display before the input box (e.g., `label="$F =$"`).                                                                                                                                                                                                                                                             |
+| `suffix`                   | text                                         | -            | A suffix to display after the input box (e.g., `suffix="$\rm m/s^2$"`).                                                                                                                                                                                                                                                       |
+| `display`                  | "block" or "inline"                          | "inline"     | How to display the input field.                                                                                                                                                                                                                                                                                               |
+| `grading-mode`             | "with-units", "exact-units", or "only-units" | "with-units" | How to grade student submission. "only-units" only checks for the units input by the student. "exact-units" asks for a quantity with a specified unit. "with-units" is similar to "exact-units", but will automatically convert the units used by the given answer if possible.                                               |
+| `comparison`               | "exact", "sigfig", "decdig" or "relabs"      | "sigfig"     | How to grade. "relabs" uses relative ("rtol") and absolute ("atol") tolerances. "sigfig" use "digits" significant digits. "decdig" uses "digits" after decimal place, "exact" uses `==` and should only be used for integers. Attribute can only be set if `grading-mode=exact-units`                                         |
+| `rtol`                     | number                                       | 1e-2         | Relative tolerance for `comparison="relabs"` and `grading-mode=exact-units`.                                                                                                                                                                                                                                                  |
+| `atol`                     | string                                       | 1e-8         | Absolute tolerance for `comparison="relabs"` and `grading-mode=with-units`. Required and must include units when `grading-mode=with-units`.                                                                                                                                                                                   |
+| `digits`                   | integer                                      | 2            | Number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.                                                                                                                                                                                                                                     |
+| `allow-blank`              | boolean                                      | false        | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).                                                                                                                                                                                                              |
+| `blank-value`              | string                                       | ""           | Value to be used as an answer if element is left blank. Only applied if `allow-blank` is true. Must follow the same format as an expected user input.                                                                                                                                                                         |
+| `size`                     | integer                                      | 35           | Size of the input box.                                                                                                                                                                                                                                                                                                        |
+| `show-help-text`           | boolean                                      | true         | Show the question mark at the end of the input displaying required input parameters.                                                                                                                                                                                                                                          |
+| `placeholder`              | string                                       | -            | String to override default placeholder text. The default placeholder gives information about the comparison type used.                                                                                                                                                                                                        |
+| `magnitude-partial-credit` | float                                        | -            | Fraction of partial credit given to answers of correct magnitude and incorrect units when `grading-mode=exact-units`. Remaining fraction of credit given when units are correct but magnitude is incorrect. Must be between 0.0 and 1.0. Partial credit is disabled if this is not set.                                       |
+| `allow-feedback`           | boolean                                      | true         | Whether to show detailed feedback from the autograder for incorrect answers (for example, stating whether a unit or magnitude specifically is incorrect). Feedback varies based on `grading-mode`.                                                                                                                            |
+| `custom-format`            | string                                       | -            | Custom format specifier to use when formatting the submitted and correct answer after processing. By default, uses standard string conversion. A full description of the format can be found [on the Pint documentation page](https://pint.readthedocs.io/en/stable/getting/tutorial.html?highlight=print#string-formatting). |
+
+#### Details
+
+This element uses [Pint](https://pint.readthedocs.io/en/stable/index.html) to parse and represent units. Any units allowed by Pint are supported by this element. To obtain a `Pint` unit registry, question code can use `pl.get_unit_registry()` to construct a default unit registry. This is recommended over constructing a registry using the constructor provided by `Pint` (as this does not use caching and is slower).
+
+#### Example implementations
+
+- [element/unitsInput]
+
+---
+
 ### `pl-matching` element
 
 Given a list of statements, select a matching option for each entry from a drop-down list.
@@ -1158,20 +1207,20 @@ line callouts.
 
 #### Customizations
 
-| Attribute               | Type    | Default   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| ----------------------- | ------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `language`              | string  | —         | The programming language syntax highlighting to use. See below for options.                                                                                                                                                                                                                                                                                                                                                                           |
-| `no-highlight`          | boolean | false     | Disable highlighting.                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `source-file-name`      | text    | -         | Name of the source file with existing code to be displayed as a code block (instead of writing the existing code between the element tags as illustrated in the above code snippet).                                                                                                                                                                                                                                                                  |
-| `directory`             | string  | special   | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `clientFilesCourse` or `serverFilesCourse`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory. |
-| `prevent-select`        | boolean | false     | Applies methods to make the source code more difficult to copy, like preventing selection or right-clicking. Note that the source code is still accessible in the page source, which will always be visible to students.                                                                                                                                                                                                                              |
-| `highlight-lines`       | text    | -         | Apply a distinctive background highlight the specified lines of code. Accepts input like `4`, `1-3,5-10`, and `1,2-5,20`.                                                                                                                                                                                                                                                                                                                             |
-| `highlight-lines-color` | text    | `#b3d7ff` | Specifies the color of highlighted lines of code.                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `copy-code-button`      | boolean | false     | Whether to include a button to copy the code displayed by this element.                                                                                                                                                                                                                                                                                                                                                                               |
+| Attribute               | Type    | Default    | Description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ----------------------- | ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `language`              | string  | —          | The programming language syntax highlighting to use. See below for options.                                                                                                                                                                                                                                                                                                                                                                           |
+| `style`                 | string  | "friendly" | The pygments style to use. A sample of valid styles can be found [here](https://pygments.org/styles/).                                                                                                                                                                                                                                                                                                                                                |
+| `source-file-name`      | text    | -          | Name of the source file with existing code to be displayed as a code block (instead of writing the existing code between the element tags as illustrated in the above code snippet).                                                                                                                                                                                                                                                                  |
+| `directory`             | string  | special    | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `clientFilesCourse` or `serverFilesCourse`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory. |
+| `prevent-select`        | boolean | false      | Applies methods to make the source code more difficult to copy, like preventing selection or right-clicking. Note that the source code is still accessible in the page source, which will always be visible to students.                                                                                                                                                                                                                              |
+| `highlight-lines`       | text    | -          | Apply a distinctive background highlight the specified lines of code. Accepts input like `4`, `1-3,5-10`, and `1,2-5,20`.                                                                                                                                                                                                                                                                                                                             |
+| `highlight-lines-color` | text    | `#b3d7ff`  | Specifies the color of highlighted lines of code.                                                                                                                                                                                                                                                                                                                                                                                                     |
+| `copy-code-button`      | boolean | false      | Whether to include a button to copy the code displayed by this element.                                                                                                                                                                                                                                                                                                                                                                               |
 
 #### Details
 
-The `pl-code` element uses the _Pygments_ library for syntax highlighting, a full list of supported languages can be found [here](https://pygments.org/languages/).
+The `pl-code` element uses the _Pygments_ library for syntax highlighting. It supports the any of the built-in supported languages, be found [here](https://pygments.org/languages/), as well as the custom [`ansi-color` custom language](https://github.com/chriskuehl/pygments-ansi-color) that can be used to display terminal output. If the language is not provided, no syntax highlighting is done.
 
 ##### Common Pitfalls
 
@@ -1215,23 +1264,24 @@ def generate(data):
 
 #### Customizations
 
-| Attribute        | Type    | Default | Description                                                                                                                                                                                                                                                                 |
-| ---------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `params-name`    | string  | —       | The name of the key in `data['params']` to get a value from.                                                                                                                                                                                                                |
-| `prefix`         | string  | (empty) | Any prefix to append to the output in `text` mode.                                                                                                                                                                                                                          |
-| `prefix-newline` | boolean | false   | Add newline to the end of `prefix`.                                                                                                                                                                                                                                         |
-| `suffix`         | string  | (empty) | Any suffix to append to the output in `text` mode.                                                                                                                                                                                                                          |
-| `suffix-newline` | boolean | false   | Add newline before the start of `suffix`.                                                                                                                                                                                                                                   |
-| `indent`         | integer | 1       | Specifies the amount of indentation added for each nesting level when printing nested objects.                                                                                                                                                                              |
-| `depth`          | integer | -       | The number of nesting levels which may be printed; if the data structure being printed is too deep, the next contained level is replaced by ... By default, there is no constraint on the depth of the objects being formatted.                                             |
-| `width`          | integer | 80      | Specifies the desired maximum number of characters per line in the output. If a structure cannot be formatted within the width constraint, a best effort will be made.                                                                                                      |
-| `compact`        | boolean | false   | Impacts the way that long sequences (lists, tuples, sets, etc.) are formatted. If compact is false then each item of a sequence will be formatted on a separate line. If compact is true, as many items as will fit within the width will be formatted on each output line. |
-| `sort-dicts`     | boolean | true    | If true, dictionaries will be formatted with their keys sorted, otherwise they will display in insertion order.                                                                                                                                                             |
-| `no-highlight`   | boolean | false   | Disable syntax highlighting.                                                                                                                                                                                                                                                |
+| Attribute          | Type    | Default | Description                                                                                                                                                                                                                                                                 |
+| ------------------ | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `params-name`      | string  | —       | The name of the key in `data['params']` to get a value from.                                                                                                                                                                                                                |
+| `prefix`           | string  | (empty) | Any prefix to append to the output in `text` mode.                                                                                                                                                                                                                          |
+| `prefix-newline`   | boolean | false   | Add newline to the end of `prefix`.                                                                                                                                                                                                                                         |
+| `suffix`           | string  | (empty) | Any suffix to append to the output in `text` mode.                                                                                                                                                                                                                          |
+| `suffix-newline`   | boolean | false   | Add newline before the start of `suffix`.                                                                                                                                                                                                                                   |
+| `indent`           | integer | 1       | Specifies the amount of indentation added for each nesting level when printing nested objects.                                                                                                                                                                              |
+| `depth`            | integer | -       | The number of nesting levels which may be printed; if the data structure being printed is too deep, the next contained level is replaced by ... By default, there is no constraint on the depth of the objects being formatted.                                             |
+| `width`            | integer | 80      | Specifies the desired maximum number of characters per line in the output. If a structure cannot be formatted within the width constraint, a best effort will be made.                                                                                                      |
+| `compact`          | boolean | false   | Impacts the way that long sequences (lists, tuples, sets, etc.) are formatted. If compact is false then each item of a sequence will be formatted on a separate line. If compact is true, as many items as will fit within the width will be formatted on each output line. |
+| `sort-dicts`       | boolean | true    | If true, dictionaries will be formatted with their keys sorted, otherwise they will display in insertion order.                                                                                                                                                             |
+| `no-highlight`     | boolean | false   | Disable syntax highlighting.                                                                                                                                                                                                                                                |
+| `copy-code-button` | boolean | false   | Whether to include a button to copy the code displayed by this element.                                                                                                                                                                                                     |
 
 #### Details
 
-The element supports displaying Python objects via `repr()`, with support for more complex display options similar to the built-in pprint library. Objects to be displayed must be JSON serialized. For details about what objects can be serialized and how to do this with the provided `to_json` and `from_json` functions, see the [Question Writing documentation](question.md#question-data-storage).
+The element supports displaying Python objects via `repr()`, with support for more complex display options similar to the built-in `pprint` library. **Objects to be displayed must be serializable to JSON.** For details about what objects can be serialized and how to do this with the provided `to_json` and `from_json` functions, see the [Question Writing documentation](question.md#question-data-storage). To display objects that cannot be easily JSON serialized, please refer to the `pl-code` example question [element/code].
 
 Printing Pandas DataFrames with this element is deprecated. Please use the new [`pl-dataframe`](#pl-dataframe-element) element for this purpose.
 
@@ -1602,8 +1652,7 @@ ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 
 ### `pl-graph` element
 
-Using the [viz.js](https://github.com/mdaines/viz.js/) library, create
-Graphviz DOT visualizations.
+Using the [PyGraphviz](https://pygraphviz.github.io/) library, create Graphviz DOT visualizations.
 
 #### Sample elements
 
@@ -1674,6 +1723,7 @@ def generate(data):
 | `negative-weights`          | boolean | false              | Whether to recognize negative weights in an adjacency matrix. If set to false, then all weights at most 0 are ignored (not counted as an edge). If set to true, then all weights that are not `None` are recognized.                                                    |
 | `directed`                  | boolean | true               | Whether to treat edges in an adjacency matrix as directed or undirected. If set to false, then edges will be rendered as undirected. _The input adjacency matrix must be symmetric if this is set to false._                                                            |
 | `weights-presentation-type` | string  | `'f'`              | Number display format for the weights when using an adjacency matrix. If presentation-type is 'sigfig', each number is formatted using the to_precision module to digits significant figures. Otherwise, each number is formatted as `{:.{digits}{presentation-type}}`. |
+| `log-warnings`              | boolean | true               | Whether to log warnings that occur during Graphviz rendering.                                                                                                                                                                                                           |
 
 #### Details
 
@@ -1708,7 +1758,7 @@ For a full implementation, check out the `edge-inc-matrix` extension in the exam
 
 #### See also
 
-- [External: `viz.js` graphing library](https://github.com/mdaines/viz.js/)
+- [External: the DOT language reference](https://graphviz.org/doc/info/lang.html)
 - [`pl-figure` for displaying static or dynamically generated graphics.](#pl-figure-element)
 - [`pl-file-download` for allowing either static or dynamically generated files to be downloaded.](#pl-file-download-element)
 
@@ -1901,6 +1951,46 @@ Note that only one of the attributes `source-file-name`, `submitted-file-name` o
 #### See also
 
 - [`pl-file-editor` to provide an in-browser code environment](#pl-file-editor-element)
+
+### `pl-card` element
+
+Displays question content within a card-styled component. Optionally displays a header, footer, and/or image via tag attributes.
+
+#### Sample element
+
+```html
+<pl-card
+  header="Header"
+  title="Title"
+  width="50%"
+  img-bottom-src="https://via.placeholder.com/720x480"
+>
+  <pl-question-panel> This card is 50% width and has a bottom image. </pl-question-panel>
+</pl-card>
+```
+
+#### Customizations
+
+| Attribute        | Type                           | Default | Description                            |
+| ---------------- | ------------------------------ | ------- | -------------------------------------- |
+| `header`         | string                         | -       | Contents of the card header.           |
+| `title`          | string                         | -       | Contents of the card title.            |
+| `subtitle`       | string                         | -       | Contents of the card subtitle.         |
+| `contents`       | string                         | -       | Raw contents of the card body.         |
+| `footer`         | string                         | -       | Contents of the card footer.           |
+| `img-top-src`    | string                         | -       | Source URL for the top image.          |
+| `img-top-alt`    | string                         | -       | Alternative text for the top image.    |
+| `img-bottom-src` | string                         | -       | Source URL for the bottom image.       |
+| `img-bottom-alt` | string                         | -       | Alternative text for the bottom image. |
+| `width`          | "25%", "50%", "75%", or "auto" | "auto"  | Width of the card.                     |
+
+#### Details
+
+The `pl-card` attributes mirror the options of [Bootstrap 4 cards](https://getbootstrap.com/docs/4.6/components/card/).
+
+#### Example implementations
+
+- [element/card]
 
 ---
 
@@ -2326,6 +2416,7 @@ The provided `script-name` corresponds to a file located within the director for
 [element/matrixlatex]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/matrixLatex
 [element/multiplechoice]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/multipleChoice
 [element/numberinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/numberInput
+[element/unitsinput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/unitsInput
 [element/orderblocks]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocks
 [element/overlay]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/overlay
 [element/panels]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/panels
@@ -2337,6 +2428,7 @@ The provided `script-name` corresponds to a file located within the director for
 [element/threejs]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/threeJS
 [element/variableoutput]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/variableOutput
 [element/xsssafe]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/xssSafe
+[element/card]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/card
 
 <!-- Advanced uses of PL features -->
 

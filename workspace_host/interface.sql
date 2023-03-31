@@ -155,6 +155,9 @@ FROM
   JOIN workspace_hosts AS wh ON (w.workspace_host_id = wh.id)
 WHERE
   w.state = 'stopped'::enum_workspace_state
+  -- We only want workspaces that have been marked as stopped but still have a
+  -- `launch_uuid`, which means it's probably still running on this host.
+  AND w.launch_uuid IS NOT NULL
   AND wh.instance_id = $instance_id;
 
 -- BLOCK clear_workspace_on_shutdown

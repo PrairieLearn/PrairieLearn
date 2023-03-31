@@ -4,7 +4,7 @@ const express = require('express');
 const util = require('util');
 const sqldb = require('@prairielearn/postgres');
 
-const error = require('../../prairielib/error');
+const error = require('@prairielearn/error');
 const chunks = require('../../lib/chunks');
 const cache = require('../../lib/cache');
 const { AdministratorSettings } = require('./administratorSettings.html');

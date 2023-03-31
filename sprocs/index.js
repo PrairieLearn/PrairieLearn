@@ -3,8 +3,8 @@ const fs = require('fs');
 const path = require('path');
 const async = require('async');
 
-const error = require('../prairielib/lib/error');
-const logger = require('../lib/logger');
+const error = require('@prairielearn/error');
+const { logger } = require('@prairielearn/logger');
 const sqldb = require('@prairielearn/postgres');
 
 module.exports.init = function (callback) {
@@ -80,7 +80,6 @@ module.exports.init = function (callback) {
       'assessment_instances_grade.sql',
       'assessment_instances_regrade.sql',
       'assessment_instances_select_for_auto_finish.sql',
-      'assessment_instances_select_log.sql',
       'assessment_instances_ensure_open.sql',
       'instance_questions_points_homework.sql',
       'instance_questions_points_exam.sql',

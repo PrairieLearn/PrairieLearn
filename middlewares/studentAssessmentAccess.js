@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const _ = require('lodash');
 
-var logger = require('../lib/logger');
+const { logger } = require('@prairielearn/logger');
 var csrf = require('../lib/csrf');
 var config = require('../lib/config');
 const { idsEqual } = require('../lib/id');

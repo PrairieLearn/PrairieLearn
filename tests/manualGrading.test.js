@@ -389,8 +389,16 @@ describe('Manual Grading', function () {
         const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
         const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
         const form = $manualGradingIQPage('form[name=instance_question-manual-grade-update-form]');
-        assert.equal(form.find('input[name=score_manual_percent]').val(), score_percent);
-        assert.equal(form.find('input[name=score_manual_points]').val(), score_points);
+        const actualPercent = parseFloat(form.find('input[name=score_manual_percent]').val());
+        const actualPoints = parseFloat(form.find('input[name=score_manual_points]').val());
+        // Postgres 12 changed the default `extra_float_digits` from 0 to 1, which
+        // subtly changed the rounding behavior of some of the calculations involved
+        // here. We use `approximately()` to allow for a small difference.
+        //
+        // In the future, we'll explicitly round these values to a fixed number of
+        // decimals, at which point we can replace this with an exact comparison.
+        assert.approximately(actualPercent, score_percent, 0.0001);
+        assert.approximately(actualPoints, score_points, 0.0001);
         assert.equal(form.find('textarea').text(), feedback_note);
       }
     );
@@ -412,8 +420,14 @@ describe('Manual Grading', function () {
         assert.equal(instanceList[0].last_grader, mockStaff[2].user_id);
         assert.equal(instanceList[0].last_grader_name, mockStaff[2].authName);
         assert.equal(instanceList[0].score_perc, score_percent);
-        assert.equal(instanceList[0].points, score_points);
-        assert.equal(instanceList[0].manual_points, score_points);
+        // Postgres 12 changed the default `extra_float_digits` from 0 to 1, which
+        // subtly changed the rounding behavior of some of the calculations involved
+        // here. We use `approximately()` to allow for a small difference.
+        //
+        // In the future, we'll explicitly round these values to a fixed number of
+        // decimals, at which point we can replace this with an exact comparison.
+        assert.approximately(instanceList[0].points, score_points, 0.0001);
+        assert.approximately(instanceList[0].manual_points, score_points, 0.0001);
         assert.equal(instanceList[0].auto_points, 0);
       }
     );
@@ -449,16 +463,32 @@ describe('Manual Grading', function () {
       const questionsPage = await (await fetch(iqUrl)).text();
       const $questionsPage = cheerio.load(questionsPage);
 
-      assert.equal(getLatestSubmissionStatus($questionsPage), `manual grading: ${score_percent}%`);
-      assert.equal(
+      // Postgres 12 changed the default `extra_float_digits` from 0 to 1, which
+      // subtly changed the rounding behavior of some of the calculations involved
+      // here. Because we use `Math.floor` to display the score to the student, we'll
+      // be off by 1 in some cases. We use `approximately()` to allow for that.
+      //
+      // In the future, we'll explicitly round these values to a fixed number of
+      // decimals, at which point we can replace this with an exact comparison.
+      const submissionStatus = getLatestSubmissionStatus($questionsPage);
+      assert.match(submissionStatus, /^manual grading: \d+%/);
+      const percent = parseInt(submissionStatus.match(/(\d+)%/)[1], 10);
+      assert.approximately(percent, score_percent, 1);
+      const actualPoints = parseFloat(
         $questionsPage(
           '#question-score-panel tr:contains("Total points") [data-testid="awarded-points"]'
         )
           .first()
           .text()
-          .trim(),
-        `${score_points}`
+          .trim()
       );
+      // Postgres 12 changed the default `extra_float_digits` from 0 to 1, which
+      // subtly changed the rounding behavior of some of the calculations involved
+      // here. We use `approximately()` to allow for a small difference.
+      //
+      // In the future, we'll explicitly round these values to a fixed number of
+      // decimals, at which point we can replace this with an exact comparison.
+      assert.approximately(actualPoints, score_points, 0.1);
       assert.equal(
         $questionsPage('[data-testid="feedback-body"]').first().text().trim(),
         feedback_note

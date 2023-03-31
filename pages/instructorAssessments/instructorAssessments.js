@@ -10,9 +10,9 @@ const ansiUp = new AnsiUp();
 const sanitizeName = require('../../lib/sanitize-name');
 const sqldb = require('@prairielearn/postgres');
 
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const debug = require('debug')('prairielearn:instructorAssessments');
-const logger = require('../../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const { AssessmentAddEditor } = require('../../lib/editors');
 const assessment = require('../../lib/assessment');
 

@@ -1,5 +1,5 @@
 const assert = require('chai').assert;
-const requestp = require('request-promise-native');
+const fetch = require('node-fetch').default;
 const cheerio = require('cheerio');
 
 const news_items = require('../news_items');
@@ -21,14 +21,15 @@ describe('News items', function () {
   before('set up testing server', helperServer.before());
   after('shut down testing server', helperServer.after);
 
-  var page, elemList;
-
   describe('News item initialization', () => {
     it('should prepare by creating the student test user', async () => {
-      const cookies = requestp.jar();
-      cookies.setCookie(requestp.cookie('pl_test_user=test_student'), locals.siteUrl);
-      page = await requestp({ url: locals.baseUrl, jar: cookies });
-      locals.$ = cheerio.load(page);
+      const res = await fetch(locals.baseUrl, {
+        headers: {
+          Cookie: 'pl_test_user=test_student',
+        },
+      });
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
     it('should succeed with notifications turned on', async () => {
       const notify_with_new_server = true;
@@ -64,7 +65,7 @@ describe('News items', function () {
     });
   });
 
-  // FIXME: We only test notifiction creation for course staff users
+  // FIXME: We only test notification creation for course staff users
   // (the dev user). We don't test for student users. This is
   // because when this code was originally written we didn't have
   // any student-visible news items and it was too horrible to mock
@@ -74,29 +75,29 @@ describe('News items', function () {
 
   describe('News item notifications', () => {
     it('should permit page load', async () => {
-      page = await requestp(locals.baseUrl);
-      locals.$ = cheerio.load(page);
+      const res = await fetch(locals.baseUrl);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
     it('should show up in the top navbar', () => {
-      elemList = locals.$('span.news-item-count');
+      const elemList = locals.$('span.news-item-count');
       assert.lengthOf(elemList, 1);
     });
     it('should show up in the News link', () => {
-      elemList = locals.$('span.news-item-link-count');
+      const elemList = locals.$('span.news-item-link-count');
       assert.lengthOf(elemList, 1);
     });
   });
 
   describe('News items page at root level', () => {
     it('should load', async () => {
-      page = await requestp(locals.newsItemsUrl);
-      locals.$ = cheerio.load(page);
+      const res = await fetch(locals.newsItemsUrl);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
     it('should contain a link to the "New layout" news item', () => {
-      elemList = locals.$('.news-items-table a:contains("New layout")');
+      const elemList = locals.$('.news-items-table a:contains("New layout")');
       assert.lengthOf(elemList, 1);
-    });
-    it('should have the correct link', () => {
       locals.newsItem1Url = locals.siteUrl + elemList[0].attribs.href;
       assert.equal(locals.newsItem1Url, locals.baseUrl + '/news_item/1/');
     });
@@ -104,11 +105,12 @@ describe('News items', function () {
 
   describe('Single news item page  at root level', () => {
     it('should load', async () => {
-      page = await requestp(locals.newsItem1Url);
-      locals.$ = cheerio.load(page);
+      const res = await fetch(locals.newsItem1Url);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
     });
     it('should contain the "New layout" header', () => {
-      elemList = locals.$('h1:contains("New layout")');
+      const elemList = locals.$('h1:contains("New layout")');
       assert.lengthOf(elemList, 1);
     });
     it('should remove notification 1', async () => {
@@ -129,31 +131,31 @@ describe('News items', function () {
 
   describe('News items page', () => {
     it('should load in course instructor level', async () => {
-      page = await requestp(locals.baseUrl + '/course/1/news_items');
-      locals.$ = cheerio.load(page);
+      const res = await fetch(locals.baseUrl + '/course/1/news_items');
+      assert.isOk(res.ok);
     });
     it('should load in course instance instructor level', async () => {
-      page = await requestp(locals.baseUrl + '/course_instance/1/instructor/news_items');
-      locals.$ = cheerio.load(page);
+      const res = await fetch(locals.baseUrl + '/course_instance/1/instructor/news_items');
+      assert.isOk(res.ok);
     });
     it('should load in course instance student level', async () => {
-      page = await requestp(locals.baseUrl + '/course_instance/1/news_items');
-      locals.$ = cheerio.load(page);
+      const res = await fetch(locals.baseUrl + '/course_instance/1/news_items');
+      assert.isOk(res.ok);
     });
   });
 
   describe('Single news item page', () => {
     it('should load in course instructor level', async () => {
-      page = await requestp(locals.baseUrl + '/course/1/news_item/1/');
-      locals.$ = cheerio.load(page);
+      const res = await fetch(locals.baseUrl + '/course/1/news_item/1/');
+      assert.isOk(res.ok);
     });
     it('should load in course instance instructor level', async () => {
-      page = await requestp(locals.baseUrl + '/course_instance/1/instructor/news_item/1/');
-      locals.$ = cheerio.load(page);
+      const res = await fetch(locals.baseUrl + '/course_instance/1/instructor/news_item/1/');
+      assert.isOk(res.ok);
     });
     it('should load in course instance student level', async () => {
-      page = await requestp(locals.baseUrl + '/course_instance/1/news_item/1/');
-      locals.$ = cheerio.load(page);
+      const res = await fetch(locals.baseUrl + '/course_instance/1/news_item/1/');
+      assert.isOk(res.ok);
     });
   });
 });

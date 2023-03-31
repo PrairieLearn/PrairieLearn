@@ -2,6 +2,7 @@
 
 import json
 import os
+import pathlib
 import re
 import shlex
 import subprocess
@@ -12,6 +13,41 @@ import lxml.etree as ET
 CODEBASE = "/grade/student"
 DATAFILE = "/grade/data/data.json"
 SB_USER = "sbuser"
+
+# List of symbols that are not allowed to be used in student code
+INVALID_SYMBOLS = frozenset(
+    (
+        "__asan_default_options",
+        "__asan_on_error",
+        "__asan_malloc_hook",
+        "__asan_free_hook",
+        "__asan_unpoison_memory_region",
+        "__asan_set_error_exit_code",
+        "__asan_set_death_callback",
+        "__asan_set_error_report_callback",
+        "__msan_default_options",
+        "__msan_malloc_hook",
+        "__msan_free_hook",
+        "__msan_unpoison",
+        "__msan_unpoison_string",
+        "__msan_set_exit_code",
+        "__lsan_is_turned_off",
+        "__lsan_default_suppressions",
+        "__lsan_do_leak_check",
+        "__lsan_disable",
+        "__lsan_enable",
+        "__lsan_ignore_object",
+        "__lsan_register_root_region",
+        "__lsan_unregister_root_region",
+        "__sanitizer_set_death_callback",
+        "__sanitizer_set_report_path",
+        "__sanitizer_sandbox_on_notify",
+    )
+)
+INVALID_PRIMITIVES = frozenset(("no_sanitize", "disable_sanitizer_instrumentation"))
+
+ASAN_FLAGS = ("-fsanitize=address", "-static-libasan", "-g", "-O0")
+
 
 TIMEOUT_MESSAGE = """
 
@@ -86,12 +122,16 @@ class CGrader:
         add_warning_result_msg=True,
         ungradable_if_failed=True,
         return_objects=False,
+        enable_asan=False,
+        reject_symbols=None,
     ):
         cflags = flags
         if cflags and not isinstance(cflags, list):
             cflags = shlex.split(cflags)
         elif not cflags:
             cflags = []
+        if enable_asan:
+            cflags.extend(ASAN_FLAGS)
 
         if not add_c_file:
             add_c_file = []
@@ -105,7 +145,6 @@ class CGrader:
             if isinstance(pkg_config_flags, str):
                 pkg_config_flags = shlex.split(pkg_config_flags)
             out_flags = self.run_command(["pkg-config", "--cflags"] + pkg_config_flags)
-            print("out_flags in compiler is: ", out_flags)
             if out_flags:
                 cflags.extend(shlex.split(out_flags))
 
@@ -113,16 +152,58 @@ class CGrader:
         std_obj_files = []
         objs = []
         for std_c_file in c_file if isinstance(c_file, list) else [c_file]:
-            obj_file = re.sub(r"\.[^.]*$", "", std_c_file) + ".o"
-            out += self.run_command(
-                [compiler, "-c", std_c_file, "-o", obj_file] + cflags, sandboxed=False
-            )
+            obj_file = pathlib.Path(std_c_file).with_suffix(".o")
             std_obj_files.append(obj_file)
+            out += self.run_command(
+                [compiler, "-save-temps", "-c", std_c_file, "-o", obj_file] + cflags,
+                sandboxed=False,
+            )
+            # Identify references to functions intended to disable sanitizers from object file
+            if os.path.isfile(obj_file):
+                # These primitives are checked in the .i file (the
+                # preprocessed C file), which will have any #define
+                # and #include primitives already expanded and
+                # comments removed
+                found_primitives = None
+                preprocessed_file = pathlib.Path(std_c_file).with_suffix(".i")
+                if not os.path.isfile(preprocessed_file):
+                    preprocessed_file = pathlib.Path(std_c_file).with_suffix(".ii")
+                if not os.path.isfile(preprocessed_file):
+                    preprocessed_file = pathlib.Path(std_c_file).with_suffix(".mi")
+                if os.path.isfile(preprocessed_file):
+                    with open(preprocessed_file, "r") as f:
+                        preprocessed_text = f.read()
+                        found_primitives = {
+                            s for s in INVALID_PRIMITIVES if s in preprocessed_text
+                        }
+                if found_primitives:
+                    out += (
+                        "\n\033[31mThe following unauthorized primitives were found in the submitted code:\n\t"
+                        + ", ".join(found_primitives)
+                        + "\033[0m"
+                    )
+                    os.unlink(obj_file)
+                # nm -j will list any references to global symbols in
+                # the object file, either from function definitions or
+                # function calls.
+                symbols = self.run_command(
+                    ["nm", "-j", obj_file], sandboxed=False
+                ).splitlines()
+                found_symbols = (INVALID_SYMBOLS | set(reject_symbols or {})) & set(
+                    symbols
+                )
+                if found_symbols:
+                    out += (
+                        "\n\033[31mThe following unauthorized function(s) and/or variable(s) were found in the submitted code:\n\t"
+                        + ", ".join(found_symbols)
+                        + "\033[0m"
+                    )
+                    os.unlink(obj_file)
 
         if all(os.path.isfile(obj) for obj in std_obj_files):
             # Add new C files that maybe overwrite some existing functions.
             for added_c_file in add_c_file:
-                obj_file = re.sub(r"\.[^.]*$", "", added_c_file) + ".o"
+                obj_file = pathlib.Path(added_c_file).with_suffix(".o")
                 out += self.run_command(
                     [compiler, "-c", added_c_file, "-o", obj_file] + cflags,
                     sandboxed=False,
@@ -148,6 +229,7 @@ class CGrader:
                 pkg_config_flags=pkg_config_flags,
                 add_warning_result_msg=add_warning_result_msg,
                 ungradable_if_failed=ungradable_if_failed,
+                enable_asan=enable_asan,
             )
         return (out, std_obj_files + objs) if return_objects else out
 
@@ -161,11 +243,14 @@ class CGrader:
         pkg_config_flags=None,
         add_warning_result_msg=True,
         ungradable_if_failed=True,
+        enable_asan=False,
     ):
         if flags and not isinstance(flags, list):
             flags = shlex.split(flags)
         elif not flags:
             flags = []
+        if enable_asan:
+            flags.extend(ASAN_FLAGS)
 
         if not student_obj_files:
             student_obj_files = []
@@ -186,7 +271,6 @@ class CGrader:
             if isinstance(pkg_config_flags, str):
                 pkg_config_flags = shlex.split(pkg_config_flags)
             out_flags = self.run_command(["pkg-config", "--libs"] + pkg_config_flags)
-            print("out_flags in linker is: ", out_flags)
             if out_flags:
                 flags.extend(shlex.split(out_flags))
 
@@ -225,6 +309,8 @@ class CGrader:
         name="Compilation",
         add_warning_result_msg=True,
         ungradable_if_failed=True,
+        enable_asan=False,
+        reject_symbols=None,
     ):
         if not add_c_file:
             add_c_file = []
@@ -245,6 +331,8 @@ class CGrader:
             add_warning_result_msg=add_warning_result_msg,
             ungradable_if_failed=ungradable_if_failed,
             return_objects=True,
+            enable_asan=enable_asan,
+            reject_symbols=reject_symbols,
         )
         success = (
             os.path.isfile(exec_file)
@@ -287,6 +375,7 @@ class CGrader:
         name=None,
         msg=None,
         max_points=1,
+        highlight_matches=False,
     ):
         if args is not None:
             if not isinstance(args, list):
@@ -302,20 +391,34 @@ class CGrader:
         elif name is None:
             name = "Test command: %s" % command
 
-        if exp_output is not None and not isinstance(exp_output, list):
+        if exp_output is None:
+            exp_output = []
+            must_match_all_outputs = True
+        elif not isinstance(exp_output, list):
             exp_output = [exp_output]
-        if reject_output is not None and not isinstance(reject_output, list):
+
+        if reject_output is None:
+            reject_output = []
+        elif not isinstance(reject_output, list):
             reject_output = [reject_output]
-        if msg is None and exp_output is not None:
-            msg = "Expected: %s" % (" AND " if must_match_all_outputs else " OR ").join(
-                [f"\n{t}\n" if "\n" in str(t) else f'"{t}"' for t in exp_output]
-            ) + (
-                ' but not "%s"' % '"/"'.join([str(t) for t in reject_output])
-                if reject_output
-                else ""
+
+        def compile_re(t):
+            if isinstance(t, re.Pattern):
+                return (t.pattern, t)
+            # If t is not a string, convert it to its string representation
+            t = str(t)
+            return (
+                t.strip(),
+                re.compile(
+                    "\\s+".join(map(re.escape, re.split("\\s+", t)))
+                    if ignore_consec_spaces
+                    else re.escape(t),
+                    re.I if ignore_case else 0,
+                ),
             )
-        elif msg is None:
-            msg = ""
+
+        exp_output = [compile_re(t) for t in exp_output]
+        reject_output = [compile_re(t) for t in reject_output]
 
         out = self.run_command(
             command if args is None else ([command] + args),
@@ -323,48 +426,51 @@ class CGrader:
             sandboxed=True,
             timeout=timeout,
         )
+
         outcmp = out
+        if highlight_matches and out:
+            for _, r in exp_output:
+                out = r.sub(r"\033[32m\g<0>\033[0m", out)
+            for _, r in reject_output:
+                out = r.sub(r"\033[31m\g<0>\033[0m", out)
         if not out:
             out = "(NO OUTPUT)"
         elif not out.endswith("\n"):
             out += "\n(NO ENDING LINE BREAK)"
 
-        if ignore_case:
-            outcmp = outcmp.lower()
-            if exp_output:
-                exp_output = [str(t).lower() for t in exp_output]
+        if msg is None and exp_output:
+            comment = (
+                ""
+                if len(exp_output) == 1
+                else " all of"
+                if must_match_all_outputs
+                else " one of"
+            )
+            msg = f"Expected{comment}:\n\t" + "\n\t".join(
+                f"\033[32m{t}\033[0m"
+                if highlight_matches and r.search(outcmp) is not None
+                else t
+                for t, r in exp_output
+            )
             if reject_output:
-                reject_output = [str(t).lower() for t in reject_output]
-
-        if ignore_consec_spaces:
-            # Replace all space-like characters with single space
-            outcmp = re.sub(r"\s+", " ", outcmp)
-            if exp_output:
-                exp_output = [re.sub(r"\s+", " ", str(t)) for t in exp_output]
-            if reject_output:
-                reject_output = [re.sub(r"\s+", " ", str(t)) for t in reject_output]
+                msg += "\nBut not:\n\t" + "\n\t".join(
+                    f"\033[31m{t}\033[0m"
+                    if highlight_matches and r.search(outcmp) is not None
+                    else t
+                    for t, r in reject_output
+                )
+        elif msg is None:
+            msg = ""
 
         points = True
-        if timeout and "TIMEOUT" in out:
+        if timeout and "TIMEOUT" in outcmp:
             points = False
-        elif size_limit and len(out) > size_limit:
+        elif size_limit and len(outcmp) > size_limit:
             out = out[0:size_limit] + "\nTRUNCATED: Output too long."
             points = False
-        elif (
-            exp_output is not None
-            and must_match_all_outputs
-            and [t for t in exp_output if str(t) not in outcmp]
-        ):
-            points = False
-        elif (
-            exp_output is not None
-            and not must_match_all_outputs
-            and not [t for t in exp_output if str(t) in outcmp]
-        ):
-            points = False
-        elif reject_output is not None and [
-            t for t in reject_output if str(t) in outcmp
-        ]:
+        elif not (all if must_match_all_outputs else any)(
+            r.search(outcmp) is not None for _, r in exp_output
+        ) or any(r.search(outcmp) is not None for _, r in reject_output):
             points = False
 
         return self.add_test_result(
@@ -412,6 +518,7 @@ class CGrader:
         self.result["tests"].append(test)
         self.result["points"] += points
         self.result["max_points"] += max_points
+
         if field is not None:
             if "partial_scores" not in self.result:
                 self.result["partial_scores"] = {}
@@ -435,33 +542,36 @@ class CGrader:
         use_iteration=False,
         sandboxed=False,
         use_malloc_debug=False,
+        env=None,
     ):
         if not args:
             args = []
         if not isinstance(args, list):
             args = [args]
 
+        if not env:
+            env = {}
+        env["TEMP"] = "/tmp"
+
         log_file_dir = tempfile.mkdtemp()
         log_file = os.path.join(log_file_dir, "tests.xml")
+        env["CK_XML_LOG_FILE_NAME"] = log_file
+
         if sandboxed:
             self.change_mode(log_file_dir, "777", change_parent=False)
+        else:
+            env["SANDBOX_UID"] = self.run_command("id -u")
+            env["SANDBOX_GID"] = self.run_command("id -g")
 
-        out = self.run_command(
-            [exec_file] + args,
-            env={
-                "CK_XML_LOG_FILE_NAME": log_file,
-                "TEMP": "/tmp",
-                "SANDBOX_UID": self.run_command("id -u") if not sandboxed else "",
-                "SANDBOX_GID": self.run_command("id -g") if not sandboxed else "",
-                "LD_PRELOAD": "/lib/x86_64-linux-gnu/libc_malloc_debug.so"
-                if use_malloc_debug
-                else "",
-            },
-            sandboxed=sandboxed,
-        )
+        if use_malloc_debug:
+            env["LD_PRELOAD"] = "/lib/x86_64-linux-gnu/libc_malloc_debug.so"
+
+        out = self.run_command([exec_file] + args, env=env, sandboxed=sandboxed)
+
         print(out)  # Printing so it shows in the grading job log
 
         # Copy log file to results directory so it becomes available to the instructor after execution
+        out = self.run_command(["mkdir", "-p", "/grade/results"], sandboxed=False)
         out = self.run_command(
             ["cp", log_file, "/grade/results/check_log.xml", "--backup=numbered"],
             sandboxed=False,
@@ -556,4 +666,5 @@ class CPPGrader(CGrader):
         super(CPPGrader, self).__init__(compiler)
 
 
-CGrader().start()
+if __name__ == "__main__":
+    CGrader().start()
