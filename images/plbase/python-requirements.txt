@@ -27,7 +27,7 @@ pyquaternion==0.9.9
 pytest-lazy-fixture==0.6.3
 pytest==7.2.1
 recommonmark==0.7.1
-regex==2022.10.31
+regex==2023.3.23
 rpy2==3.5.9
 scikit-learn==1.2.1
 scipy==1.10.1
