@@ -3540,7 +3540,7 @@ __metadata:
     crypto-js: ^4.1.1
     csv-parse: ^5.3.5
     csvtojson: ^2.0.10
-    d3: ^7.8.2
+    d3: ^7.8.4
     date-fns: ^2.29.3
     date-fns-tz: ^2.0.0
     debug: ^4.3.4
@@ -5776,9 +5776,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"d3@npm:^7.8.2":
-  version: 7.8.2
-  resolution: "d3@npm:7.8.2"
+"d3@npm:^7.8.4":
+  version: 7.8.4
+  resolution: "d3@npm:7.8.4"
   dependencies:
     d3-array: 3
     d3-axis: 3
@@ -5810,7 +5810,7 @@ __metadata:
     d3-timer: 3
     d3-transition: 3
     d3-zoom: 3
-  checksum: e7bf5918f2a97d0c0cc489d64348b323446aa824c32b65f0888846c26f80ed05dbee18a4b7c9a487b3e60d9d404e4672d169573fe63439e3e53abd5812bcd766
+  checksum: 8dfea4d026e5597ab9c46035df7f0ca4f3891b2b52b21b181bd8660fc61d85f0bbe3cc2b8f1e922978084156cb017cbbfa350a8e42349310642023a9f1517471
   languageName: node
   linkType: hard
 
