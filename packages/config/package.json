@@ -1,0 +1,12 @@
+{
+  "name": "@prairielearn/config",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "dependencies": {
+    "@aws-sdk/client-ec2": "^3.304.0",
+    "fs-extra": "^11.1.1"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.1"
+  }
+}
