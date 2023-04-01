@@ -3027,13 +3027,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/dockerode@npm:^3.3.14":
-  version: 3.3.14
-  resolution: "@types/dockerode@npm:3.3.14"
+"@types/dockerode@npm:^3.3.16":
+  version: 3.3.16
+  resolution: "@types/dockerode@npm:3.3.16"
   dependencies:
     "@types/docker-modem": "*"
     "@types/node": "*"
-  checksum: 6a8472622861fb0c97908963a8236d6e439c9feefc845b866326272ad0e5c33f537206fb4633424c5e3c8ec63559cb14bc737e2f88f0fcdf11496a9162d5b139
+  checksum: ef316e330f8a1a137962d6000cac53bb25b5ba4300e38dd5842f32a6c58bec420278d61526c68865351c48c7e843c9aa45bcbca332737630a0c251e09390bf5b
   languageName: node
   linkType: hard
 
@@ -3491,7 +3491,7 @@ __metadata:
     "@types/chai-as-promised": ^7.1.5
     "@types/cheerio": ^0.22.31
     "@types/diff": ^5.0.2
-    "@types/dockerode": ^3.3.14
+    "@types/dockerode": ^3.3.16
     "@types/folder-hash": ^4.0.2
     "@types/fs-extra": ^11.0.1
     "@types/lodash": ^4.14.191
@@ -3547,7 +3547,7 @@ __metadata:
     delay: ^5.0.0
     detect-mocha: ^0.1.0
     diff: ^5.1.0
-    dockerode: ^3.3.4
+    dockerode: ^3.3.5
     dropzone: ^5.9.3
     ejs: ^3.1.8
     eslint: ^8.35.0
@@ -6131,14 +6131,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dockerode@npm:^3.3.4":
-  version: 3.3.4
-  resolution: "dockerode@npm:3.3.4"
+"dockerode@npm:^3.3.5":
+  version: 3.3.5
+  resolution: "dockerode@npm:3.3.5"
   dependencies:
     "@balena/dockerignore": ^1.0.2
     docker-modem: ^3.0.0
     tar-fs: ~2.0.1
-  checksum: 6cb4b9d1c42feb3acfa77daf103b070cc412351dc7dc0a1553cc774ccd1be1a1412a87f8aa13c3155c63ec5c61a7cadc833b4248c4d8342814bbf708f795b952
+  checksum: 7f6650422b07fa7ea9d5801f04b1a432634446b5fe37b995b8302b953b64e93abf1bb4596c2fb574ba47aafee685ef2ab959cc86c9654add5a26d09541bbbcc6
   languageName: node
   linkType: hard
 
