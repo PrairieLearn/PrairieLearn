@@ -13,7 +13,7 @@ matplotlib==3.7.0
 networkx==3.0
 nltk==3.8.1
 numpy==1.24.2
-openpyxl==3.1.1
+openpyxl==3.1.2
 pandas-stubs==1.5.3.230227
 pandas==1.5.3
 Pint==0.20.1
