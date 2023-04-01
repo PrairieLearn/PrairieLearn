@@ -1,5 +1,5 @@
 ansi2html==1.8.0
-black==23.1.0
+black==23.3.0
 chevron==0.14.0
 Faker==17.6.0
 flake8-black==0.3.6
