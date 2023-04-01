@@ -160,7 +160,7 @@
         "@types/chai": "^4.3.4",
         "@types/chai-as-promised": "^7.1.5",
         "@types/cheerio": "^0.22.31",
-        "@types/diff": "^5.0.2",
+        "@types/diff": "^5.0.3",
         "@types/dockerode": "^3.3.14",
         "@types/folder-hash": "^4.0.2",
         "@types/fs-extra": "^11.0.1",
