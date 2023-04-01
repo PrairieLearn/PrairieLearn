@@ -11,7 +11,7 @@
     "@prairielearn/tsconfig": "*",
     "@types/fs-extra": "^11.0.1",
     "@types/mocha": "^10.0.1",
-    "@types/node": "^18.14.2",
+    "@types/node": "^18.15.11",
     "copyfiles": "^2.4.1",
     "mocha": "^10.2.0",
     "ts-node": "^10.9.1",

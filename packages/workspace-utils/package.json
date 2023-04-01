@@ -9,7 +9,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "*",
-    "@types/node": "^18.11.18",
+    "@types/node": "^18.15.11",
     "copyfiles": "^2.4.1",
     "typescript": "^4.9.4"
   },
