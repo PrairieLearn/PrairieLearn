@@ -12,7 +12,7 @@
     },
     "dependencies": {
         "@aws-sdk/client-auto-scaling": "^3.282.0",
-        "@fortawesome/fontawesome-free": "^6.3.0",
+        "@fortawesome/fontawesome-free": "^6.4.0",
         "@octokit/rest": "^19.0.7",
         "@prairielearn/bind-mount": "^1.0.0",
         "@prairielearn/compiled-assets": "^1.0.0",
