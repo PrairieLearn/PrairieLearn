@@ -128,7 +128,7 @@
         "remark-parse": "^9.0.0",
         "remark-rehype": "^8.1.0",
         "requirejs": "^2.3.6",
-        "s3-streamlogger": "^1.7.0",
+        "s3-streamlogger": "^1.9.0",
         "search-string": "^3.1.0",
         "serve-favicon": "^2.5.0",
         "showdown": "^2.1.0",
