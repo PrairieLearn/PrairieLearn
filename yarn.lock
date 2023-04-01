@@ -3446,12 +3446,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/yargs@npm:^17.0.22":
-  version: 17.0.22
-  resolution: "@types/yargs@npm:17.0.22"
+"@types/yargs@npm:^17.0.24":
+  version: 17.0.24
+  resolution: "@types/yargs@npm:17.0.24"
   dependencies:
     "@types/yargs-parser": "*"
-  checksum: 0773523fda71bafdc52f13f5970039e535a353665a60ba9261149a5c9c2b908242e6e77fbb7a8c06931ec78ce889d64d09673c68ba23eb5f5742d5385d0d1982
+  checksum: 5f3ac4dc4f6e211c1627340160fbe2fd247ceba002190da6cf9155af1798450501d628c9165a183f30a224fc68fa5e700490d740ff4c73e2cdef95bc4e8ba7bf
   languageName: node
   linkType: hard
 
@@ -3508,7 +3508,7 @@ __metadata:
     "@types/pg": ^8.6.6
     "@types/tmp": ^0.2.3
     "@types/uuid": ^9.0.1
-    "@types/yargs": ^17.0.22
+    "@types/yargs": ^17.0.24
     ace-builds: ^1.15.2
     ace-code: ^1.15.2
     ajv: ^8.12.0
