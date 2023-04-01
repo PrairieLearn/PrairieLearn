@@ -2162,9 +2162,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/instrumentation-pg@npm:^0.34.1":
-  version: 0.34.1
-  resolution: "@opentelemetry/instrumentation-pg@npm:0.34.1"
+"@opentelemetry/instrumentation-pg@npm:^0.35.0":
+  version: 0.35.0
+  resolution: "@opentelemetry/instrumentation-pg@npm:0.35.0"
   dependencies:
     "@opentelemetry/core": ^1.8.0
     "@opentelemetry/instrumentation": ^0.35.1
@@ -2173,7 +2173,7 @@ __metadata:
     "@types/pg-pool": 2.0.3
   peerDependencies:
     "@opentelemetry/api": ^1.3.0
-  checksum: b9e0143525336fc25411dfe52c918eb84f2f47aec6ae01c671c298b2c36a80bb3b753f6b10f9443d4515d37e733c5416be841dc1d071cf234259e5764ec33317
+  checksum: e05e8c49075f1a53acbf46d26e5a5409d5a54540a9eee701e8825a6f6a0adfcf014008227e60917731f9f16c0a87a75ccea48cd45f47f215076a2a28d5763439
   languageName: node
   linkType: hard
 
@@ -2559,7 +2559,7 @@ __metadata:
     "@opentelemetry/instrumentation-dns": ^0.31.2
     "@opentelemetry/instrumentation-express": ^0.32.1
     "@opentelemetry/instrumentation-http": ^0.35.1
-    "@opentelemetry/instrumentation-pg": ^0.34.1
+    "@opentelemetry/instrumentation-pg": ^0.35.0
     "@opentelemetry/instrumentation-redis": ^0.34.2
     "@opentelemetry/resource-detector-aws": ^1.2.2
     "@opentelemetry/resources": ^1.9.1
