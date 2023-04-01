@@ -36,7 +36,7 @@
         "async": "^3.2.4",
         "async-mutex": "^0.4.0",
         "async-stacktrace": "0.0.2",
-        "aws-sdk": "^2.1325.0",
+        "aws-sdk": "^2.1348.0",
         "backbone": "^1.4.1",
         "base64url": "^3.0.1",
         "better-ajv-errors": "^1.2.0",
