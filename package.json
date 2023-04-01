@@ -16,6 +16,7 @@
         "@octokit/rest": "^19.0.7",
         "@prairielearn/bind-mount": "^1.0.0",
         "@prairielearn/compiled-assets": "^1.0.0",
+        "@prairielearn/csv": "workspace:^",
         "@prairielearn/error": "workspace:^",
         "@prairielearn/html": "^2.0.0",
         "@prairielearn/named-locks": "^1.0.0",
