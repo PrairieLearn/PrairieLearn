@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@prairielearn/html": "^2.0.0",
-    "ejs": "^3.1.8"
+    "ejs": "^3.1.9"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "*",

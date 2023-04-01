@@ -2481,7 +2481,7 @@ __metadata:
     "@prairielearn/tsconfig": "*"
     "@types/ejs": ^3.1.2
     "@types/node": ^18.14.2
-    ejs: ^3.1.8
+    ejs: ^3.1.9
     mocha: ^10.2.0
     ts-node: ^10.9.1
     typescript: ^4.9.5
@@ -3549,7 +3549,7 @@ __metadata:
     diff: ^5.1.0
     dockerode: ^3.3.4
     dropzone: ^5.9.3
-    ejs: ^3.1.8
+    ejs: ^3.1.9
     eslint: ^8.35.0
     eslint-config-prettier: ^8.6.0
     eslint-plugin-import: 2.27.5
@@ -6284,14 +6284,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"ejs@npm:^3.1.8":
-  version: 3.1.8
-  resolution: "ejs@npm:3.1.8"
+"ejs@npm:^3.1.9":
+  version: 3.1.9
+  resolution: "ejs@npm:3.1.9"
   dependencies:
     jake: ^10.8.5
   bin:
     ejs: bin/cli.js
-  checksum: 1d40d198ad52e315ccf37e577bdec06e24eefdc4e3c27aafa47751a03a0c7f0ec4310254c9277a5f14763c3cd4bbacce27497332b2d87c74232b9b1defef8efc
+  checksum: af6f10eb815885ff8a8cfacc42c6b6cf87daf97a4884f87a30e0c3271fedd85d76a3a297d9c33a70e735b97ee632887f85e32854b9cdd3a2d97edf931519a35f
   languageName: node
   linkType: hard
 
