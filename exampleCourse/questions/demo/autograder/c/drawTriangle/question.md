@@ -1,5 +1,4 @@
 <pl-question-panel>
-<markdown>
 
 In this question, we'll assume that there's a graphics library available that will allow us to draw lines on the screen. Such a library is not available with the system that we’re using but similar libraries are available on other systems, so the problems posed here are not unreasonable.
 
@@ -15,13 +14,7 @@ Your task is to write a function `drawTri` that draws right-angled, isosceles tr
 - `side_length`: the equal length of the two shorter sides,
 - `x` and `y`: the (coordinate) location of the upper vertex
 
-Sample output are as follows (in red only):
-
-</markdown>
-
-<blockquote>
-<markdown>
-**Sample Output**
+Sample output are as follows. Note that you are only required to draw the red triangle, not the axes or the dashed supporting lines.
 
 Function call: `drawTri(2, 0, 4);`
 
@@ -73,13 +66,7 @@ Function call: `drawTri(1, 1, 1);`
   </pl-drawing-initial>
 </pl-drawing>
 
-
-</markdown>
-</blockquote>
-
-<markdown>
-**Note**: Your function is not expected to draw the axes and the dashed supporting-lines!
-</markdown>
+---
 
 <pl-file-editor source-file-name="start.c" file-name="drawTri.c" ace-mode="ace/mode/c_cpp">
 </pl-file-editor>

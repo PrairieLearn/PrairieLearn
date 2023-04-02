@@ -1,17 +1,16 @@
 <pl-question-panel>
 
-<markdown>
-----
+---
 
 ### Compound R Object
 
 Please create a single R object named `x` containing the following:
+
 - an integer `ii` with value 42
 - a numeric `nn` with value 3.1415
 - a text variable `cc` with text `hello, world!` including the comma an exclamation
 
 You can press the button below to launch a demo RStudio workspace.
-</markdown>
 
 <pl-workspace></pl-workspace>
 

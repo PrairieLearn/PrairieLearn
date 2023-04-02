@@ -1,7 +1,5 @@
 <pl-question-panel>
 
-<markdown>
-
 ----
 
 ### Compound R Object
@@ -12,8 +10,6 @@ Please create a single R object named `x` containing the following
 - a text variable `cc` with text `hello, world!` including the comma an exclamation
 
 You can press _Open workspace_ above to launch an RStudio instance.
-
-</markdown>
 
 <pl-file-editor file-name="student.R" ace-mode="ace/mode/r" source-file-name="demo.R"></pl-file-editor>
 
