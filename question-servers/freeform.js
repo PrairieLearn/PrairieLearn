@@ -418,10 +418,23 @@ module.exports = {
     }
   },
 
-  async execTemplate(htmlFilename, data) {
-    const rawFile = await fs.readFile(htmlFilename, { encoding: 'utf8' });
-    let html = mustache.render(rawFile, data);
-    html = markdown.processQuestion(html);
+  async execTemplate(htmlFilename, mdFilename, data) {
+    let usingMdFile = false;
+    // Attempts to read the question.html file. If an error is thrown because the file does not
+    // exist, attempts to read the question.md file. A separate check if the file exists is not
+    // done to avoid race conditions.
+    const rawFile = await fs.readFile(htmlFilename, { encoding: 'utf8' }).catch((err) => {
+      if (err.code === 'ENOENT') {
+        usingMdFile = true;
+        return fs.readFile(mdFilename, { encoding: 'utf8' });
+      } else {
+        throw err;
+      }
+    });
+    const rendered = mustache.render(rawFile, data);
+    const html = usingMdFile
+      ? await markdown.processQuestionMd(rendered)
+      : markdown.processQuestion(rendered);
     const $ = cheerio.load(html, {
       recognizeSelfClosing: true,
     });
@@ -802,12 +815,24 @@ module.exports = {
     }
 
     const htmlFilename = path.join(context.question_dir_host, 'question.html');
+    const mdFilename = path.join(context.question_dir_host, 'question.md');
     let html, $;
     try {
-      ({ html, $ } = await module.exports.execTemplate(htmlFilename, data));
+      ({ html, $ } = await module.exports.execTemplate(htmlFilename, mdFilename, data));
     } catch (err) {
+      // If the error is ENOENT, this means both question.html and question.md were attempted and
+      // neither exists. Other errors (e.g., permissions, file type, etc.) will have the name of the
+      // problematic file in err.path.
       return {
-        courseIssues: [new CourseIssueError(htmlFilename + ': ' + err.toString(), { fatal: true })],
+        courseIssues: [
+          err.code === 'ENOENT'
+            ? new CourseIssueError(`Neither ${htmlFilename} nor ${mdFilename} exist`, {
+                fatal: true,
+              })
+            : new CourseIssueError((err.path ?? htmlFilename) + ': ' + err.toString(), {
+                fatal: true,
+              }),
+        ],
         data,
         html: '',
         fileData: Buffer.from(''),
