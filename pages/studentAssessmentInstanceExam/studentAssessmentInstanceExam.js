@@ -13,44 +13,83 @@ var groupAssessmentHelper = require('../../lib/groups');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-router.post('/', asyncHandler(async function (req, res, next) {
-  if (res.locals.assessment.type !== 'Exam') return next();
-  if (!res.locals.authz_result.authorized_edit) {
-    return next(error.make(403, 'Not authorized', res.locals));
-  }
+router.post(
+  '/',
+  asyncHandler(async function (req, res, next) {
+    if (res.locals.assessment.type !== 'Exam') return next();
+    if (!res.locals.authz_result.authorized_edit) {
+      return next(error.make(403, 'Not authorized', res.locals));
+    }
 
-  if (req.body.__action === 'attach_file') {
-    util.callbackify(studentAssessmentInstance.processFileUpload)(req, res, function (err) {
-      if (ERR(err, next)) return;
-      res.redirect(req.originalUrl);
-    });
-  } else if (req.body.__action === 'attach_text') {
-    util.callbackify(studentAssessmentInstance.processTextUpload)(req, res, function (err) {
-      if (ERR(err, next)) return;
-      res.redirect(req.originalUrl);
-    });
-  } else if (req.body.__action === 'delete_file') {
-    util.callbackify(studentAssessmentInstance.processDeleteFile)(req, res, function (err) {
-      if (ERR(err, next)) return;
-      res.redirect(req.originalUrl);
-    });
-  } else if (['grade', 'finish', 'timeLimitFinish'].includes(req.body.__action)) {
-    const overrideGradeRate = false;
-    var closeExam;
-    if (req.body.__action === 'grade') {
-      if (!res.locals.assessment.allow_real_time_grading) {
-        next(error.make(403, 'Real-time grading is not allowed for this assessment'));
-        return;
+    if (req.body.__action === 'attach_file') {
+      util.callbackify(studentAssessmentInstance.processFileUpload)(req, res, function (err) {
+        if (ERR(err, next)) return;
+        res.redirect(req.originalUrl);
+      });
+    } else if (req.body.__action === 'attach_text') {
+      util.callbackify(studentAssessmentInstance.processTextUpload)(req, res, function (err) {
+        if (ERR(err, next)) return;
+        res.redirect(req.originalUrl);
+      });
+    } else if (req.body.__action === 'delete_file') {
+      util.callbackify(studentAssessmentInstance.processDeleteFile)(req, res, function (err) {
+        if (ERR(err, next)) return;
+        res.redirect(req.originalUrl);
+      });
+    } else if (['grade', 'finish', 'timeLimitFinish'].includes(req.body.__action)) {
+      const overrideGradeRate = false;
+      var closeExam;
+      if (req.body.__action === 'grade') {
+        if (!res.locals.assessment.allow_real_time_grading) {
+          next(error.make(403, 'Real-time grading is not allowed for this assessment'));
+          return;
+        }
+        closeExam = false;
+      } else if (req.body.__action === 'finish') {
+        closeExam = true;
+      } else if (req.body.__action === 'timeLimitFinish') {
+        // Only close if the timer expired due to time limit, not for access end
+        if (!res.locals.assessment_instance_time_limit_expired) {
+          return res.redirect(req.originalUrl);
+        }
+        closeExam = true;
+      } else {
+        next(
+          error.make(400, 'unknown __action', {
+            locals: res.locals,
+            body: req.body,
+          })
+        );
       }
-      closeExam = false;
-    } else if (req.body.__action === 'finish') {
-      closeExam = true;
-    } else if (req.body.__action === 'timeLimitFinish') {
-      // Only close if the timer expired due to time limit, not for access end
-      if (!res.locals.assessment_instance_time_limit_expired) {
-        return res.redirect(req.originalUrl);
-      }
-      closeExam = true;
+      const requireOpen = true;
+      assessment.gradeAssessmentInstance(
+        res.locals.assessment_instance.id,
+        res.locals.authn_user.user_id,
+        requireOpen,
+        closeExam,
+        overrideGradeRate,
+        function (err) {
+          if (ERR(err, next)) return;
+          if (req.body.__action === 'timeLimitFinish') {
+            res.redirect(req.originalUrl + '?timeLimitExpired=true');
+          } else {
+            res.redirect(req.originalUrl);
+          }
+        }
+      );
+    } else if (req.body.__action === 'leave_group') {
+      if (!res.locals.authz_result.active) return next(error.make(400, 'Unauthorized request.'));
+      await groupAssessmentHelper.leaveGroup(
+        res.locals.assessment.id,
+        res.locals.user.user_id,
+        res.locals.authn_user.user_id
+      );
+      res.redirect(
+        '/pl/course_instance/' +
+          res.locals.course_instance.id +
+          '/assessment/' +
+          res.locals.assessment.id
+      );
     } else {
       next(
         error.make(400, 'unknown __action', {
@@ -59,44 +98,8 @@ router.post('/', asyncHandler(async function (req, res, next) {
         })
       );
     }
-    const requireOpen = true;
-    assessment.gradeAssessmentInstance(
-      res.locals.assessment_instance.id,
-      res.locals.authn_user.user_id,
-      requireOpen,
-      closeExam,
-      overrideGradeRate,
-      function (err) {
-        if (ERR(err, next)) return;
-        if (req.body.__action === 'timeLimitFinish') {
-          res.redirect(req.originalUrl + '?timeLimitExpired=true');
-        } else {
-          res.redirect(req.originalUrl);
-        }
-      }
-    );
-  } else if (req.body.__action === 'leave_group') {
-    if (!res.locals.authz_result.active) return next(error.make(400, 'Unauthorized request.'));
-    await groupAssessmentHelper.leaveGroup(
-      res.locals.assessment.id,
-      res.locals.user.user_id,
-      res.locals.authn_user.user_id
-    );
-    res.redirect(
-      '/pl/course_instance/' +
-        res.locals.course_instance.id +
-        '/assessment/' +
-        res.locals.assessment.id
-    );
-  } else {
-    next(
-      error.make(400, 'unknown __action', {
-        locals: res.locals,
-        body: req.body,
-      })
-    );
-  }
-}));
+  })
+);
 
 router.get(
   '/',

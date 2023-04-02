@@ -878,29 +878,6 @@ describe('Test group based assessments with custom group roles from student side
     locals.$ = cheerio.load(await res.text());
   });
 
-  step('should be able to switch user', function () {
-    let student = locals.studentUsers[0];
-    config.authUid = student.uid;
-    config.authName = student.name;
-    config.authUin = '00000001';
-    config.userId = student.user_id;
-  });
-
-  step('should load assessment page successfully', async function () {
-    const res = await fetch(locals.assessmentUrl);
-    assert.isOk(res.ok);
-    locals.$ = cheerio.load(await res.text());
-  });
-
-  step('should have a CSRF token', function () {
-    elemList = locals.$('form input[name="__csrf_token"]');
-    console.log(elemList)
-    assert.lengthOf(elemList, 3);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.__csrf_token = elemList[0].attribs.value;
-    assert.isString(locals.__csrf_token);
-  });
-
   step('should have correct role configuration in the database', async function () {
     const params = {
       assessment_id: locals.assessment_id,
@@ -933,6 +910,28 @@ describe('Test group based assessments with custom group roles from student side
 
     assert.sameDeepMembers(expected, result.rows);
     locals.roleUpdates = roleUpdates;
+  });
+
+  step('should be able to switch user', function () {
+    let student = locals.studentUsers[0];
+    config.authUid = student.uid;
+    config.authName = student.name;
+    config.authUin = '00000001';
+    config.userId = student.user_id;
+  });
+
+  step('should load assessment page successfully', async function () {
+    const res = await fetch(locals.assessmentUrl);
+    assert.isOk(res.ok);
+    locals.$ = cheerio.load(await res.text());
+  });
+
+  step('should have a CSRF token', function () {
+    elemList = locals.$('form input[name="__csrf_token"]');
+    assert.lengthOf(elemList, 3);
+    assert.nestedProperty(elemList[0], 'attribs.value');
+    locals.__csrf_token = elemList[0].attribs.value;
+    assert.isString(locals.__csrf_token);
   });
 
   step('should have correct roles checked in the table', function () {

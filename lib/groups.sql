@@ -275,3 +275,28 @@ WITH
   )
 SELECT
   1;
+
+-- BLOCK transfer_group_roles
+WITH
+  group_role_ids AS (
+    SELECT
+      gu.group_role_id
+    FROM
+      group_user_roles gu
+    WHERE
+      gu.group_id = $group_id
+      AND gu.user_id = $user_id
+  ),
+  transferred_group_roles AS (
+    INSERT INTO
+      group_user_roles (group_id, user_id, group_role_id)
+    SELECT
+      $group_id,
+      $assignee_user_id,
+      gri.group_role_id
+    FROM
+      group_role_ids AS gri
+    ON CONFLICT (group_id, user_id, group_role_id) DO NOTHING
+  )
+SELECT
+  1;
