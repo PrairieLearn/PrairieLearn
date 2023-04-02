@@ -21,7 +21,7 @@ questions
 |   |
 |   +-- info.json             # metadata for the addVectors question
 |   +-- server.py
-|   +-- question.html
+|   +-- question.md           # Markdown template for the question (alternative to question.html)
 |   +-- notes.docx            # more files, like notes on how the question works
 |   +-- solution.docx         # these are secret (can't be seen by students)
 |   |
@@ -102,9 +102,9 @@ The different types of dependency properties available are summarized in this ta
 | `clientFilesCourseStyles`    | The styles required by this question relative to `[course directory]/clientFilesCourse`.          |
 | `clientFilesCourseScripts`   | The scripts required by this question relative to `[course directory]/clientFilesCourse`.         |
 
-## Question `question.html`
+## Question `question.html` and `question.md`
 
-The `question.html` is a template used to render the question to the student. A complete `question.html` example looks like:
+A template used to render the question to the student must be provided either in `question.html` (in HTML format) or `question.md` (in Markdown format). A complete `question.html` example looks like:
 
 ```html
 <pl-question-panel>
@@ -126,15 +126,27 @@ The `question.html` is a template used to render the question to the student. A 
 </p>
 ```
 
-The `question.html` is regular HTML, with four special features:
+A complete `question.md` example looks like:
 
-1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values. If you use triple-braces (like `{{{params.html}}}`) then raw HTML is substituted (don't use this unless you know you need it). This is using [Mustache](https://mustache.github.io/mustache.5.html) templating.
+```md
+<pl-question-panel>
+A particle of mass $m = {{params.m}}\rm\ kg$ is observed to have acceleration $a =
+{{params.a}}\rm\ m/s^2$.
+
+What is the total force $F$ currently acting on the particle?
+</pl-question-panel>
+
+<pl-number-input answers-name="F" comparison="sigfig" digits="2" label="$F =$" suffix="$\rm m/s^2$">
+</pl-number-input>
+```
+
+Both of these files can use regular HTML or Markdown format, with three special features:
+
+1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values. If you use triple-braces (like `{{{params.html}}}`) then raw HTML (or Markdown, for `question.md` is substituted (don't use this unless you know you need it). This is using [Mustache](https://mustache.github.io/mustache.5.html) templating.
 
 2. Special HTML elements (like `<pl-number-input>`) enable input and formatted output. See the [list of PrairieLearn elements](elements.md). Note that that **all submission elements must have unique `answers-name` attributes.** This is is necessary for questions to be graded properly.
 
-3. A special `<markdown>` tag allows you to write Markdown inline in questions.
-
-4. LaTeX equations are available within HTML by using `$x^2$` for inline equations, and `$$x^2$$` or `\[x^2\]` for display equations.
+3. LaTeX equations are available within HTML by using `$x^2$` for inline equations, and `$$x^2$$` or `\[x^2\]` for display equations.
 
 ## Question `server.py`
 
@@ -309,40 +321,17 @@ To disable partial credit for a question, set `"partialCredit": false` in the `i
 
 In general, it is _strongly_ recommended to leave partial credit enabled for all questions.
 
-## Using Markdown in questions
-
-HTML and custom elements are great for flexibility and expressiveness. However, they're not great for working with large amounts of text, formatting text, and so on. [Markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet) is a lightweight plaintext markup syntax that's ideal for authoring simple but rich text. To enable this, PrairieLearn adds a special `<markdown>` tag to questions. When a `<markdown>` block is encountered, its contents are converted to HTML. Here's an example `question.html` that utilizes this element:
-
-```
-<markdown>
-# Hello, world!
-
-This is some **Markdown** text.
-</markdown>
-```
-
-That question would be rendered like this:
-
-```html
-<h1>Hello, world!</h1>
-<p>This is some <strong>Markdown</strong> text.</p>
-```
-
-A few special behaviors have been added to enable Markdown to work better within the PrairieLearn ecosystem, as described below.
-
 ## Markdown code blocks
 
-Fenced code blocks (those using triple-backticks <code>\`\`\`</code>) are rendered as `<pl-code>` elements, which will then be rendered as usual by PrairieLearn. These blocks support specifying language and highlighted lines, which are then passed to the resulting `<pl-code>` element. Consider the following markdown:
+In `question.md` files, fenced code blocks (those using triple-backticks <code>\`\`\`</code>) are rendered as `<pl-code>` elements, which will then be rendered as usual by PrairieLearn. These blocks support specifying language and highlighted lines, which are then passed to the resulting `<pl-code>` element. Consider the following code in `question.md`:
 
-````
-<markdown>
+````md
 ```cpp{1-2,4}
 int i = 1;
 int j = 2;
 int k = 3;
 int m = 4;
 ```
-</markdown>
 ````
 
 This will be rendered to the following `<pl-code>` element (which itself will eventually be rendered to standard HTML):
@@ -357,21 +346,17 @@ int m = 4;
 </pl-code>
 ```
 
-## Escaping `<markdown>` tags
-
-Under the hood, PrairieLearn is doing some very simple parsing to determine what pieces of a question to process as Markdown: it finds an opening `<markdown>` tag and processes everything up to the closing `</markdown>` tag. But what if you want to have a literal `<markdown>` or `</markdown>` tag in your question? PrairieLearn defines a special escape syntax to enable this. If you have `<markdown#>` or `</markdown#>` in a Markdown block, they will be renderd as `<markdown>` and `</markdown>` respectively (but will not be used to find regions of text to process as Markdown). You can use more hashes to produce different strings: for instance, to have `<markdown###>` show up in the output, write `<markdown####>` in your question.
-
-## Rendering panels from `question.html`
+## Rendering panels from `question.html` or `question.md`
 
 When a question is displayed to a student, there are three "panels" that will be shown at different stages: the "question" panel, the "submission" panel, and the "answer" panel. These display the question prompt, the solution provided by the student, and the correct answer.
 
-All three panels display the same `question.html` template, but elements will render differently in each panel. For example, the `<pl-number-input>` element displays an input box in the "question" panel, the submitted answer in the "submissions" panel, and the correct answer in the "answer" panel.
+All three panels display the same `question.html` or `question.md` template, but elements will render differently in each panel. For example, the `<pl-number-input>` element displays an input box in the "question" panel, the submitted answer in the "submissions" panel, and the correct answer in the "answer" panel.
 
-Text in `question.html` can be set to only display in the "question" panel by wrapping it in the `<pl-question-panel>` element. This is useful for the question prompt, which doesn't need to be repeated in the "submission" and "answer" panels. There are also elements that only render in the other two panels.
+Text in `question.html` or `question.md` can be set to only display in the "question" panel by wrapping it in the `<pl-question-panel>` element. This is useful for the question prompt, which doesn't need to be repeated in the "submission" and "answer" panels. There are also elements that only render in the other two panels.
 
-## Hiding staff comments in `question.html`
+## Hiding staff comments in `question.html` or `question.md`
 
-Please note that HTML or JavaScript comments in your `question.html` source may be visible to students in the rendered page source. To leave small maintenance notes to staff in your `question.html` source, you may prefer to use a Mustache comment that will stay hidden. Please refer to [this FAQ item](faq.md#how-can-i-add-comments-in-my-questionhtml-source-that-wont-be-visible-to-students).
+Please note that HTML or JavaScript comments in your `question.html` source may be visible to students in the rendered page source. To leave small maintenance notes to staff in your `question.html` source, you may prefer to use a Mustache comment that will stay hidden. Please refer to [this FAQ item](faq.md#how-can-i-add-comments-in-my-questionhtml-or-questionmd-source-that-wont-be-visible-to-students).
 
 ## How questions are rendered
 
@@ -470,7 +455,7 @@ Example of valid HTML:
 
 For most elements, there are four different ways of auto-grading the student answer. This applies to elements like [`pl-number-input`](elements/#pl-number-input-element) and [`pl-string-input`](elements/#pl-string-input-element) that allow students to input an answer of their choosing, but not [`pl-multiple-choice`](elements/#pl-multiple-choice-element) or [`pl-checkbox`](elements/#pl-checkbox-element) that are much more constrained. The four ways are:
 
-1. Set the correct answer using the correct-answer attributes for each element in `question.html`. This will use the built-in grading methods for each element. Given that this option is typically used for answers with a hard-coded value, without randomization, it is not expected to be used frequently.
+1. Set the correct answer using the correct-answer attributes for each element in `question.html` or `question.md`. This will use the built-in grading methods for each element. Given that this option is typically used for answers with a hard-coded value, without randomization, it is not expected to be used frequently.
 
 2. Set `data["correct_answers"][VAR_NAME]` in `server.py`. This is for questions where you can pre-compute a single correct answer based on the (randomized) parameters.
 
@@ -491,7 +476,7 @@ Any custom grading function for the whole question should set `data["score"]` as
 
 More detailed information can be found in the docstrings for these functions. If you would prefer not to show score badges for individual parts, you may unset the dictionary entries in `data["partial_scores"]` once `data["score"]` has been computed.
 
-To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above question](#Question-server.py) or [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction) for examples of this. Note that the feeback set in the `data["feedback"]` dictionary is meant for use by custom grader code in a `server.py` file, while the feedback set in `data["partial_scores"]` is meant for use by element grader code.
+To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html` or `question.md`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above question](#Question-server.py) or [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction) for examples of this. Note that the feeback set in the `data["feedback"]` dictionary is meant for use by custom grader code in a `server.py` file, while the feedback set in `data["partial_scores"]` is meant for use by element grader code.
 
 For generated floating point answers, it's important to use consistent rounding when displaying numbers to students _and_ when computing the correct answer. For example, the following is problematic:
 

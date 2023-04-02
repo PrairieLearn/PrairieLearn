@@ -178,11 +178,10 @@ To learn more about where files are stored, please see
 
 ## Why is my QID invalid?
 
-QID stands for the **Q**uestion **Id**entifier given to the folder that contains
-the question information -- e.g. `info.json`, `question.html`, and `server.py`
-(optional) -- in `questions/`. QIDs can be invalid if they are spelled incorrectly
-or simply are not present in the directory. On sync, these issues are picked up
-and displayed as an error.
+QID stands for the **Q**uestion **Id**entifier given to the folder that contains the question
+information -- e.g. `info.json`, `question.html`/`question.md`, and `server.py` (optional) --
+in `questions/`. QIDs can be invalid if they are spelled incorrectly or simply are not present in
+the directory. On sync, these issues are picked up and displayed as an error.
 
 ```bash
 Error: invalid QID: "question_name"
@@ -328,9 +327,9 @@ The HTML specification disallows inserting special characters onto the page (i.e
 
 Docker Toolbox is no longer supported. [Docker Community Edition](https://www.docker.com/community-edition) is required to [run PrairieLearn locally](https://prairielearn.readthedocs.io/en/latest/installing/).
 
-## How can I add comments in my `question.html` source that won't be visible to students?
+## How can I add comments in my `question.html` or `question.md` source that won't be visible to students?
 
-Course staff members may want to write small maintenance comments in the `question.html` source, but HTML or JavaScript comments will remain visible in the rendered page's source (as can be seen in the browser dev tools). To prevent students from seeing staff comments, you can use [Mustache comments](https://mustache.github.io/mustache.5.html#Comments) that will be removed during the rendering process. To be safe, never put sensitive information such as solutions in a comment.
+Course staff members may want to write small maintenance comments in the `question.html` or `question.md` source, but HTML or JavaScript comments will remain visible in the rendered page's source (as can be seen in the browser dev tools). To prevent students from seeing staff comments, you can use [Mustache comments](https://mustache.github.io/mustache.5.html#Comments) that will be removed during the rendering process. To be safe, never put sensitive information such as solutions in a comment.
 
 Example:
 
@@ -369,7 +368,7 @@ If you have a block of text that you want to re-use in many questions, possibly 
                 "answer_units": "metric",
             })
 
-4.  In the `question.html` for the same question, insert the rendered template like this (note the use of triple curly braces):
+4.  In the `question.html` or `question.md` for the same question, insert the rendered template like this (note the use of triple curly braces):
 
         {{{params.units_instructions}}}
 
@@ -377,7 +376,7 @@ If you have a block of text that you want to re-use in many questions, possibly 
 
 Questions can specify the `showCorrectAnswer: false` property in `info.json` to hide the correct answer box entirely. For more information on this option, see [the documentation for question info.json files](question.md#question-infojson).
 
-For more granular control, some elements in PL have their own options for specifying whether to hide individual correct answers (for example, `pl-checkbox` has a `hide-answer-panel` attribute). Not all element types offer this as an attribute (e.g., `pl-multiple-choice` currently does not). However, to hide the correct answer for any kind of element, you can surround the particular graded pl-element with `pl-hide-in-panel` in the `question.html` file.
+For more granular control, some elements in PL have their own options for specifying whether to hide individual correct answers (for example, `pl-checkbox` has a `hide-answer-panel` attribute). Not all element types offer this as an attribute (e.g., `pl-multiple-choice` currently does not). However, to hide the correct answer for any kind of element, you can surround the particular graded pl-element with `pl-hide-in-panel` in the `question.html` or `question.md` file.
 
 For example:
 

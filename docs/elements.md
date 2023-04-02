@@ -1,4 +1,4 @@
-# PrairieLearn Elements for use in `question.html`
+# PrairieLearn Elements for use in `question.html` or `question.md`
 
 When writing questions, there exists a core pool of elements that provides
 common structures associated with assessment items. These elements can be
@@ -266,7 +266,7 @@ tolerances.
 
 ![](elements/pl-number-input-rtol.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-number-input answers-name="ans_rtol" label="$x =$"> </pl-number-input>
@@ -290,7 +290,7 @@ def generate(data):
 
 ![](elements/pl-number-input-sigfig.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-number-input answers-name="ans_sig" comparison="sigfig" digits="2" label="$x =$">
@@ -356,7 +356,7 @@ Select the correct answer from a drop-down **select** menu list of potential ans
 
 ![](elements/pl-dropdown.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <p>Select the correct word in the following quotes:</p>
@@ -419,7 +419,7 @@ Element to arrange given blocks of code or text that are displayed initially in 
 
 ![](elements/pl-order-blocks.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <p>List all the even numbers in order:</p>
@@ -495,7 +495,7 @@ Fill in the blank field that requires an **integer** input.
 
 ![](elements/pl-integer-input.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-integer-input answers-name="int_value" label="$y =$"></pl-integer-input>
@@ -565,7 +565,7 @@ Fill in the blank field that allows for mathematical symbol input.
 
 ![](elements/pl-symbolic-input.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-symbolic-input answers-name="symbolic_math" variables="x, y" label="$z =$"></pl-symbolic-input>
@@ -632,7 +632,7 @@ Do not include `i` or `j` in the list of `variables` if `allow-complex="true"`. 
 Fill in the blank field that allows for asymptotic mathematical input (i.e. big O, big Theta, etc.).
 Gives automated feedback in the case of improper asymptotic input.
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-big-o-input answers-name="ans" variable="n" correct-answer="n**2" size="10"></pl-big-o-input>
@@ -678,7 +678,7 @@ Fill in the blank field that allows for **string** value input.
 
 ![](elements/pl-string-input.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-string-input answers-name="string_value" label="Prairie"></pl-string-input>
@@ -730,7 +730,7 @@ Fill in the blank field that allows for **numeric** input and accompanying **uni
 
 #### Sample element
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-units-input answers-name="c_1" correct-answer="1m" atol="1cm"></pl-units-input>
@@ -778,7 +778,7 @@ Given a list of statements, select a matching option for each entry from a drop-
 
 ![](elements/pl-matching.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-matching answers-name="string_value">
@@ -846,7 +846,7 @@ the same shape of the variable stored in `answers-name`
 
 ![](elements/pl-matrix-component-input.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-matrix-component-input answers-name="matrixA" label="$A=$"></pl-matrix-component-input>
@@ -910,7 +910,7 @@ format (either MATLAB or Python's numpy).
 
 ![](elements/pl-matrix-input.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-matrix-input answers-name="matrixB" label="$B=$"></pl-matrix-input>
@@ -1246,7 +1246,7 @@ Displays the value of a Python variable. Uses options similar to the [pprint](ht
 
 ![](elements/pl-python-variable.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-python-variable params-name="variable"></pl-python-variable>
@@ -1301,7 +1301,7 @@ Displays a formatted display of Pandas DataFrames, with various options for disp
 
 #### Sample elements
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-dataframe params-name="df" show-index="false" show-dimensions="false" digits="4"></pl-dataframe>
@@ -1470,7 +1470,7 @@ supported programming languages (e.g. MATLAB, Mathematica, Python, or R).
 
 ![](elements/pl-variable-output.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-variable-output digits="3">
@@ -1578,7 +1578,7 @@ Displays a scalar or 2D numpy array of numbers in LaTeX using mathjax.
 
 ![](elements/pl-matrix-latex.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 $$C = <pl-matrix-latex params-name="matrixC"></pl-matrix-latex>$$
@@ -1595,7 +1595,7 @@ def generate(data):
     # Construct a matrix
     mat = np.matrix("1 2; 3 4")
 
-    # Export matrix to be displayed in question.html
+    # Export matrix to be displayed in question.html or question.md
     data["params"]["matrixC"] = pl.to_json(mat)
 ```
 
@@ -1658,7 +1658,7 @@ Using the [PyGraphviz](https://pygraphviz.github.io/) library, create Graphviz D
 
 ![](elements/pl-graph1.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-graph> digraph G { A -> B } </pl-graph>
@@ -1668,7 +1668,7 @@ Using the [PyGraphviz](https://pygraphviz.github.io/) library, create Graphviz D
 
 ![](elements/pl-graph2.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-graph params-name="matrix" params-name-labels="labels"></pl-graph>
@@ -1689,7 +1689,7 @@ def generate(data):
 
 ---
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <pl-graph params-type="networkx" params-name="random-graph"></pl-graph>
@@ -1862,7 +1862,7 @@ data["params"]["names_from_user"] = [
 
 ![](elements/pl-external-grader-variables.png)
 
-**question.html**
+**question.html** or **question.md**
 
 ```html
 <p>The setup code gives the following variables:</p>
@@ -2352,7 +2352,7 @@ new questions.
 
 #### Details
 
-The provided `script-name` corresponds to a file located within the director for the question. Parameter names are keys stored in `data["params"]` in `server.py` (i.e., those available for templating within `question.html`).
+The provided `script-name` corresponds to a file located within the director for the question. Parameter names are keys stored in `data["params"]` in `server.py` (i.e., those available for templating within `question.html` or `question.md`).
 
 #### Example implementations
 

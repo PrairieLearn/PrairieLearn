@@ -1583,7 +1583,7 @@ Any element is free to define any of the above methods, and a description for ea
 - `validate_attributes()`
   Returns `True` if this element's attributes should be validated, `False` otherwise. It's recommended that you keep this as the default `True` unless you have a clear reason otherwise.
 - `get_attributes()`
-  Returns a list of strings representing the possible attributes that this element may have defined in the `question.html`.
+  Returns a list of strings representing the possible attributes that this element may have defined in `question.html` or `question.md`.
 
 Here is an example definition of the `pl-point` element:
 

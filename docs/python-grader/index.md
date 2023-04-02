@@ -45,7 +45,7 @@ def generate(data):
 
 Each variable dictionary has entries `name` (the Python variable name in the code), `description` (human readable), and `type` (human readable). These variable lists are used for two purposes: (1) showing students which variables are used, and (2) making variables available to the student code and autograder code.
 
-### `question.html`
+### `question.html` or `question.md`
 
 At a minimum, the question markup should contain a `pl-file-editor` element (or `pl-file-upload`) and a `pl-external-grader-results` to show the status of grading jobs. These are placed in the question panel and submission panel, respectively. It is also recommended to place a `pl-file-preview` element in the submission panel so that students may see their previous code submissions. An example question markup is given below:
 

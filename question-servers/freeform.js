@@ -825,13 +825,14 @@ module.exports = {
       // problematic file in err.path.
       return {
         courseIssues: [
-          err.code === 'ENOENT'
-            ? new CourseIssueError(`Neither ${htmlFilename} nor ${mdFilename} exist`, {
-                fatal: true,
-              })
-            : new CourseIssueError((err.path ?? htmlFilename) + ': ' + err.toString(), {
-                fatal: true,
-              }),
+          new CourseIssueError(
+            err.code === 'ENOENT'
+              ? `Neither ${htmlFilename} nor ${mdFilename} exist`
+              : `${err.path ?? htmlFilename}: ${err.toString()}`,
+            {
+              fatal: true,
+            }
+          ),
         ],
         data,
         html: '',
