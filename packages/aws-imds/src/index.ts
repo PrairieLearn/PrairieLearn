@@ -1,0 +1,51 @@
+import fetch from 'node-fetch';
+
+const IMDS_URI = 'http://169.254.169.254';
+const TOKEN_PATH = '/latest/api/token';
+const TOKEN_TTL = 21_600; // 6 hours
+
+let cachedToken: string | null = null;
+let cachedTokenExpiration: number = 0;
+
+async function getToken(): Promise<string> {
+  if (cachedToken && Date.now() < cachedTokenExpiration) {
+    return cachedToken;
+  }
+
+  cachedTokenExpiration = Date.now() + TOKEN_TTL * 1000;
+  const tokenRes = await fetch(`${IMDS_URI}${TOKEN_PATH}`, {
+    method: 'PUT',
+    headers: {
+      'X-aws-ec2-metadata-token-ttl-seconds': TOKEN_TTL.toString(),
+    },
+    timeout: 5_000,
+  });
+  if (!tokenRes.ok) {
+    throw new Error(`Failed to get IMDS token: ${tokenRes.status} ${tokenRes.statusText}`);
+  }
+
+  cachedToken = await tokenRes.text();
+  return cachedToken;
+}
+
+export async function imdsFetchText(path: string): Promise<string> {
+  const token = await getToken();
+
+  const res = await fetch(`${IMDS_URI}${path}`, {
+    headers: {
+      'X-aws-ec2-metadata-token': token,
+    },
+    timeout: 5_000,
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to fetch IMDS path ${path}: ${res.status} ${res.statusText}`);
+  }
+
+  return res.text();
+}
+
+export async function imdsFetchJson(path: string): Promise<unknown> {
+  const json = await imdsFetchText(path);
+  return JSON.parse(json);
+}
