@@ -2,47 +2,33 @@ import fs from 'fs-extra';
 import { z } from 'zod';
 import { EC2Client, DescribeTagsCommand } from '@aws-sdk/client-ec2';
 import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
-import {
-  isImdsAvailable,
-  fetchInstanceHostname,
-  fetchInstanceIdentity,
-} from '@prairielearn/aws-imds';
+import { fetchInstanceHostname, fetchInstanceIdentity } from '@prairielearn/aws-imds';
 
 export class ConfigLoader<Schema extends z.ZodTypeAny> {
   private readonly schema: Schema;
-  private resolvedConfig: z.infer<Schema> | null;
-  private readonly configProxy: z.infer<Schema>;
+  private readonly resolvedConfig: z.infer<Schema>;
 
   constructor(schema: Schema) {
     this.schema = schema;
-    this.resolvedConfig = null;
-
-    this.configProxy = new Proxy<z.infer<Schema>>(
-      {},
-      {
-        get: (_target, prop) => {
-          if (!this.resolvedConfig) {
-            throw new Error('Config has not been loaded yet');
-          }
-          return this.resolvedConfig[prop];
-        },
-      }
-    );
+    this.resolvedConfig = {};
   }
 
   async loadAndValidate(filename?: string) {
-    const configFromFile = await this.loadConfigFromFile(filename);
-    const loadConfigFromSecretsManager = await this.loadConfigFromSecretsManager();
-    const configFromImds = await this.loadConfigFromImds();
+    let config = await this.loadConfigFromFile(filename);
 
-    const config = {
-      ...configFromFile,
-      ...loadConfigFromSecretsManager,
-      // Dynamic values from IMDS will always override any other values.
-      ...configFromImds,
-    };
+    if (config.runningInEc2) {
+      const configFromSecretsManager = await this.loadConfigFromSecretsManager();
+      const configFromImds = await this.loadConfigFromImds();
+      config = {
+        ...config,
+        configFromSecretsManager,
+        // Dynamic values from IMDS will always override any other values.
+        ...configFromImds,
+      };
+    }
 
-    this.resolvedConfig = this.schema.parse(config);
+    const parsedConfig = this.schema.parse(config);
+    Object.assign(this.resolvedConfig, parsedConfig);
   }
 
   private async loadConfigFromFile(filename: string | undefined): Promise<Record<string, any>> {
@@ -52,8 +38,6 @@ export class ConfigLoader<Schema extends z.ZodTypeAny> {
   }
 
   private async loadConfigFromSecretsManager(): Promise<Record<string, any>> {
-    if (!(await isImdsAvailable())) return {};
-
     const identity = await fetchInstanceIdentity();
 
     const ec2Client = new EC2Client({ region: identity.region });
@@ -76,8 +60,6 @@ export class ConfigLoader<Schema extends z.ZodTypeAny> {
   }
 
   private async loadConfigFromImds(): Promise<Record<string, any>> {
-    if (!(await isImdsAvailable())) return {};
-
     const hostname = await fetchInstanceHostname();
     const identity = await fetchInstanceIdentity();
 
@@ -89,6 +71,6 @@ export class ConfigLoader<Schema extends z.ZodTypeAny> {
   }
 
   get config() {
-    return this.configProxy;
+    return this.resolvedConfig;
   }
 }
