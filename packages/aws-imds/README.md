@@ -5,8 +5,17 @@ Utilities for fetching data from the [AWS EC2 Instance Metadata Service (IMDS)](
 ## Usage
 
 ```ts
-import { imdsFetchText, imdsFetchJson } from '@prairielearn/aws-imds';
+import { fetchImdsText, fetchImdsJson } from '@prairielearn/aws-imds';
 
-const hostname = await imdsFetchText('/latest/meta-data/hostname');
-const identity = await imdsFetchJson('/latest/dynamic/instance-identity/document');
+const hostname = await fetchImdsText('/latest/meta-data/hostname');
+const identity = await fetchImdsJson('/latest/dynamic/instance-identity/document');
+```
+
+You can also use convenience functions to fetch data from common endpoints. The data is internally validated with Zod before being returned.
+
+```ts
+import { fetchInstanceHostname, fetchInstanceIdentity } from '@prairielearn/aws-imds';
+
+const hostname = await fetchInstanceHostname();
+const identity = await fetchInstanceIdentity();
 ```
