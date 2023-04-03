@@ -44,3 +44,7 @@ export async function loadAndValidate(filename: string) {
 
 export default configLoader.config;
 ```
+
+### Obtaining values from IMDS
+
+When running on AWS, it's often useful to know information about the host on which code is running, such as the hostname, instance ID, and region. If your schema contains the keys `hostname`, `instanceId`, and `region`, those values will automatically be fetched from IMDS and made available on the resulting config.

@@ -19,10 +19,28 @@ const InstanceIdentitySchema = z.object({
 });
 type InstanceIdentity = z.infer<typeof InstanceIdentitySchema>;
 
+let isAvailable: boolean | null = null;
 let cachedToken: string | null = null;
 let cachedTokenExpiration: number = 0;
 
+export async function isImdsAvailable(): Promise<boolean> {
+  if (isAvailable !== null) return isAvailable;
+
+  try {
+    await fetch(IMDS_URI);
+    isAvailable = true;
+  } catch (err) {
+    isAvailable = false;
+  }
+
+  return isAvailable;
+}
+
 async function getToken(): Promise<string> {
+  if (!(await isImdsAvailable())) {
+    throw new Error('IMDS is not available');
+  }
+
   if (cachedToken && Date.now() < cachedTokenExpiration) {
     return cachedToken;
   }
