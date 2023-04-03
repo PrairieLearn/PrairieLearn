@@ -2,6 +2,11 @@
   "name": "@prairielearn/opentelemetry",
   "version": "1.8.0",
   "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/opentelemetry"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",

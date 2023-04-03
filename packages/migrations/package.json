@@ -2,6 +2,11 @@
   "name": "@prairielearn/migrations",
   "version": "1.0.0",
   "main": "./dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/migrations"
+  },
   "scripts": {
     "build": "tsc && copyfiles -u 1 \"./src/**/*.sql\" dist",
     "dev": "tsc --watch --preserveWatchOutput",
