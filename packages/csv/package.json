@@ -1,31 +1,29 @@
 {
-  "name": "@prairielearn/migrations",
+  "name": "@prairielearn/csv",
   "version": "1.0.0",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
-    "directory": "packages/migrations"
+    "directory": "packages/csv"
   },
   "scripts": {
-    "build": "tsc && copyfiles -u 1 \"./src/**/*.sql\" dist",
+    "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
     "test": "mocha --no-config --require ts-node/register src/*.test.ts"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "*",
-    "@types/fs-extra": "^11.0.1",
     "@types/mocha": "^10.0.1",
-    "@types/node": "^18.15.11",
-    "copyfiles": "^2.4.1",
+    "@types/multipipe": "^3.0.1",
+    "@types/node": "^18.14.2",
     "mocha": "^10.2.0",
     "ts-node": "^10.9.1",
-    "typescript": "^4.9.5"
+    "typescript": "^4.9.4"
   },
   "dependencies": {
-    "@prairielearn/error": "^1.0.0",
-    "@prairielearn/named-locks": "^1.0.0",
-    "@prairielearn/postgres": "^1.2.0",
-    "fs-extra": "^11.1.1"
+    "csv-stringify": "^6.3.0",
+    "multipipe": "^4.0.0",
+    "stream-transform": "^3.2.2"
   }
 }
