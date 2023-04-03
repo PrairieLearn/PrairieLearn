@@ -8,18 +8,26 @@ import {
   fetchInstanceIdentity,
 } from '@prairielearn/aws-imds';
 
-interface ConfigLoaderOptions<Schema extends z.ZodTypeAny> {
-  schema: Schema;
-  defaults: z.infer<Schema>;
-}
-
 export class ConfigLoader<Schema extends z.ZodTypeAny> {
-  private options: ConfigLoaderOptions<Schema>;
-  private resolvedConfig: z.infer<Schema>;
+  private readonly schema: Schema;
+  private resolvedConfig: z.infer<Schema> | null;
+  private readonly configProxy: z.infer<Schema>;
 
-  constructor(options: ConfigLoaderOptions<Schema>) {
-    this.options = options;
-    this.resolvedConfig = options.defaults;
+  constructor(schema: Schema) {
+    this.schema = schema;
+    this.resolvedConfig = null;
+
+    this.configProxy = new Proxy<z.infer<Schema>>(
+      {},
+      {
+        get: (_target, prop) => {
+          if (!this.resolvedConfig) {
+            throw new Error('Config has not been loaded yet');
+          }
+          return this.resolvedConfig[prop];
+        },
+      }
+    );
   }
 
   async loadAndValidate(filename?: string) {
@@ -28,14 +36,13 @@ export class ConfigLoader<Schema extends z.ZodTypeAny> {
     const configFromImds = await this.loadConfigFromImds();
 
     const config = {
-      ...this.options.defaults,
       ...configFromFile,
       ...loadConfigFromSecretsManager,
       // Dynamic values from IMDS will always override any other values.
       ...configFromImds,
     };
 
-    this.resolvedConfig = this.options.schema.parse(config);
+    this.resolvedConfig = this.schema.parse(config);
   }
 
   private async loadConfigFromFile(filename: string | undefined): Promise<Record<string, any>> {
@@ -82,6 +89,6 @@ export class ConfigLoader<Schema extends z.ZodTypeAny> {
   }
 
   get config() {
-    return this.resolvedConfig;
+    return this.configProxy;
   }
 }

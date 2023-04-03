@@ -11,17 +11,10 @@ import { ConfigLoader } from '@prairielearn/config';
 import { z } from 'zod';
 
 const ConfigSchema = z.object({
-  hello: z.string(),
+  hello: z.string().default('world'),
 });
 
-const defaultConfig = {
-  hello: 'world',
-};
-
-const configLoader = new ConfigLoader({
-  defaults: defaultConfig,
-  schema: ConfigSchema
-});
+const configLoader = new ConfigLoader(ConfigSchema);
 
 await configLoader.loadAndValidate('config.json');
 
@@ -33,10 +26,9 @@ Typically, you'll want to have a `config.ts` file in your own project that encap
 
 ```ts
 import { ConfigLoader } from '@prairielearn/config'
+import { z } from 'zod';
 
-const configLoader = new ConfigLoader({
-  // ...
-});
+const configLoader = new ConfigLoader(z.any());
 
 export async function loadAndValidate(filename: string) {
   await configLoader.loadAndValidate();
