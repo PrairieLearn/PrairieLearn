@@ -22,6 +22,8 @@ locals.courseDir = path.join(__dirname, '..', 'testCourse');
 
 const storedConfig = {};
 
+// TODO: regroup and rename these tests so they make sense when running
+
 describe('Test group based assessments with custom group roles from student side', function () {
   this.timeout(20000);
   before('set authenticated user', function () {
@@ -53,7 +55,7 @@ describe('Test group based assessments with custom group roles from student side
       locals.courseInstanceUrl + '/assessment/' + locals.assessment_id_without_roles;
   });
 
-  step('should contain the 4 roles for the assessment', async function () {
+  step('should contain the 4 group roles for the assessment', async function () {
     const params = {
       assessment_id: locals.assessment_id,
     };
@@ -86,14 +88,12 @@ describe('Test group based assessments with custom group roles from student side
     locals.studentUsers = result.rows;
   });
 
-  step('should switch current user to the group creator', function () {
+  step('should switch current user to the group creator and load assessment', async function () {
     config.authUid = locals.studentUsers[0].uid;
     config.authName = locals.studentUsers[0].name;
     config.authUin = '00000001';
     config.userId = locals.studentUsers[0].user_id;
-  });
 
-  step('should load assessment page successfully', async function () {
     const res = await fetch(locals.assessmentUrl);
     assert.isOk(res.ok);
     locals.$ = cheerio.load(await res.text());
@@ -122,28 +122,28 @@ describe('Test group based assessments with custom group roles from student side
     locals.$ = cheerio.load(await res.text());
   });
 
-  step('should update locals with role updates', function () {
+  step('group creator should have manager role in database', async function () {
+    // Updating local variables to persist role updates across tests
     locals.roleUpdates = [
       { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
     ];
+
+    // Check role config
+    const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+      user_id: groupUserId,
+      group_role_id: roleId,
+    }));
+    const params = {
+      assessment_id: locals.assessment_id,
+    };
+    const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
+    assert.sameDeepMembers(expected, result.rows);
   });
 
   step('should contain the 4-character join code', function () {
     elemList = locals.$('#join-code');
     locals.joinCode = elemList.text();
     assert.lengthOf(locals.joinCode, locals.$('#group-name').text().length + 1 + 4);
-  });
-
-  step('should have correct role configuration in the database', async function () {
-    const params = {
-      assessment_id: locals.assessment_id,
-    };
-    const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
-    const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
-      user_id: groupUserId,
-      group_role_id: roleId,
-    }));
-    assert.sameDeepMembers(expected, result.rows);
   });
 
   step('group role table is visible and has one user in it', function () {
@@ -188,7 +188,7 @@ describe('Test group based assessments with custom group roles from student side
     assert.lengthOf(elemList, 1);
   });
 
-  step('should be able to leave the group', async function () {
+  step('manager should be able to leave the group', async function () {
     const form = {
       __action: 'leave_group',
       __csrf_token: locals.__csrf_token,
@@ -205,7 +205,7 @@ describe('Test group based assessments with custom group roles from student side
     assert.isOk(res.ok);
   });
 
-  step('should have correct role configuration in the database', async function () {
+  step('should have no role assignments in the database after leave', async function () {
     const params = {
       assessment_id: locals.assessment_id,
     };
@@ -214,7 +214,7 @@ describe('Test group based assessments with custom group roles from student side
     assert.lengthOf(result.rows, 0);
   });
 
-  step('should be able to join group', async function () {
+  step('first user should be able to join group again', async function () {
     const form = {
       __action: 'join_group',
       __csrf_token: locals.__csrf_token,
@@ -228,15 +228,11 @@ describe('Test group based assessments with custom group roles from student side
     locals.$ = cheerio.load(await res.text());
   });
 
-  step('should have correct role configuration in the database', async function () {
-    const expectedRoleUpdates = [
-      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-    ];
-    const expected = expectedRoleUpdates.map(({ roleId, groupUserId }) => ({
+  step('first user should have manager role in database', async function () {
+    const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
       user_id: groupUserId,
       group_role_id: roleId,
     }));
-
     const params = {
       assessment_id: locals.assessment_id,
     };
@@ -249,15 +245,13 @@ describe('Test group based assessments with custom group roles from student side
     assert.lengthOf(elemList, 2);
   });
 
-  step('should be able to switch user', function () {
+  step('should be able to switch to second user and load assessment', async function () {
     let student = locals.studentUsers[1];
     config.authUid = student.uid;
     config.authName = student.name;
     config.authUin = '00000002';
     config.userId = student.user_id;
-  });
 
-  step('should load assessment page successfully', async function () {
     const res = await fetch(locals.assessmentUrl);
     assert.isOk(res.ok);
     locals.$ = cheerio.load(await res.text());
@@ -271,7 +265,7 @@ describe('Test group based assessments with custom group roles from student side
     assert.isString(locals.__csrf_token);
   });
 
-  step('should be able to join group', async function () {
+  step('second user should be able to join group', async function () {
     const form = {
       __action: 'join_group',
       __csrf_token: locals.__csrf_token,
@@ -290,7 +284,7 @@ describe('Test group based assessments with custom group roles from student side
     assert.isTrue(elemList.is(':disabled'));
   });
 
-  step('should have correct role configuration in the database', async function () {
+  step('should have correct role configuration in the database for two users', async function () {
     const expectedRoleUpdates = [
       { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
       { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
@@ -306,7 +300,7 @@ describe('Test group based assessments with custom group roles from student side
     assert.sameDeepMembers(expected, result.rows);
   });
 
-  step('should not render the group role table', function () {
+  step('should not render the group role table for non-assigner', function () {
     elemList = locals.$('#role-select-form').find('tr');
     assert.lengthOf(elemList, 0);
   });
@@ -316,15 +310,13 @@ describe('Test group based assessments with custom group roles from student side
     assert.lengthOf(elemList, 1);
   });
 
-  step('should be able to switch user', function () {
+  step('should be able to switch to third user and load assessment', async function () {
     let student = locals.studentUsers[2];
     config.authUid = student.uid;
     config.authName = student.name;
     config.authUin = '00000003';
     config.userId = student.user_id;
-  });
 
-  step('should load assessment page successfully', async function () {
     const res = await fetch(locals.assessmentUrl);
     assert.isOk(res.ok);
     locals.$ = cheerio.load(await res.text());
@@ -338,7 +330,7 @@ describe('Test group based assessments with custom group roles from student side
     assert.isString(locals.__csrf_token);
   });
 
-  step('should be able to join group', async function () {
+  step('should be able to join group as third user', async function () {
     const form = {
       __action: 'join_group',
       __csrf_token: locals.__csrf_token,
@@ -352,7 +344,7 @@ describe('Test group based assessments with custom group roles from student side
     locals.$ = cheerio.load(await res.text());
   });
 
-  step('should not be able to start assessment', function () {
+  step('should not be able to start assessment as non-assigner', function () {
     elemList = locals.$('#start-assessment');
     assert.isTrue(elemList.is(':disabled'));
   });
@@ -367,7 +359,12 @@ describe('Test group based assessments with custom group roles from student side
     assert.lengthOf(elemList, 1);
   });
 
-  step('should have correct role configuration in the database', async function () {
+  step('should display error for too many recorders', function () {
+    elemList = locals.$('.alert:contains(Recorder has too many assignments)');
+    assert.lengthOf(elemList, 1);
+  });
+
+  step('should have correct role configuration in the database for three users', async function () {
     const expectedRoleUpdates = [
       { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
       { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
@@ -384,15 +381,13 @@ describe('Test group based assessments with custom group roles from student side
     assert.sameDeepMembers(expected, result.rows);
   });
 
-  step('should be able to switch user', function () {
+  step('should be able to switch to fourth user and load assessment', async function () {
     let student = locals.studentUsers[3];
     config.authUid = student.uid;
     config.authName = student.name;
     config.authUin = '00000004';
     config.userId = student.user_id;
-  });
 
-  step('should load assessment page successfully', async function () {
     const res = await fetch(locals.assessmentUrl);
     assert.isOk(res.ok);
     locals.$ = cheerio.load(await res.text());
@@ -406,7 +401,7 @@ describe('Test group based assessments with custom group roles from student side
     assert.isString(locals.__csrf_token);
   });
 
-  step('should be able to join group', async function () {
+  step('should be able to join group as fourth user', async function () {
     const form = {
       __action: 'join_group',
       __csrf_token: locals.__csrf_token,
@@ -430,12 +425,17 @@ describe('Test group based assessments with custom group roles from student side
     assert.lengthOf(elemList, 1);
   });
 
+  step('should display error for too many recorders', function () {
+    elemList = locals.$('.alert:contains(Recorder has too many assignments)');
+    assert.lengthOf(elemList, 1);
+  });
+
   step('should not render the group role table', function () {
     elemList = locals.$('#role-select-form').find('tr');
     assert.lengthOf(elemList, 0);
   });
 
-  step('should have correct role configuration in the database', async function () {
+  step('should have correct role configuration in the database for four users', async function () {
     const expectedRoleUpdates = [
       { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
       { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
@@ -453,15 +453,13 @@ describe('Test group based assessments with custom group roles from student side
     assert.sameDeepMembers(expected, result.rows);
   });
 
-  step('should be able to switch user', function () {
+  step('should be able to switch back to first user and load assessment', async function () {
     let student = locals.studentUsers[0];
     config.authUid = student.uid;
     config.authName = student.name;
     config.authUin = '00000001';
     config.userId = student.user_id;
-  });
 
-  step('should load assessment page successfully', async function () {
     const res = await fetch(locals.assessmentUrl);
     assert.isOk(res.ok);
     locals.$ = cheerio.load(await res.text());
@@ -481,7 +479,7 @@ describe('Test group based assessments with custom group roles from student side
     assert.lengthOf(elemList, 5);
   });
 
-  step('should edit role table to correct configuration', function () {
+  step('should be able to edit role table to correct configuration', function () {
     // Uncheck all of the inputs
     const roleIds = locals.groupRoles.map((role) => role.id);
     const userIds = locals.studentUsers.map((user) => user.user_id);
@@ -504,7 +502,7 @@ describe('Test group based assessments with custom group roles from student side
       { roleId: locals.contributor.id, groupUserId: locals.studentUsers[3].user_id },
     ];
 
-    // Drop and store the first element here, since we want to test whether Manager is correctly reassigned
+    // Uncheck manager role in table to test whether Manager is correctly reassigned
     locals.assignerRoleUpdate = roleUpdates.shift();
     locals.roleUpdates = roleUpdates;
 
@@ -540,21 +538,24 @@ describe('Test group based assessments with custom group roles from student side
     locals.$ = cheerio.load(await res.text());
   });
 
-  step('should have correct role configuration in the database', async function () {
-    const params = {
-      assessment_id: locals.assessment_id,
-    };
-    const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
-    // We expect the db to have all role updates, including the assigner role
-    locals.roleUpdates.push(locals.assignerRoleUpdate);
-    const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
-      user_id: groupUserId,
-      group_role_id: roleId,
-    }));
-    assert.sameDeepMembers(expected, result.rows);
-  });
+  step(
+    'should have correct role configuration in the database after reassigning roles',
+    async function () {
+      const params = {
+        assessment_id: locals.assessment_id,
+      };
+      const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
+      // We expect the db to have all role updates, including the assigner role
+      locals.roleUpdates.push(locals.assignerRoleUpdate);
+      const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+        user_id: groupUserId,
+        group_role_id: roleId,
+      }));
+      assert.sameDeepMembers(expected, result.rows);
+    }
+  );
 
-  step('should have correct roles checked in the table', function () {
+  step('should have all four roles checked once in the table', function () {
     elemList = locals.$('#role-select-form').find('tr').find('input:checked');
     assert.lengthOf(elemList, 4);
 
@@ -583,7 +584,7 @@ describe('Test group based assessments with custom group roles from student side
     assert.lengthOf(elemList, 0);
   });
 
-  step('should edit role table to correct configuration', function () {
+  step('should be able to assign too many recorders', function () {
     // Uncheck all of the inputs
     const roleIds = locals.groupRoles.map((role) => role.id);
     const userIds = locals.studentUsers.map((user) => user.user_id);
@@ -611,7 +612,7 @@ describe('Test group based assessments with custom group roles from student side
     assert.lengthOf(elemList, 4);
   });
 
-  step('should press submit button to perform the role updates', async function () {
+  step('should be able to press submit button to perform the role updates', async function () {
     // Grab IDs of checkboxes to construct update request
     const checkedElementIds = {};
     for (let i = 0; i < elemList.length; i++) {
@@ -635,17 +636,20 @@ describe('Test group based assessments with custom group roles from student side
     locals.$ = cheerio.load(await res.text());
   });
 
-  step('should have correct role configuration in the database', async function () {
-    const params = {
-      assessment_id: locals.assessment_id,
-    };
-    const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
-    const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
-      user_id: groupUserId,
-      group_role_id: roleId,
-    }));
-    assert.sameDeepMembers(expected, result.rows);
-  });
+  step(
+    'should have correct role configuration in the database after assigning two recorders',
+    async function () {
+      const params = {
+        assessment_id: locals.assessment_id,
+      };
+      const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
+      const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+        user_id: groupUserId,
+        group_role_id: roleId,
+      }));
+      assert.sameDeepMembers(expected, result.rows);
+    }
+  );
 
   step('should have correct roles checked in the table', function () {
     elemList = locals.$('#role-select-form').find('tr').find('input:checked');
@@ -664,7 +668,7 @@ describe('Test group based assessments with custom group roles from student side
     assert.lengthOf(elemList, 1);
   });
 
-  step('should edit role table to correct configuration', function () {
+  step('should edit role table to have two contributors', function () {
     // Uncheck all of the inputs
     const roleIds = locals.groupRoles.map((role) => role.id);
     const userIds = locals.studentUsers.map((user) => user.user_id);
@@ -753,15 +757,13 @@ describe('Test group based assessments with custom group roles from student side
     assert.isTrue(elemList.is(':disabled'));
   });
 
-  step('should be able to switch user', function () {
+  step('should be able to switch to fourth user and load assessment', async function () {
     let student = locals.studentUsers[3];
     config.authUid = student.uid;
     config.authName = student.name;
     config.authUin = '00000004';
     config.userId = student.user_id;
-  });
 
-  step('should load assessment page successfully', async function () {
     const res = await fetch(locals.assessmentUrl);
     assert.isOk(res.ok);
     locals.$ = cheerio.load(await res.text());
@@ -776,7 +778,7 @@ describe('Test group based assessments with custom group roles from student side
     assert.isString(locals.__csrf_token);
   });
 
-  step('should be able to leave the group', async function () {
+  step('should be able to leave the group as fourth user', async function () {
     const form = {
       __action: 'leave_group',
       __csrf_token: locals.__csrf_token,
@@ -789,23 +791,13 @@ describe('Test group based assessments with custom group roles from student side
     locals.$ = cheerio.load(await res.text());
   });
 
-  step('should update locals with roles updates', function () {
-    locals.roleUpdates = [
-      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-      { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
-    ];
-  });
-
-  step('should be able to switch user', function () {
+  step('should be able to switch to first user and load assessment', async function () {
     let student = locals.studentUsers[0];
     config.authUid = student.uid;
     config.authName = student.name;
     config.authUin = '00000001';
     config.userId = student.user_id;
-  });
 
-  step('should load assessment page successfully', async function () {
     const res = await fetch(locals.assessmentUrl);
     assert.isOk(res.ok);
     locals.$ = cheerio.load(await res.text());
@@ -819,17 +811,26 @@ describe('Test group based assessments with custom group roles from student side
     assert.isString(locals.__csrf_token);
   });
 
-  step('should have correct role configuration in the database', async function () {
-    const params = {
-      assessment_id: locals.assessment_id,
-    };
-    const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
-    const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
-      user_id: groupUserId,
-      group_role_id: roleId,
-    }));
-    assert.sameDeepMembers(expected, result.rows);
-  });
+  step(
+    'should have correct role configuration in the database after fourth user leaves',
+    async function () {
+      // Non-required roles are removed now that group size = # of required roles
+      locals.roleUpdates = [
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
+      ];
+      const params = {
+        assessment_id: locals.assessment_id,
+      };
+      const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
+      const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+        user_id: groupUserId,
+        group_role_id: roleId,
+      }));
+      assert.sameDeepMembers(expected, result.rows);
+    }
+  );
 
   step('should have correct roles checked in the table', function () {
     elemList = locals.$('#role-select-form').find('tr').find('input:checked');
@@ -843,15 +844,13 @@ describe('Test group based assessments with custom group roles from student side
     });
   });
 
-  step('should be able to switch user', function () {
+  step('should be able to switch to third user and load assessment', async function () {
     let student = locals.studentUsers[2];
     config.authUid = student.uid;
     config.authName = student.name;
     config.authUin = '00000003';
     config.userId = student.user_id;
-  });
 
-  step('should load assessment page successfully', async function () {
     const res = await fetch(locals.assessmentUrl);
     assert.isOk(res.ok);
     locals.$ = cheerio.load(await res.text());
@@ -865,7 +864,7 @@ describe('Test group based assessments with custom group roles from student side
     assert.isString(locals.__csrf_token);
   });
 
-  step('should be able to leave the group', async function () {
+  step('should be able to leave the group as third user', async function () {
     const form = {
       __action: 'leave_group',
       __csrf_token: locals.__csrf_token,
@@ -878,49 +877,53 @@ describe('Test group based assessments with custom group roles from student side
     locals.$ = cheerio.load(await res.text());
   });
 
-  step('should have correct role configuration in the database', async function () {
-    const params = {
-      assessment_id: locals.assessment_id,
-    };
-    // Reflector is given to the first user
-    const roleUpdates1 = [
-      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-      { roleId: locals.reflector.id, groupUserId: locals.studentUsers[0].user_id },
-      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-    ];
-    // Reflector is given to the second user
-    const roleUpdates2 = [
-      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-      { roleId: locals.reflector.id, groupUserId: locals.studentUsers[1].user_id },
-      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-    ];
-    // Assert that the reflector role is given to either first or second user
-    const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
-    assert.lengthOf(result.rows, 3);
-    // Get all roles for first user
-    const firstUserRoleUpdates = result.rows.filter(
-      (row) => row.user_id === locals.studentUsers[0].user_id
-    );
-    assert.isTrue(firstUserRoleUpdates.length === 1 || firstUserRoleUpdates.length === 2);
-    const roleUpdates = firstUserRoleUpdates.length === 2 ? roleUpdates1 : roleUpdates2;
-    const expected = roleUpdates.map(({ roleId, groupUserId }) => ({
-      user_id: groupUserId,
-      group_role_id: roleId,
-    }));
+  step(
+    'should have reflector role transferred in database after third user leaves',
+    async function () {
+      const params = {
+        assessment_id: locals.assessment_id,
+      };
+      // Scenario 1: Reflector is given to the first user
+      const roleUpdates1 = [
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[0].user_id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+      ];
+      // Scenario 2: Reflector is given to the second user
+      const roleUpdates2 = [
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[1].user_id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+      ];
 
-    assert.sameDeepMembers(expected, result.rows);
-    locals.roleUpdates = roleUpdates;
-  });
+      // Assert that the reflector role is given to either first or second user
+      const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
+      assert.lengthOf(result.rows, 3);
 
-  step('should be able to switch user', function () {
+      // Get all roles for first user
+      const firstUserRoleUpdates = result.rows.filter(
+        (row) => row.user_id === locals.studentUsers[0].user_id
+      );
+      assert.isTrue(firstUserRoleUpdates.length === 1 || firstUserRoleUpdates.length === 2);
+
+      const roleUpdates = firstUserRoleUpdates.length === 2 ? roleUpdates1 : roleUpdates2;
+      const expected = roleUpdates.map(({ roleId, groupUserId }) => ({
+        user_id: groupUserId,
+        group_role_id: roleId,
+      }));
+
+      assert.sameDeepMembers(expected, result.rows);
+      locals.roleUpdates = roleUpdates;
+    }
+  );
+
+  step('should be able to switch to first user and load assessment', async function () {
     let student = locals.studentUsers[0];
     config.authUid = student.uid;
     config.authName = student.name;
     config.authUin = '00000001';
     config.userId = student.user_id;
-  });
 
-  step('should load assessment page successfully', async function () {
     const res = await fetch(locals.assessmentUrl);
     assert.isOk(res.ok);
     locals.$ = cheerio.load(await res.text());
@@ -945,7 +948,7 @@ describe('Test group based assessments with custom group roles from student side
     });
   });
 
-  step('should be able to leave the group', async function () {
+  step('should be able to leave the group as first user', async function () {
     const form = {
       __action: 'leave_group',
       __csrf_token: locals.__csrf_token,
@@ -958,23 +961,13 @@ describe('Test group based assessments with custom group roles from student side
     locals.$ = cheerio.load(await res.text());
   });
 
-  step('should update locals with roles updates', function () {
-    locals.roleUpdates = [
-      { roleId: locals.manager.id, groupUserId: locals.studentUsers[1].user_id },
-      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-      { roleId: locals.reflector.id, groupUserId: locals.studentUsers[1].user_id },
-    ];
-  });
-
-  step('should be able to switch user', function () {
+  step('should be able to switch to second user and load assessment', async function () {
     let student = locals.studentUsers[1];
     config.authUid = student.uid;
     config.authName = student.name;
     config.authUin = '00000002';
     config.userId = student.user_id;
-  });
 
-  step('should load assessment page successfully', async function () {
     const res = await fetch(locals.assessmentUrl);
     assert.isOk(res.ok);
     locals.$ = cheerio.load(await res.text());
@@ -988,7 +981,12 @@ describe('Test group based assessments with custom group roles from student side
     assert.isString(locals.__csrf_token);
   });
 
-  step('should have correct role configuration in the database', async function () {
+  step('should have transferred all required roles to second user in database', async function () {
+    locals.roleUpdates = [
+      { roleId: locals.manager.id, groupUserId: locals.studentUsers[1].user_id },
+      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+      { roleId: locals.reflector.id, groupUserId: locals.studentUsers[1].user_id },
+    ];
     const params = {
       assessment_id: locals.assessment_id,
     };
@@ -1017,33 +1015,20 @@ describe('Test group based assessments with custom group roles from student side
     assert.lengthOf(elemList, 2);
   });
 
-  step('should be able to switch user', function () {
-    let student = locals.studentUsers[0];
-    config.authUid = student.uid;
-    config.authName = student.name;
-    config.authUin = '00000001';
-    config.userId = student.user_id;
-  });
+  step(
+    'should be able to switch to first user and load assessment without roles',
+    async function () {
+      let student = locals.studentUsers[0];
+      config.authUid = student.uid;
+      config.authName = student.name;
+      config.authUin = '00000001';
+      config.userId = student.user_id;
 
-  step('should load assessment page successfully', async function () {
-    const res = await fetch(locals.assessmentUrl);
-    assert.isOk(res.ok);
-    locals.$ = cheerio.load(await res.text());
-  });
-
-  step('should have a CSRF token', function () {
-    elemList = locals.$('form input[name="__csrf_token"]');
-    assert.lengthOf(elemList, 2);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.__csrf_token = elemList[0].attribs.value;
-    assert.isString(locals.__csrf_token);
-  });
-
-  step('should load new assessment page successfully', async function () {
-    const res = await fetch(locals.assessmentUrlWithoutRoles);
-    assert.isOk(res.ok);
-    locals.$ = cheerio.load(await res.text());
-  });
+      const res = await fetch(locals.assessmentUrlWithoutRoles);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
+    }
+  );
 
   step('should have a CSRF token', function () {
     elemList = locals.$('form input[name="__csrf_token"]');
@@ -1053,7 +1038,7 @@ describe('Test group based assessments with custom group roles from student side
     assert.isString(locals.__csrf_token);
   });
 
-  step('should be able to create a group', async function () {
+  step('should be able to create a group in assessment without roles', async function () {
     locals.group_name = 'groupAA';
     const form = {
       __action: 'create_group',
@@ -1068,7 +1053,7 @@ describe('Test group based assessments with custom group roles from student side
     locals.$ = cheerio.load(await res.text());
   });
 
-  step('group role table is not visible', function () {
+  step('group role table is not visible in assessment without roles', function () {
     elemList = locals.$('#role-select-form');
     assert.lengthOf(elemList, 0);
   });
