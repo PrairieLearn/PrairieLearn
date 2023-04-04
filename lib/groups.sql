@@ -110,7 +110,9 @@ SELECT
   gr.role_name,
   COUNT(gur.user_id) AS count,
   gr.maximum,
-  gr.minimum
+  gr.minimum,
+  gr.can_assign_roles_at_start,
+  gr.can_assign_roles_during_assessment
 FROM
   (
     SELECT
@@ -135,9 +137,11 @@ FROM
   ) AS gur ON gur.group_role_id = gr.id
 GROUP BY
   gr.id,
+  gr.role_name,
   maximum,
   minimum,
-  role_name;
+  can_assign_roles_at_start,
+  can_assign_roles_during_assessment;
 
 -- BLOCK get_assessment_level_permissions
 SELECT
@@ -300,3 +304,33 @@ WITH
   )
 SELECT
   1;
+
+-- FIXME: Even with a RETURNING clause, this wouldn't do anything when
+-- added as a CTE in the update_group_roles query below.
+-- Is it preferred that we combine them?
+-- BLOCK clear_group_roles
+DELETE FROM group_user_roles
+WHERE
+  group_id = $group_id;
+
+-- BLOCK update_group_roles
+WITH
+  assign_new_group_roles AS (
+    INSERT INTO
+      group_user_roles (group_id, user_id, group_role_id)
+    SELECT
+      (role_assignment ->> 'group_id')::bigint,
+      (role_assignment ->> 'user_id')::bigint,
+      (role_assignment ->> 'group_role_id')::bigint
+    FROM
+      JSON_ARRAY_ELEMENTS($role_assignments::json) as role_assignment
+  )
+INSERT INTO
+  group_logs (authn_user_id, user_id, group_id, action)
+VALUES
+  (
+    $authn_user_id,
+    $user_id,
+    $group_id,
+    'update roles'
+  );

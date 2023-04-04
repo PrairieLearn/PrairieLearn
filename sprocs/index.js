@@ -160,7 +160,6 @@ module.exports.init = function (callback) {
       'workspace_hosts_find_terminable.sql',
       'group_users_insert.sql',
       'sync_assessment_modules.sql',
-      'group_roles_update.sql',
       'group_leave.sql',
     ],
     function (filename, callback) {
