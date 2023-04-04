@@ -24,15 +24,6 @@ router.get(
     });
     res.locals.assessment_stats = statsResult.rows;
 
-    res.locals.question_attempts_histogram = null;
-    res.locals.question_attempts_before_giving_up_histogram = null;
-    res.locals.question_attempts_histogram_hw = null;
-    res.locals.question_attempts_before_giving_up_histogram_hw = null;
-    // res.locals.question_attempts_histogram = res.locals.result.question_attempts_histogram;
-    // res.locals.question_attempts_before_giving_up_histogram = res.locals.result.question_attempts_before_giving_up_histogram;
-    // res.locals.question_attempts_histogram_hw = res.locals.result.question_attempts_histogram_hw;
-    // res.locals.question_attempts_before_giving_up_histogram_hw = res.locals.result.question_attempts_before_giving_up_histogram_hw;
-
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   })
 );
