@@ -1,7 +1,63 @@
-.pl-code-highlighted-line {
-    margin-left: -0.5em;
-    margin-right: -0.5em;
-    padding-right: 0.5em;
-    padding-left: 0.5em;
+.pl-code .pl-code-highlighted-line {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding-right: 1rem;
+    padding-left: 1rem;
     display: block;
+}
+
+.pl-code > div {
+    background: var(--pl-code-background-color, transparent);
+    border: 1px solid #ccc;
+    margin-bottom: 0.5rem;
+}
+
+.pl-code:not(.show-line-numbers) {
+    color: green;
+}
+
+.pl-code:not(.show-line-numbers) pre {
+    margin-bottom: 0px;
+    padding: 0.5rem 1rem;
+}
+
+.pl-code.show-line-numbers table {
+    border: none;
+}
+
+.pl-code.show-line-numbers td.linenos {
+    border-right: 1px solid #ccc;
+    /* background-color: var(--pl-code-line-number-background-color, transparent) */
+}
+
+.pl-code.show-line-numbers td.linenos div pre span {
+    color: var(--pl-code-line-number-color, default);
+}
+
+.pl-code.show-line-numbers td.linenos pre {
+    user-select: none;
+    line-height: 125%;
+    margin-bottom: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.pl-code.show-line-numbers td.linenos pre span {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.pl-code.show-line-numbers td.code {
+    width: 100%;
+    border: none;
+    padding: 0px;
+}
+
+.pl-code.show-line-numbers td.code pre {
+    padding: 0.5rem 1rem;
+    margin-bottom: 0px;
+    overflow: visible;
+}
+
+.pl-code.show-line-numbers > div {
+    overflow: auto;
 }

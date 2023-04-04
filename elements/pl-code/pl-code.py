@@ -21,12 +21,10 @@ NO_HIGHLIGHT_DEFAULT = False
 SOURCE_FILE_NAME_DEFAULT = None
 PREVENT_SELECT_DEFAULT = False
 HIGHLIGHT_LINES_DEFAULT = None
-HIGHLIGHT_LINES_COLOR_DEFAULT = "#b3d7ff"
+HIGHLIGHT_LINES_COLOR_DEFAULT = None
 DIRECTORY_DEFAULT = "."
 COPY_CODE_BUTTON_DEFAULT = False
 SHOW_LINE_NUMBERS_DEFAULT = False
-LINE_NUMBER_COLOR_DEFAULT = "black"
-LINE_NUMBER_BACKGROUND_COLOR_DEFAULT = "lightgray"
 
 # These are the same colors used in pl-external-grader-result
 ANSI_COLORS = {
@@ -80,29 +78,14 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
             if t != 1:
                 yield t, value
             if i + 1 in self.hl_lines:  # i + 1 because Python indexes start at 0
-                yield 1, f'<span class="pl-code-highlighted-line" style="background-color: {self.style.hl_color}">{value}</span>'
+                yield 1, f'<span class="pl-code-highlighted-line" style="background-color: {self.style.highlight_color}">{value}</span>'
             else:
                 yield 1, value
 
     @property
     def _linenos_style(self) -> str:
-        """
-        Change style used to wrap tags associated with line numbers to avoid them being picked up when copying.
-        Based on code at https://github.com/pygments/pygments/blob/master/pygments/formatters/html.py#L596-L601
-        """
-        return f"""
-            color: {self.style.line_number_color};
-            background-color: {self.style.line_number_background_color};
-            padding-left: 5px;
-            padding-right: 5px;
-            margin-right: 5px;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            -khtml-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-        """
+        # All styling will be handled in CSS.
+        return ""
 
 
 def get_lexer_by_name(name: str) -> Optional[pygments.lexer.Lexer]:
@@ -202,13 +185,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "show-line-numbers", SHOW_LINE_NUMBERS_DEFAULT
     )
 
-    line_number_color_choice = pl.get_color_attrib(
-        element, "line-number-color", LINE_NUMBER_COLOR_DEFAULT
-    )
-    line_number_background_color_choice = pl.get_color_attrib(
-        element, "line-number-background-color", LINE_NUMBER_BACKGROUND_COLOR_DEFAULT
-    )
-
     # The no-highlight option is deprecated, but supported for backwards compatibility
     if pl.get_boolean_attrib(element, "no-highlight", NO_HIGHLIGHT_DEFAULT):
         language = None
@@ -245,18 +221,21 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     pygments_style = get_style_by_name(style)
 
+    background_color = pygments_style.background_color or "transparent"
+    line_number_color = pygments_style.line_number_color
+    line_number_background_color = pygments_style.line_number_color
+
     class CustomStyleWithAnsiColors(pygments_style):
         styles = dict(pygments_style.styles)
         styles.update(color_tokens(ANSI_COLORS, ANSI_COLORS))
 
-        line_number_color = line_number_color_choice
-        line_number_background_color = line_number_background_color_choice
-        hl_color = highlight_lines_color
+        highlight_color = (
+            pygments_style.highlight_color or highlight_lines_color or "#b3d7ff"
+        )
 
     formatter_opts = {
         "style": CustomStyleWithAnsiColors,
-        "cssclass": "mb-2 rounded",
-        "prestyles": "padding: 0.5rem; margin-bottom: 0px",
+        "nobackground": True,
         "noclasses": True,
     }
 
@@ -264,7 +243,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         formatter_opts["hl_lines"] = parse_highlight_lines(highlight_lines)
 
     if show_line_numbers:
-        formatter_opts["linenos"] = "inline"
+        formatter_opts["linenos"] = "table"
 
     formatter = HighlightingHtmlFormatter(**formatter_opts)
 
@@ -274,6 +253,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "uuid": pl.get_uuid(),
         "code": code,
         "prevent_select": prevent_select,
+        "style": f"--pl-code-background-color: {background_color}; --pl-code-line-number-color: {line_number_color}; --pl-code-line-number-background-color: {line_number_background_color};",
+        "show_line_numbers": show_line_numbers,
         "copy_code_button": pl.get_boolean_attrib(
             element, "copy-code-button", COPY_CODE_BUTTON_DEFAULT
         ),
