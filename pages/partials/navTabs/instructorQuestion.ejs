@@ -10,6 +10,7 @@
     urlSuffix:      '/question/'+question.id+'/preview',
     iconClasses:    'fas fa-tv',
     tabLabel:       'Preview'}) %>
+<% if (question.course_id === course.id) { %>
 <%- include('navTab', {
     activeSubPage:  'settings',
     urlSuffix:      '/question/'+question.id+'/settings',
@@ -20,3 +21,4 @@
     urlSuffix:      '/question/'+question.id+'/statistics',
     iconClasses:    'fas fa-chart-bar',
     tabLabel:       'Statistics'}) %>
+<% } %>
