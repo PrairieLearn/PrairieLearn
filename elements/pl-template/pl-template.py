@@ -9,9 +9,10 @@ import lxml.etree
 import lxml.html
 import prairielearn as pl
 
-WARN_UNDEFINED_DEFAULT = False
+LOG_VARIABLE_WARNINGS_DEFAULT = False
 TRIM_WHITESPACE_DEFAULT = True
-LOG_WARNINGS_DEFAULT = True
+DIRECTORY_CHOICE_DEFAULT = "serverFilesCourse"
+LOG_TAG_WARNINGS_DEFAULT = True
 
 # These elements should be display only
 ALLOWED_PL_TAGS = frozenset(("pl-template", "pl-variable", "pl-code", "pl-card"))
@@ -48,7 +49,7 @@ def get_file_path(data: pl.QuestionData, element: lxml.html.HtmlElement) -> str:
     dir_choice = pl.get_string_attrib(
         element,
         "directory",
-        "serverFilesCourse",
+        DIRECTORY_CHOICE_DEFAULT,
     )
 
     if dir_choice not in parent_dir_dict:
@@ -65,8 +66,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     required_attribs = ["file-name"]
     optional_attribs = [
         "directory",
-        "warn-undefined",
-        "log-warnings",
+        "log-variable-warnings",
+        "log-tag-warnings",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -112,16 +113,18 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 f'Tags inside of pl-template must be pl-variable, not "{child.tag}".'
             )
 
-    warn_undefined = pl.get_boolean_attrib(
-        element, "warn-undefined", WARN_UNDEFINED_DEFAULT
+    log_variable_warnings = pl.get_boolean_attrib(
+        element, "log-variable-warnings", LOG_VARIABLE_WARNINGS_DEFAULT
     )
 
-    log_warnings = pl.get_boolean_attrib(element, "log-warnings", LOG_WARNINGS_DEFAULT)
+    log_tag_warnings = pl.get_boolean_attrib(
+        element, "log-tag-warnings", LOG_TAG_WARNINGS_DEFAULT
+    )
 
     with open(get_file_path(data, element), "r") as f:
-        res = chevron.render(f, variable_dict, warn=warn_undefined)
+        res = chevron.render(f, variable_dict, warn=log_variable_warnings)
 
-    if log_warnings:
+    if log_tag_warnings:
         check_tags(res)
 
     return res
