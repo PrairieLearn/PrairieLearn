@@ -82,11 +82,6 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
             else:
                 yield 1, value
 
-    @property
-    def _linenos_style(self) -> str:
-        # All styling will be handled in CSS.
-        return ""
-
 
 def get_lexer_by_name(name: str) -> Optional[pygments.lexer.Lexer]:
     """
@@ -121,8 +116,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "copy-code-button",
         "style",
         "show-line-numbers",
-        "line-number-color",
-        "line-number-background-color",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -253,7 +246,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "uuid": pl.get_uuid(),
         "code": code,
         "prevent_select": prevent_select,
-        "style": f"--pl-code-background-color: {background_color}; --pl-code-line-number-color: {line_number_color}; --pl-code-line-number-background-color: {line_number_background_color};",
+        "background_color": background_color,
+        "line_number_color": line_number_color,
+        "line_number_background_color": line_number_background_color,
         "show_line_numbers": show_line_numbers,
         "copy_code_button": pl.get_boolean_attrib(
             element, "copy-code-button", COPY_CODE_BUTTON_DEFAULT

@@ -6,7 +6,8 @@ $(function(){
 </script>
 {{/copy_code_button}}
 
-<div class="pl-code mb-3 {{#show_line_numbers}}show-line-numbers{{/show_line_numbers}}" style="{{style}}">
+<div class="pl-code mb-3 {{#show_line_numbers}}show-line-numbers{{/show_line_numbers}}"
+    style="--pl-code-background-color: {{background_color}}; --pl-code-line-number-color: {{line_number_color}}; --pl-code-line-number-background-color: {{line_number_background_color}};">
     <div
         id="pl-code-{{uuid}}"
         class="rounded"

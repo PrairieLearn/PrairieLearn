@@ -701,8 +701,8 @@ def get_color_attrib(element: lxml.html.HtmlElement, name: str, *args: str) -> s
 
 @overload
 def get_color_attrib(
-    element: lxml.html.HtmlElement, name: str, *args: Union[str, None]
-) -> Union[str, None]:
+    element: lxml.html.HtmlElement, name: str, *args: None
+) -> Optional[str]:
     ...
 
 
