@@ -153,7 +153,7 @@ module.exports.pullAndUpdate = function (locals, callback) {
     // ensures that if the sync fails, we'll sync from the same starting commit
     // hash next time.
     const syncStage2 = () => {
-      courseUtil.updateCourseCommitHash(locals.course.path, (err, hash) => {
+      courseUtil.getCommitHash(locals.course.path, (err, hash) => {
         ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
         endGitHash = hash;
         syncStage3();
