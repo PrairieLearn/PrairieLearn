@@ -175,9 +175,9 @@
         "ensureExecutorImageAtStartup": {
             "description": "If enabled, the server won't start serving traffic until the executor image is present",
             "type": "boolean"
-        }, 
-        "questionSharingEnabled": {
-            "description": "Allow question from one course to be imported into assessments in another course on this server",
+        },
+        "checkSharingOnSync": {
+            "description": "During sync, should QIDs of shared questions being imported be validated? Turn off in dev mode to enable successful syncs when you don't have access to imported questions. Must be true in production for data integrity.",
             "type": "boolean"
         }
     }

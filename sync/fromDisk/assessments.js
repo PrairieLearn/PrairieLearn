@@ -381,11 +381,10 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
   }
 
   let missingQids = Array.from(importedQids).filter((qid) => !(qid in importedQuestions));
-  // ignore question import errors in dev mode
-  if (!config.devMode) {
+  if (config.checkSharingOnSync) {
     missingQids.forEach((qid) => {
       importedQidAssessmentMap.get(qid).forEach((tid) => {
-        // TODO: give a more verbose error message if the reason the question isn't found
+        // TODO: give a different error message if the reason the question isn't found
         // is because the course slug is invalid/doesn't exist? or just give the same message as if the question id doesn't exist?
         infofile.addError(
           assessments[tid],
