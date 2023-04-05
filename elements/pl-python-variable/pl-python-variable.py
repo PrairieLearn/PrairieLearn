@@ -23,6 +23,7 @@ SHOW_HEADER_DEFAULT = True
 SHOW_INDEX_DEFAULT = True
 SHOW_DIMENSIONS_DEFAULT = True
 COPY_CODE_BUTTON_DEFAULT = False
+SHOW_LINE_NUMBERS_DEFAULT = False
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -37,6 +38,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             "prefix-newline",
             "suffix-newline",
             "copy-code-button",
+            "show-line-numbers",
             # Pretty print parameters
             "indent",
             "depth",
@@ -112,6 +114,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "copy-code-button", COPY_CODE_BUTTON_DEFAULT
     )
 
+    show_line_numbers = pl.get_boolean_attrib(
+        element, "show-line-numbers", SHOW_LINE_NUMBERS_DEFAULT
+    )
+
     if prefix_newline:
         prefix += "\n"
     if suffix_newline:
@@ -119,4 +125,4 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     language = "" if no_highlight else ' language="python"'
 
-    return f'<pl-code{language} copy-code-button="{copy_code_button}">{prefix}{var_string}{suffix}</pl-code>'
+    return f'<pl-code{language} copy-code-button="{copy_code_button}" show-line-numbers="{show_line_numbers}">{prefix}{var_string}{suffix}</pl-code>'

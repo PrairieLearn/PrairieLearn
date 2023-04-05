@@ -141,6 +141,7 @@
         "tar": "^6.1.13",
         "three": "^0.151.3",
         "tmp-promise": "^3.0.3",
+        "tzientist": "^2.3.0",
         "unified": "^9.2.2",
         "unist-util-visit": "^2.0.3",
         "unzipper": "^0.10.11",

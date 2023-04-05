@@ -300,7 +300,15 @@
             <a class="dropdown-item" href="<%= plainUrlPrefix %>/request_course"> Course Requests </a>
           <% } %>
           <a class="dropdown-item" href="<%= plainUrlPrefix %>/settings">Settings</a>
-          <a class="dropdown-item news-item-link" href="<%= urlPrefix %>/news_items">
+          <a class="dropdown-item news-item-link" href="<%= urlPrefix %>/news_items"
+            <% if (typeof news_item_notification_count !== 'undefined' && news_item_notification_count > 0) { %>
+              title="News (<%= news_item_notification_count %> unread)"
+              aria-label="News (<%= news_item_notification_count %> unread)"
+            <% } else { %>
+              title="News"
+              aria-label="News"
+            <% } %>  
+          >
             News
             <% if (typeof news_item_notification_count != 'undefined' && news_item_notification_count > 0) { %>
               <span class="badge badge-pill badge-primary news-item-link-count"><%= news_item_notification_count %></span>
