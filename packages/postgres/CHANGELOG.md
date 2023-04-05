@@ -1,5 +1,17 @@
 # @prairielearn/postgres
 
+## 1.6.0
+
+### Minor Changes
+
+- dbfa7a689: Allow cursor results to be consumed as a stream
+
+## 1.5.0
+
+### Minor Changes
+
+- 5d0f08ecc: Don't start nested transactions in `runInTransactionAsync`
+
 ## 1.4.0
 
 ### Minor Changes

@@ -1,21 +1,21 @@
-// @ts-check
-const chai = require('chai');
-const chaiAsPromised = require('chai-as-promised');
-const { queryAsync, queryCursor, queryValidatedCursor } = require('@prairielearn/postgres');
-const { z, ZodError } = require('zod');
+import chai from 'chai';
+import chaiAsPromised from 'chai-as-promised';
+import { z, ZodError } from 'zod';
+
+import { queryAsync, queryCursor, queryValidatedCursor } from './default-pool';
+import { makePostgresTestUtils } from './test-utils';
 
 chai.use(chaiAsPromised);
 const { assert } = chai;
 
-const helperDb = require('./helperDb');
+const postgresTestUtils = makePostgresTestUtils({
+  database: 'prairielearn_postgres',
+});
 
-// TODO: move this into the `@prairielearn/postgres` package once the database
-// helpers are in a shared package.
 describe('@prairielearn/postgres', function () {
   before(async () => {
-    await helperDb.before.call(this);
-
-    // We use workspaces as a test case because they are a simple table.
+    await postgresTestUtils.createDatabase();
+    await queryAsync('CREATE TABLE workspaces (id BIGSERIAL PRIMARY KEY, state TEXT);', {});
     await queryAsync("INSERT INTO workspaces (id, state) VALUES (1,'uninitialized');", {});
     await queryAsync("INSERT INTO workspaces (id, state) VALUES (2, 'stopped');", {});
     await queryAsync("INSERT INTO workspaces (id, state) VALUES (3, 'launching');", {});
@@ -23,7 +23,7 @@ describe('@prairielearn/postgres', function () {
   });
 
   after(async () => {
-    await helperDb.after.call(this);
+    await postgresTestUtils.dropDatabase();
   });
 
   describe('queryCursor', () => {
@@ -57,6 +57,29 @@ describe('@prairielearn/postgres', function () {
       assert.lengthOf(rowBatches[0], 4);
     });
 
+    it('handles errors', async () => {
+      const cursor = await queryCursor('NOT VALID SQL', { foo: 'bar' });
+
+      async function readAllRows() {
+        const allRows = [];
+        for await (const rows of cursor.iterate(10)) {
+          allRows.push(...rows);
+        }
+        return allRows;
+      }
+
+      const maybeError = await readAllRows().catch((err) => err);
+      assert.instanceOf(maybeError, Error);
+      assert.match(maybeError.message, /syntax error/);
+      assert.isDefined(maybeError.data);
+      assert.equal(maybeError.data.sql, 'NOT VALID SQL');
+      assert.deepEqual(maybeError.data.sqlParams, { foo: 'bar' });
+      assert.isDefined(maybeError.data.sqlError);
+      assert.equal(maybeError.data.sqlError.severity, 'ERROR');
+    });
+  });
+
+  describe('queryValidatedCursor', () => {
     it('validates with provided schema', async () => {
       const WorkspaceSchema = z.object({
         id: z.string(),
@@ -71,7 +94,7 @@ describe('@prairielearn/postgres', function () {
         allRows.push(...rows);
       }
       assert.lengthOf(allRows, 4);
-      const workspace = /** @type{any} */ (allRows[0]);
+      const workspace = allRows[0] as any;
       assert.equal(workspace.id, '1');
       assert.isUndefined(workspace.state);
     });
@@ -99,25 +122,46 @@ describe('@prairielearn/postgres', function () {
       assert.lengthOf(maybeError.errors, 4);
     });
 
-    it('handles errors', async () => {
-      const cursor = await queryCursor('NOT VALID SQL', { foo: 'bar' });
+    it('returns a stream', async () => {
+      const WorkspaceSchema = z.object({
+        id: z.string(),
+      });
+      const cursor = await queryValidatedCursor(
+        'SELECT * FROM workspaces ORDER BY id ASC;',
+        {},
+        WorkspaceSchema
+      );
+      const stream = cursor.stream(1);
+      const allRows = [];
+      for await (const row of stream) {
+        allRows.push(row);
+      }
+
+      assert.lengthOf(allRows, 4);
+    });
+
+    it('emits an error when validation fails', async () => {
+      const BadWorkspaceSchema = z.object({
+        badProperty: z.string(),
+      });
+      const cursor = await queryValidatedCursor(
+        'SELECT * FROM workspaces ORDER BY id ASC;',
+        {},
+        BadWorkspaceSchema
+      );
+      const stream = cursor.stream(1);
 
       async function readAllRows() {
         const allRows = [];
-        for await (const rows of cursor.iterate(10)) {
-          allRows.push(...rows);
+        for await (const row of stream) {
+          allRows.push(row);
         }
         return allRows;
       }
 
       const maybeError = await readAllRows().catch((err) => err);
-      assert.instanceOf(maybeError, Error);
-      assert.match(maybeError.message, /syntax error/);
-      assert.isDefined(maybeError.data);
-      assert.equal(maybeError.data.sql, 'NOT VALID SQL');
-      assert.deepEqual(maybeError.data.sqlParams, { foo: 'bar' });
-      assert.isDefined(maybeError.data.sqlError);
-      assert.equal(maybeError.data.sqlError.severity, 'ERROR');
+      assert.instanceOf(maybeError, ZodError);
+      assert.lengthOf(maybeError.errors, 1);
     });
   });
 });

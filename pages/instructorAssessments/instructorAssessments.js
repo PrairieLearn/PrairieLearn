@@ -1,21 +1,20 @@
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
-const csvStringify = require('../../lib/nonblocking-csv-stringify');
 const express = require('express');
 const asyncHandler = require('express-async-handler');
-const router = express.Router();
 const { default: AnsiUp } = require('ansi_up');
-const ansiUp = new AnsiUp();
-
-const sanitizeName = require('../../lib/sanitize-name');
-const sqldb = require('@prairielearn/postgres');
-
 const error = require('@prairielearn/error');
 const debug = require('debug')('prairielearn:instructorAssessments');
 const { logger } = require('@prairielearn/logger');
+const { stringifyStream } = require('@prairielearn/csv');
+const sqldb = require('@prairielearn/postgres');
+const { pipeline } = require('node:stream/promises');
+
+const sanitizeName = require('../../lib/sanitize-name');
 const { AssessmentAddEditor } = require('../../lib/editors');
 const assessment = require('../../lib/assessment');
 
+const router = express.Router();
+const ansiUp = new AnsiUp();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const csvFilename = (locals) => {
@@ -87,76 +86,72 @@ router.get(
       // data, because this file only has aggregate data.
 
       // update assessment statistics if needed
-      assessment.updateAssessmentStatisticsForCourseInstance(res.locals.course_instance.id);
+      await assessment.updateAssessmentStatisticsForCourseInstance(res.locals.course_instance.id);
 
-      var params = {
+      const cursor = await sqldb.queryCursor(sql.select_assessments, {
         course_instance_id: res.locals.course_instance.id,
         authz_data: res.locals.authz_data,
         req_date: res.locals.req_date,
         assessments_group_by: res.locals.course_instance.assessments_group_by,
-      };
-      const result = await sqldb.queryAsync(sql.select_assessments, params);
+      });
 
-      var assessmentStats = result.rows;
-      var csvHeaders = [
-        'Course',
-        'Instance',
-        'Set',
-        'Number',
-        'Assessment',
-        'Title',
-        'AID',
-        'NStudents',
-        'Mean',
-        'Std',
-        'Min',
-        'Max',
-        'Median',
-        'NZero',
-        'NHundred',
-        'NZeroPerc',
-        'NHundredPerc',
-        'Hist1',
-        'Hist2',
-        'Hist3',
-        'Hist4',
-        'Hist5',
-        'Hist6',
-        'Hist7',
-        'Hist8',
-        'Hist9',
-        'Hist10',
-      ];
-      var csvData = [];
-      _(assessmentStats).each(function (assessmentStat) {
-        var csvRow = [
-          res.locals.course.short_name,
-          res.locals.course_instance.short_name,
-          assessmentStat.name,
-          assessmentStat.assessment_number,
-          assessmentStat.label,
-          assessmentStat.title,
-          assessmentStat.tid,
-          assessmentStat.score_stat_number,
-          assessmentStat.score_stat_mean,
-          assessmentStat.score_stat_std,
-          assessmentStat.score_stat_min,
-          assessmentStat.score_stat_max,
-          assessmentStat.score_stat_median,
-          assessmentStat.score_stat_n_zero,
-          assessmentStat.score_stat_n_hundred,
-          assessmentStat.score_stat_n_zero_perc,
-          assessmentStat.score_stat_n_hundred_perc,
-        ];
-        csvRow = csvRow.concat(assessmentStat.score_stat_hist);
-        csvData.push(csvRow);
+      const stringifier = stringifyStream({
+        header: true,
+        columns: [
+          'Course',
+          'Instance',
+          'Set',
+          'Number',
+          'Assessment',
+          'Title',
+          'AID',
+          'NStudents',
+          'Mean',
+          'Std',
+          'Min',
+          'Max',
+          'Median',
+          'NZero',
+          'NHundred',
+          'NZeroPerc',
+          'NHundredPerc',
+          'Hist1',
+          'Hist2',
+          'Hist3',
+          'Hist4',
+          'Hist5',
+          'Hist6',
+          'Hist7',
+          'Hist8',
+          'Hist9',
+          'Hist10',
+        ],
+        transform(record) {
+          return [
+            res.locals.course.short_name,
+            res.locals.course_instance.short_name,
+            record.name,
+            record.assessment_number,
+            record.label,
+            record.title,
+            record.tid,
+            record.score_stat_number,
+            record.score_stat_mean,
+            record.score_stat_std,
+            record.score_stat_min,
+            record.score_stat_max,
+            record.score_stat_median,
+            record.score_stat_n_zero,
+            record.score_stat_n_hundred,
+            record.score_stat_n_zero_perc,
+            record.score_stat_n_hundred_perc,
+            ...record.score_stat_hist,
+          ];
+        },
       });
-      csvData.splice(0, 0, csvHeaders);
-      csvStringify(csvData, function (err, csv) {
-        if (err) throw Error('Error formatting CSV', err);
-        res.attachment(req.params.filename);
-        res.send(csv);
-      });
+
+      res.attachment(req.params.filename);
+      await pipeline(cursor.stream(100), stringifier, res);
     } else {
       throw error.make(404, 'Unknown filename: ' + req.params.filename);
     }
