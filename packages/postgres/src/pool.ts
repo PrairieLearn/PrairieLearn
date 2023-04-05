@@ -6,11 +6,14 @@ import debugFactory from 'debug';
 import { callbackify } from 'node:util';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { z } from 'zod';
+import { Readable, Transform } from 'node:stream';
+import multipipe from 'multipipe';
 
 export type QueryParams = Record<string, any> | any[];
 
 export interface CursorIterator<T> {
   iterate: (batchSize: number) => AsyncGenerator<T[]>;
+  stream: (batchSize: number) => NodeJS.ReadWriteStream;
 }
 
 const debug = debugFactory('prairielib:' + path.basename(__filename, '.js'));
@@ -470,19 +473,33 @@ export class PostgresPool {
    * will be committed otherwise.
    */
   async runInTransactionAsync<T>(fn: (client: pg.PoolClient) => Promise<T>): Promise<T> {
-    const client = await this.beginTransactionAsync();
+    // Check if we're already inside a transaction. If so, we won't start another one,
+    // as Postgres doesn't support nested transactions.
+    let client = this.alsClient.getStore();
+    const isNestedTransaction = client !== undefined;
+    const transactionClient = client ?? (await this.beginTransactionAsync());
+
     let result: T;
     try {
-      result = await this.alsClient.run(client, () => fn(client));
+      result = await this.alsClient.run(transactionClient, () => fn(transactionClient));
     } catch (err: any) {
-      await this.endTransactionAsync(client, err);
+      if (!isNestedTransaction) {
+        // If we're inside another transaction, we assume that the root transaction
+        // will catch this error and roll back the transaction.
+        await this.endTransactionAsync(transactionClient, err);
+      }
       throw err;
     }
 
-    // Note that we don't invoke `endTransactionAsync` inside the `try` block
-    // because we don't want an error thrown by it to trigger *another* call
-    // to `endTransactionAsync` in the `catch` block.
-    await this.endTransactionAsync(client, null);
+    if (!isNestedTransaction) {
+      // If we're inside another transaction; don't commit it prematurely. Allow
+      // the root transaction to commit it instead.
+      //
+      // Note that we don't invoke `endTransactionAsync` inside the `try` block
+      // because we don't want an error thrown by it to trigger *another* call
+      // to `endTransactionAsync` in the `catch` block.
+      await this.endTransactionAsync(transactionClient, null);
+    }
 
     return result;
   }
@@ -896,7 +913,7 @@ export class PostgresPool {
     const cursor = await this.queryCursorWithClient(client, sql, params);
 
     let iterateCalled = false;
-    return {
+    const iterator: CursorIterator<z.infer<Model>> = {
       iterate: async function* (batchSize: number) {
         // Safety check: if someone calls iterate multiple times, they're
         // definitely doing something wrong.
@@ -924,7 +941,23 @@ export class PostgresPool {
           client.release();
         }
       },
+      stream: function (batchSize: number) {
+        const transform = new Transform({
+          readableObjectMode: true,
+          writableObjectMode: true,
+          transform(chunk, _encoding, callback) {
+            for (const row of chunk) {
+              this.push(row);
+            }
+            callback();
+          },
+        });
+
+        // TODO: use native `node:stream#compose` once it's stable.
+        return multipipe(Readable.from(iterator.iterate(batchSize)), transform);
+      },
     };
+    return iterator;
   }
 
   /**

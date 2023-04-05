@@ -23,8 +23,8 @@ WITH
         )
       ) AS jobs
     FROM
-      job_sequences AS js
-      LEFT JOIN course_requests AS cr ON cr.id = js.course_request_id
+      course_requests AS cr
+      JOIN job_sequences AS js ON cr.id = js.course_request_id
       LEFT JOIN users AS u ON js.authn_user_id = u.user_id
     GROUP BY
       cr.id

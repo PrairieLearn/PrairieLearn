@@ -1,5 +1,6 @@
-const { contains } = require('../lib/instructorFiles');
-const assert = require('chai').assert;
+import { assert } from 'chai';
+
+import { contains } from './index';
 
 describe('File paths', () => {
   describe('parentContainsChild function', () => {

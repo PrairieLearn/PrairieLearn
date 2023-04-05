@@ -44,18 +44,28 @@ router.get('/', function (req, res, next) {
     if (res.locals.ipaddress.substr(0, 7) === '::ffff:') {
       res.locals.ipaddress = res.locals.ipaddress.substr(7);
     }
+
+    // This page can be mounted under `/pl/course/...`, in which case we won't
+    // have a course instance to get a display timezone from. In that case, we'll
+    // fall back to the course, and then to the institution. All institutions must
+    // have a display timezone, so we're always guaranteed to have one.
+    const displayTimezone =
+      res.locals.course_instance?.display_timezone ??
+      res.locals.course.display_timezone ??
+      res.locals.institution.display_timezone;
+
     res.locals.true_req_date_for_display = format(
-      utcToZonedTime(res.locals.true_req_date, res.locals.course_instance.display_timezone),
+      utcToZonedTime(res.locals.true_req_date, displayTimezone),
       "yyyy-MM-dd'T'HH:mm:ss.SSSxxx",
       {
-        timeZone: res.locals.course_instance.display_timezone,
+        timeZone: displayTimezone,
       }
     );
     res.locals.req_date_for_display = format(
-      utcToZonedTime(res.locals.req_date, res.locals.course_instance.display_timezone),
+      utcToZonedTime(res.locals.req_date, displayTimezone),
       "yyyy-MM-dd'T'HH:mm:ss.SSSxxx",
       {
-        timeZone: res.locals.course_instance.display_timezone,
+        timeZone: displayTimezone,
       }
     );
 

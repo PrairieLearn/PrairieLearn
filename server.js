@@ -1369,44 +1369,30 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion',
-    [
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./middlewares/studentAssessmentAccess'),
-      require('./pages/clientFilesQuestion/clientFilesQuestion'),
-    ]
+    require('./pages/clientFilesQuestion/clientFilesQuestion')
   );
 
   // generatedFiles
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/generatedFilesQuestion',
-    [
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./middlewares/studentAssessmentAccess'),
-      require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
-    ]
+    require('./pages/generatedFilesQuestion/generatedFilesQuestion')
   );
 
   // Submission files
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/submission/:submission_id/file',
-    [
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./middlewares/studentAssessmentAccess'),
-      require('./pages/submissionFile/submissionFile'),
-    ]
+    require('./pages/submissionFile/submissionFile')
   );
 
   // legacy client file paths
-  app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/file', [
-    require('./middlewares/selectAndAuthzInstanceQuestion'),
-    require('./middlewares/studentAssessmentAccess'),
-    require('./pages/legacyQuestionFile/legacyQuestionFile'),
-  ]);
-  app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/text', [
-    require('./middlewares/selectAndAuthzInstanceQuestion'),
-    require('./middlewares/studentAssessmentAccess'),
-    require('./pages/legacyQuestionText/legacyQuestionText'),
-  ]);
+  app.use(
+    '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/file',
+    require('./pages/legacyQuestionFile/legacyQuestionFile')
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/text',
+    require('./pages/legacyQuestionText/legacyQuestionText')
+  );
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
