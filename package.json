@@ -95,7 +95,7 @@
         "lodash": "^4.17.21",
         "logform": "^2.4.2",
         "loopbench": "^2.0.0",
-        "lru-cache": "^8.0.4",
+        "lru-cache": "^8.0.5",
         "mathjax": "^3.2.2",
         "memorystream": "^0.3.1",
         "mersenne": "0.0.4",

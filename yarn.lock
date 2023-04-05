@@ -3992,7 +3992,7 @@ __metadata:
     lodash: ^4.17.21
     logform: ^2.4.2
     loopbench: ^2.0.0
-    lru-cache: ^8.0.4
+    lru-cache: ^8.0.5
     mathjax: ^3.2.2
     memorystream: ^0.3.1
     mersenne: 0.0.4
@@ -10751,10 +10751,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lru-cache@npm:^8.0.4":
-  version: 8.0.4
-  resolution: "lru-cache@npm:8.0.4"
-  checksum: dee2b905a8cd688c5847faa46ba3cfeaa0766283b244bfd6177420e04e9d923fc901a9a578fc3963d70959631595240ead37abaf43e21968bb9805bbd9519856
+"lru-cache@npm:^8.0.5":
+  version: 8.0.5
+  resolution: "lru-cache@npm:8.0.5"
+  checksum: 87d72196d8f46e8299c4ab576ed2ec8a07e3cbef517dc9874399c0b2470bd9bf62aacec3b67f84ed6d74aaa1ef31636d048edf996f76248fd17db72bfb631609
   languageName: node
   linkType: hard
 
