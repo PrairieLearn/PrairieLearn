@@ -1,4 +1,10 @@
 // @ts-check
+
+// The OpenTelemetry instrumentation for Express breaks our ability to inspect
+// the Express routes. We need to disable it before loading the server.
+const { disableInstrumentations } = require('@prairielearn/opentelemetry');
+disableInstrumentations();
+
 const path = require('path');
 const { test } = require('mocha');
 const axe = require('axe-core');
@@ -9,8 +15,8 @@ const util = require('util');
 const expressListEndpoints = require('express-list-endpoints');
 const sqldb = require('@prairielearn/postgres');
 
-const news_items = require('../../news_items');
 const server = require('../../server');
+const news_items = require('../../news_items');
 const config = require('../../lib/config');
 const helperServer = require('../helperServer');
 

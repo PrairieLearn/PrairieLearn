@@ -94,17 +94,17 @@ const instrumentations = [
   new AwsInstrumentation(),
   new ConnectInstrumentation(),
   new DnsInstrumentation(),
-  // new ExpressInstrumentation({
-  //   // We use a lot of middleware; it makes the traces way too noisy. If we
-  //   // want telemetry on a particular middleware, we should instrument it
-  //   // manually.
-  //   ignoreLayersType: [ExpressLayerType.MIDDLEWARE],
-  //   ignoreLayers: [
-  //     // These don't provide useful information to us.
-  //     'router - /',
-  //     'request handler - /*',
-  //   ],
-  // }),
+  new ExpressInstrumentation({
+    // We use a lot of middleware; it makes the traces way too noisy. If we
+    // want telemetry on a particular middleware, we should instrument it
+    // manually.
+    ignoreLayersType: [ExpressLayerType.MIDDLEWARE],
+    ignoreLayers: [
+      // These don't provide useful information to us.
+      'router - /',
+      'request handler - /*',
+    ],
+  }),
   new HttpInstrumentation({
     ignoreIncomingPaths: [
       // socket.io requests are generally just long-polling; they don't add
@@ -314,4 +314,12 @@ export async function shutdown(): Promise<void> {
     await tracerProvider.shutdown();
     tracerProvider = null;
   }
+}
+
+/**
+ * Disables all OpenTelemetry instrumentations. This is useful for tests that
+ * need to access the unwrapped modules.
+ */
+export function disableInstrumentations() {
+  instrumentations.forEach((i) => i.disable());
 }
