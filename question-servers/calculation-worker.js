@@ -10,8 +10,8 @@
 
 const path = require('path');
 const readline = require('readline');
+const error = require('@prairielearn/error');
 
-const error = require('../prairielib/lib/error');
 const requireFrontend = require('../lib/require-frontend');
 
 /**
