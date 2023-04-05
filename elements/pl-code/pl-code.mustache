@@ -6,25 +6,28 @@ $(function(){
 </script>
 {{/copy_code_button}}
 
-{{#prevent_select}}<!-- Well aren't you clever ;) -->{{/prevent_select}}
-<div class="pl-code"><span
-id="pl-code-{{uuid}}"
-{{#prevent_select}}
-style="-moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; user-select:none;-o-user-select:none;"
-unselectable="on"
-onselectstart="return false;"
-onmousedown="return false;"
-oncontextmenu="return false;"
-{{/prevent_select}}
->{{{code}}}</span>
+<div class="pl-code mb-3 {{#show_line_numbers}}show-line-numbers{{/show_line_numbers}}"
+    style="--pl-code-background-color: {{background_color}}; --pl-code-line-number-color: {{line_number_color}};">
+    <div
+        id="pl-code-{{uuid}}"
+        class="rounded"
+        {{#prevent_select}}
+        style="-moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; user-select:none;-o-user-select:none;"
+        unselectable="on"
+        onselectstart="return false;"
+        onmousedown="return false;"
+        oncontextmenu="return false;"
+        {{/prevent_select}}
+    >{{{code}}}</div>
 
-{{#copy_code_button}}
-<button
-id="pl-code-button-{{uuid}}"
-type="button"
-class="btn btn-secondary btn-sm copy-button"
-data-clipboard-target="#pl-code-{{uuid}}">
-copy this text
-</button>
-{{/copy_code_button}}
+    {{#copy_code_button}}
+    <button
+        id="pl-code-button-{{uuid}}"
+        type="button"
+        class="btn btn-secondary btn-sm copy-button"
+        data-clipboard-target="#pl-code-{{uuid}} td.code"
+    >
+        copy this text
+    </button>
+    {{/copy_code_button}}
 </div>
