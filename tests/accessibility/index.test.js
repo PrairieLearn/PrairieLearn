@@ -216,10 +216,6 @@ const SKIP_ROUTES = [
   '/pl/oauth2callback',
   '/pl/oauth2login',
 
-  // TODO: enable once the following PR is merged:
-  // https://github.com/PrairieLearn/PrairieLearn/pull/7382
-  '/pl/course/:course_id/effectiveUser',
-
   // TODO: add tests for file editing/viewing.
   /\/file_edit\/\*$/,
   /\/file_view\/\*$/,
