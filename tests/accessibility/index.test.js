@@ -20,8 +20,6 @@ const news_items = require('../../news_items');
 const config = require('../../lib/config');
 const helperServer = require('../helperServer');
 
-config.cronActive = false;
-
 const SITE_URL = 'http://localhost:' + config.serverPort;
 const EXAMPLE_COURSE_DIR = path.resolve(__dirname, '..', '..', 'exampleCourse');
 
@@ -267,7 +265,9 @@ describe('accessibility', () => {
   let endpoints = [];
   let routeParams = {};
   before('set up testing server', async function () {
+    config.cronActive = false;
     await util.promisify(helperServer.before(EXAMPLE_COURSE_DIR).bind(this))();
+    config.cronActive = true;
 
     // We want to test a news item page, so we need to "init" them.
     const notify_with_new_server = true;
