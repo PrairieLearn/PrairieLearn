@@ -29,6 +29,7 @@ nav:
   - 'Course instance configuration': 'courseInstance.md'
   - 'Assessment configuration': 'assessment.md'
   - 'Question configuration': 'question.md'
+  - 'Question runtime environment': 'questionRuntime/index.md'
   - 'Elements for writing questions': 'elements.md'
   - 'Access control': 'accessControl.md'
   - 'Remote exams': 'remoteExams.md'
@@ -44,7 +45,7 @@ nav:
   - 'Manual grading': 'manualGrading.md'
   - 'What to tell students': 'whatToTellStudents.md'
   - 'FAQ': 'faq.md'
-  - 'API': 'api.md'  
+  - 'API': 'api.md'
 - Developer Guide:
   - 'Developer guide': 'dev-guide.md'
   - 'Running in Docker with local source': 'installingLocal.md'
@@ -57,7 +58,7 @@ nav:
   - 'Contributing to PL development': 'contributing.md'
 - Running in Production:
   - 'Setup': 'running-in-production/setup.md'
-  - 'Using Docker Compose': 'running-in-production/docker-compose.md'  
+  - 'Using Docker Compose': 'running-in-production/docker-compose.md'
   - 'User Authentication': 'running-in-production/authentication.md'
   - 'Admin User': 'running-in-production/admin-user.md'
 - Deprecated Features:

@@ -11,7 +11,8 @@ var sqldb = require('@prairielearn/postgres');
 
 var sql = sqldb.loadSqlEquiv(__filename);
 
-const moment = require('moment');
+const { parseISO, isValid } = require('date-fns');
+const { format, utcToZonedTime } = require('date-fns-tz');
 
 router.get('/', function (req, res, next) {
   if (
@@ -43,7 +44,30 @@ router.get('/', function (req, res, next) {
     if (res.locals.ipaddress.substr(0, 7) === '::ffff:') {
       res.locals.ipaddress = res.locals.ipaddress.substr(7);
     }
-    res.locals.req_date_for_display = moment(res.locals.req_date).toISOString(true);
+
+    // This page can be mounted under `/pl/course/...`, in which case we won't
+    // have a course instance to get a display timezone from. In that case, we'll
+    // fall back to the course, and then to the institution. All institutions must
+    // have a display timezone, so we're always guaranteed to have one.
+    const displayTimezone =
+      res.locals.course_instance?.display_timezone ??
+      res.locals.course.display_timezone ??
+      res.locals.institution.display_timezone;
+
+    res.locals.true_req_date_for_display = format(
+      utcToZonedTime(res.locals.true_req_date, displayTimezone),
+      "yyyy-MM-dd'T'HH:mm:ss.SSSxxx",
+      {
+        timeZone: displayTimezone,
+      }
+    );
+    res.locals.req_date_for_display = format(
+      utcToZonedTime(res.locals.req_date, displayTimezone),
+      "yyyy-MM-dd'T'HH:mm:ss.SSSxxx",
+      {
+        timeZone: displayTimezone,
+      }
+    );
 
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
   });
@@ -93,8 +117,8 @@ router.post('/', function (req, res, next) {
     res.redirect(req.originalUrl);
   } else if (req.body.__action === 'changeDate') {
     debug(`POST: req.body.pl_requested_date = ${req.body.pl_requested_date}`);
-    let date = moment(req.body.pl_requested_date, moment.ISO_8601);
-    if (!date.isValid()) {
+    let date = parseISO(req.body.pl_requested_date);
+    if (!isValid(date)) {
       return next(error.make(400, `invalid requested date: ${req.body.pl_requested_date}`));
     }
     res.cookie('pl_requested_date', date.toISOString(), {

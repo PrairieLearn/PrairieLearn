@@ -10,6 +10,7 @@ const { v4: uuidv4 } = require('uuid');
 const debug = require('debug')('prairielearn:instructorFileEditor');
 const { callbackify } = require('util');
 const { logger } = require('@prairielearn/logger');
+const { contains } = require('@prairielearn/path-utils');
 const serverJobs = require('../../lib/server-jobs');
 const namedLocks = require('@prairielearn/named-locks');
 const syncFromDisk = require('../../sync/syncFromDisk');
@@ -26,7 +27,7 @@ const modelist = require('ace-code/src/ext/modelist');
 const { decodePath } = require('../../lib/uri-util');
 const chunks = require('../../lib/chunks');
 const { idsEqual } = require('../../lib/id');
-const { contains, getPaths } = require('../../lib/instructorFiles');
+const { getPaths } = require('../../lib/instructorFiles');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -1041,10 +1042,11 @@ function saveAndSync(fileEdit, locals, callback) {
                 oldHash: startGitHash,
                 newHash: endGitHash,
               },
-              (err) => {
+              (err, chunkChanges) => {
                 if (err) {
                   job.fail(err);
                 } else {
+                  chunks.logChunkChangesToJob(chunkChanges, job);
                   checkJsonErrors();
                 }
               }

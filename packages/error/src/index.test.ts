@@ -3,7 +3,13 @@ import { assert } from 'chai';
 import { make, makeWithData, addData, newMessage } from './index';
 
 describe('make', () => {
-  it('makes an error with the expected properties', () => {
+  it('makes an error without data', () => {
+    const err = make(404, 'Not Found');
+    assert.equal(err.status, 404);
+    assert.equal(err.message, 'Not Found');
+  });
+
+  it('makes an error with data', () => {
     const err = make(404, 'Not Found', { foo: 'bar' });
     assert.equal(err.status, 404);
     assert.equal(err.message, 'Not Found');
