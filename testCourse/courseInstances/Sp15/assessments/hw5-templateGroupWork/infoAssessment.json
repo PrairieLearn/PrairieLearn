@@ -6,7 +6,7 @@
     "number": "5",
     "module": "Module3",
     "groupWork": true,
-    "groupMaxSize": 4,
+    "groupMaxSize": 5,
     "groupMinSize": 2,
     "studentGroupCreate": true,
     "studentGroupJoin": true,

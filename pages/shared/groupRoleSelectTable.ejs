@@ -19,7 +19,7 @@
               name="user_role_<%= role.id %>-<%= user.user_id %>"
               <% if (rolesInfo.disabledRoles.includes(role.role_name)) { %>
                 disabled
-              <% } else if (rolesInfo.roleAssignments[user.uid] !== undefined && rolesInfo.roleAssignments[user.uid].includes(role.role_name)) { %>
+              <% } else if (rolesInfo.roleAssignments[user.uid] !== undefined && rolesInfo.roleAssignments[user.uid].find((a) => a.role_name === role.role_name) !== undefined) { %>
                 checked
               <% }%>
               form="role-select-form"

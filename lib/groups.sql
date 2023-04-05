@@ -158,42 +158,14 @@ WHERE
 SELECT
   gu.user_id,
   u.uid,
-  gr.role_name
+  gr.role_name,
+  gr.id as group_role_id
 FROM
   users u
   JOIN group_user_roles gu ON u.user_id = gu.user_id
   JOIN group_roles gr ON gu.group_role_id = gr.id
 WHERE
   gu.group_id = $group_id;
-
--- BLOCK get_user_with_non_required_role
-SELECT
-  gu.user_id,
-  gr.id AS group_role_id
-FROM
-  users u
-  JOIN group_user_roles gu ON u.user_id = gu.user_id
-  JOIN group_roles gr ON gu.group_role_id = gr.id
-WHERE
-  gu.group_id = $group_id
-  AND u.user_id != $user_id
-  AND gr.minimum = 0
-LIMIT
-  1;
-
--- BLOCK update_group_user_role
-WITH
-  updated_group_role AS (
-    UPDATE group_user_roles
-    SET
-      group_role_id = $group_role_id
-    WHERE
-      group_id = $group_id
-      AND user_id = $assignee_id
-      AND group_role_id = $assignee_old_role_id
-  )
-SELECT
-  1;
 
 -- BLOCK get_group_id
 SELECT
@@ -205,38 +177,6 @@ FROM
 WHERE
   gc.assessment_id = $assessment_id
   AND gu.user_id = $user_id;
-
--- BLOCK get_user_roles
-SELECT
-  gu.group_role_id
-FROM
-  group_user_roles as gu
-WHERE
-  gu.group_id = $group_id
-  AND gu.user_id = $user_id;
-
--- BLOCK get_user_required_roles
-SELECT
-  gu.group_role_id
-FROM
-  group_user_roles gu
-  JOIN group_roles gr ON gu.group_role_id = gr.id
-WHERE
-  gu.group_id = $group_id
-  AND gu.user_id = $user_id
-  AND gr.minimum > 0;
-
--- BLOCK assign_user_roles
-WITH
-  assign_user_role AS (
-    INSERT INTO
-      group_user_roles (group_id, user_id, group_role_id)
-    VALUES
-      ($group_id, $assignee_id, $group_role_id)
-    ON CONFLICT (group_id, user_id, group_role_id) DO NOTHING
-  )
-SELECT
-  1;
 
 -- BLOCK delete_non_required_roles
 WITH
@@ -270,40 +210,21 @@ WITH
     WHERE
       user_id = $user_id
       AND group_id = $group_id
-  ),
-  create_log AS (
-    INSERT INTO
-      group_logs (authn_user_id, user_id, group_id, action)
-    VALUES
-      ($authn_user_id, $user_id, $group_id, 'leave')
   )
-SELECT
-  1;
+INSERT INTO
+  group_logs (authn_user_id, user_id, group_id, action)
+VALUES
+  ($authn_user_id, $user_id, $group_id, 'leave');
 
--- BLOCK transfer_group_roles
-WITH
-  group_role_ids AS (
-    SELECT
-      gu.group_role_id
-    FROM
-      group_user_roles gu
-    WHERE
-      gu.group_id = $group_id
-      AND gu.user_id = $user_id
-  ),
-  transferred_group_roles AS (
-    INSERT INTO
-      group_user_roles (group_id, user_id, group_role_id)
-    SELECT
-      $group_id,
-      $assignee_user_id,
-      gri.group_role_id
-    FROM
-      group_role_ids AS gri
-    ON CONFLICT (group_id, user_id, group_role_id) DO NOTHING
-  )
+-- BLOCK reassign_group_roles_after_leave
+INSERT INTO
+  group_user_roles (group_id, user_id, group_role_id)
 SELECT
-  1;
+  (role_assignment ->> 'group_id')::bigint,
+  (role_assignment ->> 'user_id')::bigint,
+  (role_assignment ->> 'group_role_id')::bigint
+FROM
+  JSON_ARRAY_ELEMENTS($role_assignments::json) as role_assignment;
 
 -- FIXME: Even with a RETURNING clause, this wouldn't do anything when
 -- added as a CTE in the update_group_roles query below.

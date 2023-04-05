@@ -132,7 +132,7 @@ describe('Group based homework assess control on student side', function () {
         var min = result.rows[0]['minimum'];
         var max = result.rows[0]['maximum'];
         assert.equal(min, 2);
-        assert.equal(max, 4);
+        assert.equal(max, 5);
       });
       callback(null);
     });

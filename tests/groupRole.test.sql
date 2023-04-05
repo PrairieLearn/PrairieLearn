@@ -45,14 +45,14 @@ FROM
 WHERE
   gc.assessment_id = $assessment_id;
 
--- BLOCK generate_and_enroll_4_users
+-- BLOCK generate_and_enroll_5_users
 SELECT
   user_id,
   uid,
   name,
   uin
 FROM
-  users_randomly_generate (4, 1)
+  users_randomly_generate (5, 1)
   LEFT JOIN course_instances AS ci on (ci.id = 1)
   LEFT JOIN pl_courses AS c ON (c.id = ci.course_id)
 ORDER BY
