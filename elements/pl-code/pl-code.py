@@ -82,6 +82,11 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
             else:
                 yield 1, value
 
+    @property
+    def _linenos_style(self) -> str:
+        # All styling will be handled in CSS.
+        return ""
+
 
 def get_lexer_by_name(name: str) -> Optional[pygments.lexer.Lexer]:
     """
