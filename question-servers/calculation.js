@@ -1,221 +1,174 @@
-var ERR = require('async-stacktrace');
-var path = require('path');
-var _ = require('lodash');
+// @ts-check
+const { experimentAsync } = require('tzientist');
+const _ = require('lodash');
+const Sentry = require('@prairielearn/sentry');
 
-const error = require('@prairielearn/error');
-var chunks = require('../lib/chunks');
-var filePaths = require('../lib/file-paths');
-var requireFrontend = require('../lib/require-frontend');
+const config = require('../lib/config');
+const calculationInprocess = require('./calculation-inprocess');
+const calculationSubprocess = require('./calculation-subprocess');
 
-module.exports = {
-  loadServer: function (question, course, callback) {
-    const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-
-    chunks.getTemplateQuestionIds(question, (err, questionIds) => {
-      if (ERR(err, callback)) return;
-
-      const templateQuestionChunks = questionIds.map((id) => ({
-        type: 'question',
-        questionId: id,
-      }));
-      const chunksToLoad = [
-        {
-          type: 'question',
-          questionId: question.id,
-        },
-        {
-          type: 'clientFilesCourse',
-        },
-        {
-          type: 'serverFilesCourse',
-        },
-      ].concat(templateQuestionChunks);
-      chunks.ensureChunksForCourse(course.id, chunksToLoad, (err) => {
-        if (ERR(err, callback)) return;
-        filePaths.questionFilePath(
-          'server.js',
-          question.directory,
-          coursePath,
-          question,
-          function (err, questionServerPath) {
-            if (ERR(err, callback)) return;
-            var configRequire = requireFrontend.config({
-              paths: {
-                clientFilesCourse: path.join(coursePath, 'clientFilesCourse'),
-                serverFilesCourse: path.join(coursePath, 'serverFilesCourse'),
-                clientCode: path.join(coursePath, 'clientFilesCourse'),
-                serverCode: path.join(coursePath, 'serverFilesCourse'),
-              },
-            });
-            configRequire(
-              [questionServerPath],
-              function (server) {
-                if (server === undefined) {
-                  return callback('Unable to load "server.js" for qid: ' + question.qid);
-                }
-                setTimeout(function () {
-                  // use a setTimeout() to get out of requireJS error handling
-                  return callback(null, server);
-                }, 0);
-              },
-              (err) => {
-                const e = error.makeWithData(
-                  `Error loading server.js for QID ${question.qid}`,
-                  err
-                );
-                if (err.originalError != null) {
-                  e.stack = err.originalError.stack + '\n\n' + err.stack;
-                }
-                return callback(e);
-              }
-            );
-          }
-        );
+/**
+ * Similar to `util.promisify`, but with support for the non-standard
+ * three-argument callback function that all of our question functions use.
+ * Note that the returned promise resolves with an array of values.
+ *
+ * TODO: refactor to standard two-argument callback or async/await.
+ *
+ * @param {string} spanName
+ * @param {Function} func
+ */
+function promisifyQuestionFunction(spanName, func) {
+  return async (...args) => {
+    return new Promise((resolve, reject) => {
+      func(...args, (err, courseIssues, val) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve([courseIssues, val]);
+        }
       });
     });
-  },
+  };
+}
 
-  render: function (
-    renderSelection,
-    variant,
-    question,
-    submission,
-    submissions,
-    course,
-    course_instance,
-    locals,
-    callback
-  ) {
-    const htmls = {
-      extraHeadersHtml: '',
-      questionHtml: '',
-      submissionHtmls: _.map(submissions, () => ''),
-      answerHtml: '',
-    };
-    callback(null, [], htmls);
-  },
-
-  generate: function (question, course, variant_seed, callback) {
-    const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-    var questionDir = path.join(coursePath, 'questions', question.directory);
-    module.exports.loadServer(question, course, function (err, server) {
-      if (ERR(err, callback)) return;
-      var options = question.options || {};
-      try {
-        var vid = variant_seed;
-        var questionData = server.getData(vid, options, questionDir);
-      } catch (err) {
-        let data = {
-          variant_seed: variant_seed,
-          question: question,
-          course: course,
-        };
-        err.status = 500;
-        return ERR(error.addData(err, data), callback);
-      }
-      let data = {
-        params: questionData.params,
-        true_answer: questionData.trueAnswer,
-        options: questionData.options || question.options || {},
-      };
-      callback(null, [], data);
+/**
+ * Turns the error or result of an experiment observation into a JSON string
+ * suitable for reporting to Sentry.
+ *
+ * @param {Error} error
+ * @param {any} result
+ * @returns {string}
+ */
+function observationPayload(error, result) {
+  if (error) {
+    return JSON.stringify({
+      type: 'error',
+      result: {
+        message: error.message,
+        stack: error.stack,
+      },
     });
-  },
+  }
 
-  prepare: function (question, course, variant, callback) {
-    const data = {
-      params: variant.params,
-      true_answer: variant.true_answer,
-      options: variant.options,
-    };
-    callback(null, [], data);
-  },
+  return JSON.stringify({
+    type: 'success',
+    result,
+  });
+}
 
-  getFile: function (filename, variant, question, course, callback) {
-    const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-    module.exports.loadServer(question, course, function (err, server) {
-      if (ERR(err, callback)) return;
-      var fileData;
-      try {
-        var vid = variant.variant_seed;
-        var params = variant.params;
-        var trueAnswer = variant.true_answer;
-        var options = variant.options;
-        var questionDir = path.join(coursePath, 'questions', question.directory);
-        fileData = server.getFile(filename, vid, params, trueAnswer, options, questionDir);
-      } catch (err) {
-        var data = {
-          variant: variant,
-          question: question,
-          course: course,
-        };
-        err.status = 500;
-        return ERR(error.addData(err, data), callback);
-      }
-      callback(null, fileData);
-    });
-  },
+/**
+ * Runs both the `control` and `candidate` functions at the same time and
+ * compares their output. No matter what the candidate does, the results of
+ * the `control` function will always be what's returned to the client.
+ *
+ * @param {string} name
+ * @param {Function} control
+ * @param {Function} candidate
+ * @returns {Function}
+ */
+function questionFunctionExperiment(name, control, candidate) {
+  const experiment = experimentAsync({
+    name,
+    control: promisifyQuestionFunction('control', control),
+    candidate: promisifyQuestionFunction('candidate', candidate),
+    options: {
+      publish: ({ controlResult, controlError, candidateResult, candidateError }) => {
+        // The control implementation does not utilize course issues.
+        const controlHasError = !!controlError;
 
-  parse: function (submission, variant, question, course, callback) {
-    const data = {
-      params: variant.params,
-      true_answer: variant.true_answer,
-      submitted_answer: submission.submitted_answer,
-      raw_submitted_answer: submission.raw_submitted_answer,
-      format_errors: {},
-      gradable: true,
-    };
-    callback(null, [], data);
-  },
+        // The candidate implementation does propagate some errors as course
+        // issues, so we need to take those into account when checking if the
+        // implementation resulted in an error.
+        const candidateHasError = !!candidateError || !_.isEmpty(candidateResult?.[0]);
 
-  grade: function (submission, variant, question, course, callback) {
-    const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-    module.exports.loadServer(question, course, function (err, server) {
-      if (ERR(err, callback)) return;
-      var grading;
-      try {
-        var vid = variant.variant_seed;
-        var params = variant.params;
-        var trueAnswer = variant.true_answer;
-        var submittedAnswer = submission.submitted_answer;
-        var options = variant.options;
-        var questionDir = path.join(coursePath, 'questions', question.directory);
-        grading = server.gradeAnswer(
-          vid,
-          params,
-          trueAnswer,
-          submittedAnswer,
-          options,
-          questionDir
-        );
-      } catch (err) {
-        const data = {
-          submission: submission,
-          variant: variant,
-          question: question,
-          course: course,
-        };
-        err.status = 500;
-        return ERR(error.addData(err, data), callback);
-      }
+        // We don't want to assert that the errors themselves are equal, just
+        // that either both errored or both did not error.
+        const errorsMismatched = controlHasError !== candidateHasError;
 
-      let score = grading.score;
-      if (!question.partial_credit) {
-        // legacy Calculation questions round the score to 0 or 1 (with 0.5 rounding up)
-        score = grading.score >= 0.5 ? 1 : 0;
-      }
-      const data = {
-        score: score,
-        v2_score: grading.score,
-        feedback: grading.feedback,
-        partial_scores: {},
-        submitted_answer: submission.submitted_answer,
-        format_errors: {},
-        gradable: true,
-        params: variant.params,
-        true_answer: variant.true_answer,
-      };
-      callback(null, [], data);
-    });
-  },
-};
+        // The "results" can actually contain error information for the candidate,
+        // but not for the control. To avoid false positives, we'll only compare
+        // the "data" portion of the results. The "course issues" portion of the
+        // results was already handled above.
+        const controlData = controlResult?.[1];
+        const candidateData = candidateResult?.[1];
+        const controlHasData = !_.isEmpty(controlData);
+        const candidateHasData = !_.isEmpty(candidateData);
+
+        // Lodash is clever enough to understand Buffers, so we don't event need to
+        // special-case `getFile`, which can sometimes return a Buffer.
+        //
+        // We only assert that `controlData` and `candidateData` are equal if
+        // they're both not "empty" (empty object, null, undefined, etc.) since
+        // for our purposes, all empty data is equal.
+        const dataMismatched =
+          controlHasData && candidateHasData && !_.isEqual(controlData, candidateData);
+
+        if (errorsMismatched || dataMismatched) {
+          Sentry.captureException(new Error('Experiment results did not match'), {
+            contexts: {
+              experiment: {
+                control: observationPayload(controlError, controlResult),
+                candidate: observationPayload(candidateError, candidateResult),
+              },
+            },
+          });
+        }
+      },
+    },
+  });
+
+  return (...args) => {
+    if (config.legacyQuestionExecutionMode === 'inprocess') {
+      control(...args);
+      return;
+    } else if (config.legacyQuestionExecutionMode === 'subprocess') {
+      candidate(...args);
+      return;
+    }
+
+    const callback = args.pop();
+    experiment(...args)
+      .then(([courseIssues, data]) => {
+        callback(null, courseIssues, data);
+      })
+      .catch((err) => {
+        callback(err);
+      });
+  };
+}
+
+module.exports.generate = questionFunctionExperiment(
+  'calculation-question-generate',
+  calculationInprocess.generate,
+  calculationSubprocess.generate
+);
+
+module.exports.prepare = questionFunctionExperiment(
+  'calculation-question-prepare',
+  calculationInprocess.prepare,
+  calculationSubprocess.prepare
+);
+
+module.exports.render = questionFunctionExperiment(
+  'calculation-question-render',
+  calculationInprocess.render,
+  calculationSubprocess.render
+);
+
+module.exports.getFile = questionFunctionExperiment(
+  'calculation-question-getFile',
+  calculationInprocess.getFile,
+  calculationSubprocess.getFile
+);
+
+module.exports.parse = questionFunctionExperiment(
+  'calculation-question-parse',
+  calculationInprocess.parse,
+  calculationSubprocess.parse
+);
+
+module.exports.grade = questionFunctionExperiment(
+  'calculation-question-grade',
+  calculationInprocess.grade,
+  calculationSubprocess.grade
+);
