@@ -27,6 +27,6 @@
     "@prairielearn/named-locks": "^1.0.0",
     "@prairielearn/postgres": "^1.2.0",
     "fs-extra": "^11.1.1",
-    "zod": "^3.20.6"
+    "zod": "^3.21.4"
   }
 }
