@@ -2,6 +2,7 @@ columns
     course_id: bigint not null
     exam_id: bigint not null default nextval('exams_exam_id_seq'::regclass)
     exam_string: text not null
+    exam_type: enum_exam_type
     uuid: uuid
 
 indexes

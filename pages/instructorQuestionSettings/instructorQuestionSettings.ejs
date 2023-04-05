@@ -46,20 +46,24 @@
                   <% if (questionGHLink) { %>(<a target="_blank" href="<%= questionGHLink %>">view on GitHub</a>)<% } %>
               </td>
             </tr>
-            <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
             <tr>
               <th>Configuration</th>
               <td>
-                <a href="<%= urlPrefix %>/question/<%= question.id %>/file_view/<%= infoPath %>">
+                <% if (authz_data.has_course_permission_view) { %>
+                  <a href="<%= urlPrefix %>/question/<%= question.id %>/file_view/<%= infoPath %>">
+                    info.json
+                  </a>
+                  <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
+                    <a role="button" class="btn btn-xs btn-secondary mx-2" href="<%= urlPrefix %>/question/<%= question.id %>/file_edit/<%= infoPath %>">
+                      <i class="fa fa-edit"></i>
+                      <span>Edit</span>
+                    </a>
+                  <% } %>
+                <% } else { %>
                   info.json
-                </a>
-                <a role="button" class="btn btn-xs btn-secondary mx-2" href="<%= urlPrefix %>/question/<%= question.id %>/file_edit/<%= infoPath %>">
-                  <i class="fa fa-edit"></i>
-                  <span>Edit</span>
-                </a>
+                <% } %>
               </td>
             </tr>
-            <% } %>
             <tr>
               <th>Type</th>
               <td><%= question.type %></td>
@@ -80,12 +84,12 @@
               <th>Assessments</th>
               <td><% if (locals.assessments) { %><%- include('../partials/assessments', {assessments: assessments}); %><% } %></td>
             </tr>
-            <% if (question.type == 'Freeform' && question.grading_method != 'External') { %>
+            <% if (question.type == 'Freeform' && question.grading_method != 'External' && authz_data.has_course_permission_view) { %>
             <tr>
               <th class="align-middle">Tests</th>
               <td>
-                <form name="question-tests-form" method="POST">
-                  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                <form name="question-tests-form" method="POST" action="<%= questionTestPath %>">
+                  <input type="hidden" name="__csrf_token" value="<%= questionTestCsrfToken %>">
                   <button class="btn btn-sm btn-outline-primary" name="__action" value="test_once">
                     Test once with full details
                   </button>
@@ -103,11 +107,11 @@
           We only want to show the card footer if it will have something inside. Since it is easy
           to make a mistake when merging logical conditions, we will simply "or" them all.
         -->
-        <% if ((editable_courses && editable_courses.length > 0) ||
+        <% if ((authz_data.editable_courses && (authz_data.editable_courses.length > 0) && authz_data.has_course_permission_view) ||
                ((authz_data.has_course_permission_edit) && (! course.example_course))) { %>
         <div class="card-footer">
           <div class="row">
-            <% if (editable_courses && editable_courses.length > 0) { %>
+            <% if (authz_data.editable_courses && (authz_data.editable_courses.length > 0) && authz_data.has_course_permission_view) { %>
             <div class="col-auto">
               <button type="button" class="btn btn-sm btn-primary" id="copyQuestionButton" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Copy this question" data-content="<%= include('copyForm', {buttonID: 'copyQuestionButton'}) %>" data-trigger="manual" onclick="$(this).popover('show')">
                   <i class="fa fa-clone"></i>

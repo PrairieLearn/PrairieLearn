@@ -62,40 +62,12 @@
 
           <%- include('../partials/questionScorePanel') %>
 
-          <p class="text-center">
-            <% if (instance_question_info.prev_instance_question_id) { %>
-            <a class="btn btn-primary" href="<%= urlPrefix %>/instance_question/<%= instance_question_info.prev_instance_question_id %>/">Previous question</a>
-            <% } else { %>
-            <a class="btn btn-primary disabled" tabindex="-1">Previous question</a>
-            <% } %>
-          </p>
-          <p class="text-center mb-4">
-            <% if (instance_question_info.next_instance_question_id) { %>
-            <a class="btn btn-primary" href="<%= urlPrefix %>/instance_question/<%= instance_question_info.next_instance_question_id %>/">Next question</a>
-            <% } else { %>
-            <a class="btn btn-primary disabled" tabindex="-1">Next question</a>
-            <% } %>
-          </p>
+          <%- include('../partials/questionNavSideButtonGroup') %>
 
           <% if (config.attachedFilesDialogEnabled) { %>
               <%- include('../partials/attachFilePanel') %>
           <% } %>
 
-          <% if (video) { %>
-          <div class="modal" id="youtubemodal">
-            <div class="modal-dialog" style="width: 620px">
-              <div class="modal-content">
-                <div class="modal-body no-overflow">
-                  <iframe id="player" width="560" height="315" data-url="https://www.youtube.com/embed/{{video}}?rel=0&wmode=Opaque&enablejsapi=1&autoplay=1" frameborder="0"></iframe>
-                  <button type="button" class="close" data-dismiss="modal" id="youtubeclose">x</button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <p class="text-center">
-            <a class="btn btn-warning" href="#youtubemodal" data-toggle="modal">Help video</a>
-          </p>
-          <% } %>
           <%- include('../partials/instructorInfoPanel') %>
         </div>
       </div>

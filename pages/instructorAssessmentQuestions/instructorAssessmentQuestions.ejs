@@ -6,6 +6,18 @@
     <script src="<%= node_modules_asset_path('d3/dist/d3.min.js') %>"></script>
     <script src="<%= asset_path('localscripts/histmini.js') %>"></script>
   </head>
+  <script>
+    $(() => {
+        $('[data-toggle="popover"]').popover({
+            sanitize: false,
+            container: 'body',
+            html: true,
+            trigger: 'hover',
+        }).on("show.bs.popover", function() {
+            $($(this).data("bs.popover").getTipElement()).css("max-width", "80%");
+        });;
+    });
+  </script>
   <body>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
@@ -17,6 +29,13 @@
         </div>
 
         <div class="table-responsive">
+          <% 
+          var nTableCols = 9;
+          
+          // If at least one question has a nonzero unlock score, display the Advance Score column
+          const showAdvanceScorePercCol = questions.filter(q => {return q.assessment_question_advance_score_perc != 0}).length >= 1;
+          if (showAdvanceScorePercCol) nTableCols++;
+          %>
           <table class="table table-sm table-hover">
             <thead>
               <tr>
@@ -24,7 +43,11 @@
                 <th>QID</th>
                 <th>Topic</th>
                 <th>Tags</th>
-                <th>Points</th>
+                <th>Auto Points</th>
+                <th>Manual Points</th>
+                <% if (showAdvanceScorePercCol) { %>
+                  <th>Advance Score</th>
+                <% } %>
                 <th width="100">Mean score</th>
                 <th width="100">Question score</th>
                 <th>Num. Submissions Histogram</th>
@@ -35,7 +58,7 @@
               <% questions.forEach(function(question, i) { %>
               <% if (question.start_new_zone) { %>
               <tr>
-                <th colspan="9">
+                <th colspan="<%= nTableCols %>">
                   Zone <%= question.zone_number %>. <%= question.zone_title %>
                   <% if (question.zone_number_choose == null) { %>
                   (Choose all questions)
@@ -55,7 +78,7 @@
               <% } %>
               <% if (question.start_new_alternative_group && question.alternative_group_size > 1) { %>
               <tr>
-                <td colspan="9">
+                <td colspan="<%= nTableCols %>">
                   <%= question.alternative_group_number %>.
                   <% if (question.alternative_group_number_choose == null) { %>
                   Choose all questions from:
@@ -80,13 +103,34 @@
                     <%- include('../partials/issueBadge', {count: question.open_issue_count, issueQid: question.qid}); %>
                   </a>
                 </td>
-                <td><%= question.qid %></td>
+                <td>
+                  <% if (question.sync_errors) { %>
+                  <button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Errors"
+                          data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;><%= question.sync_errors_ansified %></pre>">
+                    <i class="fa fa-times text-danger" aria-hidden="true"></i>
+                  </button>
+                  <% } else if (question.sync_warnings) { %>
+                  <button class="btn btn-xs mr-1" data-toggle="popover" data-title="Sync Warnings"
+                          data-content="<pre style=&quot;background-color: black&quot; class=&quot;text-white rounded p-3&quot;><%= question.sync_warnings_ansified %></pre>">
+                    <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
+                  </button>
+                  <% } %>
+                  <%= question.qid %>
+                </td>
                 <td><%- include('../partials/topic', {topic: question.topic}); %></td>
                 <td><%- include('../partials/tags', {tags: question.tags}); %></td>
                 <td>
-                  <% if (assessment.type == "Exam") { %><%= question.points_list %><% } %>
-                  <% if (assessment.type == "Homework") { %><%= question.init_points %>/<%= question.max_points %><% } %>
+                  <% if (question.max_auto_points || !question.max_manual_points) { %>
+                  <% if (assessment.type == "Exam") { %><%= (question.points_list || [question.max_manual_points]).map((p) => p - question.max_manual_points) %><% } %>
+                  <% if (assessment.type == "Homework") { %><%= question.init_points - question.max_manual_points %>/<%= question.max_auto_points %><% } %>
+                  <% } else { %>—<% } %>
                 </td>
+                <td><%= question.max_manual_points || '—' %></td>
+                <% if (showAdvanceScorePercCol) { %>
+                  <td class="<% if (question.assessment_question_advance_score_perc == 0) { %>text-muted<% } %>" data-testid="advance-score-perc">
+                    <%= question.assessment_question_advance_score_perc %>%
+                  </td>
+                <% } %>
                 <td>
                   <% if (question.mean_question_score) { %>
                     <%= question.mean_question_score.toFixed(3) %>

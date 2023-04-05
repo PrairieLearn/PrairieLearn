@@ -1,6 +1,4 @@
-DROP FUNCTION IF EXISTS base64_safe_decode(text);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     base64_safe_decode(
         IN base64_text text
     ) RETURNS bytea

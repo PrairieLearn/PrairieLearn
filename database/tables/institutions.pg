@@ -1,4 +1,6 @@
 columns
+    default_authn_provider_id: bigint
+    display_timezone: text not null default 'America/Chicago'::text
     id: bigint not null default nextval('institutions_id_seq'::regclass)
     long_name: text not null
     short_name: text not null
@@ -9,7 +11,11 @@ indexes
     institutions_long_name_key: UNIQUE (long_name) USING btree (long_name)
     institutions_short_name_key: UNIQUE (short_name) USING btree (short_name)
 
+foreign-key constraints
+    institutions_default_authn_provider_id_fkey: FOREIGN KEY (default_authn_provider_id) REFERENCES authn_providers(id) ON UPDATE CASCADE ON DELETE SET NULL
+
 referenced by
     institution_authn_providers: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE CASCADE
     pl_courses: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE SET NULL
+    saml_providers: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE CASCADE
     users: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE SET NULL

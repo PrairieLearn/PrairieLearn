@@ -5,6 +5,6 @@ import numpy as np
 
 beta = data["params"]["beta"]
 
-n = int(np.random.choice([4,5]))
-m = int(n-np.random.choice([1,2]))
-a = np.random.random((n,m))
+n = int(np.random.choice([4, 5]))
+m = int(n - np.random.choice([1, 2]))
+a = np.random.random((n, m))

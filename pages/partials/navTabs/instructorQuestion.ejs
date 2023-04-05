@@ -1,8 +1,10 @@
+<% if (authz_data.has_course_permission_view) { %>
 <%- include('navTab', {
-    activeSubPage:  'file_view',
+    activeSubPage:  ['file_view', 'file_edit'],
     urlSuffix:      '/question/'+question.id+'/file_view',
     iconClasses:    'fa fa-edit',
     tabLabel:       'Files'}) %>
+<% } %>
 <%- include('navTab', {
     activeSubPage:  'preview',
     urlSuffix:      '/question/'+question.id+'/preview',

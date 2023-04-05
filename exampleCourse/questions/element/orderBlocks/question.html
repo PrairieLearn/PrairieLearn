@@ -1,4 +1,3 @@
-
 <pl-question-panel>
 <p>
 This question illustrates different use cases for the
@@ -6,11 +5,11 @@ This question illustrates different use cases for the
 </p>
 <hr>
 <p>
-<strong>Example 1:</strong> Drag all the prime numbers below to the yellow box. Remember 1 is not a prime number.
+<strong>Example 1:</strong> Drag all the prime numbers below to the answer zone. Remember 1 is not a prime number.
 </p>
 
-<p> This example uses the attribute <code>source-blocks-order="ordered"</code> so that 
-  the displayed blocks appear in the same order provided by the HTML answers. It also 
+<p> This example uses the attribute <code>source-blocks-order="ordered"</code> so that
+  the displayed blocks appear in the same order provided by the HTML answers. It also
   uses the attribute <code>grading-method="unordered"</code>, so that any ordering of the solution is accepted as correct.</p>
 
 </pl-question-panel>
@@ -23,19 +22,20 @@ This question illustrates different use cases for the
   <pl-answer correct="true">5</pl-answer>
   <pl-answer correct="false">6</pl-answer>
   <pl-answer correct="true">7</pl-answer>
+  <pl-answer correct="false">This is an example very long tile to test CSS overflow</pl-answer>
 </pl-order-blocks>
 
 <hr>
 
 <pl-question-panel>
 <p>
-  <strong>Example 2:</strong> Drag all the prime numbers below to the yellow box <strong> in ascending order</strong>.
+  <strong>Example 2:</strong> Drag all the prime numbers below to the answer zone <strong> in ascending order</strong>.
 </p>
 
 <p> This example uses the attributes <code>min-incorrect="2"</code> and
-  <code>max-incorrect="4"</code> to display a minimum of 2 incorrect distractors and maximum of 4. 
+  <code>max-incorrect="4"</code> to display a minimum of 2 incorrect distractors and maximum of 4.
   Since this example uses the default values for <code>source-blocks-order="random"</code> and <code>grading-method="ordered"</code>,
-  the blocks in the source area appear shuffled, and the correct answer from the solution area follows 
+  the blocks in the source area appear shuffled, and the correct answer from the solution area follows
   the order defined by the <code>pl-answers</code>.</p>
 
 </pl-question-panel>
@@ -66,8 +66,13 @@ This question illustrates different use cases for the
 </pl-question-panel>
 
 
-<pl-order-blocks answers-name="python-ordered" grading-method="ranking" indentation="true">
-
+<pl-order-blocks
+  answers-name="python-ordered"
+  grading-method="ranking"
+  indentation="true"
+  format="code"
+  code-language="python"
+>
   <pl-answer correct="true" ranking="1" indent="0">def my_sum(first, second):</pl-answer>
   <pl-answer correct="true" ranking="2" indent="1">sum = 0</pl-answer>
   <pl-answer correct="true" ranking="3" indent="1">sum += first</pl-answer>
@@ -75,35 +80,49 @@ This question illustrates different use cases for the
   <pl-answer correct="true" ranking="4" indent="1">return sum</pl-answer>
   <pl-answer correct="false">sum + first</pl-answer>
   <pl-answer correct="false">sum + second</pl-answer>
-  <pl-answer correct="false">This is an example very long tile to test CSS overflow</pl-answer>
-
 </pl-order-blocks>
 
 <hr>
 
 <pl-question-panel>
 <p>
-  <strong>Example 4:</strong> Let $a, b$ be any even numbers. Prove that $a + b$ is always even.
+  <strong>Example 4:</strong> Prove that $A \land B \land C \rightarrow A \land C$
 </p>
 
-<p>This example uses the attribute <code>grading-method="ranking"</code> to control how the correct solution is ordered.
-When the order of a correct block is not relevant,
- the attribute <code>ranking</code> is not provided. In this example, two of the blocks can be placed at any
-position when constructing the solution. The attribute <code>solution-placement="bottom"</code> is used
+<p>This example uses the attribute <code>grading-method="dag"</code> to control how the correct solution is ordered.
+This is especially useful when you want students to construct a mathematical proof, where the dependency of lines of the
+proof on one another is given by a directed acyclic graph (DAG) structure. The <code>depends</code> attribute on each
+line is used to denote which lines of the proof must appear before a particular line.
+Then a correct answer is a topological sort of the lines of the proof.
+The attribute <code>solution-placement="bottom"</code> is used
 to display the input area above the output area.</p>
 </pl-question-panel>
 
- <pl-order-blocks answers-name="latex_answers" grading-method="ranking" solution-placement="bottom">
-  <pl-answer correct="true" ranking="1" >Proof by Contrapositive:</pl-answer>
-  <pl-answer correct="true" ranking="2" >Take some $m \in \mathbb{Z}$ </pl-answer>
-  <pl-answer correct="true" ranking="2" >Take some $n \in \mathbb{Z}$ </pl-answer>
-  <pl-answer correct="true" >Assume $m$ is even</pl-answer>
-  <pl-answer correct="true" >Assume $n$ is even</pl-answer>
-  <pl-answer correct="true" ranking="3" >$\exists \ell \in \mathbb{Z}$ such that $m = 2l$</pl-answer>
-  <pl-answer correct="true" ranking="3" >$\exists k \in \mathbb{Z}$ such that $n = 2k$</pl-answer>
-  <pl-answer correct="true" ranking="4">$am^2 + bm + cn^2 + dn + e$</pl-answer>
-  <pl-answer correct="true" ranking="5">$= a(2l)^2 + b(2l) + c(2k)^2 + d(2k) + e$ </pl-answer>
-  <pl-answer correct="true" ranking="6">$= 2(2al^2 + bl + 2ck^2 + dk) + e$ </pl-answer>
-  <pl-answer correct="true" ranking="7">Since $e$ is odd, $2(2al^2 + bl + 2ck^2 + dk) + e$ is odd </pl-answer>
-  <pl-answer correct="true" ranking="8">$QED$</pl-answer>
-</pl-order-blocks> 
+<pl-order-blocks answers-name="conjunction-implies-conjunction" source-blocks-order="random" grading-method="dag" solution-placement="bottom">
+  <pl-answer correct="true" tag="1" depends=""  > Assume $A \land B \land C$.</pl-answer>
+  <pl-answer correct="true" tag="2" depends="1" > Then $A$ is true. </pl-answer>
+  <pl-answer correct="true" tag="3" depends="1" > Then $C$ is true. </pl-answer>
+  <pl-answer correct="true" tag="4" depends="2,3" > Since $A$ and $C$, we know $A \land C$</pl-answer>
+</pl-order-blocks>
+
+<hr>
+
+<pl-question-panel>
+  <p>
+    <strong>Example 5:</strong> Drag all fruits to the answer zone.
+  </p>
+
+  <p>
+    This example uses the attribute <code>source-blocks-order="alphabetized"</code>
+    to order the source blocks alphabetically, even though they appear in a random
+    order in <code>question.html</code>.
+  </p>
+</pl-question-panel>
+
+<pl-order-blocks answers-name="alphabetized" source-blocks-order="alphabetized" grading-method="unordered">
+  <pl-answer correct="true">eggplant</pl-answer>
+  <pl-answer correct="true">banana</pl-answer>
+  <pl-answer correct="true">date</pl-answer>
+  <pl-answer correct="false">carrot</pl-answer>
+  <pl-answer correct="true">apple</pl-answer>
+</pl-order-blocks>

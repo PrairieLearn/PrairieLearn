@@ -1,7 +1,4 @@
-DROP FUNCTION IF EXISTS sync_course_instances(JSONB, bigint);
-DROP FUNCTION IF EXISTS sync_course_instances(JSONB[], bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     sync_course_instances(
         IN disk_course_instances_data JSONB[],
         IN syncing_course_id bigint,
@@ -15,8 +12,6 @@ DECLARE
     valid_course_instance record;
     syncing_course_instance_id bigint;
     enrollment JSONB;
-    new_user_ids bigint[];
-    new_user_id bigint;
 BEGIN
     -- The sync algorithm used here is described in the preprint
     -- "Preserving identity during opportunistic unidirectional
@@ -54,12 +49,22 @@ BEGIN
 
     WITH
     matched_rows AS (
-        SELECT src.short_name AS src_short_name, src.uuid AS src_uuid, dest.id AS dest_id -- matched_rows cols have underscores
+        -- See `sync_questions.sql` for an explanation of the use of DISTINCT ON.
+        SELECT DISTINCT ON (src_short_name)
+            src.short_name AS src_short_name,
+            src.uuid AS src_uuid,
+            dest.id AS dest_id
         FROM disk_course_instances AS src LEFT JOIN course_instances AS dest ON (
             dest.course_id = syncing_course_id
-            AND (src.uuid = dest.uuid
-                 OR ((src.uuid IS NULL OR dest.uuid IS NULL)
-                     AND src.short_name = dest.short_name AND dest.deleted_at IS NULL)))
+            AND (
+                src.uuid = dest.uuid
+                OR (
+                    (src.uuid IS NULL OR dest.uuid IS NULL)
+                    AND src.short_name = dest.short_name AND dest.deleted_at IS NULL
+                )
+            )
+        )
+        ORDER BY src_short_name, (src.uuid = dest.uuid) DESC NULLS LAST
     ),
     deactivate_unmatched_dest_rows AS (
         UPDATE course_instances AS dest
@@ -122,6 +127,7 @@ BEGIN
     UPDATE course_instances AS dest
     SET
         long_name = src.data->>'long_name',
+        assessments_group_by = (src.data->>'assessments_group_by')::enum_assessment_grouping,
         display_timezone = src.data->>'display_timezone',
         hide_in_enroll_page = (src.data->>'hide_in_enroll_page')::boolean,
         sync_errors = NULL,
@@ -133,7 +139,7 @@ BEGIN
         AND dest.course_id = syncing_course_id
         AND (src.errors IS NULL OR src.errors = '');
 
-    -- Now, loop over all valid course instances and sync access rules and course staff for them
+    -- Now, loop over all valid course instances and sync access rules for them
     FOR valid_course_instance IN (
         SELECT short_name, data
         FROM disk_course_instances AS src
@@ -157,7 +163,7 @@ BEGIN
         ) SELECT
             syncing_course_instance_id,
             number,
-            (access_rule->>'role')::enum_role,
+            'Student'::enum_role,
             CASE
                 WHEN access_rule->'uids' = null::JSONB THEN NULL
                 ELSE jsonb_array_to_text_array(access_rule->'uids')
@@ -180,46 +186,6 @@ BEGIN
         WHERE
             course_instance_id = syncing_course_instance_id
             AND number > JSONB_ARRAY_LENGTH(valid_course_instance.data->'access_rules');
-
-        -- Add enrollments for all course staff
-        new_user_ids := array[]::bigint[];
-        FOR enrollment IN SELECT * FROM JSONB_ARRAY_ELEMENTS(valid_course_instance.data->'user_roles') LOOP
-            -- Ensure that a user exists
-            INSERT INTO users (uid)
-            VALUES (enrollment->>0)
-            ON CONFLICT (uid) DO NOTHING;
-
-            SELECT user_id into new_user_id
-            FROM users
-            WHERE uid = enrollment->>0;
-
-            new_user_ids := array_append(new_user_ids, new_user_id);
-
-            -- Ensure enrollment for this course instance
-            INSERT INTO enrollments (
-                user_id,
-                role,
-                course_instance_id
-            ) VALUES (
-                new_user_id,
-                (enrollment->>1)::enum_role,
-                syncing_course_instance_id
-            )
-            ON CONFLICT (user_id, course_instance_id) DO UPDATE
-            SET
-                role = EXCLUDED.role;
-        END LOOP;
-
-        -- Downgrade all other enrollments
-        UPDATE enrollments AS e
-        SET role = 'Student'
-        FROM
-            users AS u
-        WHERE
-            u.user_id = e.user_id
-            AND e.course_instance_id = syncing_course_instance_id
-            AND u.user_id NOT IN (SELECT unnest(new_user_ids))
-            AND e.role != 'Student';
     END LOOP;
 
     -- Second pass: add errors where needed.

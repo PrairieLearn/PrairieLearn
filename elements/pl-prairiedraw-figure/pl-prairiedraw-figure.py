@@ -1,48 +1,48 @@
-import prairielearn as pl
-import lxml.html
-import chevron
 import os
 
+import chevron
+import lxml.html
+import prairielearn as pl
 
 PARAM_NAMES_DEFAULT = None
-WIDTH_DEFAULT = '500'
-HEIGHT_DEFAULT = '300'
+WIDTH_DEFAULT = "500"
+HEIGHT_DEFAULT = "300"
 
 
 def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ['script-name']
-    optional_attribs = ['param-names', 'width', 'height']
+    required_attribs = ["script-name"]
+    optional_attribs = ["param-names", "width", "height"]
     pl.check_attribs(element, required_attribs, optional_attribs)
     return data
 
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    script_name = pl.get_string_attrib(element, 'script-name', None)
+    script_name = pl.get_string_attrib(element, "script-name", None)
 
-    with open(os.path.join(data['options']['question_path'], script_name)) as f:
+    with open(os.path.join(data["options"]["question_path"], script_name)) as f:
         script = f.read()
 
-    width = pl.get_string_attrib(element, 'width', WIDTH_DEFAULT)
-    height = pl.get_string_attrib(element, 'height', HEIGHT_DEFAULT)
+    width = pl.get_string_attrib(element, "width", WIDTH_DEFAULT)
+    height = pl.get_string_attrib(element, "height", HEIGHT_DEFAULT)
 
-    params_names = pl.get_string_attrib(element, 'param-names', PARAM_NAMES_DEFAULT)
+    params_names = pl.get_string_attrib(element, "param-names", PARAM_NAMES_DEFAULT)
     if params_names is None:
         client_params = {}
     else:
-        params_names = params_names.split(sep=',')
-        client_params = {key: data['params'][key] for key in params_names}
+        params_names = params_names.split(sep=",")
+        client_params = {key: data["params"][key] for key in params_names}
 
     html_params = {
-        'script': script,
-        'width': width,
-        'height': height,
-        'client_params': client_params,
-        'uuid': pl.get_uuid(),
+        "script": script,
+        "width": width,
+        "height": height,
+        "client_params": client_params,
+        "uuid": pl.get_uuid(),
     }
 
-    with open('pl-prairiedraw-figure.mustache') as f:
+    with open("pl-prairiedraw-figure.mustache") as f:
         html = chevron.render(f, html_params).strip()
 
     return html

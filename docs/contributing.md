@@ -1,7 +1,6 @@
-
 # Contributing to PrairieLearn
 
-* [Good blog post on how to contribute via GitHub](http://blog.davidecoppola.com/2016/11/howto-contribute-to-open-source-project-on-github/)
+- [Good blog post on how to contribute via GitHub](http://blog.davidecoppola.com/2016/11/howto-contribute-to-open-source-project-on-github/)
 
 ## GitHub: distributed model
 
@@ -16,9 +15,9 @@ git remote add upstream git@github.com:PrairieLearn/PrairieLearn.git
 
 This means that you now have three key repositories to keep track of:
 
-* **Upstream:** the main PrairieLearn repository on GitHub. You can't directly push to this, but this is where you will pull other people's commits from.
-* **Origin:** your forked repository on GitHub. You can push and pull directly to this.
-* **Local:** your clone of origin on your local computer. This is where you commit before pushing to origin.
+- **Upstream:** the main PrairieLearn repository on GitHub. You can't directly push to this, but this is where you will pull other people's commits from.
+- **Origin:** your forked repository on GitHub. You can push and pull directly to this.
+- **Local:** your clone of origin on your local computer. This is where you commit before pushing to origin.
 
 **Important note:** Don't ever commit anything to the `master` branch. You should do all your work in branches and issue pull requests from these branches back to the main PrairieLearn repository.
 
@@ -65,13 +64,13 @@ PrairieLearn version numbers have the format `major.minor.patch`. Patch-level ch
 
 Branches:
 
-* `master` - current development branch
-* `1.0`, `1.1`, `2.0` - release branches
-* all other branches are for private feature development
+- `master` - current development branch
+- `1.0`, `1.1`, `2.0` - release branches
+- all other branches are for private feature development
 
 Tags:
 
-* `1.0.0`, `1.0.1`, `1.0.2` - releases on the `1.0` branch, corresponding to `prairielearn-1.0.X.tar.gz` release tarballs.
+- `1.0.0`, `1.0.1`, `1.0.2` - releases on the `1.0` branch, corresponding to `prairielearn-1.0.X.tar.gz` release tarballs.
 
 Main repository topology:
 
@@ -103,14 +102,18 @@ Main repository topology:
 
 No problem, assuming that you have not made any commits yet.
 First, create and checkout a new branch in which to keep your changes, leaving the current branch as is.
+
 ```
 git checkout -b <new-branch>
 ```
+
 Then, make a commit as you normally would:
+
 ```
 git add <files>
 git commit -m "<Brief description of this commit>"
 ```
+
 Once your commit is made, you can checkout and reset master.
 
 [See here for more information.](https://stackoverflow.com/questions/1394797/move-existing-uncommited-work-to-a-new-branch-in-git)

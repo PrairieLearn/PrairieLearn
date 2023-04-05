@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     array_increments_above_max(
         IN data double precision[],
         OUT increments double precision[]

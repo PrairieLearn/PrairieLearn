@@ -1,7 +1,4 @@
-DROP FUNCTION IF EXISTS issues_insert_for_variant(bigint,text,boolean,jsonb,jsonb,bigint);
-DROP FUNCTION IF EXISTS issues_insert_for_variant(bigint,text,boolean,boolean,jsonb,jsonb,bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     issues_insert_for_variant(
         variant_id bigint,
         student_message text,
@@ -39,7 +36,7 @@ BEGIN
         LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     WHERE
         v.id = variant_id;
-    IF NOT FOUND THEN RAISE EXCEPTION 'invalid variant_id'; END IF;
+    IF NOT FOUND THEN RAISE EXCEPTION 'invalid variant_id: %', variant_id; END IF;
 
     INSERT INTO issues
         (student_message, instructor_message, course_caused, course_data, system_data, authn_user_id,

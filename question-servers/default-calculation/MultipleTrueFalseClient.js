@@ -1,3 +1,3 @@
-define(["MTFClient"], function(MTFClient) {
-    return new MTFClient.MTFClient();
+define(['MTFClient'], function (MTFClient) {
+  return new MTFClient.MTFClient();
 });

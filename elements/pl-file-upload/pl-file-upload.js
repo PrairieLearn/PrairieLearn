@@ -1,228 +1,358 @@
 /* eslint-env browser,jquery */
-/* global _ */
-$(function() {
-    if (!window.File || !window.FileReader || !window.FileList || !window.Blob) {
-        alert('Warning: Your browser does not fully support HTML5 file upload operations.' +
-        'Please use a more current browser or you may not be able to complete this question.');
-    }
-});
 
-window.PLFileUpload = function(uuid, options) {
-    this.uuid = uuid;
-    this.files = options.files || [];
-    this.acceptedFiles = options.acceptedFiles || [];
-    this.acceptedFilesLowerCase = this.acceptedFiles.map(f => f.toLowerCase());
+(() => {
+  function escapePath(path) {
+    return path
+      .replace(/^\//, '')
+      .split('/')
+      .map((part) => encodeURIComponent(part))
+      .join('/');
+  }
 
-    var elementId = '#file-upload-' + uuid;
-    this.element = $(elementId);
-    if (!this.element) {
+  class PLFileUpload {
+    constructor(uuid, options) {
+      this.uuid = uuid;
+      this.files = [];
+      this.acceptedFiles = options.acceptedFiles || [];
+      this.acceptedFilesLowerCase = this.acceptedFiles.map((f) => f.toLowerCase());
+      this.pendingFileDownloads = new Set();
+      this.failedFileDownloads = new Set();
+
+      const elementId = '#file-upload-' + uuid;
+      this.element = $(elementId);
+      if (!this.element) {
         throw new Error('File upload element ' + elementId + ' was not found!');
+      }
+
+      if (options.submittedFileNames) {
+        this.downloadExistingFiles(options.submittedFileNames).then(() => {
+          this.syncFilesToHiddenInput();
+        });
+      }
+
+      // We need to render after we start loading the existing files so that we
+      // can pick up the right values from `pendingFileDownloads`.
+      this.initializeTemplate();
     }
 
-    this.syncFilesToHiddenInput();
-    this.initializeTemplate();
-};
+    async downloadExistingFiles(fileNames) {
+      const submissionFilesUrl = this.element.data('submission-files-url');
+      fileNames.forEach((file) => this.pendingFileDownloads.add(file));
 
-/**
-* Initializes the file upload zone on the question.
-*/
-window.PLFileUpload.prototype.initializeTemplate = function() {
-    var $dropTarget = this.element.find('.upload-dropzone');
+      await Promise.all(
+        fileNames.map(async (file) => {
+          const escapedFileName = escapePath(file);
+          const path = `${submissionFilesUrl}/${escapedFileName}`;
+          try {
+            const res = await fetch(path, { method: 'GET' });
+            if (!res.ok) {
+              throw new Error(`Failed to download file: ${res.status}`);
+            }
+            if (!res) {
+              this.pendingFileDownloads.delete(file);
+              this.failedFileDownloads.add(file);
+              this.renderFileList();
+              return;
+            }
 
-    var that = this;
+            // Avoid race condition with student initiated upload. If the student
+            // added a file while this was loading, the file name would have been
+            // removed from the list of pending downloads, so we can just ignore
+            // the result.
+            if (this.pendingFileDownloads.has(file)) {
+              this.addFileFromBlob(file, await res.blob(), true);
+            }
+          } catch (e) {
+            console.error(e);
+          }
+        })
+      );
+    }
 
-    $dropTarget.dropzone({
+    /**
+     * Initializes the file upload zone on the question.
+     */
+    initializeTemplate() {
+      const $dropTarget = this.element.find('.upload-dropzone');
+
+      $dropTarget.dropzone({
         url: '/none',
         autoProcessQueue: false,
-        accept: function(file, done) {
-            // fuzzy case:
-            const fileNameLowerCase = file.name.toLowerCase();
-            if (_.includes(that.acceptedFilesLowerCase, fileNameLowerCase)) {
-                return done();
-            }
-            return done('invalid file');
+        accept: (file, done) => {
+          // fuzzy case match
+          const fileNameLowerCase = file.name.toLowerCase();
+          if (this.acceptedFilesLowerCase.includes(fileNameLowerCase)) {
+            return done();
+          }
+          return done('invalid file');
         },
-        addedfile: function(file) {
-            // fuzzy case match
-            const fileNameLowerCase = file.name.toLowerCase();
-            if (!_.includes(that.acceptedFilesLowerCase, fileNameLowerCase)) {
-                that.addWarningMessage('<strong>' + file.name + '</strong>' + ' did not match any accepted file for this question.');
-                return;
-            }
-            const acceptedFilesIdx = that.acceptedFilesLowerCase.indexOf(fileNameLowerCase);
-            const acceptedName = that.acceptedFiles[acceptedFilesIdx];
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                var dataUrl = e.target.result;
-
-                var commaSplitIdx = dataUrl.indexOf(',');
-
-                // Store the file as base-64 encoded data
-                var base64FileData = dataUrl.substring(commaSplitIdx + 1);
-                that.saveSubmittedFile(acceptedName, base64FileData);
-                that.renderFileList();
-                // Show the preview for the newly-uploaded file
-                that.element.find(`li[data-file="${acceptedName}"] .file-preview`).addClass('in');
-            };
-
-            reader.readAsDataURL(file);
+        addedfile: (file) => {
+          // fuzzy case match
+          const fileNameLowerCase = file.name.toLowerCase();
+          if (!this.acceptedFilesLowerCase.includes(fileNameLowerCase)) {
+            this.addWarningMessage(
+              '<strong>' +
+                file.name +
+                '</strong>' +
+                ' did not match any accepted file for this question.'
+            );
+            return;
+          }
+          const acceptedFilesIdx = this.acceptedFilesLowerCase.indexOf(fileNameLowerCase);
+          const acceptedName = this.acceptedFiles[acceptedFilesIdx];
+          this.addFileFromBlob(acceptedName, file, false);
         },
-    });
+      });
 
-    this.renderFileList();
-};
-
-/**
- * Syncs the internal file array to the hidden input element
- * @type {[type]}
- */
-window.PLFileUpload.prototype.syncFilesToHiddenInput = function() {
-    this.element.find('input').val(JSON.stringify(this.files));
-};
-
-/**
-* Saves or updates the given file.
-* @param  {String} name     Name of the file
-* @param  {String} contents The file's base64-encoded contents
-*/
-window.PLFileUpload.prototype.saveSubmittedFile = function(name, contents) {
-    var idx = _.findIndex(this.files, function(file) {
-        if (file.name === name) {
-            return true;
-        }
-    });
-    if (idx === -1) {
-        this.files.push({
-            name: name,
-            contents: contents,
-        });
-    } else {
-        this.files[idx].contents = contents;
+      this.renderFileList();
     }
 
-    this.syncFilesToHiddenInput();
-};
+    /**
+     * Syncs the internal file array to the hidden input element
+     * @type {[type]}
+     */
+    syncFilesToHiddenInput() {
+      this.element.find('input').val(JSON.stringify(this.files));
+    }
 
-/**
-* Gets the base64-encoded contents of a file with the given name.
-* @param  {String} name The desired file
-* @return {String}      The file's contents, or null if the file was not found
-*/
-window.PLFileUpload.prototype.getSubmittedFileContents = function(name) {
-    var contents = null;
-    _.each(this.files, function(file) {
-        if (file.name === name) {
-            contents = file.contents;
+    addFileFromBlob(name, blob, isFromDownload) {
+      this.pendingFileDownloads.delete(name);
+      this.failedFileDownloads.delete(name);
+
+      var reader = new FileReader();
+      reader.onload = (e) => {
+        var dataUrl = e.target.result;
+
+        var commaSplitIdx = dataUrl.indexOf(',');
+        if (commaSplitIdx === -1) {
+          this.addWarningMessage('<strong>' + name + '</strong>' + ' is empty, ignoring file.');
+          return;
         }
-    });
-    return contents;
-};
 
-/**
-* Generates markup to show the status of the uploaded files, including
-* previews of files as appropriate.
-*
-* Imperative DOM manipulations can rot in hell.
-*/
-window.PLFileUpload.prototype.renderFileList = function() {
-    var $fileList = this.element.find('.file-upload-status .card ul.list-group');
+        // Store the file as base-64 encoded data
+        var base64FileData = dataUrl.substring(commaSplitIdx + 1);
+        this.saveSubmittedFile(name, base64FileData);
+        this.renderFileList();
 
-    // Save which cards are currently expanded
-    var expandedFiles = [];
-    $fileList.children().each(function() {
+        if (!isFromDownload) {
+          // Show the preview for the newly-uploaded file
+          const container = this.element.find(`li[data-file="${name}"]`);
+          container.find('.file-preview').addClass('show');
+          container.find('.file-status-container').removeClass('collapsed');
+
+          // Ensure that students see a prompt if they try to navigate away
+          // from the page without saving the form. This check is initially
+          // disabled because we don't want students to see the prompt if they
+          // haven't actually made any changes.
+          this.element.find('input').removeAttr('data-disable-unload-check');
+        }
+      };
+
+      reader.readAsDataURL(blob);
+    }
+
+    /**
+     * Saves or updates the given file.
+     * @param  {String} name     Name of the file
+     * @param  {String} contents The file's base64-encoded contents
+     */
+    saveSubmittedFile(name, contents) {
+      var idx = this.files.findIndex((file) => file.name === name);
+      if (idx === -1) {
+        this.files.push({
+          name: name,
+          contents: contents,
+        });
+      } else {
+        this.files[idx].contents = contents;
+      }
+
+      this.syncFilesToHiddenInput();
+    }
+
+    /**
+     * Gets the base64-encoded contents of a file with the given name.
+     * @param  {String} name The desired file
+     * @return {String}      The file's contents, or null if the file was not found
+     */
+    getSubmittedFileContents(name) {
+      const file = this.files.find((file) => file.name === name);
+      return file ? file.contents : null;
+    }
+
+    /**
+     * Generates markup to show the status of the uploaded files, including
+     * previews of files as appropriate.
+     */
+    renderFileList() {
+      var $fileList = this.element.find('.file-upload-status .card ul.list-group');
+
+      // Save which cards are currently expanded
+      var expandedFiles = [];
+      $fileList.children().each(function () {
         var fileName = $(this).attr('data-file');
-        if (fileName && $(this).find('.file-preview').hasClass('in')) {
-            expandedFiles.push(fileName);
+        if (fileName && $(this).find('.file-preview').hasClass('show')) {
+          expandedFiles.push(fileName);
         }
-    });
+      });
 
-    $fileList.html('');
+      $fileList.html('');
 
-    var uuid = this.uuid;
-    var that = this;
+      var uuid = this.uuid;
+      var that = this;
 
-    _.each(this.acceptedFiles, function(fileName, index) {
-        var isExpanded = _.includes(expandedFiles, fileName);
+      this.acceptedFiles.forEach((fileName, index) => {
+        var isExpanded = expandedFiles.includes(fileName);
         var fileData = that.getSubmittedFileContents(fileName);
 
         var $file = $('<li class="list-group-item" data-file="' + fileName + '"></li>');
-        var $fileStatusContainer = $('<div class="file-status-container collapsed" data-toggle="collapse" data-target="#file-preview-' + uuid + '-' + index + '"></div>');
+        var $fileStatusContainer = $(
+          '<div class="file-status-container collapsed d-flex flex-row" data-toggle="collapse" data-target="#file-preview-' +
+            uuid +
+            '-' +
+            index +
+            '"></div>'
+        );
         if (isExpanded) {
-            $fileStatusContainer.removeClass('collapsed');
+          $fileStatusContainer.removeClass('collapsed');
         }
         if (fileData) {
-            $fileStatusContainer.addClass('has-preview');
+          $fileStatusContainer.addClass('has-preview');
         }
         $file.append($fileStatusContainer);
-        var $fileStatusContainerLeft = $('<div class="file-status-container-left"></div>');
+        var $fileStatusContainerLeft = $('<div class="flex-grow-1"></div>');
         $fileStatusContainer.append($fileStatusContainerLeft);
-        if (fileData) {
-            $fileStatusContainerLeft.append('<i class="file-status-icon fa fa-check-circle" style="color: #4CAF50;" aria-hidden="true"></i>');
+        if (this.pendingFileDownloads.has(fileName)) {
+          $fileStatusContainerLeft.append(
+            '<i class="file-status-icon fas fa-spinner fa-spin" aria-hidden="true"></i>'
+          );
+        } else if (this.failedFileDownloads.has(fileName)) {
+          $fileStatusContainerLeft.append(
+            '<i class="file-status-icon fas fa-circle-exclamation text-danger" aria-hidden="true"></i>'
+          );
+        } else if (fileData) {
+          $fileStatusContainerLeft.append(
+            '<i class="file-status-icon fa fa-check-circle text-success" aria-hidden="true"></i>'
+          );
         } else {
-            $fileStatusContainerLeft.append('<i class="file-status-icon far fa-circle" aria-hidden="true"></i>');
+          $fileStatusContainerLeft.append(
+            '<i class="file-status-icon far fa-circle" aria-hidden="true"></i>'
+          );
         }
         $fileStatusContainerLeft.append(fileName);
-        if (!fileData) {
-            $fileStatusContainerLeft.append('<p class="file-status">not uploaded</p>');
+        if (this.pendingFileDownloads.has(fileName)) {
+          $fileStatusContainerLeft.append(
+            '<p class="file-status">fetching previous submission...</p>'
+          );
+        } else if (this.failedFileDownloads.has(fileName)) {
+          $fileStatusContainerLeft.append(
+            '<p class="file-status">failed to fetch previous submission; upload this file again</p>'
+          );
+        } else if (!fileData) {
+          $fileStatusContainerLeft.append('<p class="file-status">not uploaded</p>');
         } else {
-            $fileStatusContainerLeft.append('<p class="file-status">uploaded</p>');
+          $fileStatusContainerLeft.append('<p class="file-status">uploaded</p>');
         }
         if (fileData) {
-            var download = '<a download="' + fileName + '" class="btn btn-outline-secondary btn-sm mr-1" onclick="event.stopPropagation();" href="data:application/octet-stream;base64,' + fileData + '">Download</a>';
+          var download =
+            '<a download="' +
+            fileName +
+            '" class="btn btn-outline-secondary btn-sm mr-1" onclick="event.stopPropagation();" href="data:application/octet-stream;base64,' +
+            fileData +
+            '">Download</a>';
 
-            var $preview = $('<div class="file-preview collapse" id="file-preview-' + uuid + '-' + index + '"><pre class="bg-dark text-white rounded p-3 mb-0"><code></code></pre></div>');
-            if (isExpanded) {
-                $preview.addClass('in');
+          var $preview = $(
+            '<div class="file-preview collapse" id="file-preview-' + uuid + '-' + index + '"></div>'
+          );
+
+          var $error = $('<div class="alert alert-danger mt-2 d-none" role="alert"></div>');
+          $preview.append($error);
+
+          var $imgPreview = $('<img class="mw-100 mt-2 d-none"/>');
+          $preview.append($imgPreview);
+
+          var $codePreview = $(
+            '<pre class="bg-dark text-white rounded p-3 mt-2 mb-0 d-none"><code></code></pre>'
+          );
+          $preview.append($codePreview);
+
+          if (isExpanded) {
+            $preview.addClass('show');
+          }
+          try {
+            var fileContents = that.b64DecodeUnicode(fileData);
+            if (!that.isBinary(fileContents)) {
+              $preview.find('code').text(fileContents);
+            } else {
+              $preview.find('code').text('Binary file not previewed.');
             }
-            try {
-                var fileContents = that.b64DecodeUnicode(fileData);
-                if (!that.isBinary(fileContents)) {
-                    $preview.find('code').text(fileContents);
-                } else {
-                    $preview.find('code').text('Binary file not previewed.');
-                }
-            } catch (e) {
-                $preview.find('code').text('Unable to decode file.');
-            }
-            $file.append($preview);
-            $fileStatusContainer.append('<div class="file-status-container-right">' + download + '<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button"><span class="file-preview-icon fa fa-angle-down"></span></button></div>');
+            $codePreview.removeClass('d-none');
+          } catch (e) {
+            $imgPreview
+              .on('load', () => {
+                $imgPreview.removeClass('d-none');
+              })
+              .on('error', () => {
+                $error
+                  .text('Content preview is not available for this type of file.')
+                  .removeClass('d-none');
+              })
+              .attr('src', 'data:application/octet-stream;base64,' + fileData);
+          }
+          $file.append($preview);
+          $fileStatusContainer.append(
+            '<div class="align-self-center">' +
+              download +
+              '<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button"><span class="file-preview-icon fa fa-angle-down"></span></button></div>'
+          );
         }
 
         $fileList.append($file);
-    });
-};
+      });
+    }
 
-window.PLFileUpload.prototype.addWarningMessage = function(message) {
-    var $alert = $('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>');
-    $alert.append(message);
-    this.element.find('.messages').append($alert);
-};
+    addWarningMessage(message) {
+      var $alert = $(
+        '<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>'
+      );
+      $alert.append(message);
+      this.element.find('.messages').append($alert);
+    }
 
-/**
-* Checks if the given file contents should be treated as binary or
-* text. Uses the same method as git: if the first 8000 bytes contain a
-* NUL character ('\0'), we consider the file to be binary.
-* http://stackoverflow.com/questions/6119956/how-to-determine-if-git-handles-a-file-as-binary-or-as-text
-* @param  {String}  decodedFileContents File contents to check
-* @return {Boolean}                     If the file is recognized as binary
-*/
-window.PLFileUpload.prototype.isBinary = function(decodedFileContents) {
-    var nulIdx = decodedFileContents.indexOf('\0');
-    var fileLength = decodedFileContents.length;
-    return nulIdx != -1 && nulIdx <= (fileLength <= 8000 ? fileLength : 8000);
-};
+    /**
+     * Checks if the given file contents should be treated as binary or
+     * text. Uses the same method as git: if the first 8000 bytes contain a
+     * NUL character ('\0'), we consider the file to be binary.
+     * http://stackoverflow.com/questions/6119956/how-to-determine-if-git-handles-a-file-as-binary-or-as-text
+     * @param  {String}  decodedFileContents File contents to check
+     * @return {Boolean}                     If the file is recognized as binary
+     */
+    isBinary(decodedFileContents) {
+      var nulIdx = decodedFileContents.indexOf('\0');
+      var fileLength = decodedFileContents.length;
+      return nulIdx !== -1 && nulIdx <= (fileLength <= 8000 ? fileLength : 8000);
+    }
 
-/**
-* To support unicode strings, we use a method from Mozilla to decode:
-* first we get the bytestream, then we percent-encode it, then we
-* decode that to the original string.
-* https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding#The_Unicode_Problem
-* @param  {String} str the base64 string to decode
-* @return {String}     the decoded string
-*/
-window.PLFileUpload.prototype.b64DecodeUnicode = function(str) {
-    // Going backwards: from bytestream, to percent-encoding, to original string.
-    return decodeURIComponent(atob(str).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-};
+    /**
+     * To support unicode strings, we use a method from Mozilla to decode:
+     * first we get the bytestream, then we percent-encode it, then we
+     * decode that to the original string.
+     * https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding#The_Unicode_Problem
+     * @param  {String} str the base64 string to decode
+     * @return {String}     the decoded string
+     */
+    b64DecodeUnicode(str) {
+      // Going backwards: from bytestream, to percent-encoding, to original string.
+      return decodeURIComponent(
+        atob(str)
+          .split('')
+          .map(function (c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+          })
+          .join('')
+      );
+    }
+  }
+
+  window.PLFileUpload = PLFileUpload;
+})();

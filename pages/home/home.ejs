@@ -117,69 +117,91 @@
         </div><!-- card -->
         <% } %> <!-- devMode -->
 
-        <%- include('../partials/advertisement'); %>
+        <% if (locals.instructor_courses && instructor_courses.length > 0) { %>
+          <div class="card mb-4">
+            <div class="card-header bg-primary text-white">Courses with instructor access</div>
 
-        <% if (courses && courses.length > 0) { %>
-        <div class="card mb-4">
-          <div class="card-header bg-primary text-white">Courses</div>
-          <table class="table table-sm table-hover table-striped">
-            <tbody>
-              <% courses.forEach(function(course) { %>
-              <tr>
-                <td>
-                  <a href="<%= plainUrlPrefix %>/course/<%= course.id %>">
-                    <%= course.label %>
-                  </a>
-                </td>
-              </tr>
-              <% }); %>
-            </tbody>
-          </table>
-        </div><!-- card -->
-        <% } %> <!-- courses.length -->
+            <table class="table table-sm table-hover table-striped">
+              <tbody>
+                <% instructor_courses.forEach(function(course) { %>
+                  <tr>
+                    <td class="w-50 align-middle">
+                      <% if (course.do_link) { %>
+                        <a href="<%= plainUrlPrefix %>/course/<%= course.id %>"><%= course.label %></a>
+                      <% } else { %>
+                        <%= course.label %>
+                      <% } %>
+                    </td>
+                    <td>
+                      <% course.course_instances.forEach(function(course_instance) { %>
+                        <a class="btn btn-outline-primary btn-sm my-1" href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor">
+                          <%= course_instance.label %>
+                        </a>
+                      <% }); %>
+                    </td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        <% } %>
 
         <div class="card mb-4">
           <div class="card-header bg-primary text-white d-flex align-items-center">
-            <% if (courses && courses.length > 0) { %>
-            Course instances
+            <% if (locals.instructor_courses && instructor_courses.length > 0) { %>
+              Courses with student access
             <% } else { %>
-            Courses
+              Courses
             <% } %>
             <% if (authn_provider_name !== 'LTI') { %>
-            <a href="<%= plainUrlPrefix %>/enroll" class="btn btn-light btn-sm ml-auto">
-              <i class="fa fa-edit" aria-hidden="true"></i>
-              <span class="d-none d-sm-inline">Add or remove courses</span>
-            </a>
+              <a href="<%= plainUrlPrefix %>/enroll" class="btn btn-light btn-sm ml-auto">
+                <i class="fa fa-edit" aria-hidden="true"></i>
+                <span class="d-none d-sm-inline">Add or remove courses</span>
+              </a>
             <% } %>
-          </div><!-- card-header -->
+          </div>
 
-          <% if (course_instances && course_instances.length == 0) { %>
-          <% if (devMode) { %>
-          <div class="card-body">
-            No courses loaded. Click <strong>“Load from disk”</strong>
-            above and then click <strong>“Home”</strong> to come back to
-            this page.
-          </div>
-          <% } else { %> <!-- devMode -->
-          <div class="card-body">
-            No courses found. Use the “Add or remove courses” button to add one.
-          </div>
-          <% } %> <!-- devMode -->
-          <% } else { %> <!-- course_instances.length -->
-          <table class="table table-sm table-hover table-striped">
-            <tbody>
-              <% course_instances.forEach(function(course_instance) { %>
-              <tr>
-                <td>
-                  <a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>">
-                    <%= course_instance.label %>
-                  </a>
-                </td>
-              </tr>
-              <% }); %>
-            </tbody>
-          </table>
-          <% } %> <!-- course_instances.length -->
+          <% if (locals.student_courses && student_courses.length == 0) { %>
+
+            <% if (locals.instructor_courses && instructor_courses.length > 0) { %>
+              <div class="card-body">
+                No courses found with student access. Courses with instructor access are found in the list above.
+                <% if (authn_provider_name !== 'LTI') { %>
+                  Use the “Add or remove courses” button to add a course as a student.
+                <% } %>
+              </div>
+            <% } else if (devMode) { %>
+              <div class="card-body">
+                No courses loaded. Click <strong>“Load from disk”</strong>
+                above and then click <strong>“PrairieLearn”</strong> in the top left corner to come back to
+                this page.
+              </div>
+            <% } else { %> <!-- devMode -->
+              <div class="card-body">
+                No courses found.
+                <% if (authn_provider_name !== 'LTI') { %>
+                  Use the “Add or remove courses” button to add one.
+                <% } %>
+              </div>
+            <% } %> <!-- devMode -->
+
+          <% } else { %> <!-- student_courses.length -->
+
+            <table class="table table-sm table-hover table-striped">
+              <tbody>
+                <% student_courses.forEach(function(course_instance) { %>
+                  <tr>
+                    <td>
+                      <a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>">
+                        <%= course_instance.label %>
+                      </a>
+                    </td>
+                  </tr>
+                <% }); %>
+              </tbody>
+            </table>
+
+          <% } %> <!-- student_courses.length -->
         </div><!-- card -->
       </div><!-- container -->
       <% } else { %> <!-- isAuthenticated -->
@@ -470,6 +492,10 @@
       <div class="bg-flourish h-flourish"></div>
       <% } %>
       <div class="<%= isAuthenticated ? 'bg-secondary p-1' : 'container' %>">
+        <% if (config.homepageFooterText) { %>
+          <a class="text-light" href="<%= config.homepageFooterTextHref %>"><%= config.homepageFooterText %></a>
+          &middot;
+        <% } %>
         &copy; 2021 <a class="text-nowrap text-light" href="https://illinois.edu">University of Illinois at Urbana-Champaign</a>
         &middot;
         <a class="text-nowrap text-light" href="https://www.vecteezy.com/free-vector/nature">Nature Vectors by Vecteezy</a>

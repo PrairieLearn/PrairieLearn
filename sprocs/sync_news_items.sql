@@ -1,7 +1,4 @@
-DROP FUNCTION IF EXISTS sync_news_items(jsonb);
-DROP FUNCTION IF EXISTS sync_news_items(jsonb,boolean);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     sync_news_items (
         IN news_items_on_disk jsonb,
         IN notify_with_new_server boolean -- should we send notifications on a new server install (a blank DB)
@@ -50,25 +47,7 @@ BEGIN
     IF existing_news_items_count > 0   -- IF we are updating a existing server
     OR notify_with_new_server          -- OR we should notify on new servers
     THEN                               -- THEN send notifications
-        WITH
-        users_as_course_staff AS (
-            -- This is a more efficient implementation of
-            -- sprocs/users_is_course_staff for all users at once
-            SELECT
-                user_id,
-                bool_or(
-                    cp.course_role > 'None'
-                    OR e.role > 'Student'
-                    OR adm.id IS NOT NULL
-                ) AS is_course_staff
-            FROM
-                users AS u
-                LEFT JOIN course_permissions AS cp USING (user_id)
-                LEFT JOIN enrollments AS e USING (user_id)
-                LEFT JOIN administrators AS adm USING (user_id)
-            GROUP BY user_id
-        ),
-        new_news_items AS (
+        WITH new_news_items AS (
             SELECT
                 ni.id,
                 ni.visible_to_students
@@ -82,10 +61,10 @@ BEGIN
             u.user_id
         FROM
             new_news_items AS ni
-            CROSS JOIN users_as_course_staff AS u
+            CROSS JOIN users_are_instructors_in_any_course() AS u
         WHERE
             ni.visible_to_students
-            OR u.is_course_staff;
+            OR u.is_instructor;
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

@@ -1,8 +1,4 @@
-DROP FUNCTION IF EXISTS sync_assessment_sets(JSONB, bigint);
-DROP FUNCTION IF EXISTS sync_assessment_sets(boolean, jsonb, text[], bigint);
-DROP FUNCTION IF EXISTS sync_assessment_sets(boolean, boolean, jsonb, text[], bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     sync_assessment_sets(
         IN valid_course_info boolean,
         IN delete_unused boolean,
@@ -82,7 +78,7 @@ BEGIN
         ) SELECT
             name,
             name,
-            concat(name, ' (Auto-generated from use in an assessment; add this assessment set to your courseInfo.json file to customize)'),
+            concat(name, ' (Auto-generated from use in an assessment; add this assessment set to your infoCourse.json file to customize)'),
             'gray1',
             (array_length(used_assessment_set_names, 1) + (row_number() OVER ())),
             syncing_course_id

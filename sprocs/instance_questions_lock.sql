@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     instance_questions_lock (
         instance_question_id bigint
     ) RETURNS void
@@ -18,6 +18,6 @@ BEGIN
     PERFORM ai.id
     FROM assessment_instances AS ai
     WHERE ai.id = assessment_instance_id
-    FOR UPDATE OF ai;
+    FOR NO KEY UPDATE OF ai;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

@@ -26,7 +26,8 @@
                     "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
                 },
                 "coreStyles": {
-                    "description": "The styles required by this element from /public/stylesheets.",
+                    "description": "[DEPRECATED, DO NOT USE] The styles required by this element from /public/stylesheets.",
+                    "deprecated": true,
                     "type": "array",
                     "items": {
                         "description": "A .css file located in /public/stylesheets.",
@@ -34,7 +35,8 @@
                     }
                 },
                 "coreScripts": {
-                    "description": "The scripts required by this element from /public/javascripts.",
+                    "description": "[DEPRECATED, DO NOT USE] The scripts required by this element from /public/javascripts.",
+                    "deprecated": true,
                     "type": "array",
                     "items": {
                         "description": "A .js file located in /public/javascripts.",

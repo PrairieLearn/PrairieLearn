@@ -88,6 +88,10 @@
             "description": "Whether the question is not randomized and only generates a single variant (defaults to \"false\").",
             "type": "boolean"
         },
+        "showCorrectAnswer": {
+            "description": "Whether to show the correct answer panel (defaults to \"true\").",
+            "type": "boolean"
+        },
         "partialCredit": {
             "description": "Whether the question will give partial points for fractional scores (defaults to \"false\" for v2 questions and \"true\" for v3.).",
             "type": "boolean"
@@ -136,6 +140,10 @@
                 "enableNetworking": {
                     "description": "Whether the grading containers should have network access. Access is disabled by default.",
                     "type": "boolean"
+                },
+                "environment": {
+                    "description": "Environment variables to set inside the grading container.",
+                    "type": "object"
                 }
             }
         },
@@ -149,7 +157,8 @@
                     "anyOf": [{"type": "string"}, {"type": "array"}, {"type": "object"}]
                 },
                 "coreStyles": {
-                    "description": "The styles required by this question from /public/stylesheets.",
+                    "description": "[DEPRECATED, DO NOT USE] The styles required by this question from /public/stylesheets.",
+                    "deprecated": true,
                     "type": "array",
                     "items": {
                         "description": "A .css file located in /public/stylesheets.",
@@ -157,7 +166,8 @@
                     }
                 },
                 "coreScripts": {
-                    "description": "The scripts required by this question from /public/javascripts.",
+                    "description": "[DEPRECATED, DO NOT USE] The scripts required by this question from /public/javascripts.",
+                    "deprecated": true,
                     "type": "array",
                     "items": {
                         "description": "A .js file located in /public/javascripts.",
@@ -256,8 +266,16 @@
                         "type": "string"
                     }
                 },
+                "enableNetworking": {
+                    "description": "Whether the workspace should have network access. Access is disabled by default.",
+                    "type": "boolean"
+                },
+                "environment": {
+                    "description": "Environment variables to set inside the workspace container.",
+                    "type": "object"
+                },
                 "syncIgnore": {
-                    "description": "The list of files or directories that will be excluded from sync.",
+                    "description": "(deprecated) The list of files or directories that will be excluded from sync.",
                     "type": "array",
                     "items": {
                         "description": "A single file or directory that will be excluded from sync.",

@@ -57,6 +57,7 @@ line.axis {
 .statsPlot .label {
     font-size: 14px;
     font-weight: normal;
+    fill: black;
 }
 
 .statsPlot .fitLine {
@@ -111,6 +112,14 @@ table.two-column-description-no-header-with-help tr td:last-of-type {
 
 pre {
     overflow-wrap: normal;
+}
+
+/* MathJax SVG shape rendering: Prefer accurate antialiased font shapes
+   over "crisp" pixel-aligned ones. This may be less sharp in some cases,
+   but it can prevent thin lines from disappearing. */
+mjx-container {
+  shape-rendering: geometricPrecision;
+  text-rendering: geometricPrecision;
 }
 
 /**************

@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_groups_update(
         IN arg_assessment_id bigint,
         IN update_list text[][], -- [[groupName1, uid1], [groupName2, uid2], ...]

@@ -1,16 +1,22 @@
 {
   "compilerOptions": {
     "allowJs": true,
+    "esModuleInterop": true,
     "noEmit": true,
     // Allow spreading Maps/Sets into arrays
-    "downlevelIteration": true
+    "downlevelIteration": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
   },
   // We don't actually use any TypeScript; we just use it to validate our
   // standard JavaScript with JSDoc comments.
   // Adding new code? Consider opting in to type checking!
   "include": [
-    "tests/sync/**/*",
+    "tests/**/*",
     "sync/**/*",
-    "lib/**/*"
-  ]
+    "lib/**/*",
+    "tools/**/*",
+    "ee/**/*",
+    "api/**/*",
+  ],
 }

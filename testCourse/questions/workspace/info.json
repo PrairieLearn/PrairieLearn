@@ -4,7 +4,8 @@
     "topic": "Workspace",
     "tags": [
         "su20",
-        "nnytko2"
+        "nnytko2",
+        "tyang15"
     ],
     "type": "v3",
     "workspaceOptions": {
@@ -14,6 +15,10 @@
         "gradedFiles": [
             "starter_code.h",
             "starter_code.c"
-        ]
+        ],
+        "environment": {
+            "FOO": "bar baz",
+            "ILL": "ini"
+        }
     }
 }

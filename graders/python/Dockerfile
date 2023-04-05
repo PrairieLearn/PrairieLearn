@@ -12,3 +12,6 @@ COPY python_autograder /python_autograder
 
 # Anything that needs to be run post-install
 RUN /bin/bash /post-install.sh
+
+# Add serverFilesCourse to Python path
+ENV PYTHONPATH=/grade/serverFilesCourse/

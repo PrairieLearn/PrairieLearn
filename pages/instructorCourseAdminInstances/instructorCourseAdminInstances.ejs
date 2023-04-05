@@ -59,15 +59,17 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <% rows.forEach(function(row) { %>
-                                <tr>
-                                    <td class="align-left"><a href="<%= plainUrlPrefix %>/course_instance/<%= row.id %>/instructor/instance_admin"><%= row.long_name %></a></td>
-                                    <td class="align-left"><%= row.short_name %></td>
-                                    <td class="align-left"><%= row.formatted_start_date %></td>
-                                    <td class="align-left"><%= row.formatted_end_date %></td>
-                                    <td class="align-middle"><%= row.number %></td>
-                                </tr>
-                            <% }); %>
+                            <% if (locals.authz_data && authz_data.course_instances) { %>
+                                <% authz_data.course_instances.forEach(function(row) { %>
+                                    <tr>
+                                        <td class="align-left"><a href="<%= plainUrlPrefix %>/course_instance/<%= row.id %>/instructor/instance_admin"><%= row.long_name %></a></td>
+                                        <td class="align-left"><%= row.short_name %></td>
+                                        <td class="align-left"><%= row.formatted_start_date %></td>
+                                        <td class="align-left"><%= row.formatted_end_date %></td>
+                                        <td class="align-middle"><%= row.number %></td>
+                                    </tr>
+                                <% }); %>
+                            <% } %>
                         </tbody>
                     </table>
                 </div>

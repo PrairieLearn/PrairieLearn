@@ -1,0 +1,48 @@
+<form name="add-users-form" method="POST">
+  <input type="hidden" name="__action" value="course_permissions_insert_by_user_uids">
+  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+
+  <div class="form-group mb-4">
+    <p class=form-text>
+      Use this form to add users to the course staff. Any UIDs of users who are already on the course staff will have their permissions updated only if the new permissions are higher than their existing permissions. All new users will be given the same access to course content and to student data.
+    </p>
+  </div>
+
+  <div class="form-group">
+    <label for="addUsersInputUid">List of UIDs separated by commas, whitespaces, or semicolons:</label>
+    <textarea class="form-control" id="addUsersInputUid" name="uid" placeholder="user1@domain.org, user2@domain.org" required></textarea>
+  </div>
+
+  <div class="form-group">
+    <label for="addUsersInputCourseRole">Course content access for all new users:</label>
+    <select class="form-control form-control-sm" id="addUsersInputCourseRole" name="course_role" required>
+      <option value="None" selected>None</option>
+      <option value="Previewer">Previewer</option>
+      <option value="Viewer">Viewer</option>
+      <option value="Editor">Editor</option>
+    </select>
+  </div>
+
+  <% if (authz_data.course_instances && authz_data.course_instances.length > 0) { %>
+    <div class="form-group">
+      <label for="addUsersInputCourseInstance">Student data access for all new users:</label>
+      <div class="input-group">
+        <select class="form-control form-control-sm" id="addUsersInputCourseInstance" name="course_instance_id">
+          <option selected value>None</option>
+          <% authz_data.course_instances.forEach(function(ci) { %>
+          <option value="<%= ci.id %>"><%= ci.short_name %></option>
+          <% }); %>
+        </select>
+        <select class="form-control form-control-sm" id="addUsersInputCourseInstanceRole" name="course_instance_role">
+          <option value="Student Data Viewer" selected>Viewer</option>
+          <option value="Student Data Editor">Editor</option>
+        </select>
+      </div>
+    </div>
+  <% } %>
+
+  <div class="text-right mt-4">
+    <button type="button" class="btn btn-secondary" onclick="$('#<%= id %>').popover('hide')">Cancel</button>
+    <button type="submit" class="btn btn-primary">Add users</button>
+  </div>
+</form>

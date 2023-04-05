@@ -1,4 +1,3 @@
-
 # Docker
 
 ## Building the container
@@ -74,6 +73,8 @@ docker exec -it pl /bin/bash
 
 ## Docker-Compose
 
+This section describes common applications for [Docker Compose](https://github.com/docker/compose) with PrairieLearn. See the [official Docker Compose documentation](https://docs.docker.com/compose/) for more.
+
 ### Basics
 
 A docker-compose file describes the services an application needs to run. In our case, we use `docker-compose` to configure and run the PrairieLearn docker container locally.
@@ -88,15 +89,18 @@ To run PrairieLearn with `docker-compose`, run `docker-compose up pl`. This will
 The server will be available on port `3000`.
 
 The equivalent `docker run` command to perform all these actions would be:
+
 ```sh
-docker build -t prairielearn/prairielearn:local . 
+docker build -t prairielearn/prairielearn:local .
 docker run -it --rm \
-      -p 3000:3000 \
-      - ./testCourse:/course \
-      -v ${HOME}/pl_ag_jobs:/jobs -e HOST_JOBS_DIR=${HOME}/pl_ag_jobs \
-      -v .:/PrairieLearn -e NODEMON=true \
-      -v /var/run/docker.sock:/var/run/docker.sock
-      prairielearn/prairielearn
+  -p 3000:3000 \
+  -v $PWD/testCourse:/course \
+  -v $HOME/pl_ag_jobs:/jobs \
+  -v $PWD:/PrairieLearn \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -e HOST_JOBS_DIR=$HOME/pl_ag_jobs \
+  -e NODEMON=true \
+  prairielearn/prairielearn
 ```
 
 ### Useful Commands
@@ -116,6 +120,8 @@ docker-compose -f docker-compose.yml -f docker-compose.local.yml ...
 ```
 
 compose will use values from `docker-compose.local.yml` to override those from `docker-compose.yml`.
+
+If a file `docker-compose.override.yml` exists, Docker Compose will override all configurations with that file, even if it isn't specified in the invoking command.
 
 ## Docker Hub
 

@@ -15,10 +15,34 @@
 
     <table class="table table-sm table-hover two-column-description">
       <tbody>
-        <% if (devMode || authz_data.has_instructor_view) {
-              var body = encodeURIComponent("Hello " + issue.user_name + ",\n\nRegarding the issue of:\n\n\"" + (issue.student_message || '-') +"\"\n\nWe've..."); %>
+        <% if (
+                (!issue.course_instance_id) ||
+                (
+                  locals.course_instance &&
+                  (course_instance.id == issue.course_instance_id) &&
+                  authz_data.has_course_instance_permission_view
+                )
+              ) {
+
+          // There are three situations in which the issue need not be anonymized:
+          //
+          //  1) The issue is not associated with a course instance. The only way
+          //     for a user to generate an issue that is not associated with a course
+          //     instance is if they are an instructor, so there are no student data
+          //     to be protected in this case.
+          //
+          //  2) We are accessing this page through a course instance, the issue is
+          //     associated with the same course instance, and the user has student
+          //     data view access.
+          //
+          // Otherwise, all issues must be anonymized.
+
         %>
-        <tr><th>Student:</th><td><%= issue.user_name || '-'  %> (<a href="mailto:<%= issue.user_uid  || '-' %>?subject=Reported%20PrairieLearn%20Issue&body=<%= body %>"><%= issue.user_uid || '-' %></a>)</td></tr>
+        <% let body = encodeURIComponent("Hello " + issue.user_name + ",\n\nRegarding the issue of:\n\n\"" + (issue.student_message || '-') +"\"\n\nWe've..."); %>
+        <tr><th>User:</th><td><%= issue.user_name || '-'  %> (<a href="mailto:<%= issue.user_uid  || '-' %>?subject=Reported%20PrairieLearn%20Issue&body=<%= body %>"><%= issue.user_uid || '-' %></a>)</td></tr>
+        <tr><th>Student message:</th><td><%= issue.student_message %></td></tr>
+        <tr><th>Instructor message:</th><td><%= issue.instructor_message %></td></tr>
+        <% } else if (authz_data.has_course_permission_preview) { %>
         <tr><th>Student message:</th><td><%= issue.student_message %></td></tr>
         <tr><th>Instructor message:</th><td><%= issue.instructor_message %></td></tr>
         <% } else { %>
@@ -29,7 +53,7 @@
       </tbody>
     </table>
 
-    <% if (devMode || authz_data.has_instructor_view || authz_data.has_course_permission_view || is_administrator) { %>
+    <% if (devMode || authz_data.has_course_permission_view) { %>
     <div class="card-body border border-bottom-0 border-left-0 border-right-0">
       <% if (issue.system_data.courseErrData) { %>
         <p><strong>Console log:</strong>
@@ -67,17 +91,10 @@
           <%= instance_question_info.question_number %>. <%= question.title %>
         <% } else if (question_context == 'student_exam') { %>
           Question <%= instance_question_info.question_number %>: <%= question.title %>
-        <% } else if (question_context == 'instructor') { %>
+        <% } else if (question_context == 'instructor' || question_context == 'manual_grading') { %>
           <%= question.title %>
         <% } else { %>
             <% throw Error('unknown question_context: ' + question_context); %>
-        <% } %>
-        <% if (authz_data.mode == 'Exam') { %>
-        <div class="float-sm-right ml-1">
-          <button class="btn btn-xs btn-light" type="button" data-toggle="modal" data-target="#iqqrcode" aria-expanded="false" aria-controls="iqqrcode">
-            <i class="fa fa-question-circle" aria-hidden="true"></i> Proctor
-          </button>
-        </div>
         <% } %>
       </div>
       <div class="card-body question-body">
@@ -93,49 +110,20 @@
   <div class="card mb-4">
     <div class="card-header bg-primary text-white">
       <% if (question_context == 'student_homework') { %>
-        <%= instance_question_info.question_number %>. <%= question.title %></h3>
+        <%= instance_question_info.question_number %>. <%= question.title %>
       <% } else if (question_context == 'student_exam') { %>
             <!-- FIXME: insert question number properly -->
             Question <%= instance_question_info.question_number %>: <%= question.title %>
-      <% } else if (question_context == 'instructor') { %>
+      <% } else if (question_context == 'instructor' || question_context == 'manual_grading') { %>
         <%= question.title %>
       <% } else { %>
         <% throw Error('unknown question_context: ' + question_context); %>
-      <% } %>
-      <% if (authz_data.mode == 'Exam') { %>
-        <div class="float-sm-right">
-          <button class="btn btn-xs btn-secondary" type="button" data-toggle="modal" data-target="#iqqrcode" aria-expanded="false" aria-controls="iqqrcode">
-            Proctor <i class="fa fa-question-circle"></i>
-          </button>
-        </div>
       <% } %>
     </div>
     <div class="card-body question-body">
       <%- questionHtml %>
     </div>
     <%- include('questionFooter'); %>
-  </div>
-  <% } %>
-
-  <% if (authz_data.mode == 'Exam') { %>
-  <div class="modal fade" id="iqqrcode" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Proctor Information</h5>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <center><%- iqqrcode %></center>
-          <p>If you need assistance with this question, proctors may use this link to get more information.</p>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-        </div>
-      </div>
-    </div>
   </div>
   <% } %>
 
@@ -155,10 +143,8 @@
     <% const MAX_TOP_RECENTS = 3; %>
 
     <%# Show the top submissions %>
-    <% submissions.forEach(function(submission, idx) { %>
-      <% if (submissions.length - idx > submissions.length - MAX_TOP_RECENTS) { %>
-      <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionIdx: submissions.length - idx, submissionHtml: submissionHtmls[idx]}); %>
-      <% } %>
+    <% submissions.slice(0, MAX_TOP_RECENTS).forEach(function(submission, idx) { %>
+      <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionHtml: submissionHtmls[idx]}); %>
     <% }); %>
 
     <%# Optionally show the older submissions %>
@@ -172,15 +158,41 @@
       </div>
 
       <div id="more-submissions-collapser" class="collapse">
-
-        <% submissions.forEach(function(submission, idx) { %>
-          <% if (submissions.length - idx <= submissions.length - MAX_TOP_RECENTS) { %>
-          <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionIdx: submissions.length - idx, submissionHtml: submissionHtmls[idx]}); %>
-          <% } %>
+        <% submissions.slice(MAX_TOP_RECENTS).forEach(function(submission, idx) { %>
+          <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionHtml: submissionHtmls[idx + MAX_TOP_RECENTS]}); %>
         <% }); %>
-
       </div>
 
+      <script>
+        $(function() {
+          $('.js-submission-body.render-pending').on('show.bs.collapse', function(e) {
+            const submissionId = $(this).data('submission-id');
+            // <% if (question_context === 'instructor') { %>
+            const submissionContentUrl = `<%= urlPrefix %>/question/<%= question.id %>/preview/variant/<%= variant.id %>/submission/${submissionId}`;
+            // <% } else if (question_context === 'manual_grading') { %>
+            const submissionContentUrl = `<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/instance_question/<%= instance_question.id %>/variant/<%= variant.id %>/submission/${submissionId}`;
+            // <% } else { %>
+            const submissionContentUrl = `<%= urlPrefix %>/instance_question/<%= instance_question.id %>/variant/<%= variant.id %>/submission/${submissionId}`;
+            // <% } %>
+            const wasModalOpen = ($(`#submissionInfoModal-${submissionId}`).data('bs.modal') || {})._isShown;
+            $(`#submissionInfoModal-${submissionId}`).modal('hide');
+            $.get(submissionContentUrl, 'json')
+              .done((data) => {
+                $(`#submission-${submissionId}`).replaceWith($(data.submissionPanel).fadeIn('slow'));
+                MathJax.typesetPromise();
+              })
+              .fail(() => {
+                $(`#submission-${submissionId}-body`).html('<div class="card-body submission-body">Error retrieving submission</div>');
+              })
+              .always(() => {
+                // Restore modal state if need be
+                if (wasModalOpen) {
+                  $(`#submissionInfoModal-${submissionId}`).modal('show');
+                }
+              });
+          });
+        });
+        </script>
     <% } %>
 
   <% } %> <%# endif showSubmissions %>

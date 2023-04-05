@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     workspace_hosts_drain_extra(surplus integer) RETURNS void
 AS $$
 BEGIN

@@ -1,8 +1,4 @@
-DROP FUNCTION IF EXISTS variants_insert(text,jsonb,jsonb,jsonb,boolean,bigint,bigint,bigint,bigint);
-DROP FUNCTION IF EXISTS variants_insert(text,jsonb,jsonb,jsonb,boolean,bigint,bigint,bigint,bigint,bigint);
-DROP FUNCTION IF EXISTS variants_insert(text,jsonb,jsonb,jsonb,boolean,bigint,bigint,bigint,bigint,bigint, boolean);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     variants_insert(
         IN variant_seed text,
         IN params jsonb,
@@ -15,7 +11,8 @@ CREATE OR REPLACE FUNCTION
         IN user_id bigint,              -- can be NULL, but needed if instance_question_id is NULL
         IN authn_user_id bigint,
         IN group_work boolean,
-        OUT variant jsonb
+        IN require_open boolean,
+        OUT variant json
     )
 AS $$
 DECLARE
@@ -29,6 +26,7 @@ DECLARE
     variant_id bigint;
     question_workspace_image text;
     workspace_id bigint;
+    existing_variant json;
 BEGIN
     -- The caller must have provided either instance_question_id or
     -- the (question_id, user_id). If instance_question_id is not
@@ -53,6 +51,17 @@ BEGIN
             iq.id = instance_question_id;
 
         IF NOT FOUND THEN RAISE EXCEPTION 'instance_question not found'; END IF;
+
+        -- This handles the race condition where we simultaneously start generating
+        -- two variants for the same instance question. If we're the second one
+        -- to try and insert a variant, just pull the existing variant back out of
+        -- the database and use that instead.
+        existing_variant := instance_questions_select_variant(instance_question_id, require_open);
+        IF existing_variant IS NOT NULL THEN
+            SELECT variants_select((existing_variant->>'id')::bigint, real_question_id, instance_question_id)
+            INTO variant;
+            RETURN;
+        END IF;
 
         PERFORM instance_questions_ensure_open(instance_question_id);
         PERFORM assessment_instances_ensure_open(assessment_instance_id);
@@ -114,7 +123,7 @@ BEGIN
     RETURNING id
     INTO variant_id;
 
-    SELECT variants_select(variant_id)
+    SELECT variants_select(variant_id, real_question_id, instance_question_id)
     INTO variant;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

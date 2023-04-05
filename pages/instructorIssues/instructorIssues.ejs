@@ -3,11 +3,17 @@
   <head>
     <%- include('../partials/head'); %>
     <link href="<%= asset_path('stylesheets/issues.css') %>" rel="stylesheet" />
+    <script>
+      $(() => {
+          $('[data-toggle=tooltip]').tooltip();
+      });
+    </script>
   </head>
   <body>
     <%- include('../partials/navbar'); %>
     <div id="content" class="container-fluid">
       <%- include('../partials/courseSyncErrorsAndWarnings'); %>
+      <% if (authz_data.has_course_permission_edit) { %>
       <div class="modal fade" id="closeAllIssuesModal" tabindex="-1" role="dialog" aria-labelledby="closeAllIssuesModalLabel">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
@@ -29,6 +35,7 @@
           </div>
         </div>
       </div>
+      <% } %>
 
       <div class="modal fade" id="filterHelpModal" tabindex="-1" role="dialog" aria-labelledby="filterHelpModalLabel">
         <div class="modal-dialog modal-lg" role="document">
@@ -98,7 +105,11 @@
         </div>
       </div>
 
+      <% if (authz_data.has_course_permission_edit) {
+          // NOTE: this is currently disabled (see pages/partials/issueActionButtons.ejs)
+      %>
       <%- include('../partials/issueResponseModal'); %>
+      <% } %>
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -114,9 +125,11 @@
                 </a>
               </small>
             </div>
+            <% if (authz_data.has_course_permission_edit) { %>
             <button class="btn btn-sm btn-danger ml-auto" data-toggle="modal" data-target="#closeAllIssuesModal">
               <i class="fa fa-times" aria-hidden="true"></i> Close all issues
             </button>
+            <% } %>
           </div>
           <form name="query-form" method="GET">
             <div class="input-group">
@@ -172,23 +185,33 @@
               <% } %>
               <div class="d-block">
                 <strong><%= row.question_qid %></strong>
-                (<a href="<%= urlPrefix %>/question/<%= row.question_id %>/?variant_id=<%= row.variant_id %>">instructor
-                  view</a><% if (row.instance_question_id) { %>,
+                <% if (row.instance_question_id && row.show_user) { %>
+                (<a href="<%= urlPrefix %>/question/<%= row.question_id %>/?variant_id=<%= row.variant_id %>">instructor view</a>,
                 <a href="<%= plainUrlPrefix %>/course_instance/<%= row.course_instance_id %>/instance_question/<%= row.instance_question_id %>/?variant_id=<%= row.variant_id %>">student view</a>,
-                <% if (course.manual_grading_visible) { %>
-                <a href="<%= plainUrlPrefix %>/course_instance/<%= row.course_instance_id %>/instructor/instance_question/<%= row.instance_question_id %>/manual_grading">manual grading</a>,
+                <a href="<%= plainUrlPrefix %>/course_instance/<%= row.course_instance_id %>/instructor/assessment/<%= row.assessment_id %>/manual_grading/instance_question/<%= row.instance_question_id %>">manual grading</a>,
+                <a href="<%= plainUrlPrefix %>/course_instance/<%= row.course_instance_id %>/instructor/assessment_instance/<%= row.assessment_instance_id %>">assessment details</a>)
+                <% } else if (!row.instance_question_id) { %>
+                (<a href="<%= urlPrefix %>/question/<%= row.question_id %>/?variant_id=<%= row.variant_id %>">instructor view</a>)
+                <% } else { %>
+                (<a href="<%= urlPrefix %>/question/<%= row.question_id %>/?variant_seed=<%= row.variant_seed %>">instructor view</a>)
+                <a tabindex="0" class="badge badge-warning badge-sm"
+		   data-toggle="tooltip" data-html="true"
+		   title="This issue was raised in course instance <strong><%= row.course_instance_short_name %></strong>. You do not have student data access for <%= row.course_instance_short_name %>, so you can't view some of the issue details. Student data access can be granted by a course owner on the Staff page.">
+                  No student data access
+                </a>
                 <% } %>
-                <a href="<%= plainUrlPrefix %>/course_instance/<%= row.course_instance_id %>/instructor/assessment_instance/<%= row.assessment_instance_id %>">assessment details</a><% } %>)
               </div>
               <p class="mb-0">
                 <%= getFormattedMessage(row) %>
               </p>
-              <% if (row.manually_reported) {
-                 var body = encodeURIComponent("Hello " + row.user_name + ",\n\nRegarding the issue of:\n\n\"" + (row.student_message || '-') +"\"\n\nWe've..."); %>
-              <small class="text-muted mr-2">#<%= row.issue_id %> reported <span title="<%= row.formatted_date %>"><%= row.relative_date %></span> by <%= row.user_name || '-' %> (<a href="mailto:<%= row.user_uid || '-' %>?subject=Reported%20PrairieLearn%20Issue&body=<%= body %>"><%= row.user_uid || '-' %></a>)</small>
-              <% } else { %>
-              <small class="text-muted mr-2">#<%= row.issue_id %> reported <span title="<%= row.formatted_date %>"><%= row.relative_date %></span> for <%= row.user_name || '-' %> (<a href="mailto:<%= row.user_uid || '-' %>?subject=Reported%20PrairieLearn%20Issue&body=<%= body %>"><%= row.user_uid || '-' %></a>)</small>
-              <% } %>
+              <small class="text-muted mr-2">
+                #<%= row.issue_id %> reported <span title="<%= row.formatted_date %>"><%= row.relative_date %></span>
+                <% if (row.show_user) { %>
+                  <% if (row.manually_reported) { %>by<% } else { %>for<% } %>
+                  <% let body = encodeURIComponent("Hello " + row.user_name + ",\n\nRegarding the issue of:\n\n\"" + (row.student_message || '-') +"\"\n\nWe've..."); %>
+                  <%= row.user_name || '-' %> (<a href="mailto:<%= row.user_uid || '-' %>?subject=Reported%20PrairieLearn%20Issue&body=<%= body %>"><%= row.user_uid || '-' %></a>)
+                <% } %>
+              </small>
               <% if (row.manually_reported) { %>
               <span class="badge badge-info">Manually reported</span>
               <% } else { %>
@@ -201,9 +224,11 @@
               <span class="badge badge-dark"><%= row.course_instance_short_name || '—' %></span>
               <% } %>
             </div>
+            <% if (authz_data.has_course_permission_edit) { %>
             <div class="ml-auto pl-4">
               <%- include('../partials/issueActionButtons', {issue: row}) %>
             </div>
+            <% } %>
           </div>
           <% }); %>
         </div>

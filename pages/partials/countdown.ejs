@@ -53,6 +53,7 @@ $(function() {
   var serverRemainingMS;
   var serverTimeLimitMS;
   var clientStart;
+  var updateServerIfExpired = true;
 
   var countdownDisplay = $('<%= displaySelector %>');
   var countdownProgress = $('<%= progressSelector %>');
@@ -67,13 +68,17 @@ $(function() {
       clientStart = Date.now();
       if (serverRemainingMS <= 0) {
           <%= timerOutCode %>;
-      } else
-          displayCountdown();
+          updateServerIfExpired = false;
+      }
+      displayCountdown();
   };
   
   var updateServerRemainingMS = function() {
       <% if (typeof serverUpdateURL !== 'undefined' && serverUpdateURL) { %>
-      $.get("<%= serverUpdateURL %>", handleServerResponseRemainingMS, 'json');
+      $.get("<%= serverUpdateURL %>", handleServerResponseRemainingMS, 'json')
+      <% if (typeof serverUpdateFailFunction !== 'undefined' && serverUpdateFailFunction) { %>
+         .fail(<%= serverUpdateFailFunction %>);
+      <% } %>
       <% } %>
   };
   
@@ -103,7 +108,7 @@ $(function() {
           <% if (typeof serverUpdateURL !== 'undefined' && serverUpdateURL) { %>
           // If the timer runs out, trigger a new server update
           // to confirm before closing
-          updateServerRemainingMS();
+          if (updateServerIfExpired) updateServerRemainingMS();
           <% } else { %>
           <%= timerOutCode %>;
           <% } %>

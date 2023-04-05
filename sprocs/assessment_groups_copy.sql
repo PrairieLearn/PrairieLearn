@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_groups_copy(
         assessment_id bigint,
         copying_assessment_id bigint,

@@ -1,10 +1,11 @@
-FROM node:stretch
+FROM node:buster
 
 RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y emacs-nox vim tmux
 COPY src /xterm
 
 WORKDIR /xterm
-RUN npm ci
+RUN yarn install --frozen-lockfile
 
-ENTRYPOINT node server.js
+RUN useradd -m student
+ENTRYPOINT node server.js -w /home/student

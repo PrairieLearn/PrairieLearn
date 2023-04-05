@@ -1,11 +1,11 @@
 const ERR = require('async-stacktrace');
-const { sqldb, sqlLoader } = require('@prairielearn/prairielib');
+const sqldb = require('@prairielearn/postgres');
 
 const config = require('./config').config;
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 function reportTime(sqlBlockName) {
-  return function(jobId, callback) {
+  return function (jobId, callback) {
     if (!config.useDatabase) {
       // Fall back to machine time if DB isn't enabled
       const time = new Date().toISOString();

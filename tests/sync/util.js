@@ -1,7 +1,7 @@
 const fs = require('fs-extra');
 const tmp = require('tmp-promise');
 const path = require('path');
-const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqldb = require('@prairielearn/postgres');
 const stringify = require('json-stable-stringify');
 const { assert } = require('chai');
 
@@ -34,7 +34,13 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string} color
  */
 
-/** 
+/**
+ * @typedef {Object} Module
+ * @property {string} name
+ * @property {string} heading
+ */
+
+/**
  * @typedef {Object} Course
  * @property {string} uuid
  * @property {string} name
@@ -45,13 +51,11 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {Tag[]} tags
  * @property {Topic[]} topics
  * @property {AssessmentSet[]} assessmentSets
+ * @property {Module[]} [assessmentModules]
  */
-
-/** @typedef {"Student" | "TA" | "Instructor" | "Superuser"} UserRole */
 
 /**
  * @typedef {Object} CourseInstanceAllowAccess
- * @property {UserRule=} role
  * @property {string[]=} uids
  * @property {string=} startDate
  * @property {string=} endDate
@@ -64,8 +68,18 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string} longName
  * @property {number} [number]
  * @property {string} [timezone]
- * @property {{ [uid: string]: "Student" | "TA" | "Instructor"}} [userRoles]
  * @property {CourseInstanceAllowAccess[]} [allowAccess]
+ * @property {"Set" | "Module"} [groupAssessmentsBy]
+ */
+
+/**
+ * @typedef {Object} GroupRole
+ * @property {string} name
+ * @property {number} [minimum]
+ * @property {number} [maximum]
+ * @property {boolean} [canAssignRolesAtStart]
+ * @property {boolean} [canAssignRolesDuringAssessment]
+ * @property {boolean} [canSubmitAssessment]
  */
 
 /**
@@ -77,45 +91,53 @@ const syncFromDisk = require('../../sync/syncFromDisk');
 
 /**
  * @typedef {Object} AssessmentAllowAccess
- * @property {"Public" | "Exam" | "SEB"} mode
- * @property {string} examUuid
- * @property {"Student" | "TA" | "Instructor"} role
- * @property {string[]} uids
- * @property {number} credit
- * @property {string} startDate
- * @property {string} endDate
- * @property {number} timeLimitMin
- * @property {string} password
- * @property {SEBConfig} SEBConfig
+ * @property {"Public" | "Exam" | "SEB"} [mode]
+ * @property {string} [examUuid]
+ * @property {string[]} [uids]
+ * @property {number} [credit]
+ * @property {string} [startDate]
+ * @property {string} [endDate]
+ * @property {number} [timeLimitMin]
+ * @property {string} [password]
+ * @property {SEBConfig} [SEBConfig]
+ * @property {boolean} [active]
  */
 
- /**
-  * @typedef {Object} QuestionAlternative
-  * @property {number | number[]} points
-  * @property {numer | number[]} maxPoints
-  * @property {string} id
-  * @property {boolean} forceMaxPoints
-  * @property {number} triesPerVariant
-  */
+/**
+ * @typedef {Object} QuestionAlternative
+ * @property {number | number[]} [points]
+ * @property {number | number[]} [autoPoints]
+ * @property {number} [maxPoints]
+ * @property {number} [maxAutoPoints]
+ * @property {number} [manualPoints]
+ * @property {string} [id]
+ * @property {boolean} [forceMaxPoints]
+ * @property {number} [triesPerVariant]
+ */
 
 /**
  * @typedef {Object} ZoneQuestion
- * @property {number | number[]} points
- * @property {number | []} maxPoints
- * @property {string} id
- * @property {boolean} forceMaxPoints
- * @property {QuestionAlternative[]} alternatives
- * @property {number} numberChoose
- * @property {number} triesPerVariant
+ * @property {number | number[]} [points]
+ * @property {number | number[]} [autoPoints]
+ * @property {number} [maxPoints]
+ * @property {number} [maxAutoPoints]
+ * @property {number} [manualPoints]
+ * @property {string} [id]
+ * @property {boolean} [forceMaxPoints]
+ * @property {QuestionAlternative[]} [alternatives]
+ * @property {number} [numberChoose]
+ * @property {number} [triesPerVariant]
+ * @property {string[]} [canSubmit]
+ * @property {string[]} [canView]
  */
 
 /**
  * @typedef {Object} Zone
- * @property {string} title
- * @property {number} maxPoints
- * @property {number} maxChoose
- * @property {number} bestQuestions
- * @property {ZoneQuestion[]} questions
+ * @property {string} [title]
+ * @property {number} [maxPoints]
+ * @property {number} [maxChoose]
+ * @property {number} [bestQuestions]
+ * @property {ZoneQuestion[]} [questions]
  */
 
 /**
@@ -124,24 +146,26 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {"Homework" | "Exam"} type
  * @property {string} title
  * @property {string} set
+ * @property {string} [module]
  * @property {string} number
- * @property {boolean} allowIssueReporting
- * @property {boolean} allowRealTimeGrading
- * @property {boolean} requireHonorCode
- * @property {boolean} multipleInstance
- * @property {boolean} shuffleQuestions
- * @property {AssessmentAllowAccess[]} allowAccess
- * @property {string} text
- * @property {number} maxPoints
- * @property {boolean} autoClose
- * @property {Zone[]} zones
- * @property {boolean} constantQuestionValue
- * @property {boolean} groupWork
- * @property {number} groupMaxSize
- * @property {number} groupMinSize
- * @property {boolean} studentGroupCreate
- * @property {boolean} studentGroupJoin
- * @property {boolean} studentGroupLeave
+ * @property {GroupRole[]} [groupRoles]
+ * @property {boolean} [allowIssueReporting]
+ * @property {boolean} [allowRealTimeGrading]
+ * @property {boolean} [requireHonorCode]
+ * @property {boolean} [multipleInstance]
+ * @property {boolean} [shuffleQuestions]
+ * @property {AssessmentAllowAccess[]} [allowAccess]
+ * @property {string} [text]
+ * @property {number} [maxPoints]
+ * @property {boolean} [autoClose]
+ * @property {Zone[]} [zones]
+ * @property {boolean} [constantQuestionValue]
+ * @property {boolean} [groupWork]
+ * @property {number} [groupMaxSize]
+ * @property {number} [groupMinSize]
+ * @property {boolean} [studentGroupCreate]
+ * @property {boolean} [studentGroupJoin]
+ * @property {boolean} [studentGroupLeave]
  */
 
 /**
@@ -152,6 +176,7 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string[]=} serverFilesCourse
  * @property {number=} timeout
  * @property {boolean=} enableNetworking
+ * @property {Record<string, string | null>=} environment
  */
 
 /**
@@ -161,27 +186,29 @@ const syncFromDisk = require('../../sync/syncFromDisk');
  * @property {string} home
  * @property {string} args
  * @property {string[]} gradedFiles
- * @property {string[]} syncIgnore
  * @property {string} rewriteUrl
+ * @property {boolean=} enableNetworking
+ * @property {Record<string, string | null>=} environment
  */
 
- /**
-  * @typedef {Object} Question
-  * @property {string} uuid
-  * @property {"Calculation" | "ShortAnswer" | "MultipleChoice" | "Checkbox" | "File" | "MultipleTrueFalse" | "v3"} type
-  * @property {string} title
-  * @property {string} topic
-  * @property {string[]} [tags]
-  * @property {string[]} [clientFiles]
-  * @property {string[]} [clientTemplates]
-  * @property {string} [template]
-  * @property {"Internal" | "External" | "Manual"} [gradingMethod]
-  * @property {boolean} [singleVariant]
-  * @property {boolean} [partialCredit]
-  * @property {Object} [options]
-  * @property {QuestionExternalGradingOptions} [externalGradingOptions]
-  * @property {QuestionWorkspaceOptions} [workspaceOptions]
-  */
+/**
+ * @typedef {Object} Question
+ * @property {string} uuid
+ * @property {"Calculation" | "ShortAnswer" | "MultipleChoice" | "Checkbox" | "File" | "MultipleTrueFalse" | "v3"} type
+ * @property {string} title
+ * @property {string} topic
+ * @property {string[]} [tags]
+ * @property {string[]} [clientFiles]
+ * @property {string[]} [clientTemplates]
+ * @property {string} [template]
+ * @property {"Internal" | "External" | "Manual"} [gradingMethod]
+ * @property {boolean} [singleVariant]
+ * @property {boolean} [showCorrectAnswer]
+ * @property {boolean} [partialCredit]
+ * @property {Object} [options]
+ * @property {QuestionExternalGradingOptions} [externalGradingOptions]
+ * @property {QuestionWorkspaceOptions} [workspaceOptions]
+ */
 
 /** @typedef {{ assessments: { [id: string]: Assessment }, courseInstance: CourseInstance }} CourseInstanceData */
 /** @typedef {{ course: Course, questions: { [id: string]: Question }, courseInstances: { [id: string]: CourseInstanceData } }} CourseData */
@@ -189,13 +216,13 @@ const syncFromDisk = require('../../sync/syncFromDisk');
 /**
  * Accepts a CourseData object and creates a PrairieLearn course directory
  * structure from it. Returns the path to the newly-created directory.
- * 
+ *
  * @param {CourseData} courseData - The course data to write to disk
  * @returns {Promise<string>} - The path to the directory containing the course data
  */
-module.exports.writeCourseToTempDirectory = async function(courseData) {
+module.exports.writeCourseToTempDirectory = async function (courseData) {
   const { path: coursePath } = await tmp.dir({ unsafeCleanup: true });
-  await this.writeCourseToDirectory(courseData, coursePath);
+  await module.exports.writeCourseToDirectory(courseData, coursePath);
   return coursePath;
 };
 
@@ -203,14 +230,14 @@ module.exports.writeCourseToTempDirectory = async function(courseData) {
  * Accepts a CourseData object and writes it as a PrairieLearn course
  * into the given directory. Removes any existing content from the
  * directory.
- * 
+ *
  * @param {CourseData} courseData - The course data to write to disk
  * @param {string} coursePath - The path to the directory to write to
  */
-module.exports.writeCourseToDirectory = async function(courseData, coursePath) {
+module.exports.writeCourseToDirectory = async function (courseData, coursePath) {
   await fs.emptyDir(coursePath);
 
-  // courseInfo.json
+  // infoCourse.json
   const courseInfoPath = path.join(coursePath, 'infoCourse.json');
   await fs.writeJSON(courseInfoPath, courseData.course);
 
@@ -254,6 +281,8 @@ module.exports.writeCourseToDirectory = async function(courseData, coursePath) {
 
 module.exports.QUESTION_ID = 'test';
 module.exports.ALTERNATIVE_QUESTION_ID = 'test2';
+module.exports.MANUAL_GRADING_QUESTION_ID = 'test_manual';
+module.exports.WORKSPACE_QUESTION_ID = 'workspace';
 module.exports.COURSE_INSTANCE_ID = 'Fa19';
 
 /** @type {Course} */
@@ -261,40 +290,56 @@ const course = {
   uuid: '5d14d80e-b0b8-494e-afed-f5a47497f5cb',
   name: 'TEST 101',
   title: 'Test Course',
-  assessmentSets: [{
-    name: 'TEST',
-    abbreviation: 'Test',
-    heading: 'Testing set',
-    color: 'red1',
-  }, {
-    name: 'ANOTHER TEST',
-    abbreviation: 'Another Test',
-    heading: 'Another testing set',
-    color: 'red2',
-  }, {
-    name: 'PRIVATE SET',
-    abbreviation: 'Private',
-    heading: 'Used by the default assessment, do not use in your own tests',
-    color: 'red2',
-  }],
-  topics: [{
-    name: 'Test',
-    color: 'gray1',
-    description: 'A test topic',
-  }, {
-    name: 'Another test',
-    color: 'gray2',
-    description: 'Another test topic',
-  }],
-  tags: [{
-    name: 'test',
-    color: 'blue1',
-    description: 'A test tag',
-  }, {
-    name: 'another test',
-    color: 'blue2',
-    description: 'Another test tag',
-  }],
+  assessmentSets: [
+    {
+      name: 'TEST',
+      abbreviation: 'Test',
+      heading: 'Testing set',
+      color: 'red1',
+    },
+    {
+      name: 'ANOTHER TEST',
+      abbreviation: 'Another Test',
+      heading: 'Another testing set',
+      color: 'red2',
+    },
+    {
+      name: 'PRIVATE SET',
+      abbreviation: 'Private',
+      heading: 'Used by the default assessment, do not use in your own tests',
+      color: 'red2',
+    },
+  ],
+  assessmentModules: [
+    {
+      name: 'TEST',
+      heading: 'Test module',
+    },
+  ],
+  topics: [
+    {
+      name: 'Test',
+      color: 'gray1',
+      description: 'A test topic',
+    },
+    {
+      name: 'Another test',
+      color: 'gray2',
+      description: 'Another test topic',
+    },
+  ],
+  tags: [
+    {
+      name: 'test',
+      color: 'blue1',
+      description: 'A test tag',
+    },
+    {
+      name: 'another test',
+      color: 'blue2',
+      description: 'Another test tag',
+    },
+  ],
 };
 
 /** @type {{ [id: string]: Question }} */
@@ -323,6 +368,15 @@ const questions = {
     tags: ['test'],
     type: 'Calculation',
   },
+  [module.exports.MANUAL_GRADING_QUESTION_ID]: {
+    uuid: '2798b1ba-06e0-4ddf-9e5d-765fcca08a46',
+    title: 'Test question',
+    topic: 'Test',
+    gradingMethod: 'Manual',
+    secondaryTopics: [],
+    tags: ['test'],
+    type: 'v3',
+  },
   [module.exports.WORKSPACE_QUESTION_ID]: {
     uuid: '894927f7-19b3-451d-8ad1-75974ad2ffb7',
     title: 'Workspace test question',
@@ -335,13 +389,7 @@ const questions = {
       port: 8080,
       home: '/home/coder',
       args: '--auth none',
-      gradedFiles: [
-        'animal.h',
-        'animal.c',
-      ],
-      syncIgnore: [
-        '.local/share/code-server/',
-      ],
+      gradedFiles: ['animal.h', 'animal.c'],
     },
   },
 };
@@ -356,30 +404,33 @@ const courseInstances = {
         type: 'Exam',
         set: 'PRIVATE SET',
         number: '100',
-        allowAccess: [{
-          mode: 'Exam',
-          role: 'Student',
-        }],
-        zones: [{
-          title: 'zone 1',
-          questions: [{
-            points: 10,
-            alternatives: [{ id: 'private' }],
-          }],
-        }],
+        allowAccess: [
+          {
+            mode: 'Exam',
+          },
+        ],
+        zones: [
+          {
+            title: 'zone 1',
+            questions: [
+              {
+                points: 10,
+                alternatives: [{ id: 'private' }],
+              },
+            ],
+          },
+        ],
       },
     },
     courseInstance: {
       uuid: 'a17b1abd-eaf6-45dc-99bc-9890a7fb345e',
       longName: 'Testing instance',
-      allowAccess: [{
-        startDate: '2019-01-14T00:00:00',
-        endDate: '2019-05-15T00:00:00',
-      }],
-      userRoles: {
-        'user1@illinois.edu': 'Instructor',
-        'user2@illinois.edu': 'TA',
-      },
+      allowAccess: [
+        {
+          startDate: '2019-01-14T00:00:00',
+          endDate: '2019-05-15T00:00:00',
+        },
+      ],
     },
   },
 };
@@ -387,7 +438,7 @@ const courseInstances = {
 /**
  * @returns {CourseData} - The base course data for syncing testing
  */
-module.exports.getCourseData = function() {
+module.exports.getCourseData = function () {
   // Round-trip through JSON.stringify to ensure that mutations to nested
   // objects aren't reflected in the original objects.
   const courseData = {
@@ -398,7 +449,7 @@ module.exports.getCourseData = function() {
   return JSON.parse(JSON.stringify(courseData));
 };
 
-module.exports.getFakeLogger = function() {
+module.exports.getFakeLogger = function () {
   return {
     verbose: () => {},
     debug: () => {},
@@ -411,8 +462,8 @@ module.exports.getFakeLogger = function() {
  * Async wrapper for syncing course data from a directory. Also stubs out the
  * logger interface.
  */
-module.exports.syncCourseData = function(courseDir) {
-  const logger = this.getFakeLogger();
+module.exports.syncCourseData = function (courseDir) {
+  const logger = module.exports.getFakeLogger();
   return new Promise((resolve, reject) => {
     syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, (err) => {
       if (err) {
@@ -424,8 +475,8 @@ module.exports.syncCourseData = function(courseDir) {
   });
 };
 
-module.exports.createAndSyncCourseData = async function() {
-  const courseData = this.getCourseData();
+module.exports.createAndSyncCourseData = async function () {
+  const courseData = module.exports.getCourseData();
   const courseDir = await module.exports.writeCourseToTempDirectory(courseData);
   await module.exports.syncCourseData(courseDir);
 
@@ -438,25 +489,25 @@ module.exports.createAndSyncCourseData = async function() {
 /**
  * Writes the given course data to a new temporary directory and returns the
  * path to the directory.
- * 
+ *
  * @param {CourseData} courseData - The course data to write and sync
  * @returns {Promise<string>} the path to the new temp directory
  */
-module.exports.writeAndSyncCourseData = async function(courseData) {
-  const courseDir = await this.writeCourseToTempDirectory(courseData);
-  await this.syncCourseData(courseDir);
+module.exports.writeAndSyncCourseData = async function (courseData) {
+  const courseDir = await module.exports.writeCourseToTempDirectory(courseData);
+  await module.exports.syncCourseData(courseDir);
   return courseDir;
 };
 
 /**
- * Overwrites the course data in the given directory and 
- * 
+ * Overwrites the course data in the given directory and
+ *
  * @param {CourseData} courseData - The course data write and sync
  * @param {string} courseDir - The path to write the course data to
  */
-module.exports.overwriteAndSyncCourseData = async function(courseData, courseDir) {
-  await this.writeCourseToDirectory(courseData, courseDir);
-  await this.syncCourseData(courseDir);
+module.exports.overwriteAndSyncCourseData = async function (courseData, courseDir) {
+  await module.exports.writeCourseToDirectory(courseData, courseDir);
+  await module.exports.syncCourseData(courseDir);
 };
 
 /**
@@ -465,12 +516,12 @@ module.exports.overwriteAndSyncCourseData = async function(courseData, courseDir
  * @param {string} tableName - The name of the table to query
  * @return {Promise<Record<string, any>[]>} - The rows of the given table
  */
-module.exports.dumpTable = async function(tableName) {
+module.exports.dumpTable = async function (tableName) {
   const res = await sqldb.queryAsync(`SELECT * FROM ${tableName};`, {});
   return res.rows;
 };
 
-module.exports.captureDatabaseSnapshot = async function() {
+module.exports.captureDatabaseSnapshot = async function () {
   return {
     courseInstances: await module.exports.dumpTable('course_instances'),
     assessments: await module.exports.dumpTable('assessments'),
@@ -491,10 +542,10 @@ module.exports.captureDatabaseSnapshot = async function() {
 
 /**
  * Computes setA U setB.
- * 
+ *
  * @template T
- * @param {Set.<T>} setA 
- * @param {Set.<T>}setB 
+ * @param {Set.<T>} setA
+ * @param {Set.<T>}setB
  * @returns {Set.<T>} The union of setA and setB
  */
 function setUnion(setA, setB) {
@@ -503,9 +554,9 @@ function setUnion(setA, setB) {
 
 /**
  * Checks if two sets contain the same elements.
- * 
+ *
  * @param {Set.<any>} setA
- * @param {Set.<any>} setB 
+ * @param {Set.<any>} setB
  * @returns {boolean} whether or not the sets contain the same elements.
  */
 function checkSetsSame(setA, setB) {
@@ -518,19 +569,22 @@ function checkSetsSame(setA, setB) {
  * matching if they both contain the same keys and if for each key, the array
  * of values contains the same elements. Elements may be in different orders.
  * Optionally, a subset of the keys in the snapshot can be ignored.
- * 
+ *
  * @param {{ [key: string]: any[] }} snapshotA - The first snapshot
  * @param {{ [key: string]: any[] }} snapshotB - The second snapshot
  * @param {string[]} [ignoreKeys=[]] An optional list of keys to ignore
  */
-module.exports.assertSnapshotsMatch = function(snapshotA, snapshotB, ignoredKeys = []) {
+module.exports.assertSnapshotsMatch = function (snapshotA, snapshotB, ignoredKeys = []) {
   // Sanity check - make sure both snapshots have the same keys
-  assert(checkSetsSame(new Set(Object.keys(snapshotA)), new Set(Object.keys(snapshotB))), 'snapshots contained different keys');
+  assert(
+    checkSetsSame(new Set(Object.keys(snapshotA)), new Set(Object.keys(snapshotB))),
+    'snapshots contained different keys'
+  );
   for (const key of Object.keys(snapshotA)) {
     if (ignoredKeys.indexOf(key) !== -1) continue;
     // Build a set of deterministically-stringified rows for each snapshot
-    const setA = new Set(snapshotA[key].map(s => stringify(s)));
-    const setB = new Set(snapshotB[key].map(s => stringify(s)));
+    const setA = new Set(snapshotA[key].map((s) => stringify(s)));
+    const setB = new Set(snapshotB[key].map((s) => stringify(s)));
     assert(checkSetsSame(setA, setB), `Snapshot of ${key} did not match`);
   }
 };
@@ -543,14 +597,20 @@ module.exports.assertSnapshotsMatch = function(snapshotA, snapshotB, ignoredKeys
  * @param {{ [key: string]: any[] }} snapshotB - The second snapshot
  * @param {string[]} [ignoreKeys=[]] An optional list of keys to ignore
  */
-module.exports.assertSnapshotSubset = function(snapshotA, snapshotB, ignoredKeys = []) {
+module.exports.assertSnapshotSubset = function (snapshotA, snapshotB, ignoredKeys = []) {
   // Sanity check - make sure both snapshots have the same keys
-  assert(checkSetsSame(new Set(Object.keys(snapshotA)), new Set(Object.keys(snapshotB))), 'snapshots contained different keys');
+  assert(
+    checkSetsSame(new Set(Object.keys(snapshotA)), new Set(Object.keys(snapshotB))),
+    'snapshots contained different keys'
+  );
   for (const key of Object.keys(snapshotA)) {
     if (ignoredKeys.indexOf(key) !== -1) continue;
     // Build a set of deterministically-stringified rows for each snapshot
-    const setA = new Set(snapshotA[key].map(s => stringify(s)));
-    const setB = new Set(snapshotB[key].map(s => stringify(s)));
-    assert([...setA].every(entry => setB.has(entry)), `Snapshot of ${key} is not a subset`);
+    const setA = new Set(snapshotA[key].map((s) => stringify(s)));
+    const setB = new Set(snapshotB[key].map((s) => stringify(s)));
+    assert(
+      [...setA].every((entry) => setB.has(entry)),
+      `Snapshot of ${key} is not a subset`
+    );
   }
 };

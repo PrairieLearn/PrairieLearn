@@ -41,6 +41,7 @@
     </div>
 
     <% } else { %>
+    <% if (authz_data.has_course_instance_permission_edit) { %>
     <div id="content" class="container-fluid">
       <div class="modal fade" id="uploadAssessmentGroupsModal" tabindex="-1" role="dialog"
         aria-labelledby="uploadAssessmentGroupsModalLabel">
@@ -61,7 +62,7 @@
                         groupA,two@example.com<br>
                         groupB,three@example.com<br>
                         groupB,four@example.com</code>
-              <!-- Closing code tag not on its own line to improve copy/paste formatting -->
+              <%# Closing code tag not on its own line to improve copy/paste formatting %>
             </div>
             <div class="modal-body">
               <p>
@@ -219,9 +220,11 @@
         </div>
       </div>
     </div>
+    <% } %>
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center">
         <%= assessment_set.name %> <%= assessment.number %>: Groups
+        <% if (authz_data.has_course_instance_permission_edit) { %>
         <div class="ml-auto">
           <button type="button" class="btn btn-sm btn-light" tabindex="0" data-toggle="modal"
             data-target="#addGroupModal">
@@ -232,7 +235,9 @@
             <i class="fa fa-times" aria-hidden="true"></i> Delete all groups
           </button>
         </div>
+        <% } %>
       </div>
+      <% if (authz_data.has_course_instance_permission_edit) { %>
       <div class="container-fluid">
         <div class="row">
           <div class="col-sm bg-light py-4 border" align="center">
@@ -264,6 +269,7 @@
           </div>
         </div>
       </div>
+      <% } %>
       <div class="table-responsive">
         <table id="usersTable" class="table table-sm table-hover tablesorter">
           <thead>
@@ -271,7 +277,9 @@
               <th>Name</th>
               <th>Size</th>
               <th class="text-center">Group Members (UIDs)</th>
+              <% if (authz_data.has_course_instance_permission_edit) { %>
               <th class="sorter-false"></th>
+              <% } %>
             </tr>
           </thead>
           <tbody>
@@ -280,74 +288,68 @@
               <td><%= row.name %></td>
               <td class="text-center"><%= row.size %></td>
               <td class="text-center" style ="word-break:break-all;"><small><%= row.uid_list %></small></td>
+              <% if (authz_data.has_course_instance_permission_edit) { %>
               <td class="text-center">
                 <div class="dropdown">
-                  <button type="button" 
-                          class="btn btn-xs dropdown-toggle" 
-                          data-toggle="dropdown" 
+                  <button type="button"
+                          class="btn btn-xs dropdown-toggle"
+                          data-toggle="dropdown"
                           aria-haspopup="true"
                           aria-expanded="false">
                     Action <span class="caret"></span>
                   </button>
-                  <div id="row<%= iRow %>PopoverAdd" 
-                        tabindex="0" 
-                        data-toggle="popover" 
+                  <div id="row<%= iRow %>PopoverAdd"
+                        tabindex="0"
+                        data-toggle="popover"
                         data-trigger="manual"
-                        data-container="body" 
-                        data-html="true" 
-                        data-placement="auto" 
+                        data-container="body"
+                        data-html="true"
+                        data-placement="auto"
                         title="Add Members"
                         data-content="<%= include('formAddMembers.ejs', {row: row, iRow: iRow }); %>">
                   </div>
-                  <div id="row<%= iRow %>Popoverdeletemember" 
-                        tabindex="0" 
-                        data-toggle="popover" 
+                  <div id="row<%= iRow %>Popoverdeletemember"
+                        tabindex="0"
+                        data-toggle="popover"
                         data-trigger="manual"
-                        data-container="body" 
-                        data-html="true" 
-                        data-placement="auto" 
+                        data-container="body"
+                        data-html="true"
+                        data-placement="auto"
                         title="Remove Members"
                         data-content="<%= include('formRemoveMembers.ejs', {row: row, iRow: iRow }); %>">
                   </div>
-                  <div id="row<%= iRow %>Popoverdeletegroup" 
-                        tabindex="0" 
-                        data-toggle="popover" 
+                  <div id="row<%= iRow %>Popoverdeletegroup"
+                        tabindex="0"
+                        data-toggle="popover"
                         data-trigger="manual"
-                        data-container="body" 
-                        data-html="true" 
-                        data-placement="auto" 
+                        data-container="body"
+                        data-html="true"
+                        data-placement="auto"
                         title="Confirm delete this group"
                         data-content="<%= include('formDeleteGroup.ejs', {row: row, iRow: iRow }); %>">
                   </div>
 
-                  <!-- Capture all clicks to dropdown items to prevent scrolling to the top of the page -->
+                  <%# Capture all clicks to dropdown items to prevent scrolling to the top of the page %>
                   <div class="dropdown-menu" onclick="window.event.preventDefault();">
 
-                    <!-- ################################################## -->
-
-                    <% if (authz_data.has_instructor_edit) { %>
+                    <% if (authz_data.has_course_instance_permission_edit) { %>
                     <a class="dropdown-item" onclick="$('#row<%= iRow %>PopoverAdd').popover('show')" href="#">
                       <i class="fa fa-user-plus" aria-hidden="true"></i> Add members
                     </a>
 
-                    <!-- ################################################## -->
-
                     <a class="dropdown-item" onclick="$('#row<%= iRow %>Popoverdeletemember').popover('show')" href="#">
                       <i class="fa fa-user-minus" aria-hidden="true"></i> Remove members
                     </a>
-
-                    <!-- ################################################## -->
 
                     <a class="dropdown-item" onclick="$('#row<%= iRow %>Popoverdeletegroup').popover('show')" href="#">
                       <i class="fa fa-times" aria-hidden="true"></i> Delete this group
                     </a>
                     <% } %>
 
-                    <!-- ################################################## -->
-
                   </div>
                 </div>
               </td>
+              <% } %>
             </tr>
             <% }); %>
           </tbody>
@@ -375,7 +377,6 @@
             <% } %>
           </small>
         </div>
-        <% } %>
       </div>
       <script>
         $(function () {
@@ -391,6 +392,7 @@
         });
       </script>
     </div>
+    <% } %>
 
   </div>
 </body>

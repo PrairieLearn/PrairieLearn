@@ -1,4 +1,5 @@
 columns
+    advance_score_perc: double precision
     alternative_group_id: bigint
     assessment_id: bigint not null
     average_average_submission_score: double precision
@@ -10,6 +11,7 @@ columns
     average_submission_score_variance: double precision
     deleted_at: timestamp with time zone
     discrimination: double precision
+    effective_advance_score_perc: double precision default 0
     first_submission_score_hist: double precision[]
     first_submission_score_variance: double precision
     force_max_points: boolean default false
@@ -22,6 +24,8 @@ columns
     init_points: double precision
     last_submission_score_hist: double precision[]
     last_submission_score_variance: double precision
+    max_auto_points: double precision
+    max_manual_points: double precision
     max_points: double precision
     max_submission_score_hist: double precision[]
     max_submission_score_variance: double precision
@@ -53,4 +57,5 @@ foreign-key constraints
     assessment_questions_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
+    assessment_question_role_permissions: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     instance_questions: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE

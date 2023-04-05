@@ -1,11 +1,3 @@
 {
-    "controller": "pl-variable-output.py",
-    "dependencies": {
-        "nodeModulesScripts": [
-            "clipboard/dist/clipboard.min.js"
-        ],
-        "coreScripts": [
-            "PrairieUtil.js"
-        ]
-    }
+  "controller": "pl-variable-output.py"
 }

@@ -1,102 +1,73 @@
-
-ul.pl-order-blocks-connected-sortable {
-  /* This style applies to the MCQ options table, on the left hand side*/
-  border: 2px solid #A9A9A9; /* High visibility borders for accessibility */
-  border-radius: 4px;
-  background-color: #efefff; /* Pale Blue */
-
-  width: 100%;
-
-  margin: 0 40px 0 10px;
-
-  list-style-type: none;
-  padding: 5px 0 20px 0;
-  float: left;
-}
-
 div.pl-order-blocks-right {
   /* This style applies to the DIV that holds each dropzone column */
-  /* This particular style renders the dropzones in a single row horizontally */ 
-  width: 46%;
-  margin-right: 20px;
+  /* This particular style renders the dropzones in a single row horizontally */
+  width: calc(50% - 16px);
+  margin: 8px
 }
 
 div.pl-order-blocks-bottom {
   /* This style applies to the DIV that holds each dropzone column */
-  /* This particular style renders the dropzones in a single column vertically */ 
+  /* This particular style renders the dropzones in a single column vertically */
   width: 100%;
-  margin-right: 20px;
-  margin-bottom: 20px;
+  margin: 8px;
 }
 
-
-ul.dropzone {
-  /* This style applies to answer dropzone */
-  background-color: #FFA; /* Yellow */
-  min-height: 30px;
+li.pl-order-blocks-code {
+  list-style-type: none;
 }
 
-
-ul.pl-order-blocks-connected-sortable li, ul.dropzone li{
-  /* This style applies to the answer draggable tiles themselves */
-  background-color: #EFEFEF; /* Grey */
-  border: 2px solid #A9A9A9;
-  border-radius: 4px;
-  margin: 0 10px 10px 10px;
-  padding: 5px;
-  font-size: 1.2em;
-
-  display: block;
-
-  /* Show overflow text in the answer draggable tiles */
-  white-space: normal;
-  height: auto;
-  max-height: none;
-  overflow: visible;
+.pl-order-blocks-code > .pl-code:only-child div {
+  /* override margins on code block to ensure code is centered properly */
+  margin-bottom: 0px !important;
 }
 
-ul.pl-order-blocks-connected-sortable li:hover, ul.dropzone li:hover{
+ul.pl-order-blocks-connected-sortable li:hover{
   cursor: move; /* For UX: The answer tiles shows a 'grab' cursor on mouse over */
+  outline: 2px solid blue;
+  outline-offset: -2px;
 }
 
-
-li.info {
-  /* This styling applies to the instruction text for the dropzones */
-  background-color: transparent !important;
+li.ui-state-highlight {
+  /* This styling applies to the placeholder answer tile created by jquery-ui when the user is dragging */
   border: none !important;
-  cursor: auto !important;
+  list-style-type: none;
+  background-color: #90a4ae !important;
+  min-width: 3em !important;
 }
 
-li.ui-state-highlight { 
-  /*This styling applies to the placeholder answer tile that appears when the user is dragging */
-  height: 2em !important; 
-  line-height: 1.5em !important;
-  border: none !important;
-  color: #efefff !important; 
-  background-color: #efefff !important; 
+.pl-order-blocks-container > ul {
+  padding: 17px 17px 17px 17px;
+  height: 100%;
+  margin-bottom: 0px;
 }
 
-code.user-output {
-  border: 2px solid #A9A9A9; /* High visibility borders for accessibility */
-  margin-right: 4px;
+.pl-order-blocks-container li, .pl-order-blocks-answer-container li {
+  margin-bottom: 5px;
+  border: 1px solid grey !important;
+  border-radius: 5px !important;
+  line-height: 1.2em;
 }
 
+.pl-order-blocks-answer-container > ul {
+  padding: 5px 5px 5px 5px;
+}
 
-.answer_block {
+div.pl-order-blocks-answer-container {
   display: inline-block;
-  border-style: solid;
-  border: 2px solid #A9A9A9; /* High visibility borders for accessibility */
-  background-color: #EFEFEF;
+  border: 1px solid #9e9e9e;
   border-radius: 4px;
-  margin-right: 10px;
-  padding: 3px;
-  padding-left: 7px;
-  padding-right: 7px;
 }
 
-.row:after {
-  /* Clear floats after the columns */
-  content: "";
-  display: table;
-  clear: both;
+div.pl-order-blocks-container {
+  display: block;
+  box-shadow: 2px #888888;
+  border-radius: 4px;
+  background-color: #eeeeee;
+  border: 1px solid #9e9e9e;
+}
+
+.pl-order-blocks-header {
+  height: 3rem;
+  display: flex;
+  align-items: center;
 }

@@ -1,5 +1,4 @@
-DROP FUNCTION IF EXISTS group_users_insert(bigint,bigint,bigint,text,text);
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     group_users_insert (
         arg_assessment_id bigint,
         arg_user_id bigint,
@@ -37,7 +36,7 @@ BEGIN
     PERFORM g.id
     FROM groups AS g
     WHERE g.id = arg_group_id
-    FOR UPDATE OF g;
+    FOR NO KEY UPDATE OF g;
 
     -- count the group size and compare with the max size
     SELECT

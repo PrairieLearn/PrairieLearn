@@ -1,5 +1,4 @@
-DROP FUNCTION IF EXISTS assessment_groups_delete_group(bigint,bigint,bigint);
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessment_groups_delete_group(
         assessment_id bigint,
         arg_group_id bigint,
@@ -18,7 +17,7 @@ BEGIN
         gc.assessment_id = assessment_groups_delete_group.assessment_id
         AND g.id = arg_group_id
         AND g.deleted_at IS NULL
-    FOR UPDATE of g;
+    FOR NO KEY UPDATE of g;
 
     IF NOT FOUND THEN
         RAISE EXCEPTION 'The user does not belong to the assessment';

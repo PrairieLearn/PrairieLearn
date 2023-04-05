@@ -1,7 +1,7 @@
 {
     "uuid": "de771443-9058-4a46-9915-f50bdfc5755f",
-    "title": "Demo: Custom grading function to add binary numbers",
+    "title": "Demo: Custom grading function without using PrairieLearn element",
     "topic": "Custom",
-    "tags": ["mwest", "fa17", "tpl101", "v3"],
+    "tags": ["mwest", "fa17"],
     "type": "v3"
 }

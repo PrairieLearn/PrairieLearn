@@ -7,6 +7,7 @@ columns
     external_grading_enable_networking: boolean
     external_grading_enabled: boolean default false
     external_grading_entrypoint: text
+    external_grading_environment: jsonb not null default '{}'::jsonb
     external_grading_files: text[] default ARRAY[]::text[]
     external_grading_image: text
     external_grading_timeout: integer
@@ -16,6 +17,7 @@ columns
     options: jsonb
     partial_credit: boolean default true
     qid: text
+    show_correct_answer: boolean default true
     single_variant: boolean default false
     sync_errors: text
     sync_job_sequence_id: bigint
@@ -26,6 +28,8 @@ columns
     type: enum_question_type
     uuid: uuid
     workspace_args: text
+    workspace_enable_networking: boolean
+    workspace_environment: jsonb not null default '{}'::jsonb
     workspace_graded_files: text[] default ARRAY[]::text[]
     workspace_home: text
     workspace_image: text

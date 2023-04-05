@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     assessments_duration_stats (
         IN assessment_id bigint,
         OUT min interval,
@@ -31,13 +31,12 @@ BEGIN
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
-        LEFT JOIN group_info(assessments_duration_stats.assessment_id) AS gi ON (gi.id = ai.group_id)
-        LEFT JOIN group_users AS gu ON (gu.group_id = gi.id)
+        LEFT JOIN group_users AS gu ON (gu.group_id = ai.group_id)
         JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
         JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
     WHERE
         a.id = assessments_duration_stats.assessment_id
-        AND role = 'Student';
+        AND ai.include_in_statistics;
 
     min := coalesce(min, interval '0');
     max := coalesce(max, interval '0');
@@ -57,12 +56,13 @@ BEGIN
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
-        LEFT JOIN group_info(assessments_duration_stats.assessment_id) AS gi ON (gi.id = ai.group_id)
-        LEFT JOIN group_users AS gu ON (gu.group_id = gi.id)
+        LEFT JOIN group_users AS gu ON (gu.group_id = ai.group_id)
         JOIN users AS u ON (u.user_id = ai.user_id OR u.user_id = gu.user_id)
         JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
     WHERE
         a.id = assessments_duration_stats.assessment_id
-        AND role = 'Student';
+        AND NOT users_is_instructor_in_course_instance(e.user_id, e.course_instance_id);
+
+    hist := coalesce(hist, array_fill(0, ARRAY[array_length(thresholds, 1) - 1]));
 END;
 $$ LANGUAGE plpgsql STABLE;

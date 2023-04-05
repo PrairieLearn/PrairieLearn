@@ -1,147 +1,145 @@
-const ERR = require('async-stacktrace');
-const _ = require('lodash');
-const async = require('async');
-const csvStringify = require('../../lib/nonblocking-csv-stringify');
+const asyncHandler = require('express-async-handler');
 const express = require('express');
-const router = express.Router();
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const { pipeline } = require('node:stream/promises');
+const error = require('@prairielearn/error');
+const sqldb = require('@prairielearn/postgres');
+const { stringifyStream } = require('@prairielearn/csv');
 
-const error = require('@prairielearn/prairielib/error');
 const sanitizeName = require('../../lib/sanitize-name');
-const sqldb = require('@prairielearn/prairielib/sql-db');
-const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const assessment = require('../../lib/assessment');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const router = express.Router();
+const sql = sqldb.loadSqlEquiv(__filename);
 
-const setFilenames = function(locals) {
-    const prefix = sanitizeName.assessmentFilenamePrefix(locals.assessment, locals.assessment_set, locals.course_instance, locals.course);
-    locals.questionStatsCsvFilename = prefix + 'question_stats.csv';
+const setFilenames = function (locals) {
+  const prefix = sanitizeName.assessmentFilenamePrefix(
+    locals.assessment,
+    locals.assessment_set,
+    locals.course_instance,
+    locals.course
+  );
+  locals.questionStatsCsvFilename = prefix + 'question_stats.csv';
 };
 
-router.get('/', function(req, res, next) {
-    debug('GET /');
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
     setFilenames(res.locals);
-    async.series([
-        function(callback) {
-          var params = {assessment_id: res.locals.assessment.id};
-          sqldb.queryOneRow(sql.assessment_stats_last_updated, params, function(err, result) {
-            if (ERR(err, callback)) return;
-            res.locals.stats_last_updated = result.rows[0].stats_last_updated;
-            callback(null);
-          });
-        },
-        function(callback) {
-            debug('query assessment_stats');
-            var params = {assessment_id: res.locals.assessment.id};
-            sqldb.queryOneRow(sql.assessment_stats, params, function(err, result) {
-                if (ERR(err, callback)) return;
-                res.locals.assessment_stat = result.rows[0];
-                callback(null);
-           });
-        },
-        function(callback) {
-            debug('query questions');
-            var params = {
-                assessment_id: res.locals.assessment.id,
-                course_id: res.locals.course.id,
-            };
-            sqldb.query(sql.questions, params, function(err, result) {
-                if (ERR(err, callback)) return;
-                res.locals.questions = result.rows;
-                callback(null);
-            });
-        },
-    ], function(err) {
-        if (ERR(err, next)) return;
-        debug('render page');
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-    });
-});
 
-router.get('/:filename', function(req, res, next) {
+    // make sure statistics are up to date
+    await assessment.updateAssessmentStatistics(res.locals.assessment.id);
+
+    // re-fetch assessment to get updated statistics
+    const assessmentResult = await sqldb.queryOneRowAsync(sql.select_assessment, {
+      assessment_id: res.locals.assessment.id,
+    });
+    res.locals.assessment = assessmentResult.rows[0].assessment;
+
+    // Fetch assessments.stats_last_updated (the time when we last updated
+    // the _question_ statistics for this assessment). Note that this is
+    // different to assessments.statistics_last_updated_at (the time we last
+    // updated the assessment instance statistics stored in the assessments
+    // row itself).
+    const lastUpdateResult = await sqldb.queryOneRowAsync(sql.assessment_stats_last_updated, {
+      assessment_id: res.locals.assessment.id,
+    });
+    res.locals.stats_last_updated = lastUpdateResult.rows[0].stats_last_updated;
+
+    const questionResult = await sqldb.queryAsync(sql.questions, {
+      assessment_id: res.locals.assessment.id,
+      course_id: res.locals.course.id,
+    });
+    res.locals.questions = questionResult.rows;
+
+    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+  })
+);
+
+router.get(
+  '/:filename',
+  asyncHandler(async (req, res) => {
     setFilenames(res.locals);
     if (req.params.filename === res.locals.questionStatsCsvFilename) {
-        var params = {
-            assessment_id: res.locals.assessment.id,
-            course_id: res.locals.course.id,
-        };
-        sqldb.query(sql.questions, params, function(err, result) {
-            if (ERR(err, next)) return;
-            var questionStatsList = result.rows;
-            var csvData = [];
-            var csvHeaders = ['Course', 'Instance', 'Assessment', 'Question number', 'QID', 'Question title'];
-            Object.keys(res.locals.stat_descriptions).forEach(key => {
-                csvHeaders.push(res.locals.stat_descriptions[key].non_html_title);
-            });
+      const cursor = await sqldb.queryCursor(sql.questions, {
+        assessment_id: res.locals.assessment.id,
+        course_id: res.locals.course.id,
+      });
 
-            csvData.push(csvHeaders);
+      const stringifier = stringifyStream({
+        header: true,
+        columns: [
+          'Course',
+          'Instance',
+          'Assessment',
+          'Question number',
+          'QID',
+          'Question title',
+          ...Object.values(res.locals.stat_descriptions).map((d) => d.non_html_title),
+        ],
+        transform(record) {
+          return [
+            record.course_short_name,
+            record.course_instance_short_name,
+            record.assessment_label,
+            record.assessment_question_number,
+            record.qid,
+            record.question_title,
+            record.mean_question_score,
+            record.question_score_variance,
+            record.discrimination,
+            record.some_submission_perc,
+            record.some_perfect_submission_perc,
+            record.some_nonzero_submission_perc,
+            record.average_first_submission_score,
+            record.first_submission_score_variance,
+            record.first_submission_score_hist,
+            record.average_last_submission_score,
+            record.last_submission_score_variance,
+            record.last_submission_score_hist,
+            record.average_max_submission_score,
+            record.max_submission_score_variance,
+            record.max_submission_score_hist,
+            record.average_average_submission_score,
+            record.average_submission_score_variance,
+            record.average_submission_score_hist,
+            record.submission_score_array_averages,
+            record.incremental_submission_score_array_averages,
+            record.incremental_submission_points_array_averages,
+            record.average_number_submissions,
+            record.number_submissions_variance,
+            record.number_submissions_hist,
+            record.quintile_question_scores,
+          ];
+        },
+      });
 
-            _(questionStatsList).each(function(questionStats) {
-                var questionStatsData = [];
-                questionStatsData.push(questionStats.course_short_name);
-                questionStatsData.push(questionStats.course_instance_short_name);
-                questionStatsData.push(questionStats.assessment_label);
-                questionStatsData.push(questionStats.assessment_question_number);
-                questionStatsData.push(questionStats.qid);
-                questionStatsData.push(questionStats.question_title);
-                questionStatsData.push(questionStats.mean_question_score);
-                questionStatsData.push(questionStats.question_score_variance);
-                questionStatsData.push(questionStats.discrimination);
-                questionStatsData.push(questionStats.some_submission_perc);
-                questionStatsData.push(questionStats.some_perfect_submission_perc);
-                questionStatsData.push(questionStats.some_nonzero_submission_perc);
-                questionStatsData.push(questionStats.average_first_submission_score);
-                questionStatsData.push(questionStats.first_submission_score_variance);
-                questionStatsData.push(questionStats.first_submission_score_hist);
-                questionStatsData.push(questionStats.average_last_submission_score);
-                questionStatsData.push(questionStats.last_submission_score_variance);
-                questionStatsData.push(questionStats.last_submission_score_hist);
-                questionStatsData.push(questionStats.average_max_submission_score);
-                questionStatsData.push(questionStats.max_submission_score_variance);
-                questionStatsData.push(questionStats.max_submission_score_hist);
-                questionStatsData.push(questionStats.average_average_submission_score);
-                questionStatsData.push(questionStats.average_submission_score_variance);
-                questionStatsData.push(questionStats.average_submission_score_hist);
-                questionStatsData.push(questionStats.submission_score_array_averages);
-                questionStatsData.push(questionStats.incremental_submission_score_array_averages);
-                questionStatsData.push(questionStats.incremental_submission_points_array_averages);
-                questionStatsData.push(questionStats.average_number_submissions);
-                questionStatsData.push(questionStats.number_submissions_variance);
-                questionStatsData.push(questionStats.number_submissions_hist);
-                questionStatsData.push(questionStats.quintile_question_scores);
-
-                _(questionStats.quintile_scores).each(function(perc) {
-                    questionStatsData.push(perc);
-                });
-
-                csvData.push(questionStatsData);
-            });
-
-            csvStringify(csvData, function(err, csv) {
-                if (ERR(err, next)) return;
-                res.attachment(req.params.filename);
-                res.send(csv);
-            });
-        });
+      res.attachment(req.params.filename);
+      await pipeline(cursor.stream(100), stringifier, res);
     } else {
-        next(new Error('Unknown filename: ' + req.params.filename));
+      throw error.make(404, 'Unknown filename: ' + req.params.filename);
     }
-});
+  })
+);
 
-router.post('/', function(req, res, next) {
-    if (!res.locals.authz_data.has_instructor_edit) return next();
-    if (req.body.__action == 'refresh_stats') {
-        var params = [
-            res.locals.assessment.id,
-        ];
-        sqldb.call('assessment_questions_calculate_stats_for_assessment', params, function(err) {
-          if (ERR(err, next)) return;
-          res.redirect(req.originalUrl);
-        });
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    // The action "refresh_stats" (from the button "Recalculate statistics") does
+    // not change student data. Statistics *should* be recalculated automatically,
+    // e.g., every time this page is loaded, but until then we will let anyone who
+    // can view the page post this action and trigger a recalculation.
+    if (req.body.__action === 'refresh_stats') {
+      await sqldb.callAsync('assessment_questions_calculate_stats_for_assessment', [
+        res.locals.assessment.id,
+      ]);
+      res.redirect(req.originalUrl);
     } else {
-        return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
+      throw error.make(400, 'unknown __action', {
+        locals: res.locals,
+        body: req.body,
+      });
     }
-});
+  })
+);
 
 module.exports = router;

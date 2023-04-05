@@ -1,4 +1,3 @@
-
 # PrairieLib
 
 PrairieLib is a NodeJS library used in [PrairieLearn](https://github.com/PrairieLearn/PrairieLearn).

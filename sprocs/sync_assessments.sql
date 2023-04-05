@@ -1,8 +1,4 @@
-DROP FUNCTION IF EXISTS sync_assessments(JSONB, bigint, bigint, boolean);
-DROP FUNCTION IF EXISTS sync_assessments(JSONB[], bigint, bigint, boolean);
-DROP FUNCTION IF EXISTS sync_assessments(JSONB[], bigint, bigint);
-
-CREATE OR REPLACE FUNCTION
+CREATE FUNCTION
     sync_assessments(
         IN disk_assessments_data JSONB[],
         IN syncing_course_id bigint,
@@ -15,6 +11,8 @@ DECLARE
     missing_src_tids TEXT;
     mismatched_uuid_tids TEXT;
     valid_assessment record;
+    group_role JSONB;
+    valid_group_role record;
     access_rule JSONB;
     zone JSONB;
     alternative_group JSONB;
@@ -27,6 +25,11 @@ DECLARE
     new_assessment_question_id bigint;
     new_assessment_question_ids bigint[];
     bad_assessments text;
+    new_group_role_names text[];
+    new_group_role_name text;
+    question_grading_method enum_grading_method;
+    computed_manual_points double precision;
+    computed_max_auto_points double precision;
 BEGIN
     -- The sync algorithm used here is described in the preprint
     -- "Preserving identity during opportunistic unidirectional
@@ -63,12 +66,22 @@ BEGIN
 
     WITH
     matched_rows AS (
-        SELECT src.tid AS src_tid, src.uuid AS src_uuid, dest.id AS dest_id -- matched_rows cols have underscores
+        -- See `sync_questions.sql` for an explanation of the use of DISTINCT ON.
+        SELECT DISTINCT ON (src_tid)
+            src.tid AS src_tid,
+            src.uuid AS src_uuid,
+            dest.id AS dest_id
         FROM disk_assessments AS src LEFT JOIN assessments AS dest ON (
             dest.course_instance_id = syncing_course_instance_id
-            AND (src.uuid = dest.uuid
-                 OR ((src.uuid IS NULL OR dest.uuid IS NULL)
-                     AND src.tid = dest.tid AND dest.deleted_at IS NULL)))
+            AND (
+                src.uuid = dest.uuid
+                OR (
+                    (src.uuid IS NULL OR dest.uuid IS NULL)
+                    AND src.tid = dest.tid AND dest.deleted_at IS NULL
+                )
+            )
+        )
+        ORDER BY src_tid, (src.uuid = dest.uuid) DESC NULLS LAST
     ),
     deactivate_unmatched_dest_rows AS (
         UPDATE assessments AS dest
@@ -129,7 +142,7 @@ BEGIN
     FOR valid_assessment IN (
         SELECT tid, data, warnings
         FROM disk_assessments AS src
-        wHERE (src.errors IS NULL OR src.errors = '')
+        WHERE (src.errors IS NULL OR src.errors = '')
     ) LOOP
         UPDATE assessments AS a
         SET
@@ -144,18 +157,21 @@ BEGIN
             auto_close = (valid_assessment.data->>'auto_close')::boolean,
             text = valid_assessment.data->>'text',
             assessment_set_id = aggregates.assessment_set_id,
+            assessment_module_id = aggregates.assessment_module_id,
             constant_question_value = (valid_assessment.data->>'constant_question_value')::boolean,
             allow_issue_reporting = (valid_assessment.data->>'allow_issue_reporting')::boolean,
             allow_real_time_grading = (valid_assessment.data->>'allow_real_time_grading')::boolean,
             require_honor_code = (valid_assessment.data->>'require_honor_code')::boolean,
             group_work = (valid_assessment.data->>'group_work')::boolean,
+            advance_score_perc = (valid_assessment.data->>'advance_score_perc')::double precision,
             sync_errors = NULL,
             sync_warnings = valid_assessment.warnings
         FROM
             (
                 SELECT
                     tid,
-                    (SELECT id FROM assessment_sets WHERE name = da.data->>'set_name' AND course_id = syncing_course_id) AS assessment_set_id
+                    (SELECT id FROM assessment_sets WHERE name = da.data->>'set_name' AND course_id = syncing_course_id) AS assessment_set_id,
+                    (SELECT id FROM assessment_modules WHERE name = da.data->>'assessment_module_name' AND course_id = syncing_course_id) AS assessment_module_id
                 FROM disk_assessments AS da
             ) AS aggregates
         WHERE
@@ -193,6 +209,42 @@ BEGIN
                 student_authz_join = EXCLUDED.student_authz_join,
                 student_authz_leave = EXCLUDED.student_authz_leave,
                 deleted_at = NULL;
+
+            -- Insert all group roles
+            FOR group_role IN SELECT * FROM JSONB_ARRAY_ELEMENTS(valid_assessment.data->'groupRoles') LOOP
+                INSERT INTO group_roles (
+                    role_name,
+                    assessment_id,
+                    minimum,
+                    maximum,
+                    can_assign_roles_at_start,
+                    can_assign_roles_during_assessment
+                ) VALUES (
+                    (group_role->>'role_name'),
+                    new_assessment_id,
+                    -- Insert default values where necessary
+                    CASE WHEN group_role ? 'minimum' THEN (group_role->>'minimum')::integer ELSE 0 END,
+                    (group_role->>'maximum')::integer,
+                    CASE WHEN group_role ? 'can_assign_roles_at_start' THEN (group_role->>'can_assign_roles_at_start')::boolean ELSE FALSE END,
+                    CASE WHEN group_role ? 'can_assign_roles_during_assessment' THEN (group_role->>'can_assign_roles_during_assessment')::boolean ELSE FALSE END
+                ) ON CONFLICT (role_name, assessment_id)
+                DO UPDATE
+                SET
+                    role_name = EXCLUDED.role_name,
+                    minimum = EXCLUDED.minimum,
+                    maximum = EXCLUDED.maximum,
+                    can_assign_roles_at_start = EXCLUDED.can_assign_roles_at_start,
+                    can_assign_roles_during_assessment = EXCLUDED.can_assign_roles_during_assessment
+                RETURNING group_roles.role_name INTO new_group_role_name;
+                new_group_role_names := array_append(new_group_role_names, new_group_role_name);
+            END LOOP;
+
+            -- Delete excess group roles
+            DELETE FROM group_roles
+            WHERE
+                assessment_id = new_assessment_id
+                AND role_name NOT IN (SELECT unnest(new_group_role_names));
+
         ELSE
             UPDATE group_configs
             SET deleted_at = now()
@@ -215,13 +267,14 @@ BEGIN
                 start_date,
                 end_date,
                 show_closed_assessment,
-                show_closed_assessment_score)
+                show_closed_assessment_score,
+                active)
             (
                 SELECT
                     new_assessment_id,
                     (access_rule->>'number')::integer,
                     (access_rule->>'mode')::enum_mode,
-                    (access_rule->>'role')::enum_role,
+                    'Student'::enum_role,
                     (access_rule->>'credit')::integer,
                     jsonb_array_to_text_array(access_rule->'uids'),
                     (access_rule->>'time_limit_min')::integer,
@@ -231,7 +284,8 @@ BEGIN
                     input_date(access_rule->>'start_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago')),
                     input_date(access_rule->>'end_date', COALESCE(ci.display_timezone, c.display_timezone, 'America/Chicago')),
                     (access_rule->>'show_closed_assessment')::boolean,
-                    (access_rule->>'show_closed_assessment_score')::boolean
+                    (access_rule->>'show_closed_assessment_score')::boolean,
+                    (access_rule->>'active')::boolean
                 FROM
                     assessments AS a
                     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -252,7 +306,8 @@ BEGIN
                 start_date = EXCLUDED.start_date,
                 end_date = EXCLUDED.end_date,
                 show_closed_assessment = EXCLUDED.show_closed_assessment,
-                show_closed_assessment_score = EXCLUDED.show_closed_assessment_score;
+                show_closed_assessment_score = EXCLUDED.show_closed_assessment_score,
+                active = EXCLUDED.active;
         END LOOP;
 
         -- Delete excess access rules
@@ -270,21 +325,25 @@ BEGIN
                 title,
                 max_points,
                 number_choose,
-                best_questions
-            ) VALUES (
+                best_questions,
+                advance_score_perc
+            )
+            VALUES (
                 new_assessment_id,
                 (zone->>'number')::integer,
                 zone->>'title',
                 (zone->>'max_points')::double precision,
                 (zone->>'number_choose')::integer,
-                (zone->>'best_questions')::integer
+                (zone->>'best_questions')::integer,
+                (zone->>'advance_score_perc')::double precision
             )
             ON CONFLICT (number, assessment_id) DO UPDATE
             SET
                 title = EXCLUDED.title,
                 max_points = EXCLUDED.max_points,
                 number_choose = EXCLUDED.number_choose,
-                best_questions = EXCLUDED.best_questions
+                best_questions = EXCLUDED.best_questions,
+                advance_score_perc = EXCLUDED.advance_score_perc
             RETURNING id INTO new_zone_id;
 
             -- Insert each alternative group in this zone
@@ -292,24 +351,45 @@ BEGIN
                 INSERT INTO alternative_groups (
                     number,
                     number_choose,
+                    advance_score_perc,
                     assessment_id,
                     zone_id
                 ) VALUES (
                     (alternative_group->>'number')::integer,
                     (alternative_group->>'number_choose')::integer,
+                    (alternative_group->>'advance_score_perc')::double precision,
                     new_assessment_id,
                     new_zone_id
                 ) ON CONFLICT (number, assessment_id) DO UPDATE
                 SET
                     number_choose = EXCLUDED.number_choose,
-                    zone_id = EXCLUDED.zone_id
+                    zone_id = EXCLUDED.zone_id,
+                    advance_score_perc = EXCLUDED.advance_score_perc
                 RETURNING id INTO new_alternative_group_id;
 
                 -- Insert an assessment question for each question in this alternative group
                 FOR assessment_question IN SELECT * FROM JSONB_ARRAY_ELEMENTS(alternative_group->'questions') LOOP
+                    IF (assessment_question->>'has_split_points')::boolean THEN
+                        computed_manual_points := (assessment_question->>'manual_points')::double precision;
+                        computed_max_auto_points := (assessment_question->>'max_points')::double precision;
+                    ELSE
+                        SELECT grading_method INTO question_grading_method
+                        FROM questions q
+                        WHERE q.id = (assessment_question->>'question_id')::bigint;
+
+                        IF FOUND AND question_grading_method = 'Manual' THEN
+                            computed_manual_points := (assessment_question->>'max_points')::double precision;
+                            computed_max_auto_points := 0;
+                        ELSE
+                            computed_manual_points := 0;
+                            computed_max_auto_points := (assessment_question->>'max_points')::double precision;
+                        END IF;
+                    END IF;
                     INSERT INTO assessment_questions AS aq (
                         number,
                         max_points,
+                        max_manual_points,
+                        max_auto_points,
                         init_points,
                         points_list,
                         force_max_points,
@@ -319,10 +399,14 @@ BEGIN
                         assessment_id,
                         question_id,
                         alternative_group_id,
-                        number_in_alternative_group
+                        number_in_alternative_group,
+                        advance_score_perc,
+                        effective_advance_score_perc
                     ) VALUES (
                         (assessment_question->>'number')::integer,
-                        (assessment_question->>'max_points')::double precision,
+                        COALESCE(computed_manual_points, 0) + COALESCE(computed_max_auto_points, 0),
+                        COALESCE(computed_manual_points, 0),
+                        COALESCE(computed_max_auto_points, 0),
                         (assessment_question->>'init_points')::double precision,
                         jsonb_array_to_double_precision_array(assessment_question->'points_list'),
                         (assessment_question->>'force_max_points')::boolean,
@@ -332,11 +416,15 @@ BEGIN
                         new_assessment_id,
                         (assessment_question->>'question_id')::bigint,
                         new_alternative_group_id,
-                        (assessment_question->>'number_in_alternative_group')::integer
+                        (assessment_question->>'number_in_alternative_group')::integer,
+                        (assessment_question->>'advance_score_perc')::double precision,
+                        (assessment_question->>'effective_advance_score_perc')::double precision
                     ) ON CONFLICT (question_id, assessment_id) DO UPDATE
                     SET
                         number = EXCLUDED.number,
                         max_points = EXCLUDED.max_points,
+                        max_manual_points = EXCLUDED.max_manual_points,
+                        max_auto_points = EXCLUDED.max_auto_points,
                         points_list = EXCLUDED.points_list,
                         init_points = EXCLUDED.init_points,
                         force_max_points = EXCLUDED.force_max_points,
@@ -345,9 +433,52 @@ BEGIN
                         deleted_at = EXCLUDED.deleted_at,
                         alternative_group_id = EXCLUDED.alternative_group_id,
                         number_in_alternative_group = EXCLUDED.number_in_alternative_group,
-                        question_id = EXCLUDED.question_id
+                        question_id = EXCLUDED.question_id,
+                        advance_score_perc = EXCLUDED.advance_score_perc,
+                        effective_advance_score_perc = EXCLUDED.effective_advance_score_perc
                     RETURNING aq.id INTO new_assessment_question_id;
                     new_assessment_question_ids := array_append(new_assessment_question_ids, new_assessment_question_id);
+
+                    IF (valid_assessment.data->>'group_work')::boolean THEN
+                        -- Iterate over all group roles in assessment
+                        FOR valid_group_role IN (
+                            SELECT gr.id, gr.role_name 
+                            FROM group_roles as gr
+                            WHERE gr.assessment_id = new_assessment_id
+                        ) LOOP
+                            -- Insert roles that can view
+                            INSERT INTO assessment_question_role_permissions (
+                                assessment_question_id,
+                                group_role_id,
+                                can_view
+                            ) VALUES (
+                                new_assessment_question_id,
+                                valid_group_role.id,
+                                (valid_group_role.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_view')))
+                            ) ON CONFLICT (assessment_question_id, group_role_id) 
+                            DO UPDATE
+                            SET
+                                assessment_question_id = EXCLUDED.assessment_question_id,
+                                group_role_id = EXCLUDED.group_role_id,
+                                can_view = EXCLUDED.can_view;
+
+                            -- Insert roles that can submit
+                            INSERT INTO assessment_question_role_permissions (
+                                assessment_question_id,
+                                group_role_id,
+                                can_submit
+                            ) VALUES (
+                                new_assessment_question_id,
+                                valid_group_role.id,
+                                (valid_group_role.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_submit')))
+                            ) ON CONFLICT (assessment_question_id, group_role_id) 
+                            DO UPDATE
+                            SET
+                                assessment_question_id = EXCLUDED.assessment_question_id,
+                                group_role_id = EXCLUDED.group_role_id,
+                                can_submit = EXCLUDED.can_submit;
+                        END LOOP;
+                    END IF;
                 END LOOP;
             END LOOP;
             zone_index := zone_index + 1;
@@ -388,7 +519,7 @@ BEGIN
                 SELECT string_agg(convert_to(coalesce(r[2],
                     length(length(r[1])::text) || length(r[1])::text || r[1]),
                     'SQL_ASCII'),'\x00')
-                FROM regexp_matches(number, '0*([0-9]+)|([^0-9]+)', 'g') r 
+                FROM regexp_matches(number, '0*([0-9]+)|([^0-9]+)', 'g') r
             ) ASC) AS order_by
         FROM assessments
         WHERE
@@ -415,6 +546,14 @@ BEGIN
         AND a.deleted_at IS NULL
         AND a.course_instance_id = syncing_course_instance_id
         AND (da.errors IS NOT NULL AND da.errors != '');
+    
+    -- Ensure all assessments have an assessment module, default number=0.
+    UPDATE assessments AS a
+    SET
+        assessment_module_id = COALESCE(a.assessment_module_id,
+            (SELECT id FROM assessment_modules WHERE number = 0 AND course_id = syncing_course_id))
+    WHERE a.deleted_at IS NULL
+    AND a.course_instance_id = syncing_course_instance_id;
 
     -- Finally, clean up any other leftover models
 
@@ -447,7 +586,7 @@ BEGIN
         AND a.course_instance_id = syncing_course_instance_id;
 
     -- Internal consistency check. All assessments should have an
-    -- assessment set and a number.
+    -- assessment set, assessment module, and number.
     SELECT string_agg(a.id::text, ', ')
     INTO bad_assessments
     FROM assessments AS a
@@ -457,9 +596,10 @@ BEGIN
         AND (
             a.assessment_set_id IS NULL
             OR a.number IS NULL
+            OR a.assessment_module_id IS NULL
         );
     IF (bad_assessments IS NOT NULL) THEN
-        RAISE EXCEPTION 'Assertion failure: Assessment IDs without set or number: %', bad_assessments;
+        RAISE EXCEPTION 'Assertion failure: Assessment IDs without set, number, or module: %', bad_assessments;
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
