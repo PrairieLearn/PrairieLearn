@@ -1281,6 +1281,7 @@ def generate(data):
 | `sort-dicts`       | boolean | true    | If true, dictionaries will be formatted with their keys sorted, otherwise they will display in insertion order.                                                                                                                                                             |
 | `no-highlight`     | boolean | false   | Disable syntax highlighting.                                                                                                                                                                                                                                                |
 | `copy-code-button` | boolean | false   | Whether to include a button to copy the code displayed by this element.                                                                                                                                                                                                     |
+| `show-line-numbers`     | boolean | false      | Whether to show line numbers in code displayed by this element.                                                                                                                                                                                                                                                                                                                                                                                       |
 
 #### Details
 
