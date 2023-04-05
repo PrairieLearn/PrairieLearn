@@ -101,7 +101,7 @@
           }
           text += `<a class="formatter-data" href="<%= urlPrefix %>/question/${question.id}/">${_.escape(question.qid)}</a>`;
           if (question.open_issue_count > 0) {
-              text += `<a class="badge badge-pill badge-danger ml-1" href="<%= urlPrefix %>/course_admin/issues?q=qid%3A${_.escape(question.qid)}">${question.open_issue_count}</a>`;
+              text += `<a class="badge badge-pill badge-danger ml-1" href="<%= urlPrefix %>/course_admin/issues?q=is%3Aopen+qid%3A${_.escape(question.qid)}">${question.open_issue_count}</a>`;
           }
           return text;
       }
