@@ -2,14 +2,13 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const util = require('util');
-const error = require('../../../prairielib/lib/error');
-const sqldb = require('../../../prairielib/lib/sql-db');
-const sqlLoader = require('../../../prairielib/lib/sql-loader');
+const error = require('@prairielearn/error');
+const sqldb = require('@prairielearn/postgres');
 
 const ltiOutcomes = require('../../../lib/ltiOutcomes');
 const manualGrading = require('../../../lib/manualGrading');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get(
   '/',

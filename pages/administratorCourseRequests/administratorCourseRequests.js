@@ -3,16 +3,15 @@ const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
 
-const error = require('../../prairielib/lib/error');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const error = require('@prairielearn/error');
+const sqldb = require('@prairielearn/postgres');
 
 const github = require('../../lib/github');
 const config = require('../../lib/config');
 const opsbot = require('../../lib/opsbot');
-const logger = require('../../lib/logger');
+const { logger } = require('@prairielearn/logger');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', (req, res, next) => {
   res.locals.coursesRoot = config.coursesRoot;

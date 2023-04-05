@@ -1,48 +1,50 @@
-var ERR = require('async-stacktrace');
-var passport = require('passport');
-var express = require('express');
-var router = express.Router();
+// @ts-check
+const passport = require('passport');
+const express = require('express');
+const asyncHandler = require('express-async-handler');
 
-var config = require('../../../lib/config');
-var csrf = require('../../../lib/csrf');
-var sqldb = require('../../../prairielib/lib/sql-db');
+const authnLib = require('../../../lib/authn');
 
-router.post('/', function (req, res, next) {
-  const authData = {
-    response: res,
-    failureRedirect: '/pl',
-    session: false,
-  };
-  passport.authenticate('azuread-openidconnect', authData, function (err, user, _info) {
-    if (ERR(err, next)) return;
-    if (!user) return next(new Error('Login failed'));
+const router = express.Router();
 
-    var params = [
-      user.upn, // uid
-      user.displayName, // name
-      null, // uin
-      'Azure', // provider
-    ];
-    sqldb.call('users_select_or_insert', params, (err, result) => {
-      if (ERR(err, next)) return;
-      var tokenData = {
-        user_id: result.rows[0].user_id,
-        authn_provider_name: 'Azure',
-      };
-      var pl_authn = csrf.generateToken(tokenData, config.secretKey);
-      res.cookie('pl_authn', pl_authn, {
-        maxAge: config.authnCookieMaxAgeMilliseconds,
-        httpOnly: true,
-        secure: true,
-      });
-      var redirUrl = res.locals.homeUrl;
-      if ('preAuthUrl' in req.cookies) {
-        redirUrl = req.cookies.preAuthUrl;
-        res.clearCookie('preAuthUrl');
+function authenticate(req, res) {
+  return new Promise((resolve, reject) => {
+    passport.authenticate(
+      'azuread-openidconnect',
+      {
+        failureRedirect: '/pl',
+        session: false,
+      },
+      (err, user) => {
+        if (err) {
+          reject(err);
+        } else if (!user) {
+          reject(new Error('Login failed'));
+        } else {
+          resolve(user);
+        }
       }
-      res.redirect(redirUrl);
+    )(req, res);
+  });
+}
+
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    const user = await authenticate(req, res);
+
+    const authnParams = {
+      uid: user.upn,
+      name: user.displayName,
+      uin: null,
+      provider: 'Azure',
+    };
+
+    await authnLib.loadUser(req, res, authnParams, {
+      redirect: true,
+      pl_authn_cookie: true,
     });
-  })(req, res, next);
-});
+  })
+);
 
 module.exports = router;

@@ -23,7 +23,9 @@ CREATE FUNCTION
         OUT workspace_launching_count integer,
         OUT workspace_relaunching_count integer,
         OUT workspace_running_count integer,
+        OUT workspace_running_on_healthy_hosts_count integer,
         OUT workspace_active_count integer,
+        OUT workspace_active_on_healthy_hosts_count integer,
         -- max time in each workspace state
         OUT workspace_longest_launching_sec double precision,
         OUT workspace_longest_running_sec double precision,
@@ -39,8 +41,16 @@ BEGIN
     SELECT count(*) INTO workspace_launching_count FROM workspaces AS w WHERE w.state = 'launching';
     SELECT count(*) INTO workspace_relaunching_count FROM workspaces AS w WHERE w.state = 'launching' AND num_nonnulls(w.rebooted_at, w.reset_at) > 0;
     SELECT count(*) INTO workspace_running_count FROM workspaces AS w WHERE w.state = 'running';
+    SELECT count(*) INTO workspace_running_on_healthy_hosts_count
+    FROM
+        workspaces AS w
+        JOIN workspace_hosts AS wh ON (wh.id = w.workspace_host_id)
+    WHERE
+        w.state = 'running'
+        AND (wh.state = 'ready' OR wh.state = 'draining');
 
     workspace_active_count := workspace_running_count + workspace_launching_count;
+    workspace_active_on_healthy_hosts_count := workspace_running_on_healthy_hosts_count + workspace_launching_count;
 
     -- Longest running workspace in launching state.
     SELECT COALESCE(max(DATE_PART('epoch', now() - state_updated_at)), 0)
@@ -98,8 +108,15 @@ BEGIN
     FROM workspace_hosts AS wh
     WHERE wh.state = 'terminating';
 
-    -- Compute desired number of workspace hosts
-    workspace_jobs_capacity_desired := workspace_active_count * workspace_capacity_factor;
+    -- Compute desired number of workspace hosts.
+    --
+    -- We only consider workspaces that are launching OR that are running on
+    -- a healthy host. In the case where a workspace is running on a host that
+    -- is unhealthy, that workspace will continue to run there until it times
+    -- out and is shut down. We don't want to include those workspaces in the
+    -- computation to avoid overprovisioning after deploys when all existing
+    -- hosts are marked as unhealthy.
+    workspace_jobs_capacity_desired := workspace_active_on_healthy_hosts_count * workspace_capacity_factor;
     workspace_hosts_desired := CEIL(workspace_jobs_capacity_desired / workspace_host_capacity);
     IF (workspace_hosts_desired < 1) THEN
        workspace_hosts_desired := 1;
@@ -125,7 +142,9 @@ BEGIN
         ('workspace_launching_count', workspace_launching_count),
         ('workspace_relaunching_count', workspace_relaunching_count),
         ('workspace_running_count', workspace_running_count),
+        ('workspace_running_on_healthy_hosts_count', workspace_running_on_healthy_hosts_count),
         ('workspace_active_count', workspace_active_count),
+        ('workspace_active_on_healthy_hosts_count', workspace_active_on_healthy_hosts_count),
         ('workspace_longest_launching_sec', workspace_longest_launching_sec),
         ('workspace_longest_running_sec', workspace_longest_running_sec);
 

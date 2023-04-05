@@ -16,7 +16,7 @@
             <span class="input-group-text">{{{label}}}</span>
         </span>
         {{/label}}
-        <input name="{{name}}" type="text" autocomplete="off" class="form-control pl-symbolic-input-input {{^show_info}}rounded-right{{/show_info}}" size="{{size}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} {{#show_placeholder}}placeholder="{{shortinfo}}"{{/show_placeholder}} />
+        <input name="{{name}}" type="text" autocomplete="off" class="form-control pl-symbolic-input-input {{^show_info}}rounded-right{{/show_info}}" size="{{size}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} placeholder="{{placeholder}}"/>
         <span class="input-group-append">
 
             {{#show_info}}
@@ -115,10 +115,6 @@ ${{a_tru}}$
 
 <p>Note that either <code class="user-output">^</code> or <code class="user-output">**</code> can be used for exponentiation.</p>
 {{/format}}
-
-{{#shortformat}}
-symbolic expression
-{{/shortformat}}
 
 {{#format_error}}
     <hr>

@@ -5,12 +5,11 @@ const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const sanitizeName = require('../../lib/sanitize-name');
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const groupUpdate = require('../../lib/group-update');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 /*
 This function run all needed SQL queries to load the page at the same time that res passed in will be saved.

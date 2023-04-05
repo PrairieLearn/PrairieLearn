@@ -7,13 +7,12 @@ const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'
 const config = require('../../lib/config');
 const QR = require('qrcode-svg');
 
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
-const error = require('../../prairielib/lib/error');
-const logger = require('../../lib/logger');
+const error = require('@prairielearn/error');
+const { logger } = require('@prairielearn/logger');
 const {
   AssessmentCopyEditor,
   AssessmentRenameEditor,

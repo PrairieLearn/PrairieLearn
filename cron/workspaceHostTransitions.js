@@ -1,16 +1,15 @@
+// @ts-check
+const async = require('async');
 const AWS = require('aws-sdk');
 const { callbackify } = require('util');
+const fetch = require('node-fetch').default;
+const { logger } = require('@prairielearn/logger');
 
-const logger = require('../lib/logger');
 const config = require('../lib/config');
-const request = require('request-promise-native');
-const async = require('async');
+const workspaceHelper = require('../lib/workspace');
 
-const sqldb = require('../prairielib/lib/sql-db');
-const sqlLoader = require('../prairielib/lib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(__filename);
-
-module.exports = {};
+const sqldb = require('@prairielearn/postgres');
+const sql = sqldb.loadSqlEquiv(__filename);
 
 module.exports.run = callbackify(async () => {
   if (!config.runningInEc2) return;
@@ -80,8 +79,15 @@ async function checkDBConsistency() {
   const not_in_ec2 = set_difference(db_hosts_nonterminated, running_host_set);
   if (not_in_ec2.size > 0) {
     logger.info('Terminating hosts that are not running in EC2', Array.from(not_in_ec2));
-    await sqldb.queryAsync(sql.set_terminated_hosts_if_not_launching, {
+    const result = await sqldb.queryAsync(sql.set_terminated_hosts_if_not_launching, {
       instances: Array.from(not_in_ec2),
+    });
+    result.rows.forEach((row) => {
+      workspaceHelper.emitMessageForWorkspace(row.workspace_id, 'change:state', {
+        workspace_id: row.workspace_id,
+        state: row.state,
+        message: row.message,
+      });
     });
   }
 }
@@ -107,10 +113,11 @@ async function checkHealth() {
       healthy = false;
     } else {
       try {
-        await request({ uri: url, resolveWithFullResponse: true });
+        const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+        healthy = res.ok;
       } catch (err) {
         healthy = false;
-        logger.info(`Could not reach host ${host.hostname}: ${err}`);
+        logger.error(`Could not reach host ${host.hostname}`, err);
       }
     }
 

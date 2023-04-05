@@ -2,9 +2,9 @@
 const ERR = require('async-stacktrace');
 const util = require('util');
 
-const namedLocks = require('../lib/named-locks');
+const namedLocks = require('@prairielearn/named-locks');
 const courseDB = require('./course-db');
-const sqldb = require('../prairielib/lib/sql-db');
+const sqldb = require('@prairielearn/postgres');
 
 const config = require('../lib/config');
 

@@ -4,11 +4,11 @@ const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
 
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const logPageView = require('../../middlewares/logPageView')('studentInstanceQuestion');
 const question = require('../../lib/question');
 const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
-const sqldb = require('../../prairielib/lib/sql-db');
+const sqldb = require('@prairielearn/postgres');
 
 function processSubmission(req, res, callback) {
   if (!res.locals.authz_result.active) {

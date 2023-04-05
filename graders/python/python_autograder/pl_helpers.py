@@ -7,7 +7,6 @@ from os.path import join, splitext
 
 import pygments
 from code_feedback import Feedback
-from IPython import get_ipython
 from IPython.core.interactiveshell import InteractiveShell
 from nbformat import read
 from pygments.formatters import Terminal256Formatter
@@ -118,7 +117,8 @@ def print_student_code(st_code="user_code.py", ipynb_key="#grade", as_feedback=T
         if extension == ".ipynb":
             contents = extract_ipynb_contents(f, ipynb_key).strip()
             lines = filter(
-                lambda l: not l.strip().startswith(ipynb_key), contents.split("\n")
+                lambda item: not item.strip().startswith(ipynb_key),
+                contents.split("\n"),
             )
             contents = "\n".join(lines)
         else:

@@ -3,9 +3,9 @@ const fs = require('fs');
 const path = require('path');
 const async = require('async');
 
-const error = require('../prairielib/lib/error');
-const logger = require('../lib/logger');
-const sqldb = require('../prairielib/lib/sql-db');
+const error = require('@prairielearn/error');
+const { logger } = require('@prairielearn/logger');
+const sqldb = require('@prairielearn/postgres');
 
 module.exports.init = function (callback) {
   logger.verbose('Starting DB stored procedure initialization');
@@ -80,7 +80,6 @@ module.exports.init = function (callback) {
       'assessment_instances_grade.sql',
       'assessment_instances_regrade.sql',
       'assessment_instances_select_for_auto_finish.sql',
-      'assessment_instances_select_log.sql',
       'assessment_instances_ensure_open.sql',
       'instance_questions_points_homework.sql',
       'instance_questions_points_exam.sql',
@@ -117,7 +116,6 @@ module.exports.init = function (callback) {
       'files_insert.sql',
       'files_delete.sql',
       'issues_insert_for_variant.sql',
-      'issues_insert_for_assessment.sql',
       'issues_update_open.sql',
       'issues_update_open_all.sql',
       'variants_lock.sql',
@@ -147,7 +145,6 @@ module.exports.init = function (callback) {
       'sync_question_tags.sql',
       'sync_assessment_sets.sql',
       'sync_assessments.sql',
-      'course_requests_insert.sql',
       'assessment_groups_update.sql',
       'assessment_groups_delete_all.sql',
       'assessment_groups_copy.sql',
@@ -156,8 +153,6 @@ module.exports.init = function (callback) {
       'assessment_groups_delete_group.sql',
       'group_info.sql',
       'groups_uid_list.sql',
-      'workspaces_message_update.sql',
-      'workspaces_state_update.sql',
       'workspace_loads_current.sql',
       'workspace_hosts_assign_workspace.sql',
       'workspace_hosts_recapture_draining.sql',

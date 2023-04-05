@@ -9,6 +9,7 @@ columns
     grading_needed: boolean not null default false
     group_id: bigint
     id: bigint not null default nextval('assessment_instances_id_seq'::regclass)
+    include_in_statistics: boolean not null default true
     max_bonus_points: double precision
     max_points: double precision
     mode: enum_mode

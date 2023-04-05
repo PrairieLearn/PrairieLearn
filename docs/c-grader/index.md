@@ -161,6 +161,18 @@ self.link_object_files(["student_file1_nomain.o", "student_file2.o"],
 
 The `link_object_files` also accepts arguments like `flags`, `pkg_config_flags`, `add_warning_result_msg=False` and `ungradable_if_failed=False`, as described above.
 
+For questions where students are not allowed to use a specific set of functions or global variables (e.g., students are not allowed to use the `system` library call), it is possible to reject a specific set of symbols. This option will cause an error similar to a compilation error if any of these symbols is referenced in the code. Only student files are checked against this list of symbols, so they can still be used in instructor code.
+
+```python
+self.compile_file(
+    ["student_file1.c", "student_file2.c"],
+    "executable",
+    add_c_file=["/grade/tests/question_file1.c", "/grade/tests/question_file2.c"],
+    flags=["-I/grade/tests", "-I/grade/student", "-lrt"],
+    reject_symbols=["system", "vfork", "clone", "clone3", "posix_spawn", "posix_spawnp"],
+)
+```
+
 For `self.test_compile_file()`, the results of the compilation will show up as a test named "Compilation", worth one point. To change the name and/or points, set the `name` or `points` argument as follows:
 
 ```python
@@ -220,6 +232,16 @@ Some times a test must ensure that some strings are _not_ found in the output of
 self.test_run("diff -q output.txt expected.txt", reject_output=["differ"])
 ```
 
+If you would like to highlight, in the test message or output, the expected and rejected outputs, you can use the `highlight_matches` argument. This option will highlight in green (for expected outputs) and red (for rejected outputs) all strings that matched in the program output.
+
+```python
+self.test_run("./square",
+              exp_output=["TEST 1 PASSED", "TEST 2 PASSED"],
+              reject_output=["ERROR", "FAIL"],
+              must_match_all_outputs=True,
+              highlight_matches=True)
+```
+
 By default, any sequence of space-like characters (space, line break, carriage return, tab) in the program output, expected output and rejected output strings will be treated as a single space for comparison. This means difference in the number and type of spacing will be ignored. So, for example, if the output prints two numbers as `1 \n 2`, while the expected output is `1 2`, the test will pass. If, however, the intention is that spaces must match a pattern exactly, the `ignore_consec_spaces` option can be set to `False`:
 
 ```python
@@ -231,6 +253,12 @@ By default, differences in cases are ignored. To make all comparisons case-sensi
 
 ```python
 self.test_run("./lowercase", "ABC", "abc", ignore_case=False)
+```
+
+For both `exp_output` and `reject_output`, regular expressions may be used, by providing a compiled pattern object from [Python's `re` module](https://docs.python.org/3/library/re.html#re.compile). Note: if a pattern object is used, arguments `ignore_consec_spaces` and `ignore_case` do not take effect. If these patterns should ignore consecutive spaces, a pattern such as `\\s+` may be used instead of spaces, while case may be ignored by using the [`re.I` flag](https://docs.python.org/3/library/re.html#re.I);
+
+```python
+self.test_run("./valid_date", exp_output=re.compile('([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))'))
 ```
 
 To avoid issues with student-provided code running longer than expected, such as in cases of infinite loop, the program will timeout after one second. In this case, the test will be considered failed. This setting can be changed with the `timeout` argument, which should be set to a number of seconds.
@@ -314,6 +342,47 @@ If your application explicitly needs to keep any of the restricted environments 
 #define PLCHECK_NO_EXTRA_FORK
 ```
 
+### Identifying dangling pointers, memory leaks and similar issues
+
+A major concern when testing C/C++ code is to identify cases of dangling pointers and memory leaks. The [AddressSanitizer](https://github.com/google/sanitizers/wiki/AddressSanitizer) library can be used for this purpose in this autograder. In particular, it is able to detect: use-after-free and use-after-return; out-of-bounds access in heap, stack and global arrays; and memory leaks.
+
+To add this library to the code, add the following option to the compilation function (`compile_file`, `test_compile_file` or `link_object_files`):
+
+```python
+self.compile_file(..., enable_asan=True)
+```
+
+By default, the options above will compile the code with flags that will cause the application to abort immediately when an invalid memory access is identified, or before exiting in case of memory leaks. If you are using the autograder workflow that checks the program's standard output, this functionality should capture the majority of cases, though you may want to include some reject strings that capture memory leaks. For example:
+
+```python
+self.test_run(..., reject_output=['AddressSanitizer'])
+```
+
+If you are using the check-based workflow, note that while the setup above will cause the tests to fail in these scenarios, it may not provide a useful message to students. To provide a more detailed feedback to students in this case, you are strongly encouraged to add a call to `pl_setup_asan_hooks()` at the start of your main function, like this:
+
+```c
+int main(int argc, char *argv[]) {
+
+  pl_setup_asan_hooks();
+  Suite *s = suite_create(...);
+  // ...
+}
+```
+
+If you need more fine-tuned control over when and where these memory access problems happen, you can use the ASAN interface to provide further control. For example, if you want to identify the status of individual pointers to check if they have been correctly allocated, you can use `__asan_address_is_poisoned` or `__asan_region_is_poisoned`:
+
+```c
+  ck_assert_msg(__asan_address_is_poisoned(deleted_node), "Deleted node has not been freed");
+  ck_assert_msg(!__asan_address_is_poisoned(other_node), "Node other than the first element has been freed");
+  ck_assert_msg(!__asan_region_is_poisoned(new_node, sizeof(struct node)), "Node was not allocated with appropriate size");
+```
+
+It is also possible to [set specific flags](https://github.com/google/sanitizers/wiki/AddressSanitizerFlags) to change the behaviour of AddressSanitizer, by setting the environment variable `ASAN_OPTIONS` when calling `run_check_suite`. For example, to disable the memory leak check, you may use:
+
+```python
+self.run_check_suite("./main", env={"ASAN_OPTIONS": "detect_leaks=0"})
+```
+
 ### Running a command without creating a test
 
 It is also possible to run a command that is not directly linked to a specific test. This can be done with the `self.run_command()` method, which at the minimum receives a command as argument. This command can be a single string with or without arguments, or an array of strings containing the executable as the first element, and the arguments to follow. The method returns a string contaning the standard output (and standard error) generated by the program.
@@ -382,7 +451,7 @@ self.add_test_result("Generated image", points=matched_pixels,
 
 ### Code subject to manual review
 
-In some situations, instructors may perform a manual review of the student's code, to check for issues like code style, comments, use of algorithms and other criteria that can't easily be programmed into code. This can be done by setting both [auto points and manual points](assessment.md#assessment-points) to the assessment question. The grade generated by the external grader only affects the auto points, leaving the manual points free to be used by the course staff as they see fit.
+In some situations, instructors may perform a manual review of the student's code, to check for issues like code style, comments, use of algorithms and other criteria that can't easily be programmed into code. This can be done by setting both [auto points and manual points](../assessment.md#assessment-points) to the assessment question. The grade generated by the external grader only affects the auto points, leaving the manual points free to be used by the course staff as they see fit.
 
 ## Sandbox execution
 

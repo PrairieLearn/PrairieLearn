@@ -4,11 +4,10 @@ var express = require('express');
 var router = express.Router();
 
 const { getCourseOwners } = require('../../lib/course');
-var error = require('../../prairielib/lib/error');
-var sqldb = require('../../prairielib/lib/sql-db');
-var sqlLoader = require('../../prairielib/lib/sql-loader');
+const error = require('@prairielearn/error');
+var sqldb = require('@prairielearn/postgres');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+var sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_permission_edit) {

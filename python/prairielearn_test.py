@@ -1,9 +1,10 @@
 import json
 import math
 from enum import Enum
-from typing import Any, Callable, Dict, Optional, Tuple, cast
+from typing import Any, Callable, Optional, cast
 
 import lxml.html
+import networkx as nx
 import numpy as np
 import pandas as pd
 import prairielearn as pl
@@ -45,12 +46,48 @@ def test_encoding_legacy(df: pd.DataFrame) -> None:
     pd.testing.assert_frame_equal(df, reserialized_dataframe)
 
 
-def test_inner_html() -> None:
-    e = lxml.html.fragment_fromstring("<div>test</div>")
-    assert pl.inner_html(e) == "test"
+@pytest.mark.parametrize(
+    "networkx_graph",
+    [
+        nx.cycle_graph(20),
+        nx.ladder_graph(20),
+        nx.lollipop_graph(20, 20),
+        nx.gn_graph(20),
+        nx.gnc_graph(20),
+    ],
+)
+def test_networkx_serialization(networkx_graph: Any) -> None:
+    """Test equality after conversion of various numpy objects."""
 
-    e = lxml.html.fragment_fromstring("<div>test&gt;test</div>")
-    assert pl.inner_html(e) == "test&gt;test"
+    networkx_graph.graph["rankdir"] = "TB"
+
+    # Add some data to test that it's retained
+    for i, (in_node, out_node, edge_data) in enumerate(networkx_graph.edges(data=True)):
+        edge_data["weight"] = i
+        edge_data["label"] = chr(ord("a") + i)
+
+    json_object = json.dumps(pl.to_json(networkx_graph), allow_nan=False)
+    decoded_json_object = pl.from_json(json.loads(json_object))
+
+    assert type(networkx_graph) == type(decoded_json_object)
+
+    assert nx.utils.nodes_equal(networkx_graph.nodes(), decoded_json_object.nodes())
+    assert nx.utils.edges_equal(networkx_graph.edges(), decoded_json_object.edges())
+
+
+@pytest.mark.parametrize(
+    "inner_html_string",
+    [
+        "test",
+        "test&gt;test",
+        "some loose text <pl>other <b>bold</b> text</pl>"
+        "some <p> other <b>words</b> are </p> here",
+        '<p>Some flavor text.</p> <pl-thing some-attribute="4">answers</pl-thing>',
+    ],
+)
+def test_inner_html(inner_html_string: str) -> None:
+    e = lxml.html.fragment_fromstring(f"<div>{inner_html_string}</div>")
+    assert pl.inner_html(e) == inner_html_string
 
 
 @pytest.mark.parametrize(
@@ -77,7 +114,6 @@ def test_set_score_data(
     score_3: float,
     expected_score: float,
 ) -> None:
-
     question_data["partial_scores"] = {
         "p1": {"score": score_1, "weight": 2},
         "p2": {"score": score_2, "weight": 4},
@@ -96,12 +132,12 @@ def test_set_score_data(
         np.int32(-12),
         np.uint8(55),
         np.byte(3),
-        np.float128(-1100204.04010340),
+        np.float64(-1100204.04010340),
         np.float32(2.1100044587483),
         np.float16(0.00000184388328),
         np.int64((2**53) + 5),
+        np.complex64("12+3j"),
         np.complex128("12+3j"),
-        np.complex256("12+3j"),
         np.arange(15),
         np.array([1.2, 3.5, 5.1]),
         np.array([1, 2, 3, 4]),
@@ -204,13 +240,12 @@ def test_grade_answer_parametrized_correct(
     weight: int,
     expected_grade: bool,
 ) -> None:
-
     question_data["submitted_answers"] = {question_name: student_answer}
 
     good_feedback = "you did good"
     bad_feedback = "that's terrible"
 
-    def grading_function(submitted_answer: str) -> Tuple[bool, Optional[str]]:
+    def grading_function(submitted_answer: str) -> tuple[bool, Optional[str]]:
         if submitted_answer in {"a", "b", "c", "d", "<>"}:
             return True, good_feedback
         return False, bad_feedback
@@ -255,8 +290,8 @@ def test_grade_answer_parametrized_key_error_blank(
 
     question_data["submitted_answers"] = {question_name: "True"}
 
-    def grading_function(_: str) -> Tuple[bool, Optional[str]]:
-        decoy_dict: Dict[str, str] = dict()
+    def grading_function(_: str) -> tuple[bool, Optional[str]]:
+        decoy_dict: dict[str, str] = dict()
         decoy_dict["junk"]  # This is to throw a key error
         return (True, None)
 

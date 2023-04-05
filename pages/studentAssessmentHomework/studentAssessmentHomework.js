@@ -5,13 +5,12 @@ var path = require('path');
 var debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const { checkPasswordOrRedirect } = require('../../middlewares/studentAssessmentAccess');
-var error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 var assessment = require('../../lib/assessment');
-var sqldb = require('../../prairielib/lib/sql-db');
-var sqlLoader = require('../../prairielib/lib/sql-loader');
+var sqldb = require('@prairielearn/postgres');
 var groupAssessmentHelper = require('../../lib/groups');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+var sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
   debug('GET');

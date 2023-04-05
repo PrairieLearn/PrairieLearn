@@ -39,7 +39,7 @@
       <% } %>
     </ul>
 
-    <%# User and logout %> 
+    <%# User and logout %>
     <%
     let displayedName;
     if (locals.authz_data) {
@@ -300,14 +300,22 @@
             <a class="dropdown-item" href="<%= plainUrlPrefix %>/request_course"> Course Requests </a>
           <% } %>
           <a class="dropdown-item" href="<%= plainUrlPrefix %>/settings">Settings</a>
-          <a class="dropdown-item news-item-link" href="<%= urlPrefix %>/news_items">
+          <a class="dropdown-item news-item-link" href="<%= urlPrefix %>/news_items"
+            <% if (typeof news_item_notification_count !== 'undefined' && news_item_notification_count > 0) { %>
+              title="News (<%= news_item_notification_count %> unread)"
+              aria-label="News (<%= news_item_notification_count %> unread)"
+            <% } else { %>
+              title="News"
+              aria-label="News"
+            <% } %>  
+          >
             News
             <% if (typeof news_item_notification_count != 'undefined' && news_item_notification_count > 0) { %>
               <span class="badge badge-pill badge-primary news-item-link-count"><%= news_item_notification_count %></span>
             <% } %>
           </a>
 
-          <%- include('logout'); %>
+          <a class="dropdown-item" href="<%= plainUrlPrefix %>/logout">Log out</a>
 
         </div>
       </li>
@@ -504,6 +512,7 @@ const navPagesTabs = {
     course_admin: 'navTabs/instructorCourseAdmin',
     assessment: 'navTabs/instructorAssessment',
     question: 'navTabs/instructorQuestion',
+    admin: 'navTabs/administrator',
     institution_admin: 'navTabs/institutionAdmin',
 };
 // If navPage matches any of the keys in navPagesTabs, include the page given by its value
