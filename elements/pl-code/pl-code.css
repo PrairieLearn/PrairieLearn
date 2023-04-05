@@ -14,6 +14,7 @@
 
 .pl-code table {
     border: none;
+    min-width: 100%;
 }
 
 .pl-code.pl-code:not(.show-line-numbers) td.linenos {
