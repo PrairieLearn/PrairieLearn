@@ -221,7 +221,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     background_color = pygments_style.background_color or "transparent"
     line_number_color = pygments_style.line_number_color
-    line_number_background_color = pygments_style.line_number_color
 
     class CustomStyleWithAnsiColors(pygments_style):
         styles = dict(pygments_style.styles)
@@ -235,13 +234,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "style": CustomStyleWithAnsiColors,
         "nobackground": True,
         "noclasses": True,
+        # We'll unconditionally render the line numbers, but we'll hide them if
+        # they aren't specifically enabled. This means we only have to deal with
+        # one markup "shape" in our CSS, not two.
+        "linenos": "table",
     }
 
     if highlight_lines is not None:
         formatter_opts["hl_lines"] = parse_highlight_lines(highlight_lines)
-
-    if show_line_numbers:
-        formatter_opts["linenos"] = "table"
 
     formatter = HighlightingHtmlFormatter(**formatter_opts)
 
@@ -253,7 +253,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "prevent_select": prevent_select,
         "background_color": background_color,
         "line_number_color": line_number_color,
-        "line_number_background_color": line_number_background_color,
         "show_line_numbers": show_line_numbers,
         "copy_code_button": pl.get_boolean_attrib(
             element, "copy-code-button", COPY_CODE_BUTTON_DEFAULT

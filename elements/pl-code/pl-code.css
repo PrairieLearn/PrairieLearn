@@ -12,52 +12,47 @@
     margin-bottom: 0.5rem;
 }
 
-.pl-code:not(.show-line-numbers) {
-    color: green;
-}
-
-.pl-code:not(.show-line-numbers) pre {
-    margin-bottom: 0px;
-    padding: 0.5rem 1rem;
-}
-
-.pl-code.show-line-numbers table {
+.pl-code table {
     border: none;
 }
 
-.pl-code.show-line-numbers td.linenos {
-    border-right: 1px solid #ccc;
-    /* background-color: var(--pl-code-line-number-background-color, transparent) */
+.pl-code.pl-code:not(.show-line-numbers) td.linenos {
+    display: none;
 }
 
-.pl-code.show-line-numbers td.linenos div pre span {
+.pl-code td.linenos {
+    user-select: none;
+    -webkit-user-select: none;
+    border-right: 1px solid #ccc;
+}
+
+.pl-code td.linenos div pre span {
     color: var(--pl-code-line-number-color, default);
 }
 
-.pl-code.show-line-numbers td.linenos pre {
-    user-select: none;
+.pl-code td.linenos pre {
     line-height: 125%;
     margin-bottom: 0.5rem;
     margin-top: 0.5rem;
 }
 
-.pl-code.show-line-numbers td.linenos pre span {
+.pl-code td.linenos pre span {
     padding-left: 1rem;
     padding-right: 1rem;
 }
 
-.pl-code.show-line-numbers td.code {
+.pl-code td.code {
     width: 100%;
     border: none;
     padding: 0px;
 }
 
-.pl-code.show-line-numbers td.code pre {
+.pl-code td.code pre {
     padding: 0.5rem 1rem;
     margin-bottom: 0px;
     overflow: visible;
 }
 
-.pl-code.show-line-numbers > div {
+.pl-code > div {
     overflow: auto;
 }
