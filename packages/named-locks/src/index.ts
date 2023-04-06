@@ -63,7 +63,7 @@ type InternalLockOptions =
  * can lead to deadlocks.
  */
 
-const pool = new PostgresPool();
+export const pool = new PostgresPool();
 
 /**
  * Initializes a new {@link PostgresPool} that will be used to acquire named locks.

@@ -2,6 +2,11 @@
   "name": "@prairielearn/html",
   "version": "2.1.1",
   "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/html"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
@@ -9,7 +14,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "*",
-    "@types/node": "^18.14.2",
+    "@types/node": "^18.15.11",
     "mocha": "^10.2.0",
     "ts-node": "^10.9.1",
     "typescript": "^4.9.5"

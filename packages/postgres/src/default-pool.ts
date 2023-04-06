@@ -1,6 +1,7 @@
 import { PostgresPool } from './pool';
 
 const defaultPool = new PostgresPool();
+export { defaultPool };
 
 // We re-expose all functions from the default pool here to account for the
 // default case of a shared global pool of clients. If someone want to create
@@ -61,6 +62,9 @@ export const queryValidatedSingleColumnZeroOrOneRow =
 export const callValidatedRows = defaultPool.callValidatedRows.bind(defaultPool);
 export const callValidatedOneRow = defaultPool.callValidatedOneRow.bind(defaultPool);
 export const callValidatedZeroOrOneRow = defaultPool.callValidatedZeroOrOneRow.bind(defaultPool);
+export const queryCursorWithClient = defaultPool.queryCursorWithClient.bind(defaultPool);
+export const queryCursor = defaultPool.queryCursor.bind(defaultPool);
+export const queryValidatedCursor = defaultPool.queryValidatedCursor.bind(defaultPool);
 export const setSearchSchema = defaultPool.setSearchSchema.bind(defaultPool);
 export const getSearchSchema = defaultPool.getSearchSchema.bind(defaultPool);
 export const setRandomSearchSchema = defaultPool.setRandomSearchSchema.bind(defaultPool);

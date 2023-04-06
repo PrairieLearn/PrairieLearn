@@ -1369,44 +1369,30 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion',
-    [
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./middlewares/studentAssessmentAccess'),
-      require('./pages/clientFilesQuestion/clientFilesQuestion'),
-    ]
+    require('./pages/clientFilesQuestion/clientFilesQuestion')
   );
 
   // generatedFiles
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/generatedFilesQuestion',
-    [
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./middlewares/studentAssessmentAccess'),
-      require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
-    ]
+    require('./pages/generatedFilesQuestion/generatedFilesQuestion')
   );
 
   // Submission files
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/submission/:submission_id/file',
-    [
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./middlewares/studentAssessmentAccess'),
-      require('./pages/submissionFile/submissionFile'),
-    ]
+    require('./pages/submissionFile/submissionFile')
   );
 
   // legacy client file paths
-  app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/file', [
-    require('./middlewares/selectAndAuthzInstanceQuestion'),
-    require('./middlewares/studentAssessmentAccess'),
-    require('./pages/legacyQuestionFile/legacyQuestionFile'),
-  ]);
-  app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/text', [
-    require('./middlewares/selectAndAuthzInstanceQuestion'),
-    require('./middlewares/studentAssessmentAccess'),
-    require('./pages/legacyQuestionText/legacyQuestionText'),
-  ]);
+  app.use(
+    '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/file',
+    require('./pages/legacyQuestionFile/legacyQuestionFile')
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/text',
+    require('./pages/legacyQuestionText/legacyQuestionText')
+  );
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
@@ -1772,21 +1758,21 @@ module.exports.startServer = async () => {
   const meter = opentelemetry.metrics.getMeter('prairielearn');
 
   const connectionCounter = opentelemetry.getCounter(meter, 'http.connections', {
-    unit: opentelemetry.ValueType.INT,
+    valueType: opentelemetry.ValueType.INT,
   });
   server.on('connection', () => connectionCounter.add(1));
 
-  const activeConnectionsGauge = opentelemetry.getObservableGauge(
+  opentelemetry.createObservableValueGauges(
     meter,
     'http.connections.active',
     {
-      unit: opentelemetry.ValueType.INT,
+      valueType: opentelemetry.ValueType.INT,
+      interval: 1000,
+    },
+    () => {
+      return util.promisify(server.getConnections.bind(server))();
     }
   );
-  activeConnectionsGauge.addCallback(async (observableResult) => {
-    const count = await util.promisify(server.getConnections.bind(server))();
-    observableResult.observe(count);
-  });
 
   server.timeout = config.serverTimeout;
   server.keepAliveTimeout = config.serverKeepAliveTimeout;
@@ -2003,6 +1989,64 @@ if (config.startServer) {
             process.exit(0);
           }
         }
+      },
+      async () => {
+        // Collect metrics on our Postgres connection pools.
+        const meter = opentelemetry.metrics.getMeter('prairielearn');
+
+        const pools = [
+          {
+            name: 'default',
+            pool: sqldb.defaultPool,
+          },
+          {
+            name: 'named-locks',
+            pool: namedLocks.pool,
+          },
+        ];
+
+        pools.forEach(({ name, pool }) => {
+          opentelemetry.createObservableValueGauges(
+            meter,
+            `postgres.pool.${name}.total`,
+            {
+              valueType: opentelemetry.ValueType.INT,
+              interval: 1000,
+            },
+            () => pool.totalCount
+          );
+
+          opentelemetry.createObservableValueGauges(
+            meter,
+            `postgres.pool.${name}.idle`,
+            {
+              valueType: opentelemetry.ValueType.INT,
+              interval: 1000,
+            },
+            () => pool.idleCount
+          );
+
+          opentelemetry.createObservableValueGauges(
+            meter,
+            `postgres.pool.${name}.waiting`,
+            {
+              valueType: opentelemetry.ValueType.INT,
+              interval: 1000,
+            },
+            () => pool.waitingCount
+          );
+
+          const queryCounter = opentelemetry.getObservableCounter(
+            meter,
+            `postgres.pool.${name}.query.count`,
+            {
+              valueType: opentelemetry.ValueType.INT,
+            }
+          );
+          queryCounter.addCallback((observableResult) => {
+            observableResult.observe(pool.queryCount);
+          });
+        });
       },
       async () => {
         // We create and activate a random DB schema name
