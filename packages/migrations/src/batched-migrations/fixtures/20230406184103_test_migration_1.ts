@@ -1,7 +1,7 @@
 import { BatchedMigration } from '../batched-migration';
 
 class TestMigration1 extends BatchedMigration {
-  async getConfig() {
+  async getParameters() {
     return {
       min: 1n,
       max: 100n,

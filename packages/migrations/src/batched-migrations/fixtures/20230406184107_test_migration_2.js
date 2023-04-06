@@ -2,7 +2,7 @@
 const { BatchedMigration } = require('../batched-migration');
 
 class TestMigration2 extends BatchedMigration {
-  async getConfig() {
+  async getParameters() {
     return {
       min: 2n,
       max: 200n,

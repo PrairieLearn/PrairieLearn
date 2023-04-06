@@ -1,4 +1,4 @@
-export interface BatchedMigrationConfig {
+export interface BatchedMigrationParameters {
   min: BigInt;
   max: BigInt;
   batchSize: number;
@@ -12,6 +12,6 @@ export interface BatchedMigrationConfig {
  * of unexpected failure.
  */
 export abstract class BatchedMigration {
-  public abstract getConfig(): Promise<BatchedMigrationConfig>;
+  public abstract getParameters(): Promise<BatchedMigrationParameters>;
   public abstract execute(start: BigInt, end: BigInt): Promise<void>;
 }
