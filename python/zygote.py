@@ -20,6 +20,7 @@ import io
 import json
 import os
 import signal
+import subprocess
 import sys
 from inspect import signature
 
@@ -126,6 +127,43 @@ def worker_loop():
                 # care about graceful termination, we just want to get out of here as
                 # fast as possible.
                 os._exit(0)
+
+            if file.endswith(".js"):
+                # We've shoehorned legacy v2 questions into the v3 code caller
+                # so that we can reuse the same worker processes, and specifically
+                # so that we can reuse the container pool.
+                #
+                # Node doesn't support POSIX-style forks, so we can't use a zygote
+                # process like we do with Python. Instead, we'll exec a Node subprocess.
+                # Node generally boots up very quickly, so this should be fine.
+                result = subprocess.run(
+                    [
+                        "node",
+                        "./question-servers/calculation-worker.js",
+                    ],
+                    cwd=cwd,
+                    capture_output=True,
+                    # By convention, the first argument is an object that contains all
+                    # the call information.
+                    input=json.dumps(args[0]),
+                    encoding="utf-8",
+                )
+
+                # Proxy any output from the subprocess back to the caller.
+                # Note that we only deal with stderr, as the Node process rewrote
+                # the output streams so that writes to stdout actually go to stderr.
+                # This allows us to use stdout for the actual return value.
+                if result.stderr:
+                    print(result.stderr, file=sys.stderr)
+                    sys.stderr.flush()
+
+                # If the subprocess exited with a non-zero exit code, raise an exception.
+                result.check_returncode()
+
+                outf.write(result.stdout)
+                outf.write("\n")
+                outf.flush()
+                continue
 
             # Here, we re-seed the PRNGs if not already seeded in this worker_loop() call.
             # We only want to seed the PRNGs once per worker_loop() call, so that if a
