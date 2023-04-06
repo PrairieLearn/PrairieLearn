@@ -3,11 +3,26 @@ module.exports = {
     node: true,
     es2021: true,
   },
-  extends: ['eslint:recommended', 'plugin:import/recommended', 'prettier'],
+  extends: [
+    'eslint:recommended',
+    'plugin:import/recommended',
+    'plugin:import/typescript',
+    'plugin:@typescript-eslint/recommended',
+    'prettier',
+  ],
+  plugins: ['@typescript-eslint', 'no-floating-promise', 'mocha'],
   parserOptions: {
     ecmaVersion: 13,
   },
-  plugins: ['no-floating-promise', 'mocha'],
+  settings: {
+    'import/parsers': {
+      '@typescript-eslint/parser': ['.ts', '.js'],
+    },
+    'import/resolver': {
+      typescript: true,
+      node: true,
+    },
+  },
   rules: {
     curly: ['error', 'multi-line', 'consistent'],
     eqeqeq: ['error', 'smart'],
@@ -27,13 +42,6 @@ module.exports = {
         message: 'Use MathJax.typesetPromise() instead of MathJax.Hub',
       },
     ],
-    'no-unused-vars': [
-      'error',
-      {
-        args: 'after-used',
-        argsIgnorePattern: '^_',
-      },
-    ],
 
     // By default, eslint-plugin-import only validates ESM syntax. We're still
     // using CommonJS, so we need to explicitly enable support for that.
@@ -48,8 +56,26 @@ module.exports = {
     // these two rules.
     'mocha/no-exclusive-tests': 'error',
     'mocha/no-skipped-tests': 'error',
+
+    // Replaces the standard `no-unused-vars` rule.
+    '@typescript-eslint/no-unused-vars': [
+      'error',
+      {
+        args: 'after-used',
+        argsIgnorePattern: '^_',
+      },
+    ],
+
+    // Look, sometimes we just want to use `any`.
+    '@typescript-eslint/no-explicit-any': 'off',
   },
   overrides: [
+    {
+      files: ['*.js'],
+      rules: {
+        '@typescript-eslint/no-var-requires': 'off',
+      },
+    },
     {
       files: ['*.test.{js,ts,mjs}'],
       env: {
