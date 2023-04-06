@@ -2,8 +2,9 @@ import { assert } from 'chai';
 import { makePostgresTestUtils, queryOneRowAsync } from '@prairielearn/postgres';
 import * as namedLocks from '@prairielearn/named-locks';
 
-import { BatchedMigration, BatchedMigrationExecutor } from './batched-migration';
-import { SCHEMA_MIGRATIONS_PATH, init } from './index';
+import { BatchedMigration } from './batched-migration';
+import { BatchedMigrationRunner } from './batched-migration-runner';
+import { SCHEMA_MIGRATIONS_PATH, init } from '../index';
 
 const postgresTestUtils = makePostgresTestUtils({
   database: 'prairielearn_migrations',
@@ -45,7 +46,7 @@ describe('BatchedMigrationExecutor', () => {
     assert.equal(true, true);
 
     const migration = new TestBatchMigration();
-    const executor = new BatchedMigrationExecutor('test_batch_migration', migration);
+    const executor = new BatchedMigrationRunner('test_batch_migration', migration);
     await executor.run({ iterations: 1 });
 
     const migrationState = await getBatchedMigrationState();
@@ -54,7 +55,7 @@ describe('BatchedMigrationExecutor', () => {
 
   it('runs an entire batched migration', async () => {
     const migration = new TestBatchMigration();
-    const executor = new BatchedMigrationExecutor('test_batch_migration', migration);
+    const executor = new BatchedMigrationRunner('test_batch_migration', migration);
     await executor.run();
 
     const migrationState = await getBatchedMigrationState();

@@ -149,6 +149,21 @@ export async function doWithLock<T>(
 }
 
 /**
+ * Tries to acquire the given lock, executes the provided function with the lock held,
+ * and releases the lock once the function has executed. If the lock cannot be acquired,
+ * the function is not executed and null is returned.
+ */
+export async function tryWithLock<T>(name: string, func: () => Promise<T>): Promise<T | null> {
+  const lock = await tryLockAsync(name);
+  if (lock == null) return null;
+  try {
+    return await func();
+  } finally {
+    await releaseLockAsync(lock);
+  }
+}
+
+/**
  * Internal helper function to get a lock with optional
  * waiting. Do not call directly, but use tryLock() or waitLock()
  * instead.
