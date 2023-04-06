@@ -226,9 +226,6 @@ SELECT
 FROM
   JSON_ARRAY_ELEMENTS($role_assignments::json) as role_assignment;
 
--- FIXME: Even with a RETURNING clause, this wouldn't do anything when
--- added as a CTE in the update_group_roles query below.
--- Is it preferred that we combine them?
 -- BLOCK clear_group_roles
 DELETE FROM group_user_roles
 WHERE
