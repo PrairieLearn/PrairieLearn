@@ -17,6 +17,9 @@ LOG_TAG_WARNINGS_DEFAULT = True
 # These elements should be display only
 ALLOWED_PL_TAGS = frozenset(("pl-template", "pl-variable", "pl-code", "pl-card"))
 
+# Entries from the data dict to copy
+DATA_ENTRIES_TO_COPY = ("params",)
+
 
 def check_tags(element_html: str) -> None:
     element_list = cast(list, lxml.html.fragments_fromstring(element_html))
@@ -71,8 +74,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
-    # Load in entries from data dict. Allows filling templates with entries from data['params'].
-    variable_dict: dict[str, Any] = {"params": copy.deepcopy(data["params"])}
+    # Load in entries from data dict and add uuid.
+    variable_dict: dict[str, Any] = {
+        k: copy.deepcopy(data[k]) for k in DATA_ENTRIES_TO_COPY
+    }
+    variable_dict["uuid"] = pl.get_uuid()
 
     for child in element:
         if child.tag == "pl-variable":

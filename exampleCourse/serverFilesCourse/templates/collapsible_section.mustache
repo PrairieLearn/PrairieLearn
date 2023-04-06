@@ -3,14 +3,14 @@
     <h4
       class="card-title d-flex justify-content-between"
       data-toggle="collapse"
-      data-target="#{{section_name}}"
+      data-target="#{{section_name}}-{{panel}}"
     >
       <div>{{section_header}}</div>
       <div class="fa fa-angle-down"></div>
     </h4>
   </div>
 
-  <div class="collapse{{#show}} show{{/show}}" id="{{section_name}}">
+  <div class="collapse{{#show}} show{{/show}}" id="{{section_name}}-{{panel}}">
     <div class="card-body">
       <div class="card-text">{{{section_body}}}</div>
     </div>

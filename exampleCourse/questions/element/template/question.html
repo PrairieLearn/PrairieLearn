@@ -5,25 +5,25 @@
 
 <hr />
 
-<pl-template file-name="templates/outerTemplate.mustache">
+<pl-template file-name="templates/problem_statement_template.mustache">
   <pl-variable name="is-open">True</pl-variable>
   <pl-variable
     name="problem-statement"
     directory="question"
-    file-name="serverFilesQuestion/statement.html"
+    file-name="statement.html"
   ></pl-variable>
 </pl-template>
 
 <hr />
 
-<pl-template file-name="serverFilesQuestion/cardTemplate.mustache" directory="question">
+<pl-template file-name="templates/card_template.mustache" directory="serverFilesCourse">
   <pl-variable name="header"><b>A bolded card header</b></pl-variable>
 </pl-template>
 
 <hr />
 
 <pl-template
-  file-name="templates/prompt_in_collapsed_section.mustache.html"
+  file-name="templates/prompt_in_collapsed_section.mustache"
   directory="serverFilesCourse"
   log-variable-warnings="False"
 >
@@ -37,7 +37,7 @@
 <hr />
 
 <pl-template
-  file-name="templates/prompt_in_collapsed_section.mustache.html"
+  file-name="templates/prompt_in_collapsed_section.mustache"
   directory="serverFilesCourse"
   log-variable-warnings="False"
 >
