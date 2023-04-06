@@ -141,7 +141,9 @@ GROUP BY
   maximum,
   minimum,
   can_assign_roles_at_start,
-  can_assign_roles_during_assessment;
+  can_assign_roles_during_assessment
+ORDER BY
+  minimum DESC;
 
 -- BLOCK get_assessment_level_permissions
 SELECT
