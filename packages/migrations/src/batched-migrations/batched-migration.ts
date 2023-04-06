@@ -1,3 +1,9 @@
+export interface BatchedMigrationConfig {
+  min: BigInt;
+  max: BigInt;
+  batchSize: number;
+}
+
 /**
  * A batched migration operates on a range of IDs in batches. It's designed
  * for migrations that are too large to run in a single transaction.
@@ -6,9 +12,6 @@
  * of unexpected failure.
  */
 export abstract class BatchedMigration {
-  public async getMin(): Promise<string> {
-    return '0';
-  }
-  public abstract getMax(): Promise<string>;
+  public abstract getConfig(): Promise<BatchedMigrationConfig>;
   public abstract execute(start: BigInt, end: BigInt): Promise<void>;
 }

@@ -6,6 +6,12 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
 
+import {
+  MigrationFile,
+  readAndValidateMigrationsFromDirectories,
+  sortMigrationFiles,
+} from './load-migrations';
+
 const sql = sqldb.loadSqlEquiv(__filename);
 
 export async function init(directories: string | string[], project: string) {
@@ -17,76 +23,6 @@ export async function init(directories: string | string[], project: string) {
     await initWithLock(migrationDirectories, project);
   });
   logger.verbose(`Released lock ${lockName}`);
-}
-
-/**
- * Timestamp prefixes will be of the form `YYYYMMDDHHMMSS`, which will have 14 digits.
- * If this code is still around in the year 10000... good luck.
- */
-const MIGRATION_FILENAME_REGEX = /^([0-9]{14})_.+\.sql$/;
-
-interface MigrationFile {
-  directory: string;
-  filename: string;
-  timestamp: string;
-}
-
-export async function readAndValidateMigrationsFromDirectory(
-  dir: string
-): Promise<MigrationFile[]> {
-  const migrationFiles = (await fs.readdir(dir)).filter((m) => m.endsWith('.sql'));
-
-  const migrations = migrationFiles.map((mf) => {
-    const match = mf.match(MIGRATION_FILENAME_REGEX);
-
-    if (!match) {
-      throw new Error(`Invalid migration filename: ${mf}`);
-    }
-
-    const timestamp = match[1] ?? null;
-
-    if (timestamp === null) {
-      throw new Error(`Migration ${mf} does not have a timestamp`);
-    }
-
-    return {
-      directory: dir,
-      filename: mf,
-      timestamp,
-    };
-  });
-
-  // First pass: validate that all migrations have a unique timestamp prefix.
-  // This will avoid data loss and conflicts in unexpected scenarios.
-  let seenTimestamps = new Set();
-  for (const migration of migrations) {
-    const { filename, timestamp } = migration;
-
-    if (timestamp !== null) {
-      if (seenTimestamps.has(timestamp)) {
-        throw new Error(`Duplicate migration timestamp: ${timestamp} (${filename})`);
-      }
-      seenTimestamps.add(timestamp);
-    }
-  }
-
-  return migrations;
-}
-
-async function readAndValidateMigrationsFromDirectories(
-  directories: string[]
-): Promise<MigrationFile[]> {
-  const migrations: MigrationFile[] = [];
-  for (const directory of directories) {
-    migrations.push(...(await readAndValidateMigrationsFromDirectory(directory)));
-  }
-  return migrations;
-}
-
-export function sortMigrationFiles(migrationFiles: MigrationFile[]): MigrationFile[] {
-  return migrationFiles.sort((a, b) => {
-    return a.timestamp.localeCompare(b.timestamp);
-  });
 }
 
 export function getMigrationsToExecute(
@@ -132,7 +68,7 @@ async function initWithLock(directories: string[], project: string) {
 
   let allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
 
-  const migrationFiles = await readAndValidateMigrationsFromDirectories(directories);
+  const migrationFiles = await readAndValidateMigrationsFromDirectories(directories, ['.sql']);
 
   // Validation: if we not all previously-executed migrations have timestamps,
   // prompt the user to deploy an earlier version that includes both indexes

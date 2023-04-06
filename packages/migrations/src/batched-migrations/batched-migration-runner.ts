@@ -37,11 +37,10 @@ export class BatchedMigrationRunner {
   }
 
   private async createMigrationState(): Promise<BatchedMigrationRow> {
-    const min = await this.migration.getMin();
-    const max = await this.migration.getMax();
+    const config = await this.migration.getConfig();
     return await queryValidatedOneRow(
       'INSERT INTO batched_migrations (name, min, max, current) VALUES ($name, $min, $max, $min) ON CONFLICT DO NOTHING RETURNING *;',
-      { name: this.name, min, max },
+      { name: this.name, min: config.min, max: config.max },
       BatchedMigrationSchema
     );
   }

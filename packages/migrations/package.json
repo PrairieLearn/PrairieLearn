@@ -10,7 +10,7 @@
   "scripts": {
     "build": "tsc && copyfiles -u 1 \"./src/**/*.sql\" dist",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "mocha --no-config --require ts-node/register src/*.test.ts"
+    "test": "mocha --no-config --require ts-node/register src/**/*.test.ts"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "*",

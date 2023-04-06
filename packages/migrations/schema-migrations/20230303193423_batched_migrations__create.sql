@@ -12,9 +12,9 @@ CREATE TABLE IF NOT EXISTS
   batched_migrations (
     id BIGSERIAL PRIMARY KEY,
     project TEXT DEFAULT 'prairielearn',
-    name TEXT,
-    timestamp TEXT,
-    batch_size BIGINT NOT NULL,
+    name TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    batch_size INTEGER NOT NULL,
     min_value BIGINT NOT NULL,
     max_value BIGINT NOT NULL,
     status enum_batched_migration_status DEFAULT 'pending',
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS
   batched_migration_jobs (
     id BIGSERIAL PRIMARY KEY,
     batched_migration_id BIGINT NOT NULL REFERENCES batched_migrations (id) ON UPDATE CASCADE ON DELETE CASCADE,
-    min_value BIGINT NUL NULL,
+    min_value BIGINT NOT NULL,
     max_value BIGINT NOT NULL,
     status enum_batched_migration_job_status DEFAULT 'pending',
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

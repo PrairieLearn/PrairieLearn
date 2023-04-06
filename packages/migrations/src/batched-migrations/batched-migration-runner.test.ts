@@ -11,12 +11,12 @@ const postgresTestUtils = makePostgresTestUtils({
 });
 
 class TestBatchMigration extends BatchedMigration {
-  async getMin() {
-    return '0';
-  }
-
-  async getMax() {
-    return '10000';
+  async getConfig() {
+    return {
+      min: 0n,
+      max: 10000n,
+      batchSize: 1000,
+    };
   }
 
   async execute(_start: BigInt, _end: BigInt) {}
