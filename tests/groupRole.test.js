@@ -168,9 +168,9 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   step('should display error for too few recorders/reflectors', function () {
-    elemList = locals.$('.alert:contains(Recorder has too few assignments)');
+    elemList = locals.$('.alert:contains(1 more person needs to be assigned Reflector.)');
     assert.lengthOf(elemList, 1);
-    elemList = locals.$('.alert:contains(Reflector has too few assignments)');
+    elemList = locals.$('.alert:contains(1 more person needs to be assigned Recorder.)');
     assert.lengthOf(elemList, 1);
   });
 
@@ -304,7 +304,7 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   step('should display error for too few reflectors', function () {
-    elemList = locals.$('.alert:contains(Reflector has too few assignments)');
+    elemList = locals.$('.alert:contains(1 more person needs to be assigned Reflector.)');
     assert.lengthOf(elemList, 1);
   });
 
@@ -352,13 +352,10 @@ describe('Test group based assessments with custom group roles from student side
     assert.lengthOf(elemList, 0);
   });
 
-  step('should display error for too few reflectors', function () {
-    elemList = locals.$('.alert:contains(Reflector has too few assignments)');
+  step('should display error for too few reflectors and too many recorders', function () {
+    elemList = locals.$('.alert:contains(1 more person needs to be assigned Reflector.)');
     assert.lengthOf(elemList, 1);
-  });
-
-  step('should display error for too many recorders', function () {
-    elemList = locals.$('.alert:contains(Recorder has too many assignments)');
+    elemList = locals.$('.alert:contains(1 less person needs to be assigned Recorder.)');
     assert.lengthOf(elemList, 1);
   });
 
@@ -418,13 +415,10 @@ describe('Test group based assessments with custom group roles from student side
     assert.isTrue(elemList.is(':disabled'));
   });
 
-  step('should display error for too few reflectors', function () {
-    elemList = locals.$('.alert:contains(Reflector has too few assignments)');
+  step('should display error for too few reflectors and too many recorders', function () {
+    elemList = locals.$('.alert:contains(1 more person needs to be assigned Reflector.)');
     assert.lengthOf(elemList, 1);
-  });
-
-  step('should display error for too many recorders', function () {
-    elemList = locals.$('.alert:contains(Recorder has too many assignments)');
+    elemList = locals.$('.alert:contains(1 less person needs to be assigned Recorder.)');
     assert.lengthOf(elemList, 1);
   });
 
@@ -662,7 +656,7 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   step('should display error for too many recorders', function () {
-    elemList = locals.$('.alert:contains(Recorder has too many assignments)');
+    elemList = locals.$('.alert:contains(1 less person needs to be assigned Recorder.)');
     assert.lengthOf(elemList, 1);
   });
 
@@ -877,7 +871,7 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   step(
-    'should have correct role configuration in the database after fourth user leaves',
+    'should have correct role configuration in the database after fourth user joins again',
     async function () {
       // Fourth user receives contributor
       locals.roleUpdates = [
