@@ -5,11 +5,11 @@ export const BatchedMigrationStatusSchema = z.enum([
   'paused',
   'running',
   'failed',
-  'finished',
+  'succeeded',
 ]);
 export type BatchedMigrationStatus = z.infer<typeof BatchedMigrationStatusSchema>;
 
-export const BatchedMigrationSchema = z.object({
+export const BatchedMigrationRowSchema = z.object({
   id: z.string(),
   project: z.string(),
   name: z.string(),
@@ -22,12 +22,17 @@ export const BatchedMigrationSchema = z.object({
   updated_at: z.date(),
   started_at: z.date().nullable(),
 });
-export type BatchedMigrationType = z.infer<typeof BatchedMigrationSchema>;
+export type BatchedMigrationRow = z.infer<typeof BatchedMigrationRowSchema>;
 
-export const BatchedMigrationJobStatusSchema = z.enum(['pending', 'running', 'failed', 'finished']);
+export const BatchedMigrationJobStatusSchema = z.enum([
+  'pending',
+  'running',
+  'failed',
+  'succeeded',
+]);
 export type BatchedMigrationJobStatus = z.infer<typeof BatchedMigrationJobStatusSchema>;
 
-export const BatchedMigrationJobSchema = z.object({
+export const BatchedMigrationJobRowSchema = z.object({
   id: z.string(),
   batched_migration_id: z.string(),
   min_value: z.bigint({ coerce: true }),
@@ -39,4 +44,4 @@ export const BatchedMigrationJobSchema = z.object({
   finished_at: z.date().nullable(),
   data: z.any(),
 });
-export type BatchedMigrationJobType = z.infer<typeof BatchedMigrationJobSchema>;
+export type BatchedMigrationJobRow = z.infer<typeof BatchedMigrationJobRowSchema>;

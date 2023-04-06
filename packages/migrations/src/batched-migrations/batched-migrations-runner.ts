@@ -1,25 +1,17 @@
 import EventEmitter from 'node:events';
 import path from 'node:path';
-import { setTimeout } from 'node:timers/promises';
-import {
-  loadSqlEquiv,
-  queryAsync,
-  queryValidatedOneRow,
-  queryValidatedRows,
-  queryValidatedZeroOrOneRow,
-} from '@prairielearn/postgres';
+import { setTimeout as sleep } from 'node:timers/promises';
+import { loadSqlEquiv, queryValidatedZeroOrOneRow } from '@prairielearn/postgres';
 import { doWithLock, tryWithLock } from '@prairielearn/named-locks';
-import { z } from 'zod';
 
-import {
-  BatchedMigrationJobSchema,
-  BatchedMigrationJobType,
-  BatchedMigrationSchema,
-  BatchedMigrationStatus,
-  BatchedMigrationType,
-} from './schemas';
+import { BatchedMigrationRowSchema, BatchedMigrationRow } from './schemas';
 import { MigrationFile, readAndValidateMigrationsFromDirectories } from '../load-migrations';
-import { BatchedMigration } from './batched-migration';
+import {
+  allBatchedMigrations,
+  BatchedMigration,
+  insertBatchedMigration,
+} from './batched-migration';
+import { BatchedMigrationRunner } from './batched-migration-runner';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -32,8 +24,9 @@ interface BatchedMigrationRunnerOptions {
 export class BatchedMigrationsRunner extends EventEmitter {
   private readonly options: BatchedMigrationRunnerOptions;
   private readonly lockName: string;
-  private running: boolean = false;
+  private started: boolean = false;
   private migrationFiles: MigrationFile[] = [];
+  private abortController = new AbortController();
 
   constructor(options: BatchedMigrationRunnerOptions) {
     super();
@@ -41,17 +34,9 @@ export class BatchedMigrationsRunner extends EventEmitter {
     this.lockName = `batched-migrations:${this.options.project}`;
   }
 
-  async allBatchedMigrations() {
-    return queryValidatedRows(
-      sql.select_all_batched_migrations,
-      { project: this.options.project },
-      BatchedMigrationSchema
-    );
-  }
-
   async init() {
     await doWithLock(this.lockName, {}, async () => {
-      const existingMigrations = await this.allBatchedMigrations();
+      const existingMigrations = await allBatchedMigrations(this.options.project);
 
       this.migrationFiles = await readAndValidateMigrationsFromDirectories(
         this.options.directories,
@@ -66,7 +51,7 @@ export class BatchedMigrationsRunner extends EventEmitter {
         const migration = new MigrationClass();
         const migrationParameters = await migration.getParameters();
 
-        await queryAsync(sql.insert_batched_migration, {
+        await insertBatchedMigration({
           project: this.options.project,
           name: migrationFile.filename,
           timestamp: migrationFile.timestamp,
@@ -79,24 +64,29 @@ export class BatchedMigrationsRunner extends EventEmitter {
   }
 
   start() {
-    if (this.running) return;
+    if (this.started) {
+      throw new Error('BatchedMigrationsRunner was already started');
+    }
 
-    this.running = true;
-
+    this.started = true;
     this.loop();
   }
 
   async loop() {
     while (true) {
-      if (!this.running) return;
+      if (this.abortController.signal.aborted) return;
 
+      let didWork = false;
       try {
-        await this.performWork();
+        await tryWithLock(this.lockName, async () => {
+          didWork = await this.performWork(60 * 1000);
+        });
       } catch (err) {
         this.emit('error', err);
       }
 
-      await setTimeout(1000, null, { ref: false });
+      const waitInterval = didWork ? 1_000 : 30_000;
+      await sleep(waitInterval, null, { ref: false });
     }
   }
 
@@ -112,7 +102,6 @@ export class BatchedMigrationsRunner extends EventEmitter {
     // We use dynamic imports to handle both CJS and ESM modules.
     const migrationModulePath = path.join(migrationFile.directory, migrationFile.filename);
     const migrationModule = await import(migrationModulePath);
-    console.log(migrationModule);
 
     const MigrationClass = migrationModule.default as new () => BatchedMigration;
     if (!MigrationClass || !(MigrationClass.prototype instanceof BatchedMigration)) {
@@ -124,124 +113,33 @@ export class BatchedMigrationsRunner extends EventEmitter {
   /**
    * Should be called with the batched migrations lock held.
    */
-  private async getOrStartMigration(): Promise<BatchedMigrationType | null> {
+  private async getOrStartMigration(): Promise<BatchedMigrationRow | null> {
+    // TODO: should this actually transition a migration from pending to running?
+    // If so, implement that here.
     return queryValidatedZeroOrOneRow(
       sql.select_running_migration,
       { project: this.options.project },
-      BatchedMigrationSchema
+      BatchedMigrationRowSchema
     );
   }
 
-  private async hasIncompleteJobs(migration: BatchedMigrationType) {
-    const res = await queryValidatedOneRow(
-      sql.batched_migration_has_incomplete_jobs,
-      { batched_migration_id: migration.id },
-      z.object({ exists: z.boolean() })
-    );
-    return res.exists;
-  }
-
-  private async hasFailedJobs(migration: BatchedMigrationType) {
-    const res = await queryValidatedOneRow(
-      sql.batched_migration_has_failed_jobs,
-      { batched_migration_id: migration.id },
-      z.object({ exists: z.boolean() })
-    );
-    return res.exists;
-  }
-
-  private async updateMigrationStatus(
-    migration: BatchedMigrationType,
-    status: BatchedMigrationStatus
-  ) {
-    await queryAsync(sql.update_batched_migration_status, {
-      batched_migration_id: migration.id,
-      status,
-    });
-  }
-
-  private async finishRunningMigration(migration: BatchedMigrationType) {
-    // Safety check: if there are any pending or running jobs, don't mark this
-    // migration as finished.
-    if (await this.hasIncompleteJobs(migration)) return;
-
-    const hasFailedJobs = await this.hasFailedJobs(migration);
-    const finalStatus = hasFailedJobs ? 'failed' : 'finished';
-    await this.updateMigrationStatus(migration, finalStatus);
-  }
-
-  private async getOrCreateNextMigrationJob(
-    migration: BatchedMigrationType
-  ): Promise<BatchedMigrationJobType | null> {
-    const nextBatchBounds = await this.getNextBatchBounds(migration);
-    if (nextBatchBounds) {
-      return queryValidatedOneRow(
-        sql.insert_batched_migration_job,
-        {
-          batched_migration_id: migration.id,
-          min_value: nextBatchBounds[0],
-          max_value: nextBatchBounds[1],
-        },
-        BatchedMigrationJobSchema
-      );
-    } else {
-      // Pick up any old pending jobs from this migration. These will only exist if
-      // an admin manually elected to retry all failed jobs; we'll never automatically
-      // transition failed jobs back to pending.
-      return queryValidatedZeroOrOneRow(
-        sql.select_first_pending_batched_migration_job,
-        { batched_migration_id: migration.id },
-        BatchedMigrationJobSchema
-      );
+  async performWork(durationMs: number): Promise<boolean> {
+    const migration = await this.getOrStartMigration();
+    if (!migration) {
+      // No work to do. Handle this case.
+      return false;
     }
-  }
 
-  private async getNextBatchBounds(
-    migration: BatchedMigrationType
-  ): Promise<null | [BigInt, BigInt]> {
-    const lastJob = await queryValidatedZeroOrOneRow(
-      sql.select_last_batched_migration_job,
-      {
-        batched_migration_id: migration.id,
-      },
-      BatchedMigrationJobSchema
-    );
+    const MigrationClass = await this.loadMigrationClass(migration.timestamp);
+    const migrationInstance = new MigrationClass();
 
-    const nextMin = lastJob ? lastJob.max_value + 1n : migration.min_value;
-    if (nextMin > migration.max_value) return null;
+    const runner = new BatchedMigrationRunner(migration, migrationInstance);
+    await runner.run({ signal: this.abortController.signal, durationMs });
 
-    let nextMax = nextMin + BigInt(migration.batch_size) - 1n;
-    if (nextMax > migration.max_value) nextMax = migration.max_value;
-
-    return [nextMin, nextMax];
-  }
-
-  private async runMigrationJob(migration: BatchedMigrationType) {
-    const nextJob = await this.getOrCreateNextMigrationJob(migration);
-    if (nextJob) {
-      try {
-      } catch (err) {}
-    } else {
-      await this.finishRunningMigration(migration);
-    }
-  }
-
-  async performWork(): Promise<boolean> {
-    let didWork = false;
-    await tryWithLock(this.lockName, async () => {
-      didWork = true;
-      const migration = await this.getOrStartMigration();
-      if (!migration) {
-        // No work to do. Handle this case.
-        return;
-      }
-      // TODO: should actually loop here with the lock held.
-      await this.runMigrationJob(migration);
-    });
-    return didWork;
+    return true;
   }
 
   stop() {
-    this.running = false;
+    this.abortController.abort();
   }
 }

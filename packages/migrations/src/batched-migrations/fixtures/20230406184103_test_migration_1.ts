@@ -9,7 +9,7 @@ class TestMigration1 extends BatchedMigration {
     };
   }
 
-  async execute(min: BigInt, max: BigInt) {
+  async execute(min: bigint, max: bigint) {
     // TODO: do something testable?
     console.log(min, max);
   }

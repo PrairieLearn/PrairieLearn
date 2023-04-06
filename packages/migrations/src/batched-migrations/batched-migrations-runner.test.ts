@@ -4,12 +4,13 @@ import { makePostgresTestUtils } from '@prairielearn/postgres';
 import * as namedLocks from '@prairielearn/named-locks';
 
 import { SCHEMA_MIGRATIONS_PATH, init, BatchedMigrationsRunner } from '../index';
+import { allBatchedMigrations } from './batched-migration';
 
 const postgresTestUtils = makePostgresTestUtils({
   database: 'prairielearn_migrations',
 });
 
-describe.only('BatchedMigrationsRunner', () => {
+describe('BatchedMigrationsRunner', () => {
   before(async () => {
     await postgresTestUtils.createDatabase();
     await namedLocks.init(postgresTestUtils.getPoolConfig(), (err) => {
@@ -32,9 +33,9 @@ describe.only('BatchedMigrationsRunner', () => {
       project: 'test',
       directories: [path.join(__dirname, 'fixtures')],
     });
-
     await runner.init();
-    const migrations = await runner.allBatchedMigrations();
+
+    const migrations = await allBatchedMigrations('test');
 
     assert.lengthOf(migrations, 2);
   });

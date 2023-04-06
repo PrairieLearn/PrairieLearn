@@ -1,89 +1,151 @@
+import { logger } from '@prairielearn/logger';
 import {
+  loadSqlEquiv,
   queryAsync,
   queryValidatedOneRow,
   queryValidatedZeroOrOneRow,
 } from '@prairielearn/postgres';
 import { z } from 'zod';
 
-import { BatchedMigration } from './batched-migration';
+import { BatchedMigration, updateBatchedMigrationStatus } from './batched-migration';
+import {
+  BatchedMigrationJobRowSchema,
+  BatchedMigrationJobStatus,
+  BatchedMigrationJobRow,
+  BatchedMigrationStatus,
+  BatchedMigrationRow,
+} from './schemas';
 
-const BatchedMigrationSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  min: z.bigint({ coerce: true }),
-  max: z.bigint({ coerce: true }),
-  current: z.bigint({ coerce: true }),
-});
-type BatchedMigrationRow = z.infer<typeof BatchedMigrationSchema>;
+const sql = loadSqlEquiv(__filename);
 
 export class BatchedMigrationRunner {
-  private name: string;
-  private migration: BatchedMigration;
+  private migration: BatchedMigrationRow;
+  private migrationImplementation: BatchedMigration;
+  private migrationStatus: BatchedMigrationStatus;
 
-  constructor(name: string, migration: BatchedMigration) {
-    this.name = name;
+  constructor(migration: BatchedMigrationRow, migrationImplementation: BatchedMigration) {
     this.migration = migration;
+    this.migrationImplementation = migrationImplementation;
+    this.migrationStatus = migration.status;
   }
 
-  private async getMigrationState(): Promise<BatchedMigrationRow> {
-    const migration = await queryValidatedZeroOrOneRow(
-      'SELECT * FROM batched_migrations WHERE name = $name;',
-      { name: this.name },
-      BatchedMigrationSchema
+  private async hasIncompleteJobs(migration: BatchedMigrationRow) {
+    const res = await queryValidatedOneRow(
+      sql.batched_migration_has_incomplete_jobs,
+      { batched_migration_id: migration.id },
+      z.object({ exists: z.boolean() })
     );
-    if (migration) return migration;
-
-    return this.createMigrationState();
+    return res.exists;
   }
 
-  private async createMigrationState(): Promise<BatchedMigrationRow> {
-    const config = await this.migration.getConfig();
-    return await queryValidatedOneRow(
-      'INSERT INTO batched_migrations (name, min, max, current) VALUES ($name, $min, $max, $min) ON CONFLICT DO NOTHING RETURNING *;',
-      { name: this.name, min: config.min, max: config.max },
-      BatchedMigrationSchema
+  private async hasFailedJobs(migration: BatchedMigrationRow) {
+    const res = await queryValidatedOneRow(
+      sql.batched_migration_has_failed_jobs,
+      { batched_migration_id: migration.id },
+      z.object({ exists: z.boolean() })
     );
+    return res.exists;
   }
 
-  private async updateMigrationState(current: BigInt): Promise<void> {
-    await queryAsync('UPDATE batched_migrations SET current = $current WHERE name = $name;', {
-      name: this.name,
-      current,
-    });
+  private async updateMigrationStatus(
+    migration: BatchedMigrationRow,
+    status: BatchedMigrationStatus
+  ) {
+    await updateBatchedMigrationStatus(migration.id, status);
+    this.migrationStatus = status;
   }
 
-  /**
-   * Should be used when the migration is being run with a short-lived lock
-   * held. Allows the migration to be picked up by different machines and
-   * be automatically restarted in case of failure.
-   *
-   * @param duration How many seconds to execute for.
-   */
-  async runForDuration(duration: number): Promise<void> {
-    await this.run({ signal: AbortSignal.timeout(duration * 1000) });
+  private async finishRunningMigration(migration: BatchedMigrationRow) {
+    // Safety check: if there are any pending or running jobs, don't mark this
+    // migration as finished.
+    if (await this.hasIncompleteJobs(migration)) return;
+
+    const hasFailedJobs = await this.hasFailedJobs(migration);
+    const finalStatus = hasFailedJobs ? 'failed' : 'succeeded';
+    await this.updateMigrationStatus(migration, finalStatus);
+  }
+
+  private async getNextBatchBounds(
+    migration: BatchedMigrationRow
+  ): Promise<null | [bigint, bigint]> {
+    const lastJob = await queryValidatedZeroOrOneRow(
+      sql.select_last_batched_migration_job,
+      { batched_migration_id: migration.id },
+      BatchedMigrationJobRowSchema
+    );
+
+    const nextMin = lastJob ? lastJob.max_value + 1n : migration.min_value;
+    if (nextMin > migration.max_value) return null;
+
+    let nextMax = nextMin + BigInt(migration.batch_size) - 1n;
+    if (nextMax > migration.max_value) nextMax = migration.max_value;
+
+    return [nextMin, nextMax];
+  }
+
+  private async updateJobStatus(job: BatchedMigrationJobRow, status: BatchedMigrationJobStatus) {
+    await queryAsync(sql.update_batched_migration_job_status, { id: job.id, status });
+  }
+
+  private async getOrCreateNextMigrationJob(
+    migration: BatchedMigrationRow
+  ): Promise<BatchedMigrationJobRow | null> {
+    const nextBatchBounds = await this.getNextBatchBounds(migration);
+    if (nextBatchBounds) {
+      return queryValidatedOneRow(
+        sql.insert_batched_migration_job,
+        {
+          batched_migration_id: migration.id,
+          min_value: nextBatchBounds[0],
+          max_value: nextBatchBounds[1],
+        },
+        BatchedMigrationJobRowSchema
+      );
+    } else {
+      // Pick up any old pending jobs from this migration. These will only exist if
+      // an admin manually elected to retry all failed jobs; we'll never automatically
+      // transition failed jobs back to pending.
+      return queryValidatedZeroOrOneRow(
+        sql.select_first_pending_batched_migration_job,
+        { batched_migration_id: migration.id },
+        BatchedMigrationJobRowSchema
+      );
+    }
+  }
+
+  private async runMigrationJob(
+    migration: BatchedMigrationRow,
+    migrationInstance: BatchedMigration
+  ) {
+    const nextJob = await this.getOrCreateNextMigrationJob(migration);
+    if (nextJob) {
+      try {
+        await this.updateJobStatus(nextJob, 'running');
+        await migrationInstance.execute(nextJob.min_value, nextJob.max_value);
+        await this.updateJobStatus(nextJob, 'succeeded');
+      } catch (err) {
+        await this.updateJobStatus(nextJob, 'failed');
+        logger.error(`Error running batched migration job ${nextJob.id}`, err);
+      }
+    } else {
+      await this.finishRunningMigration(migration);
+    }
   }
 
   async run({
     signal,
     iterations,
-  }: { signal?: AbortSignal; iterations?: number } = {}): Promise<void> {
-    const migrationState = await this.getMigrationState();
-
-    let current = migrationState.current;
+    durationMs,
+  }: { signal?: AbortSignal; iterations?: number; durationMs?: number } = {}) {
     let iterationCount = 0;
+    let endTime = durationMs ? Date.now() + durationMs : null;
     while (
       !signal?.aborted &&
       (iterations ? iterationCount < iterations : true) &&
-      current < migrationState.max
+      (endTime ? Date.now() < endTime : true) &&
+      this.migrationStatus === 'running'
     ) {
-      // TODO: configurable batch size
-      let max = current + 1000n;
-      if (max > migrationState.max) max = migrationState.max;
-
-      this.migration.execute(current, max);
-
-      current = max;
-      await this.updateMigrationState(current);
+      await this.runMigrationJob(this.migration, this.migrationImplementation);
       iterationCount += 1;
     }
   }
