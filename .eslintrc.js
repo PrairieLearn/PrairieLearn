@@ -43,6 +43,9 @@ module.exports = {
       },
     ],
 
+    // This isn't super useful to use because we're using TypeScript.
+    'import/no-named-as-default-member': 'off',
+
     // By default, eslint-plugin-import only validates ESM syntax. We're still
     // using CommonJS, so we need to explicitly enable support for that.
     'import/no-unresolved': [
@@ -65,6 +68,9 @@ module.exports = {
         argsIgnorePattern: '^_',
       },
     ],
+
+    // We use empty functions in quite a few places, so we'll disable this rule.
+    '@typescript-eslint/no-empty-function': 'off',
 
     // Look, sometimes we just want to use `any`.
     '@typescript-eslint/no-explicit-any': 'off',

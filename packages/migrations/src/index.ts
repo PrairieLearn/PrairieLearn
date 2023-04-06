@@ -55,7 +55,7 @@ export async function readAndValidateMigrationsFromDirectory(
 
   // First pass: validate that all migrations have a unique timestamp prefix.
   // This will avoid data loss and conflicts in unexpected scenarios.
-  let seenTimestamps = new Set();
+  const seenTimestamps = new Set();
   for (const migration of migrations) {
     const { filename, timestamp } = migration;
 

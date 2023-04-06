@@ -137,6 +137,7 @@ window.PLFileEditor.prototype.updatePreview = function (html_contents) {
 };
 
 window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
+  // eslint-disable-next-line @typescript-eslint/no-this-alias
   var that = this;
 
   this.settingsButton.click(function () {
@@ -242,21 +243,20 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
 };
 
 window.PLFileEditor.prototype.initRestoreOriginalButton = function () {
-  var that = this;
-  this.restoreOriginalButton.click(function () {
-    that.restoreOriginalButton.hide();
-    that.restoreOriginalConfirmContainer.show();
+  this.restoreOriginalButton.click(() => {
+    this.restoreOriginalButton.hide();
+    this.restoreOriginalConfirmContainer.show();
   });
 
-  this.restoreOriginalConfirm.click(function () {
-    that.restoreOriginalConfirmContainer.hide();
-    that.restoreOriginalButton.show();
-    that.setEditorContents(that.b64DecodeUnicode(that.originalContents));
+  this.restoreOriginalConfirm.click(() => {
+    this.restoreOriginalConfirmContainer.hide();
+    this.restoreOriginalButton.show();
+    this.setEditorContents(this.b64DecodeUnicode(this.originalContents));
   });
 
-  this.restoreOriginalCancel.click(function () {
-    that.restoreOriginalConfirmContainer.hide();
-    that.restoreOriginalButton.show();
+  this.restoreOriginalCancel.click(() => {
+    this.restoreOriginalConfirmContainer.hide();
+    this.restoreOriginalButton.show();
   });
 };
 
