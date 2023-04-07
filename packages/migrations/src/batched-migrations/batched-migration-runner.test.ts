@@ -146,8 +146,6 @@ describe('BatchedMigrationExecutor', () => {
 
   it('handles failing execution', async () => {
     const migration = await insertTestBatchedMigration();
-    await updateBatchedMigrationStatus(migration.id, 'running');
-    migration.status = 'running';
 
     const migrationInstance = new TestBatchMigration();
     migrationInstance.setFailingIds([1n, 5010n]);

@@ -2111,6 +2111,7 @@ if (config.startServer) {
         });
 
         runner.on('error', (err) => {
+          logger.error('Batched migration runner error', err);
           Sentry.captureException(err);
         });
       },
