@@ -2,7 +2,7 @@
 INSERT INTO
   batched_migrations (
     project,
-    name,
+    filename,
     timestamp,
     batch_size,
     min_value,
@@ -11,7 +11,7 @@ INSERT INTO
 VALUES
   (
     $project,
-    $name,
+    $filename,
     $timestamp,
     $batch_size,
     $min_value,

@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS
   batched_migrations (
     id BIGSERIAL PRIMARY KEY,
     project TEXT DEFAULT 'prairielearn',
-    name TEXT NOT NULL,
+    filename TEXT NOT NULL,
     timestamp TEXT NOT NULL,
     batch_size INTEGER NOT NULL,
     min_value BIGINT NOT NULL,

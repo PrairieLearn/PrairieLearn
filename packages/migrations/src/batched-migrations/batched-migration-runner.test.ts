@@ -80,7 +80,7 @@ async function insertTestBatchedMigration() {
   const parameters = await migrationImplementation.getParameters();
   return insertBatchedMigration({
     project: 'test',
-    name: 'test_batch_migration',
+    filename: '20230406184103_test_batch_migration.js',
     timestamp: '20230406184103',
     batch_size: parameters.batchSize,
     min_value: parameters.min,

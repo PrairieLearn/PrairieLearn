@@ -1,10 +1,10 @@
 columns
     batch_size: integer not null
     created_at: timestamp with time zone default CURRENT_TIMESTAMP
+    filename: text not null
     id: bigint not null default nextval('batched_migrations_id_seq'::regclass)
     max_value: bigint not null
     min_value: bigint not null
-    name: text not null
     project: text default 'prairielearn'::text
     started_at: timestamp with time zone
     status: enum_batched_migration_status default 'pending'::enum_batched_migration_status

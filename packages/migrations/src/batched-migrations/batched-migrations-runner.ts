@@ -54,7 +54,7 @@ export class BatchedMigrationsRunner extends EventEmitter {
 
         await insertBatchedMigration({
           project: this.options.project,
-          name: migrationFile.filename,
+          filename: migrationFile.filename,
           timestamp: migrationFile.timestamp,
           batch_size: migrationParameters.batchSize,
           min_value: migrationParameters.min,

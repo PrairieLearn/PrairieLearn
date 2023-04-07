@@ -20,7 +20,7 @@ export type BatchedMigrationStatus = z.infer<typeof BatchedMigrationStatusSchema
 export const BatchedMigrationRowSchema = z.object({
   id: z.string(),
   project: z.string(),
-  name: z.string(),
+  filename: z.string(),
   timestamp: z.string(),
   batch_size: z.number(),
   min_value: z.bigint({ coerce: true }),
@@ -52,7 +52,7 @@ export abstract class BatchedMigration {
 
 type NewBatchedMigration = Pick<
   BatchedMigrationRow,
-  'project' | 'name' | 'timestamp' | 'batch_size' | 'min_value' | 'max_value'
+  'project' | 'filename' | 'timestamp' | 'batch_size' | 'min_value' | 'max_value'
 >;
 
 export async function insertBatchedMigration(
