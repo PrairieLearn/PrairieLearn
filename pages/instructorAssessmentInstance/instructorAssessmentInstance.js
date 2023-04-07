@@ -1,4 +1,3 @@
-const _ = require('lodash');
 const express = require('express');
 const { pipeline } = require('node:stream/promises');
 const asyncHandler = require('express-async-handler');

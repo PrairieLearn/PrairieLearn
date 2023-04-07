@@ -66,4 +66,6 @@ ORDER BY
   s.date DESC,
   ai.number DESC
 LIMIT
-  1;
+  1
+FOR NO KEY UPDATE OF
+  iq;
