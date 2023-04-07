@@ -11,7 +11,7 @@ interface LockOptions {
   /** How many milliseconds to wait (anything other than a positive number means forever) */
   timeout?: number;
   /**
-   * How often to renew the lock in milliseconds. If not set the lock will not
+   * How often to renew the lock in milliseconds. If not set, the lock will not
    * be automatically renewed.
    *
    * This is mostly useful for locks that may be help for longer than the idle
