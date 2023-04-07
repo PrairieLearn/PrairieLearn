@@ -92,7 +92,7 @@ export function getMigrationsToExecute(
   return migrationFiles.filter((m) => !executedMigrationTimestamps.has(m.timestamp));
 }
 
-async function initWithLock(migrationDir: string, project: string) {
+export async function initWithLock(migrationDir: string, project: string) {
   logger.verbose('Starting DB schema migration');
 
   // Create the migrations table if needed
