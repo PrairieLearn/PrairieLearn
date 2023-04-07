@@ -4,21 +4,22 @@ import { PoolConfig } from 'pg';
 
 interface Lock {
   client: PoolClient;
+  intervalId: NodeJS.Timeout | null;
 }
 
 interface LockOptions {
   /** How many milliseconds to wait (anything other than a positive number means forever) */
   timeout?: number;
+  /**
+   * How often to renew the lock in milliseconds. If not set the lock will not
+   * be automatically renewed.
+   *
+   * This is mostly useful for locks that may be help for longer than the idle
+   * session timeout that's configured for the Postgres database. The lock is
+   * "renewed" by making a no-op query.
+   */
+  renewPeriodMs?: number;
 }
-
-type InternalLockOptions =
-  | {
-      wait: false;
-    }
-  | {
-      wait: true;
-      timeout: number;
-    };
 
 /*
  * The functions here all identify locks by "name", which is a plain
@@ -95,7 +96,7 @@ export async function close() {
  * @param name The name of the lock to acquire.
  */
 export async function tryLockAsync(name: string): Promise<Lock | null> {
-  return getLock(name, { wait: false });
+  return getLock(name, { timeout: 0 });
 }
 
 export const tryLock = util.callbackify(tryLockAsync);
@@ -107,12 +108,7 @@ export const tryLock = util.callbackify(tryLockAsync);
  * @param options
  */
 export async function waitLockAsync(name: string, options: LockOptions): Promise<Lock> {
-  const internalOptions = {
-    wait: true,
-    timeout: options.timeout || 0,
-  };
-
-  const lock = await getLock(name, internalOptions);
+  const lock = await getLock(name, options);
   if (lock == null) throw new Error(`failed to acquire lock: ${name}`);
   return lock;
 }
@@ -126,6 +122,7 @@ export const waitLock = util.callbackify(waitLockAsync);
  */
 export async function releaseLockAsync(lock: Lock) {
   if (lock == null) throw new Error('lock is null');
+  clearInterval(lock.intervalId ?? undefined);
   await pool.endTransactionAsync(lock.client, null);
 }
 
@@ -156,7 +153,7 @@ export async function doWithLock<T>(
  * @param name The name of the lock to acquire.
  * @param options Optional parameters.
  */
-async function getLock(name: string, options: InternalLockOptions) {
+async function getLock(name: string, options: LockOptions) {
   await pool.queryAsync(
     'INSERT INTO named_locks (name) VALUES ($name) ON CONFLICT (name) DO NOTHING;',
     { name }
@@ -166,7 +163,7 @@ async function getLock(name: string, options: InternalLockOptions) {
 
   let acquiredLock = false;
   try {
-    if (options.wait && options.timeout > 0) {
+    if (options.timeout) {
       // SQL doesn't like us trying to use a parameterized query with
       // `SET LOCAL ...`. So, in this very specific case, we do the
       // parameterization ourselves using `escapeLiteral`.
@@ -183,7 +180,7 @@ async function getLock(name: string, options: InternalLockOptions) {
     // safe if it shows up in plaintext in logs, telemetry, error messages,
     // etc.
     const lockNameLiteral = client.escapeLiteral(name);
-    const lock_sql = options.wait
+    const lock_sql = options.timeout
       ? `SELECT * FROM named_locks WHERE name = ${lockNameLiteral} FOR UPDATE;`
       : `SELECT * FROM named_locks WHERE name = ${lockNameLiteral} FOR UPDATE SKIP LOCKED;`;
     const result = await pool.queryWithClientAsync(client, lock_sql, { name });
@@ -202,8 +199,16 @@ async function getLock(name: string, options: InternalLockOptions) {
     return null;
   }
 
+  let intervalId = null;
+  if (options.renewPeriodMs) {
+    // Periodically "renew" the lock by making a query.
+    intervalId = setInterval(() => {
+      client.query('SELECT 1;').catch(() => {});
+    }, options.renewPeriodMs);
+  }
+
   // We successfully acquired the lock, so we return with the transaction
   // help open. The caller will be responsible for releasing the lock and
   // ending the transaction.
-  return { client };
+  return { client, intervalId };
 }
