@@ -8,7 +8,9 @@ import {
   readAndValidateMigrationsFromDirectory,
   sortMigrationFiles,
   getMigrationsToExecute,
+  initWithLock,
 } from './index';
+import { makePostgresTestUtils, queryAsync } from '@prairielearn/postgres';
 
 chai.use(chaiAsPromised);
 
@@ -29,7 +31,7 @@ describe('migrations', () => {
     it('handles migrations without a timestamp', async () => {
       await withMigrationFiles(['001_testing.sql'], async (tmpDir) => {
         await assert.isRejected(
-          readAndValidateMigrationsFromDirectory(tmpDir),
+          readAndValidateMigrationsFromDirectory(tmpDir, ['.sql']),
           'Invalid migration filename: 001_testing.sql'
         );
       });
@@ -40,7 +42,7 @@ describe('migrations', () => {
         ['20220101010101_testing.sql', '20220101010101_testing_again.sql'],
         async (tmpDir) => {
           await assert.isRejected(
-            readAndValidateMigrationsFromDirectory(tmpDir),
+            readAndValidateMigrationsFromDirectory(tmpDir, ['.sql']),
             'Duplicate migration timestamp'
           );
         }
@@ -120,6 +122,31 @@ describe('migrations', () => {
       assert.deepEqual(getMigrationsToExecute(migrationFiles, executedMigrations), [
         { timestamp: '20220101010103', filename: '20220101010103_testing_3.sql' },
       ]);
+    });
+  });
+
+  describe('initWithLock', () => {
+    const postgresTestUtils = makePostgresTestUtils({
+      database: 'prairielearn_migrations',
+    });
+
+    before(async () => {
+      await postgresTestUtils.createDatabase();
+    });
+
+    after(async () => {
+      await postgresTestUtils.dropDatabase();
+    });
+
+    it('runs both SQL and JavaScript migrations', async () => {
+      const migrationDir = path.join(__dirname, 'fixtures');
+      await initWithLock(migrationDir, 'prairielearn_migrations');
+
+      // If both migrations ran successfully, there should be a single user
+      // in the database.
+      const users = await queryAsync('SELECT * FROM users', {});
+      assert.lengthOf(users.rows, 1);
+      assert.equal(users.rows[0].name, 'Test User');
     });
   });
 });
