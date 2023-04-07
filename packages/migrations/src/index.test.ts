@@ -29,7 +29,7 @@ describe('migrations', () => {
     it('handles migrations without a timestamp', async () => {
       await withMigrationFiles(['001_testing.sql'], async (tmpDir) => {
         await assert.isRejected(
-          readAndValidateMigrationsFromDirectory(tmpDir),
+          readAndValidateMigrationsFromDirectory(tmpDir, ['.sql']),
           'Invalid migration filename: 001_testing.sql'
         );
       });
@@ -40,7 +40,7 @@ describe('migrations', () => {
         ['20220101010101_testing.sql', '20220101010101_testing_again.sql'],
         async (tmpDir) => {
           await assert.isRejected(
-            readAndValidateMigrationsFromDirectory(tmpDir),
+            readAndValidateMigrationsFromDirectory(tmpDir, ['.sql']),
             'Duplicate migration timestamp'
           );
         }
