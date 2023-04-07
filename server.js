@@ -31,7 +31,7 @@ const { filesize } = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const compiledAssets = require('@prairielearn/compiled-assets');
-const { SCHEMA_MIGRATIONS_PATH } = require('@prairielearn/migrations');
+const { SCHEMA_MIGRATIONS_PATH, initBatchedMigrations } = require('@prairielearn/migrations');
 
 const { logger, addFileLogging } = require('@prairielearn/logger');
 const config = require('./lib/config');
@@ -2086,6 +2086,12 @@ if (config.startServer) {
           callback(null);
         });
       },
+      async () =>
+        initBatchedMigrations({
+          project: 'prairielearn',
+          directories: [path.join(__dirname, 'batched-migrations')],
+          runDurationMs: config.batchedMigrationsRunDurationMs,
+        }),
       function (callback) {
         if (!config.initNewsItems) return callback(null);
         const notify_with_new_server = false;

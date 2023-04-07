@@ -143,3 +143,15 @@ export class BatchedMigrationsRunner extends EventEmitter {
     this.abortController.abort();
   }
 }
+
+let runner: BatchedMigrationsRunner | null = null;
+
+export function initBatchedMigrations(options: BatchedMigrationRunnerOptions) {
+  if (runner) throw new Error('Batched migrations already initialized');
+  runner = new BatchedMigrationsRunner(options);
+}
+
+export function stopBatchedMigrations() {
+  runner?.stop();
+  runner = null;
+}

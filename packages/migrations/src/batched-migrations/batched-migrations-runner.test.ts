@@ -3,7 +3,8 @@ import path from 'node:path';
 import { makePostgresTestUtils } from '@prairielearn/postgres';
 import * as namedLocks from '@prairielearn/named-locks';
 
-import { SCHEMA_MIGRATIONS_PATH, init, BatchedMigrationsRunner } from '../index';
+import { SCHEMA_MIGRATIONS_PATH, init } from '../index';
+import { BatchedMigrationsRunner } from './batched-migrations-runner';
 import { allBatchedMigrations } from './batched-migration';
 
 const postgresTestUtils = makePostgresTestUtils({
