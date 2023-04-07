@@ -191,6 +191,15 @@ for await (const users of cursor.iterate(100)) {
 }
 ```
 
+You can also use `cursor.stream(...)` to get an object stream, which can be useful for piping it somewhere else:
+
+```ts
+import { queryCursor } from '@prairielearn/postgres';
+
+const cursor = await queryCursor(sql.select_all_users, {});
+cursor.stream(100).pipe(makeStreamSomehow());
+```
+
 ### Callback-style functions
 
 For most functions that return promises, there are corresponding versions that work with Node-style callbacks:

@@ -81,7 +81,7 @@ FROM
   assessments AS a
 WHERE
   a.id = $assessment_id
-FOR UPDATE;
+FOR NO KEY UPDATE;
 
 -- BLOCK select_assessment_needs_statisics_update
 SELECT

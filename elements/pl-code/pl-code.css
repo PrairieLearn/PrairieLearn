@@ -1,7 +1,59 @@
-.pl-code-highlighted-line {
-    margin-left: -0.5em;
-    margin-right: -0.5em;
-    padding-right: 0.5em;
-    padding-left: 0.5em;
+.pl-code .pl-code-highlighted-line {
+    margin-left: -1rem;
+    margin-right: -1rem;
+    padding-right: 1rem;
+    padding-left: 1rem;
     display: block;
+}
+
+.pl-code > div {
+    background: var(--pl-code-background-color, transparent);
+    border: 1px solid #ccc;
+    margin-bottom: 0.5rem;
+}
+
+.pl-code table {
+    border: none;
+    min-width: 100%;
+}
+
+.pl-code.pl-code:not(.show-line-numbers) td.linenos {
+    display: none;
+}
+
+.pl-code td.linenos {
+    user-select: none;
+    -webkit-user-select: none;
+    border-right: 1px solid #ccc;
+}
+
+.pl-code td.linenos div pre span {
+    color: var(--pl-code-line-number-color, default);
+}
+
+.pl-code td.linenos pre {
+    line-height: 125%;
+    margin-bottom: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.pl-code td.linenos pre span {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.pl-code td.code {
+    width: 100%;
+    border: none;
+    padding: 0px;
+}
+
+.pl-code td.code pre {
+    padding: 0.5rem 1rem;
+    margin-bottom: 0px;
+    overflow: visible;
+}
+
+.pl-code > div {
+    overflow: auto;
 }
