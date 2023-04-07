@@ -38,7 +38,7 @@ export function getMigrationsToExecute(
   return migrationFiles.filter((m) => !executedMigrationTimestamps.has(m.timestamp));
 }
 
-async function initWithLock(directories: string[], project: string) {
+export async function initWithLock(directories: string[], project: string) {
   logger.verbose('Starting DB schema migration');
 
   // Create the migrations table if needed
@@ -103,15 +103,22 @@ async function initWithLock(directories: string[], project: string) {
       logger.info(`Running migration ${filename}`);
     }
 
-    // Read the migration.
-    const migrationSql = await fs.readFile(path.join(directory, filename), 'utf8');
-
-    // Perform the migration.
-    try {
-      await sqldb.queryAsync(migrationSql, {});
-    } catch (err) {
-      error.addData(err, { sqlFile: filename });
-      throw err;
+    const migrationPath = path.join(directory, filename);
+    if (filename.endsWith('.sql')) {
+      const migrationSql = await fs.readFile(migrationPath, 'utf8');
+      try {
+        await sqldb.queryAsync(migrationSql, {});
+      } catch (err) {
+        error.addData(err, { sqlFile: filename });
+        throw err;
+      }
+    } else {
+      const migrationModule = await import(migrationPath);
+      const implementation = migrationModule.default;
+      if (typeof implementation !== 'function') {
+        throw new Error(`Migration ${filename} does not export a default function`);
+      }
+      await implementation();
     }
 
     // Record the migration.
