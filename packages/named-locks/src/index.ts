@@ -2,6 +2,15 @@ import util from 'util';
 import { PostgresPool, PoolClient } from '@prairielearn/postgres';
 import { PoolConfig } from 'pg';
 
+interface NamedLocksConfig {
+  /**
+   * How often to renew the lock in milliseconds. Defaults to 60 seconds.
+   * Auto-renewal must be explicitly enabled on each lock where it is desired.
+   *
+   */
+  renewIntervalMs?: number;
+}
+
 interface Lock {
   client: PoolClient;
   intervalId: NodeJS.Timeout | null;
@@ -11,14 +20,14 @@ interface LockOptions {
   /** How many milliseconds to wait (anything other than a positive number means forever) */
   timeout?: number;
   /**
-   * How often to renew the lock in milliseconds. If not set, the lock will not
-   * be automatically renewed.
+   * Whether or not this lock should automatically renew itself periodically.
+   * By default, locks will not renew themselves.
    *
    * This is mostly useful for locks that may be help for longer than the idle
    * session timeout that's configured for the Postgres database. The lock is
    * "renewed" by making a no-op query.
    */
-  renewPeriodMs?: number;
+  autoRenew?: boolean;
 }
 
 /*
@@ -65,14 +74,17 @@ interface LockOptions {
  */
 
 export const pool = new PostgresPool();
+let renewIntervalMs = 60_000;
 
 /**
  * Initializes a new {@link PostgresPool} that will be used to acquire named locks.
  */
 export async function init(
   pgConfig: PoolConfig,
-  idleErrorHandler: (error: Error, client: PoolClient) => void
+  idleErrorHandler: (error: Error, client: PoolClient) => void,
+  namedLocksConfig: NamedLocksConfig = {}
 ) {
+  renewIntervalMs = namedLocksConfig.renewIntervalMs ?? renewIntervalMs;
   await pool.initAsync(pgConfig, idleErrorHandler);
   await pool.queryAsync(
     'CREATE TABLE IF NOT EXISTS named_locks (id bigserial PRIMARY KEY, name text NOT NULL UNIQUE);',
@@ -200,11 +212,11 @@ async function getLock(name: string, options: LockOptions) {
   }
 
   let intervalId = null;
-  if (options.renewPeriodMs) {
+  if (options.autoRenew) {
     // Periodically "renew" the lock by making a query.
     intervalId = setInterval(() => {
       client.query('SELECT 1;').catch(() => {});
-    }, options.renewPeriodMs);
+    }, renewIntervalMs);
   }
 
   // We successfully acquired the lock, so we return with the transaction

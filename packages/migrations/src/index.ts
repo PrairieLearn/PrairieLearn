@@ -14,14 +14,14 @@ export async function init(migrationDir: string, project: string) {
   await namedLocks.doWithLock(
     lockName,
     {
-      // Migrations *might* take a long time to run, so we'll periodically
-      // renew the lock so that our lock doesn't get killed by the Postgres
+      // Migrations *might* take a long time to run, so we'll enable automatic
+      // lock renewal so that our lock doesn't get killed by the Postgres
       // idle session timeout.
       //
       // That said, we should generally try to keep migrations executing as
       // quickly as possible. A long-running migration likely means that
       // Postgres is locking a whole table, which is unacceptable in production.
-      renewPeriodMs: 60_000,
+      autoRenew: true,
     },
     async () => {
       logger.verbose(`Acquired lock ${lockName}`);
