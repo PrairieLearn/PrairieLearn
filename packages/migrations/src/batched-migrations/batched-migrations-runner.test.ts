@@ -5,7 +5,7 @@ import * as namedLocks from '@prairielearn/named-locks';
 
 import { SCHEMA_MIGRATIONS_PATH, init } from '../index';
 import { BatchedMigrationsRunner } from './batched-migrations-runner';
-import { allBatchedMigrations } from './batched-migration';
+import { selectAllBatchedMigrations } from './batched-migration';
 
 const postgresTestUtils = makePostgresTestUtils({
   database: 'prairielearn_migrations',
@@ -36,7 +36,7 @@ describe('BatchedMigrationsRunner', () => {
     });
     await runner.init();
 
-    const migrations = await allBatchedMigrations('test');
+    const migrations = await selectAllBatchedMigrations('test');
 
     assert.lengthOf(migrations, 2);
   });

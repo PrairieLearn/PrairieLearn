@@ -1658,6 +1658,10 @@ module.exports.initExpress = function () {
     '/pl/administrator/courseRequests/',
     require('./pages/administratorCourseRequests/administratorCourseRequests')
   );
+  app.use(
+    '/pl/administrator/batchedMigrations',
+    require('./pages/administratorBatchedMigrations/administratorBatchedMigrations')
+  );
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
@@ -2086,12 +2090,24 @@ if (config.startServer) {
           callback(null);
         });
       },
-      async () =>
-        initBatchedMigrations({
+      async () => {
+        // TODO: add support for JS migrations and add a function to "synchronously" run
+        // a batched migration to completion. We'll want to extend `named-locks` with
+        // support for periodically refreshing locks so we don't hit the idle-in-transaction
+        // timeout.
+        //
+        // TODO: remove "running" status from individual jobs; should just have "pending", "succeeded", "failed".
+        //
+        // TODO: add an attempts counter to each job. Increment the counter before
+        // trying to run the job. This is just for our own recordkeeping.
+        //
+        // TODO: send any errors to Sentry; log error details on job row.
+        await initBatchedMigrations({
           project: 'prairielearn',
           directories: [path.join(__dirname, 'batched-migrations')],
           runDurationMs: config.batchedMigrationsRunDurationMs,
-        }),
+        });
+      },
       function (callback) {
         if (!config.initNewsItems) return callback(null);
         const notify_with_new_server = false;

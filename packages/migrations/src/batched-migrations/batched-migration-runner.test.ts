@@ -9,12 +9,13 @@ import * as namedLocks from '@prairielearn/named-locks';
 
 import {
   BatchedMigration,
+  BatchedMigrationRowSchema,
   insertBatchedMigration,
   updateBatchedMigrationStatus,
 } from './batched-migration';
 import { BatchedMigrationRunner } from './batched-migration-runner';
 import { SCHEMA_MIGRATIONS_PATH, init } from '../index';
-import { BatchedMigrationJobRowSchema, BatchedMigrationRowSchema } from './schemas';
+import { BatchedMigrationJobRowSchema } from './schemas';
 
 const postgresTestUtils = makePostgresTestUtils({
   database: 'prairielearn_migrations',

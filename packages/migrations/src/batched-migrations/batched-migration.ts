@@ -4,10 +4,33 @@ import {
   queryValidatedOneRow,
   queryValidatedRows,
 } from '@prairielearn/postgres';
-
-import { BatchedMigrationRow, BatchedMigrationRowSchema, BatchedMigrationStatus } from './schemas';
+import { z } from 'zod';
 
 const sql = loadSqlEquiv(__filename);
+
+export const BatchedMigrationStatusSchema = z.enum([
+  'pending',
+  'paused',
+  'running',
+  'failed',
+  'succeeded',
+]);
+export type BatchedMigrationStatus = z.infer<typeof BatchedMigrationStatusSchema>;
+
+export const BatchedMigrationRowSchema = z.object({
+  id: z.string(),
+  project: z.string(),
+  name: z.string(),
+  timestamp: z.string(),
+  batch_size: z.number(),
+  min_value: z.bigint({ coerce: true }),
+  max_value: z.bigint({ coerce: true }),
+  status: BatchedMigrationStatusSchema,
+  created_at: z.date(),
+  updated_at: z.date(),
+  started_at: z.date().nullable(),
+});
+export type BatchedMigrationRow = z.infer<typeof BatchedMigrationRowSchema>;
 
 export interface BatchedMigrationParameters {
   min: bigint;
@@ -42,7 +65,7 @@ export async function insertBatchedMigration(
   );
 }
 
-export async function allBatchedMigrations(project: string) {
+export async function selectAllBatchedMigrations(project: string) {
   return queryValidatedRows(
     sql.select_all_batched_migrations,
     { project },

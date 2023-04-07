@@ -4,12 +4,13 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { loadSqlEquiv, queryValidatedZeroOrOneRow } from '@prairielearn/postgres';
 import { doWithLock, tryWithLock } from '@prairielearn/named-locks';
 
-import { BatchedMigrationRowSchema, BatchedMigrationRow } from './schemas';
 import { MigrationFile, readAndValidateMigrationsFromDirectories } from '../load-migrations';
 import {
-  allBatchedMigrations,
   BatchedMigration,
+  BatchedMigrationRowSchema,
+  BatchedMigrationRow,
   insertBatchedMigration,
+  selectAllBatchedMigrations,
 } from './batched-migration';
 import { BatchedMigrationRunner } from './batched-migration-runner';
 
@@ -36,7 +37,7 @@ export class BatchedMigrationsRunner extends EventEmitter {
 
   async init() {
     await doWithLock(this.lockName, {}, async () => {
-      const existingMigrations = await allBatchedMigrations(this.options.project);
+      const existingMigrations = await selectAllBatchedMigrations(this.options.project);
 
       this.migrationFiles = await readAndValidateMigrationsFromDirectories(
         this.options.directories,
@@ -146,9 +147,11 @@ export class BatchedMigrationsRunner extends EventEmitter {
 
 let runner: BatchedMigrationsRunner | null = null;
 
-export function initBatchedMigrations(options: BatchedMigrationRunnerOptions) {
+export async function initBatchedMigrations(options: BatchedMigrationRunnerOptions) {
   if (runner) throw new Error('Batched migrations already initialized');
   runner = new BatchedMigrationsRunner(options);
+  await runner.init();
+  runner.start();
 }
 
 export function stopBatchedMigrations() {

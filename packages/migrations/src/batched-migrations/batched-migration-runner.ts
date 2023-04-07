@@ -7,13 +7,16 @@ import {
 } from '@prairielearn/postgres';
 import { z } from 'zod';
 
-import { BatchedMigration, updateBatchedMigrationStatus } from './batched-migration';
+import {
+  BatchedMigration,
+  BatchedMigrationStatus,
+  BatchedMigrationRow,
+  updateBatchedMigrationStatus,
+} from './batched-migration';
 import {
   BatchedMigrationJobRowSchema,
   BatchedMigrationJobStatus,
   BatchedMigrationJobRow,
-  BatchedMigrationStatus,
-  BatchedMigrationRow,
 } from './schemas';
 
 const sql = loadSqlEquiv(__filename);
