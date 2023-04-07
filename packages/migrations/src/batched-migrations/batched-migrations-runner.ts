@@ -152,6 +152,7 @@ export async function initBatchedMigrations(options: BatchedMigrationRunnerOptio
   runner = new BatchedMigrationsRunner(options);
   await runner.init();
   runner.start();
+  return runner;
 }
 
 export function stopBatchedMigrations() {
