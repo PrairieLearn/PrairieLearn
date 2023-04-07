@@ -85,6 +85,7 @@ async function insertTestBatchedMigration() {
     batch_size: parameters.batchSize,
     min_value: parameters.min,
     max_value: parameters.max,
+    status: 'running',
   });
 }
 
@@ -108,8 +109,6 @@ describe('BatchedMigrationExecutor', () => {
 
   it('runs one iteration of a batched migration', async () => {
     const migration = await insertTestBatchedMigration();
-    await updateBatchedMigrationStatus(migration.id, 'running');
-    migration.status = 'running';
 
     const migrationInstance = new TestBatchMigration();
     const executor = new BatchedMigrationRunner(migration, migrationInstance);
@@ -126,8 +125,6 @@ describe('BatchedMigrationExecutor', () => {
 
   it('runs an entire batched migration', async () => {
     const migration = await insertTestBatchedMigration();
-    await updateBatchedMigrationStatus(migration.id, 'running');
-    migration.status = 'running';
 
     const migrationInstance = new TestBatchMigration();
     const runner = new BatchedMigrationRunner(migration, migrationInstance);

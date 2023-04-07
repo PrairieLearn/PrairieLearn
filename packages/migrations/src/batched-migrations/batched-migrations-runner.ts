@@ -11,10 +11,14 @@ import {
   BatchedMigrationRow,
   insertBatchedMigration,
   selectAllBatchedMigrations,
+  BatchedMigrationStatus,
 } from './batched-migration';
 import { BatchedMigrationRunner } from './batched-migration-runner';
 
 const sql = loadSqlEquiv(__filename);
+
+const DEFAULT_MIN_VALUE = 1n;
+const DEFAULT_BATCH_SIZE = 1_000;
 
 interface BatchedMigrationRunnerOptions {
   project: string;
@@ -52,13 +56,23 @@ export class BatchedMigrationsRunner extends EventEmitter {
         const migration = new MigrationClass();
         const migrationParameters = await migration.getParameters();
 
+        // If `max` is null, that implies that there are no rows to process, so
+        // we can immediately mark the migration as finished.
+        const status: BatchedMigrationStatus =
+          migrationParameters.max === null ? 'pending' : 'succeeded';
+
+        const minValue = migrationParameters.min ?? DEFAULT_MIN_VALUE;
+        const maxValue = migrationParameters.max ?? minValue;
+        const batchSize = migrationParameters.batchSize ?? DEFAULT_BATCH_SIZE;
+
         await insertBatchedMigration({
           project: this.options.project,
           filename: migrationFile.filename,
           timestamp: migrationFile.timestamp,
-          batch_size: migrationParameters.batchSize,
-          min_value: migrationParameters.min,
-          max_value: migrationParameters.max,
+          batch_size: batchSize,
+          min_value: minValue,
+          max_value: maxValue,
+          status,
         });
       }
     });
@@ -86,8 +100,12 @@ export class BatchedMigrationsRunner extends EventEmitter {
         this.emit('error', err);
       }
 
-      const waitInterval = didWork ? 1_000 : 30_000;
-      await sleep(waitInterval, null, { ref: false });
+      // If we did work, we'll immediately try again since there's probably more
+      // work to be done. If not, we'll sleep for a while - maybe some more work
+      // will become available!
+      if (!didWork) {
+        await sleep(30_000, null, { ref: false });
+      }
     }
   }
 

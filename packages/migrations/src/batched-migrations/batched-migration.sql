@@ -6,7 +6,8 @@ INSERT INTO
     timestamp,
     batch_size,
     min_value,
-    max_value
+    max_value,
+    status
   )
 VALUES
   (
@@ -15,7 +16,8 @@ VALUES
     $timestamp,
     $batch_size,
     $min_value,
-    $max_value
+    $max_value,
+    $status
   )
 RETURNING
   *;

@@ -33,9 +33,9 @@ export const BatchedMigrationRowSchema = z.object({
 export type BatchedMigrationRow = z.infer<typeof BatchedMigrationRowSchema>;
 
 export interface BatchedMigrationParameters {
-  min: bigint;
-  max: bigint;
-  batchSize: number;
+  min?: bigint | null;
+  max: bigint | null;
+  batchSize?: number;
 }
 
 /**
@@ -52,7 +52,7 @@ export abstract class BatchedMigration {
 
 type NewBatchedMigration = Pick<
   BatchedMigrationRow,
-  'project' | 'filename' | 'timestamp' | 'batch_size' | 'min_value' | 'max_value'
+  'project' | 'filename' | 'timestamp' | 'batch_size' | 'min_value' | 'max_value' | 'status'
 >;
 
 export async function insertBatchedMigration(

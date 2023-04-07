@@ -68,7 +68,12 @@ export async function initWithLock(directories: string[], project: string) {
 
   let allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
 
-  const migrationFiles = await readAndValidateMigrationsFromDirectories(directories, ['.sql']);
+  const migrationFiles = await readAndValidateMigrationsFromDirectories(directories, [
+    '.sql',
+    '.js',
+    '.ts',
+    '.mjs',
+  ]);
 
   // Validation: if we not all previously-executed migrations have timestamps,
   // prompt the user to deploy an earlier version that includes both indexes

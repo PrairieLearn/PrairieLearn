@@ -2099,6 +2099,11 @@ if (config.startServer) {
         // TODO: if this is a fresh database, we can probably safely skip any
         // pending batched migration (or more realistically, just mark it as
         // "succeeded" since there won't be any rows on which to operate.)
+        //
+        // TODO: `initBatchedMigrations()` shouldn't actually load the batched
+        // migrations from disk. We should instead rely on migrations themselves
+        // to "enqueue" batched migrations. This will give us precise control
+        // over their sequencing.
         const runner = await initBatchedMigrations({
           project: 'prairielearn',
           directories: [path.join(__dirname, 'batched-migrations')],

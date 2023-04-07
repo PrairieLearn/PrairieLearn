@@ -38,10 +38,12 @@ describe('BatchedMigrationsRunner', () => {
 
     const migrations = await selectAllBatchedMigrations('test');
 
-    assert.lengthOf(migrations, 2);
+    assert.lengthOf(migrations, 3);
     assert.equal(migrations[0].timestamp, '20230406184103');
     assert.equal(migrations[0].filename, '20230406184103_test_migration_1.ts');
     assert.equal(migrations[1].timestamp, '20230406184107');
     assert.equal(migrations[1].filename, '20230406184107_test_migration_2.js');
+    assert.equal(migrations[2].timestamp, '20230407230446');
+    assert.equal(migrations[2].filename, '20230407230446_test_migration_no_rows.ts');
   });
 });

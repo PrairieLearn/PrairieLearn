@@ -1,6 +1,6 @@
 import { BatchedMigration } from '../batched-migration';
 
-class TestMigration1 extends BatchedMigration {
+export default class TestMigration1 extends BatchedMigration {
   async getParameters() {
     return {
       min: 1n,
@@ -14,5 +14,3 @@ class TestMigration1 extends BatchedMigration {
     console.log(min, max);
   }
 }
-
-module.exports = TestMigration1;
