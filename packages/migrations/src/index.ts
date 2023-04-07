@@ -22,7 +22,7 @@ export async function init(migrationDir: string, project: string) {
  * Timestamp prefixes will be of the form `YYYYMMDDHHMMSS`, which will have 14 digits.
  * If this code is still around in the year 10000... good luck.
  */
-const MIGRATION_FILENAME_REGEX = /^([0-9]{14})_.+\.sql$/;
+const MIGRATION_FILENAME_REGEX = /^([0-9]{14})_.+\.[a-z]+$/;
 
 interface MigrationFile {
   filename: string;
@@ -30,9 +30,12 @@ interface MigrationFile {
 }
 
 export async function readAndValidateMigrationsFromDirectory(
-  dir: string
+  dir: string,
+  extensions: string[]
 ): Promise<MigrationFile[]> {
-  const migrationFiles = (await fs.readdir(dir)).filter((m) => m.endsWith('.sql'));
+  const migrationFiles = (await fs.readdir(dir)).filter((m) =>
+    extensions.some((e) => m.endsWith(e))
+  );
 
   const migrations = migrationFiles.map((mf) => {
     const match = mf.match(MIGRATION_FILENAME_REGEX);
@@ -89,7 +92,7 @@ export function getMigrationsToExecute(
   return migrationFiles.filter((m) => !executedMigrationTimestamps.has(m.timestamp));
 }
 
-async function initWithLock(migrationDir: string, project: string) {
+export async function initWithLock(migrationDir: string, project: string) {
   logger.verbose('Starting DB schema migration');
 
   // Create the migrations table if needed
@@ -119,7 +122,12 @@ async function initWithLock(migrationDir: string, project: string) {
 
   let allMigrations = await sqldb.queryAsync(sql.get_migrations, { project });
 
-  const migrationFiles = await readAndValidateMigrationsFromDirectory(migrationDir);
+  const migrationFiles = await readAndValidateMigrationsFromDirectory(migrationDir, [
+    '.sql',
+    '.js',
+    '.ts',
+    '.mjs',
+  ]);
 
   // Validation: if we not all previously-executed migrations have timestamps,
   // prompt the user to deploy an earlier version that includes both indexes
@@ -154,15 +162,22 @@ async function initWithLock(migrationDir: string, project: string) {
       logger.info(`Running migration ${filename}`);
     }
 
-    // Read the migration.
-    const migrationSql = await fs.readFile(path.join(migrationDir, filename), 'utf8');
-
-    // Perform the migration.
-    try {
-      await sqldb.queryAsync(migrationSql, {});
-    } catch (err) {
-      error.addData(err, { sqlFile: filename });
-      throw err;
+    const migrationPath = path.join(migrationDir, filename);
+    if (filename.endsWith('.sql')) {
+      const migrationSql = await fs.readFile(migrationPath, 'utf8');
+      try {
+        await sqldb.queryAsync(migrationSql, {});
+      } catch (err) {
+        error.addData(err, { sqlFile: filename });
+        throw err;
+      }
+    } else {
+      const migrationModule = await import(migrationPath);
+      const implementation = migrationModule.default;
+      if (typeof implementation !== 'function') {
+        throw new Error(`Migration ${filename} does not export a default function`);
+      }
+      await implementation();
     }
 
     // Record the migration.
