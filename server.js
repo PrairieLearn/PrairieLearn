@@ -2091,17 +2091,14 @@ if (config.startServer) {
         });
       },
       async () => {
-        // TODO: add support for JS migrations and add a function to "synchronously" run
-        // a batched migration to completion. We'll want to extend `named-locks` with
-        // support for periodically refreshing locks so we don't hit the idle-in-transaction
-        // timeout.
-        //
-        // TODO: remove "running" status from individual jobs; should just have "pending", "succeeded", "failed".
-        //
         // TODO: add an attempts counter to each job. Increment the counter before
         // trying to run the job. This is just for our own recordkeeping.
         //
         // TODO: send any errors to Sentry; log error details on job row.
+        //
+        // TODO: if this is a fresh database, we can probably safely skip any
+        // pending batched migration (or more realistically, just mark it as
+        // "succeeded" since there won't be any rows on which to operate.)
         await initBatchedMigrations({
           project: 'prairielearn',
           directories: [path.join(__dirname, 'batched-migrations')],

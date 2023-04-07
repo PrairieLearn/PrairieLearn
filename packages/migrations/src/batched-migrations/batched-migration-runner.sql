@@ -28,23 +28,20 @@ VALUES
 RETURNING
   *;
 
--- BLOCK update_batched_migration_job_status
+-- BLOCK start_batched_migration_job
+UPDATE batched_migration_jobs
+SET
+  updated_at = CURRENT_TIMESTAMP,
+  started_at = CURRENT_TIMESTAMP
+WHERE
+  id = $id;
+
+-- BLOCK finish_batched_migration_job
 UPDATE batched_migration_jobs
 SET
   status = $status::enum_batched_migration_job_status,
   updated_at = CURRENT_TIMESTAMP,
-  started_at = (
-    CASE
-      WHEN $status::enum_batched_migration_job_status = 'running' THEN CURRENT_TIMESTAMP
-      ELSE started_at
-    END
-  ),
-  finished_at = (
-    CASE
-      WHEN $status::enum_batched_migration_job_status IN ('succeeded', 'failed') THEN CURRENT_TIMESTAMP
-      ELSE finished_at
-    END
-  )
+  finished_at = CURRENT_TIMESTAMP
 WHERE
   id = $id;
 
@@ -70,7 +67,7 @@ SELECT
       batched_migration_jobs
     WHERE
       batched_migration_id = $batched_migration_id
-      AND status IN ('pending', 'running')
+      AND status = 'pending'
   ) as exists;
 
 -- BLOCK batched_migration_has_failed_jobs

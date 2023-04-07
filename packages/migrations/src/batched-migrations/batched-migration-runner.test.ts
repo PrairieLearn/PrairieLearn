@@ -13,9 +13,9 @@ import {
   insertBatchedMigration,
   updateBatchedMigrationStatus,
 } from './batched-migration';
+import { BatchedMigrationJobRowSchema } from './batched-migration-job';
 import { BatchedMigrationRunner } from './batched-migration-runner';
 import { SCHEMA_MIGRATIONS_PATH, init } from '../index';
-import { BatchedMigrationJobRowSchema } from './schemas';
 
 const postgresTestUtils = makePostgresTestUtils({
   database: 'prairielearn_migrations',

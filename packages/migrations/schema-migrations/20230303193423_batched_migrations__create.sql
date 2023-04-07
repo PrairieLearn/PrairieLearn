@@ -6,7 +6,7 @@ CREATE TYPE enum_batched_migration_status AS ENUM(
   'succeeded'
 );
 
-CREATE TYPE enum_batched_migration_job_status AS ENUM('pending', 'running', 'failed', 'succeeded');
+CREATE TYPE enum_batched_migration_job_status AS ENUM('pending', 'failed', 'succeeded');
 
 CREATE TABLE IF NOT EXISTS
   batched_migrations (

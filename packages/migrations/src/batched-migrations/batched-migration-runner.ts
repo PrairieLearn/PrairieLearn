@@ -1,4 +1,3 @@
-import { logger } from '@prairielearn/logger';
 import {
   loadSqlEquiv,
   queryAsync,
@@ -17,7 +16,7 @@ import {
   BatchedMigrationJobRowSchema,
   BatchedMigrationJobStatus,
   BatchedMigrationJobRow,
-} from './schemas';
+} from './batched-migration-job';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -59,7 +58,7 @@ export class BatchedMigrationRunner {
   }
 
   private async finishRunningMigration(migration: BatchedMigrationRow) {
-    // Safety check: if there are any pending or running jobs, don't mark this
+    // Safety check: if there are any pending jobs, don't mark this
     // migration as finished.
     if (await this.hasIncompleteJobs(migration)) return;
 
@@ -86,8 +85,15 @@ export class BatchedMigrationRunner {
     return [nextMin, nextMax];
   }
 
-  private async updateJobStatus(job: BatchedMigrationJobRow, status: BatchedMigrationJobStatus) {
-    await queryAsync(sql.update_batched_migration_job_status, { id: job.id, status });
+  private async startJob(job: BatchedMigrationJobRow) {
+    await queryAsync(sql.start_batched_migration_job, { id: job.id });
+  }
+
+  private async finishJob(
+    job: BatchedMigrationJobRow,
+    status: Extract<BatchedMigrationJobStatus, 'failed' | 'succeeded'>
+  ) {
+    await queryAsync(sql.finish_batched_migration_job, { id: job.id, status });
   }
 
   private async getOrCreateNextMigrationJob(
@@ -123,12 +129,11 @@ export class BatchedMigrationRunner {
     const nextJob = await this.getOrCreateNextMigrationJob(migration);
     if (nextJob) {
       try {
-        await this.updateJobStatus(nextJob, 'running');
+        await this.startJob(nextJob);
         await migrationInstance.execute(nextJob.min_value, nextJob.max_value);
-        await this.updateJobStatus(nextJob, 'succeeded');
+        await this.finishJob(nextJob, 'succeeded');
       } catch (err) {
-        await this.updateJobStatus(nextJob, 'failed');
-        logger.error(`Error running batched migration job ${nextJob.id}`, err);
+        await this.finishJob(nextJob, 'failed');
       }
     } else {
       await this.finishRunningMigration(migration);

@@ -1,11 +1,6 @@
 import { z } from 'zod';
 
-export const BatchedMigrationJobStatusSchema = z.enum([
-  'pending',
-  'running',
-  'failed',
-  'succeeded',
-]);
+export const BatchedMigrationJobStatusSchema = z.enum(['pending', 'failed', 'succeeded']);
 export type BatchedMigrationJobStatus = z.infer<typeof BatchedMigrationJobStatusSchema>;
 
 export const BatchedMigrationJobRowSchema = z.object({
