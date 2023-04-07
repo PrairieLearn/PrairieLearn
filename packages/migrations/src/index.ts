@@ -1,6 +1,7 @@
 import path from 'path';
 
 export { init } from './migrations';
+
 export {
   BatchedMigration,
   BatchedMigrationRow,

@@ -10,7 +10,7 @@ import {
   MigrationFile,
   readAndValidateMigrationsFromDirectories,
   sortMigrationFiles,
-} from './load-migrations';
+} from '../load-migrations';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
