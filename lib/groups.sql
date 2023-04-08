@@ -181,23 +181,18 @@ WHERE
   AND gu.user_id = $user_id;
 
 -- BLOCK delete_non_required_roles
-WITH
-  deleted_group_user_roles AS (
-    DELETE FROM group_user_roles gur
+DELETE FROM group_user_roles gur
+WHERE
+  group_id = $group_id
+  AND group_role_id IN (
+    SELECT
+      id
+    FROM
+      group_roles
     WHERE
-      group_id = $group_id
-      AND group_role_id IN (
-        SELECT
-          id
-        FROM
-          group_roles
-        WHERE
-          assessment_id = $assessment_id
-          AND minimum = 0
-      )
-  )
-SELECT
-  1;
+      assessment_id = $assessment_id
+      AND minimum = 0
+  );
 
 -- BLOCK delete_group_users
 WITH
