@@ -18,7 +18,7 @@ router.post(
   asyncHandler(async function (req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
     if (!res.locals.authz_result.authorized_edit) {
-      return next(error.make(403, 'Not authorized', res.locals));
+      throw error.make(403, 'Not authorized', res.locals);
     }
 
     if (req.body.__action === 'attach_file') {
@@ -41,8 +41,7 @@ router.post(
       var closeExam;
       if (req.body.__action === 'grade') {
         if (!res.locals.assessment.allow_real_time_grading) {
-          next(error.make(403, 'Real-time grading is not allowed for this assessment'));
-          return;
+          throw error.make(403, 'Real-time grading is not allowed for this assessment');
         }
         closeExam = false;
       } else if (req.body.__action === 'finish') {
@@ -78,7 +77,7 @@ router.post(
         }
       );
     } else if (req.body.__action === 'leave_group') {
-      if (!res.locals.authz_result.active) return next(error.make(400, 'Unauthorized request.'));
+      if (!res.locals.authz_result.active) throw error.make(400, 'Unauthorized request.');
       await groupAssessmentHelper.leaveGroup(
         res.locals.assessment.id,
         res.locals.user.user_id,
@@ -151,7 +150,7 @@ router.get(
       );
 
       if (groupId === null) {
-        return next(error.make(403, 'Not a group member', res.locals));
+        throw error.make(403, 'Not a group member', res.locals);
       } else {
         res.locals.notInGroup = false;
         const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);

@@ -86,7 +86,7 @@ router.get(
       );
 
       if (groupId === null) {
-        return next(error.make(403, 'Not a group member', res.locals));
+        throw error.make(403, 'Not a group member.');
       } else {
         res.locals.notInGroup = false;
         const groupInfo = await groupAssessmentHelper.getGroupInfo(groupId, groupConfig);
@@ -115,7 +115,7 @@ router.post(
   asyncHandler(async function (req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();
     if (!res.locals.authz_result.authorized_edit) {
-      return next(error.make(403, 'Not authorized', res.locals));
+      throw error.make(403, 'Not authorized', res.locals);
     }
 
     if (req.body.__action === 'attach_file') {
@@ -134,7 +134,7 @@ router.post(
         res.redirect(req.originalUrl);
       });
     } else if (req.body.__action === 'leave_group') {
-      if (!res.locals.authz_result.active) return next(error.make(400, 'Unauthorized request.'));
+      if (!res.locals.authz_result.active) throw error.make(400, 'Unauthorized request.');
       await groupAssessmentHelper.leaveGroup(
         res.locals.assessment.id,
         res.locals.user.user_id,
