@@ -150,7 +150,7 @@ router.get(
         res.locals.user.user_id
       );
 
-      if (groupId === undefined) {
+      if (groupId === null) {
         return next(error.make(403, 'Not a group member', res.locals));
       } else {
         res.locals.notInGroup = false;

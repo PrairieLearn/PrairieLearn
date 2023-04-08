@@ -59,7 +59,7 @@ router.get(
           res.locals.user.user_id
         );
 
-        if (groupId === undefined) {
+        if (groupId === null) {
           res.locals.notInGroup = true;
         } else {
           res.locals.notInGroup = false;
