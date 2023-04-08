@@ -3914,6 +3914,7 @@ __metadata:
     express-async-handler: ^1.2.0
     fabric: ^4.6.0
     fast-glob: ^3.2.12
+    fast-xml-parser: ^4.1.4
     file-type: ^16.5.4
     filesize: ^10.0.7
     folder-hash: ^4.0.4
@@ -4005,7 +4006,6 @@ __metadata:
     uuid: ^9.0.0
     winston: ^3.8.2
     winston-aws-cloudwatch: ^3.0.0
-    xml2js: ^0.4.23
     xss: ^1.0.14
     yargs: ^17.7.1
     yargs-parser: ^21.1.1
@@ -7705,6 +7705,17 @@ __metadata:
   bin:
     xml2js: cli.js
   checksum: 73b9c907a424cc2f9b11a8a2f1b7448d936f1db6fa574b85cbe4be9739c2f77d99a827bb27d738a0db0047b20c71a5d663f64937fbdb9c38977fc6cd145221d2
+  languageName: node
+  linkType: hard
+
+"fast-xml-parser@npm:^4.1.4":
+  version: 4.1.4
+  resolution: "fast-xml-parser@npm:4.1.4"
+  dependencies:
+    strnum: ^1.0.5
+  bin:
+    fxparser: src/cli/cli.js
+  checksum: bccc4747bb1e167cb882b708bf5b964ee6d9f9f659ee5957f44ce37885c12a4883fd51f32685eb9eac2bdb55ed134327cbaa09e65afd8dba8807c906aafeada2
   languageName: node
   linkType: hard
 
