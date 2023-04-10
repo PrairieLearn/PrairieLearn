@@ -32,6 +32,15 @@ WHERE
 ORDER BY
   id ASC;
 
+-- BLOCK select_batched_migration
+SELECT
+  *
+FROM
+  batched_migrations
+WHERE
+  project = $project
+  AND timestamp = $timestamp;
+
 -- BLOCK update_batched_migration_status
 UPDATE batched_migrations
 SET

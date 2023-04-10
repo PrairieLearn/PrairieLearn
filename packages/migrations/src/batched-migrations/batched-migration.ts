@@ -3,6 +3,7 @@ import {
   queryAsync,
   queryValidatedOneRow,
   queryValidatedRows,
+  queryValidatedZeroOrOneRow,
 } from '@prairielearn/postgres';
 import { z } from 'zod';
 
@@ -12,6 +13,7 @@ export const BatchedMigrationStatusSchema = z.enum([
   'pending',
   'paused',
   'running',
+  'finalizing',
   'failed',
   'succeeded',
 ]);
@@ -69,6 +71,17 @@ export async function selectAllBatchedMigrations(project: string) {
   return queryValidatedRows(
     sql.select_all_batched_migrations,
     { project },
+    BatchedMigrationRowSchema
+  );
+}
+
+export async function selectBatchedMigrationForTimestamp(
+  project: string,
+  timestamp: string
+): Promise<BatchedMigrationRow | null> {
+  return queryValidatedZeroOrOneRow(
+    sql.select_batched_migration,
+    { project, timestamp },
     BatchedMigrationRowSchema
   );
 }

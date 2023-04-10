@@ -10,8 +10,9 @@ import {
   BatchedMigrationRowSchema,
   BatchedMigrationRow,
   insertBatchedMigration,
-  selectAllBatchedMigrations,
   BatchedMigrationStatus,
+  selectBatchedMigrationForTimestamp,
+  updateBatchedMigrationStatus,
 } from './batched-migration';
 import { BatchedMigrationRunner } from './batched-migration-runner';
 
@@ -19,6 +20,7 @@ const sql = loadSqlEquiv(__filename);
 
 const DEFAULT_MIN_VALUE = 1n;
 const DEFAULT_BATCH_SIZE = 1_000;
+const EXTENSIONS = ['.js', '.ts', '.mjs', '.mts'];
 
 interface BatchedMigrationRunnerOptions {
   project: string;
@@ -30,7 +32,7 @@ export class BatchedMigrationsRunner extends EventEmitter {
   private readonly options: BatchedMigrationRunnerOptions;
   private readonly lockName: string;
   private started: boolean = false;
-  private migrationFiles: MigrationFile[] = [];
+  private migrationFiles: MigrationFile[] | null = null;
   private abortController = new AbortController();
 
   constructor(options: BatchedMigrationRunnerOptions) {
@@ -39,43 +41,109 @@ export class BatchedMigrationsRunner extends EventEmitter {
     this.lockName = `batched-migrations:${this.options.project}`;
   }
 
-  async init() {
-    await doWithLock(this.lockName, {}, async () => {
-      const existingMigrations = await selectAllBatchedMigrations(this.options.project);
-
+  private getMigrationFiles = async () => {
+    if (!this.migrationFiles) {
       this.migrationFiles = await readAndValidateMigrationsFromDirectories(
         this.options.directories,
-        ['.js', '.ts', '.mjs', '.mts']
+        EXTENSIONS
       );
+    }
+    return this.migrationFiles;
+  };
 
-      const existingMigrationTimestamps = new Set(existingMigrations.map((m) => m.timestamp));
-      for (const migrationFile of this.migrationFiles) {
-        if (existingMigrationTimestamps.has(migrationFile.timestamp)) continue;
+  private async getMigrationForIdentifier(identifier: string): Promise<MigrationFile | null> {
+    const timestamp = identifier.split('_')[0];
 
-        const MigrationClass = await this.loadMigrationClass(migrationFile.timestamp);
-        const migration = new MigrationClass();
-        const migrationParameters = await migration.getParameters();
+    const migrationFiles = await this.getMigrationFiles();
+    const migrationFile = migrationFiles.find((m) => m.timestamp === timestamp);
+    return migrationFile ?? null;
+  }
 
-        // If `max` is null, that implies that there are no rows to process, so
-        // we can immediately mark the migration as finished.
-        const status: BatchedMigrationStatus =
-          migrationParameters.max === null ? 'pending' : 'succeeded';
+  /**
+   * Loads that class for the migration with the given identifier. The identifier
+   * must start with a 14-character timestamp. It may optionally be followed by
+   * an underscore with additional characters, which are ignored. These should
+   * typically be used to provide a human-readable name for the migration.
+   */
+  private async loadMigrationClass(migrationFile: MigrationFile) {
+    // We use dynamic imports to handle both CJS and ESM modules.
+    const migrationModulePath = path.join(migrationFile.directory, migrationFile.filename);
+    const migrationModule = await import(migrationModulePath);
 
-        const minValue = migrationParameters.min ?? DEFAULT_MIN_VALUE;
-        const maxValue = migrationParameters.max ?? minValue;
-        const batchSize = migrationParameters.batchSize ?? DEFAULT_BATCH_SIZE;
+    const MigrationClass = migrationModule.default as new () => BatchedMigration;
+    if (!MigrationClass || !(MigrationClass.prototype instanceof BatchedMigration)) {
+      throw new Error(`Invalid migration class in ${migrationModulePath}`);
+    }
+    return MigrationClass;
+  }
 
-        await insertBatchedMigration({
-          project: this.options.project,
-          filename: migrationFile.filename,
-          timestamp: migrationFile.timestamp,
-          batch_size: batchSize,
-          min_value: minValue,
-          max_value: maxValue,
-          status,
-        });
+  async enqueueBatchedMigration(identifier: string) {
+    await doWithLock(this.lockName, {}, async () => {
+      const migrationFile = await this.getMigrationForIdentifier(identifier);
+      if (!migrationFile) {
+        throw new Error(`No migration found for identifier ${identifier}`);
       }
+
+      const MigrationClass = await this.loadMigrationClass(migrationFile);
+      const migration = new MigrationClass();
+      const migrationParameters = await migration.getParameters();
+
+      // If `max` is null, that implies that there are no rows to process, so
+      // we can immediately mark the migration as finished.
+      const status: BatchedMigrationStatus =
+        migrationParameters.max === null ? 'pending' : 'succeeded';
+
+      const minValue = migrationParameters.min ?? DEFAULT_MIN_VALUE;
+      const maxValue = migrationParameters.max ?? minValue;
+      const batchSize = migrationParameters.batchSize ?? DEFAULT_BATCH_SIZE;
+
+      await insertBatchedMigration({
+        project: this.options.project,
+        filename: migrationFile.filename,
+        timestamp: migrationFile.timestamp,
+        batch_size: batchSize,
+        min_value: minValue,
+        max_value: maxValue,
+        status,
+      });
     });
+  }
+
+  async finalizeBatchedMigration(identifier: string) {
+    const timestamp = identifier.split('_')[0];
+
+    const batchedMigration = await selectBatchedMigrationForTimestamp(
+      this.options.project,
+      timestamp
+    );
+
+    if (!batchedMigration) {
+      throw new Error(`Batched migration with identifier ${identifier} not found`);
+    }
+
+    if (batchedMigration.status === 'succeeded') return;
+
+    if (batchedMigration.status === 'failed') {
+      throw new Error(
+        `Batched migration with identifier ${identifier} failed. Fix the error and retry any failed jobs.`
+      );
+    }
+
+    // If the migration isn't already in the finalizing state, mark it as such.
+    if (batchedMigration.status !== 'finalizing') {
+      await updateBatchedMigrationStatus(batchedMigration.id, 'finalizing');
+      batchedMigration.status = 'finalizing';
+    }
+
+    const migrationFile = await this.getMigrationForIdentifier(identifier);
+    if (!migrationFile) {
+      throw new Error(`No migration found for identifier ${identifier}`);
+    }
+    const MigrationClass = await this.loadMigrationClass(migrationFile);
+    const migrationInstance = new MigrationClass();
+
+    const runner = new BatchedMigrationRunner(batchedMigration, migrationInstance);
+    await runner.run();
   }
 
   start() {
@@ -110,26 +178,6 @@ export class BatchedMigrationsRunner extends EventEmitter {
   }
 
   /**
-   * Loads that class for the given migration that's uniquely identified by its
-   * timestamp. Timestamps are enforced to be unique by the database.
-   */
-  async loadMigrationClass(timestamp: string): Promise<new () => BatchedMigration> {
-    const migrationFile = this.migrationFiles.find((m) => m.timestamp === timestamp);
-    if (!migrationFile) throw new Error(`No migration found with timestamp ${timestamp}`);
-
-    // Load the migration file; we need this to get the batch size, min value, and max value.
-    // We use dynamic imports to handle both CJS and ESM modules.
-    const migrationModulePath = path.join(migrationFile.directory, migrationFile.filename);
-    const migrationModule = await import(migrationModulePath);
-
-    const MigrationClass = migrationModule.default as new () => BatchedMigration;
-    if (!MigrationClass || !(MigrationClass.prototype instanceof BatchedMigration)) {
-      throw new Error(`Invalid migration class in ${migrationModulePath}`);
-    }
-    return MigrationClass;
-  }
-
-  /**
    * Should be called with the batched migrations lock held.
    */
   private async getOrStartMigration(): Promise<BatchedMigrationRow | null> {
@@ -149,7 +197,14 @@ export class BatchedMigrationsRunner extends EventEmitter {
       return false;
     }
 
-    const MigrationClass = await this.loadMigrationClass(migration.timestamp);
+    // This server may not yet know about the current running migration. If
+    // that's the case, we'll just skip it for now.
+    const migrationFile = await this.getMigrationForIdentifier(migration.timestamp);
+    if (!migrationFile) {
+      return false;
+    }
+
+    const MigrationClass = await this.loadMigrationClass(migrationFile);
     const migrationInstance = new MigrationClass();
 
     const runner = new BatchedMigrationRunner(migration, migrationInstance);
@@ -165,15 +220,47 @@ export class BatchedMigrationsRunner extends EventEmitter {
 
 let runner: BatchedMigrationsRunner | null = null;
 
-export async function initBatchedMigrations(options: BatchedMigrationRunnerOptions) {
+function assertRunner(
+  runner: BatchedMigrationsRunner | null
+): asserts runner is BatchedMigrationsRunner {
+  if (!runner) throw new Error('Batched migrations not initialized');
+}
+
+export function initBatchedMigrations(options: BatchedMigrationRunnerOptions) {
   if (runner) throw new Error('Batched migrations already initialized');
   runner = new BatchedMigrationsRunner(options);
-  await runner.init();
+  return runner;
+}
+
+export function startBatchedMigrations() {
+  assertRunner(runner);
   runner.start();
   return runner;
 }
 
+/**
+ * Given a batched migration identifier like `20230406184103_migration`,
+ * enqueues it for execution by creating a row in the `batched_migrations`
+ * table.
+ *
+ * Despite taking a full identifier, only the timestamp is used to uniquely
+ * identify the batched migration. The remaining part is just used to make
+ * calls more human-readable.
+ *
+ * @param identifier The identifier of the batched migration to enqueue.
+ */
+export async function enqueueBatchedMigration(identifier: string) {
+  assertRunner(runner);
+  await runner.enqueueBatchedMigration(identifier);
+}
+
+export async function finalizeBatchedMigration(identifier: string) {
+  assertRunner(runner);
+  await runner.finalizeBatchedMigration(identifier);
+}
+
 export function stopBatchedMigrations() {
-  runner?.stop();
+  assertRunner(runner);
+  runner.stop();
   runner = null;
 }

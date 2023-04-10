@@ -3,4 +3,10 @@ export {
   BatchedMigrationRow,
   selectAllBatchedMigrations,
 } from './batched-migration';
-export { initBatchedMigrations } from './batched-migrations-runner';
+export {
+  initBatchedMigrations,
+  startBatchedMigrations,
+  stopBatchedMigrations,
+  enqueueBatchedMigration,
+  finalizeBatchedMigration,
+} from './batched-migrations-runner';

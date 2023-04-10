@@ -34,7 +34,10 @@ describe('BatchedMigrationsRunner', () => {
       project: 'test',
       directories: [path.join(__dirname, 'fixtures')],
     });
-    await runner.init();
+
+    await runner.enqueueBatchedMigration('20230406184103_test_migration_1.ts');
+    await runner.enqueueBatchedMigration('20230406184107_test_migration_2.js');
+    await runner.enqueueBatchedMigration('20230407230446_test_migration_no_rows.ts');
 
     const migrations = await selectAllBatchedMigrations('test');
 

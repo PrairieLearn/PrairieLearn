@@ -31,7 +31,11 @@ const { filesize } = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const compiledAssets = require('@prairielearn/compiled-assets');
-const { SCHEMA_MIGRATIONS_PATH, initBatchedMigrations } = require('@prairielearn/migrations');
+const {
+  SCHEMA_MIGRATIONS_PATH,
+  initBatchedMigrations,
+  startBatchedMigrations,
+} = require('@prairielearn/migrations');
 
 const { logger, addFileLogging } = require('@prairielearn/logger');
 const config = require('./lib/config');
@@ -1983,6 +1987,25 @@ if (config.startServer) {
         logger.verbose('Successfully connected to database');
       },
       async () => {
+        // We need to do this before we run migrations, as some migrations will
+        // call `enqueueBatchedMigration` which requires this to be initialized.
+        //
+        // TODO: add an attempts counter to each job. Increment the counter before
+        // trying to run the job. This is just for our own recordkeeping.
+        //
+        // TODO: log error details on job row.
+        const runner = await initBatchedMigrations({
+          project: 'prairielearn',
+          directories: [path.join(__dirname, 'batched-migrations')],
+          runDurationMs: config.batchedMigrationsRunDurationMs,
+        });
+
+        runner.on('error', (err) => {
+          logger.error('Batched migration runner error', err);
+          Sentry.captureException(err);
+        });
+      },
+      async () => {
         // Using the `--migrate-and-exit` flag will override the value of
         // `config.runMigrations`. This allows us to use the same config when
         // running migrations as we do when we start the server.
@@ -2091,29 +2114,9 @@ if (config.startServer) {
         });
       },
       async () => {
-        // TODO: add an attempts counter to each job. Increment the counter before
-        // trying to run the job. This is just for our own recordkeeping.
-        //
-        // TODO: log error details on job row.
-        //
-        // TODO: if this is a fresh database, we can probably safely skip any
-        // pending batched migration (or more realistically, just mark it as
-        // "succeeded" since there won't be any rows on which to operate.)
-        //
-        // TODO: `initBatchedMigrations()` shouldn't actually load the batched
-        // migrations from disk. We should instead rely on migrations themselves
-        // to "enqueue" batched migrations. This will give us precise control
-        // over their sequencing.
-        const runner = await initBatchedMigrations({
-          project: 'prairielearn',
-          directories: [path.join(__dirname, 'batched-migrations')],
-          runDurationMs: config.batchedMigrationsRunDurationMs,
-        });
-
-        runner.on('error', (err) => {
-          logger.error('Batched migration runner error', err);
-          Sentry.captureException(err);
-        });
+        // Now that all migrations have been run, we can start executing any
+        // batched migrations that may have been enqueued by migrations.
+        startBatchedMigrations();
       },
       function (callback) {
         if (!config.initNewsItems) return callback(null);

@@ -6,6 +6,10 @@ export {
   BatchedMigration,
   BatchedMigrationRow,
   initBatchedMigrations,
+  startBatchedMigrations,
+  stopBatchedMigrations,
+  enqueueBatchedMigration,
+  finalizeBatchedMigration,
   selectAllBatchedMigrations,
 } from './batched-migrations';
 

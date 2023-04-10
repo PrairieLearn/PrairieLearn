@@ -2,6 +2,7 @@ CREATE TYPE enum_batched_migration_status AS ENUM(
   'pending',
   'paused',
   'running',
+  'finalizing',
   'failed',
   'succeeded'
 );
