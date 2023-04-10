@@ -151,7 +151,7 @@ export class BatchedMigrationRunner {
       !signal?.aborted &&
       (iterations ? iterationCount < iterations : true) &&
       (endTime ? Date.now() < endTime : true) &&
-      this.migrationStatus === 'running'
+      (this.migrationStatus === 'running' || this.migrationStatus === 'finalizing')
     ) {
       await this.runMigrationJob(this.migration, this.migrationImplementation);
       iterationCount += 1;

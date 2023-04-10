@@ -11,8 +11,5 @@ export default class TestMigrationNoRows extends BatchedMigration {
     };
   }
 
-  async execute(min: bigint, max: bigint) {
-    // TODO: something testable?
-    console.log(min, max);
-  }
+  async execute(_min: bigint, _max: bigint) {}
 }

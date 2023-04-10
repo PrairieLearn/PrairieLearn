@@ -91,7 +91,7 @@ export class BatchedMigrationsRunner extends EventEmitter {
       // If `max` is null, that implies that there are no rows to process, so
       // we can immediately mark the migration as finished.
       const status: BatchedMigrationStatus =
-        migrationParameters.max === null ? 'pending' : 'succeeded';
+        migrationParameters.max === null ? 'succeeded' : 'pending';
 
       const minValue = migrationParameters.min ?? DEFAULT_MIN_VALUE;
       const maxValue = migrationParameters.max ?? minValue;

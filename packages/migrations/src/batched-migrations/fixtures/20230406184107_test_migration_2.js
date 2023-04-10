@@ -10,10 +10,7 @@ class TestMigration2 extends BatchedMigration {
     };
   }
 
-  async execute(min, max) {
-    // TODO: do something testable?
-    console.log(min, max);
-  }
+  async execute(_min, _max) {}
 }
 
 module.exports = TestMigration2;
