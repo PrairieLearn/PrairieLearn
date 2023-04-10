@@ -30,7 +30,7 @@ interface BatchedMigrationRunnerOptions {
 
 export class BatchedMigrationsRunner extends EventEmitter {
   private readonly options: BatchedMigrationRunnerOptions;
-  private started: boolean = false;
+  private running: boolean = false;
   private migrationFiles: MigrationFile[] | null = null;
   private abortController = new AbortController();
 
@@ -146,25 +146,42 @@ export class BatchedMigrationsRunner extends EventEmitter {
   }
 
   start() {
-    if (this.started) {
-      throw new Error('BatchedMigrationsRunner was already started');
+    if (this.running) {
+      throw new Error('BatchedMigrationsRunner is already running');
     }
 
-    this.started = true;
     this.loop();
   }
 
   async loop() {
+    this.running = true;
     while (true) {
-      if (this.abortController.signal.aborted) return;
+      if (this.abortController.signal.aborted) {
+        this.running = false;
+        return;
+      }
 
-      const didWork = await this.maybePerformWork(60 * 1000);
+      let didWork = false;
+      try {
+        didWork = await this.maybePerformWork(60 * 1000);
+      } catch (err) {
+        this.emit('error', err);
+      }
 
       // If we did work, we'll immediately try again since there's probably more
       // work to be done. If not, we'll sleep for a while - maybe some more work
       // will become available!
       if (!didWork) {
-        await sleep(30_000, null, { ref: false });
+        // We provide the signal here so that we can more quickly stop things
+        // when we're shutting down.
+        try {
+          await sleep(30_000, null, { ref: false, signal: this.abortController.signal });
+        } catch (err) {
+          // We don't care about errors here, they should only ever occur when
+          // the AbortController is aborted. Continue to the next iteration of
+          // the loop so we can shut down.
+          continue;
+        }
       }
     }
   }
@@ -213,8 +230,13 @@ export class BatchedMigrationsRunner extends EventEmitter {
     return didWork;
   }
 
-  stop() {
+  async stop() {
     this.abortController.abort();
+
+    // Spin until we're no longer running.
+    while (this.running) {
+      await sleep(1000);
+    }
   }
 }
 
@@ -259,8 +281,8 @@ export async function finalizeBatchedMigration(identifier: string) {
   await runner.finalizeBatchedMigration(identifier);
 }
 
-export function stopBatchedMigrations() {
+export async function stopBatchedMigrations() {
   assertRunner(runner);
-  runner.stop();
+  await runner.stop();
   runner = null;
 }

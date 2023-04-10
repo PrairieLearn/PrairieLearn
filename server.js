@@ -2229,6 +2229,7 @@ if (config.startServer) {
             externalGraderResults.stop(),
             cron.stop(),
             serverJobs.stop(),
+            stopBatchedMigrations(),
           ]);
           results.forEach((r) => {
             if (r.status === 'rejected') {
@@ -2236,8 +2237,6 @@ if (config.startServer) {
               Sentry.captureException(r.reason);
             }
           });
-
-          stopBatchedMigrations();
 
           try {
             await lifecycleHooks.completeInstanceTermination();
