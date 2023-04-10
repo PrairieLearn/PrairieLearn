@@ -1973,7 +1973,9 @@ if (config.startServer) {
 
         // Our named locks code maintains a separate pool of database connections.
         // This ensures that we avoid deadlocks.
-        await namedLocks.init(pgConfig, idleErrorHandler);
+        await namedLocks.init(pgConfig, idleErrorHandler, {
+          renewIntervalMs: config.namedLocksRenewIntervalMs,
+        });
 
         logger.verbose('Successfully connected to database');
       },
