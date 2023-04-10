@@ -1,3 +1,4 @@
+// @ts-check
 const { html } = require('@prairielearn/html');
 const { renderEjs } = require('@prairielearn/html-ejs');
 
@@ -10,7 +11,16 @@ const { renderEjs } = require('@prairielearn/html-ejs');
 /**
  * @typedef {Object} AdministratorBatchedMigrationProps
  * @property {import('@prairielearn/migrations').BatchedMigrationRow} batchedMigration
+ * @property {import('@prairielearn/migrations').BatchedMigrationJobRow[]} recentSucceededJobs
+ * @property {import('@prairielearn/migrations').BatchedMigrationJobRow[]} recentFailedJobs
  * @property {Record<string, any>} resLocals
+ */
+
+/**
+ * @typedef {Object} MigrationJobsCardProps
+ * @property {string} title
+ * @property {import('@prairielearn/migrations').BatchedMigrationJobRow[]} jobs
+ * @property {string} emptyText
  */
 
 /**
@@ -64,7 +74,14 @@ function AdministratorBatchedMigrations({ batchedMigrations, resLocals }) {
  * @param {AdministratorBatchedMigrationProps} props
  * @returns {string}
  */
-function AdministratorBatchedMigration({ batchedMigration, resLocals }) {
+function AdministratorBatchedMigration({
+  batchedMigration,
+  recentSucceededJobs,
+  recentFailedJobs,
+  resLocals,
+}) {
+  // TODO: directly interpolate BigInt values once this PR lands:
+  // https://github.com/PrairieLearn/PrairieLearn/pull/7492
   return html`
     <!DOCTYPE html>
     <html>
@@ -80,7 +97,7 @@ function AdministratorBatchedMigration({ batchedMigration, resLocals }) {
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              <span class="mr-auto">Batched migrations</span>
+              <span class="mr-auto">Migration details</span>
             </div>
             <table class="table table-sm two-column-description">
               <tbody>
@@ -90,35 +107,79 @@ function AdministratorBatchedMigration({ batchedMigration, resLocals }) {
                 </tr>
                 <tr>
                   <th>Minimum value</th>
-                  <td>${batchedMigration.min_value}</td>
+                  <td>${String(batchedMigration.min_value)}</td>
                 </tr>
                 <tr>
                   <th>Maximum value</th>
-                  <td>${batchedMigration.max_value}</td>
+                  <td>${String(batchedMigration.max_value)}</td>
                 </tr>
                 <tr>
                   <th>Status</th>
                   <td>${MigrationStatusBadge(batchedMigration.status)}</td>
                 </tr>
+                <tr>
+                  <th>Created at</th>
+                  <td>${batchedMigration.created_at.toUTCString()}</td>
+                </tr>
+                <tr>
+                  <th>Updated at</th>
+                  <td>${batchedMigration.updated_at.toUTCString()}</td>
+                </tr>
+                <tr>
+                  <th>Started at</th>
+                  <td>${batchedMigration.started_at.toUTCString()}</td>
+                </tr>
+                <tr>
+                  <th>Actions</th>
+                  <td>
+                    <form method="POST">
+                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                      <button
+                        type="submit"
+                        name="__action"
+                        value="retry_failed_jobs"
+                        class="btn btn-primary btn-sm"
+                      >
+                        Retry failed jobs
+                      </button>
+                    </form>
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
+
+          ${MigrationJobsCard({
+            title: 'Recent succeeded jobs',
+            jobs: recentSucceededJobs,
+            emptyText: 'No recent succeeded jobs',
+          })}
+          ${MigrationJobsCard({
+            title: 'Recent failed jobs',
+            jobs: recentFailedJobs,
+            emptyText: 'No recent failed jobs',
+          })}
         </main>
       </body>
     </html>
   `.toString();
 }
 
+/**
+ *
+ * @param {import('@prairielearn/migrations').BatchedMigrationStatus} status
+ * @returns
+ */
 function MigrationStatusBadge(status) {
   switch (status) {
     case 'pending':
       return html`<span class="badge badge-secondary">Pending</span>`;
     case 'paused':
-      return html`<span class="badge badge-secondary">Pending</span>`;
+      return html`<span class="badge badge-secondary">Paused</span>`;
     case 'running':
-      return html`<span class="badge badge-info">Running</span>`;
+      return html`<span class="badge badge-primary">Running</span>`;
     case 'finalizing':
-      return html`<span class="badge badge-info">Finalizing</span>`;
+      return html`<span class="badge badge-primary">Finalizing</span>`;
     case 'failed':
       return html`<span class="badge badge-danger">Failed</span>`;
     case 'succeeded':
@@ -126,6 +187,34 @@ function MigrationStatusBadge(status) {
     default:
       return html`<span class="badge badge-warning">Unknown (${status})</span>`;
   }
+}
+
+/**
+ * @param {MigrationJobsCardProps} props
+ */
+function MigrationJobsCard({ title, jobs, emptyText }) {
+  return html`
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white d-flex align-items-center">
+        <span class="mr-auto">${title}</span>
+      </div>
+      ${jobs.length > 0
+        ? html`<div class="list-group list-group-flush">
+            ${jobs.map((job) => {
+              const duration = job.finished_at.getTime() - job.started_at.getTime();
+              return html`
+                <div class="list-group-item d-flex flex-column">
+                  <div>${job.min_value} - ${job.max_value}</div>
+                  <span class="text-muted text-small">
+                    #${job.id} ran at ${job.finished_at.toUTCString()} for ${duration}ms
+                  </span>
+                </div>
+              `;
+            })}
+          </div>`
+        : html`<div class="card-body text-center text-secondary">${emptyText}</div>`}
+    </div>
+  `;
 }
 
 module.exports = {

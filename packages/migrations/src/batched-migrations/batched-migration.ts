@@ -1,5 +1,6 @@
 import {
   loadSqlEquiv,
+  queryAsync,
   queryValidatedOneRow,
   queryValidatedRows,
   queryValidatedZeroOrOneRow,
@@ -109,4 +110,8 @@ export async function updateBatchedMigrationStatus(
     { id, status },
     BatchedMigrationRowSchema
   );
+}
+
+export async function retryFailedBatchedMigrationJobs(project: string, id: string): Promise<void> {
+  await queryAsync(sql.retry_failed_jobs, { project, id });
 }

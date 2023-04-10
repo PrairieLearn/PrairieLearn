@@ -60,3 +60,29 @@ WHERE
   id = $id
 RETURNING
   *;
+
+-- BLOCK retry_failed_jobs
+WITH
+  updated_batched_migration AS (
+    UPDATE batched_migrations
+    SET
+      status = 'running',
+      started_at = CURRENT_TIMESTAMP,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE
+      project = $project
+      AND id = $id
+    RETURNING
+      *
+  )
+UPDATE batched_migration_jobs
+SET
+  status = 'pending',
+  started_at = NULL,
+  finished_at = NULL,
+  updated_at = CURRENT_TIMESTAMP
+FROM
+  updated_batched_migration
+WHERE
+  batched_migration_id = updated_batched_migration.id
+  AND batched_migration_jobs.status = 'failed';

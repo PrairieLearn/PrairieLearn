@@ -2,6 +2,7 @@
 const { BatchedMigration } = require('@prairielearn/migrations');
 const { setTimeout } = require('node:timers/promises');
 
+// TODO: delete before merging
 class TestBatchedMigration extends BatchedMigration {
   async getParameters() {
     return {
@@ -17,7 +18,8 @@ class TestBatchedMigration extends BatchedMigration {
    */
   async execute(min, max) {
     console.log(`Running for range [${min}, ${max}]`);
-    await setTimeout(5000);
+    // throw new Error('Testing failure');
+    await setTimeout(1000);
   }
 }
 
