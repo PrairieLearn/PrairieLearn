@@ -18,10 +18,23 @@ export async function init(directories: string | string[], project: string) {
   const migrationDirectories = Array.isArray(directories) ? directories : [directories];
   const lockName = 'migrations';
   logger.verbose(`Waiting for lock ${lockName}`);
-  await namedLocks.doWithLock(lockName, {}, async () => {
-    logger.verbose(`Acquired lock ${lockName}`);
-    await initWithLock(migrationDirectories, project);
-  });
+  await namedLocks.doWithLock(
+    lockName,
+    {
+      // Migrations *might* take a long time to run, so we'll enable automatic
+      // lock renewal so that our lock doesn't get killed by the Postgres
+      // idle session timeout.
+      //
+      // That said, we should generally try to keep migrations executing as
+      // quickly as possible. A long-running migration likely means that
+      // Postgres is locking a whole table, which is unacceptable in production.
+      autoRenew: true,
+    },
+    async () => {
+      logger.verbose(`Acquired lock ${lockName}`);
+      await initWithLock(migrationDirectories, project);
+    }
+  );
   logger.verbose(`Released lock ${lockName}`);
 }
 
