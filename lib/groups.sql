@@ -214,6 +214,12 @@ VALUES
   ($authn_user_id, $user_id, $group_id, 'leave');
 
 -- BLOCK reassign_group_roles_after_leave
+WITH
+  deleted_group_users_roles AS (
+    DELETE FROM group_user_roles
+    WHERE
+      group_id = $group_id
+  )
 INSERT INTO
   group_user_roles (group_id, user_id, group_role_id)
 SELECT
@@ -221,15 +227,19 @@ SELECT
   (role_assignment ->> 'user_id')::bigint,
   (role_assignment ->> 'group_role_id')::bigint
 FROM
-  JSON_ARRAY_ELEMENTS($role_assignments::json) as role_assignment;
-
--- BLOCK clear_group_roles
-DELETE FROM group_user_roles
-WHERE
-  group_id = $group_id;
+  JSON_ARRAY_ELEMENTS($role_assignments::json) as role_assignment
+ON CONFLICT (group_id, user_id, group_role_id) DO
+UPDATE
+SET
+  group_role_id = EXCLUDED.group_role_id;
 
 -- BLOCK update_group_roles
 WITH
+  deleted_group_users_roles AS (
+    DELETE FROM group_user_roles
+    WHERE
+      group_id = $group_id
+  ),
   assign_new_group_roles AS (
     INSERT INTO
       group_user_roles (group_id, user_id, group_role_id)
@@ -239,6 +249,10 @@ WITH
       (role_assignment ->> 'group_role_id')::bigint
     FROM
       JSON_ARRAY_ELEMENTS($role_assignments::json) as role_assignment
+    ON CONFLICT (group_id, user_id, group_role_id) DO
+    UPDATE
+    SET
+      group_role_id = EXCLUDED.group_role_id
   )
 INSERT INTO
   group_logs (authn_user_id, user_id, group_id, action)
