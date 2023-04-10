@@ -112,27 +112,13 @@ export class BatchedMigrationsRunner extends EventEmitter {
   async finalizeBatchedMigration(identifier: string) {
     const timestamp = identifier.split('_')[0];
 
-    const batchedMigration = await selectBatchedMigrationForTimestamp(
-      this.options.project,
-      timestamp
-    );
+    let migration = await selectBatchedMigrationForTimestamp(this.options.project, timestamp);
 
-    if (!batchedMigration) {
-      throw new Error(`Batched migration with identifier ${identifier} not found`);
-    }
-
-    if (batchedMigration.status === 'succeeded') return;
-
-    if (batchedMigration.status === 'failed') {
-      throw new Error(
-        `Batched migration with identifier ${identifier} failed. Fix the error and retry any failed jobs.`
-      );
-    }
+    if (migration.status === 'succeeded') return;
 
     // If the migration isn't already in the finalizing state, mark it as such.
-    if (batchedMigration.status !== 'finalizing') {
-      await updateBatchedMigrationStatus(batchedMigration.id, 'finalizing');
-      batchedMigration.status = 'finalizing';
+    if (migration.status !== 'finalizing') {
+      migration = await updateBatchedMigrationStatus(migration.id, 'finalizing');
     }
 
     const migrationFile = await this.getMigrationForIdentifier(identifier);
@@ -142,8 +128,16 @@ export class BatchedMigrationsRunner extends EventEmitter {
     const MigrationClass = await this.loadMigrationClass(migrationFile);
     const migrationInstance = new MigrationClass();
 
-    const runner = new BatchedMigrationRunner(batchedMigration, migrationInstance);
+    const runner = new BatchedMigrationRunner(migration, migrationInstance);
     await runner.run();
+
+    migration = await selectBatchedMigrationForTimestamp(this.options.project, timestamp);
+
+    if (migration.status === 'succeeded') return;
+
+    throw new Error(
+      `Expected batched migration with identifier ${identifier} to be marked as 'succeeded', but it is '${migration.status}'.`
+    );
   }
 
   start() {

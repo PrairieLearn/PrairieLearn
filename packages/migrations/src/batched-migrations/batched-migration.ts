@@ -1,10 +1,4 @@
-import {
-  loadSqlEquiv,
-  queryAsync,
-  queryValidatedOneRow,
-  queryValidatedRows,
-  queryValidatedZeroOrOneRow,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryValidatedOneRow, queryValidatedRows } from '@prairielearn/postgres';
 import { z } from 'zod';
 
 const sql = loadSqlEquiv(__filename);
@@ -78,14 +72,21 @@ export async function selectAllBatchedMigrations(project: string) {
 export async function selectBatchedMigrationForTimestamp(
   project: string,
   timestamp: string
-): Promise<BatchedMigrationRow | null> {
-  return queryValidatedZeroOrOneRow(
+): Promise<BatchedMigrationRow> {
+  return queryValidatedOneRow(
     sql.select_batched_migration,
     { project, timestamp },
     BatchedMigrationRowSchema
   );
 }
 
-export async function updateBatchedMigrationStatus(id: string, status: BatchedMigrationStatus) {
-  await queryAsync(sql.update_batched_migration_status, { id, status });
+export async function updateBatchedMigrationStatus(
+  id: string,
+  status: BatchedMigrationStatus
+): Promise<BatchedMigrationRow> {
+  return queryValidatedOneRow(
+    sql.update_batched_migration_status,
+    { id, status },
+    BatchedMigrationRowSchema
+  );
 }

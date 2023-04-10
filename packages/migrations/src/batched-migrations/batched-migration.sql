@@ -47,4 +47,6 @@ SET
   status = $status,
   updated_at = CURRENT_TIMESTAMP
 WHERE
-  id = $id;
+  id = $id
+RETURNING
+  *;

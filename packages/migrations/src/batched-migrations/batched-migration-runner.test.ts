@@ -145,7 +145,7 @@ describe('BatchedMigrationExecutor', () => {
   });
 
   it('handles failing execution', async () => {
-    const migration = await insertTestBatchedMigration();
+    let migration = await insertTestBatchedMigration();
 
     const migrationInstance = new TestBatchMigration();
     migrationInstance.setFailingIds([1n, 5010n]);
@@ -165,8 +165,7 @@ describe('BatchedMigrationExecutor', () => {
 
     // Retry the failed jobs; ensure they succeed this time.
     await resetFailedBatchedMigrationJobs(migration.id);
-    await updateBatchedMigrationStatus(migration.id, 'running');
-    migration.status = 'running';
+    migration = await updateBatchedMigrationStatus(migration.id, 'running');
 
     migrationInstance.setFailingIds([]);
     const retryRunner = new BatchedMigrationRunner(migration, migrationInstance);
@@ -179,8 +178,8 @@ describe('BatchedMigrationExecutor', () => {
     assert.lengthOf(finalFailedJobs, 0);
     assert.lengthOf(finalSuccessfulJobs, 10);
 
-    const finalMigration = await getBatchedMigration(migration.id);
-    assert.equal(finalMigration.status, 'succeeded');
+    migration = await getBatchedMigration(migration.id);
+    assert.equal(migration.status, 'succeeded');
 
     // The runner should have run only the previously failed jobs, which
     // works out to 2 additional execution.
