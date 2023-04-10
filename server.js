@@ -35,6 +35,7 @@ const {
   SCHEMA_MIGRATIONS_PATH,
   initBatchedMigrations,
   startBatchedMigrations,
+  stopBatchedMigrations,
 } = require('@prairielearn/migrations');
 
 const { logger, addFileLogging } = require('@prairielearn/logger');
@@ -2235,6 +2236,8 @@ if (config.startServer) {
               Sentry.captureException(r.reason);
             }
           });
+
+          stopBatchedMigrations();
 
           try {
             await lifecycleHooks.completeInstanceTermination();
