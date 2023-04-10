@@ -1,6 +1,7 @@
 columns
     client_files: text[] default ARRAY[]::text[]
     course_id: bigint not null
+    cross_origin_isolated: boolean default false
     deleted_at: timestamp with time zone
     dependencies: jsonb not null default '{}'::jsonb
     directory: text

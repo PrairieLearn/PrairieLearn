@@ -399,6 +399,7 @@ const FILE_UUID_REGEX =
  * @property {boolean} singleVariant
  * @property {boolean} showCorrectAnswer
  * @property {boolean} partialCredit
+ * @property {boolean} crossOriginIsolated
  * @property {Object} options
  * @property {QuestionExternalGradingOptions} externalGradingOptions
  * @property {QuestionWorkspaceOptions} [workspaceOptions]

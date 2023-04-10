@@ -48,6 +48,7 @@ function getParamsForQuestion(q) {
     workspace_url_rewrite: q.workspaceOptions && q.workspaceOptions.rewriteUrl,
     workspace_enable_networking: q.workspaceOptions && q.workspaceOptions.enableNetworking,
     workspace_environment: q.workspaceOptions?.environment ?? {},
+    cross_origin_isolated: q.crossOriginIsolated === undefined ? false : q.crossOriginIsolated,
   };
 }
 

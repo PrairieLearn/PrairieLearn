@@ -163,7 +163,8 @@ BEGIN
         workspace_enable_networking = (src.data->>'workspace_enable_networking')::boolean,
         workspace_environment = (src.data->>'workspace_environment')::jsonb,
         sync_errors = NULL,
-        sync_warnings = src.warnings
+        sync_warnings = src.warnings,
+        cross_origin_isolated = (src.data->>'cross_origin_isolated')::boolean
     FROM
         disk_questions AS src,
         -- Aggregates are not allowed in UPDATE clauses, so we need to do them in a
