@@ -17,7 +17,7 @@ class TestBatchedMigration extends BatchedMigration {
    */
   async execute(min, max) {
     console.log(`Running for range [${min}, ${max}]`);
-    await setTimeout(10000);
+    await setTimeout(5000);
   }
 }
 

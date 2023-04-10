@@ -11,6 +11,8 @@ export {
   enqueueBatchedMigration,
   finalizeBatchedMigration,
   selectAllBatchedMigrations,
+  selectBatchedMigration,
+  selectBatchedMigrationForTimestamp,
 } from './batched-migrations';
 
 export const SCHEMA_MIGRATIONS_PATH = path.resolve(__dirname, '..', 'schema-migrations');

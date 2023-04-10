@@ -10,7 +10,9 @@ class TestMigration2 extends BatchedMigration {
     };
   }
 
-  async execute(_min, _max) {}
+  async execute(_min, _max) {
+    throw new Error('Testing failure');
+  }
 }
 
 module.exports = TestMigration2;

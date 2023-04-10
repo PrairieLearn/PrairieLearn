@@ -78,7 +78,7 @@ async function resetFailedBatchedMigrationJobs(migrationId: string) {
 async function insertTestBatchedMigration() {
   const migrationImplementation = new TestBatchMigration();
   const parameters = await migrationImplementation.getParameters();
-  return insertBatchedMigration({
+  const migration = await insertBatchedMigration({
     project: 'test',
     filename: '20230406184103_test_batch_migration.js',
     timestamp: '20230406184103',
@@ -87,6 +87,8 @@ async function insertTestBatchedMigration() {
     max_value: parameters.max,
     status: 'running',
   });
+  if (!migration) throw new Error('Failed to insert batched migration');
+  return migration;
 }
 
 describe('BatchedMigrationExecutor', () => {

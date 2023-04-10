@@ -2,6 +2,8 @@ export {
   BatchedMigration,
   BatchedMigrationRow,
   selectAllBatchedMigrations,
+  selectBatchedMigration,
+  selectBatchedMigrationForTimestamp,
 } from './batched-migration';
 export {
   initBatchedMigrations,

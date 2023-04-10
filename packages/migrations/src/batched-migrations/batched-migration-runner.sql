@@ -81,3 +81,11 @@ SELECT
       batched_migration_id = $batched_migration_id
       AND status = 'failed'
   ) as exists;
+
+-- BLOCK get_migration_status
+SELECT
+  status
+FROM
+  batched_migrations
+WHERE
+  id = $id;

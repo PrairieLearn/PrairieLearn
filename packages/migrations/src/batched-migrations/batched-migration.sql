@@ -19,6 +19,7 @@ VALUES
     $max_value,
     $status
   )
+ON CONFLICT DO NOTHING
 RETURNING
   *;
 
@@ -33,6 +34,15 @@ ORDER BY
   id ASC;
 
 -- BLOCK select_batched_migration
+SELECT
+  *
+FROM
+  batched_migrations
+WHERE
+  project = $project
+  AND id = $id;
+
+-- BLOCK select_batched_migration_for_timestamp
 SELECT
   *
 FROM

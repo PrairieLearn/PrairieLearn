@@ -2,7 +2,7 @@ import EventEmitter from 'node:events';
 import path from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { loadSqlEquiv, queryValidatedZeroOrOneRow } from '@prairielearn/postgres';
-import { doWithLock, tryWithLock } from '@prairielearn/named-locks';
+import { tryWithLock } from '@prairielearn/named-locks';
 
 import { MigrationFile, readAndValidateMigrationsFromDirectories } from '../load-migrations';
 import {
@@ -30,7 +30,6 @@ interface BatchedMigrationRunnerOptions {
 
 export class BatchedMigrationsRunner extends EventEmitter {
   private readonly options: BatchedMigrationRunnerOptions;
-  private readonly lockName: string;
   private started: boolean = false;
   private migrationFiles: MigrationFile[] | null = null;
   private abortController = new AbortController();
@@ -38,7 +37,10 @@ export class BatchedMigrationsRunner extends EventEmitter {
   constructor(options: BatchedMigrationRunnerOptions) {
     super();
     this.options = options;
-    this.lockName = `batched-migrations:${this.options.project}`;
+  }
+
+  private lockNameForTimestamp(timestamp: string) {
+    return `batched-migrations:${this.options.project}:${timestamp}`;
   }
 
   private getMigrationFiles = async () => {
@@ -78,34 +80,32 @@ export class BatchedMigrationsRunner extends EventEmitter {
   }
 
   async enqueueBatchedMigration(identifier: string) {
-    await doWithLock(this.lockName, {}, async () => {
-      const migrationFile = await this.getMigrationForIdentifier(identifier);
-      if (!migrationFile) {
-        throw new Error(`No migration found for identifier ${identifier}`);
-      }
+    const migrationFile = await this.getMigrationForIdentifier(identifier);
+    if (!migrationFile) {
+      throw new Error(`No migration found for identifier ${identifier}`);
+    }
 
-      const MigrationClass = await this.loadMigrationClass(migrationFile);
-      const migration = new MigrationClass();
-      const migrationParameters = await migration.getParameters();
+    const MigrationClass = await this.loadMigrationClass(migrationFile);
+    const migration = new MigrationClass();
+    const migrationParameters = await migration.getParameters();
 
-      // If `max` is null, that implies that there are no rows to process, so
-      // we can immediately mark the migration as finished.
-      const status: BatchedMigrationStatus =
-        migrationParameters.max === null ? 'succeeded' : 'pending';
+    // If `max` is null, that implies that there are no rows to process, so
+    // we can immediately mark the migration as finished.
+    const status: BatchedMigrationStatus =
+      migrationParameters.max === null ? 'succeeded' : 'pending';
 
-      const minValue = migrationParameters.min ?? DEFAULT_MIN_VALUE;
-      const maxValue = migrationParameters.max ?? minValue;
-      const batchSize = migrationParameters.batchSize ?? DEFAULT_BATCH_SIZE;
+    const minValue = migrationParameters.min ?? DEFAULT_MIN_VALUE;
+    const maxValue = migrationParameters.max ?? minValue;
+    const batchSize = migrationParameters.batchSize ?? DEFAULT_BATCH_SIZE;
 
-      await insertBatchedMigration({
-        project: this.options.project,
-        filename: migrationFile.filename,
-        timestamp: migrationFile.timestamp,
-        batch_size: batchSize,
-        min_value: minValue,
-        max_value: maxValue,
-        status,
-      });
+    await insertBatchedMigration({
+      project: this.options.project,
+      filename: migrationFile.filename,
+      timestamp: migrationFile.timestamp,
+      batch_size: batchSize,
+      min_value: minValue,
+      max_value: maxValue,
+      status,
     });
   }
 
@@ -128,6 +128,11 @@ export class BatchedMigrationsRunner extends EventEmitter {
     const MigrationClass = await this.loadMigrationClass(migrationFile);
     const migrationInstance = new MigrationClass();
 
+    // TODO: we should still lock this migration. Probably what we want to do
+    // is to have the normal run loop check for a runnable migration *before*
+    // acquiring a lock. If it finds a running one, it should grab and hold a
+    // lock just for that specific migration. This allows the instance that's
+    // performing finalization to run without anyone else trying to grab a global lock.
     const runner = new BatchedMigrationRunner(migration, migrationInstance);
     await runner.run();
 
@@ -153,14 +158,7 @@ export class BatchedMigrationsRunner extends EventEmitter {
     while (true) {
       if (this.abortController.signal.aborted) return;
 
-      let didWork = false;
-      try {
-        await tryWithLock(this.lockName, async () => {
-          didWork = await this.performWork(60 * 1000);
-        });
-      } catch (err) {
-        this.emit('error', err);
-      }
+      const didWork = await this.maybePerformWork(60 * 1000);
 
       // If we did work, we'll immediately try again since there's probably more
       // work to be done. If not, we'll sleep for a while - maybe some more work
@@ -171,20 +169,19 @@ export class BatchedMigrationsRunner extends EventEmitter {
     }
   }
 
-  /**
-   * Should be called with the batched migrations lock held.
-   */
   private async getOrStartMigration(): Promise<BatchedMigrationRow | null> {
-    // TODO: should this actually transition a migration from pending to running?
-    // If so, implement that here.
+    // This query will lock all existing rows in the `batched_migrations` table
+    // to guard against race conditions.
+    //
+    // TODO: should this use `LOCK TABLE ...` instead?
     return queryValidatedZeroOrOneRow(
-      sql.select_running_migration,
+      sql.select_or_start_running_migration,
       { project: this.options.project },
       BatchedMigrationRowSchema
     );
   }
 
-  async performWork(durationMs: number): Promise<boolean> {
+  async maybePerformWork(durationMs: number): Promise<boolean> {
     const migration = await this.getOrStartMigration();
     if (!migration) {
       // No work to do. Handle this case.
@@ -198,13 +195,22 @@ export class BatchedMigrationsRunner extends EventEmitter {
       return false;
     }
 
-    const MigrationClass = await this.loadMigrationClass(migrationFile);
-    const migrationInstance = new MigrationClass();
+    let didWork = false;
+    await tryWithLock(this.lockNameForTimestamp(migrationFile.timestamp), async () => {
+      didWork = true;
+      const MigrationClass = await this.loadMigrationClass(migrationFile);
+      const migrationInstance = new MigrationClass();
 
-    const runner = new BatchedMigrationRunner(migration, migrationInstance);
-    await runner.run({ signal: this.abortController.signal, durationMs });
+      const runner = new BatchedMigrationRunner(migration, migrationInstance);
 
-    return true;
+      try {
+        await runner.run({ signal: this.abortController.signal, durationMs });
+      } catch (err) {
+        this.emit('error', err);
+      }
+    });
+
+    return didWork;
   }
 
   stop() {

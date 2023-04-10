@@ -2,6 +2,7 @@ import {
   loadSqlEquiv,
   queryAsync,
   queryValidatedOneRow,
+  queryValidatedSingleColumnOneRow,
   queryValidatedZeroOrOneRow,
 } from '@prairielearn/postgres';
 import { z } from 'zod';
@@ -11,6 +12,7 @@ import {
   BatchedMigrationStatus,
   BatchedMigrationRow,
   updateBatchedMigrationStatus,
+  BatchedMigrationStatusSchema,
 } from './batched-migration';
 import {
   BatchedMigrationJobRowSchema,
@@ -49,12 +51,14 @@ export class BatchedMigrationRunner {
     return res.exists;
   }
 
-  private async updateMigrationStatus(
-    migration: BatchedMigrationRow,
-    status: BatchedMigrationStatus
-  ) {
-    await updateBatchedMigrationStatus(migration.id, status);
-    this.migrationStatus = status;
+  private async refreshMigrationStatus(migration: BatchedMigrationRow) {
+    this.migrationStatus = await queryValidatedSingleColumnOneRow(
+      sql.get_migration_status,
+      {
+        id: migration.id,
+      },
+      BatchedMigrationStatusSchema
+    );
   }
 
   private async finishRunningMigration(migration: BatchedMigrationRow) {
@@ -64,7 +68,7 @@ export class BatchedMigrationRunner {
 
     const hasFailedJobs = await this.hasFailedJobs(migration);
     const finalStatus = hasFailedJobs ? 'failed' : 'succeeded';
-    await this.updateMigrationStatus(migration, finalStatus);
+    await updateBatchedMigrationStatus(migration.id, finalStatus);
   }
 
   private async getNextBatchBounds(
@@ -155,6 +159,9 @@ export class BatchedMigrationRunner {
     ) {
       await this.runMigrationJob(this.migration, this.migrationImplementation);
       iterationCount += 1;
+      // Always refresh the status so we can detect if the migration was marked
+      // as paused by another process.
+      await this.refreshMigrationStatus(this.migration);
     }
   }
 }
