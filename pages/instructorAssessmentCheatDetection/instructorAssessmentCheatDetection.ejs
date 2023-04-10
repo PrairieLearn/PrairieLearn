@@ -234,7 +234,7 @@
               console.log("<%= urlPrefix %>")
               console.log("hello")
 
-              let tr = $("<tr role=\"row\" class=\"even\" data-href=\"" +window.location.href+ "_pair\"></tr>");   // localhost:3000/cheat_detection_pair             localhost:3000/pl/.....
+              let tr = $("<tr role=\"row\" class=\"even\" data-href=\"" +window.location.href+ "_pair?data1=" + data[i].student1 + "&data2=" + data[i].student2 + "\"></tr>");  // localhost:3000/cheat_detection_pair             localhost:3000/pl/.....
               tr.append($("<td>"+(i+1)+"</td>"));
               tr.append($("<td>"+"100%"+"</td>")); 
               tr.append($("<td>"+data[i].student1+"</td>"));
@@ -245,6 +245,23 @@
               highlightSimilarityScore(data[i].rule4_prob, tr)
               highlightSimilarityScore(data[i].rule4_prob, tr)
               table_body.append(tr);
+
+              tr.on("click", function() {
+                let url = $(this).attr("data-href");
+
+                $.ajax({
+                  url: url,
+                  method: "GET",
+                  success: function(response) {
+                    let newWindow = window.open();
+                    newWindow.document.write(response);
+
+                  },
+                  error: function(error) {
+                    console.error("Failed to load details page: " + error);
+                  }
+                });
+              });
             }              
           }
           function highlightSimilarityScore(score, tr) {
