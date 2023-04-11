@@ -11,6 +11,14 @@ describe('html', () => {
     assert.equal(html`<p>${'cats'} and ${'dogs'}</p>`.toString(), '<p>cats and dogs</p>');
   });
 
+  it('interpolates a number', () => {
+    assert.equal(html`<p>${123}</p>`.toString(), '<p>123</p>');
+  });
+
+  it('interpolates a bigint', () => {
+    assert.equal(html`<p>${123n}</p>`.toString(), '<p>123</p>');
+  });
+
   it('escapes values when rendering array', () => {
     const arr = ['cats>', '<dogs'];
     assert.equal(
