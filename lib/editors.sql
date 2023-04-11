@@ -38,3 +38,14 @@ FROM
 WHERE
   q.course_id = $course_id
   AND q.deleted_at IS NULL;
+
+-- BLOCK select_base_question_path
+SELECT
+  q.qid,
+  c.path AS course_path
+FROM
+  questions AS q
+  JOIN pl_courses AS c ON (c.id = q.course_id)
+WHERE
+  q.id = $question_id
+  AND (c.id = $course_id OR c.example_course);

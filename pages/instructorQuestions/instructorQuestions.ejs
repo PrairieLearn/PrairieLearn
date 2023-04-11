@@ -33,9 +33,7 @@
                       text: 'Add Question',
                       icon: 'fa-plus',
                       attributes: { title: 'Create a new question' },
-                      event: () => {
-                          $('form[name=add-question-form]').submit();
-                      },
+                      html: addQuestionDropdown,
                   },
                   //<% } %>
               },
@@ -65,6 +63,12 @@
           });
       });
 
+      function addQuestionDropdown() {
+        const dropdown = document.querySelector('.js-add-question-dropdown')
+              .content.firstElementChild.cloneNode(true);
+        return dropdown.outerHTML;
+      }
+     
       function topicList() {
           var data = $('#questionsTable').bootstrapTable('getData');
           return _.keyBy(_.map(data, row => row.topic.name));
@@ -171,10 +175,28 @@
       }
     </style>
     <%- include('../partials/navbar'); %>
-    <form class="ml-1 btn-group" name="add-question-form" method="POST">
-      <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-      <input type="hidden" name="__action" value="add_question">
-    </form>
+    <template class="js-add-question-dropdown">
+      <div class="dropdown btn-group" data-boundary="window">
+        <button class="btn btn-secondary dropdown-toggle" data-toggle="dropdown" name="addQuestion">
+          <i class="fas fa-plus"></i> Add Question
+        </button>
+        <form class="ml-1 btn-group" name="add-question-form" method="POST">
+          <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+          <input type="hidden" name="__action" value="add_question">
+          <div class="dropdown-menu dropdown-menu-right">
+            <% template_questions.forEach((course, index) => { %>
+            <% if (index) { %><div class="dropdown-divider"></div><% } %>
+            <div class="dropdown-header"><%= course.course_title %></div>
+            <% course.questions.forEach((question) => { %>
+            <button class="dropdown-item" type="submit" name="source_question_id" value="<%= question.id %>">
+              <%= question.title %>
+            </button>
+            <% }); %>
+            <% }); %>
+          </div>
+        </form>
+      </div>
+    </template>
     <div id="content" class="container-fluid">
       <%- include('../partials/courseSyncErrorsAndWarnings'); %>
       <div class="card mb-4">

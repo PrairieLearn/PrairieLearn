@@ -29,26 +29,28 @@ router.get('/', function (req, res, next) {
           callback(null);
         });
       },
-      (callback) => {
-        const params = {
+      async () => {
+        const result = await sqldb.queryAsync(sql.questions, {
           course_id: res.locals.course.id,
-        };
-        sqldb.query(sql.questions, params, function (err, result) {
-          if (ERR(err, callback)) return;
-          const ci_ids = _.map(res.locals.authz_data.course_instances, (ci) => ci.id);
-          res.locals.questions = _.map(result.rows, (row) => {
-            if (row.sync_errors) row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
-            if (row.sync_warnings) {
-              row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
-            }
-            row.assessments = _.filter(row.assessments, (assessment) =>
-              ci_ids.includes(assessment.course_instance_id)
-            );
-            return row;
-          });
-          res.locals.has_legacy_questions = _.some(result.rows, (row) => row.display_type !== 'v3');
-          callback(null);
         });
+        const ci_ids = _.map(res.locals.authz_data.course_instances, (ci) => ci.id);
+        res.locals.questions = _.map(result.rows, (row) => {
+          if (row.sync_errors) row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
+          if (row.sync_warnings) {
+            row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
+          }
+          row.assessments = _.filter(row.assessments, (assessment) =>
+            ci_ids.includes(assessment.course_instance_id)
+          );
+          return row;
+        });
+        res.locals.has_legacy_questions = _.some(result.rows, (row) => row.display_type !== 'v3');
+      },
+      async () => {
+        const result = await sqldb.queryAsync(sql.template_questions, {
+          course_id: res.locals.course.id,
+        });
+        res.locals.template_questions = result.rows;
       },
     ],
     (err) => {
@@ -64,6 +66,7 @@ router.post('/', (req, res, next) => {
     debug(`Responding to action add_question`);
     const editor = new QuestionAddEditor({
       locals: res.locals,
+      source_question_id: req.body.source_question_id,
     });
     editor.canEdit((err) => {
       if (ERR(err, next)) return;
