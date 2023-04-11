@@ -80,8 +80,6 @@ function AdministratorBatchedMigration({
   recentFailedJobs,
   resLocals,
 }) {
-  // TODO: directly interpolate BigInt values once this PR lands:
-  // https://github.com/PrairieLearn/PrairieLearn/pull/7492
   return html`
     <!DOCTYPE html>
     <html>
@@ -107,11 +105,11 @@ function AdministratorBatchedMigration({
                 </tr>
                 <tr>
                   <th>Minimum value</th>
-                  <td>${String(batchedMigration.min_value)}</td>
+                  <td>${batchedMigration.min_value}</td>
                 </tr>
                 <tr>
                   <th>Maximum value</th>
-                  <td>${String(batchedMigration.max_value)}</td>
+                  <td>${batchedMigration.max_value}</td>
                 </tr>
                 <tr>
                   <th>Status</th>
