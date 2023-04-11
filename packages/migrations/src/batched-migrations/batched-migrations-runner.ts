@@ -30,6 +30,7 @@ interface BatchedMigrationRunnerOptions {
 
 export class BatchedMigrationsRunner extends EventEmitter {
   private readonly options: BatchedMigrationRunnerOptions;
+  private readonly lockName: string;
   private running: boolean = false;
   private migrationFiles: MigrationFile[] | null = null;
   private abortController = new AbortController();
@@ -37,10 +38,11 @@ export class BatchedMigrationsRunner extends EventEmitter {
   constructor(options: BatchedMigrationRunnerOptions) {
     super();
     this.options = options;
+    this.lockName = `batched-migrations:${this.options.project}`;
   }
 
   private lockNameForTimestamp(timestamp: string) {
-    return `batched-migrations:${this.options.project}:${timestamp}`;
+    return `${this.lockName}:${timestamp}`;
   }
 
   private getMigrationFiles = async () => {
@@ -187,15 +189,23 @@ export class BatchedMigrationsRunner extends EventEmitter {
   }
 
   private async getOrStartMigration(): Promise<BatchedMigrationRow | null> {
-    // This query will lock all existing rows in the `batched_migrations` table
-    // to guard against race conditions.
-    //
-    // TODO: should this use `LOCK TABLE ...` instead?
-    return queryValidatedZeroOrOneRow(
-      sql.select_or_start_running_migration,
-      { project: this.options.project },
-      BatchedMigrationRowSchema
-    );
+    return doWithLock(this.lockName, {}, async () => {
+      let migration = await queryValidatedZeroOrOneRow(
+        sql.select_running_migration,
+        { project: this.options.project },
+        BatchedMigrationRowSchema
+      );
+
+      if (!migration) {
+        migration = await queryValidatedZeroOrOneRow(
+          sql.start_next_pending_migration,
+          { project: this.options.project },
+          BatchedMigrationRowSchema
+        );
+      }
+
+      return migration;
+    });
   }
 
   async maybePerformWork(durationMs: number): Promise<boolean> {
@@ -213,19 +223,23 @@ export class BatchedMigrationsRunner extends EventEmitter {
     }
 
     let didWork = false;
-    await tryWithLock(this.lockNameForTimestamp(migrationFile.timestamp), async () => {
-      didWork = true;
-      const MigrationClass = await this.loadMigrationClass(migrationFile);
-      const migrationInstance = new MigrationClass();
+    await tryWithLock(
+      this.lockNameForTimestamp(migrationFile.timestamp),
+      { autoRenew: true },
+      async () => {
+        didWork = true;
+        const MigrationClass = await this.loadMigrationClass(migrationFile);
+        const migrationInstance = new MigrationClass();
 
-      const runner = new BatchedMigrationRunner(migration, migrationInstance);
+        const runner = new BatchedMigrationRunner(migration, migrationInstance);
 
-      try {
-        await runner.run({ signal: this.abortController.signal, durationMs });
-      } catch (err) {
-        this.emit('error', err);
+        try {
+          await runner.run({ signal: this.abortController.signal, durationMs });
+        } catch (err) {
+          this.emit('error', err);
+        }
       }
-    });
+    );
 
     return didWork;
   }
