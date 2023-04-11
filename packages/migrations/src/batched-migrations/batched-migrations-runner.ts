@@ -2,7 +2,7 @@ import EventEmitter from 'node:events';
 import path from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { loadSqlEquiv, queryValidatedZeroOrOneRow } from '@prairielearn/postgres';
-import { tryWithLock } from '@prairielearn/named-locks';
+import { doWithLock, tryWithLock } from '@prairielearn/named-locks';
 
 import { MigrationFile, readAndValidateMigrationsFromDirectories } from '../load-migrations';
 import {
@@ -121,20 +121,20 @@ export class BatchedMigrationsRunner extends EventEmitter {
       migration = await updateBatchedMigrationStatus(migration.id, 'finalizing');
     }
 
-    const migrationFile = await this.getMigrationForIdentifier(identifier);
-    if (!migrationFile) {
-      throw new Error(`No migration found for identifier ${identifier}`);
-    }
-    const MigrationClass = await this.loadMigrationClass(migrationFile);
-    const migrationInstance = new MigrationClass();
+    await doWithLock(this.lockNameForTimestamp(timestamp), { autoRenew: true }, async () => {
+      const migrationFile = await this.getMigrationForIdentifier(identifier);
+      if (!migrationFile) {
+        throw new Error(`No migration found for identifier ${identifier}`);
+      }
+      const MigrationClass = await this.loadMigrationClass(migrationFile);
+      const migrationInstance = new MigrationClass();
 
-    // TODO: we should still lock this migration. Probably what we want to do
-    // is to have the normal run loop check for a runnable migration *before*
-    // acquiring a lock. If it finds a running one, it should grab and hold a
-    // lock just for that specific migration. This allows the instance that's
-    // performing finalization to run without anyone else trying to grab a global lock.
-    const runner = new BatchedMigrationRunner(migration, migrationInstance);
-    await runner.run();
+      const runner = new BatchedMigrationRunner(migration, migrationInstance);
+
+      // Because we don't give any arguments to `run()`, it will run until it
+      // has attempted every job.
+      await runner.run();
+    });
 
     migration = await selectBatchedMigrationForTimestamp(this.options.project, timestamp);
 
