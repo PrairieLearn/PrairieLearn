@@ -274,6 +274,12 @@ export function startBatchedMigrations() {
   return runner;
 }
 
+export async function stopBatchedMigrations() {
+  assertRunner(runner);
+  await runner.stop();
+  runner = null;
+}
+
 /**
  * Given a batched migration identifier like `20230406184103_migration`,
  * enqueues it for execution by creating a row in the `batched_migrations`
@@ -290,13 +296,14 @@ export async function enqueueBatchedMigration(identifier: string) {
   await runner.enqueueBatchedMigration(identifier);
 }
 
+/**
+ * Given a batched migration identifier like `20230406184103_migration`,
+ * synchronously runs it to completion. An error will be thrown if the final
+ * status of the migration is not `succeeded`.
+ *
+ * @param identifier The identifier of the batched migration to finalize.
+ */
 export async function finalizeBatchedMigration(identifier: string) {
   assertRunner(runner);
   await runner.finalizeBatchedMigration(identifier);
-}
-
-export async function stopBatchedMigrations() {
-  assertRunner(runner);
-  await runner.stop();
-  runner = null;
 }

@@ -4,7 +4,12 @@ const path = require('path');
 const util = require('util');
 
 const sqldb = require('@prairielearn/postgres');
-const { init: initMigrations, SCHEMA_MIGRATIONS_PATH } = require('@prairielearn/migrations');
+const {
+  init: initMigrations,
+  initBatchedMigrations,
+  SCHEMA_MIGRATIONS_PATH,
+  stopBatchedMigrations,
+} = require('@prairielearn/migrations');
 const sprocs = require('../sprocs');
 const namedLocks = require('@prairielearn/named-locks');
 
@@ -53,6 +58,13 @@ async function runMigrationsAndSprocs(dbName, runMigrations) {
   // acquire a lock.
   await namedLocks.init(pgConfig, idleErrorHandler);
 
+  // Some migrations will call `enqueueBatchedMigration` and `finalizeBatchedMigration`,
+  // so we need to make sure the batched migration machinery is initialized.
+  initBatchedMigrations({
+    project: 'prairielearn',
+    directories: [path.join(__dirname, '..', 'batched-migrations')],
+  });
+
   if (runMigrations) {
     await initMigrations(
       [path.join(__dirname, '..', 'migrations'), SCHEMA_MIGRATIONS_PATH],
@@ -63,6 +75,7 @@ async function runMigrationsAndSprocs(dbName, runMigrations) {
   await sqldb.setRandomSearchSchemaAsync('test');
   await util.promisify(sprocs.init)();
 
+  await stopBatchedMigrations();
   await namedLocks.close();
   await sqldb.closeAsync();
 }
