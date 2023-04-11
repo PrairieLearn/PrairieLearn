@@ -1997,7 +1997,7 @@ if (config.startServer) {
         // trying to run the job. This is just for our own recordkeeping.
         //
         // TODO: log error details on job row.
-        const runner = await initBatchedMigrations({
+        const runner = initBatchedMigrations({
           project: 'prairielearn',
           directories: [path.join(__dirname, 'batched-migrations')],
           runDurationMs: config.batchedMigrationsRunDurationMs,
@@ -2083,6 +2083,11 @@ if (config.startServer) {
         });
       },
       async () => {
+        // Now that all migrations have been run, we can start executing any
+        // batched migrations that may have been enqueued by migrations.
+        startBatchedMigrations();
+      },
+      async () => {
         // We create and activate a random DB schema name
         // (https://www.postgresql.org/docs/12/ddl-schemas.html)
         // after we have run the migrations but before we create
@@ -2115,11 +2120,6 @@ if (config.startServer) {
           if (ERR(err, callback)) return;
           callback(null);
         });
-      },
-      async () => {
-        // Now that all migrations have been run, we can start executing any
-        // batched migrations that may have been enqueued by migrations.
-        startBatchedMigrations();
       },
       function (callback) {
         if (!config.initNewsItems) return callback(null);
