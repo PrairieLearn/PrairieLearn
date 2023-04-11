@@ -31,7 +31,7 @@ interface BatchedMigrationRunnerOptions {
 export class BatchedMigrationsRunner extends EventEmitter {
   private readonly options: BatchedMigrationRunnerOptions;
   private readonly lockName: string;
-  private running: boolean = false;
+  private running = false;
   private migrationFiles: MigrationFile[] | null = null;
   private abortController = new AbortController();
 
@@ -157,8 +157,10 @@ export class BatchedMigrationsRunner extends EventEmitter {
 
   async loop() {
     this.running = true;
-    while (true) {
+    while (this.running) {
       if (this.abortController.signal.aborted) {
+        // We assign this here so that `stop()` can tell when this loop is done
+        // processing jobs.
         this.running = false;
         return;
       }

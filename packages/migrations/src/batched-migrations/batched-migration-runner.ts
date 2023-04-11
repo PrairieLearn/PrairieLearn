@@ -161,7 +161,7 @@ export class BatchedMigrationRunner {
     durationMs,
   }: { signal?: AbortSignal; iterations?: number; durationMs?: number } = {}) {
     let iterationCount = 0;
-    let endTime = durationMs ? Date.now() + durationMs : null;
+    const endTime = durationMs ? Date.now() + durationMs : null;
     while (
       !signal?.aborted &&
       (iterations ? iterationCount < iterations : true) &&
