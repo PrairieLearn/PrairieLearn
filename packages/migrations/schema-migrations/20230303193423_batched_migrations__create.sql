@@ -23,8 +23,8 @@ CREATE TABLE IF NOT EXISTS
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP NOT NULL,
     started_at TIMESTAMP WITH TIME ZONE,
     UNIQUE (project, timestamp),
-    CHECK (min_value > 0),
-    CHECK (max_value >= min_value)
+    CONSTRAINT batched_migrations_min_value_check CHECK (min_value > 0),
+    CONSTRAINT batched_migrations_max_value_check CHECK (max_value >= min_value)
   );
 
 CREATE TABLE IF NOT EXISTS
@@ -40,8 +40,8 @@ CREATE TABLE IF NOT EXISTS
     started_at TIMESTAMP WITH TIME ZONE,
     finished_at TIMESTAMP WITH TIME ZONE,
     data jsonb,
-    CHECK (min_value > 0),
-    CHECK (max_value >= min_value)
+    CONSTRAINT batched_migration_jobs_min_value_check CHECK (min_value > 0),
+    CONSTRAINT batched_migration_jobs_max_value_check CHECK (max_value >= min_value)
   );
 
 CREATE INDEX IF NOT EXISTS batched_migration_jobs_batched_migration_id_max_value_idx ON batched_migration_jobs (batched_migration_id, max_value);

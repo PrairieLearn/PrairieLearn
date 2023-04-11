@@ -16,5 +16,9 @@ indexes
     batched_migration_jobs_batched_migration_id_max_value_idx: USING btree (batched_migration_id, max_value)
     batched_migration_jobs_batched_migration_id_status_idx: USING btree (batched_migration_id, status)
 
+check constraints
+    batched_migration_jobs_max_value_check: CHECK (max_value >= min_value)
+    batched_migration_jobs_min_value_check: CHECK (min_value > 0)
+
 foreign-key constraints
     batched_migration_jobs_batched_migration_id_fkey: FOREIGN KEY (batched_migration_id) REFERENCES batched_migrations(id) ON UPDATE CASCADE ON DELETE CASCADE
