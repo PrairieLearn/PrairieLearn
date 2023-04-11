@@ -3,7 +3,6 @@ import chevron
 import lxml.html
 import prairielearn as pl
 from ansi2html import Ansi2HTMLConverter
-from colors import get_css_color
 
 # No built-in support for custom schemes, so we'll monkey-patch our own colors
 # into the module. Colors borrowed from the "Dark Background" color preset in
@@ -142,16 +141,16 @@ def render(element_html, data):
                             )
 
                             if test["max_points"] != test["points"]:
-                                test["results_color"] = get_css_color("crimson")
+                                test["results_color"] = "#E70000"
                                 test["results_icon"] = "fa-times"
                             # Don't consider points for test cases that are 0/0
                             # to be correct. We compare with a string because
                             # `round_value()` returns a string.
                             elif test["max_points"] == "0":
-                                test["results_color"] = get_css_color("dimgray")
+                                test["results_color"] = "#757575"
                                 test["results_icon"] = "fa-circle-info"
                             else:
-                                test["results_color"] = get_css_color("darkgreen")
+                                test["results_color"] = "#008900"
                                 test["results_icon"] = "fa-check"
 
                         test["images"] = results_test.get("images", [])
