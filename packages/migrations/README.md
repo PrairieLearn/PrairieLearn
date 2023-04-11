@@ -76,6 +76,8 @@ export default class ExampleMigration extends BatchedMigration {
 }
 ```
 
+Batched migrations **must** be idempotent, as they may run multiple times on the same ID range in the case of retries after failure.
+
 #### Executing batched migrations
 
 You'll need to initialize and start batched migration processing in your application startup code. Since batched migrations are typically used with regular migrations, you'll need to take care to call `init()` after `initBatchedMigrations()` but before `startBatchedMigrations()`.

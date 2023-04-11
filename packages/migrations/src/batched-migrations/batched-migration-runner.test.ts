@@ -141,6 +141,7 @@ describe('BatchedMigrationExecutor', () => {
     assert.isTrue(jobs.every((job) => job.started_at !== null));
     assert.isTrue(jobs.every((job) => job.finished_at !== null));
     assert.isTrue(jobs.every((job) => job.status === 'succeeded'));
+    assert.isTrue(jobs.every((job) => job.attempts === 1));
 
     const finalMigration = await getBatchedMigration(migration.id);
     assert.equal(finalMigration.status, 'succeeded');
@@ -161,6 +162,7 @@ describe('BatchedMigrationExecutor', () => {
     assert.lengthOf(failedJobs, 2);
     assert.lengthOf(successfulJobs, 8);
     assert.equal(migrationInstance.executionCount, 10);
+    assert.isTrue(jobs.every((job) => job.attempts === 1));
 
     const failedMigration = await getBatchedMigration(migration.id);
     assert.equal(failedMigration.status, 'failed');
@@ -176,9 +178,11 @@ describe('BatchedMigrationExecutor', () => {
     const finalJobs = await getBatchedMigrationJobs(migration.id);
     const finalFailedJobs = finalJobs.filter((job) => job.status === 'failed');
     const finalSuccessfulJobs = finalJobs.filter((job) => job.status === 'succeeded');
+    const retriedJobs = finalJobs.filter((job) => job.attempts === 2);
     assert.lengthOf(finalJobs, 10);
     assert.lengthOf(finalFailedJobs, 0);
     assert.lengthOf(finalSuccessfulJobs, 10);
+    assert.lengthOf(retriedJobs, 2);
 
     migration = await getBatchedMigration(migration.id);
     assert.equal(migration.status, 'succeeded');

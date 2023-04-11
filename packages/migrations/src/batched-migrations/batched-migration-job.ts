@@ -12,6 +12,7 @@ export const BatchedMigrationJobRowSchema = z.object({
   min_value: z.bigint({ coerce: true }),
   max_value: z.bigint({ coerce: true }),
   status: BatchedMigrationJobStatusSchema,
+  attempts: z.number(),
   created_at: z.date(),
   updated_at: z.date(),
   started_at: z.date().nullable(),

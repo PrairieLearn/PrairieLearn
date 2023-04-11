@@ -200,11 +200,14 @@ function MigrationJobsCard({ title, jobs, emptyText }) {
         ? html`<div class="list-group list-group-flush">
             ${jobs.map((job) => {
               const duration = job.finished_at.getTime() - job.started_at.getTime();
+              const attemptsLabel = job.attempts === 1 ? 'attempt' : 'attempts';
+              const attempts = `${job.attempts} ${attemptsLabel}`;
               return html`
                 <div class="list-group-item d-flex flex-column">
                   <div>${job.min_value} - ${job.max_value}</div>
-                  <span class="text-muted text-small">
-                    #${job.id} ran at ${job.finished_at.toUTCString()} for ${duration}ms
+                  <span class="text-muted text-small" style="font-variant-numeric: tabular-nums;">
+                    #${job.id} ran at ${job.finished_at.toUTCString()} for ${duration}ms &mdash;
+                    ${attempts}
                   </span>
                 </div>
               `;

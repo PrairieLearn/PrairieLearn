@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS
     min_value BIGINT NOT NULL,
     max_value BIGINT NOT NULL,
     status enum_batched_migration_job_status DEFAULT 'pending',
+    attempts INTEGER DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     started_at TIMESTAMP WITH TIME ZONE,

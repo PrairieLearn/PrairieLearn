@@ -1993,9 +1993,6 @@ if (config.startServer) {
         // We need to do this before we run migrations, as some migrations will
         // call `enqueueBatchedMigration` which requires this to be initialized.
         //
-        // TODO: add an attempts counter to each job. Increment the counter before
-        // trying to run the job. This is just for our own recordkeeping.
-        //
         // TODO: log error details on job row.
         const runner = initBatchedMigrations({
           project: 'prairielearn',

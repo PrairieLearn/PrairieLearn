@@ -31,6 +31,7 @@ RETURNING
 -- BLOCK start_batched_migration_job
 UPDATE batched_migration_jobs
 SET
+  attempts = attempts + 1,
   updated_at = CURRENT_TIMESTAMP,
   started_at = CURRENT_TIMESTAMP
 WHERE
