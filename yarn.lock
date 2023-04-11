@@ -4061,6 +4061,7 @@ __metadata:
     eslint-plugin-import: 2.27.5
     eslint-plugin-mocha: ^10.1.0
     eslint-plugin-no-floating-promise: ^1.0.2
+    eslint-plugin-no-only-tests: ^3.1.0
     execa: ^5.1.1
     express: ^4.18.2
     express-async-handler: ^1.2.0
@@ -7465,6 +7466,13 @@ __metadata:
   dependencies:
     requireindex: 1.2.0
   checksum: fe4f3c1b0b60775508e86dfe2ad14fd1bf2020b48cd3222e665f1d9f29179428b7bcbc136dd6f2ab12a7edfd95f5ad3c4b96f8a6c9600cbc73da307a792b84d2
+  languageName: node
+  linkType: hard
+
+"eslint-plugin-no-only-tests@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "eslint-plugin-no-only-tests@npm:3.1.0"
+  checksum: 2a5de82f3a732dbd46792661dd0f8546cf819f76d8828968166dee35741e8039904ba473dafe1eed585f401a496d260c2c38354bb887c94bd4ced0ddca00fb62
   languageName: node
   linkType: hard
 

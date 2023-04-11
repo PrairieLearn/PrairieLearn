@@ -10,7 +10,7 @@ module.exports = {
     'plugin:@typescript-eslint/recommended',
     'prettier',
   ],
-  plugins: ['@typescript-eslint', 'no-floating-promise', 'mocha'],
+  plugins: ['@typescript-eslint', 'no-floating-promise', 'no-only-tests', 'mocha'],
   parserOptions: {
     ecmaVersion: 13,
   },
@@ -27,6 +27,7 @@ module.exports = {
     curly: ['error', 'multi-line', 'consistent'],
     eqeqeq: ['error', 'smart'],
     'no-floating-promise/no-floating-promise': 'error',
+    'no-only-tests/no-only-tests': 'error',
     'handle-callback-err': 'error',
     'no-template-curly-in-string': 'error',
     'no-restricted-syntax': [
