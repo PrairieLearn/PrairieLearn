@@ -2804,7 +2804,7 @@ __metadata:
     "@prairielearn/tsconfig": "*"
     "@types/mocha": ^10.0.1
     "@types/node": ^18.15.11
-    aws-sdk: ^2.1349.0
+    aws-sdk: ^2.1354.0
     date-fns: ^2.29.3
     mocha: ^10.2.0
     ts-node: ^10.9.1
@@ -3871,7 +3871,7 @@ __metadata:
     async: ^3.2.4
     async-mutex: ^0.4.0
     async-stacktrace: 0.0.2
-    aws-sdk: ^2.1349.0
+    aws-sdk: ^2.1354.0
     backbone: ^1.4.1
     base64url: ^3.0.1
     better-ajv-errors: ^1.2.0
@@ -4005,7 +4005,7 @@ __metadata:
     uuid: ^9.0.0
     winston: ^3.8.2
     winston-aws-cloudwatch: ^3.0.0
-    xml2js: ^0.4.23
+    xml2js: ^0.5.0
     xss: ^1.0.14
     yargs: ^17.7.1
     yargs-parser: ^21.1.1
@@ -4517,9 +4517,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"aws-sdk@npm:^2.1349.0":
-  version: 2.1349.0
-  resolution: "aws-sdk@npm:2.1349.0"
+"aws-sdk@npm:^2.1354.0":
+  version: 2.1354.0
+  resolution: "aws-sdk@npm:2.1354.0"
   dependencies:
     buffer: 4.9.2
     events: 1.1.1
@@ -4530,8 +4530,8 @@ __metadata:
     url: 0.10.3
     util: ^0.12.4
     uuid: 8.0.0
-    xml2js: 0.4.19
-  checksum: 8a10071a185315158d6a5dc7cec441bc3284ca6c33166d9f5b5053fcccde5c1b1944bec4f8e7c9f1f8138bf5f10cd4863ac1a55c048e22db75e1d12f9f71c1f9
+    xml2js: 0.5.0
+  checksum: 432bec81aad109b009dd1730aadb7f228d3e90a2d3533ae4293ea9023d84bd26cc23b59148ab2e00dcbe6dabac773c5f230f4265ce6eebe95f41390bca4e5ae6
   languageName: node
   linkType: hard
 
@@ -15684,6 +15684,16 @@ __metadata:
     sax: ">=0.6.0"
     xmlbuilder: ~9.0.1
   checksum: ca8b2fee430d450a18947786bfd7cd1a353ee00fc6fd550acbc8a8e65f1b4df5e9786fcb2990c1a5514ecd554d445fb74e1d716b3a4fcfffc10554aeb5db482b
+  languageName: node
+  linkType: hard
+
+"xml2js@npm:0.5.0, xml2js@npm:^0.5.0":
+  version: 0.5.0
+  resolution: "xml2js@npm:0.5.0"
+  dependencies:
+    sax: ">=0.6.0"
+    xmlbuilder: ~11.0.0
+  checksum: 1aa71d62e5bc2d89138e3929b9ea46459157727759cbc62ef99484b778641c0cd21fb637696c052d901a22f82d092a3e740a16b4ce218e81ac59b933535124ea
   languageName: node
   linkType: hard
 
