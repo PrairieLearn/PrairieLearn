@@ -34,7 +34,7 @@ export function getWorkspaceSocketNamespace() {
 export async function updateWorkspaceMessage(
   workspace_id: string | number,
   message: string,
-  toDatabase: boolean = true
+  toDatabase = true
 ): Promise<void> {
   if (toDatabase) await queryAsync(sql.update_workspace_message, { workspace_id, message });
   emitMessageForWorkspace(workspace_id, 'change:message', {
@@ -53,7 +53,7 @@ export async function updateWorkspaceMessage(
 export async function updateWorkspaceState(
   workspace_id: string | number,
   state: string,
-  message: string = ''
+  message = ''
 ): Promise<void> {
   // TODO: add locking
   await queryAsync(sql.update_workspace_state, { workspace_id, state, message });

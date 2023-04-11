@@ -21,9 +21,8 @@ import {
   Sampler,
   ConsoleSpanExporter,
 } from '@opentelemetry/sdk-trace-base';
-import { detectResources, Resource } from '@opentelemetry/resources';
+import { detectResources, processDetector, envDetector, Resource } from '@opentelemetry/resources';
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
-import { ExpressLayerType } from '@opentelemetry/instrumentation-express';
 import { metrics } from '@opentelemetry/api';
 import { hrTimeToMilliseconds } from '@opentelemetry/core';
 
@@ -36,14 +35,13 @@ import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
 import { AwsInstrumentation } from '@opentelemetry/instrumentation-aws-sdk';
 import { ConnectInstrumentation } from '@opentelemetry/instrumentation-connect';
 import { DnsInstrumentation } from '@opentelemetry/instrumentation-dns';
-import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
+import { ExpressLayerType, ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 import { PgInstrumentation } from '@opentelemetry/instrumentation-pg';
 import { RedisInstrumentation } from '@opentelemetry/instrumentation-redis';
 
 // Resource detectors go here.
 import { awsEc2Detector } from '@opentelemetry/resource-detector-aws';
-import { processDetector, envDetector } from '@opentelemetry/resources';
 
 /**
  * Extends `BatchSpanProcessor` to give it the ability to filter out spans
