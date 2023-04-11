@@ -202,9 +202,23 @@ function MigrationJobsCard({ title, jobs, emptyText }) {
               const duration = job.finished_at.getTime() - job.started_at.getTime();
               const attemptsLabel = job.attempts === 1 ? 'attempt' : 'attempts';
               const attempts = `${job.attempts} ${attemptsLabel}`;
+              const summary = `${job.min_value} - ${job.max_value}`;
+              const hasData = job.data != null;
               return html`
                 <div class="list-group-item d-flex flex-column">
-                  <div>${job.min_value} - ${job.max_value}</div>
+                  ${hasData
+                    ? html`
+                        <details>
+                          <summary>${summary}</summary>
+
+                          <pre class="mt-3 p-3 rounded bg-dark text-white"><code>${JSON.stringify(
+                            job.data,
+                            null,
+                            2
+                          )}</code></pre>
+                        </details>
+                      `
+                    : html`<div>${summary}</div>`}
                   <span class="text-muted text-small" style="font-variant-numeric: tabular-nums;">
                     #${job.id} ran at ${job.finished_at.toUTCString()} for ${duration}ms &mdash;
                     ${attempts}
