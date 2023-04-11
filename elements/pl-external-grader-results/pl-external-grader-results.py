@@ -149,7 +149,7 @@ def render(element_html, data):
                             elif test["max_points"] == "0":
                                 test["results_color"] = "rgba(0, 0, 0, 0.3)"
                                 test["results_icon"] = "fa-circle-info"
-                            else correct:
+                            else:
                                 test["results_color"] = "#4CAF50"
                                 test["results_icon"] = "fa-check"
 
