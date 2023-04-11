@@ -34,22 +34,20 @@ export class BatchedMigrationRunner {
     this.migrationStatus = migration.status;
   }
 
-  private async hasIncompleteJobs(migration: BatchedMigrationRow) {
-    const res = await queryValidatedOneRow(
+  private async hasIncompleteJobs(migration: BatchedMigrationRow): Promise<boolean> {
+    return queryValidatedSingleColumnOneRow(
       sql.batched_migration_has_incomplete_jobs,
       { batched_migration_id: migration.id },
-      z.object({ exists: z.boolean() })
+      z.boolean()
     );
-    return res.exists;
   }
 
-  private async hasFailedJobs(migration: BatchedMigrationRow) {
-    const res = await queryValidatedOneRow(
+  private async hasFailedJobs(migration: BatchedMigrationRow): Promise<boolean> {
+    return queryValidatedSingleColumnOneRow(
       sql.batched_migration_has_failed_jobs,
       { batched_migration_id: migration.id },
-      z.object({ exists: z.boolean() })
+      z.boolean()
     );
-    return res.exists;
   }
 
   private async refreshMigrationStatus(migration: BatchedMigrationRow) {
