@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@prairielearn/logger": "workspace:^",
-    "aws-sdk": "^2.1349.0",
+    "aws-sdk": "^2.1354.0",
     "date-fns": "^2.29.3"
   }
 }
