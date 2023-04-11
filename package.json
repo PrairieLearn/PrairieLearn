@@ -8,7 +8,7 @@
     },
     "scripts": {
         "release": "turbo run build && changeset publish",
-        "version": "changeset version && yarn"
+        "version": "changeset version && YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn"
     },
     "dependencies": {
         "@aws-sdk/client-auto-scaling": "^3.304.0",
