@@ -3,7 +3,7 @@ import { subHours, isFuture } from 'date-fns';
 import util from 'util';
 import { logger } from '@prairielearn/logger';
 
-// @ts-expect-error
+// @ts-expect-error -- Types don't reflect that this path exists.
 import mmm from 'aws-sdk/lib/maintenance_mode_message';
 mmm.suppress = true;
 

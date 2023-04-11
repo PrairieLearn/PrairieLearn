@@ -15,7 +15,7 @@ function encodeCharacter(c: string) {
  * Based on the `escapeXML` function from the `ejs` library.
  */
 function escapeHtmlRaw(value: string): string {
-  return value == undefined ? '' : String(value).replace(MATCH_HTML, encodeCharacter);
+  return value == null ? '' : String(value).replace(MATCH_HTML, encodeCharacter);
 }
 
 function escapeValue(value: unknown): string {

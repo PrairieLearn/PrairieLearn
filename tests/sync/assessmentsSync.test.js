@@ -1452,7 +1452,7 @@ describe('Assessment syncing', () => {
 
   it('creates entry in the database in the case of invalid JSON', async () => {
     const courseData = util.getCourseData();
-    // @ts-expect-error
+    // @ts-expect-error -- Deliberately invalid.
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = 'lol not valid json';
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessmentSets = await util.dumpTable('assessment_sets');
