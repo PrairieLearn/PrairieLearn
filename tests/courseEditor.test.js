@@ -39,6 +39,7 @@ const testEditData = [
     url: questionsUrl,
     form: 'add-question-form',
     action: 'add_question',
+    data: { source_question_id: 1 },
     info: 'questions/New_1/info.json',
     files: new Set([
       'README.md',
