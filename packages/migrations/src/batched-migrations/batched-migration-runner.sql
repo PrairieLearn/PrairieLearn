@@ -42,7 +42,8 @@ UPDATE batched_migration_jobs
 SET
   status = $status::enum_batched_migration_job_status,
   updated_at = CURRENT_TIMESTAMP,
-  finished_at = CURRENT_TIMESTAMP
+  finished_at = CURRENT_TIMESTAMP,
+  data = $data
 WHERE
   id = $id;
 

@@ -17,7 +17,7 @@ export const BatchedMigrationJobRowSchema = z.object({
   updated_at: z.date(),
   started_at: z.date().nullable(),
   finished_at: z.date().nullable(),
-  data: z.any(),
+  data: z.unknown(),
 });
 export type BatchedMigrationJobRow = z.infer<typeof BatchedMigrationJobRowSchema>;
 

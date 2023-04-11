@@ -1992,8 +1992,6 @@ if (config.startServer) {
       async () => {
         // We need to do this before we run migrations, as some migrations will
         // call `enqueueBatchedMigration` which requires this to be initialized.
-        //
-        // TODO: log error details on job row.
         const runner = initBatchedMigrations({
           project: 'prairielearn',
           directories: [path.join(__dirname, 'batched-migrations')],

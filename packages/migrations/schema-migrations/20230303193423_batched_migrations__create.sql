@@ -39,7 +39,8 @@ CREATE TABLE IF NOT EXISTS
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     started_at TIMESTAMP WITH TIME ZONE,
     finished_at TIMESTAMP WITH TIME ZONE,
-    data jsonb DEFAULT '{}'::jsonb NOT NULL CHECK (min_value > 0),
+    data jsonb,
+    CHECK (min_value > 0),
     CHECK (max_value >= min_value)
   );
 

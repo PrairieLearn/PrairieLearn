@@ -163,6 +163,14 @@ describe('BatchedMigrationExecutor', () => {
     assert.lengthOf(successfulJobs, 8);
     assert.equal(migrationInstance.executionCount, 10);
     assert.isTrue(jobs.every((job) => job.attempts === 1));
+    failedJobs.forEach((job) => {
+      const jobData = job.data as any;
+      assert.isObject(jobData);
+      assert.isObject(jobData.error);
+      assert.hasAllKeys(jobData.error, ['name', 'message', 'stack']);
+      assert.equal(jobData.error.name, 'Error');
+      assert.equal(jobData.error.message, 'Execution failure');
+    });
 
     const failedMigration = await getBatchedMigration(migration.id);
     assert.equal(failedMigration.status, 'failed');
@@ -183,6 +191,7 @@ describe('BatchedMigrationExecutor', () => {
     assert.lengthOf(finalFailedJobs, 0);
     assert.lengthOf(finalSuccessfulJobs, 10);
     assert.lengthOf(retriedJobs, 2);
+    assert.isTrue(finalJobs.every((job) => job.data === null));
 
     migration = await getBatchedMigration(migration.id);
     assert.equal(migration.status, 'succeeded');

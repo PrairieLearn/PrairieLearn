@@ -5,6 +5,7 @@ import {
   queryValidatedSingleColumnOneRow,
   queryValidatedZeroOrOneRow,
 } from '@prairielearn/postgres';
+import { serializeError } from 'serialize-error';
 import { z } from 'zod';
 
 import {
@@ -95,9 +96,10 @@ export class BatchedMigrationRunner {
 
   private async finishJob(
     job: BatchedMigrationJobRow,
-    status: Extract<BatchedMigrationJobStatus, 'failed' | 'succeeded'>
+    status: Extract<BatchedMigrationJobStatus, 'failed' | 'succeeded'>,
+    data?: unknown
   ) {
-    await queryAsync(sql.finish_batched_migration_job, { id: job.id, status });
+    await queryAsync(sql.finish_batched_migration_job, { id: job.id, status, data: data ?? null });
   }
 
   private async getOrCreateNextMigrationJob(
@@ -132,12 +134,21 @@ export class BatchedMigrationRunner {
   ) {
     const nextJob = await this.getOrCreateNextMigrationJob(migration);
     if (nextJob) {
+      await this.startJob(nextJob);
+
+      let error = null;
       try {
-        await this.startJob(nextJob);
+        // We'll only handle errors thrown by the migration itself. If any of
+        // our own execution machinery throws an error, we'll let it bubble up.
         await migrationInstance.execute(nextJob.min_value, nextJob.max_value);
-        await this.finishJob(nextJob, 'succeeded');
       } catch (err) {
-        await this.finishJob(nextJob, 'failed');
+        error = err;
+      }
+
+      if (error) {
+        await this.finishJob(nextJob, 'failed', { error: serializeError(error) });
+      } else {
+        await this.finishJob(nextJob, 'succeeded');
       }
     } else {
       await this.finishRunningMigration(migration);
