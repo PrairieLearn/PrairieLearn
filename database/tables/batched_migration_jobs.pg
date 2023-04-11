@@ -1,15 +1,15 @@
 columns
-    attempts: integer default 0
+    attempts: integer not null default 0
     batched_migration_id: bigint not null
-    created_at: timestamp with time zone default CURRENT_TIMESTAMP
+    created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     data: jsonb
     finished_at: timestamp with time zone
     id: bigint not null default nextval('batched_migration_jobs_id_seq'::regclass)
     max_value: bigint not null
     min_value: bigint not null
     started_at: timestamp with time zone
-    status: enum_batched_migration_job_status default 'pending'::enum_batched_migration_job_status
-    updated_at: timestamp with time zone default CURRENT_TIMESTAMP
+    status: enum_batched_migration_job_status not null default 'pending'::enum_batched_migration_job_status
+    updated_at: timestamp with time zone not null default CURRENT_TIMESTAMP
 
 indexes
     batched_migration_jobs_pkey: PRIMARY KEY (id) USING btree (id)

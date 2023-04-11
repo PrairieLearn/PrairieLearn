@@ -1,15 +1,15 @@
 columns
     batch_size: integer not null
-    created_at: timestamp with time zone default CURRENT_TIMESTAMP
+    created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     filename: text not null
     id: bigint not null default nextval('batched_migrations_id_seq'::regclass)
     max_value: bigint not null
     min_value: bigint not null
-    project: text default 'prairielearn'::text
+    project: text not null default 'prairielearn'::text
     started_at: timestamp with time zone
-    status: enum_batched_migration_status default 'pending'::enum_batched_migration_status
+    status: enum_batched_migration_status not null default 'pending'::enum_batched_migration_status
     timestamp: text not null
-    updated_at: timestamp with time zone default CURRENT_TIMESTAMP
+    updated_at: timestamp with time zone not null default CURRENT_TIMESTAMP
 
 indexes
     batched_migrations_pkey: PRIMARY KEY (id) USING btree (id)
