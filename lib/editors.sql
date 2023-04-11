@@ -48,4 +48,7 @@ FROM
   JOIN pl_courses AS c ON (c.id = q.course_id)
 WHERE
   q.id = $question_id
-  AND (c.id = $course_id OR c.example_course);
+  AND (
+    c.id = $course_id
+    OR c.example_course
+  );

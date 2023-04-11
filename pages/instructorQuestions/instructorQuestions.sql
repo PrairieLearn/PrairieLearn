@@ -54,12 +54,23 @@ WHERE
   AND q.deleted_at IS NULL;
 
 -- BLOCK template_questions
-WITH base_courses AS (
-  -- Done as a union so that two different indices may be used
-  SELECT * FROM pl_courses AS c WHERE c.example_course
-  UNION
-  SELECT * FROM pl_courses AS c WHERE c.id = $course_id
-)
+WITH
+  base_courses AS (
+    -- Done as a union so that two different indices may be used
+    SELECT
+      *
+    FROM
+      pl_courses AS c
+    WHERE
+      c.example_course
+    UNION
+    SELECT
+      *
+    FROM
+      pl_courses AS c
+    WHERE
+      c.id = $course_id
+  )
 SELECT
   c.title AS course_title,
   JSON_AGG(q.*) AS questions
