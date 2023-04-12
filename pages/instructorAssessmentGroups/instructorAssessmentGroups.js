@@ -123,7 +123,7 @@ router.post('/', function (req, res, next) {
     const uids = req.body.uids;
     const uidlist = uids.split(/[ ,]+/);
     res.locals.errormsg = '';
-    let updateList = new Array();
+    let updateList = [];
     uidlist.forEach((uid) => {
       updateList.push([group_name, uid]);
     });

@@ -93,6 +93,18 @@ WHERE
 ORDER BY
   1;
 
+-- BLOCK get_check_constraints_for_table
+SELECT
+  conname AS name,
+  pg_catalog.pg_get_constraintdef (r.oid, true) as def
+FROM
+  pg_catalog.pg_constraint r
+WHERE
+  r.conrelid = $oid
+  AND r.contype = 'c'
+ORDER BY
+  1;
+
 -- BLOCK get_enums
 SELECT
   t.typname AS name,

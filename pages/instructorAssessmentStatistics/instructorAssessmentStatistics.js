@@ -1,8 +1,7 @@
-const _ = require('lodash');
 const express = require('express');
 const asyncHandler = require('express-async-handler');
 const router = express.Router();
-const { nonblockingStringifyAsync } = require('../../lib/nonblocking-csv-stringify');
+const { stringify } = require('@prairielearn/csv');
 
 const error = require('@prairielearn/error');
 const sanitizeName = require('../../lib/sanitize-name');
@@ -75,25 +74,6 @@ router.get(
     res.locals.assessment = assessmentResult.rows[0].assessment;
 
     if (req.params.filename === res.locals.scoreStatsCsvFilename) {
-      const csvHeaders = [
-        'Course',
-        'Instance',
-        'Set',
-        'Number',
-        'Assessment',
-        'Title',
-        'AID',
-        'NStudents',
-        'Mean',
-        'Std',
-        'Min',
-        'Max',
-        'Median',
-        'NZero',
-        'NHundred',
-        'NZeroPerc',
-        'NHundredPerc',
-      ];
       const csvData = [
         [
           res.locals.course.short_name,
@@ -113,16 +93,34 @@ router.get(
           res.locals.assessment.score_stat_n_hundred,
           res.locals.assessment.score_stat_n_zero_perc,
           res.locals.assessment.score_stat_n_hundred_perc,
+          ...res.locals.assessment.score_stat_hist,
         ],
       ];
-      _(res.locals.assessment.score_stat_hist).each(function (count, i) {
-        csvHeaders.push('Hist ' + (i + 1));
-        csvData[0].push(count);
-      });
-      csvData.unshift(csvHeaders);
-      const csv = await nonblockingStringifyAsync(csvData);
+
       res.attachment(req.params.filename);
-      res.send(csv);
+      stringify(csvData, {
+        header: true,
+        columns: [
+          'Course',
+          'Instance',
+          'Set',
+          'Number',
+          'Assessment',
+          'Title',
+          'AID',
+          'NStudents',
+          'Mean',
+          'Std',
+          'Min',
+          'Max',
+          'Median',
+          'NZero',
+          'NHundred',
+          'NZeroPerc',
+          'NHundredPerc',
+          ...res.locals.assessment.score_stat_hist.map((_, i) => `Hist ${i + 1}`),
+        ],
+      }).pipe(res);
     } else if (req.params.filename === res.locals.durationStatsCsvFilename) {
       // get formatted duration statistics
       const durationStatsResult = await sqldb.queryOneRowAsync(sql.select_duration_stats, {
@@ -130,19 +128,6 @@ router.get(
       });
       const duration_stat = durationStatsResult.rows[0];
 
-      const csvHeaders = [
-        'Course',
-        'Instance',
-        'Set',
-        'Number',
-        'Assessment',
-        'Title',
-        'AID',
-        'Mean duration (min)',
-        'Median duration (min)',
-        'Min duration (min)',
-        'Max duration (min)',
-      ];
       const csvData = [
         [
           res.locals.course.short_name,
@@ -156,30 +141,35 @@ router.get(
           duration_stat.median_mins,
           duration_stat.min_mins,
           duration_stat.max_mins,
+          ...duration_stat.threshold_seconds,
+          ...duration_stat.hist,
         ],
       ];
-      _(duration_stat.threshold_seconds).each(function (count, i) {
-        csvHeaders.push('Hist boundary ' + (i + 1) + ' (s)');
-        csvData[0].push(count);
-      });
-      _(duration_stat.hist).each(function (count, i) {
-        csvHeaders.push('Hist' + (i + 1));
-        csvData[0].push(count);
-      });
-      csvData.unshift(csvHeaders);
-      const csv = await nonblockingStringifyAsync(csvData);
+
       res.attachment(req.params.filename);
-      res.send(csv);
+      stringify(csvData, {
+        header: true,
+        columns: [
+          'Course',
+          'Instance',
+          'Set',
+          'Number',
+          'Assessment',
+          'Title',
+          'AID',
+          'Mean duration (min)',
+          'Median duration (min)',
+          'Min duration (min)',
+          'Max duration (min)',
+          ...duration_stat.threshold_seconds.map((_, i) => `Hist boundary ${i + 1} (s)`),
+          ...duration_stat.hist.map((_, i) => `Hist ${i + 1}`),
+        ],
+      }).pipe(res);
     } else if (req.params.filename === res.locals.statsByDateCsvFilename) {
       const histByDateResult = await sqldb.queryAsync(sql.assessment_score_histogram_by_date, {
         assessment_id: res.locals.assessment.id,
       });
       const scoresByDay = histByDateResult.rows;
-
-      const csvHeaders = ['Date'];
-      _(scoresByDay).each(function (day) {
-        csvHeaders.push(day.date_formatted);
-      });
 
       const numDays = scoresByDay.length;
       const numGroups = scoresByDay[0].histogram.length;
@@ -205,10 +195,12 @@ router.get(
         }
         csvData.push(groupData);
       }
-      csvData.splice(0, 0, csvHeaders);
-      const csv = await nonblockingStringifyAsync(csvData);
+
       res.attachment(req.params.filename);
-      res.send(csv);
+      stringify(csvData, {
+        header: true,
+        columns: ['Date', ...scoresByDay.map((day) => day.date_formatted)],
+      }).pipe(res);
     } else {
       throw error.make(404, 'Unknown filename: ' + req.params.filename);
     }

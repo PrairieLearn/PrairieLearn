@@ -1,19 +1,20 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var csvStringify = require('../../lib/nonblocking-csv-stringify');
-var express = require('express');
-var router = express.Router();
+const ERR = require('async-stacktrace');
+const asyncHandler = require('express-async-handler');
+const _ = require('lodash');
+const express = require('express');
+const { stringifyStream } = require('@prairielearn/csv');
+const { pipeline } = require('node:stream/promises');
 
-const { getCourseOwners } = require('../../lib/course');
 const error = require('@prairielearn/error');
+const sqldb = require('@prairielearn/postgres');
+
+const course = require('../../lib/course');
 const sanitizeName = require('../../lib/sanitize-name');
-var sqldb = require('@prairielearn/postgres');
 
-var course = require('../../lib/course');
+const router = express.Router();
+const sql = sqldb.loadSqlEquiv(__filename);
 
-var sql = sqldb.loadSqlEquiv(__filename);
-
-var csvFilename = function (locals) {
+const csvFilename = function (locals) {
   return (
     sanitizeName.courseInstanceFilenamePrefix(locals.course_instance, locals.course) +
     'gradebook.csv'
@@ -29,7 +30,8 @@ router.get('/', function (req, res, next) {
     // see instructions for how to get student data viewer permissions. Otherwise,
     // users just wouldn't see the tab at all, and this caused a lot of questions
     // about why staff couldn't see the gradebook tab.
-    getCourseOwners(res.locals.course.id)
+    course
+      .getCourseOwners(res.locals.course.id)
       .then((owners) => {
         res.locals.course_owners = owners;
         res.status(403).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
@@ -76,40 +78,38 @@ router.get('/raw_data.json', function (req, res, next) {
   });
 });
 
-router.get('/:filename', function (req, res, next) {
-  if (!res.locals.authz_data.has_course_instance_permission_view) {
-    return next(error.make(403, 'Access denied (must be a student data viewer)'));
-  }
+router.get(
+  '/:filename',
+  asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_view) {
+      throw error.make(403, 'Access denied (must be a student data viewer)');
+    }
 
-  if (req.params.filename === csvFilename(res.locals)) {
-    var params = {
-      course_id: res.locals.course.id,
-      course_instance_id: res.locals.course_instance.id,
-    };
-    sqldb.query(sql.course_assessments, params, function (err, result) {
-      if (ERR(err, next)) return;
-      var courseAssessments = result.rows;
-      sqldb.query(sql.user_scores, params, function (err, result) {
-        if (ERR(err, next)) return;
-        var userScores = result.rows;
+    if (req.params.filename === csvFilename(res.locals)) {
+      const params = {
+        course_id: res.locals.course.id,
+        course_instance_id: res.locals.course_instance.id,
+      };
 
-        var csvHeaders = ['UID', 'UIN', 'Name', 'Role'].concat(_.map(courseAssessments, 'label'));
-        var csvData = _.map(userScores, function (row) {
-          const score_percs = _.map(row.scores, (s) => s.score_perc);
-          return [row.uid, row.uin, row.user_name, row.role].concat(score_percs);
-        });
-        csvData.splice(0, 0, csvHeaders);
-        csvStringify(csvData, function (err, csv) {
-          if (ERR(err, next)) return;
-          res.attachment(req.params.filename);
-          res.send(csv);
-        });
+      const assessmentsResult = await sqldb.queryAsync(sql.course_assessments, params);
+      const userScoresCursor = await sqldb.queryCursor(sql.user_scores, params);
+
+      const stringifier = stringifyStream({
+        header: true,
+        columns: ['UID', 'UIN', 'Name', 'Role', ...assessmentsResult.rows.map((a) => a.label)],
+        transform(record) {
+          const score_percs = _.map(record.scores, (s) => s.score_perc);
+          return [record.uid, record.uin, record.user_name, record.role].concat(score_percs);
+        },
       });
-    });
-  } else {
-    next(error.make(404, 'Unknown filename: ' + req.params.filename));
-  }
-});
+
+      res.attachment(req.params.filename);
+      await pipeline(userScoresCursor.stream(100), stringifier, res);
+    } else {
+      throw error.make(404, 'Unknown filename: ' + req.params.filename);
+    }
+  })
+);
 
 router.post('/', function (req, res, next) {
   if (!res.locals.authz_data.has_course_instance_permission_edit) {

@@ -181,11 +181,10 @@ module.exports = {
 
   queueJobs(jobsList, intervalSec) {
     debug(`queueJobs(): ${intervalSec}`);
-    const that = this;
     function queueRun() {
       debug(`queueJobs(): ${intervalSec}: starting run`);
       jobTimeouts[intervalSec] = 0;
-      that.runJobs(jobsList, () => {
+      module.exports.runJobs(jobsList, () => {
         debug(`queueJobs(): ${intervalSec}: completed run`);
         if (jobTimeouts[intervalSec] === -1) {
           // someone requested a stop
@@ -202,7 +201,6 @@ module.exports = {
 
   queueDailyJobs(jobsList) {
     debug(`queueDailyJobs()`);
-    const that = this;
     function timeToNextMS() {
       const now = Date.now();
       const midnight = new Date(now).setHours(0, 0, 0, 0);
@@ -226,7 +224,7 @@ module.exports = {
     function queueRun() {
       debug(`queueDailyJobs(): starting run`);
       jobTimeouts['daily'] = 0;
-      that.runJobs(jobsList, () => {
+      module.exports.runJobs(jobsList, () => {
         debug(`queueDailyJobs(): completed run`);
         if (jobTimeouts['daily'] === -1) {
           // someone requested a stop
