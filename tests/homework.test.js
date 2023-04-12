@@ -1360,17 +1360,15 @@ describe('Homework assessment', function () {
     describe(`partial credit test #${iPartialCreditTest + 1}`, function () {
       describe('server', function () {
         it('should shut down', function (callback) {
-          var that = this;
           // pass "this" explicitly to enable this.timeout() calls
-          helperServer.after.call(that, function (err) {
+          helperServer.after.call(this, function (err) {
             if (ERR(err, callback)) return;
             callback(null);
           });
         });
         it('should start up', function (callback) {
-          var that = this;
           // pass "this" explicitly to enable this.timeout() calls
-          helperServer.before().call(that, function (err) {
+          helperServer.before().call(this, function (err) {
             if (ERR(err, callback)) return;
             callback(null);
           });

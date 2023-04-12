@@ -327,10 +327,6 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
 
   const params = [assessmentParams, courseId, courseInstanceId];
   perf.start('sproc:sync_assessments');
-  const result = await sqldb.callOneRowAsync('sync_assessments', params);
+  await sqldb.callOneRowAsync('sync_assessments', params);
   perf.end('sproc:sync_assessments');
-
-  /** @type {[string, any][]} */
-  const nameToIdMap = result.rows[0].name_to_id_map; // eslint-disable-line no-unused-vars
-  // we don't use this here, but see questions.js for the format of this return value
 };

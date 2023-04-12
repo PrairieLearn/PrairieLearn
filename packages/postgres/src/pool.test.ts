@@ -29,7 +29,7 @@ describe('@prairielearn/postgres', function () {
   describe('queryCursor', () => {
     it('returns zero rows', async () => {
       const cursor = await queryCursor('SELECT * FROM workspaces WHERE id = 5;', {});
-      let rowBatches = [];
+      const rowBatches = [];
       for await (const rows of cursor.iterate(10)) {
         rowBatches.push(rows);
       }
