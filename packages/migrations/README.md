@@ -24,14 +24,6 @@ module.exports = async function () {
 };
 ```
 
-To execute any pending migrations, call `init()` early on in your application startup code.
-
-```ts
-await init([path.join(__dirname, 'migrations')], 'prairielearn');
-```
-
-The first argument is an array of directory paths containing migration files as described above. The second argument is a project identifier, which is used to isolate multiple migration sequences from each other when two or more applications share a single database.
-
 ### Batched migrations
 
 Batched migrations are useful for when one needs to make changes to many rows within a table, for instance backfilling a new column from existing data. While one could technically do this with the schema migrations machinery, that has a number of disadvantages:
@@ -82,27 +74,6 @@ Batched migration `execute()` functions **must** be idempotent, as they may run 
 
 #### Executing batched migrations
 
-You'll need to initialize and start batched migration processing in your application startup code. Since batched migrations are typically used with regular migrations, you'll need to take care to call `init()` after `initBatchedMigrations()` but before `startBatchedMigrations()`.
-
-```ts
-import { init, initBatchedMigrations, startBatchedMigrations } from '@prairielearn/migrations';
-
-const runner = initBatchedMigrations({
-  project: 'prairielearn',
-  directories: [path.join(__dirname, 'batched-migrations')],
-});
-runner.on('error', (error) => {
-  // Handle error, e.g. by reporting to Sentry.
-});
-
-await init();
-
-startBatchedMigrations({
-  workDurationMs: 60_000,
-  sleepDurationMs: 30_000,
-});
-```
-
 Unlike regular migrations, batched migrations aren't automatically started. Instead, you must write a regular migration to call `enqueueBatchedMigration()` to explicitly start a given batched migration. This provides precise control over execution order.
 
 ```ts
@@ -128,3 +99,48 @@ export default async function () {
 ```
 
 In most cases, you'll want to do your best to ensure that the given batched migration has finished _before_ deploying a migration that finalizes it. That way, `finalizeBatchedMigration()` will just have to assert that the migration has already successfully executed. However, finalizing a migration is still an important part of preventing data loss or inconsistencies for many migrations.
+
+### Server setup
+
+To execute any pending regular migrations, call `init()` early on in your application startup code. The first argument is an array of directory paths containing migration files as described above. The second argument is a project identifier, which is used to isolate multiple migration sequences from each other when two or more applications share a single database.
+
+```ts
+import { init } from '@prairielearn/migrations';
+
+await init([path.join(__dirname, 'migrations')], 'prairielearn');
+```
+
+If you want to make use of batched migrations, you'll need to do some additional setup. Since batched migrations are typically used with regular migrations, you'll need to take care to call `init()` after `initBatchedMigrations()` but before `startBatchedMigrations()`.
+
+```ts
+import {
+  init,
+  initBatchedMigrations,
+  startBatchedMigrations,
+  stopBatchedMigrations,
+} from '@prairielearn/migrations';
+
+const runner = initBatchedMigrations({
+  project: 'prairielearn',
+  directories: [path.join(__dirname, 'batched-migrations')],
+});
+runner.on('error', (error) => {
+  // Handle error, e.g. by reporting to Sentry.
+});
+
+await init([path.join(__dirname, 'migrations')], 'prairielearn');
+
+startBatchedMigrations({
+  workDurationMs: 60_000,
+  sleepDurationMs: 30_000,
+});
+
+```
+
+If you want to gracefully shut down your server, you can stop processing batched migrations and wait for any in-progress jobs to finish.
+
+```ts
+import { stopBatchedMigrations } from '@prairielearn/migrations';
+
+await stopBatchedMigrations();
+```
