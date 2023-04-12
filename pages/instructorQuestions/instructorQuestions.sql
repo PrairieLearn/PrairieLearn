@@ -73,7 +73,11 @@ WITH
   )
 SELECT
   c.example_course,
-  JSON_AGG(q.* ORDER BY q.title) AS questions
+  JSON_AGG(
+    q.*
+    ORDER BY
+      q.title
+  ) AS questions
 FROM
   base_courses AS c
   JOIN tags AS t ON (t.course_id = c.id)
