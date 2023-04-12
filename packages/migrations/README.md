@@ -77,7 +77,7 @@ Batched migration `execute()` functions **must** be idempotent, as they may run 
 Unlike regular migrations, batched migrations aren't automatically started. Instead, you must write a regular migration to call `enqueueBatchedMigration()` to explicitly start a given batched migration. This provides precise control over execution order.
 
 ```ts
-// migrations/20230411002409_start_batched_migration__example_migration.sql
+// migrations/20230411002409_start_batched_migration__example_migration.ts
 import { enqueueBatchedMigration } from '@prairielearn/migrations';
 
 export default async function () {
@@ -90,7 +90,7 @@ This will queue the batched migration for execution.
 You may need to ensure that a given batched migration has succeeded before running a subsequent regular migration. For instance, you might have a batched migration that copies a column from one table to another, and you want to ensure that all data has been copied before you delete the original column. You can achieve this by "finalizing" the migration with `finalizeBatchedMigration()`. This will synchronously execute any remaining batches, and will error if the migration ends up in a failed state. This gives you a chance to fix any errors and retry the failed jobs.
 
 ```ts
-// migrations/20230411002409_finalize_batched_migration__example_migration.sql
+// migrations/20230411002409_finalize_batched_migration__example_migration.ts
 import { finalizeBatchedMigration } from '@prairielearn/migrations';
 
 export default async function () {
