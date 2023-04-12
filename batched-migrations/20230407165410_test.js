@@ -17,7 +17,7 @@ module.exports = makeBatchedMigration({
    * @param {bigint} max
    */
   async execute(min, max) {
-    console.log(`Running for range [${min}, ${max}]`);
+    // console.log(`Running for range [${min}, ${max}]`);
     await setTimeout(1000);
     // throw new Error('Testing failure');
   },

@@ -5,6 +5,7 @@ import {
   queryValidatedSingleColumnOneRow,
   queryValidatedZeroOrOneRow,
 } from '@prairielearn/postgres';
+import { logger } from '@prairielearn/logger';
 import { serializeError } from 'serialize-error';
 import { z } from 'zod';
 
@@ -23,18 +24,31 @@ import {
 
 const sql = loadSqlEquiv(__filename);
 
+interface BatchedMigrationRunnerOptions {
+  logProgress?: boolean;
+}
+
 export class BatchedMigrationRunner {
+  private options: BatchedMigrationRunnerOptions;
   private migration: BatchedMigrationRow;
   private migrationImplementation: BatchedMigrationImplementation;
   private migrationStatus: BatchedMigrationStatus;
 
   constructor(
     migration: BatchedMigrationRow,
-    migrationImplementation: BatchedMigrationImplementation
+    migrationImplementation: BatchedMigrationImplementation,
+    options: BatchedMigrationRunnerOptions = {}
   ) {
+    this.options = options;
     this.migration = migration;
     this.migrationImplementation = migrationImplementation;
     this.migrationStatus = migration.status;
+  }
+
+  private log(message: string, ...meta: any[]) {
+    if (this.options.logProgress) {
+      logger.info(`[${this.migration.filename}] ${message}`, ...meta);
+    }
   }
 
   private async hasIncompleteJobs(migration: BatchedMigrationRow): Promise<boolean> {
@@ -66,11 +80,14 @@ export class BatchedMigrationRunner {
   private async finishRunningMigration(migration: BatchedMigrationRow) {
     // Safety check: if there are any pending jobs, don't mark this
     // migration as finished.
-    if (await this.hasIncompleteJobs(migration)) return;
+    if (await this.hasIncompleteJobs(migration)) {
+      this.log(`Incomplete jobs found, not marking as finished`);
+    }
 
     const hasFailedJobs = await this.hasFailedJobs(migration);
     const finalStatus = hasFailedJobs ? 'failed' : 'succeeded';
     await updateBatchedMigrationStatus(migration.id, finalStatus);
+    this.log(`Finished with status '${finalStatus}'`);
   }
 
   private async getNextBatchBounds(
@@ -93,6 +110,9 @@ export class BatchedMigrationRunner {
 
   private async startJob(job: BatchedMigrationJobRow) {
     await queryAsync(sql.start_batched_migration_job, { id: job.id });
+    const jobRange = `[${job.min_value}, ${job.max_value}]`;
+    const migrationRange = `[${this.migration.min_value}, ${this.migration.max_value}]`;
+    this.log(`Started job ${job.id} for range ${jobRange} in ${migrationRange}`);
   }
 
   private async finishJob(
@@ -101,6 +121,7 @@ export class BatchedMigrationRunner {
     data?: unknown
   ) {
     await queryAsync(sql.finish_batched_migration_job, { id: job.id, status, data: data ?? null });
+    this.log(`Job ${job.id} finished with status '${status}'`);
   }
 
   private async getOrCreateNextMigrationJob(

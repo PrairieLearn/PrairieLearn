@@ -134,7 +134,9 @@ export class BatchedMigrationsRunner extends EventEmitter {
       }
       const migrationImplementation = await this.loadMigrationImplementation(migrationFile);
 
-      const runner = new BatchedMigrationRunner(migration, migrationImplementation);
+      const runner = new BatchedMigrationRunner(migration, migrationImplementation, {
+        logProgress: true,
+      });
 
       // Because we don't give any arguments to `run()`, it will run until it
       // has attempted every job.
