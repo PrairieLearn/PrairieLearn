@@ -9,10 +9,11 @@ const sqldb = require('@prairielearn/postgres');
 const courseDB = require('../sync/course-db');
 const chunksLib = require('../lib/chunks');
 const config = require('../lib/config');
-const logger = require('./dummyLogger');
+const { makeMockLogger } = require('./mockLogger');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const helperServer = require('./helperServer');
+const helperCourse = require('./helperCourse');
 const { syncDiskToSqlAsync } = require('../sync/syncFromDisk');
 
 const COURSE = {
@@ -345,6 +346,7 @@ describe('chunks', () => {
       await fs.move(tempPath, newPath);
 
       // Sync course to DB.
+      const { logger } = makeMockLogger();
       await syncDiskToSqlAsync(courseDir, courseId, logger);
 
       // Regenerate chunks.
