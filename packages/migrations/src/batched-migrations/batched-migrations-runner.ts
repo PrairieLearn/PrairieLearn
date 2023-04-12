@@ -6,13 +6,14 @@ import { doWithLock, tryWithLock } from '@prairielearn/named-locks';
 
 import { MigrationFile, readAndValidateMigrationsFromDirectories } from '../load-migrations';
 import {
-  BatchedMigration,
   BatchedMigrationRowSchema,
   BatchedMigrationRow,
   insertBatchedMigration,
   BatchedMigrationStatus,
   selectBatchedMigrationForTimestamp,
   updateBatchedMigrationStatus,
+  BatchedMigrationImplementation,
+  validateBatchedMigrationImplementation,
 } from './batched-migration';
 import { BatchedMigrationRunner } from './batched-migration-runner';
 
@@ -64,21 +65,19 @@ export class BatchedMigrationsRunner extends EventEmitter {
   }
 
   /**
-   * Loads that class for the migration with the given identifier. The identifier
+   * Loads the implementation for the migration with the given identifier. The identifier
    * must start with a 14-character timestamp. It may optionally be followed by
    * an underscore with additional characters, which are ignored. These should
    * typically be used to provide a human-readable name for the migration.
    */
-  private async loadMigrationClass(migrationFile: MigrationFile) {
+  private async loadMigrationImplementation(migrationFile: MigrationFile) {
     // We use dynamic imports to handle both CJS and ESM modules.
     const migrationModulePath = path.join(migrationFile.directory, migrationFile.filename);
     const migrationModule = await import(migrationModulePath);
 
-    const MigrationClass = migrationModule.default as new () => BatchedMigration;
-    if (!MigrationClass || !(MigrationClass.prototype instanceof BatchedMigration)) {
-      throw new Error(`Invalid migration class in ${migrationModulePath}`);
-    }
-    return MigrationClass;
+    const migrationImplementation = migrationModule.default as BatchedMigrationImplementation;
+    validateBatchedMigrationImplementation(migrationImplementation);
+    return migrationImplementation;
   }
 
   async enqueueBatchedMigration(identifier: string) {
@@ -87,9 +86,8 @@ export class BatchedMigrationsRunner extends EventEmitter {
       throw new Error(`No migration found for identifier ${identifier}`);
     }
 
-    const MigrationClass = await this.loadMigrationClass(migrationFile);
-    const migration = new MigrationClass();
-    const migrationParameters = await migration.getParameters();
+    const migrationImplementation = await this.loadMigrationImplementation(migrationFile);
+    const migrationParameters = await migrationImplementation.getParameters();
 
     // If `max` is null, that implies that there are no rows to process, so
     // we can immediately mark the migration as finished.
@@ -128,10 +126,9 @@ export class BatchedMigrationsRunner extends EventEmitter {
       if (!migrationFile) {
         throw new Error(`No migration found for identifier ${identifier}`);
       }
-      const MigrationClass = await this.loadMigrationClass(migrationFile);
-      const migrationInstance = new MigrationClass();
+      const migrationImplementation = await this.loadMigrationImplementation(migrationFile);
 
-      const runner = new BatchedMigrationRunner(migration, migrationInstance);
+      const runner = new BatchedMigrationRunner(migration, migrationImplementation);
 
       // Because we don't give any arguments to `run()`, it will run until it
       // has attempted every job.
@@ -230,10 +227,9 @@ export class BatchedMigrationsRunner extends EventEmitter {
       { autoRenew: true },
       async () => {
         didWork = true;
-        const MigrationClass = await this.loadMigrationClass(migrationFile);
-        const migrationInstance = new MigrationClass();
+        const migrationImplementation = await this.loadMigrationImplementation(migrationFile);
 
-        const runner = new BatchedMigrationRunner(migration, migrationInstance);
+        const runner = new BatchedMigrationRunner(migration, migrationImplementation);
 
         try {
           await runner.run({ signal: this.abortController.signal, durationMs });

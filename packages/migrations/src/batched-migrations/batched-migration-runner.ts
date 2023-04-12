@@ -9,11 +9,11 @@ import { serializeError } from 'serialize-error';
 import { z } from 'zod';
 
 import {
-  BatchedMigration,
   BatchedMigrationStatus,
   BatchedMigrationRow,
   updateBatchedMigrationStatus,
   BatchedMigrationStatusSchema,
+  BatchedMigrationImplementation,
 } from './batched-migration';
 import {
   BatchedMigrationJobRowSchema,
@@ -25,10 +25,13 @@ const sql = loadSqlEquiv(__filename);
 
 export class BatchedMigrationRunner {
   private migration: BatchedMigrationRow;
-  private migrationImplementation: BatchedMigration;
+  private migrationImplementation: BatchedMigrationImplementation;
   private migrationStatus: BatchedMigrationStatus;
 
-  constructor(migration: BatchedMigrationRow, migrationImplementation: BatchedMigration) {
+  constructor(
+    migration: BatchedMigrationRow,
+    migrationImplementation: BatchedMigrationImplementation
+  ) {
     this.migration = migration;
     this.migrationImplementation = migrationImplementation;
     this.migrationStatus = migration.status;
@@ -128,7 +131,7 @@ export class BatchedMigrationRunner {
 
   private async runMigrationJob(
     migration: BatchedMigrationRow,
-    migrationInstance: BatchedMigration
+    migrationImplementation: BatchedMigrationImplementation
   ) {
     const nextJob = await this.getOrCreateNextMigrationJob(migration);
     if (nextJob) {
@@ -138,7 +141,7 @@ export class BatchedMigrationRunner {
       try {
         // We'll only handle errors thrown by the migration itself. If any of
         // our own execution machinery throws an error, we'll let it bubble up.
-        await migrationInstance.execute(nextJob.min_value, nextJob.max_value);
+        await migrationImplementation.execute(nextJob.min_value, nextJob.max_value);
       } catch (err) {
         error = err;
       }

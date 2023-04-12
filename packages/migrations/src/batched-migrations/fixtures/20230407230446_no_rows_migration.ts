@@ -1,6 +1,6 @@
-import { BatchedMigration } from '../batched-migration';
+import { makeBatchedMigration } from '../batched-migration';
 
-export default class TestMigrationNoRows extends BatchedMigration {
+export default makeBatchedMigration({
   async getParameters() {
     return {
       // Simulates the case where there are no rows to process. A null
@@ -9,7 +9,7 @@ export default class TestMigrationNoRows extends BatchedMigration {
       max: null,
       batchSize: 10,
     };
-  }
+  },
 
-  async execute(_min: bigint, _max: bigint) {}
-}
+  async execute(_min: bigint, _max: bigint) {},
+});

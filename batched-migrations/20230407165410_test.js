@@ -1,16 +1,16 @@
 // @ts-check
-const { BatchedMigration } = require('@prairielearn/migrations');
+const { makeBatchedMigration } = require('@prairielearn/migrations');
 const { setTimeout } = require('node:timers/promises');
 
 // TODO: delete before merging
-class TestBatchedMigration extends BatchedMigration {
+module.exports = makeBatchedMigration({
   async getParameters() {
     return {
       min: 1n,
       max: 100000n,
       batchSize: 1000,
     };
-  }
+  },
 
   /**
    * @param {bigint} min
@@ -20,7 +20,5 @@ class TestBatchedMigration extends BatchedMigration {
     console.log(`Running for range [${min}, ${max}]`);
     await setTimeout(1000);
     // throw new Error('Testing failure');
-  }
-}
-
-module.exports = TestBatchedMigration;
+  },
+});

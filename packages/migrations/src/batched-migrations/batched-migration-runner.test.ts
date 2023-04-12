@@ -8,9 +8,9 @@ import {
 import * as namedLocks from '@prairielearn/named-locks';
 
 import {
-  BatchedMigration,
   BatchedMigrationRowSchema,
   insertBatchedMigration,
+  makeBatchedMigration,
   updateBatchedMigrationStatus,
 } from './batched-migration';
 import { BatchedMigrationJobRowSchema } from './batched-migration-job';
@@ -21,33 +21,32 @@ const postgresTestUtils = makePostgresTestUtils({
   database: 'prairielearn_migrations',
 });
 
-class TestBatchMigration extends BatchedMigration {
-  private failingIds: bigint[] = [];
-  private _executionCount = 0;
+function makeTestBatchMigration() {
+  let executionCount = 0;
+  let failingIds: bigint[] = [];
 
-  async getParameters() {
-    return {
-      min: 1n,
-      max: 10000n,
-      batchSize: 1000,
-    };
-  }
-
-  async execute(start: bigint, end: bigint) {
-    this._executionCount += 1;
-    const shouldFail = this.failingIds.some((id) => id >= start && id <= end);
-    if (shouldFail) {
-      throw new Error('Execution failure');
-    }
-  }
-
-  setFailingIds(ids: bigint[]) {
-    this.failingIds = ids;
-  }
-
-  get executionCount() {
-    return this._executionCount;
-  }
+  return makeBatchedMigration({
+    async getParameters() {
+      return {
+        min: 1n,
+        max: 10000n,
+        batchSize: 1000,
+      };
+    },
+    async execute(start: bigint, end: bigint) {
+      executionCount += 1;
+      const shouldFail = failingIds.some((id) => id >= start && id <= end);
+      if (shouldFail) {
+        throw new Error('Execution failure');
+      }
+    },
+    setFailingIds(ids: bigint[]) {
+      failingIds = ids;
+    },
+    get executionCount() {
+      return executionCount;
+    },
+  });
 }
 
 async function getBatchedMigration(migrationId: string) {
@@ -76,7 +75,7 @@ async function resetFailedBatchedMigrationJobs(migrationId: string) {
 }
 
 async function insertTestBatchedMigration() {
-  const migrationImplementation = new TestBatchMigration();
+  const migrationImplementation = makeTestBatchMigration();
   const parameters = await migrationImplementation.getParameters();
   const migration = await insertBatchedMigration({
     project: 'test',
@@ -112,8 +111,8 @@ describe('BatchedMigrationExecutor', () => {
   it('runs one iteration of a batched migration', async () => {
     const migration = await insertTestBatchedMigration();
 
-    const migrationInstance = new TestBatchMigration();
-    const executor = new BatchedMigrationRunner(migration, migrationInstance);
+    const migrationImplementation = makeTestBatchMigration();
+    const executor = new BatchedMigrationRunner(migration, migrationImplementation);
     await executor.run({ iterations: 1 });
 
     const jobs = await getBatchedMigrationJobs(migration.id);
@@ -122,14 +121,14 @@ describe('BatchedMigrationExecutor', () => {
     const finalMigration = await getBatchedMigration(migration.id);
     assert.equal(finalMigration.status, 'running');
 
-    assert.equal(migrationInstance.executionCount, 1);
+    assert.equal(migrationImplementation.executionCount, 1);
   });
 
   it('runs an entire batched migration', async () => {
     const migration = await insertTestBatchedMigration();
 
-    const migrationInstance = new TestBatchMigration();
-    const runner = new BatchedMigrationRunner(migration, migrationInstance);
+    const migrationImplementation = makeTestBatchMigration();
+    const runner = new BatchedMigrationRunner(migration, migrationImplementation);
     await runner.run();
 
     const jobs = await getBatchedMigrationJobs(migration.id);
@@ -150,9 +149,9 @@ describe('BatchedMigrationExecutor', () => {
   it('handles failing execution', async () => {
     let migration = await insertTestBatchedMigration();
 
-    const migrationInstance = new TestBatchMigration();
-    migrationInstance.setFailingIds([1n, 5010n]);
-    const runner = new BatchedMigrationRunner(migration, migrationInstance);
+    const migrationImplementation = makeTestBatchMigration();
+    migrationImplementation.setFailingIds([1n, 5010n]);
+    const runner = new BatchedMigrationRunner(migration, migrationImplementation);
     await runner.run();
 
     const jobs = await getBatchedMigrationJobs(migration.id);
@@ -161,7 +160,7 @@ describe('BatchedMigrationExecutor', () => {
     assert.lengthOf(jobs, 10);
     assert.lengthOf(failedJobs, 2);
     assert.lengthOf(successfulJobs, 8);
-    assert.equal(migrationInstance.executionCount, 10);
+    assert.equal(migrationImplementation.executionCount, 10);
     assert.isTrue(jobs.every((job) => job.attempts === 1));
     failedJobs.forEach((job) => {
       const jobData = job.data as any;
@@ -179,8 +178,8 @@ describe('BatchedMigrationExecutor', () => {
     await resetFailedBatchedMigrationJobs(migration.id);
     migration = await updateBatchedMigrationStatus(migration.id, 'running');
 
-    migrationInstance.setFailingIds([]);
-    const retryRunner = new BatchedMigrationRunner(migration, migrationInstance);
+    migrationImplementation.setFailingIds([]);
+    const retryRunner = new BatchedMigrationRunner(migration, migrationImplementation);
     await retryRunner.run();
 
     const finalJobs = await getBatchedMigrationJobs(migration.id);
@@ -198,6 +197,6 @@ describe('BatchedMigrationExecutor', () => {
 
     // The runner should have run only the previously failed jobs, which
     // works out to 2 additional execution.
-    assert.equal(migrationInstance.executionCount, 12);
+    assert.equal(migrationImplementation.executionCount, 12);
   });
 });

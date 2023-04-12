@@ -48,32 +48,34 @@ By using batched migrations, these problems are avoided:
 
 #### Writing batched migrations
 
-Batched migrations are written as a class that extends `BatchedMigration`. They must have two member functions:
+Batched migrations are written as an object with two functions:
 
 - `getParameters()`: returns the minimum and maximum IDs to operate on, as well as a batch size. `min` defaults to `1` and `batchSize` defaults to `1000`. If `max === null`, that indicates that there are no rows to operate on.
 - `execute(min, max)`: runs the migration on the given range of IDs, inclusive of its endpoints.
 
+A `makeBatchedMigration()` function is available to help ensure you're writing an object with the correct shape.
+
 ```ts
 // batched-migrations/20230411002409_example_migration.ts
-import { BatchedMigration } from '@prairielearn/migrations';
+import { makeBatchedMigration } from '@prairielearn/migrations';
 import { queryOneRowAsync, queryAsync } from '@prairielearn/postgres';
 
-export default class ExampleMigration extends BatchedMigration {
+export default makeBatchedMigration({
   async getParameters() {
     const result = await queryOneRowAsync('SELECT MAX(id) as max from examples;', {});
     return {
       max: result.rows[0].max,
       batchSize: 1000,
     };
-  }
+  },
 
   async execute(min: bigint, max: bigint) {
     await queryAsync('UPDATE examples SET text = TRIM(text) WHERE id >= $min AND id <= $max', {
       min,
       max,
     });
-  }
-}
+  },
+});
 ```
 
 Batched migrations **must** be idempotent, as they may run multiple times on the same ID range in the case of retries after failure.

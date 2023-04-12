@@ -1,13 +1,13 @@
-import { BatchedMigration } from '../batched-migration';
+import { makeBatchedMigration } from '../batched-migration';
 
-export default class TestMigration1 extends BatchedMigration {
+export default makeBatchedMigration({
   async getParameters() {
     return {
       min: 1n,
       max: 100n,
       batchSize: 10,
     };
-  }
+  },
 
-  async execute(_min: bigint, _max: bigint) {}
-}
+  async execute(_min: bigint, _max: bigint) {},
+});

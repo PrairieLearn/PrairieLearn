@@ -1,18 +1,16 @@
 // @ts-check
-const { BatchedMigration } = require('../batched-migration');
+const { makeBatchedMigration } = require('../batched-migration');
 
-class TestMigration2 extends BatchedMigration {
+module.exports = makeBatchedMigration({
   async getParameters() {
     return {
       min: 2n,
       max: 200n,
       batchSize: 20,
     };
-  }
+  },
 
   async execute(_min, _max) {
     throw new Error('Testing failure');
-  }
-}
-
-module.exports = TestMigration2;
+  },
+});

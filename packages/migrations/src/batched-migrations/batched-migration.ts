@@ -40,16 +40,28 @@ export interface BatchedMigrationParameters {
   batchSize?: number;
 }
 
+export interface BatchedMigrationImplementation {
+  getParameters(): Promise<BatchedMigrationParameters>;
+  execute(start: bigint, end: bigint): Promise<void>;
+}
+
 /**
- * A batched migration operates on a range of IDs in batches. It's designed
- * for migrations that are too large to run in a single transaction.
- *
- * Migrations should be idempotent, as they may be run multiple times in case
- * of unexpected failure.
+ * Identity function that helps to write correct batched migrations.
  */
-export abstract class BatchedMigration {
-  public abstract getParameters(): Promise<BatchedMigrationParameters>;
-  public abstract execute(start: bigint, end: bigint): Promise<void>;
+export function makeBatchedMigration<T extends BatchedMigrationImplementation>(fns: T): T {
+  validateBatchedMigrationImplementation(fns);
+  return fns;
+}
+
+export function validateBatchedMigrationImplementation(
+  fns: BatchedMigrationImplementation
+): asserts fns is BatchedMigrationImplementation {
+  if (typeof fns.getParameters !== 'function') {
+    throw new Error('getParameters() must be a function');
+  }
+  if (typeof fns.execute !== 'function') {
+    throw new Error('execute() must be a function');
+  }
 }
 
 type NewBatchedMigration = Pick<

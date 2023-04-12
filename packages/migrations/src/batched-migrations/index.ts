@@ -1,7 +1,7 @@
 export {
-  BatchedMigration,
   BatchedMigrationRow,
   BatchedMigrationStatus,
+  makeBatchedMigration,
   selectAllBatchedMigrations,
   selectBatchedMigration,
   selectBatchedMigrationForTimestamp,
