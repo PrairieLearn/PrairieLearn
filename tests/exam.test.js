@@ -1441,9 +1441,8 @@ describe('Exam assessment', function () {
       describe('server', function () {
         it('should shut down', function (callback) {
           debug('partial credit test: server shutting down');
-          var that = this;
           // pass "this" explicitly to enable this.timeout() calls
-          helperServer.after.call(that, function (err) {
+          helperServer.after.call(this, function (err) {
             debug('partial credit test: server shutdown complete');
             if (ERR(err, callback)) return;
             callback(null);
@@ -1451,9 +1450,8 @@ describe('Exam assessment', function () {
         });
         it('should start up', function (callback) {
           debug('partial credit test: server starting up');
-          var that = this;
           // pass "this" explicitly to enable this.timeout() calls
-          helperServer.before().call(that, function (err) {
+          helperServer.before().call(this, function (err) {
             debug('partial credit test: server startup complete');
             if (ERR(err, callback)) return;
             callback(null);
