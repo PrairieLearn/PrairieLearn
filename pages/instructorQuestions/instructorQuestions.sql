@@ -72,8 +72,8 @@ WITH
       c.id = $course_id
   )
 SELECT
-  c.title AS course_title,
-  JSON_AGG(q.*) AS questions
+  c.example_course,
+  JSON_AGG(q.* ORDER BY q.title) AS questions
 FROM
   base_courses AS c
   JOIN tags AS t ON (t.course_id = c.id)
@@ -83,4 +83,6 @@ WHERE
   t.name = 'template'
 GROUP BY
   c.id,
-  c.title;
+  c.example_course
+ORDER BY
+  c.example_course;
