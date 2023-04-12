@@ -90,7 +90,6 @@ import { init, initBatchedMigrations, startBatchedMigrations } from '@prairielea
 const runner = initBatchedMigrations({
   project: 'prairielearn',
   directories: [path.join(__dirname, 'batched-migrations')],
-  runDurationMs: 60_000,
 });
 runner.on('error', (error) => {
   // Handle error, e.g. by reporting to Sentry.
@@ -98,7 +97,10 @@ runner.on('error', (error) => {
 
 await init();
 
-startBatchedMigrations();
+startBatchedMigrations({
+  workDurationMs: 60_000,
+  sleepDurationMs: 30_000,
+});
 ```
 
 Unlike regular migrations, batched migrations aren't automatically started. Instead, you must write a regular migration to call `enqueueBatchedMigration()` to explicitly start a given batched migration. This provides precise control over execution order.

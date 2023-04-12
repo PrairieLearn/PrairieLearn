@@ -21,12 +21,18 @@ const sql = loadSqlEquiv(__filename);
 
 const DEFAULT_MIN_VALUE = 1n;
 const DEFAULT_BATCH_SIZE = 1_000;
+const DEFAULT_WORK_DURATION_MS = 60_000;
+const DEFAULT_SLEEP_DURATION_MS = 30_000;
 const EXTENSIONS = ['.js', '.ts', '.mjs', '.mts'];
 
 interface BatchedMigrationRunnerOptions {
   project: string;
   directories: string[];
-  runDurationMs?: number;
+}
+
+interface BatchedMigrationStartOptions {
+  workDurationMs?: number;
+  sleepDurationMs?: number;
 }
 
 export class BatchedMigrationsRunner extends EventEmitter {
@@ -144,15 +150,18 @@ export class BatchedMigrationsRunner extends EventEmitter {
     );
   }
 
-  start() {
+  start(options: BatchedMigrationStartOptions = {}) {
     if (this.running) {
       throw new Error('BatchedMigrationsRunner is already running');
     }
 
-    this.loop();
+    this.loop(options);
   }
 
-  async loop() {
+  async loop({ workDurationMs, sleepDurationMs }: BatchedMigrationStartOptions) {
+    workDurationMs ??= DEFAULT_WORK_DURATION_MS;
+    sleepDurationMs ??= DEFAULT_SLEEP_DURATION_MS;
+
     this.running = true;
     while (this.running) {
       if (this.abortController.signal.aborted) {
@@ -164,7 +173,7 @@ export class BatchedMigrationsRunner extends EventEmitter {
 
       let didWork = false;
       try {
-        didWork = await this.maybePerformWork(60 * 1000);
+        didWork = await this.maybePerformWork(workDurationMs);
       } catch (err) {
         this.emit('error', err);
       }
@@ -176,7 +185,7 @@ export class BatchedMigrationsRunner extends EventEmitter {
         // We provide the signal here so that we can more quickly stop things
         // when we're shutting down.
         try {
-          await sleep(30_000, null, { ref: false, signal: this.abortController.signal });
+          await sleep(sleepDurationMs, null, { ref: false, signal: this.abortController.signal });
         } catch (err) {
           // We don't care about errors here, they should only ever occur when
           // the AbortController is aborted. Continue to the next iteration of
@@ -266,9 +275,9 @@ export function initBatchedMigrations(options: BatchedMigrationRunnerOptions) {
   return runner;
 }
 
-export function startBatchedMigrations() {
+export function startBatchedMigrations(options: BatchedMigrationStartOptions = {}) {
   assertRunner(runner);
-  runner.start();
+  runner.start(options);
   return runner;
 }
 

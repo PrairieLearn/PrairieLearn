@@ -1995,7 +1995,6 @@ if (config.startServer) {
         const runner = initBatchedMigrations({
           project: 'prairielearn',
           directories: [path.join(__dirname, 'batched-migrations')],
-          runDurationMs: config.batchedMigrationsRunDurationMs,
         });
 
         runner.on('error', (err) => {
@@ -2080,7 +2079,10 @@ if (config.startServer) {
       async () => {
         // Now that all migrations have been run, we can start executing any
         // batched migrations that may have been enqueued by migrations.
-        startBatchedMigrations();
+        startBatchedMigrations({
+          workDurationMs: config.batchedMigrationsWorkDurationMs,
+          sleepDurationMs: config.batchedMigrationsSleepDurationMs,
+        });
       },
       async () => {
         // We create and activate a random DB schema name
