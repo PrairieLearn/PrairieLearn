@@ -4,7 +4,7 @@ SELECT
     SELECT
       1
     FROM
-      feature_flag_grants
+      feature_grants
     WHERE
       name = $name
       AND (
@@ -27,8 +27,9 @@ SELECT
 
 -- BLOCK enable_feature
 INSERT INTO
-  feature_flag_grants (
+  feature_grants (
     name,
+    type,
     institution_id,
     course_id,
     course_instance_id,
@@ -37,6 +38,7 @@ INSERT INTO
 VALUES
   (
     $name,
+    $type,
     $institution_id,
     $course_id,
     $course_instance_id,
@@ -44,7 +46,7 @@ VALUES
   );
 
 -- BLOCK disable_feature
-DELETE FROM feature_flag_grants
+DELETE FROM feature_grants
 WHERE
   name = $name
   AND (
