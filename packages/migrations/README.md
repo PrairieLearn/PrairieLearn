@@ -78,7 +78,7 @@ export default makeBatchedMigration({
 });
 ```
 
-Batched migrations **must** be idempotent, as they may run multiple times on the same ID range in the case of retries after failure.
+Batched migration `execute()` functions **must** be idempotent, as they may run multiple times on the same ID range in the case of retries after failure.
 
 #### Executing batched migrations
 
