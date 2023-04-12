@@ -82,6 +82,7 @@ export class BatchedMigrationRunner {
     // migration as finished.
     if (await this.hasIncompleteJobs(migration)) {
       this.log(`Incomplete jobs found, not marking as finished`);
+      return;
     }
 
     const hasFailedJobs = await this.hasFailedJobs(migration);
