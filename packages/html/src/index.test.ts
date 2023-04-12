@@ -19,6 +19,10 @@ describe('html', () => {
     assert.equal(html`<p>${123n}</p>`.toString(), '<p>123</p>');
   });
 
+  it('interpolates a boolean', () => {
+    assert.equal(html`<p>${false}</p>`.toString(), '<p>false</p>');
+  });
+
   it('escapes values when rendering array', () => {
     const arr = ['cats>', '<dogs'];
     assert.equal(
