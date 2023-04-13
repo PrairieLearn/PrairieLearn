@@ -147,10 +147,13 @@ module.exports.pullAndUpdate = function (locals, callback) {
       serverJobs.spawnJob(jobOptions);
     };
 
-    // After either cloning or fetching and resetting from Git, we'll need
-    // to load and store the current commit hash in the database
+    // After either cloning or fetching and resetting from Git, we'll load the
+    // current commit hash. Note that we don't commit this to the database until
+    // after we've synced the changes to the database and generated chunks. This
+    // ensures that if the sync fails, we'll sync from the same starting commit
+    // hash next time.
     const syncStage2 = () => {
-      courseUtil.updateCourseCommitHash(locals.course, (err, hash) => {
+      courseUtil.getCommitHash(locals.course.path, (err, hash) => {
         ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
         endGitHash = hash;
         syncStage3();
@@ -183,6 +186,16 @@ module.exports.pullAndUpdate = function (locals, callback) {
               return;
             }
 
+            const updateCourseCommitHash = () => {
+              courseUtil.getOrUpdateCourseCommitHash(locals.course, (err) => {
+                if (err) {
+                  job.fail(err);
+                } else {
+                  checkJsonErrors();
+                }
+              });
+            };
+
             const checkJsonErrors = () => {
               if (result.hadJsonErrors) {
                 job.fail('One or more JSON files contained errors and were unable to be synced');
@@ -205,12 +218,12 @@ module.exports.pullAndUpdate = function (locals, callback) {
                     job.fail(err);
                   } else {
                     chunks.logChunkChangesToJob(chunkChanges, job);
-                    checkJsonErrors();
+                    updateCourseCommitHash();
                   }
                 }
               );
             } else {
-              checkJsonErrors();
+              updateCourseCommitHash();
             }
           }
         );
