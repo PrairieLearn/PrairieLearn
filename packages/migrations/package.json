@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/migrations",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",
@@ -24,7 +24,7 @@
   },
   "dependencies": {
     "@prairielearn/error": "^1.0.0",
-    "@prairielearn/named-locks": "^1.0.0",
+    "@prairielearn/named-locks": "^1.2.0",
     "@prairielearn/postgres": "^1.2.0",
     "fs-extra": "^11.1.1"
   }
