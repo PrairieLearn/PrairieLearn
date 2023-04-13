@@ -10,8 +10,10 @@ columns
 
 indexes
     feature_grants_pkey: PRIMARY KEY (id) USING btree (id)
-    feature_grants_name_institution_id_course_id_course_instanc_key: UNIQUE (name, institution_id, course_id, course_instance_id, user_id) USING btree (name, institution_id, course_id, course_instance_id, user_id)
-    feature_grants_user_id: USING btree (user_id)
+    feature_grants_by_name_idx: UNIQUE (name, institution_id, course_id, course_instance_id, user_id, type) USING btree (name, institution_id, course_id, course_instance_id, user_id, type)
+    feature_grants_by_entity_idx: USING btree (institution_id, course_id, course_instance_id, user_id, name, type)
+    feature_grants_name_user_id_type_idx: USING btree (name, user_id, type)
+    feature_grants_user_id_name_type_idx: USING btree (user_id, name, type)
 
 foreign-key constraints
     feature_grants_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
