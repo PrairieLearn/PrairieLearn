@@ -10,8 +10,8 @@ $(() => {
   } = document.querySelector('#questionsTable').dataset;
 
   const columns = [
-    { name: 'qid', data: 'qid', title: 'QID', render: { display: qidFormatter } },
-    { name: 'title', data: 'title', title: 'Title' },
+    { name: 'qid', data: 'qid', title: 'QID', render: { display: qidFormatter }, filter: 'input' },
+    { name: 'title', data: 'title', title: 'Title', filter: 'input' },
     {
       name: 'topic',
       data: 'topic',
@@ -117,7 +117,7 @@ $(() => {
           action: () => {
             document.querySelectorAll('.js-filter-input').forEach((input) => {
               input.value = '';
-              input.dispatchEvent(new Event('change'));
+              input.dispatchEvent(new Event('input'));
             });
             table.search('').draw();
           },
@@ -136,12 +136,12 @@ $(() => {
           : []
       ),
       dom:
-        // row 1: page info, search, buttons
+        // row 1: page info, buttons
         // row 2: table, control
         // row 3: page info, page list, length selection
-        "<'row m-1'<'col-sm-12 col-md-4'i><'col-sm-12 col-md-4 text-right'f><'col-sm-12 col-md-4 text-right'B>>" +
+        "<'row m-1'<'col-sm-12 col-md-6'i><'col-sm-12 col-md-6 text-right'B>>" +
         "<'row'<'col-sm-12'tr>>" +
-        "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-2'l><'col-sm-12 col-md-5'p>>",
+        "<'row'<'col-sm-12 col-md-5'i><'col-sm-4 col-md-2'l><'col-sm-8 col-md-5'p>>",
       autoWidth: false,
       columnDefs: [
         { targets: [0], className: 'sticky-column' },
@@ -155,7 +155,8 @@ $(() => {
             const dtColumn = this.api().column(index);
             const input = document.createElement(column.filter);
             input.classList.add('form-control', 'js-filter-input');
-            input.addEventListener('change', () => {
+
+            input.addEventListener('input', () => {
               dtColumn.search(input.value).draw();
             });
             input.addEventListener('click', (event) => {
@@ -183,7 +184,7 @@ $(() => {
                   input.appendChild(option);
                 });
             } else if (column.filter === 'input') {
-              input.setAttribute('type', column.filterType ?? 'text');
+              input.setAttribute('type', column.filterType ?? 'search');
             }
 
             dtColumn.header().appendChild(input);
@@ -206,7 +207,7 @@ $(() => {
 
   $(document).keydown((event) => {
     if ((event.ctrlKey || event.metaKey) && String.fromCharCode(event.which).toLowerCase() == 'f') {
-      $('input[type="search"]:first').focus();
+      $('input[type="search"]:visible:first').focus();
       event.preventDefault();
     }
   });
