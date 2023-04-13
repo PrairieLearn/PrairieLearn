@@ -174,12 +174,14 @@ $(() => {
               option.setAttribute('value', '');
               option.innerText = column.filterPlaceholder ?? '(All)';
               input.appendChild(option);
-              Object.entries(options).forEach(([key, value]) => {
-                const option = document.createElement('option');
-                option.setAttribute('value', key);
-                option.innerText = value;
-                input.appendChild(option);
-              });
+              Object.entries(options)
+                .sort(([, a], [, b]) => a.localeCompare(b))
+                .forEach(([key, value]) => {
+                  const option = document.createElement('option');
+                  option.setAttribute('value', key);
+                  option.innerText = value;
+                  input.appendChild(option);
+                });
             } else if (column.filter === 'input') {
               input.setAttribute('type', column.filterType ?? 'text');
             }
