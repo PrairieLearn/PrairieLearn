@@ -134,7 +134,6 @@ startBatchedMigrations({
   workDurationMs: 60_000,
   sleepDurationMs: 30_000,
 });
-
 ```
 
 If you want to gracefully shut down your server, you can stop processing batched migrations and wait for any in-progress jobs to finish.
