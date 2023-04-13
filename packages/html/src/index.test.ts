@@ -20,6 +20,7 @@ describe('html', () => {
   });
 
   it('interpolates a boolean', () => {
+    assert.equal(html`<p>${true}</p>`.toString(), '<p>true</p>');
     assert.equal(html`<p>${false}</p>`.toString(), '<p>false</p>');
   });
 
