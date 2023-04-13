@@ -28,7 +28,9 @@ WHERE
 -- BLOCK select_assessment_group_roles
 SELECT
   gr.id,
-  gr.role_name
+  gr.role_name,
+  gr.minimum,
+  gr.maximum
 FROM
   group_roles AS gr
 WHERE

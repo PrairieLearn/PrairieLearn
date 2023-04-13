@@ -10,6 +10,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 
 const helperServer = require('./helperServer');
 const { URLSearchParams } = require('url');
+const { getGroupRoleReassignmentsAfterLeave } = require('../lib/groups');
 
 let elemList;
 const locals = {};
@@ -1585,5 +1586,364 @@ describe('Test group based assessments with custom group roles from student side
   step('group role table is not visible in assessment without roles', function () {
     elemList = locals.$('#role-select-form');
     assert.lengthOf(elemList, 0);
+  });
+});
+
+describe('Test group role reassignments when user leaves', function () {
+  this.timeout(20000);
+  before('set authenticated user', function () {
+    storedConfig.authUid = config.authUid;
+    storedConfig.authName = config.authName;
+    storedConfig.authUin = config.authUin;
+  });
+  before('set up testing server', helperServer.before(locals.courseDir));
+  after('shut down testing server', helperServer.after);
+  after('unset authenticated user', function () {
+    Object.assign(config, storedConfig);
+  });
+
+  step('should contain a group-based homework assessment with roles', async function () {
+    const result = await sqldb.queryAsync(sql.select_group_work_assessment_with_roles, []);
+    assert.lengthOf(result.rows, 1);
+    assert.notEqual(result.rows[0].id, undefined);
+    locals.assessment_id = result.rows[0].id;
+    locals.assessmentUrl = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id;
+  });
+
+  step('should contain the 4 group roles for the assessment', async function () {
+    const params = {
+      assessment_id: locals.assessment_id,
+    };
+    const result = await sqldb.queryAsync(sql.select_assessment_group_roles, params);
+    assert.lengthOf(result.rows, 4);
+    locals.groupRoles = result.rows;
+
+    // Store roles by name for later tests
+    const manager = result.rows.find((row) => row.role_name === 'Manager');
+    assert.isDefined(manager);
+
+    const recorder = result.rows.find((row) => row.role_name === 'Recorder');
+    assert.isDefined(recorder);
+
+    const reflector = result.rows.find((row) => row.role_name === 'Reflector');
+    assert.isDefined(reflector);
+
+    const contributor = result.rows.find((row) => row.role_name === 'Contributor');
+    assert.isDefined(contributor);
+
+    locals.manager = manager;
+    locals.recorder = recorder;
+    locals.reflector = reflector;
+    locals.contributor = contributor;
+  });
+
+  step('should insert/get 5 users into/from the DB', async function () {
+    const result = await sqldb.queryAsync(sql.generate_and_enroll_5_users, []);
+    assert.lengthOf(result.rows, 5);
+    locals.studentUsers = result.rows;
+  });
+
+  step('should setup group info', async function () {
+    locals.groupId = '1';
+    locals.groupName = '1';
+    locals.groupMembers = locals.studentUsers.map((user) => ({
+      ...user,
+      group_name: locals.groupName,
+    }));
+    locals.rolesInfo = {
+      roleAssignments: [],
+      groupRoles: locals.groupRoles,
+      validationErrors: [],
+      disabledRoles: [],
+      rolesAreBalanced: true,
+      usersWithoutRoles: [],
+    };
+    locals.groupInfo = {
+      groupMembers: locals.groupMembers,
+      groupSize: locals.groupMembers.length,
+      groupName: locals.groupName,
+      joinCode: locals.joinCode,
+      start: false,
+      rolesInfo: locals.rolesInfo,
+    };
+  });
+
+  step(
+    'should transfer required roles to another user when there are no non-required roles to replace',
+    function () {
+      // Setup group of 2 users with one user as manager and the other user as recorder
+      locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 2);
+      locals.groupInfo.groupSize = 2;
+      locals.rolesInfo.roleAssignments = [
+        {
+          user_id: locals.studentUsers[0].user_id,
+          group_role_id: locals.manager.id,
+          group_id: locals.groupId,
+        },
+        {
+          user_id: locals.studentUsers[1].user_id,
+          group_role_id: locals.recorder.id,
+          group_id: locals.groupId,
+        },
+      ];
+
+      // Get role reassignments if second user leaves
+      const result = getGroupRoleReassignmentsAfterLeave(
+        locals.groupInfo,
+        locals.studentUsers[1].user_id,
+        locals.groupId
+      );
+      // Recorder role should be transferred to first user
+      const expected = [
+        {
+          user_id: locals.studentUsers[0].user_id,
+          group_role_id: locals.manager.id,
+          group_id: locals.groupId,
+        },
+        {
+          user_id: locals.studentUsers[0].user_id,
+          group_role_id: locals.recorder.id,
+          group_id: locals.groupId,
+        },
+      ];
+      assert.sameDeepMembers(result, expected);
+    }
+  );
+
+  step(
+    "should replace another user's non-required role with leaving user's required role",
+    function () {
+      // Setup group of 2 users with one user as manager and the other user as recorder
+      locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 2);
+      locals.groupInfo.groupSize = 2;
+      locals.rolesInfo.roleAssignments = [
+        {
+          user_id: locals.studentUsers[0].user_id,
+          group_role_id: locals.manager.id,
+          group_id: locals.groupId,
+        },
+        {
+          user_id: locals.studentUsers[1].user_id,
+          group_role_id: locals.contributor.id,
+          group_id: locals.groupId,
+        },
+      ];
+
+      // Get role reassignments if first user leaves
+      const result = getGroupRoleReassignmentsAfterLeave(
+        locals.groupInfo,
+        locals.studentUsers[0].user_id,
+        locals.groupId
+      );
+      // Manager role should replace first user's contributor role
+      const expected = [
+        {
+          user_id: locals.studentUsers[1].user_id,
+          group_role_id: locals.manager.id,
+          group_id: locals.groupId,
+        },
+      ];
+      assert.sameDeepMembers(result, expected);
+    }
+  );
+
+  step(
+    "should replace other users' non-required roles with leaving user's required roles",
+    function () {
+      // Setup group of 3 users with first user as manager AND reflector, and the other users as contributors
+      locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 3);
+      locals.groupInfo.groupSize = 3;
+      locals.rolesInfo.roleAssignments = [
+        {
+          user_id: locals.studentUsers[0].user_id,
+          group_role_id: locals.manager.id,
+          group_id: locals.groupId,
+        },
+        {
+          user_id: locals.studentUsers[0].user_id,
+          group_role_id: locals.reflector.id,
+          group_id: locals.groupId,
+        },
+        {
+          user_id: locals.studentUsers[1].user_id,
+          group_role_id: locals.contributor.id,
+          group_id: locals.groupId,
+        },
+        {
+          user_id: locals.studentUsers[2].user_id,
+          group_role_id: locals.contributor.id,
+          group_id: locals.groupId,
+        },
+      ];
+
+      // Get role reassignments if first user leaves
+      const result = getGroupRoleReassignmentsAfterLeave(
+        locals.groupInfo,
+        locals.studentUsers[0].user_id,
+        locals.groupId
+      );
+      // Case 1: Manager role should replace second user's contributor role, and
+      // reflector role should replace third user's contributor role
+      const expected1 = [
+        {
+          user_id: locals.studentUsers[1].user_id,
+          group_role_id: locals.manager.id,
+          group_id: locals.groupId,
+        },
+        {
+          user_id: locals.studentUsers[2].user_id,
+          group_role_id: locals.reflector.id,
+          group_id: locals.groupId,
+        },
+      ];
+      const expected2 = [
+        {
+          user_id: locals.studentUsers[2].user_id,
+          group_role_id: locals.manager.id,
+          group_id: locals.groupId,
+        },
+        {
+          user_id: locals.studentUsers[1].user_id,
+          group_role_id: locals.reflector.id,
+          group_id: locals.groupId,
+        },
+      ];
+
+      assert.lengthOf(result, 2);
+      // If second user receives manager, we expect case 1; otherwise, we expect case 2
+      const secondUserRoleAssignment = result.find(
+        ({ user_id }) => user_id === locals.studentUsers[1].user_id
+      );
+      assert.isDefined(secondUserRoleAssignment);
+      const expected =
+        secondUserRoleAssignment.group_role_id === locals.manager.id ? expected1 : expected2;
+      assert.sameDeepMembers(result, expected);
+    }
+  );
+
+  step(
+    "should replace other users' non-required roles with leaving user's required roles, then transfer after non-required roles run out",
+    function () {
+      // Setup group of 3 users with one user as manager, recorder, and reflector, and the other users as contributor
+      locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 3);
+      locals.groupInfo.groupSize = 3;
+      locals.rolesInfo.roleAssignments = [
+        {
+          user_id: locals.studentUsers[0].user_id,
+          group_role_id: locals.manager.id,
+          group_id: locals.groupId,
+        },
+        {
+          user_id: locals.studentUsers[0].user_id,
+          group_role_id: locals.recorder.id,
+          group_id: locals.groupId,
+        },
+        {
+          user_id: locals.studentUsers[0].user_id,
+          group_role_id: locals.reflector.id,
+          group_id: locals.groupId,
+        },
+        {
+          user_id: locals.studentUsers[1].user_id,
+          group_role_id: locals.contributor.id,
+          group_id: locals.groupId,
+        },
+        {
+          user_id: locals.studentUsers[2].user_id,
+          group_role_id: locals.contributor.id,
+          group_id: locals.groupId,
+        },
+      ];
+
+      // Get role reassignments if first user leaves
+      const result = getGroupRoleReassignmentsAfterLeave(
+        locals.groupInfo,
+        locals.studentUsers[0].user_id,
+        locals.groupId
+      );
+
+      // Ensure that there is a single role assignment for manager, recorder, and reflector each
+      assert.lengthOf(
+        result.filter(({ group_role_id }) => group_role_id === locals.manager.id),
+        1
+      );
+      assert.lengthOf(
+        result.filter(({ group_role_id }) => group_role_id === locals.recorder.id),
+        1
+      );
+      assert.lengthOf(
+        result.filter(({ group_role_id }) => group_role_id === locals.reflector.id),
+        1
+      );
+
+      // Ensure that there are no contributors
+      assert.lengthOf(
+        result.filter(({ group_role_id }) => group_role_id === locals.contributor.id),
+        0
+      );
+    }
+  );
+
+  step('should not transfer non-required roles to another user', function () {
+    // Setup group of 2 users with one user as manager and the other user as contributor
+    locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 2);
+    locals.groupInfo.groupSize = 2;
+    locals.rolesInfo.roleAssignments = [
+      {
+        user_id: locals.studentUsers[0].user_id,
+        group_role_id: locals.manager.id,
+        group_id: locals.groupId,
+      },
+      {
+        user_id: locals.studentUsers[1].user_id,
+        group_role_id: locals.contributor.id,
+        group_id: locals.groupId,
+      },
+    ];
+
+    // Get role reassignments if second user leaves
+    const result = getGroupRoleReassignmentsAfterLeave(
+      locals.groupInfo,
+      locals.studentUsers[1].user_id,
+      locals.groupId
+    );
+    // Recorder role should be transferred to first user
+    const expected = [
+      {
+        user_id: locals.studentUsers[0].user_id,
+        group_role_id: locals.manager.id,
+        group_id: locals.groupId,
+      },
+    ];
+    assert.sameDeepMembers(result, expected);
+  });
+
+  step('should do nothing when leaving user has no roles', function () {
+    // Setup group of 2 users with one user as manager and the other user without roles
+    locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 2);
+    locals.groupInfo.groupSize = 2;
+    locals.rolesInfo.roleAssignments = [
+      {
+        user_id: locals.studentUsers[0].user_id,
+        group_role_id: locals.manager.id,
+        group_id: locals.groupId,
+      },
+    ];
+
+    // Get role reassignments if second user leaves
+    const result = getGroupRoleReassignmentsAfterLeave(
+      locals.groupInfo,
+      locals.studentUsers[1].user_id,
+      locals.groupId
+    );
+    // Recorder role should be transferred to first user
+    const expected = [
+      {
+        user_id: locals.studentUsers[0].user_id,
+        group_role_id: locals.manager.id,
+        group_id: locals.groupId,
+      },
+    ];
+    assert.sameDeepMembers(result, expected);
   });
 });
