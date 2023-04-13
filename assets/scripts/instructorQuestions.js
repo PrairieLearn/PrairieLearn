@@ -80,21 +80,26 @@ $(() => {
       orderable: false,
       render: {
         display: (data) =>
-          data
-            .map(
-              (assessment) =>
-                `<a href="${plainUrlPrefix}/course_instance/${ci.id}/instructor/assessment/${
-                  assessment.assessment_id
-                }" class="badge color-${assessment.color} color-hover">
+          data?.length
+            ? data
+                .map(
+                  (assessment) =>
+                    `<a href="${plainUrlPrefix}/course_instance/${ci.id}/instructor/assessment/${
+                      assessment.assessment_id
+                    }" class="badge color-${assessment.color} color-hover">
                   <span>${_.escape(assessment.label)}</span></a>`
-            )
-            .join(' '),
-        filter: (data) => data.map((assessment) => assessment.assessment_id),
+                )
+                .join(' ')
+            : '&mdash;',
+        filter: (data) =>
+          data?.length ? data.map((assessment) => assessment.assessment_id) : ['NONE'],
       },
       filter: 'select',
       filterOptions: (list, items) => ({
         ...list,
-        ..._.mapValues(_.keyBy(items, 'assessment_id'), 'label'),
+        ...(items?.length
+          ? _.mapValues(_.keyBy(items, 'assessment_id'), 'label')
+          : { NONE: '(None)' }),
       }),
       filterPlaceholder: '(All Assessments)',
     }))
@@ -109,6 +114,8 @@ $(() => {
         [10, 20, 50, 100, 200, 500, 'All'],
       ],
       pageLength: 50,
+      scrollX: true,
+      fixedColumns: { left: 1 },
       buttons: [
         { extend: 'colvis', text: '<i class="fas fa-th-list"></i> Columns' },
         {
@@ -142,11 +149,9 @@ $(() => {
         "<'row m-1'<'col-sm-12 col-md-6'i><'col-sm-12 col-md-6 text-right'B>>" +
         "<'row'<'col-sm-12'tr>>" +
         "<'row'<'col-sm-12 col-md-5'i><'col-sm-4 col-md-2'l><'col-sm-8 col-md-5'p>>",
-      autoWidth: false,
       columnDefs: [
-        { targets: [0], className: 'sticky-column' },
         { targets: '_all', className: 'align-middle' },
-        { targets: [...columns.filter((_c, i) => i > 1).keys()], className: 'text-no-wrap' },
+        { targets: '_all', className: 'text-nowrap' },
       ],
       columns: columns,
       initComplete: function () {
@@ -156,9 +161,6 @@ $(() => {
             const input = document.createElement(column.filter);
             input.classList.add('form-control', 'js-filter-input');
 
-            input.addEventListener('input', () => {
-              dtColumn.search(input.value).draw();
-            });
             input.addEventListener('click', (event) => {
               event.stopPropagation();
             });
@@ -183,8 +185,16 @@ $(() => {
                   option.innerText = value;
                   input.appendChild(option);
                 });
+
+              input.addEventListener('input', () => {
+                const val = $.fn.dataTable.util.escapeRegex(input.value);
+                dtColumn.search(input.value ? `^${val}$` : '', true, false).draw();
+              });
             } else if (column.filter === 'input') {
               input.setAttribute('type', column.filterType ?? 'search');
+              input.addEventListener('input', () => {
+                dtColumn.search(input.value).draw();
+              });
             }
 
             dtColumn.header().appendChild(input);

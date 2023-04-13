@@ -3720,6 +3720,7 @@ __metadata:
     d3: ^7.8.4
     datatables.net-bs4: ^1.13.4
     datatables.net-buttons-bs4: ^2.3.6
+    datatables.net-fixedcolumns-bs4: ^4.2.2
     datatables.net-fixedheader-bs4: ^3.3.2
     date-fns: ^2.29.3
     date-fns-tz: ^2.0.0
@@ -6045,6 +6046,27 @@ __metadata:
     datatables.net: ">=1.12.1"
     jquery: ">=1.7"
   checksum: 90e74f426a1e40ec88509711b767244c59fbf26b93b7c9de0acc9dfcf65d4c73f4d7c2eafd7fa73272c27cece61961c2af1e0a4b683df4f01f556e5d5ac55034
+  languageName: node
+  linkType: hard
+
+"datatables.net-fixedcolumns-bs4@npm:^4.2.2":
+  version: 4.2.2
+  resolution: "datatables.net-fixedcolumns-bs4@npm:4.2.2"
+  dependencies:
+    datatables.net-bs4: ">=1.12.1"
+    datatables.net-fixedcolumns: ">=4.1.0"
+    jquery: ">=1.7"
+  checksum: f418eac64081ef944673ffe9928e5826118c451646ed4f62639b6a00e9cb9e734acba1fcd44be4431649c6ee513fe48830ff65bcf1f72ad64d942db8e398dbad
+  languageName: node
+  linkType: hard
+
+"datatables.net-fixedcolumns@npm:>=4.1.0":
+  version: 4.2.2
+  resolution: "datatables.net-fixedcolumns@npm:4.2.2"
+  dependencies:
+    datatables.net: ">=1.12.1"
+    jquery: ">=1.7"
+  checksum: 77ca8b7eb1e7a4c84a878123eafe81f917b5a336426de8689f06f78b8bb183dc61e2feb16f5c8c3f7c4bb9a1a5fb67f93b576ac5e9cc5b2e496719b219427c6b
   languageName: node
   linkType: hard
 

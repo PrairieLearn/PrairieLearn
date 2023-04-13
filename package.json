@@ -59,6 +59,7 @@
         "d3": "^7.8.4",
         "datatables.net-bs4": "^1.13.4",
         "datatables.net-buttons-bs4": "^2.3.6",
+        "datatables.net-fixedcolumns-bs4": "^4.2.2",
         "datatables.net-fixedheader-bs4": "^3.3.2",
         "date-fns": "^2.29.3",
         "date-fns-tz": "^2.0.0",
