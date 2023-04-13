@@ -8,7 +8,7 @@
     },
     "scripts": {
         "release": "turbo run build && changeset publish",
-        "version": "changeset version && yarn"
+        "version": "changeset version && YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn"
     },
     "dependencies": {
         "@aws-sdk/client-auto-scaling": "^3.304.0",
@@ -36,7 +36,7 @@
         "async": "^3.2.4",
         "async-mutex": "^0.4.0",
         "async-stacktrace": "0.0.2",
-        "aws-sdk": "^2.1349.0",
+        "aws-sdk": "^2.1354.0",
         "backbone": "^1.4.1",
         "base64url": "^3.0.1",
         "better-ajv-errors": "^1.2.0",
@@ -45,7 +45,7 @@
         "body-parser": "^1.20.2",
         "bootstrap": "^4.6.2",
         "bootstrap-icons": "^1.10.3",
-        "bootstrap-table": "^1.21.4",
+        "bootstrap-table": "1.21.2",
         "bowser": "^2.11.0",
         "byline": "^5.0.0",
         "chalk": "^4.1.2",
@@ -128,7 +128,7 @@
         "remark-parse": "^9.0.0",
         "remark-rehype": "^8.1.0",
         "requirejs": "^2.3.6",
-        "s3-streamlogger": "^1.9.0",
+        "s3-streamlogger": "1.7.0",
         "search-string": "^3.1.0",
         "serve-favicon": "^2.5.0",
         "showdown": "^2.1.0",
@@ -147,7 +147,7 @@
         "uuid": "^9.0.0",
         "winston": "^3.8.2",
         "winston-aws-cloudwatch": "^3.0.0",
-        "xml2js": "^0.4.23",
+        "xml2js": "^0.5.0",
         "xss": "^1.0.14",
         "yargs": "^17.7.1",
         "yargs-parser": "^21.1.1",
@@ -180,13 +180,17 @@
         "@types/tmp": "^0.2.3",
         "@types/uuid": "^9.0.1",
         "@types/yargs": "^17.0.24",
+        "@typescript-eslint/eslint-plugin": "^5.57.1",
+        "@typescript-eslint/parser": "^5.57.1",
         "chai": "^4.3.7",
         "chai-as-promised": "^7.1.1",
         "coveralls": "^3.1.1",
         "eslint": "^8.37.0",
         "eslint-config-prettier": "^8.8.0",
+        "eslint-import-resolver-typescript": "^3.5.5",
         "eslint-plugin-import": "2.27.5",
         "eslint-plugin-mocha": "^10.1.0",
+        "eslint-plugin-no-only-tests": "^3.1.0",
         "fast-glob": "^3.2.12",
         "htmlhint": "^1.1.4",
         "jsdoc": "^4.0.2",
@@ -224,5 +228,5 @@
     "workspaces": [
         "packages/*"
     ],
-    "packageManager": "yarn@3.3.1"
+    "packageManager": "yarn@3.5.0"
 }
