@@ -20,7 +20,6 @@ $(() => {
         filter: (data) => data.id,
         _: (data) => data.name,
       },
-      searchable: false,
       filter: 'select',
       filterOptions: (list, topic) => ({ ...list, [topic.id]: topic.name }),
       filterPlaceholder: '(All Topics)',
@@ -37,7 +36,6 @@ $(() => {
             .join(' '),
         filter: (data) => (data ?? []).map((tag) => tag.id),
       },
-      // searchable: false,
       filter: 'select',
       filterOptions: (list, tags) => ({ ...list, ..._.mapValues(_.keyBy(tags, 'id'), 'name') }),
       filterPlaceholder: '(All Tags)',
@@ -52,7 +50,6 @@ $(() => {
           `<span class="badge color-${data === 'v3' ? 'green1' : 'red1'}">
                ${_.escape(data)}</span>`,
       },
-      // searchable: false,
       filter: 'select',
       filterPlaceholder: '(All Tags)',
     },
@@ -61,7 +58,6 @@ $(() => {
       data: 'grading_method',
       title: 'Grading Method',
       visible: false,
-      // searchable: false,
       filter: 'select',
       filterPlaceholder: '(All Methods)',
     },
@@ -69,8 +65,8 @@ $(() => {
       name: 'external_grading_image',
       data: 'external_grading_image',
       title: 'External Grading Image',
+      render: { display: (data) => data || '&mdash;' },
       visible: false,
-      // searchable: false,
       filter: 'select',
       filterPlaceholder: '(All Images)',
     },
@@ -94,7 +90,6 @@ $(() => {
             .join(' '),
         filter: (data) => data.map((assessment) => assessment.assessment_id),
       },
-      // searchable: false,
       filter: 'select',
       filterOptions: (list, items) => ({
         ...list,
@@ -112,7 +107,7 @@ $(() => {
         [10, 20, 50, 100, 200, 500, 'All'],
       ],
       pageLength: 50,
-      buttons: ['colvis'],
+      buttons: [{ extend: 'colvis', text: '<i class="fas fa-th-list"></i> Columns' }],
       dom:
         // row 1: page info, search, buttons
         // row 2: table, control
@@ -145,7 +140,7 @@ $(() => {
                 .data()
                 .reduce(
                   column.filterOptions ||
-                    ((list, value) => ({ ...list, [value]: value ?? '(None)' })),
+                    ((list, value) => (value ? { ...list, [value]: value } : list)),
                   {}
                 );
               const option = document.createElement('option');
