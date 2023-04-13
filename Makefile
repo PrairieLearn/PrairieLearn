@@ -35,7 +35,7 @@ start-s3rver:
 test: test-js test-python
 test-js: test-prairielearn test-prairielib test-grader-host test-workspace-host test-packages
 test-prairielearn: start-support
-	@yarn mocha --parallel "tests/**/*.test.{js,mjs}" "lib/**/*.test.{js,mjs}"
+	@yarn mocha --parallel "tests/**/*.test.{js,mjs}"
 test-prairielearn-serial: start-support
 	@yarn mocha "tests/**/*.test.{js,mjs}"
 test-prairielib:

@@ -13,7 +13,6 @@ const { makeMockLogger } = require('./mockLogger');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const helperServer = require('./helperServer');
-const helperCourse = require('./helperCourse');
 const { syncDiskToSqlAsync } = require('../sync/syncFromDisk');
 
 const COURSE = {
