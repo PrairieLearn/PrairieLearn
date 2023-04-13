@@ -3720,6 +3720,7 @@ __metadata:
     d3: ^7.8.4
     datatables.net-bs4: ^1.13.4
     datatables.net-buttons-bs4: ^2.3.6
+    datatables.net-fixedheader-bs4: ^3.3.2
     date-fns: ^2.29.3
     date-fns-tz: ^2.0.0
     debug: ^4.3.4
@@ -6044,6 +6045,27 @@ __metadata:
     datatables.net: ">=1.12.1"
     jquery: ">=1.7"
   checksum: 90e74f426a1e40ec88509711b767244c59fbf26b93b7c9de0acc9dfcf65d4c73f4d7c2eafd7fa73272c27cece61961c2af1e0a4b683df4f01f556e5d5ac55034
+  languageName: node
+  linkType: hard
+
+"datatables.net-fixedheader-bs4@npm:^3.3.2":
+  version: 3.3.2
+  resolution: "datatables.net-fixedheader-bs4@npm:3.3.2"
+  dependencies:
+    datatables.net-bs4: ">=1.12.1"
+    datatables.net-fixedheader: ">=3.2.4"
+    jquery: ">=1.7"
+  checksum: adeb49cf12874e600b06e546f885dd49cbeb79ff50baa28ec773d60a48cfb814f083b614134976125e3ccde6c1411470a0a1dd5a7e763c039037b383f21a47f9
+  languageName: node
+  linkType: hard
+
+"datatables.net-fixedheader@npm:>=3.2.4":
+  version: 3.3.2
+  resolution: "datatables.net-fixedheader@npm:3.3.2"
+  dependencies:
+    datatables.net: ">=1.12.1"
+    jquery: ">=1.7"
+  checksum: 464dd335823d3eee6e28722d8c0f15422829204b28b28895da1e78b8b4e0579ef56708e47dcf86250217d9992dc1bb3d036d5936f96ec001c7a9139b444815bd
   languageName: node
   linkType: hard
 
