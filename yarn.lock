@@ -3718,6 +3718,8 @@ __metadata:
     csv-parse: ^5.3.6
     csvtojson: ^2.0.10
     d3: ^7.8.4
+    datatables.net-bs4: ^1.13.4
+    datatables.net-buttons-bs4: ^2.3.6
     date-fns: ^2.29.3
     date-fns-tz: ^2.0.0
     debug: ^4.3.4
@@ -6011,6 +6013,46 @@ __metadata:
     whatwg-mimetype: ^2.2.0
     whatwg-url: ^7.0.0
   checksum: dc4bd9621df0dff336d7c4c0517c792488ef3cf11cd37e72ab80f3a7f0a0aa14bad677ac97cf22c87c6eb9518e58b98590e1c8c756b56240940f0e470c81612e
+  languageName: node
+  linkType: hard
+
+"datatables.net-bs4@npm:>=1.12.1, datatables.net-bs4@npm:^1.13.4":
+  version: 1.13.4
+  resolution: "datatables.net-bs4@npm:1.13.4"
+  dependencies:
+    datatables.net: ">=1.12.1"
+    jquery: ">=1.7"
+  checksum: c2df4fabf60056d456ac8483bee5acfb774454a9ad180089d18ab93c3633f63e7ce0af884f19bad5c6bcac3e9bef64125e5f8393977b6c81bb913b1dd1ed3eb4
+  languageName: node
+  linkType: hard
+
+"datatables.net-buttons-bs4@npm:^2.3.6":
+  version: 2.3.6
+  resolution: "datatables.net-buttons-bs4@npm:2.3.6"
+  dependencies:
+    datatables.net-bs4: ">=1.12.1"
+    datatables.net-buttons: ">=2.2.3"
+    jquery: ">=1.7"
+  checksum: a7f2a7c4baee167e408b58a5079daa2d9487340919060defc8a1f405055a0aade925058a6e29d15a7ada78f497fffa6c5d70dd84e87df7dbe29955a49181a7db
+  languageName: node
+  linkType: hard
+
+"datatables.net-buttons@npm:>=2.2.3":
+  version: 2.3.6
+  resolution: "datatables.net-buttons@npm:2.3.6"
+  dependencies:
+    datatables.net: ">=1.12.1"
+    jquery: ">=1.7"
+  checksum: 90e74f426a1e40ec88509711b767244c59fbf26b93b7c9de0acc9dfcf65d4c73f4d7c2eafd7fa73272c27cece61961c2af1e0a4b683df4f01f556e5d5ac55034
+  languageName: node
+  linkType: hard
+
+"datatables.net@npm:>=1.12.1":
+  version: 1.13.4
+  resolution: "datatables.net@npm:1.13.4"
+  dependencies:
+    jquery: ">=1.7"
+  checksum: 7fa718f0c93809ac3b66e0287ae007459e072dfab9b435ac026be8feddbec24274b7cd08259b4caae3635e4e212cfd4de44e0e450ece66baaf43a1054966fead
   languageName: node
   linkType: hard
 
@@ -9190,6 +9232,13 @@ __metadata:
   version: 3.6.3
   resolution: "jquery@npm:3.6.3"
   checksum: 0fd366bdcaa0c84a7a8751ce20f8192290141913978b5059574426d9b01f4365daa675f95aab3eec94fd794d27b08d32078a2236bef404b8ba78073009988ce6
+  languageName: node
+  linkType: hard
+
+"jquery@npm:>=1.7":
+  version: 3.6.4
+  resolution: "jquery@npm:3.6.4"
+  checksum: 8354f7bd0a0424aa714ee1b6b1ef74b410f834eb5c8501682289b358bc151f11677f11188b544f3bb49309d6ec4d15d1a5de175661250c206b06185a252f706f
   languageName: node
   linkType: hard
 
