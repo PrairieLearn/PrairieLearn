@@ -2077,12 +2077,14 @@ if (config.startServer) {
         });
       },
       async () => {
-        // Now that all migrations have been run, we can start executing any
-        // batched migrations that may have been enqueued by migrations.
-        startBatchedMigrations({
-          workDurationMs: config.batchedMigrationsWorkDurationMs,
-          sleepDurationMs: config.batchedMigrationsSleepDurationMs,
-        });
+        if (config.runBatchedMigrations) {
+          // Now that all migrations have been run, we can start executing any
+          // batched migrations that may have been enqueued by migrations.
+          startBatchedMigrations({
+            workDurationMs: config.batchedMigrationsWorkDurationMs,
+            sleepDurationMs: config.batchedMigrationsSleepDurationMs,
+          });
+        }
       },
       async () => {
         // We create and activate a random DB schema name
