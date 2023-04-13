@@ -15,38 +15,6 @@
   </head>
   
   <body>
-    <!-- 
-    <script>
-      $(function() {
-          $('#questionsTable').bootstrapTable({
-              icons: {
-                  columns: 'fa-th-list',
-              },
-              buttons: {
-                  clearFilters: {
-                      text: 'Clear filters',
-                      icon: 'fa-times',
-                      attributes: { title: 'Clear all set question filters' },
-                      event: () => {
-                          $('#questionsTable').bootstrapTable('clearFilterControl');
-                      },
-                  },
-                  //<% if ((authz_data.has_course_permission_edit) && (! course.example_course) && (! locals.needToSync)) { %>
-                  addQuestion: {
-                      text: 'Add Question',
-                      icon: 'fa-plus',
-                      attributes: { title: 'Create a new question' },
-                      event: () => {
-                          $('form[name=add-question-form]').submit();
-                      },
-                  },
-                  //<% } %>
-              },
-          });
-      });
-
-    </script>
-    -->
     <style>
       .sticky-column {
           position: sticky;
@@ -58,13 +26,6 @@
       .table-hover tbody tr:hover td.sticky-column {
           color: #212529;
           background-color: #efefef;
-      }
-      .fixed-table-toolbar {
-          padding: 0 1em 0 1em;
-      }
-      .fixed-table-toolbar div.pagination,
-      .fixed-table-toolbar div.pagination-detail {
-          margin: 0 1em 0 0 !important;
       }
     </style>
     <%- include('../partials/navbar'); %>
@@ -90,6 +51,7 @@
                data-plain-url-prefix="<%= plainUrlPrefix %>"
                data-has-legacy-questions="<%= has_legacy_questions %>"
                data-current-course-instance="<%= locals.course_instance?.id ?? '' %>"
+               data-new-question-allowed="<%= authz_data.has_course_permission_edit && !course.example_course && !locals.needToSync %>"
                class="table table-sm table-hover table-bordered">
           <!--
                data-sticky-header="true"-->

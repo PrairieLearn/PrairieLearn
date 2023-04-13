@@ -6,6 +6,7 @@ $(() => {
     urlPrefix,
     hasLegacyQuestions,
     currentCourseInstance,
+    newQuestionAllowed,
   } = document.querySelector('#questionsTable').dataset;
 
   const columns = [
@@ -99,7 +100,7 @@ $(() => {
     }))
   );
 
-  $('#questionsTable')
+  const table = $('#questionsTable')
     .DataTable({
       data: JSON.parse(data),
       lengthMenu: [
@@ -107,7 +108,32 @@ $(() => {
         [10, 20, 50, 100, 200, 500, 'All'],
       ],
       pageLength: 50,
-      buttons: [{ extend: 'colvis', text: '<i class="fas fa-th-list"></i> Columns' }],
+      buttons: [
+        { extend: 'colvis', text: '<i class="fas fa-th-list"></i> Columns' },
+        {
+          text: '<i class="fas fa-times"></i> Clear filters',
+          title: 'Clear all question filters',
+          action: () => {
+            document.querySelectorAll('.js-filter-input').forEach((input) => {
+              input.value = '';
+              input.dispatchEvent(new Event('change'));
+            });
+            table.search('').draw();
+          },
+        },
+      ].concat(
+        JSON.parse(newQuestionAllowed)
+          ? [
+              {
+                text: '<i class="fas fa-plus"></i> Add Question',
+                title: 'Create a new question',
+                action: () => {
+                  $('form[name=add-question-form]').submit();
+                },
+              },
+            ]
+          : []
+      ),
       dom:
         // row 1: page info, search, buttons
         // row 2: table, control
