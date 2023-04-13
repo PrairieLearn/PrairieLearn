@@ -100,8 +100,8 @@ export class BatchedMigrationsRunner extends EventEmitter {
     const status: BatchedMigrationStatus =
       migrationParameters.max === null ? 'succeeded' : 'pending';
 
-    const minValue = migrationParameters.min ?? DEFAULT_MIN_VALUE;
-    const maxValue = migrationParameters.max ?? minValue;
+    const minValue = BigInt(migrationParameters.min ?? DEFAULT_MIN_VALUE);
+    const maxValue = BigInt(migrationParameters.max ?? minValue);
     const batchSize = migrationParameters.batchSize ?? DEFAULT_BATCH_SIZE;
 
     await insertBatchedMigration({
