@@ -1,3 +1,4 @@
+import _ from 'lodash';
 import fs from 'fs-extra';
 import { z } from 'zod';
 import { EC2Client, DescribeTagsCommand } from '@aws-sdk/client-ec2';
@@ -14,21 +15,22 @@ export class ConfigLoader<Schema extends z.ZodTypeAny> {
   }
 
   async loadAndValidate(filename?: string) {
-    let config = await this.loadConfigFromFile(filename);
+    // Get the default values from the schema. This ensures that all values
+    // have defaults, and also allows us to override nested defaults with
+    // `_.merge()`.
+    let config = this.schema.parse({});
 
-    if (config.runningInEc2) {
+    const fileConfig = await this.loadConfigFromFile(filename);
+    _.merge(config, fileConfig);
+
+    if (config.runningInEc2 || process.env.CONFIG_LOAD_FROM_AWS) {
       const configFromSecretsManager = await this.loadConfigFromSecretsManager();
       const configFromImds = await this.loadConfigFromImds();
-      config = {
-        ...config,
-        ...configFromSecretsManager,
-        // Dynamic values from IMDS will always override any other values.
-        ...configFromImds,
-      };
+      config = _.merge(config, configFromSecretsManager, configFromImds);
     }
 
     const parsedConfig = this.schema.parse(config);
-    Object.assign(this.resolvedConfig, parsedConfig);
+    _.merge(this.resolvedConfig, parsedConfig);
   }
 
   private async loadConfigFromFile(filename: string | undefined): Promise<Record<string, any>> {

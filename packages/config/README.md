@@ -37,6 +37,14 @@ export async function loadAndValidate(filename: string) {
 export default configLoader.config;
 ```
 
-### Obtaining values from IMDS
+### Loading config from AWS
 
-When running on AWS, it's often useful to know information about the host on which code is running, such as the hostname, instance ID, and region. If your schema contains the keys `hostname`, `instanceId`, and `region`, those values will automatically be fetched from IMDS and made available on the resulting config.
+If your application is running in AWS, you can opt in to loading certain pieces of config from AWS services in one of two ways:
+
+- Set `CONFIG_LOAD_FROM_AWS=1` in the process environment
+- Place `{"runningInEc2": true}` in the config file whose path is passed to `loadAndValidate()`.
+
+The following will then be used to load config.
+
+- If your schema contains the keys `hostname`, `instanceId`, and `region`, those values will automatically be fetched from IMDS and made available on the resulting config.
+- If the EC2 instance has a `ConfSecret` tag, the value of that tag will be used treated as a Secrets Manager secret ID, and that secret's value will be parsed as JSON and merged into the config.

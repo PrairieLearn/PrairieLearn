@@ -20,7 +20,7 @@ const InstanceIdentitySchema = z.object({
 type InstanceIdentity = z.infer<typeof InstanceIdentitySchema>;
 
 let cachedToken: string | null = null;
-let cachedTokenExpiration: number = 0;
+let cachedTokenExpiration = 0;
 
 async function getToken(): Promise<string> {
   if (cachedToken && Date.now() < cachedTokenExpiration) {
@@ -70,6 +70,6 @@ export async function fetchInstanceHostname(): Promise<string> {
 }
 
 export async function fetchInstanceIdentity(): Promise<InstanceIdentity> {
-  const json = fetchImdsJson('/latest/dynamic/instance-identity/document');
+  const json = await fetchImdsJson('/latest/dynamic/instance-identity/document');
   return InstanceIdentitySchema.parse(json);
 }
