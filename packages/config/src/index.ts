@@ -21,7 +21,7 @@ export class ConfigLoader<Schema extends z.ZodTypeAny> {
       const configFromImds = await this.loadConfigFromImds();
       config = {
         ...config,
-        configFromSecretsManager,
+        ...configFromSecretsManager,
         // Dynamic values from IMDS will always override any other values.
         ...configFromImds,
       };
@@ -33,7 +33,7 @@ export class ConfigLoader<Schema extends z.ZodTypeAny> {
 
   private async loadConfigFromFile(filename: string | undefined): Promise<Record<string, any>> {
     if (!filename || !fs.pathExists(filename)) return {};
-    const config = fs.readJson(filename);
+    const config = await fs.readJson(filename);
     return z.record(z.string(), z.any()).parse(config);
   }
 
