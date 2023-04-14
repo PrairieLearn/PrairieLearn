@@ -88,15 +88,26 @@ BEGIN
     INTO real_question_id
     FROM
         questions AS q
-    JOIN
-        course_instances AS ci on ci.course_id = q.course_id
     WHERE
         q.id = real_question_id
         -- TODO: when implementing question sharing, make sure the question has been shared with the course_id
         -- instead of requiring the question being created in the course that created it.
-        AND q.course_id = variant_course_id
-        AND ci.course_id = variant_course_id;
+        AND q.course_id = variant_course_id;
     IF real_question_id IS NULL THEN RAISE EXCEPTION 'inconsistent course for question_id and course_id'; END IF;
+
+    -- check consistency of course_instance_id and course_id
+    IF real_course_instance_id IS NOT NULL THEN
+        SELECT ci.id
+        INTO real_course_instance_id
+        FROM
+            course_instances AS ci
+            JOIN pl_courses AS c ON ci.course_id = c.id
+        WHERE
+            ci.id = real_course_instance_id
+            AND ci.course_id = variant_course_id;
+
+        IF real_course_instance_id IS NULL THEN RAISE EXCEPTION 'inconsistentcourse_instance_id for course_id'; END IF;
+    END IF;
 
     -- check if workspace needed
     SELECT q.workspace_image
