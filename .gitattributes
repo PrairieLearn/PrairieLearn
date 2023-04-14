@@ -9,3 +9,4 @@
 # https://stackoverflow.com/a/51564689 and
 # https://yarnpkg.com/getting-started/qa#which-files-should-be-gitignored
 .yarn/** binary
+public/images/** binary

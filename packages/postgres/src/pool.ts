@@ -239,7 +239,7 @@ export class PostgresPool {
 
     // If we're inside a transaction, we'll reuse the same client to avoid a
     // potential deadlock.
-    let client = this.alsClient.getStore() ?? (await this.pool.connect());
+    const client = this.alsClient.getStore() ?? (await this.pool.connect());
 
     // If we're configured to use a particular schema, we'll store whether or
     // not the search path has already been configured for this particular
@@ -475,7 +475,7 @@ export class PostgresPool {
   async runInTransactionAsync<T>(fn: (client: pg.PoolClient) => Promise<T>): Promise<T> {
     // Check if we're already inside a transaction. If so, we won't start another one,
     // as Postgres doesn't support nested transactions.
-    let client = this.alsClient.getStore();
+    const client = this.alsClient.getStore();
     const isNestedTransaction = client !== undefined;
     const transactionClient = client ?? (await this.beginTransactionAsync());
 
@@ -754,7 +754,7 @@ export class PostgresPool {
     model: Model
   ): Promise<z.infer<Model> | null> {
     const results = await this.queryZeroOrOneRowAsync(query, params);
-    if (results.rows.length == 0) {
+    if (results.rows.length === 0) {
       return null;
     } else {
       return model.parse(results.rows[0]);
@@ -772,7 +772,7 @@ export class PostgresPool {
     model: Model
   ): Promise<z.infer<Model>[]> {
     const results = await this.queryAsync(query, params);
-    if (results.fields.length != 1) {
+    if (results.fields.length !== 1) {
       throw new Error(`Expected one column, got ${results.fields.length}`);
     }
     const columnName = results.fields[0].name;
@@ -791,7 +791,7 @@ export class PostgresPool {
     model: Model
   ): Promise<z.infer<Model>> {
     const results = await this.queryOneRowAsync(query, params);
-    if (results.fields.length != 1) {
+    if (results.fields.length !== 1) {
       throw new Error(`Expected one column, got ${results.fields.length}`);
     }
     const columnName = results.fields[0].name;
@@ -809,10 +809,10 @@ export class PostgresPool {
     model: Model
   ): Promise<z.infer<Model> | null> {
     const results = await this.queryZeroOrOneRowAsync(query, params);
-    if (results.fields.length != 1) {
+    if (results.fields.length !== 1) {
       throw new Error(`Expected one column, got ${results.fields.length}`);
     }
-    if (results.rows.length == 0) {
+    if (results.rows.length === 0) {
       return null;
     } else {
       const columnName = results.fields[0].name;
@@ -856,7 +856,7 @@ export class PostgresPool {
     model: Model
   ): Promise<z.infer<Model> | null> {
     const results = await this.callZeroOrOneRowAsync(sprocName, params);
-    if (results.rows.length == 0) {
+    if (results.rows.length === 0) {
       return null;
     } else {
       return model.parse(results.rows[0]);
