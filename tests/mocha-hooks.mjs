@@ -4,7 +4,7 @@ import { createTemplate, dropTemplate } from './helperDb.js';
 export async function mochaGlobalSetup() {
   // Create a global instance of our template database, dropping the existing
   // template database first if needed.
-  await createTemplate(this);
+  await createTemplate();
 }
 
 export async function mochaGlobalTeardown() {

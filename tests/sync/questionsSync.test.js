@@ -37,8 +37,6 @@ async function findSyncedUndeletedQuestion(qid) {
 }
 
 describe('Question syncing', () => {
-  // Uncomment whenever you change relevant sprocs or migrations
-  // before('remove the template database', helperDb.dropTemplate);
   before('set up testing database', helperDb.before);
   after('tear down testing database', helperDb.after);
 

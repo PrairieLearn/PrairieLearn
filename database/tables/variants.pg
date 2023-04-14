@@ -26,6 +26,9 @@ indexes
     variants_qiid_key: UNIQUE (qiid) USING btree (qiid)
     variants_workspace_id_key: USING btree (workspace_id)
 
+check constraints
+    user_group_xor: CHECK (user_id IS NOT NULL AND group_id IS NULL OR group_id IS NOT NULL AND user_id IS NULL)
+
 foreign-key constraints
     variants_authn_user_id_fkey: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     variants_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE

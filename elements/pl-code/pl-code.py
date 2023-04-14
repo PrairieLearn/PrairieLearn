@@ -10,6 +10,7 @@ import pygments.formatters
 import pygments.lexer
 import pygments.lexers
 import pygments.util
+from code_utils import parse_highlight_lines
 from pygments.styles import STYLE_MAP, get_style_by_name
 from pygments.token import Token
 from pygments_ansi_color import color_tokens
@@ -20,9 +21,10 @@ NO_HIGHLIGHT_DEFAULT = False
 SOURCE_FILE_NAME_DEFAULT = None
 PREVENT_SELECT_DEFAULT = False
 HIGHLIGHT_LINES_DEFAULT = None
-HIGHLIGHT_LINES_COLOR_DEFAULT = "#b3d7ff"
+HIGHLIGHT_LINES_COLOR_DEFAULT = None
 DIRECTORY_DEFAULT = "."
 COPY_CODE_BUTTON_DEFAULT = False
+SHOW_LINE_NUMBERS_DEFAULT = False
 
 # These are the same colors used in pl-external-grader-result
 ANSI_COLORS = {
@@ -51,7 +53,7 @@ class NoHighlightingLexer(pygments.lexer.Lexer):
     want to run it through the highlighter for styling and code escaping.
     """
 
-    def __init__(self, **options: dict[str, Any]) -> None:
+    def __init__(self, **options: Any) -> None:
         pygments.lexer.Lexer.__init__(self, **options)
         self.compress = options.get("compress", "")
 
@@ -65,10 +67,6 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
     with highlighted lines.
     """
 
-    def __init__(self, **options: dict[str, Any]) -> None:
-        pygments.formatters.HtmlFormatter.__init__(self, **options)
-        self.hl_color = options.get("hl_color", HIGHLIGHT_LINES_COLOR_DEFAULT)
-
     def _highlight_lines(
         self, tokensource: Iterable[tuple[int, str]]
     ) -> Generator[tuple[int, str], None, None]:
@@ -80,36 +78,14 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
             if t != 1:
                 yield t, value
             if i + 1 in self.hl_lines:  # i + 1 because Python indexes start at 0
-                yield 1, f'<span class="pl-code-highlighted-line" style="background-color: {self.hl_color}">{value}</span>'
+                yield 1, f'<span class="pl-code-highlighted-line" style="background-color: {self.style.highlight_color}">{value}</span>'
             else:
                 yield 1, value
 
-
-def parse_highlight_lines(highlight_lines: str) -> Optional[list[int]]:
-    """
-    Parses a string like "1", "1-4", "1-3,5,7-8" into a list of lines like
-    [1], [1,2,3,4], and [1,2,3,5,7,8]
-    """
-    lines = []
-    components = highlight_lines.split(",")
-    for component in components:
-        component = component.strip()
-        try:
-            line = int(component)
-            lines.append(line)
-        except ValueError:
-            # Try parsing as "##-###"
-            numbers = component.split("-")
-            if len(numbers) != 2:
-                return None
-            try:
-                start = int(numbers[0])
-                end = int(numbers[1])
-                lines.extend(range(start, end + 1))
-
-            except ValueError:
-                return None
-    return lines
+    @property
+    def _linenos_style(self) -> str:
+        # All styling will be handled in CSS.
+        return ""
 
 
 def get_lexer_by_name(name: str) -> Optional[pygments.lexer.Lexer]:
@@ -144,6 +120,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "highlight-lines-color",
         "copy-code-button",
         "style",
+        "show-line-numbers",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -198,8 +175,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     highlight_lines = pl.get_string_attrib(
         element, "highlight-lines", HIGHLIGHT_LINES_DEFAULT
     )
-    highlight_lines_color = pl.get_string_attrib(
+    highlight_lines_color = pl.get_color_attrib(
         element, "highlight-lines-color", HIGHLIGHT_LINES_COLOR_DEFAULT
+    )
+
+    show_line_numbers = pl.get_boolean_attrib(
+        element, "show-line-numbers", SHOW_LINE_NUMBERS_DEFAULT
     )
 
     # The no-highlight option is deprecated, but supported for backwards compatibility
@@ -238,19 +219,30 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     pygments_style = get_style_by_name(style)
 
-    class CustomStyleWithAnsiColors(pygments_style):  # type: ignore
+    background_color = pygments_style.background_color or "transparent"
+    line_number_color = pygments_style.line_number_color
+
+    class CustomStyleWithAnsiColors(pygments_style):
         styles = dict(pygments_style.styles)
         styles.update(color_tokens(ANSI_COLORS, ANSI_COLORS))
 
+        highlight_color = (
+            pygments_style.highlight_color or highlight_lines_color or "#b3d7ff"
+        )
+
     formatter_opts = {
         "style": CustomStyleWithAnsiColors,
-        "cssclass": "mb-2 rounded",
-        "prestyles": "padding: 0.5rem; margin-bottom: 0px",
+        "nobackground": True,
         "noclasses": True,
+        # We'll unconditionally render the line numbers, but we'll hide them if
+        # they aren't specifically enabled. This means we only have to deal with
+        # one markup "shape" in our CSS, not two.
+        "linenos": "table",
     }
+
     if highlight_lines is not None:
         formatter_opts["hl_lines"] = parse_highlight_lines(highlight_lines)
-        formatter_opts["hl_color"] = highlight_lines_color
+
     formatter = HighlightingHtmlFormatter(**formatter_opts)
 
     code = pygments.highlight(unescape(code), lexer, formatter)
@@ -259,6 +251,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "uuid": pl.get_uuid(),
         "code": code,
         "prevent_select": prevent_select,
+        "background_color": background_color,
+        "line_number_color": line_number_color,
+        "show_line_numbers": show_line_numbers,
         "copy_code_button": pl.get_boolean_attrib(
             element, "copy-code-button", COPY_CODE_BUTTON_DEFAULT
         ),
