@@ -68,7 +68,7 @@ $(() => {
       name: 'external_grading_image',
       data: 'external_grading_image',
       title: 'External Grading Image',
-      render: { display: (data) => data || '&mdash;' },
+      defaultContent: '&mdash;',
       visible: false,
       filter: 'select',
       filterPlaceholder: '(All Images)',
