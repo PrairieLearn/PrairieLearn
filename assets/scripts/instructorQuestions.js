@@ -1,3 +1,5 @@
+/* global _ */
+
 $(() => {
   const {
     data,
@@ -74,8 +76,10 @@ $(() => {
   ].concat(
     JSON.parse(courseInstances).map((ci) => ({
       data: (row) =>
+        // eslint-disable-next-line eqeqeq
         (row.assessments ?? []).filter((assessment) => assessment.course_instance_id == ci.id),
       title: `<span class="text-nowrap">${_.escape(ci.short_name)} Assessments</span>`,
+      // eslint-disable-next-line eqeqeq
       visible: currentCourseInstance == ci.id,
       orderable: false,
       render: {
@@ -161,8 +165,12 @@ $(() => {
             const input = document.createElement(column.filter);
             input.classList.add('form-control', 'js-filter-input');
 
-            input.addEventListener('click', (event) => {
-              event.stopPropagation();
+            // Keep events in the input from propagating to the header (which triggers ordering or
+            // something similar)
+            ['click', 'keydown', 'keypress', 'keyup'].forEach((e) => {
+              input.addEventListener(e, (event) => {
+                event.stopPropagation();
+              });
             });
 
             if (column.filter === 'select') {
@@ -216,7 +224,10 @@ $(() => {
     });
 
   $(document).keydown((event) => {
-    if ((event.ctrlKey || event.metaKey) && String.fromCharCode(event.which).toLowerCase() == 'f') {
+    if (
+      (event.ctrlKey || event.metaKey) &&
+      String.fromCharCode(event.which).toLowerCase() === 'f'
+    ) {
       $('input[type="search"]:visible:first').focus();
       event.preventDefault();
     }
