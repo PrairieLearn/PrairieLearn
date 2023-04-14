@@ -106,7 +106,7 @@ BEGIN
             ci.id = real_course_instance_id
             AND ci.course_id = variant_course_id;
 
-        IF real_course_instance_id IS NULL THEN RAISE EXCEPTION 'inconsistentcourse_instance_id for course_id'; END IF;
+        IF real_course_instance_id IS NULL THEN RAISE EXCEPTION 'inconsistent course_instance_id for course_id'; END IF;
     END IF;
 
     -- check if workspace needed
