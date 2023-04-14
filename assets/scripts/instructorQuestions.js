@@ -12,8 +12,8 @@ $(() => {
   } = document.querySelector('#questionsTable').dataset;
 
   const columns = [
-    { name: 'qid', data: 'qid', title: 'QID', render: { display: qidFormatter }, filter: 'input' },
-    { name: 'title', data: 'title', title: 'Title', filter: 'input' },
+    { name: 'qid', data: 'qid', title: 'QID', render: { display: qidFormatter } },
+    { name: 'title', data: 'title', title: 'Title' },
     {
       name: 'topic',
       data: 'topic',
@@ -37,7 +37,7 @@ $(() => {
           (data ?? [])
             .map((tag) => `<span class="badge color-${tag.color}">${_.escape(tag.name)}</span>`)
             .join(' '),
-        filter: (data) => (data ?? []).map((tag) => tag.id),
+        filter: (data) => (data ?? []).map((tag) => tag.id).join(' '),
       },
       filter: 'select',
       filterOptions: (list, tags) => ({ ...list, ..._.mapValues(_.keyBy(tags, 'id'), 'name') }),
@@ -96,7 +96,7 @@ $(() => {
                 .join(' ')
             : '&mdash;',
         filter: (data) =>
-          data?.length ? data.map((assessment) => assessment.assessment_id) : ['NONE'],
+          data?.length ? data.map((assessment) => assessment.assessment_id).join(' ') : 'NONE',
       },
       filter: 'select',
       filterOptions: (list, items) => ({
@@ -150,7 +150,7 @@ $(() => {
         // row 1: page info, buttons
         // row 2: table, control
         // row 3: page info, page list, length selection
-        "<'row m-1'<'col-sm-12 col-md-6'i><'col-sm-12 col-md-6 text-right'B>>" +
+        "<'row m-1'<'col-sm-12 col-md-4'i><'col-sm-12 col-md-8 text-right'<'d-inline-block mr-2'f><'d-inline-block'B>>>" +
         "<'row'<'col-sm-12 table-responsive'tr>>" +
         "<'row'<'col-sm-12 col-md-5'i><'col-sm-4 col-md-2'l><'col-sm-8 col-md-5'p>>",
       columnDefs: [
@@ -163,11 +163,10 @@ $(() => {
           if (column.filter) {
             const dtColumn = this.api().column(index);
             const input = document.createElement(column.filter);
-            input.classList.add('form-control', 'js-filter-input');
+            input.classList.add('form-control', 'form-control-sm', 'js-filter-input');
 
-            // Keep events in the input from propagating to the header (which triggers ordering or
-            // something similar)
-            ['click', 'keydown', 'keypress', 'keyup'].forEach((e) => {
+            // Keep events in the input from propagating to the header (which triggers ordering)
+            ['click', 'keypress', 'keyup'].forEach((e) => {
               input.addEventListener(e, (event) => {
                 event.stopPropagation();
               });
@@ -196,7 +195,7 @@ $(() => {
 
               input.addEventListener('input', () => {
                 const val = $.fn.dataTable.util.escapeRegex(input.value);
-                dtColumn.search(input.value ? `^${val}$` : '', true, false).draw();
+                dtColumn.search(input.value ? `\\b${val}\\b` : '', true, false).draw();
               });
             } else if (column.filter === 'input') {
               input.setAttribute('type', column.filterType ?? 'search');
