@@ -753,19 +753,11 @@ function saveAndSync(fileEdit, locals, callback) {
         arguments: ['reset', '--hard', `origin/${locals.course.branch}`],
         working_directory: fileEdit.coursePath,
         env: gitEnv,
-        on_success: _pullFromRemoteHash,
+        on_success: _checkHash,
         on_error: _cleanup,
         no_job_sequence_update: true,
       };
       serverJobs.spawnJob(jobOptions);
-    };
-
-    const _pullFromRemoteHash = () => {
-      debug(`${job_sequence_id}: _pullFromRemoteHash`);
-      courseUtil.updateCourseCommitHash(locals.course, (err) => {
-        ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
-        _checkHash();
-      });
     };
 
     const _checkHash = () => {
@@ -965,7 +957,7 @@ function saveAndSync(fileEdit, locals, callback) {
         type: 'unlock',
         description: 'Unlock',
         job_sequence_id: job_sequence_id,
-        on_success: jobSequenceHasFailed ? _finishWithFailure : _updateCommitHash,
+        on_success: jobSequenceHasFailed ? _finishWithFailure : _getEndCommitHash,
         on_error: _finishWithFailure,
         no_job_sequence_update: true,
       };
@@ -986,9 +978,9 @@ function saveAndSync(fileEdit, locals, callback) {
       });
     };
 
-    const _updateCommitHash = () => {
+    const _getEndCommitHash = () => {
       debug(`${job_sequence_id}: _updateCommitHash`);
-      courseUtil.updateCourseCommitHash(locals.course, (err, hash) => {
+      courseUtil.getCommitHash(locals.course.path, (err, hash) => {
         ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
         endGitHash = hash;
         if (fileEdit.needToSync || config.chunksGenerator) {
@@ -1025,6 +1017,16 @@ function saveAndSync(fileEdit, locals, callback) {
             return;
           }
 
+          const updateCourseCommitHash = () => {
+            courseUtil.updateCourseCommitHash(locals.course, (err) => {
+              if (err) {
+                job.fail(err);
+              } else {
+                checkJsonErrors();
+              }
+            });
+          };
+
           const checkJsonErrors = () => {
             if (result.hadJsonErrors) {
               job.fail('One or more JSON files contained errors and were unable to be synced');
@@ -1047,12 +1049,12 @@ function saveAndSync(fileEdit, locals, callback) {
                   job.fail(err);
                 } else {
                   chunks.logChunkChangesToJob(chunkChanges, job);
-                  checkJsonErrors();
+                  updateCourseCommitHash();
                 }
               }
             );
           } else {
-            checkJsonErrors();
+            updateCourseCommitHash();
           }
         });
       });
