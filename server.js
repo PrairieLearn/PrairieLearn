@@ -829,6 +829,11 @@ module.exports.initExpress = function () {
     ]
   );
   //check with Ruiwei about this, it isn't working
+  app.get('/cheat_detection_pair', function(req, res) {
+    let data1 = req.query.data1;
+    let data2 = req.query.data2;
+    res.render('cheat_detection_pair', {data1: data1, data2: data2});
+  });
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/cheat_detection_pair',
     [
@@ -841,9 +846,7 @@ module.exports.initExpress = function () {
       require('./pages/instructorAssessmentCheatDetectionPair/instructorAssessmentCheatDetectionPair'),
     ]
   );
-  app.get('/cheat_detection_pair', function(req, res) {
-    res.render('cheat_detection_pair', {data1: res.locals.data1, data2: res.locals.data2});
-  });
+  
   app.use(
     '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/question_statistics',
     [

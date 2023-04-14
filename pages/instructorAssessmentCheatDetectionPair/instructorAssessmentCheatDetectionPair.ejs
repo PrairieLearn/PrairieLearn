@@ -21,6 +21,20 @@
   </head>
   <body>
     <script>
+      document.addEventListener('DOMContentLoaded', function() {
+
+      const queryParamsString = window.location.search.substr(1);
+      const queryParams = queryParamsString
+        .split('&')
+        .reduce((accumulator, singleQueryParam) => {
+          const [key, value] = singleQueryParam.split('=');
+          accumulator[key] = value;
+          return accumulator;
+          }, {});
+          var cardHeader = document.getElementById('cardHeader');
+          cardHeader.innerText = 'Detailed Report for Pair (' + queryParams.data1 + ', ' + queryParams.data2 + ')';
+        }, {});
+
       $(function () {
           $('[data-toggle="popover"]').popover({sanitize: false})
       });
@@ -30,10 +44,10 @@
       <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
       <!-- pair detail on each rule -->
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
+        <div class="card-header bg-primary text-white" id="cardHeader">
           Detailed Report for Pair (Student1, Student2)
         </div>
-        <p style="margin:2%">Student1, Student2 have been detected by 6 abnormal behaviors with a confidence score of 86%: </p>
+        <p id='cardContent'style="margin:2%">Student1, Student2 have been detected by 6 abnormal behaviors with a confidence score of 86%: </p>
         <ol>
 
         <!-- rule#0: Abnormal time-score-ration -->
