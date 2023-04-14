@@ -31,21 +31,19 @@
         <div class="card-header bg-primary text-white">
           Questions
         </div>
-
-        <div class="table-responsive">
-          <table id="questionsTable"
-                 data-data="<%= JSON.stringify(questions) %>"
-                 data-course-instances="<%= JSON.stringify(authz_data.course_instances || []) %>"
-                 data-url-prefix="<%= urlPrefix %>"
-                 data-plain-url-prefix="<%= plainUrlPrefix %>"
-                 data-has-legacy-questions="<%= has_legacy_questions %>"
-                 data-current-course-instance="<%= locals.course_instance?.id ?? '' %>"
-                 data-new-question-allowed="<%= authz_data.has_course_permission_edit && !course.example_course && !locals.needToSync %>"
-                 class="table table-sm table-hover table-bordered w-100">
-            <thead class="thead-light">
-            </thead>
+        
+        <table id="questionsTable"
+               data-data="<%= JSON.stringify(questions) %>"
+               data-course-instances="<%= JSON.stringify(authz_data.course_instances || []) %>"
+               data-url-prefix="<%= urlPrefix %>"
+               data-plain-url-prefix="<%= plainUrlPrefix %>"
+               data-has-legacy-questions="<%= has_legacy_questions %>"
+               data-current-course-instance="<%= locals.course_instance?.id ?? '' %>"
+               data-new-question-allowed="<%= authz_data.has_course_permission_edit && !course.example_course && !locals.needToSync %>"
+               class="table table-sm table-hover table-bordered w-100">
+          <thead class="thead-light">
+          </thead>
         </table>
-        </div>
       </div>
     </div>
     </div>

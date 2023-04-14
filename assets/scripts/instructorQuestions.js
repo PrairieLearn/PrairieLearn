@@ -147,7 +147,7 @@ $(() => {
         // row 2: table, control
         // row 3: page info, page list, length selection
         "<'row m-1'<'col-sm-12 col-md-6'i><'col-sm-12 col-md-6 text-right'B>>" +
-        "<'row'<'col-sm-12'tr>>" +
+        "<'row'<'col-sm-12 table-responsive'tr>>" +
         "<'row'<'col-sm-12 col-md-5'i><'col-sm-4 col-md-2'l><'col-sm-8 col-md-5'p>>",
       columnDefs: [
         { targets: '_all', className: 'align-middle' },
