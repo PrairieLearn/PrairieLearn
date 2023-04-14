@@ -15,7 +15,7 @@ function encodeCharacter(c: string) {
  * Based on the `escapeXML` function from the `ejs` library.
  */
 function escapeHtmlRaw(value: string): string {
-  return value == undefined ? '' : String(value).replace(MATCH_HTML, encodeCharacter);
+  return value == null ? '' : String(value).replace(MATCH_HTML, encodeCharacter);
 }
 
 function escapeValue(value: unknown): string {
@@ -24,7 +24,7 @@ function escapeValue(value: unknown): string {
     return value.toString();
   } else if (Array.isArray(value)) {
     return value.map((val) => escapeValue(val)).join('');
-  } else if (typeof value === 'string' || typeof value === 'number') {
+  } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'bigint') {
     return escapeHtmlRaw(String(value));
   } else if (value == null) {
     // undefined or null -- render nothing
@@ -54,7 +54,15 @@ export class HtmlSafeString {
   }
 }
 
-export type HtmlValue = string | number | boolean | HtmlSafeString | undefined | null | HtmlValue[];
+export type HtmlValue =
+  | string
+  | number
+  | boolean
+  | bigint
+  | HtmlSafeString
+  | undefined
+  | null
+  | HtmlValue[];
 
 export function html(strings: TemplateStringsArray, ...values: HtmlValue[]): HtmlSafeString {
   return new HtmlSafeString(strings, values);

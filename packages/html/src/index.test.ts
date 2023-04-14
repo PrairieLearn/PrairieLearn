@@ -11,6 +11,14 @@ describe('html', () => {
     assert.equal(html`<p>${'cats'} and ${'dogs'}</p>`.toString(), '<p>cats and dogs</p>');
   });
 
+  it('interpolates a number', () => {
+    assert.equal(html`<p>${123}</p>`.toString(), '<p>123</p>');
+  });
+
+  it('interpolates a bigint', () => {
+    assert.equal(html`<p>${123n}</p>`.toString(), '<p>123</p>');
+  });
+
   it('escapes values when rendering array', () => {
     const arr = ['cats>', '<dogs'];
     assert.equal(
@@ -31,7 +39,7 @@ describe('html', () => {
 
   it('errors when interpolating object', () => {
     assert.throws(
-      // @ts-expect-error
+      // @ts-expect-error -- Testing runtime behavior of bad input.
       () => html`<p>${{ foo: 'bar' }}</p>`.toString(),
       'Cannot interpolate object in template'
     );

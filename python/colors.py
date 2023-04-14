@@ -1,4 +1,6 @@
-colors = {
+from typing import Optional
+
+colors: dict[str, str] = {
     # Colors used in /public/stylesheets/colors.css
     "red1": "#ffccbc",
     "red2": "#ff6c5c",
@@ -181,7 +183,7 @@ colors = {
 }
 
 
-def get_css_color(name):
+def get_css_color(name: str) -> Optional[str]:
     """
     Tries to look up a hex code value from a named css color, otherwise will
     return None if not a valid color.
