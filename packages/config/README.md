@@ -7,7 +7,7 @@ This package *should not* be depended upon by other packages directly. Instead, 
 ## Usage
 
 ```ts
-import { ConfigLoader } from '@prairielearn/config';
+import { ConfigLoader, makeFileConfig } from '@prairielearn/config';
 import { z } from 'zod';
 
 const ConfigSchema = z.object({
@@ -16,7 +16,7 @@ const ConfigSchema = z.object({
 
 const configLoader = new ConfigLoader(ConfigSchema);
 
-await configLoader.loadAndValidate('config.json');
+await configLoader.loadAndValidate([makeFileConfig('config.json')]);
 
 console.log(configLoader.config);
 // { hello: "world" }
@@ -25,13 +25,15 @@ console.log(configLoader.config);
 Typically, you'll want to have a `config.ts` file in your own project that encapsulates this. Then, you can import the config elsewhere in the project.
 
 ```ts
-import { ConfigLoader } from '@prairielearn/config'
+import { ConfigLoader, makeFileConfig } from '@prairielearn/config'
 import { z } from 'zod';
 
 const configLoader = new ConfigLoader(z.any());
 
-export async function loadAndValidate(filename: string) {
-  await configLoader.loadAndValidate();
+export async function loadAndValidate(path: string) {
+  await configLoader.loadAndValidate([
+    makeFileConfig(path)
+  ]);
 }
 
 export default configLoader.config;
@@ -39,12 +41,12 @@ export default configLoader.config;
 
 ### Loading config from AWS
 
-If your application is running in AWS, you can opt in to loading certain pieces of config from AWS services in one of two ways:
+If you're running in AWS, you can use `makeImdsConfig()` and `makeSecretsManagerConfig()` to load config from IMDS and Secrets Manager, respectively:
 
-- Set `CONFIG_LOAD_FROM_AWS=1` in the process environment
-- Place `{"runningInEc2": true}` in the config file whose path is passed to `loadAndValidate()`.
+- `makeImdsConfig()` will load `hostname`, `instanceId`, and `region`, which will be available if you config schema contains these values.
+- `makeSecretsManagerConfig()` will look for a `ConfSecret` tag on the instance. If found, the value of that tag will be used treated as a Secrets Manager secret ID, and that secret's value will be parsed as JSON and merged into the config.
 
-The following will then be used to load config.
+Note that both of these config sources are no-ops by default. To active them, you must do one of the following:
 
-- If your schema contains the keys `hostname`, `instanceId`, and `region`, those values will automatically be fetched from IMDS and made available on the resulting config.
-- If the EC2 instance has a `ConfSecret` tag, the value of that tag will be used treated as a Secrets Manager secret ID, and that secret's value will be parsed as JSON and merged into the config.
+- Set `CONFIG_LOAD_FROM_AWS=1` in the process environment.
+- Chain them after `makeFileConfig()`, and ensure that the config file contains `{"runningInEc2": true}`.
