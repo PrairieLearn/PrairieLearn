@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/html-ejs",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "main": "dist/index.js",
   "repository": {
     "type": "git",
@@ -13,7 +13,7 @@
     "test": "mocha --no-config --require ts-node/register src/index.test.ts"
   },
   "dependencies": {
-    "@prairielearn/html": "^2.0.0",
+    "@prairielearn/html": "^3.0.0",
     "ejs": "^3.1.9"
   },
   "devDependencies": {
