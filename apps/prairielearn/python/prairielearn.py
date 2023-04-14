@@ -4,12 +4,12 @@ import importlib
 import importlib.util
 import json
 import math
+import numbers
 import os
 import re
 import unicodedata
 import uuid
 from enum import Enum
-import numbers
 from typing import (
     Any,
     Callable,
@@ -1527,14 +1527,14 @@ def latex_from_2darray(
             return "{:.{digits}{presentation_type}}".format(
                 A, digits=digits, presentation_type=presentation_type
             )
-
+    # Using Any annotation here because of weird Pyright-isms.
     if presentation_type == "sigfig":
-        formatter = {
+        formatter: Any = {
             "float_kind": lambda x: to_precision.to_precision(x, digits),
             "complex_kind": lambda x: _string_from_complex_sigfig(x, digits),
         }
     else:
-        formatter = {
+        formatter: Any = {
             "float_kind": lambda x: "{:.{digits}{presentation_type}}".format(
                 x, digits=digits, presentation_type=presentation_type
             ),
