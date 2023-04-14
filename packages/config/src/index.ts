@@ -83,13 +83,14 @@ export class ConfigLoader<Schema extends z.ZodTypeAny> {
 
   constructor(schema: Schema) {
     this.schema = schema;
-    this.resolvedConfig = {};
+
+    // Get the default values from the schema. This ensures that all values
+    // have defaults, and also allows us to override nested defaults with
+    // `_.merge()` in `loadAndValidate()`.
+    this.resolvedConfig = schema.parse({});
   }
 
   async loadAndValidate(sources: ConfigSource[] = []) {
-    // Get the default values from the schema. This ensures that all values
-    // have defaults, and also allows us to override nested defaults with
-    // `_.merge()`.
     let config = this.schema.parse({});
 
     for (const source of sources) {
