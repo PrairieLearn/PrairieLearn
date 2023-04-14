@@ -9,6 +9,7 @@ import re
 import unicodedata
 import uuid
 from enum import Enum
+import numbers
 from typing import (
     Any,
     Callable,
@@ -1498,7 +1499,11 @@ def string_to_2darray(s, allow_complex=True):
     raise Exception(f"Invalid number of left brackets: {number_of_left_brackets}")
 
 
-def latex_from_2darray(A, presentation_type="f", digits=2):
+def latex_from_2darray(
+    A: Union[numbers.Number, np.ndarray],
+    presentation_type: str = "f",
+    digits: int = 2,
+) -> str:
     r"""latex_from_2darray
     This function assumes that A is one of these things:
             - a number (float or complex)
@@ -1515,7 +1520,7 @@ def latex_from_2darray(A, presentation_type="f", digits=2):
     Otherwise, each number is formatted as '{:.{digits}{presentation_type}}'.
     """
     # if A is a scalar
-    if np.isscalar(A):
+    if isinstance(A, numbers.Number):
         if presentation_type == "sigfig":
             return string_from_number_sigfig(A, digits=digits)
         else:
@@ -1547,8 +1552,8 @@ def latex_from_2darray(A, presentation_type="f", digits=2):
         .splitlines()
     )
     rv = [r"\begin{bmatrix}"]
-    rv += ["  " + " & ".join(line.split()) + r"\\" for line in lines]
-    rv += [r"\end{bmatrix}"]
+    rv.extend("  " + " & ".join(line.split()) + r"\\" for line in lines)
+    rv.append(r"\end{bmatrix}")
     return "".join(rv)
 
 
