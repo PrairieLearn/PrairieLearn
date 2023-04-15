@@ -2443,7 +2443,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/compiled-assets@workspace:packages/compiled-assets"
   dependencies:
-    "@prairielearn/html": ^2.1.1
+    "@prairielearn/html": ^3.0.0
     "@prairielearn/tsconfig": "*"
     "@types/node": ^18.15.11
     chai: ^4.3.7
@@ -2516,7 +2516,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/html-ejs@workspace:packages/html-ejs"
   dependencies:
-    "@prairielearn/html": ^2.0.0
+    "@prairielearn/html": ^3.0.0
     "@prairielearn/tsconfig": "*"
     "@types/ejs": ^3.1.2
     "@types/node": ^18.15.11
@@ -2527,7 +2527,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/html@^2.0.0, @prairielearn/html@^2.1.1, @prairielearn/html@workspace:packages/html":
+"@prairielearn/html@^3.0.0, @prairielearn/html@workspace:packages/html":
   version: 0.0.0-use.local
   resolution: "@prairielearn/html@workspace:packages/html"
   dependencies:
@@ -2538,6 +2538,13 @@ __metadata:
     typescript: ^4.9.5
   languageName: unknown
   linkType: soft
+
+"@prairielearn/html@npm:^2.0.0":
+  version: 2.2.0
+  resolution: "@prairielearn/html@npm:2.2.0"
+  checksum: 6df0d73a8a7486f0e9d253750b0ea67613bb4c21c3e9e02ec4ec481d754739bbadbfb00b531eb8b0baba6d376fdbf7b0c42fbc7674e254322e400882167a8fa7
+  languageName: node
+  linkType: hard
 
 "@prairielearn/logger@workspace:^, @prairielearn/logger@workspace:packages/logger":
   version: 0.0.0-use.local
