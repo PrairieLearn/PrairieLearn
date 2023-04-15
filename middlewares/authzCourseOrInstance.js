@@ -5,9 +5,9 @@ const async = require('async');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-const moment = require('moment');
+const { parseISO, isValid } = require('date-fns');
 const config = require('../lib/config');
-const error = require('../prairielib/error');
+const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 const { idsEqual } = require('../lib/id');
 
@@ -298,8 +298,8 @@ module.exports = function (req, res, next) {
           (callback) => {
             let req_date = res.locals.req_date;
             if (req.cookies.pl_requested_date) {
-              req_date = moment(req.cookies.pl_requested_date, moment.ISO_8601);
-              if (!req_date.isValid()) {
+              req_date = parseISO(req.cookies.pl_requested_date);
+              if (!isValid(req_date)) {
                 debug(`requested date is invalid: ${req.cookies.pl_requested_date}, ${req_date}`);
                 overrides.forEach((override) => {
                   debug(`clearing cookie: ${override.cookie}`);

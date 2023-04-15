@@ -5,7 +5,7 @@ const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const sanitizeName = require('../../lib/sanitize-name');
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const groupUpdate = require('../../lib/group-update');
 const sqldb = require('@prairielearn/postgres');
 
@@ -123,7 +123,7 @@ router.post('/', function (req, res, next) {
     const uids = req.body.uids;
     const uidlist = uids.split(/[ ,]+/);
     res.locals.errormsg = '';
-    let updateList = new Array();
+    let updateList = [];
     uidlist.forEach((uid) => {
       updateList.push([group_name, uid]);
     });

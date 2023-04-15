@@ -11,7 +11,7 @@ const sqldb = require('@prairielearn/postgres');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const { logger } = require('@prairielearn/logger');
 const {
   AssessmentCopyEditor,

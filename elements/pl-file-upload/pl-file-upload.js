@@ -199,11 +199,10 @@
       $fileList.html('');
 
       var uuid = this.uuid;
-      var that = this;
 
       this.acceptedFiles.forEach((fileName, index) => {
         var isExpanded = expandedFiles.includes(fileName);
-        var fileData = that.getSubmittedFileContents(fileName);
+        var fileData = this.getSubmittedFileContents(fileName);
 
         var $file = $('<li class="list-group-item" data-file="' + fileName + '"></li>');
         var $fileStatusContainer = $(
@@ -280,8 +279,8 @@
             $preview.addClass('show');
           }
           try {
-            var fileContents = that.b64DecodeUnicode(fileData);
-            if (!that.isBinary(fileContents)) {
+            var fileContents = this.b64DecodeUnicode(fileData);
+            if (!this.isBinary(fileContents)) {
               $preview.find('code').text(fileContents);
             } else {
               $preview.find('code').text('Binary file not previewed.');

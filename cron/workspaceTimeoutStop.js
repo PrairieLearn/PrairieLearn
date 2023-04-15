@@ -1,11 +1,11 @@
 // @ts-check
 const util = require('util');
-const sqldb = require('@prairielearn/postgres');
+const { logger } = require('@prairielearn/logger');
 const { metrics, getCounter, ValueType } = require('@prairielearn/opentelemetry');
+const sqldb = require('@prairielearn/postgres');
+const workspaceUtils = require('@prairielearn/workspace-utils');
 
 const config = require('../lib/config');
-const { logger } = require('@prairielearn/logger');
-const workspaceHelper = require('../lib/workspace');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -22,7 +22,7 @@ async function stopLaunchedTimeoutWorkspaces() {
   });
   for (const workspace of result.rows) {
     logger.verbose(`workspaceTimeoutStop: launched timeout for workspace_id = ${workspace.id}`);
-    await workspaceHelper.updateState(
+    await workspaceUtils.updateWorkspaceState(
       workspace.id,
       'stopped',
       `Maximum run time of ${Math.round(
@@ -44,7 +44,7 @@ async function stopHeartbeatTimeoutWorkspaces() {
   });
   for (const workspace of result.rows) {
     logger.verbose(`workspaceTimeoutStop: heartbeat timeout for workspace_id = ${workspace.id}`);
-    await workspaceHelper.updateState(
+    await workspaceUtils.updateWorkspaceState(
       workspace.id,
       'stopped',
       `Connection was lost for more than ${Math.round(
@@ -69,7 +69,7 @@ async function stopInLaunchingTimeoutWorkspaces() {
     // these are errors because timeouts should have been enforced
     // by the workspace hosts
     logger.error(`workspaceTimeoutStop: in-launching timeout for workspace_id = ${workspace.id}`);
-    await workspaceHelper.updateState(
+    await workspaceUtils.updateWorkspaceState(
       workspace.id,
       'stopped',
       `Maximum launching time of ${Math.round(

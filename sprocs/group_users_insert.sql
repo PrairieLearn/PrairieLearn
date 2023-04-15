@@ -36,7 +36,7 @@ BEGIN
     PERFORM g.id
     FROM groups AS g
     WHERE g.id = arg_group_id
-    FOR UPDATE OF g;
+    FOR NO KEY UPDATE OF g;
 
     -- count the group size and compare with the max size
     SELECT

@@ -42,7 +42,6 @@ module.exports = {
     }
     return function (callback) {
       debug('before()');
-      var that = this;
       let httpServer;
       async.series(
         [
@@ -52,7 +51,7 @@ module.exports = {
           async () => {
             debug('before(): initializing DB');
             // pass "this" explicitly to enable this.timeout() calls
-            await helperDb.before.call(that);
+            await helperDb.before.call(this);
           },
           async () => {
             debug('before(): create tmp dir for config.filesRoot');
@@ -143,7 +142,6 @@ module.exports = {
 
   after: function (callback) {
     debug('after()');
-    var that = this;
     // call close()/stop() functions in reverse order to the
     // start() functions above
     async.series(
@@ -190,7 +188,7 @@ module.exports = {
         },
         async () => {
           debug('after(): finish DB');
-          await helperDb.after.call(that);
+          await helperDb.after.call(this);
         },
       ],
       function (err) {
