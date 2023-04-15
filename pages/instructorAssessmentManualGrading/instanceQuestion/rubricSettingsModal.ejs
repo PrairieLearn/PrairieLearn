@@ -61,7 +61,7 @@
                 </label>
               </div>
               <div class="form-group col-4">
-                <label data-toggle="tooltip" title="Minimum number of points to be assigned to a student from the rubric (out of <%= max_points %>). Rubric items with positive points will not cause the grade to become higher than this value.">
+                <label data-toggle="tooltip" title="Maximum number of points to be assigned to a student from the rubric (out of <%= max_points %>). Rubric items with positive points will not cause the grade to become higher than this value.">
                   Maximum points
                   <input class="form-control" name="max_points" type="number" value="<%= rubric?.max_points ?? max_points %>">
                 </label>
@@ -80,7 +80,7 @@
                     <th>In use</th>
                 </thead>
                 <tbody>
-                  <% (rubric?.rubric_items || []).forEach((item, index) => { %>
+                  <% (rubric?.rubric_items?.forEach((item, index) => { %>
                   <tr>
                     <td class="text-nowrap">
                       <input type="hidden"
@@ -216,7 +216,7 @@
         </div>
         <div class="modal-footer">
           <% if (authz_data.has_course_instance_permission_edit) { %>
-          <button type="submit" class="btn btn-primary">Confirm</button>
+          <button type="submit" class="btn btn-primary">Save</button>
           <% } %>
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
         </div>
