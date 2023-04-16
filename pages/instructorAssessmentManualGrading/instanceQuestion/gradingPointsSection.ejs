@@ -76,12 +76,12 @@
        margin-bottom: 0;
    }
   </style>
-  <% (rubric.rubric_items || []).forEach((item) => { %>
+  <% rubric.rubric_items?.forEach((item) => { %>
     <div>
       <label class="js-selectable-rubric-item-label w-100">
         <input type="checkbox" name="rubric_item_selected_<%= type %>"
                class="js-selectable-rubric-item"
-               value="<%= item.id %>" <% if (rubric_grading?.rubric_items[item.id]?.score) { %>checked<% } %>
+               value="<%= item.id %>" <% if (rubric_grading?.rubric_items?.[item.id]?.score) { %>checked<% } %>
                <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %>
                data-rubric-item-points="<%= item.points %>"
                data-rubric-item-type="<%= type %>"
@@ -144,5 +144,4 @@
       </label>
     </div>
   </div>
-  <hr/>
 <% } %>
