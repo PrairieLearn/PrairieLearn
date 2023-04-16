@@ -205,7 +205,7 @@ router.post(
           res.locals.authn_user.user_id
         )
         .then(() => {
-          res.redirect(req.originalUrl + '/grading_rubric_panels');
+          res.redirect(req.baseUrl + '/grading_rubric_panels');
         })
         .catch((err) => {
           console.log(err);
