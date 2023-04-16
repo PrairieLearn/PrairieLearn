@@ -301,18 +301,6 @@ function updatePointsView() {
     const manual_perc = roundPoints((manual_points * 100) / (max_manual_points || max_points));
     const total_perc = roundPoints((points * 100) / max_points);
 
-    console.log(
-      auto_points,
-      manual_points,
-      points,
-      auto_perc,
-      manual_perc,
-      total_perc,
-      max_manual_points,
-      max_points,
-      max_auto_points
-    );
-
     if (this.name !== 'score_auto_points') {
       updateQueryObjects(form, '[name=score_auto_points]', { value: auto_points });
     }
