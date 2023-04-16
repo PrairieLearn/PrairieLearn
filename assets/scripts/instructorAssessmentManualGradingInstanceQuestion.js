@@ -88,10 +88,11 @@ function resetInstructorGradingPanel() {
       form.querySelectorAll('.js-auto-score-value-info').forEach((element) => {
         element.style.display = 'none';
       });
-      const input = form.querySelector('.js-auto-score-value-input');
-      input.classList.remove('d-none');
-      input.style.display = '';
-      input.querySelector('input').focus();
+      form.querySelectorAll('.js-auto-score-value-input').forEach((input) => {
+        input.classList.remove('d-none');
+        input.style.display = '';
+        input.querySelector('input').focus();
+      });
     });
   });
 

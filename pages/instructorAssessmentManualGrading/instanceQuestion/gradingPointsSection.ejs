@@ -8,11 +8,15 @@
     </label>
     <span class="float-right">
       <% if (rubric || type == 'auto') { %>
-        <span class="js-manual-grading-points js-<%= type %>-score-value-info">
-          <span class="js-value-<%= type %>-points"><%= Math.round(points * 100) / 100 %></span> / <%= max_points %>
+        <span class="js-manual-grading-points">
+          <span class="js-<%= type %>-score-value-info">
+            <span class="js-value-<%= type %>-points"><%= Math.round(points * 100) / 100 %></span> / <%= max_points %>
+          </span>
         </span>
-        <span class="js-manual-grading-percentage js-<%= type %>-score-value-info">
-          <span class="js-value-<%= type %>-percentage"><%= Math.round(points * 10000 / (max_points || assessment_question.max_points)) / 100 %></span>%
+        <span class="js-manual-grading-percentage">
+          <span class="js-<%= type %>-score-value-info">
+            <span class="js-value-<%= type %>-percentage"><%= Math.round(points * 10000 / (max_points || assessment_question.max_points)) / 100 %></span>%
+          </span>
         </span>
       <% } %>
       <div class="btn-group btn-group-sm" role="group">
@@ -51,7 +55,7 @@
     <div class="input-group js-<%= type %>-score-value-input <% if (rubric || type == 'auto') { %> d-none<% } %>">
       <input type="number" step="any" required
              id="js-<%= type %>-score-value-input-percentage-<%= context %>"
-             class="form-control js-grading-score-input"
+             class="form-control js-grading-score-input js-<%= type %>-score-value-input-percentage"
              name="score_<%= type %>_percent"
              value="<%= Math.round(points * 10000 / (max_points || assessment_question.max_points)) / 100 %>"
       <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %> />
