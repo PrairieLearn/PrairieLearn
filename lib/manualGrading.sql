@@ -193,9 +193,9 @@ UPDATE rubric_items
 SET
   number = $number::bigint,
   points = $points,
-  short_text = COALESCE($short_text, short_text),
   description = COALESCE($description, description),
-  staff_instructions = COALESCE($staff_instructions, staff_instructions),
+  explanation = COALESCE($explanation, explanation),
+  grader_note = COALESCE($grader_note, grader_note),
   key_binding = CASE
     WHEN $number > 10 THEN NULL
     ELSE MOD($number + 1, 10)
@@ -213,9 +213,9 @@ INSERT INTO
     rubric_id,
     number,
     points,
-    short_text,
     description,
-    staff_instructions,
+    explanation,
+    grader_note,
     key_binding
   )
 VALUES
@@ -223,9 +223,9 @@ VALUES
     $rubric_id,
     $number::bigint,
     $points,
-    $short_text,
     $description,
-    $staff_instructions,
+    $explanation,
+    $grader_note,
     CASE
       WHEN $number > 10 THEN NULL
       ELSE MOD($number + 1, 10)
@@ -335,7 +335,7 @@ WITH
         rubric_item_id,
         score,
         points,
-        short_text,
+        description,
         note
       )
     SELECT
@@ -343,7 +343,7 @@ WITH
       ari.rubric_item_id,
       COALESCE(ari.score, 1),
       ri.points,
-      ri.short_text,
+      ri.description,
       ari.note
     FROM
       inserted_rubric_grading AS irg

@@ -1,13 +1,13 @@
 columns
     deleted_at: timestamp with time zone
-    description: text
+    description: text not null
+    explanation: text
+    grader_note: text
     id: bigint not null default nextval('rubric_items_id_seq'::regclass)
     key_binding: text
     number: bigint not null
     points: double precision not null
     rubric_id: bigint not null
-    short_text: text not null
-    staff_instructions: text
 
 indexes
     rubric_items_pkey: PRIMARY KEY (id) USING btree (id)

@@ -28,13 +28,13 @@
               [<%= (item.points >= 0 ? '+' : '') + item.points %>]
             </strong>
           </span>
-          <span class="d-inline-block" data-testid="rubric-item-short-text">
-            <%- item.short_text_rendered %>
+          <span class="d-inline-block" data-testid="rubric-item-description">
+            <%- item.description_rendered %>
           </span>
-          <% if (item.description) { %>
+          <% if (item.explanation) { %>
             <button type="button" class="btn btn-xs text-info" data-toggle="popover"
-                    data-content="<%= item.description_rendered %>"
-                    data-html="true" data-testid="rubric-item-description">
+                    data-content="<%= item.explanation_rendered %>"
+                    data-html="true" data-testid="rubric-item-explanation">
               <i class="fas fa-circle-info"></i>
               <span class="sr-only">Details</span>
             </button>

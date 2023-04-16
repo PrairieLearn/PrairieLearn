@@ -90,9 +90,9 @@
                   <tr>
                     <th style="width: 1px"><!-- Order --></th>
                     <th>Points</th>
-                    <th>Text</th>
-                    <th>Detailed description</th>
-                    <th>Grader note</th>
+                    <th>Description</th>
+                    <th>Detailed explanation (optional)</th>
+                    <th>Grader note (optional, not visible to students)</th>
                     <th>In use</th>
                 </thead>
                 <tbody>
@@ -126,23 +126,23 @@
                     </td>
                     <td>
                       <input type="text" class="form-control" required maxlength="100"
-                             name="rubric_item[cur<%= item.id %>][short_text]"
-                             value="<%= item.short_text %>">
+                             name="rubric_item[cur<%= item.id %>][description]"
+                             value="<%= item.description %>">
                     </td>
                     <td>
-                      <label data-input-name="rubric_item[cur<%= item.id %>][description]"
-                             data-current-value="<%= item.description %>">
-                        <%= item.description %>
-                        <button type="button" class="btn btn-sm js-rubric-item-description-field">
+                      <label data-input-name="rubric_item[cur<%= item.id %>][explanation]"
+                             data-current-value="<%= item.explanation %>">
+                        <%= item.explanation %>
+                        <button type="button" class="btn btn-sm js-rubric-item-long-text-field">
                           <i class="fas fa-pencil"></i>
                         </button>
                       </label>
                     </td>
                     <td>
-                      <label data-input-name="rubric_item[cur<%= item.id %>][staff_instructions]"
-                             data-current-value="<%= item.staff_instructions %>">
-                        <%= item.staff_instructions %>
-                        <button type="button" class="btn btn-sm js-rubric-item-description-field">
+                      <label data-input-name="rubric_item[cur<%= item.id %>][grader_note]"
+                             data-current-value="<%= item.grader_note %>">
+                        <%= item.grader_note %>
+                        <button type="button" class="btn btn-sm js-rubric-item-long-text-field">
                           <i class="fas fa-pencil"></i>
                         </button>
                       </label>
@@ -182,18 +182,18 @@
                     <input type="number" class="form-control js-rubric-item-points" step="any" required>
                   </td>
                   <td>
-                    <input type="text" class="form-control js-rubric-item-short-text" required maxlength="100">
+                    <input type="text" class="form-control js-rubric-item-description" required maxlength="100">
                   </td>
                   <td>
-                    <label class="js-rubric-item-description">
-                      <button type="button" class="btn btn-sm js-rubric-item-description-field">
+                    <label class="js-rubric-item-explanation">
+                      <button type="button" class="btn btn-sm js-rubric-item-long-text-field">
                         <i class="fas fa-pencil"></i>
                       </button>
                     </label>
                   </td>
                   <td>
-                    <label class="js-rubric-item-staff-instructions">
-                      <button type="button" class="btn btn-sm js-rubric-item-description-field">
+                    <label class="js-rubric-item-grader-note">
+                      <button type="button" class="btn btn-sm js-rubric-item-long-text-field">
                         <i class="fas fa-pencil"></i>
                       </button>
                     </label>

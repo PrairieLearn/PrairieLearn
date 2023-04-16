@@ -261,8 +261,8 @@ function resetRubricItemRowsListeners() {
     .querySelectorAll('.js-rubric-item-move-button')
     .forEach((row) => row.addEventListener('dragstart', rowDragStart));
   document
-    .querySelectorAll('.js-rubric-item-description-field')
-    .forEach((button) => button.addEventListener('click', enableRubricItemDescriptionField));
+    .querySelectorAll('.js-rubric-item-long-text-field')
+    .forEach((button) => button.addEventListener('click', enableRubricItemLongTextField));
   document
     .querySelectorAll('.js-rubric-item-move-down-button')
     .forEach((button) => button.addEventListener('click', moveRowDown));
@@ -360,7 +360,7 @@ function computePointsFromRubric() {
   updatePointsView();
 }
 
-function enableRubricItemDescriptionField(event) {
+function enableRubricItemLongTextField(event) {
   const cell = event.target.closest('label');
   const input = document.createElement('textarea');
   input.classList.add('form-control');
@@ -430,13 +430,13 @@ function addRubricItemRow() {
   row.querySelector('.js-rubric-item-row-order').name = `rubric_item[new${next_id}][order]`;
   row.querySelector('.js-rubric-item-points').name = `rubric_item[new${next_id}][points]`;
   row.querySelector('.js-rubric-item-points').value = points;
-  row.querySelector('.js-rubric-item-short-text').name = `rubric_item[new${next_id}][short_text]`;
+  row.querySelector('.js-rubric-item-description').name = `rubric_item[new${next_id}][description]`;
   row.querySelector(
-    '.js-rubric-item-description'
-  ).dataset.inputName = `rubric_item[new${next_id}][description]`;
+    '.js-rubric-item-explanation'
+  ).dataset.inputName = `rubric_item[new${next_id}][explanation]`;
   row.querySelector(
-    '.js-rubric-item-staff-instructions'
-  ).dataset.inputName = `rubric_item[new${next_id}][staff_instructions]`;
+    '.js-rubric-item-grader-node'
+  ).dataset.inputName = `rubric_item[new${next_id}][grader_node]`;
 
   row.querySelector('.js-rubric-item-points').focus();
 

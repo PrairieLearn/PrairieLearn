@@ -350,7 +350,7 @@ WITH
                   mrg.adjust_points,
                   'items',
                   JSONB_AGG(
-                    JSONB_BUILD_OBJECT('text', rgi.short_text, 'points', rgi.points)
+                    JSONB_BUILD_OBJECT('text', rgi.description, 'points', rgi.points)
                   )
                 )
               FROM
@@ -371,7 +371,7 @@ WITH
                   arg.adjust_points,
                   'items',
                   JSONB_AGG(
-                    JSONB_BUILD_OBJECT('text', rgi.short_text, 'points', rgi.points)
+                    JSONB_BUILD_OBJECT('text', rgi.description, 'points', rgi.points)
                   )
                 )
               FROM

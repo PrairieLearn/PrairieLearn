@@ -226,16 +226,16 @@ const checkGradingResults = (assigned_grader, grader) => {
           `[${item.points >= 0 ? '+' : ''}${item.points}]`
         );
         assert.equal(
-          container.find('[data-testid="rubric-item-short-text"]').html().trim(),
-          item.short_text_render ?? item.short_text
+          container.find('[data-testid="rubric-item-description"]').html().trim(),
+          item.description_render ?? item.description
         );
-        if (item.description) {
+        if (item.explanation) {
           assert.equal(
-            container.find('[data-testid="rubric-item-description"]').attr('data-content'),
-            item.description_render ?? `<p>${item.description}</p>`
+            container.find('[data-testid="rubric-item-explanation"]').attr('data-content'),
+            item.explanation_render ?? `<p>${item.explanation}</p>`
           );
         } else {
-          assert.equal(container.find('[data-testid="rubric-item-description"]').length, 0);
+          assert.equal(container.find('[data-testid="rubric-item-explanation"]').length, 0);
         }
       });
     }
@@ -283,19 +283,16 @@ const checkSettingsResults = (starting_points, min_points, max_points) => {
       assert.equal(idField.attr('name'), `rubric_item[cur${item.id}][id]`);
       const points = form.find(`[name="rubric_item[cur${item.id}][points]"]`);
       assert.equal(points.val(), item.points);
-      const shortText = form.find(`[name="rubric_item[cur${item.id}][short_text]"]`);
-      assert.equal(shortText.val(), item.short_text);
-      const description = form.find(
-        `label[data-input-name="rubric_item[cur${item.id}][description]"]`
+      const description = form.find(`[name="rubric_item[cur${item.id}][description]"]`);
+      assert.equal(description.val(), item.description);
+      const explanation = form.find(
+        `label[data-input-name="rubric_item[cur${item.id}][explanation]"]`
       );
-      assert.equal(description.attr('data-current-value') ?? '', item.description ?? '');
-      const staffInstructions = form.find(
-        `label[data-input-name="rubric_item[cur${item.id}][staff_instructions]"]`
+      assert.equal(explanation.attr('data-current-value') ?? '', item.explanation ?? '');
+      const graderNote = form.find(
+        `label[data-input-name="rubric_item[cur${item.id}][grader_note]"]`
       );
-      assert.equal(
-        staffInstructions.attr('data-current-value') ?? '',
-        item.staff_instructions ?? ''
-      );
+      assert.equal(graderNote.attr('data-current-value') ?? '', item.grader_note ?? '');
     });
   });
 
@@ -314,17 +311,16 @@ const checkSettingsResults = (starting_points, min_points, max_points) => {
         `[${item.points >= 0 ? '+' : ''}${item.points}]`
       );
       assert.equal(
-        container.find('[data-testid="rubric-item-short-text"]').html().trim(),
-        item.short_text_render ?? item.short_text
-      );
-      assert.equal(
         container.find('[data-testid="rubric-item-description"]').html().trim(),
-        item.description_render ?? (item.description ? `<p>${item.description}</p>` : '')
+        item.description_render ?? item.description
       );
       assert.equal(
-        container.find('[data-testid="rubric-item-staff-instructions"]').html().trim(),
-        item.staff_instructions_render ??
-          (item.staff_instructions ? `<p>${item.staff_instructions}</p>` : '')
+        container.find('[data-testid="rubric-item-explanation"]').html().trim(),
+        item.explanation_render ?? (item.explanation ? `<p>${item.explanation}</p>` : '')
+      );
+      assert.equal(
+        container.find('[data-testid="rubric-item-grader-note"]').html().trim(),
+        item.grader_note_render ?? (item.grader_note ? `<p>${item.grader_note}</p>` : '')
       );
     });
   });
@@ -685,34 +681,34 @@ describe('Manual Grading', function () {
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
           const form = $manualGradingIQPage('form[name=rubric-settings-manual]');
           rubric_items = [
-            { points: 6, short_text: 'First rubric item' },
+            { points: 6, description: 'First rubric item' },
             {
               points: 3,
-              short_text: 'Second rubric item (partial, with `markdown`)',
-              description: 'Description with **markdown**',
-              staff_instructions: 'Instructions with *markdown*',
-              short_text_render: 'Second rubric item (partial, with <code>markdown</code>)',
-              description_render: '<p>Description with <strong>markdown</strong></p>',
-              staff_instructions_render: '<p>Instructions with <em>markdown</em></p>',
+              description: 'Second rubric item (partial, with `markdown`)',
+              explanation: 'Explanation with **markdown**',
+              grader_note: 'Instructions with *markdown*',
+              description_render: 'Second rubric item (partial, with <code>markdown</code>)',
+              explanation_render: '<p>Explanation with <strong>markdown</strong></p>',
+              grader_note_render: '<p>Instructions with <em>markdown</em></p>',
             },
             {
               points: 0.4,
-              short_text: 'Third rubric item (partial, with moustache: {{params.value1}})',
-              description: 'Description with moustache: {{params.value2}}',
-              staff_instructions:
+              description: 'Third rubric item (partial, with moustache: {{params.value1}})',
+              explanation: 'Explanation with moustache: {{params.value2}}',
+              grader_note:
                 'Instructions with *markdown* and moustache: {{params.value3}}\n\nAnd more than one line',
-              short_text_render: 'Third rubric item (partial, with moustache: 37)',
-              description_render: '<p>Description with moustache: 43</p>',
-              staff_instructions_render:
+              description_render: 'Third rubric item (partial, with moustache: 37)',
+              explanation_render: '<p>Explanation with moustache: 43</p>',
+              grader_note_render:
                 '<p>Instructions with <em>markdown</em> and moustache: 49</p>\n<p>And more than one line</p>',
             },
             {
               points: -1.6,
-              short_text: 'Penalty rubric item (negative points, floating point)',
+              description: 'Penalty rubric item (negative points, floating point)',
             },
             {
               points: 0,
-              short_text: 'Rubric item with no value (zero points)',
+              description: 'Rubric item with no value (zero points)',
             },
           ];
 
@@ -862,35 +858,35 @@ describe('Manual Grading', function () {
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
           const form = $manualGradingIQPage('form[name=rubric-settings-manual]');
           rubric_items = [
-            { points: 0, short_text: 'First rubric item' },
+            { points: 0, description: 'First rubric item' },
             {
               points: -3,
-              short_text: 'Second rubric item (partial, with `markdown`)',
-              description: 'Description with **markdown**',
-              staff_instructions: 'Instructions with *markdown*',
-              short_text_render: 'Second rubric item (partial, with <code>markdown</code>)',
-              description_render: '<p>Description with <strong>markdown</strong></p>',
-              staff_instructions_render: '<p>Instructions with <em>markdown</em></p>',
+              description: 'Second rubric item (partial, with `markdown`)',
+              explanation: 'Explanation with **markdown**',
+              grader_note: 'Instructions with *markdown*',
+              description_render: 'Second rubric item (partial, with <code>markdown</code>)',
+              explanation_render: '<p>Explanation with <strong>markdown</strong></p>',
+              grader_note_render: '<p>Instructions with <em>markdown</em></p>',
             },
             {
               points: -4,
-              short_text: 'Third rubric item (partial, with moustache: {{params.value1}})',
-              description: 'Description with moustache: {{params.value2}}',
-              staff_instructions:
+              description: 'Third rubric item (partial, with moustache: {{params.value1}})',
+              explanation: 'Explanation with moustache: {{params.value2}}',
+              grader_note:
                 'Instructions with *markdown* and moustache: {{params.value3}}\n\nAnd more than one line',
-              short_text_render: 'Third rubric item (partial, with moustache: 37)',
-              description_render: '<p>Description with moustache: 43</p>',
-              staff_instructions_render:
+              description_render: 'Third rubric item (partial, with moustache: 37)',
+              explanation_render: '<p>Explanation with moustache: 43</p>',
+              grader_note_render:
                 '<p>Instructions with <em>markdown</em> and moustache: 49</p>\n<p>And more than one line</p>',
             },
             {
               points: 1.6,
-              short_text:
+              description:
                 'Positive rubric item in negative grading (positive points, floating point)',
             },
             {
               points: 6,
-              short_text: 'Rubric item with positive reaching maximum',
+              description: 'Rubric item with positive reaching maximum',
             },
           ];
 
@@ -936,35 +932,35 @@ describe('Manual Grading', function () {
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
           const form = $manualGradingIQPage('form[name=rubric-settings-manual]');
           rubric_items = [
-            { points: 0, short_text: 'First rubric item' },
+            { points: 0, description: 'First rubric item' },
             {
               points: 1.5,
-              short_text: 'Second rubric item (partial, with `markdown`)',
-              description: 'Description with **markdown**',
-              staff_instructions: 'Instructions with *markdown*',
-              short_text_render: 'Second rubric item (partial, with <code>markdown</code>)',
-              description_render: '<p>Description with <strong>markdown</strong></p>',
-              staff_instructions_render: '<p>Instructions with <em>markdown</em></p>',
+              description: 'Second rubric item (partial, with `markdown`)',
+              explanation: 'Explanation with **markdown**',
+              grader_note: 'Instructions with *markdown*',
+              description_render: 'Second rubric item (partial, with <code>markdown</code>)',
+              explanation_render: '<p>Explanation with <strong>markdown</strong></p>',
+              grader_note_render: '<p>Instructions with <em>markdown</em></p>',
             },
             {
               points: -1,
-              short_text: 'Third rubric item (partial, with moustache: {{params.value1}})',
-              description: 'Description with moustache: {{params.value2}}',
-              staff_instructions:
+              description: 'Third rubric item (partial, with moustache: {{params.value1}})',
+              explanation: 'Explanation with moustache: {{params.value2}}',
+              grader_note:
                 'Instructions with *markdown* and moustache: {{params.value3}}\n\nAnd more than one line',
-              short_text_render: 'Third rubric item (partial, with moustache: 37)',
-              description_render: '<p>Description with moustache: 43</p>',
-              staff_instructions_render:
+              description_render: 'Third rubric item (partial, with moustache: 37)',
+              explanation_render: '<p>Explanation with moustache: 43</p>',
+              grader_note_render:
                 '<p>Instructions with <em>markdown</em> and moustache: 49</p>\n<p>And more than one line</p>',
             },
             {
               points: 1.6,
-              short_text:
+              description:
                 'Positive rubric item in negative grading (positive points, floating point)',
             },
             {
               points: 6,
-              short_text: 'Rubric item with positive reaching maximum',
+              description: 'Rubric item with positive reaching maximum',
             },
           ];
 

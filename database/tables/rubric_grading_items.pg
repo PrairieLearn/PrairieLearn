@@ -1,11 +1,11 @@
 columns
+    description: text not null
     id: bigint not null default nextval('rubric_grading_items_id_seq'::regclass)
     note: text
     points: double precision not null
     rubric_grading_id: bigint not null
     rubric_item_id: bigint not null
     score: double precision not null default 1
-    short_text: text not null
 
 indexes
     rubric_grading_items_pkey: PRIMARY KEY (id) USING btree (id)

@@ -15,9 +15,9 @@ CREATE TABLE IF NOT EXISTS
     rubric_id BIGINT NOT NULL REFERENCES rubrics (id) ON DELETE CASCADE ON UPDATE CASCADE,
     number BIGINT NOT NULL,
     points DOUBLE PRECISION NOT NULL,
-    short_text TEXT NOT NULL,
-    description TEXT,
-    staff_instructions TEXT,
+    description TEXT NOT NULL,
+    explanation TEXT,
+    grader_note TEXT,
     key_binding TEXT,
     deleted_at TIMESTAMP WITH TIME ZONE
   );
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS
     rubric_item_id BIGINT NOT NULL REFERENCES rubric_items (id) ON DELETE CASCADE ON UPDATE CASCADE,
     score DOUBLE PRECISION NOT NULL DEFAULT 1,
     points DOUBLE PRECISION NOT NULL,
-    short_text TEXT NOT NULL,
+    description TEXT NOT NULL,
     note TEXT
   );
 
