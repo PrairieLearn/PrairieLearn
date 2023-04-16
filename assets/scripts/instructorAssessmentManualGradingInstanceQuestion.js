@@ -180,12 +180,6 @@ function resetInstructorGradingPanel() {
   document
     .querySelectorAll('.js-add-rubric-item-button')
     .forEach((button) => button.addEventListener('click', addRubricItemRow));
-  document.querySelectorAll('.js-rubric-item-delete').forEach((button) =>
-    button.addEventListener('click', function () {
-      this.closest('tr').remove();
-      updateRubricItemOrderField();
-    })
-  );
 
   document.querySelectorAll('.js-rubric-settings-modal form').forEach((form) =>
     form.addEventListener('submit', function (e) {
@@ -269,6 +263,9 @@ function resetRubricItemRowsListeners() {
   document
     .querySelectorAll('.js-rubric-item-move-up-button')
     .forEach((button) => button.addEventListener('click', moveRowUp));
+  document
+    .querySelectorAll('.js-rubric-item-delete')
+    .forEach((button) => button.addEventListener('click', deleteRow));
 }
 
 function updateQueryObjects(parent, query, values) {
@@ -389,6 +386,14 @@ function moveRowUp(event) {
   updateRubricItemOrderField();
 }
 
+function deleteRow(event) {
+  const table = event.target.closest('table');
+  event.target.closest('tr').remove();
+  if (!table?.querySelectorAll('.js-rubric-item-row-order')?.length)
+    table.querySelector('.js-no-rubric-item-note').classList.remove('d-none');
+  updateRubricItemOrderField();
+}
+
 function rowDragStart(event) {
   window.rubricItemRowDragging = event.target.closest('tr');
   if (event.originalEvent?.dataTransfer) {
@@ -435,10 +440,12 @@ function addRubricItemRow() {
     '.js-rubric-item-explanation'
   ).dataset.inputName = `rubric_item[new${next_id}][explanation]`;
   row.querySelector(
-    '.js-rubric-item-grader-node'
-  ).dataset.inputName = `rubric_item[new${next_id}][grader_node]`;
+    '.js-rubric-item-grader-note'
+  ).dataset.inputName = `rubric_item[new${next_id}][grader_note]`;
 
   row.querySelector('.js-rubric-item-points').focus();
+
+  table.querySelector('.js-no-rubric-item-note').classList.add('d-none');
 
   resetRubricItemRowsListeners();
   updateRubricItemOrderField();

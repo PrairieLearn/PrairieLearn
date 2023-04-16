@@ -155,6 +155,9 @@
                     </td>
                   </tr>
                   <% }); %>
+                  <tr class="js-no-rubric-item-note<% if (rubric?.rubric_items?.length) { %> d-none<% } %>">
+                    <td colspan="6"><em>This question does not have any rubric items. Click "Add item" below to add some.</em></td>
+                  </tr>
                 </tbody>
               </table>
               <button type="button" class="btn btn-sm btn-secondary js-add-rubric-item-button">
