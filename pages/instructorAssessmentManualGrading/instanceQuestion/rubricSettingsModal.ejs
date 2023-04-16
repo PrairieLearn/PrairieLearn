@@ -17,54 +17,70 @@
           <div class="alert alert-danger js-settings-error-alert d-none" role="alert"></div>
           <div class="form-check">
             <label class="form-check-label">
-              <input class="form-check-input" name="use_rubrics" type="checkbox" value="true" <% if (rubric) { %>checked<% } %>>
+              <input class="form-check-input" name="use_rubrics" type="checkbox"
+                     value="true" <% if (rubric) { %>checked<% } %>>
               Use rubrics
             </label>
           </div>
           <div class="js-rubric-settings-info">
             <hr/>
             <div class="form-row">
-              <div class="col-4">
+              <div class="col-6">
                 <div class="form-check">
-                  <label class="form-check-label" data-toggle="tooltip"
-                         title="Start grading at zero and add points">
+                  <label class="form-check-label">
                     <input class="form-check-input" name="starting_points" type="radio" value="0"
-                           <% if ((rubric?.starting_points ?? 0) == 0) { %>checked<% } %>>
-                    Positive grading
+                           <% if ((rubric?.starting_points ?? 0) == 0) { %>checked<% } %>
+                           aria-describedby="rubric-settings-<%= type %>-start-points-explanation">
+                    Positive grading (start at zero, add points)
                   </label>
                 </div>
                 <div class="form-check">
-                  <label class="form-check-label" data-toggle="tooltip"
-                         title="Start grading at 100% (<%= max_points %> points) and subtract penalties">
+                  <label class="form-check-label">
                     <input class="form-check-input js-negative-grading" name="starting_points" type="radio" value="<%= max_points %>"
-                           <% if (rubric?.starting_points == max_points) { %>checked<% } %>>
-                    Negative grading
+                           <% if (rubric?.starting_points == max_points) { %>checked<% } %>
+                           aria-describedby="rubric-settings-<%= type %>-start-points-explanation">
+                    Negative grading (start at <%= max_points %> points, subtract penalties)
                   </label>
                 </div>
                 <div class="form-check">
                   <label class="form-check-label">
                     <input class="form-check-input" name="starting_points" type="radio" value="CUSTOM"
-                           <% if (![0, max_points].includes(rubric?.starting_points ?? 0)) { %>checked<% } %>>
+                           <% if (![0, max_points].includes(rubric?.starting_points ?? 0)) { %>checked<% } %>
+                           aria-describedby="rubric-settings-<%= type %>-start-points-explanation">
                     Custom starting points
                   </label>
                 </div>
                 <div class="js-starting-points-custom">
                   <label><span class="sr-only">Starting points</span>
-                    <input class="form-control" name="starting_points_custom" type="number" value="<%= rubric?.starting_points ?? max_points %>">
+                    <input class="form-control" name="starting_points_custom" type="number"
+                           value="<%= rubric?.starting_points ?? max_points %>"
+                           aria-describedby="rubric-settings-<%= type %>-start-points-explanation">
                   </label>
                 </div>
               </div>
-              <div class="form-group col-4">
-                <label data-toggle="tooltip" title="Minimum number of points to be assigned to a student from the rubric (out of <%= max_points %>). Rubric items with negative points will not cause the grade to become lower than this value.">
-                  Minimum points
-                  <input class="form-control" name="min_points" type="number" value="<%= rubric?.min_points ?? 0 %>">
+              <div class="form-group col-3">
+                <label>
+                  Rubric floor
+                  <input class="form-control" name="min_points" type="number"
+                         value="<%= rubric?.min_points ?? 0 %>"
+                         aria-describedby="rubric-settings-<%= type %>-floor-ceiling-explanation">
                 </label>
               </div>
-              <div class="form-group col-4">
-                <label data-toggle="tooltip" title="Maximum number of points to be assigned to a student from the rubric (out of <%= max_points %>). Rubric items with positive points will not cause the grade to become higher than this value.">
-                  Maximum points
-                  <input class="form-control" name="max_points" type="number" value="<%= rubric?.max_points ?? max_points %>">
+              <div class="form-group col-3">
+                <label data-toggle="tooltip" title="">
+                  Rubric ceiling
+                  <input class="form-control" name="max_points" type="number"
+                         value="<%= rubric?.max_points ?? max_points %>"
+                         aria-describedby="rubric-settings-<%= type %>-floor-ceiling-explanation">
                 </label>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-6">
+                <small id="rubric-settings-<%= type %>-start-points-explanation" class="form-text text-muted">The setting above only affects starting points. Rubric items may always be added with positive or negative points.</small>
+              </div>
+              <div class="col-6">
+                <small id="rubric-settings-<%= type %>-floor-ceiling-explanation" class="form-text text-muted">Minimum and maximum number of points to be assigned to a student from the rubric (out of <%= max_points %>). Rubric items will not cause the grade to violate these constraints. This setting does not affect the <%= type %> points assigned to the question.</small>
               </div>
             </div>
             <hr/>
