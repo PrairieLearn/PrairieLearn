@@ -280,9 +280,9 @@ function roundPoints(points) {
 
 function updatePointsView() {
   document.querySelectorAll('form[name=manual-grading-form]').forEach((form) => {
-    const max_auto_points = form.dataset.maxAutoPoints;
-    const max_manual_points = form.dataset.maxManualPoints;
-    const max_points = form.dataset.maxPoints;
+    const max_auto_points = Number(form.dataset.maxAutoPoints);
+    const max_manual_points = Number(form.dataset.maxManualPoints);
+    const max_points = Number(form.dataset.maxPoints);
 
     const auto_points =
       roundPoints(
@@ -300,6 +300,18 @@ function updatePointsView() {
     const auto_perc = roundPoints((auto_points * 100) / (max_auto_points || max_points));
     const manual_perc = roundPoints((manual_points * 100) / (max_manual_points || max_points));
     const total_perc = roundPoints((points * 100) / max_points);
+
+    console.log(
+      auto_points,
+      manual_points,
+      points,
+      auto_perc,
+      manual_perc,
+      total_perc,
+      max_manual_points,
+      max_points,
+      max_auto_points
+    );
 
     if (this.name !== 'score_auto_points') {
       updateQueryObjects(form, '[name=score_auto_points]', { value: auto_points });
