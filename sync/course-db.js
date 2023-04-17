@@ -619,10 +619,10 @@ module.exports.loadInfoFile = async function ({
 
     if (!schema) {
       // Skip schema validation, just return the data
-      return {
+      return infofile.makeInfoFile({
         uuid: json.uuid,
         data: json,
-      };
+      });
     }
 
     // Validate file against schema
@@ -630,7 +630,7 @@ module.exports.loadInfoFile = async function ({
     try {
       const valid = validate(json);
       if (!valid) {
-        const result = { uuid: /** @type {any} */ (json).uuid };
+        const result = infofile.makeInfoFile({ uuid: /** @type {any} */ (json).uuid });
         const errorText = betterAjvErrors(schema, json, validate.errors, {
           indent: 2,
         });
@@ -638,10 +638,10 @@ module.exports.loadInfoFile = async function ({
         infofile.addError(result, errorTextString);
         return result;
       }
-      return {
+      return infofile.makeInfoFile({
         uuid: json.uuid,
         data: json,
-      };
+      });
     } catch (err) {
       return infofile.makeError(err.message);
     }
