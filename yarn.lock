@@ -2545,7 +2545,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@prairielearn/aws-imds@workspace:packages/aws-imds":
+"@prairielearn/aws-imds@workspace:^, @prairielearn/aws-imds@workspace:packages/aws-imds":
   version: 0.0.0-use.local
   resolution: "@prairielearn/aws-imds@workspace:packages/aws-imds"
   dependencies:
@@ -2600,6 +2600,7 @@ __metadata:
   dependencies:
     "@aws-sdk/client-ec2": ^3.304.0
     "@aws-sdk/client-secrets-manager": ^3.303.0
+    "@prairielearn/aws-imds": "workspace:^"
     "@prairielearn/tsconfig": "*"
     "@types/fs-extra": ^11.0.1
     "@types/lodash": ^4.14.194
