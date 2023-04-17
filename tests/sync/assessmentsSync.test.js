@@ -652,7 +652,7 @@ describe('Assessment syncing', () => {
     assert.equal(syncedRoles.length, 2);
 
     const foundManager = syncedRoles.find((role) => role.role_name === 'Manager');
-    assert.isUndefined(foundManager);
+    assert.isDefined(foundManager);
     assert.equal(foundManager?.minimum, 1);
     assert.equal(foundManager?.maximum, 1);
     assert.isTrue(foundManager?.can_assign_roles_at_start);
