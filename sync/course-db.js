@@ -711,11 +711,12 @@ module.exports.loadCourseInfo = async function (coursePath) {
    * Used to retrieve fields such as "assessmentSets" and "topics".
    * Adds a warning when syncing if duplicates are found.
    * If defaults are provided, the entries from defaults not present in the resulting list are merged.
+   * @template {'tags' | 'topics' | 'assessmentSets' | 'assessmentModules'} K
    * @template T
-   * @param {string} fieldName The member of `info` to inspect
+   * @param {K} fieldName The member of `info` to inspect
    * @param {string} entryIdentifier The member of each element of the field which uniquely identifies it, usually "name"
-   * @param {T[]} [defaults]
-   * @returns {T[]}
+   * @param {Course[K]} [defaults]
+   * @returns {Course[K]}
    */
   function getFieldWithoutDuplicates(fieldName, entryIdentifier, defaults) {
     const known = new Map();
