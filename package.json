@@ -19,6 +19,8 @@
         "@prairielearn/csv": "workspace:^",
         "@prairielearn/error": "workspace:^",
         "@prairielearn/html": "workspace:^",
+        "@prairielearn/html-ejs": "workspace:^",
+        "@prairielearn/migrations": "workspace:^",
         "@prairielearn/named-locks": "workspace:^",
         "@prairielearn/opentelemetry": "workspace:^",
         "@prairielearn/path-utils": "workspace:^",
