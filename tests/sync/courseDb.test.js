@@ -213,8 +213,6 @@ describe('course database', () => {
         await writeQuestion(dir, 'question2', getQuestion());
         await writeQuestion(dir, 'question3', getAlternativeQuestion());
         const result = await courseDb.loadQuestions(dir);
-        assert.isFalse(infofile.hasErrors(result));
-        assert.isFalse(infofile.hasWarnings(result));
         assert.equal(Object.keys(result).length, 3);
         assert.match(
           infofile.stringifyWarnings(result['question1']),

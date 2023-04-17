@@ -123,12 +123,12 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
       ? zone.gradeRateMinutes
       : assessment.gradeRateMinutes || 0;
     return zone.questions.map((question) => {
-      /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], maxAutoPoints: number | number[], autoPoints: number | number[], manualPoints: number, forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number, canView: string[], canSubmit: string[], advanceScorePerc: number }[]} */
+      /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], maxAutoPoints: number | number[], autoPoints: number | number[], manualPoints: number, forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number, canView: string[] | null, canSubmit: string[] | null, advanceScorePerc: number }[]} */
       let alternatives = [];
       let questionGradeRateMinutes = _.has(question, 'gradeRateMinutes')
         ? question.gradeRateMinutes
         : zoneGradeRateMinutes;
-      if (_(question).has('alternatives')) {
+      if (question.alternatives) {
         alternatives = _.map(question.alternatives, function (alternative) {
           return {
             qid: alternative.id,
@@ -152,14 +152,10 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
               ? alternative.gradeRateMinutes
               : questionGradeRateMinutes,
             canView: alternative?.canView ?? question?.canView ?? null,
-            canSubmit: _.has(alternative, 'canSubmit')
-              ? alternative.canSubmit
-              : _.has(question, 'canSubmit')
-              ? question.canSubmit
-              : null,
+            canSubmit: alternative?.canSubmit ?? question?.canSubmit ?? null,
           };
         });
-      } else if (_(question).has('id')) {
+      } else if (question.id) {
         alternatives = [
           {
             qid: question.id,

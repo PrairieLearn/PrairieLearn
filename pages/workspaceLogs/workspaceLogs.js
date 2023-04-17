@@ -67,16 +67,23 @@ async function loadLogsForWorkspaceVersion(workspaceId, version) {
     })
     .promise();
 
-  if (logItems.Contents.length > 0) {
-    // Load all parts serially to avoid hitting S3 rate limits.
-    for (const item of logItems.Contents) {
-      const res = await s3Client
-        .getObject({
-          Bucket: config.workspaceLogsS3Bucket,
-          Key: item.Key,
-        })
-        .promise();
-      logParts.push(res.Body.toString('utf-8'));
+  // Load all parts serially to avoid hitting S3 rate limits.
+  for (const item of logItems.Contents ?? []) {
+    // This should never happen, but the AWS SDK types annoyingly list this as
+    // possible undefined.
+    if (!item.Key) continue;
+
+    const res = await s3Client
+      .getObject({
+        Bucket: config.workspaceLogsS3Bucket,
+        Key: item.Key,
+      })
+      .promise();
+
+    // Once again, the AWS SDK types aren't narrow enough. This should never be
+    // falsy in practice.
+    if (res.Body) {
+      res.Body.toString('utf-8');
     }
   }
 
