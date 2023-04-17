@@ -8,7 +8,7 @@ var express = require('express');
 var router = express.Router();
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-var config = require('../../lib/config');
+const { config } = require('../../lib/config-new');
 var serverJobs = require('../../lib/server-jobs');
 var syncFromDisk = require('../../sync/syncFromDisk');
 var chunks = require('../../lib/chunks');

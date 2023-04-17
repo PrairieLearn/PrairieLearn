@@ -1,7 +1,7 @@
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-var config = require('../lib/config');
+const { config } = require('../lib/config-new');
 const error = require('@prairielearn/error');
 var csrf = require('../lib/csrf');
 

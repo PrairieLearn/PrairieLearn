@@ -2,7 +2,7 @@ var assert = require('assert');
 var request = require('request');
 var cheerio = require('cheerio');
 
-var config = require('../lib/config');
+const { config } = require('../lib/config-new');
 var helperServer = require('./helperServer');
 
 var baseUrl = 'http://localhost:' + config.serverPort;

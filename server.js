@@ -33,7 +33,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const compiledAssets = require('@prairielearn/compiled-assets');
 
 const { logger, addFileLogging } = require('@prairielearn/logger');
-const { config, loadConfig, setLocalsFromConfig } = require('./lib/config');
+const { config, loadConfig, setLocalsFromConfig } = require('./lib/config-new');
 const load = require('./lib/load');
 const awsHelper = require('./lib/aws.js');
 const externalGrader = require('./lib/externalGrader');
