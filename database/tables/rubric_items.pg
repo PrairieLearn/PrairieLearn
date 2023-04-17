@@ -1,10 +1,10 @@
 columns
     deleted_at: timestamp with time zone
-    description: text not null
-    explanation: text
-    grader_note: text
+    description: character varying(100) not null
+    explanation: character varying(10000)
+    grader_note: character varying(10000)
     id: bigint not null default nextval('rubric_items_id_seq'::regclass)
-    key_binding: text
+    key_binding: character varying(30)
     number: bigint not null
     points: double precision not null
     rubric_id: bigint not null
