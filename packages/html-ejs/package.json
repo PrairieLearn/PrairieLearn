@@ -13,7 +13,7 @@
     "test": "mocha --no-config --require ts-node/register src/index.test.ts"
   },
   "dependencies": {
-    "@prairielearn/html": "^3.0.0",
+    "@prairielearn/html": "workspace:^",
     "ejs": "^3.1.9"
   },
   "devDependencies": {
