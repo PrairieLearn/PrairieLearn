@@ -12,11 +12,11 @@
     "dev": "tsc --watch --preserveWatchOutput"
   },
   "devDependencies": {
-    "@prairielearn/tsconfig": "*",
+    "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^18.15.11",
     "typescript": "^4.9.4"
   },
   "dependencies": {
-    "@prairielearn/postgres": "^1.3.0"
+    "@prairielearn/postgres": "workspace:^"
   }
 }
