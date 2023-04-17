@@ -33,7 +33,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const compiledAssets = require('@prairielearn/compiled-assets');
 
 const { logger, addFileLogging } = require('@prairielearn/logger');
-const { config, loadConfigAsync, setLocalsFromConfig } = require('./lib/config');
+const { config, loadConfig, setLocalsFromConfig } = require('./lib/config');
 const load = require('./lib/load');
 const awsHelper = require('./lib/aws.js');
 const externalGrader = require('./lib/externalGrader');
@@ -1844,7 +1844,7 @@ if (config.startServer) {
         }
 
         // Load config immediately so we can use it configure everything else.
-        await loadConfigAsync(configFilename);
+        await loadConfig(configFilename);
         await awsHelper.init();
 
         // This should be done as soon as we load our config so that we can

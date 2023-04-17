@@ -26,7 +26,7 @@ const socketServer = require('../lib/socket-server'); // must load socket server
 const { logger } = require('@prairielearn/logger');
 const LocalLock = require('../lib/local-lock');
 
-const { config, loadConfigAsync } = require('../lib/config-new');
+const { config, loadConfig } = require('../lib/config-new');
 const sqldb = require('@prairielearn/postgres');
 const { parseDockerLogs } = require('./lib/docker');
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -104,7 +104,7 @@ async
   .series([
     async () => {
       const configFilename = argv['config'] ?? 'config.json';
-      await loadConfigAsync(configFilename);
+      await loadConfig(configFilename);
       if (config.runningInEc2) {
         // copy discovered variables into workspace_server_settings
         workspace_server_settings.instance_id = config.instanceId;
