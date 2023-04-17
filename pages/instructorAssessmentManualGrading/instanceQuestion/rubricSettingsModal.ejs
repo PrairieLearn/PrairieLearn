@@ -26,6 +26,7 @@
             <hr/>
             <div class="form-row">
               <div class="col-6">
+                <% if (max_points) { %>
                 <div class="form-check">
                   <label class="form-check-label">
                     <input class="form-check-input" name="starting_points" type="radio" value="0"
@@ -42,6 +43,16 @@
                     Negative grading (start at <%= max_points %> points, subtract penalties)
                   </label>
                 </div>
+                <% } else { %>
+                <div class="form-check">
+                  <label class="form-check-label">
+                    <input class="form-check-input js-negative-grading" name="starting_points" type="radio" value="0"
+                           <% if (!rubric?.starting_points) { %>checked<% } %>
+                           aria-describedby="rubric-settings-<%= type %>-start-points-explanation">
+                    Start at zero points
+                  </label>
+                </div>
+                <% } %>
                 <div class="form-check">
                   <label class="form-check-label">
                     <input class="form-check-input" name="starting_points" type="radio" value="CUSTOM"
@@ -77,10 +88,14 @@
             </div>
             <div class="row">
               <div class="col-6">
-                <small id="rubric-settings-<%= type %>-start-points-explanation" class="form-text text-muted">The setting above only affects starting points. Rubric items may always be added with positive or negative points.</small>
+                <small id="rubric-settings-<%= type %>-start-points-explanation" class="form-text text-muted">
+                  The setting above only affects starting points. Rubric items may always be added with positive or negative points.
+                </small>
               </div>
               <div class="col-6">
-                <small id="rubric-settings-<%= type %>-floor-ceiling-explanation" class="form-text text-muted">Minimum and maximum number of points to be assigned to a student from the rubric (out of <%= max_points %>). Rubric items will not cause the grade to violate these constraints. This setting does not affect the <%= type %> points assigned to the question.</small>
+                <small id="rubric-settings-<%= type %>-floor-ceiling-explanation" class="form-text text-muted">
+                  Minimum and maximum number of points to be assigned to a student from the rubric (out of <%= max_points %>). Points computed from the rubric will be bound to the limits above, even if the sum of additional points or penalties overrides them. This setting does not affect the <%= type %> points assigned to the question.
+                </small>
               </div>
             </div>
             <hr/>
