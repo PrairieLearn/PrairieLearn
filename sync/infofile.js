@@ -34,7 +34,7 @@ module.exports.hasErrors = function (infoFile) {
  * @returns {boolean}
  */
 module.exports.hasWarnings = function (infoFile) {
-  return !!(infoFile.warnings && infoFile.warnings.length > 0);
+  return infoFile.warnings.length > 0;
 };
 
 /**
@@ -96,6 +96,15 @@ module.exports.addWarning = function (infoFile, warning) {
  */
 module.exports.addWarnings = function (infoFile, warnings) {
   infoFile.warnings = infoFile.warnings.concat(warnings);
+};
+
+/**
+ * @template T
+ * @param {Partial<Pick<InfoFile<T>, 'uuid' | 'data'>>} infoFile
+ * @returns {InfoFile<T>}
+ */
+module.exports.makeInfoFile = function (infoFile = {}) {
+  return { ...infoFile, errors: [], warnings: [] };
 };
 
 /**
