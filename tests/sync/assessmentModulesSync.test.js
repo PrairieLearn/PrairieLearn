@@ -29,7 +29,7 @@ describe('Assessment modules syncing', () => {
       name: 'New Module',
       heading: 'This is a new module',
     };
-    courseData.course.assessmentModules.push(newAssessmentModule);
+    courseData.course.assessmentModules?.push(newAssessmentModule);
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessmentModules = await util.dumpTable('assessment_modules');
     const syncedAssessmentModule = syncedAssessmentModules.find(
@@ -44,9 +44,9 @@ describe('Assessment modules syncing', () => {
       name: 'New Module',
       heading: 'This is a new module',
     };
-    courseData.course.assessmentModules.push(newAssessmentModule);
+    courseData.course.assessmentModules?.push(newAssessmentModule);
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    courseData.course.assessmentModules.pop();
+    courseData.course.assessmentModules?.pop();
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessmentModules = await util.dumpTable('assessment_modules');
     const syncedAssessmentModule = syncedAssessmentModules.find(
