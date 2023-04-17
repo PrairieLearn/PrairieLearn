@@ -2,7 +2,7 @@
 
 Utilities to help load configuration from various sources including a JSON file and AWS Secrets Manager. Config is made type-safe through a [Zod](https://github.com/colinhacks/zod) schema.
 
-This package *should not* be depended upon by other packages directly. Instead, import it into your application, load the config, and then provide any necessary values to other packages.
+This package _should not_ be depended upon by other packages directly. Instead, import it into your application, load the config, and then provide any necessary values to other packages.
 
 ## Usage
 
@@ -25,15 +25,13 @@ console.log(configLoader.config);
 Typically, you'll want to have a `config.ts` file in your own project that encapsulates this. Then, you can import the config elsewhere in the project.
 
 ```ts
-import { ConfigLoader, makeFileConfig } from '@prairielearn/config'
+import { ConfigLoader, makeFileConfig } from '@prairielearn/config';
 import { z } from 'zod';
 
 const configLoader = new ConfigLoader(z.any());
 
 export async function loadAndValidate(path: string) {
-  await configLoader.loadAndValidate([
-    makeFileConfig(path)
-  ]);
+  await configLoader.loadAndValidate([makeFileConfig(path)]);
 }
 
 export default configLoader.config;
