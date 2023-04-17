@@ -12,13 +12,13 @@ interface ConfigSource {
   load: (existingConfig: AbstractConfig) => Promise<AbstractConfig>;
 }
 
-export function makeLiteralConfig(config: AbstractConfig) {
+export function makeLiteralConfigSource(config: AbstractConfig) {
   return {
     load: async () => config,
   };
 }
 
-export function makeFileConfig(path: string): ConfigSource {
+export function makeFileConfigSource(path: string): ConfigSource {
   return {
     load: async () => {
       const config = await fs.readJson(path);
@@ -27,7 +27,7 @@ export function makeFileConfig(path: string): ConfigSource {
   };
 }
 
-export function makeSecretsManagerConfig(tagKey: string): ConfigSource {
+export function makeSecretsManagerConfigSource(tagKey: string): ConfigSource {
   return {
     load: async (existingConfig) => {
       if (!existingConfig.runningInEc2 && !process.env.CONFIG_LOAD_FROM_AWS) {
@@ -58,7 +58,7 @@ export function makeSecretsManagerConfig(tagKey: string): ConfigSource {
   };
 }
 
-export function makeImdsConfig(): ConfigSource {
+export function makeImdsConfigSource(): ConfigSource {
   return {
     load: async (existingConfig) => {
       if (!existingConfig.runningInEc2 && !process.env.CONFIG_LOAD_FROM_AWS) {

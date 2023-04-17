@@ -3,7 +3,7 @@ import { writeFile } from 'node:fs/promises';
 import { withFile } from 'tmp-promise';
 import { z } from 'zod';
 
-import { ConfigLoader, makeLiteralConfig, makeFileConfig } from './index';
+import { ConfigLoader, makeLiteralConfigSource, makeFileConfigSource } from './index';
 
 describe('config', () => {
   it('loads config with defaults', async () => {
@@ -29,7 +29,7 @@ describe('config', () => {
 
     await withFile(async ({ path }) => {
       await writeFile(path, JSON.stringify({ foo: 'bar', bar: 'bar' }));
-      await loader.loadAndValidate([makeFileConfig(path)]);
+      await loader.loadAndValidate([makeFileConfigSource(path)]);
     });
 
     assert.equal(loader.config.foo, 'bar');
@@ -47,7 +47,7 @@ describe('config', () => {
     const loader = new ConfigLoader(schema);
 
     await loader.loadAndValidate([
-      makeLiteralConfig({
+      makeLiteralConfigSource({
         features: {
           foo: false,
           baz: true,
