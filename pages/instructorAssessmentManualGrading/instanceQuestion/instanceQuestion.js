@@ -208,8 +208,7 @@ router.post(
           res.redirect(req.baseUrl + '/grading_rubric_panels');
         })
         .catch((err) => {
-          console.log(err);
-          res.send({ err: String(err) });
+          res.status(500).send({ err: String(err) });
         });
     } else if (typeof req.body.__action === 'string' && req.body.__action.startsWith('reassign_')) {
       const assigned_grader = req.body.__action.substring(9);

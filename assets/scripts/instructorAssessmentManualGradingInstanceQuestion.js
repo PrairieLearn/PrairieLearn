@@ -197,54 +197,71 @@ function resetInstructorGradingPanel() {
       fetch(this.action, {
         method: 'POST',
         body: new URLSearchParams(new FormData(this)),
-      }).then(async (response) => {
-        const data = await response.json();
-        if (data.err) {
-          console.error(data.err);
-          const alert = form.querySelector('.js-settings-error-alert');
-          alert.classList.remove('d-none');
-          alert.innerText = data.err;
-          return;
-        }
-        $(modal).modal('hide');
-        if (data.gradingPanel) {
-          document.querySelector('.js-main-grading-panel').innerHTML = data.gradingPanel;
+      })
+        .catch((err) => ({ err }))
+        .then(async (response) => {
+          const data = await response
+            .json()
+            .catch(() => ({ err: `Error: ${response.statusText}` }));
+          if (data.err) {
+            console.error(data.err);
+            return addAlert(form, data.err);
+          }
+          $(modal).modal('hide');
+          if (data.gradingPanel) {
+            document.querySelector('.js-main-grading-panel').innerHTML = data.gradingPanel;
 
-          // Restore any values that had been set before the settings were configured.
-          const newRubricForm = document.querySelector(
-            '.js-main-grading-panel form[name=manual-grading-form]'
-          );
-          newRubricForm.querySelectorAll('input[type="checkbox"]').forEach((input) => {
-            input.checked = false;
-          });
-          rubricFormData.forEach(([item_name, item_value]) => {
-            newRubricForm.querySelectorAll(`[name="${item_name}"]`).forEach((input) => {
-              if (input.name === 'modified_at') {
-                // Do not reset modified_at, as the rubric settings may have changed it
-              } else if (input.type !== 'checkbox') {
-                input.value = item_value;
-              } else if (input.value === item_value) {
-                input.checked = true;
-              }
+            // Restore any values that had been set before the settings were configured.
+            const newRubricForm = document.querySelector(
+              '.js-main-grading-panel form[name=manual-grading-form]'
+            );
+            newRubricForm.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+              input.checked = false;
             });
-          });
-        }
-        if (data.rubricSettingsManual) {
-          document.querySelector('.rubric-settings-modal-manual').outerHTML =
-            data.rubricSettingsManual;
-        }
-        if (data.rubricSettingsAuto) {
-          document.querySelector('.rubric-settings-modal-auto').outerHTML = data.rubricSettingsAuto;
-        }
-        document.querySelector('input[name=__csrf_token]').value = oldCsrfToken;
-        resetInstructorGradingPanel();
-      });
+            rubricFormData.forEach(([item_name, item_value]) => {
+              newRubricForm.querySelectorAll(`[name="${item_name}"]`).forEach((input) => {
+                if (input.name === 'modified_at') {
+                  // Do not reset modified_at, as the rubric settings may have changed it
+                } else if (input.type !== 'checkbox') {
+                  input.value = item_value;
+                } else if (input.value === item_value) {
+                  input.checked = true;
+                }
+              });
+            });
+          }
+          if (data.rubricSettingsManual) {
+            document.querySelector('.rubric-settings-modal-manual').outerHTML =
+              data.rubricSettingsManual;
+          }
+          if (data.rubricSettingsAuto) {
+            document.querySelector('.rubric-settings-modal-auto').outerHTML =
+              data.rubricSettingsAuto;
+          }
+          document.querySelector('input[name=__csrf_token]').value = oldCsrfToken;
+          resetInstructorGradingPanel();
+        });
     })
   );
 
   resetRubricItemRowsListeners();
   updateRubricItemOrderField();
   computePointsFromRubric();
+}
+
+function addAlert(parent, msg) {
+  const alertPH = parent.querySelector('.js-settings-error-alert-placeholder');
+  const alert = document.createElement('div');
+  alert.classList.add('alert', 'alert-danger', 'alert-dismissible', 'fade', 'show');
+  alert.setAttribute('role', 'alert');
+  alert.innerText = msg;
+  const closeBtn = document.createElement('button');
+  closeBtn.classList.add('close');
+  closeBtn.dataset.dismiss = 'alert';
+  closeBtn.setAttribute('aria-label', 'Close');
+  closeBtn.innerHTML = '<span aria-hidden="true">&times;</span>';
+  alert.appendChild(closeBtn);
+  alertPH.appendChild(alert);
 }
 
 function resetRubricItemRowsListeners() {
