@@ -21,6 +21,8 @@ export function makeLiteralConfigSource(config: AbstractConfig) {
 export function makeFileConfigSource(path: string): ConfigSource {
   return {
     load: async () => {
+      if (!fs.pathExists(path)) return {};
+
       const config = await fs.readJson(path);
       return z.record(z.string(), z.any()).parse(config);
     },
