@@ -13,14 +13,14 @@
     "dev": "tsc --watch --preserveWatchOutput"
   },
   "devDependencies": {
-    "@prairielearn/tsconfig": "*",
+    "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^18.15.11",
     "copyfiles": "^2.4.1",
     "typescript": "^4.9.4"
   },
   "dependencies": {
-    "@prairielearn/path-utils": "workspace:*",
-    "@prairielearn/postgres": "workspace:*",
+    "@prairielearn/path-utils": "workspace:^",
+    "@prairielearn/postgres": "workspace:^",
     "fast-glob": "^3.2.12",
     "filesize": "^10.0.7"
   }
