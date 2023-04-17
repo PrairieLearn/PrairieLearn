@@ -2,7 +2,7 @@
 const { Router } = require('express');
 const asyncHandler = require('express-async-handler');
 
-const config = require('../../lib/config');
+const { config } = require('../../lib/config-new');
 const authnLib = require('../../lib/authn');
 
 var router = Router();

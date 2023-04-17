@@ -4,7 +4,7 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const config = require('../../lib/config');
+const { config } = require('../../lib/config-new');
 const QR = require('qrcode-svg');
 
 const sqldb = require('@prairielearn/postgres');

@@ -8,7 +8,7 @@
 //
 const ERR = require('async-stacktrace');
 const sqldb = require('@prairielearn/postgres');
-const config = require('../lib/config');
+const { config } = require('../lib/config-new');
 const { logger } = require('@prairielearn/logger');
 const readline = require('readline');
 

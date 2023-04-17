@@ -1,7 +1,7 @@
 // @ts-check
 const asyncHandler = require('express-async-handler');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config-new');
 const csrf = require('../lib/csrf');
 const sqldb = require('@prairielearn/postgres');
 const authnLib = require('../lib/authn');

@@ -2,7 +2,7 @@
 const { Router } = require('express');
 const asyncHandler = require('express-async-handler');
 
-const config = require('../../lib/config');
+const { config } = require('../../lib/config-new');
 const sqldb = require('@prairielearn/postgres');
 const { isEnterprise } = require('../../lib/license');
 

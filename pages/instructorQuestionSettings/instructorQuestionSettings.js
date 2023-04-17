@@ -15,7 +15,7 @@ const {
   QuestionDeleteEditor,
   QuestionCopyEditor,
 } = require('../../lib/editors');
-const config = require('../../lib/config');
+const { config } = require('../../lib/config-new');
 const sql = sqldb.loadSqlEquiv(__filename);
 const { encodePath } = require('../../lib/uri-util');
 const { idsEqual } = require('../../lib/id');

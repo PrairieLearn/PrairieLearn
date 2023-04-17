@@ -8,7 +8,7 @@ const sqldb = require('@prairielearn/postgres');
 
 const courseDB = require('../sync/course-db');
 const chunksLib = require('../lib/chunks');
-const config = require('../lib/config');
+const { config } = require('../lib/config-new');
 const logger = require('./dummyLogger');
 const sql = sqldb.loadSqlEquiv(__filename);
 

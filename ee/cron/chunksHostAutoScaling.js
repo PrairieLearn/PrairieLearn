@@ -3,7 +3,7 @@ const AWS = require('aws-sdk');
 const { callbackify } = require('util');
 const _ = require('lodash');
 
-const config = require('../../lib/config');
+const { config } = require('../../lib/config-new');
 
 // These are used as IDs when reading CloudWatch metrics. They must start with
 // a lowercase letter and contain only numbers, letters, and underscores.
