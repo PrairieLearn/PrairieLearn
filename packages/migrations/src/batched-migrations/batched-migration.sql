@@ -7,7 +7,8 @@ INSERT INTO
     batch_size,
     min_value,
     max_value,
-    status
+    status,
+    started_at
   )
 VALUES
   (
@@ -17,7 +18,13 @@ VALUES
     $batch_size,
     $min_value,
     $max_value,
-    $status
+    $status,
+    -- If the migration is marked as already having succeeded, set `started_at`
+    -- since the migration did technically start.
+    CASE
+      WHEN $status::enum_batched_migration_status = 'succeeded' THEN CURRENT_TIMESTAMP
+      ELSE NULL
+    END
   )
 ON CONFLICT DO NOTHING
 RETURNING
