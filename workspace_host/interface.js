@@ -26,16 +26,10 @@ const socketServer = require('../lib/socket-server'); // must load socket server
 const { logger } = require('@prairielearn/logger');
 const LocalLock = require('../lib/local-lock');
 
-const config = require('../lib/config');
+const { config, loadConfig } = require('../lib/config');
 const sqldb = require('@prairielearn/postgres');
 const { parseDockerLogs } = require('./lib/docker');
 const sql = sqldb.loadSqlEquiv(__filename);
-
-let configFilename = 'config.json';
-if ('config' in argv) {
-  configFilename = argv['config'];
-}
-config.loadConfig(configFilename);
 
 const docker = new Docker();
 
@@ -109,8 +103,9 @@ let workspace_server_settings = {};
 async
   .series([
     async () => {
+      const configFilename = argv['config'] ?? 'config.json';
+      await loadConfig(configFilename);
       if (config.runningInEc2) {
-        await awsHelper.loadConfigSecrets(); // sets config.* variables
         // copy discovered variables into workspace_server_settings
         workspace_server_settings.instance_id = config.instanceId;
         workspace_server_settings.hostname = config.hostname;

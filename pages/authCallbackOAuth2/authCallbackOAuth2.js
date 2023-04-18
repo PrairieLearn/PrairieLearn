@@ -7,14 +7,21 @@ const { OAuth2Client } = require('google-auth-library');
 const { logger } = require('@prairielearn/logger');
 
 const authnLib = require('../../lib/authn');
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 
 const router = express.Router();
 
 router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
-    if (!config.hasOauth) throw new Error('Google login is not enabled');
+    if (
+      !config.hasOauth ||
+      !config.googleClientId ||
+      !config.googleClientSecret ||
+      !config.googleRedirectUrl
+    ) {
+      throw new Error('Google login is not enabled');
+    }
 
     const code = req.query.code;
     if (code == null) {
@@ -31,7 +38,7 @@ router.get(
     );
 
     logger.verbose('Got Google auth with code: ' + code);
-    const getTokenRes = await oauth2Client.getToken(code).catch((err) => {
+    const { tokens } = await oauth2Client.getToken(code).catch((err) => {
       if (err?.response) {
         // This is probably a detailed error from the Google API client. We'll
         // pick off the useful bits and attach them to the Sentry scope so that
@@ -46,12 +53,16 @@ router.get(
       throw err;
     });
 
-    logger.verbose('Got Google auth tokens: ' + JSON.stringify(getTokenRes.tokens));
+    const idToken = tokens.id_token;
+    if (!idToken) {
+      throw new Error('Missing id_token in Google auth response');
+    }
+
     // tokens.id_token is a JWT (JSON Web Token)
     // http://openid.net/specs/draft-jones-json-web-token-07.html
     // A JWT has the form HEADER.PAYLOAD.SIGNATURE
     // We get the PAYLOAD, un-base64, parse to JSON:
-    const parts = getTokenRes.tokens.id_token.split('.');
+    const parts = idToken.split('.');
     identity = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
     logger.verbose('Got Google auth identity: ' + JSON.stringify(identity));
     assert(identity.email);

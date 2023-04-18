@@ -3,7 +3,7 @@ const cheerio = require('cheerio');
 const fs = require('fs-extra');
 const path = require('path');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const fetch = require('node-fetch');
 const helperServer = require('./helperServer');
 const sqldb = require('@prairielearn/postgres');

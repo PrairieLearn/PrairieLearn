@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/html",
-  "version": "2.2.0",
+  "version": "3.0.0",
   "main": "dist/index.js",
   "repository": {
     "type": "git",
@@ -13,7 +13,7 @@
     "test": "mocha --no-config --require ts-node/register src/index.test.ts"
   },
   "devDependencies": {
-    "@prairielearn/tsconfig": "*",
+    "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^18.15.11",
     "mocha": "^10.2.0",
     "ts-node": "^10.9.1",

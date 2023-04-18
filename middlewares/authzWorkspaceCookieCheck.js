@@ -1,5 +1,5 @@
 const csrf = require('../lib/csrf');
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const { idsEqual } = require('../lib/id');
 
 module.exports = (req, res, next) => {

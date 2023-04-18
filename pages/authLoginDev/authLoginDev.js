@@ -2,7 +2,7 @@
 const { Router } = require('express');
 const asyncHandler = require('express-async-handler');
 
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 const authnLib = require('../../lib/authn');
 
 var router = Router();
@@ -10,7 +10,7 @@ var router = Router();
 router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
-    if (!config.devMode) {
+    if (!config.devMode || !config.authUid) {
       throw new Error('devMode login is not enabled');
     }
 

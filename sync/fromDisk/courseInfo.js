@@ -22,6 +22,10 @@ module.exports.sync = async function (courseData, courseId) {
   }
 
   const courseInfo = courseData.course.data;
+  if (!courseInfo) {
+    throw new Error('Course info file is missing data');
+  }
+
   const params = {
     course_id: courseId,
     short_name: courseInfo.name,

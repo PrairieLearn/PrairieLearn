@@ -7,7 +7,7 @@ const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 
 const github = require('../../lib/github');
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 const opsbot = require('../../lib/opsbot');
 const { logger } = require('@prairielearn/logger');
 
