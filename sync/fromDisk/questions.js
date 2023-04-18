@@ -5,7 +5,7 @@ const infofile = require('../infofile');
 const perf = require('../performance')('question');
 
 /**
- * @param {import('../course-db').Question} q
+ * @param {import('../course-db').Question | null | undefined} q
  */
 function getParamsForQuestion(q) {
   if (!q) return null;

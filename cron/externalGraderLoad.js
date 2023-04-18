@@ -2,7 +2,7 @@ const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const AWS = require('aws-sdk');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const { logger } = require('@prairielearn/logger');
 const sqldb = require('@prairielearn/postgres');
 

@@ -24,7 +24,12 @@ function escapeValue(value: unknown): string {
     return value.toString();
   } else if (Array.isArray(value)) {
     return value.map((val) => escapeValue(val)).join('');
-  } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'bigint') {
+  } else if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'bigint' ||
+    typeof value === 'boolean'
+  ) {
     return escapeHtmlRaw(String(value));
   } else if (value == null) {
     // undefined or null -- render nothing
@@ -32,8 +37,10 @@ function escapeValue(value: unknown): string {
   } else if (typeof value === 'object') {
     throw new Error(`Cannot interpolate object in template: ${JSON.stringify(value)}`);
   } else {
-    // This is boolean - don't render anything here.
-    return '';
+    // There shouldn't be any other types
+    throw new Error(
+      `Unexpected type in template: ${typeof value} for value ${JSON.stringify(value)}`
+    );
   }
 }
 

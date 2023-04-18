@@ -10,7 +10,7 @@ const crypto = require('crypto');
 const _ = require('lodash');
 
 const csrf = require('../../lib/csrf');
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 const sqldb = require('@prairielearn/postgres');
 const error = require('@prairielearn/error');
 

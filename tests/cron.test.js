@@ -2,7 +2,7 @@ const _ = require('lodash');
 const cron = require('../cron');
 const assert = require('chai').assert;
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 

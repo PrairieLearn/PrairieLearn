@@ -9,7 +9,7 @@ const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 const error = require('@prairielearn/error');
 const csrf = require('../../lib/csrf');
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 const cache = require('../../lib/cache');
 
 var timeTolerance = 3000; // seconds

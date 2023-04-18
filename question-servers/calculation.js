@@ -3,7 +3,7 @@ const { experimentAsync } = require('tzientist');
 const _ = require('lodash');
 const Sentry = require('@prairielearn/sentry');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const calculationInprocess = require('./calculation-inprocess');
 const calculationSubprocess = require('./calculation-subprocess');
 

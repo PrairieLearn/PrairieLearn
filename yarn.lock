@@ -126,6 +126,97 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@aws-sdk/client-ec2@npm:^3.304.0":
+  version: 3.304.0
+  resolution: "@aws-sdk/client-ec2@npm:3.304.0"
+  dependencies:
+    "@aws-crypto/sha256-browser": 3.0.0
+    "@aws-crypto/sha256-js": 3.0.0
+    "@aws-sdk/client-sts": 3.303.0
+    "@aws-sdk/config-resolver": 3.303.0
+    "@aws-sdk/credential-provider-node": 3.303.0
+    "@aws-sdk/fetch-http-handler": 3.303.0
+    "@aws-sdk/hash-node": 3.303.0
+    "@aws-sdk/invalid-dependency": 3.303.0
+    "@aws-sdk/middleware-content-length": 3.303.0
+    "@aws-sdk/middleware-endpoint": 3.303.0
+    "@aws-sdk/middleware-host-header": 3.303.0
+    "@aws-sdk/middleware-logger": 3.303.0
+    "@aws-sdk/middleware-recursion-detection": 3.303.0
+    "@aws-sdk/middleware-retry": 3.303.0
+    "@aws-sdk/middleware-sdk-ec2": 3.303.0
+    "@aws-sdk/middleware-serde": 3.303.0
+    "@aws-sdk/middleware-signing": 3.303.0
+    "@aws-sdk/middleware-stack": 3.303.0
+    "@aws-sdk/middleware-user-agent": 3.303.0
+    "@aws-sdk/node-config-provider": 3.303.0
+    "@aws-sdk/node-http-handler": 3.303.0
+    "@aws-sdk/protocol-http": 3.303.0
+    "@aws-sdk/smithy-client": 3.303.0
+    "@aws-sdk/types": 3.303.0
+    "@aws-sdk/url-parser": 3.303.0
+    "@aws-sdk/util-base64": 3.303.0
+    "@aws-sdk/util-body-length-browser": 3.303.0
+    "@aws-sdk/util-body-length-node": 3.303.0
+    "@aws-sdk/util-defaults-mode-browser": 3.303.0
+    "@aws-sdk/util-defaults-mode-node": 3.303.0
+    "@aws-sdk/util-endpoints": 3.303.0
+    "@aws-sdk/util-retry": 3.303.0
+    "@aws-sdk/util-user-agent-browser": 3.303.0
+    "@aws-sdk/util-user-agent-node": 3.303.0
+    "@aws-sdk/util-utf8": 3.303.0
+    "@aws-sdk/util-waiter": 3.303.0
+    fast-xml-parser: 4.1.2
+    tslib: ^2.5.0
+    uuid: ^8.3.2
+  checksum: 2f2ff020957ff9174313561e8856f169800b44e1c5f6cc8544f7deb91a723ed254a51a5119eef1f38103d9953d4ed06475e33c35f7b89929964116bb3e57aa12
+  languageName: node
+  linkType: hard
+
+"@aws-sdk/client-secrets-manager@npm:^3.303.0":
+  version: 3.303.0
+  resolution: "@aws-sdk/client-secrets-manager@npm:3.303.0"
+  dependencies:
+    "@aws-crypto/sha256-browser": 3.0.0
+    "@aws-crypto/sha256-js": 3.0.0
+    "@aws-sdk/client-sts": 3.303.0
+    "@aws-sdk/config-resolver": 3.303.0
+    "@aws-sdk/credential-provider-node": 3.303.0
+    "@aws-sdk/fetch-http-handler": 3.303.0
+    "@aws-sdk/hash-node": 3.303.0
+    "@aws-sdk/invalid-dependency": 3.303.0
+    "@aws-sdk/middleware-content-length": 3.303.0
+    "@aws-sdk/middleware-endpoint": 3.303.0
+    "@aws-sdk/middleware-host-header": 3.303.0
+    "@aws-sdk/middleware-logger": 3.303.0
+    "@aws-sdk/middleware-recursion-detection": 3.303.0
+    "@aws-sdk/middleware-retry": 3.303.0
+    "@aws-sdk/middleware-serde": 3.303.0
+    "@aws-sdk/middleware-signing": 3.303.0
+    "@aws-sdk/middleware-stack": 3.303.0
+    "@aws-sdk/middleware-user-agent": 3.303.0
+    "@aws-sdk/node-config-provider": 3.303.0
+    "@aws-sdk/node-http-handler": 3.303.0
+    "@aws-sdk/protocol-http": 3.303.0
+    "@aws-sdk/smithy-client": 3.303.0
+    "@aws-sdk/types": 3.303.0
+    "@aws-sdk/url-parser": 3.303.0
+    "@aws-sdk/util-base64": 3.303.0
+    "@aws-sdk/util-body-length-browser": 3.303.0
+    "@aws-sdk/util-body-length-node": 3.303.0
+    "@aws-sdk/util-defaults-mode-browser": 3.303.0
+    "@aws-sdk/util-defaults-mode-node": 3.303.0
+    "@aws-sdk/util-endpoints": 3.303.0
+    "@aws-sdk/util-retry": 3.303.0
+    "@aws-sdk/util-user-agent-browser": 3.303.0
+    "@aws-sdk/util-user-agent-node": 3.303.0
+    "@aws-sdk/util-utf8": 3.303.0
+    tslib: ^2.5.0
+    uuid: ^8.3.2
+  checksum: fb256258007035410233d7d0ff988e66e337181402b1c997e5d594f6c9c4087fc0b60fcb94d4308a9223aeb4d9528915ab37efffc606f7b61df81faa73dc6131
+  languageName: node
+  linkType: hard
+
 "@aws-sdk/client-sso-oidc@npm:3.303.0":
   version: 3.303.0
   resolution: "@aws-sdk/client-sso-oidc@npm:3.303.0"
@@ -473,6 +564,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@aws-sdk/middleware-sdk-ec2@npm:3.303.0":
+  version: 3.303.0
+  resolution: "@aws-sdk/middleware-sdk-ec2@npm:3.303.0"
+  dependencies:
+    "@aws-sdk/middleware-endpoint": 3.303.0
+    "@aws-sdk/protocol-http": 3.303.0
+    "@aws-sdk/signature-v4": 3.303.0
+    "@aws-sdk/types": 3.303.0
+    "@aws-sdk/util-format-url": 3.303.0
+    tslib: ^2.5.0
+  checksum: 11f8a032a069cf5afdfd1f9c1cefe942d3286114dc2712edbb84289d42f808f63b0f457b9042401fc58440b082fab37213e716afe1cd3037eae24ca4e6b62771
+  languageName: node
+  linkType: hard
+
 "@aws-sdk/middleware-sdk-sts@npm:3.303.0":
   version: 3.303.0
   resolution: "@aws-sdk/middleware-sdk-sts@npm:3.303.0"
@@ -751,6 +856,17 @@ __metadata:
     "@aws-sdk/types": 3.303.0
     tslib: ^2.5.0
   checksum: 4eeee6bae6e3d4b755164d58f7105fe3311b99781dafef04d6dc3f0b42898db698abbb290b4d15d26bfd9f75abb9b420bab203fee86939f79c8d482e37d5ae70
+  languageName: node
+  linkType: hard
+
+"@aws-sdk/util-format-url@npm:3.303.0":
+  version: 3.303.0
+  resolution: "@aws-sdk/util-format-url@npm:3.303.0"
+  dependencies:
+    "@aws-sdk/querystring-builder": 3.303.0
+    "@aws-sdk/types": 3.303.0
+    tslib: ^2.5.0
+  checksum: 811459a3b9a7793aeded3278250c4bbee0f45c66c7ad56bcdcb4906f7adc9ce0c2e6b602d9b32190b3d8e82fcbd9081271838f16da49f524c5f864305cc4f6aa
   languageName: node
   linkType: hard
 
@@ -2429,7 +2545,20 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@prairielearn/bind-mount@^1.0.0, @prairielearn/bind-mount@workspace:packages/bind-mount":
+"@prairielearn/aws-imds@workspace:^, @prairielearn/aws-imds@workspace:packages/aws-imds":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/aws-imds@workspace:packages/aws-imds"
+  dependencies:
+    "@aws-sdk/client-ec2": ^3.304.0
+    "@prairielearn/tsconfig": "*"
+    "@types/node": ^18.14.2
+    node-fetch: ^2.6.9
+    typescript: ^4.9.5
+    zod: ^3.21.4
+  languageName: unknown
+  linkType: soft
+
+"@prairielearn/bind-mount@workspace:^, @prairielearn/bind-mount@workspace:packages/bind-mount":
   version: 0.0.0-use.local
   resolution: "@prairielearn/bind-mount@workspace:packages/bind-mount"
   dependencies:
@@ -2439,12 +2568,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/compiled-assets@^1.0.0, @prairielearn/compiled-assets@workspace:packages/compiled-assets":
+"@prairielearn/compiled-assets@workspace:^, @prairielearn/compiled-assets@workspace:packages/compiled-assets":
   version: 0.0.0-use.local
   resolution: "@prairielearn/compiled-assets@workspace:packages/compiled-assets"
   dependencies:
-    "@prairielearn/html": ^2.1.1
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/html": "workspace:^"
+    "@prairielearn/tsconfig": "workspace:^"
     "@types/node": ^18.15.11
     chai: ^4.3.7
     commander: ^10.0.0
@@ -2465,11 +2594,32 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/config@workspace:^, @prairielearn/config@workspace:packages/config":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/config@workspace:packages/config"
+  dependencies:
+    "@aws-sdk/client-ec2": ^3.304.0
+    "@aws-sdk/client-secrets-manager": ^3.303.0
+    "@prairielearn/aws-imds": "workspace:^"
+    "@prairielearn/tsconfig": "*"
+    "@types/fs-extra": ^11.0.1
+    "@types/lodash": ^4.14.194
+    "@types/mocha": ^10.0.1
+    "@types/node": ^18.14.2
+    fs-extra: ^11.1.1
+    lodash: ^4.17.21
+    mocha: ^10.2.0
+    tmp-promise: ^3.0.3
+    ts-node: ^10.9.1
+    typescript: ^4.9.5
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/csv@workspace:^, @prairielearn/csv@workspace:packages/csv":
   version: 0.0.0-use.local
   resolution: "@prairielearn/csv@workspace:packages/csv"
   dependencies:
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/tsconfig": "workspace:^"
     "@types/mocha": ^10.0.1
     "@types/multipipe": ^3.0.1
     "@types/node": ^18.14.2
@@ -2487,7 +2637,7 @@ __metadata:
   resolution: "@prairielearn/docker-utils@workspace:packages/docker-utils"
   dependencies:
     "@prairielearn/logger": "workspace:^"
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/tsconfig": "workspace:^"
     "@types/mocha": ^10.0.1
     "@types/node": ^18.15.11
     aws-sdk: ^2.1354.0
@@ -2498,11 +2648,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/error@^1.0.0, @prairielearn/error@workspace:^, @prairielearn/error@workspace:packages/error":
+"@prairielearn/error@workspace:^, @prairielearn/error@workspace:packages/error":
   version: 0.0.0-use.local
   resolution: "@prairielearn/error@workspace:packages/error"
   dependencies:
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/tsconfig": "workspace:^"
     "@types/mocha": ^10.0.1
     "@types/node": ^18.15.11
     lodash: ^4.17.21
@@ -2512,12 +2662,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/html-ejs@workspace:packages/html-ejs":
+"@prairielearn/html-ejs@workspace:^, @prairielearn/html-ejs@workspace:packages/html-ejs":
   version: 0.0.0-use.local
   resolution: "@prairielearn/html-ejs@workspace:packages/html-ejs"
   dependencies:
-    "@prairielearn/html": ^2.0.0
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/html": "workspace:^"
+    "@prairielearn/tsconfig": "workspace:^"
     "@types/ejs": ^3.1.2
     "@types/node": ^18.15.11
     ejs: ^3.1.9
@@ -2527,11 +2677,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/html@^2.0.0, @prairielearn/html@^2.1.1, @prairielearn/html@workspace:packages/html":
+"@prairielearn/html@workspace:^, @prairielearn/html@workspace:packages/html":
   version: 0.0.0-use.local
   resolution: "@prairielearn/html@workspace:packages/html"
   dependencies:
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/tsconfig": "workspace:^"
     "@types/node": ^18.15.11
     mocha: ^10.2.0
     ts-node: ^10.9.1
@@ -2539,11 +2689,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/logger@^1.0.0, @prairielearn/logger@workspace:^, @prairielearn/logger@workspace:packages/logger":
+"@prairielearn/logger@workspace:^, @prairielearn/logger@workspace:packages/logger":
   version: 0.0.0-use.local
   resolution: "@prairielearn/logger@workspace:packages/logger"
   dependencies:
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/tsconfig": "workspace:^"
     "@types/node": ^18.15.11
     logform: ^2.5.1
     typescript: ^4.9.4
@@ -2552,15 +2702,15 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/migrations@workspace:packages/migrations":
+"@prairielearn/migrations@workspace:^, @prairielearn/migrations@workspace:packages/migrations":
   version: 0.0.0-use.local
   resolution: "@prairielearn/migrations@workspace:packages/migrations"
   dependencies:
-    "@prairielearn/error": ^1.0.0
-    "@prairielearn/logger": ^1.0.0
-    "@prairielearn/named-locks": ^1.2.0
-    "@prairielearn/postgres": ^1.2.0
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/error": "workspace:^"
+    "@prairielearn/logger": "workspace:^"
+    "@prairielearn/named-locks": "workspace:^"
+    "@prairielearn/postgres": "workspace:^"
+    "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": ^11.0.1
     "@types/mocha": ^10.0.1
     "@types/node": ^18.15.11
@@ -2574,18 +2724,18 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/named-locks@^1.0.0, @prairielearn/named-locks@^1.2.0, @prairielearn/named-locks@workspace:packages/named-locks":
+"@prairielearn/named-locks@workspace:^, @prairielearn/named-locks@workspace:packages/named-locks":
   version: 0.0.0-use.local
   resolution: "@prairielearn/named-locks@workspace:packages/named-locks"
   dependencies:
-    "@prairielearn/postgres": ^1.3.0
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/postgres": "workspace:^"
+    "@prairielearn/tsconfig": "workspace:^"
     "@types/node": ^18.15.11
     typescript: ^4.9.4
   languageName: unknown
   linkType: soft
 
-"@prairielearn/opentelemetry@^1.0.0, @prairielearn/opentelemetry@workspace:packages/opentelemetry":
+"@prairielearn/opentelemetry@workspace:^, @prairielearn/opentelemetry@workspace:packages/opentelemetry":
   version: 0.0.0-use.local
   resolution: "@prairielearn/opentelemetry@workspace:packages/opentelemetry"
   dependencies:
@@ -2610,7 +2760,7 @@ __metadata:
     "@opentelemetry/sdk-trace-base": ^1.9.1
     "@opentelemetry/sdk-trace-node": ^1.9.1
     "@opentelemetry/semantic-conventions": ^1.11.0
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/tsconfig": "workspace:^"
     "@types/chai": ^4.3.4
     "@types/mocha": ^10.0.1
     "@types/node": ^18.15.11
@@ -2621,11 +2771,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/path-utils@workspace:*, @prairielearn/path-utils@workspace:packages/path-utils":
+"@prairielearn/path-utils@workspace:^, @prairielearn/path-utils@workspace:packages/path-utils":
   version: 0.0.0-use.local
   resolution: "@prairielearn/path-utils@workspace:packages/path-utils"
   dependencies:
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/tsconfig": "workspace:^"
     "@types/chai": ^4.3.4
     "@types/mocha": ^10.0.1
     "@types/node": ^18.15.11
@@ -2636,11 +2786,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/postgres@^1.0.0, @prairielearn/postgres@^1.2.0, @prairielearn/postgres@^1.3.0, @prairielearn/postgres@workspace:*, @prairielearn/postgres@workspace:packages/postgres":
+"@prairielearn/postgres@workspace:^, @prairielearn/postgres@workspace:packages/postgres":
   version: 0.0.0-use.local
   resolution: "@prairielearn/postgres@workspace:packages/postgres"
   dependencies:
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/tsconfig": "workspace:^"
     "@types/debug": ^4.1.7
     "@types/lodash": ^4.14.192
     "@types/mocha": ^10.0.1
@@ -2658,11 +2808,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/prettier-plugin-sql@workspace:*, @prairielearn/prettier-plugin-sql@workspace:packages/prettier-plugin-sql":
+"@prairielearn/prettier-plugin-sql@workspace:^, @prairielearn/prettier-plugin-sql@workspace:packages/prettier-plugin-sql":
   version: 0.0.0-use.local
   resolution: "@prairielearn/prettier-plugin-sql@workspace:packages/prettier-plugin-sql"
   dependencies:
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/tsconfig": "workspace:^"
     "@types/node": ^18.15.11
     "@types/prettier": ^2.7.2
     sql-formatter: ^12.2.0
@@ -2670,11 +2820,11 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/sentry@^1.0.0, @prairielearn/sentry@workspace:packages/sentry":
+"@prairielearn/sentry@workspace:^, @prairielearn/sentry@workspace:packages/sentry":
   version: 0.0.0-use.local
   resolution: "@prairielearn/sentry@workspace:packages/sentry"
   dependencies:
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/tsconfig": "workspace:^"
     "@sentry/node": ^7.46.0
     "@types/node": ^18.15.11
     execa: ^5.1.1
@@ -2683,19 +2833,19 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/tsconfig@*, @prairielearn/tsconfig@workspace:packages/tsconfig":
+"@prairielearn/tsconfig@*, @prairielearn/tsconfig@workspace:^, @prairielearn/tsconfig@workspace:packages/tsconfig":
   version: 0.0.0-use.local
   resolution: "@prairielearn/tsconfig@workspace:packages/tsconfig"
   languageName: unknown
   linkType: soft
 
-"@prairielearn/workspace-utils@workspace:*, @prairielearn/workspace-utils@workspace:packages/workspace-utils":
+"@prairielearn/workspace-utils@workspace:^, @prairielearn/workspace-utils@workspace:packages/workspace-utils":
   version: 0.0.0-use.local
   resolution: "@prairielearn/workspace-utils@workspace:packages/workspace-utils"
   dependencies:
-    "@prairielearn/path-utils": "workspace:*"
-    "@prairielearn/postgres": "workspace:*"
-    "@prairielearn/tsconfig": "*"
+    "@prairielearn/path-utils": "workspace:^"
+    "@prairielearn/postgres": "workspace:^"
+    "@prairielearn/tsconfig": "workspace:^"
     "@types/node": ^18.15.11
     copyfiles: ^2.4.1
     fast-glob: ^3.2.12
@@ -3189,6 +3339,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/klaw@npm:^3.0.3":
+  version: 3.0.3
+  resolution: "@types/klaw@npm:3.0.3"
+  dependencies:
+    "@types/node": "*"
+  checksum: 6d321b6a3b56eb25e08b6670f16486afa9128b759f6a3866f987fb6908f851057e9b53a29068daa9ff3828e13f7dda32fc5c1b7ef990b958c50ab88b04877f22
+  languageName: node
+  linkType: hard
+
 "@types/linkify-it@npm:*":
   version: 3.0.2
   resolution: "@types/linkify-it@npm:3.0.2"
@@ -3196,10 +3355,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/lodash@npm:^4.14.192":
-  version: 4.14.192
-  resolution: "@types/lodash@npm:4.14.192"
-  checksum: 31e1f0543a04158d2c429c45efd7c77882736630d0652f82eb337d6159ec0c249c5d175c0af731537b53271e665ff8d76f43221d75d03646d31cb4bd6f0056b1
+"@types/lodash@npm:^4.14.192, @types/lodash@npm:^4.14.194":
+  version: 4.14.194
+  resolution: "@types/lodash@npm:4.14.194"
+  checksum: 113f34831c461469d91feca2dde737f88487732898b4d25e9eb23b087bb193985f864d1e1e0f3b777edc5022e460443588b6000a3b2348c966f72d17eedc35ea
   languageName: node
   linkType: hard
 
@@ -3648,18 +3807,21 @@ __metadata:
     "@changesets/cli": ^2.26.1
     "@fortawesome/fontawesome-free": ^6.4.0
     "@octokit/rest": ^19.0.7
-    "@prairielearn/bind-mount": ^1.0.0
-    "@prairielearn/compiled-assets": ^1.0.0
+    "@prairielearn/bind-mount": "workspace:^"
+    "@prairielearn/compiled-assets": "workspace:^"
+    "@prairielearn/config": "workspace:^"
     "@prairielearn/csv": "workspace:^"
     "@prairielearn/error": "workspace:^"
-    "@prairielearn/html": ^2.0.0
-    "@prairielearn/named-locks": ^1.0.0
-    "@prairielearn/opentelemetry": ^1.0.0
-    "@prairielearn/path-utils": "workspace:*"
-    "@prairielearn/postgres": ^1.0.0
-    "@prairielearn/prettier-plugin-sql": "workspace:*"
-    "@prairielearn/sentry": ^1.0.0
-    "@prairielearn/workspace-utils": "workspace:*"
+    "@prairielearn/html": "workspace:^"
+    "@prairielearn/html-ejs": "workspace:^"
+    "@prairielearn/migrations": "workspace:^"
+    "@prairielearn/named-locks": "workspace:^"
+    "@prairielearn/opentelemetry": "workspace:^"
+    "@prairielearn/path-utils": "workspace:^"
+    "@prairielearn/postgres": "workspace:^"
+    "@prairielearn/prettier-plugin-sql": "workspace:^"
+    "@prairielearn/sentry": "workspace:^"
+    "@prairielearn/workspace-utils": "workspace:^"
     "@pyroscope/nodejs": ^0.2.5
     "@sentry/profiling-node": ^0.3.0
     "@sentry/tracing": ^7.46.0
@@ -3672,6 +3834,7 @@ __metadata:
     "@types/dockerode": ^3.3.16
     "@types/folder-hash": ^4.0.2
     "@types/fs-extra": ^11.0.1
+    "@types/klaw": ^3.0.3
     "@types/lodash": ^4.14.192
     "@types/loopbench": ^1.2.1
     "@types/memorystream": ^0.3.1

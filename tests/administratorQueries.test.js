@@ -1,7 +1,7 @@
 const assert = require('chai').assert;
 const { step } = require('mocha-steps');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 
 const helperServer = require('./helperServer');
 const helperClient = require('./helperClient');

@@ -2,7 +2,7 @@
 const _ = require('lodash');
 const sqldb = require('@prairielearn/postgres');
 
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 const perf = require('../performance')('assessments');
 const infofile = require('../infofile');
 
@@ -44,6 +44,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 function getParamsForAssessment(assessmentInfoFile, questionIds) {
   if (infofile.hasErrors(assessmentInfoFile)) return null;
   const assessment = assessmentInfoFile.data;
+  if (!assessment) throw new Error(`Missing assessment data for ${assessmentInfoFile.uuid}`);
 
   const allowIssueReporting = !!_.get(assessment, 'allowIssueReporting', true);
   const allowRealTimeGrading = !!_.get(assessment, 'allowRealTimeGrading', true);
@@ -122,12 +123,12 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
       ? zone.gradeRateMinutes
       : assessment.gradeRateMinutes || 0;
     return zone.questions.map((question) => {
-      /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], maxAutoPoints: number | number[], autoPoints: number | number[], manualPoints: number, forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number, canView: string[], canSubmit: string[], advanceScorePerc: number }[]} */
-      let alternatives;
+      /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], maxAutoPoints: number | number[], autoPoints: number | number[], manualPoints: number, forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number, canView: string[] | null, canSubmit: string[] | null, advanceScorePerc: number }[]} */
+      let alternatives = [];
       let questionGradeRateMinutes = _.has(question, 'gradeRateMinutes')
         ? question.gradeRateMinutes
         : zoneGradeRateMinutes;
-      if (_(question).has('alternatives')) {
+      if (question.alternatives) {
         alternatives = _.map(question.alternatives, function (alternative) {
           return {
             qid: alternative.id,
@@ -151,14 +152,10 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
               ? alternative.gradeRateMinutes
               : questionGradeRateMinutes,
             canView: alternative?.canView ?? question?.canView ?? null,
-            canSubmit: _.has(alternative, 'canSubmit')
-              ? alternative.canSubmit
-              : _.has(question, 'canSubmit')
-              ? question.canSubmit
-              : null,
+            canSubmit: alternative?.canSubmit ?? question?.canSubmit ?? null,
           };
         });
-      } else if (_(question).has('id')) {
+      } else if (question.id) {
         alternatives = [
           {
             qid: question.id,
@@ -208,6 +205,8 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
             initPoints,
             pointsList: undefined,
           };
+        } else {
+          throw new Error(`Unknown assessment type: ${assessment.type}`);
         }
       });
 
@@ -306,7 +305,7 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
     const uuidsRes = await sqldb.queryAsync(sql.check_access_rules_exam_uuid, uuidsParams);
     uuidsRes.rows.forEach(({ uuid, uuid_exists }) => {
       if (!uuid_exists) {
-        uuidAssessmentMap.get(uuid).forEach((tid) => {
+        uuidAssessmentMap.get(uuid)?.forEach((tid) => {
           infofile.addWarning(
             assessments[tid],
             `examUuid "${uuid}" not found. Ensure you copied the correct UUID from the scheduler.`
