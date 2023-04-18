@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const async = require('async');
 const AWS = require('aws-sdk');
@@ -43,36 +44,47 @@ const ConfigSchema = z.object({
   postgresqlPoolSize: z.number().default(2),
   postgresqlIdleTimeoutMillis: z.number().default(30000),
   autoScalingGroupName: z.string().nullable().default(null),
+  instanceId: z.string().nullable().default(null),
+  sentryDsn: z.string().nullable().default(null),
+  sentryEnvironment: z.string().nullable().default(null),
+  awsConfig: z.any().default(null),
 });
 
 function makeProductionConfigSource() {
-  if (!isProduction) return {};
   return {
-    useDatabase: true,
-    useEc2MetadataService: true,
-    useCloudWatchLogging: true,
-    useConsoleLoggingForJobs: false,
-    useImagePreloading: true,
-    reportLoad: true,
+    async load() {
+      if (!isProduction) return {};
+      return {
+        useDatabase: true,
+        useEc2MetadataService: true,
+        useCloudWatchLogging: true,
+        useConsoleLoggingForJobs: false,
+        useImagePreloading: true,
+        reportLoad: true,
+      };
+    },
   };
 }
 
-async function makeAutoScalingGroupConfigSource(existingConfig) {
-  // AutoScalingGroup we are inside (if any)
-  if (!existingConfig.runningInEc2) return {};
+function makeAutoScalingGroupConfigSource() {
+  return {
+    async load(existingConfig) {
+      if (!existingConfig.runningInEc2 && !process.env.CONFIG_LOAD_FROM_AWS) return {};
 
-  logger.info('Detecting AutoScalingGroup...');
-  var autoscaling = new AWS.AutoScaling();
-  var params = { InstanceIds: [existingConfig.instanceId] };
-  const data = await autoscaling.describeAutoScalingInstances(params).promise();
-  if (data.AutoScalingInstances.length === 0) {
-    logger.info('Not running inside an AutoScalingGroup');
-    return {};
-  }
+      logger.info('Detecting AutoScalingGroup...');
+      var autoscaling = new AWS.AutoScaling();
+      var params = { InstanceIds: [existingConfig.instanceId] };
+      const data = await autoscaling.describeAutoScalingInstances(params).promise();
+      if (!data.AutoScalingInstances || data.AutoScalingInstances.length === 0) {
+        logger.info('Not running inside an AutoScalingGroup');
+        return {};
+      }
 
-  const autoScalingGroupName = data.AutoScalingInstances[0].AutoScalingGroupName;
-  logger.info(`Running inside AutoScalingGroup: ${autoScalingGroupName}`);
-  return { autoScalingGroupName };
+      const autoScalingGroupName = data.AutoScalingInstances[0].AutoScalingGroupName;
+      logger.info(`Running inside AutoScalingGroup: ${autoScalingGroupName}`);
+      return { autoScalingGroupName };
+    },
+  };
 }
 
 const loader = new ConfigLoader(ConfigSchema);
@@ -85,7 +97,7 @@ module.exports.loadConfig = function (callback) {
         await loader.loadAndValidate([
           makeProductionConfigSource(),
           makeImdsConfigSource(),
-          makeSecretsManagerConfigSource(),
+          makeSecretsManagerConfigSource('ConfSecret'),
           makeAutoScalingGroupConfigSource(),
         ]);
       },
@@ -94,6 +106,7 @@ module.exports.loadConfig = function (callback) {
         if (module.exports.config.useCloudWatchLogging) {
           const groupName = module.exports.config.globalLogGroup;
           const streamName = module.exports.config.instanceId;
+          // @ts-expect-error -- Need to type this better in the future.
           logger.initCloudWatchLogging(groupName, streamName);
           logger.info(`CloudWatch logging enabled! Logging to ${groupName}/${streamName}`);
         }
