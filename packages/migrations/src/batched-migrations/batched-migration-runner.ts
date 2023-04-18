@@ -116,12 +116,26 @@ export class BatchedMigrationRunner {
     this.log(`Started job ${job.id} for range ${jobRange} in ${migrationRange}`);
   }
 
+  private serializeJobData(data: unknown) {
+    if (data == null) return null;
+
+    // Return JSON-stringified data. Convert BigInts to strings.
+    return JSON.stringify(data, (_key, value) => {
+      if (typeof value === 'bigint') return value.toString();
+      return value;
+    });
+  }
+
   private async finishJob(
     job: BatchedMigrationJobRow,
     status: Extract<BatchedMigrationJobStatus, 'failed' | 'succeeded'>,
     data?: unknown
   ) {
-    await queryAsync(sql.finish_batched_migration_job, { id: job.id, status, data: data ?? null });
+    await queryAsync(sql.finish_batched_migration_job, {
+      id: job.id,
+      status,
+      data: this.serializeJobData(data),
+    });
     this.log(`Job ${job.id} finished with status '${status}'`);
   }
 

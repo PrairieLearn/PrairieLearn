@@ -78,7 +78,9 @@ describe('BatchedMigrationsRunner', () => {
     });
 
     await runner.enqueueBatchedMigration('20230406184103_successful_migration');
-    await runner.finalizeBatchedMigration('20230406184103_successful_migration');
+    await runner.finalizeBatchedMigration('20230406184103_successful_migration', {
+      logProgress: false,
+    });
 
     const migrations = await selectAllBatchedMigrations('test');
     assert.lengthOf(migrations, 1);
@@ -95,7 +97,9 @@ describe('BatchedMigrationsRunner', () => {
     await runner.enqueueBatchedMigration('20230406184107_failing_migration');
 
     await assert.isRejected(
-      runner.finalizeBatchedMigration('20230406184107_failing_migration'),
+      runner.finalizeBatchedMigration('20230406184107_failing_migration', {
+        logProgress: false,
+      }),
       "but it is 'failed'"
     );
 

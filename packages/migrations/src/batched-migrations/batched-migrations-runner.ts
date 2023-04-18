@@ -35,6 +35,10 @@ interface BatchedMigrationStartOptions {
   sleepDurationMs?: number;
 }
 
+interface BatchedMigrationFinalizeOptions {
+  logProgress?: boolean;
+}
+
 export class BatchedMigrationsRunner extends EventEmitter {
   private readonly options: BatchedMigrationRunnerOptions;
   private readonly lockName: string;
@@ -115,7 +119,7 @@ export class BatchedMigrationsRunner extends EventEmitter {
     });
   }
 
-  async finalizeBatchedMigration(identifier: string) {
+  async finalizeBatchedMigration(identifier: string, options?: BatchedMigrationFinalizeOptions) {
     const timestamp = identifier.split('_')[0];
 
     let migration = await selectBatchedMigrationForTimestamp(this.options.project, timestamp);
@@ -135,7 +139,8 @@ export class BatchedMigrationsRunner extends EventEmitter {
       const migrationImplementation = await this.loadMigrationImplementation(migrationFile);
 
       const runner = new BatchedMigrationRunner(migration, migrationImplementation, {
-        logProgress: true,
+        // Always log progress unless explicitly disabled.
+        logProgress: options?.logProgress ?? true,
       });
 
       // Because we don't give any arguments to `run()`, it will run until it
@@ -311,8 +316,12 @@ export async function enqueueBatchedMigration(identifier: string) {
  * status of the migration is not `succeeded`.
  *
  * @param identifier The identifier of the batched migration to finalize.
+ * @param options Options for finalizing the batched migration.
  */
-export async function finalizeBatchedMigration(identifier: string) {
+export async function finalizeBatchedMigration(
+  identifier: string,
+  options?: BatchedMigrationFinalizeOptions
+) {
   assertRunner(runner);
-  await runner.finalizeBatchedMigration(identifier);
+  await runner.finalizeBatchedMigration(identifier, options);
 }

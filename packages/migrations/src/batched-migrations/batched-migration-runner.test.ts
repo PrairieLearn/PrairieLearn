@@ -6,6 +6,7 @@ import {
   queryValidatedRows,
 } from '@prairielearn/postgres';
 import * as namedLocks from '@prairielearn/named-locks';
+import * as error from '@prairielearn/error';
 
 import {
   BatchedMigrationRowSchema,
@@ -37,7 +38,10 @@ function makeTestBatchMigration() {
       executionCount += 1;
       const shouldFail = failingIds.some((id) => id >= start && id <= end);
       if (shouldFail) {
-        throw new Error('Execution failure');
+        // Throw an error with some data to make sure it gets persisted. We
+        // specifically use BigInt values here to make sure that they are
+        // correctly serialized to strings.
+        throw error.makeWithData('Execution failure', { start, end });
       }
     },
     setFailingIds(ids: bigint[]) {
@@ -166,9 +170,11 @@ describe('BatchedMigrationExecutor', () => {
       const jobData = job.data as any;
       assert.isObject(jobData);
       assert.isObject(jobData.error);
-      assert.hasAllKeys(jobData.error, ['name', 'message', 'stack']);
+      assert.hasAllKeys(jobData.error, ['name', 'message', 'stack', 'data']);
       assert.equal(jobData.error.name, 'Error');
       assert.equal(jobData.error.message, 'Execution failure');
+      assert.equal(jobData.error.data.start, job.min_value.toString());
+      assert.equal(jobData.error.data.end, job.max_value.toString());
     });
 
     const failedMigration = await getBatchedMigration(migration.id);
