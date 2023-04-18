@@ -76,6 +76,7 @@ function resetInstructorGradingPanel() {
         element.style.display = use_percentage ? '' : 'none';
       });
       window.localStorage.manual_grading_score_use = use_percentage ? 'percentage' : 'points';
+      updatePointsView();
     });
     toggle.checked = window.localStorage.manual_grading_score_use === 'percentage';
     toggle.dispatchEvent(new Event('change'));
