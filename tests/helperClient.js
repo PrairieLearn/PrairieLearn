@@ -79,9 +79,9 @@ module.exports.extractAndSaveVariantId = (context, $, parentSelector = '') => {
 
 /**
  * @typedef {Object} User
- * @property {string} authUid
- * @property {string} authName
- * @property {string} authUin
+ * @property {string | null} authUid
+ * @property {string | null} authName
+ * @property {string | null} authUin
  */
 
 /**

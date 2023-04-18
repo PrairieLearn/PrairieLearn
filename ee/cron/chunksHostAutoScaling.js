@@ -15,7 +15,8 @@ module.exports.run = callbackify(async () => {
   if (
     !config.runningInEc2 ||
     !config.chunksLoadBalancerDimensionName ||
-    !config.chunksTargetGroupDimensionName
+    !config.chunksTargetGroupDimensionName ||
+    !config.chunksAutoScalingGroupName
   ) {
     return;
   }

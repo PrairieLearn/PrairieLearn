@@ -45,6 +45,9 @@ function areContainerLogsEnabled() {
  * @returns {Promise<string | null>}
  */
 async function loadLogsForWorkspaceVersion(workspaceId, version) {
+  // Safety check for TypeScript.
+  if (!config.workspaceLogsS3Bucket) return null;
+
   // Get the current workspace version.
   const workspaceRes = await sqldb.queryOneRowAsync(sql.select_workspace, {
     workspace_id: workspaceId,

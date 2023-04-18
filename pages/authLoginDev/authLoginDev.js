@@ -10,7 +10,7 @@ var router = Router();
 router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
-    if (!config.devMode) {
+    if (!config.devMode || !config.authUid) {
       throw new Error('devMode login is not enabled');
     }
 

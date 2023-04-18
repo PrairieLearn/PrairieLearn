@@ -396,7 +396,8 @@ function logProgressOutput(output, job, printedInfos, prefix) {
 function pullAndPushToECR(image, dockerAuth, job, callback) {
   debug(`pullAndPushtoECR for ${image}`);
 
-  if (!config.cacheImageRegistry) {
+  const { cacheImageRegistry } = config;
+  if (!cacheImageRegistry) {
     return callback(new Error('cacheImageRegistry not defined'));
   }
 
@@ -426,7 +427,7 @@ function pullAndPushToECR(image, dockerAuth, job, callback) {
           job.info('Successfully located downloaded image');
 
           // Tag the image to add the new registry
-          repository.setRegistry(config.cacheImageRegistry);
+          repository.setRegistry(cacheImageRegistry);
 
           var options = {
             repo: repository.getCombined(),

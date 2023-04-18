@@ -84,6 +84,8 @@ module.exports = asyncHandler(async (req, res, next) => {
       uin = '100000000';
     }
 
+    if (!uid) throw new Error('Missing uid');
+
     let authnParams = {
       uid,
       uin,

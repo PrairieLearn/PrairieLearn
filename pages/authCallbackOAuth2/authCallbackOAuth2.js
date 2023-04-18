@@ -14,7 +14,14 @@ const router = express.Router();
 router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
-    if (!config.hasOauth) throw new Error('Google login is not enabled');
+    if (
+      !config.hasOauth ||
+      !config.googleClientId ||
+      !config.googleClientSecret ||
+      !config.googleRedirectUrl
+    ) {
+      throw new Error('Google login is not enabled');
+    }
 
     const code = req.query.code;
     if (code == null) {
