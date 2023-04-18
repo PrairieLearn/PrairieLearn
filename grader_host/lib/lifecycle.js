@@ -2,7 +2,7 @@ const assert = require('assert');
 const AWS = require('aws-sdk');
 
 const logger = require('./logger');
-const config = require('./config').config;
+const { config } = require('./config');
 
 /**
  * Stores our current state. We do one-way transitions:

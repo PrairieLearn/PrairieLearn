@@ -1,7 +1,7 @@
 const AWS = require('aws-sdk');
 const { callbackify } = require('util');
 
-const config = require('../../lib/config');
+const { config, getDBConfigValue } = require('../../lib/config');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -136,17 +136,17 @@ async function sendStatsToCloudwatch(stats) {
 }
 
 async function handleWorkspaceAutoscaling(stats) {
-  if ((await config.getDBConfigValueAsync('workspaceAutoscalingEnabled', 'true')) !== 'true') {
+  if ((await getDBConfigValue('workspaceAutoscalingEnabled', 'true')) !== 'true') {
     return;
   }
 
-  let desired_hosts = await config.getDBConfigValueAsync('workspaceDesiredHostCount', null);
+  let desired_hosts = await getDBConfigValue('workspaceDesiredHostCount', null);
   if (desired_hosts !== null) {
     desired_hosts = parseInt(desired_hosts);
   } else {
     desired_hosts = stats.workspace_hosts_desired;
   }
-  let launch_template_id = await config.getDBConfigValueAsync('workspaceLaunchTemplateId', null);
+  let launch_template_id = await getDBConfigValue('workspaceLaunchTemplateId', null);
   if (!launch_template_id) {
     launch_template_id = config.workspaceLoadLaunchTemplateId;
   }

@@ -1,7 +1,7 @@
 // @ts-check
 const asyncHandler = require('express-async-handler');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const csrf = require('../lib/csrf');
 const sqldb = require('@prairielearn/postgres');
 const authnLib = require('../lib/authn');
@@ -83,6 +83,8 @@ module.exports = asyncHandler(async (req, res, next) => {
       name = 'Instructor User';
       uin = '100000000';
     }
+
+    if (!uid) throw new Error('Missing uid');
 
     let authnParams = {
       uid,

@@ -1,6 +1,6 @@
 const util = require('util');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const { logger } = require('@prairielearn/logger');
 const workspaceUtils = require('@prairielearn/workspace-utils');
 const sqldb = require('@prairielearn/postgres');

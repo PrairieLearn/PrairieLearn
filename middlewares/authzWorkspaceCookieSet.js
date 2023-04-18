@@ -1,5 +1,5 @@
 const csrf = require('../lib/csrf');
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 
 module.exports = (req, res, next) => {
   // We should only have arrived here if we passed authn/authz and

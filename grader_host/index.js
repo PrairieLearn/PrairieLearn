@@ -15,8 +15,7 @@ const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 
 const globalLogger = require('./lib/logger');
 const jobLogger = require('./lib/jobLogger');
-const configManager = require('./lib/config');
-const config = require('./lib/config').config;
+const { config, loadConfig } = require('./lib/config');
 const healthCheck = require('./lib/healthCheck');
 const lifecycle = require('./lib/lifecycle');
 const pullImages = require('./lib/pullImages');
@@ -38,7 +37,7 @@ process.on('SIGTERM', () => {
 async.series(
   [
     (callback) => {
-      configManager.loadConfig((err) => {
+      loadConfig((err) => {
         if (ERR(err, callback)) return;
         globalLogger.info('Config loaded:');
         globalLogger.info(JSON.stringify(config, null, 2));

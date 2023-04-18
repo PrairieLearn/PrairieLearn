@@ -2,7 +2,7 @@
 const _ = require('lodash');
 const sqldb = require('@prairielearn/postgres');
 
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 const perf = require('../performance')('assessments');
 const infofile = require('../infofile');
 

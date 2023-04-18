@@ -5,7 +5,7 @@ const router = express.Router();
 const opsbot = require('../../lib/opsbot');
 const github = require('../../lib/github');
 const { logger } = require('@prairielearn/logger');
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 const path = require('path');
 
 const sqldb = require('@prairielearn/postgres');

@@ -4,7 +4,7 @@ const router = express.Router({ mergeParams: true });
 const _ = require('lodash');
 
 const chunks = require('../../lib/chunks');
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 const ERR = require('async-stacktrace');
 
 /**

@@ -1,7 +1,7 @@
 const ERR = require('async-stacktrace');
 const sqldb = require('@prairielearn/postgres');
 
-const config = require('./config').config;
+const { config } = require('./config');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 function reportTime(sqlBlockName) {

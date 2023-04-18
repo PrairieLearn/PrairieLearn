@@ -7,14 +7,21 @@ const { OAuth2Client } = require('google-auth-library');
 const { logger } = require('@prairielearn/logger');
 
 const authnLib = require('../../lib/authn');
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 
 const router = express.Router();
 
 router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
-    if (!config.hasOauth) throw new Error('Google login is not enabled');
+    if (
+      !config.hasOauth ||
+      !config.googleClientId ||
+      !config.googleClientSecret ||
+      !config.googleRedirectUrl
+    ) {
+      throw new Error('Google login is not enabled');
+    }
 
     const code = req.query.code;
     if (code == null) {
