@@ -48,6 +48,7 @@ const ConfigSchema = z.object({
   sentryDsn: z.string().nullable().default(null),
   sentryEnvironment: z.string().nullable().default(null),
   awsConfig: z.any().default(null),
+  region: z.string().default('us-east-2'),
 });
 
 function makeProductionConfigSource() {
@@ -100,6 +101,8 @@ module.exports.loadConfig = function (callback) {
           makeSecretsManagerConfigSource('ConfSecret'),
           makeAutoScalingGroupConfigSource(),
         ]);
+
+        AWS.config.update({ region: loader.config.region });
       },
       (callback) => {
         // Initialize CloudWatch logging if it's enabled
