@@ -22,7 +22,7 @@
               <div class="form-check">
                 <label class="form-check-label">
                   <input class="form-check-input" name="starting_points" type="radio" value="0"
-                         <% if ((rubric?.starting_points ?? 0) == 0) { %>checked<% } %>
+                         <% if (!rubric?.starting_points) { %>checked<% } %>
                          aria-describedby="rubric-settings-<%= type %>-start-points-explanation">
                   Positive grading (start at zero, add points)
                 </label>
@@ -30,36 +30,12 @@
               <div class="form-check">
                 <label class="form-check-label">
                   <input class="form-check-input js-negative-grading" name="starting_points" type="radio" value="<%= max_points %>"
-                         <% if (rubric?.starting_points == max_points) { %>checked<% } %>
+                         <% if (rubric?.starting_points) { %>checked<% } %>
                          aria-describedby="rubric-settings-<%= type %>-start-points-explanation">
                   Negative grading (start at <%= max_points %> points, subtract penalties)
                 </label>
               </div>
-              <% } else { %>
-              <div class="form-check">
-                <label class="form-check-label">
-                  <input class="form-check-input js-negative-grading" name="starting_points" type="radio" value="0"
-                         <% if (!rubric?.starting_points) { %>checked<% } %>
-                         aria-describedby="rubric-settings-<%= type %>-start-points-explanation">
-                  Start at zero points
-                </label>
-              </div>
               <% } %>
-              <div class="form-check">
-                <label class="form-check-label">
-                  <input class="form-check-input" name="starting_points" type="radio" value="CUSTOM"
-                         <% if (![0, max_points].includes(rubric?.starting_points ?? 0)) { %>checked<% } %>
-                         aria-describedby="rubric-settings-<%= type %>-start-points-explanation">
-                  Custom starting points
-                </label>
-              </div>
-              <div class="js-starting-points-custom">
-                <label><span class="sr-only">Starting points</span>
-                  <input class="form-control" name="starting_points_custom" type="number"
-                         value="<%= rubric?.starting_points ?? max_points %>"
-                         aria-describedby="rubric-settings-<%= type %>-start-points-explanation">
-                </label>
-              </div>
             </div>
             <div class="form-group col-3">
               <label>
@@ -80,9 +56,11 @@
           </div>
           <div class="row">
             <div class="col-6">
+              <% if (max_points) { %>
               <small id="rubric-settings-<%= type %>-start-points-explanation" class="form-text text-muted">
                 The setting above only affects starting points. Rubric items may always be added with positive or negative points.
               </small>
+              <% } %>
             </div>
             <div class="col-6">
               <small id="rubric-settings-<%= type %>-floor-ceiling-explanation" class="form-text text-muted">
@@ -90,9 +68,8 @@
               </small>
             </div>
           </div>
-          <hr/>
           <div>
-            <table class="table table-sm table-striped js-rubric-items-table">
+            <table class="table table-sm table-striped js-rubric-items-table mt-2">
               <thead>
                 <tr>
                   <th style="width: 1px"><!-- Order --></th>

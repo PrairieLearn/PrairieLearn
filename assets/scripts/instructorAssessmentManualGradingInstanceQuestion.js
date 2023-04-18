@@ -152,20 +152,6 @@ function resetInstructorGradingPanel() {
   );
 
   document
-    .querySelectorAll('.js-rubric-settings-modal input[name="starting_points"]')
-    .forEach((input) => {
-      input.addEventListener('change', function () {
-        // Custom starting points are only visible if starting point is set to custom.
-        const modal = this.closest('.js-rubric-settings-modal');
-        modal.querySelector('.js-starting-points-custom').style.display =
-          modal.querySelector('input[name="starting_points"]:checked').value === 'CUSTOM'
-            ? ''
-            : 'none';
-      });
-      input.dispatchEvent(new Event('change'));
-    });
-
-  document
     .querySelectorAll('.js-add-rubric-item-button')
     .forEach((button) => button.addEventListener('click', addRubricItemRow));
 
