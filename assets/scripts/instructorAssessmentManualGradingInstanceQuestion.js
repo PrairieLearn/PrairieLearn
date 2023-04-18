@@ -194,6 +194,9 @@ function resetInstructorGradingPanel() {
       // different URL), so save the old value to be used in future requests.
       const oldCsrfToken = gradingForm.querySelector('[name=__csrf_token]').value;
 
+      // Clear old alerts
+      form.querySelector('.js-settings-error-alert-placeholder').innerHTML = '';
+
       fetch(this.action, {
         method: 'POST',
         body: new URLSearchParams(new FormData(this)),
