@@ -3336,6 +3336,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/klaw@npm:^3.0.3":
+  version: 3.0.3
+  resolution: "@types/klaw@npm:3.0.3"
+  dependencies:
+    "@types/node": "*"
+  checksum: 6d321b6a3b56eb25e08b6670f16486afa9128b759f6a3866f987fb6908f851057e9b53a29068daa9ff3828e13f7dda32fc5c1b7ef990b958c50ab88b04877f22
+  languageName: node
+  linkType: hard
+
 "@types/linkify-it@npm:*":
   version: 3.0.2
   resolution: "@types/linkify-it@npm:3.0.2"
@@ -3822,6 +3831,7 @@ __metadata:
     "@types/dockerode": ^3.3.16
     "@types/folder-hash": ^4.0.2
     "@types/fs-extra": ^11.0.1
+    "@types/klaw": ^3.0.3
     "@types/lodash": ^4.14.192
     "@types/loopbench": ^1.2.1
     "@types/memorystream": ^0.3.1

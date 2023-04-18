@@ -181,7 +181,10 @@ module.exports.pullAndUpdate = function (locals, callback) {
           locals.course.id,
           job,
           function (err, result) {
-            if (err) {
+            // `!result` is included to make TypeScript happy. In practice, it will
+            // always be truthy if `err` is falsy. This will be resolved by switching
+            // to async/await in the future.
+            if (err || !result) {
               job.fail(err);
               return;
             }
@@ -326,11 +329,11 @@ module.exports.gitStatus = function (locals, callback) {
 
 function locateImage(image, callback) {
   debug('locateImage');
-  docker.listImages(function (err, list) {
+  docker.listImages(function (err, list = []) {
     if (ERR(err, callback)) return;
     debug(`locateImage: list=${list}`);
     for (var i = 0, len = list.length; i < len; i++) {
-      if (list[i].RepoTags && list[i].RepoTags.indexOf(image) !== -1) {
+      if (list[i].RepoTags && list[i].RepoTags?.indexOf(image) !== -1) {
         return callback(null, docker.getImage(list[i].Id));
       }
     }
@@ -405,6 +408,7 @@ function pullAndPushToECR(image, dockerAuth, job, callback) {
   job.info(`Pulling ${repository.getCombined()}`);
   docker.createImage({}, params, (err, stream) => {
     if (ERR(err, callback)) return;
+    if (!stream) throw new Error('Missing stream from createImage()');
 
     const printedInfos = new Set();
     docker.modem.followProgress(
@@ -450,6 +454,7 @@ function pullAndPushToECR(image, dockerAuth, job, callback) {
                 },
                 (err, stream) => {
                   if (ERR(err, callback)) return;
+                  if (!stream) throw new Error('Missing stream from push()');
 
                   const printedInfos = new Set();
                   docker.modem.followProgress(

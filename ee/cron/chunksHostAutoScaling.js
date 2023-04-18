@@ -91,19 +91,19 @@ module.exports.run = callbackify(async () => {
     })
     .promise();
 
-  const pageViewsPerSecondMetric = metrics.MetricDataResults.find(
+  const pageViewsPerSecondMetric = metrics.MetricDataResults?.find(
     (m) => m.Id === PAGE_VIEWS_PER_SECOND
   );
-  const activeWorkersPerSecondMetric = metrics.MetricDataResults.find(
+  const activeWorkersPerSecondMetric = metrics.MetricDataResults?.find(
     (m) => m.Id === ACTIVE_WORKERS_PER_SECOND
   );
-  const loadBalancerRequestsPerMinuteMetric = metrics.MetricDataResults.find(
+  const loadBalancerRequestsPerMinuteMetric = metrics.MetricDataResults?.find(
     (m) => m.Id === LOAD_BALANCER_REQUESTS_PER_MINUTE
   );
 
-  const maxPageViewsPerSecond = _.max(pageViewsPerSecondMetric.Values) ?? 0;
-  const maxActiveWorkersPerSecond = _.max(activeWorkersPerSecondMetric.Values) ?? 0;
-  const maxLoadBalancerRequestsPerMinute = _.max(loadBalancerRequestsPerMinuteMetric.Values) ?? 0;
+  const maxPageViewsPerSecond = _.max(pageViewsPerSecondMetric?.Values) ?? 0;
+  const maxActiveWorkersPerSecond = _.max(activeWorkersPerSecondMetric?.Values) ?? 0;
+  const maxLoadBalancerRequestsPerMinute = _.max(loadBalancerRequestsPerMinuteMetric?.Values) ?? 0;
 
   const desiredInstancesByPageViews = maxPageViewsPerSecond / config.chunksPageViewsCapacityFactor;
   const desiredInstancesByActiveWorkers =

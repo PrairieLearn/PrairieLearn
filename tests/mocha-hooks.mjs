@@ -26,6 +26,7 @@ export const mochaHooks = {
       // @ts-expect-error - The `TransportStream` type does not include `name`.
       (transport) => transport.name === 'console'
     );
+    if (!consoleTransport) throw new Error('Could not find console transport');
     consoleTransport.level = 'warn';
 
     const config = (await import('../lib/config.js')).default;

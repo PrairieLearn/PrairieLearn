@@ -116,7 +116,7 @@ router.post('/', function (req, res, next) {
     });
   } else if (req.body.__action === 'change_id') {
     debug(`Change tid from ${res.locals.assessment.tid} to ${req.body.id}`);
-    if (!req.body.id) return next(new Error(`Invalid TID (was falsey): ${req.body.id}`));
+    if (!req.body.id) return next(new Error(`Invalid TID (was falsy): ${req.body.id}`));
     if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
       return next(
         new Error(

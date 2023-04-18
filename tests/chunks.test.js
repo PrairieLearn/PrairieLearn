@@ -14,26 +14,28 @@ const sql = sqldb.loadSqlEquiv(__filename);
 
 const helperServer = require('./helperServer');
 const { syncDiskToSqlAsync } = require('../sync/syncFromDisk');
+const { makeInfoFile } = require('../sync/infofile');
 
+/** @type {import('../sync/course-db').CourseData} */
 const COURSE = {
-  course: {},
+  course: makeInfoFile(),
   questions: {
-    'simple-question': {},
-    'complex/question': {},
+    'simple-question': makeInfoFile(),
+    'complex/question': makeInfoFile(),
   },
   courseInstances: {
     'simple-course-instance': {
-      courseInstance: {},
+      courseInstance: makeInfoFile(),
       assessments: {
-        'simple-assessment': {},
-        'complex/assessment': {},
+        'simple-assessment': makeInfoFile(),
+        'complex/assessment': makeInfoFile(),
       },
     },
     'complex/course/instance': {
-      courseInstance: {},
+      courseInstance: makeInfoFile(),
       assessments: {
-        'simple-assessment': {},
-        'complex/assessment': {},
+        'simple-assessment': makeInfoFile(),
+        'complex/assessment': makeInfoFile(),
       },
     },
   },
@@ -321,7 +323,10 @@ describe('chunks', () => {
       // ensures that it's written correctly.
 
       const courseDir = tempTestCourseDir.path;
-      const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({ id: courseId, path: null });
+      const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({
+        id: courseId,
+        path: courseDir,
+      });
 
       // Generate chunks for the test course.
       await chunksLib.updateChunksForCourse({
@@ -367,7 +372,10 @@ describe('chunks', () => {
 
     it('deletes chunks that are no longer needed', async () => {
       const courseDir = tempTestCourseDir.path;
-      const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({ id: courseId, path: null });
+      const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({
+        id: courseId,
+        path: courseDir,
+      });
 
       /** @type {import('../lib/chunks').Chunk[]} */
       const chunksToLoad = [

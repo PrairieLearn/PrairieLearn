@@ -19,6 +19,13 @@ async function getUserParams(user_id) {
   return { uid, name, uin, institution_id };
 }
 
+/**
+ *
+ * @param {{ uid: string, name: string, uin?: string | null }} user
+ * @param {string | null} authn_provider_name
+ * @param {string | null} institution_id
+ * @returns
+ */
 async function usersSelectOrInsert(user, authn_provider_name = null, institution_id = null) {
   return sqldb.callAsync('users_select_or_insert', [
     user.uid,

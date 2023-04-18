@@ -16,7 +16,7 @@ var sqldb = require('@prairielearn/postgres');
  *
  * @see assessment.gradeAssessmentInstance
  *
- * @param {(err?: Error) => void} callback
+ * @param {(err?: Error | null) => void} callback
  */
 module.exports.run = function (callback) {
   var params = [config.autoFinishAgeMins];
