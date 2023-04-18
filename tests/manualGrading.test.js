@@ -256,18 +256,10 @@ const checkSettingsResults = (starting_points, min_points, max_points) => {
     const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
     const form = $manualGradingIQPage('form[name=rubric-settings-manual]');
 
-    if (starting_points === 0 || starting_points === 6) {
-      assert.equal(
-        form.find(`input[name="starting_points"][value="${starting_points}"]`).is(':checked'),
-        true
-      );
-    } else {
-      assert.equal(form.find(`input[name="starting_points"][value="CUSTOM"]`).is(':checked'), true);
-      assert.equal(
-        form.find(`input[name="starting_points_custom"]`).val(),
-        starting_points.toString()
-      );
-    }
+    assert.equal(
+      form.find(`input[name="starting_points"][value="${starting_points}"]`).is(':checked'),
+      true
+    );
     assert.equal(form.find('input[name="max_points"]').val(), max_points.toString());
     assert.equal(form.find('input[name="min_points"]').val(), min_points.toString());
 
@@ -722,7 +714,6 @@ describe('Manual Grading', function () {
               modified_at: form.find('input[name=modified_at]').val(),
               use_rubrics: 'true',
               starting_points: '0', // Positive grading
-              starting_points_custom: '4', // Custom starting points, should be ignored
               min_points: '-0.3',
               max_points: '6.3',
               ...buildRubricItemFields(rubric_items),
@@ -766,7 +757,6 @@ describe('Manual Grading', function () {
               modified_at: form.find('input[name=modified_at]').val(),
               use_rubrics: 'true',
               starting_points: '0', // Positive grading
-              starting_points_custom: '4', // Custom starting points, should be ignored
               min_points: '-0.3',
               max_points: '6.3',
               ...buildRubricItemFields(rubric_items),
@@ -798,10 +788,22 @@ describe('Manual Grading', function () {
         step('submit a grade that reaches the ceiling', async () => {
           setUser(mockStaff[3]);
           applied_rubrics = [0, 1];
-          adjust_points = -1;
+          adjust_points = null;
           score_points = 6.3;
           score_percent = 105;
           feedback_note = 'Test feedback note updated over ceiling';
+          await submitGradeForm();
+        });
+
+        checkGradingResults(mockStaff[0], mockStaff[3]);
+
+        step('submit a grade that reaches the ceiling with adjust points', async () => {
+          setUser(mockStaff[3]);
+          applied_rubrics = [0, 1];
+          adjust_points = 1.2;
+          score_points = 7.5;
+          score_percent = 125;
+          feedback_note = 'Test feedback note updated over ceiling and adjustment';
           await submitGradeForm();
         });
 
@@ -812,8 +814,8 @@ describe('Manual Grading', function () {
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
           const form = $manualGradingIQPage('form[name=rubric-settings-manual]');
-          score_points = 5.7;
-          score_percent = 95;
+          score_points = 6.9;
+          score_percent = 115;
 
           const response = await fetch(manualGradingIQUrl, {
             method: 'POST',
@@ -825,7 +827,6 @@ describe('Manual Grading', function () {
               modified_at: form.find('input[name=modified_at]').val(),
               use_rubrics: 'true',
               starting_points: '0', // Positive grading
-              starting_points_custom: '4', // Custom starting points, should be ignored
               min_points: '-0.3',
               max_points: '5.7',
               ...buildRubricItemFields(rubric_items),
@@ -899,8 +900,7 @@ describe('Manual Grading', function () {
               rubric_type: form.find('input[name=rubric_type]').val(),
               modified_at: form.find('input[name=modified_at]').val(),
               use_rubrics: 'true',
-              starting_points: '6', // Positive grading
-              starting_points_custom: '4', // Custom starting points, should be ignored
+              starting_points: '6', // Negative grading
               min_points: '-0.6',
               max_points: '6.6',
               ...buildRubricItemFields(rubric_items),
@@ -919,80 +919,6 @@ describe('Manual Grading', function () {
           score_points = 3.6;
           score_percent = 60;
           feedback_note = 'Test feedback note updated after negative rubrics';
-          await submitGradeForm();
-        });
-
-        checkGradingResults(mockStaff[0], mockStaff[0]);
-      });
-
-      describe('Grading with custom starting points', () => {
-        step('set rubric settings should succeed', async () => {
-          setUser(mockStaff[0]);
-          const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
-          const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-          const form = $manualGradingIQPage('form[name=rubric-settings-manual]');
-          rubric_items = [
-            { points: 0, description: 'First rubric item' },
-            {
-              points: 1.5,
-              description: 'Second rubric item (partial, with `markdown`)',
-              explanation: 'Explanation with **markdown**',
-              grader_note: 'Instructions with *markdown*',
-              description_render: 'Second rubric item (partial, with <code>markdown</code>)',
-              explanation_render: '<p>Explanation with <strong>markdown</strong></p>',
-              grader_note_render: '<p>Instructions with <em>markdown</em></p>',
-            },
-            {
-              points: -1,
-              description: 'Third rubric item (partial, with moustache: {{params.value1}})',
-              explanation: 'Explanation with moustache: {{params.value2}}',
-              grader_note:
-                'Instructions with *markdown* and moustache: {{params.value3}}\n\nAnd more than one line',
-              description_render: 'Third rubric item (partial, with moustache: 37)',
-              explanation_render: '<p>Explanation with moustache: 43</p>',
-              grader_note_render:
-                '<p>Instructions with <em>markdown</em> and moustache: 49</p>\n<p>And more than one line</p>',
-            },
-            {
-              points: 1.6,
-              description:
-                'Positive rubric item in negative grading (positive points, floating point)',
-            },
-            {
-              points: 6,
-              description: 'Rubric item with positive reaching maximum',
-            },
-          ];
-
-          const response = await fetch(manualGradingIQUrl, {
-            method: 'POST',
-            headers: { 'Content-type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-              __action: form.find('input[name=__action]').val(),
-              __csrf_token: form.find('input[name=__csrf_token]').val(),
-              rubric_type: form.find('input[name=rubric_type]').val(),
-              modified_at: form.find('input[name=modified_at]').val(),
-              use_rubrics: 'true',
-              starting_points: 'CUSTOM',
-              starting_points_custom: '4',
-              min_points: '-3',
-              max_points: '9',
-              ...buildRubricItemFields(rubric_items),
-            }).toString(),
-          });
-
-          assert.equal(response.ok, true);
-        });
-
-        checkSettingsResults(4, -3, 9);
-
-        step('submit a grade', async () => {
-          setUser(mockStaff[0]);
-          applied_rubrics = [1, 2];
-          adjust_points = null;
-          score_points = 4.5;
-          score_percent = 75;
-          feedback_note = 'Test feedback note updated after custom starting points';
           await submitGradeForm();
         });
 
@@ -1124,8 +1050,8 @@ describe('Manual Grading', function () {
         setUser(mockStaff[1]);
         applied_rubrics = [1, 2, 4];
         adjust_points = null;
-        score_points = 9;
-        score_percent = 150;
+        score_points = 5;
+        score_percent = 83.33;
         feedback_note = 'Test feedback note for second submission';
         await submitGradeForm();
       });

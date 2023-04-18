@@ -195,9 +195,7 @@ router.post(
           res.locals.instance_question.assessment_question_id,
           req.body.rubric_type,
           req.body.use_rubrics === 'true',
-          req.body.starting_points === 'CUSTOM'
-            ? req.body.starting_points_custom
-            : req.body.starting_points,
+          req.body.starting_points,
           req.body.min_points,
           req.body.max_points,
           rubric_items,
