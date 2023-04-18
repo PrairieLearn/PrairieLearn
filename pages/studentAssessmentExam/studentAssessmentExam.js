@@ -50,18 +50,15 @@ router.get(
           res.locals.rolesInfo = groupInfo.rolesInfo;
 
           if (groupConfig.hasRoles) {
-            const result = await groupAssessmentHelper.getAssessmentLevelPermissions(
+            const result = await groupAssessmentHelper.getAssessmentPermissions(
               res.locals.assessment.id,
               res.locals.user.user_id
             );
             res.locals.canViewRoleTable = result.can_assign_roles_at_start;
           }
         }
-
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-      } else {
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
       }
+      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     } else {
       const result = await sqldb.queryAsync(sql.select_single_assessment_instance, params);
       if (result.rowCount === 0) {
@@ -94,7 +91,7 @@ router.get(
             res.locals.rolesInfo = groupInfo.rolesInfo;
 
             if (groupConfig.has_roles) {
-              const result = await groupAssessmentHelper.getAssessmentLevelPermissions(
+              const result = await groupAssessmentHelper.getAssessmentPermissions(
                 res.locals.assessment.id,
                 res.locals.user.user_id
               );

@@ -72,7 +72,7 @@ router.get(
           res.locals.rolesInfo = groupInfo.rolesInfo;
 
           if (groupConfig.has_roles) {
-            const result = await groupAssessmentHelper.getAssessmentLevelPermissions(
+            const result = await groupAssessmentHelper.getAssessmentPermissions(
               res.locals.assessment.id,
               res.locals.user.user_id
             );
