@@ -29,7 +29,7 @@ describe('Assessment modules syncing', () => {
       name: 'New Module',
       heading: 'This is a new module',
     };
-    courseData.course.assessmentModules.push(newAssessmentModule);
+    courseData.course.assessmentModules?.push(newAssessmentModule);
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessmentModules = await util.dumpTable('assessment_modules');
     const syncedAssessmentModule = syncedAssessmentModules.find(
@@ -44,9 +44,9 @@ describe('Assessment modules syncing', () => {
       name: 'New Module',
       heading: 'This is a new module',
     };
-    courseData.course.assessmentModules.push(newAssessmentModule);
+    courseData.course.assessmentModules?.push(newAssessmentModule);
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    courseData.course.assessmentModules.pop();
+    courseData.course.assessmentModules?.pop();
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     const syncedAssessmentModules = await util.dumpTable('assessment_modules');
     const syncedAssessmentModule = syncedAssessmentModules.find(
@@ -65,8 +65,8 @@ describe('Assessment modules syncing', () => {
       name: 'new assessment set',
       heading: 'new assessment module 2',
     };
-    courseData.course.assessmentModules.push(newAssessmentModule1);
-    courseData.course.assessmentModules.push(newAssessmentModule2);
+    courseData.course.assessmentModules?.push(newAssessmentModule1);
+    courseData.course.assessmentModules?.push(newAssessmentModule2);
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessmentModules = await util.dumpTable('assessment_modules');
     const syncedAssessmentModule = syncedAssessmentModules.find(
@@ -75,6 +75,6 @@ describe('Assessment modules syncing', () => {
     checkAssessmentModule(syncedAssessmentModule, newAssessmentModule2);
     const syncedCourses = await util.dumpTable('pl_courses');
     const syncedCourse = syncedCourses.find((c) => c.short_name === courseData.course.name);
-    assert.match(syncedCourse.sync_warnings, /Found duplicates in 'assessmentModules'/);
+    assert.match(syncedCourse?.sync_warnings, /Found duplicates in 'assessmentModules'/);
   });
 });

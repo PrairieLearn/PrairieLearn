@@ -276,7 +276,7 @@ module.exports = {
                 }
 
                 // resolve no matter what so that we run all jobs even if one fails
-                resolve();
+                resolve(null);
               });
               debug(`runJobs(): completed ${job.name}`);
             });

@@ -98,12 +98,12 @@ async function handleInput(line, codeCaller) {
   };
 }
 
-let questionTimeoutMilliseconds = Number.parseInt(process.env.QUESTION_TIMEOUT_MILLISECONDS);
+let questionTimeoutMilliseconds = Number.parseInt(process.env.QUESTION_TIMEOUT_MILLISECONDS ?? '');
 if (Number.isNaN(questionTimeoutMilliseconds)) {
   questionTimeoutMilliseconds = 10000;
 }
 
-let pingTimeoutMilliseconds = Number.parseInt(process.env.PING_TIMEOUT_MILLISECONDS);
+let pingTimeoutMilliseconds = Number.parseInt(process.env.PING_TIMEOUT_MILLISECONDS ?? '');
 if (Number.isNaN(pingTimeoutMilliseconds)) {
   pingTimeoutMilliseconds = 60_000;
 }

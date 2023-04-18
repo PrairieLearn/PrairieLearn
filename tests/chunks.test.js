@@ -323,7 +323,10 @@ describe('chunks', () => {
       // ensures that it's written correctly.
 
       const courseDir = tempTestCourseDir.path;
-      const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({ id: courseId, path: null });
+      const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({
+        id: courseId,
+        path: courseDir,
+      });
 
       // Generate chunks for the test course.
       await chunksLib.updateChunksForCourse({
@@ -369,7 +372,10 @@ describe('chunks', () => {
 
     it('deletes chunks that are no longer needed', async () => {
       const courseDir = tempTestCourseDir.path;
-      const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({ id: courseId, path: null });
+      const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({
+        id: courseId,
+        path: courseDir,
+      });
 
       /** @type {import('../lib/chunks').Chunk[]} */
       const chunksToLoad = [

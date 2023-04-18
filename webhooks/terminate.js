@@ -52,7 +52,7 @@ router.post('/', async (req, res) => {
     // `server.closeIdleConnections` in `server.js` instead of this.
     const socket = res.socket;
     res.on('close', () => {
-      socket.end(() => {
+      socket?.end(() => {
         socket.destroy();
         logger.info('Terminating server due to webhook request');
         process.kill(process.pid, 'SIGTERM');
