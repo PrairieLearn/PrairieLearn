@@ -1678,32 +1678,27 @@ describe('Test group role reassignments when user leaves', function () {
         {
           user_id: locals.studentUsers[0].user_id,
           group_role_id: locals.manager.id,
-          group_id: locals.groupId,
         },
         {
           user_id: locals.studentUsers[1].user_id,
           group_role_id: locals.recorder.id,
-          group_id: locals.groupId,
         },
       ];
 
       // Get role reassignments if second user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
         locals.groupInfo,
-        locals.studentUsers[1].user_id,
-        locals.groupId
+        locals.studentUsers[1].user_id
       );
       // Recorder role should be transferred to first user
       const expected = [
         {
           user_id: locals.studentUsers[0].user_id,
           group_role_id: locals.manager.id,
-          group_id: locals.groupId,
         },
         {
           user_id: locals.studentUsers[0].user_id,
           group_role_id: locals.recorder.id,
-          group_id: locals.groupId,
         },
       ];
       assert.sameDeepMembers(result, expected);
@@ -1720,27 +1715,23 @@ describe('Test group role reassignments when user leaves', function () {
         {
           user_id: locals.studentUsers[0].user_id,
           group_role_id: locals.manager.id,
-          group_id: locals.groupId,
         },
         {
           user_id: locals.studentUsers[1].user_id,
           group_role_id: locals.contributor.id,
-          group_id: locals.groupId,
         },
       ];
 
       // Get role reassignments if first user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
         locals.groupInfo,
-        locals.studentUsers[0].user_id,
-        locals.groupId
+        locals.studentUsers[0].user_id
       );
       // Manager role should replace first user's contributor role
       const expected = [
         {
           user_id: locals.studentUsers[1].user_id,
           group_role_id: locals.manager.id,
-          group_id: locals.groupId,
         },
       ];
       assert.sameDeepMembers(result, expected);
@@ -1757,30 +1748,25 @@ describe('Test group role reassignments when user leaves', function () {
         {
           user_id: locals.studentUsers[0].user_id,
           group_role_id: locals.manager.id,
-          group_id: locals.groupId,
         },
         {
           user_id: locals.studentUsers[0].user_id,
           group_role_id: locals.reflector.id,
-          group_id: locals.groupId,
         },
         {
           user_id: locals.studentUsers[1].user_id,
           group_role_id: locals.contributor.id,
-          group_id: locals.groupId,
         },
         {
           user_id: locals.studentUsers[2].user_id,
           group_role_id: locals.contributor.id,
-          group_id: locals.groupId,
         },
       ];
 
       // Get role reassignments if first user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
         locals.groupInfo,
-        locals.studentUsers[0].user_id,
-        locals.groupId
+        locals.studentUsers[0].user_id
       );
       // Case 1: Manager role should replace second user's contributor role, and
       // reflector role should replace third user's contributor role
@@ -1788,24 +1774,20 @@ describe('Test group role reassignments when user leaves', function () {
         {
           user_id: locals.studentUsers[1].user_id,
           group_role_id: locals.manager.id,
-          group_id: locals.groupId,
         },
         {
           user_id: locals.studentUsers[2].user_id,
           group_role_id: locals.reflector.id,
-          group_id: locals.groupId,
         },
       ];
       const expected2 = [
         {
           user_id: locals.studentUsers[2].user_id,
           group_role_id: locals.manager.id,
-          group_id: locals.groupId,
         },
         {
           user_id: locals.studentUsers[1].user_id,
           group_role_id: locals.reflector.id,
-          group_id: locals.groupId,
         },
       ];
 
@@ -1831,35 +1813,29 @@ describe('Test group role reassignments when user leaves', function () {
         {
           user_id: locals.studentUsers[0].user_id,
           group_role_id: locals.manager.id,
-          group_id: locals.groupId,
         },
         {
           user_id: locals.studentUsers[0].user_id,
           group_role_id: locals.recorder.id,
-          group_id: locals.groupId,
         },
         {
           user_id: locals.studentUsers[0].user_id,
           group_role_id: locals.reflector.id,
-          group_id: locals.groupId,
         },
         {
           user_id: locals.studentUsers[1].user_id,
           group_role_id: locals.contributor.id,
-          group_id: locals.groupId,
         },
         {
           user_id: locals.studentUsers[2].user_id,
           group_role_id: locals.contributor.id,
-          group_id: locals.groupId,
         },
       ];
 
       // Get role reassignments if first user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
         locals.groupInfo,
-        locals.studentUsers[0].user_id,
-        locals.groupId
+        locals.studentUsers[0].user_id
       );
 
       // Ensure that there is a single role assignment for manager, recorder, and reflector each
@@ -1892,27 +1868,23 @@ describe('Test group role reassignments when user leaves', function () {
       {
         user_id: locals.studentUsers[0].user_id,
         group_role_id: locals.manager.id,
-        group_id: locals.groupId,
       },
       {
         user_id: locals.studentUsers[1].user_id,
         group_role_id: locals.contributor.id,
-        group_id: locals.groupId,
       },
     ];
 
     // Get role reassignments if second user leaves
     const result = getGroupRoleReassignmentsAfterLeave(
       locals.groupInfo,
-      locals.studentUsers[1].user_id,
-      locals.groupId
+      locals.studentUsers[1].user_id
     );
     // Recorder role should be transferred to first user
     const expected = [
       {
         user_id: locals.studentUsers[0].user_id,
         group_role_id: locals.manager.id,
-        group_id: locals.groupId,
       },
     ];
     assert.sameDeepMembers(result, expected);
@@ -1926,22 +1898,19 @@ describe('Test group role reassignments when user leaves', function () {
       {
         user_id: locals.studentUsers[0].user_id,
         group_role_id: locals.manager.id,
-        group_id: locals.groupId,
       },
     ];
 
     // Get role reassignments if second user leaves
     const result = getGroupRoleReassignmentsAfterLeave(
       locals.groupInfo,
-      locals.studentUsers[1].user_id,
-      locals.groupId
+      locals.studentUsers[1].user_id
     );
     // Recorder role should be transferred to first user
     const expected = [
       {
         user_id: locals.studentUsers[0].user_id,
         group_role_id: locals.manager.id,
-        group_id: locals.groupId,
       },
     ];
     assert.sameDeepMembers(result, expected);

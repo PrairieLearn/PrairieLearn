@@ -114,19 +114,10 @@ SELECT
   gr.can_assign_roles_at_start,
   gr.can_assign_roles_during_assessment
 FROM
-  (
-    SELECT
-      *
-    FROM
-      group_roles
-    WHERE
-      assessment_id = (
-        SELECT
-          *
-        FROM
-          get_assessment_id
-      )
-  ) AS gr
+  get_assessment_id
+  JOIN group_roles AS gr ON (
+    gr.assessment_id = get_assessment_id.assessment_id
+  )
   LEFT JOIN (
     SELECT
       *
@@ -219,15 +210,22 @@ WITH
     DELETE FROM group_user_roles
     WHERE
       group_id = $group_id
+  ),
+  json_roles AS (
+    SELECT
+      (role_assignment ->> 'user_id')::bigint AS user_id,
+      (role_assignment ->> 'group_role_id')::bigint AS group_role_id
+    FROM
+      JSON_ARRAY_ELEMENTS($role_assignments::json) AS role_assignment
   )
 INSERT INTO
   group_user_roles (group_id, user_id, group_role_id)
 SELECT
-  (role_assignment ->> 'group_id')::bigint,
-  (role_assignment ->> 'user_id')::bigint,
-  (role_assignment ->> 'group_role_id')::bigint
+  $group_id AS group_id,
+  user_id,
+  group_role_id
 FROM
-  JSON_ARRAY_ELEMENTS($role_assignments::json) as role_assignment
+  json_roles
 ON CONFLICT (group_id, user_id, group_role_id) DO
 UPDATE
 SET
