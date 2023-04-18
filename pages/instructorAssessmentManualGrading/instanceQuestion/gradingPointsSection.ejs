@@ -41,8 +41,9 @@
              class="form-control js-grading-score-input js-<%= type %>-score-value-input-points"
              data-rubric-active="<%= !!rubric %>"
              data-rubric-starting-points="<%= rubric?.starting_points %>"
-             data-rubric-max-points="<%= rubric?.max_points %>"
+             data-rubric-max-extra-points="<%= rubric?.max_extra_points %>"
              data-rubric-min-points="<%= rubric?.min_points %>"
+             data-max-points="<%= max_points %>"
              name="score_<%= type %>_points"
              value="<%= Math.round(points * 100) / 100 %>"
       <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %> />

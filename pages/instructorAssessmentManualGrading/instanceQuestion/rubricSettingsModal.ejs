@@ -39,7 +39,7 @@
             </div>
             <div class="form-group col-3">
               <label>
-                Rubric floor
+                Minimum rubric score
                 <input class="form-control" name="min_points" type="number"
                        value="<%= rubric?.min_points ?? 0 %>"
                        aria-describedby="rubric-settings-<%= type %>-floor-ceiling-explanation">
@@ -47,9 +47,9 @@
             </div>
             <div class="form-group col-3">
               <label data-toggle="tooltip" title="">
-                Rubric ceiling
-                <input class="form-control" name="max_points" type="number"
-                       value="<%= rubric?.max_points ?? max_points %>"
+                Maximum extra credit
+                <input class="form-control" name="max_extra_points" type="number"
+                       value="<%= rubric?.max_extra_points ?? 0 %>"
                        aria-describedby="rubric-settings-<%= type %>-floor-ceiling-explanation">
               </label>
             </div>
@@ -64,7 +64,11 @@
             </div>
             <div class="col-6">
               <small id="rubric-settings-<%= type %>-floor-ceiling-explanation" class="form-text text-muted">
-                Minimum and maximum number of points to be assigned to a student from the rubric (out of <%= max_points %>). Points computed from the rubric will be bound to the limits above, even if the sum of additional points or penalties overrides them. This setting does not affect the <%= type %> points assigned to the question.
+                <% if (max_points) { %>
+                By default, points are limited to the range of 0 to <%= max_points %>, and credit/penalties applied by rubric items do not violate this range. The settings above allow rubrics to extend beyond this range, either for penalties that affect <%= type === 'manual' ? 'auto' : 'manual' %> points or the assessment as a whole, or for bonus credit.
+                <% } else { %>
+                The settings above determine the range of points assigned to a student from the rubric items. This question is not assigned any <%= type %> points, so these points affect the <%= type === 'manual' ? 'auto' : 'manual' %> points or the assessment as a whole.
+                <% } %>
               </small>
             </div>
           </div>

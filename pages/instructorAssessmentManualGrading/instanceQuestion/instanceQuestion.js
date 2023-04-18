@@ -197,7 +197,7 @@ router.post(
           req.body.use_rubrics === 'true',
           req.body.starting_points,
           req.body.min_points,
-          req.body.max_points,
+          req.body.max_extra_points,
           rubric_items,
           !!req.body.tag_for_manual_grading,
           res.locals.authn_user.user_id

@@ -345,14 +345,14 @@ function computePointsFromRubric() {
       manualInput.value =
         Math.min(
           Math.max(Math.round(itemsSum.manual * 100) / 100, manualInput.dataset.rubricMinPoints),
-          manualInput.dataset.rubricMaxPoints
+          manualInput.dataset.maxPoints + manualInput.dataset.rubricMaxExtraPoints
         ) + Number(form.querySelector('input[name="score_manual_adjust_points"]')?.value || 0);
     }
     if (autoInput?.dataset?.rubricActive === 'true') {
       autoInput.value =
         Math.min(
           Math.max(Math.round(itemsSum.auto * 100) / 100, autoInput.dataset.rubricMinPoints),
-          autoInput.dataset.rubricMaxPoints
+          autoInput.dataset.maxPoints + autoInput.dataset.rubricMaxExtraPoints
         ) + Number(form.querySelector('input[name="score_auto_adjust_points"]')?.value || 0);
     }
   });

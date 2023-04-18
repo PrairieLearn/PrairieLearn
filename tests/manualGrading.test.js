@@ -250,7 +250,7 @@ const checkGradingResults = (assigned_grader, grader) => {
   });
 };
 
-const checkSettingsResults = (starting_points, min_points, max_points) => {
+const checkSettingsResults = (starting_points, min_points, max_extra_points) => {
   step('rubric settings modal should update with new values', async () => {
     const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
     const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
@@ -260,7 +260,7 @@ const checkSettingsResults = (starting_points, min_points, max_points) => {
       form.find(`input[name="starting_points"][value="${starting_points}"]`).is(':checked'),
       true
     );
-    assert.equal(form.find('input[name="max_points"]').val(), max_points.toString());
+    assert.equal(form.find('input[name="max_extra_points"]').val(), max_extra_points.toString());
     assert.equal(form.find('input[name="min_points"]').val(), min_points.toString());
 
     const idFields = form.find(`input[name^="rubric_item"][name$="[id]"]`);
@@ -715,7 +715,7 @@ describe('Manual Grading', function () {
               use_rubrics: 'true',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
-              max_points: '6.3',
+              max_extra_points: '0.3',
               ...buildRubricItemFields(rubric_items),
             }).toString(),
           });
@@ -723,7 +723,7 @@ describe('Manual Grading', function () {
           assert.equal(response.ok, true);
         });
 
-        checkSettingsResults(0, -0.3, 6.3);
+        checkSettingsResults(0, -0.3, 0.3);
 
         step('submit a grade using a positive rubric', async () => {
           setUser(mockStaff[0]);
@@ -758,7 +758,7 @@ describe('Manual Grading', function () {
               use_rubrics: 'true',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
-              max_points: '6.3',
+              max_extra_points: '0.3',
               ...buildRubricItemFields(rubric_items),
             }).toString(),
           });
@@ -766,7 +766,7 @@ describe('Manual Grading', function () {
           assert.equal(response.ok, true);
         });
 
-        checkSettingsResults(0, -0.3, 6.3);
+        checkSettingsResults(0, -0.3, 0.3);
         checkGradingResults(mockStaff[0], mockStaff[0]);
       });
 
@@ -828,7 +828,7 @@ describe('Manual Grading', function () {
               use_rubrics: 'true',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
-              max_points: '5.7',
+              max_extra_points: '-0.3',
               ...buildRubricItemFields(rubric_items),
             }).toString(),
           });
@@ -836,7 +836,7 @@ describe('Manual Grading', function () {
           assert.equal(response.ok, true);
         });
 
-        checkSettingsResults(0, -0.3, 5.7);
+        checkSettingsResults(0, -0.3, -0.3);
         checkGradingResults(mockStaff[0], mockStaff[0]);
 
         step('submit a grade that reaches the floor', async () => {
@@ -902,7 +902,7 @@ describe('Manual Grading', function () {
               use_rubrics: 'true',
               starting_points: '6', // Negative grading
               min_points: '-0.6',
-              max_points: '6.6',
+              max_extra_points: '0.6',
               ...buildRubricItemFields(rubric_items),
             }).toString(),
           });
@@ -910,7 +910,7 @@ describe('Manual Grading', function () {
           assert.equal(response.ok, true);
         });
 
-        checkSettingsResults(6, -0.6, 6.6);
+        checkSettingsResults(6, -0.6, 0.6);
 
         step('submit a grade using a negative rubric', async () => {
           setUser(mockStaff[0]);

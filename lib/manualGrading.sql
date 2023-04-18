@@ -155,9 +155,9 @@ FOR NO KEY UPDATE;
 
 -- BLOCK insert_rubric
 INSERT INTO
-  rubrics (starting_points, min_points, max_points)
+  rubrics (starting_points, min_points, max_extra_points)
 VALUES
-  ($starting_points, $min_points, $max_points)
+  ($starting_points, $min_points, $max_extra_points)
 RETURNING
   id;
 
@@ -166,7 +166,7 @@ UPDATE rubrics
 SET
   starting_points = $starting_points,
   min_points = $min_points,
-  max_points = $max_points,
+  max_extra_points = $max_extra_points,
   modified_at = CURRENT_TIMESTAMP
 WHERE
   id = $rubric_id;
@@ -243,7 +243,7 @@ WITH
       iq.id AS instance_question_id,
       s.id AS submission_id,
       rg.starting_points != r.starting_points
-      OR rg.max_points != r.max_points
+      OR rg.max_extra_points != r.max_extra_points
       OR rg.min_points != r.min_points AS rubric_settings_changed
     FROM
       instance_questions AS iq
@@ -311,7 +311,7 @@ WITH
         computed_points,
         adjust_points,
         starting_points,
-        max_points,
+        max_extra_points,
         min_points
       )
     SELECT
@@ -319,7 +319,7 @@ WITH
       $computed_points,
       $adjust_points,
       r.starting_points,
-      r.max_points,
+      r.max_extra_points,
       r.min_points
     FROM
       rubrics r
