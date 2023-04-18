@@ -43,8 +43,8 @@ async function checkDBConsistency() {
       })
       .promise()
   ).Reservations;
-  for (const reservation of reservations) {
-    for (const instance of Object.values(reservation.Instances)) {
+  for (const reservation of reservations ?? []) {
+    for (const instance of Object.values(reservation.Instances ?? [])) {
       running_host_set.add(instance.InstanceId);
     }
   }
