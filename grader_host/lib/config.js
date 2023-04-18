@@ -70,10 +70,10 @@ function makeProductionConfigSource() {
 function makeAutoScalingGroupConfigSource() {
   return {
     async load(existingConfig) {
-      if (!existingConfig.runningInEc2 && !process.env.CONFIG_LOAD_FROM_AWS) return {};
+      if (!process.env.CONFIG_LOAD_FROM_AWS) return {};
 
       logger.info('Detecting AutoScalingGroup...');
-      var autoscaling = new AWS.AutoScaling();
+      var autoscaling = new AWS.AutoScaling({ region: existingConfig.region });
       var params = { InstanceIds: [existingConfig.instanceId] };
       const data = await autoscaling.describeAutoScalingInstances(params).promise();
       if (!data.AutoScalingInstances || data.AutoScalingInstances.length === 0) {
