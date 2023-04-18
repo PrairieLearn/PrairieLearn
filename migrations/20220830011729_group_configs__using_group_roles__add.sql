@@ -1,5 +1,5 @@
 ALTER TABLE group_configs
-ADD COLUMN has_roles boolean DEFAULT false;
+ADD COLUMN has_roles boolean NOT NULL DEFAULT false;
 
 ALTER TABLE group_users
 DROP COLUMN IF EXISTS group_role_id;
