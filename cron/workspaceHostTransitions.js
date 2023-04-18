@@ -5,7 +5,7 @@ const { callbackify } = require('util');
 const fetch = require('node-fetch').default;
 const { logger } = require('@prairielearn/logger');
 
-const { config } = require('../lib/config-new');
+const { config } = require('../lib/config');
 const workspaceHelper = require('../lib/workspace');
 
 const sqldb = require('@prairielearn/postgres');

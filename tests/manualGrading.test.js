@@ -5,7 +5,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const { step } = require('mocha-steps');
 
-const { config } = require('../lib/config-new');
+const { config } = require('../lib/config');
 const fetch = require('node-fetch').default;
 const helperServer = require('./helperServer');
 const sqldb = require('@prairielearn/postgres');

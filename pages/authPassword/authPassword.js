@@ -3,7 +3,7 @@ var express = require('express');
 var router = express.Router();
 
 var csrf = require('../../lib/csrf');
-const { config } = require('../../lib/config-new');
+const { config } = require('../../lib/config');
 
 router.get('/', function (req, res) {
   res.locals.passwordInvalid = 'pl_assessmentpw' in req.cookies;

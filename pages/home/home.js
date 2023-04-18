@@ -2,7 +2,7 @@ var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
 
-const { config } = require('../../lib/config-new');
+const { config } = require('../../lib/config');
 var sqldb = require('@prairielearn/postgres');
 
 var sql = sqldb.loadSqlEquiv(__filename);

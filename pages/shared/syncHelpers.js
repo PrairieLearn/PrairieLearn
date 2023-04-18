@@ -8,7 +8,7 @@ const Docker = require('dockerode');
 const { logger } = require('@prairielearn/logger');
 const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 
-const { config } = require('../../lib/config-new');
+const { config } = require('../../lib/config');
 const serverJobs = require('../../lib/server-jobs');
 const syncFromDisk = require('../../sync/syncFromDisk');
 const requireFrontend = require('../../lib/require-frontend');

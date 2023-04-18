@@ -1,7 +1,7 @@
 // @ts-check
 const { OIDCStrategy } = require('passport-azure-ad');
 
-const { config } = require('../../../lib/config-new');
+const { config } = require('../../../lib/config');
 
 module.exports.getAzureStrategy = function () {
   return new OIDCStrategy(

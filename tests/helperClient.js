@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 const assert = require('chai').assert;
 const cheerio = require('cheerio');
-const { config } = require('../lib/config-new');
+const { config } = require('../lib/config');
 
 /**
  * A wrapper around node-fetch that provides a few features:

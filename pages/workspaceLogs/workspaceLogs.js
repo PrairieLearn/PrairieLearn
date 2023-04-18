@@ -4,7 +4,7 @@ const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const AWS = require('aws-sdk');
 
-const { config } = require('../../lib/config-new');
+const { config } = require('../../lib/config');
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 

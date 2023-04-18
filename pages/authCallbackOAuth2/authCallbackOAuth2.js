@@ -7,7 +7,7 @@ const { OAuth2Client } = require('google-auth-library');
 const { logger } = require('@prairielearn/logger');
 
 const authnLib = require('../../lib/authn');
-const { config } = require('../../lib/config-new');
+const { config } = require('../../lib/config');
 
 const router = express.Router();
 

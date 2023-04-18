@@ -1,7 +1,7 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
-const { config } = require('../../lib/config-new');
+const { config } = require('../../lib/config');
 const QR = require('qrcode-svg');
 
 const sqldb = require('@prairielearn/postgres');

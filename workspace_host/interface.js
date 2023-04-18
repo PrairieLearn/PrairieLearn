@@ -26,7 +26,7 @@ const socketServer = require('../lib/socket-server'); // must load socket server
 const { logger } = require('@prairielearn/logger');
 const LocalLock = require('../lib/local-lock');
 
-const { config, loadConfig } = require('../lib/config-new');
+const { config, loadConfig } = require('../lib/config');
 const sqldb = require('@prairielearn/postgres');
 const { parseDockerLogs } = require('./lib/docker');
 const sql = sqldb.loadSqlEquiv(__filename);

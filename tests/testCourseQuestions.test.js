@@ -1,4 +1,4 @@
-const { config } = require('../lib/config-new');
+const { config } = require('../lib/config');
 
 var helperServer = require('./helperServer');
 var helperQuestion = require('./helperQuestion');

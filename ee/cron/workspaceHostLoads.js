@@ -1,7 +1,7 @@
 const AWS = require('aws-sdk');
 const { callbackify } = require('util');
 
-const { config, getDBConfigValue } = require('../../lib/config-new');
+const { config, getDBConfigValue } = require('../../lib/config');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 
