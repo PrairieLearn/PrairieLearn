@@ -9,7 +9,7 @@ const { DockerName } = require('@prairielearn/docker-utils');
 const error = require('@prairielearn/error');
 
 const syncHelpers = require('../shared/syncHelpers');
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 const router = express.Router();

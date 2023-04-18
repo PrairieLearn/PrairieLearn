@@ -3,7 +3,7 @@ const AWS = require('aws-sdk');
 const { callbackify } = require('util');
 const _ = require('lodash');
 
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 
 // These are used as IDs when reading CloudWatch metrics. They must start with
 // a lowercase letter and contain only numbers, letters, and underscores.
@@ -15,7 +15,8 @@ module.exports.run = callbackify(async () => {
   if (
     !config.runningInEc2 ||
     !config.chunksLoadBalancerDimensionName ||
-    !config.chunksTargetGroupDimensionName
+    !config.chunksTargetGroupDimensionName ||
+    !config.chunksAutoScalingGroupName
   ) {
     return;
   }

@@ -2,7 +2,7 @@ const winston = require('winston');
 const S3StreamLogger = require('s3-streamlogger').S3StreamLogger;
 
 const globalLogger = require('./logger');
-const config = require('./config').config;
+const { config } = require('./config');
 
 module.exports = function (options) {
   const { bucket, rootKey } = options;
