@@ -194,7 +194,7 @@ router.post(
         .updateAssessmentQuestionRubric(
           res.locals.instance_question.assessment_question_id,
           req.body.rubric_type,
-          !!req.body.use_rubrics,
+          req.body.use_rubrics === 'true',
           req.body.starting_points === 'CUSTOM'
             ? req.body.starting_points_custom
             : req.body.starting_points,

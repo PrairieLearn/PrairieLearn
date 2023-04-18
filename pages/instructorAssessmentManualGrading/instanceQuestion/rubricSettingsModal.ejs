@@ -5,6 +5,7 @@
       <input type="hidden" name="__action" value="modify_rubric_settings">
       <input type="hidden" name="rubric_type" value="<%= type %>">
       <input type="hidden" name="modified_at" value="<%= rubric?.modified_at %>">
+      <input type="hidden" name="use_rubrics" value="true">
       
       <div class="modal-content">
         <div class="modal-header bg-info text-light">
@@ -15,173 +16,102 @@
         </div>
         <div class="modal-body">
           <div class="js-settings-error-alert-placeholder"></div>
-          <div class="form-check">
-            <label class="form-check-label">
-              <input class="form-check-input" name="use_rubrics" type="checkbox"
-                     value="true" <% if (rubric) { %>checked<% } %>>
-              Use rubrics
-            </label>
+          <div class="form-row">
+            <div class="col-6">
+              <% if (max_points) { %>
+              <div class="form-check">
+                <label class="form-check-label">
+                  <input class="form-check-input" name="starting_points" type="radio" value="0"
+                         <% if ((rubric?.starting_points ?? 0) == 0) { %>checked<% } %>
+                         aria-describedby="rubric-settings-<%= type %>-start-points-explanation">
+                  Positive grading (start at zero, add points)
+                </label>
+              </div>
+              <div class="form-check">
+                <label class="form-check-label">
+                  <input class="form-check-input js-negative-grading" name="starting_points" type="radio" value="<%= max_points %>"
+                         <% if (rubric?.starting_points == max_points) { %>checked<% } %>
+                         aria-describedby="rubric-settings-<%= type %>-start-points-explanation">
+                  Negative grading (start at <%= max_points %> points, subtract penalties)
+                </label>
+              </div>
+              <% } else { %>
+              <div class="form-check">
+                <label class="form-check-label">
+                  <input class="form-check-input js-negative-grading" name="starting_points" type="radio" value="0"
+                         <% if (!rubric?.starting_points) { %>checked<% } %>
+                         aria-describedby="rubric-settings-<%= type %>-start-points-explanation">
+                  Start at zero points
+                </label>
+              </div>
+              <% } %>
+              <div class="form-check">
+                <label class="form-check-label">
+                  <input class="form-check-input" name="starting_points" type="radio" value="CUSTOM"
+                         <% if (![0, max_points].includes(rubric?.starting_points ?? 0)) { %>checked<% } %>
+                         aria-describedby="rubric-settings-<%= type %>-start-points-explanation">
+                  Custom starting points
+                </label>
+              </div>
+              <div class="js-starting-points-custom">
+                <label><span class="sr-only">Starting points</span>
+                  <input class="form-control" name="starting_points_custom" type="number"
+                         value="<%= rubric?.starting_points ?? max_points %>"
+                         aria-describedby="rubric-settings-<%= type %>-start-points-explanation">
+                </label>
+              </div>
+            </div>
+            <div class="form-group col-3">
+              <label>
+                Rubric floor
+                <input class="form-control" name="min_points" type="number"
+                       value="<%= rubric?.min_points ?? 0 %>"
+                       aria-describedby="rubric-settings-<%= type %>-floor-ceiling-explanation">
+              </label>
+            </div>
+            <div class="form-group col-3">
+              <label data-toggle="tooltip" title="">
+                Rubric ceiling
+                <input class="form-control" name="max_points" type="number"
+                       value="<%= rubric?.max_points ?? max_points %>"
+                       aria-describedby="rubric-settings-<%= type %>-floor-ceiling-explanation">
+              </label>
+            </div>
           </div>
-          <div class="js-rubric-settings-info">
-            <hr/>
-            <div class="form-row">
-              <div class="col-6">
-                <% if (max_points) { %>
-                <div class="form-check">
-                  <label class="form-check-label">
-                    <input class="form-check-input" name="starting_points" type="radio" value="0"
-                           <% if ((rubric?.starting_points ?? 0) == 0) { %>checked<% } %>
-                           aria-describedby="rubric-settings-<%= type %>-start-points-explanation">
-                    Positive grading (start at zero, add points)
-                  </label>
-                </div>
-                <div class="form-check">
-                  <label class="form-check-label">
-                    <input class="form-check-input js-negative-grading" name="starting_points" type="radio" value="<%= max_points %>"
-                           <% if (rubric?.starting_points == max_points) { %>checked<% } %>
-                           aria-describedby="rubric-settings-<%= type %>-start-points-explanation">
-                    Negative grading (start at <%= max_points %> points, subtract penalties)
-                  </label>
-                </div>
-                <% } else { %>
-                <div class="form-check">
-                  <label class="form-check-label">
-                    <input class="form-check-input js-negative-grading" name="starting_points" type="radio" value="0"
-                           <% if (!rubric?.starting_points) { %>checked<% } %>
-                           aria-describedby="rubric-settings-<%= type %>-start-points-explanation">
-                    Start at zero points
-                  </label>
-                </div>
-                <% } %>
-                <div class="form-check">
-                  <label class="form-check-label">
-                    <input class="form-check-input" name="starting_points" type="radio" value="CUSTOM"
-                           <% if (![0, max_points].includes(rubric?.starting_points ?? 0)) { %>checked<% } %>
-                           aria-describedby="rubric-settings-<%= type %>-start-points-explanation">
-                    Custom starting points
-                  </label>
-                </div>
-                <div class="js-starting-points-custom">
-                  <label><span class="sr-only">Starting points</span>
-                    <input class="form-control" name="starting_points_custom" type="number"
-                           value="<%= rubric?.starting_points ?? max_points %>"
-                           aria-describedby="rubric-settings-<%= type %>-start-points-explanation">
-                  </label>
-                </div>
-              </div>
-              <div class="form-group col-3">
-                <label>
-                  Rubric floor
-                  <input class="form-control" name="min_points" type="number"
-                         value="<%= rubric?.min_points ?? 0 %>"
-                         aria-describedby="rubric-settings-<%= type %>-floor-ceiling-explanation">
-                </label>
-              </div>
-              <div class="form-group col-3">
-                <label data-toggle="tooltip" title="">
-                  Rubric ceiling
-                  <input class="form-control" name="max_points" type="number"
-                         value="<%= rubric?.max_points ?? max_points %>"
-                         aria-describedby="rubric-settings-<%= type %>-floor-ceiling-explanation">
-                </label>
-              </div>
+          <div class="row">
+            <div class="col-6">
+              <small id="rubric-settings-<%= type %>-start-points-explanation" class="form-text text-muted">
+                The setting above only affects starting points. Rubric items may always be added with positive or negative points.
+              </small>
             </div>
-            <div class="row">
-              <div class="col-6">
-                <small id="rubric-settings-<%= type %>-start-points-explanation" class="form-text text-muted">
-                  The setting above only affects starting points. Rubric items may always be added with positive or negative points.
-                </small>
-              </div>
-              <div class="col-6">
-                <small id="rubric-settings-<%= type %>-floor-ceiling-explanation" class="form-text text-muted">
-                  Minimum and maximum number of points to be assigned to a student from the rubric (out of <%= max_points %>). Points computed from the rubric will be bound to the limits above, even if the sum of additional points or penalties overrides them. This setting does not affect the <%= type %> points assigned to the question.
-                </small>
-              </div>
+            <div class="col-6">
+              <small id="rubric-settings-<%= type %>-floor-ceiling-explanation" class="form-text text-muted">
+                Minimum and maximum number of points to be assigned to a student from the rubric (out of <%= max_points %>). Points computed from the rubric will be bound to the limits above, even if the sum of additional points or penalties overrides them. This setting does not affect the <%= type %> points assigned to the question.
+              </small>
             </div>
-            <hr/>
-            <div>
-              <table class="table table-sm table-striped js-rubric-items-table">
-                <thead>
-                  <tr>
-                    <th style="width: 1px"><!-- Order --></th>
-                    <th>Points</th>
-                    <th>Description</th>
-                    <th>Detailed explanation (optional)</th>
-                    <th>Grader note (optional, not visible to students)</th>
-                    <th>In use</th>
-                </thead>
-                <tbody>
-                  <% rubric?.rubric_items?.forEach((item, index) => { %>
-                  <tr>
-                    <td class="text-nowrap">
-                      <input type="hidden"
-                             name="rubric_item[cur<%= item.id %>][id]"
-                             value="<%= item.id %>">
-                      <input type="hidden" class="js-rubric-item-row-order"
-                             name="rubric_item[cur<%= item.id %>][order]"
-                             value="<%= index %>">
-                      <button type="button" class="btn btn-sm js-rubric-item-move-button" draggable="true">
-                        <i class="fas fa-arrows-up-down"></i>
-                      </button>
-                      <button type="button" class="btn btn-sm sr-only js-rubric-item-move-down-button">
-                        Move down
-                      </button>
-                      <button type="button" class="btn btn-sm sr-only js-rubric-item-move-up-button">
-                        Move up
-                      </button>
-                      <button type="button" class="btn btn-sm js-rubric-item-delete text-danger">
-                        <i class="fas fa-trash"></i>
-                        <span class="sr-only">Delete</span>
-                      </button>
-                    </td>
-                    <td style="max-width: 4rem">
-                      <input type="number" class="form-control" step="any" required
-                             name="rubric_item[cur<%= item.id %>][points]"
-                             value="<%= item.points %>">
-                    </td>
-                    <td>
-                      <input type="text" class="form-control" required maxlength="100"
-                             name="rubric_item[cur<%= item.id %>][description]"
-                             value="<%= item.description %>">
-                    </td>
-                    <td>
-                      <label data-input-name="rubric_item[cur<%= item.id %>][explanation]"
-                             data-current-value="<%= item.explanation %>">
-                        <%= item.explanation %>
-                        <button type="button" class="btn btn-sm js-rubric-item-long-text-field">
-                          <i class="fas fa-pencil"></i>
-                        </button>
-                      </label>
-                    </td>
-                    <td>
-                      <label data-input-name="rubric_item[cur<%= item.id %>][grader_note]"
-                             data-current-value="<%= item.grader_note %>">
-                        <%= item.grader_note %>
-                        <button type="button" class="btn btn-sm js-rubric-item-long-text-field">
-                          <i class="fas fa-pencil"></i>
-                        </button>
-                      </label>
-                    </td>
-                    <td>
-                      <% if (!item.num_submissions) { %>No
-                      <% } else if (!item.num_submissions == 1) { %>1 submission
-                      <% } else { %><%= item.num_submissions %> submissions
-                      <% } %>
-                    </td>
-                  </tr>
-                  <% }); %>
-                  <tr class="js-no-rubric-item-note<% if (rubric?.rubric_items?.length) { %> d-none<% } %>">
-                    <td colspan="6"><em>This question does not have any rubric items. Click "Add item" below to add some.</em></td>
-                  </tr>
-                </tbody>
-              </table>
-              <button type="button" class="btn btn-sm btn-secondary js-add-rubric-item-button">
-                Add item
-              </button>
-              <template class="js-new-row-rubric-item">
+          </div>
+          <hr/>
+          <div>
+            <table class="table table-sm table-striped js-rubric-items-table">
+              <thead>
+                <tr>
+                  <th style="width: 1px"><!-- Order --></th>
+                  <th>Points</th>
+                  <th>Description</th>
+                  <th>Detailed explanation (optional)</th>
+                  <th>Grader note (optional, not visible to students)</th>
+                  <th>In use</th>
+              </thead>
+              <tbody>
+                <% rubric?.rubric_items?.forEach((item, index) => { %>
                 <tr>
                   <td class="text-nowrap">
-                    <input type="hidden" class="js-rubric-item-row-order">
+                    <input type="hidden"
+                           name="rubric_item[cur<%= item.id %>][id]"
+                           value="<%= item.id %>">
+                    <input type="hidden" class="js-rubric-item-row-order"
+                           name="rubric_item[cur<%= item.id %>][order]"
+                           value="<%= index %>">
                     <button type="button" class="btn btn-sm js-rubric-item-move-button" draggable="true">
                       <i class="fas fa-arrows-up-down"></i>
                     </button>
@@ -197,60 +127,128 @@
                     </button>
                   </td>
                   <td style="max-width: 4rem">
-                    <input type="number" class="form-control js-rubric-item-points" step="any" required>
+                    <input type="number" class="form-control" step="any" required
+                           name="rubric_item[cur<%= item.id %>][points]"
+                           value="<%= item.points %>">
                   </td>
                   <td>
-                    <input type="text" class="form-control js-rubric-item-description" required maxlength="100">
+                    <input type="text" class="form-control" required maxlength="100"
+                           name="rubric_item[cur<%= item.id %>][description]"
+                           value="<%= item.description %>">
                   </td>
                   <td>
-                    <label class="js-rubric-item-explanation">
+                    <label data-input-name="rubric_item[cur<%= item.id %>][explanation]"
+                           data-current-value="<%= item.explanation %>">
+                      <%= item.explanation %>
                       <button type="button" class="btn btn-sm js-rubric-item-long-text-field">
                         <i class="fas fa-pencil"></i>
                       </button>
                     </label>
                   </td>
                   <td>
-                    <label class="js-rubric-item-grader-note">
+                    <label data-input-name="rubric_item[cur<%= item.id %>][grader_note]"
+                           data-current-value="<%= item.grader_note %>">
+                      <%= item.grader_note %>
                       <button type="button" class="btn btn-sm js-rubric-item-long-text-field">
                         <i class="fas fa-pencil"></i>
                       </button>
                     </label>
                   </td>
                   <td>
-                    New
+                    <% if (!item.num_submissions) { %>No
+                    <% } else if (!item.num_submissions == 1) { %>1 submission
+                    <% } else { %><%= item.num_submissions %> submissions
+                    <% } %>
                   </td>
                 </tr>
-              </template>
-              <% if (variant.params || variant.true_answer || submission?.submitted_answer) { %>
-              <div class="small form-text text-muted">
-                Rubric items may be populated with the following values (click to copy):
-                <ul style="max-height: 7rem; overflow-y: auto;">
-                  <% [
-                    ...Object.keys(variant.params || {}).map((key) => ['params', key]),
-                    ...Object.keys(variant.true_answer || {}).map((key) => ['correct_answers', key]),
-                    ...Object.keys(submission?.submitted_answer || {}).map((key) => ['submitted_answers', key]),
-                  ].forEach(([group, key]) => { %>
-                    <li><code class="js-copy-on-click"
-                              data-clipboard-text="{{<%= group %>.<%= key %>}}"
-                        >{{<%= group %>.<%= key %>}}</code></li>
-                  <% }); %>
-                </ul>
-              </div>
-              <% } %>
+                <% }); %>
+                <tr class="js-no-rubric-item-note<% if (rubric?.rubric_items?.length) { %> d-none<% } %>">
+                  <td colspan="6"><em>This question does not have any rubric items. Click "Add item" below to add some.</em></td>
+                </tr>
+              </tbody>
+            </table>
+            <button type="button" class="btn btn-sm btn-secondary js-add-rubric-item-button">
+              Add item
+            </button>
+            <template class="js-new-row-rubric-item">
+              <tr>
+                <td class="text-nowrap">
+                  <input type="hidden" class="js-rubric-item-row-order">
+                  <button type="button" class="btn btn-sm js-rubric-item-move-button" draggable="true">
+                    <i class="fas fa-arrows-up-down"></i>
+                  </button>
+                  <button type="button" class="btn btn-sm sr-only js-rubric-item-move-down-button">
+                    Move down
+                  </button>
+                  <button type="button" class="btn btn-sm sr-only js-rubric-item-move-up-button">
+                    Move up
+                  </button>
+                  <button type="button" class="btn btn-sm js-rubric-item-delete text-danger">
+                    <i class="fas fa-trash"></i>
+                    <span class="sr-only">Delete</span>
+                  </button>
+                </td>
+                <td style="max-width: 4rem">
+                  <input type="number" class="form-control js-rubric-item-points" step="any" required>
+                </td>
+                <td>
+                  <input type="text" class="form-control js-rubric-item-description" required maxlength="100">
+                </td>
+                <td>
+                  <label class="js-rubric-item-explanation">
+                    <button type="button" class="btn btn-sm js-rubric-item-long-text-field">
+                      <i class="fas fa-pencil"></i>
+                    </button>
+                  </label>
+                </td>
+                <td>
+                  <label class="js-rubric-item-grader-note">
+                    <button type="button" class="btn btn-sm js-rubric-item-long-text-field">
+                      <i class="fas fa-pencil"></i>
+                    </button>
+                  </label>
+                </td>
+                <td>
+                  New
+                </td>
+              </tr>
+            </template>
+            <% if (variant.params || variant.true_answer || submission?.submitted_answer) { %>
+            <div class="small form-text text-muted">
+              Rubric items may be populated with the following values (click to copy):
+              <ul style="max-height: 7rem; overflow-y: auto;">
+                <% [
+                   ...Object.keys(variant.params || {}).map((key) => ['params', key]),
+                   ...Object.keys(variant.true_answer || {}).map((key) => ['correct_answers', key]),
+                   ...Object.keys(submission?.submitted_answer || {}).map((key) => ['submitted_answers', key]),
+                   ].forEach(([group, key]) => { %>
+                <li><code class="js-copy-on-click"
+                          data-clipboard-text="{{<%= group %>.<%= key %>}}"
+                          >{{<%= group %>.<%= key %>}}</code></li>
+                <% }); %>
+              </ul>
             </div>
-            <hr/>
-            <div class="form-check">
-              <label class="form-check-label">
-                <input class="form-check-input" type="checkbox" value="true"
-                       name="tag_for_manual_grading">
-                Require all graded submissions to be manually graded/reviewed
-              </label>
-            </div>
+            <% } %>
+          </div>
+          <hr/>
+          <div class="form-check">
+            <label class="form-check-label">
+              <input class="form-check-input" type="checkbox" value="true"
+                     name="tag_for_manual_grading">
+              Require all graded submissions to be manually graded/reviewed
+            </label>
           </div>
         </div>
         <div class="modal-footer">
           <% if (authz_data.has_course_instance_permission_edit) { %>
-          <button type="submit" class="btn btn-primary">Save</button>
+          <% if (rubric) { %>
+          <button type="button" class="btn btn-link btn-sm js-disable-rubric-button mr-auto">
+            Disable rubric
+          </button>
+          <% } %>
+          <button type="submit" class="btn btn-primary">
+            <%= rubric ? 'Update rubric' : 'Set rubric' %>
+          </button>
           <% } %>
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
         </div>

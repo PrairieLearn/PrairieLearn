@@ -152,18 +152,6 @@ function resetInstructorGradingPanel() {
   );
 
   document
-    .querySelectorAll('.js-rubric-settings-modal input[name="use_rubrics"]')
-    .forEach((checkbox) => {
-      checkbox.addEventListener('change', function () {
-        // Rubric settings are only visible if rubrics are enabled
-        this.closest('.js-rubric-settings-modal').querySelector(
-          '.js-rubric-settings-info'
-        ).style.display = this.checked ? '' : 'none';
-      });
-      checkbox.dispatchEvent(new Event('change'));
-    });
-
-  document
     .querySelectorAll('.js-rubric-settings-modal input[name="starting_points"]')
     .forEach((input) => {
       input.addEventListener('change', function () {
@@ -181,75 +169,87 @@ function resetInstructorGradingPanel() {
     .querySelectorAll('.js-add-rubric-item-button')
     .forEach((button) => button.addEventListener('click', addRubricItemRow));
 
-  document.querySelectorAll('.js-rubric-settings-modal form').forEach((form) =>
-    form.addEventListener('submit', function (e) {
-      e.preventDefault();
-      const modal = this.closest('.modal');
-      const gradingForm = document.querySelector(
-        '.js-main-grading-panel form[name=manual-grading-form]'
-      );
-      // Save values in grading rubric so they can be re-applied once the form is re-created.
-      const rubricFormData = Array.from(new FormData(gradingForm).entries());
-      // The CSRF token of the returned panels is not valid for the current form (it uses a
-      // different URL), so save the old value to be used in future requests.
-      const oldCsrfToken = gradingForm.querySelector('[name=__csrf_token]').value;
+  document
+    .querySelectorAll('.js-rubric-settings-modal form')
+    .forEach((form) => form.addEventListener('submit', submitSettings));
 
-      // Clear old alerts
-      form.querySelector('.js-settings-error-alert-placeholder').innerHTML = '';
-
-      fetch(this.action, {
-        method: 'POST',
-        body: new URLSearchParams(new FormData(this)),
-      })
-        .catch((err) => ({ err }))
-        .then(async (response) => {
-          const data = await response
-            .json()
-            .catch(() => ({ err: `Error: ${response.statusText}` }));
-          if (data.err) {
-            console.error(data.err);
-            return addAlert(form, data.err);
-          }
-          $(modal).modal('hide');
-          if (data.gradingPanel) {
-            document.querySelector('.js-main-grading-panel').innerHTML = data.gradingPanel;
-
-            // Restore any values that had been set before the settings were configured.
-            const newRubricForm = document.querySelector(
-              '.js-main-grading-panel form[name=manual-grading-form]'
-            );
-            newRubricForm.querySelectorAll('input[type="checkbox"]').forEach((input) => {
-              input.checked = false;
-            });
-            rubricFormData.forEach(([item_name, item_value]) => {
-              newRubricForm.querySelectorAll(`[name="${item_name}"]`).forEach((input) => {
-                if (input.name === 'modified_at') {
-                  // Do not reset modified_at, as the rubric settings may have changed it
-                } else if (input.type !== 'checkbox') {
-                  input.value = item_value;
-                } else if (input.value === item_value) {
-                  input.checked = true;
-                }
-              });
-            });
-          }
-          if (data.rubricSettingsManual) {
-            document.querySelector('.rubric-settings-modal-manual').outerHTML =
-              data.rubricSettingsManual;
-          }
-          if (data.rubricSettingsAuto) {
-            document.querySelector('.rubric-settings-modal-auto').outerHTML =
-              data.rubricSettingsAuto;
-          }
-          document.querySelector('input[name=__csrf_token]').value = oldCsrfToken;
-          resetInstructorGradingPanel();
-        });
-    })
-  );
+  document
+    .querySelectorAll('.js-disable-rubric-button')
+    .forEach((button) =>
+      button.addEventListener('click', (e) =>
+        submitSettings.bind(button.closest('form'))(e, 'false')
+      )
+    );
 
   resetRubricItemRowsListeners();
   updateRubricItemOrderField();
   computePointsFromRubric();
+}
+
+function submitSettings(e, use_rubrics) {
+  e.preventDefault();
+  const modal = this.closest('.modal');
+  const gradingForm = document.querySelector(
+    '.js-main-grading-panel form[name=manual-grading-form]'
+  );
+  // Save values in grading rubric so they can be re-applied once the form is re-created.
+  const rubricFormData = Array.from(new FormData(gradingForm).entries());
+  // The CSRF token of the returned panels is not valid for the current form (it uses a
+  // different URL), so save the old value to be used in future requests.
+  const oldCsrfToken = gradingForm.querySelector('[name=__csrf_token]').value;
+
+  // Clear old alerts
+  this.querySelector('.js-settings-error-alert-placeholder').innerHTML = '';
+
+  const settingsFormData = new URLSearchParams(new FormData(this));
+  if (use_rubrics != null) {
+    settingsFormData.set('use_rubrics', use_rubrics);
+  }
+
+  fetch(this.action, {
+    method: 'POST',
+    body: settingsFormData,
+  })
+    .catch((err) => ({ err }))
+    .then(async (response) => {
+      const data = await response.json().catch(() => ({ err: `Error: ${response.statusText}` }));
+      if (data.err) {
+        console.error(data.err);
+        return addAlert(this, data.err);
+      }
+      $(modal).modal('hide');
+      if (data.gradingPanel) {
+        document.querySelector('.js-main-grading-panel').innerHTML = data.gradingPanel;
+
+        // Restore any values that had been set before the settings were configured.
+        const newRubricForm = document.querySelector(
+          '.js-main-grading-panel form[name=manual-grading-form]'
+        );
+        newRubricForm.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+          input.checked = false;
+        });
+        rubricFormData.forEach(([item_name, item_value]) => {
+          newRubricForm.querySelectorAll(`[name="${item_name}"]`).forEach((input) => {
+            if (input.name === 'modified_at') {
+              // Do not reset modified_at, as the rubric settings may have changed it
+            } else if (input.type !== 'checkbox') {
+              input.value = item_value;
+            } else if (input.value === item_value) {
+              input.checked = true;
+            }
+          });
+        });
+      }
+      if (data.rubricSettingsManual) {
+        document.querySelector('.rubric-settings-modal-manual').outerHTML =
+          data.rubricSettingsManual;
+      }
+      if (data.rubricSettingsAuto) {
+        document.querySelector('.rubric-settings-modal-auto').outerHTML = data.rubricSettingsAuto;
+      }
+      document.querySelector('input[name=__csrf_token]').value = oldCsrfToken;
+      resetInstructorGradingPanel();
+    });
 }
 
 function addAlert(parent, msg) {
