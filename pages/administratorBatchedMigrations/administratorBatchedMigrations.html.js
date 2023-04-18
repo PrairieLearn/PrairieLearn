@@ -125,7 +125,7 @@ function AdministratorBatchedMigration({
                 </tr>
                 <tr>
                   <th>Started at</th>
-                  <td>${batchedMigration.started_at.toUTCString()}</td>
+                  <td>${batchedMigration.started_at?.toUTCString()}</td>
                 </tr>
                 <tr>
                   <th>Actions</th>
@@ -199,7 +199,10 @@ function MigrationJobsCard({ title, jobs, emptyText }) {
       ${jobs.length > 0
         ? html`<div class="list-group list-group-flush">
             ${jobs.map((job) => {
-              const duration = job.finished_at.getTime() - job.started_at.getTime();
+              let duration = null;
+              if (job.started_at && job.finished_at) {
+                duration = job.finished_at.getTime() - job.started_at.getTime();
+              }
               const attemptsLabel = job.attempts === 1 ? 'attempt' : 'attempts';
               const attempts = `${job.attempts} ${attemptsLabel}`;
               const summary = `${job.min_value} - ${job.max_value}`;
@@ -219,10 +222,17 @@ function MigrationJobsCard({ title, jobs, emptyText }) {
                         </details>
                       `
                     : html`<div>${summary}</div>`}
-                  <span class="text-muted text-small" style="font-variant-numeric: tabular-nums;">
-                    #${job.id} ran at ${job.finished_at.toUTCString()} for ${duration}ms &mdash;
-                    ${attempts}
-                  </span>
+                  ${job.started_at
+                    ? html`
+                        <span
+                          class="text-muted text-small"
+                          style="font-variant-numeric: tabular-nums;"
+                        >
+                          #${job.id} ran at ${job.started_at.toUTCString()} for ${duration}ms
+                          &mdash; ${attempts}
+                        </span>
+                      `
+                    : null}
                 </div>
               `;
             })}
