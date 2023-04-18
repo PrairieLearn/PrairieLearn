@@ -226,7 +226,7 @@ const checkGradingResults = (assigned_grader, grader) => {
           `[${item.points >= 0 ? '+' : ''}${item.points}]`
         );
         assert.equal(
-          container.find('[data-testid="rubric-item-description"]').html().trim(),
+          container.find('[data-testid="rubric-item-description"]').html()?.trim(),
           item.description_render ?? item.description
         );
         if (item.explanation) {
@@ -311,15 +311,15 @@ const checkSettingsResults = (starting_points, min_points, max_points) => {
         `[${item.points >= 0 ? '+' : ''}${item.points}]`
       );
       assert.equal(
-        container.find('[data-testid="rubric-item-description"]').html().trim(),
+        container.find('[data-testid="rubric-item-description"]').html()?.trim(),
         item.description_render ?? item.description
       );
       assert.equal(
-        container.find('[data-testid="rubric-item-explanation"]').html().trim(),
+        container.find('[data-testid="rubric-item-explanation"]').html()?.trim(),
         item.explanation_render ?? (item.explanation ? `<p>${item.explanation}</p>` : '')
       );
       assert.equal(
-        container.find('[data-testid="rubric-item-grader-note"]').html().trim(),
+        container.find('[data-testid="rubric-item-grader-note"]').html()?.trim(),
         item.grader_note_render ?? (item.grader_note ? `<p>${item.grader_note}</p>` : '')
       );
     });
