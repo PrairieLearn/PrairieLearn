@@ -9,7 +9,7 @@ const courseDirDefault = path.join(__dirname, '..', 'testCourse');
 async function syncCourse(courseDir = courseDirDefault) {
   const { logger, getOutput } = makeMockLogger();
   const result = await syncFromDisk.syncOrCreateDiskToSqlAsync(courseDir, logger);
-  if (result.hadJsonErrorsOrWarnings) {
+  if (!result || result.hadJsonErrorsOrWarnings) {
     console.log(getOutput());
     throw new Error(`Errors or warnings found during sync of ${courseDir}`);
   }
