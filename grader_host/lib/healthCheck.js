@@ -2,7 +2,7 @@ const http = require('http');
 const Docker = require('dockerode');
 
 const globalLogger = require('./logger');
-const config = require('./config').config;
+const { config } = require('./config');
 const lifecycle = require('./lifecycle');
 
 /**

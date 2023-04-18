@@ -1,4 +1,4 @@
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const { logger } = require('@prairielearn/logger');
 const { enrichSentryScope } = require('../lib/sentry');
 

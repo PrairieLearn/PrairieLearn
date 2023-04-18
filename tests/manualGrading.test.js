@@ -6,7 +6,7 @@ const path = require('path');
 const _ = require('lodash');
 const { step } = require('mocha-steps');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const fetch = require('node-fetch').default;
 const helperServer = require('./helperServer');
 const sqldb = require('@prairielearn/postgres');

@@ -4,7 +4,7 @@ const router = express.Router();
 const asyncHandler = require('express-async-handler');
 const AWS = require('aws-sdk');
 
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 
@@ -45,6 +45,9 @@ function areContainerLogsEnabled() {
  * @returns {Promise<string | null>}
  */
 async function loadLogsForWorkspaceVersion(workspaceId, version) {
+  // Safety check for TypeScript.
+  if (!config.workspaceLogsS3Bucket) return null;
+
   // Get the current workspace version.
   const workspaceRes = await sqldb.queryOneRowAsync(sql.select_workspace, {
     workspace_id: workspaceId,

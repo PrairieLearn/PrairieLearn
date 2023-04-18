@@ -1,4 +1,4 @@
-var config = require('../lib/config');
+const { config } = require('../lib/config');
 const path = require('path');
 
 var helperServer = require('./helperServer');

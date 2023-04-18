@@ -3,7 +3,7 @@ const router = require('express').Router();
 const jose = require('jose');
 const crypto = require('crypto');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const { logger } = require('@prairielearn/logger');
 
 /**

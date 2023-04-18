@@ -6,7 +6,7 @@ const Ajv = require('ajv').default;
 const sqldb = require('@prairielearn/postgres');
 
 const globalLogger = require('./logger');
-const config = require('./config').config;
+const { config } = require('./config');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 let messageSchema = null;
