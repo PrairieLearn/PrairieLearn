@@ -331,33 +331,28 @@ function computePointsFromRubric() {
   document.querySelectorAll('form[name=manual-grading-form]').forEach((form) => {
     const manualInput = form.querySelector('.js-manual-score-value-input-points');
     const autoInput = form.querySelector('.js-auto-score-value-input-points');
-    let computedPoints = {
-      manual:
-        (parseFloat(manualInput?.dataset?.rubricStartingPoints) || 0) +
-        (parseFloat(form.querySelector('input[name="score_manual_adjust_points"]')?.value) || 0),
-      auto:
-        (parseFloat(autoInput?.dataset?.rubricStartingPoints) || 0) +
-        (parseFloat(form.querySelector('input[name="score_auto_adjust_points"]')?.value) || 0),
+    let itemsSum = {
+      manual: Number(manualInput?.dataset?.rubricStartingPoints || 0),
+      auto: Number(autoInput?.dataset?.rubricStartingPoints || 0),
     };
 
     form.querySelectorAll('.js-selectable-rubric-item:checked').forEach((item) => {
-      computedPoints[item.dataset.rubricItemType] += parseFloat(item.dataset.rubricItemPoints);
+      itemsSum[item.dataset.rubricItemType] += Number(item.dataset.rubricItemPoints);
     });
 
     if (manualInput?.dataset?.rubricActive === 'true') {
-      manualInput.value = Math.min(
-        Math.max(
-          Math.round(computedPoints.manual * 100) / 100,
-          manualInput.dataset.rubricMinPoints
-        ),
-        manualInput.dataset.rubricMaxPoints
-      );
+      manualInput.value =
+        Math.min(
+          Math.max(Math.round(itemsSum.manual * 100) / 100, manualInput.dataset.rubricMinPoints),
+          manualInput.dataset.rubricMaxPoints
+        ) + Number(form.querySelector('input[name="score_manual_adjust_points"]')?.value || 0);
     }
     if (autoInput?.dataset?.rubricActive === 'true') {
-      autoInput.value = Math.min(
-        Math.max(Math.round(computedPoints.auto * 100) / 100, autoInput.dataset.rubricMinPoints),
-        autoInput.dataset.rubricMaxPoints
-      );
+      autoInput.value =
+        Math.min(
+          Math.max(Math.round(itemsSum.auto * 100) / 100, autoInput.dataset.rubricMinPoints),
+          autoInput.dataset.rubricMaxPoints
+        ) + Number(form.querySelector('input[name="score_auto_adjust_points"]')?.value || 0);
     }
   });
   updatePointsView();
@@ -429,7 +424,7 @@ function rowDragOver(event) {
 function addRubricItemRow() {
   const modal = this.closest('.modal');
   const table = modal.querySelector('.js-rubric-items-table');
-  const next_id = parseFloat(table.dataset.nextNewId ?? 0) + 1;
+  const next_id = Number(table.dataset.nextNewId ?? 0) + 1;
   const points = modal.querySelector('.js-negative-grading')?.checked ? -1 : +1;
   table.dataset.nextNewId = next_id;
 
