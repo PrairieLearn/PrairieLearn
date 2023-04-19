@@ -64,7 +64,7 @@ process.on('warning', (e) => console.warn(e));
 
 // If there is only one argument and `server.js` is being executed directly,
 // legacy it into the config option.
-if (argv['_'].length === 1 && require.main === module) {
+if (require.main === module && argv['_'].length === 1) {
   argv['config'] = argv['_'][0];
   argv['_'] = [];
 }
@@ -1833,7 +1833,7 @@ module.exports.insertDevUser = function (callback) {
   });
 };
 
-if (config.startServer && require.main === module) {
+if (require.main === module && config.startServer) {
   async.series(
     [
       async () => {
