@@ -680,7 +680,7 @@ describe('Assessment syncing', () => {
       },
       { name: 'Contributor' },
     ];
-    groupAssessment.zones.push({
+    groupAssessment.zones?.push({
       title: 'test zone',
       questions: [
         {
@@ -779,7 +779,7 @@ describe('Assessment syncing', () => {
       },
       { name: 'Contributor' },
     ];
-    groupAssessment.zones.push({
+    groupAssessment.zones?.push({
       title: 'test zone',
       questions: [
         {
@@ -832,7 +832,9 @@ describe('Assessment syncing', () => {
         canAssignRolesDuringAssessment: true,
       },
     ];
-    groupAssessment.zones[groupAssessment.zones.length - 1].questions = [
+    const lastZone = groupAssessment?.zones?.[groupAssessment.zones.length - 1];
+    if (!lastZone) throw new Error('could not find last zone');
+    lastZone.questions = [
       {
         id: util.QUESTION_ID,
         points: 5,
@@ -922,11 +924,11 @@ describe('Assessment syncing', () => {
     const syncedAssessment = await findSyncedAssessment('groupAssessmentFail');
 
     assert.match(
-      syncedAssessment.sync_errors,
+      syncedAssessment?.sync_errors,
       /Could not find a role with minimum >= 1 and "can_assign_roles_at_start" set to "true"./
     );
     assert.match(
-      syncedAssessment.sync_errors,
+      syncedAssessment?.sync_errors,
       /Could not find a role with minimum >= 1 and "can_assign_roles_during_assessment" set to "true"./
     );
   });
@@ -955,11 +957,11 @@ describe('Assessment syncing', () => {
     const syncedAssessment = await findSyncedAssessment('groupAssessmentFail');
 
     assert.match(
-      syncedAssessment.sync_errors,
+      syncedAssessment?.sync_errors,
       /Group role "Manager" contains an invalid minimum. \(Expected at most 4, found 10\)./
     );
     assert.match(
-      syncedAssessment.sync_errors,
+      syncedAssessment?.sync_errors,
       /Group role "Reflector" contains an invalid maximum. \(Expected at most 4, found 10\)./
     );
   });
@@ -978,7 +980,7 @@ describe('Assessment syncing', () => {
       },
       { name: 'Contributor' },
     ];
-    groupAssessment.zones.push({
+    groupAssessment.zones?.push({
       title: 'test zone',
       questions: [
         {
