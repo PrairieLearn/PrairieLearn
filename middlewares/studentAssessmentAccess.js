@@ -4,7 +4,7 @@ const _ = require('lodash');
 
 const { logger } = require('@prairielearn/logger');
 var csrf = require('../lib/csrf');
-var config = require('../lib/config');
+const { config } = require('../lib/config');
 const { idsEqual } = require('../lib/id');
 
 var timeout = 24; // hours

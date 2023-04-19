@@ -3,7 +3,7 @@ const fetch = require('node-fetch').default;
 const cheerio = require('cheerio');
 
 const news_items = require('../news_items');
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 

@@ -33,7 +33,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const compiledAssets = require('@prairielearn/compiled-assets');
 
 const { logger, addFileLogging } = require('@prairielearn/logger');
-const config = require('./lib/config');
+const { config, loadConfig, setLocalsFromConfig } = require('./lib/config');
 const load = require('./lib/load');
 const awsHelper = require('./lib/aws.js');
 const externalGrader = require('./lib/externalGrader');
@@ -115,7 +115,7 @@ module.exports.initExpress = function () {
     next();
   });
   app.use(function (req, res, next) {
-    config.setLocals(res.locals);
+    setLocalsFromConfig(res.locals);
     next();
   });
 
@@ -1844,11 +1844,9 @@ if (config.startServer && require.main === module) {
           configFilename = argv['config'];
         }
 
-        // Load config values from AWS as early as possible so we can use them
-        // to set values for e.g. the database connection
-        await config.loadConfigAsync(configFilename);
+        // Load config immediately so we can use it configure everything else.
+        await loadConfig(configFilename);
         await awsHelper.init();
-        await awsHelper.loadConfigSecrets();
 
         // This should be done as soon as we load our config so that we can
         // start exporting spans.
@@ -1974,7 +1972,9 @@ if (config.startServer && require.main === module) {
 
         // Our named locks code maintains a separate pool of database connections.
         // This ensures that we avoid deadlocks.
-        await namedLocks.init(pgConfig, idleErrorHandler);
+        await namedLocks.init(pgConfig, idleErrorHandler, {
+          renewIntervalMs: config.namedLocksRenewIntervalMs,
+        });
 
         logger.verbose('Successfully connected to database');
       },

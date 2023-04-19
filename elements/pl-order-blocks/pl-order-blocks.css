@@ -16,7 +16,8 @@ li.pl-order-blocks-code {
   list-style-type: none;
 }
 
-.pl-order-blocks-code > .pl-code:only-child div {
+.pl-order-blocks-code > .pl-code,
+.pl-order-blocks-code > .pl-code div {
   /* override margins on code block to ensure code is centered properly */
   margin-bottom: 0px !important;
 }

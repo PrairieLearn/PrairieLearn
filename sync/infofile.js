@@ -4,8 +4,8 @@
  * contain any combination of errors, warnings, data, and a UUID.
  * @template T
  * @typedef {object} InfoFile
- * @property {string[]} [errors]
- * @property {string[]} [warnings]
+ * @property {string[]} errors
+ * @property {string[]} warnings
  * @property {string} [uuid]
  * @property {T} [data]
  */
@@ -25,7 +25,7 @@ module.exports.hasUuid = function (infoFile) {
  * @returns {boolean}
  */
 module.exports.hasErrors = function (infoFile) {
-  return !!(infoFile.errors && infoFile.errors.length > 0);
+  return infoFile.errors.length > 0;
 };
 
 /**
@@ -34,7 +34,7 @@ module.exports.hasErrors = function (infoFile) {
  * @returns {boolean}
  */
 module.exports.hasWarnings = function (infoFile) {
-  return !!(infoFile.warnings && infoFile.warnings.length > 0);
+  return infoFile.warnings.length > 0;
 };
 
 /**
@@ -51,7 +51,6 @@ module.exports.hasErrorsOrWarnings = function (infoFile) {
  * @param {InfoFile<T>} infoFile
  */
 module.exports.stringifyErrors = function (infoFile) {
-  if (!this.hasErrors(infoFile)) return '';
   return infoFile.errors.join('\n');
 };
 
@@ -60,7 +59,6 @@ module.exports.stringifyErrors = function (infoFile) {
  * @param {InfoFile<T>} infoFile
  */
 module.exports.stringifyWarnings = function (infoFile) {
-  if (!this.hasWarnings(infoFile)) return '';
   return infoFile.warnings.join('\n');
 };
 
@@ -70,9 +68,6 @@ module.exports.stringifyWarnings = function (infoFile) {
  * @param {string} error
  */
 module.exports.addError = function (infoFile, error) {
-  if (!this.hasErrors(infoFile)) {
-    infoFile.errors = [];
-  }
   infoFile.errors.push(error);
 };
 
@@ -82,9 +77,6 @@ module.exports.addError = function (infoFile, error) {
  * @param {string[]} errors
  */
 module.exports.addErrors = function (infoFile, errors) {
-  if (!this.hasErrors(infoFile)) {
-    infoFile.errors = [];
-  }
   infoFile.errors = infoFile.errors.concat(errors);
 };
 
@@ -94,9 +86,6 @@ module.exports.addErrors = function (infoFile, errors) {
  * @param {string} warning
  */
 module.exports.addWarning = function (infoFile, warning) {
-  if (!this.hasWarnings(infoFile)) {
-    infoFile.warnings = [];
-  }
   infoFile.warnings.push(warning);
 };
 
@@ -106,10 +95,16 @@ module.exports.addWarning = function (infoFile, warning) {
  * @param {string[]} warnings
  */
 module.exports.addWarnings = function (infoFile, warnings) {
-  if (!this.hasWarnings(infoFile)) {
-    infoFile.warnings = [];
-  }
   infoFile.warnings = infoFile.warnings.concat(warnings);
+};
+
+/**
+ * @template T
+ * @param {Partial<Pick<InfoFile<T>, 'uuid' | 'data'>>} infoFile
+ * @returns {InfoFile<T>}
+ */
+module.exports.makeInfoFile = function (infoFile = {}) {
+  return { ...infoFile, errors: [], warnings: [] };
 };
 
 /**
@@ -118,7 +113,7 @@ module.exports.addWarnings = function (infoFile, warnings) {
  * @returns {InfoFile<T>}
  */
 module.exports.makeError = function (error) {
-  return { errors: [error] };
+  return { errors: [error], warnings: [] };
 };
 
 /**
@@ -127,5 +122,5 @@ module.exports.makeError = function (error) {
  * @returns {InfoFile<T>}
  */
 module.exports.makeWarning = function (warning) {
-  return { warnings: [warning] };
+  return { warnings: [warning], errors: [] };
 };

@@ -1,7 +1,7 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 const QR = require('qrcode-svg');
 
 const sqldb = require('@prairielearn/postgres');
@@ -106,7 +106,7 @@ router.post('/', function (req, res, next) {
     });
   } else if (req.body.__action === 'change_id') {
     debug(`Change short_name from ${res.locals.course_instance.short_name} to ${req.body.id}`);
-    if (!req.body.id) return next(new Error(`Invalid CIID (was falsey): ${req.body.id}`));
+    if (!req.body.id) return next(new Error(`Invalid CIID (was falsy): ${req.body.id}`));
     if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
       return next(
         new Error(
