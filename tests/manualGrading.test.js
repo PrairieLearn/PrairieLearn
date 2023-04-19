@@ -5,7 +5,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const { step } = require('mocha-steps');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const fetch = require('node-fetch').default;
 const helperServer = require('./helperServer');
 const sqldb = require('@prairielearn/postgres');
@@ -472,7 +472,7 @@ describe('Manual Grading', function () {
       // decimals, at which point we can replace this with an exact comparison.
       const submissionStatus = getLatestSubmissionStatus($questionsPage);
       assert.match(submissionStatus, /^manual grading: \d+%/);
-      const percent = parseInt(submissionStatus.match(/(\d+)%/)[1], 10);
+      const percent = parseInt(submissionStatus.match(/(\d+)%/)?.[1] ?? '', 10);
       assert.approximately(percent, score_percent, 1);
       const actualPoints = parseFloat(
         $questionsPage(

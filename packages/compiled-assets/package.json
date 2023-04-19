@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/compiled-assets",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "dist/index.js",
   "bin": "dist/cli.js",
   "repository": {
@@ -14,7 +14,7 @@
     "test": "mocha --no-config --require ts-node/register src/index.test.ts"
   },
   "dependencies": {
-    "@prairielearn/html": "^2.1.1",
+    "@prairielearn/html": "workspace:^",
     "commander": "^10.0.0",
     "esbuild": "^0.17.15",
     "express": "^4.18.2",
@@ -25,7 +25,7 @@
     "tmp-promise": "^3.0.3"
   },
   "devDependencies": {
-    "@prairielearn/tsconfig": "*",
+    "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^18.15.11",
     "chai": "^4.3.7",
     "get-port": "^5.1.1",

@@ -1,6 +1,6 @@
 const ERR = require('async-stacktrace');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const path = require('path');
 var assert = require('chai').assert;
 var request = require('request');

@@ -6,7 +6,7 @@ const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const { parseISO, isValid } = require('date-fns');
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 const { idsEqual } = require('../lib/id');

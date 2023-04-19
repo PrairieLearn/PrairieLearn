@@ -13,7 +13,7 @@
     "test": "mocha --no-config --require ts-node/register src/*.test.ts"
   },
   "devDependencies": {
-    "@prairielearn/tsconfig": "*",
+    "@prairielearn/tsconfig": "workspace:^",
     "@types/mocha": "^10.0.1",
     "@types/multipipe": "^3.0.1",
     "@types/node": "^18.14.2",

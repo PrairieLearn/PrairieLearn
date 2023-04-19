@@ -15,7 +15,7 @@ const {
   QuestionDeleteEditor,
   QuestionCopyEditor,
 } = require('../../lib/editors');
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 const sql = sqldb.loadSqlEquiv(__filename);
 const { encodePath } = require('../../lib/uri-util');
 const { idsEqual } = require('../../lib/id');
@@ -83,7 +83,7 @@ router.post('/test', function (req, res, next) {
 router.post('/', function (req, res, next) {
   if (req.body.__action === 'change_id') {
     debug(`Change qid from ${res.locals.question.qid} to ${req.body.id}`);
-    if (!req.body.id) return next(new Error(`Invalid QID (was falsey): ${req.body.id}`));
+    if (!req.body.id) return next(new Error(`Invalid QID (was falsy): ${req.body.id}`));
     if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
       return next(
         new Error(
