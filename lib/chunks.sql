@@ -176,17 +176,14 @@ WITH
       JSON_ARRAY_ELEMENTS($chunks) AS cm
       LEFT JOIN questions AS q ON (
         q.qid = (cm ->> 'questionName')
-        AND q.deleted_at IS NULL
         AND q.course_id = $course_id
       )
       LEFT JOIN course_instances AS ci ON (
         ci.short_name = (cm ->> 'courseInstanceName')
-        AND ci.deleted_at IS NULL
         AND ci.course_id = $course_id
       )
       LEFT JOIN assessments AS a ON (
         a.tid = (cm ->> 'assessmentName')
-        AND a.deleted_at IS NULL
         AND a.course_instance_id = ci.id
       )
   ),
