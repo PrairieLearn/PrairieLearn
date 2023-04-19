@@ -335,33 +335,36 @@ describe('Test group based assessments with custom group roles from student side
     assert.lengthOf(elemList, 3);
   });
 
-  step('should be able to edit role table to correct configuration', function () {
-    // Uncheck all of the inputs
-    const roleIds = locals.groupRoles.map((role) => role.id);
-    const userIds = locals.studentUsers.map((user) => user.user_id);
-    for (const roleId of roleIds) {
-      for (const userId of userIds) {
-        const elementId = `#user_role_${roleId}-${userId}`;
-        locals.$('#role-select-form').find(elementId).attr('checked', null);
+  step(
+    'should be able to edit role table to remove role assignments from second user',
+    function () {
+      // Uncheck all of the inputs
+      const roleIds = locals.groupRoles.map((role) => role.id);
+      const userIds = locals.studentUsers.map((user) => user.user_id);
+      for (const roleId of roleIds) {
+        for (const userId of userIds) {
+          const elementId = `#user_role_${roleId}-${userId}`;
+          locals.$('#role-select-form').find(elementId).attr('checked', null);
+        }
       }
+
+      // Ensure all checkboxes are unchecked
+      elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+      assert.lengthOf(elemList, 0);
+
+      // Remove role assignments from second user
+      locals.roleUpdates = [
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+      ];
+
+      // Mark the checkboxes as checked
+      locals.roleUpdates.forEach(({ roleId, groupUserId }) => {
+        locals.$(`#user_role_${roleId}-${groupUserId}`).attr('checked', '');
+      });
+      elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+      assert.lengthOf(elemList, 1);
     }
-
-    // Ensure all checkboxes are unchecked
-    elemList = locals.$('#role-select-form').find('tr').find('input:checked');
-    assert.lengthOf(elemList, 0);
-
-    // Construct role updates from database info
-    locals.roleUpdates = [
-      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-    ];
-
-    // Mark the checkboxes as checked
-    locals.roleUpdates.forEach(({ roleId, groupUserId }) => {
-      locals.$(`#user_role_${roleId}-${groupUserId}`).attr('checked', '');
-    });
-    elemList = locals.$('#role-select-form').find('tr').find('input:checked');
-    assert.lengthOf(elemList, 1);
-  });
+  );
 
   step('should press submit button to perform the role updates', async function () {
     // Grab IDs of checkboxes to construct update request
@@ -464,7 +467,7 @@ describe('Test group based assessments with custom group roles from student side
     assert.isString(locals.__csrf_token);
   });
 
-  step('should be able to edit role table to correct configuration', function () {
+  step('should be able to edit role table to make both users manager', function () {
     // Uncheck all of the inputs
     const roleIds = locals.groupRoles.map((role) => role.id);
     const userIds = locals.studentUsers.map((user) => user.user_id);
@@ -479,7 +482,7 @@ describe('Test group based assessments with custom group roles from student side
     elemList = locals.$('#role-select-form').find('tr').find('input:checked');
     assert.lengthOf(elemList, 0);
 
-    // Construct role updates from database info
+    // Make both first and second user manager
     locals.roleUpdates = [
       { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
       { roleId: locals.manager.id, groupUserId: locals.studentUsers[1].user_id },
@@ -565,45 +568,10 @@ describe('Test group based assessments with custom group roles from student side
     assert.isTrue(elemList.is(':disabled'));
   });
 
-  step('should be able to replace self manager role with reflector role', function () {
-    // Uncheck all of the inputs
-    const roleIds = locals.groupRoles.map((role) => role.id);
-    const userIds = locals.studentUsers.map((user) => user.user_id);
-    for (const roleId of roleIds) {
-      for (const userId of userIds) {
-        const elementId = `#user_role_${roleId}-${userId}`;
-        locals.$('#role-select-form').find(elementId).attr('checked', null);
-      }
-    }
-
-    // Ensure all checkboxes are unchecked
-    elemList = locals.$('#role-select-form').find('tr').find('input:checked');
-    assert.lengthOf(elemList, 0);
-
-    // Construct role updates from database info
-    locals.roleUpdates = [
-      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-    ];
-
-    // Mark the checkboxes as checked
-    locals.roleUpdates.forEach(({ roleId, groupUserId }) => {
-      locals.$(`#user_role_${roleId}-${groupUserId}`).attr('checked', '');
-    });
-    elemList = locals.$('#role-select-form').find('tr').find('input:checked');
-    assert.lengthOf(elemList, 2);
-  });
-
-  step('should press submit button to perform the role updates', async function () {
-    // Grab IDs of checkboxes to construct update request
-    const checkedElementIds = {};
-    for (let i = 0; i < elemList.length; i++) {
-      checkedElementIds[elemList[i.toString()].attribs.id] = 'on';
-    }
+  step('second user should be able to leave group as manager', async function () {
     const form = {
-      __action: 'update_group_roles',
+      __action: 'leave_group',
       __csrf_token: locals.__csrf_token,
-      ...checkedElementIds,
     };
     const res = await fetch(locals.assessmentUrl, {
       method: 'POST',
@@ -612,18 +580,41 @@ describe('Test group based assessments with custom group roles from student side
     assert.isOk(res.ok);
   });
 
+  step('second user should be able to load assessment', async function () {
+    const res = await fetch(locals.assessmentUrl);
+    assert.isOk(res.ok);
+    locals.$ = cheerio.load(await res.text());
+  });
+
+  step('second user should be able to join group again', async function () {
+    const form = {
+      __action: 'join_group',
+      __csrf_token: locals.__csrf_token,
+      join_code: locals.joinCode,
+    };
+    const res = await fetch(locals.assessmentUrl, {
+      method: 'POST',
+      body: new URLSearchParams(form),
+    });
+    assert.isOk(res.ok);
+    locals.$ = cheerio.load(await res.text());
+  });
+
   step(
-    'should have correct role configuration in the database after reassigning roles',
+    'should have correct role configuration in the database after second user leaves and rejoins',
     async function () {
+      const expectedRoleUpdates = [
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+      ];
+      const expected = expectedRoleUpdates.map(({ roleId, groupUserId }) => ({
+        user_id: groupUserId,
+        group_role_id: roleId,
+      }));
       const params = {
         assessment_id: locals.assessment_id,
       };
       const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
-      // We expect the db to have all role updates, including the assigner role
-      const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
-        user_id: groupUserId,
-        group_role_id: roleId,
-      }));
       assert.sameDeepMembers(expected, result.rows);
     }
   );
@@ -1970,7 +1961,7 @@ describe('Test group role reassignments when user leaves', function () {
       group_name: locals.groupName,
     }));
     locals.rolesInfo = {
-      roleAssignments: [],
+      roleAssignments: {},
       groupRoles: locals.groupRoles,
       validationErrors: [],
       disabledRoles: [],
@@ -1993,7 +1984,7 @@ describe('Test group role reassignments when user leaves', function () {
       // Setup group of 2 users with one user as manager and the other user as recorder
       locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 2);
       locals.groupInfo.groupSize = 2;
-      locals.rolesInfo.roleAssignments = [
+      const roleAssignments = [
         {
           user_id: locals.studentUsers[0].user_id,
           group_role_id: locals.manager.id,
@@ -2003,6 +1994,12 @@ describe('Test group role reassignments when user leaves', function () {
           group_role_id: locals.recorder.id,
         },
       ];
+      locals.groupInfo.rolesInfo.groupRoles = locals.groupRoles.map((role) => ({
+        ...role,
+        count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
+          .length,
+      }));
+      locals.rolesInfo.roleAssignments = roleAssignments;
 
       // Get role reassignments if second user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
@@ -2030,7 +2027,7 @@ describe('Test group role reassignments when user leaves', function () {
       // Setup group of 2 users with one user as manager and the other user as recorder
       locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 2);
       locals.groupInfo.groupSize = 2;
-      locals.rolesInfo.roleAssignments = [
+      const roleAssignments = [
         {
           user_id: locals.studentUsers[0].user_id,
           group_role_id: locals.manager.id,
@@ -2040,6 +2037,12 @@ describe('Test group role reassignments when user leaves', function () {
           group_role_id: locals.contributor.id,
         },
       ];
+      locals.groupInfo.rolesInfo.groupRoles = locals.groupRoles.map((role) => ({
+        ...role,
+        count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
+          .length,
+      }));
+      locals.rolesInfo.roleAssignments = roleAssignments;
 
       // Get role reassignments if first user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
@@ -2063,7 +2066,7 @@ describe('Test group role reassignments when user leaves', function () {
       // Setup group of 3 users with first user as manager AND reflector, and the other users as contributors
       locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 3);
       locals.groupInfo.groupSize = 3;
-      locals.rolesInfo.roleAssignments = [
+      const roleAssignments = [
         {
           user_id: locals.studentUsers[0].user_id,
           group_role_id: locals.manager.id,
@@ -2081,6 +2084,12 @@ describe('Test group role reassignments when user leaves', function () {
           group_role_id: locals.contributor.id,
         },
       ];
+      locals.groupInfo.rolesInfo.groupRoles = locals.groupRoles.map((role) => ({
+        ...role,
+        count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
+          .length,
+      }));
+      locals.rolesInfo.roleAssignments = roleAssignments;
 
       // Get role reassignments if first user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
@@ -2128,7 +2137,7 @@ describe('Test group role reassignments when user leaves', function () {
       // Setup group of 3 users with one user as manager, recorder, and reflector, and the other users as contributor
       locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 3);
       locals.groupInfo.groupSize = 3;
-      locals.rolesInfo.roleAssignments = [
+      const roleAssignments = [
         {
           user_id: locals.studentUsers[0].user_id,
           group_role_id: locals.manager.id,
@@ -2150,6 +2159,12 @@ describe('Test group role reassignments when user leaves', function () {
           group_role_id: locals.contributor.id,
         },
       ];
+      locals.groupInfo.rolesInfo.groupRoles = locals.groupRoles.map((role) => ({
+        ...role,
+        count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
+          .length,
+      }));
+      locals.rolesInfo.roleAssignments = roleAssignments;
 
       // Get role reassignments if first user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
@@ -2183,7 +2198,7 @@ describe('Test group role reassignments when user leaves', function () {
     // Setup group of 2 users with one user as manager and the other user as contributor
     locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 2);
     locals.groupInfo.groupSize = 2;
-    locals.rolesInfo.roleAssignments = [
+    const roleAssignments = [
       {
         user_id: locals.studentUsers[0].user_id,
         group_role_id: locals.manager.id,
@@ -2193,6 +2208,12 @@ describe('Test group role reassignments when user leaves', function () {
         group_role_id: locals.contributor.id,
       },
     ];
+    locals.groupInfo.rolesInfo.groupRoles = locals.groupRoles.map((role) => ({
+      ...role,
+      count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
+        .length,
+    }));
+    locals.rolesInfo.roleAssignments = roleAssignments;
 
     // Get role reassignments if second user leaves
     const result = getGroupRoleReassignmentsAfterLeave(
@@ -2213,12 +2234,18 @@ describe('Test group role reassignments when user leaves', function () {
     // Setup group of 2 users with one user as manager and the other user without roles
     locals.groupInfo.groupMembers = locals.groupMembers.slice(0, 2);
     locals.groupInfo.groupSize = 2;
-    locals.rolesInfo.roleAssignments = [
+    const roleAssignments = [
       {
         user_id: locals.studentUsers[0].user_id,
         group_role_id: locals.manager.id,
       },
     ];
+    locals.groupInfo.rolesInfo.groupRoles = locals.groupRoles.map((role) => ({
+      ...role,
+      count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
+        .length,
+    }));
+    locals.rolesInfo.roleAssignments = roleAssignments;
 
     // Get role reassignments if second user leaves
     const result = getGroupRoleReassignmentsAfterLeave(
