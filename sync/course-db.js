@@ -1260,6 +1260,11 @@ async function validateAssessment(assessment, questions) {
           `Group role "${role.name}" contains an invalid maximum. (Expected at most ${assessment.groupMaxSize}, found ${role.maximum}).`
         );
       }
+      if (role.minimum > role.maximum) {
+        errors.push(
+          `Group role "${role.name}" must have a minimum <= maximum. (Expected minimum <= ${role.maximum}, found minimum = ${role.minimum}).`
+        );
+      }
     });
   }
 
