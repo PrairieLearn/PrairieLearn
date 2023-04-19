@@ -4,7 +4,7 @@ const fetch = require('node-fetch').default;
 const path = require('path');
 const { step } = require('mocha-steps');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 
