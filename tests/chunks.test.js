@@ -60,8 +60,6 @@ function getAllChunksForCourse(course_id) {
   );
 }
 
-function syncAndReloadCourse() {}
-
 describe('chunks', () => {
   describe('identifyChunksFromChangedFiles', () => {
     it('should identify change in element', () => {
