@@ -129,7 +129,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         lexer = get_lexer_by_name(language)
         if lexer is None:
             raise KeyError(
-                f'Unknown language: "{language}". Must be one of the aliases listed in https://pygments.org/languages/.'
+                f'Unknown language: "{language}". Must be one of the aliases listed in https://pygments.org/languages/, or the special language "ansi-color".'
             )
 
     style = pl.get_string_attrib(element, "style", STYLE_DEFAULT)
