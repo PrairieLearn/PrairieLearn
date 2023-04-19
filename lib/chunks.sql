@@ -199,12 +199,12 @@ WITH
     FROM
       chunks
       JOIN chunks_metadata AS cm ON (
-        chunks.course_id = $course_id
-        AND chunks.type = cm.type
+        cm.type = chunks.type
         AND cm.question_id = chunks.question_id
       )
     WHERE
-      chunks.type = 'question'
+      chunks.course_id = $course_id
+      AND chunks.type = 'question'
   ),
   client_files_course_instance_chunks_to_delete AS (
     SELECT
@@ -212,12 +212,12 @@ WITH
     FROM
       chunks
       JOIN chunks_metadata AS cm ON (
-        chunks.course_id = $course_id
-        AND chunks.type = cm.type
+        cm.type = chunks.type
         AND cm.course_instance_id = chunks.course_instance_id
       )
     WHERE
-      chunks.type = 'clientFilesCourseInstance'
+      chunks.course_id = $course_id
+      AND chunks.type = 'clientFilesCourseInstance'
   ),
   client_files_assessment_chunks_to_delete AS (
     SELECT
@@ -225,27 +225,27 @@ WITH
     FROM
       chunks
       JOIN chunks_metadata AS cm ON (
-        chunks.course_id = $course_id
-        AND chunks.type = cm.type
+        cm.type = chunks.type
         AND cm.assessment_id = chunks.assessment_id
       )
     WHERE
-      chunks.type = 'clientFilesAssessment'
+      chunks.course_id = $course_id
+      AND chunks.type = 'clientFilesAssessment'
   ),
   other_chunks_to_delete AS (
     SELECT
       id
     FROM
       chunks
-      JOIN chunks_metadata AS cm ON (
-        chunks.course_id = $course_id
-        AND chunks.type = cm.type
-      )
+      JOIN chunks_metadata AS cm ON (cm.type = chunks.type)
     WHERE
-      cm.type = 'elements'
-      OR cm.type = 'elementExtensions'
-      OR cm.type = 'clientFilesCourse'
-      OR cm.type = 'serverFilesCourse'
+      chunks.course_id = $course_id
+      AND (
+        cm.type = 'elements'
+        OR cm.type = 'elementExtensions'
+        OR cm.type = 'clientFilesCourse'
+        OR cm.type = 'serverFilesCourse'
+      )
   ),
   chunks_to_delete AS (
     SELECT
