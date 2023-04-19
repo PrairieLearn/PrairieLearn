@@ -34,7 +34,7 @@ function cleanLargePages(url, page) {
   if (url === '/pl/course_instance/1/instructor/course_admin/questions') {
     // This attribute is very large, which somehow corresponds to a long running
     // time for AXE. It's irrelevant for our checks, so we just remove it.
-    page.window.document.querySelector('#questionsTable').removeAttribute('data-data');
+    page.window.document.querySelector('#questionsTable')?.removeAttribute('data-data');
   }
 
   if (
