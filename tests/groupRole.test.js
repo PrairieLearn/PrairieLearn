@@ -309,6 +309,325 @@ describe('Test group based assessments with custom group roles from student side
     assert.lengthOf(elemList, 1);
   });
 
+  step('should be able to switch to first user and load assessment', async function () {
+    let student = locals.studentUsers[0];
+    config.authUid = student.uid;
+    config.authName = student.name;
+    config.authUin = '00000001';
+    config.userId = student.user_id;
+
+    const res = await fetch(locals.assessmentUrl);
+    assert.isOk(res.ok);
+    locals.$ = cheerio.load(await res.text());
+  });
+
+  step('should have a CSRF token', function () {
+    elemList = locals.$('form input[name="__csrf_token"]');
+    assert.lengthOf(elemList, 2);
+    assert.nestedProperty(elemList[0], 'attribs.value');
+    locals.__csrf_token = elemList[0].attribs.value;
+    assert.isString(locals.__csrf_token);
+  });
+
+  step('group role table is visible and has two users in it', function () {
+    elemList = locals.$('#role-select-form').find('tr');
+    // Header row and two user rows
+    assert.lengthOf(elemList, 3);
+  });
+
+  step('should be able to edit role table to correct configuration', function () {
+    // Uncheck all of the inputs
+    const roleIds = locals.groupRoles.map((role) => role.id);
+    const userIds = locals.studentUsers.map((user) => user.user_id);
+    for (const roleId of roleIds) {
+      for (const userId of userIds) {
+        const elementId = `#user_role_${roleId}-${userId}`;
+        locals.$('#role-select-form').find(elementId).attr('checked', null);
+      }
+    }
+
+    // Ensure all checkboxes are unchecked
+    elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+    assert.lengthOf(elemList, 0);
+
+    // Construct role updates from database info
+    locals.roleUpdates = [
+      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+    ];
+
+    // Mark the checkboxes as checked
+    locals.roleUpdates.forEach(({ roleId, groupUserId }) => {
+      locals.$(`#user_role_${roleId}-${groupUserId}`).attr('checked', '');
+    });
+    elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+    assert.lengthOf(elemList, 1);
+  });
+
+  step('should press submit button to perform the role updates', async function () {
+    // Grab IDs of checkboxes to construct update request
+    const checkedElementIds = {};
+    for (let i = 0; i < elemList.length; i++) {
+      checkedElementIds[elemList[i.toString()].attribs.id] = 'on';
+    }
+    const form = {
+      __action: 'update_group_roles',
+      __csrf_token: locals.__csrf_token,
+      ...checkedElementIds,
+    };
+    const res = await fetch(locals.assessmentUrl, {
+      method: 'POST',
+      body: new URLSearchParams(form),
+    });
+    assert.isOk(res.ok);
+  });
+
+  step('should reload assessment page successfully', async function () {
+    const res = await fetch(locals.assessmentUrl);
+    assert.isOk(res.ok);
+    locals.$ = cheerio.load(await res.text());
+  });
+
+  step('should have only manager role in the database after reassigning roles', async function () {
+    const params = {
+      assessment_id: locals.assessment_id,
+    };
+    const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
+    const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+      user_id: groupUserId,
+      group_role_id: roleId,
+    }));
+    assert.sameDeepMembers(expected, result.rows);
+  });
+
+  step('should have only manager for first user selected in the table', function () {
+    elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+    assert.lengthOf(elemList, 1);
+
+    locals.roleUpdates.forEach(({ roleId, groupUserId }) => {
+      const elementId = `#user_role_${roleId}-${groupUserId}`;
+      elemList = locals.$('#role-select-form').find(elementId);
+      assert.lengthOf(elemList, 1);
+      assert.isDefined(elemList['0'].attribs.checked);
+    });
+  });
+
+  step('should have error displayed for requiring all users have a role', function () {
+    elemList = locals.$(
+      '.alert:contains(At least one user does not have a role. All users must have a role.)'
+    );
+    assert.lengthOf(elemList, 1);
+  });
+
+  step('should not be able to start assessment', function () {
+    elemList = locals.$('#start-assessment');
+    assert.isTrue(elemList.is(':disabled'));
+  });
+
+  step(
+    'should be able to switch to second user, load assessment, and verify CSRF token',
+    async function () {
+      let student = locals.studentUsers[1];
+      config.authUid = student.uid;
+      config.authName = student.name;
+      config.authUin = '00000002';
+      config.userId = student.user_id;
+
+      const res = await fetch(locals.assessmentUrl);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
+
+      elemList = locals.$('form input[name="__csrf_token"]');
+      assert.lengthOf(elemList, 1);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.__csrf_token = elemList[0].attribs.value;
+      assert.isString(locals.__csrf_token);
+    }
+  );
+
+  step('should be able to switch to first user and load assessment', async function () {
+    let student = locals.studentUsers[0];
+    config.authUid = student.uid;
+    config.authName = student.name;
+    config.authUin = '00000001';
+    config.userId = student.user_id;
+
+    const res = await fetch(locals.assessmentUrl);
+    assert.isOk(res.ok);
+    locals.$ = cheerio.load(await res.text());
+  });
+
+  step('should have a CSRF token', function () {
+    elemList = locals.$('form input[name="__csrf_token"]');
+    assert.lengthOf(elemList, 2);
+    assert.nestedProperty(elemList[0], 'attribs.value');
+    locals.__csrf_token = elemList[0].attribs.value;
+    assert.isString(locals.__csrf_token);
+  });
+
+  step('should be able to edit role table to correct configuration', function () {
+    // Uncheck all of the inputs
+    const roleIds = locals.groupRoles.map((role) => role.id);
+    const userIds = locals.studentUsers.map((user) => user.user_id);
+    for (const roleId of roleIds) {
+      for (const userId of userIds) {
+        const elementId = `#user_role_${roleId}-${userId}`;
+        locals.$('#role-select-form').find(elementId).attr('checked', null);
+      }
+    }
+
+    // Ensure all checkboxes are unchecked
+    elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+    assert.lengthOf(elemList, 0);
+
+    // Construct role updates from database info
+    locals.roleUpdates = [
+      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+      { roleId: locals.manager.id, groupUserId: locals.studentUsers[1].user_id },
+    ];
+
+    // Mark the checkboxes as checked
+    locals.roleUpdates.forEach(({ roleId, groupUserId }) => {
+      locals.$(`#user_role_${roleId}-${groupUserId}`).attr('checked', '');
+    });
+    elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+    assert.lengthOf(elemList, 2);
+  });
+
+  step('should press submit button to perform the role updates', async function () {
+    // Grab IDs of checkboxes to construct update request
+    const checkedElementIds = {};
+    for (let i = 0; i < elemList.length; i++) {
+      checkedElementIds[elemList[i.toString()].attribs.id] = 'on';
+    }
+    const form = {
+      __action: 'update_group_roles',
+      __csrf_token: locals.__csrf_token,
+      ...checkedElementIds,
+    };
+    const res = await fetch(locals.assessmentUrl, {
+      method: 'POST',
+      body: new URLSearchParams(form),
+    });
+    assert.isOk(res.ok);
+  });
+
+  step(
+    'should have correct role configuration in the database after reassigning roles',
+    async function () {
+      const params = {
+        assessment_id: locals.assessment_id,
+      };
+      const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
+      const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+        user_id: groupUserId,
+        group_role_id: roleId,
+      }));
+      assert.sameDeepMembers(expected, result.rows);
+    }
+  );
+
+  step(
+    'should be able to switch to second user, load assessment, and verify CSRF token',
+    async function () {
+      let student = locals.studentUsers[1];
+      config.authUid = student.uid;
+      config.authName = student.name;
+      config.authUin = '00000002';
+      config.userId = student.user_id;
+
+      const res = await fetch(locals.assessmentUrl);
+      assert.isOk(res.ok);
+      locals.$ = cheerio.load(await res.text());
+
+      elemList = locals.$('form input[name="__csrf_token"]');
+      assert.lengthOf(elemList, 2);
+      assert.nestedProperty(elemList[0], 'attribs.value');
+      locals.__csrf_token = elemList[0].attribs.value;
+      assert.isString(locals.__csrf_token);
+    }
+  );
+
+  step('group role table is visible and has two users in it', function () {
+    elemList = locals.$('#role-select-form').find('tr');
+    // Header row and two user rows
+    assert.lengthOf(elemList, 3);
+  });
+
+  step('should have errors displayed for incorrect number of role assignments', function () {
+    elemList = locals.$('.alert:contains(less person needs to be assigned)');
+    assert.lengthOf(elemList, 1);
+    elemList = locals.$('.alert:contains(more person needs to be assigned)');
+    assert.lengthOf(elemList, 2);
+  });
+
+  step('should not be able to start assessment', function () {
+    elemList = locals.$('#start-assessment');
+    assert.isTrue(elemList.is(':disabled'));
+  });
+
+  step('should be able to replace self manager role with reflector role', function () {
+    // Uncheck all of the inputs
+    const roleIds = locals.groupRoles.map((role) => role.id);
+    const userIds = locals.studentUsers.map((user) => user.user_id);
+    for (const roleId of roleIds) {
+      for (const userId of userIds) {
+        const elementId = `#user_role_${roleId}-${userId}`;
+        locals.$('#role-select-form').find(elementId).attr('checked', null);
+      }
+    }
+
+    // Ensure all checkboxes are unchecked
+    elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+    assert.lengthOf(elemList, 0);
+
+    // Construct role updates from database info
+    locals.roleUpdates = [
+      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+    ];
+
+    // Mark the checkboxes as checked
+    locals.roleUpdates.forEach(({ roleId, groupUserId }) => {
+      locals.$(`#user_role_${roleId}-${groupUserId}`).attr('checked', '');
+    });
+    elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+    assert.lengthOf(elemList, 2);
+  });
+
+  step('should press submit button to perform the role updates', async function () {
+    // Grab IDs of checkboxes to construct update request
+    const checkedElementIds = {};
+    for (let i = 0; i < elemList.length; i++) {
+      checkedElementIds[elemList[i.toString()].attribs.id] = 'on';
+    }
+    const form = {
+      __action: 'update_group_roles',
+      __csrf_token: locals.__csrf_token,
+      ...checkedElementIds,
+    };
+    const res = await fetch(locals.assessmentUrl, {
+      method: 'POST',
+      body: new URLSearchParams(form),
+    });
+    assert.isOk(res.ok);
+  });
+
+  step(
+    'should have correct role configuration in the database after reassigning roles',
+    async function () {
+      const params = {
+        assessment_id: locals.assessment_id,
+      };
+      const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
+      // We expect the db to have all role updates, including the assigner role
+      const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
+        user_id: groupUserId,
+        group_role_id: roleId,
+      }));
+      assert.sameDeepMembers(expected, result.rows);
+    }
+  );
+
   step('should be able to switch to third user and load assessment', async function () {
     let student = locals.studentUsers[2];
     config.authUid = student.uid;
