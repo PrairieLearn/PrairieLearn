@@ -128,11 +128,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if language is not None:
         lexer = get_lexer_by_name(language)
         if lexer is None:
-            allowed_languages = (
-                l[1][0] for l in pygments.lexers.get_all_lexers() if l[1]
-            )
             raise KeyError(
-                f'Unknown language: "{language}". Must be one of: {", ".join(allowed_languages)}'
+                f'Unknown language: "{language}". Must be one of the alias listed in https://pygments.org/languages/.'
             )
 
     style = pl.get_string_attrib(element, "style", STYLE_DEFAULT)
