@@ -869,7 +869,7 @@ describe('Assessment syncing', () => {
     );
   });
 
-  it('handles role permissions with nonexistent group roles', async () => {
+  it('records an error if a question has permissions for non-existent group roles', async () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groupWork = true;
@@ -900,6 +900,66 @@ describe('Assessment syncing', () => {
     assert.match(
       syncedAssessment.sync_errors,
       /A zone question's "canView" permission contains the non-existent group role name "Invalid"./
+    );
+  });
+
+  it('records an error if there is no group role with minimum > 0 that can reassign roles', async () => {
+    const courseData = util.getCourseData();
+    const groupAssessment = makeAssessment(courseData, 'Homework');
+    groupAssessment.groupWork = true;
+    groupAssessment.groupRoles = [
+      {
+        name: 'Recorder',
+        canAssignRolesAtStart: false,
+        canAssignRolesDuringAssessment: false,
+      },
+    ];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupAssessmentFail'] =
+      groupAssessment;
+
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('groupAssessmentFail');
+
+    assert.match(
+      syncedAssessment.sync_errors,
+      /Could not find a role with minimum >= 1 and "can_assign_roles_at_start" set to "true"./
+    );
+    assert.match(
+      syncedAssessment.sync_errors,
+      /Could not find a role with minimum >= 1 and "can_assign_roles_during_assessment" set to "true"./
+    );
+  });
+
+  it('records an error if group role max/min are greater than the group maximum', async () => {
+    const courseData = util.getCourseData();
+    const groupAssessment = makeAssessment(courseData, 'Homework');
+    groupAssessment.groupWork = true;
+    groupAssessment.groupMaxSize = 4;
+    groupAssessment.groupRoles = [
+      {
+        name: 'Manager',
+        canAssignRolesAtStart: true,
+        canAssignRolesDuringAssessment: true,
+        minimum: 10,
+      },
+      {
+        name: 'Reflector',
+        maximum: 10,
+      },
+    ];
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupAssessmentFail'] =
+      groupAssessment;
+
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('groupAssessmentFail');
+
+    assert.match(
+      syncedAssessment.sync_errors,
+      /Group role "Manager" contains an invalid minimum. \(Expected at most 4, found 10\)./
+    );
+    assert.match(
+      syncedAssessment.sync_errors,
+      /Group role "Reflector" contains an invalid maximum. \(Expected at most 4, found 10\)./
     );
   });
 

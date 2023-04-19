@@ -1208,8 +1208,8 @@ async function validateAssessment(assessment, questions) {
     });
   });
 
-  // Ensure at least one role can assign roles before and during an assessment
   if (assessment.groupRoles) {
+    // Ensure at least one role can assign roles before and during an assessment
     let foundCanAssignRolesAtStart = false;
     let foundCanAssignRolesDuringAssessment = false;
 
@@ -1232,6 +1232,20 @@ async function validateAssessment(assessment, questions) {
         'Could not find a role with minimum >= 1 and "can_assign_roles_during_assessment" set to "true".'
       );
     }
+
+    // Ensure values for role minimum and maximum are within bounds
+    assessment.groupRoles.forEach((role) => {
+      if (role.minimum && role.minimum > assessment.groupMaxSize) {
+        errors.push(
+          `Group role "${role.name}" contains an invalid minimum. (Expected at most ${assessment.groupMaxSize}, found ${role.minimum}).`
+        );
+      }
+      if (role.maximum && role.maximum > assessment.groupMaxSize) {
+        errors.push(
+          `Group role "${role.name}" contains an invalid maximum. (Expected at most ${assessment.groupMaxSize}, found ${role.maximum}).`
+        );
+      }
+    });
   }
 
   return { warnings, errors };
