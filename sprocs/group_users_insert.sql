@@ -13,7 +13,7 @@ DECLARE
     max_size bigint;
     has_roles boolean;
     default_group_role_id bigint;
-    required_roles_count bigint;
+    min_roles_to_fill bigint;
 BEGIN
     -- find group id
     SELECT 
@@ -67,19 +67,19 @@ BEGIN
     -- find the default group role id
     IF has_roles THEN
         -- if groupsize == 0, give an assigner role
-        -- else if groupsize <= (# required roles), assign the user a random role where (min > 0)
+        -- else if groupsize <= (minimum roles to fill), assign the user a random role where (min > 0)
         -- else, assign a role with the highest maximum
-
-        SELECT COUNT(*) INTO required_roles_count
+        
+        SELECT SUM(gr.minimum) INTO min_roles_to_fill
         FROM group_roles AS gr
-        WHERE gr.assessment_id = arg_assessment_id AND gr.minimum > 0;
+        WHERE gr.assessment_id = arg_assessment_id;
 
         IF cur_size = 0 THEN
             SELECT id INTO default_group_role_id
             FROM group_roles AS gr
             WHERE gr.assessment_id = arg_assessment_id AND gr.can_assign_roles_at_start
             LIMIT 1;
-        ELSIF cur_size < required_roles_count THEN
+        ELSIF cur_size < min_roles_to_fill THEN
             SELECT id INTO default_group_role_id
             FROM group_roles AS gr
             WHERE gr.assessment_id = arg_assessment_id AND gr.minimum > 0 AND NOT gr.can_assign_roles_at_start
