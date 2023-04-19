@@ -17,7 +17,7 @@ const sqldb = require('@prairielearn/postgres');
 
 const server = require('../../server');
 const news_items = require('../../news_items');
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 const helperServer = require('../helperServer');
 
 const SITE_URL = 'http://localhost:' + config.serverPort;
