@@ -240,11 +240,11 @@ WITH
       JOIN chunks_metadata AS cm ON (cm.type = chunks.type)
     WHERE
       chunks.course_id = $course_id
-      AND (
-        cm.type = 'elements'
-        OR cm.type = 'elementExtensions'
-        OR cm.type = 'clientFilesCourse'
-        OR cm.type = 'serverFilesCourse'
+      AND cm.type IN (
+        'elements',
+        'elementExtensions',
+        'clientFilesCourse',
+        'serverFilesCourse'
       )
   ),
   chunks_to_delete AS (
