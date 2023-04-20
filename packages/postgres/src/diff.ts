@@ -1,5 +1,4 @@
 // @ts-check
-import async from 'async';
 import fs from 'fs-extra';
 import path from 'path';
 import chalk from 'chalk';
@@ -135,16 +134,16 @@ async function loadDescriptionFromDisk(dirPath: string): Promise<Description> {
   };
 
   const tables = await fs.readdir(path.join(dirPath, 'tables'));
-  await async.each(tables, async (table) => {
+  for (const table of tables) {
     const data = await fs.readFile(path.join(dirPath, 'tables', table), 'utf8');
     description.tables[table.replace('.pg', '')] = data;
-  });
+  }
 
   const enums = await fs.readdir(path.join(dirPath, 'enums'));
-  await async.each(enums, async (enumName) => {
+  for (const enumName of enums) {
     const data = await fs.readFile(path.join(dirPath, 'enums', enumName), 'utf8');
     description.enums[enumName.replace('.pg', '')] = data;
-  });
+  }
 
   return description;
 }

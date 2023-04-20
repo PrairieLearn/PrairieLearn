@@ -1,5 +1,4 @@
 // @ts-check
-import async from 'async';
 import pg from 'pg';
 import chalk from 'chalk';
 import _ from 'lodash';
@@ -103,7 +102,7 @@ async function describeWithPool(
   }
 
   // Get column info for each table
-  await async.each(tables, async (table) => {
+  for (const table of tables) {
     const columnResults = await pool.queryAsync(sql.get_columns_for_table, {
       oid: table.oid,
     });
@@ -143,7 +142,7 @@ async function describeWithPool(
       references: references,
       checkConstraints: checkConstraintResults.rows,
     };
-  });
+  }
 
   // Get all enums
   const enumsRes = await pool.queryAsync(sql.get_enums, []);
