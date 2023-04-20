@@ -1,132 +1,110 @@
 // @ts-check
-const async = require('async');
-const pgArray = require('pg').types.arrayParser;
-const chalk = require('chalk');
-const _ = require('lodash');
+import async from 'async';
+import pg from 'pg';
+import chalk from 'chalk';
+import _ from 'lodash';
 
-const sqldb = require('@prairielearn/postgres');
-const sql = sqldb.loadSqlEquiv(__filename);
+import { loadSqlEquiv } from './loader';
+import { PostgresPool } from './pool';
 
-/**
- * @typedef {Object} ColumnDescription
- * @property {string} name
- * @property {string} type
- * @property {boolean} notnull
- * @property {any} default
- */
+const sql = loadSqlEquiv(__filename);
+const pgArray = pg.types.arrayParser;
 
-/**
- * @typedef {Object} IndexDescription
- * @property {string} name
- * @property {boolean} isprimary
- * @property {boolean} isunique
- * @property {string} indexdef
- * @property {string} constraintdef
- * @property {string} contype
- */
+interface ColumnDescription {
+  name: string;
+  type: string;
+  notnull: boolean;
+  default: any;
+}
 
-/**
- * @typedef {Object} ForeignKeyConstraintDescription
- * @property {string} name
- * @property {string} def
- */
+interface IndexDescription {
+  name: string;
+  isprimary: boolean;
+  isunique: boolean;
+  indexdef: string;
+  constraintdef: string;
+  contype: string;
+}
 
-/**
- * @typedef {Object} ReferenceDescription
- * @property {string} name
- * @property {string} table
- * @property {string} condef
- */
+interface ForeignKeyConstraintDescription {
+  name: string;
+  def: string;
+}
 
-/**
- * @typedef {Object} CheckConstraintDescription
- * @property {string} name
- * @property {string} def
- */
+interface ReferenceDescription {
+  name: string;
+  table: string;
+  condef: string;
+}
 
-/**
- * @typedef {Object} TableDescription
- * @property {ColumnDescription[]} columns
- * @property {IndexDescription[]} indexes
- * @property {ForeignKeyConstraintDescription[]} foreignKeyConstraints
- * @property {ReferenceDescription[]} references
- * @property {CheckConstraintDescription[]} checkConstraints
- */
+interface CheckConstraintDescription {
+  name: string;
+  def: string;
+}
 
-/**
- * @typedef {Object} DatabaseDescription
- * @property {Record<string, TableDescription>} tables
- * @property {Record<string, string[]>} enums
- */
+interface TableDescription {
+  columns: ColumnDescription[];
+  indexes: IndexDescription[];
+  foreignKeyConstraints: ForeignKeyConstraintDescription[];
+  references: ReferenceDescription[];
+  checkConstraints: CheckConstraintDescription[];
+}
 
-/**
- * @typedef {Object} DescribeOptions
- * @property {string[]} [ignoreTables]
- * @property {string[]} [ignoreColumns]
- * @property {string[]} [ignoreEnums]
- */
+interface DatabaseDescription {
+  tables: Record<string, TableDescription>;
+  enums: Record<string, string[]>;
+}
 
-/**
- * Will produce a description of a given database's schema. This will include
- * information about tables, enums, constraints, indices, etc.
- *
- * @param {string} databaseName
- * @param {DescribeOptions} [options]
- * @returns {Promise<DatabaseDescription>}
- */
-module.exports.describe = async function (databaseName, options = {}) {
+interface DescribeOptions {
+  ignoreTables?: string[];
+  ignoreColumns?: string[];
+  ignoreEnums?: string[];
+}
+
+function parsePostgresArray(arr: string): string[] {
+  // @ts-expect-error -- Incorrect type definitions in `pg-types`.
+  return pgArray.create(arr, String).parse();
+}
+
+async function describeWithPool(
+  pool: PostgresPool,
+  options: DescribeOptions
+): Promise<DatabaseDescription> {
   const ignoreTables = options?.ignoreTables || [];
   const ignoreEnums = options?.ignoreEnums || [];
-  var ignoreColumns = {};
+  let ignoreColumns: Record<string, string[]> = {};
 
-  /** @type {DatabaseDescription} */
-  var output = {
+  const output: DatabaseDescription = {
     tables: {},
     enums: {},
   };
 
-  // Connect to the database
-  const pgConfig = {
-    user: 'postgres',
-    database: databaseName,
-    host: 'localhost',
-    max: 10,
-    idleTimeoutMillis: 30000,
-  };
-  function idleErrorHandler(err) {
-    throw err;
-  }
-  await sqldb.initAsync(pgConfig, idleErrorHandler);
-
   // Get the names of the tables and filter out any ignored tables
-  const tablesRes = await sqldb.queryAsync(sql.get_tables, []);
+  const tablesRes = await pool.queryAsync(sql.get_tables, []);
   const tables = tablesRes.rows.filter((table) => ignoreTables.indexOf(table.name) === -1);
 
   // Transform ignored columns into a map from table names to arrays
   // of column names
-  if (options.ignoreColumns && _.isArray(options.ignoreColumns)) {
-    ignoreColumns = _.filter(options.ignoreColumns, (ignore) => {
-      return /^[^\s.]*\.[^\s.]*$/.test(ignore);
-    });
-    ignoreColumns = _.reduce(
-      ignoreColumns,
-      (result, value) => {
-        var res = /^(([^\s.]*)\.([^\s.]*))$/.exec(value);
+  if (options.ignoreColumns && Array.isArray(options.ignoreColumns)) {
+    ignoreColumns = options.ignoreColumns
+      .filter((ignore) => {
+        return /^[^\s.]*\.[^\s.]*$/.test(ignore);
+      })
+      .reduce((result, value) => {
+        const res = /^(([^\s.]*)\.([^\s.]*))$/.exec(value);
         if (!res) {
           throw new Error(`Invalid ignore column: ${value}`);
         }
-        var table = res[2];
-        var column = res[3];
+        const table = res[2];
+        const column = res[3];
         (result[table] || (result[table] = [])).push(column);
         return result;
-      },
-      {}
-    );
+      }, {} as Record<string, string[]>);
   }
 
   // Get column info for each table
   await async.each(tables, async (table) => {
-    const columnResults = await sqldb.queryAsync(sql.get_columns_for_table, {
+    const columnResults = await pool.queryAsync(sql.get_columns_for_table, {
       oid: table.oid,
     });
 
@@ -134,18 +112,18 @@ module.exports.describe = async function (databaseName, options = {}) {
       return (ignoreColumns[table.name] || []).indexOf(row.name) === -1;
     });
 
-    const indexResults = await sqldb.queryAsync(sql.get_indexes_for_table, {
+    const indexResults = await pool.queryAsync(sql.get_indexes_for_table, {
       oid: table.oid,
     });
 
-    const foreignKeyConstraintResults = await sqldb.queryAsync(
+    const foreignKeyConstraintResults = await pool.queryAsync(
       sql.get_foreign_key_constraints_for_table,
       {
         oid: table.oid,
       }
     );
 
-    const referenceResults = await sqldb.queryAsync(sql.get_references_for_table, {
+    const referenceResults = await pool.queryAsync(sql.get_references_for_table, {
       oid: table.oid,
     });
 
@@ -154,7 +132,7 @@ module.exports.describe = async function (databaseName, options = {}) {
       return ignoreTables.indexOf(row.table) === -1;
     });
 
-    const checkConstraintResults = await sqldb.queryAsync(sql.get_check_constraints_for_table, {
+    const checkConstraintResults = await pool.queryAsync(sql.get_check_constraints_for_table, {
       oid: table.oid,
     });
 
@@ -168,7 +146,7 @@ module.exports.describe = async function (databaseName, options = {}) {
   });
 
   // Get all enums
-  const enumsRes = await sqldb.queryAsync(sql.get_enums, []);
+  const enumsRes = await pool.queryAsync(sql.get_enums, []);
 
   // Filter ignored enums
   const rows = enumsRes.rows.filter((row) => {
@@ -176,23 +154,49 @@ module.exports.describe = async function (databaseName, options = {}) {
   });
 
   rows.forEach((row) => {
-    output.enums[row.name] = pgArray.create(row.values, String).parse();
+    output.enums[row.name] = parsePostgresArray(row.values);
   });
 
-  await sqldb.closeAsync();
   return output;
-};
+}
 
 /**
- *
- * @param {DatabaseDescription} description
- * @param {{ coloredOutput: boolean }} options
- * @returns {{ tables: Record<string, string>, enums: Record<string, string> }}
+ * Will produce a description of a given database's schema. This will include
+ * information about tables, enums, constraints, indices, etc.
  */
-module.exports.formatDescription = function (description, options = { coloredOutput: true }) {
+export async function describe(
+  databaseName: string,
+  options: DescribeOptions = {}
+): Promise<DatabaseDescription> {
+  // Connect to the database.
+  const pool = new PostgresPool();
+  const pgConfig = {
+    user: 'postgres',
+    database: databaseName,
+    host: 'localhost',
+    max: 10,
+    idleTimeoutMillis: 30000,
+  };
+  function idleErrorHandler(err: Error) {
+    throw err;
+  }
+  await pool.initAsync(pgConfig, idleErrorHandler);
+
+  try {
+    return await describeWithPool(pool, options);
+  } catch (err) {
+    await pool.closeAsync();
+    throw err;
+  }
+}
+
+module.exports.formatDescription = function (
+  description: DatabaseDescription,
+  options = { coloredOutput: true }
+): { tables: Record<string, string>; enums: Record<string, string> } {
   const output = {
-    tables: {},
-    enums: {},
+    tables: {} as Record<string, string>,
+    enums: {} as Record<string, string>,
   };
 
   Object.keys(description.tables).forEach((tableName) => (output.tables[tableName] = ''));
@@ -200,12 +204,8 @@ module.exports.formatDescription = function (description, options = { coloredOut
   /**
    * Optionally applies the given formatter to the text if colored output is
    * enabled.
-   *
-   * @param {string} text
-   * @param {(s: string) => string} formatter
-   * @returns {string}
    */
-  function formatText(text, formatter) {
+  function formatText(text: string, formatter: (s: string) => string): string {
     if (options.coloredOutput) {
       return formatter(text);
     }
@@ -217,7 +217,7 @@ module.exports.formatDescription = function (description, options = { coloredOut
       output.tables[tableName] += formatText('columns\n', chalk.underline);
       output.tables[tableName] += table.columns
         .map((row) => {
-          var rowText = formatText(`    ${row.name}`, chalk.bold);
+          let rowText = formatText(`    ${row.name}`, chalk.bold);
           rowText += ':' + formatText(` ${row.type}`, chalk.green);
           if (row.notnull) {
             rowText += formatText(' not null', chalk.gray);
@@ -238,7 +238,7 @@ module.exports.formatDescription = function (description, options = { coloredOut
       output.tables[tableName] += table.indexes
         .map((row) => {
           const using = row.indexdef.substring(row.indexdef.indexOf('USING '));
-          var rowText = formatText(`    ${row.name}`, chalk.bold) + ':';
+          let rowText = formatText(`    ${row.name}`, chalk.bold) + ':';
           // Primary indexes are implicitly unique, so we don't need to
           // capture that explicitly.
           if (row.isunique && !row.isprimary) {
@@ -288,7 +288,7 @@ module.exports.formatDescription = function (description, options = { coloredOut
       output.tables[tableName] += formatText('foreign-key constraints\n', chalk.underline);
       output.tables[tableName] += table.foreignKeyConstraints
         .map((row) => {
-          var rowText = formatText(`    ${row.name}:`, chalk.bold);
+          let rowText = formatText(`    ${row.name}:`, chalk.bold);
           rowText += formatText(` ${row.def}`, chalk.green);
           return rowText;
         })
@@ -302,7 +302,7 @@ module.exports.formatDescription = function (description, options = { coloredOut
       output.tables[tableName] += formatText('referenced by\n', chalk.underline);
       output.tables[tableName] += table.references
         ?.map((row) => {
-          var rowText = formatText(`    ${row.table}:`, chalk.bold);
+          let rowText = formatText(`    ${row.table}:`, chalk.bold);
           rowText += formatText(` ${row.condef}`, chalk.green);
           return rowText;
         })
