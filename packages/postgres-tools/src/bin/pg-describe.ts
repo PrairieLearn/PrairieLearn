@@ -42,7 +42,7 @@ const args = yargs
 const argv = args.parseSync();
 
 if (argv._.length !== 1) {
-  yargs.showHelp();
+  args.showHelp();
   process.exit(1);
 }
 

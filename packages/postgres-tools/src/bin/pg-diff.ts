@@ -48,7 +48,7 @@ if (argv.db && typeof argv.db === 'string' && argv.dir && typeof argv.dir === 's
 } else if (argv.dir && Array.isArray(argv.dir) && argv.dir.length === 2 && !argv.db) {
   diffDirectories(argv.dir[0], argv.dir[1], options).then(handleResults, handleError);
 } else {
-  yargs.showHelp();
+  args.showHelp();
   process.exit(1);
 }
 
