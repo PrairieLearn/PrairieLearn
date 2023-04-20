@@ -1,35 +1,32 @@
 // @ts-check
-const async = require('async');
-const fs = require('fs-extra');
-const path = require('path');
-const chalk = require('chalk');
-const _ = require('lodash');
-const jsdiff = require('diff');
+import async from 'async';
+import fs from 'fs-extra';
+import path from 'path';
+import chalk from 'chalk';
+import _ from 'lodash';
+import jsdiff from 'diff';
 
-const describe = require('./databaseDescribe');
+import * as describe from './describe';
 
-/** @typedef {{ type: 'database', name: string }} DatabaseInfo */
-/** @typedef {{ type: 'directory', path: string }} DirectoryInfo */
-/** @typedef {DatabaseInfo | DirectoryInfo} DiffTarget */
-/** @typedef {{ coloredOutput?: boolean}} DiffOptions */
+type DatabaseInfo = { type: 'database'; name: string };
+type DirectoryInfo = { type: 'directory'; path: string };
+type DiffTarget = DatabaseInfo | DirectoryInfo;
+type DiffOptions = { coloredOutput?: boolean };
+type Description = {
+  tables: Record<string, string>;
+  enums: Record<string, string>;
+};
 
-/**
- *
- * @param {DiffTarget} db1
- * @param {DiffTarget} db2
- * @param {DiffOptions} options
- * @returns {Promise<string>}
- */
-async function diff(db1, db2, options) {
-  function formatText(text, formatter) {
+async function diff(db1: DiffTarget, db2: DiffTarget, options: DiffOptions): Promise<string> {
+  function formatText(text: string, formatter?: ((s: string) => string) | null): string {
     if (options.coloredOutput && formatter) {
       return formatter(text);
     }
     return text;
   }
 
-  let db2Name = db2.type === 'database' ? db2.name : db2.path;
-  let db2NameBold = formatText(db2Name, chalk.bold);
+  const db2Name = db2.type === 'database' ? db2.name : db2.path;
+  const db2NameBold = formatText(db2Name, chalk.bold);
 
   let result = '';
 
@@ -37,8 +34,8 @@ async function diff(db1, db2, options) {
   const description2 = await loadDescription(db2);
 
   // Determine if both databases have the same tables
-  let tablesMissingFrom1 = _.difference(_.keys(description2.tables), _.keys(description1.tables));
-  let tablesMissingFrom2 = _.difference(_.keys(description1.tables), _.keys(description2.tables));
+  const tablesMissingFrom1 = _.difference(_.keys(description2.tables), _.keys(description1.tables));
+  const tablesMissingFrom2 = _.difference(_.keys(description1.tables), _.keys(description2.tables));
 
   if (tablesMissingFrom1.length > 0) {
     result += formatText(`Tables added to ${db2NameBold} (${db2.type})\n`, chalk.underline);
@@ -57,8 +54,8 @@ async function diff(db1, db2, options) {
   }
 
   // Determine if both databases have the same enums
-  let enumsMissingFrom1 = _.difference(_.keys(description2.enums), _.keys(description1.enums));
-  let enumsMissingFrom2 = _.difference(_.keys(description1.enums), _.keys(description2.enums));
+  const enumsMissingFrom1 = _.difference(_.keys(description2.enums), _.keys(description1.enums));
+  const enumsMissingFrom2 = _.difference(_.keys(description1.enums), _.keys(description2.enums));
 
   if (enumsMissingFrom1.length > 0) {
     result += formatText(`Enums added to ${db2NameBold} (${db1.type})\n`, chalk.underline);
@@ -77,7 +74,7 @@ async function diff(db1, db2, options) {
   }
 
   // Determine if the columns of any table differ
-  let intersection = _.intersection(_.keys(description1.tables), _.keys(description2.tables));
+  const intersection = _.intersection(_.keys(description1.tables), _.keys(description2.tables));
   _.forEach(intersection, (table) => {
     // We normalize each blob to end with a newline to make diffs print cleaner
     const diff = jsdiff.diffLines(
@@ -91,7 +88,7 @@ async function diff(db1, db2, options) {
 
     // Shift around the newlines so that we can cleanly show +/- symbols
     for (let i = 1; i < diff.length; i++) {
-      let prev = diff[i - 1].value;
+      const prev = diff[i - 1].value;
       if (prev[prev.length - 1] === '\n') {
         diff[i - 1].value = prev.slice(0, -1);
         diff[i].value = '\n' + diff[i].value;
@@ -107,13 +104,15 @@ async function diff(db1, db2, options) {
       if (index === 0) {
         change = change.slice(1, change.length);
       }
-      result += formatText(change, part.added ? chalk.green : part.removed ? chalk.red : null);
+      if (part.added || part.removed) {
+        result += formatText(change, part.added ? chalk.green : part.removed ? chalk.red : null);
+      }
     });
     result += '\n\n';
   });
 
   // Determine if the values of any enums differ
-  let enumsIntersection = _.intersection(_.keys(description1.enums), _.keys(description2.enums));
+  const enumsIntersection = _.intersection(_.keys(description1.enums), _.keys(description2.enums));
   _.forEach(enumsIntersection, (enumName) => {
     // We don't need to do a particularly fancy diff here, since
     // enums are just represented here as strings
@@ -129,8 +128,8 @@ async function diff(db1, db2, options) {
   return result;
 }
 
-async function loadDescriptionFromDisk(dirPath) {
-  const description = {
+async function loadDescriptionFromDisk(dirPath: string): Promise<Description> {
+  const description: Description = {
     tables: {},
     enums: {},
   };
@@ -150,12 +149,12 @@ async function loadDescriptionFromDisk(dirPath) {
   return description;
 }
 
-async function loadDescriptionFromDatabase(name) {
+async function loadDescriptionFromDatabase(name: string) {
   const description = await describe.describe(name);
   return describe.formatDescription(description, { coloredOutput: false });
 }
 
-async function loadDescription(db) {
+async function loadDescription(db: DiffTarget): Promise<Description> {
   if (db.type === 'database') {
     return loadDescriptionFromDatabase(db.name);
   } else if (db.type === 'directory') {
@@ -165,7 +164,11 @@ async function loadDescription(db) {
   }
 }
 
-module.exports.diffDatabases = async function (database1, database2, options) {
+module.exports.diffDatabases = async function (
+  database1: string,
+  database2: string,
+  options: DiffOptions
+) {
   return diff(
     {
       type: 'database',
@@ -179,7 +182,11 @@ module.exports.diffDatabases = async function (database1, database2, options) {
   );
 };
 
-module.exports.diffDatabaseAndDirectory = async function (database, directory, options) {
+module.exports.diffDatabaseAndDirectory = async function (
+  database: string,
+  directory: string,
+  options: DiffOptions
+) {
   return diff(
     {
       type: 'database',
@@ -193,7 +200,11 @@ module.exports.diffDatabaseAndDirectory = async function (database, directory, o
   );
 };
 
-module.exports.diffDirectoryAndDatabase = async function (directory, database, options) {
+module.exports.diffDirectoryAndDatabase = async function (
+  directory: string,
+  database: string,
+  options: DiffOptions
+) {
   return diff(
     {
       type: 'directory',
@@ -207,7 +218,11 @@ module.exports.diffDirectoryAndDatabase = async function (directory, database, o
   );
 };
 
-module.exports.diffDirectories = async function (directory1, directory2, options) {
+module.exports.diffDirectories = async function (
+  directory1: string,
+  directory2: string,
+  options: DiffOptions
+) {
   return diff(
     {
       type: 'directory',

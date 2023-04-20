@@ -190,7 +190,7 @@ export async function describe(
   }
 }
 
-module.exports.formatDescription = function (
+export function formatDescription(
   description: DatabaseDescription,
   options = { coloredOutput: true }
 ): { tables: Record<string, string>; enums: Record<string, string> } {
@@ -319,4 +319,4 @@ module.exports.formatDescription = function (
   output.enums = _.mapValues(output.enums, (item) => item + '\n');
 
   return output;
-};
+}
