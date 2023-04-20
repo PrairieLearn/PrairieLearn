@@ -21,7 +21,7 @@ const yargs = require('yargs')
 
 // TODO: remove cast once `@types/yargs` is fixed
 // https://github.com/yargs/yargs/issues/2175
-const argv = /** @type {Record<string, any>} */ (yargs.argv);
+const argv = /** @type {Record<string, any>} */ yargs.argv;
 
 const options = {
   outputFormat: 'string',
