@@ -1,9 +1,9 @@
 import os
+from enum import Enum
 
 import chevron
 import lxml.html
 import prairielearn as pl
-from enum import Enum
 from typing_extensions import assert_never
 
 
@@ -91,7 +91,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         base_url = data["options"]["client_files_question_dynamic_url"]
 
     else:
-        assert_never(file_name)
+        assert_never(file_type)
 
     # Get full url
     file_url = os.path.join(base_url, file_name)
