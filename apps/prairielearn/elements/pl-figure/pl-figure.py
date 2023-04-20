@@ -18,12 +18,14 @@ DIRECTORY_DEFAULT = "clientFilesQuestion"
 INLINE_DEFAULT = False
 ALT_TEXT_DEFAULT = ""
 
-PARENT_DIR_DICT = {
-    "question": "question_path",
+DIRECTORY_URL_DICT = {
+    "clientFilesQuestion": "client_files_question_url",
+    "clientFilesCourse": "client_files_course_url",
+}
+
+DIRECTORY_PATH_DICT = {
     "clientFilesQuestion": "client_files_question_path",
     "clientFilesCourse": "client_files_course_path",
-    "serverFilesCourse": "server_files_course_path",
-    "courseExtensions": "course_extensions_path",
 }
 
 
@@ -34,6 +36,29 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         required_attribs=["file-name"],
         optional_attribs=["width", "type", "directory", "inline", "alt"],
     )
+
+    file_type = pl.get_enum_attrib(element, "type", FileType, FILE_TYPE_DEFAULT)
+
+    # Only check for file existence if type is static
+    if file_type is FileType.STATIC:
+        file_directory = pl.get_string_attrib(element, "directory", DIRECTORY_DEFAULT)
+
+        if file_directory not in DIRECTORY_PATH_DICT:
+            dict_keys = ", ".join(f'"{key}"' for key in DIRECTORY_PATH_DICT.keys())
+            raise ValueError(
+                f'Invalid directory choice "{file_directory}", must be one of: {dict_keys}.'
+            )
+
+        file_name = pl.get_string_attrib(element, "file-name")
+        file_path = os.path.join(
+            data["options"][DIRECTORY_PATH_DICT[file_directory]], file_name
+        )
+
+        # If file not found on server, raise error
+        if not os.path.isfile(file_path):
+            raise FileNotFoundError(
+                f'File "{file_name}" not found in directory "{file_directory}".'
+            )
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -55,33 +80,21 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if file_type is FileType.STATIC:
         # Get directory (default is clientFilesQuestion)
         file_directory = pl.get_string_attrib(element, "directory", DIRECTORY_DEFAULT)
-
-        if file_directory not in PARENT_DIR_DICT:
-            dict_keys = ", ".join(f'"{key}"' for key in PARENT_DIR_DICT.keys())
-            raise ValueError(
-                f'Invalid directory choice "{file_directory}", must be one of: {dict_keys}.'
-            )
-
-        base_url = data["options"][PARENT_DIR_DICT[file_directory]]
+        base_url = data["options"][DIRECTORY_URL_DICT[file_directory]]
 
     elif file_type is FileType.DYNAMIC:
         if pl.has_attrib(element, "directory"):
             raise ValueError(
-                f'Attribute  "directory" cannot be provided for type "{file_type}".'
+                f'Attribute "directory" cannot be provided for type "{file_type}".'
             )
-        else:
-            base_url = data["options"]["client_files_question_dynamic_url"]
+
+        base_url = data["options"]["client_files_question_dynamic_url"]
 
     else:
         assert_never(file_name)
 
     # Get full url
     file_url = os.path.join(base_url, file_name)
-
-    if not os.path.isfile(file_url) and file_type is FileType.STATIC:
-        raise FileNotFoundError(
-            f'File "{file_name}" not found in directory "{file_directory}".'
-        )
 
     # Get width (optional)
     width = pl.get_string_attrib(element, "width", WIDTH_DEFAULT)
