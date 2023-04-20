@@ -190,27 +190,67 @@ WITH
         AND a.course_instance_id = ci.id
       )
   ),
+  -- We use separate queries for each chunk type so that Postgres doesn't try to
+  -- compute a huge cross product of the chunks + metadata on `type` as an
+  -- intermediate step. This was O(n^2) with the number of chunks to delete.
   chunks_to_delete AS (
-    SELECT
-      id
-    FROM
-      chunks
-      JOIN chunks_metadata AS cm ON (
+    (
+      SELECT
+        id
+      FROM
+        chunks
+        JOIN chunks_metadata AS cm ON (
+          cm.type = chunks.type
+          AND cm.question_id = chunks.question_id
+        )
+      WHERE
         chunks.course_id = $course_id
-        AND chunks.type = cm.type
-        AND CASE
-          WHEN (
-            cm.type = 'elements'
-            OR cm.type = 'elementExtensions'
-            OR cm.type = 'clientFilesCourse'
-            OR cm.type = 'serverFilesCourse'
-          ) THEN TRUE
-          WHEN (cm.type = 'clientFilesCourseInstance') THEN cm.course_instance_id = chunks.course_instance_id
-          WHEN (cm.type = 'clientFilesAssessment') THEN cm.assessment_id = chunks.assessment_id
-          WHEN (cm.type = 'question') THEN cm.question_id = chunks.question_id
-          ELSE FALSE
-        END
-      )
+        AND chunks.type = 'question'
+    )
+    UNION
+    (
+      SELECT
+        id
+      FROM
+        chunks
+        JOIN chunks_metadata AS cm ON (
+          cm.type = chunks.type
+          AND cm.course_instance_id = chunks.course_instance_id
+        )
+      WHERE
+        chunks.course_id = $course_id
+        AND chunks.type = 'clientFilesCourseInstance'
+    )
+    UNION
+    (
+      SELECT
+        id
+      FROM
+        chunks
+        JOIN chunks_metadata AS cm ON (
+          cm.type = chunks.type
+          AND cm.assessment_id = chunks.assessment_id
+        )
+      WHERE
+        chunks.course_id = $course_id
+        AND chunks.type = 'clientFilesAssessment'
+    )
+    UNION
+    (
+      SELECT
+        id
+      FROM
+        chunks
+        JOIN chunks_metadata AS cm ON (cm.type = chunks.type)
+      WHERE
+        chunks.course_id = $course_id
+        AND cm.type IN (
+          'elements',
+          'elementExtensions',
+          'clientFilesCourse',
+          'serverFilesCourse'
+        )
+    )
   )
 DELETE FROM chunks
 WHERE
