@@ -7,7 +7,7 @@
         "node": ">=16.0.0"
     },
     "scripts": {
-        "release": "turbo run build && changeset publish",
+        "release": "turbo run build && node tools/fix-workspace-versions-before-publish.mjs && changeset publish",
         "version": "changeset version && YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn"
     },
     "dependencies": {

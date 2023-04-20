@@ -102,7 +102,6 @@ module.exports.init = function (callback) {
       'grading_jobs_insert.sql',
       'grading_jobs_update_after_grading.sql',
       'ip_to_mode.sql',
-      'config_select.sql',
       'users_select_or_insert.sql',
       'users_select_or_insert_and_enroll_lti.sql',
       'users_are_instructors_in_any_course.sql',
