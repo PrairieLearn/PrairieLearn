@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-check
 
 import async from 'async';
 import chalk from 'chalk';
