@@ -12,15 +12,23 @@ const databaseDescribe = require('../lib/databaseDescribe');
 const yargs = require('yargs')
   .usage('Usage: $0 <database name> [options]')
   .demandCommand(1)
-  .alias('o', 'output')
-  .nargs('o', 1)
-  .describe('o', 'Specify a directory to output files to')
-  .describe('ignore-tables', 'a list of tables to ignore')
-  .array('ignore-tables')
-  .describe('ignore-enums', 'a list of enums to ignore')
-  .array('ignore-enums')
-  .describe('ignore-columns', 'a list of columns to ignore, formatted like [table].[column]')
-  .array('ignore-columns')
+  .option('output', {
+    alias: 'o',
+    nargs: 1,
+    description: 'Specify a directory to output files to',
+  })
+  .option('ignore-tables', {
+    array: true,
+    description: 'a list of tables to ignore',
+  })
+  .option('ignore-enums', {
+    array: true,
+    description: 'a list of enums to ignore',
+  })
+  .option('ignore-columns', {
+    array: true,
+    description: 'a list of columns to ignore, formatted like [table].[column]',
+  })
   .help('h')
   .alias('h', 'help')
   .example('$0 postgres', 'Describe the "postgres" database')
@@ -30,9 +38,7 @@ const yargs = require('yargs')
   )
   .strict();
 
-// TODO: remove cast once `@types/yargs` is fixed
-// https://github.com/yargs/yargs/issues/2175
-const argv = /** @type {Record<string, any>} */ (yargs.argv);
+const argv = yargs.parseSync();
 
 if (argv._.length !== 1) {
   yargs.showHelp();
@@ -40,12 +46,12 @@ if (argv._.length !== 1) {
 }
 
 // Disable color if we're not attached to a tty
-const coloredOutput = !argv.o && process.stdout.isTTY;
+const coloredOutput = !argv.output && process.stdout.isTTY;
 
 const options = {
-  ignoreTables: argv['ignore-tables'] || [],
-  ignoreEnums: argv['ignore-enums'] || [],
-  ignoreColumns: argv['ignore-columns'] || [],
+  ignoreTables: (argv['ignore-tables'] ?? []).map((table) => table.toString()),
+  ignoreEnums: (argv['ignore-enums'] ?? []).map((enumName) => enumName.toString()),
+  ignoreColumns: (argv['ignore-columns'] ?? []).map((column) => column.toString()),
 };
 
 function formatText(text, formatter) {
@@ -55,7 +61,7 @@ function formatText(text, formatter) {
   return text;
 }
 
-databaseDescribe.describe(argv._[0], options).then(
+databaseDescribe.describe(argv._[0].toString(), options).then(
   async (description) => {
     if (argv.o) {
       await writeDescriptionToDisk(description, argv.o);
