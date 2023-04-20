@@ -180,9 +180,8 @@ export async function describeDatabase(
 
   try {
     return await describeWithPool(pool, options);
-  } catch (err) {
+  } finally {
     await pool.closeAsync();
-    throw err;
   }
 }
 

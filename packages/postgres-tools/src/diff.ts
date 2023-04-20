@@ -3,7 +3,7 @@ import fs from 'fs-extra';
 import path from 'node:path';
 import chalk from 'chalk';
 import _ from 'lodash';
-import jsdiff from 'diff';
+import { diffLines } from 'diff';
 
 import { describeDatabase, formatDatabaseDescription } from './describe';
 
@@ -76,7 +76,7 @@ async function diff(db1: DiffTarget, db2: DiffTarget, options: DiffOptions): Pro
   const intersection = _.intersection(_.keys(description1.tables), _.keys(description2.tables));
   _.forEach(intersection, (table) => {
     // We normalize each blob to end with a newline to make diffs print cleaner
-    const diff = jsdiff.diffLines(
+    const diff = diffLines(
       description1.tables[table].trim() + '\n',
       description2.tables[table].trim() + '\n'
     );
