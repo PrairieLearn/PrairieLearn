@@ -190,83 +190,67 @@ WITH
         AND a.course_instance_id = ci.id
       )
   ),
-  -- We use separate CTEs for each chunk type so that Postgres doesn't tye to
+  -- We use separate queries for each chunk type so that Postgres doesn't try to
   -- compute a huge cross product of the chunks + metadata on `type` as an
   -- intermediate step. This was O(n^2) with the number of chunks to delete.
-  question_chunks_to_delete AS (
-    SELECT
-      id
-    FROM
-      chunks
-      JOIN chunks_metadata AS cm ON (
-        cm.type = chunks.type
-        AND cm.question_id = chunks.question_id
-      )
-    WHERE
-      chunks.course_id = $course_id
-      AND chunks.type = 'question'
-  ),
-  client_files_course_instance_chunks_to_delete AS (
-    SELECT
-      id
-    FROM
-      chunks
-      JOIN chunks_metadata AS cm ON (
-        cm.type = chunks.type
-        AND cm.course_instance_id = chunks.course_instance_id
-      )
-    WHERE
-      chunks.course_id = $course_id
-      AND chunks.type = 'clientFilesCourseInstance'
-  ),
-  client_files_assessment_chunks_to_delete AS (
-    SELECT
-      id
-    FROM
-      chunks
-      JOIN chunks_metadata AS cm ON (
-        cm.type = chunks.type
-        AND cm.assessment_id = chunks.assessment_id
-      )
-    WHERE
-      chunks.course_id = $course_id
-      AND chunks.type = 'clientFilesAssessment'
-  ),
-  other_chunks_to_delete AS (
-    SELECT
-      id
-    FROM
-      chunks
-      JOIN chunks_metadata AS cm ON (cm.type = chunks.type)
-    WHERE
-      chunks.course_id = $course_id
-      AND cm.type IN (
-        'elements',
-        'elementExtensions',
-        'clientFilesCourse',
-        'serverFilesCourse'
-      )
-  ),
   chunks_to_delete AS (
-    SELECT
-      id
-    FROM
-      question_chunks_to_delete
+    (
+      SELECT
+        id
+      FROM
+        chunks
+        JOIN chunks_metadata AS cm ON (
+          cm.type = chunks.type
+          AND cm.question_id = chunks.question_id
+        )
+      WHERE
+        chunks.course_id = $course_id
+        AND chunks.type = 'question'
+    )
     UNION
-    SELECT
-      id
-    FROM
-      client_files_course_instance_chunks_to_delete
+    (
+      SELECT
+        id
+      FROM
+        chunks
+        JOIN chunks_metadata AS cm ON (
+          cm.type = chunks.type
+          AND cm.course_instance_id = chunks.course_instance_id
+        )
+      WHERE
+        chunks.course_id = $course_id
+        AND chunks.type = 'clientFilesCourseInstance'
+    )
     UNION
-    SELECT
-      id
-    FROM
-      client_files_assessment_chunks_to_delete
+    (
+      SELECT
+        id
+      FROM
+        chunks
+        JOIN chunks_metadata AS cm ON (
+          cm.type = chunks.type
+          AND cm.assessment_id = chunks.assessment_id
+        )
+      WHERE
+        chunks.course_id = $course_id
+        AND chunks.type = 'clientFilesAssessment'
+    )
     UNION
-    SELECT
-      id
-    FROM
-      other_chunks_to_delete
+    (
+      SELECT
+        id
+      FROM
+        chunks
+        JOIN chunks_metadata AS cm ON (cm.type = chunks.type)
+      WHERE
+        chunks.course_id = $course_id
+        AND cm.type IN (
+          'elements',
+          'elementExtensions',
+          'clientFilesCourse',
+          'serverFilesCourse'
+        )
+    )
   )
 DELETE FROM chunks
 WHERE
