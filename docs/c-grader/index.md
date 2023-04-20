@@ -130,7 +130,18 @@ It is also possible to test programs where the student only submits part of an a
 self.compile_file("square.c", "square", add_c_file="/grade/tests/main.c")
 ```
 
-The instruction above will compile the student-provided C/C++ file with the instructor-provided C/C++ file into the same executable. If the student implements any function that is also implemented by the instructor's code, including `main` if provided, it will be ignored, and the instructor-provided functions will take precedence. This is achieved by compiling the code with the `-Wl,--allow-multiple-definition` flag of `gcc`.
+The instruction above will compile the student-provided C/C++ file with the instructor-provided C/C++ file into the same executable.
+
+If the student implements any function that is also implemented by the instructor's code, including `main` if provided, it will be ignored, and the instructor-provided functions will take precedence. This is achieved by compiling the code with the `-Wl,--allow-multiple-definition` flag of `gcc`. If, however, there is a need to make reference to some of these functions implemented by the student, the option `objcopy_args` can be used. If provided, the [`objcopy` command](https://man7.org/linux/man-pages/man1/objcopy.1.html) is called on the student's code with the specified list of arguments. This option only operates on student files, not on added (instructor-provided) files. For example, the following instruction compiles the same files above, but renames the student's `main` function into `student_main` and makes the static function `my_static_fn` global, so that the instructor's `main` function can call both of these functions directly.
+
+```python
+self.compile_file(
+  "square.c",
+  "square",
+  add_c_file="/grade/tests/main.c",
+  objcopy_args=["--redefine-sym", "main=student_main", "--globalize-symbol", "my_static_fn"],
+)
+```
 
 It is also possible to compile multiple student files and multiple question-provided files into a single executable, by providing lists of files:
 
@@ -145,16 +156,16 @@ self.compile_file(
 
 If the compilation involves include (`.h`) files, the flags `-I/grade/tests` (for question-provided includes) and `-I/grade/student` (for student-provided includes) are recommended as well. The specific `.h` files don't need to be listed as arguments to `compile_file`.
 
-If the executable name is not provided, then the files will be compiled only into equivalent object files (with `.o` extension). To link these files into an executable, the `link_object_files` can be used. This function receives three mandatory arguments: the student object files, the additional object files (which can be set to `None` if there are none), and the executable name. This separation allows for more fined-tuned compilation flags between different C files or between compilation and linking, as well as additional operations to be performed with the generated object files. For example, the following sequence compiles the same files above, but renames the student's `main` function into `student_main` so it can be called from the instructor's `main` function.
+If the executable name is not provided, then the files will be compiled only into equivalent object files (with `.o` extension). To link these files into an executable, the `link_object_files` can be used. This function receives three mandatory arguments: the student object files, the additional object files (which can be set to `None` if there are none), and the executable name. This separation allows for more fined-tuned compilation flags between different C files or between compilation and linking, as well as additional operations to be performed with the generated object files. For example, the following sequence compiles student files and instructor files with different flags.
 
 ```python
 self.compile_file(["student_file1.c", "student_file2.c"],
+                  flags=["-I/grade/tests", "-I/grade/student", "-Wall", "-g"])
+self.compile_file([], # No student files in this invocation
                   add_c_file=["/grade/tests/question_file1.c",
                               "/grade/tests/question_file2.c"],
                   flags=["-I/grade/tests", "-I/grade/student"])
-self.run_command("objcopy --redefine-sym main=student_main student_file1.o student_file1_nomain.o",
-                 sandboxed=False)
-self.link_object_files(["student_file1_nomain.o", "student_file2.o"],
+self.link_object_files(["student_file1.o", "student_file2.o"],
                        ["/grade/tests/question_file1.o", "/grade/tests/question_file2.o"],
                        "executable")
 ```

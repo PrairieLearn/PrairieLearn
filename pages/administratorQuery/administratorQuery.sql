@@ -16,7 +16,7 @@ RETURNING
 -- BLOCK select_query_run
 SELECT
   *,
-  format_date_full_compact (date, config_select ('display_timezone')) as formatted_date
+  format_date_full_compact (date, 'UTC') as formatted_date
 FROM
   query_runs
 WHERE
@@ -26,7 +26,7 @@ WHERE
 SELECT
   qr.id,
   qr.params,
-  format_date_full_compact (qr.date, config_select ('display_timezone')) as formatted_date,
+  format_date_full_compact (qr.date, 'UTC') as formatted_date,
   u.name AS user_name,
   u.uid AS user_uid
 FROM
