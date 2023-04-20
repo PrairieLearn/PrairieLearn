@@ -1,5 +1,11 @@
 # @prairielearn/named-locks
 
+## 1.3.0
+
+### Minor Changes
+
+- 4cc962358: Add `tryWithLock` function
+
 ## 1.2.0
 
 ### Minor Changes

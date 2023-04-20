@@ -38,7 +38,7 @@ WITH
   )
 SELECT
   ai.id AS assessment_instance_id,
-  format_date_full_compact (ai.date, config_select ('display_timezone')) AS start_date,
+  format_date_full_compact (ai.date, 'UTC') AS start_date,
   format_interval (now() - last_views.date) AS since_last_view,
   DATE_PART('epoch', (now() - last_views.date)) AS _sortval_since_last_view,
   format_interval (now() - last_submissions.date) AS since_last_submission,
