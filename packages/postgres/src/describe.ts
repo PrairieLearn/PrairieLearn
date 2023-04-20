@@ -1,7 +1,6 @@
 // @ts-check
 import pg from 'pg';
 import chalk from 'chalk';
-import _ from 'lodash';
 
 import { loadSqlEquiv } from './loader';
 import { PostgresPool } from './pool';
@@ -314,8 +313,12 @@ export function formatDescription(
   });
 
   // We need to tack on a newline to everything.
-  output.tables = _.mapValues(output.tables, (item) => item + '\n');
-  output.enums = _.mapValues(output.enums, (item) => item + '\n');
+  Object.entries(output.tables).forEach(([tableName, table]) => {
+    output.tables[tableName] = table + '\n';
+  });
+  Object.entries(output.enums).forEach(([enumName, enumValues]) => {
+    output.enums[enumName] = enumValues + '\n';
+  });
 
   return output;
 }

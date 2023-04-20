@@ -1,6 +1,6 @@
 // @ts-check
 import fs from 'fs-extra';
-import path from 'path';
+import path from 'node:path';
 import chalk from 'chalk';
 import _ from 'lodash';
 import jsdiff from 'diff';
