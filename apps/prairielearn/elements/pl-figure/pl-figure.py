@@ -39,7 +39,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     file_type = pl.get_enum_attrib(element, "type", FileType, FILE_TYPE_DEFAULT)
 
-    # Only check for file existence if type is static
+    # If the file is static, validate that it exists on disk
     if file_type is FileType.STATIC:
         file_directory = pl.get_string_attrib(element, "directory", DIRECTORY_DEFAULT)
 
