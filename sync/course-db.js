@@ -1250,6 +1250,11 @@ async function validateAssessment(assessment, questions) {
 
     // Ensure values for role minimum and maximum are within bounds
     assessment.groupRoles.forEach((role) => {
+      if (role.minimum > assessment.groupMinSize) {
+        warnings.push(
+          `Group role "${role.name}" has a minimum greater than the group's minimum size.`
+        );
+      }
       if (role.minimum && role.minimum > assessment.groupMaxSize) {
         errors.push(
           `Group role "${role.name}" contains an invalid minimum. (Expected at most ${assessment.groupMaxSize}, found ${role.minimum}).`
