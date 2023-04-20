@@ -59,3 +59,12 @@ FROM
   LEFT JOIN pl_courses AS c ON (c.id = ci.course_id)
 ORDER BY
   user_id;
+
+-- BLOCK select_assessment
+SELECT
+  id
+FROM
+  assessments
+WHERE
+  tid = $tid
+  AND deleted_at IS NULL;
