@@ -46,14 +46,8 @@ SELECT
   ci.id AS course_instance_id,
   aset.abbreviation || a.number || ': ' || a.title AS assessment,
   a.id AS assessment_id,
-  format_date_full_compact (
-    arwnd.start_date,
-    config_select ('display_timezone')
-  ) AS start_date,
-  format_date_full_compact (
-    arwnd.end_date,
-    config_select ('display_timezone')
-  ) AS end_date,
+  format_date_full_compact (arwnd.start_date, 'UTC') AS start_date,
+  format_date_full_compact (arwnd.end_date, 'UTC') AS end_date,
   format_interval (arwnd.end_date - arwnd.start_date) AS end_minus_start,
   DATE_PART('epoch', (arwnd.end_date - arwnd.start_date)) AS _sortval_end_minus_start,
   format_interval (make_interval(mins => arwnd.time_limit_min)) AS time_limit,

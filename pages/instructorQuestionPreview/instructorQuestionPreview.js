@@ -86,7 +86,7 @@ function processSubmission(req, res, callback) {
 async function processIssue(req, res, callback) {
   const description = req.body.description;
   if (!_.isString(description) || description.length === 0) {
-    return callback(new Error('A description of the issue must be provided'));
+    return callback(error.make(400, 'A description of the issue must be provided'));
   }
 
   const variantId = req.body.__variant_id;
