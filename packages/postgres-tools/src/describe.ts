@@ -1,9 +1,7 @@
 // @ts-check
 import pg from 'pg';
 import chalk from 'chalk';
-
-import { loadSqlEquiv } from './loader';
-import { PostgresPool } from './pool';
+import { loadSqlEquiv, PostgresPool } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(__filename);
 const pgArray = pg.types.arrayParser;

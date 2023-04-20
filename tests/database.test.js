@@ -1,7 +1,7 @@
 // @ts-check
 const _ = require('lodash');
 
-const { describeDatabase, diffDirectoryAndDatabase } = require('@prairielearn/postgres');
+const { describeDatabase, diffDirectoryAndDatabase } = require('@prairielearn/postgres-tools');
 const helperDb = require('./helperDb');
 
 // Custom error type so we can display our own message and omit a stacktrace

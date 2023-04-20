@@ -26,6 +26,7 @@
         "@prairielearn/opentelemetry": "workspace:^",
         "@prairielearn/path-utils": "workspace:^",
         "@prairielearn/postgres": "workspace:^",
+        "@prairielearn/postgres-tools": "workspace:^",
         "@prairielearn/sentry": "workspace:^",
         "@prairielearn/workspace-utils": "workspace:^",
         "@pyroscope/nodejs": "^0.2.5",
