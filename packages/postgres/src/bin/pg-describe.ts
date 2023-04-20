@@ -1,20 +1,22 @@
 #!/usr/bin/env node
 // @ts-check
 
-const async = require('async');
-const chalk = require('chalk');
-const fs = require('fs-extra');
-const _ = require('lodash');
-const path = require('path');
+import async from 'async';
+import chalk from 'chalk';
+import fs from 'fs-extra';
+import _ from 'lodash';
+import path from 'path';
+import yargs from 'yargs';
 
-const databaseDescribe = require('../lib/databaseDescribe');
+import { describeDatabase, formatDatabaseDescription, DatabaseDescription } from '../describe';
 
-const yargs = require('yargs')
+const args = yargs
   .usage('Usage: $0 <database name> [options]')
   .demandCommand(1)
   .option('output', {
     alias: 'o',
     nargs: 1,
+    string: true,
     description: 'Specify a directory to output files to',
   })
   .option('ignore-tables', {
@@ -38,7 +40,7 @@ const yargs = require('yargs')
   )
   .strict();
 
-const argv = yargs.parseSync();
+const argv = args.parseSync();
 
 if (argv._.length !== 1) {
   yargs.showHelp();
@@ -54,17 +56,17 @@ const options = {
   ignoreColumns: (argv['ignore-columns'] ?? []).map((column) => column.toString()),
 };
 
-function formatText(text, formatter) {
-  if (!argv.o && coloredOutput) {
+function formatText(text: string, formatter: (text: string) => string) {
+  if (!argv.output && coloredOutput) {
     return formatter(text);
   }
   return text;
 }
 
-databaseDescribe.describe(argv._[0].toString(), options).then(
+describeDatabase(argv._[0].toString(), options).then(
   async (description) => {
-    if (argv.o) {
-      await writeDescriptionToDisk(description, argv.o);
+    if (argv.output) {
+      await writeDescriptionToDisk(description, argv.output);
     } else {
       printDescription(description);
     }
@@ -76,22 +78,23 @@ databaseDescribe.describe(argv._[0].toString(), options).then(
   }
 );
 
-function printDescription(description) {
-  _.forEach(_.sortBy(_.keys(description.tables)), (tableName) => {
+function printDescription(description: DatabaseDescription) {
+  const formattedDescription = formatDatabaseDescription(description, { coloredOutput });
+  _.forEach(_.sortBy(_.keys(formattedDescription.tables)), (tableName) => {
     process.stdout.write(formatText(`[table] ${tableName}\n`, chalk.bold));
-    process.stdout.write(description.tables[tableName]);
+    process.stdout.write(formattedDescription.tables[tableName]);
     process.stdout.write('\n\n');
   });
 
-  _.forEach(_.sortBy(_.keys(description.enums)), (enumName) => {
+  _.forEach(_.sortBy(_.keys(formattedDescription.enums)), (enumName) => {
     process.stdout.write(formatText(`[enum] ${enumName}\n`, chalk.bold));
-    process.stdout.write(description.enums[enumName]);
+    process.stdout.write(formattedDescription.enums[enumName]);
     process.stdout.write('\n\n');
   });
 }
 
-async function writeDescriptionToDisk(description, dir, coloredOutput) {
-  const formattedDescription = databaseDescribe.formatDescription(description, { coloredOutput });
+async function writeDescriptionToDisk(description: DatabaseDescription, dir: string) {
+  const formattedDescription = formatDatabaseDescription(description, { coloredOutput: false });
   await fs.emptyDir(dir);
   await fs.mkdir(path.join(dir, 'tables'));
   await fs.mkdir(path.join(dir, 'enums'));

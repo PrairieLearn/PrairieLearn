@@ -48,7 +48,7 @@ interface TableDescription {
   checkConstraints: CheckConstraintDescription[];
 }
 
-interface DatabaseDescription {
+export interface DatabaseDescription {
   tables: Record<string, TableDescription>;
   enums: Record<string, string[]>;
 }
@@ -162,7 +162,7 @@ async function describeWithPool(
  * Will produce a description of a given database's schema. This will include
  * information about tables, enums, constraints, indices, etc.
  */
-export async function describe(
+export async function describeDatabase(
   databaseName: string,
   options: DescribeOptions = {}
 ): Promise<DatabaseDescription> {
@@ -188,7 +188,7 @@ export async function describe(
   }
 }
 
-export function formatDescription(
+export function formatDatabaseDescription(
   description: DatabaseDescription,
   options = { coloredOutput: true }
 ): { tables: Record<string, string>; enums: Record<string, string> } {

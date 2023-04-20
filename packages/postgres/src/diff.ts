@@ -5,7 +5,7 @@ import chalk from 'chalk';
 import _ from 'lodash';
 import jsdiff from 'diff';
 
-import * as describe from './describe';
+import { describeDatabase, formatDatabaseDescription } from './describe';
 
 type DatabaseInfo = { type: 'database'; name: string };
 type DirectoryInfo = { type: 'directory'; path: string };
@@ -149,8 +149,8 @@ async function loadDescriptionFromDisk(dirPath: string): Promise<Description> {
 }
 
 async function loadDescriptionFromDatabase(name: string) {
-  const description = await describe.describe(name);
-  return describe.formatDescription(description, { coloredOutput: false });
+  const description = await describeDatabase(name);
+  return formatDatabaseDescription(description, { coloredOutput: false });
 }
 
 async function loadDescription(db: DiffTarget): Promise<Description> {
@@ -163,11 +163,7 @@ async function loadDescription(db: DiffTarget): Promise<Description> {
   }
 }
 
-module.exports.diffDatabases = async function (
-  database1: string,
-  database2: string,
-  options: DiffOptions
-) {
+export async function diffDatabases(database1: string, database2: string, options: DiffOptions) {
   return diff(
     {
       type: 'database',
@@ -179,9 +175,9 @@ module.exports.diffDatabases = async function (
     },
     options
   );
-};
+}
 
-module.exports.diffDatabaseAndDirectory = async function (
+export async function diffDatabaseAndDirectory(
   database: string,
   directory: string,
   options: DiffOptions
@@ -197,9 +193,9 @@ module.exports.diffDatabaseAndDirectory = async function (
     },
     options
   );
-};
+}
 
-module.exports.diffDirectoryAndDatabase = async function (
+export async function diffDirectoryAndDatabase(
   directory: string,
   database: string,
   options: DiffOptions
@@ -215,9 +211,9 @@ module.exports.diffDirectoryAndDatabase = async function (
     },
     options
   );
-};
+}
 
-module.exports.diffDirectories = async function (
+export async function diffDirectories(
   directory1: string,
   directory2: string,
   options: DiffOptions
@@ -233,4 +229,4 @@ module.exports.diffDirectories = async function (
     },
     options
   );
-};
+}
