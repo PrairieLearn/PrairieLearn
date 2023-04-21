@@ -1,5 +1,5 @@
 const util = require('util');
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const assert = require('chai').assert;
 
 const sqldb = require('@prairielearn/postgres');

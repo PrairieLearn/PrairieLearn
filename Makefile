@@ -54,7 +54,7 @@ test-python:
 
 lint: lint-js lint-python lint-html lint-links
 lint-js:
-	@yarn eslint --ext js --report-unused-disable-directives "**/*.js"
+	@yarn eslint --ext js --report-unused-disable-directives "**/*.{js,ts}"
 	@yarn prettier --check "**/*.{js,ts,md,sql}"
 lint-python:
 	@python3 -m flake8 ./
@@ -65,7 +65,7 @@ lint-links:
 
 format: format-js format-python
 format-js:
-	@yarn eslint --ext js --fix "**/*.js"
+	@yarn eslint --ext js --fix "**/*.{js,ts}"
 	@yarn prettier --write "**/*.{js,ts,md,sql}"
 format-python:
 	@python3 -m isort ./

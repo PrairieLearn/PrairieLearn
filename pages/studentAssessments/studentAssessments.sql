@@ -120,13 +120,29 @@ WITH
       FULL JOIN assessments AS a ON (gc.assessment_id = a.id)
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-      LEFT JOIN assessment_instances AS ai ON (
-        ai.assessment_id = a.id
-        AND (
-          ai.user_id = $user_id
-          OR ai.group_id = gu.group_id
-        )
-      )
+      -- We use a subquery to find assessment instances by either user_id or
+      -- group_id. We use to do this with AND (ai.user_id = $user_id OR
+      -- ai.group_id = gu.group_id) but this was triggering a bad query plan for
+      -- some course instances. Having separate SELECTs for user_id and group_id
+      -- allows the query planner to utilize the two separate indexes we have
+      -- for user_id and group_id.
+      LEFT JOIN LATERAL (
+        SELECT
+          *
+        FROM
+          assessment_instances AS ai1
+        WHERE
+          ai1.assessment_id = a.id
+          AND ai1.user_id = $user_id
+        UNION
+        SELECT
+          *
+        FROM
+          assessment_instances AS ai2
+        WHERE
+          ai2.assessment_id = a.id
+          AND ai2.group_id = gu.group_id
+      ) AS ai ON (TRUE)
       LEFT JOIN LATERAL authz_assessment (a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
       LEFT JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
     WHERE

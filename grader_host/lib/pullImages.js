@@ -6,7 +6,7 @@ const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 
 const logger = require('./logger');
 const sql = sqldb.loadSqlEquiv(__filename);
-const config = require('./config').config;
+const { config } = require('./config');
 
 module.exports = function (callback) {
   const docker = new Docker();

@@ -1,8 +1,7 @@
+// @ts-check
 const asyncHandler = require('express-async-handler');
-const _ = require('lodash');
 const express = require('express');
 const util = require('util');
-const sqldb = require('@prairielearn/postgres');
 
 const error = require('@prairielearn/error');
 const chunks = require('../../lib/chunks');
@@ -10,13 +9,10 @@ const cache = require('../../lib/cache');
 const { AdministratorSettings } = require('./administratorSettings.html');
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const result = await sqldb.queryOneRowAsync(sql.select, []);
-    _.assign(res.locals, result.rows[0]);
     res.send(AdministratorSettings({ resLocals: res.locals }));
   })
 );

@@ -1,9 +1,9 @@
 import AWS from 'aws-sdk';
-import moment from 'moment';
+import { subHours, isFuture } from 'date-fns';
 import util from 'util';
 import { logger } from '@prairielearn/logger';
 
-// @ts-expect-error
+// @ts-expect-error -- Types don't reflect that this path exists.
 import mmm from 'aws-sdk/lib/maintenance_mode_message';
 mmm.suppress = true;
 
@@ -36,11 +36,7 @@ export async function setupDockerAuthAsync(
   if (!imageRegistry) return null;
 
   // If we have cached data that's not within an hour of expiring, use it.
-  if (
-    dockerAuthData &&
-    dockerAuthDataExpiresAt &&
-    moment().isBefore(moment(dockerAuthDataExpiresAt).subtract(1, 'hour'))
-  ) {
+  if (dockerAuthData && dockerAuthDataExpiresAt && isFuture(subHours(dockerAuthDataExpiresAt, 1))) {
     logger.info('Using cached ECR authorization token');
     return dockerAuthData;
   }

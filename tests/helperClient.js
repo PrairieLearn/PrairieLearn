@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 const assert = require('chai').assert;
 const cheerio = require('cheerio');
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 
 /**
  * A wrapper around node-fetch that provides a few features:
@@ -79,9 +79,9 @@ module.exports.extractAndSaveVariantId = (context, $, parentSelector = '') => {
 
 /**
  * @typedef {Object} User
- * @property {string} authUid
- * @property {string} authName
- * @property {string} authUin
+ * @property {string | null} authUid
+ * @property {string | null} authName
+ * @property {string | null} authUin
  */
 
 /**

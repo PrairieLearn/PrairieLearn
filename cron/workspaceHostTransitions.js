@@ -5,7 +5,7 @@ const { callbackify } = require('util');
 const fetch = require('node-fetch').default;
 const { logger } = require('@prairielearn/logger');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const workspaceHelper = require('../lib/workspace');
 const workspaceHostUtils = require('../lib/workspaceHost');
 
@@ -44,8 +44,8 @@ async function checkDBConsistency() {
       })
       .promise()
   ).Reservations;
-  for (const reservation of reservations) {
-    for (const instance of Object.values(reservation.Instances)) {
+  for (const reservation of reservations ?? []) {
+    for (const instance of Object.values(reservation.Instances ?? [])) {
       running_host_set.add(instance.InstanceId);
     }
   }

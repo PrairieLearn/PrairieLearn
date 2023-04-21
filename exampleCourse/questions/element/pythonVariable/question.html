@@ -26,9 +26,11 @@
 <div class="card my-2">
   <div class="card-body">
     <p>Here is an example displaying a dictionary. You can add additional text to the output by using the
-      <code>prefix</code> and <code>suffix</code> attributes.
+      <code>prefix</code> and <code>suffix</code> attributes. We also set <code>copy-code-button="True"</code>
+      to enable the copy code button.
     </p>
-    <pl-python-variable params-name="my_dictionary" prefix="my_dictionary = "></pl-python-variable>
+    <pl-python-variable params-name="my_dictionary" prefix="my_dictionary = "
+      copy-code-button="True"></pl-python-variable>
   </div>
 </div>
 
@@ -44,8 +46,8 @@
     <p>Here is an example displaying a dictionary with line breaks. We've set <code>width="1"</code> to
       force printing each element on a new line and set <code>prefix-newline="true"</code> to insert a line
       break between the prefix and the printed dictionary.</p>
-    <pl-python-variable params-name="my_dictionary" prefix="my_dictionary = \" prefix-newline="true"
-      width="1"></pl-python-variable>
+    <pl-python-variable params-name="my_dictionary" prefix="my_dictionary = \" prefix-newline="true" width="1"
+      copy-code-button="True"></pl-python-variable>
   </div>
 </div>
 
@@ -55,14 +57,16 @@
       <code>suffix</code> and <code>suffix-newline</code> attributes.
     </p>
     <pl-python-variable params-name="my_list" prefix="my_list = \" prefix-newline="true" width="1"
-      suffix="# This is a cool list" suffix-newline="true"></pl-python-variable>
+      suffix="# This is a cool list" suffix-newline="true" copy-code-button="True"></pl-python-variable>
   </div>
 </div>
 
 <div class="card my-2">
   <div class="card-body">
-    <p>Here is an example displaying a more complex list.</p>
-    <pl-python-variable params-name="another_list" width="1"></pl-python-variable>
+    <p>Here is an example displaying a more complex list. We've also enabled line numbers by setting
+      <code>show-line-numbers="True"</code>.
+    </p>
+    <pl-python-variable params-name="another_list" width="1" show-line-numbers="True"></pl-python-variable>
   </div>
 </div>
 

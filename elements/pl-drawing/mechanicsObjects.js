@@ -2545,25 +2545,24 @@ mechanicsObjects.byType['pl-arc'] = class extends PLDrawingBaseElement {
       canvas.add(c1, c2, c3);
 
       var subObj = mechanicsObjects.cloneMechanicsObject('pl-arc', options);
-      var that = this;
 
       // Center
       mechanicsObjects.attachHandlersNoClone(
         subObj,
         c1,
         submittedAnswer,
-        function () {
+        () => {
           // Modified
           subObj.left = c1.left;
           subObj.top = c1.top;
           submittedAnswer.updateObject(subObj);
         },
-        function () {
+        () => {
           // Removed
           canvas.remove(c2);
           canvas.remove(c3);
           canvas.remove(obj);
-          that.removeSubmittedAnswerObj(submittedAnswer, subObj);
+          this.removeSubmittedAnswerObj(submittedAnswer, subObj);
         }
       );
       c1.on('moving', function () {

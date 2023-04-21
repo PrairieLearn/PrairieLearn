@@ -16,7 +16,7 @@ const logger = winston.createLogger({
 logger.initCloudWatchLogging = function (groupName, streamName) {
   // IMPORTANT: don't require('./config') until after module is initialized
   // in order to prevent a circular dependency issue
-  const config = require('./config').config;
+  const { config } = require('./config');
 
   logger.add(
     new CloudWatchTransport({

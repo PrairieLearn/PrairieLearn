@@ -137,11 +137,9 @@ window.PLFileEditor.prototype.updatePreview = function (html_contents) {
 };
 
 window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
-  var that = this;
-
-  this.settingsButton.click(function () {
-    ace.require(['ace/ext/themelist'], function (themeList) {
-      var themeSelect = that.modal.find('#modal-' + uuid + '-themes');
+  this.settingsButton.click(() => {
+    ace.require(['ace/ext/themelist'], (themeList) => {
+      var themeSelect = this.modal.find('#modal-' + uuid + '-themes');
       themeSelect.empty();
       for (const entries in themeList.themesByName) {
         var caption = themeList.themesByName[entries].caption;
@@ -157,7 +155,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
       }
 
       var fontSizeList = ['12px', '14px', '16px', '18px', '20px', '22px', '24px'];
-      var fontSelect = that.modal.find('#modal-' + uuid + '-fontsize');
+      var fontSelect = this.modal.find('#modal-' + uuid + '-fontsize');
       fontSelect.empty();
       for (const entries in fontSizeList) {
         fontSelect.append(
@@ -170,7 +168,7 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
       }
 
       var keyboardHandlerList = ['Default', 'Vim', 'Emacs', 'Sublime', 'VSCode'];
-      var keyboardHandlerSelect = that.modal.find('#modal-' + uuid + '-keyboardHandler');
+      var keyboardHandlerSelect = this.modal.find('#modal-' + uuid + '-keyboardHandler');
       keyboardHandlerSelect.empty();
       for (const index in keyboardHandlerList) {
         var keyboardHandler = 'ace/keyboard/' + keyboardHandlerList[index].toLowerCase();
@@ -184,9 +182,9 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
         );
       }
     });
-    that.modal.modal('show');
-    sessionStorage.setItem('pl-file-editor-theme-current', that.editor.getTheme());
-    sessionStorage.setItem('pl-file-editor-fontsize-current', that.editor.getFontSize());
+    this.modal.modal('show');
+    sessionStorage.setItem('pl-file-editor-theme-current', this.editor.getTheme());
+    sessionStorage.setItem('pl-file-editor-fontsize-current', this.editor.getFontSize());
     if (localStorage.getItem('pl-file-editor-keyboardHandler')) {
       sessionStorage.setItem(
         'pl-file-editor-keyboardHandler-current',
@@ -194,20 +192,20 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
       );
     }
 
-    that.modal.find('#modal-' + uuid + '-themes').change(function () {
+    this.modal.find('#modal-' + uuid + '-themes').change(function () {
       var theme = $(this).val();
-      that.editor.setTheme(theme);
+      this.editor.setTheme(theme);
     });
-    that.modal.find('#modal-' + uuid + '-fontsize').change(function () {
+    this.modal.find('#modal-' + uuid + '-fontsize').change(function () {
       var fontSize = $(this).val();
-      that.editor.setFontSize(fontSize);
+      this.editor.setFontSize(fontSize);
     });
   });
 
-  this.saveSettingsButton.click(function () {
-    var theme = that.modal.find('#modal-' + uuid + '-themes').val();
-    var fontsize = that.modal.find('#modal-' + uuid + '-fontsize').val();
-    var keyboardHandler = that.modal.find('#modal-' + uuid + '-keyboardHandler').val();
+  this.saveSettingsButton.click(() => {
+    var theme = this.modal.find('#modal-' + uuid + '-themes').val();
+    var fontsize = this.modal.find('#modal-' + uuid + '-fontsize').val();
+    var keyboardHandler = this.modal.find('#modal-' + uuid + '-keyboardHandler').val();
 
     localStorage.setItem('pl-file-editor-theme', theme);
     localStorage.setItem('pl-file-editor-fontsize', fontsize);
@@ -220,18 +218,18 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
     sessionStorage.removeItem('pl-file-editor-fontsize-current');
     sessionStorage.removeItem('pl-file-editor-keyboardHandler-current');
 
-    that.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
-    that.editor.setFontSize(localStorage.getItem('pl-file-editor-fontsize'));
-    that.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
+    this.editor.setTheme(localStorage.getItem('pl-file-editor-theme'));
+    this.editor.setFontSize(localStorage.getItem('pl-file-editor-fontsize'));
+    this.editor.setKeyboardHandler(localStorage.getItem('pl-file-editor-keyboardHandler'));
 
     window.dispatchEvent(new Event('pl-file-editor-settings-changed'));
-    that.modal.modal('hide');
+    this.modal.modal('hide');
   });
 
-  this.closeSettingsButton.click(function () {
-    that.editor.setTheme(sessionStorage.getItem('pl-file-editor-theme-current'));
-    that.editor.setFontSize(sessionStorage.getItem('pl-file-editor-fontsize-current'));
-    that.editor.setKeyboardHandler(
+  this.closeSettingsButton.click(() => {
+    this.editor.setTheme(sessionStorage.getItem('pl-file-editor-theme-current'));
+    this.editor.setFontSize(sessionStorage.getItem('pl-file-editor-fontsize-current'));
+    this.editor.setKeyboardHandler(
       sessionStorage.getItem('pl-file-editor-keyboardHandler-current')
     );
 
@@ -242,21 +240,20 @@ window.PLFileEditor.prototype.initSettingsButton = function (uuid) {
 };
 
 window.PLFileEditor.prototype.initRestoreOriginalButton = function () {
-  var that = this;
-  this.restoreOriginalButton.click(function () {
-    that.restoreOriginalButton.hide();
-    that.restoreOriginalConfirmContainer.show();
+  this.restoreOriginalButton.click(() => {
+    this.restoreOriginalButton.hide();
+    this.restoreOriginalConfirmContainer.show();
   });
 
-  this.restoreOriginalConfirm.click(function () {
-    that.restoreOriginalConfirmContainer.hide();
-    that.restoreOriginalButton.show();
-    that.setEditorContents(that.b64DecodeUnicode(that.originalContents));
+  this.restoreOriginalConfirm.click(() => {
+    this.restoreOriginalConfirmContainer.hide();
+    this.restoreOriginalButton.show();
+    this.setEditorContents(this.b64DecodeUnicode(this.originalContents));
   });
 
-  this.restoreOriginalCancel.click(function () {
-    that.restoreOriginalConfirmContainer.hide();
-    that.restoreOriginalButton.show();
+  this.restoreOriginalCancel.click(() => {
+    this.restoreOriginalConfirmContainer.hide();
+    this.restoreOriginalButton.show();
   });
 };
 
