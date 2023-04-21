@@ -45,6 +45,10 @@ async function insertWorkspaceHost(id, state = 'launching') {
   );
 }
 
+/**
+ * @param {string | number} id
+ * @param {string | number | null | undefined} hostId
+ */
 async function insertWorkspace(id, hostId = null) {
   return sqldb.queryValidatedOneRow(
     'INSERT INTO workspaces (id, state, workspace_host_id) VALUES ($id, $state, $workspace_host_id) RETURNING *;',
