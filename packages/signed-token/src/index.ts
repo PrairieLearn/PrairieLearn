@@ -1,7 +1,7 @@
-import _ from 'lodash';
-import hmacSha256 from 'crypto-js/hmac-sha256';
 import base64url from 'base64url';
 import debugModule from 'debug';
+import _ from 'lodash';
+import crypto from 'node:crypto';
 
 const debug = debugModule('prairielearn:csrf');
 const sep = '.';
@@ -17,16 +17,17 @@ export function generateSignedToken(data: any, secretKey: string) {
   const dataString = base64url.encode(dataJSON);
   const dateString = new Date().getTime().toString(36);
   const checkString = dateString + sep + dataString;
-  const signature = base64url.encode(hmacSha256(checkString, secretKey).toString());
+  const signature = crypto.createHmac('sha256', secretKey).update(checkString).digest('hex');
+  const encodedSignature = base64url.encode(signature);
   debug(
     `generateSignedToken(): ${JSON.stringify({
       dataString,
       dateString,
       checkString,
-      signature,
+      encodedSignature,
     })}`
   );
-  const token = signature + sep + checkString;
+  const token = encodedSignature + sep + checkString;
   debug(`generateSignedToken(): token = ${token}`);
   return token;
 }
@@ -56,10 +57,11 @@ export function getCheckedSignedTokenData(
 
   // check the signature
   const checkString = tokenDateString + sep + tokenDataString;
-  const checkSignature = base64url.encode(hmacSha256(checkString, secretKey).toString());
-  if (checkSignature !== tokenSignature) {
+  const checkSignature = crypto.createHmac('sha256', secretKey).update(checkString).digest('hex');
+  const encodedCheckSignature = base64url.encode(checkSignature);
+  if (encodedCheckSignature !== tokenSignature) {
     debug(
-      `getCheckedSignedTokenData(): FAIL - signature mismatch: checkSig=${checkSignature} != tokenSig=${tokenSignature}`
+      `getCheckedSignedTokenData(): FAIL - signature mismatch: checkSig=${encodedCheckSignature} != tokenSig=${tokenSignature}`
     );
     return null;
   }
