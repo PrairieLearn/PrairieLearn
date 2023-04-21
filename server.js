@@ -52,7 +52,6 @@ const error = require('@prairielearn/error');
 const sprocs = require('./sprocs');
 const news_items = require('./news_items');
 const cron = require('./cron');
-const redis = require('./lib/redis');
 const socketServer = require('./lib/socket-server');
 const serverJobs = require('./lib/server-jobs');
 const freeformServer = require('./question-servers/freeform.js');
@@ -2147,12 +2146,6 @@ if (config.startServer) {
       },
       async () => await codeCaller.init(),
       async () => await assets.init(),
-      (callback) => {
-        redis.init((err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
       (callback) => {
         cache.init((err) => {
           if (ERR(err, callback)) return;
