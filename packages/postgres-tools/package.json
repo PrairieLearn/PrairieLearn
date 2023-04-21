@@ -1,6 +1,6 @@
 {
-  "name": "@prairielearn/postgres",
-  "version": "1.6.0",
+  "name": "@prairielearn/postgres-tools",
+  "version": "1.0.0",
   "main": "./dist/index.js",
   "bin": {
     "pg-describe": "./dist/bin/pg-describe.js",
@@ -9,37 +9,26 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
-    "directory": "packages/postgres"
+    "directory": "packages/postgres-tools"
   },
   "scripts": {
     "build": "tsc && copyfiles -u 1 \"./src/**/*.sql\" dist",
-    "dev": "tsc --watch --preserveWatchOutput",
-    "test": "mocha --no-config --require ts-node/register src/*.test.ts"
+    "dev": "tsc --watch --preserveWatchOutput"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/diff": "^5.0.3",
     "@types/fs-extra": "^11.0.1",
-    "@types/mocha": "^10.0.1",
-    "@types/multipipe": "^3.0.1",
     "@types/node": "^18.15.11",
     "copyfiles": "^2.4.1",
-    "mocha": "^10.2.0",
-    "ts-node": "^10.9.1",
     "typescript": "^4.9.4"
   },
   "dependencies": {
-    "@types/debug": "^4.1.7",
+    "@prairielearn/postgres": "workspace:^",
     "@types/lodash": "^4.14.192",
-    "@types/pg-cursor": "^2.7.0",
     "chalk": "^4.1.2",
     "diff": "^5.1.0",
     "fs-extra": "^11.1.1",
-    "lodash": "^4.17.21",
-    "multipipe": "^4.0.0",
-    "pg": "^8.10.0",
-    "pg-cursor": "^2.9.0",
-    "pg-pool": "^3.6.0",
-    "zod": "^3.21.4"
+    "lodash": "^4.17.21"
   }
 }
