@@ -2,7 +2,7 @@
 const asyncHandler = require('express-async-handler');
 
 const { config } = require('../lib/config');
-const csrf = require('../lib/csrf');
+const { getCheckedSignedTokenData } = require('@prairielearn/signed-token');
 const sqldb = require('@prairielearn/postgres');
 const authnLib = require('../lib/authn');
 
@@ -34,7 +34,7 @@ module.exports = asyncHandler(async (req, res, next) => {
 
   // look for load-testing override cookie
   if (req.cookies.load_test_token) {
-    const data = csrf.getCheckedData(req.cookies.load_test_token, config.secretKey, {
+    const data = getCheckedSignedTokenData(req.cookies.load_test_token, config.secretKey, {
       maxAge: 24 * 60 * 60 * 1000,
     });
 
@@ -103,7 +103,7 @@ module.exports = asyncHandler(async (req, res, next) => {
   var authnData = null;
   if (req.cookies.pl_authn) {
     // if we have a authn cookie then we try and unpack it
-    authnData = csrf.getCheckedData(req.cookies.pl_authn, config.secretKey, {
+    authnData = getCheckedSignedTokenData(req.cookies.pl_authn, config.secretKey, {
       maxAge: config.authnCookieMaxAgeMilliseconds,
     });
     // if the cookie unpacking failed then authnData will be null

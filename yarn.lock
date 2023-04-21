@@ -2865,6 +2865,21 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/signed-token@workspace:^, @prairielearn/signed-token@workspace:packages/signed-token":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/signed-token@workspace:packages/signed-token"
+  dependencies:
+    "@prairielearn/tsconfig": "*"
+    "@types/debug": ^4.1.7
+    "@types/node": ^18.14.2
+    base64url: ^3.0.1
+    debug: ^4.3.4
+    lodash: ^4.17.21
+    mocha: ^10.2.0
+    typescript: ^4.9.5
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/tsconfig@*, @prairielearn/tsconfig@workspace:^, @prairielearn/tsconfig@workspace:packages/tsconfig":
   version: 0.0.0-use.local
   resolution: "@prairielearn/tsconfig@workspace:packages/tsconfig"
@@ -3854,6 +3869,7 @@ __metadata:
     "@prairielearn/postgres-tools": "workspace:^"
     "@prairielearn/prettier-plugin-sql": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
+    "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
     "@pyroscope/nodejs": ^0.2.5
     "@sentry/profiling-node": ^0.3.0

@@ -3,7 +3,7 @@ const router = express.Router();
 const _ = require('lodash');
 
 const { logger } = require('@prairielearn/logger');
-var csrf = require('../lib/csrf');
+const { generateSignedToken, getCheckedSignedTokenData } = require('@prairielearn/signed-token');
 const { config } = require('../lib/config');
 const { idsEqual } = require('../lib/id');
 
@@ -87,7 +87,7 @@ module.exports.checkPasswordOrRedirect = function (req, res) {
     return false;
   }
 
-  var pwData = csrf.getCheckedData(req.cookies.pl_assessmentpw, config.secretKey, {
+  var pwData = getCheckedSignedTokenData(req.cookies.pl_assessmentpw, config.secretKey, {
     maxAge: timeout * 60 * 60 * 1000,
   });
   if (pwData == null || pwData.password !== res.locals.authz_result.password) {
@@ -113,7 +113,7 @@ function badSEB(req, res) {
     course_instance_id: res.locals.course_instance.id,
     authz_data: res.locals.authz_data,
   };
-  res.locals.SEBdata = csrf.generateToken(SEBdata, config.secretKey);
+  res.locals.SEBdata = generateSignedToken(SEBdata, config.secretKey);
   //var proto = 'seb://';
   //var proto = 'http://';  // For testing
   //res.locals.SEBUrl = proto + req.get('host') + '/pl/downloadSEBConfig/';
@@ -131,7 +131,7 @@ function checkUserAgent(res, userAgent) {
   if (examHash === null) return;
   var key = examHash[1];
 
-  var fromSEB = csrf.getCheckedData(key, config.secretKey, {
+  var fromSEB = getCheckedSignedTokenData(key, config.secretKey, {
     maxAge: timeout * 60 * 60 * 1000,
   });
 
