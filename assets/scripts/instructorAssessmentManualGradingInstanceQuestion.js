@@ -201,7 +201,8 @@ function submitSettings(e, use_rubrics) {
     .then(async (response) => {
       const data = await response.json().catch(() => ({ err: `Error: ${response.statusText}` }));
       if (data.err) {
-        console.error(data.err);
+        console.error(response);
+        console.error(data);
         return addAlert(this, data.err);
       }
       $(modal).modal('hide');
@@ -234,7 +235,9 @@ function submitSettings(e, use_rubrics) {
       if (data.rubricSettingsAuto) {
         document.querySelector('.rubric-settings-modal-auto').outerHTML = data.rubricSettingsAuto;
       }
-      document.querySelector('input[name=__csrf_token]').value = oldCsrfToken;
+      document.querySelectorAll('input[name=__csrf_token]').forEach((input) => {
+        input.value = oldCsrfToken;
+      });
       resetInstructorGradingPanel();
     });
 }
