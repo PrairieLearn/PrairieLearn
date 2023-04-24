@@ -390,7 +390,7 @@ WITH
         JOIN questions AS q ON (q.id = aq.question_id)
         LEFT JOIN users AS u ON (u.user_id = gj.auth_user_id)
         LEFT JOIN rubric_gradings AS mrg ON (mrg.id = gj.manual_rubric_grading_id)
-        LEFT JOIN rubric_gradings AS arg ON (mrg.id = gj.auto_rubric_grading_id)
+        LEFT JOIN rubric_gradings AS arg ON (arg.id = gj.auto_rubric_grading_id)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
         AND gj.grading_method = 'Manual'
