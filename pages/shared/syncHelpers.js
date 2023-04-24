@@ -118,10 +118,7 @@ module.exports.pullAndUpdate = async function (locals) {
     // hash next time.
     const endGitHash = await courseUtil.getCommitHashAsync(locals.course.path);
 
-    /** @type {import('../../sync/syncFromDisk').SyncResults | null} */
-    let syncResult = null;
-
-    await runJob(
+    const syncResult = await runJob(
       {
         course_id: locals.course.id,
         user_id: locals.user.user_id,
@@ -130,7 +127,7 @@ module.exports.pullAndUpdate = async function (locals) {
         description: 'Sync git repository to database',
       },
       async (job) => {
-        syncResult = await syncFromDisk.syncDiskToSqlAsync(
+        const syncResult = await syncFromDisk.syncDiskToSqlAsync(
           locals.course.path,
           locals.course.id,
           job
@@ -152,6 +149,8 @@ module.exports.pullAndUpdate = async function (locals) {
         await courseUtil.updateCourseCommitHashAsync(locals.course);
 
         checkJsonErrors();
+
+        return syncResult;
       }
     );
 
@@ -171,8 +170,7 @@ module.exports.pullAndUpdate = async function (locals) {
       }
     );
 
-    // @ts-expect-error -- Disabling temporarily.
-    if (syncResult?.hadJsonErrors) {
+    if (syncResult.hadJsonErrors) {
       throw new Error('One or more JSON files contained errors and were unable to be synced');
     }
   });
