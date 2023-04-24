@@ -245,9 +245,6 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/grading_job/:job_id',
 ];
 
-// const ONLY_ROUTES = ['/pl/course_instance/:course_instance_id/effectiveUser'];
-const ONLY_ROUTES = [];
-
 function shouldSkipPath(path) {
   return SKIP_ROUTES.some((r) => {
     if (typeof r === 'string') {
@@ -323,10 +320,6 @@ describe('accessibility', () => {
       const missingParams = getMissingRouteParams(endpoint.path, routeParams);
       if (missingParams.length > 0) {
         missingParamsEndpoints.push(endpoint);
-        continue;
-      }
-
-      if (ONLY_ROUTES.length > 0 && !ONLY_ROUTES.includes(endpoint.path)) {
         continue;
       }
 
