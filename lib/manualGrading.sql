@@ -400,8 +400,10 @@ WHERE
     OR $submission_id IS NULL
   )
 ORDER BY
-  s.date DESC,
-  ai.number DESC
+  -- If there variants with and without submissions, select one that has a submission. If there are
+  -- no submissions at all, the process proceeds, but without submission and grading job changes.
+  s.date DESC NULLS LAST,
+  s.id DESC NULLS LAST
 LIMIT
   1
 FOR NO KEY UPDATE OF

@@ -67,8 +67,8 @@ WHERE
     )
   )
 ORDER BY
-  s.date DESC,
-  ai.number DESC
+  s.date DESC NULLS LAST,
+  s.id DESC NULLS LAST
 LIMIT
   1
 FOR NO KEY UPDATE OF
