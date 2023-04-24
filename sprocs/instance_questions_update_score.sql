@@ -100,7 +100,11 @@ BEGIN
                 AND (g.name = arg_uid_or_group OR u.uid = arg_uid_or_group)
                 AND ai.number = arg_assessment_instance_number AND q.qid = arg_qid)
         )
-    ORDER BY s.date DESC, ai.number DESC;
+    -- If some variants have submissions and others don't, select one that has a
+    -- submission. Variants without submissions will include a NULL s.date. If none of the variants
+    -- have submissions, the process proceeds, but without submission and grading job changes.
+    ORDER BY s.date DESC NULLS LAST, ai.number DESC
+    LIMIT 1;
 
     IF NOT FOUND THEN
         RAISE EXCEPTION 'could not locate submission_id=%, instance_question_id=%, uid=%, assessment_instance_number=%, qid=%, assessment_id=%', arg_submission_id, arg_instance_question_id, arg_uid_or_group, arg_assessment_instance_number, arg_qid, arg_assessment_id;
