@@ -187,7 +187,7 @@ module.exports.pullAndUpdate = function (locals, callback) {
             }
 
             const updateCourseCommitHash = () => {
-              courseUtil.getOrUpdateCourseCommitHash(locals.course, (err) => {
+              courseUtil.updateCourseCommitHash(locals.course, (err) => {
                 if (err) {
                   job.fail(err);
                 } else {
