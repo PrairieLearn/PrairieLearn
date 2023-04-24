@@ -395,8 +395,9 @@ function moveRowUp(event) {
 function deleteRow(event) {
   const table = event.target.closest('table');
   event.target.closest('tr').remove();
-  if (!table?.querySelectorAll('.js-rubric-item-row-order')?.length)
+  if (!table?.querySelectorAll('.js-rubric-item-row-order')?.length) {
     table.querySelector('.js-no-rubric-item-note').classList.remove('d-none');
+  }
   updateRubricItemOrderField();
 }
 

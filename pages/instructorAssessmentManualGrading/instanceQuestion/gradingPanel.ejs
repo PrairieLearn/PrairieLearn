@@ -4,6 +4,7 @@
       data-max-points="<%= assessment_question.max_points %>">
   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
   <input type="hidden" name="modified_at" value="<%= instance_question.modified_at %>">
+  <input type="hidden" name="submission_id" value="<%= submission.id %>">
   <ul class="list-group list-group-flush">
     <li class="list-group-item">
       <div class="form-group row justify-content-center">
