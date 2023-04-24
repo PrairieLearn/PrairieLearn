@@ -18,6 +18,7 @@
 !pyproject.toml
 !admin_queries/
 !api/
+!batched-migrations/
 !cron/
 !database/
 !docs/

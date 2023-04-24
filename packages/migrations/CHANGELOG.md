@@ -1,5 +1,16 @@
 # @prairielearn/migrations
 
+## 1.2.0
+
+### Minor Changes
+
+- 4cc962358: Add support for asynchronous batched migrations
+
+### Patch Changes
+
+- Updated dependencies [4cc962358]
+  - @prairielearn/named-locks@1.3.0
+
 ## 1.1.0
 
 ### Minor Changes
