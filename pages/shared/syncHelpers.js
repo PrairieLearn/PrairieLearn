@@ -36,7 +36,7 @@ module.exports.pullAndUpdate = async function (locals) {
     gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
   }
 
-  jobSequence.execute(async ({ runJob, spawnJob }) => {
+  jobSequence.executeInBackground(async ({ runJob, spawnJob }) => {
     let startGitHash = null;
     const coursePathExists = await fs.pathExists(locals.course.path);
     if (coursePathExists) {
@@ -187,7 +187,7 @@ module.exports.gitStatus = async function (locals) {
     description: 'Show server git status',
   });
 
-  jobSequence.execute(async ({ spawnJob }) => {
+  jobSequence.executeInBackground(async ({ spawnJob }) => {
     await spawnJob({
       course_id: locals.course.id,
       user_id: locals.user.user_id,
