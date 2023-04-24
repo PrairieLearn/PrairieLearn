@@ -7,7 +7,6 @@ SET
     WHEN $display_timezone::text IS NOT NULL THEN $display_timezone::text
     ELSE display_timezone
   END,
-  grading_queue = $grading_queue,
   example_course = $example_course,
   options = $options,
   sync_errors = NULL,
