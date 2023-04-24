@@ -52,7 +52,9 @@
 
         <!-- rule#0: Abnormal time-score-ration -->
         <li> 
-          <h5>Earn High Score in an Abnormally Short Period of Time (confidence: x%)</h5> 
+          <div class="card-header bg-primary text-white" id="cardHeader">
+            1. Earn High Score in an Abnormally Short Period of Time (confidence: x%)
+        </div>
           <p>This student's overall time-score-ratio <i style="color:rgb(0, 132, 255)">(total score earned / total time spent)</i> is abnornally high. Only 0.05% students (1 out of 200) among the whole class have same or higher socre-time-ratio.
             In addition, out of 13 questions, 8 questions (q2, q4, q5, q6, q7, q8, q9, q10) has abnormal time-score-ratio. </p>
           <p>A Quintiles Graph demonstrates how rare the similarity is</p>
@@ -98,8 +100,10 @@
         </li><br>
 
           <!-- rule#1 Time -->
-        <li> 
-          <h5>Submit Multiple Exam Questions in Close Time (confidence: x%)</h5> 
+        <li>
+          <div class="card-header bg-primary text-white" id="cardHeader">
+            Submit Multiple Exam Questions in Close Time (confidence: x%)
+        </div>
           <p>Out of 13 same questions, 9 questions (q1, q2, q4, q6, q7, q8, q9, q10, q14) are answered within 60 seconds time difference. Only 0.0025% pairs (1 out of 40000) among the whole class have answered 9 or more questions within 60 seconds.</p>
           <p>A Quintiles Graph demonstrates how rare the count is</p>
           <!-- <p>A Quintiles Graph demonstrates time diff distribution</p> -->
@@ -178,7 +182,9 @@
 
           <!-- rule#3 Order -->
           <li> 
-            <h5>Submit Multiple Exam Questions in Close Order</h5>
+            <div class="card-header bg-primary text-white" id="cardHeader">
+              Submit Multiple Exam Questions in Close Order
+          </div>
             <p>Out of 13 same questions, 2 questions (q4, q7) are flagged due to same wrong answers. Only 0.005% pairs (2 out of 40000) among the whole class have higher wrong answer similarity scores.</p>
             <p>A Quintiles Graph demonstrates how rare the similarity is</p>
             <div id="accordion">
@@ -218,7 +224,9 @@
 
           <!-- rule#2: same anwer -->
           <li> 
-            <h5>Submit Multiple Exam Questions with Same Answers</h5> 
+            <div class="card-header bg-primary text-white" id="cardHeader">
+              Submit Multiple Exam Questions with Same Answers
+          </div>
             <p>Out of 13 same questions, 8 questions (q2, q4, q5, q6, q7, q8, q9, q10) are flagged due to same answers. Only 0.005% pairs (2 out of 40000) among the whole class have same or higher answer similarity scores.</p>
             <p>A Quintiles Graph demonstrates how rare the similarity is</p>
             <div id="accordion">
@@ -266,7 +274,9 @@
 
           <!-- rule#4: same wrong anwer -->
           <li> 
-            <h5>Submit Multiple Exam Questions with Same Wrong Answers</h5> 
+            <div class="card-header bg-primary text-white" id="cardHeader">
+              Submit Multiple Exam Questions with Same Wrong Answers
+          </div> 
             <p>Out of 13 same questions, 2 questions (q4, q7) are flagged due to same wrong answers. Only 0.005% pairs (2 out of 40000) among the whole class have same or higher wrong answer similarity scores.</p>
             <p>A Quintiles Graph demonstrates how rare the similarity is</p>
             <div id="accordion">
@@ -313,7 +323,9 @@
 
         <!-- rule#5: same score -->
         <li> 
-          <h5>Submit Multiple Exam Questions with Same Score Distribution</h5> 
+          <div class="card-header bg-primary text-white" id="cardHeader">
+            Submit Multiple Exam Questions with Same Score Distribution
+        </div> 
           <p>Out of 13 same questions, 8 questions (q2, q4, q5, q6, q7, q8, q9, q10) are flagged due to same score distribution. Only 0.005% pairs (2 out of 40000) among the whole class have same or higher wrong answer similarity scores.</p>
           <p>A Quintiles Graph demonstrates how rare the similarity is</p>
           <div id="accordion">

@@ -35,12 +35,19 @@
       <input type = "file" id = "uploadcsv">
       <button type="button" class="btn btn-sm btn-primary" id="uploadconfirm"> Upload CSV</button>
       <hr>
+      <button type="button" class="btn btn-sm btn-primary" id="reload" style="position: absolute; top: 0px; left: 0px;">Reload Data</button>
+
 
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_set.name %> <%= assessment.number %> Overview
         </div>
+        <script>
+          document.getElementById("reload").addEventListener("click", function() {
+            console.log("reload button clicked")
+          });
+        </script>
 
         <div class="card-footer">
           <small>
@@ -53,6 +60,11 @@
 
         </div>
       </div>
+      <script>
+        var button = document.getElementById("uploadcsv");
+        var rect = button.getBoundingClientRect();
+        console.log(rect.top, rect.right, rect.bottom, rect.left);
+      </script>
 
   
         <script>
