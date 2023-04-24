@@ -544,6 +544,7 @@ describe('chunks', () => {
       await fs.remove(path.join(courseDir, 'questions', 'addNumbers'));
 
       // Sync course to DB.
+      const { logger } = makeMockLogger();
       await syncDiskToSqlAsync(courseDir, courseId, logger);
 
       // Regenerate chunks
