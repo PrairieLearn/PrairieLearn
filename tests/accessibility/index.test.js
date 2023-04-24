@@ -216,6 +216,9 @@ const SKIP_ROUTES = [
   '/pl/oauth2callback',
   '/pl/oauth2login',
 
+  // Admin page; we aren't guaranteed to have a batched migration to navigate to.
+  '/pl/administrator/batchedMigrations/:batched_migration_id',
+
   // TODO: add tests for file editing/viewing.
   /\/file_edit\/\*$/,
   /\/file_view\/\*$/,
