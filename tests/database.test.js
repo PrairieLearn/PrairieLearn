@@ -1,8 +1,7 @@
 // @ts-check
 const _ = require('lodash');
 
-const databaseDiff = require('../lib/databaseDiff');
-const databaseDescribe = require('../lib/databaseDescribe');
+const { describeDatabase, diffDirectoryAndDatabase } = require('@prairielearn/postgres-tools');
 const helperDb = require('./helperDb');
 
 // Custom error type so we can display our own message and omit a stacktrace
@@ -26,7 +25,7 @@ describe('database', function () {
       coloredOutput: process.stdout.isTTY,
     };
     const dbName = helperDb.getDatabaseNameForCurrentWorker();
-    const diff = await databaseDiff.diffDirectoryAndDatabase('database', dbName, options);
+    const diff = await diffDirectoryAndDatabase('database', dbName, options);
     if (diff) {
       throw new DatabaseError(diff);
     }
@@ -45,7 +44,7 @@ describe('database', function () {
      * See https://github.com/PrairieLearn/PrairieLearn/issues/2256 for a bug caused by this problem.
      */
     const dbName = helperDb.getDatabaseNameForCurrentWorker();
-    const data = await databaseDescribe.describe(dbName);
+    const data = await describeDatabase(dbName);
 
     const tableHasDeletedAtColumn = (table) =>
       _.some(data.tables[table].columns, { name: 'deleted_at' });

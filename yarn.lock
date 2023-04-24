@@ -2786,17 +2786,46 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/postgres-tools@workspace:^, @prairielearn/postgres-tools@workspace:packages/postgres-tools":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/postgres-tools@workspace:packages/postgres-tools"
+  dependencies:
+    "@prairielearn/postgres": "workspace:^"
+    "@prairielearn/tsconfig": "workspace:^"
+    "@types/diff": ^5.0.3
+    "@types/fs-extra": ^11.0.1
+    "@types/lodash": ^4.14.192
+    "@types/node": ^18.15.11
+    chalk: ^4.1.2
+    copyfiles: ^2.4.1
+    diff: ^5.1.0
+    fs-extra: ^11.1.1
+    lodash: ^4.17.21
+    typescript: ^4.9.4
+  bin:
+    pg-describe: ./dist/bin/pg-describe.js
+    pg-diff: ./dist/bin/pg-diff.js
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/postgres@workspace:^, @prairielearn/postgres@workspace:packages/postgres":
   version: 0.0.0-use.local
   resolution: "@prairielearn/postgres@workspace:packages/postgres"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/debug": ^4.1.7
+    "@types/diff": ^5.0.3
+    "@types/fs-extra": ^11.0.1
     "@types/lodash": ^4.14.192
     "@types/mocha": ^10.0.1
     "@types/multipipe": ^3.0.1
     "@types/node": ^18.15.11
     "@types/pg-cursor": ^2.7.0
+    chalk: ^4.1.2
+    copyfiles: ^2.4.1
+    diff: ^5.1.0
+    fs-extra: ^11.1.1
+    lodash: ^4.17.21
     mocha: ^10.2.0
     multipipe: ^4.0.0
     pg: ^8.10.0
@@ -2805,6 +2834,9 @@ __metadata:
     ts-node: ^10.9.1
     typescript: ^4.9.4
     zod: ^3.21.4
+  bin:
+    pg-describe: ./dist/bin/pg-describe.js
+    pg-diff: ./dist/bin/pg-diff.js
   languageName: unknown
   linkType: soft
 
@@ -2829,6 +2861,21 @@ __metadata:
     "@types/node": ^18.15.11
     execa: ^5.1.1
     ts-node: ^10.9.1
+    typescript: ^4.9.5
+  languageName: unknown
+  linkType: soft
+
+"@prairielearn/signed-token@workspace:^, @prairielearn/signed-token@workspace:packages/signed-token":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/signed-token@workspace:packages/signed-token"
+  dependencies:
+    "@prairielearn/tsconfig": "*"
+    "@types/debug": ^4.1.7
+    "@types/node": ^18.14.2
+    base64url: ^3.0.1
+    debug: ^4.3.4
+    lodash: ^4.17.21
+    mocha: ^10.2.0
     typescript: ^4.9.5
   languageName: unknown
   linkType: soft
@@ -3819,8 +3866,10 @@ __metadata:
     "@prairielearn/opentelemetry": "workspace:^"
     "@prairielearn/path-utils": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
+    "@prairielearn/postgres-tools": "workspace:^"
     "@prairielearn/prettier-plugin-sql": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
+    "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
     "@pyroscope/nodejs": ^0.2.5
     "@sentry/profiling-node": ^0.3.0

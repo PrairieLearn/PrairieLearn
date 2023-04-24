@@ -1,8 +1,7 @@
-//var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
 
-var csrf = require('../../lib/csrf');
+const { generateSignedToken } = require('@prairielearn/signed-token');
 const { config } = require('../../lib/config');
 
 router.get('/', function (req, res) {
@@ -15,7 +14,7 @@ router.post('/', function (req, res) {
     var pl_pw_origUrl = req.cookies.pl_pw_origUrl;
     var maxAge = 1000 * 60 * 60 * 12; // 12 hours
 
-    var pwCookie = csrf.generateToken({ password: req.body.password, maxAge }, config.secretKey);
+    var pwCookie = generateSignedToken({ password: req.body.password, maxAge }, config.secretKey);
     res.cookie('pl_assessmentpw', pwCookie, { maxAge, httpOnly: true, secure: true });
     res.clearCookie('pl_pw_origUrl');
     return res.redirect(pl_pw_origUrl);
