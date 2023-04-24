@@ -1,4 +1,7 @@
-/* eslint-env jest */
+// @ts-check
+const { assert } = require('chai');
+const sinon = require('sinon');
+const { config } = require('../lib/config');
 const queueReceiver = require('../lib/receiveFromQueue');
 
 function randomString() {
@@ -28,7 +31,7 @@ function fakeSqs(options = {}) {
   const timeoutCount = options.timeoutCount || 0;
   let callCount = 0;
   return {
-    receiveMessage: jest.fn((params, callback) => {
+    receiveMessage: sinon.spy((params, callback) => {
       if (callCount < timeoutCount) {
         callCount++;
         return callback(null, {});
@@ -42,14 +45,22 @@ function fakeSqs(options = {}) {
         ],
       });
     }),
-    deleteMessage: jest.fn((params, callback) => callback(null)),
-    changeMessageVisibility: jest.fn((params, callback) => callback(null)),
+    deleteMessage: sinon.spy((params, callback) => callback(null)),
+    changeMessageVisibility: sinon.spy((params, callback) => callback(null)),
     message,
     receiptHandle,
   };
 }
 
+const TIMEOUT_OVERHEAD = 300;
+
 describe('queueReceiver', () => {
+  beforeEach(() => {
+    // Our config-loading system chokes when it's not running in AWS. Instead
+    // of loading it, we'll just set the values we need for these tests.
+    config.timeoutOverhead = TIMEOUT_OVERHEAD;
+  });
+
   it('tries to receive a message from the correct queue url', (done) => {
     const sqs = fakeSqs();
 
@@ -58,8 +69,8 @@ describe('queueReceiver', () => {
       'helloworld',
       (message, errCb, successCb) => successCb(),
       (err) => {
-        expect(err).toBeNull();
-        expect(sqs.receiveMessage.mock.calls[0][0].QueueUrl).toBe('helloworld');
+        assert.isNull(err);
+        assert.equal(sqs.receiveMessage.args[0][0].QueueUrl, 'helloworld');
         done();
       }
     );
@@ -75,14 +86,14 @@ describe('queueReceiver', () => {
       'helloworld',
       (message, errCb, successCb) => successCb(),
       (err) => {
-        expect(err).toBeNull();
-        expect(sqs.receiveMessage.mock.calls.length).toBe(2);
+        assert.isNull(err);
+        assert.equal(sqs.receiveMessage.callCount, 2);
         done();
       }
     );
   });
 
-  it("rejects messages that aren't contain a valid json string", (done) => {
+  it("rejects messages that don't contain a valid json string", (done) => {
     const sqs = fakeSqs({
       message: '{"oops, this is invalid json"',
     });
@@ -92,8 +103,8 @@ describe('queueReceiver', () => {
       '',
       (message, errCb, successCb) => successCb(),
       (err) => {
-        expect(err).not.toBeNull();
-        expect(sqs.deleteMessage.mock.calls.length).toBe(0);
+        assert.isNotNull(err);
+        assert.equal(sqs.deleteMessage.callCount, 0);
         done();
       }
     );
@@ -112,8 +123,8 @@ describe('queueReceiver', () => {
       '',
       (message, errCb, successCb) => successCb(),
       (err) => {
-        expect(err).not.toBeNull();
-        expect(sqs.deleteMessage.mock.calls.length).toBe(0);
+        assert.isNotNull(err);
+        assert.equal(sqs.deleteMessage.callCount, 0);
         done();
       }
     );
@@ -131,10 +142,10 @@ describe('queueReceiver', () => {
       '',
       (message, errCb, successCb) => successCb(),
       (err) => {
-        expect(err).toBeNull();
-        expect(sqs.changeMessageVisibility.mock.calls.length).toBe(1);
-        const params = sqs.changeMessageVisibility.mock.calls[0][0];
-        expect(params.VisibilityTimeout).toBeGreaterThan(10);
+        assert.isNull(err);
+        assert.equal(sqs.changeMessageVisibility.callCount, 1);
+        const params = sqs.changeMessageVisibility.args[0][0];
+        assert.equal(params.VisibilityTimeout, 10 + TIMEOUT_OVERHEAD);
         done();
       }
     );
@@ -148,8 +159,8 @@ describe('queueReceiver', () => {
       '',
       (message, errCb, _successCb) => errCb(new Error('RIP')),
       (err) => {
-        expect(err).not.toBeNull();
-        expect(sqs.deleteMessage.mock.calls.length).toBe(0);
+        assert.isNotNull(err);
+        assert.equal(sqs.deleteMessage.callCount, 0);
         done();
       }
     );
@@ -163,10 +174,10 @@ describe('queueReceiver', () => {
       'goodbyeworld',
       (message, errCb, successCb) => successCb(),
       (err) => {
-        expect(err).toBeNull();
-        expect(sqs.deleteMessage.mock.calls.length).toBe(1);
-        expect(sqs.deleteMessage.mock.calls[0][0].QueueUrl).toBe('goodbyeworld');
-        expect(sqs.deleteMessage.mock.calls[0][0].ReceiptHandle).toBe(sqs.receiptHandle);
+        assert.isNull(err);
+        assert.equal(sqs.deleteMessage.callCount, 1);
+        assert.equal(sqs.deleteMessage.args[0][0].QueueUrl, 'goodbyeworld');
+        assert.equal(sqs.deleteMessage.args[0][0].ReceiptHandle, sqs.receiptHandle);
         done();
       }
     );

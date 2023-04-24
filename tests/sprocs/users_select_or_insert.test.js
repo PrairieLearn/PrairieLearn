@@ -3,14 +3,13 @@ const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 const { step } = require('mocha-steps');
 
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 const helperDb = require('../helperDb');
 
 chai.use(chaiAsPromised);
 const { assert } = chai;
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 async function getUserParams(user_id) {
   const query = 'SELECT uid, name, uin, institution_id FROM users WHERE user_id = $1;';
@@ -20,6 +19,13 @@ async function getUserParams(user_id) {
   return { uid, name, uin, institution_id };
 }
 
+/**
+ *
+ * @param {{ uid: string, name: string, uin?: string | null }} user
+ * @param {string | null} authn_provider_name
+ * @param {string | null} institution_id
+ * @returns
+ */
 async function usersSelectOrInsert(user, authn_provider_name = null, institution_id = null) {
   return sqldb.callAsync('users_select_or_insert', [
     user.uid,

@@ -1,5 +1,5 @@
-const config = require('../lib/config');
-const logger = require('../lib/logger');
+const { config } = require('../lib/config');
+const { logger } = require('@prairielearn/logger');
 const { enrichSentryScope } = require('../lib/sentry');
 
 module.exports = function (req, res, next) {

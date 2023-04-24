@@ -1,10 +1,9 @@
 const ERR = require('async-stacktrace');
 const crypto = require('crypto');
-const sqldb = require('../prairielib/lib/sql-db');
-const sqlLoader = require('../prairielib/lib/sql-loader');
-const logger = require('../lib/logger');
+const sqldb = require('@prairielearn/postgres');
+const { logger } = require('@prairielearn/logger');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 module.exports = (req, res, next) => {
   let token;

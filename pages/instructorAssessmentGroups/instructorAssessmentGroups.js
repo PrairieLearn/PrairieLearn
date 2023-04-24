@@ -5,12 +5,11 @@ const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 const sanitizeName = require('../../lib/sanitize-name');
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const groupUpdate = require('../../lib/group-update');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 /*
 This function run all needed SQL queries to load the page at the same time that res passed in will be saved.
@@ -124,7 +123,7 @@ router.post('/', function (req, res, next) {
     const uids = req.body.uids;
     const uidlist = uids.split(/[ ,]+/);
     res.locals.errormsg = '';
-    let updateList = new Array();
+    let updateList = [];
     uidlist.forEach((uid) => {
       updateList.push([group_name, uid]);
     });
@@ -175,8 +174,9 @@ router.post('/', function (req, res, next) {
       if (failedUids.length > 0) {
         res.locals.errormsg += 'Failed to add ' + failedUids + '. Please check if the uid exist.\n';
       }
+    })().then(() => {
       obtainInfo(req, res, next);
-    })();
+    });
   } else if (req.body.__action === 'delete_member') {
     const assessment_id = res.locals.assessment.id;
     const group_id = req.body.group_id;
@@ -198,8 +198,9 @@ router.post('/', function (req, res, next) {
         res.locals.errormsg +=
           'Failed to remove ' + failedUids + '. Please check if the uid exist.\n';
       }
+    })().then(() => {
       obtainInfo(req, res, next);
-    })();
+    });
   } else if (req.body.__action === 'delete_group') {
     const params = [res.locals.assessment.id, req.body.group_id, res.locals.authn_user.user_id];
     sqldb.call('assessment_groups_delete_group', params, function (err, _result) {

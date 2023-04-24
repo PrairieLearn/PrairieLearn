@@ -2,7 +2,7 @@ const _ = require('lodash');
 const assert = require('chai').assert;
 const request = require('request');
 const cheerio = require('cheerio');
-const csvParse = require('csv-parse/lib/sync');
+const { parse: csvParse } = require('csv-parse/sync');
 
 const helperServer = require('./helperServer');
 const helperQuestion = require('./helperQuestion');

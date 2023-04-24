@@ -78,3 +78,23 @@ has become increasingly complex, with many different possible combinations of op
   </pl-block-group>
   <pl-answer correct="true" tag="11" depends="g1,g2,g3">11</pl-answer>
 </pl-order-blocks>
+
+
+<pl-order-blocks answers-name="test-duplicate-tags"
+  grading-method="dag"
+  partial-credit="none"
+  feedback="none">
+  <pl-answer correct="true"  tag="1" >A</pl-answer>
+  <pl-answer correct="true"  tag="2" depends="1">AA</pl-answer>
+  <pl-answer correct="false" tag="1" >B</pl-answer>
+  <pl-answer correct="false" tag="" >C</pl-answer>
+  <pl-answer correct="false" tag="" >D</pl-answer>
+</pl-order-blocks>
+
+<pl-order-blocks
+  answers-name="test-not-grading-indent"
+  indentation="true"
+  grading-method="ranking">
+  <pl-answer ranking="1" indent="-1" correct="true">first</pl-answer>
+  <pl-answer ranking="2" indent="-1" correct="true">second</pl-answer>
+</pl-order-blocks>

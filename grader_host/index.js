@@ -9,20 +9,18 @@ const { exec } = require('child_process');
 const path = require('path');
 const byline = require('byline');
 const Sentry = require('@prairielearn/sentry');
-
-const sqldb = require('../prairielib/lib/sql-db');
+const sqldb = require('@prairielearn/postgres');
 const sanitizeObject = require('../prairielib/lib/util').sanitizeObject;
+const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 
 const globalLogger = require('./lib/logger');
 const jobLogger = require('./lib/jobLogger');
-const configManager = require('./lib/config');
-const config = require('./lib/config').config;
+const { config, loadConfig } = require('./lib/config');
 const healthCheck = require('./lib/healthCheck');
 const lifecycle = require('./lib/lifecycle');
 const pullImages = require('./lib/pullImages');
 const receiveFromQueue = require('./lib/receiveFromQueue');
 const timeReporter = require('./lib/timeReporter');
-const dockerUtil = require('./lib/dockerUtil');
 const load = require('./lib/load');
 
 // catch SIGTERM and exit after waiting for all current jobs to finish
@@ -39,7 +37,7 @@ process.on('SIGTERM', () => {
 async.series(
   [
     (callback) => {
-      configManager.loadConfig((err) => {
+      loadConfig((err) => {
         if (ERR(err, callback)) return;
         globalLogger.info('Config loaded:');
         globalLogger.info(JSON.stringify(config, null, 2));
@@ -256,7 +254,7 @@ function initDocker(info, callback) {
       (callback) => {
         if (config.cacheImageRegistry) {
           logger.info('Authenticating to docker');
-          dockerUtil.setupDockerAuth((err, auth) => {
+          setupDockerAuth(config.cacheImageRegistry, (err, auth) => {
             if (ERR(err, callback)) return;
             dockerAuth = auth;
             callback(null);
@@ -267,9 +265,9 @@ function initDocker(info, callback) {
       },
       async () => {
         logger.info(`Pulling latest version of "${image}" image`);
-        var repository = new dockerUtil.DockerName(image);
+        var repository = new DockerName(image);
         if (config.cacheImageRegistry) {
-          repository.registry = config.cacheImageRegistry;
+          repository.setRegistry(config.cacheImageRegistry);
         }
         const params = {
           fromImage: repository.getRegistryRepo(),
@@ -284,10 +282,10 @@ function initDocker(info, callback) {
             stream,
             (err) => {
               if (err) {
-                globalLogger.error('Error pulling "${image}" image:', err);
+                globalLogger.error(`Error pulling "${image}" image:`, err);
                 reject(err);
               } else {
-                globalLogger.info('Successfully pulled "${image}" image');
+                globalLogger.info(`Successfully pulled "${image}" image`);
                 resolve();
               }
             },
@@ -396,24 +394,28 @@ function runJob(info, callback) {
   } = info;
 
   let results = {};
-  let jobTimeout = timeout || 30;
-  let globalJobTimeout = jobTimeout * 2;
+  let runTimeout = timeout || config.defaultTimeout;
+  // Even if instructors specify a really short timeout for the execution of
+  // the grading job, there's a certain amount of overhead associated with
+  // running the job (pulling an image, uploading results, etc.). We add a
+  // fixed amount of time to the instructor-specified timeout to account for
+  // this.
+  let jobTimeout = config.timeoutOverhead + runTimeout;
   let jobEnableNetworking = enableNetworking || false;
   let jobEnvironment = environment || {};
 
   let jobFailed = false;
-  let globalJobTimeoutCleared = false;
-  const globalJobTimeoutId = setTimeout(() => {
+  let jobTimeoutId = setTimeout(() => {
     jobFailed = true;
     healthCheck.flagUnhealthy('Job timeout exceeded; Docker presumed dead.');
-    return callback(new Error(`Job timeout of ${globalJobTimeout}s exceeded.`));
-  }, globalJobTimeout * 1000);
+    return callback(new Error(`Job timeout of ${jobTimeout}s exceeded.`));
+  }, jobTimeout * 1000);
 
   logger.info('Launching Docker container to run grading job');
 
-  var repository = new dockerUtil.DockerName(image);
+  var repository = new DockerName(image);
   if (config.cacheImageRegistry) {
-    repository.registry = config.cacheImageRegistry;
+    repository.setRegistry(config.cacheImageRegistry);
   }
   const runImage = repository.getCombined();
   logger.info(`Run image: ${runImage}`);
@@ -486,7 +488,7 @@ function runJob(info, callback) {
           container.kill().catch((err) => {
             globalLogger.error('Error killing container', err);
           });
-        }, jobTimeout * 1000);
+        }, runTimeout * 1000);
 
         logger.info('Waiting for container to complete');
         try {
@@ -529,9 +531,9 @@ function runJob(info, callback) {
         );
       },
       (callback) => {
-        // We made it throught the Docker danger zone!
-        clearTimeout(globalJobTimeoutId);
-        globalJobTimeoutCleared = true;
+        // We made it through the Docker danger zone!
+        clearTimeout(jobTimeoutId);
+        jobTimeoutId = null;
         logger.info('Reading course results');
         // Now that the job has completed, let's extract the results
         // First up: results.json
@@ -567,7 +569,7 @@ function runJob(info, callback) {
           });
         } else {
           if (results.timedOut) {
-            results.message = `Your grading job did not complete within the time limit of ${timeout} seconds. Please fix your code before submitting again.`;
+            results.message = `Your grading job did not complete within the time limit of ${timeout} seconds.\nPlease fix your code before submitting again.`;
           }
           results.results = null;
           callback(null);
@@ -580,11 +582,11 @@ function runJob(info, callback) {
       // It's possible that we get here with an error prior to the global job timeout exceeding.
       // If that happens, Docker is still alive, but it just errored. We'll cancel
       // the timeout here if needed.
-      if (!globalJobTimeoutCleared) {
-        clearTimeout(globalJobTimeoutId);
+      if (jobTimeoutId != null) {
+        clearTimeout(jobTimeoutId);
       }
 
-      // If we somehow eventually get here after exceeding the global tieout,
+      // If we somehow eventually get here after exceeding the global timeout,
       // we should avoid calling the callback again
       if (jobFailed) {
         return;
@@ -622,7 +624,7 @@ function uploadResults(info, callback) {
         const params = {
           Bucket: s3Bucket,
           Key: `${s3RootKey}/results.json`,
-          Body: Buffer.from(JSON.stringify(results, null, '  '), 'binary'),
+          Body: Buffer.from(JSON.stringify(results, null, 2)),
         };
         s3.putObject(params, (err) => {
           if (ERR(err, callback)) return;

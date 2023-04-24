@@ -4,15 +4,15 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+const _ = require('lodash');
 
 const assessment = require('../../lib/assessment');
 const studentAssessmentInstance = require('../shared/studentAssessmentInstance');
-const error = require('../../prairielib/lib/error');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const error = require('@prairielearn/error');
+const sqldb = require('@prairielearn/postgres');
 var groupAssessmentHelper = require('../../lib/groups');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const ensureUpToDate = (locals, callback) => {
   debug('ensureUpToDate()');
@@ -52,6 +52,15 @@ router.get('/', function (req, res, next) {
       if (ERR(err, next)) return;
       res.locals.questions = result.rows;
       debug('number of questions:', res.locals.questions.length);
+
+      res.locals.has_manual_grading_question = _.some(
+        res.locals.questions,
+        (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading
+      );
+      res.locals.has_auto_grading_question = _.some(
+        res.locals.questions,
+        (q) => q.max_auto_points || q.auto_points || !q.max_points
+      );
 
       debug('rendering assessment text');
       assessment.renderText(

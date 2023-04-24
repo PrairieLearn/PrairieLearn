@@ -1,56 +1,11 @@
 .pl-graph {
   display: flex;
   flex-direction: column;
-  overflow-x: scroll;
+  overflow-x: auto;
   width: 100%;
   margin-bottom: 1rem;
 }
 
-.pl-graph > * {
+.pl-graph > svg {
   margin: auto;
-}
-
-.pl-graph .render-label {
-  color: #999;
-}
-
-.pl-graph .spinner {
-  width: 40px;
-  height: 40px;
-
-  position: relative;
-}
-
-.pl-graph .double-bounce1, .pl-graph .double-bounce2 {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;
-  background-color: #999;
-  opacity: 0.6;
-  position: absolute;
-  top: 0;
-  left: 0;
-  
-  -webkit-animation: sk-bounce 2.0s infinite ease-in-out;
-  animation: sk-bounce 2.0s infinite ease-in-out;
-}
-
-.pl-graph .double-bounce2 {
-  -webkit-animation-delay: -1.0s;
-  animation-delay: -1.0s;
-}
-
-@-webkit-keyframes sk-bounce {
-  0%, 100% { -webkit-transform: scale(0.0) }
-  50% { -webkit-transform: scale(1.0) }
-}
-
-@keyframes sk-bounce {
-  0%, 100% { 
-    transform: scale(0.0);
-    -webkit-transform: scale(0.0);
-  } 50% { 
-    transform: scale(1.0);
-    -webkit-transform: scale(1.0);
-  }
 }

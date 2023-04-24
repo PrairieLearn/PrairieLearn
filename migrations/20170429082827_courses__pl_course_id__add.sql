@@ -1,5 +1,5 @@
-
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS pl_course_id bigint;
+ALTER TABLE courses
+ADD COLUMN IF NOT EXISTS pl_course_id bigint;
 
 DO $$
 BEGIN

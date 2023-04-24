@@ -4,16 +4,15 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 const QR = require('qrcode-svg');
 
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
-const error = require('../../prairielib/lib/error');
-const logger = require('../../lib/logger');
+const error = require('@prairielearn/error');
+const { logger } = require('@prairielearn/logger');
 const {
   AssessmentCopyEditor,
   AssessmentRenameEditor,
@@ -40,15 +39,15 @@ router.get('/', function (req, res, next) {
     ],
     function (err) {
       if (ERR(err, next)) return;
-      debug('render page');
-      let host = config.serverCanonicalHost || 'https://' + req.headers.host;
-      res.locals.studentLink =
-        host +
+      const host = config.serverCanonicalHost || `${req.protocol}://${req.headers.host}`;
+      res.locals.studentLink = new URL(
         res.locals.plainUrlPrefix +
-        '/course_instance/' +
-        res.locals.course_instance.id +
-        '/assessment/' +
-        res.locals.assessment.id;
+          '/course_instance/' +
+          res.locals.course_instance.id +
+          '/assessment/' +
+          res.locals.assessment.id,
+        host
+      ).href;
       res.locals.studentLinkQRCode = new QR({
         content: res.locals.studentLink,
         width: 512,
@@ -117,7 +116,7 @@ router.post('/', function (req, res, next) {
     });
   } else if (req.body.__action === 'change_id') {
     debug(`Change tid from ${res.locals.assessment.tid} to ${req.body.id}`);
-    if (!req.body.id) return next(new Error(`Invalid TID (was falsey): ${req.body.id}`));
+    if (!req.body.id) return next(new Error(`Invalid TID (was falsy): ${req.body.id}`));
     if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
       return next(
         new Error(

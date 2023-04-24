@@ -1,6 +1,6 @@
 const express = require('express');
 
-const error = require('../../prairielib/error');
+const error = require('@prairielearn/error');
 
 const router = express.Router();
 

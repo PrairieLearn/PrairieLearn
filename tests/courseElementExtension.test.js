@@ -1,10 +1,9 @@
 const assert = require('chai').assert;
 const { step } = require('mocha-steps');
 const fs = require('fs-extra');
-const config = require('../lib/config');
-const sqldb = require('../prairielib/lib/sql-db');
-const sqlLoader = require('../prairielib/lib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const { config } = require('../lib/config');
+const sqldb = require('@prairielearn/postgres');
+const sql = sqldb.loadSqlEquiv(__filename);
 const _ = require('lodash');
 const path = require('path');
 const freeform = require('../question-servers/freeform.js');
@@ -69,8 +68,8 @@ describe('Course element extensions', function () {
         path.join(__dirname, '..', 'testCourse', 'elementExtensions'),
         path.join(__dirname, '..', 'testCourse', 'elementExtensions')
       );
-      assert(
-        extensions.length === 0,
+      assert.isEmpty(
+        extensions,
         'non-zero number of extensions were loaded from a course without extensions'
       );
     });

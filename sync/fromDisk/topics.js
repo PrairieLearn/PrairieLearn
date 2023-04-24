@@ -1,5 +1,5 @@
 // @ts-check
-const sqldb = require('../../prairielib/lib/sql-db');
+const sqldb = require('@prairielearn/postgres');
 
 const infofile = require('../infofile');
 const perf = require('../performance')('topics');
@@ -19,7 +19,7 @@ module.exports.sync = async function (courseId, courseData) {
   /** @type {string[]} */
   let courseTopics = [];
   if (!infofile.hasErrors(courseData.course)) {
-    courseTopics = courseData.course.data.topics.map((t) =>
+    courseTopics = (courseData.course.data?.topics ?? []).map((t) =>
       JSON.stringify([t.name, t.description, t.color])
     );
   }
@@ -27,7 +27,7 @@ module.exports.sync = async function (courseId, courseData) {
   /** @type Set<string> */
   const knownQuestionTopicNames = new Set();
   Object.values(courseData.questions).forEach((q) => {
-    if (!infofile.hasErrors(q)) {
+    if (!infofile.hasErrors(q) && q.data?.topic) {
       knownQuestionTopicNames.add(q.data.topic);
     }
   });

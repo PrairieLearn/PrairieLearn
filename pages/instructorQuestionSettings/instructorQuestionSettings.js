@@ -2,25 +2,24 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const async = require('async');
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const question = require('../../lib/question');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 const fs = require('fs-extra');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const logger = require('../../lib/logger');
+const { logger } = require('@prairielearn/logger');
 const {
   QuestionRenameEditor,
   QuestionDeleteEditor,
   QuestionCopyEditor,
 } = require('../../lib/editors');
-const config = require('../../lib/config');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const { config } = require('../../lib/config');
+const sql = sqldb.loadSqlEquiv(__filename);
 const { encodePath } = require('../../lib/uri-util');
 const { idsEqual } = require('../../lib/id');
-const csrf = require('../../lib/csrf');
+const { generateSignedToken } = require('@prairielearn/signed-token');
 
 router.post('/test', function (req, res, next) {
   // We use a separate `test/` POST route so that we can always use the
@@ -84,7 +83,7 @@ router.post('/test', function (req, res, next) {
 router.post('/', function (req, res, next) {
   if (req.body.__action === 'change_id') {
     debug(`Change qid from ${res.locals.question.qid} to ${req.body.id}`);
-    if (!req.body.id) return next(new Error(`Invalid QID (was falsey): ${req.body.id}`));
+    if (!req.body.id) return next(new Error(`Invalid QID (was falsy): ${req.body.id}`));
     if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
       return next(
         new Error(
@@ -228,7 +227,7 @@ router.get('/', function (req, res, next) {
 
   // Generate a CSRF token for the test route. We can't use `res.locals.__csrf_token`
   // here because this form will actually post to a different route, not `req.originalUrl`.
-  const questionTestCsrfToken = csrf.generateToken(
+  const questionTestCsrfToken = generateSignedToken(
     { url: questionTestPath, authn_user_id: res.locals.authn_user.user_id },
     config.secretKey
   );

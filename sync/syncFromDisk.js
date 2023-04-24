@@ -2,11 +2,11 @@
 const ERR = require('async-stacktrace');
 const util = require('util');
 
-const namedLocks = require('../lib/named-locks');
+const namedLocks = require('@prairielearn/named-locks');
 const courseDB = require('./course-db');
-const sqldb = require('../prairielib/lib/sql-db');
+const sqldb = require('@prairielearn/postgres');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 
 const syncCourseInfo = require('./fromDisk/courseInfo');
 const syncCourseInstances = require('./fromDisk/courseInstances');
@@ -44,10 +44,6 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
 
   const courseData = await perf.timedAsync('loadCourseData', () =>
     courseDB.loadFullCourse(courseDir)
-  );
-  // Write any errors and warnings to sync log
-  courseDB.writeErrorsAndWarningsForCourseData(courseId, courseData, (line) =>
-    logger.info(line || '')
   );
   logger.info('Syncing info to database');
   await perf.timedAsync('syncCourseInfo', () => syncCourseInfo.sync(courseData, courseId));
@@ -93,6 +89,15 @@ async function syncDiskToSqlWithLock(courseDir, courseId, logger) {
   } else {
     logger.info(chalk.green('✓ Course sync successful'));
   }
+
+  // Note that we deliberately log warnings/errors after syncing to the database
+  // since in some cases we actually discover new warnings/errors during the
+  // sync process. For instance, we don't actually validate exam UUIDs until
+  // the database sync step.
+  courseDB.writeErrorsAndWarningsForCourseData(courseId, courseData, (line) =>
+    logger.info(line || '')
+  );
+
   perf.end('sync');
   return {
     hadJsonErrors: courseDataHasErrors,
@@ -141,7 +146,19 @@ module.exports.syncDiskToSql = function (courseDir, course_id, logger, callback)
     }
   });
 };
-module.exports.syncDiskToSqlAsync = promisify(module.exports.syncDiskToSql);
+
+/**
+ * @param {string} courseDir
+ * @param {string} course_id
+ * @param {any} logger
+ * @returns {Promise<SyncResults>}
+ */
+function syncDiskToSqlAsync(courseDir, course_id, logger) {
+  // @ts-expect-error -- The types of `syncDiskToSql` can't express the fact
+  // that it'll always result in a non-undefined value if it doesn't error.
+  return promisify(module.exports.syncDiskToSql)(courseDir, course_id, logger);
+}
+module.exports.syncDiskToSqlAsync = syncDiskToSqlAsync;
 
 /**
  * @param {string} courseDir

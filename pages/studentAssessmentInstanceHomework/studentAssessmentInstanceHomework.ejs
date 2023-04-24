@@ -64,18 +64,37 @@
 
         <table class="table table-sm table-hover">
           <thead>
+            <% if (has_manual_grading_question && has_auto_grading_question) { %>
+            <tr>
+              <th rowspan="2">Question</th>
+              <th class="text-center" colspan="3">Auto-grading</th>
+              <th class="text-center" rowspan="2">Manual grading points</th>
+              <th class="text-center" rowspan="2">Total points</th>
+            </tr>
+            <tr>
+              <th class="text-center">Value</th>
+              <th class="text-center">History</th>
+              <th class="text-center">Points</th>
+            </tr>
+            <% } else { %>
             <tr>
               <th>Question</th>
+              <% if (has_auto_grading_question) { %>
               <th class="text-center">Value</th>
               <th class="text-center">History</th>
               <th class="text-center">Awarded points</th>
+              <% } %>
+              <% if (has_manual_grading_question) { %>
+              <th class="text-center">Awarded points</th>
+              <% } %>
             </tr>
+            <% } %>
           </thead>
           <tbody>
             <% questions.forEach(function(question) { %>
             <% if (question.start_new_zone && question.zone_title) { %>
             <tr>
-              <th colspan="4">
+              <th colspan="<%= has_auto_grading_question ? has_manual_grading_question ? 6 : 4 : 2 %>">
                 <%= question.zone_title %>
                 <% if (question.zone_has_max_points) { %>
                   <%- include('../partials/zoneInfoBadge', { zoneInfo: {
@@ -99,9 +118,24 @@
                   rowLabelText: `${question.question_number}. ${question.question_title}`,
                 }); %>
               </td>
+              <% if (has_auto_grading_question) { %>
               <td class="text-center"><%- include('../partials/questionValue', {value: question.current_value});  %></td>
               <td class="text-center"><%- include('../partials/questionAwardedPoints', {awarded_points: question.variants_points_list, init_points: question.init_points});  %></td>
-              <td class="text-center"><%- include('../partials/questionPointsOfMax', {points: question.points, max_points: question.max_points}); %></td>
+              <% } %>
+              <% if (has_auto_grading_question && has_manual_grading_question) { %>
+              <td class="text-center">
+                <%- include('../partials/instanceQuestionPoints',
+                            {instance_question: question, component: 'auto'}); %>
+              </td>
+              <td class="text-center">
+                <%- include('../partials/instanceQuestionPoints',
+                            {instance_question: question, component: 'manual'}); %>
+              </td>
+              <% } %>
+              <td class="text-center">
+                <%- include('../partials/instanceQuestionPoints',
+                            {instance_question: question, component: 'total'}); %>
+              </td>
             </tr>
             <% }); %>
           </tbody>

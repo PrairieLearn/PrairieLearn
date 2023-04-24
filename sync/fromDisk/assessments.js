@@ -1,13 +1,12 @@
 // @ts-check
 const _ = require('lodash');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 const perf = require('../performance')('assessments');
 const infofile = require('../infofile');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 /**
  * SYNCING PROCESS:
@@ -45,6 +44,7 @@ const sql = sqlLoader.loadSqlEquiv(__filename);
 function getParamsForAssessment(assessmentInfoFile, questionIds) {
   if (infofile.hasErrors(assessmentInfoFile)) return null;
   const assessment = assessmentInfoFile.data;
+  if (!assessment) throw new Error(`Missing assessment data for ${assessmentInfoFile.uuid}`);
 
   const allowIssueReporting = !!_.get(assessment, 'allowIssueReporting', true);
   const allowRealTimeGrading = !!_.get(assessment, 'allowRealTimeGrading', true);
@@ -123,17 +123,20 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
       ? zone.gradeRateMinutes
       : assessment.gradeRateMinutes || 0;
     return zone.questions.map((question) => {
-      /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number, canView: string[], canSubmit: string[], advanceScorePerc: number }[]} */
-      let alternatives;
+      /** @type {{ qid: string, maxPoints: number | number[], points: number | number[], maxAutoPoints: number | number[], autoPoints: number | number[], manualPoints: number, forceMaxPoints: boolean, triesPerVariant: number, gradeRateMinutes: number, canView: string[] | null, canSubmit: string[] | null, advanceScorePerc: number }[]} */
+      let alternatives = [];
       let questionGradeRateMinutes = _.has(question, 'gradeRateMinutes')
         ? question.gradeRateMinutes
         : zoneGradeRateMinutes;
-      if (_(question).has('alternatives')) {
+      if (question.alternatives) {
         alternatives = _.map(question.alternatives, function (alternative) {
           return {
             qid: alternative.id,
-            maxPoints: alternative.maxPoints || question.maxPoints,
-            points: alternative.points || question.points,
+            maxPoints: alternative.maxPoints ?? question.maxPoints ?? null,
+            points: alternative.points ?? question.points ?? null,
+            maxAutoPoints: alternative.maxAutoPoints ?? question.maxAutoPoints ?? null,
+            autoPoints: alternative.autoPoints ?? question.autoPoints ?? null,
+            manualPoints: alternative.manualPoints ?? question.manualPoints ?? null,
             forceMaxPoints: _.has(alternative, 'forceMaxPoints')
               ? alternative.forceMaxPoints
               : _.has(question, 'forceMaxPoints')
@@ -149,19 +152,18 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
               ? alternative.gradeRateMinutes
               : questionGradeRateMinutes,
             canView: alternative?.canView ?? question?.canView ?? null,
-            canSubmit: _.has(alternative, 'canSubmit')
-              ? alternative.canSubmit
-              : _.has(question, 'canSubmit')
-              ? question.canSubmit
-              : null,
+            canSubmit: alternative?.canSubmit ?? question?.canSubmit ?? null,
           };
         });
-      } else if (_(question).has('id')) {
+      } else if (question.id) {
         alternatives = [
           {
             qid: question.id,
-            maxPoints: question.maxPoints,
-            points: question.points,
+            maxPoints: question.maxPoints ?? null,
+            points: question.points ?? null,
+            autoPoints: question.autoPoints ?? null,
+            maxAutoPoints: question.maxAutoPoints ?? null,
+            manualPoints: question.manualPoints ?? null,
             forceMaxPoints: question.forceMaxPoints || false,
             triesPerVariant: question.triesPerVariant || 1,
             advanceScorePerc: question.advanceScorePerc,
@@ -173,29 +175,38 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
       }
 
       const normalizedAlternatives = alternatives.map((alternative) => {
+        const hasSplitPoints =
+          alternative.autoPoints !== null ||
+          alternative.maxAutoPoints !== null ||
+          alternative.manualPoints !== null;
+        const autoPoints = (hasSplitPoints ? alternative.autoPoints : alternative.points) ?? 0;
+        const manualPoints = (hasSplitPoints ? alternative.manualPoints : 0) ?? 0;
+
         if (assessment.type === 'Exam') {
-          const pointsList = Array.isArray(alternative.points)
-            ? alternative.points
-            : [alternative.points];
+          let pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
           const maxPoints = Math.max(...pointsList);
+
           return {
             ...alternative,
-            // Exlude 'points' prop
-            points: undefined,
+            hasSplitPoints,
             maxPoints,
-            pointsList,
             initPoints: undefined,
+            pointsList: hasSplitPoints ? pointsList.map((p) => p + manualPoints) : pointsList,
           };
-        }
-        if (assessment.type === 'Homework') {
-          const maxPoints = alternative.maxPoints || alternative.points;
-          const initPoints = alternative.points;
+        } else if (assessment.type === 'Homework') {
+          const initPoints =
+            (Array.isArray(autoPoints) ? autoPoints[0] : autoPoints) + manualPoints;
+          const maxPoints = alternative.maxAutoPoints ?? alternative.maxPoints ?? autoPoints;
+
           return {
             ...alternative,
+            hasSplitPoints,
             maxPoints,
             initPoints,
             pointsList: undefined,
           };
+        } else {
+          throw new Error(`Unknown assessment type: ${assessment.type}`);
         }
       });
 
@@ -212,9 +223,11 @@ function getParamsForAssessment(assessmentInfoFile, questionIds) {
           const questionId = questionIds[alternative.qid];
           return {
             number: assessmentQuestionNumber,
-            max_points: alternative.maxPoints,
+            has_split_points: alternative.hasSplitPoints,
             points_list: alternative.pointsList,
             init_points: alternative.initPoints,
+            max_points: alternative.maxPoints,
+            manual_points: alternative.manualPoints,
             force_max_points: alternative.forceMaxPoints,
             tries_per_variant: alternative.triesPerVariant,
             grade_rate_minutes: alternative.gradeRateMinutes,
@@ -292,7 +305,7 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
     const uuidsRes = await sqldb.queryAsync(sql.check_access_rules_exam_uuid, uuidsParams);
     uuidsRes.rows.forEach(({ uuid, uuid_exists }) => {
       if (!uuid_exists) {
-        uuidAssessmentMap.get(uuid).forEach((tid) => {
+        uuidAssessmentMap.get(uuid)?.forEach((tid) => {
           infofile.addWarning(
             assessments[tid],
             `examUuid "${uuid}" not found. Ensure you copied the correct UUID from the scheduler.`
@@ -313,10 +326,6 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
 
   const params = [assessmentParams, courseId, courseInstanceId];
   perf.start('sproc:sync_assessments');
-  const result = await sqldb.callOneRowAsync('sync_assessments', params);
+  await sqldb.callOneRowAsync('sync_assessments', params);
   perf.end('sproc:sync_assessments');
-
-  /** @type {[string, any][]} */
-  const nameToIdMap = result.rows[0].name_to_id_map; // eslint-disable-line no-unused-vars
-  // we don't use this here, but see questions.js for the format of this return value
 };

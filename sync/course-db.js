@@ -7,14 +7,12 @@ const jju = require('jju');
 const Ajv = require('ajv').default;
 const betterAjvErrors = require('better-ajv-errors').default;
 const { parseISO, isValid, isAfter, isFuture } = require('date-fns');
-const { default: chalkDefault } = require('chalk');
+const { chalk } = require('../lib/chalk');
 
 const schemas = require('../schemas');
 const infofile = require('./infofile');
 const jsonLoad = require('../lib/json-load');
 const perf = require('./performance')('course-db');
-
-const chalk = new chalkDefault.constructor({ enabled: true, level: 3 });
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv({ allErrors: true });
@@ -281,17 +279,26 @@ const FILE_UUID_REGEX =
 /**
  * @typedef {Object} QuestionAlternative
  * @property {number | number[]} points
- * @property {number | number[]} maxPoints
+ * @property {number | number[]} autoPoints
+ * @property {number} maxPoints
+ * @property {number} manualPoints
+ * @property {number} maxAutoPoints
  * @property {string} id
  * @property {boolean} forceMaxPoints
  * @property {number} triesPerVariant
+ * @property {number} advanceScorePerc
  * @property {number} gradeRateMinutes
+ * @property {string[]} canView
+ * @property {string[]} canSubmit
  */
 
 /**
  * @typedef {Object} ZoneQuestion
  * @property {number | number[]} points
- * @property {number | number[]} maxPoints
+ * @property {number | number[]} autoPoints
+ * @property {number} maxPoints
+ * @property {number} manualPoints
+ * @property {number} maxAutoPoints
  * @property {string} [id]
  * @property {boolean} forceMaxPoints
  * @property {QuestionAlternative[]} [alternatives]
@@ -371,7 +378,6 @@ const FILE_UUID_REGEX =
  * @property {string} home
  * @property {string} args
  * @property {string[]} gradedFiles
- * @property {string[]} syncIgnore
  * @property {string} rewriteUrl
  * @property {boolean} enableNetworking
  * @property {Record<string, string | null>} environment
@@ -554,7 +560,7 @@ module.exports.courseDataHasErrorsOrWarnings = function (courseData) {
  * @param {string} options.filePath
  * @param {object} [options.schema]
  * @param {boolean} [options.tolerateMissing] - Whether or not a missing file constitutes an error
- * @returns {Promise<InfoFile<T>>}
+ * @returns {Promise<InfoFile<T> | null>}
  */
 module.exports.loadInfoFile = async function ({
   coursePath,
@@ -613,19 +619,18 @@ module.exports.loadInfoFile = async function ({
 
     if (!schema) {
       // Skip schema validation, just return the data
-      return {
+      return infofile.makeInfoFile({
         uuid: json.uuid,
         data: json,
-      };
+      });
     }
 
     // Validate file against schema
-    /** @type {import('ajv').ValidateFunction<T>} */
-    const validate = ajv.compile(schema);
+    const validate = /** @type {import('ajv').ValidateFunction<T>} */ (ajv.compile(schema));
     try {
-      const valid = validate(json);
-      if (!valid) {
-        const result = { uuid: /** @type {any} */ (json).uuid };
+      validate(json);
+      if (validate.errors) {
+        const result = infofile.makeInfoFile({ uuid: /** @type {any} */ (json).uuid });
         const errorText = betterAjvErrors(schema, json, validate.errors, {
           indent: 2,
         });
@@ -633,10 +638,10 @@ module.exports.loadInfoFile = async function ({
         infofile.addError(result, errorTextString);
         return result;
       }
-      return {
+      return infofile.makeInfoFile({
         uuid: json.uuid,
         data: json,
-      };
+      });
     } catch (err) {
       return infofile.makeError(err.message);
     }
@@ -664,8 +669,15 @@ module.exports.loadInfoFile = async function ({
       return result;
     }
 
-    // Extract and store UUID
-    result.uuid = match[0].match(UUID_REGEX)[0];
+    // Extract and store UUID. Checking for a falsy value isn't technically
+    // required, but it keeps TypeScript happy.
+    const uuid = match[0].match(UUID_REGEX);
+    if (!uuid) {
+      infofile.addError(result, 'UUID not found in file');
+      return result;
+    }
+
+    result.uuid = uuid[0];
     return result;
   }
 };
@@ -675,26 +687,36 @@ module.exports.loadInfoFile = async function ({
  * @returns {Promise<InfoFile<Course>>}
  */
 module.exports.loadCourseInfo = async function (coursePath) {
-  /** @type {import('./infofile').InfoFile<Course>} */
-  const loadedData = await module.exports.loadInfoFile({
+  /** @type {import('./infofile').InfoFile<Course> | null} */
+  const maybeNullLoadedData = await module.exports.loadInfoFile({
     coursePath,
     filePath: 'infoCourse.json',
     schema: schemas.infoCourse,
   });
-  if (infofile.hasErrors(loadedData)) {
+
+  if (maybeNullLoadedData && infofile.hasErrors(maybeNullLoadedData)) {
     // We'll only have an error if we couldn't parse JSON data; abort
-    return loadedData;
+    return maybeNullLoadedData;
   }
 
-  const info = loadedData.data;
+  if (!maybeNullLoadedData || !maybeNullLoadedData.data) {
+    throw new Error('Could not load infoCourse.json');
+  }
+
+  // Reassign to a non-null type.
+  const loadedData = maybeNullLoadedData;
+  const info = maybeNullLoadedData.data;
 
   /**
    * Used to retrieve fields such as "assessmentSets" and "topics".
    * Adds a warning when syncing if duplicates are found.
    * If defaults are provided, the entries from defaults not present in the resulting list are merged.
-   * @param {string} fieldName The member of `info` to inspect
+   * @template {'tags' | 'topics' | 'assessmentSets' | 'assessmentModules'} K
+   * @template T
+   * @param {K} fieldName The member of `info` to inspect
    * @param {string} entryIdentifier The member of each element of the field which uniquely identifies it, usually "name"
-   * @param {array} defaults
+   * @param {Course[K]} [defaults]
+   * @returns {Course[K]}
    */
   function getFieldWithoutDuplicates(fieldName, entryIdentifier, defaults) {
     const known = new Map();
@@ -736,8 +758,8 @@ module.exports.loadCourseInfo = async function (coursePath) {
     DEFAULT_ASSESSMENT_SETS
   );
   const tags = getFieldWithoutDuplicates('tags', 'name', DEFAULT_TAGS);
-  const topics = getFieldWithoutDuplicates('topics', 'name', null);
-  const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name', null);
+  const topics = getFieldWithoutDuplicates('topics', 'name');
+  const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name');
 
   const exampleCourse =
     info.uuid === 'fcc5282c-a752-4146-9bd6-ee19aac53fc5' &&
@@ -772,8 +794,8 @@ module.exports.loadCourseInfo = async function (coursePath) {
  * @param {any} options.defaults
  * @param {any} options.schema
  * @param {boolean} [options.tolerateMissing] - Whether or not a missing file constitutes an error
- * @param {(info: T) => Promise<{ warnings?: string[], errors?: string[] }>} options.validate
- * @returns {Promise<InfoFile<T>>}
+ * @param {(info: T) => Promise<{ warnings: string[], errors: string[] }>} options.validate
+ * @returns {Promise<InfoFile<T> | null>}
  */
 async function loadAndValidateJson({
   coursePath,
@@ -783,7 +805,6 @@ async function loadAndValidateJson({
   validate,
   tolerateMissing,
 }) {
-  // perf.start(`loadandvalidate:${filePath}`);
   const loadedJson = /** @type {InfoFile<T>} */ (
     await module.exports.loadInfoFile({
       coursePath,
@@ -792,14 +813,13 @@ async function loadAndValidateJson({
       tolerateMissing,
     })
   );
-  // perf.end(`loadandvalidate:${filePath}`);
   if (loadedJson === null) {
     // This should only occur if we looked for a file in a non-directory,
     // as would happen if there was a .DS_Store file, or if we're
     // tolerating missing files, as we'd need to for nesting support.
     return null;
   }
-  if (infofile.hasErrors(loadedJson)) {
+  if (infofile.hasErrors(loadedJson) || !loadedJson.data) {
     return loadedJson;
   }
 
@@ -824,7 +844,7 @@ async function loadAndValidateJson({
  * @param {any} options.defaultInfo
  * @param {object} options.schema
  * @param {boolean} [options.recursive] - Whether or not info files should be searched for recursively
- * @param {(info: T) => Promise<{ warnings?: string[], errors?: string[] }>} options.validate
+ * @param {(info: T) => Promise<{ warnings: string[], errors: string[] }>} options.validate
  * @returns {Promise<{ [id: string]: InfoFile<T> }>}
  */
 async function loadInfoForDirectory({
@@ -933,7 +953,7 @@ function checkDuplicateUUIDs(infos, makeErrorMessage) {
     ids.forEach((id) => {
       const otherIds = ids.filter((other) => other !== id);
       infofile.addWarning(infos[id], makeErrorMessage(uuid, otherIds));
-      infos[id].uuid = null;
+      infos[id].uuid = undefined;
     });
   });
 }
@@ -963,14 +983,14 @@ function checkAllowAccessRoles(rule) {
 function checkAllowAccessDates(rule) {
   const errors = [];
   let startDate, endDate;
-  if ('startDate' in rule) {
+  if (rule.startDate) {
     startDate = parseISO(rule.startDate);
     if (!isValid(startDate)) {
       startDate = null;
       errors.push(`Invalid allowAccess rule: startDate (${rule.startDate}) is not valid`);
     }
   }
-  if ('endDate' in rule) {
+  if (rule.endDate) {
     endDate = parseISO(rule.endDate);
     if (!isValid(endDate)) {
       endDate = null;
@@ -1075,44 +1095,46 @@ async function validateAssessment(assessment, questions) {
   };
   (assessment.zones || []).forEach((zone) => {
     (zone.questions || []).map((zoneQuestion) => {
-      if (
-        !allowRealTimeGrading &&
-        Array.isArray(zoneQuestion.points) &&
-        zoneQuestion.points.length > 1
-      ) {
+      /** @type {number | number[]} */
+      const autoPoints = zoneQuestion.autoPoints ?? zoneQuestion.points;
+      if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
         errors.push(
           `Cannot specify an array of multiple point values for a question if real-time grading is disabled`
         );
       }
       // We'll normalize either single questions or alternative groups
       // to make validation easier
-      /** @type {{ points: number | number[], maxPoints: number | number[] }[]} */
+      /** @type {{ points: number | number[], autoPoints: number | number[], maxPoints: number, maxAutoPoints: number, manualPoints: number }[]} */
       let alternatives = [];
       if ('alternatives' in zoneQuestion && 'id' in zoneQuestion) {
         errors.push('Cannot specify both "alternatives" and "id" in one question');
-      } else if ('alternatives' in zoneQuestion) {
+      } else if (zoneQuestion?.alternatives) {
         zoneQuestion.alternatives.forEach((alternative) => checkAndRecordQid(alternative.id));
         alternatives = zoneQuestion.alternatives.map((alternative) => {
-          if (
-            !allowRealTimeGrading &&
-            Array.isArray(alternative.points) &&
-            alternative.points.length > 1
-          ) {
+          /** @type {number | number[]} */
+          const autoPoints = alternative.autoPoints ?? alternative.points;
+          if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
             errors.push(
               `Cannot specify an array of multiple point values for an alternative if real-time grading is disabled`
             );
           }
           return {
-            points: alternative.points || zoneQuestion.points,
-            maxPoints: alternative.maxPoints || zoneQuestion.maxPoints,
+            points: alternative.points ?? zoneQuestion.points,
+            maxPoints: alternative.maxPoints ?? zoneQuestion.maxPoints,
+            maxAutoPoints: alternative.maxAutoPoints ?? zoneQuestion.maxAutoPoints,
+            autoPoints: alternative.autoPoints ?? zoneQuestion.autoPoints,
+            manualPoints: alternative.manualPoints ?? zoneQuestion.manualPoints,
           };
         });
-      } else if ('id' in zoneQuestion) {
+      } else if (zoneQuestion.id) {
         checkAndRecordQid(zoneQuestion.id);
         alternatives = [
           {
             points: zoneQuestion.points,
             maxPoints: zoneQuestion.maxPoints,
+            maxAutoPoints: zoneQuestion.maxAutoPoints,
+            autoPoints: zoneQuestion.autoPoints,
+            manualPoints: zoneQuestion.manualPoints,
           },
         ];
       } else {
@@ -1120,21 +1142,44 @@ async function validateAssessment(assessment, questions) {
       }
 
       alternatives.forEach((alternative) => {
+        if (
+          alternative.points === undefined &&
+          alternative.autoPoints === undefined &&
+          alternative.manualPoints === undefined
+        ) {
+          errors.push('Must specify "points", "autoPoints" or "manualPoints" for a question');
+        }
+        if (
+          alternative.points !== undefined &&
+          (alternative.autoPoints !== undefined ||
+            alternative.manualPoints !== undefined ||
+            alternative.maxAutoPoints !== undefined)
+        ) {
+          errors.push(
+            'Cannot specify "points" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified'
+          );
+        }
         if (assessment.type === 'Exam') {
-          if (alternative.maxPoints !== undefined) {
-            errors.push('Cannot specify "maxPoints" for a question in an "Exam" assessment');
-          }
-          if (alternative.points === undefined) {
-            errors.push('Must specify "points" for a question in an "Exam" assessment');
+          if (alternative.maxPoints !== undefined || alternative.maxAutoPoints !== undefined) {
+            errors.push(
+              'Cannot specify "maxPoints" or "maxAutoPoints" for a question in an "Exam" assessment'
+            );
           }
         }
         if (assessment.type === 'Homework') {
-          if (alternative.points === undefined) {
-            errors.push('Must specify "points" for a question in a "Homework" assessment');
-          }
-          if (Array.isArray(alternative.points)) {
+          if (
+            alternative.maxPoints !== undefined &&
+            (alternative.autoPoints !== undefined ||
+              alternative.manualPoints !== undefined ||
+              alternative.maxAutoPoints !== undefined)
+          ) {
             errors.push(
-              'Cannot specify "points" as a list for a question in a "Homework" assessment'
+              'Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified'
+            );
+          }
+          if (Array.isArray(alternative.autoPoints ?? alternative.points)) {
+            errors.push(
+              'Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment'
             );
           }
         }
@@ -1242,6 +1287,13 @@ module.exports.loadQuestions = async function (coursePath) {
     validate: validateQuestion,
     recursive: true,
   });
+  // Don't allow questions to start with '@', because it will be used to
+  // reference questions outside the course once question sharing is implemented.
+  for (let qid in questions) {
+    if (qid[0] === '@') {
+      infofile.addError(questions[qid], `Question IDs are not allowed to begin with '@'`);
+    }
+  }
   checkDuplicateUUIDs(
     questions,
     (uuid, ids) => `UUID "${uuid}" is used in other questions: ${ids.join(', ')}`
@@ -1281,7 +1333,7 @@ module.exports.loadCourseInstances = async function (coursePath) {
  */
 module.exports.loadAssessments = async function (coursePath, courseInstance, questions) {
   const assessmentsPath = path.join('courseInstances', courseInstance, 'assessments');
-  /** @type {(assessment: Assessment) => Promise<{ warnings?: string[], errors?: string[] }>} */
+  /** @type {(assessment: Assessment) => Promise<{ warnings: string[], errors: string[] }>} */
   const validateAssessmentWithQuestions = (assessment) => validateAssessment(assessment, questions);
   /** @type {{ [tid: string]: InfoFile<Assessment> }} */
   const assessments = await loadInfoForDirectory({

@@ -176,30 +176,6 @@ The same pattern holds for referencing material in a `serverFilesQuestion`.
 To learn more about where files are stored, please see
 [clientFiles and serverFiles](https://prairielearn.readthedocs.io/en/latest/clientServerFiles/).
 
-## How can questions be manually graded?
-
-Manually graded questions should be used with care. Note that any question
-that has a manual grade component will disable automatic grading for any
-PrairieLearn elements included in the page. With this being said, the
-manual grading procedure requires:
-
-- Adding to the question's `info.json` file:
-
-```
-"singleVariant": true,
-"gradingMethod": "Manual"
-```
-
-- Download the "best" question files from underneath the assessment's "Downloads" page.
-- Grade the files manually and record the results either as a percentage out of
-  100 or as a pure point total using the appropriate PrairieLearn file format.
-- Upload the grades back into PrairieLearn in the "Uploads" page.
-
-From there, the grades are incorporated into the courses' gradebook and will
-be available for export as part of the total assessment.
-
-For a sample implementation of a manually graded question, the example course includes a question where a Python submission is to be manually graded. Please [see the question's `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/demo/manualGrade/codeUpload/info.json#L8) in the example course.
-
 ## Why is my QID invalid?
 
 QID stands for the **Q**uestion **Id**entifier given to the folder that contains

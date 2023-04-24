@@ -1,9 +1,8 @@
 // @ts-check
-const sqldb = require('../../prairielib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
-const config = require('../../lib/config');
+const sqldb = require('@prairielearn/postgres');
+const { config } = require('../../lib/config');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 async function getInstitution(institutionId) {
   const institutionRes = await sqldb.queryOneRowAsync(sql.select_institution, {

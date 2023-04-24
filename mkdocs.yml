@@ -23,12 +23,13 @@ nav:
   - 'Creating content in the browser': 'getStarted.md'
   - 'Workshop': 'workshop/index.md'
 - User Guide:
-  - 'Installing and running PL locally': 'installing.md'
+  - 'Installing and running locally': 'installing.md'
   - 'Syncing course content': 'sync.md'
   - 'Course configuration': 'course.md'
   - 'Course instance configuration': 'courseInstance.md'
   - 'Assessment configuration': 'assessment.md'
   - 'Question configuration': 'question.md'
+  - 'Question runtime environment': 'questionRuntime/index.md'
   - 'Elements for writing questions': 'elements.md'
   - 'Access control': 'accessControl.md'
   - 'Remote exams': 'remoteExams.md'
@@ -44,11 +45,11 @@ nav:
   - 'Manual grading': 'manualGrading.md'
   - 'What to tell students': 'whatToTellStudents.md'
   - 'FAQ': 'faq.md'
-  - 'API': 'api.md'  
+  - 'API': 'api.md'
 - Developer Guide:
   - 'Developer guide': 'dev-guide.md'
-  - 'Installing with local source': 'installingLocal.md'
-  - 'Installing natively': 'installingNative.md'
+  - 'Running in Docker with local source': 'installingLocal.md'
+  - 'Running natively': 'installingNative.md'
   - 'Server configuration': 'configJson.md'
   - 'Question element writing': 'devElements.md'
   - 'Element extensions': 'elementExtensions.md'
@@ -57,7 +58,7 @@ nav:
   - 'Contributing to PL development': 'contributing.md'
 - Running in Production:
   - 'Setup': 'running-in-production/setup.md'
-  - 'Using Docker Compose': 'running-in-production/docker-compose.md'  
+  - 'Using Docker Compose': 'running-in-production/docker-compose.md'
   - 'User Authentication': 'running-in-production/authentication.md'
   - 'Admin User': 'running-in-production/admin-user.md'
 - Deprecated Features:

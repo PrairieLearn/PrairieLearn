@@ -24,17 +24,33 @@
               idField: 'id',
               selectItemName: 'instance_question_id',
               showButtonText: true,
-              showColumns: false,
+              showColumns: true,
               showRefresh: true,
               autoRefresh: true,
               autoRefreshStatus: false,
               autoRefreshInterval: 30,
-              buttonsOrder: ['refresh', 'autoRefresh', 'status'],
+              buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'status'],
               theadClasses: 'thead-light',
               stickyHeader: true,
               filterControl: true,
               rowStyle: row => (row.requires_manual_grading ? {} : { classes: 'text-muted bg-light' }),
               buttons: {
+                  showStudentInfo: {
+                    text: 'Show student info',
+                    icon: 'fa-eye',
+                    event: () => {
+                      const button = $('#js-show-student-info-button');
+                      $('#grading-table').bootstrapTable(
+                        button.hasClass('active') ? 'hideColumn' : 'showColumn',
+                        ['user_or_group_name', 'uid']
+                      );
+                      button.toggleClass('active');
+                    },
+                    attributes: {
+                      id: 'js-show-student-info-button',
+                      title: 'Show/hide student identification information',
+                    },
+                  },
                   status: {
                       text: 'Tag for grading',
                       icon: 'fa-tags',
@@ -48,17 +64,6 @@
               onCheck: updateGradingTagButton,
               onCheckAll: updateGradingTagButton,
               onCheckSome: updateGradingTagButton,
-              onRefresh: () => {
-                  // a bug in bootstrap-table causes the filters to lose value on refresh
-                  // (https://github.com/wenzhixin/bootstrap-table/issues/6030).
-                  // This code saves the value of all filters to be reloaded once filter controls are re-created.
-                  savedFilterValues = {};
-                  $('#grading-table .filter-control').find('input, select').each(function() {
-                      const field_name = $(this).parents('[data-field]:first').data('field');
-                      savedFilterValues[field_name] = $(this).val();
-                      $(this).tooltip('dispose');
-                  });
-              },
               onCreatedControls: () => {
                   $('#grading-table th[data-field="points"] .filter-control input').tooltip({
                       title: 'hint: use <code>&lt;<%= Math.ceil(assessment_question.max_points / 2) %></code>, or <code>&gt;0</code>',
@@ -68,17 +73,6 @@
                       title: 'hint: use <code>&lt;50</code>, or <code>&gt;0</code>',
                       html: true,
                   });
-              },
-              onSearch: () => {
-                  // This update is done with the search method because onCreatedControls
-                  // is called before the filter control selects are populated
-                  // (https://github.com/wenzhixin/bootstrap-table/issues/6072).
-                  if (savedFilterValues) {
-                      for (const [field, value] of Object.entries(savedFilterValues)) {
-                          $(`#grading-table th[data-field=${field}]`).find('input, select').val(value);
-                      }
-                      savedFilterValues = false;
-                  }
               },
               onPreBody: () => {
                   $('#grading-table [data-toggle="popover"]').popover('dispose');
@@ -101,30 +95,35 @@
                       checkbox: true,
                   },
                   {
-                      field: 'user_or_group_name',
-                      title: '<%= assessment.group_work ? 'Group Name' : 'Name' %>',
-                      searchable: true,
-                      filterControl: 'input',
-                      searchFormatter: false,
+                      field: 'index',
+                      title: 'Instance',
+                      searchable: false,
                       sortable: true,
-                      formatter: (value, row) => `<a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/instance_question/${row.id}">${value}` +
+                      switchable: false,
+                      formatter: (value, row) => `<a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/instance_question/${row.id}">Instance ${row.index}` +
                           (row.open_issue_count ? ` <span class="badge badge-pill badge-danger">${row.open_issue_count}</span>` : '') + '</a>' +
                           (row.assessment_open ? ` <span title="Assessment instance is still open" data-toggle="tooltip"><i class="fas fa-exclamation-triangle text-warning"></i></span>` : ''),
                   },
                   {
-                      field: 'uid',
-                      title: 'UID',
+                      field: 'user_or_group_name',
+                      title: '<%= assessment.group_work ? 'Group Name' : 'Name' %>',
                       searchable: true,
                       filterControl: 'input',
                       sortable: true,
-                      visible: <%= !assessment.group_work %>,
+                      visible: false,
+                  },
+                  {
+                      field: 'uid',
+                      title: '<%= assessment.group_work ? 'UIDs' : 'UID' %>',
+                      searchable: true,
+                      filterControl: 'input',
+                      sortable: true,
+                      visible: false,
                   },
                   {
                       field: 'requires_manual_grading',
                       title: 'Grading status',
                       filterControl: 'select',
-                      // filterDefault: 'true',
-                      searchFormatter: false,
                       sortable: true,
                       class: 'text-center',
                       formatter: (value, row) => row.requires_manual_grading ? 'Requires grading' : 'Graded',
@@ -133,14 +132,34 @@
                       field: 'assigned_grader',
                       title: 'Assigned grader',
                       filterControl: 'select',
+                      formatter: (value, row) => row.assigned_grader_name || '—',
+                  },
+                  {
+                      field: 'auto_points',
+                      title: 'Auto points',
+                      class: 'text-center',
+                      filterControl: 'input',
+                      visible: <%= assessment_question.max_auto_points > 0 %>,
                       searchFormatter: false,
-                      formatter: (value, row) => row.assigned_grader ? row.assigned_grader_name : '&mdash;',
+                      sortable: true,
+                      formatter: pointsFormatter,
+                  },
+                  {
+                      field: 'manual_points',
+                      title: 'Manual points',
+                      class: 'text-center',
+                      filterControl: 'input',
+                      visible: true,
+                      searchFormatter: false,
+                      sortable: true,
+                      formatter: pointsFormatter,
                   },
                   {
                       field: 'points',
-                      title: 'Awarded points',
+                      title: 'Total points',
                       class: 'text-center',
                       filterControl: 'input',
+                      visible: false,
                       searchFormatter: false,
                       sortable: true,
                       formatter: pointsFormatter,
@@ -158,7 +177,6 @@
                       field: 'last_grader',
                       title: 'Graded by',
                       filterControl: 'select',
-                      searchFormatter: false,
                       formatter: (value, row) => row.last_grader ? row.last_grader_name : '&mdash;',
                   },
               ]],
@@ -241,16 +259,23 @@
           }
       }
 
-      function pointsFormatter(points, row) {
-          let text = `${getStringFromFloat(row.points)} <small>/<span class="text-muted"><%= assessment_question.max_points %></span></small> `, button = '';
+      function pointsFormatter(points, row, _index, field) {
+          const max =
+                field === 'manual_points' ? row.max_manual_points :
+                field === 'auto_points' ? row.max_auto_points :
+                field === 'points' ? row.max_points : 0;
+          let text = `${getStringFromFloat(points)} <small>/<span class="text-muted">${max}</span></small> `, button = '';
           if (has_course_instance_permission_edit) {
-              button = `<button type="button" class="btn btn-xs btn-secondary editQuestionPointsButton"
-                            id="editQuestionPoints${row.id}" tabindex="0"
+              button = `<button type="button" class="btn btn-xs btn-secondary"
+                            id="editQuestionPoints_${field}_${row.id}"
                             data-toggle="popover" data-container="body"
                             data-html="true" data-placement="auto" title="Change question points"
                             data-base-content="<%= include('../../partials/editQuestionPointsForm',
-                                                           {id: 'editQuestionPoints${row.id}',
-                                                            instance_question: {id: '${row.id}', assessment_instance_id: '${row.assessment_instance_id}', points: '${row.points}', max_points: assessment_question.max_points, modified_at: '${row.modified_at}'}}); %>">
+                                                           {id: 'editQuestionPoints_${field}_${row.id}', field: '${field}',
+                                                            instance_question: {id: '${row.id}',
+                                                            assessment_instance_id: '${row.assessment_instance_id}',
+                                                            points: '${points}', max_points: '${max}',
+                                                            modified_at: '${row.modified_at}'}}); %>">
                       <i class="fa fa-edit" aria-hidden="true"></i>
                     </button>`;
           }
@@ -273,8 +298,8 @@
               bar += '</div>';
           }
           if (has_course_instance_permission_edit) {
-              button = `<button type="button" class="btn btn-xs btn-secondary editQuestionScorePercButton"
-                            id="editQuestionScorePerc${row.id}" tabindex="0"
+              button = `<button type="button" class="btn btn-xs btn-secondary"
+                            id="editQuestionScorePerc${row.id}"
                             data-toggle="popover" data-container="body"
                             data-html="true" data-placement="auto" title="Change question percentage score"
                             data-base-content="<%= include('../../partials/editQuestionScorePercForm',

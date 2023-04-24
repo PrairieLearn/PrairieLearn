@@ -4,12 +4,12 @@ const _ = require('lodash');
 const express = require('express');
 const router = express.Router();
 
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const logPageView = require('../../middlewares/logPageView')('studentInstanceQuestion');
 const question = require('../../lib/question');
 const assessment = require('../../lib/assessment');
 const studentInstanceQuestion = require('../shared/studentInstanceQuestion');
-const sqldb = require('../../prairielib/lib/sql-db');
+const sqldb = require('@prairielearn/postgres');
 
 function processSubmission(req, res, callback) {
   if (!res.locals.assessment_instance.open) {
@@ -202,6 +202,24 @@ router.post('/', function (req, res, next) {
       })
     );
   }
+});
+
+router.get('/variant/:variant_id/submission/:submission_id', function (req, res, next) {
+  question.renderPanelsForSubmission(
+    req.params.submission_id,
+    res.locals.question.id,
+    res.locals.instance_question.id,
+    req.params.variant_id,
+    res.locals.urlPrefix,
+    null, // questionContext
+    null, // csrfToken
+    null, // authorizedEdit
+    false, // renderScorePanels
+    (err, results) => {
+      if (ERR(err, next)) return;
+      res.send({ submissionPanel: results.submissionPanel });
+    }
+  );
 });
 
 router.get('/', function (req, res, next) {

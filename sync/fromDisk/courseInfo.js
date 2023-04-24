@@ -1,10 +1,9 @@
 // @ts-check
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const sqldb = require('@prairielearn/postgres');
 
 const infofile = require('../infofile');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 /**
  * @param {import('../course-db').CourseData} courseData
@@ -23,12 +22,15 @@ module.exports.sync = async function (courseData, courseId) {
   }
 
   const courseInfo = courseData.course.data;
+  if (!courseInfo) {
+    throw new Error('Course info file is missing data');
+  }
+
   const params = {
     course_id: courseId,
     short_name: courseInfo.name,
     title: courseInfo.title,
     display_timezone: courseInfo.timezone || null,
-    grading_queue: courseInfo.name.toLowerCase().replace(' ', ''),
     example_course: courseInfo.exampleCourse,
     options: courseInfo.options || {},
     sync_warnings: infofile.stringifyWarnings(courseData.course),

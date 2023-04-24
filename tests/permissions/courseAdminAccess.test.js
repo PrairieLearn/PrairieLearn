@@ -1,10 +1,9 @@
 const util = require('util');
 const assert = require('chai').assert;
 const { step } = require('mocha-steps');
-const config = require('../../lib/config');
-const sqldb = require('../../prairielib/sql-db');
-const sqlLoader = require('../../prairielib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const { config } = require('../../lib/config');
+const sqldb = require('@prairielearn/postgres');
+const sql = sqldb.loadSqlEquiv(__filename);
 const helperServer = require('../helperServer');
 const helperClient = require('../helperClient');
 

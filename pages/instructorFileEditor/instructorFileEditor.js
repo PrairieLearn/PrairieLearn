@@ -2,33 +2,34 @@ const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
 const async = require('async');
-const error = require('../../prairielib/lib/error');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const error = require('@prairielearn/error');
+const sqldb = require('@prairielearn/postgres');
 const fs = require('fs-extra');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const debug = require('debug')('prairielearn:instructorFileEditor');
 const { callbackify } = require('util');
-const logger = require('../../lib/logger');
+const { logger } = require('@prairielearn/logger');
+const { contains } = require('@prairielearn/path-utils');
 const serverJobs = require('../../lib/server-jobs');
-const namedLocks = require('../../lib/named-locks');
+const namedLocks = require('@prairielearn/named-locks');
 const syncFromDisk = require('../../sync/syncFromDisk');
 const courseUtil = require('../../lib/courseUtil');
 const requireFrontend = require('../../lib/require-frontend');
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 const editorUtil = require('../../lib/editorUtil');
 const { default: AnsiUp } = require('ansi_up');
 const sha256 = require('crypto-js/sha256');
 const b64Util = require('../../lib/base64-util');
 const fileStore = require('../../lib/file-store');
-const isBinaryFile = require('isbinaryfile').isBinaryFile;
+const { isBinaryFile } = require('isbinaryfile');
 const modelist = require('ace-code/src/ext/modelist');
 const { decodePath } = require('../../lib/uri-util');
 const chunks = require('../../lib/chunks');
 const { idsEqual } = require('../../lib/id');
+const { getPaths } = require('../../lib/instructorFiles');
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/*', (req, res, next) => {
   if (!res.locals.authz_data.has_course_permission_edit) {
@@ -87,7 +88,7 @@ router.get('/*', (req, res, next) => {
   debug(
     `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`
   );
-  if (relPath.split(path.sep)[0] === '..' || path.isAbsolute(relPath)) {
+  if (!contains(fileEdit.coursePath, fullPath)) {
     return next(
       error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
         locals: res.locals,
@@ -197,9 +198,12 @@ router.get('/*', (req, res, next) => {
         fileEdit.origHash = fileEdit.diskHash;
       }
 
-      debug('Render');
-      res.locals.fileEdit = fileEdit;
-      res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      getPaths(req, res, (err, paths) => {
+        if (ERR(err, next)) return;
+        res.locals.fileEdit = fileEdit;
+        res.locals.fileEdit.paths = paths;
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+      });
     }
   );
 });
@@ -249,7 +253,7 @@ router.post('/*', (req, res, next) => {
   debug(
     `Edit file in browser\n fileName: ${fileEdit.fileName}\n coursePath: ${fileEdit.coursePath}\n fullPath: ${fullPath}\n relPath: ${relPath}`
   );
-  if (relPath.split(path.sep)[0] === '..' || path.isAbsolute(relPath)) {
+  if (!contains(fileEdit.coursePath, fullPath)) {
     return next(
       error.make(400, `attempting to edit file outside course directory: ${workingPath}`, {
         locals: res.locals,
@@ -749,19 +753,11 @@ function saveAndSync(fileEdit, locals, callback) {
         arguments: ['reset', '--hard', `origin/${locals.course.branch}`],
         working_directory: fileEdit.coursePath,
         env: gitEnv,
-        on_success: _pullFromRemoteHash,
+        on_success: _checkHash,
         on_error: _cleanup,
         no_job_sequence_update: true,
       };
       serverJobs.spawnJob(jobOptions);
-    };
-
-    const _pullFromRemoteHash = () => {
-      debug(`${job_sequence_id}: _pullFromRemoteHash`);
-      courseUtil.updateCourseCommitHash(locals.course, (err) => {
-        ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
-        _checkHash();
-      });
     };
 
     const _checkHash = () => {
@@ -961,7 +957,7 @@ function saveAndSync(fileEdit, locals, callback) {
         type: 'unlock',
         description: 'Unlock',
         job_sequence_id: job_sequence_id,
-        on_success: jobSequenceHasFailed ? _finishWithFailure : _updateCommitHash,
+        on_success: jobSequenceHasFailed ? _finishWithFailure : _getEndCommitHash,
         on_error: _finishWithFailure,
         no_job_sequence_update: true,
       };
@@ -982,9 +978,9 @@ function saveAndSync(fileEdit, locals, callback) {
       });
     };
 
-    const _updateCommitHash = () => {
+    const _getEndCommitHash = () => {
       debug(`${job_sequence_id}: _updateCommitHash`);
-      courseUtil.updateCourseCommitHash(locals.course, (err, hash) => {
+      courseUtil.getCommitHash(locals.course.path, (err, hash) => {
         ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
         endGitHash = hash;
         if (fileEdit.needToSync || config.chunksGenerator) {
@@ -1021,6 +1017,16 @@ function saveAndSync(fileEdit, locals, callback) {
             return;
           }
 
+          const updateCourseCommitHash = () => {
+            courseUtil.updateCourseCommitHash(locals.course, (err) => {
+              if (err) {
+                job.fail(err);
+              } else {
+                checkJsonErrors();
+              }
+            });
+          };
+
           const checkJsonErrors = () => {
             if (result.hadJsonErrors) {
               job.fail('One or more JSON files contained errors and were unable to be synced');
@@ -1038,16 +1044,17 @@ function saveAndSync(fileEdit, locals, callback) {
                 oldHash: startGitHash,
                 newHash: endGitHash,
               },
-              (err) => {
+              (err, chunkChanges) => {
                 if (err) {
                   job.fail(err);
                 } else {
-                  checkJsonErrors();
+                  chunks.logChunkChangesToJob(chunkChanges, job);
+                  updateCourseCommitHash();
                 }
               }
             );
           } else {
-            checkJsonErrors();
+            updateCourseCommitHash();
           }
         });
       });

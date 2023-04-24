@@ -1,14 +1,14 @@
 // @ts-check
 const _ = require('lodash');
-const sqldb = require('../../prairielib/lib/sql-db');
+const sqldb = require('@prairielearn/postgres');
 
 const infofile = require('../infofile');
 const perf = require('../performance')('question');
 
 /**
  *
- * @param {import('../course-db').CourseInstance} courseInstance
- * @param {string} courseTimezone
+ * @param {import('../course-db').CourseInstance | null | undefined} courseInstance
+ * @param {string | null} courseTimezone
  */
 function getParamsForCourseInstance(courseInstance, courseTimezone) {
   if (!courseInstance) return null;

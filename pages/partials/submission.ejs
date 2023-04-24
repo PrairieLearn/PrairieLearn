@@ -1,7 +1,6 @@
-<!-- Keeping "graded" state in the DOM is bad, yet here we are. -->
 <div data-grading-job-status="<%= submission.grading_job_status %>" data-grading-job-id="<%= submission.grading_job_id %>" id="submission-<%= submission.id %>">
 
-<% if (course.manual_grading_visible && submission.feedback?.manual) { %>
+<% if (submission.feedback?.manual) { %>
 <div class="card mb-4 grading-block border-info">
   <div class="card-header bg-info text-white d-flex submission-header <% if (submission.submission_number != submissionCount) { %> collapsed<% } %>" data-toggle="collapse" data-target="#submission-feedback-<%= submission.id %>-body">
     <div class="mr-auto">
@@ -23,8 +22,8 @@
 <% } %>
 
 <div class="card mb-4" data-testid="submission-block">
-  <div class="card-header bg-light text-dark d-flex align-items-center submission-header <% if (submission.submission_number != submissionCount) { %> collapsed <% } %>" data-toggle="collapse" data-target="#submission-<%= submission.id %>-body">
-    <div class="mr-auto">
+  <div class="card-header bg-light text-dark d-flex align-items-center submission-header <% if (submission.submission_number != submissionCount && !locals.expanded) { %> collapsed <% } %>" data-toggle="collapse" data-target="#submission-<%= submission.id %>-body">
+    <div class="mr-2">
       <div>
         <span class="mr-2">
           Submitted answer
@@ -32,10 +31,10 @@
           <%= submission.submission_number %>
           <% } %>
         </span>
-        <span data-testid="submission-status"><%- include('submissionStatus', {submission: submission}); %></span>
       </div>
       <small>Submitted at <%- submission.formatted_date %></small>
     </div>
+    <div class="mr-auto" data-testid="submission-status"><%- include('submissionStatus', {submission: submission}); %></div>
     <button type="button" class="btn btn-outline-secondary btn-sm mr-2" data-submission-id="<%= submission.id %>">
       <i class="fa fa-info-circle fa-fw"></i>
     </button>
@@ -44,14 +43,16 @@
     </button>
   </div>
 
-  <div class="collapse <% if (submission.submission_number == submissionCount) { %>show<% } %>" id="submission-<%= submission.id %>-body">
+  <div class="collapse js-submission-body <% if (submission.submission_number == submissionCount || locals.expanded) { %>show<% } %> <% if (submissionHtml === undefined && question.type === 'Freeform') { %>render-pending<% } %>" data-submission-id="<%= submission.id %>" id="submission-<%= submission.id %>-body">
     <div class="card-body submission-body" >
       <%- submissionHtml %>
+      <% if (submissionHtml === undefined) { %>
+      <div class="spinner-border" role="status"><span class="sr-only">Loading...</span></div>
+      <% } %>
     </div>
   </div>
 
   <%- include('submissionInfoModal', {submission: submission}); %>
-</div>
 </div>
 
 <script>
@@ -63,3 +64,4 @@ $(function() {
   });
 });
 </script>
+</div>

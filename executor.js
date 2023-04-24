@@ -98,55 +98,48 @@ async function handleInput(line, codeCaller) {
   };
 }
 
-// Our overall loop looks like this: read a line of input from stdin, spin
-// off a python worker to handle it, and write the results back to stdout.
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  terminal: false,
-});
-
-let questionTimeoutMilliseconds = Number.parseInt(process.env.QUESTION_TIMEOUT_MILLISECONDS);
+let questionTimeoutMilliseconds = Number.parseInt(process.env.QUESTION_TIMEOUT_MILLISECONDS ?? '');
 if (Number.isNaN(questionTimeoutMilliseconds)) {
   questionTimeoutMilliseconds = 10000;
 }
 
-let codeCaller = new CodeCallerNative({
-  dropPrivileges: true,
-  questionTimeoutMilliseconds,
-  errorLogger: console.error,
-});
-codeCaller.ensureChild();
+let pingTimeoutMilliseconds = Number.parseInt(process.env.PING_TIMEOUT_MILLISECONDS ?? '');
+if (Number.isNaN(pingTimeoutMilliseconds)) {
+  pingTimeoutMilliseconds = 60_000;
+}
 
-// Safety check: if we receive more input while handling another request,
-// discard it.
-let processingRequest = false;
-rl.on('line', (line) => {
-  if (processingRequest) {
-    // Someone else messed up - fail fast.
-    process.exit(1);
+(async () => {
+  let codeCaller = new CodeCallerNative({
+    dropPrivileges: true,
+    questionTimeoutMilliseconds,
+    pingTimeoutMilliseconds,
+    errorLogger: console.error,
+  });
+  await codeCaller.ensureChild();
+
+  // Our overall loop looks like this: read a line of input from stdin, spin
+  // off a python worker to handle it, and write the results back to stdout.
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    terminal: false,
+  });
+
+  // Once the readline interface closes, we can't get any more input; die
+  // immediately to allow our container to be removed.
+  rl.on('close', () => process.exit(0));
+
+  for await (const line of rl) {
+    const results = await handleInput(line, codeCaller);
+    const { needsFullRestart, ...rest } = results;
+    console.log(JSON.stringify(rest));
+    if (needsFullRestart) {
+      codeCaller.done();
+      codeCaller = new CodeCallerNative();
+      await codeCaller.ensureChild();
+    }
   }
-
-  processingRequest = true;
-  handleInput(line, codeCaller)
-    .then((results) => {
-      const { needsFullRestart, ...rest } = results;
-      if (needsFullRestart) {
-        codeCaller.done();
-        codeCaller = new CodeCallerNative();
-        codeCaller.ensureChild();
-      }
-      console.log(JSON.stringify(rest));
-      processingRequest = false;
-    })
-    .catch((err) => {
-      console.error(err);
-      processingRequest = false;
-    });
-});
-
-rl.on('close', () => {
-  // We can't get any more input; die immediately to allow our container
-  // to be removed.
-  process.exit(0);
+})().catch((err) => {
+  console.error(err);
+  process.exit(1);
 });

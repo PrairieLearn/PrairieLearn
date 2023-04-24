@@ -1,4 +1,4 @@
-var config = require('../lib/config');
+const { config } = require('../lib/config');
 const path = require('path');
 
 var helperServer = require('./helperServer');
@@ -30,6 +30,7 @@ const qidsExampleCourse = [
   'demo/matrixComplexAlgebra',
   'demo/randomCheckbox',
   'demo/randomDataFrame',
+  'demo/randomFakeData',
   'demo/randomMultipleChoice',
   'demo/randomPlot',
   'demo/randomSymbolic',
@@ -59,7 +60,9 @@ const qidsExampleCourse = [
   'element/panels',
   'element/pythonVariable',
   'element/stringInput',
-  // FIXME: 'element/symbolicInput',
+  'element/symbolicInput',
+  'element/bigOInput',
+  'element/unitsInput',
   // FIXME: 'element/threeJS',
   'element/variableOutput',
   'element/orderBlocks',

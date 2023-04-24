@@ -1,9 +1,9 @@
 const ERR = require('async-stacktrace');
 
-const config = require('../lib/config');
-const logger = require('../lib/logger');
+const { config } = require('../lib/config');
+const { logger } = require('@prairielearn/logger');
 const opsbot = require('../lib/opsbot');
-const sqldb = require('../prairielib/lib/sql-db');
+const sqldb = require('@prairielearn/postgres');
 
 module.exports = {};
 
@@ -52,7 +52,7 @@ module.exports.run = (callback) => {
       if (ERR(err, callback)) return;
       if (res.statusCode !== 200) {
         logger.error(
-          'Error posting external grading stats to slack [status code ${res.statusCode}]',
+          `Error posting external grading stats to slack [status code ${res.statusCode}]`,
           body
         );
       }

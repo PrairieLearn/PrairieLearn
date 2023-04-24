@@ -9,13 +9,12 @@ const crypto = require('crypto');
 //const jscryptor = require('jscryptor'); // temporarily disabled, see commit 192dda72f
 const _ = require('lodash');
 
-const csrf = require('../../lib/csrf');
-const config = require('../../lib/config');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
-const error = require('../../prairielib/lib/error');
+const { generateSignedToken, getCheckedSignedTokenData } = require('@prairielearn/signed-token');
+const { config } = require('../../lib/config');
+const sqldb = require('@prairielearn/postgres');
+const error = require('@prairielearn/error');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+var sql = sqldb.loadSqlEquiv(__filename);
 
 var load_default_config = function (res, _req) {
   var defobj = plist.parse(fs.readFileSync(__dirname + '/seb-default-exam.seb', 'utf8'));
@@ -31,7 +30,7 @@ var load_default_config = function (res, _req) {
     assessment_id: res.locals.assessment.id,
     user_id: res.locals.authz_data.user.user_id,
   };
-  defobj['browserUserAgent'] = 'prairielearn:' + csrf.generateToken(hashdata, config.secretKey);
+  defobj['browserUserAgent'] = 'prairielearn:' + generateSignedToken(hashdata, config.secretKey);
 
   defobj['browserUserAgentWinDesktopMode'] = 1;
   defobj['browserUserAgentMac'] = 1;
@@ -89,7 +88,7 @@ var add_allowed_program = function (SEBconfig, program) {
 router.get('/', function (req, res, next) {
   var encodedData = req.query.data || null;
 
-  var data = csrf.getCheckedData(encodedData, config.secretKey);
+  var data = getCheckedSignedTokenData(encodedData, config.secretKey);
 
   if (data === null) {
     return next(error.make(403, 'Unrecognized config request, please try again', res.locals));

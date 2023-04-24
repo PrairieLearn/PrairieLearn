@@ -65,7 +65,7 @@ BEGIN
         ) SELECT
             name,
             (num_existing_topics + number),
-            'Auto-generated from use in a question; add this topic to your courseInfo.json file to customize',
+            'Auto-generated from use in a question; add this topic to your infoCourse.json file to customize',
             'gray1',
             syncing_course_id
         FROM UNNEST(question_topic_names) WITH ORDINALITY AS t(name, number)

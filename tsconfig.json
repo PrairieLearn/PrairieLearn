@@ -7,6 +7,11 @@
     "downlevelIteration": true,
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
+    "strictNullChecks": true,
+    "module": "NodeNext",
+    // Corresponds to Node 16.x, which we currently run on.
+    // To check compatibility in the future, see https://node.green/.
+    "target": "ES2021",
   },
   // We don't actually use any TypeScript; we just use it to validate our
   // standard JavaScript with JSDoc comments.
@@ -17,5 +22,7 @@
     "lib/**/*",
     "tools/**/*",
     "ee/**/*",
+    "api/**/*",
+    "question-servers/**/*",
   ],
 }

@@ -4,10 +4,9 @@ var assert = require('chai').assert;
 var request = require('request');
 var cheerio = require('cheerio');
 
-var config = require('../lib/config');
-var sqldb = require('../prairielib/lib/sql-db');
-var sqlLoader = require('../prairielib/lib/sql-loader');
-var sql = sqlLoader.loadSqlEquiv(__filename);
+const { config } = require('../lib/config');
+var sqldb = require('@prairielearn/postgres');
+var sql = sqldb.loadSqlEquiv(__filename);
 
 var res, page, elemList;
 
@@ -317,17 +316,15 @@ describe('Zone grading exam assessment', function () {
     describe(`zone grading test #${iZoneGradingTest + 1}`, function () {
       describe('server', function () {
         it('should shut down', function (callback) {
-          var that = this;
           // pass "this" explicitly to enable this.timeout() calls
-          helperServer.after.call(that, function (err) {
+          helperServer.after.call(this, function (err) {
             if (ERR(err, callback)) return;
             callback(null);
           });
         });
         it('should start up', function (callback) {
-          var that = this;
           // pass "this" explicitly to enable this.timeout() calls
-          helperServer.before().call(that, function (err) {
+          helperServer.before().call(this, function (err) {
             if (ERR(err, callback)) return;
             callback(null);
           });
@@ -362,6 +359,8 @@ describe('Zone grading exam assessment', function () {
                 instance_question_points: locals.question.points,
                 instance_question_score_perc:
                   (locals.question.points / locals.question.maxPoints) * 100,
+                instance_question_auto_points: locals.question.points,
+                instance_question_manual_points: 0,
                 assessment_instance_points: locals.totalPoints,
                 assessment_instance_score_perc: (locals.totalPoints / assessmentMaxPoints) * 100,
               };

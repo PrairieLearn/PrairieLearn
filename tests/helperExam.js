@@ -4,10 +4,9 @@ const assert = require('chai').assert;
 const request = require('request');
 const cheerio = require('cheerio');
 
-const config = require('../lib/config');
-const sqldb = require('../prairielib/lib/sql-db');
-const sqlLoader = require('../prairielib/lib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const { config } = require('../lib/config');
+const sqldb = require('@prairielearn/postgres');
+const sql = sqldb.loadSqlEquiv(__filename);
 
 // sorted alphabetically by qid
 const questionsArray = [
@@ -22,7 +21,7 @@ const questionsArray = [
 
 const questions = _.keyBy(questionsArray, 'qid');
 
-const assessmentMaxPoints = 84; // must be the sum of maxPoints in questionsArray, but we hard-code it for reference
+const assessmentMaxPoints = 94; // must be the sum of maxPoints in questionsArray, but we hard-code it for reference
 
 let res, page, elemList;
 

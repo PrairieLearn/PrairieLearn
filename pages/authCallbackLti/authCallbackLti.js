@@ -5,16 +5,14 @@ const _ = require('lodash');
 const oauthSignature = require('oauth-signature');
 const debug = require('debug')('prairielearn:authCallbackLti');
 
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
-const sql = sqlLoader.loadSqlEquiv(__filename);
-const error = require('../../prairielib/lib/error');
-const csrf = require('../../lib/csrf');
-const config = require('../../lib/config');
+const sqldb = require('@prairielearn/postgres');
+const sql = sqldb.loadSqlEquiv(__filename);
+const error = require('@prairielearn/error');
+const { generateSignedToken } = require('@prairielearn/signed-token');
+const { config } = require('../../lib/config');
 const cache = require('../../lib/cache');
 
 var timeTolerance = 3000; // seconds
-var redirUrl;
 
 router.post('/', function (req, res, next) {
   debug(req.body);
@@ -127,7 +125,7 @@ router.post('/', function (req, res, next) {
           user_id: result.rows[0].user_id,
           authn_provider_name: 'LTI',
         };
-        var pl_authn = csrf.generateToken(tokenData, config.secretKey);
+        var pl_authn = generateSignedToken(tokenData, config.secretKey);
         res.cookie('pl_authn', pl_authn, {
           maxAge: config.authnCookieMaxAgeMilliseconds,
           httpOnly: true,
@@ -162,8 +160,9 @@ router.post('/', function (req, res, next) {
               });
             }
 
-            redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/assessment/${result.rows[0].assessment_id}/`;
-            res.redirect(redirUrl);
+            res.redirect(
+              `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/assessment/${result.rows[0].assessment_id}/`
+            );
           } else {
             // No linked assessment
 
@@ -175,12 +174,13 @@ router.post('/', function (req, res, next) {
                   error.make(403, 'Access denied (could not determine if user is instructor)')
                 );
               }
-              if (result.rows[0].is_instructor) {
-                redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/instructor/instance_admin/lti`;
-                res.redirect(redirUrl);
+              if (!result.rows[0].is_instructor) {
+                // Show an error that the assignment is unavailable
+                return next(error.make(400, 'Assignment not available yet'));
               }
-              // Show an error that the assignment is unavailable
-              return next(error.make(400, 'Assignment not available yet'));
+              res.redirect(
+                `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/instructor/instance_admin/lti`
+              );
             });
           }
         });

@@ -3,10 +3,9 @@ var assert = require('chai').assert;
 var request = require('request');
 var cheerio = require('cheerio');
 
-var config = require('../lib/config');
-var sqldb = require('../prairielib/lib/sql-db');
-var sqlLoader = require('../prairielib/lib/sql-loader');
-var sql = sqlLoader.loadSqlEquiv(__filename);
+const { config } = require('../lib/config');
+var sqldb = require('@prairielearn/postgres');
+var sql = sqldb.loadSqlEquiv(__filename);
 
 var helperServer = require('./helperServer');
 

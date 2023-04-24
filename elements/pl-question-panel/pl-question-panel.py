@@ -1,15 +1,15 @@
-import prairielearn as pl
 import lxml.html
+import prairielearn as pl
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(element, required_attribs=[], optional_attribs=[])
 
 
-def render(element_html, data):
-    if data['panel'] == 'question':
+def render(element_html: str, data: pl.QuestionData) -> str:
+    if data["panel"] == "question":
         element = lxml.html.fragment_fromstring(element_html)
         return pl.inner_html(element)
-    else:
-        return ''
+
+    return ""

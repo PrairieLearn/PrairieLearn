@@ -3,16 +3,15 @@ const express = require('express');
 const router = express.Router();
 const async = require('async');
 
-const logger = require('../../lib/logger');
-const error = require('../../prairielib/lib/error');
-const sqldb = require('../../prairielib/lib/sql-db');
-const sqlLoader = require('../../prairielib/lib/sql-loader');
+const { logger } = require('@prairielearn/logger');
+const error = require('@prairielearn/error');
+const sqldb = require('@prairielearn/postgres');
 const { idsEqual } = require('../../lib/id');
 
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-const sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', (req, res, next) => {
   if (!res.locals.authz_data.has_course_permission_own) {
@@ -168,7 +167,7 @@ router.post('/', (req, res, next) => {
               `to add them again. However, you should first check the reason for each failure to ` +
               `grant access (see below). For example, it may be that a user you tried to add ` +
               `was already a member of the course staff, in which case you will find them in the ` +
-              `list and can update their course content acccess as appropriate.</p>`;
+              `list and can update their course content access as appropriate.</p>`;
           }
           err.info +=
             '<hr>' +
