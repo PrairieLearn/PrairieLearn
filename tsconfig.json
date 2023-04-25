@@ -24,6 +24,8 @@
     "tools/**/*",
     "ee/**/*",
     "api/**/*",
+    // TODO: remove in favor of app-specific tsconfig.json files.
+    "apps/**/*",
     "question-servers/**/*",
   ],
 }
