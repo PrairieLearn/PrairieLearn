@@ -396,12 +396,13 @@ async function _getWorkspaceAsync(workspace_id) {
   return workspace;
 }
 
+const _allocateContainerPortMutex = new Mutex();
+
 /**
  * Allocates and returns an unused port for a workspace.  This will insert the new port into the workspace table.
  * @param {object} workspace Workspace object, should at least contain an id.
- * @return {Promise<number | string>} Port that was allocated to the workspace.
+ * @return {Promise<number>} Port that was allocated to the workspace.
  */
-const _allocateContainerPortMutex = new Mutex();
 async function _allocateContainerPort(workspace) {
   // Check if a port is considered free in the database
   async function check_port_db(port) {
@@ -412,6 +413,7 @@ async function _allocateContainerPort(workspace) {
     const result = await sqldb.queryOneRowAsync(sql.get_is_port_occupied, params);
     return !result.rows[0].port_used;
   }
+
   // Spin up a server to check if a port is free
   async function check_port_server(port) {
     return new Promise((res) => {
@@ -428,7 +430,7 @@ async function _allocateContainerPort(workspace) {
     });
   }
 
-  return await _allocateContainerPortMutex.runExclusive(async () => {
+  return _allocateContainerPortMutex.runExclusive(async () => {
     let port;
     let done = false;
     // Max attempts <= 0 means unlimited attempts, > 0 mean a finite number of attempts.
@@ -447,7 +449,7 @@ async function _allocateContainerPort(workspace) {
       if (!(await check_port_server(port))) continue;
       done = true;
     }
-    if (!done) {
+    if (!done || !port) {
       throw new Error(`Failed to allocate port after ${max_attempts} attempts!`);
     }
     await sqldb.queryAsync(sql.set_workspace_launch_port, {
