@@ -17,6 +17,7 @@ const ConfigSchema = z.object({
   redisUrl: z.string().nullable().default('redis://localhost:6379/'),
   runningInEc2: z.boolean().default(false),
   cacheImageRegistry: z.string().nullable().default(null),
+  awsRegion: z.string().default('us-east-2'),
   instanceId: z.string().default('server'),
   hostname: z.string().default('localhost'),
   sentryDsn: z.string().nullable().default(null),

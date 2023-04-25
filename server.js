@@ -1854,7 +1854,7 @@ if (config.startServer) {
 
         // Load config immediately so we can use it configure everything else.
         await loadConfig(configFilename);
-        await awsHelper.init();
+        awsHelper.init();
 
         // This should be done as soon as we load our config so that we can
         // start exporting spans.
