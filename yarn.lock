@@ -2632,7 +2632,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/docker-utils@workspace:packages/docker-utils":
+"@prairielearn/docker-utils@workspace:^, @prairielearn/docker-utils@workspace:packages/docker-utils":
   version: 0.0.0-use.local
   resolution: "@prairielearn/docker-utils@workspace:packages/docker-utils"
   dependencies:
@@ -2659,6 +2659,38 @@ __metadata:
     mocha: ^10.2.0
     ts-node: ^10.9.1
     typescript: ^4.9.4
+  languageName: unknown
+  linkType: soft
+
+"@prairielearn/grader-host@workspace:apps/grader-host":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/grader-host@workspace:apps/grader-host"
+  dependencies:
+    "@prairielearn/config": "workspace:^"
+    "@prairielearn/docker-utils": "workspace:^"
+    "@prairielearn/postgres": "workspace:^"
+    "@prairielearn/sanitize": "workspace:^"
+    "@prairielearn/sentry": "workspace:^"
+    "@types/async": ^3.2.18
+    "@types/chai": ^4.3.4
+    "@types/dockerode": ^3.3.16
+    "@types/fs-extra": ^11.0.1
+    "@types/tmp": ^0.2.3
+    ajv: ^8.12.0
+    async: ^3.2.4
+    async-stacktrace: ^0.0.2
+    aws-sdk: ^2.1354.0
+    byline: ^5.0.0
+    chai: ^4.3.7
+    dockerode: ^3.3.5
+    fs-extra: ^11.1.1
+    logform: ^2.4.2
+    s3-streamlogger: 1.7.0
+    sinon: ^15.0.3
+    tmp: ^0.2.1
+    winston: ^3.8.2
+    winston-aws-cloudwatch: ^3.0.0
+    zod: ^3.21.4
   languageName: unknown
   linkType: soft
 
@@ -2895,6 +2927,12 @@ __metadata:
 "@prairielearn/tsconfig@*, @prairielearn/tsconfig@workspace:^, @prairielearn/tsconfig@workspace:packages/tsconfig":
   version: 0.0.0-use.local
   resolution: "@prairielearn/tsconfig@workspace:packages/tsconfig"
+  languageName: unknown
+  linkType: soft
+
+"@prairielearn/workspace-host@workspace:apps/workspace-host":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/workspace-host@workspace:apps/workspace-host"
   languageName: unknown
   linkType: soft
 
@@ -3921,7 +3959,7 @@ __metadata:
     archiver: ^5.3.1
     async: ^3.2.4
     async-mutex: ^0.4.0
-    async-stacktrace: 0.0.2
+    async-stacktrace: ^0.0.2
     aws-sdk: ^2.1354.0
     backbone: ^1.4.1
     base64url: ^3.0.1
@@ -4047,7 +4085,7 @@ __metadata:
     tablesorter: ^2.31.3
     tar: ^6.1.13
     three: ^0.151.3
-    tmp: 0.2.1
+    tmp: ^0.2.1
     tmp-promise: ^3.0.3
     turbo: ^1.8.8
     typescript: ^4.9.5
@@ -4491,7 +4529,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"async-stacktrace@npm:0.0.2":
+"async-stacktrace@npm:^0.0.2":
   version: 0.0.2
   resolution: "async-stacktrace@npm:0.0.2"
   checksum: 5e4a4af07569ddbf7b7025d324c32b569fd38934c2b6f75e530608b4b570811d04ac7074998ab12e8896b8fa3e660b9d3beb7d15242656b8c36a8be59e4d40c0
@@ -13970,21 +14008,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tmp@npm:0.2.1, tmp@npm:^0.2.0":
-  version: 0.2.1
-  resolution: "tmp@npm:0.2.1"
-  dependencies:
-    rimraf: ^3.0.0
-  checksum: 8b1214654182575124498c87ca986ac53dc76ff36e8f0e0b67139a8d221eaecfdec108c0e6ec54d76f49f1f72ab9325500b246f562b926f85bcdfca8bf35df9e
-  languageName: node
-  linkType: hard
-
 "tmp@npm:^0.0.33":
   version: 0.0.33
   resolution: "tmp@npm:0.0.33"
   dependencies:
     os-tmpdir: ~1.0.2
   checksum: 902d7aceb74453ea02abbf58c203f4a8fc1cead89b60b31e354f74ed5b3fb09ea817f94fb310f884a5d16987dd9fa5a735412a7c2dd088dd3d415aa819ae3a28
+  languageName: node
+  linkType: hard
+
+"tmp@npm:^0.2.0, tmp@npm:^0.2.1":
+  version: 0.2.1
+  resolution: "tmp@npm:0.2.1"
+  dependencies:
+    rimraf: ^3.0.0
+  checksum: 8b1214654182575124498c87ca986ac53dc76ff36e8f0e0b67139a8d221eaecfdec108c0e6ec54d76f49f1f72ab9325500b246f562b926f85bcdfca8bf35df9e
   languageName: node
   linkType: hard
 
