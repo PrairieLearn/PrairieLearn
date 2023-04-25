@@ -2628,7 +2628,7 @@ __metadata:
     multipipe: ^4.0.0
     stream-transform: ^3.2.2
     ts-node: ^10.9.1
-    typescript: ^4.9.4
+    typescript: ^4.9.5
   languageName: unknown
   linkType: soft
 
@@ -2658,7 +2658,7 @@ __metadata:
     lodash: ^4.17.21
     mocha: ^10.2.0
     ts-node: ^10.9.1
-    typescript: ^4.9.4
+    typescript: ^4.9.5
   languageName: unknown
   linkType: soft
 
@@ -2688,6 +2688,7 @@ __metadata:
     s3-streamlogger: 1.7.0
     sinon: ^15.0.3
     tmp: ^0.2.1
+    typescript: ^4.9.5
     winston: ^3.8.2
     winston-aws-cloudwatch: ^3.0.0
     zod: ^3.21.4
@@ -2728,7 +2729,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": ^18.15.11
     logform: ^2.5.1
-    typescript: ^4.9.4
+    typescript: ^4.9.5
     winston: ^3.8.2
     zod: ^3.21.4
   languageName: unknown
@@ -2763,7 +2764,7 @@ __metadata:
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": ^18.15.11
-    typescript: ^4.9.4
+    typescript: ^4.9.5
   languageName: unknown
   linkType: soft
 
@@ -2833,7 +2834,7 @@ __metadata:
     diff: ^5.1.0
     fs-extra: ^11.1.1
     lodash: ^4.17.21
-    typescript: ^4.9.4
+    typescript: ^4.9.5
   bin:
     pg-describe: ./dist/bin/pg-describe.js
     pg-diff: ./dist/bin/pg-diff.js
@@ -2864,7 +2865,7 @@ __metadata:
     pg-cursor: ^2.9.0
     pg-pool: ^3.6.0
     ts-node: ^10.9.1
-    typescript: ^4.9.4
+    typescript: ^4.9.5
     zod: ^3.21.4
   bin:
     pg-describe: ./dist/bin/pg-describe.js
@@ -2880,7 +2881,7 @@ __metadata:
     "@types/node": ^18.15.11
     "@types/prettier": ^2.7.2
     sql-formatter: ^12.2.0
-    typescript: ^4.9.4
+    typescript: ^4.9.5
   languageName: unknown
   linkType: soft
 
@@ -2892,7 +2893,7 @@ __metadata:
     "@types/node": ^18.15.11
     mocha: ^10.2.0
     ts-node: ^10.9.1
-    typescript: ^4.9.4
+    typescript: ^4.9.5
   languageName: unknown
   linkType: soft
 
@@ -2956,6 +2957,7 @@ __metadata:
     request: ^2.88.2
     socket.io: ^4.6.1
     socket.io-redis: ^6.1.1
+    typescript: ^4.9.5
     uuid: ^9.0.0
     yargs-parser: ^21.1.1
     zod: ^3.21.4
@@ -2973,7 +2975,7 @@ __metadata:
     copyfiles: ^2.4.1
     fast-glob: ^3.2.12
     filesize: ^10.0.7
-    typescript: ^4.9.4
+    typescript: ^4.9.5
   languageName: unknown
   linkType: soft
 
@@ -3947,6 +3949,7 @@ __metadata:
     "@prairielearn/sanitize": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
     "@prairielearn/signed-token": "workspace:^"
+    "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
     "@pyroscope/nodejs": ^0.2.5
     "@sentry/profiling-node": ^0.3.0
@@ -14426,7 +14429,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^4.9.4, typescript@npm:^4.9.5":
+"typescript@npm:^4.9.5":
   version: 4.9.5
   resolution: "typescript@npm:4.9.5"
   bin:
@@ -14436,7 +14439,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@^4.9.4#~builtin<compat/typescript>, typescript@patch:typescript@^4.9.5#~builtin<compat/typescript>":
+"typescript@patch:typescript@^4.9.5#~builtin<compat/typescript>":
   version: 4.9.5
   resolution: "typescript@patch:typescript@npm%3A4.9.5#~builtin<compat/typescript>::version=4.9.5&hash=23ec76"
   bin:

@@ -2,6 +2,9 @@
   "name": "@prairielearn/workspace-host",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "build": "tsc"
+  },
   "dependencies": {
     "@prairielearn/config": "workspace:^",
     "@prairielearn/docker-utils": "workspace:^",
@@ -25,6 +28,7 @@
     "request": "^2.88.2",
     "socket.io": "^4.6.1",
     "socket.io-redis": "^6.1.1",
+    "typescript": "^4.9.5",
     "uuid": "^9.0.0",
     "yargs-parser": "^21.1.1",
     "zod": "^3.21.4"

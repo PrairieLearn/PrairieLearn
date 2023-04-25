@@ -1,0 +1,4 @@
+{
+  "extends": "@prairielearn/tsconfig/tsconfig.app.json",
+  "include": ["src/**/*"]
+}

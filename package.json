@@ -30,6 +30,7 @@
         "@prairielearn/sanitize": "workspace:^",
         "@prairielearn/sentry": "workspace:^",
         "@prairielearn/signed-token": "workspace:^",
+        "@prairielearn/tsconfig": "workspace:^",
         "@prairielearn/workspace-utils": "workspace:^",
         "@pyroscope/nodejs": "^0.2.5",
         "@sentry/profiling-node": "^0.3.0",
