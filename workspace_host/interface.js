@@ -19,19 +19,17 @@ const net = require('net');
 const asyncHandler = require('express-async-handler');
 const bodyParser = require('body-parser');
 const { Mutex } = require('async-mutex');
+const { DockerName, setupDockerAuthAsync } = require('@prairielearn/docker-utils');
+const { logger } = require('@prairielearn/logger');
+const sqldb = require('@prairielearn/postgres');
 const Sentry = require('@prairielearn/sentry');
 const workspaceUtils = require('@prairielearn/workspace-utils');
-const { DockerName, setupDockerAuthAsync } = require('@prairielearn/docker-utils');
 
-const awsHelper = require('../lib/aws');
-const socketServer = require('../lib/socket-server'); // must load socket server before workspace
-const { logger } = require('@prairielearn/logger');
-
-const { config, loadConfig } = require('../lib/config');
-const sqldb = require('@prairielearn/postgres');
+const { config, loadConfig } = require('./lib/config');
 const { parseDockerLogs } = require('./lib/docker');
-const sql = sqldb.loadSqlEquiv(__filename);
+const socketServer = require('./lib/socket-server');
 
+const sql = sqldb.loadSqlEquiv(__filename);
 const docker = new Docker();
 
 const app = express();
@@ -119,6 +117,24 @@ async
         workspace_server_settings.server_to_container_hostname =
           config.workspaceDevContainerHostname;
       }
+
+      // If we're not running in EC2, assume we're running with a local s3rver instance.
+      // See https://github.com/jamhall/s3rver for more details.
+      if (!config.runningInEc2) {
+        logger.verbose('Using local s3rver AWS configuration');
+        AWS.config.update({
+          s3ForcePathStyle: true,
+          accessKeyId: 'S3RVER',
+          secretAccessKey: 'S3RVER',
+          s3: {
+            endpoint: new AWS.Endpoint('http://localhost:5000'),
+          },
+        });
+      }
+
+      // It is important that we always do this:
+      // https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/setting-region.html
+      AWS.config.update({ region: config.awsRegion });
     },
     async () => {
       if (config.sentryDsn) {
@@ -127,12 +143,6 @@ async
           environment: config.sentryEnvironment,
         });
       }
-    },
-    (callback) => {
-      util.callbackify(awsHelper.init)((err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
     },
     async () => {
       // Always grab the port from the config
