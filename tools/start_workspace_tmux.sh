@@ -97,7 +97,7 @@ pl_tmux_start_workspace_pane () {
   echo "Starting workspace host..."
   # A background process spams this pane, so pipe it to cat
   # to prevent a shell prompt from appearing also:
-  make start-workspace-host | cat
+  make workspace-host-start | cat
 }
 
 export -f pl_tmux_check_http pl_tmux_check_https pl_tmux_check_lin_host pl_tmux_wait_alive pl_tmux_start_server_pane pl_tmux_start_workspace_pane pl_tmux_show_tips

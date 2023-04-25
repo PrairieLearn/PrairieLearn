@@ -303,7 +303,7 @@ Note that in this case, the `$HOME/pl_ag_jobs` folder is created inside the WSL2
 For development, run the docker container as described in [Installing with local source code](../installingLocal.md) but also add the workspace-specific arguments described above to the docker command line. Inside the container, run:
 
 ```
-make start-workspace-host
+make workspace-host-dev
 make start
 ```
 

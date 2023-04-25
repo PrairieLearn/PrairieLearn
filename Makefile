@@ -14,9 +14,9 @@ start: start-support
 	@node server.js
 start-nodemon: start-support
 	@yarn nodemon server.js
-start-workspace-host: start-support kill-running-workspaces
+workspace-host-start: start-support kill-running-workspaces
 	@yarn workspace-host-start
-start-workspace-host-nodemon: start-support kill-running-workspaces
+workspace-host-dev: start-support kill-running-workspaces
 	@yarn workspace-host-dev
 start-executor:
 	@node executor.js
