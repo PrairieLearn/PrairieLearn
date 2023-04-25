@@ -3,7 +3,6 @@
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "allowJs": true,
-    "noEmit": true,
     // Allow spreading Maps/Sets into arrays
     "downlevelIteration": true,
     "allowSyntheticDefaultImports": true,

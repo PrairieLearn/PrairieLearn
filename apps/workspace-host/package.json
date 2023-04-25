@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "tsc"
+    "build": "tsc && tscp"
   },
   "dependencies": {
     "@prairielearn/config": "workspace:^",
@@ -29,6 +29,7 @@
     "socket.io": "^4.6.1",
     "socket.io-redis": "^6.1.1",
     "typescript": "^4.9.5",
+    "typescript-cp": "^0.1.7",
     "uuid": "^9.0.0",
     "yargs-parser": "^21.1.1",
     "zod": "^3.21.4"
