@@ -9,8 +9,12 @@ export async function mochaGlobalSetup() {
 
 /** @this {import('mocha').Context} */
 export async function mochaGlobalTeardown() {
+  // Dropping this database could take a long time to error if other
+  // processes have an open connection to the database.
+  this.timeout(20000);
+
   // Drop the template database to clean up after ourselves.
-  await dropTemplate.call(this);
+  await dropTemplate();
 }
 
 /**
