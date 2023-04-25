@@ -1,18 +1,18 @@
 import { assert } from 'chai';
 
-import * as util from './index';
+import { sanitizeObject, recursivelyTruncateStrings } from './index';
 
 describe('sanitizeObject', () => {
   it('sanitizes an empty object', () => {
     const input = {};
     const expected = {};
-    assert.deepEqual(expected, util.sanitizeObject(input));
+    assert.deepEqual(expected, sanitizeObject(input));
   });
 
   it('handles null byte in top-level string', () => {
     const input = { test: 'test\u0000ing' };
     const expected = { test: 'test\\u0000ing' };
-    assert.deepEqual(expected, util.sanitizeObject(input));
+    assert.deepEqual(expected, sanitizeObject(input));
   });
 
   it('handles null byte in nested string', () => {
@@ -26,7 +26,7 @@ describe('sanitizeObject', () => {
         nestedTest: 'test\\u0000ing',
       },
     };
-    assert.deepEqual(expected, util.sanitizeObject(input));
+    assert.deepEqual(expected, sanitizeObject(input));
   });
 
   it('handles null byte in top-level array', () => {
@@ -36,7 +36,7 @@ describe('sanitizeObject', () => {
     const expected = {
       test: ['testing', 'test\\u0000ing'],
     };
-    assert.deepEqual(expected, util.sanitizeObject(input));
+    assert.deepEqual(expected, sanitizeObject(input));
   });
 
   it('handles null byte in nested array', () => {
@@ -50,7 +50,7 @@ describe('sanitizeObject', () => {
         test2: ['testing', 'test\\u0000ing'],
       },
     };
-    assert.deepEqual(expected, util.sanitizeObject(input));
+    assert.deepEqual(expected, sanitizeObject(input));
   });
 
   it('handles numbers correctly', () => {
@@ -64,7 +64,7 @@ describe('sanitizeObject', () => {
       a: 1,
       b: 2.45,
     };
-    assert.deepEqual(expected, util.sanitizeObject(input));
+    assert.deepEqual(expected, sanitizeObject(input));
   });
 
   it('handles null values correctly', () => {
@@ -76,38 +76,38 @@ describe('sanitizeObject', () => {
       test: 'test\\u0000ing',
       a: null,
     };
-    assert.deepEqual(expected, util.sanitizeObject(input));
+    assert.deepEqual(expected, sanitizeObject(input));
   });
 });
 
 describe('recursivelyTruncateStrings', () => {
   it('handles empty object', () => {
-    assert.deepEqual(util.recursivelyTruncateStrings({}, 10), {});
+    assert.deepEqual(recursivelyTruncateStrings({}, 10), {});
   });
 
   it('handles null and undefined', () => {
-    assert.deepEqual(util.recursivelyTruncateStrings({ test: null }, 10), { test: null });
-    assert.deepEqual(util.recursivelyTruncateStrings({ test: undefined }, 10), { test: undefined });
+    assert.deepEqual(recursivelyTruncateStrings({ test: null }, 10), { test: null });
+    assert.deepEqual(recursivelyTruncateStrings({ test: undefined }, 10), { test: undefined });
   });
 
   it('handles legal string', () => {
-    assert.deepEqual(util.recursivelyTruncateStrings({ test: 'test' }, 10), { test: 'test' });
+    assert.deepEqual(recursivelyTruncateStrings({ test: 'test' }, 10), { test: 'test' });
   });
 
   it('handles long string', () => {
-    assert.deepEqual(util.recursivelyTruncateStrings({ test: 'testtest' }, 4), {
+    assert.deepEqual(recursivelyTruncateStrings({ test: 'testtest' }, 4), {
       test: 'test...[truncated]',
     });
   });
 
   it('handles long string in array', () => {
-    assert.deepEqual(util.recursivelyTruncateStrings({ test: ['testtest'] }, 4), {
+    assert.deepEqual(recursivelyTruncateStrings({ test: ['testtest'] }, 4), {
       test: ['test...[truncated]'],
     });
   });
 
   it('handles long string in object in array', () => {
-    assert.deepEqual(util.recursivelyTruncateStrings({ test: [{ test: 'testtest' }] }, 4), {
+    assert.deepEqual(recursivelyTruncateStrings({ test: [{ test: 'testtest' }] }, 4), {
       test: [{ test: 'test...[truncated]' }],
     });
   });
