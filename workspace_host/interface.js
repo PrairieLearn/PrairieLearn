@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const util = require('util');
@@ -142,7 +143,7 @@ async
         user: config.postgresqlUser,
         database: config.postgresqlDatabase,
         host: config.postgresqlHost,
-        password: config.postgresqlPassword,
+        password: config.postgresqlPassword ?? undefined,
         max: config.postgresqlPoolSize,
         idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
       };
@@ -319,7 +320,7 @@ async function _getDockerContainerByLaunchUuid(launch_uuid) {
  * Attempts to kill and remove a container.  Will fail silently if the container
  * is already stopped or does not exist.  Also removes the container's home directory.
  *
- * @param {import('dockerode').Container} input
+ * @param {import('dockerode').Container} container
  */
 async function dockerAttemptKillAndRemove(container) {
   try {
@@ -461,6 +462,10 @@ async function _allocateContainerPort(workspace) {
   });
 }
 
+/**
+ * @param {object} workspace
+ * @param {function} callback
+ */
 function _checkServer(workspace, callback) {
   const checkMilliseconds = 500;
   const maxMilliseconds = 30000;
@@ -591,7 +596,7 @@ async function _pullImage(workspace) {
         }
 
         if (!percentDisplayed) {
-          resolve();
+          resolve(null);
           return;
         }
 
@@ -656,6 +661,10 @@ async function _pullImage(workspace) {
   });
 }
 
+/**
+ * @param {object} workspace
+ * @param {function} callback
+ */
 function _createContainer(workspace, callback) {
   const localName = workspace.local_name;
   const remoteName = workspace.remote_name;
@@ -706,6 +715,9 @@ function _createContainer(workspace, callback) {
         try {
           await fsPromises.access(workspaceJobPath);
         } catch (err) {
+          // @ts-expect-error: The ES2021 TypeScript lib doesn't include the
+          // second argument with a `cause` property. Once we're running on
+          // Node 18, we can bump to ES2022 and this will no longer error.
           throw Error('Could not access workspace files.', { cause: err });
         }
       },
@@ -893,7 +905,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       await _startContainer(workspace);
       await _checkServerAsync(workspace);
       debug(`init: container initialized for workspace_id=${workspace_id}`);
-      await workspaceUtils.updateWorkspaceState(workspace_id, 'running', null);
+      await workspaceUtils.updateWorkspaceState(workspace_id, 'running');
     } catch (err) {
       logger.error(`Error starting container for workspace ${workspace.id}`, err);
       safeUpdateWorkspaceState(

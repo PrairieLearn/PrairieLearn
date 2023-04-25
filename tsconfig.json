@@ -11,6 +11,7 @@
     "module": "NodeNext",
     // Corresponds to Node 16.x, which we currently run on.
     // To check compatibility in the future, see https://node.green/.
+    "lib": ["ES2021"],
     "target": "ES2021",
   },
   // We don't actually use any TypeScript; we just use it to validate our

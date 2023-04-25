@@ -113,7 +113,13 @@ async function checkHealth() {
       healthy = false;
     } else {
       try {
-        const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+        const res = await fetch(url, {
+          // @ts-expect-error: `node-fetch@2` uses a custom type for `AbortController`
+          // which is incompatible with the `AbortController` type defined in TypeScript's
+          // Node types for ES2021. This is fixed in `node-fetch@3`, which we'll be able
+          // to consume once we can use ESM packages.
+          signal: AbortSignal.timeout(30_000),
+        });
         healthy = res.ok;
       } catch (err) {
         healthy = false;
