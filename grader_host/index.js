@@ -10,7 +10,7 @@ const path = require('path');
 const byline = require('byline');
 const Sentry = require('@prairielearn/sentry');
 const sqldb = require('@prairielearn/postgres');
-const sanitizeObject = require('../prairielib/lib/util').sanitizeObject;
+const { sanitizeObject } = require('@prairielearn/sanitize');
 const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 
 const globalLogger = require('./lib/logger');

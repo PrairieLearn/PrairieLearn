@@ -2852,6 +2852,18 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/sanitize@workspace:^, @prairielearn/sanitize@workspace:packages/sanitize":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/sanitize@workspace:packages/sanitize"
+  dependencies:
+    "@prairielearn/tsconfig": "workspace:^"
+    "@types/node": ^18.15.11
+    mocha: ^10.2.0
+    ts-node: ^10.9.1
+    typescript: ^4.9.4
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/sentry@workspace:^, @prairielearn/sentry@workspace:packages/sentry":
   version: 0.0.0-use.local
   resolution: "@prairielearn/sentry@workspace:packages/sentry"
@@ -3868,6 +3880,7 @@ __metadata:
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/postgres-tools": "workspace:^"
     "@prairielearn/prettier-plugin-sql": "workspace:^"
+    "@prairielearn/sanitize": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
     "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"

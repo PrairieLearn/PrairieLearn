@@ -1,23 +1,18 @@
-// @ts-check
-const { assert } = require('chai');
+import { assert } from 'chai';
 
-const util = require('../lib/util');
-
-function check(input, expected) {
-  assert.deepEqual(expected, util.sanitizeObject(input));
-}
+import * as util from './index';
 
 describe('sanitizeObject', () => {
   it('sanitizes an empty object', () => {
     const input = {};
     const expected = {};
-    check(input, expected);
+    assert.deepEqual(expected, util.sanitizeObject(input));
   });
 
   it('handles null byte in top-level string', () => {
     const input = { test: 'test\u0000ing' };
     const expected = { test: 'test\\u0000ing' };
-    check(input, expected);
+    assert.deepEqual(expected, util.sanitizeObject(input));
   });
 
   it('handles null byte in nested string', () => {
@@ -31,7 +26,7 @@ describe('sanitizeObject', () => {
         nestedTest: 'test\\u0000ing',
       },
     };
-    check(input, expected);
+    assert.deepEqual(expected, util.sanitizeObject(input));
   });
 
   it('handles null byte in top-level array', () => {
@@ -41,7 +36,7 @@ describe('sanitizeObject', () => {
     const expected = {
       test: ['testing', 'test\\u0000ing'],
     };
-    check(input, expected);
+    assert.deepEqual(expected, util.sanitizeObject(input));
   });
 
   it('handles null byte in nested array', () => {
@@ -55,7 +50,7 @@ describe('sanitizeObject', () => {
         test2: ['testing', 'test\\u0000ing'],
       },
     };
-    check(input, expected);
+    assert.deepEqual(expected, util.sanitizeObject(input));
   });
 
   it('handles numbers correctly', () => {
@@ -69,7 +64,7 @@ describe('sanitizeObject', () => {
       a: 1,
       b: 2.45,
     };
-    check(input, expected);
+    assert.deepEqual(expected, util.sanitizeObject(input));
   });
 
   it('handles null values correctly', () => {
@@ -81,7 +76,7 @@ describe('sanitizeObject', () => {
       test: 'test\\u0000ing',
       a: null,
     };
-    check(input, expected);
+    assert.deepEqual(expected, util.sanitizeObject(input));
   });
 });
 
