@@ -1,3 +1,5 @@
+// @ts-check
+
 /**
  * Converts Docker's custom multiplexed stream format into a normal string.
  * This essentially entails removing each 8-byte header.
