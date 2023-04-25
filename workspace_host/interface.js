@@ -19,16 +19,16 @@ const net = require('net');
 const asyncHandler = require('express-async-handler');
 const bodyParser = require('body-parser');
 const { Mutex } = require('async-mutex');
+const { DockerName, setupDockerAuthAsync } = require('@prairielearn/docker-utils');
+const { logger } = require('@prairielearn/logger');
+const sqldb = require('@prairielearn/postgres');
 const Sentry = require('@prairielearn/sentry');
 const workspaceUtils = require('@prairielearn/workspace-utils');
-const { DockerName, setupDockerAuthAsync } = require('@prairielearn/docker-utils');
 
 const awsHelper = require('../lib/aws');
-const socketServer = require('../lib/socket-server'); // must load socket server before workspace
-const { logger } = require('@prairielearn/logger');
+const socketServer = require('../lib/socket-server');
 
-const { config, loadConfig } = require('../lib/config');
-const sqldb = require('@prairielearn/postgres');
+const { config, loadConfig } = require('./lib/config');
 const { parseDockerLogs } = require('./lib/docker');
 const sql = sqldb.loadSqlEquiv(__filename);
 
