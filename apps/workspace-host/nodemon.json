@@ -1,9 +1,7 @@
 {
   "watch": [
-    "workspace_host",
-    "lib",
-    "packages",
-    "sprocs"
+    "apps/workspace-host",
+    "packages"
   ],
   "ext": "js,json,sql"
 }

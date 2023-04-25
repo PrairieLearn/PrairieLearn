@@ -5,9 +5,9 @@ ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
 # Install Python/NodeJS dependencies before copying code to limit download size
 # when code changes.
 #
-# Note that we also have to copy the `packages` directory so that `yarn`
-# can resolve the workspaces inside it and set up symlinks correctly.
-# This is suboptimal, as a change to any file under `package/` will
+# Note that we also have to copy the `packages` and `apps` directories so that
+# `yarn` can resolve the workspaces inside it and set up symlinks correctly.
+# This is suboptimal, as a change to any file in these directories will
 # invalidate this layer's cache, but it's unavoidable.
 #
 # We also need to copy both the `.yarn` directory and the `.yarnrc.yml` file,

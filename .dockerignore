@@ -18,6 +18,7 @@
 !pyproject.toml
 !admin_queries/
 !api/
+!apps/
 !batched-migrations/
 !cron/
 !database/
@@ -27,7 +28,6 @@
 !elements/
 !exampleCourse/
 !executor.js
-!grader_host/
 !lib/
 !Makefile
 !middlewares/
@@ -51,4 +51,3 @@ public/build/
 !tests/
 !tools/
 !webhooks/
-!workspace_host/

@@ -38,10 +38,6 @@ test-prairielearn: start-support
 	@yarn mocha --parallel "tests/**/*.test.{js,mjs}"
 test-prairielearn-serial: start-support
 	@yarn mocha "tests/**/*.test.{js,mjs}"
-test-grader-host:
-	@yarn mocha "grader_host/**/*.test.{js,mjs}"
-test-workspace-host:
-	@yarn mocha "workspace_host/**/*.test.{js,mjs}"
 test-packages:
 	@yarn turbo run test
 test-python:
