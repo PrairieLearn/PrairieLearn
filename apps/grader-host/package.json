@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "build": "tsc && tscp",
-    "dev": "ts-node --transpile-only src/index.js",
+    "dev:no-watch": "ts-node --transpile-only src/interface.js",
+    "dev": "nodemon --exec \"yarn dev:no-watch\" --",
     "start": "node dist/index.js",
     "test": "mocha --no-config --require ts-node/register src/**/*.test.{js,ts}"
   },
@@ -14,12 +15,6 @@
     "@prairielearn/postgres": "workspace:^",
     "@prairielearn/sanitize": "workspace:^",
     "@prairielearn/sentry": "workspace:^",
-    "@types/async": "^3.2.18",
-    "@types/chai": "^4.3.4",
-    "@types/dockerode": "^3.3.16",
-    "@types/fs-extra": "^11.0.1",
-    "@types/node": "^18.16.1",
-    "@types/tmp": "^0.2.3",
     "ajv": "^8.12.0",
     "async": "^3.2.4",
     "async-stacktrace": "^0.0.2",
@@ -29,15 +24,24 @@
     "dockerode": "^3.3.5",
     "fs-extra": "^11.1.1",
     "logform": "^2.4.2",
-    "mocha": "^10.2.0",
     "s3-streamlogger": "1.7.0",
-    "sinon": "^15.0.3",
     "tmp": "^0.2.1",
-    "ts-node": "^10.9.1",
-    "typescript": "^4.9.5",
-    "typescript-cp": "^0.1.7",
     "winston": "^3.8.2",
     "winston-aws-cloudwatch": "^3.0.0",
     "zod": "^3.21.4"
+  },
+  "devDependencies": {
+    "@types/async": "^3.2.18",
+    "@types/chai": "^4.3.4",
+    "@types/dockerode": "^3.3.16",
+    "@types/fs-extra": "^11.0.1",
+    "@types/node": "^18.16.1",
+    "@types/tmp": "^0.2.3",
+    "mocha": "^10.2.0",
+    "nodemon": "^2.0.22",
+    "sinon": "^15.0.3",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.9.5",
+    "typescript-cp": "^0.1.7"
   }
 }
