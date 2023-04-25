@@ -48,7 +48,7 @@ const ConfigSchema = z.object({
   sentryDsn: z.string().nullable().default(null),
   sentryEnvironment: z.string().nullable().default(null),
   awsConfig: z.any().default(null),
-  region: z.string().default('us-east-2'),
+  awsRegion: z.string().default('us-east-2'),
 });
 
 function makeProductionConfigSource() {
@@ -73,7 +73,7 @@ function makeAutoScalingGroupConfigSource() {
       if (!process.env.CONFIG_LOAD_FROM_AWS) return {};
 
       logger.info('Detecting AutoScalingGroup...');
-      var autoscaling = new AWS.AutoScaling({ region: existingConfig.region });
+      var autoscaling = new AWS.AutoScaling({ region: existingConfig.awsRegion });
       var params = { InstanceIds: [existingConfig.instanceId] };
       const data = await autoscaling.describeAutoScalingInstances(params).promise();
       if (!data.AutoScalingInstances || data.AutoScalingInstances.length === 0) {
@@ -102,7 +102,7 @@ module.exports.loadConfig = function (callback) {
           makeAutoScalingGroupConfigSource(),
         ]);
 
-        AWS.config.update({ region: loader.config.region });
+        AWS.config.update({ region: loader.config.awsRegion });
       },
       (callback) => {
         // Initialize CloudWatch logging if it's enabled
