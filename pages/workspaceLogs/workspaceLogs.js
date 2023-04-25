@@ -98,10 +98,6 @@ async function loadLogsForWorkspaceVersion(workspaceId, version) {
       method: 'POST',
       body: JSON.stringify({ workspace_id: workspaceId, action: 'getLogs' }),
       headers: { 'Content-Type': 'application/json' },
-      // @ts-expect-error: `node-fetch@2` uses a custom type for `AbortController`
-      // which is incompatible with the `AbortController` type defined in TypeScript's
-      // Node types for ES2021. This is fixed in `node-fetch@3`, which we'll be able
-      // to consume once we can use ESM packages.
       signal: AbortSignal.timeout(30_000),
     });
     if (res.ok) {

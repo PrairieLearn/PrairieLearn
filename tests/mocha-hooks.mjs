@@ -7,9 +7,10 @@ export async function mochaGlobalSetup() {
   await createTemplate();
 }
 
+/** @this {import('mocha').Context} */
 export async function mochaGlobalTeardown() {
   // Drop the template database to clean up after ourselves.
-  await dropTemplate();
+  await dropTemplate.call(this);
 }
 
 /**
