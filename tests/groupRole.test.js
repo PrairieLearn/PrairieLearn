@@ -27,6 +27,133 @@ locals.courseDir = path.join(__dirname, '..', 'testCourse');
 
 const storedConfig = {};
 
+/**
+ * Switches `config` to new user, loads assessment page, and changes local CSRF token
+ * @param {Object} studentUser
+ * @param {string} assessmentUrl
+ * @param {String} authUin
+ * @param {Number} numCsrfTokens
+ */
+const switchUserAndLoadAssessment = async (studentUser, assessmentUrl, authUin, numCsrfTokens) => {
+  // Load config
+  config.authUid = studentUser.uid;
+  config.authName = studentUser.name;
+  config.authUin = authUin;
+  config.userId = studentUser.user_id;
+
+  // Load assessment
+  const res = await fetch(assessmentUrl);
+  assert.isOk(res.ok);
+  locals.$ = cheerio.load(await res.text());
+
+  // Check for CSRF tokens
+  elemList = locals.$('form input[name="__csrf_token"]');
+  assert.lengthOf(elemList, numCsrfTokens);
+  assert.nestedProperty(elemList[0], 'attribs.value');
+  locals.__csrf_token = elemList[0].attribs.value;
+  assert.isString(locals.__csrf_token);
+};
+
+/**
+ * Joins group as current user with CSRF token and loads page with cheerio.
+ * @param {String} assessmentUrl
+ * @param {String} joinCode
+ */
+const joinGroup = async (assessmentUrl, joinCode) => {
+  const form = {
+    __action: 'join_group',
+    __csrf_token: locals.__csrf_token,
+    join_code: joinCode,
+  };
+  const res = await fetch(assessmentUrl, {
+    method: 'POST',
+    body: new URLSearchParams(form),
+  });
+  assert.isOk(res.ok);
+  locals.$ = cheerio.load(await res.text());
+};
+
+/**
+ * Leaves group as current user
+ * @param {String} assessmentUrl
+ */
+const leaveGroup = async (assessmentUrl) => {
+  const form = {
+    __action: 'leave_group',
+    __csrf_token: locals.__csrf_token,
+  };
+  const res = await fetch(assessmentUrl, {
+    method: 'POST',
+    body: new URLSearchParams(form),
+  });
+  assert.isOk(res.ok);
+};
+
+/**
+ * @param {Array} roleAssignments
+ * @param {String} assessmentId
+ */
+const verifyGroupRoleAssignmentsInDatabase = async (roleAssignments, assessmentId) => {
+  const expected = roleAssignments.map(({ roleId, groupUserId }) => ({
+    user_id: groupUserId,
+    group_role_id: roleId,
+  }));
+  const result = await sqldb.queryAsync(sql.select_group_user_roles, {
+    assessment_id: assessmentId,
+  });
+  assert.sameDeepMembers(result.rows, expected);
+};
+
+/**
+ * Sends and verifies a group roles update request using current user.
+ * Updates element list to check that group role select table is changed correctly.
+ * @param {Array} roleUpdates
+ * @param {Array} groupRoles
+ * @param {Array} studentUsers
+ * @param {String} assessmentUrl
+ */
+const updateGroupRoles = async (roleUpdates, groupRoles, studentUsers, assessmentUrl) => {
+  // Uncheck all of the inputs
+  const roleIds = groupRoles.map((role) => role.id);
+  const userIds = studentUsers.map((user) => user.user_id);
+  for (const roleId of roleIds) {
+    for (const userId of userIds) {
+      const elementId = `#user_role_${roleId}-${userId}`;
+      locals.$('#role-select-form').find(elementId).attr('checked', null);
+    }
+  }
+
+  // Ensure all checkboxes are unchecked
+  elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+  assert.lengthOf(elemList, 0);
+
+  // Remove role assignments from second user
+  roleUpdates = [{ roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id }];
+
+  // Mark the checkboxes as checked
+  roleUpdates.forEach(({ roleId, groupUserId }) => {
+    locals.$(`#user_role_${roleId}-${groupUserId}`).attr('checked', '');
+  });
+  elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+  assert.lengthOf(elemList, 1);
+
+  // Grab IDs of checkboxes to construct update request
+  const checkedElementIds = {};
+  for (let i = 0; i < elemList.length; i++) {
+    checkedElementIds[elemList[i.toString()].attribs.id] = 'on';
+  }
+  const form = {
+    __action: 'update_group_roles',
+    __csrf_token: locals.__csrf_token,
+    ...checkedElementIds,
+  };
+  const res = await fetch(assessmentUrl, {
+    method: 'POST',
+    body: new URLSearchParams(form),
+  });
+  assert.isOk(res.ok);
+};
+
 describe('Test group based assessments with custom group roles from student side', function () {
   this.timeout(20000);
   before('set authenticated user', function () {
@@ -91,26 +218,8 @@ describe('Test group based assessments with custom group roles from student side
     locals.studentUsers = result.rows;
   });
 
-  step('should switch current user to the group creator and load assessment', async function () {
-    config.authUid = locals.studentUsers[0].uid;
-    config.authName = locals.studentUsers[0].name;
-    config.authUin = '00000001';
-    config.userId = locals.studentUsers[0].user_id;
-
-    const res = await fetch(locals.assessmentUrl);
-    assert.isOk(res.ok);
-    locals.$ = cheerio.load(await res.text());
-  });
-
-  step('should have a CSRF token', function () {
-    elemList = locals.$('form input[name="__csrf_token"]');
-    assert.lengthOf(elemList, 2);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.__csrf_token = elemList[0].attribs.value;
-    assert.isString(locals.__csrf_token);
-  });
-
-  step('should be able to create a group', async function () {
+  step('should be able to create a group as first user', async function () {
+    await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 2);
     locals.group_name = 'groupBB';
     const form = {
       __action: 'create_group',
@@ -132,15 +241,7 @@ describe('Test group based assessments with custom group roles from student side
     ];
 
     // Check role config
-    const expected = locals.roleUpdates.map(({ roleId, groupUserId }) => ({
-      user_id: groupUserId,
-      group_role_id: roleId,
-    }));
-    const params = {
-      assessment_id: locals.assessment_id,
-    };
-    const result = await sqldb.queryAsync(sql.select_group_user_roles, params);
-    assert.sameDeepMembers(expected, result.rows);
+    await verifyGroupRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
   });
 
   step('should contain the 4-character join code', function () {
@@ -191,19 +292,9 @@ describe('Test group based assessments with custom group roles from student side
     assert.lengthOf(elemList, 1);
   });
 
-  step('manager should be able to leave the group', async function () {
-    const form = {
-      __action: 'leave_group',
-      __csrf_token: locals.__csrf_token,
-    };
-    const res = await fetch(locals.assessmentUrl, {
-      method: 'POST',
-      body: new URLSearchParams(form),
-    });
-    assert.isOk(res.ok);
-  });
+  step('manager should be able to leave the group and reload assessment', async function () {
+    await leaveGroup(locals.assessmentUrl);
 
-  step('should load assessment page successfully', async function () {
     const res = await fetch(locals.assessmentUrl);
     assert.isOk(res.ok);
   });
@@ -218,17 +309,7 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   step('first user should be able to join group again', async function () {
-    const form = {
-      __action: 'join_group',
-      __csrf_token: locals.__csrf_token,
-      join_code: locals.joinCode,
-    };
-    const res = await fetch(locals.assessmentUrl, {
-      method: 'POST',
-      body: new URLSearchParams(form),
-    });
-    assert.isOk(res.ok);
-    locals.$ = cheerio.load(await res.text());
+    await joinGroup(locals.assessmentUrl, locals.joinCode);
   });
 
   step('first user should have manager role in database', async function () {
@@ -248,27 +329,8 @@ describe('Test group based assessments with custom group roles from student side
     assert.lengthOf(elemList, 2);
   });
 
-  step('should be able to switch to second user and load assessment', async function () {
-    let student = locals.studentUsers[1];
-    config.authUid = student.uid;
-    config.authName = student.name;
-    config.authUin = '00000002';
-    config.userId = student.user_id;
-
-    const res = await fetch(locals.assessmentUrl);
-    assert.isOk(res.ok);
-    locals.$ = cheerio.load(await res.text());
-  });
-
-  step('should have a CSRF token', function () {
-    elemList = locals.$('form input[name="__csrf_token"]');
-    assert.lengthOf(elemList, 2);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.__csrf_token = elemList[0].attribs.value;
-    assert.isString(locals.__csrf_token);
-  });
-
   step('second user should be able to join group', async function () {
+    await switchUserAndLoadAssessment(locals.studentUsers[1], locals.assessmentUrl, '00000002', 2);
     const form = {
       __action: 'join_group',
       __csrf_token: locals.__csrf_token,
@@ -313,79 +375,27 @@ describe('Test group based assessments with custom group roles from student side
     assert.lengthOf(elemList, 1);
   });
 
-  step('should be able to switch to first user and load assessment', async function () {
-    let student = locals.studentUsers[0];
-    config.authUid = student.uid;
-    config.authName = student.name;
-    config.authUin = '00000001';
-    config.userId = student.user_id;
-
-    const res = await fetch(locals.assessmentUrl);
-    assert.isOk(res.ok);
-    locals.$ = cheerio.load(await res.text());
+  step('should switch back to first user', async function () {
+    await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 2);
   });
 
-  step('should have a CSRF token', function () {
-    elemList = locals.$('form input[name="__csrf_token"]');
-    assert.lengthOf(elemList, 2);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.__csrf_token = elemList[0].attribs.value;
-    assert.isString(locals.__csrf_token);
-  });
-
-  step('group role table is visible and has two users in it', function () {
+  step('check group role table is visible and has two users in it', async function () {
     elemList = locals.$('#role-select-form').find('tr');
     // Header row and two user rows
     assert.lengthOf(elemList, 3);
   });
 
-  step(
-    'should be able to edit role table to remove role assignments from second user',
-    function () {
-      // Uncheck all of the inputs
-      const roleIds = locals.groupRoles.map((role) => role.id);
-      const userIds = locals.studentUsers.map((user) => user.user_id);
-      for (const roleId of roleIds) {
-        for (const userId of userIds) {
-          const elementId = `#user_role_${roleId}-${userId}`;
-          locals.$('#role-select-form').find(elementId).attr('checked', null);
-        }
-      }
-
-      // Ensure all checkboxes are unchecked
-      elemList = locals.$('#role-select-form').find('tr').find('input:checked');
-      assert.lengthOf(elemList, 0);
-
-      // Remove role assignments from second user
-      locals.roleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-      ];
-
-      // Mark the checkboxes as checked
-      locals.roleUpdates.forEach(({ roleId, groupUserId }) => {
-        locals.$(`#user_role_${roleId}-${groupUserId}`).attr('checked', '');
-      });
-      elemList = locals.$('#role-select-form').find('tr').find('input:checked');
-      assert.lengthOf(elemList, 1);
-    }
-  );
-
-  step('should press submit button to perform the role updates', async function () {
-    // Grab IDs of checkboxes to construct update request
-    const checkedElementIds = {};
-    for (let i = 0; i < elemList.length; i++) {
-      checkedElementIds[elemList[i.toString()].attribs.id] = 'on';
-    }
-    const form = {
-      __action: 'update_group_roles',
-      __csrf_token: locals.__csrf_token,
-      ...checkedElementIds,
-    };
-    const res = await fetch(locals.assessmentUrl, {
-      method: 'POST',
-      body: new URLSearchParams(form),
-    });
-    assert.isOk(res.ok);
+  step('should be able to remove role assignments from second user', async function () {
+    // Remove role assignments from second user
+    locals.roleUpdates = [
+      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+    ];
+    await updateGroupRoles(
+      locals.roleUpdates,
+      locals.groupRoles,
+      locals.studentUsers,
+      locals.assessmentUrl
+    );
   });
 
   step('should reload assessment page successfully', async function () {
@@ -451,54 +461,45 @@ describe('Test group based assessments with custom group roles from student side
     }
   );
 
-  step('should be able to switch to first user and load assessment', async function () {
-    let student = locals.studentUsers[0];
-    config.authUid = student.uid;
-    config.authName = student.name;
-    config.authUin = '00000001';
-    config.userId = student.user_id;
+  step(
+    'first user should be able to edit role table to make both users manager',
+    async function () {
+      // Switch to first user
+      await switchUserAndLoadAssessment(
+        locals.studentUsers[0],
+        locals.assessmentUrl,
+        '00000001',
+        2
+      );
 
-    const res = await fetch(locals.assessmentUrl);
-    assert.isOk(res.ok);
-    locals.$ = cheerio.load(await res.text());
-  });
-
-  step('should have a CSRF token', function () {
-    elemList = locals.$('form input[name="__csrf_token"]');
-    assert.lengthOf(elemList, 2);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.__csrf_token = elemList[0].attribs.value;
-    assert.isString(locals.__csrf_token);
-  });
-
-  step('should be able to edit role table to make both users manager', function () {
-    // Uncheck all of the inputs
-    const roleIds = locals.groupRoles.map((role) => role.id);
-    const userIds = locals.studentUsers.map((user) => user.user_id);
-    for (const roleId of roleIds) {
-      for (const userId of userIds) {
-        const elementId = `#user_role_${roleId}-${userId}`;
-        locals.$('#role-select-form').find(elementId).attr('checked', null);
+      // Uncheck all of the inputs
+      const roleIds = locals.groupRoles.map((role) => role.id);
+      const userIds = locals.studentUsers.map((user) => user.user_id);
+      for (const roleId of roleIds) {
+        for (const userId of userIds) {
+          const elementId = `#user_role_${roleId}-${userId}`;
+          locals.$('#role-select-form').find(elementId).attr('checked', null);
+        }
       }
+
+      // Ensure all checkboxes are unchecked
+      elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+      assert.lengthOf(elemList, 0);
+
+      // Make both first and second user manager
+      locals.roleUpdates = [
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[1].user_id },
+      ];
+
+      // Mark the checkboxes as checked
+      locals.roleUpdates.forEach(({ roleId, groupUserId }) => {
+        locals.$(`#user_role_${roleId}-${groupUserId}`).attr('checked', '');
+      });
+      elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+      assert.lengthOf(elemList, 2);
     }
-
-    // Ensure all checkboxes are unchecked
-    elemList = locals.$('#role-select-form').find('tr').find('input:checked');
-    assert.lengthOf(elemList, 0);
-
-    // Make both first and second user manager
-    locals.roleUpdates = [
-      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-      { roleId: locals.manager.id, groupUserId: locals.studentUsers[1].user_id },
-    ];
-
-    // Mark the checkboxes as checked
-    locals.roleUpdates.forEach(({ roleId, groupUserId }) => {
-      locals.$(`#user_role_${roleId}-${groupUserId}`).attr('checked', '');
-    });
-    elemList = locals.$('#role-select-form').find('tr').find('input:checked');
-    assert.lengthOf(elemList, 2);
-  });
+  );
 
   step('should press submit button to perform the role updates', async function () {
     // Grab IDs of checkboxes to construct update request
@@ -1086,36 +1087,7 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   step('should be able to leave the group as fourth user', async function () {
-    const form = {
-      __action: 'leave_group',
-      __csrf_token: locals.__csrf_token,
-    };
-    const res = await fetch(locals.assessmentUrl, {
-      method: 'POST',
-      body: new URLSearchParams(form),
-    });
-    assert.isOk(res.ok);
-    locals.$ = cheerio.load(await res.text());
-  });
-
-  step('should be able to switch to first user and load assessment', async function () {
-    let student = locals.studentUsers[0];
-    config.authUid = student.uid;
-    config.authName = student.name;
-    config.authUin = '00000001';
-    config.userId = student.user_id;
-
-    const res = await fetch(locals.assessmentUrl);
-    assert.isOk(res.ok);
-    locals.$ = cheerio.load(await res.text());
-  });
-
-  step('should have a CSRF token', function () {
-    elemList = locals.$('form input[name="__csrf_token"]');
-    assert.lengthOf(elemList, 3);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.__csrf_token = elemList[0].attribs.value;
-    assert.isString(locals.__csrf_token);
+    await leaveGroup(locals.assessmentUrl);
   });
 
   step(
@@ -1139,7 +1111,8 @@ describe('Test group based assessments with custom group roles from student side
     }
   );
 
-  step('should have correct roles checked in the table', function () {
+  step('first user should see correct roles checked in the table', async function () {
+    await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 3);
     elemList = locals.$('#role-select-form').find('tr').find('input:checked');
     assert.lengthOf(elemList, 3);
 
@@ -1151,27 +1124,8 @@ describe('Test group based assessments with custom group roles from student side
     });
   });
 
-  step('should be able to switch to fourth user and load assessment', async function () {
-    let student = locals.studentUsers[3];
-    config.authUid = student.uid;
-    config.authName = student.name;
-    config.authUin = '00000004';
-    config.userId = student.user_id;
-
-    const res = await fetch(locals.assessmentUrl);
-    assert.isOk(res.ok);
-    locals.$ = cheerio.load(await res.text());
-  });
-
-  step('should have a CSRF token', function () {
-    elemList = locals.$('form input[name="__csrf_token"]');
-    assert.lengthOf(elemList, 2);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.__csrf_token = elemList[0].attribs.value;
-    assert.isString(locals.__csrf_token);
-  });
-
   step('should be able to join group as fourth user', async function () {
+    await switchUserAndLoadAssessment(locals.studentUsers[3], locals.assessmentUrl, '00000004', 2);
     const form = {
       __action: 'join_group',
       __csrf_token: locals.__csrf_token,
@@ -1207,27 +1161,9 @@ describe('Test group based assessments with custom group roles from student side
     }
   );
 
-  step('should be able to switch to first user and load assessment', async function () {
-    let student = locals.studentUsers[0];
-    config.authUid = student.uid;
-    config.authName = student.name;
-    config.authUin = '00000001';
-    config.userId = student.user_id;
+  step('first user should see correct roles checked in the table', async function () {
+    await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 3);
 
-    const res = await fetch(locals.assessmentUrl);
-    assert.isOk(res.ok);
-    locals.$ = cheerio.load(await res.text());
-  });
-
-  step('should have a CSRF token', function () {
-    elemList = locals.$('form input[name="__csrf_token"]');
-    assert.lengthOf(elemList, 3);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.__csrf_token = elemList[0].attribs.value;
-    assert.isString(locals.__csrf_token);
-  });
-
-  step('should have correct roles checked in the table', function () {
     elemList = locals.$('#role-select-form').find('tr').find('input:checked');
     assert.lengthOf(elemList, 4);
 
@@ -1239,27 +1175,8 @@ describe('Test group based assessments with custom group roles from student side
     });
   });
 
-  step('should be able to switch to fifth user and load assessment', async function () {
-    let student = locals.studentUsers[4];
-    config.authUid = student.uid;
-    config.authName = student.name;
-    config.authUin = '00000005';
-    config.userId = student.user_id;
-
-    const res = await fetch(locals.assessmentUrl);
-    assert.isOk(res.ok);
-    locals.$ = cheerio.load(await res.text());
-  });
-
-  step('should have a CSRF token', function () {
-    elemList = locals.$('form input[name="__csrf_token"]');
-    assert.lengthOf(elemList, 2);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.__csrf_token = elemList[0].attribs.value;
-    assert.isString(locals.__csrf_token);
-  });
-
   step('fifth user should be able to join group', async function () {
+    await switchUserAndLoadAssessment(locals.studentUsers[4], locals.assessmentUrl, '00000005', 2);
     const form = {
       __action: 'join_group',
       __csrf_token: locals.__csrf_token,
@@ -1296,27 +1213,8 @@ describe('Test group based assessments with custom group roles from student side
     }
   );
 
-  step('should be able to switch to first user and load assessment', async function () {
-    let student = locals.studentUsers[0];
-    config.authUid = student.uid;
-    config.authName = student.name;
-    config.authUin = '00000001';
-    config.userId = student.user_id;
-
-    const res = await fetch(locals.assessmentUrl);
-    assert.isOk(res.ok);
-    locals.$ = cheerio.load(await res.text());
-  });
-
-  step('should have a CSRF token', function () {
-    elemList = locals.$('form input[name="__csrf_token"]');
-    assert.lengthOf(elemList, 3);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.__csrf_token = elemList[0].attribs.value;
-    assert.isString(locals.__csrf_token);
-  });
-
-  step('should have five roles checked in the table', function () {
+  step('first user should see five roles checked in the table', async function () {
+    await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 3);
     elemList = locals.$('#role-select-form').find('tr').find('input:checked');
     assert.lengthOf(elemList, 5);
 
@@ -1923,7 +1821,7 @@ const changeGroupRolesConfig = async (courseDir, groupRoles) => {
   await syncCourseData(courseDir);
 };
 
-describe('Test group role reassignments with role minimum > 1', function () {
+describe('Test group role reassignments with role of minimum > 1', function () {
   /** @type {tmp.DirectoryResult} */
   let tempTestCourseDir;
   /** @type {tmp.DirectoryResult} */
@@ -2062,27 +1960,8 @@ describe('Test group role reassignments with role minimum > 1', function () {
     assert.sameDeepMembers(expected, result.rows);
   });
 
-  step('should be able to switch to second user and load assessment', async function () {
-    let student = locals.studentUsers[1];
-    config.authUid = student.uid;
-    config.authName = student.name;
-    config.authUin = '00000002';
-    config.userId = student.user_id;
-
-    const res = await fetch(assessmentUrl);
-    assert.isOk(res.ok);
-    locals.$ = cheerio.load(await res.text());
-  });
-
-  step('second user should have a CSRF token', function () {
-    elemList = locals.$('form input[name="__csrf_token"]');
-    assert.lengthOf(elemList, 2);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.__csrf_token = elemList[0].attribs.value;
-    assert.isString(locals.__csrf_token);
-  });
-
   step('second user should be able to join group', async function () {
+    await switchUserAndLoadAssessment(locals.studentUsers[1], assessmentUrl, '00000002', 2);
     const form = {
       __action: 'join_group',
       __csrf_token: locals.__csrf_token,
@@ -2129,27 +2008,8 @@ describe('Test group role reassignments with role minimum > 1', function () {
     assert.lengthOf(elemList, 1);
   });
 
-  step('should be able to switch to third user and load assessment', async function () {
-    let student = locals.studentUsers[2];
-    config.authUid = student.uid;
-    config.authName = student.name;
-    config.authUin = '00000003';
-    config.userId = student.user_id;
-
-    const res = await fetch(assessmentUrl);
-    assert.isOk(res.ok);
-    locals.$ = cheerio.load(await res.text());
-  });
-
-  step('third user should have a CSRF token', function () {
-    elemList = locals.$('form input[name="__csrf_token"]');
-    assert.lengthOf(elemList, 2);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.__csrf_token = elemList[0].attribs.value;
-    assert.isString(locals.__csrf_token);
-  });
-
   step('should be able to join group as third user', async function () {
+    await switchUserAndLoadAssessment(locals.studentUsers[2], assessmentUrl, '00000003', 2);
     const form = {
       __action: 'join_group',
       __csrf_token: locals.__csrf_token,
@@ -2200,27 +2060,8 @@ describe('Test group role reassignments with role minimum > 1', function () {
     assert.sameDeepMembers(expected, result.rows);
   });
 
-  step('should be able to switch to fourth user and load assessment', async function () {
-    let student = locals.studentUsers[3];
-    config.authUid = student.uid;
-    config.authName = student.name;
-    config.authUin = '00000004';
-    config.userId = student.user_id;
-
-    const res = await fetch(assessmentUrl);
-    assert.isOk(res.ok);
-    locals.$ = cheerio.load(await res.text());
-  });
-
-  step('fourth user should have a CSRF token', function () {
-    elemList = locals.$('form input[name="__csrf_token"]');
-    assert.lengthOf(elemList, 2);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.__csrf_token = elemList[0].attribs.value;
-    assert.isString(locals.__csrf_token);
-  });
-
   step('should be able to join group as fourth user', async function () {
+    await switchUserAndLoadAssessment(locals.studentUsers[3], assessmentUrl, '00000004', 2);
     const form = {
       __action: 'join_group',
       __csrf_token: locals.__csrf_token,
@@ -2269,24 +2110,8 @@ describe('Test group role reassignments with role minimum > 1', function () {
     assert.sameDeepMembers(expected, result.rows);
   });
 
-  step('should be able to switch back to first user and load assessment', async function () {
-    let student = locals.studentUsers[0];
-    config.authUid = student.uid;
-    config.authName = student.name;
-    config.authUin = '00000001';
-    config.userId = student.user_id;
-
-    const res = await fetch(assessmentUrl);
-    assert.isOk(res.ok);
-    locals.$ = cheerio.load(await res.text());
-  });
-
-  step('first user should have a CSRF token', function () {
-    elemList = locals.$('form input[name="__csrf_token"]');
-    assert.lengthOf(elemList, 2);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.__csrf_token = elemList[0].attribs.value;
-    assert.isString(locals.__csrf_token);
+  step('switch back to first user and load group role table', async function () {
+    await switchUserAndLoadAssessment(locals.studentUsers[0], assessmentUrl, '00000001', 2);
   });
 
   step('group role table is visible and has four users in it', function () {
@@ -2414,27 +2239,8 @@ describe('Test group role reassignments with role minimum > 1', function () {
   });
 
   describe('test correct role config where group size exceeds minimum required role count', function () {
-    step('should be able to switch to fifth user and load assessment', async function () {
-      let student = locals.studentUsers[4];
-      config.authUid = student.uid;
-      config.authName = student.name;
-      config.authUin = '00000005';
-      config.userId = student.user_id;
-
-      const res = await fetch(assessmentUrl);
-      assert.isOk(res.ok);
-      locals.$ = cheerio.load(await res.text());
-    });
-
-    step('should have a CSRF token', function () {
-      elemList = locals.$('form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 2);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
-      assert.isString(locals.__csrf_token);
-    });
-
     step('fifth user should be able to join group', async function () {
+      await switchUserAndLoadAssessment(locals.studentUsers[4], assessmentUrl, '00000005', 2);
       const form = {
         __action: 'join_group',
         __csrf_token: locals.__csrf_token,
@@ -2471,24 +2277,8 @@ describe('Test group role reassignments with role minimum > 1', function () {
       }
     );
 
-    step('should be able to switch back to first user and load assessment', async function () {
-      let student = locals.studentUsers[0];
-      config.authUid = student.uid;
-      config.authName = student.name;
-      config.authUin = '00000001';
-      config.userId = student.user_id;
-
-      const res = await fetch(assessmentUrl);
-      assert.isOk(res.ok);
-      locals.$ = cheerio.load(await res.text());
-    });
-
-    step('should have a CSRF token', function () {
-      elemList = locals.$('form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 3);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
-      assert.isString(locals.__csrf_token);
+    step('switch back to first user and load group role table', async function () {
+      await switchUserAndLoadAssessment(locals.studentUsers[0], assessmentUrl, '00000001', 3);
     });
 
     step('group role table is visible and has five users in it', function () {
@@ -2628,30 +2418,14 @@ describe('Test group role reassignments with role minimum > 1', function () {
 
     step('should be able to leave as fifth user', async function () {
       // Switch to fifth user
-      let student = locals.studentUsers[4];
-      config.authUid = student.uid;
-      config.authName = student.name;
-      config.authUin = '00000005';
-      config.userId = student.user_id;
-
-      // Load assessment
-      let res = await fetch(assessmentUrl);
-      assert.isOk(res.ok);
-      locals.$ = cheerio.load(await res.text());
-
-      // Get CSRF token
-      elemList = locals.$('form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 1);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
-      assert.isString(locals.__csrf_token);
+      await switchUserAndLoadAssessment(locals.studentUsers[4], assessmentUrl, '00000005', 1);
 
       // Leave as fifth user
       const form = {
         __action: 'leave_group',
         __csrf_token: locals.__csrf_token,
       };
-      res = await fetch(assessmentUrl, {
+      const res = await fetch(assessmentUrl, {
         method: 'POST',
         body: new URLSearchParams(form),
       });
@@ -2661,55 +2435,41 @@ describe('Test group role reassignments with role minimum > 1', function () {
   });
 
   describe('test incorrect role config where user has no roles', function () {
-    step('should be able to switch to first user and load assessment', async function () {
-      let student = locals.studentUsers[0];
-      config.authUid = student.uid;
-      config.authName = student.name;
-      config.authUin = '00000001';
-      config.userId = student.user_id;
+    step(
+      'first user should be able to edit role table to remove a recorder assignment',
+      async function () {
+        // Switch to first user and load assessment
+        await switchUserAndLoadAssessment(locals.studentUsers[0], assessmentUrl, '00000001', 3);
 
-      const res = await fetch(assessmentUrl);
-      assert.isOk(res.ok);
-      locals.$ = cheerio.load(await res.text());
-    });
-
-    step('should have a CSRF token', function () {
-      elemList = locals.$('form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 3);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
-      assert.isString(locals.__csrf_token);
-    });
-
-    step('should be able to edit role table to remove a recorder assignment', function () {
-      // Uncheck all of the inputs
-      const roleIds = locals.groupRoles.map((role) => role.id);
-      const userIds = locals.studentUsers.map((user) => user.user_id);
-      for (const roleId of roleIds) {
-        for (const userId of userIds) {
-          const elementId = `#user_role_${roleId}-${userId}`;
-          locals.$('#role-select-form').find(elementId).attr('checked', null);
+        // Uncheck all of the inputs
+        const roleIds = locals.groupRoles.map((role) => role.id);
+        const userIds = locals.studentUsers.map((user) => user.user_id);
+        for (const roleId of roleIds) {
+          for (const userId of userIds) {
+            const elementId = `#user_role_${roleId}-${userId}`;
+            locals.$('#role-select-form').find(elementId).attr('checked', null);
+          }
         }
+
+        // Ensure all checkboxes are unchecked
+        elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+        assert.lengthOf(elemList, 0);
+
+        // Remove recorder assignment from second user
+        locals.roleUpdates = [
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].user_id },
+          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].user_id },
+        ];
+
+        // Mark the checkboxes as checked
+        locals.roleUpdates.forEach(({ roleId, groupUserId }) => {
+          locals.$(`#user_role_${roleId}-${groupUserId}`).attr('checked', '');
+        });
+        elemList = locals.$('#role-select-form').find('tr').find('input:checked');
+        assert.lengthOf(elemList, 3);
       }
-
-      // Ensure all checkboxes are unchecked
-      elemList = locals.$('#role-select-form').find('tr').find('input:checked');
-      assert.lengthOf(elemList, 0);
-
-      // Remove recorder assignment from second user
-      locals.roleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].user_id },
-        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].user_id },
-      ];
-
-      // Mark the checkboxes as checked
-      locals.roleUpdates.forEach(({ roleId, groupUserId }) => {
-        locals.$(`#user_role_${roleId}-${groupUserId}`).attr('checked', '');
-      });
-      elemList = locals.$('#role-select-form').find('tr').find('input:checked');
-      assert.lengthOf(elemList, 3);
-    });
+    );
 
     step('should press submit button to perform the role updates', async function () {
       // Grab IDs of checkboxes to construct update request
@@ -2886,31 +2646,14 @@ describe('Test group role reassignments with role minimum > 1', function () {
 
   describe('test correct role config where group size falls below minimum required role count', function () {
     step('should be able to leave as fourth user', async function () {
-      // Switch to fourth user
-      let student = locals.studentUsers[3];
-      config.authUid = student.uid;
-      config.authName = student.name;
-      config.authUin = '00000004';
-      config.userId = student.user_id;
-
-      // Load assessment
-      let res = await fetch(assessmentUrl);
-      assert.isOk(res.ok);
-      locals.$ = cheerio.load(await res.text());
-
-      // Get CSRF token
-      elemList = locals.$('form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 1);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
-      assert.isString(locals.__csrf_token);
+      await switchUserAndLoadAssessment(locals.studentUsers[3], assessmentUrl, '00000004', 1);
 
       // Leave as fourth user
       const form = {
         __action: 'leave_group',
         __csrf_token: locals.__csrf_token,
       };
-      res = await fetch(assessmentUrl, {
+      const res = await fetch(assessmentUrl, {
         method: 'POST',
         body: new URLSearchParams(form),
       });
@@ -2939,24 +2682,8 @@ describe('Test group role reassignments with role minimum > 1', function () {
       }
     );
 
-    step('should be able to switch to first user and load assessment', async function () {
-      let student = locals.studentUsers[0];
-      config.authUid = student.uid;
-      config.authName = student.name;
-      config.authUin = '00000001';
-      config.userId = student.user_id;
-
-      const res = await fetch(assessmentUrl);
-      assert.isOk(res.ok);
-      locals.$ = cheerio.load(await res.text());
-    });
-
-    step('should have a CSRF token', function () {
-      elemList = locals.$('form input[name="__csrf_token"]');
-      assert.lengthOf(elemList, 3);
-      assert.nestedProperty(elemList[0], 'attribs.value');
-      locals.__csrf_token = elemList[0].attribs.value;
-      assert.isString(locals.__csrf_token);
+    step('switch back to first user and load group role table', async function () {
+      await switchUserAndLoadAssessment(locals.studentUsers[0], assessmentUrl, '00000001', 3);
     });
 
     step('group role table is visible and has three users in it', function () {
