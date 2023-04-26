@@ -114,16 +114,14 @@ function PLThreeJS(options) {
     }
 
     load(url, onLoad, onProgress, onError) {
-      const scope = this;
-
       const loader = new THREE.FileLoader(this.manager);
       loader.setPath(this.path);
       loader.setRequestHeader(this.requestHeader);
       loader.setWithCredentials(this.withCredentials);
       loader.load(
         url,
-        function (text) {
-          const font = scope.parse(JSON.parse(text));
+        (text) => {
+          const font = this.parse(JSON.parse(text));
 
           if (onLoad) onLoad(font);
         },

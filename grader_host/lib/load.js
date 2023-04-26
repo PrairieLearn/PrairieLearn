@@ -1,6 +1,6 @@
 const sqldb = require('@prairielearn/postgres');
 const logger = require('./logger');
-const config = require('./config').config;
+const { config } = require('./config');
 const lifecycle = require('./lifecycle');
 const healthCheck = require('./healthCheck');
 const sql = sqldb.loadSqlEquiv(__filename);

@@ -78,6 +78,7 @@ include = [
     "./elements/pl-units-input",
     "./elements/pl-variable-output",
     "./python/conftest.py",
+    "./python/colors.py",
     "./python/prairielearn.py",
     "./python/prairielearn_test.py",
     "./python/python_helper_sympy.py",

@@ -4,7 +4,7 @@ const router = express.Router();
 const asyncHandler = require('express-async-handler');
 
 const authnLib = require('../../lib/authn');
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 
 router.get(
   '/',

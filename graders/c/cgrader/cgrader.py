@@ -124,6 +124,7 @@ class CGrader:
         return_objects=False,
         enable_asan=False,
         reject_symbols=None,
+        objcopy_args=None,
     ):
         cflags = flags
         if cflags and not isinstance(cflags, list):
@@ -164,11 +165,18 @@ class CGrader:
                 # preprocessed C file), which will have any #define
                 # and #include primitives already expanded and
                 # comments removed
-                with open(pathlib.Path(std_c_file).with_suffix(".i"), "r") as f:
-                    preprocessed_text = f.read()
-                    found_primitives = {
-                        s for s in INVALID_PRIMITIVES if s in preprocessed_text
-                    }
+                found_primitives = None
+                preprocessed_file = pathlib.Path(std_c_file).with_suffix(".i")
+                if not os.path.isfile(preprocessed_file):
+                    preprocessed_file = pathlib.Path(std_c_file).with_suffix(".ii")
+                if not os.path.isfile(preprocessed_file):
+                    preprocessed_file = pathlib.Path(std_c_file).with_suffix(".mi")
+                if os.path.isfile(preprocessed_file):
+                    with open(preprocessed_file, "r") as f:
+                        preprocessed_text = f.read()
+                        found_primitives = {
+                            s for s in INVALID_PRIMITIVES if s in preprocessed_text
+                        }
                 if found_primitives:
                     out += (
                         "\n\033[31mThe following unauthorized primitives were found in the submitted code:\n\t"
@@ -192,6 +200,10 @@ class CGrader:
                         + "\033[0m"
                     )
                     os.unlink(obj_file)
+                if objcopy_args:
+                    self.run_command(
+                        ["objcopy", obj_file] + objcopy_args, sandboxed=False
+                    )
 
         if all(os.path.isfile(obj) for obj in std_obj_files):
             # Add new C files that maybe overwrite some existing functions.
@@ -304,14 +316,14 @@ class CGrader:
         ungradable_if_failed=True,
         enable_asan=False,
         reject_symbols=None,
+        objcopy_args=None,
     ):
         if not add_c_file:
             add_c_file = []
         elif not isinstance(add_c_file, list):
             add_c_file = [add_c_file]
-        if (
-            main_file
-        ):  # Kept for compatibility reasons, but could be set as an added file
+        # Kept for compatibility reasons, but could be set as an added file
+        if main_file:
             add_c_file.append(main_file)
 
         out, objects = self.compile_file(
@@ -326,6 +338,7 @@ class CGrader:
             return_objects=True,
             enable_asan=enable_asan,
             reject_symbols=reject_symbols,
+            objcopy_args=objcopy_args,
         )
         success = (
             os.path.isfile(exec_file)

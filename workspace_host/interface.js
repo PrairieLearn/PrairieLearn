@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const util = require('util');
@@ -17,26 +18,18 @@ const archiver = require('archiver');
 const net = require('net');
 const asyncHandler = require('express-async-handler');
 const bodyParser = require('body-parser');
+const { Mutex } = require('async-mutex');
+const { DockerName, setupDockerAuthAsync } = require('@prairielearn/docker-utils');
+const { logger } = require('@prairielearn/logger');
+const sqldb = require('@prairielearn/postgres');
 const Sentry = require('@prairielearn/sentry');
 const workspaceUtils = require('@prairielearn/workspace-utils');
-const { DockerName, setupDockerAuthAsync } = require('@prairielearn/docker-utils');
 
-const awsHelper = require('../lib/aws');
-const socketServer = require('../lib/socket-server'); // must load socket server before workspace
-const { logger } = require('@prairielearn/logger');
-const LocalLock = require('../lib/local-lock');
-
-const config = require('../lib/config');
-const sqldb = require('@prairielearn/postgres');
+const { config, loadConfig } = require('./lib/config');
 const { parseDockerLogs } = require('./lib/docker');
+const socketServer = require('./lib/socket-server');
+
 const sql = sqldb.loadSqlEquiv(__filename);
-
-let configFilename = 'config.json';
-if ('config' in argv) {
-  configFilename = argv['config'];
-}
-config.loadConfig(configFilename);
-
 const docker = new Docker();
 
 const app = express();
@@ -109,8 +102,9 @@ let workspace_server_settings = {};
 async
   .series([
     async () => {
+      const configFilename = argv['config'] ?? 'config.json';
+      await loadConfig(configFilename);
       if (config.runningInEc2) {
-        await awsHelper.loadConfigSecrets(); // sets config.* variables
         // copy discovered variables into workspace_server_settings
         workspace_server_settings.instance_id = config.instanceId;
         workspace_server_settings.hostname = config.hostname;
@@ -123,6 +117,24 @@ async
         workspace_server_settings.server_to_container_hostname =
           config.workspaceDevContainerHostname;
       }
+
+      // If we're not running in EC2, assume we're running with a local s3rver instance.
+      // See https://github.com/jamhall/s3rver for more details.
+      if (!config.runningInEc2) {
+        logger.verbose('Using local s3rver AWS configuration');
+        AWS.config.update({
+          s3ForcePathStyle: true,
+          accessKeyId: 'S3RVER',
+          secretAccessKey: 'S3RVER',
+          s3: {
+            endpoint: new AWS.Endpoint('http://localhost:5000'),
+          },
+        });
+      }
+
+      // It is important that we always do this:
+      // https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/setting-region.html
+      AWS.config.update({ region: config.awsRegion });
     },
     async () => {
       if (config.sentryDsn) {
@@ -131,12 +143,6 @@ async
           environment: config.sentryEnvironment,
         });
       }
-    },
-    (callback) => {
-      util.callbackify(awsHelper.init)((err) => {
-        if (ERR(err, callback)) return;
-        callback(null);
-      });
     },
     async () => {
       // Always grab the port from the config
@@ -147,7 +153,7 @@ async
         user: config.postgresqlUser,
         database: config.postgresqlDatabase,
         host: config.postgresqlHost,
-        password: config.postgresqlPassword,
+        password: config.postgresqlPassword ?? undefined,
         max: config.postgresqlPoolSize,
         idleTimeoutMillis: config.postgresqlIdleTimeoutMillis,
       };
@@ -324,7 +330,7 @@ async function _getDockerContainerByLaunchUuid(launch_uuid) {
  * Attempts to kill and remove a container.  Will fail silently if the container
  * is already stopped or does not exist.  Also removes the container's home directory.
  *
- * @param {import('dockerode').Container} input
+ * @param {import('dockerode').Container} container
  */
 async function dockerAttemptKillAndRemove(container) {
   try {
@@ -401,12 +407,13 @@ async function _getWorkspaceAsync(workspace_id) {
   return workspace;
 }
 
+const _allocateContainerPortMutex = new Mutex();
+
 /**
  * Allocates and returns an unused port for a workspace.  This will insert the new port into the workspace table.
  * @param {object} workspace Workspace object, should at least contain an id.
- * @return {number | string} Port that was allocated to the workspace.
+ * @return {Promise<number>} Port that was allocated to the workspace.
  */
-const _allocateContainerPortLock = new LocalLock();
 async function _allocateContainerPort(workspace) {
   // Check if a port is considered free in the database
   async function check_port_db(port) {
@@ -417,6 +424,7 @@ async function _allocateContainerPort(workspace) {
     const result = await sqldb.queryOneRowAsync(sql.get_is_port_occupied, params);
     return !result.rows[0].port_used;
   }
+
   // Spin up a server to check if a port is free
   async function check_port_server(port) {
     return new Promise((res) => {
@@ -433,37 +441,41 @@ async function _allocateContainerPort(workspace) {
     });
   }
 
-  await _allocateContainerPortLock.lockAsync();
-  let port;
-  let done = false;
-  // Max attempts <= 0 means unlimited attempts, > 0 mean a finite number of attempts.
-  const max_attempts =
-    config.workspaceHostMaxPortAllocationAttempts > 0
-      ? config.workspaceHostMaxPortAllocationAttempts
-      : Infinity;
-  for (let i = 0; !done && i < max_attempts; i++) {
-    // Generate a random port from the ranges specified in config.
-    port =
-      config.workspaceHostMinPortRange +
-      Math.floor(
-        Math.random() * (config.workspaceHostMaxPortRange - config.workspaceHostMinPortRange)
-      );
-    if (!(await check_port_db(port))) continue;
-    if (!(await check_port_server(port))) continue;
-    done = true;
-  }
-  if (!done) {
-    throw new Error(`Failed to allocate port after ${max_attempts} attempts!`);
-  }
-  await sqldb.queryAsync(sql.set_workspace_launch_port, {
-    workspace_id: workspace.id,
-    launch_port: port,
-    instance_id: workspace_server_settings.instance_id,
+  return _allocateContainerPortMutex.runExclusive(async () => {
+    let port;
+    let done = false;
+    // Max attempts <= 0 means unlimited attempts, > 0 mean a finite number of attempts.
+    const max_attempts =
+      config.workspaceHostMaxPortAllocationAttempts > 0
+        ? config.workspaceHostMaxPortAllocationAttempts
+        : Infinity;
+    for (let i = 0; !done && i < max_attempts; i++) {
+      // Generate a random port from the ranges specified in config.
+      port =
+        config.workspaceHostMinPortRange +
+        Math.floor(
+          Math.random() * (config.workspaceHostMaxPortRange - config.workspaceHostMinPortRange)
+        );
+      if (!(await check_port_db(port))) continue;
+      if (!(await check_port_server(port))) continue;
+      done = true;
+    }
+    if (!done || !port) {
+      throw new Error(`Failed to allocate port after ${max_attempts} attempts!`);
+    }
+    await sqldb.queryAsync(sql.set_workspace_launch_port, {
+      workspace_id: workspace.id,
+      launch_port: port,
+      instance_id: workspace_server_settings.instance_id,
+    });
+    return port;
   });
-  _allocateContainerPortLock.unlock();
-  return port;
 }
 
+/**
+ * @param {object} workspace
+ * @param {function} callback
+ */
 function _checkServer(workspace, callback) {
   const checkMilliseconds = 500;
   const maxMilliseconds = 30000;
@@ -594,7 +606,7 @@ async function _pullImage(workspace) {
         }
 
         if (!percentDisplayed) {
-          resolve();
+          resolve(null);
           return;
         }
 
@@ -659,6 +671,10 @@ async function _pullImage(workspace) {
   });
 }
 
+/**
+ * @param {object} workspace
+ * @param {function} callback
+ */
 function _createContainer(workspace, callback) {
   const localName = workspace.local_name;
   const remoteName = workspace.remote_name;
@@ -709,6 +725,9 @@ function _createContainer(workspace, callback) {
         try {
           await fsPromises.access(workspaceJobPath);
         } catch (err) {
+          // @ts-expect-error: The ES2021 TypeScript lib doesn't include the
+          // second argument with a `cause` property. Once we're running on
+          // Node 18, we can bump to ES2022 and this will no longer error.
           throw Error('Could not access workspace files.', { cause: err });
         }
       },
@@ -896,7 +915,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       await _startContainer(workspace);
       await _checkServerAsync(workspace);
       debug(`init: container initialized for workspace_id=${workspace_id}`);
-      await workspaceUtils.updateWorkspaceState(workspace_id, 'running', null);
+      await workspaceUtils.updateWorkspaceState(workspace_id, 'running');
     } catch (err) {
       logger.error(`Error starting container for workspace ${workspace.id}`, err);
       safeUpdateWorkspaceState(

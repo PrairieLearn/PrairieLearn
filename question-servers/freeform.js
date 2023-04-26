@@ -11,7 +11,7 @@ const { instrumented, metrics, instrumentedWithMetrics } = require('@prairielear
 const objectHash = require('object-hash');
 
 const schemas = require('../schemas');
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const { logger } = require('@prairielearn/logger');
 const { withCodeCaller, FunctionMissingError } = require('../lib/code-caller');
 const jsonLoader = require('../lib/json-load');
