@@ -86,7 +86,7 @@ docker build -t prairielearn/prairielearn .
 The description at the start of this page suggests manually stopping and restarting PrairieLearn after you have edited any JavaScript files. You can alternatively use the `nodemon` package to watch for changes to code and auto-restart PrairieLearn. To do this, run the PrairieLearn container as described at the start of this page and then run:
 
 ```sh
-make start-nodemon
+make dev
 ```
 
 Alternatively, you can set the `NODEMON=true` environment variable while running PrairieLearn automatically:
