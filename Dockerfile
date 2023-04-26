@@ -2,48 +2,20 @@ FROM prairielearn/plbase
 
 ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
 
-# # Install NodeJS dependencies before copying code to take advantage of
-# # Docker's layer caching.
-# #
-# # Unfortunately, Docker's `COPY` command does not support globbing, so we have
-# # to indivually copy each `package.json` file. The `tools/validate-dockerfile.mjs`
-# # script will run during CI to ensure that all `package.json` files are copied.
-
-# # Copy the directory that contains the Yarn executable.
-# COPY .yarn/ /PrairieLearn/.yarn/
-
-# # Special case: copy the entire `bind-mount` package, not just `package.json`,
-# # because this package has a native component that needs to be built.
-# COPY packages/bind-mount/ /PrairieLearn/packages/bind-mount/
-
-# # Copy packages first; they should generally change less often. Keep this section alphabetized.
-# COPY packages/aws-imds/package.json /PrairieLearn/packages/aws-imds/package.json
-# COPY packages/compiled-assets/package.json /PrairieLearn/packages/compiled-assets/package.json
-# COPY packages/config/package.json /PrairieLearn/packages/config/package.json
-# COPY packages/csv/package.json /PrairieLearn/packages/csv/package.json
-# COPY packages/docker-utils/package.json /PrairieLearn/packages/docker-utils/package.json
-# COPY packages/error/package.json /PrairieLearn/packages/error/package.json
-# COPY packages/html/package.json /PrairieLearn/packages/html/package.json
-# COPY packages/html-ejs/package.json /PrairieLearn/packages/html-ejs/package.json
-# COPY packages/logger/package.json /PrairieLearn/packages/logger/package.json
-# COPY packages/migrations/package.json /PrairieLearn/packages/migrations/package.json
-# COPY packages/named-locks/package.json /PrairieLearn/packages/named-locks/package.json
-# COPY packages/opentelemetry/package.json /PrairieLearn/packages/opentelemetry/package.json
-# COPY packages/path-utils/package.json /PrairieLearn/packages/path-utils/package.json
-# COPY packages/postgres/package.json /PrairieLearn/packages/postgres/package.json
-# COPY packages/postgres-tools/package.json /PrairieLearn/packages/postgres-tools/package.json
-# COPY packages/prettier-plugin-sql/package.json /PrairieLearn/packages/prettier-plugin-sql/package.json
-# COPY packages/sanitize/package.json /PrairieLearn/packages/sanitize/package.json
-# COPY packages/sentry/package.json /PrairieLearn/packages/sentry/package.json
-# COPY packages/signed-token/package.json /PrairieLearn/packages/signed-token/package.json
-# COPY packages/tsconfig/package.json /PrairieLearn/packages/tsconfig/package.json
-# COPY packages/workspace-utils/package.json /PrairieLearn/packages/workspace-utils/package.json
-
-# # Copy apps and the root files.
-# COPY apps/grader-host/package.json /PrairieLearn/apps/grader-host/package.json
-# COPY apps/workspace-host/package.json /PrairieLearn/apps/workspace-host/package.json
-# COPY package.json yarn.lock .yarnrc.yml /PrairieLearn/
-
+# Note that we have to copy the `packages` and `apps` directories into the
+# image so that `yarn` can resolve the workspaces inside them and set up
+# symlinks correctly.
+#
+# This is suboptimal, as a change to any file in these directories will
+# invalidate this layer's cache, but it's the best option we have for now.
+# The alternative is to use a separate `COPY` step for each package/app, but
+# this is inexplicably slow on GitHub Actions, taking about 2.5 minutes just to
+# execute the `COPY` steps. If Docker implements `COPY --parents` as described
+# in https://github.com/moby/moby/issues/35639, we can use that and copy globs
+# instead, which should give us the best of both worlds.
+#
+# We also need to copy both the `.yarn` directory and the `.yarnrc.yml` file,
+# both of which are necessary for Yarn to correctly install dependencies.
 COPY .yarn/ /PrairieLearn/.yarn/
 COPY package.json yarn.lock .yarnrc.yml /PrairieLearn/
 COPY packages/ /PrairieLearn/packages/
