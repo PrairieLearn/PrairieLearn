@@ -32,6 +32,29 @@ jobs:
         # what images need to be built.
         fetch-depth: 0
 
+    - name: Set up Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+
+    # Ideally we'd use `with.cache: 'yarn'` in the `setup-node` action, but that
+    # doesn't support restoring from fallback cache keys in the case of an exact
+    # cache hit: https://github.com/actions/setup-node/issues/328.
+    - name: Get yarn cache directory path
+      id: yarn-cache-dir-path
+      run: echo "dir=$(yarn config get cacheFolder)" >> $GITHUB_OUTPUT
+    - uses: actions/cache@v3
+      with:
+        path: ${{ steps.yarn-cache-dir-path.outputs.dir }}
+        key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-yarn-
+
+    - name: Install dependencies
+      run: yarn install --immutable
+    - name: Validate Dockerfile
+      run : node ./tools/validate-dockerfile.mjs
+
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v2 # https://github.com/marketplace/actions/docker-setup-qemu
     - name: Set up Docker Buildx
@@ -89,13 +112,6 @@ jobs:
       # ensure that the tests fail more quickly so that people can fix them.
       timeout-minutes: 30
 
-    - name: Set up Node
-      uses: actions/setup-node@v3
-      with:
-        node-version: '16'
-        cache: 'yarn'
-    - name: Install dependencies
-      run: yarn install --immutable
     - name: Build executor image
       run: ./tools/executor/build.js
 
