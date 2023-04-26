@@ -18,7 +18,13 @@ async function validatePackageJsonCopy(prefix, directories) {
   const missingLines = [];
   for (const directory of directories) {
     const desiredLine = `COPY ${prefix}/${directory}/package.json /PrairieLearn/${prefix}/${directory}/package.json`;
-    if (!dockerfileLines.includes(desiredLine)) {
+
+    // This handles the case of packages where we need to copy the entire
+    // directory, not just `package.json`. This is generally only the case for
+    // packages with native components that will be built during installation.
+    const alternativeLine = `COPY ${prefix}/${directory}/ /PrairieLearn/${prefix}/${directory}/`;
+
+    if (!dockerfileLines.includes(desiredLine) && !dockerfileLines.includes(alternativeLine)) {
       missingLines.push(desiredLine);
     }
   }

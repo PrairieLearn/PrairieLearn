@@ -12,10 +12,12 @@ ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
 # Copy the directory that contains the Yarn executable.
 COPY .yarn/ /PrairieLearn/.yarn/
 
+# Special case: copy the entire `bind-mount` package, not just `package.json`,
+# because this package has a native component that needs to be built.
+COPY packages/bind-mount/ /PrairieLearn/packages/bind-mount/
+
 # Copy packages first; they should generally change less often. Keep this section alphabetized.
 COPY packages/aws-imds/package.json /PrairieLearn/packages/aws-imds/package.json
-COPY packages/bind-mount/package.json /PrairieLearn/packages/bind-mount/package.json
-COPY packages/bind-mount/binding.gyp /PrairieLearn/packages/bind-mount/binding.gyp
 COPY packages/compiled-assets/package.json /PrairieLearn/packages/compiled-assets/package.json
 COPY packages/config/package.json /PrairieLearn/packages/config/package.json
 COPY packages/csv/package.json /PrairieLearn/packages/csv/package.json
@@ -43,7 +45,7 @@ COPY apps/workspace-host/package.json /PrairieLearn/apps/workspace-host/package.
 COPY package.json yarn.lock .yarnrc.yml /PrairieLearn/
 
 # Install Node dependencies.
-RUN cd /PrairieLearn && yarn install --immutable && yarn cache clean
+RUN cd /PrairieLearn && yarn install --immutable || cat /tmp/xfs-*/build.log && yarn cache clean
 
 # NOTE: Modify .dockerignore to allowlist files/directories to copy.
 COPY . /PrairieLearn/
