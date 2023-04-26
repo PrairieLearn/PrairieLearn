@@ -7,9 +7,6 @@ deps:
 	@yarn
 	@make python-deps build
 
-dev:
-	@yarn turbo run dev
-
 start: start-support
 	@node server.js
 dev: start-support
