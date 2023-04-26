@@ -46,11 +46,11 @@ ENV PATH="/PrairieLearn/node_modules/.bin:$PATH"
 
 COPY .yarn/ /PrairieLearn/.yarn/
 COPY package.json yarn.lock .yarnrc.yml /PrairieLearn/
-COPY packages/ /PrairieLearn/packages
-COPY apps/ /PriaireLearn/apps
+COPY packages/ /PrairieLearn/packages/
+COPY apps/ /PrairieLearn/apps/
 
 # Install Node dependencies.
-RUN cd /PrairieLearn && yarn install --immutable || cat /tmp/xfs-*/build.log && yarn cache clean
+RUN cd /PrairieLearn && yarn install --immutable  && yarn cache clean
 
 # NOTE: Modify .dockerignore to allowlist files/directories to copy.
 COPY . /PrairieLearn/
