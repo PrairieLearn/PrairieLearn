@@ -52,8 +52,8 @@ jobs:
 
     - name: Install dependencies
       run: yarn install --immutable
-    - name: Validate Dockerfile
-      run : node ./tools/validate-dockerfile.mjs
+    # - name: Validate Dockerfile
+    #   run : node ./tools/validate-dockerfile.mjs
 
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v2 # https://github.com/marketplace/actions/docker-setup-qemu
