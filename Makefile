@@ -12,12 +12,12 @@ dev:
 
 start: start-support
 	@node server.js
-start-nodemon: start-support
+dev: start-support
 	@yarn nodemon server.js
-workspace-host-start: start-support kill-running-workspaces
-	@yarn workspace-host-start
-workspace-host-dev: start-support kill-running-workspaces
-	@yarn workspace-host-dev
+start-workspace-host: start-support kill-running-workspaces
+	@yarn start-workspace-host
+dev-workspace-host: start-support kill-running-workspaces
+	@yarn dev-workspace-host
 start-executor:
 	@node executor.js
 
