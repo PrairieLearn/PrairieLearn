@@ -58,4 +58,3 @@ ADD COLUMN IF NOT EXISTS manual_rubric_grading_id BIGINT REFERENCES rubric_gradi
 
 ALTER TABLE grading_jobs
 ADD COLUMN IF NOT EXISTS manual_rubric_grading_id BIGINT REFERENCES rubric_gradings (id) ON DELETE SET NULL ON UPDATE CASCADE;
-

@@ -63,8 +63,7 @@ WITH
       JOIN variants AS v ON (v.instance_question_id = iq.id)
       JOIN submissions AS s ON (s.variant_id = v.id)
       JOIN rubric_gradings rg ON (
-        rg.id =
-          s.manual_rubric_grading_id
+        rg.id = s.manual_rubric_grading_id
         AND rg.rubric_id = $rubric_id
       )
       JOIN rubric_grading_items rgi ON (rgi.rubric_grading_id = rg.id)
@@ -153,9 +152,19 @@ FOR NO KEY UPDATE;
 
 -- BLOCK insert_rubric
 INSERT INTO
-  rubrics (starting_points, min_points, max_extra_points, replace_auto_points)
+  rubrics (
+    starting_points,
+    min_points,
+    max_extra_points,
+    replace_auto_points
+  )
 VALUES
-  ($starting_points, $min_points, $max_extra_points, $replace_auto_points)
+  (
+    $starting_points,
+    $min_points,
+    $max_extra_points,
+    $replace_auto_points
+  )
 RETURNING
   id;
 
@@ -247,9 +256,7 @@ WITH
       JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
       JOIN variants AS v ON (v.instance_question_id = iq.id)
       JOIN submissions AS s ON (s.variant_id = v.id)
-      JOIN rubric_gradings AS rg ON (
-        rg.id = s.manual_rubric_grading_id
-      )
+      JOIN rubric_gradings AS rg ON (rg.id = s.manual_rubric_grading_id)
       JOIN rubrics AS r ON (r.id = rg.rubric_id)
     WHERE
       iq.assessment_question_id = $assessment_question_id

@@ -338,7 +338,7 @@ WITH
           END,
           'submission_id',
           s.id,
-          'rubrics',
+          'rubric_grading',
           CASE
             WHEN rg.id IS NULL THEN NULL
             ELSE (
