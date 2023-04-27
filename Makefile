@@ -7,17 +7,15 @@ deps:
 	@yarn
 	@make python-deps build
 
-dev:
-	@yarn turbo run dev
+dev: start-support
+	@yarn nodemon server.js
+dev-workspace-host: start-support kill-running-workspaces
+	@yarn nodemon --config workspace_host/nodemon.json workspace_host/interface.js
 
 start: start-support
 	@node server.js
-start-nodemon: start-support
-	@yarn nodemon server.js
 start-workspace-host: start-support kill-running-workspaces
 	@node workspace_host/interface.js
-start-workspace-host-nodemon: start-support kill-running-workspaces
-	@yarn nodemon --config workspace_host/nodemon.json workspace_host/interface.js
 start-executor:
 	@node executor.js
 
@@ -33,13 +31,11 @@ start-s3rver:
 	@docker/start_s3rver.sh
 
 test: test-js test-python
-test-js: test-prairielearn test-prairielib test-grader-host test-workspace-host test-packages
+test-js: test-prairielearn test-grader-host test-workspace-host test-packages
 test-prairielearn: start-support
 	@yarn mocha --parallel "tests/**/*.test.{js,mjs}"
 test-prairielearn-serial: start-support
 	@yarn mocha "tests/**/*.test.{js,mjs}"
-test-prairielib:
-	@yarn mocha "prairielib/**/*.test.{js,mjs}"
 test-grader-host:
 	@yarn mocha "grader_host/**/*.test.{js,mjs}"
 test-workspace-host:
