@@ -6,8 +6,9 @@ coverage/
 # Code coverage reports
 coverage/
 
-# Transpiled files
-packages/*/dist
+# Transpiled code
+apps/*/dist/
+packages/*/dist/
 
 # Built assets
 public/build/

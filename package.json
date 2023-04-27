@@ -7,8 +7,12 @@
         "node": ">=16.0.0"
     },
     "scripts": {
+        "grader-host-dev": "yarn workspace @prairielearn/grader-host dev",
+        "grader-host-start": "yarn workspace @prairielearn/grader-host start",
         "release": "turbo run build && node tools/fix-workspace-versions-before-publish.mjs && changeset publish",
-        "version": "changeset version && YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn"
+        "version": "changeset version && YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn",
+        "dev-workspace-host": "yarn workspace @prairielearn/workspace-host dev",
+        "start-workspace-host": "yarn workspace @prairielearn/workspace-host start"
     },
     "dependencies": {
         "@aws-sdk/client-auto-scaling": "^3.304.0",
@@ -30,6 +34,7 @@
         "@prairielearn/sanitize": "workspace:^",
         "@prairielearn/sentry": "workspace:^",
         "@prairielearn/signed-token": "workspace:^",
+        "@prairielearn/tsconfig": "workspace:^",
         "@prairielearn/workspace-utils": "workspace:^",
         "@pyroscope/nodejs": "^0.2.5",
         "@sentry/profiling-node": "^0.3.0",
@@ -41,7 +46,7 @@
         "archiver": "^5.3.1",
         "async": "^3.2.4",
         "async-mutex": "^0.4.0",
-        "async-stacktrace": "0.0.2",
+        "async-stacktrace": "^0.0.2",
         "aws-sdk": "^2.1354.0",
         "backbone": "^1.4.1",
         "base64url": "^3.0.1",
@@ -211,7 +216,7 @@
         "request": "^2.88.2",
         "s3rver": "^3.7.1",
         "sinon": "^15.0.3",
-        "tmp": "0.2.1",
+        "tmp": "^0.2.1",
         "turbo": "^1.8.8",
         "typescript": "^5.0.4"
     },
@@ -233,6 +238,7 @@
         "ext": "js,json,sql"
     },
     "workspaces": [
+        "apps/*",
         "packages/*"
     ],
     "packageManager": "yarn@3.5.0"
