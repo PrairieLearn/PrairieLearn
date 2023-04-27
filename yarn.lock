@@ -2671,7 +2671,7 @@ __metadata:
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/sanitize": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
-    "@types/async": ^3.2.18
+    "@types/async": ^3.2.20
     "@types/chai": ^4.3.4
     "@types/dockerode": ^3.3.16
     "@types/fs-extra": ^11.0.1
@@ -3264,10 +3264,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/async@npm:^3.2.18":
-  version: 3.2.18
-  resolution: "@types/async@npm:3.2.18"
-  checksum: fe860993cc3fc087a00c4a55ca256bfb7aebfc56f1b1f05857b124a7328ff95177da48f441b1efc0bbb6e663a49e91a807c0adabb9950abc8b817b6bcffcfee0
+"@types/async@npm:^3.2.20":
+  version: 3.2.20
+  resolution: "@types/async@npm:3.2.20"
+  checksum: 880ac312f097d3ef98da175b23dc6d29dd0014af55789b3f534dacd0fcd0fb202fdefc732d9b10e4bc93e40823cfe279bb19033cb863f4e27c032e50cd7d9a8e
   languageName: node
   linkType: hard
 
@@ -3971,7 +3971,7 @@ __metadata:
     "@pyroscope/nodejs": ^0.2.5
     "@sentry/profiling-node": ^0.3.0
     "@sentry/tracing": ^7.46.0
-    "@types/async": ^3.2.18
+    "@types/async": ^3.2.20
     "@types/body-parser": ^1.19.2
     "@types/chai": ^4.3.4
     "@types/chai-as-promised": ^7.1.5
