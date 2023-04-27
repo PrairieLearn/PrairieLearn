@@ -46,7 +46,6 @@ Alternatively, you can set the `DEV=true` environment variable while running Pra
 docker run -it --rm -p 3000:3000 -e DEV=true -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn
 ```
 
-
 ## Running the test suite
 
 The linters and tests for the JavaScript and Python code can be run with the following commands inside the container:
