@@ -2626,7 +2626,7 @@ __metadata:
     csv-stringify: ^6.3.0
     mocha: ^10.2.0
     multipipe: ^4.0.0
-    stream-transform: ^3.2.2
+    stream-transform: ^3.2.4
     ts-node: ^10.9.1
     typescript: ^5.0.4
   languageName: unknown
@@ -13645,10 +13645,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"stream-transform@npm:^3.2.2":
-  version: 3.2.2
-  resolution: "stream-transform@npm:3.2.2"
-  checksum: bc368a623b65f91d4d7faff90c46b740401fddedd79a4b325e5f9319d227894a84aca0e459d92177a679d5006d7ada3f46ebb514a1712da60b2e8beca54111c4
+"stream-transform@npm:^3.2.4":
+  version: 3.2.4
+  resolution: "stream-transform@npm:3.2.4"
+  checksum: a42324b400ca54a55de78997b943be720cd401aa81488666402247f947c12ccd85daf397fe1bfce256bcd522351fe0fd2b648402d50eabddc9fe3c69b32afe90
   languageName: node
   linkType: hard
 
