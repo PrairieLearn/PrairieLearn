@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "tsc && tscp",
-    "dev:no-watch": "ts-node --transpile-only src/interface.js",
+    "dev:no-watch": "ts-node --transpile-only src/index.js",
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
     "start": "node dist/index.js",
     "test": "mocha --no-config --require ts-node/register src/**/*.test.{js,ts}"
