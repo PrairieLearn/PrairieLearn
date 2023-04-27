@@ -4,7 +4,7 @@
       <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
       <input type="hidden" name="__action" value="modify_rubric_settings">
       <input type="hidden" name="modified_at" value="<%= locals.rubric_data?.modified_at %>">
-      <input type="hidden" name="use_rubrics" value="true">
+      <input type="hidden" name="use_rubric" value="true">
       
       <div class="modal-content">
         <div class="modal-header bg-info text-light">
@@ -64,7 +64,7 @@
             <div class="col-6">
               <small id="rubric-settings-floor-ceiling-explanation" class="form-text text-muted">
                 <% if (assessment_question.max_manual_points) { %>
-                By default, points are limited to the range of 0 to <%= assessment_question.max_manual_points %>, and credit/penalties applied by rubric items do not violate this range. The settings above allow rubrics to extend beyond this range, either for penalties that affect auto points or the assessment as a whole, or for bonus credit.
+                By default, points are limited to the range of 0 to <%= assessment_question.max_manual_points %>, and credit/penalties applied by rubric items do not violate this range. The settings above allow rubric points to extend beyond this range, either for penalties that affect auto points or the assessment as a whole, or for bonus credit.
                 <% } else { %>
                 The settings above determine the range of points assigned to a student from the rubric items. This question is not assigned any manual points, so these points affect the auto points or the assessment as a whole.
                 <% } %>

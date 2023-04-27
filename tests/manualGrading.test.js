@@ -88,7 +88,7 @@ let $manualGradingPage;
 let score_percent, score_points, adjust_points;
 let feedback_note;
 let rubric_items;
-let applied_rubrics;
+let selected_rubric_items;
 
 const submitGradeForm = async (method = 'rubric') => {
   const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
@@ -112,7 +112,7 @@ const submitGradeForm = async (method = 'rubric') => {
       ...(adjust_points ? [['score_manual_adjust_points', adjust_points]] : []),
       ...(method === 'percentage' ? [['use_score_perc', 'on']] : []),
       // Uses array since it requires the same key multiple times
-      ...(applied_rubrics || []).map((index) => [
+      ...(selected_rubric_items || []).map((index) => [
         'rubric_item_selected_manual',
         rubric_items[index].id,
       ]),
@@ -134,7 +134,7 @@ const checkGradingResults = (assigned_grader, grader) => {
       rubric_items.forEach((item, index) => {
         const checkbox = form.find(`.js-selectable-rubric-item[value="${item.id}"]`);
         assert.equal(checkbox.length, 1);
-        assert.equal(checkbox.is(':checked'), applied_rubrics.includes(index));
+        assert.equal(checkbox.is(':checked'), selected_rubric_items.includes(index));
       });
       assert.equal(form.find('input[name=score_manual_adjust_points]').val(), adjust_points || 0);
     } else {
@@ -186,7 +186,7 @@ const checkGradingResults = (assigned_grader, grader) => {
     assert.equal(nextUngraded.headers.get('location'), manualGradingAssessmentQuestionUrl);
   });
 
-  step('student view should have the new score/feedback/rubrics', async () => {
+  step('student view should have the new score/feedback/rubric', async () => {
     iqUrl = await loadHomeworkQuestionUrl(mockStudents[0]);
     const questionsPage = await (await fetch(iqUrl)).text();
     const $questionsPage = cheerio.load(questionsPage);
@@ -219,7 +219,7 @@ const checkGradingResults = (assigned_grader, grader) => {
         assert.equal(container.length, 1);
         assert.equal(
           container.find('input[type="checkbox"]').is(':checked'),
-          applied_rubrics.includes(index)
+          selected_rubric_items.includes(index)
         );
         assert.equal(
           container.find('[data-testid="rubric-item-points"]').text().trim(),
@@ -288,7 +288,7 @@ const checkSettingsResults = (starting_points, min_points, max_extra_points) => 
     });
   });
 
-  step('grading panel should have proper values for rubrics', async () => {
+  step('grading panel should have proper values for rubric', async () => {
     const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
     const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
     const form = $manualGradingIQPage('form[name=manual-grading-form]');
@@ -665,7 +665,7 @@ describe('Manual Grading', function () {
       checkGradingResults(mockStaff[0], mockStaff[1]);
     });
 
-    describe('Using rubrics', () => {
+    describe('Using rubric', () => {
       describe('Positive grading', () => {
         step('set rubric settings for positive grading should succeed', async () => {
           setUser(mockStaff[0]);
@@ -711,7 +711,7 @@ describe('Manual Grading', function () {
               __action: form.find('input[name=__action]').val(),
               __csrf_token: form.find('input[name=__csrf_token]').val(),
               modified_at: form.find('input[name=modified_at]').val(),
-              use_rubrics: 'true',
+              use_rubric: 'true',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
               max_extra_points: '0.3',
@@ -726,10 +726,10 @@ describe('Manual Grading', function () {
 
         step('submit a grade using a positive rubric', async () => {
           setUser(mockStaff[0]);
-          applied_rubrics = [0, 2, 3];
+          selected_rubric_items = [0, 2, 3];
           score_points = 4.8;
           score_percent = 80;
-          feedback_note = 'Test feedback note updated after rubrics';
+          feedback_note = 'Test feedback note updated after rubric';
           await submitGradeForm();
         });
 
@@ -753,7 +753,7 @@ describe('Manual Grading', function () {
               __action: form.find('input[name=__action]').val(),
               __csrf_token: form.find('input[name=__csrf_token]').val(),
               modified_at: form.find('input[name=modified_at]').val(),
-              use_rubrics: 'true',
+              use_rubric: 'true',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
               max_extra_points: '0.3',
@@ -771,11 +771,11 @@ describe('Manual Grading', function () {
       describe('Using adjust points', () => {
         step('submit a grade using a rubric with adjust points', async () => {
           setUser(mockStaff[3]);
-          applied_rubrics = [1, 3];
+          selected_rubric_items = [1, 3];
           adjust_points = -0.2;
           score_points = 1.2;
           score_percent = 20;
-          feedback_note = 'Test feedback note updated after rubrics and adjustment';
+          feedback_note = 'Test feedback note updated after rubric and adjustment';
           await submitGradeForm();
         });
 
@@ -785,7 +785,7 @@ describe('Manual Grading', function () {
       describe('Floor and ceiling (max/min points)', () => {
         step('submit a grade that reaches the ceiling', async () => {
           setUser(mockStaff[3]);
-          applied_rubrics = [0, 1];
+          selected_rubric_items = [0, 1];
           adjust_points = null;
           score_points = 6.3;
           score_percent = 105;
@@ -797,7 +797,7 @@ describe('Manual Grading', function () {
 
         step('submit a grade that reaches the ceiling with adjust points', async () => {
           setUser(mockStaff[3]);
-          applied_rubrics = [0, 1];
+          selected_rubric_items = [0, 1];
           adjust_points = 1.2;
           score_points = 7.5;
           score_percent = 125;
@@ -822,7 +822,7 @@ describe('Manual Grading', function () {
               __action: form.find('input[name=__action]').val(),
               __csrf_token: form.find('input[name=__csrf_token]').val(),
               modified_at: form.find('input[name=modified_at]').val(),
-              use_rubrics: 'true',
+              use_rubric: 'true',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
               max_extra_points: '-0.3',
@@ -838,7 +838,7 @@ describe('Manual Grading', function () {
 
         step('submit a grade that reaches the floor', async () => {
           setUser(mockStaff[3]);
-          applied_rubrics = [2, 3];
+          selected_rubric_items = [2, 3];
           adjust_points = null;
           score_points = -0.3;
           score_percent = -5;
@@ -895,7 +895,7 @@ describe('Manual Grading', function () {
               __action: form.find('input[name=__action]').val(),
               __csrf_token: form.find('input[name=__csrf_token]').val(),
               modified_at: form.find('input[name=modified_at]').val(),
-              use_rubrics: 'true',
+              use_rubric: 'true',
               starting_points: '6', // Negative grading
               min_points: '-0.6',
               max_extra_points: '0.6',
@@ -910,11 +910,11 @@ describe('Manual Grading', function () {
 
         step('submit a grade using a negative rubric', async () => {
           setUser(mockStaff[0]);
-          applied_rubrics = [0, 2, 3];
+          selected_rubric_items = [0, 2, 3];
           adjust_points = null;
           score_points = 3.6;
           score_percent = 60;
-          feedback_note = 'Test feedback note updated after negative rubrics';
+          feedback_note = 'Test feedback note updated after negative rubric';
           await submitGradeForm();
         });
 
@@ -975,7 +975,7 @@ describe('Manual Grading', function () {
         assert.equal(instanceQuestions[0].requires_manual_grading, true);
       });
 
-      step('student view should keep the old feedback/rubrics', async () => {
+      step('student view should keep the old feedback/rubric', async () => {
         iqUrl = await loadHomeworkQuestionUrl(mockStudents[0]);
         const questionsPage = await (await fetch(iqUrl)).text();
         const $questionsPage = cheerio.load(questionsPage);
@@ -1044,7 +1044,7 @@ describe('Manual Grading', function () {
 
       step('submit a new grade', async () => {
         setUser(mockStaff[1]);
-        applied_rubrics = [1, 2, 4];
+        selected_rubric_items = [1, 2, 4];
         adjust_points = null;
         score_points = 5;
         score_percent = 83.33;

@@ -172,7 +172,7 @@ function resetInstructorGradingPanel() {
   computePointsFromRubric();
 }
 
-function submitSettings(e, use_rubrics) {
+function submitSettings(e, use_rubric) {
   e.preventDefault();
   const modal = this.closest('.modal');
   const gradingForm = document.querySelector(
@@ -188,8 +188,8 @@ function submitSettings(e, use_rubrics) {
   this.querySelector('.js-settings-error-alert-placeholder').innerHTML = '';
 
   const settingsFormData = new URLSearchParams(new FormData(this));
-  if (use_rubrics != null) {
-    settingsFormData.set('use_rubrics', use_rubrics);
+  if (use_rubric != null) {
+    settingsFormData.set('use_rubric', use_rubric);
   }
 
   fetch(this.action, {

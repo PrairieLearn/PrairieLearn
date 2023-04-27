@@ -165,7 +165,7 @@ router.post(
       manualGrading
         .updateAssessmentQuestionRubric(
           res.locals.instance_question.assessment_question_id,
-          req.body.use_rubrics === 'true',
+          req.body.use_rubric === 'true',
           req.body.starting_points,
           req.body.min_points,
           req.body.max_extra_points,
