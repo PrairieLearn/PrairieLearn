@@ -3,7 +3,7 @@ const ERR = require('async-stacktrace');
 const async = require('async');
 const tmp = require('tmp-promise');
 const path = require('path');
-const delay = require('delay');
+const { setTimeout: sleep } = require('node:timers/promises');
 const assert = require('chai').assert;
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const opentelemetry = require('@prairielearn/opentelemetry');
@@ -219,7 +219,7 @@ module.exports.waitForJobSequenceAsync = async (job_sequence_id) => {
     });
     job_sequence = result.rows[0];
     if (job_sequence.status !== 'Running') break;
-    await delay(10);
+    await sleep(10);
   }
   return job_sequence;
 };

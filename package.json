@@ -71,7 +71,6 @@
         "date-fns": "^2.29.3",
         "date-fns-tz": "^2.0.0",
         "debug": "^4.3.4",
-        "delay": "^5.0.0",
         "detect-mocha": "^0.1.0",
         "diff": "^5.1.0",
         "dockerode": "^3.3.5",
