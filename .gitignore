@@ -55,10 +55,6 @@ public/build
 ### Logs
 /server.log
 
-### Code coverage
-/coverage/
-/.nyc_output/
-
 ### Tests
 /tests/testFileEditor/courseLive/
 /tests/testFileEditor/courseOrigin/
