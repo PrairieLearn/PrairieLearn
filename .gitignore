@@ -51,6 +51,7 @@ docker-compose.override.yml
 
 ### Logs
 /server.log
+/apps/prairielearn/server.log
 
 ### Tests
 /tests/testFileEditor/courseLive/
