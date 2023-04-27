@@ -34,7 +34,7 @@ FROM
   JOIN topics AS top ON (top.id = q.topic_id)
   LEFT JOIN issue_count ON (issue_count.question_id = q.id)
 WHERE
-  q.course_id = $course_id -- leave the same for now? eventually we will have a way to view shared questions but not now
+  q.course_id = $course_id -- TODO: change when we have a way for instructors to view questions shared with their course
   AND q.deleted_at IS NULL
 GROUP BY
   q.id,
