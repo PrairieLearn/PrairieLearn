@@ -2249,16 +2249,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/instrumentation-dns@npm:^0.31.2":
-  version: 0.31.2
-  resolution: "@opentelemetry/instrumentation-dns@npm:0.31.2"
+"@opentelemetry/instrumentation-dns@npm:^0.31.3":
+  version: 0.31.3
+  resolution: "@opentelemetry/instrumentation-dns@npm:0.31.3"
   dependencies:
-    "@opentelemetry/instrumentation": ^0.35.1
+    "@opentelemetry/instrumentation": ^0.38.0
     "@opentelemetry/semantic-conventions": ^1.0.0
     semver: ^7.3.2
   peerDependencies:
     "@opentelemetry/api": ^1.3.0
-  checksum: 0ff386475c56232b9ac5059b50466f76516f597659c7b3d493766ac128e71588a47b5216de017edae80b8cca567ead403d8bfff0293f62a6bcef37ec19ad839a
+  checksum: f261f4d3c728755642452c464040d8541d6640ffcbf606290a09716786d13ad9ccfded5cce98b0c9a2f41e21c5e2994296a6646bcff8fa43fcf1e81a439b6bd9
   languageName: node
   linkType: hard
 
@@ -2342,6 +2342,19 @@ __metadata:
   peerDependencies:
     "@opentelemetry/api": ^1.3.0
   checksum: 67a6efa878b39962f92924610546883f8535192e9c7638fd36a9493dee49e42c0349fe57291158d55b7ea1ec0a5d74bfe0d94eb2b781cc2a7804c7c5026064ee
+  languageName: node
+  linkType: hard
+
+"@opentelemetry/instrumentation@npm:^0.38.0":
+  version: 0.38.0
+  resolution: "@opentelemetry/instrumentation@npm:0.38.0"
+  dependencies:
+    require-in-the-middle: ^6.0.0
+    semver: ^7.3.2
+    shimmer: ^1.2.1
+  peerDependencies:
+    "@opentelemetry/api": ^1.3.0
+  checksum: 34c240fe8e37761eda1c55f43c94b7cfd5958b66fe5c176c69a41ee61e49cf4f3e595ae6320eb2fe0e310cac632a51794150165523f9bc4a0c33913cf0ea573d
   languageName: node
   linkType: hard
 
@@ -2786,7 +2799,7 @@ __metadata:
     "@opentelemetry/instrumentation": ^0.37.0
     "@opentelemetry/instrumentation-aws-sdk": ^0.34.0
     "@opentelemetry/instrumentation-connect": ^0.31.1
-    "@opentelemetry/instrumentation-dns": ^0.31.2
+    "@opentelemetry/instrumentation-dns": ^0.31.3
     "@opentelemetry/instrumentation-express": ^0.32.1
     "@opentelemetry/instrumentation-http": ^0.37.0
     "@opentelemetry/instrumentation-pg": ^0.35.0
