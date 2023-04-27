@@ -1,7 +1,7 @@
 // @ts-check
 const { assert } = require('chai');
 const sinon = require('sinon');
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const queueReceiver = require('../lib/receiveFromQueue');
 
 function randomString() {
@@ -58,7 +58,7 @@ describe('queueReceiver', () => {
   beforeEach(() => {
     // Our config-loading system chokes when it's not running in AWS. Instead
     // of loading it, we'll just set the values we need for these tests.
-    config.config.timeoutOverhead = TIMEOUT_OVERHEAD;
+    config.timeoutOverhead = TIMEOUT_OVERHEAD;
   });
 
   it('tries to receive a message from the correct queue url', (done) => {

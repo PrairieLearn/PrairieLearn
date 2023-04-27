@@ -1,5 +1,4 @@
 import json
-from typing import List
 
 import pytest
 import python_helper_sympy as phs
@@ -37,7 +36,7 @@ class TestSympy:
         "acosh(m)",
     ]
 
-    EXPR_LIST: List = [
+    EXPR_LIST: list = [
         M * N,
         M + 1,
         M * M + N * N + 4 * N,
@@ -173,7 +172,7 @@ class TestExceptions:
             (INVALID_COMMENT_CASES, 'must not contain the character "#"'),
         ],
     )
-    def test_invalid_format(self, a_sub_list: List[str], target_string: str) -> None:
+    def test_invalid_format(self, a_sub_list: list[str], target_string: str) -> None:
         for a_sub in a_sub_list:
             format_error = phs.validate_string_as_sympy(
                 a_sub, self.VARIABLES, allow_complex=False, allow_trig_functions=False

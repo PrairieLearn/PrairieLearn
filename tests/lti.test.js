@@ -2,7 +2,7 @@ const fetch = require('node-fetch');
 const oauthSignature = require('oauth-signature');
 const { assert } = require('chai');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const helperServer = require('./helperServer');
 const sqldb = require('@prairielearn/postgres');
 const locals = {};

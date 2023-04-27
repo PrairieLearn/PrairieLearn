@@ -4,8 +4,8 @@ const router = express.Router({ mergeParams: true });
 const _ = require('lodash');
 const ERR = require('async-stacktrace');
 
-const error = require('../../prairielib/lib/error');
-const config = require('../../lib/config');
+const error = require('@prairielearn/error');
+const { config } = require('../../lib/config');
 const chunks = require('../../lib/chunks');
 
 /**

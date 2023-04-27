@@ -1,5 +1,11 @@
 # @prairielearn/opentelemetry
 
+## 1.8.0
+
+### Minor Changes
+
+- 5ae096ba7: Add `createObservableValueGauges()` function
+
 ## 1.7.0
 
 ### Minor Changes

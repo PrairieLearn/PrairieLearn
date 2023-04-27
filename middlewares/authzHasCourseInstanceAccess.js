@@ -1,4 +1,4 @@
-const error = require('../prairielib/error');
+const error = require('@prairielearn/error');
 
 module.exports = function (req, res, next) {
   if (

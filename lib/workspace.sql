@@ -21,8 +21,8 @@ SELECT
 FROM
   workspaces
 WHERE
-  id = $workspace_id FOR
-UPDATE;
+  id = $workspace_id
+FOR NO KEY UPDATE;
 
 -- BLOCK select_workspace_data
 SELECT
@@ -73,13 +73,6 @@ WHERE
   w.id = $workspace_id
 RETURNING
   heartbeat_at;
-
--- BLOCK update_workspace_homedir_location
-UPDATE workspaces AS W
-SET
-  homedir_location = $homedir_location
-WHERE
-  w.id = $workspace_id;
 
 -- BLOCK update_workspace_state
 WITH
@@ -145,10 +138,9 @@ WITH
       *
   )
 INSERT INTO
-  workspace_logs (date, workspace_id, version, state, message)
+  workspace_logs (workspace_id, version, state, message)
 VALUES
   (
-    now(),
     $workspace_id,
     (
       SELECT
@@ -173,10 +165,9 @@ WITH
       w.version
   )
 INSERT INTO
-  workspace_logs (date, workspace_id, version, message)
+  workspace_logs (workspace_id, version, message)
 VALUES
   (
-    now(),
     $workspace_id,
     (
       SELECT

@@ -5,7 +5,7 @@ const async = require('async');
 const path = require('path');
 const { callbackify } = require('util');
 const sqldb = require('@prairielearn/postgres');
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const question = require('../../lib/question');
 const issues = require('../../lib/issues');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
@@ -86,7 +86,7 @@ function processSubmission(req, res, callback) {
 async function processIssue(req, res, callback) {
   const description = req.body.description;
   if (!_.isString(description) || description.length === 0) {
-    return callback(new Error('A description of the issue must be provided'));
+    return callback(error.make(400, 'A description of the issue must be provided'));
   }
 
   const variantId = req.body.__variant_id;

@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
 
-const error = require('../../prairielib/error');
+const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 const fileStore = require('../../lib/file-store');
 

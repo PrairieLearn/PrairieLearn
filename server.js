@@ -31,9 +31,15 @@ const { filesize } = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const compiledAssets = require('@prairielearn/compiled-assets');
+const {
+  SCHEMA_MIGRATIONS_PATH,
+  initBatchedMigrations,
+  startBatchedMigrations,
+  stopBatchedMigrations,
+} = require('@prairielearn/migrations');
 
 const { logger, addFileLogging } = require('@prairielearn/logger');
-const config = require('./lib/config');
+const { config, loadConfig, setLocalsFromConfig } = require('./lib/config');
 const load = require('./lib/load');
 const awsHelper = require('./lib/aws.js');
 const externalGrader = require('./lib/externalGrader');
@@ -41,12 +47,11 @@ const externalGraderResults = require('./lib/externalGraderResults');
 const externalGradingSocket = require('./lib/externalGradingSocket');
 const workspace = require('./lib/workspace');
 const sqldb = require('@prairielearn/postgres');
-const migrations = require('./prairielib/lib/migrations');
-const error = require('./prairielib/error');
+const migrations = require('@prairielearn/migrations');
+const error = require('@prairielearn/error');
 const sprocs = require('./sprocs');
 const news_items = require('./news_items');
 const cron = require('./cron');
-const redis = require('./lib/redis');
 const socketServer = require('./lib/socket-server');
 const serverJobs = require('./lib/server-jobs');
 const freeformServer = require('./question-servers/freeform.js');
@@ -54,7 +59,7 @@ const cache = require('./lib/cache');
 const { LocalCache } = require('./lib/local-cache');
 const codeCaller = require('./lib/code-caller');
 const assets = require('./lib/assets');
-const namedLocks = require('./lib/named-locks');
+const namedLocks = require('@prairielearn/named-locks');
 const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
 const { enrichSentryScope } = require('./lib/sentry');
@@ -114,7 +119,7 @@ module.exports.initExpress = function () {
     next();
   });
   app.use(function (req, res, next) {
-    config.setLocals(res.locals);
+    setLocalsFromConfig(res.locals);
     next();
   });
 
@@ -304,7 +309,7 @@ module.exports.initExpress = function () {
       logger.error(`Error proxying workspace request: ${err}`, {
         err,
         url: req.url,
-        originalUrl: req.url,
+        originalUrl: req.originalUrl,
       });
       // Check to make sure we weren't already in the middle of sending a
       // response before replying with an error 500
@@ -338,7 +343,7 @@ module.exports.initExpress = function () {
   app.use('/pl/workspace/:workspace_id/container', [
     cookieParser(),
     (req, res, next) => {
-      // Needed for workspaceAuthRouter and `selectAndValidateWorkspace` middleware.
+      // Needed for workspaceAuthRouter.
       res.locals.workspace_id = req.params.workspace_id;
       next();
     },
@@ -1369,44 +1374,30 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion',
-    [
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./middlewares/studentAssessmentAccess'),
-      require('./pages/clientFilesQuestion/clientFilesQuestion'),
-    ]
+    require('./pages/clientFilesQuestion/clientFilesQuestion')
   );
 
   // generatedFiles
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/generatedFilesQuestion',
-    [
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./middlewares/studentAssessmentAccess'),
-      require('./pages/generatedFilesQuestion/generatedFilesQuestion'),
-    ]
+    require('./pages/generatedFilesQuestion/generatedFilesQuestion')
   );
 
   // Submission files
   app.use(
     '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/submission/:submission_id/file',
-    [
-      require('./middlewares/selectAndAuthzInstanceQuestion'),
-      require('./middlewares/studentAssessmentAccess'),
-      require('./pages/submissionFile/submissionFile'),
-    ]
+    require('./pages/submissionFile/submissionFile')
   );
 
   // legacy client file paths
-  app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/file', [
-    require('./middlewares/selectAndAuthzInstanceQuestion'),
-    require('./middlewares/studentAssessmentAccess'),
-    require('./pages/legacyQuestionFile/legacyQuestionFile'),
-  ]);
-  app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/text', [
-    require('./middlewares/selectAndAuthzInstanceQuestion'),
-    require('./middlewares/studentAssessmentAccess'),
-    require('./pages/legacyQuestionText/legacyQuestionText'),
-  ]);
+  app.use(
+    '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/file',
+    require('./pages/legacyQuestionFile/legacyQuestionFile')
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/text',
+    require('./pages/legacyQuestionText/legacyQuestionText')
+  );
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
@@ -1671,6 +1662,10 @@ module.exports.initExpress = function () {
     '/pl/administrator/courseRequests/',
     require('./pages/administratorCourseRequests/administratorCourseRequests')
   );
+  app.use(
+    '/pl/administrator/batchedMigrations',
+    require('./pages/administratorBatchedMigrations/administratorBatchedMigrations')
+  );
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
@@ -1772,21 +1767,21 @@ module.exports.startServer = async () => {
   const meter = opentelemetry.metrics.getMeter('prairielearn');
 
   const connectionCounter = opentelemetry.getCounter(meter, 'http.connections', {
-    unit: opentelemetry.ValueType.INT,
+    valueType: opentelemetry.ValueType.INT,
   });
   server.on('connection', () => connectionCounter.add(1));
 
-  const activeConnectionsGauge = opentelemetry.getObservableGauge(
+  opentelemetry.createObservableValueGauges(
     meter,
     'http.connections.active',
     {
-      unit: opentelemetry.ValueType.INT,
+      valueType: opentelemetry.ValueType.INT,
+      interval: 1000,
+    },
+    () => {
+      return util.promisify(server.getConnections.bind(server))();
     }
   );
-  activeConnectionsGauge.addCallback(async (observableResult) => {
-    const count = await util.promisify(server.getConnections.bind(server))();
-    observableResult.observe(count);
-  });
 
   server.timeout = config.serverTimeout;
   server.keepAliveTimeout = config.serverKeepAliveTimeout;
@@ -1857,11 +1852,9 @@ if (config.startServer) {
           configFilename = argv['config'];
         }
 
-        // Load config values from AWS as early as possible so we can use them
-        // to set values for e.g. the database connection
-        await config.loadConfigAsync(configFilename);
-        await awsHelper.init();
-        await awsHelper.loadConfigSecrets();
+        // Load config immediately so we can use it configure everything else.
+        await loadConfig(configFilename);
+        awsHelper.init();
 
         // This should be done as soon as we load our config so that we can
         // start exporting spans.
@@ -1987,26 +1980,107 @@ if (config.startServer) {
 
         // Our named locks code maintains a separate pool of database connections.
         // This ensures that we avoid deadlocks.
-        await namedLocks.init(pgConfig, idleErrorHandler);
+        await namedLocks.init(pgConfig, idleErrorHandler, {
+          renewIntervalMs: config.namedLocksRenewIntervalMs,
+        });
 
         logger.verbose('Successfully connected to database');
       },
-      function (callback) {
+      async () => {
+        // We need to do this before we run migrations, as some migrations will
+        // call `enqueueBatchedMigration` which requires this to be initialized.
+        const runner = initBatchedMigrations({
+          project: 'prairielearn',
+          directories: [path.join(__dirname, 'batched-migrations')],
+        });
+
+        runner.on('error', (err) => {
+          logger.error('Batched migration runner error', err);
+          Sentry.captureException(err);
+        });
+      },
+      async () => {
         // Using the `--migrate-and-exit` flag will override the value of
         // `config.runMigrations`. This allows us to use the same config when
         // running migrations as we do when we start the server.
-        if (!config.runMigrations && !argv['migrate-and-exit']) return callback(null);
-        migrations.init(path.join(__dirname, 'migrations'), 'prairielearn', function (err) {
-          if (ERR(err, callback)) return;
-          callback(null);
+        if (config.runMigrations || argv['migrate-and-exit']) {
+          await migrations.init(
+            [path.join(__dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
+            'prairielearn'
+          );
+
+          if (argv['migrate-and-exit']) {
+            logger.info('option --migrate-and-exit passed, running DB setup and exiting');
+            process.exit(0);
+          }
+        }
+      },
+      async () => {
+        // Collect metrics on our Postgres connection pools.
+        const meter = opentelemetry.metrics.getMeter('prairielearn');
+
+        const pools = [
+          {
+            name: 'default',
+            pool: sqldb.defaultPool,
+          },
+          {
+            name: 'named-locks',
+            pool: namedLocks.pool,
+          },
+        ];
+
+        pools.forEach(({ name, pool }) => {
+          opentelemetry.createObservableValueGauges(
+            meter,
+            `postgres.pool.${name}.total`,
+            {
+              valueType: opentelemetry.ValueType.INT,
+              interval: 1000,
+            },
+            () => pool.totalCount
+          );
+
+          opentelemetry.createObservableValueGauges(
+            meter,
+            `postgres.pool.${name}.idle`,
+            {
+              valueType: opentelemetry.ValueType.INT,
+              interval: 1000,
+            },
+            () => pool.idleCount
+          );
+
+          opentelemetry.createObservableValueGauges(
+            meter,
+            `postgres.pool.${name}.waiting`,
+            {
+              valueType: opentelemetry.ValueType.INT,
+              interval: 1000,
+            },
+            () => pool.waitingCount
+          );
+
+          const queryCounter = opentelemetry.getObservableCounter(
+            meter,
+            `postgres.pool.${name}.query.count`,
+            {
+              valueType: opentelemetry.ValueType.INT,
+            }
+          );
+          queryCounter.addCallback((observableResult) => {
+            observableResult.observe(pool.queryCount);
+          });
         });
       },
-      function (callback) {
-        if (argv['migrate-and-exit']) {
-          logger.info('option --migrate-and-exit passed, running DB setup and exiting');
-          process.exit(0);
-        } else {
-          callback(null);
+      async () => {
+        if (config.runBatchedMigrations) {
+          // Now that all migrations have been run, we can start executing any
+          // batched migrations that may have been enqueued by migrations.
+          startBatchedMigrations({
+            workDurationMs: config.batchedMigrationsWorkDurationMs,
+            sleepDurationMs: config.batchedMigrationsSleepDurationMs,
+          });
         }
       },
       async () => {
@@ -2072,12 +2146,6 @@ if (config.startServer) {
       },
       async () => await codeCaller.init(),
       async () => await assets.init(),
-      (callback) => {
-        redis.init((err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
-      },
       (callback) => {
         cache.init((err) => {
           if (ERR(err, callback)) return;
@@ -2151,6 +2219,7 @@ if (config.startServer) {
             externalGraderResults.stop(),
             cron.stop(),
             serverJobs.stop(),
+            stopBatchedMigrations(),
           ]);
           results.forEach((r) => {
             if (r.status === 'rejected') {

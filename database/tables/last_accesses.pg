@@ -9,6 +9,9 @@ indexes
     last_accesses_group_id_key: UNIQUE (group_id) USING btree (group_id)
     last_accesses_user_id_key: UNIQUE (user_id) USING btree (user_id)
 
+check constraints
+    user_group_xor: CHECK (user_id IS NOT NULL AND group_id IS NULL OR group_id IS NOT NULL AND user_id IS NULL)
+
 foreign-key constraints
     last_accesses_group_id_fkey: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
     last_accesses_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE

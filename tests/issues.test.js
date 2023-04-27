@@ -4,7 +4,7 @@ const fetch = require('node-fetch').default;
 const cheerio = require('cheerio');
 const { step } = require('mocha-steps');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -38,12 +38,12 @@ function doTest(issuesUrl, label) {
       const csrfToken = $('div[id="issueCollapse"] input[name="__csrf_token"]')
         .first()
         .attr('value');
-      assert.isString(csrfToken);
+      assert(typeof csrfToken === 'string');
 
       const variantId = $('div[id="issueCollapse"] input[name="__variant_id"]')
         .first()
         .attr('value');
-      assert.isString(variantId);
+      assert(typeof variantId === 'string');
 
       const form = {
         __action: 'report_issue',
@@ -68,7 +68,7 @@ function doTest(issuesUrl, label) {
       const csrfToken = $('div[id="closeAllIssuesModal"] input[name="__csrf_token"]')
         .first()
         .attr('value');
-      assert.isString(csrfToken);
+      assert(typeof csrfToken === 'string');
 
       const form = {
         __action: 'close_all',

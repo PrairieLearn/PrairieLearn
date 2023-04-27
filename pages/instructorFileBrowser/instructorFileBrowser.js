@@ -1,12 +1,13 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
-const error = require('../../prairielib/error');
+const error = require('@prairielearn/error');
 
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const { FileDeleteEditor, FileRenameEditor, FileUploadEditor } = require('../../lib/editors');
 const { logger } = require('@prairielearn/logger');
+const { contains } = require('@prairielearn/path-utils');
 const fs = require('fs-extra');
 const async = require('async');
 const hljs = require('highlight.js');
@@ -16,7 +17,7 @@ const { encodePath } = require('../../lib/uri-util');
 const editorUtil = require('../../lib/editorUtil');
 const { default: AnsiUp } = require('ansi_up');
 const { getCourseOwners } = require('../../lib/course');
-const { contains, getPaths } = require('../../lib/instructorFiles');
+const { getPaths } = require('../../lib/instructorFiles');
 
 function isHidden(item) {
   return item[0] === '.';
@@ -315,7 +316,7 @@ router.post('/*', function (req, res, next) {
         );
       }
       if (!req.body.new_file_name) {
-        return next(new Error(`Invalid new file name (was falsey): ${req.body.new_file_name}`));
+        return next(new Error(`Invalid new file name (was falsy): ${req.body.new_file_name}`));
       }
       if (
         !/^(?:[-A-Za-z0-9_]+|\.\.)(?:\/(?:[-A-Za-z0-9_]+|\.\.))*(?:\.[-A-Za-z0-9_]+)?$/.test(

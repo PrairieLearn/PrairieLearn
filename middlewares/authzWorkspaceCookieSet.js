@@ -1,5 +1,5 @@
-const csrf = require('../lib/csrf');
-const config = require('../lib/config');
+const { generateSignedToken } = require('@prairielearn/signed-token');
+const { config } = require('../lib/config');
 
 module.exports = (req, res, next) => {
   // We should only have arrived here if we passed authn/authz and
@@ -13,7 +13,7 @@ module.exports = (req, res, next) => {
   const tokenData = {
     workspace_id: res.locals.workspace_id,
   };
-  const cookieData = csrf.generateToken(tokenData, config.secretKey);
+  const cookieData = generateSignedToken(tokenData, config.secretKey);
   res.cookie(cookieName, cookieData, {
     maxAge: config.workspaceAuthzCookieMaxAgeMilliseconds,
     httpOnly: true,

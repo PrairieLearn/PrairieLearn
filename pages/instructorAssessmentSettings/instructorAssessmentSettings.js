@@ -4,14 +4,14 @@ const express = require('express');
 const router = express.Router();
 const path = require('path');
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 const QR = require('qrcode-svg');
 
 const sqldb = require('@prairielearn/postgres');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-const error = require('../../prairielib/lib/error');
+const error = require('@prairielearn/error');
 const { logger } = require('@prairielearn/logger');
 const {
   AssessmentCopyEditor,
@@ -116,7 +116,7 @@ router.post('/', function (req, res, next) {
     });
   } else if (req.body.__action === 'change_id') {
     debug(`Change tid from ${res.locals.assessment.tid} to ${req.body.id}`);
-    if (!req.body.id) return next(new Error(`Invalid TID (was falsey): ${req.body.id}`));
+    if (!req.body.id) return next(new Error(`Invalid TID (was falsy): ${req.body.id}`));
     if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
       return next(
         new Error(

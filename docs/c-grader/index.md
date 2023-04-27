@@ -130,7 +130,18 @@ It is also possible to test programs where the student only submits part of an a
 self.compile_file("square.c", "square", add_c_file="/grade/tests/main.c")
 ```
 
-The instruction above will compile the student-provided C/C++ file with the instructor-provided C/C++ file into the same executable. If the student implements any function that is also implemented by the instructor's code, including `main` if provided, it will be ignored, and the instructor-provided functions will take precedence. This is achieved by compiling the code with the `-Wl,--allow-multiple-definition` flag of `gcc`.
+The instruction above will compile the student-provided C/C++ file with the instructor-provided C/C++ file into the same executable.
+
+If the student implements any function that is also implemented by the instructor's code, including `main` if provided, it will be ignored, and the instructor-provided functions will take precedence. This is achieved by compiling the code with the `-Wl,--allow-multiple-definition` flag of `gcc`. If, however, there is a need to make reference to some of these functions implemented by the student, the option `objcopy_args` can be used. If provided, the [`objcopy` command](https://man7.org/linux/man-pages/man1/objcopy.1.html) is called on the student's code with the specified list of arguments. This option only operates on student files, not on added (instructor-provided) files. For example, the following instruction compiles the same files above, but renames the student's `main` function into `student_main` and makes the static function `my_static_fn` global, so that the instructor's `main` function can call both of these functions directly.
+
+```python
+self.compile_file(
+  "square.c",
+  "square",
+  add_c_file="/grade/tests/main.c",
+  objcopy_args=["--redefine-sym", "main=student_main", "--globalize-symbol", "my_static_fn"],
+)
+```
 
 It is also possible to compile multiple student files and multiple question-provided files into a single executable, by providing lists of files:
 
@@ -145,21 +156,33 @@ self.compile_file(
 
 If the compilation involves include (`.h`) files, the flags `-I/grade/tests` (for question-provided includes) and `-I/grade/student` (for student-provided includes) are recommended as well. The specific `.h` files don't need to be listed as arguments to `compile_file`.
 
-If the executable name is not provided, then the files will be compiled only into equivalent object files (with `.o` extension). To link these files into an executable, the `link_object_files` can be used. This function receives three mandatory arguments: the student object files, the additional object files (which can be set to `None` if there are none), and the executable name. This separation allows for more fined-tuned compilation flags between different C files or between compilation and linking, as well as additional operations to be performed with the generated object files. For example, the following sequence compiles the same files above, but renames the student's `main` function into `student_main` so it can be called from the instructor's `main` function.
+If the executable name is not provided, then the files will be compiled only into equivalent object files (with `.o` extension). To link these files into an executable, the `link_object_files` can be used. This function receives three mandatory arguments: the student object files, the additional object files (which can be set to `None` if there are none), and the executable name. This separation allows for more fined-tuned compilation flags between different C files or between compilation and linking, as well as additional operations to be performed with the generated object files. For example, the following sequence compiles student files and instructor files with different flags.
 
 ```python
 self.compile_file(["student_file1.c", "student_file2.c"],
+                  flags=["-I/grade/tests", "-I/grade/student", "-Wall", "-g"])
+self.compile_file([], # No student files in this invocation
                   add_c_file=["/grade/tests/question_file1.c",
                               "/grade/tests/question_file2.c"],
                   flags=["-I/grade/tests", "-I/grade/student"])
-self.run_command("objcopy --redefine-sym main=student_main student_file1.o student_file1_nomain.o",
-                 sandboxed=False)
-self.link_object_files(["student_file1_nomain.o", "student_file2.o"],
+self.link_object_files(["student_file1.o", "student_file2.o"],
                        ["/grade/tests/question_file1.o", "/grade/tests/question_file2.o"],
                        "executable")
 ```
 
 The `link_object_files` also accepts arguments like `flags`, `pkg_config_flags`, `add_warning_result_msg=False` and `ungradable_if_failed=False`, as described above.
+
+For questions where students are not allowed to use a specific set of functions or global variables (e.g., students are not allowed to use the `system` library call), it is possible to reject a specific set of symbols. This option will cause an error similar to a compilation error if any of these symbols is referenced in the code. Only student files are checked against this list of symbols, so they can still be used in instructor code.
+
+```python
+self.compile_file(
+    ["student_file1.c", "student_file2.c"],
+    "executable",
+    add_c_file=["/grade/tests/question_file1.c", "/grade/tests/question_file2.c"],
+    flags=["-I/grade/tests", "-I/grade/student", "-lrt"],
+    reject_symbols=["system", "vfork", "clone", "clone3", "posix_spawn", "posix_spawnp"],
+)
+```
 
 For `self.test_compile_file()`, the results of the compilation will show up as a test named "Compilation", worth one point. To change the name and/or points, set the `name` or `points` argument as follows:
 
@@ -330,6 +353,47 @@ If your application explicitly needs to keep any of the restricted environments 
 #define PLCHECK_NO_EXTRA_FORK
 ```
 
+### Identifying dangling pointers, memory leaks and similar issues
+
+A major concern when testing C/C++ code is to identify cases of dangling pointers and memory leaks. The [AddressSanitizer](https://github.com/google/sanitizers/wiki/AddressSanitizer) library can be used for this purpose in this autograder. In particular, it is able to detect: use-after-free and use-after-return; out-of-bounds access in heap, stack and global arrays; and memory leaks.
+
+To add this library to the code, add the following option to the compilation function (`compile_file`, `test_compile_file` or `link_object_files`):
+
+```python
+self.compile_file(..., enable_asan=True)
+```
+
+By default, the options above will compile the code with flags that will cause the application to abort immediately when an invalid memory access is identified, or before exiting in case of memory leaks. If you are using the autograder workflow that checks the program's standard output, this functionality should capture the majority of cases, though you may want to include some reject strings that capture memory leaks. For example:
+
+```python
+self.test_run(..., reject_output=['AddressSanitizer'])
+```
+
+If you are using the check-based workflow, note that while the setup above will cause the tests to fail in these scenarios, it may not provide a useful message to students. To provide a more detailed feedback to students in this case, you are strongly encouraged to add a call to `pl_setup_asan_hooks()` at the start of your main function, like this:
+
+```c
+int main(int argc, char *argv[]) {
+
+  pl_setup_asan_hooks();
+  Suite *s = suite_create(...);
+  // ...
+}
+```
+
+If you need more fine-tuned control over when and where these memory access problems happen, you can use the ASAN interface to provide further control. For example, if you want to identify the status of individual pointers to check if they have been correctly allocated, you can use `__asan_address_is_poisoned` or `__asan_region_is_poisoned`:
+
+```c
+  ck_assert_msg(__asan_address_is_poisoned(deleted_node), "Deleted node has not been freed");
+  ck_assert_msg(!__asan_address_is_poisoned(other_node), "Node other than the first element has been freed");
+  ck_assert_msg(!__asan_region_is_poisoned(new_node, sizeof(struct node)), "Node was not allocated with appropriate size");
+```
+
+It is also possible to [set specific flags](https://github.com/google/sanitizers/wiki/AddressSanitizerFlags) to change the behaviour of AddressSanitizer, by setting the environment variable `ASAN_OPTIONS` when calling `run_check_suite`. For example, to disable the memory leak check, you may use:
+
+```python
+self.run_check_suite("./main", env={"ASAN_OPTIONS": "detect_leaks=0"})
+```
+
 ### Running a command without creating a test
 
 It is also possible to run a command that is not directly linked to a specific test. This can be done with the `self.run_command()` method, which at the minimum receives a command as argument. This command can be a single string with or without arguments, or an array of strings containing the executable as the first element, and the arguments to follow. The method returns a string contaning the standard output (and standard error) generated by the program.
@@ -398,7 +462,7 @@ self.add_test_result("Generated image", points=matched_pixels,
 
 ### Code subject to manual review
 
-In some situations, instructors may perform a manual review of the student's code, to check for issues like code style, comments, use of algorithms and other criteria that can't easily be programmed into code. This can be done by setting both [auto points and manual points](assessment.md#assessment-points) to the assessment question. The grade generated by the external grader only affects the auto points, leaving the manual points free to be used by the course staff as they see fit.
+In some situations, instructors may perform a manual review of the student's code, to check for issues like code style, comments, use of algorithms and other criteria that can't easily be programmed into code. This can be done by setting both [auto points and manual points](../assessment.md#assessment-points) to the assessment question. The grade generated by the external grader only affects the auto points, leaving the manual points free to be used by the course staff as they see fit.
 
 ## Sandbox execution
 

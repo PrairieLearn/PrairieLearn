@@ -1,5 +1,5 @@
 const util = require('util');
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const assert = require('chai').assert;
 
 const sqldb = require('@prairielearn/postgres');
@@ -213,10 +213,7 @@ describe('Exam and homework assessment with active access restriction', function
 
     const msg = response.$('p.small.mb-0');
     assert.lengthOf(msg, 1);
-    assert.match(
-      msg.text(),
-      /Attachments can't be added or deleted because the assessment is closed\./
-    );
+    assert.match(msg.text(), /Notes can't be added or deleted because the assessment is closed\./);
   });
 
   step('access the exam when active and showClosedAssessment are false', async () => {
@@ -298,10 +295,7 @@ describe('Exam and homework assessment with active access restriction', function
 
     const msg = response.$('p.small.mb-0');
     assert.lengthOf(msg, 1);
-    assert.match(
-      msg.text(),
-      /Attachments can't be added or deleted because the assessment is closed\./
-    );
+    assert.match(msg.text(), /Notes can't be added or deleted because the assessment is closed\./);
   });
 
   step('access a question when homework is no longer active', async () => {
