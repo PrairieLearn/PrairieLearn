@@ -5,7 +5,7 @@ columns
     max_extra_points: double precision not null
     min_points: double precision not null
     modified_at: timestamp with time zone not null default CURRENT_TIMESTAMP
-    replace_auto_points: boolean not null default true
+    replace_auto_points: boolean not null
     starting_points: double precision not null
 
 indexes
