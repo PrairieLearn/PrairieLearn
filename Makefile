@@ -8,12 +8,12 @@ deps:
 	@make python-deps build
 
 dev: start-support
-	@yarn nodemon server.js
+	@yarn dev
 dev-workspace-host: start-support kill-running-workspaces
 	@yarn dev-workspace-host
 
 start: start-support
-	@node server.js
+	@yarn start
 start-workspace-host: start-support kill-running-workspaces
 	@yarn start-workspace-host
 start-executor:

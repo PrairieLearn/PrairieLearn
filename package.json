@@ -12,7 +12,9 @@
         "release": "turbo run build && node tools/fix-workspace-versions-before-publish.mjs && changeset publish",
         "version": "changeset version && YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn",
         "dev-workspace-host": "yarn workspace @prairielearn/workspace-host dev",
-        "start-workspace-host": "yarn workspace @prairielearn/workspace-host start"
+        "dev": "yarn workspace @prairielearn/prairielearn dev",
+        "start-workspace-host": "yarn workspace @prairielearn/workspace-host start",
+        "start": "yarn workspace @prairielearn/prairielearn start"
     },
     "dependencies": {
         "@aws-sdk/client-auto-scaling": "^3.304.0",
