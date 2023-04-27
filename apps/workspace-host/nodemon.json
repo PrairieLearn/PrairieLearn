@@ -1,7 +1,0 @@
-{
-  "watch": [
-    "apps/workspace-host",
-    "packages"
-  ],
-  "ext": "js,json,sql"
-}
