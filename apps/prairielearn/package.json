@@ -1,4 +1,21 @@
 {
   "name": "@prairielearn/prairielearn",
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "tsc && tscp",
+    "dev:no-watch": "ts-node --transpile-only src/server.js",
+    "dev": "nodemon --exec \"yarn dev:no-watch\" --",
+    "start-executor": "node dist/executor.js",
+    "start": "node dist/server.js",
+    "test": "TS_NODE_TRANSPILE_ONLY=true mocha --parallel src/**/*.test.{js,ts}"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/node": "^18.16.1",
+    "mocha": "^10.2.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.4",
+    "typescript-cp": "^0.1.7"
+  }
 }
