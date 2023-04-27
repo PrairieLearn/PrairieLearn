@@ -688,6 +688,18 @@ def get_float_attrib(element, name, *args):
     return float_val
 
 
+@overload
+def get_color_attrib(element: lxml.html.HtmlElement, name: str, *args: str) -> str:
+    ...
+
+
+@overload
+def get_color_attrib(
+    element: lxml.html.HtmlElement, name: str, *args: None
+) -> Optional[str]:
+    ...
+
+
 def get_color_attrib(element, name, *args):
     """value = get_color_attrib(element, name, default)
 
@@ -695,10 +707,14 @@ def get_color_attrib(element, name, *args):
     or '#1a2b3c'), or the (optional) default value. If the default value is
     not provided and the attribute is missing then an exception is thrown. If
     the attribute is not a valid RGB string then it will be checked against various
-    named colours.  If the attribute is still not valid an exception is thrown.
+    named colors.  If the attribute is still not valid an exception is thrown.
     """
     (val, is_default) = _get_attrib(element, name, *args)
     if is_default:
+        # Allow for `None` default
+        if val is None:
+            return val
+
         named_color = colors.get_css_color(val)
         if named_color is not None:
             return named_color

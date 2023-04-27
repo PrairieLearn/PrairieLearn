@@ -22,12 +22,15 @@ module.exports.sync = async function (courseData, courseId) {
   }
 
   const courseInfo = courseData.course.data;
+  if (!courseInfo) {
+    throw new Error('Course info file is missing data');
+  }
+
   const params = {
     course_id: courseId,
     short_name: courseInfo.name,
     title: courseInfo.title,
     display_timezone: courseInfo.timezone || null,
-    grading_queue: courseInfo.name.toLowerCase().replace(' ', ''),
     example_course: courseInfo.exampleCourse,
     options: courseInfo.options || {},
     sync_warnings: infofile.stringifyWarnings(courseData.course),

@@ -9,18 +9,12 @@ WITH
             n.network,
             'start_date',
             coalesce(
-              format_date_full_compact (
-                lower(n.during),
-                config_select ('display_timezone')
-              ),
+              format_date_full_compact (lower(n.during), 'UTC'),
               '—'
             ),
             'end_date',
             coalesce(
-              format_date_full_compact (
-                upper(n.during),
-                config_select ('display_timezone')
-              ),
+              format_date_full_compact (upper(n.during), 'UTC'),
               '—'
             ),
             'location',

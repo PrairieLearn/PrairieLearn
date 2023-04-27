@@ -6,7 +6,7 @@ const namedLocks = require('@prairielearn/named-locks');
 const courseDB = require('./course-db');
 const sqldb = require('@prairielearn/postgres');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 
 const syncCourseInfo = require('./fromDisk/courseInfo');
 const syncCourseInstances = require('./fromDisk/courseInstances');

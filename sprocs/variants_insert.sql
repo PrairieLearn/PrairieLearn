@@ -95,6 +95,19 @@ BEGIN
         AND q.course_id = variant_course_id;
     IF real_question_id IS NULL THEN RAISE EXCEPTION 'inconsistent course for question_id and course_id'; END IF;
 
+    -- check consistency of course_instance_id and course_id
+    IF real_course_instance_id IS NOT NULL THEN
+        PERFORM *
+        FROM
+            course_instances AS ci
+            JOIN pl_courses AS c ON ci.course_id = c.id
+        WHERE
+            ci.id = real_course_instance_id
+            AND ci.course_id = variant_course_id;
+
+        IF NOT FOUND THEN RAISE EXCEPTION 'inconsistent course_instance_id for course_id'; END IF;
+    END IF;
+
     -- check if workspace needed
     SELECT q.workspace_image
     INTO question_workspace_image

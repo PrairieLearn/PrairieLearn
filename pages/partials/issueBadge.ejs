@@ -1,7 +1,7 @@
 <% if (count > 0) { %>
     <% if (!(typeof suppressLink != 'undefined' && suppressLink)) { %>
         <% if (typeof issueQid != 'undefined') { %>
-            <a class="badge badge-pill badge-danger" href="<%= urlPrefix %>/course_admin/issues?q=qid%3A<%= issueQid %>">
+            <a class="badge badge-pill badge-danger" href="<%= urlPrefix %>/course_admin/issues?q=is%3Aopen+qid%3A<%= issueQid %>">
         <% } else { %>
             <a class="badge badge-pill badge-danger" href="<%= urlPrefix %>/course_admin/issues">
         <% } %>

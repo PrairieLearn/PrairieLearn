@@ -2,8 +2,8 @@
   "watch": [
     "workspace_host",
     "lib",
-    "sprocs",
-    "prairielib"
+    "packages",
+    "sprocs"
   ],
   "ext": "js,json,sql"
 }

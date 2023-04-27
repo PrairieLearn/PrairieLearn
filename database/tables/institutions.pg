@@ -1,5 +1,6 @@
 columns
     default_authn_provider_id: bigint
+    display_timezone: text not null default 'America/Chicago'::text
     id: bigint not null default nextval('institutions_id_seq'::regclass)
     long_name: text not null
     short_name: text not null

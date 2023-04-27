@@ -74,13 +74,6 @@ WHERE
 RETURNING
   heartbeat_at;
 
--- BLOCK update_workspace_homedir_location
-UPDATE workspaces AS W
-SET
-  homedir_location = $homedir_location
-WHERE
-  w.id = $workspace_id;
-
 -- BLOCK update_workspace_state
 WITH
   old_workspace AS (

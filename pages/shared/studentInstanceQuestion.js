@@ -94,7 +94,7 @@ module.exports.processIssue = async (req, res) => {
   }
   const description = req.body.description;
   if (!_.isString(description) || description.length === 0) {
-    throw new Error('A description of the issue must be provided');
+    throw error.make(400, 'A description of the issue must be provided');
   }
 
   const variantId = await module.exports.getValidVariantId(req, res);
