@@ -329,4 +329,4 @@ class STLLoader extends THREE.Loader {
   }
 }
 
-global.STLLoader = STLLoader;
+THREE.STLLoader = STLLoader;

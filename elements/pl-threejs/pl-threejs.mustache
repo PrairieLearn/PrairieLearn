@@ -57,10 +57,10 @@ $(function() {
         {{#show_toggle}}
         <div class="btn-group btn-group-sm btn-group-toggle mr-2 mb-2" data-toggle="buttons" role="group" id="toggle-type-of-motion-{{uuid}}">
             <label class="btn btn-secondary active">
-                <input type="radio" autocomplete="off" checked>translate object</input>
+                <input type="radio" autocomplete="off" name="motion-{{uuid}}" checked>translate object</input>
             </label>
             <label class="btn btn-secondary">
-                <input type="radio" autocomplete="off">rotate object</input>
+                <input type="radio" autocomplete="off" name="motion-{{uuid}}">rotate object</input>
             </label>
         </div>
         {{/show_toggle}}
