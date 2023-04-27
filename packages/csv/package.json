@@ -22,7 +22,7 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
-    "csv-stringify": "^6.3.0",
+    "csv-stringify": "^6.3.2",
     "multipipe": "^4.0.0",
     "stream-transform": "^3.2.2"
   }
