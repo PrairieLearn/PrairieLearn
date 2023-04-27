@@ -166,6 +166,7 @@ router.post(
         .updateAssessmentQuestionRubric(
           res.locals.instance_question.assessment_question_id,
           req.body.use_rubric === 'true',
+          req.body.replace_auto_points === 'true',
           req.body.starting_points,
           req.body.min_points,
           req.body.max_extra_points,

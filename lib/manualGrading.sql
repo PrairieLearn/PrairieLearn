@@ -174,6 +174,7 @@ SET
   starting_points = $starting_points,
   min_points = $min_points,
   max_extra_points = $max_extra_points,
+  replace_auto_points = $replace_auto_points,
   modified_at = CURRENT_TIMESTAMP
 WHERE
   id = $rubric_id;
