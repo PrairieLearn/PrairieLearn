@@ -16,6 +16,9 @@
       tr[data-href] {
         cursor: pointer;
       }
+      #reload {
+        float: right;
+      }
     </style>
   </head>
   <body>
@@ -34,11 +37,9 @@
 
       <input type = "file" id = "uploadcsv">
       <button type="button" class="btn btn-sm btn-primary" id="uploadconfirm"> Upload CSV</button>
+      <button type="button" class="btn btn-sm btn-primary" id="reload">Reload Data</button>
       <hr>
-      <button type="button" class="btn btn-sm btn-primary" id="reload" style="position: absolute; top: 0px; left: 0px;">Reload Data</button>
-
-
-
+    
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <%= assessment_set.name %> <%= assessment.number %> Overview
