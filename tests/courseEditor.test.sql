@@ -68,7 +68,7 @@ WITH
     q.sync_errors
     FROM
       questions AS q
-      JOIN pl_courses AS c ON (q.course_id = c.id) -- leave, because only the host course of the question should have sync errors
+      JOIN pl_courses AS c ON (q.course_id = c.id)
     WHERE
       c.path = $course_path
       AND (
