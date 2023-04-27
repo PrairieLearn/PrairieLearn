@@ -50,5 +50,5 @@ FROM
   questions AS q
 WHERE
   q.uuid = $uuid
-  AND q.course_id = $course_id -- leave the same for now? eventually we will have a way to view shared questions but not now
+  AND q.course_id = $course_id -- TODO: change when we have a way for instructors to view questions shared with their course
   AND q.deleted_at IS NULL;
