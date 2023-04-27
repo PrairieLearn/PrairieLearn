@@ -27,6 +27,7 @@
         "@prairielearn/path-utils": "workspace:^",
         "@prairielearn/postgres": "workspace:^",
         "@prairielearn/postgres-tools": "workspace:^",
+        "@prairielearn/sanitize": "workspace:^",
         "@prairielearn/sentry": "workspace:^",
         "@prairielearn/signed-token": "workspace:^",
         "@prairielearn/workspace-utils": "workspace:^",
@@ -177,7 +178,7 @@
         "@types/memorystream": "^0.3.1",
         "@types/mime": "^3.0.1",
         "@types/mocha": "^10.0.1",
-        "@types/node": "^18.15.11",
+        "@types/node": "^18.16.1",
         "@types/node-fetch": "^2.6.2",
         "@types/object-hash": "^3.0.2",
         "@types/passport": "^1.0.12",
@@ -213,7 +214,7 @@
         "sinon": "^15.0.3",
         "tmp": "0.2.1",
         "turbo": "^1.8.8",
-        "typescript": "^4.9.5"
+        "typescript": "^5.0.4"
     },
     "nyc": {
         "exclude": [

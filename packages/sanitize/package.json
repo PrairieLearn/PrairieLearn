@@ -1,11 +1,11 @@
 {
-  "name": "@prairielearn/csv",
+  "name": "@prairielearn/sanitize",
   "version": "1.0.0",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
-    "directory": "packages/csv"
+    "directory": "packages/sanitize"
   },
   "scripts": {
     "build": "tsc",
@@ -14,16 +14,9 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/mocha": "^10.0.1",
-    "@types/multipipe": "^3.0.1",
     "@types/node": "^18.16.1",
     "mocha": "^10.2.0",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.4"
-  },
-  "dependencies": {
-    "csv-stringify": "^6.3.0",
-    "multipipe": "^4.0.0",
-    "stream-transform": "^3.2.2"
   }
 }

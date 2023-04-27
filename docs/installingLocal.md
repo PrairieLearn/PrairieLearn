@@ -53,6 +53,18 @@ make start-support
 mocha tests/testGetHomepage.js
 ```
 
+## Working on packages
+
+When working on something in the `packages/` directory, you'll need to rebuild the package before any changes will become visible to other packages or apps that use the package. You can build everything with `make build`, or you can run the `dev` script in a package to rebuild it automatically whenever there are changes.
+
+```sh
+# From the root of the repository:
+yarn workspace @prairielearn/postgres run dev
+
+# From a specific package directory, e.g. `packages/postgres`:
+yarn dev
+```
+
 ## Updating or building the Docker image
 
 The commands above all run PrairieLearn using local source inside the `prairielearn/prairielearn` image. This image has Python packages and other supporting files already installed. This should be periodically updated with:
