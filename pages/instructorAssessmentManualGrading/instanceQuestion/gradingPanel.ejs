@@ -23,10 +23,16 @@
         </label>
       </div>
     </li>
+    <% if (!assessment_question.max_auto_points && !(locals.auto_points ?? instance_question.auto_points)) { %>
     <li class="list-group-item">
       <%- include('manualPointsSection'); %>
+      <%- include('rubricInputSection'); %>
     </li>
-    <% if (assessment_question.max_auto_points > 0 || (locals.auto_points ?? instance_question.auto_points) > 0) { %>
+    <% } else { %>
+    <li class="list-group-item">
+      <%- include('manualPointsSection'); %>
+      <% if (!locals.rubric_data?.replace_auto_points) { %><%- include('rubricInputSection'); %><% } %>
+    </li>
     <li class="list-group-item">
       <%- include('autoPointsSection'); %>
     </li>
@@ -44,6 +50,7 @@
           <span class="js-value-total-percentage"><%= Math.round(100 * (locals.score_perc ?? instance_question.score_perc)) / 100 %></span>%
         </span>
       </div>
+      <% if (locals.rubric_data?.replace_auto_points) { %><%- include('rubricInputSection'); %><% } %>
     </li>
     <% } %>
     <li class="form-group list-group-item">
