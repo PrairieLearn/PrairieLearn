@@ -123,7 +123,7 @@ function resetInstructorGradingPanel() {
     .forEach((item) => item.addEventListener('change', computePointsFromRubric));
   document
     .querySelectorAll('.js-grading-score-input')
-    .forEach((input) => input.addEventListener('input', updatePointsView));
+    .forEach((input) => input.addEventListener('input', computePointsFromRubric));
 
   document.querySelectorAll('.js-adjust-points-enable').forEach((link) =>
     link.addEventListener('click', function () {
@@ -161,6 +161,9 @@ function resetInstructorGradingPanel() {
       const points = Number(selected.dataset.maxPoints);
       const pointsStr = points === 1 ? '1 point' : `${points} points`;
 
+      document.querySelectorAll('.js-negative-grading').forEach((input) => {
+        input.value = points;
+      });
       document.querySelectorAll('.js-rubric-max-points-info').forEach((node) => {
         node.innerText = pointsStr;
       });
@@ -349,15 +352,24 @@ function computePointsFromRubric() {
   document.querySelectorAll('form[name=manual-grading-form]').forEach((form) => {
     if (form.dataset.rubricActive === 'true') {
       const manualInput = form.querySelector('.js-manual-score-value-input-points');
+      const replaceAutoPoints = form.dataset.rubricReplaceAutoPoints === 'true';
+      const startingPoints = Number(form.dataset.rubricStartingPoints || 0);
       const itemsSum = Array.from(form.querySelectorAll('.js-selectable-rubric-item:checked'))
         .map((item) => Number(item.dataset.rubricItemPoints))
-        .reduce((a, b) => a + b, Number(form.dataset.rubricStartingPoints || 0));
-
-      manualInput.value =
+        .reduce((a, b) => a + b, startingPoints);
+      const rubricValue =
         Math.min(
           Math.max(Math.round(itemsSum * 100) / 100, Number(form.dataset.rubricMinPoints)),
-          Number(form.dataset.maxManualPoints) + Number(form.dataset.rubricMaxExtraPoints)
+          Number(replaceAutoPoints ? form.dataset.maxPoints : form.dataset.maxManualPoints) +
+            Number(form.dataset.rubricMaxExtraPoints)
         ) + Number(form.querySelector('input[name="score_manual_adjust_points"]')?.value || 0);
+      const manualPoints =
+        rubricValue -
+        (replaceAutoPoints
+          ? Number(form.querySelector('.js-auto-score-value-input-points').value)
+          : 0);
+
+      manualInput.value = manualPoints;
     }
   });
   updatePointsView();

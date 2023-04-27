@@ -3,6 +3,7 @@
       data-max-manual-points="<%= assessment_question.max_manual_points %>"
       data-max-points="<%= assessment_question.max_points %>"
       data-rubric-active="<%= !!locals.rubric_data %>"
+      data-rubric-replace-auto-points="<%= locals.rubric_data?.replace_auto_points %>"
       data-rubric-starting-points="<%= locals.rubric_data?.starting_points %>"
       data-rubric-max-extra-points="<%= locals.rubric_data?.max_extra_points %>"
       data-rubric-min-points="<%= locals.rubric_data?.min_points %>">
