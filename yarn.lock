@@ -4098,7 +4098,7 @@ __metadata:
     passport: ^0.6.0
     passport-azure-ad: ^4.3.4
     passport-saml: ^3.2.4
-    pem: ^1.14.6
+    pem: ^1.14.7
     pg: ^8.9.0
     plist: ^3.0.6
     popper.js: ^1.16.1
@@ -7028,10 +7028,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"es6-promisify@npm:^6.0.0":
-  version: 6.1.1
-  resolution: "es6-promisify@npm:6.1.1"
-  checksum: e57dfa8b6533387e6cae115bdc1591e4e6e7648443741360c4f4f8f1d2c17d1f0fb293ccd3f86193f016c236ed15f336e075784eab7ec9a67af0aed2b949dd7c
+"es6-promisify@npm:^7.0.0":
+  version: 7.0.0
+  resolution: "es6-promisify@npm:7.0.0"
+  checksum: 461305147b62bb00624cbfa986227eb2d7a12c21a696bb30e7f3f3182d899ea3436a9500900cd63e35ddbc68119ad305e243f25b4e0d1b207347361ab4f4579e
   languageName: node
   linkType: hard
 
@@ -10426,7 +10426,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"md5@npm:^2.2.1":
+"md5@npm:^2.3.0":
   version: 2.3.0
   resolution: "md5@npm:2.3.0"
   dependencies:
@@ -11590,7 +11590,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"os-tmpdir@npm:^1.0.1, os-tmpdir@npm:~1.0.2":
+"os-tmpdir@npm:^1.0.2, os-tmpdir@npm:~1.0.2":
   version: 1.0.2
   resolution: "os-tmpdir@npm:1.0.2"
   checksum: 5666560f7b9f10182548bf7013883265be33620b1c1b4a4d405c25be2636f970c5488ff3e6c48de75b55d02bde037249fe5dbfbb4c0fb7714953d56aed062e6d
@@ -11908,15 +11908,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"pem@npm:^1.14.6":
-  version: 1.14.6
-  resolution: "pem@npm:1.14.6"
+"pem@npm:^1.14.7":
+  version: 1.14.7
+  resolution: "pem@npm:1.14.7"
   dependencies:
-    es6-promisify: ^6.0.0
-    md5: ^2.2.1
-    os-tmpdir: ^1.0.1
+    es6-promisify: ^7.0.0
+    md5: ^2.3.0
+    os-tmpdir: ^1.0.2
     which: ^2.0.2
-  checksum: 3d93971f01f041a2babdc1b203cf3f57bce030e346935ef3ca3f49ccb3ed0928c3d630d714da487fc2f9a415ec4aa0d848ca6da6e9b8c753b0cc66e3ae3609fc
+  checksum: e88fc17f24646a770621e718092095b9203969bd881c3e7333674d34b76a29f0c95deed633bfe75c855ddf6aa5c336ca0daf7b1efa5783b129c7a785263b5156
   languageName: node
   linkType: hard
 
