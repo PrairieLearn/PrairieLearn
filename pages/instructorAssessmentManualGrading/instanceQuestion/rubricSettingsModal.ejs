@@ -143,7 +143,7 @@
                 </tr>
                 <% }); %>
                 <tr class="js-no-rubric-item-note<% if (locals.rubric_data?.rubric_items?.length) { %> d-none<% } %>">
-                  <td colspan="6"><em>This question does not have any rubric items. Click "Add item" below to add some.</em></td>
+                  <td colspan="6"><em>This question does not have any rubric items. Click "Add item" below to add some<% if (locals.rubric_data) { %>, or select <strong>Disable rubric</strong> below to switch back to manual grade input<% } %>.</em></td>
                 </tr>
               </tbody>
             </table>
