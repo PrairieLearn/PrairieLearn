@@ -15,10 +15,43 @@
         </div>
         <div class="modal-body">
           <div class="js-settings-error-alert-placeholder"></div>
+          <% if (assessment_question.max_auto_points) { %>
           <div class="form-row">
             <div class="col-6">
-              <% if (assessment_question.max_manual_points) { %>
               <div class="form-check">
+                <label class="form-check-label">
+                  <input class="form-check-input js-replace-auto-points-input" name="replace_auto_points"
+                         type="radio" value="true"
+                         data-max-points="<%= assessment_question.max_points %>"
+                         <% if (locals.rubric_data?.replace_auto_points ?? !assessment_question.max_manual_points) { %>checked<% } %>
+                         aria-describedby="rubric-settings-replace-auto-explanation">
+                  Apply rubric to total points (ignore auto points)
+                </label>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="form-check">
+                <label class="form-check-label">
+                  <input class="form-check-input js-replace-auto-points-input" name="replace_auto_points"
+                         type="radio" value="false"
+                         data-max-points="<%= assessment_question.max_manual_points %>"
+                         <% if (!(locals.rubric_data?.replace_auto_points ?? !assessment_question.max_manual_points)) { %>checked<% } %>
+                         aria-describedby="rubric-settings-replace-auto-explanation">
+                  Apply rubric to manual points (keep auto points)
+                </label>
+              </div>
+            </div>
+          </div>
+          <small id="rubric-settings-replace-auto-explanation" class="form-text text-muted">
+            If the rubric is applied to total points, then a student's auto points will be ignored, and the rubric items will be based on the total points of the question (<%= assessment_question.max_points %> points).
+            <br/>
+            If the rubric is applied to manual points only, then a student's auto points are kept, and the rubric items will be added to (or subtracted from) the autograder results.
+          </small>
+          <hr/>
+          <% } %>
+          <div class="form-row">
+            <div class="col-6">
+              <div class="form-check js-rubric-max-points-positive">
                 <label class="form-check-label">
                   <input class="form-check-input" name="starting_points" type="radio" value="0"
                          <% if (!locals.rubric_data?.starting_points) { %>checked<% } %>
@@ -26,15 +59,14 @@
                   Positive grading (start at zero, add points)
                 </label>
               </div>
-              <div class="form-check">
+              <div class="form-check js-rubric-max-points-positive">
                 <label class="form-check-label">
                   <input class="form-check-input js-negative-grading" name="starting_points" type="radio" value="<%= assessment_question.max_manual_points %>"
                          <% if (locals.rubric_data?.starting_points) { %>checked<% } %>
                          aria-describedby="rubric-settings-start-points-explanation">
-                  Negative grading (start at <%= assessment_question.max_manual_points %> points, subtract penalties)
+                  Negative grading (start at <span class="js-rubric-max-points-info"></span>, subtract penalties)
                 </label>
               </div>
-              <% } %>
             </div>
             <div class="form-group col-3">
               <label>
@@ -55,19 +87,18 @@
           </div>
           <div class="row">
             <div class="col-6">
-              <% if (assessment_question.max_manual_points) { %>
-              <small id="rubric-settings-start-points-explanation" class="form-text text-muted">
+              <small id="rubric-settings-start-points-explanation" class="form-text text-muted js-rubric-max-points-positive">
                 The setting above only affects starting points. Rubric items may always be added with positive or negative points.
               </small>
-              <% } %>
             </div>
             <div class="col-6">
               <small id="rubric-settings-floor-ceiling-explanation" class="form-text text-muted">
-                <% if (assessment_question.max_manual_points) { %>
-                By default, points are limited to the range of 0 to <%= assessment_question.max_manual_points %>, and credit/penalties applied by rubric items do not violate this range. The settings above allow rubric points to extend beyond this range, either for penalties that affect auto points or the assessment as a whole, or for bonus credit.
-                <% } else { %>
-                The settings above determine the range of points assigned to a student from the rubric items. This question is not assigned any manual points, so these points affect the auto points or the assessment as a whole.
-                <% } %>
+                <span class="js-rubric-max-points-positive">
+                  By default, points are limited to the range of 0 to <span class="js-rubric-max-points-info"></span>, and credit/penalties applied by rubric items do not violate this range. The settings above allow rubric points to extend beyond this range, either for penalties that affect auto points or the assessment as a whole, or for bonus credit.
+                </span>
+                <span class="js-rubric-max-points-zero">
+                  The settings above determine the range of points assigned to a student from the rubric items. This question is not assigned any manual points, so these points affect the auto points or the assessment as a whole.
+                </span>
               </small>
             </div>
           </div>
@@ -195,7 +226,7 @@
             </template>
             <% if (variant.params || variant.true_answer || submission?.submitted_answer) { %>
             <div class="small form-text text-muted">
-              Rubric items may be populated with the following values (click to copy):
+              Rubric items may use these entries, which are replaced with the corresponding values for the student variant (click to copy):
               <ul style="max-height: 7rem; overflow-y: auto;">
                 <% [
                    ...Object.keys(variant.params || {}).map((key) => ['params', key]),

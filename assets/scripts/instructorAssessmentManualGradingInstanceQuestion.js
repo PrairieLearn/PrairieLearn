@@ -155,6 +155,25 @@ function resetInstructorGradingPanel() {
     .querySelectorAll('.js-add-rubric-item-button')
     .forEach((button) => button.addEventListener('click', addRubricItemRow));
 
+  document.querySelectorAll('.js-replace-auto-points-input').forEach((input) => {
+    input.addEventListener('change', function () {
+      const selected = document.querySelector('.js-replace-auto-points-input:checked');
+      const points = Number(selected.dataset.maxPoints);
+      const pointsStr = points === 1 ? '1 point' : `${points} points`;
+
+      document.querySelectorAll('.js-rubric-max-points-info').forEach((node) => {
+        node.innerText = pointsStr;
+      });
+      document.querySelectorAll('.js-rubric-max-points-positive').forEach((node) => {
+        node.style.display = points ? '' : 'none';
+      });
+      document.querySelectorAll('.js-rubric-max-points-zero').forEach((node) => {
+        node.style.display = points ? 'none' : '';
+      });
+    });
+    input.dispatchEvent(new Event('change'));
+  });
+
   document
     .querySelectorAll('.js-rubric-settings-modal form')
     .forEach((form) => form.addEventListener('submit', submitSettings));
