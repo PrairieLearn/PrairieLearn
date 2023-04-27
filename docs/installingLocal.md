@@ -22,9 +22,6 @@ docker run -it --rm -p 3000:3000 -w /PrairieLearn -v /path/to/PrairieLearn:/Prai
 # If editing code in `packages/`, you should also repeat either this command or `make build`.
 make deps
 
-# Build and transpile all source files.
-make build
-
 # Run the PrairieLearn server.
 make start
 
