@@ -2640,6 +2640,13 @@ __metadata:
 "@prairielearn/prairielearn@workspace:apps/prairielearn":
   version: 0.0.0-use.local
   resolution: "@prairielearn/prairielearn@workspace:apps/prairielearn"
+  dependencies:
+    "@prairielearn/tsconfig": "workspace:^"
+    "@types/node": ^18.16.1
+    mocha: ^10.2.0
+    ts-node: ^10.9.1
+    typescript: ^5.0.4
+    typescript-cp: ^0.1.7
   languageName: unknown
   linkType: soft
 
