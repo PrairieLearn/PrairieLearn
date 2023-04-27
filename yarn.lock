@@ -3088,6 +3088,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@sentry-internal/tracing@npm:7.50.0":
+  version: 7.50.0
+  resolution: "@sentry-internal/tracing@npm:7.50.0"
+  dependencies:
+    "@sentry/core": 7.50.0
+    "@sentry/types": 7.50.0
+    "@sentry/utils": 7.50.0
+    tslib: ^1.9.3
+  checksum: 5015b91bffa97a78522b1638d409074682b60bfd2a600e0bfb191ce6afd6dd7ee4fcdbf7cdd818142313001b77033b980a8645bfb9939bf123e3513a29d097ad
+  languageName: node
+  linkType: hard
+
 "@sentry/core@npm:7.46.0":
   version: 7.46.0
   resolution: "@sentry/core@npm:7.46.0"
@@ -3096,6 +3108,17 @@ __metadata:
     "@sentry/utils": 7.46.0
     tslib: ^1.9.3
   checksum: af9733781f1ca9091d42363bf67b23999eebe8a2ea15178d93d942788e2adc2c0ed0709d7553cd03b94e19d6b0376066f4e1c367b4a6855c65114ddc864f26f3
+  languageName: node
+  linkType: hard
+
+"@sentry/core@npm:7.50.0":
+  version: 7.50.0
+  resolution: "@sentry/core@npm:7.50.0"
+  dependencies:
+    "@sentry/types": 7.50.0
+    "@sentry/utils": 7.50.0
+    tslib: ^1.9.3
+  checksum: d372d6235355e6e63eb82146e1944a323b5b6303f6a4f7df6a39a9713f3a9c4aebb68d3de43178a6028c7b2d6d68a2f7a34c08e33cf45c0596b46ae6fd2bf83e
   languageName: node
   linkType: hard
 
@@ -3144,12 +3167,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/tracing@npm:^7.44.1, @sentry/tracing@npm:^7.46.0":
+"@sentry/tracing@npm:^7.44.1":
   version: 7.46.0
   resolution: "@sentry/tracing@npm:7.46.0"
   dependencies:
     "@sentry-internal/tracing": 7.46.0
   checksum: 6a3812feff7536688c07094ff531fcfb017f2394f56fe32ea5e9788d04a25de8882a3cdb0624945ee8ec572140e89db7d7e85d92e90e5ffdf3ffa13205489811
+  languageName: node
+  linkType: hard
+
+"@sentry/tracing@npm:^7.50.0":
+  version: 7.50.0
+  resolution: "@sentry/tracing@npm:7.50.0"
+  dependencies:
+    "@sentry-internal/tracing": 7.50.0
+  checksum: 2227ecff08c0dec717ce6d25252669984ff8d0fd6e11e8f4a16df540ea91215d132d7cda72a0c41dd5ef0be153b1e956e0c0ccb778b1b089661cd48fb444e093
   languageName: node
   linkType: hard
 
@@ -3160,6 +3192,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@sentry/types@npm:7.50.0":
+  version: 7.50.0
+  resolution: "@sentry/types@npm:7.50.0"
+  checksum: 9f058231bf22ca9b1e83cf43607be5d7f174a75ac0477b3c565fec7e9431897b10aadfac94cf7eb5d84888e3520383ea2f4176cf2ad3928a8da78fc8b2e2481d
+  languageName: node
+  linkType: hard
+
 "@sentry/utils@npm:7.46.0, @sentry/utils@npm:^7.44.1":
   version: 7.46.0
   resolution: "@sentry/utils@npm:7.46.0"
@@ -3167,6 +3206,16 @@ __metadata:
     "@sentry/types": 7.46.0
     tslib: ^1.9.3
   checksum: cc550dac9105e68e28b770879426e12b52953468f3f34df7ff0f5352cdcc4b8a8af2144fe1a20f0a23d3f0afdbba14661951765e3d9f81335acafc35ffd632f1
+  languageName: node
+  linkType: hard
+
+"@sentry/utils@npm:7.50.0":
+  version: 7.50.0
+  resolution: "@sentry/utils@npm:7.50.0"
+  dependencies:
+    "@sentry/types": 7.50.0
+    tslib: ^1.9.3
+  checksum: 0fdb94a46d19d9b98b9be2cd2e7f8c4c54b7c9d92091cec2f1093388398d8a400be346a71108edf2b3351ee57edb6f77a0bff7026a9f1b9d91699a6a8c08f49b
   languageName: node
   linkType: hard
 
@@ -3970,7 +4019,7 @@ __metadata:
     "@prairielearn/workspace-utils": "workspace:^"
     "@pyroscope/nodejs": ^0.2.5
     "@sentry/profiling-node": ^0.3.0
-    "@sentry/tracing": ^7.46.0
+    "@sentry/tracing": ^7.50.0
     "@types/async": ^3.2.18
     "@types/body-parser": ^1.19.2
     "@types/chai": ^4.3.4
