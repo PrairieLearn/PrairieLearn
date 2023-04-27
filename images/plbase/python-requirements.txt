@@ -17,7 +17,7 @@ openpyxl==3.1.2
 pandas-stubs==1.5.3.230321
 pandas==1.5.3
 Pint==0.20.1
-psutil==5.9.4
+psutil==5.9.5
 PuLP==2.7.0
 pycryptodome==3.17.0
 Pygments==2.14.0
