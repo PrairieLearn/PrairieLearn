@@ -10,7 +10,7 @@ nbconvert==7.3.0
 nbformat==5.8.0
 networkx==3.0
 nltk==3.8.1
-numpy==1.24.2
+numpy==1.24.3
 openpyxl==3.1.2
 pandas==1.5.3
 Pillow==9.5.0
