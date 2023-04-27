@@ -10,4 +10,5 @@
 /site/
 
 # Transpiled code
+apps/*/dist/
 packages/*/dist/

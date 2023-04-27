@@ -22,14 +22,31 @@ docker run -it --rm -p 3000:3000 -w /PrairieLearn -v /path/to/PrairieLearn:/Prai
 # If editing code in `packages/`, you should also repeat either this command or `make build`.
 make deps
 
-# Run the PrairieLearn server.
+# Run the PrairieLearn server in development mode.
+make dev
+
+# Or, run PrairieLearn like it's run in production.
 make start
 
-# now you can Ctrl-C and run "make start" again to restart PrairieLearn (after code edits, for example)
-# or Ctrl-C to stop PL and Ctrl-D to exit the container
+# To stop the server, press Ctrl-C.
+# To exit the container, press Ctrl-C and then Ctrl-D.
 ```
 
 The path `/path/to/PrairieLearn` above should be replaced with the _absolute_ path to the PrairieLearn source on your computer. If you're in the root of the source directory already, you can substitute `%cd%` (on Windows cmd), `${PWD}` (on Windows PowerShell), or `$PWD` (Linux, MacOS, and WSL) for `/path/to/PrairieLearn`.
+
+## Auto-restarting the node server
+
+The steps above require you to manually stop and restart PrairieLearn after you have edited any JavaScript files. You can alternatively configure the server to automatically restart when changes are detected. To do this, run the PrairieLearn container as described at the start of this page and then run:
+
+```sh
+make dev
+```
+
+Alternatively, you can set the `DEV=true` environment variable while running PrairieLearn automatically:
+
+```sh
+docker run -it --rm -p 3000:3000 -e DEV=true -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn
+```
 
 ## Running the test suite
 
@@ -50,7 +67,7 @@ docker run -it --rm -p 3000:3000 -w /PrairieLearn -v /path/to/PrairieLearn:/Prai
 
 # following commands are inside the container:
 make start-support
-mocha tests/testGetHomepage.js
+yarn mocha tests/testGetHomepage.js
 ```
 
 ## Working on packages
@@ -79,20 +96,6 @@ You can also build a local copy of this image and use it to make sure you have a
 cd /path/to/PrairieLearn
 docker build -t prairielearn/plbase images/plbase
 docker build -t prairielearn/prairielearn .
-```
-
-## Auto-restarting the node server
-
-The description at the start of this page suggests manually stopping and restarting PrairieLearn after you have edited any JavaScript files. You can alternatively use the `nodemon` package to watch for changes to code and auto-restart PrairieLearn. To do this, run the PrairieLearn container as described at the start of this page and then run:
-
-```sh
-make start-nodemon
-```
-
-Alternatively, you can set the `NODEMON=true` environment variable while running PrairieLearn automatically:
-
-```sh
-docker run -it --rm -p 3000:3000 -e NODEMON=true -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn
 ```
 
 ## Connecting to an existing Docker container
