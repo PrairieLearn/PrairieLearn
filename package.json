@@ -96,7 +96,7 @@
         "isbinaryfile": "^5.0.0",
         "jju": "^1.4.0",
         "jose": "^4.13.1",
-        "jquery": "^3.6.3",
+        "jquery": "^3.6.4",
         "jquery-ui-dist": "^1.13.2",
         "jquery-ui-touch-punch": "^0.2.3",
         "js-cookie": "^3.0.1",
