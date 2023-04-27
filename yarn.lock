@@ -4096,7 +4096,7 @@ __metadata:
     on-finished: ^2.4.1
     parse5: ^6.0.1
     passport: ^0.6.0
-    passport-azure-ad: ^4.3.4
+    passport-azure-ad: ^4.3.5
     passport-saml: ^3.2.4
     pem: ^1.14.6
     pg: ^8.9.0
@@ -11211,7 +11211,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-jose@npm:^2.0.0":
+"node-jose@npm:^2.2.0":
   version: 2.2.0
   resolution: "node-jose@npm:2.2.0"
   dependencies:
@@ -11770,9 +11770,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"passport-azure-ad@npm:^4.3.4":
-  version: 4.3.4
-  resolution: "passport-azure-ad@npm:4.3.4"
+"passport-azure-ad@npm:^4.3.5":
+  version: 4.3.5
+  resolution: "passport-azure-ad@npm:4.3.5"
   dependencies:
     async: ^3.2.3
     base64url: ^3.0.0
@@ -11781,11 +11781,11 @@ __metadata:
     https-proxy-agent: ^5.0.0
     jws: ^3.1.3
     lodash: ^4.11.2
-    node-jose: ^2.0.0
+    node-jose: ^2.2.0
     oauth: 0.9.15
     passport: ^0.6.0
     valid-url: ^1.0.6
-  checksum: 51afb8a221bef0d86bb14e4e1f0c496ada84a36444aa81aa854dfb694f0dcb67113fdb15e460c70674be739d0db28733c483cdc94023b7a07906e53aa20086f8
+  checksum: cec9ea7e0e34d5c22cff8eb05ef97de9101d2ee1a508aceaa810181b4cc2433244d393c199fd45fc6bae0f862dc2dfd7dda75dbb89db7e86ea81b750a6e43298
   languageName: node
   linkType: hard
 

@@ -120,7 +120,7 @@
         "on-finished": "^2.4.1",
         "parse5": "^6.0.1",
         "passport": "^0.6.0",
-        "passport-azure-ad": "^4.3.4",
+        "passport-azure-ad": "^4.3.5",
         "passport-saml": "^3.2.4",
         "pem": "^1.14.6",
         "pg": "^8.9.0",
