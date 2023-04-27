@@ -1,7 +1,7 @@
 const ERR = require('async-stacktrace');
 const AWS = require('aws-sdk');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const sqldb = require('@prairielearn/postgres');
 
 module.exports = {};

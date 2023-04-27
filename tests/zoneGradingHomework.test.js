@@ -4,7 +4,7 @@ var assert = require('chai').assert;
 var request = require('request');
 var cheerio = require('cheerio');
 
-var config = require('../lib/config');
+const { config } = require('../lib/config');
 var sqldb = require('@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename);
 
@@ -297,17 +297,15 @@ describe('Zone grading homework assessment', function () {
     describe(`zone grading test #${iZoneGradingTest + 1}`, function () {
       describe('server', function () {
         it('should shut down', function (callback) {
-          var that = this;
           // pass "this" explicitly to enable this.timeout() calls
-          helperServer.after.call(that, function (err) {
+          helperServer.after.call(this, function (err) {
             if (ERR(err, callback)) return;
             callback(null);
           });
         });
         it('should start up', function (callback) {
-          var that = this;
           // pass "this" explicitly to enable this.timeout() calls
-          helperServer.before().call(that, function (err) {
+          helperServer.before().call(this, function (err) {
             if (ERR(err, callback)) return;
             callback(null);
           });

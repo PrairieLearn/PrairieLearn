@@ -1,4 +1,4 @@
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const request = require('request');
 const helperServer = require('./helperServer');
 const cheerio = require('cheerio');

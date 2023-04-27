@@ -1,7 +1,7 @@
 // @ts-check
 const { callbackify } = require('util');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const { logger } = require('@prairielearn/logger');
 const sqldb = require('@prairielearn/postgres');
 

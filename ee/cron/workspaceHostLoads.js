@@ -1,7 +1,8 @@
+// @ts-check
 const AWS = require('aws-sdk');
 const { callbackify } = require('util');
 
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -136,21 +137,9 @@ async function sendStatsToCloudwatch(stats) {
 }
 
 async function handleWorkspaceAutoscaling(stats) {
-  if ((await config.getDBConfigValueAsync('workspaceAutoscalingEnabled', 'true')) !== 'true') {
-    return;
-  }
+  if (!config.workspaceAutoscalingEnabled || !config.workspaceLoadLaunchTemplateId) return;
 
-  let desired_hosts = await config.getDBConfigValueAsync('workspaceDesiredHostCount', null);
-  if (desired_hosts !== null) {
-    desired_hosts = parseInt(desired_hosts);
-  } else {
-    desired_hosts = stats.workspace_hosts_desired;
-  }
-  let launch_template_id = await config.getDBConfigValueAsync('workspaceLaunchTemplateId', null);
-  if (!launch_template_id) {
-    launch_template_id = config.workspaceLoadLaunchTemplateId;
-  }
-
+  const desired_hosts = stats.workspace_hosts_desired;
   const ready_hosts = stats.workspace_hosts_ready_count;
   const launching_hosts = stats.workspace_hosts_launching_count;
   if (desired_hosts > ready_hosts + launching_hosts) {
@@ -169,11 +158,11 @@ async function handleWorkspaceAutoscaling(stats) {
           MaxCount: needed,
           MinCount: 1,
           LaunchTemplate: {
-            LaunchTemplateId: launch_template_id,
+            LaunchTemplateId: config.workspaceLoadLaunchTemplateId,
           },
         })
         .promise();
-      const instance_ids = data.Instances.map((instance) => instance.InstanceId);
+      const instance_ids = (data.Instances ?? []).map((instance) => instance.InstanceId);
       await sqldb.queryAsync(sql.insert_new_instances, { instance_ids });
     }
   } else if (desired_hosts < ready_hosts) {

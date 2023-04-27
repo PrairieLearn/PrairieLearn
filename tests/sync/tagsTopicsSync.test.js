@@ -97,7 +97,7 @@ async function testDuplicate(entityName) {
   checkEntity(syncedEntity, newEntity2);
   const syncedCourses = await util.dumpTable('pl_courses');
   const syncedCourse = syncedCourses.find((c) => c.short_name === courseData.course.name);
-  assert.match(syncedCourse.sync_warnings, new RegExp(`Found duplicates in '${entityName}'`));
+  assert.match(syncedCourse?.sync_warnings, new RegExp(`Found duplicates in '${entityName}'`));
 }
 
 describe('Tag/topic syncing', () => {

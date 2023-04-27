@@ -1,6 +1,6 @@
 const ERR = require('async-stacktrace');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const { logger } = require('@prairielearn/logger');
 const opsbot = require('../lib/opsbot');
 const sqldb = require('@prairielearn/postgres');

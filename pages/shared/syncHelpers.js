@@ -8,7 +8,7 @@ const Docker = require('dockerode');
 const { logger } = require('@prairielearn/logger');
 const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 const serverJobs = require('../../lib/server-jobs');
 const syncFromDisk = require('../../sync/syncFromDisk');
 const requireFrontend = require('../../lib/require-frontend');
@@ -147,10 +147,13 @@ module.exports.pullAndUpdate = function (locals, callback) {
       serverJobs.spawnJob(jobOptions);
     };
 
-    // After either cloning or fetching and resetting from Git, we'll need
-    // to load and store the current commit hash in the database
+    // After either cloning or fetching and resetting from Git, we'll load the
+    // current commit hash. Note that we don't commit this to the database until
+    // after we've synced the changes to the database and generated chunks. This
+    // ensures that if the sync fails, we'll sync from the same starting commit
+    // hash next time.
     const syncStage2 = () => {
-      courseUtil.updateCourseCommitHash(locals.course, (err, hash) => {
+      courseUtil.getCommitHash(locals.course.path, (err, hash) => {
         ERR(err, (e) => logger.error('Error in updateCourseCommitHash()', e));
         endGitHash = hash;
         syncStage3();
@@ -178,10 +181,23 @@ module.exports.pullAndUpdate = function (locals, callback) {
           locals.course.id,
           job,
           function (err, result) {
-            if (err) {
+            // `!result` is included to make TypeScript happy. In practice, it will
+            // always be truthy if `err` is falsy. This will be resolved by switching
+            // to async/await in the future.
+            if (err || !result) {
               job.fail(err);
               return;
             }
+
+            const updateCourseCommitHash = () => {
+              courseUtil.updateCourseCommitHash(locals.course, (err) => {
+                if (err) {
+                  job.fail(err);
+                } else {
+                  checkJsonErrors();
+                }
+              });
+            };
 
             const checkJsonErrors = () => {
               if (result.hadJsonErrors) {
@@ -205,12 +221,12 @@ module.exports.pullAndUpdate = function (locals, callback) {
                     job.fail(err);
                   } else {
                     chunks.logChunkChangesToJob(chunkChanges, job);
-                    checkJsonErrors();
+                    updateCourseCommitHash();
                   }
                 }
               );
             } else {
-              checkJsonErrors();
+              updateCourseCommitHash();
             }
           }
         );
@@ -313,11 +329,11 @@ module.exports.gitStatus = function (locals, callback) {
 
 function locateImage(image, callback) {
   debug('locateImage');
-  docker.listImages(function (err, list) {
+  docker.listImages(function (err, list = []) {
     if (ERR(err, callback)) return;
     debug(`locateImage: list=${list}`);
     for (var i = 0, len = list.length; i < len; i++) {
-      if (list[i].RepoTags && list[i].RepoTags.indexOf(image) !== -1) {
+      if (list[i].RepoTags && list[i].RepoTags?.indexOf(image) !== -1) {
         return callback(null, docker.getImage(list[i].Id));
       }
     }
@@ -380,7 +396,8 @@ function logProgressOutput(output, job, printedInfos, prefix) {
 function pullAndPushToECR(image, dockerAuth, job, callback) {
   debug(`pullAndPushtoECR for ${image}`);
 
-  if (!config.cacheImageRegistry) {
+  const { cacheImageRegistry } = config;
+  if (!cacheImageRegistry) {
     return callback(new Error('cacheImageRegistry not defined'));
   }
 
@@ -392,6 +409,7 @@ function pullAndPushToECR(image, dockerAuth, job, callback) {
   job.info(`Pulling ${repository.getCombined()}`);
   docker.createImage({}, params, (err, stream) => {
     if (ERR(err, callback)) return;
+    if (!stream) throw new Error('Missing stream from createImage()');
 
     const printedInfos = new Set();
     docker.modem.followProgress(
@@ -409,7 +427,7 @@ function pullAndPushToECR(image, dockerAuth, job, callback) {
           job.info('Successfully located downloaded image');
 
           // Tag the image to add the new registry
-          repository.setRegistry(config.cacheImageRegistry);
+          repository.setRegistry(cacheImageRegistry);
 
           var options = {
             repo: repository.getCombined(),
@@ -437,6 +455,7 @@ function pullAndPushToECR(image, dockerAuth, job, callback) {
                 },
                 (err, stream) => {
                   if (ERR(err, callback)) return;
+                  if (!stream) throw new Error('Missing stream from push()');
 
                   const printedInfos = new Set();
                   docker.modem.followProgress(
