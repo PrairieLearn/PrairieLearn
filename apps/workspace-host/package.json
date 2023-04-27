@@ -20,7 +20,7 @@
     "async": "^3.2.4",
     "async-mutex": "^0.4.0",
     "async-stacktrace": "^0.0.2",
-    "aws-sdk": "^2.1354.0",
+    "aws-sdk": "^2.1366.0",
     "body-parser": "^1.20.2",
     "debug": "^4.3.4",
     "dockerode": "^3.3.5",
