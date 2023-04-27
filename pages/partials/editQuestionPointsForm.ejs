@@ -1,4 +1,4 @@
-<% if (instance_question.manual_rubric_id || instance_question.auto_rubric_id) { %>
+<% if (instance_question.manual_rubric_id) { %>
   <p>This question is configured to use rubrics for grading. Changes must be performed in
     <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/manual_grading/instance_question/<%= instance_question.id %>">the manual grading page</a>.
   </p>

@@ -275,8 +275,7 @@
                                                             instance_question: {id: '${row.id}',
                                                             points: '${points}', max_points: '${max}',
                                                             modified_at: '${row.modified_at}',
-                                                            manual_rubric_id: assessment_question.manual_rubric_id,
-                                                            auto_rubric_id: assessment_question.auto_rubric_id}}); %>">
+                                                            manual_rubric_id: assessment_question.manual_rubric_id}}); %>">
                       <i class="fa fa-edit" aria-hidden="true"></i>
                     </button>`;
        }
@@ -306,8 +305,7 @@
                             data-base-content="<%= include('../../partials/editQuestionScorePercForm',
                                                            {id: 'editQuestionScorePerc${row.id}',
                                                             instance_question: {id: '${row.id}', score_perc: '${row.score_perc}', modified_at: '${row.modified_at}',
-                                                            manual_rubric_id: assessment_question.manual_rubric_id,
-                                                            auto_rubric_id: assessment_question.auto_rubric_id}}); %>">
+                                                            manual_rubric_id: assessment_question.manual_rubric_id}}); %>">
                       <i class="fa fa-edit" aria-hidden="true"></i>
                     </button>`;
        }

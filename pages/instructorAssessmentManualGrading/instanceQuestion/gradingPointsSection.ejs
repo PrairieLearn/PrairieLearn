@@ -7,7 +7,7 @@
       <%= type_label %> Score:
     </label>
     <span class="float-right">
-      <% if (rubric || type == 'auto') { %>
+      <% if (!show_input) { %>
         <span class="js-manual-grading-points">
           <span class="js-<%= type %>-score-value-info">
             <span class="js-value-<%= type %>-points"><%= Math.round(points * 100) / 100 %></span> / <%= max_points %>
@@ -20,14 +20,13 @@
         </span>
       <% } %>
       <div class="btn-group btn-group-sm" role="group">
-        <% if (type == 'auto' && authz_data.has_course_instance_permission_edit && !rubric) { %>
+        <% if (show_input_edit && authz_data.has_course_instance_permission_edit) { %>
           <button type="button" class="btn btn-outline-secondary js-enable-<%= type %>-score-edit js-<%= type %>-score-value-info">
             <i class="fas fa-pencil"></i>
           </button>
         <% } %>
-        <% if (locals.context == 'main' && authz_data.has_course_instance_permission_edit && course.manual_grading_visible) { %>
-          <button type="button" class="btn btn-outline-secondary js-show-rubric-settings-button"
-                  data-rubric-type="<%= type %>">
+        <% if (show_rubric_button && authz_data.has_course_instance_permission_edit) { %>
+          <button type="button" class="btn btn-outline-secondary js-show-rubric-settings-button">
             <i class="fas fa-list-check"></i> Rubric
           </button>
         <% } %>
@@ -35,14 +34,10 @@
     </span>
   </span>
   <div class="js-manual-grading-points">
-    <div class="input-group js-<%= type %>-score-value-input <% if (rubric || type == 'auto') { %> d-none<% } %>">
+    <div class="input-group js-<%= type %>-score-value-input <% if (!show_input) { %> d-none<% } %>">
       <input type="number" step="any" required
              id="js-<%= type %>-score-value-input-points-<%= context %>"
              class="form-control js-grading-score-input js-<%= type %>-score-value-input-points"
-             data-rubric-active="<%= !!rubric %>"
-             data-rubric-starting-points="<%= rubric?.starting_points %>"
-             data-rubric-max-extra-points="<%= rubric?.max_extra_points %>"
-             data-rubric-min-points="<%= rubric?.min_points %>"
              data-max-points="<%= max_points %>"
              name="score_<%= type %>_points"
              value="<%= Math.round(points * 100) / 100 %>"
@@ -53,7 +48,7 @@
     </div>
   </div>
   <div class="js-manual-grading-percentage">
-    <div class="input-group js-<%= type %>-score-value-input <% if (rubric || type == 'auto') { %> d-none<% } %>">
+    <div class="input-group js-<%= type %>-score-value-input <% if (!show_input) { %> d-none<% } %>">
       <input type="number" step="any" required
              id="js-<%= type %>-score-value-input-percentage-<%= context %>"
              class="form-control js-grading-score-input js-<%= type %>-score-value-input-percentage"
@@ -66,87 +61,3 @@
     </div>
   </div>
 </div>
-<% if (rubric) { %>
-  <style>
-   .js-selectable-rubric-item-label {
-       border-color: rgba(0,0,0,0);
-       border-width: 1px;
-       border-style: solid;
-   }
-   .js-selectable-rubric-item-label:has(input:checked) {
-       border-color: rgba(0,0,0,.125);
-       background-color: var(--light);
-   }
-   .js-selectable-rubric-item-label p {
-       margin-bottom: 0;
-   }
-  </style>
-  <% rubric.rubric_items?.forEach((item) => { %>
-    <div>
-      <label class="js-selectable-rubric-item-label w-100">
-        <input type="checkbox" name="rubric_item_selected_<%= type %>"
-               class="js-selectable-rubric-item"
-               value="<%= item.id %>" <% if (rubric_grading?.rubric_items?.[item.id]?.score) { %>checked<% } %>
-               <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %>
-               data-rubric-item-points="<%= item.points %>"
-               data-rubric-item-type="<%= type %>"
-               data-key-binding="<%= item.key_binding %>">
-        <span class="badge badge-info"><%= item.key_binding %></span>
-        <span class="float-right text-<%= item.points >= 0 ? 'success' : 'danger' %>">
-          <strong>
-            <span class="js-manual-grading-points" data-testid="rubric-item-points">
-              [<%= (item.points >= 0 ? '+' : '') + (Math.round(item.points * 100) / 100) %>]
-            </span>
-            <span class="js-manual-grading-percentage">
-              [<%= (item.points >= 0 ? '+' : '') + (Math.round(item.points * 10000 / (max_points || assessment_question.max_points)) / 100) %>%]
-            </span>
-          </strong>
-        </span>
-        <span>
-          <div class="d-inline-block" data-testid="rubric-item-description">
-            <%- item.description_rendered %>
-          </div>
-          <div class="small text-muted" data-testid="rubric-item-explanation">
-            <%- item.explanation_rendered %>
-          </div>
-          <div class="small text-muted" data-testid="rubric-item-grader-note">
-            <%- item.grader_note_rendered %>
-          </div>
-        </span>
-      </label>
-    </div>
-  <% }); %>
-  <div class="js-adjust-points d-flex justify-content-end">
-    <button type="button" class="js-adjust-points-enable btn btn-sm btn-link <%= (rubric_grading?.adjust_points || locals.disable || !authz_data.has_course_instance_permission_edit) ? 'd-none' : '' %>">
-      Apply adjustment
-    </button>
-    <div class="js-adjust-points-input-container w-25 <%= rubric_grading?.adjust_points ? '' : 'd-none' %>">
-      <label>
-        <span class="small">Adjustment:</span>
-        <div class="js-manual-grading-points">
-          <div class="input-group input-group-sm">
-            <input type="number" step="any"
-                   class="form-control js-adjust-points-points"
-                   name="score_<%= type %>_adjust_points"
-                   data-max-points="<%= (max_points || assessment_question.max_points) %>"
-                   value="<%= (Math.round(rubric_grading?.adjust_points * 100) / 100) || '' %>"
-            <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %> />
-          </div>
-        </div>
-        <div class="js-manual-grading-percentage">
-          <div class="input-group input-group-sm">
-            <input type="number" step="any"
-                   class="form-control js-adjust-points-percentage"
-                   name="score_<%= type %>_adjust_percent"
-                   data-max-points="<%= (max_points || assessment_question.max_points) %>"
-                   value="<%= (Math.round((rubric_grading?.adjust_points || 0) * 10000 / (max_points || assessment_question.max_points)) / 100) || '' %>"
-            <% if (locals.disable || !authz_data.has_course_instance_permission_edit) { %>disabled<% } %> />
-            <span class="input-group-append">
-              <span class="input-group-text">%</span>
-            </span>
-          </div>
-        </div>
-      </label>
-    </div>
-  </div>
-<% } %>

@@ -63,10 +63,8 @@ WITH
       JOIN variants AS v ON (v.instance_question_id = iq.id)
       JOIN submissions AS s ON (s.variant_id = v.id)
       JOIN rubric_gradings rg ON (
-        rg.id IN (
-          s.manual_rubric_grading_id,
-          s.auto_rubric_grading_id
-        )
+        rg.id =
+          s.manual_rubric_grading_id
         AND rg.rubric_id = $rubric_id
       )
       JOIN rubric_grading_items rgi ON (rgi.rubric_grading_id = rg.id)
@@ -155,9 +153,9 @@ FOR NO KEY UPDATE;
 
 -- BLOCK insert_rubric
 INSERT INTO
-  rubrics (starting_points, min_points, max_extra_points)
+  rubrics (starting_points, min_points, max_extra_points, replace_auto_points)
 VALUES
-  ($starting_points, $min_points, $max_extra_points)
+  ($starting_points, $min_points, $max_extra_points, $replace_auto_points)
 RETURNING
   id;
 
@@ -174,8 +172,7 @@ WHERE
 -- BLOCK update_assessment_question_rubric_id
 UPDATE assessment_questions
 SET
-  manual_rubric_id = $manual_rubric_id,
-  auto_rubric_id = $auto_rubric_id
+  manual_rubric_id = $manual_rubric_id
 WHERE
   id = $assessment_question_id;
 
@@ -251,10 +248,7 @@ WITH
       JOIN variants AS v ON (v.instance_question_id = iq.id)
       JOIN submissions AS s ON (s.variant_id = v.id)
       JOIN rubric_gradings AS rg ON (
-        rg.id = CASE
-          WHEN $rubric_type = 'auto' THEN s.auto_rubric_grading_id
-          ELSE s.manual_rubric_grading_id
-        END
+        rg.id = s.manual_rubric_grading_id
       )
       JOIN rubrics AS r ON (r.id = rg.rubric_id)
     WHERE
@@ -376,11 +370,9 @@ SELECT
   aq.max_auto_points,
   aq.max_manual_points,
   aq.manual_rubric_id,
-  aq.auto_rubric_id,
   s.partial_scores,
   iq.auto_points,
   iq.manual_points,
-  s.auto_rubric_grading_id,
   s.manual_rubric_grading_id,
   $check_modified_at::TIMESTAMPTZ IS NOT NULL
   AND $check_modified_at != iq.modified_at AS modified_at_conflict
@@ -423,8 +415,7 @@ INSERT INTO
     manual_points,
     feedback,
     partial_scores,
-    manual_rubric_grading_id,
-    auto_rubric_grading_id
+    manual_rubric_grading_id
   )
 VALUES
   (
@@ -439,8 +430,7 @@ VALUES
     $manual_points,
     $feedback,
     $partial_scores,
-    $manual_rubric_grading_id,
-    $auto_rubric_grading_id
+    $manual_rubric_grading_id
   )
 RETURNING
   id;
@@ -456,7 +446,6 @@ SET
     ELSE $feedback::JSONB
   END,
   partial_scores = COALESCE($partial_scores::JSONB, partial_scores),
-  auto_rubric_grading_id = $auto_rubric_grading_id,
   manual_rubric_grading_id = $manual_rubric_grading_id,
   graded_at = now(),
   override_score = COALESCE($score, override_score),

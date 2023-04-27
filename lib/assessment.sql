@@ -338,16 +338,16 @@ WITH
           END,
           'submission_id',
           s.id,
-          'manual_rubrics',
+          'rubrics',
           CASE
-            WHEN mrg.id IS NULL THEN NULL
+            WHEN rg.id IS NULL THEN NULL
             ELSE (
               SELECT
                 JSONB_BUILD_OBJECT(
                   'computed_points',
-                  mrg.computed_points,
+                  rg.computed_points,
                   'adjust_points',
-                  mrg.adjust_points,
+                  rg.adjust_points,
                   'items',
                   JSONB_AGG(
                     JSONB_BUILD_OBJECT('text', rgi.description, 'points', rgi.points)
@@ -356,28 +356,7 @@ WITH
               FROM
                 rubric_grading_items rgi
               WHERE
-                rgi.rubric_grading_id = mrg.id
-            )
-          END,
-          'auto_rubrics',
-          CASE
-            WHEN arg.id IS NULL THEN NULL
-            ELSE (
-              SELECT
-                JSONB_BUILD_OBJECT(
-                  'computed_points',
-                  arg.computed_points,
-                  'adjust_points',
-                  arg.adjust_points,
-                  'items',
-                  JSONB_AGG(
-                    JSONB_BUILD_OBJECT('text', rgi.description, 'points', rgi.points)
-                  )
-                )
-              FROM
-                rubric_grading_items rgi
-              WHERE
-                rgi.rubric_grading_id = arg.id
+                rgi.rubric_grading_id = rg.id
             )
           END
         ) AS data
@@ -389,8 +368,7 @@ WITH
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
         LEFT JOIN users AS u ON (u.user_id = gj.auth_user_id)
-        LEFT JOIN rubric_gradings AS mrg ON (mrg.id = gj.manual_rubric_grading_id)
-        LEFT JOIN rubric_gradings AS arg ON (arg.id = gj.auto_rubric_grading_id)
+        LEFT JOIN rubric_gradings AS rg ON (rg.id = gj.manual_rubric_grading_id)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
         AND gj.grading_method = 'Manual'

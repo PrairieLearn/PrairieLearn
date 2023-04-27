@@ -73,7 +73,6 @@ SELECT
   aq.max_manual_points,
   aq.max_auto_points,
   aq.manual_rubric_id,
-  aq.auto_rubric_id,
   qo.row_order,
   qo.question_number,
   admin_assessment_question_number (aq.id) as instructor_question_number,

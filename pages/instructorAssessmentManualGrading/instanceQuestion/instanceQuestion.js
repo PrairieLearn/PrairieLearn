@@ -97,25 +97,11 @@ router.get(
         path.join(__dirname, 'gradingPanel.ejs'),
         { context: 'main', ...res.locals }
       );
-      const rubricSettingsManual = await util.promisify(ejs.renderFile)(
+      const rubricSettings = await util.promisify(ejs.renderFile)(
         path.join(__dirname, 'rubricSettingsModal.ejs'),
-        {
-          type: 'manual',
-          rubric: res.locals.rubric_data_manual,
-          max_points: res.locals.assessment_question.max_manual_points,
-          ...res.locals,
-        }
+        res.locals
       );
-      const rubricSettingsAuto = await util.promisify(ejs.renderFile)(
-        path.join(__dirname, 'rubricSettingsModal.ejs'),
-        {
-          type: 'auto',
-          rubric: res.locals.rubric_data_auto,
-          max_points: res.locals.assessment_question.max_auto_points,
-          ...res.locals,
-        }
-      );
-      res.send({ gradingPanel, rubricSettingsManual, rubricSettingsAuto });
+      res.send({ gradingPanel, rubricSettings });
     } catch (err) {
       res.send({ err: String(err) });
     }
@@ -129,8 +115,7 @@ router.post(
       return next(error.make(403, 'Access denied (must be a student data editor)'));
     }
     if (req.body.__action === 'add_manual_grade') {
-      let manual_rubric_data = null,
-        auto_rubric_data = null;
+      let manual_rubric_data = null;
       if (res.locals.assessment_question.manual_rubric_id) {
         let manual_rubric_items = req.body.rubric_item_selected_manual || [];
         if (!Array.isArray(manual_rubric_items)) {
@@ -140,18 +125,6 @@ router.post(
           rubric_id: res.locals.assessment_question.manual_rubric_id,
           applied_rubric_items: manual_rubric_items.map((id) => ({ rubric_item_id: id })),
           adjust_points: req.body.score_manual_adjust_points || null,
-        };
-      }
-
-      if (res.locals.assessment_question.auto_rubric_id) {
-        let auto_rubric_items = req.body.rubric_item_selected_auto || [];
-        if (!Array.isArray(auto_rubric_items)) {
-          auto_rubric_items = [auto_rubric_items];
-        }
-        auto_rubric_data = {
-          rubric_id: res.locals.assessment_question.auto_rubric_id,
-          applied_rubric_items: auto_rubric_items.map((id) => ({ rubric_item_id: id })),
-          adjust_points: req.body.score_auto_adjust_points || null,
         };
       }
 
@@ -167,7 +140,6 @@ router.post(
           auto_points: req.body.use_score_perc ? null : req.body.score_auto_points || null,
           feedback: { manual: req.body.submission_note },
           manual_rubric_data,
-          auto_rubric_data,
         },
         res.locals.authn_user.user_id
       );
@@ -193,7 +165,6 @@ router.post(
       manualGrading
         .updateAssessmentQuestionRubric(
           res.locals.instance_question.assessment_question_id,
-          req.body.rubric_type,
           req.body.use_rubrics === 'true',
           req.body.starting_points,
           req.body.min_points,

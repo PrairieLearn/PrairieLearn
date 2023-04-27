@@ -254,7 +254,7 @@ const checkSettingsResults = (starting_points, min_points, max_extra_points) => 
   step('rubric settings modal should update with new values', async () => {
     const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
     const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-    const form = $manualGradingIQPage('form[name=rubric-settings-manual]');
+    const form = $manualGradingIQPage('form[name=rubric-settings]');
 
     assert.equal(
       form.find(`input[name="starting_points"][value="${starting_points}"]`).is(':checked'),
@@ -671,7 +671,7 @@ describe('Manual Grading', function () {
           setUser(mockStaff[0]);
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-          const form = $manualGradingIQPage('form[name=rubric-settings-manual]');
+          const form = $manualGradingIQPage('form[name=rubric-settings]');
           rubric_items = [
             { points: 6, description: 'First rubric item' },
             {
@@ -710,7 +710,6 @@ describe('Manual Grading', function () {
             body: new URLSearchParams({
               __action: form.find('input[name=__action]').val(),
               __csrf_token: form.find('input[name=__csrf_token]').val(),
-              rubric_type: form.find('input[name=rubric_type]').val(),
               modified_at: form.find('input[name=modified_at]').val(),
               use_rubrics: 'true',
               starting_points: '0', // Positive grading
@@ -742,7 +741,7 @@ describe('Manual Grading', function () {
           setUser(mockStaff[0]);
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-          const form = $manualGradingIQPage('form[name=rubric-settings-manual]');
+          const form = $manualGradingIQPage('form[name=rubric-settings]');
           rubric_items[2].points = 1;
           score_points = 5.4;
           score_percent = 90;
@@ -753,7 +752,6 @@ describe('Manual Grading', function () {
             body: new URLSearchParams({
               __action: form.find('input[name=__action]').val(),
               __csrf_token: form.find('input[name=__csrf_token]').val(),
-              rubric_type: form.find('input[name=rubric_type]').val(),
               modified_at: form.find('input[name=modified_at]').val(),
               use_rubrics: 'true',
               starting_points: '0', // Positive grading
@@ -813,7 +811,7 @@ describe('Manual Grading', function () {
           setUser(mockStaff[0]);
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-          const form = $manualGradingIQPage('form[name=rubric-settings-manual]');
+          const form = $manualGradingIQPage('form[name=rubric-settings]');
           score_points = 6.9;
           score_percent = 115;
 
@@ -823,7 +821,6 @@ describe('Manual Grading', function () {
             body: new URLSearchParams({
               __action: form.find('input[name=__action]').val(),
               __csrf_token: form.find('input[name=__csrf_token]').val(),
-              rubric_type: form.find('input[name=rubric_type]').val(),
               modified_at: form.find('input[name=modified_at]').val(),
               use_rubrics: 'true',
               starting_points: '0', // Positive grading
@@ -857,7 +854,7 @@ describe('Manual Grading', function () {
           setUser(mockStaff[0]);
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-          const form = $manualGradingIQPage('form[name=rubric-settings-manual]');
+          const form = $manualGradingIQPage('form[name=rubric-settings]');
           rubric_items = [
             { points: 0, description: 'First rubric item' },
             {
@@ -897,7 +894,6 @@ describe('Manual Grading', function () {
             body: new URLSearchParams({
               __action: form.find('input[name=__action]').val(),
               __csrf_token: form.find('input[name=__csrf_token]').val(),
-              rubric_type: form.find('input[name=rubric_type]').val(),
               modified_at: form.find('input[name=modified_at]').val(),
               use_rubrics: 'true',
               starting_points: '6', // Negative grading

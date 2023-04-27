@@ -1,6 +1,6 @@
 <div data-testid="submission-with-feedback" data-grading-job-status="<%= submission.grading_job_status %>" data-grading-job-id="<%= submission.grading_job_id %>" id="submission-<%= submission.id %>">
 
-<% if (submission.feedback?.manual || submission.rubric_grading_manual || submission.rubric_grading_auto) { %>
+<% if (submission.feedback?.manual || submission.rubric_grading) { %>
 <div class="card mb-4 grading-block border-info">
   <div class="card-header bg-info text-white d-flex submission-header <% if (submission.submission_number != submissionCount) { %> collapsed<% } %>" data-toggle="collapse" data-target="#submission-feedback-<%= submission.id %>-body">
     <div class="mr-auto">
@@ -15,14 +15,11 @@
   </div>
   <div class="collapse <% if (submission.submission_number == submissionCount) { %>show<% } %>" id="submission-feedback-<%= submission.id %>-body">
     <div class="card-body">
-      <% [
-        {type: 'Manual', grading: submission.rubric_grading_manual, ...locals.rubric_data_manual},
-        {type: 'Auto', grading: submission.rubric_grading_auto, ...locals.rubric_data_auto},
-      ].filter((rubric) => rubric.grading).forEach((rubric) => { %>
-      <% (rubric.rubric_items || []).forEach((item) => { %>
+      <% if (submission.rubric_grading) { %>
+      <% (locals.rubric_data?.rubric_items || []).forEach((item) => { %>
       <div>
         <label class="w-100" data-testid="rubric-item-container-<%= item.id %>">
-          <input type="checkbox" disabled <%= rubric.grading?.rubric_items?.[item.id]?.score ? 'checked' : '' %> >
+          <input type="checkbox" disabled <%= submission.rubric_grading?.rubric_items?.[item.id]?.score ? 'checked' : '' %> >
           <span class="text-<%= item.points >= 0 ? 'success' : 'danger' %>">
             <strong data-testid="rubric-item-points">
               [<%= (item.points >= 0 ? '+' : '') + item.points %>]
@@ -42,19 +39,19 @@
         </label>
       </div>
       <% }); // end of rubric items %>
-      <% if (rubric.grading?.adjust_points) { %>
+      <% if (submission.rubric_grading?.adjust_points) { %>
       <div class="mb-2">
         <span class="text-muted">
-          <%= rubric.type %> grading adjustment:
+          Manual grading adjustment:
         </span>
-        <span class="text-<%= rubric.grading?.adjust_points >= 0 ? 'success' : 'danger' %>">
+        <span class="text-<%= submission.rubric_grading?.adjust_points >= 0 ? 'success' : 'danger' %>">
           <strong data-testid="rubric-adjust-points">
-            [<%= (rubric.grading?.adjust_points >= 0 ? '+' : '') + rubric.grading?.adjust_points %>]
+            [<%= (submission.rubric_grading?.adjust_points >= 0 ? '+' : '') + submission.rubric_grading?.adjust_points %>]
           </strong>
         </span>
       </div>
       <% } // end of adjust points %>
-    <% }); // end of each type of rubric %>
+    <% } // end of rubric grading check %>
     <% if (submission.feedback?.manual) { %>
       <div data-testid="feedback-body">
         <%- submission.feedback_manual_html %>

@@ -1,15 +1,14 @@
-<div class="modal js-rubric-settings-modal rubric-settings-modal-<%= type %>" tabindex="-1" role="dialog">
+<div class="modal js-rubric-settings-modal" tabindex="-1" role="dialog">
   <div class="modal-dialog modal-xl border-info" role="document">
-    <form name="rubric-settings-<%= type %>" method="POST" class="needs-validation">
+    <form name="rubric-settings" method="POST" class="needs-validation">
       <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
       <input type="hidden" name="__action" value="modify_rubric_settings">
-      <input type="hidden" name="rubric_type" value="<%= type %>">
-      <input type="hidden" name="modified_at" value="<%= rubric?.modified_at %>">
+      <input type="hidden" name="modified_at" value="<%= locals.rubric_data?.modified_at %>">
       <input type="hidden" name="use_rubrics" value="true">
       
       <div class="modal-content">
         <div class="modal-header bg-info text-light">
-          <h5 class="modal-title">Rubric settings: <%= type %> grading</h5>
+          <h5 class="modal-title">Rubric settings</h5>
           <button type="button" class="close" data-dismiss="modal" aria-label="Close">
             <span aria-hidden="true">&times;</span>
           </button>
@@ -18,21 +17,21 @@
           <div class="js-settings-error-alert-placeholder"></div>
           <div class="form-row">
             <div class="col-6">
-              <% if (max_points) { %>
+              <% if (assessment_question.max_manual_points) { %>
               <div class="form-check">
                 <label class="form-check-label">
                   <input class="form-check-input" name="starting_points" type="radio" value="0"
-                         <% if (!rubric?.starting_points) { %>checked<% } %>
-                         aria-describedby="rubric-settings-<%= type %>-start-points-explanation">
+                         <% if (!locals.rubric_data?.starting_points) { %>checked<% } %>
+                         aria-describedby="rubric-settings-start-points-explanation">
                   Positive grading (start at zero, add points)
                 </label>
               </div>
               <div class="form-check">
                 <label class="form-check-label">
-                  <input class="form-check-input js-negative-grading" name="starting_points" type="radio" value="<%= max_points %>"
-                         <% if (rubric?.starting_points) { %>checked<% } %>
-                         aria-describedby="rubric-settings-<%= type %>-start-points-explanation">
-                  Negative grading (start at <%= max_points %> points, subtract penalties)
+                  <input class="form-check-input js-negative-grading" name="starting_points" type="radio" value="<%= assessment_question.max_manual_points %>"
+                         <% if (locals.rubric_data?.starting_points) { %>checked<% } %>
+                         aria-describedby="rubric-settings-start-points-explanation">
+                  Negative grading (start at <%= assessment_question.max_manual_points %> points, subtract penalties)
                 </label>
               </div>
               <% } %>
@@ -41,33 +40,33 @@
               <label>
                 Minimum rubric score
                 <input class="form-control" name="min_points" type="number"
-                       value="<%= rubric?.min_points ?? 0 %>"
-                       aria-describedby="rubric-settings-<%= type %>-floor-ceiling-explanation">
+                       value="<%= locals.rubric_data?.min_points ?? 0 %>"
+                       aria-describedby="rubric-settings-floor-ceiling-explanation">
               </label>
             </div>
             <div class="form-group col-3">
               <label data-toggle="tooltip" title="">
                 Maximum extra credit
                 <input class="form-control" name="max_extra_points" type="number"
-                       value="<%= rubric?.max_extra_points ?? 0 %>"
-                       aria-describedby="rubric-settings-<%= type %>-floor-ceiling-explanation">
+                       value="<%= locals.rubric_data?.max_extra_points ?? 0 %>"
+                       aria-describedby="rubric-settings-floor-ceiling-explanation">
               </label>
             </div>
           </div>
           <div class="row">
             <div class="col-6">
-              <% if (max_points) { %>
-              <small id="rubric-settings-<%= type %>-start-points-explanation" class="form-text text-muted">
+              <% if (assessment_question.max_manual_points) { %>
+              <small id="rubric-settings-start-points-explanation" class="form-text text-muted">
                 The setting above only affects starting points. Rubric items may always be added with positive or negative points.
               </small>
               <% } %>
             </div>
             <div class="col-6">
-              <small id="rubric-settings-<%= type %>-floor-ceiling-explanation" class="form-text text-muted">
-                <% if (max_points) { %>
-                By default, points are limited to the range of 0 to <%= max_points %>, and credit/penalties applied by rubric items do not violate this range. The settings above allow rubrics to extend beyond this range, either for penalties that affect <%= type === 'manual' ? 'auto' : 'manual' %> points or the assessment as a whole, or for bonus credit.
+              <small id="rubric-settings-floor-ceiling-explanation" class="form-text text-muted">
+                <% if (assessment_question.max_manual_points) { %>
+                By default, points are limited to the range of 0 to <%= assessment_question.max_manual_points %>, and credit/penalties applied by rubric items do not violate this range. The settings above allow rubrics to extend beyond this range, either for penalties that affect auto points or the assessment as a whole, or for bonus credit.
                 <% } else { %>
-                The settings above determine the range of points assigned to a student from the rubric items. This question is not assigned any <%= type %> points, so these points affect the <%= type === 'manual' ? 'auto' : 'manual' %> points or the assessment as a whole.
+                The settings above determine the range of points assigned to a student from the rubric items. This question is not assigned any manual points, so these points affect the auto points or the assessment as a whole.
                 <% } %>
               </small>
             </div>
@@ -84,7 +83,7 @@
                   <th>In use</th>
               </thead>
               <tbody>
-                <% rubric?.rubric_items?.forEach((item, index) => { %>
+                <% locals.rubric_data?.rubric_items?.forEach((item, index) => { %>
                 <tr>
                   <td class="text-nowrap">
                     <input type="hidden"
@@ -107,7 +106,7 @@
                       <span class="sr-only">Delete</span>
                     </button>
                   </td>
-                  <td style="max-width: 4rem">
+                  <td style="max-width: 5rem">
                     <input type="number" class="form-control" step="any" required
                            name="rubric_item[cur<%= item.id %>][points]"
                            value="<%= item.points %>">
@@ -137,13 +136,13 @@
                   </td>
                   <td>
                     <% if (!item.num_submissions) { %>No
-                    <% } else if (!item.num_submissions == 1) { %>1 submission
+                    <% } else if (item.num_submissions == 1) { %>1 submission
                     <% } else { %><%= item.num_submissions %> submissions
                     <% } %>
                   </td>
                 </tr>
                 <% }); %>
-                <tr class="js-no-rubric-item-note<% if (rubric?.rubric_items?.length) { %> d-none<% } %>">
+                <tr class="js-no-rubric-item-note<% if (locals.rubric_data?.rubric_items?.length) { %> d-none<% } %>">
                   <td colspan="6"><em>This question does not have any rubric items. Click "Add item" below to add some.</em></td>
                 </tr>
               </tbody>
@@ -169,7 +168,7 @@
                     <span class="sr-only">Delete</span>
                   </button>
                 </td>
-                <td style="max-width: 4rem">
+                <td style="max-width: 5rem">
                   <input type="number" class="form-control js-rubric-item-points" step="any" required>
                 </td>
                 <td>
@@ -222,13 +221,13 @@
         </div>
         <div class="modal-footer">
           <% if (authz_data.has_course_instance_permission_edit) { %>
-          <% if (rubric) { %>
+          <% if (locals.rubric_data) { %>
           <button type="button" class="btn btn-link btn-sm js-disable-rubric-button mr-auto">
             Disable rubric
           </button>
           <% } %>
           <button type="submit" class="btn btn-primary">
-            <%= rubric ? 'Update rubric' : 'Set rubric' %>
+            <%= locals.rubric_data ? 'Update rubric' : 'Set rubric' %>
           </button>
           <% } %>
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>

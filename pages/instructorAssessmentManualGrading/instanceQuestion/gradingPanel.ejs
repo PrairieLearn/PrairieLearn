@@ -1,7 +1,11 @@
 <form name="manual-grading-form" method="POST"
       data-max-auto-points="<%= assessment_question.max_auto_points %>"
       data-max-manual-points="<%= assessment_question.max_manual_points %>"
-      data-max-points="<%= assessment_question.max_points %>">
+      data-max-points="<%= assessment_question.max_points %>"
+      data-rubric-active="<%= !!locals.rubric_data %>"
+      data-rubric-starting-points="<%= locals.rubric_data?.starting_points %>"
+      data-rubric-max-extra-points="<%= locals.rubric_data?.max_extra_points %>"
+      data-rubric-min-points="<%= locals.rubric_data?.min_points %>">
   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
   <input type="hidden" name="modified_at" value="<%= instance_question.modified_at %>">
   <input type="hidden" name="submission_id" value="<%= submission.id %>">
@@ -19,23 +23,11 @@
       </div>
     </li>
     <li class="list-group-item">
-      <%- include('gradingPointsSection',
-          { type: 'manual', type_label: 'Manual',
-          points: locals.manual_points ?? instance_question.manual_points,
-          max_points: assessment_question.max_manual_points,
-          rubric: locals.rubric_data_manual,
-          rubric_grading: submission.rubric_grading_manual
-          }); %>
+      <%- include('manualPointsSection'); %>
     </li>
     <% if (assessment_question.max_auto_points > 0 || (locals.auto_points ?? instance_question.auto_points) > 0) { %>
     <li class="list-group-item">
-      <%- include('gradingPointsSection',
-          { type: 'auto', type_label: 'Auto',
-          points: locals.auto_points ?? instance_question.auto_points,
-          max_points: assessment_question.max_auto_points,
-          rubric: locals.rubric_data_auto,
-          rubric_grading: submission.rubric_grading_auto
-          }); %>
+      <%- include('autoPointsSection'); %>
     </li>
     <li class="list-group-item">
       <div class="form-group js-manual-grading-points w-100">
