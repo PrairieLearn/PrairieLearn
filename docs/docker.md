@@ -85,7 +85,7 @@ To run PrairieLearn with `docker-compose`, run `docker-compose up pl`. This will
 - Mount `./testCourse` as a volume for a test course
 - Set up the container to run [external grading jobs](externalGrading.md)
 - Mount the current directory as `/PrairieLearn`
-- Configure the server to automatically restart when file change
+- Configure the server to automatically restart when files are modified
 
 The server will be available on port `3000`.
 
