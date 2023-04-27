@@ -35,7 +35,7 @@ function PLThreeJS(options) {
   this.hiddenInput = $('#hidden-input-' + uuid);
 
   // global THREE options
-  THREE.Object3D.DefaultUp.set(0, 0, 1);
+  THREE.Object3D.DEFAULT_UP.set(0, 0, 1);
 
   // renderer
   this.minimumwidth = 400;
@@ -506,12 +506,12 @@ PLThreeJS.prototype.toggleTypeOfMotion = function () {
 PLThreeJS.prototype.updateBodyButtons = function () {
   if (this.isTranslating && this.bodyCanTranslate) {
     // Remove circular arrows
-    $('#x-minus-icon-' + this.uuid).removeClass('fa-redo');
-    $('#x-plus-icon-' + this.uuid).removeClass('fa-redo fa-flip-horizontal');
-    $('#y-minus-icon-' + this.uuid).removeClass('fa-redo');
-    $('#y-plus-icon-' + this.uuid).removeClass('fa-redo fa-flip-horizontal');
-    $('#z-minus-icon-' + this.uuid).removeClass('fa-redo');
-    $('#z-plus-icon-' + this.uuid).removeClass('fa-redo fa-flip-horizontal');
+    $('#x-minus-icon-' + this.uuid).removeClass('fa-rotate-right');
+    $('#x-plus-icon-' + this.uuid).removeClass('fa-rotate-left');
+    $('#y-minus-icon-' + this.uuid).removeClass('fa-rotate-right');
+    $('#y-plus-icon-' + this.uuid).removeClass('fa-rotate-left');
+    $('#z-minus-icon-' + this.uuid).removeClass('fa-rotate-right');
+    $('#z-plus-icon-' + this.uuid).removeClass('fa-rotate-left');
     // Add straight arrows
     $('#x-minus-icon-' + this.uuid).addClass('fa-arrow-left');
     $('#x-plus-icon-' + this.uuid).addClass('fa-arrow-right');
@@ -528,12 +528,12 @@ PLThreeJS.prototype.updateBodyButtons = function () {
     $('#z-minus-icon-' + this.uuid).removeClass('fa-arrow-left');
     $('#z-plus-icon-' + this.uuid).removeClass('fa-arrow-right');
     // Add circular arrows
-    $('#x-minus-icon-' + this.uuid).addClass('fa-redo');
-    $('#x-plus-icon-' + this.uuid).addClass('fa-redo fa-flip-horizontal');
-    $('#y-minus-icon-' + this.uuid).addClass('fa-redo');
-    $('#y-plus-icon-' + this.uuid).addClass('fa-redo fa-flip-horizontal');
-    $('#z-minus-icon-' + this.uuid).addClass('fa-redo');
-    $('#z-plus-icon-' + this.uuid).addClass('fa-redo fa-flip-horizontal');
+    $('#x-minus-icon-' + this.uuid).addClass('fa-rotate-right');
+    $('#x-plus-icon-' + this.uuid).addClass('fa-rotate-left');
+    $('#y-minus-icon-' + this.uuid).addClass('fa-rotate-right');
+    $('#y-plus-icon-' + this.uuid).addClass('fa-rotate-left');
+    $('#z-minus-icon-' + this.uuid).addClass('fa-rotate-right');
+    $('#z-plus-icon-' + this.uuid).addClass('fa-rotate-left');
   }
 };
 
