@@ -1,7 +1,6 @@
 columns
     auth_user_id: bigint
     auto_points: double precision
-    auto_rubric_grading_id: bigint
     correct: boolean
     date: timestamp with time zone default CURRENT_TIMESTAMP
     feedback: jsonb
@@ -34,7 +33,6 @@ indexes
 
 foreign-key constraints
     grading_jobs_auth_user_id_fkey: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    grading_jobs_auto_rubric_grading_id_fkey: FOREIGN KEY (auto_rubric_grading_id) REFERENCES rubric_gradings(id) ON UPDATE CASCADE ON DELETE SET NULL
     grading_jobs_graded_by_fkey: FOREIGN KEY (graded_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     grading_jobs_grading_request_canceled_by_fkey: FOREIGN KEY (grading_request_canceled_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     grading_jobs_manual_rubric_grading_id_fkey: FOREIGN KEY (manual_rubric_grading_id) REFERENCES rubric_gradings(id) ON UPDATE CASCADE ON DELETE SET NULL

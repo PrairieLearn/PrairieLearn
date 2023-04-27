@@ -2,7 +2,6 @@ columns
     advance_score_perc: double precision
     alternative_group_id: bigint
     assessment_id: bigint not null
-    auto_rubric_id: bigint
     average_average_submission_score: double precision
     average_first_submission_score: double precision
     average_last_submission_score: double precision
@@ -56,7 +55,6 @@ indexes
 foreign-key constraints
     assessment_questions_alternative_group_id_fkey: FOREIGN KEY (alternative_group_id) REFERENCES alternative_groups(id) ON UPDATE CASCADE ON DELETE SET NULL
     assessment_questions_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
-    assessment_questions_auto_rubric_id_fkey: FOREIGN KEY (auto_rubric_id) REFERENCES rubrics(id) ON UPDATE CASCADE ON DELETE SET NULL
     assessment_questions_manual_rubric_id_fkey: FOREIGN KEY (manual_rubric_id) REFERENCES rubrics(id) ON UPDATE CASCADE ON DELETE SET NULL
     assessment_questions_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
 

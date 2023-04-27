@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS
     starting_points DOUBLE PRECISION NOT NULL,
     max_extra_points DOUBLE PRECISION NOT NULL,
     min_points DOUBLE PRECISION NOT NULL,
+    replace_auto_points BOOLEAN NOT NULL,
     modified_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP WITH TIME ZONE
   );
@@ -52,17 +53,9 @@ ADD CONSTRAINT rubric_grading_items_rubric_grading_id_rubric_item_id_key UNIQUE 
 ALTER TABLE assessment_questions
 ADD COLUMN IF NOT EXISTS manual_rubric_id BIGINT REFERENCES rubrics (id) ON DELETE SET NULL ON UPDATE CASCADE;
 
-ALTER TABLE assessment_questions
-ADD COLUMN IF NOT EXISTS auto_rubric_id BIGINT REFERENCES rubrics (id) ON DELETE SET NULL ON UPDATE CASCADE;
-
 ALTER TABLE submissions
 ADD COLUMN IF NOT EXISTS manual_rubric_grading_id BIGINT REFERENCES rubric_gradings (id) ON DELETE SET NULL ON UPDATE CASCADE;
-
-ALTER TABLE submissions
-ADD COLUMN IF NOT EXISTS auto_rubric_grading_id BIGINT REFERENCES rubric_gradings (id) ON DELETE SET NULL ON UPDATE CASCADE;
 
 ALTER TABLE grading_jobs
 ADD COLUMN IF NOT EXISTS manual_rubric_grading_id BIGINT REFERENCES rubric_gradings (id) ON DELETE SET NULL ON UPDATE CASCADE;
 
-ALTER TABLE grading_jobs
-ADD COLUMN IF NOT EXISTS auto_rubric_grading_id BIGINT REFERENCES rubric_gradings (id) ON DELETE SET NULL ON UPDATE CASCADE;

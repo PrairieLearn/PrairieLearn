@@ -1,6 +1,5 @@
 columns
     auth_user_id: bigint
-    auto_rubric_grading_id: bigint
     broken: boolean default false
     correct: boolean
     credit: integer
@@ -35,7 +34,6 @@ indexes
 
 foreign-key constraints
     submissions_auth_user_id_fkey: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    submissions_auto_rubric_grading_id_fkey: FOREIGN KEY (auto_rubric_grading_id) REFERENCES rubric_gradings(id) ON UPDATE CASCADE ON DELETE SET NULL
     submissions_manual_rubric_grading_id_fkey: FOREIGN KEY (manual_rubric_grading_id) REFERENCES rubric_gradings(id) ON UPDATE CASCADE ON DELETE SET NULL
     submissions_variant_id_fkey: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE
 
