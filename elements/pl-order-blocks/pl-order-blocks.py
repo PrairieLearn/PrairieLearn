@@ -23,7 +23,6 @@ SOLUTION_HEADER_DEFAULT = "Construct your solution here:"
 FILE_NAME_DEFAULT = "user_code.py"
 SOLUTION_PLACEMENT_DEFAULT = "right"
 WEIGHT_DEFAULT = 1
-INDENT_OFFSET = 0
 TAB_SIZE_PX = 50
 
 FIRST_WRONG_FEEDBACK = {
@@ -357,9 +356,8 @@ def render(element_html, data):
         for index, option in enumerate(student_previous_submission):
             submission_indent = option.get("indent", None)
             if submission_indent is not None:
-                submission_indent = (
-                    int(submission_indent) * TAB_SIZE_PX
-                ) + INDENT_OFFSET
+                submission_indent = int(submission_indent) * TAB_SIZE_PX
+
             temp = {
                 "inner_html": option["inner_html"],
                 "indent": submission_indent,
@@ -422,7 +420,7 @@ def render(element_html, data):
             student_submission = [
                 {
                     "inner_html": attempt["inner_html"],
-                    "indent": ((attempt["indent"] or 0) * TAB_SIZE_PX) + INDENT_OFFSET,
+                    "indent": (attempt["indent"] or 0) * TAB_SIZE_PX,
                 }
                 for attempt in data["submitted_answers"][answer_name]
             ]
@@ -477,14 +475,21 @@ def render(element_html, data):
         check_indentation = pl.get_boolean_attrib(
             element, "indentation", INDENTION_DEFAULT
         )
-        indentation_message = (
-            ", correct indentation needed" if check_indentation is True else None
+
+        required_indents = set(
+            block["indent"] for block in data["correct_answers"][answer_name]
         )
+        indentation_message = ""
+        if check_indentation:
+            if -1 not in required_indents:
+                indentation_message = ", correct indentation required"
+            elif len(required_indents) > 1:
+                indentation_message = ", some blocks require correct indentation"
 
         question_solution = [
             {
                 "inner_html": solution["inner_html"],
-                "indent": ((solution["indent"] or 0) * TAB_SIZE_PX) + INDENT_OFFSET,
+                "indent": max(0, (solution["indent"] or 0) * TAB_SIZE_PX),
             }
             for solution in data["correct_answers"][answer_name]
         ]
@@ -603,7 +608,8 @@ def grade(element_html, data):
     if check_indentation:
         indentations = {ans["uuid"]: ans["indent"] for ans in true_answer_list}
         for ans in student_answer:
-            if ans["indent"] != indentations.get(ans["uuid"]):
+            indentation = indentations.get(ans["uuid"])
+            if indentation != -1 and ans["indent"] != indentation:
                 if "tag" in ans:
                     ans["tag"] = None
                 else:

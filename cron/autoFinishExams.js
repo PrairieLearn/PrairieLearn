@@ -3,7 +3,7 @@ var ERR = require('async-stacktrace');
 var async = require('async');
 
 const error = require('@prairielearn/error');
-var config = require('../lib/config');
+const { config } = require('../lib/config');
 const { logger } = require('@prairielearn/logger');
 var assessment = require('../lib/assessment');
 var sqldb = require('@prairielearn/postgres');
@@ -16,7 +16,7 @@ var sqldb = require('@prairielearn/postgres');
  *
  * @see assessment.gradeAssessmentInstance
  *
- * @param {(err?: Error) => void} callback
+ * @param {(err?: Error | null) => void} callback
  */
 module.exports.run = function (callback) {
   var params = [config.autoFinishAgeMins];

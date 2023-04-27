@@ -4,40 +4,61 @@ const util = require('util');
 const tmp = require('tmp-promise');
 const fs = require('fs-extra');
 const path = require('path');
+const { z } = require('zod');
 const sqldb = require('@prairielearn/postgres');
 
 const courseDB = require('../sync/course-db');
 const chunksLib = require('../lib/chunks');
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const logger = require('./dummyLogger');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const helperServer = require('./helperServer');
 const { syncDiskToSqlAsync } = require('../sync/syncFromDisk');
+const { makeInfoFile } = require('../sync/infofile');
 
+/** @type {import('../sync/course-db').CourseData} */
 const COURSE = {
-  course: {},
+  course: makeInfoFile(),
   questions: {
-    'simple-question': {},
-    'complex/question': {},
+    'simple-question': makeInfoFile(),
+    'complex/question': makeInfoFile(),
   },
   courseInstances: {
     'simple-course-instance': {
-      courseInstance: {},
+      courseInstance: makeInfoFile(),
       assessments: {
-        'simple-assessment': {},
-        'complex/assessment': {},
+        'simple-assessment': makeInfoFile(),
+        'complex/assessment': makeInfoFile(),
       },
     },
     'complex/course/instance': {
-      courseInstance: {},
+      courseInstance: makeInfoFile(),
       assessments: {
-        'simple-assessment': {},
-        'complex/assessment': {},
+        'simple-assessment': makeInfoFile(),
+        'complex/assessment': makeInfoFile(),
       },
     },
   },
 };
+
+function getAllChunksForCourse(course_id) {
+  return sqldb.queryValidatedRows(
+    sql.select_all_chunks,
+    {
+      course_id,
+    },
+    z.object({
+      id: z.string(),
+      uuid: z.string(),
+      type: z.string(),
+      course_id: z.string(),
+      course_instance_id: z.string().nullable(),
+      assessment_id: z.string().nullable(),
+      question_id: z.string().nullable(),
+    })
+  );
+}
 
 describe('chunks', () => {
   describe('identifyChunksFromChangedFiles', () => {
@@ -321,7 +342,10 @@ describe('chunks', () => {
       // ensures that it's written correctly.
 
       const courseDir = tempTestCourseDir.path;
-      const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({ id: courseId, path: null });
+      const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({
+        id: courseId,
+        path: courseDir,
+      });
 
       // Generate chunks for the test course.
       await chunksLib.updateChunksForCourse({
@@ -367,7 +391,10 @@ describe('chunks', () => {
 
     it('deletes chunks that are no longer needed', async () => {
       const courseDir = tempTestCourseDir.path;
-      const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({ id: courseId, path: null });
+      const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({
+        id: courseId,
+        path: courseDir,
+      });
 
       /** @type {import('../lib/chunks').Chunk[]} */
       const chunksToLoad = [
@@ -438,6 +465,9 @@ describe('chunks', () => {
       await fs.remove(path.join(courseDir, 'elements'));
       await fs.remove(path.join(courseDir, 'elementExtensions'));
 
+      // Sync course to DB.
+      await syncDiskToSqlAsync(courseDir, courseId, logger);
+
       // Regenerate chunks
       await chunksLib.updateChunksForCourse({
         coursePath: courseDir,
@@ -452,9 +482,49 @@ describe('chunks', () => {
       assert.isNotOk(await fs.pathExists(path.join(courseRuntimeDir, 'elements')));
       assert.isNotOk(await fs.pathExists(path.join(courseRuntimeDir, 'elementExtensions')));
 
+      // Assert that the chunks have been deleted from the database
+      let databaseChunks = await getAllChunksForCourse(courseId);
+      assert.isUndefined(databaseChunks.find((chunk) => chunk.type === 'elements'));
+      assert.isUndefined(databaseChunks.find((chunk) => chunk.type === 'elementExtensions'));
+
       // Also assert that the chunks for directories that do exist are still there
       assert.isOk(await fs.pathExists(path.join(courseRuntimeDir, 'serverFilesCourse')));
       assert.isOk(await fs.pathExists(path.join(courseRuntimeDir, 'clientFilesCourse')));
+      assert.isOk(
+        await fs.pathExists(
+          path.join(courseRuntimeDir, 'courseInstances', 'Sp15', 'clientFilesCourseInstance')
+        )
+      );
+      assert.isOk(
+        await fs.pathExists(
+          path.join(
+            courseRuntimeDir,
+            'courseInstances',
+            'Sp15',
+            'assessments',
+            'exam1-automaticTestSuite',
+            'clientFilesAssessment'
+          )
+        )
+      );
+      assert.isOk(await fs.pathExists(path.join(courseRuntimeDir, 'questions', 'addNumbers')));
+
+      // Also assert that the database still has chunks for directories that do exist
+      assert.isOk(databaseChunks.find((chunk) => chunk.type === 'serverFilesCourse'));
+      assert.isOk(databaseChunks.find((chunk) => chunk.type === 'clientFilesCourse'));
+      assert.isOk(
+        databaseChunks.find(
+          (chunk) =>
+            chunk.type === 'clientFilesCourseInstance' &&
+            chunk.course_instance_id === courseInstanceId
+        )
+      );
+      assert.isOk(
+        databaseChunks.find(
+          (chunk) => chunk.type === 'clientFilesAssessment' && chunk.assessment_id === assessmentId
+        )
+      );
+      assert.isOk(databaseChunks.find((chunk) => chunk.type === 'question' && chunk.question_id));
 
       // Remove remaining directories from the course
       await fs.remove(path.join(courseDir, 'serverFilesCourse'));
@@ -471,6 +541,9 @@ describe('chunks', () => {
         )
       );
       await fs.remove(path.join(courseDir, 'questions', 'addNumbers'));
+
+      // Sync course to DB.
+      await syncDiskToSqlAsync(courseDir, courseId, logger);
 
       // Regenerate chunks
       await chunksLib.updateChunksForCourse({
@@ -504,6 +577,28 @@ describe('chunks', () => {
       );
       assert.isNotOk(
         await fs.pathExists(path.join(courseRuntimeDir, 'questions', 'addNumbers', 'question.html'))
+      );
+
+      // Assert that the remaining chunks have been deleted from the database
+      databaseChunks = await getAllChunksForCourse(courseId);
+      assert.isUndefined(databaseChunks.find((chunk) => chunk.type === 'serverFilesCourse'));
+      assert.isUndefined(databaseChunks.find((chunk) => chunk.type === 'clientFilesCourse'));
+      assert.isUndefined(
+        databaseChunks.find(
+          (chunk) =>
+            chunk.type === 'clientFilesCourseInstance' &&
+            chunk.course_instance_id === courseInstanceId
+        )
+      );
+      assert.isUndefined(
+        databaseChunks.find(
+          (chunk) => chunk.type === 'clientFilesAssessment' && chunk.assessment_id === assessmentId
+        )
+      );
+      assert.isUndefined(
+        databaseChunks.find(
+          (chunk) => chunk.type === 'question' && chunk.question_id === questionId
+        )
       );
     });
   });

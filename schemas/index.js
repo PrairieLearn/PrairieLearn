@@ -12,4 +12,3 @@ module.exports.questionOptionsFile = require('./schemas/questionOptionsFile.json
 module.exports.questionOptionsMultipleChoice = require('./schemas/questionOptionsMultipleChoice.json');
 module.exports.questionOptionsMultipleTrueFalse = require('./schemas/questionOptionsMultipleTrueFalse.json');
 module.exports.questionOptionsv3 = require('./schemas/questionOptionsv3.json');
-module.exports.serverConfig = require('./schemas/serverConfig.json');

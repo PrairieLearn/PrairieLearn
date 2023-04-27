@@ -1,3 +1,4 @@
+// @ts-check
 const { assert } = require('chai');
 
 const { parseDockerLogs } = require('./docker');

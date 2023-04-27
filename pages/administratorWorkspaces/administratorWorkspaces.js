@@ -2,7 +2,7 @@ const asyncHandler = require('express-async-handler');
 const express = require('express');
 const { loadSqlEquiv, queryValidatedRows } = require('@prairielearn/postgres');
 
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 const { AdministratorWorkspaces, WorkspaceSchema } = require('./administratorWorkspaces.html');
 
 const router = express.Router();

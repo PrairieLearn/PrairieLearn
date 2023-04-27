@@ -6,7 +6,7 @@ const debug = require('debug')('prairielearn:cron');
 const { v4: uuidv4 } = require('uuid');
 const { trace, context, suppressTracing, SpanStatusCode } = require('@prairielearn/opentelemetry');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const { isEnterprise } = require('../lib/license');
 const { logger } = require('@prairielearn/logger');
 const { sleep } = require('../lib/sleep');
@@ -276,7 +276,7 @@ module.exports = {
                 }
 
                 // resolve no matter what so that we run all jobs even if one fails
-                resolve();
+                resolve(null);
               });
               debug(`runJobs(): completed ${job.name}`);
             });

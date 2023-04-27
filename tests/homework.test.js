@@ -4,7 +4,7 @@ const assert = require('chai').assert;
 const request = require('request');
 const cheerio = require('cheerio');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 

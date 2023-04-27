@@ -7,8 +7,8 @@ const perf = require('../performance')('question');
 
 /**
  *
- * @param {import('../course-db').CourseInstance} courseInstance
- * @param {string} courseTimezone
+ * @param {import('../course-db').CourseInstance | null | undefined} courseInstance
+ * @param {string | null} courseTimezone
  */
 function getParamsForCourseInstance(courseInstance, courseTimezone) {
   if (!courseInstance) return null;

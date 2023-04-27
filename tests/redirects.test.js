@@ -1,7 +1,7 @@
 const assert = require('assert');
 const request = require('request');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const helperServer = require('./helperServer');
 
 const siteUrl = 'http://localhost:' + config.serverPort;

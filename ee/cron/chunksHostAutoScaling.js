@@ -3,7 +3,7 @@ const AWS = require('aws-sdk');
 const { callbackify } = require('util');
 const _ = require('lodash');
 
-const config = require('../../lib/config');
+const { config } = require('../../lib/config');
 
 // These are used as IDs when reading CloudWatch metrics. They must start with
 // a lowercase letter and contain only numbers, letters, and underscores.
@@ -15,7 +15,8 @@ module.exports.run = callbackify(async () => {
   if (
     !config.runningInEc2 ||
     !config.chunksLoadBalancerDimensionName ||
-    !config.chunksTargetGroupDimensionName
+    !config.chunksTargetGroupDimensionName ||
+    !config.chunksAutoScalingGroupName
   ) {
     return;
   }
@@ -91,19 +92,19 @@ module.exports.run = callbackify(async () => {
     })
     .promise();
 
-  const pageViewsPerSecondMetric = metrics.MetricDataResults.find(
+  const pageViewsPerSecondMetric = metrics.MetricDataResults?.find(
     (m) => m.Id === PAGE_VIEWS_PER_SECOND
   );
-  const activeWorkersPerSecondMetric = metrics.MetricDataResults.find(
+  const activeWorkersPerSecondMetric = metrics.MetricDataResults?.find(
     (m) => m.Id === ACTIVE_WORKERS_PER_SECOND
   );
-  const loadBalancerRequestsPerMinuteMetric = metrics.MetricDataResults.find(
+  const loadBalancerRequestsPerMinuteMetric = metrics.MetricDataResults?.find(
     (m) => m.Id === LOAD_BALANCER_REQUESTS_PER_MINUTE
   );
 
-  const maxPageViewsPerSecond = _.max(pageViewsPerSecondMetric.Values) ?? 0;
-  const maxActiveWorkersPerSecond = _.max(activeWorkersPerSecondMetric.Values) ?? 0;
-  const maxLoadBalancerRequestsPerMinute = _.max(loadBalancerRequestsPerMinuteMetric.Values) ?? 0;
+  const maxPageViewsPerSecond = _.max(pageViewsPerSecondMetric?.Values) ?? 0;
+  const maxActiveWorkersPerSecond = _.max(activeWorkersPerSecondMetric?.Values) ?? 0;
+  const maxLoadBalancerRequestsPerMinute = _.max(loadBalancerRequestsPerMinuteMetric?.Values) ?? 0;
 
   const desiredInstancesByPageViews = maxPageViewsPerSecond / config.chunksPageViewsCapacityFactor;
   const desiredInstancesByActiveWorkers =
