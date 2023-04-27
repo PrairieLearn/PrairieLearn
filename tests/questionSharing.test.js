@@ -3,7 +3,7 @@ const ERR = require('async-stacktrace');
 const { assert } = require('chai');
 const { step } = require('mocha-steps');
 const path = require('path');
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const fetch = require('node-fetch').default;
 const helperClient = require('./helperClient');
 const helperServer = require('./helperServer');
@@ -69,7 +69,7 @@ describe('Question Sharing', function () {
       const courseDir = path.join(__dirname, '..', 'exampleCourse');
       syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
         if (ERR(err, callback)) return;
-        assert(result.hadJsonErrorsOrWarnings);
+        assert(result?.hadJsonErrorsOrWarnings);
         callback(null);
       });
     });
@@ -84,7 +84,7 @@ describe('Question Sharing', function () {
         if (ERR(err, callback)) return;
         // TODO: technically this would have an error because there is no permissions on the
         // shared question, but we are configured to ignore sharing errors locally. Is this the right thing to do?
-        if (result.hadJsonErrorsOrWarnings) {
+        if (result?.hadJsonErrorsOrWarnings) {
           return callback(new Error(`Errors or warnings found during sync of ${courseDir}`));
         }
         callback(null);
@@ -143,7 +143,8 @@ describe('Question Sharing', function () {
       });
 
       response = await helperClient.fetchCheerio(sharingUrl);
-      exampleCourseSharingId = UUID_REGEXP.exec(response.text())[0];
+      let result = UUID_REGEXP.exec(response.text());
+      exampleCourseSharingId = result ? result[0] : null;
       assert(exampleCourseSharingId != null);
     });
 
@@ -235,7 +236,7 @@ describe('Question Sharing', function () {
         const courseDir = path.join(__dirname, '..', 'exampleCourse');
         syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
           if (ERR(err, callback)) return;
-          if (result.hadJsonErrorsOrWarnings) {
+          if (result === undefined || result.hadJsonErrorsOrWarnings) {
             return callback(new Error(`Errors or warnings found during sync of ${courseDir}`));
           }
           callback(null);

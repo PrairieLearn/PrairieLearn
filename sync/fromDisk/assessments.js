@@ -358,7 +358,7 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
     let result = await sqldb.queryOneRowAsync(sql.get_course_info, { courseId: courseId });
     if (!result.rows[0].question_sharing_enabled) {
       for (let qid of importedQids) {
-        importedQidAssessmentMap.get(qid).forEach((tid) => {
+        importedQidAssessmentMap.get(qid)?.forEach((tid) => {
           infofile.addError(
             assessments[tid],
             `You have attempted to import a question with '@', but question sharing is not enabled for your course.`
@@ -382,7 +382,7 @@ module.exports.sync = async function (courseId, courseInstanceId, assessments, q
   let missingQids = Array.from(importedQids).filter((qid) => !(qid in importedQuestions));
   if (config.checkSharingOnSync) {
     missingQids.forEach((qid) => {
-      importedQidAssessmentMap.get(qid).forEach((tid) => {
+      importedQidAssessmentMap.get(qid)?.forEach((tid) => {
         // TODO: give a different error message if the reason the question isn't found
         // is because the course slug is invalid/doesn't exist? or just give the same message as if the question id doesn't exist?
         infofile.addError(
