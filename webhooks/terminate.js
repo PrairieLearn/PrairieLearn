@@ -3,7 +3,7 @@ const router = require('express').Router();
 const jose = require('jose');
 const crypto = require('crypto');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const { logger } = require('@prairielearn/logger');
 
 /**
@@ -52,7 +52,7 @@ router.post('/', async (req, res) => {
     // `server.closeIdleConnections` in `server.js` instead of this.
     const socket = res.socket;
     res.on('close', () => {
-      socket.end(() => {
+      socket?.end(() => {
         socket.destroy();
         logger.info('Terminating server due to webhook request');
         process.kill(process.pid, 'SIGTERM');

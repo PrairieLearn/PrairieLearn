@@ -20,37 +20,6 @@ function AdministratorSettings({ resLocals }) {
           navSubPage: 'settings',
         })}
         <div id="content" class="container-fluid">
-          <!-- Config -->
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Server configuration</div>
-            <div class="table-responsive">
-              <table class="table table-sm table-hover table-striped">
-                <thead>
-                  <tr>
-                    <th>Key</th>
-                    <th>Value</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${resLocals.configs.map(
-                    (config) => html`
-                      <tr>
-                        <td>${config.key}</td>
-                        <td>${config.value}</td>
-                      </tr>
-                    `
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div class="card-footer">
-              <small>
-                Edit values in the <strong><tt>config</tt></strong> table.
-              </small>
-            </div>
-          </div>
-
           <!-- Chunk generation -->
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">

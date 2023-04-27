@@ -20,7 +20,7 @@ module.exports.sync = async function (courseId, courseData) {
   /** @type {string[]} */
   let courseAssessmentSets = [];
   if (!infofile.hasErrors(courseData.course)) {
-    courseAssessmentSets = courseData.course.data.assessmentSets.map((t) =>
+    courseAssessmentSets = (courseData.course.data?.assessmentSets ?? []).map((t) =>
       JSON.stringify([t.name, t.abbreviation, t.heading, t.color])
     );
   }
@@ -29,7 +29,7 @@ module.exports.sync = async function (courseId, courseData) {
   const knownAssessmentSetNames = new Set();
   Object.values(courseData.courseInstances).forEach((ci) => {
     Object.values(ci.assessments).forEach((a) => {
-      if (!infofile.hasErrors(a)) {
+      if (!infofile.hasErrors(a) && a.data?.set) {
         knownAssessmentSetNames.add(a.data.set);
       }
     });

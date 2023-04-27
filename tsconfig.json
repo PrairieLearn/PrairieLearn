@@ -1,12 +1,8 @@
 {
+  "extends": "@prairielearn/tsconfig/tsconfig.app.json",
   "compilerOptions": {
-    "allowJs": true,
-    "esModuleInterop": true,
     "noEmit": true,
-    // Allow spreading Maps/Sets into arrays
-    "downlevelIteration": true,
-    "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true,
+    "esModuleInterop": true,
   },
   // We don't actually use any TypeScript; we just use it to validate our
   // standard JavaScript with JSDoc comments.

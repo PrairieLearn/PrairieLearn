@@ -100,6 +100,7 @@ describe('course database', () => {
           coursePath: file.dirname,
           filePath: file.basename,
         });
+        assert(result !== null);
         assert.isFalse(infofile.hasErrors(result));
         assert.isFalse(infofile.hasWarnings(result));
         assert.equal(result.uuid, UUID);
@@ -115,6 +116,7 @@ describe('course database', () => {
           coursePath: file.dirname,
           filePath: file.basename,
         });
+        assert(result !== null);
         assert.isTrue(infofile.hasErrors(result));
       });
     });
@@ -127,6 +129,7 @@ describe('course database', () => {
           coursePath: file.dirname,
           filePath: file.basename,
         });
+        assert(result !== null);
         assert.isTrue(infofile.hasErrors(result));
       });
     });
@@ -139,6 +142,7 @@ describe('course database', () => {
           coursePath: file.dirname,
           filePath: file.basename,
         });
+        assert(result !== null);
         assert.isTrue(infofile.hasErrors(result));
         assert.isFalse(infofile.hasWarnings(result));
         assert.isUndefined(result.data);
@@ -154,6 +158,7 @@ describe('course database', () => {
           coursePath: file.dirname,
           filePath: file.basename,
         });
+        assert(result !== null);
         assert.isTrue(infofile.hasErrors(result));
         assert.isFalse(infofile.hasWarnings(result));
         assert.isUndefined(result.data);
@@ -169,6 +174,7 @@ describe('course database', () => {
           coursePath: file.dirname,
           filePath: file.basename,
         });
+        assert(result !== null);
         assert.isTrue(infofile.hasErrors(result));
         assert.isFalse(infofile.hasWarnings(result));
         assert.isUndefined(result.data);
@@ -202,8 +208,8 @@ describe('course database', () => {
         assert.isFalse(infofile.hasWarnings(result['question1']));
         assert.isFalse(infofile.hasErrors(result['question2']));
         assert.isFalse(infofile.hasWarnings(result['question2']));
-        assert.equal(result['question1'].data.uuid, question1.uuid);
-        assert.equal(result['question2'].data.uuid, question2.uuid);
+        assert.equal(result['question1'].data?.uuid, question1.uuid);
+        assert.equal(result['question2'].data?.uuid, question2.uuid);
       });
     });
 
@@ -213,8 +219,6 @@ describe('course database', () => {
         await writeQuestion(dir, 'question2', getQuestion());
         await writeQuestion(dir, 'question3', getAlternativeQuestion());
         const result = await courseDb.loadQuestions(dir);
-        assert.isFalse(infofile.hasErrors(result));
-        assert.isFalse(infofile.hasWarnings(result));
         assert.equal(Object.keys(result).length, 3);
         assert.match(
           infofile.stringifyWarnings(result['question1']),

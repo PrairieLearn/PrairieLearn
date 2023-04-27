@@ -8,7 +8,7 @@ var express = require('express');
 var router = express.Router();
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-var config = require('../../lib/config');
+const { config } = require('../../lib/config');
 var serverJobs = require('../../lib/server-jobs');
 var syncFromDisk = require('../../sync/syncFromDisk');
 var chunks = require('../../lib/chunks');
@@ -56,6 +56,7 @@ var update = function (locals, callback) {
               syncFromDisk.syncOrCreateDiskToSql(courseDir, job, function (err, result) {
                 if (index !== config.courseDirs.length - 1) job.info('');
                 if (ERR(err, callback)) return;
+                if (!result) throw new Error('syncOrCreateDiskToSql() returned null');
                 if (result.hadJsonErrors) anyCourseHadJsonErrors = true;
                 debug('successfully loaded course', { courseDir });
                 if (config.chunksGenerator) {

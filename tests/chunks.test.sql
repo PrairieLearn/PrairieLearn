@@ -32,3 +32,11 @@ FROM
 WHERE
   qid = $qid
   AND deleted_at IS NULL;
+
+-- BLOCK select_all_chunks
+SELECT
+  *
+FROM
+  chunks
+WHERE
+  course_id = $course_id;

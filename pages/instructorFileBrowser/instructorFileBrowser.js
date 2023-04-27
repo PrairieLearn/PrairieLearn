@@ -316,7 +316,7 @@ router.post('/*', function (req, res, next) {
         );
       }
       if (!req.body.new_file_name) {
-        return next(new Error(`Invalid new file name (was falsey): ${req.body.new_file_name}`));
+        return next(new Error(`Invalid new file name (was falsy): ${req.body.new_file_name}`));
       }
       if (
         !/^(?:[-A-Za-z0-9_]+|\.\.)(?:\/(?:[-A-Za-z0-9_]+|\.\.))*(?:\.[-A-Za-z0-9_]+)?$/.test(

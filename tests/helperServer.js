@@ -8,7 +8,7 @@ const assert = require('chai').assert;
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const opentelemetry = require('@prairielearn/opentelemetry');
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const load = require('../lib/load');
 const aws = require('../lib/aws');
 const cron = require('../cron');

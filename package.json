@@ -7,24 +7,35 @@
         "node": ">=16.0.0"
     },
     "scripts": {
-        "release": "turbo run build && changeset publish",
-        "version": "changeset version && YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn"
+        "grader-host-dev": "yarn workspace @prairielearn/grader-host dev",
+        "grader-host-start": "yarn workspace @prairielearn/grader-host start",
+        "release": "turbo run build && node tools/fix-workspace-versions-before-publish.mjs && changeset publish",
+        "version": "changeset version && YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn",
+        "dev-workspace-host": "yarn workspace @prairielearn/workspace-host dev",
+        "start-workspace-host": "yarn workspace @prairielearn/workspace-host start"
     },
     "dependencies": {
         "@aws-sdk/client-auto-scaling": "^3.304.0",
         "@fortawesome/fontawesome-free": "^6.4.0",
         "@octokit/rest": "^19.0.7",
-        "@prairielearn/bind-mount": "^1.0.0",
-        "@prairielearn/compiled-assets": "^1.0.0",
+        "@prairielearn/bind-mount": "workspace:^",
+        "@prairielearn/compiled-assets": "workspace:^",
+        "@prairielearn/config": "workspace:^",
         "@prairielearn/csv": "workspace:^",
         "@prairielearn/error": "workspace:^",
-        "@prairielearn/html": "^2.0.0",
-        "@prairielearn/named-locks": "^1.0.0",
-        "@prairielearn/opentelemetry": "^1.0.0",
-        "@prairielearn/path-utils": "workspace:*",
-        "@prairielearn/postgres": "^1.0.0",
-        "@prairielearn/sentry": "^1.0.0",
-        "@prairielearn/workspace-utils": "workspace:*",
+        "@prairielearn/html": "workspace:^",
+        "@prairielearn/html-ejs": "workspace:^",
+        "@prairielearn/migrations": "workspace:^",
+        "@prairielearn/named-locks": "workspace:^",
+        "@prairielearn/opentelemetry": "workspace:^",
+        "@prairielearn/path-utils": "workspace:^",
+        "@prairielearn/postgres": "workspace:^",
+        "@prairielearn/postgres-tools": "workspace:^",
+        "@prairielearn/sanitize": "workspace:^",
+        "@prairielearn/sentry": "workspace:^",
+        "@prairielearn/signed-token": "workspace:^",
+        "@prairielearn/tsconfig": "workspace:^",
+        "@prairielearn/workspace-utils": "workspace:^",
         "@pyroscope/nodejs": "^0.2.5",
         "@sentry/profiling-node": "^0.3.0",
         "@sentry/tracing": "^7.46.0",
@@ -35,7 +46,7 @@
         "archiver": "^5.3.1",
         "async": "^3.2.4",
         "async-mutex": "^0.4.0",
-        "async-stacktrace": "0.0.2",
+        "async-stacktrace": "^0.0.2",
         "aws-sdk": "^2.1354.0",
         "backbone": "^1.4.1",
         "base64url": "^3.0.1",
@@ -45,7 +56,7 @@
         "body-parser": "^1.20.2",
         "bootstrap": "^4.6.2",
         "bootstrap-icons": "^1.10.3",
-        "bootstrap-table": "^1.21.4",
+        "bootstrap-table": "1.21.2",
         "bowser": "^2.11.0",
         "byline": "^5.0.0",
         "chalk": "^4.1.2",
@@ -155,7 +166,7 @@
     },
     "devDependencies": {
         "@changesets/cli": "^2.26.1",
-        "@prairielearn/prettier-plugin-sql": "workspace:*",
+        "@prairielearn/prettier-plugin-sql": "workspace:^",
         "@types/async": "^3.2.18",
         "@types/body-parser": "^1.19.2",
         "@types/chai": "^4.3.4",
@@ -165,12 +176,13 @@
         "@types/dockerode": "^3.3.16",
         "@types/folder-hash": "^4.0.2",
         "@types/fs-extra": "^11.0.1",
+        "@types/klaw": "^3.0.3",
         "@types/lodash": "^4.14.192",
         "@types/loopbench": "^1.2.1",
         "@types/memorystream": "^0.3.1",
         "@types/mime": "^3.0.1",
         "@types/mocha": "^10.0.1",
-        "@types/node": "^18.15.11",
+        "@types/node": "^18.16.1",
         "@types/node-fetch": "^2.6.2",
         "@types/object-hash": "^3.0.2",
         "@types/passport": "^1.0.12",
@@ -204,9 +216,9 @@
         "request": "^2.88.2",
         "s3rver": "^3.7.1",
         "sinon": "^15.0.3",
-        "tmp": "0.2.1",
+        "tmp": "^0.2.1",
         "turbo": "^1.8.8",
-        "typescript": "^4.9.5"
+        "typescript": "^5.0.4"
     },
     "nyc": {
         "exclude": [
@@ -226,6 +238,7 @@
         "ext": "js,json,sql"
     },
     "workspaces": [
+        "apps/*",
         "packages/*"
     ],
     "packageManager": "yarn@3.5.0"

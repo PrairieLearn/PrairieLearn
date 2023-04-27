@@ -12,4 +12,3 @@ export const questionOptionsFile: any;
 export const questionOptionsMultipleChoice: any;
 export const questionOptionsMultipleTrueFalse: any;
 export const questionOptionsv3: any;
-export const serverConfig: any;
