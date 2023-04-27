@@ -15,7 +15,7 @@ openpyxl==3.1.2
 pandas==1.5.3
 Pillow==9.5.0
 PuLP==2.7.0
-Pygments==2.14.0
+Pygments==2.15.1
 pygraphviz==1.6
 requests==2.28.2
 scikit-image==0.20.0
