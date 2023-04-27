@@ -14,4 +14,4 @@ services:
     container_name: pl
     environment:
       - HOST_JOBS_DIR=${HOME}/pl_ag_jobs
-      - NODEMON=true
+      - DEV=true
