@@ -4065,7 +4065,7 @@ __metadata:
     http-status: ^1.6.2
     isbinaryfile: ^5.0.0
     jju: ^1.4.0
-    jose: ^4.13.1
+    jose: ^4.14.3
     jquery: ^3.6.3
     jquery-ui-dist: ^1.13.2
     jquery-ui-touch-punch: ^0.2.3
@@ -9488,10 +9488,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jose@npm:^4.13.1":
-  version: 4.13.1
-  resolution: "jose@npm:4.13.1"
-  checksum: 89be959573beee69bd443493887d78799fd42340b45afa2c6681beda30314bcdfa5575f6977203c199e4c3e0ec2fc18d3c94745e7f0d59db51dedfae0efee63d
+"jose@npm:^4.14.3":
+  version: 4.14.3
+  resolution: "jose@npm:4.14.3"
+  checksum: b766d65a60c0407f891003aae053fb500be0edb7e0745e6702bce39199d9f06fda5eb74a90df10611cb7bd7daf2636cbe3726341fef388b51cb4e43b64200f4f
   languageName: node
   linkType: hard
 
