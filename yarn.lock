@@ -2840,6 +2840,7 @@ __metadata:
     lodash: ^4.17.21
     typescript: ^5.0.4
     typescript-cp: ^0.1.7
+    yargs: ^17.7.1
   bin:
     pg-describe: ./dist/bin/pg-describe.js
     pg-diff: ./dist/bin/pg-diff.js
