@@ -1,5 +1,3 @@
-import { TEST_COURSE_PATH } from '../lib/paths';
-
 // @ts-check
 const { assert } = require('chai');
 const cheerio = require('cheerio');
@@ -13,6 +11,7 @@ const helperServer = require('./helperServer');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 const { setUser, parseInstanceQuestionId, saveOrGrade } = require('./helperClient');
+const { TEST_COURSE_PATH } = require('../lib/paths');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
