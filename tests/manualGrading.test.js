@@ -1,3 +1,5 @@
+import { TEST_COURSE_PATH } from '../lib/paths';
+
 // @ts-check
 const { assert } = require('chai');
 const cheerio = require('cheerio');
@@ -21,7 +23,7 @@ const defaultUser = {
 };
 
 const fibonacciSolution = fs.readFileSync(
-  path.resolve(__dirname, '../testCourse/questions/externalGrade/codeUpload/tests/ans.py')
+  path.resolve(TEST_COURSE_PATH, 'questions', 'externalGrade', 'codeUpload', 'tests', 'ans.py')
 );
 
 const mockStudents = [

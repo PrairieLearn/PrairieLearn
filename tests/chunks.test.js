@@ -10,6 +10,7 @@ const sqldb = require('@prairielearn/postgres');
 const courseDB = require('../sync/course-db');
 const chunksLib = require('../lib/chunks');
 const { config } = require('../lib/config');
+const { TEST_COURSE_PATH } = require('../lib/paths');
 const logger = require('./dummyLogger');
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -276,7 +277,7 @@ describe('chunks', () => {
       // We need to modify the test course - create a copy that we can
       // safely manipulate.
       tempTestCourseDir = await tmp.dir({ unsafeCleanup: true });
-      await fs.copy(path.resolve(__dirname, '..', 'testCourse'), tempTestCourseDir.path, {
+      await fs.copy(TEST_COURSE_PATH, tempTestCourseDir.path, {
         overwrite: true,
       });
 

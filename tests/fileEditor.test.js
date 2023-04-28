@@ -17,12 +17,10 @@ const helperServer = require('./helperServer');
 const { exec } = require('child_process');
 const b64Util = require('../lib/base64-util');
 const { encodePath } = require('../lib/uri-util');
+const { EXAMPLE_COURSE_PATH } = require('../lib/paths');
 
 const locals = {};
 let page, elemList;
-
-// Connect to the exampleCourse
-const courseDirExampleCourse = path.join(__dirname, '..', 'exampleCourse');
 
 // Uses course within tests/testFileEditor
 const courseTemplateDir = path.join(__dirname, 'testFileEditor', 'courseTemplate');
@@ -316,7 +314,7 @@ describe('test file editor', function () {
   });
 
   describe('the exampleCourse', function () {
-    before('set up testing server', helperServer.before(courseDirExampleCourse));
+    before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
 
     after('shut down testing server', helperServer.after);
 

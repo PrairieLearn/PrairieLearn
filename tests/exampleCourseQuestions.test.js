@@ -1,4 +1,5 @@
 const { config } = require('../lib/config');
+const { EXAMPLE_COURSE_PATH } = require('../lib/paths');
 const path = require('path');
 
 var helperServer = require('./helperServer');
@@ -13,9 +14,6 @@ locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/question';
 locals.questionPreviewTabUrl = '/preview';
 locals.questionsUrl = locals.courseInstanceBaseUrl + '/questions';
 locals.isStudentPage = false;
-
-// Link against exampleCourseDir
-const exampleCourseDir = path.join(__dirname, '..', 'exampleCourse');
 
 const qidsExampleCourse = [
   // FIXME: 'demo/autograder/ansiOutput',
@@ -71,7 +69,7 @@ const qidsExampleCourse = [
 describe('Auto-test questions in exampleCourse', function () {
   this.timeout(60000);
 
-  before('set up testing server', helperServer.before(exampleCourseDir));
+  before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
   after('shut down testing server', helperServer.after);
 
   qidsExampleCourse.forEach((qid) => helperQuestion.autoTestQuestion(locals, qid));

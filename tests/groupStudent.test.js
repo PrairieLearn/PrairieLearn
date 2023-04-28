@@ -1,7 +1,6 @@
 const ERR = require('async-stacktrace');
 
 const { config } = require('../lib/config');
-const path = require('path');
 var assert = require('chai').assert;
 var request = require('request');
 var cheerio = require('cheerio');
@@ -11,6 +10,7 @@ var sql = sqldb.loadSqlEquiv(__filename);
 
 var helperServer = require('./helperServer');
 const { idsEqual } = require('../lib/id');
+const { TEST_COURSE_PATH } = require('../lib/paths');
 
 let page, elemList;
 const locals = {};
@@ -19,7 +19,6 @@ locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceUrl = locals.baseUrl + '/course_instance/1';
 locals.assessmentsUrl = locals.courseInstanceUrl + '/assessments';
-locals.courseDir = path.join(__dirname, '..', 'testCourse');
 
 const storedConfig = {};
 
@@ -31,7 +30,7 @@ describe('Group based homework assess control on student side', function () {
     storedConfig.authUin = config.authUin;
     callback(null);
   });
-  before('set up testing server', helperServer.before(locals.courseDir));
+  before('set up testing server', helperServer.before(TEST_COURSE_PATH));
   after('shut down testing server', helperServer.after);
   after('unset authenticated user', function (callback) {
     Object.assign(config, storedConfig);

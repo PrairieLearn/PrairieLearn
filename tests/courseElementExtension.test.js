@@ -7,6 +7,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
 const _ = require('lodash');
 const path = require('path');
 const freeform = require('../question-servers/freeform.js');
+const { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } = require('../lib/paths');
 const { promisify } = require('util');
 
 const helperServer = require('./helperServer');
@@ -14,10 +15,9 @@ const helperClient = require('./helperClient');
 
 describe('Course element extensions', function () {
   this.timeout(60000);
-  const exampleCourseDir = path.join(__dirname, '..', 'exampleCourse');
 
   describe('Extensions can be loaded', function () {
-    const extDir = path.join(exampleCourseDir, 'elementExtensions');
+    const extDir = path.resolve(EXAMPLE_COURSE_PATH, 'elementExtensions');
     const element = 'extendable-element';
     const element_extensions = [
       'example-extension',
@@ -65,8 +65,8 @@ describe('Course element extensions', function () {
 
     it("shouldn't fail when there are no extensions to load", async () => {
       const extensions = await freeform.loadExtensions(
-        path.join(__dirname, '..', 'testCourse', 'elementExtensions'),
-        path.join(__dirname, '..', 'testCourse', 'elementExtensions')
+        path.join(TEST_COURSE_PATH, 'elementExtensions'),
+        path.join(TEST_COURSE_PATH, 'elementExtensions')
       );
       assert.isEmpty(
         extensions,
@@ -76,7 +76,7 @@ describe('Course element extensions', function () {
   });
 
   describe('Extensions can insert client-side assets into the page', function () {
-    before('set up testing server', helperServer.before(exampleCourseDir));
+    before('set up testing server', helperServer.before(EXAMPLE_COURSE_PATH));
     after('shut down testing server', helperServer.after);
 
     const locals = {};
