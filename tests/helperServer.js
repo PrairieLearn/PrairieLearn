@@ -21,6 +21,7 @@ const localCache = require('../lib/local-cache');
 const codeCaller = require('../lib/code-caller');
 const externalGrader = require('../lib/externalGrader');
 const externalGradingSocket = require('../lib/externalGradingSocket');
+const { TEST_COURSE_PATH } = require('../lib/paths');
 
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -33,13 +34,10 @@ const server = require('../server');
 const logger = require('./dummyLogger');
 const helperDb = require('./helperDb');
 
-const courseDirDefault = path.join(__dirname, '..', 'testCourse');
-
 module.exports = {
   before: (courseDir) => {
-    if (typeof courseDir === 'undefined') {
-      courseDir = courseDirDefault;
-    }
+    courseDir ??= TEST_COURSE_PATH;
+
     return function (callback) {
       debug('before()');
       let httpServer;

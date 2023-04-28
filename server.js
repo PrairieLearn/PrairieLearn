@@ -64,6 +64,7 @@ const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
 const { enrichSentryScope } = require('./lib/sentry');
 const lifecycleHooks = require('./lib/lifecycle-hooks');
+const { APP_ROOT_PATH } = require('./lib/paths');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -356,8 +357,8 @@ module.exports.initExpress = function () {
   app.use(bodyParser.urlencoded({ extended: false, limit: 5 * 1536 * 1024 }));
   app.use(cookieParser());
   app.use(passport.initialize());
-  if (config.devMode) app.use(favicon(path.join(__dirname, 'public', 'favicon-dev.ico')));
-  else app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+  if (config.devMode) app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon-dev.ico')));
+  else app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon.ico')));
 
   if ('localRootFilesDir' in config) {
     logger.info(`localRootFilesDir: Mapping ${config.localRootFilesDir} into /`);
@@ -371,7 +372,7 @@ module.exports.initExpress = function () {
   // implementation details.
   app.use(
     '/assets/:cachebuster',
-    express.static(path.join(__dirname, 'public'), {
+    express.static(path.join(APP_ROOT_PATH, 'public'), {
       // In dev mode, assets are likely to change while the server is running,
       // so we'll prevent them from being cached.
       maxAge: config.devMode ? 0 : '31536000s',
@@ -380,7 +381,7 @@ module.exports.initExpress = function () {
   );
   // This route is kept around for legacy reasons - new code should prefer the
   // "cacheable" route above.
-  app.use(express.static(path.join(__dirname, 'public')));
+  app.use(express.static(path.join(APP_ROOT_PATH, 'public')));
 
   app.use('/build/', compiledAssets.handler());
 
@@ -2128,8 +2129,8 @@ if (config.startServer) {
       async () => {
         compiledAssets.init({
           dev: config.devMode,
-          sourceDirectory: path.resolve(__dirname, 'assets'),
-          buildDirectory: path.resolve(__dirname, 'public/build'),
+          sourceDirectory: path.resolve(APP_ROOT_PATH, 'assets'),
+          buildDirectory: path.resolve(APP_ROOT_PATH, 'public/build'),
           publicPath: '/build',
         });
       },

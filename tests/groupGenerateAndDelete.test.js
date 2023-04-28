@@ -1,17 +1,16 @@
 var ERR = require('async-stacktrace');
 var assert = require('chai').assert;
-var path = require('path');
 
 var sqldb = require('@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename);
 var helperServer = require('./helperServer');
 var groupUpdate = require('../lib/group-update');
+var { TEST_COURSE_PATH } = require('../lib/paths');
 var locals = {};
-locals.courseDir = path.join(__dirname, '..', 'testCourse');
 
 describe('test auto group and delete groups', function () {
   this.timeout(20000);
-  before('set up testing server', helperServer.before(locals.courseDir));
+  before('set up testing server', helperServer.before(TEST_COURSE_PATH));
   after('shut down testing server', helperServer.after);
 
   it('get group-based homework assessment', (callback) => {

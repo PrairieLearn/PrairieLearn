@@ -11,6 +11,7 @@ const helperServer = require('./helperServer');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 const { setUser, parseInstanceQuestionId, saveOrGrade } = require('./helperClient');
+const { TEST_COURSE_PATH } = require('../lib/paths');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -21,7 +22,7 @@ const defaultUser = {
 };
 
 const fibonacciSolution = fs.readFileSync(
-  path.resolve(__dirname, '../testCourse/questions/externalGrade/codeUpload/tests/ans.py')
+  path.resolve(TEST_COURSE_PATH, 'questions', 'externalGrade', 'codeUpload', 'tests', 'ans.py')
 );
 
 const mockStudents = [

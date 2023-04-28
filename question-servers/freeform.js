@@ -20,6 +20,7 @@ const courseUtil = require('../lib/courseUtil');
 const markdown = require('../lib/markdown');
 const chunks = require('../lib/chunks');
 const assets = require('../lib/assets');
+const { APP_ROOT_PATH } = require('../lib/paths');
 
 // Maps core element names to element info
 let coreElementsCache = {};
@@ -80,7 +81,7 @@ module.exports = {
   async init() {
     // Populate the list of PrairieLearn elements
     coreElementsCache = await module.exports.loadElements(
-      path.join(__dirname, '..', 'elements'),
+      path.join(APP_ROOT_PATH, 'elements'),
       'core'
     );
   },
