@@ -8,7 +8,7 @@
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
     "start-executor": "node dist/executor.js",
     "start": "node dist/server.js",
-    "test": "TS_NODE_TRANSPILE_ONLY=true mocha --parallel src/**/*.test.{js,ts}"
+    "test": "mocha --parallel src/**/*.test.{js,ts}"
   },
   "dependencies": {
     "@aws-sdk/client-auto-scaling": "^3.304.0",
