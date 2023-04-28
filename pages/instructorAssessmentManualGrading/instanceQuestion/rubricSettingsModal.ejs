@@ -1,6 +1,7 @@
 <div class="modal js-rubric-settings-modal" tabindex="-1" role="dialog">
   <div class="modal-dialog modal-xl border-info" role="document">
-    <form name="rubric-settings" method="POST" class="needs-validation">
+    <form name="rubric-settings" method="POST" class="needs-validation"
+          data-max-points="<%= assessment_question.max_points %>">
       <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
       <input type="hidden" name="__action" value="modify_rubric_settings">
       <input type="hidden" name="modified_at" value="<%= locals.rubric_data?.modified_at %>">
@@ -20,8 +21,9 @@
             <div class="col-6">
               <div class="form-check">
                 <label class="form-check-label">
-                  <input class="form-check-input js-replace-auto-points-input" name="replace_auto_points"
-                         type="radio" value="true"
+                  <input class="form-check-input js-replace-auto-points-input"
+                         name="replace_auto_points"
+                         type="radio" value="true" required
                          data-max-points="<%= assessment_question.max_points %>"
                          <% if (locals.rubric_data?.replace_auto_points ?? !assessment_question.max_manual_points) { %>checked<% } %>
                          aria-describedby="rubric-settings-replace-auto-explanation">
@@ -33,7 +35,7 @@
               <div class="form-check">
                 <label class="form-check-label">
                   <input class="form-check-input js-replace-auto-points-input" name="replace_auto_points"
-                         type="radio" value="false"
+                         type="radio" value="false" required
                          data-max-points="<%= assessment_question.max_manual_points %>"
                          <% if (!(locals.rubric_data?.replace_auto_points ?? !assessment_question.max_manual_points)) { %>checked<% } %>
                          aria-describedby="rubric-settings-replace-auto-explanation">
@@ -53,7 +55,8 @@
             <div class="col-6">
               <div class="form-check js-rubric-max-points-positive">
                 <label class="form-check-label">
-                  <input class="form-check-input" name="starting_points" type="radio" value="0"
+                  <input class="form-check-input" name="starting_points"
+                         type="radio" value="0" required
                          <% if (!locals.rubric_data?.starting_points) { %>checked<% } %>
                          aria-describedby="rubric-settings-start-points-explanation">
                   Positive grading (start at zero, add points)
@@ -61,7 +64,8 @@
               </div>
               <div class="form-check js-rubric-max-points-positive">
                 <label class="form-check-label">
-                  <input class="form-check-input js-negative-grading" name="starting_points" type="radio" value="<%= assessment_question.max_manual_points %>"
+                  <input class="form-check-input js-negative-grading" name="starting_points"
+                         type="radio" value="<%= assessment_question.max_manual_points %>" required
                          <% if (locals.rubric_data?.starting_points) { %>checked<% } %>
                          aria-describedby="rubric-settings-start-points-explanation">
                   Negative grading (start at <span class="js-rubric-max-points-info"></span>, subtract penalties)
@@ -71,7 +75,7 @@
             <div class="form-group col-3">
               <label>
                 Minimum rubric score
-                <input class="form-control" name="min_points" type="number"
+                <input class="form-control" name="min_points" type="number" required
                        value="<%= locals.rubric_data?.min_points ?? 0 %>"
                        aria-describedby="rubric-settings-floor-ceiling-explanation">
               </label>
@@ -79,7 +83,7 @@
             <div class="form-group col-3">
               <label data-toggle="tooltip" title="">
                 Maximum extra credit
-                <input class="form-control" name="max_extra_points" type="number"
+                <input class="form-control" name="max_extra_points" type="number" required
                        value="<%= locals.rubric_data?.max_extra_points ?? 0 %>"
                        aria-describedby="rubric-settings-floor-ceiling-explanation">
               </label>
