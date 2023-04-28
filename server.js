@@ -64,7 +64,7 @@ const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
 const { enrichSentryScope } = require('./lib/sentry');
 const lifecycleHooks = require('./lib/lifecycle-hooks');
-const { APP_ROOT_PATH } = require('./lib/paths');
+const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
 const staticNodeModules = require('./middlewares/staticNodeModules');
 
 process.on('warning', (e) => console.warn(e));
@@ -1847,13 +1847,24 @@ if (config.startServer) {
       async () => {
         logger.verbose('PrairieLearn server start');
 
-        let configFilename = 'config.json';
+        // For backwards compatibility, we'll default to trying to load config
+        // files from both the application and repository root.
+        //
+        // We'll put the app config file second so that it can override anything
+        // in the repository root config file.
+        let configPaths = [
+          path.join(REPOSITORY_ROOT_PATH, 'config.json'),
+          path.join(APP_ROOT_PATH, 'config.json'),
+        ];
+
+        // If a config file was specified on the command line, we'll use that
+        // instead of the default locations.
         if ('config' in argv) {
-          configFilename = argv['config'];
+          configPaths = [argv['config']];
         }
 
         // Load config immediately so we can use it configure everything else.
-        await loadConfig(configFilename);
+        await loadConfig(configPaths);
         awsHelper.init();
 
         // This should be done as soon as we load our config so that we can
