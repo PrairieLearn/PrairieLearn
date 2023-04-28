@@ -3735,6 +3735,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/yargs-parser@npm:*":
+  version: 21.0.0
+  resolution: "@types/yargs-parser@npm:21.0.0"
+  checksum: b2f4c8d12ac18a567440379909127cf2cec393daffb73f246d0a25df36ea983b93b7e9e824251f959e9f928cbc7c1aab6728d0a0ff15d6145f66cec2be67d9a2
+  languageName: node
+  linkType: hard
+
+"@types/yargs@npm:^17.0.24":
+  version: 17.0.24
+  resolution: "@types/yargs@npm:17.0.24"
+  dependencies:
+    "@types/yargs-parser": "*"
+  checksum: 5f3ac4dc4f6e211c1627340160fbe2fd247ceba002190da6cf9155af1798450501d628c9165a183f30a224fc68fa5e700490d740ff4c73e2cdef95bc4e8ba7bf
+  languageName: node
+  linkType: hard
+
 "@typescript-eslint/eslint-plugin@npm:^5.57.1":
   version: 5.57.1
   resolution: "@typescript-eslint/eslint-plugin@npm:5.57.1"
