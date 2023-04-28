@@ -84,15 +84,19 @@ RETURNING
 SELECT
   ss.id,
   ss.name,
-  (count(qss.question_id = $question_id) > 0)::boolean AS in_set
+  (ssq.question_id IS NOT NULL)::boolean as in_set
 FROM
   sharing_sets AS ss
-  LEFT JOIN sharing_set_questions AS qss ON qss.sharing_set_id = ss.id
+  LEFT OUTER JOIN (
+    SELECT
+      *
+    FROM
+      sharing_set_questions
+    WHERE
+      question_id = $question_id
+  ) AS ssq ON ssq.sharing_set_id = ss.id
 WHERE
-  ss.course_id = $course_id
-GROUP BY
-  ss.id,
-  ss.name;
+  ss.course_id = $course_id;
 
 -- BLOCK sharing_set_add
 INSERT INTO
