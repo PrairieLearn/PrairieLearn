@@ -1,6 +1,5 @@
 const { config } = require('../lib/config');
 const { EXAMPLE_COURSE_PATH } = require('../lib/paths');
-const path = require('path');
 
 var helperServer = require('./helperServer');
 var helperQuestion = require('./helperQuestion');
