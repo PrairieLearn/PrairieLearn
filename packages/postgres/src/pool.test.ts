@@ -1,5 +1,7 @@
 import chai from 'chai';
 import chaiAsPromised from 'chai-as-promised';
+import { Writable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import { z, ZodError } from 'zod';
 
 import { queryAsync, queryCursor, queryValidatedCursor } from './default-pool';
@@ -16,10 +18,7 @@ describe('@prairielearn/postgres', function () {
   before(async () => {
     await postgresTestUtils.createDatabase();
     await queryAsync('CREATE TABLE workspaces (id BIGSERIAL PRIMARY KEY, state TEXT);', {});
-    await queryAsync("INSERT INTO workspaces (id, state) VALUES (1,'uninitialized');", {});
-    await queryAsync("INSERT INTO workspaces (id, state) VALUES (2, 'stopped');", {});
-    await queryAsync("INSERT INTO workspaces (id, state) VALUES (3, 'launching');", {});
-    await queryAsync("INSERT INTO workspaces (id, state) VALUES (4, 'running');", {});
+    await queryAsync('INSERT INTO workspaces (id) SELECT s FROM generate_series(1, 100) AS s', {});
   });
 
   after(async () => {
@@ -28,7 +27,7 @@ describe('@prairielearn/postgres', function () {
 
   describe('queryCursor', () => {
     it('returns zero rows', async () => {
-      const cursor = await queryCursor('SELECT * FROM workspaces WHERE id = 5;', {});
+      const cursor = await queryCursor('SELECT * FROM workspaces WHERE id = 10000;', {});
       const rowBatches = [];
       for await (const rows of cursor.iterate(10)) {
         rowBatches.push(rows);
@@ -48,13 +47,13 @@ describe('@prairielearn/postgres', function () {
     });
 
     it('returns all rows at once', async () => {
-      const cursor = queryCursor('SELECT * FROM workspaces;', {});
+      const cursor = queryCursor('SELECT * FROM workspaces WHERE id <= 10;', {});
       const rowBatches = [];
       for await (const rows of (await cursor).iterate(10)) {
         rowBatches.push(rows);
       }
       assert.lengthOf(rowBatches, 1);
-      assert.lengthOf(rowBatches[0], 4);
+      assert.lengthOf(rowBatches[0], 10);
     });
 
     it('handles errors', async () => {
@@ -85,7 +84,7 @@ describe('@prairielearn/postgres', function () {
         id: z.string(),
       });
       const cursor = await queryValidatedCursor(
-        'SELECT * FROM workspaces ORDER BY id ASC;',
+        'SELECT * FROM workspaces WHERE id <= 10 ORDER BY id ASC;',
         {},
         WorkspaceSchema
       );
@@ -93,7 +92,7 @@ describe('@prairielearn/postgres', function () {
       for await (const rows of cursor.iterate(10)) {
         allRows.push(...rows);
       }
-      assert.lengthOf(allRows, 4);
+      assert.lengthOf(allRows, 10);
       const workspace = allRows[0] as any;
       assert.equal(workspace.id, '1');
       assert.isUndefined(workspace.state);
@@ -104,7 +103,7 @@ describe('@prairielearn/postgres', function () {
         badProperty: z.string(),
       });
       const cursor = await queryValidatedCursor(
-        'SELECT * FROM workspaces ORDER BY id ASC;',
+        'SELECT * FROM workspaces WHERE id <= 10 ORDER BY id ASC;',
         {},
         BadWorkspaceSchema
       );
@@ -119,7 +118,7 @@ describe('@prairielearn/postgres', function () {
 
       const maybeError = await readAllRows().catch((err) => err);
       assert.instanceOf(maybeError, ZodError);
-      assert.lengthOf(maybeError.errors, 4);
+      assert.lengthOf(maybeError.errors, 10);
     });
 
     it('returns a stream', async () => {
@@ -127,7 +126,7 @@ describe('@prairielearn/postgres', function () {
         id: z.string(),
       });
       const cursor = await queryValidatedCursor(
-        'SELECT * FROM workspaces ORDER BY id ASC;',
+        'SELECT * FROM workspaces WHERE id <= 10 ORDER BY id ASC;',
         {},
         WorkspaceSchema
       );
@@ -137,7 +136,7 @@ describe('@prairielearn/postgres', function () {
         allRows.push(row);
       }
 
-      assert.lengthOf(allRows, 4);
+      assert.lengthOf(allRows, 10);
     });
 
     it('emits an error when validation fails', async () => {
@@ -162,6 +161,32 @@ describe('@prairielearn/postgres', function () {
       const maybeError = await readAllRows().catch((err) => err);
       assert.instanceOf(maybeError, ZodError);
       assert.lengthOf(maybeError.errors, 1);
+    });
+
+    it('closes the cursor when the stream is closed', async () => {
+      const WorkspaceSchema = z.object({
+        id: z.string(),
+      });
+      const cursor = await queryValidatedCursor('SELECT * FROM workspaces;', {}, WorkspaceSchema);
+      const stream = cursor.stream(1);
+
+      const rows: any[] = [];
+      const ac = new AbortController();
+      const writable = new Writable({
+        objectMode: true,
+        write: function (chunk, _encoding, callback) {
+          rows.push(chunk);
+
+          // After receiving the first row, abort the stream. This lets us test
+          // that the underlying cursor is closed. If it is *not* closed, this
+          // `after` hook will fail with a timeout.
+          ac.abort();
+          callback();
+        },
+      });
+
+      await assert.isRejected(pipeline(stream, writable, { signal: ac.signal }));
+      assert.lengthOf(rows, 1);
     });
   });
 });
