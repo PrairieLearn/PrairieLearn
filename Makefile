@@ -31,18 +31,15 @@ start-s3rver:
 	@docker/start_s3rver.sh
 
 test: test-js test-python
-test-js: test-prairielearn test-turbo
-test-prairielearn: start-support
-	@yarn mocha --parallel "tests/**/*.test.{js,mjs}"
-test-prairielearn-serial: start-support
-	@yarn mocha "tests/**/*.test.{js,mjs}"
-test-turbo:
+test-js: start-support
 	@yarn turbo run test
 test-python:
 # `pl_unit_test.py` has an unfortunate file name - it matches the pattern that
 # pytest uses to discover tests, but it isn't actually a test file itself. We
 # explicitly exclude it here.
 	@python3 -m pytest --ignore graders/python/python_autograder/pl_unit_test.py
+test-prairielearn: start-support
+	@yarn workspace @prairielearn/prairielearn run test
 
 lint: lint-js lint-python lint-html lint-links
 lint-js:

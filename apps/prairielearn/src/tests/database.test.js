@@ -1,5 +1,6 @@
 // @ts-check
 const _ = require('lodash');
+const path = require('node:path');
 
 const { describeDatabase, diffDirectoryAndDatabase } = require('@prairielearn/postgres-tools');
 const helperDb = require('./helperDb');
@@ -24,12 +25,14 @@ describe('database', function () {
       outputFormat: 'string',
       coloredOutput: process.stdout.isTTY,
     };
+    const dbDirectory = path.resolve(__dirname, '..', '..', '..', '..', 'database');
     const dbName = helperDb.getDatabaseNameForCurrentWorker();
-    const diff = await diffDirectoryAndDatabase('database', dbName, options);
+    const diff = await diffDirectoryAndDatabase(dbDirectory, dbName, options);
     if (diff) {
       throw new DatabaseError(diff);
     }
   });
+
   it('should not contain "ON DELETE CASCADE" foreign keys from soft-delete to hard-delete tables', async function () {
     /*
      * The bad case is:
