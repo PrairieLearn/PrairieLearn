@@ -1,6 +1,5 @@
 build:
 	@yarn turbo run build
-	@node packages/compiled-assets/dist/cli.js build ./assets ./public/build
 python-deps:
 	@python3 -m pip install -r images/plbase/python-requirements.txt --root-user-action=ignore
 deps:
