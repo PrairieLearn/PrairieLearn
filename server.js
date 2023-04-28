@@ -64,7 +64,7 @@ const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
 const { enrichSentryScope } = require('./lib/sentry');
 const lifecycleHooks = require('./lib/lifecycle-hooks');
-const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
+const { APP_ROOT_PATH } = require('./lib/paths');
 const staticNodeModules = require('./middlewares/staticNodeModules');
 
 process.on('warning', (e) => console.warn(e));
