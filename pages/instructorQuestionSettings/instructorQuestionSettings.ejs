@@ -92,7 +92,7 @@
                 <% }); %>
                 <% if ((authz_data.has_course_permission_edit) && (! course.example_course) && sharing_sets_other.length > 0) { %>
                   <form name="sharing-set-add" method="POST" class="d-inline">
-                    <input type="hidden" name="__action" value="sharing_set_add">
+                    <input type="hidden" name="__action" value="unsafe_sharing_set_add">
                     <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                     <div class="btn-group btn-group-sm" role="group">
                       <button id="addSharingSet" type="button" class="btn btn-sm btn-outline-dark dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">

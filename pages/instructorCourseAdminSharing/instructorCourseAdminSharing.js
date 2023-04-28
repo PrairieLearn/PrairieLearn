@@ -60,17 +60,17 @@ router.post(
       await generateSharingId(req, res);
       res.redirect(req.originalUrl);
       return;
-    } else if (req.body.__action === 'sharing_set_create') {
-      await sqldb.queryZeroOrOneRowAsync(sql.create_sharing_set, {
+    } else if (req.body.__action === 'unsafe_sharing_set_create') {
+      await sqldb.queryZeroOrOneRowAsync(sql.sharing_set_create, {
         sharing_set_name: req.body.sharing_set_name,
         course_id: res.locals.course.id,
       });
-    } else if (req.body.__action === 'course_sharing_set_add') {
+    } else if (req.body.__action === 'unsafe_course_sharing_set_add') {
       await sqldb.queryZeroOrOneRowAsync(sql.course_sharing_set_add, {
         sharing_set_id: req.body.sharing_set_id,
         course_sharing_id: req.body.course_sharing_id,
       });
-    } else if (req.body.__action === 'choose_sharing_name') {
+    } else if (req.body.__action === 'unsafe_choose_sharing_name') {
       if (
         req.body.course_sharing_name.includes('/') ||
         req.body.course_sharing_name.includes('@')

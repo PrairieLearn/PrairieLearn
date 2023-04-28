@@ -101,7 +101,13 @@ WHERE
 -- BLOCK sharing_set_add
 INSERT INTO
   sharing_set_questions (question_id, sharing_set_id)
-VALUES
-  ($question_id, $sharing_set_id);
-
--- TODO validate the sharing_set_id belongs to this course?
+SELECT
+  q.id,
+  ss.id
+FROM
+  sharing_sets AS ss
+  JOIN questions AS q ON q.course_id = ss.course_id
+WHERE
+  ss.course_id = $course_id
+  AND ss.id = $sharing_set_id
+  AND q.id = $question_id;

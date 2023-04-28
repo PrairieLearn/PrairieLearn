@@ -3,7 +3,6 @@ CREATE TABLE IF NOT EXISTS
     id BIGSERIAL PRIMARY KEY,
     course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,
     name text,
-    description text,
     UNIQUE (course_id, name)
   );
 

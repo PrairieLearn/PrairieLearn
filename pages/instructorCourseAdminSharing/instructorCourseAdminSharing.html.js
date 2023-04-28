@@ -5,7 +5,7 @@ const { renderEjs } = require('@prairielearn/html-ejs');
 const addSharingSetPopover = (resLocals) => {
   return html`
     <form name="sharing-set-create" method="POST">
-      <input type="hidden" name="__action" value="sharing_set_create">
+      <input type="hidden" name="__action" value="unsafe_sharing_set_create">
       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
 
       <div class="form-group mb-4">
@@ -27,7 +27,7 @@ const addSharingSetPopover = (resLocals) => {
 const chooseSharingNamePopover = (resLocals) => {
   return html`
     <form name="choose-sharing-name" method="POST">
-      <input type="hidden" name="__action" value="choose_sharing_name">
+      <input type="hidden" name="__action" value="unsafe_choose_sharing_name">
       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
 
       <div class="form-group mb-4">
@@ -178,7 +178,11 @@ const InstructorSharing = ({ sharing_name, sharing_id, sharing_sets, resLocals }
                           method="POST"
                           class="d-inline"
                         >
-                          <input type="hidden" name="__action" value="course_sharing_set_add" />
+                          <input
+                            type="hidden"
+                            name="__action"
+                            value="unsafe_course_sharing_set_add"
+                          />
                           <input
                             type="hidden"
                             name="__csrf_token"

@@ -5,18 +5,14 @@ SELECT
 FROM
   pl_courses
 WHERE
-  id = $course_id
-  -- BLOCK select_sharing_sets
+  id = $course_id;
+
+-- BLOCK select_sharing_sets
 SELECT
   ss.name,
   ss.id,
   jsonb_agg(
-    jsonb_build_object(
-      'course_id',
-      c.id,
-      'short_name',
-      c.short_name --maybe should use c.sharing_name here instead?
-    )
+    jsonb_build_object('course_id', c.id, 'short_name', c.short_name)
     ORDER BY
       c.short_name
   ) AS shared_with
@@ -38,15 +34,11 @@ SET
 WHERE
   id = $course_id;
 
--- BLOCK create_sharing_set
+-- BLOCK sharing_set_create
 INSERT INTO
-  sharing_sets (course_id, name, description)
+  sharing_sets (course_id, name)
 VALUES
-  (
-    $course_id,
-    $sharing_set_name,
-    'Sharing set description'
-  );
+  ($course_id, $sharing_set_name);
 
 -- BLOCK course_sharing_set_add
 INSERT INTO

@@ -205,11 +205,15 @@ router.post('/', function (req, res, next) {
         }
       });
     });
-  } else if (req.body.__action === 'sharing_set_add') {
+  } else if (req.body.__action === 'unsafe_sharing_set_add') {
     debug('Add question to sharing set');
     sqldb.queryZeroOrOneRow(
       sql.sharing_set_add,
-      { question_id: res.locals.question.id, sharing_set_id: req.body.sharing_set_id },
+      {
+        course_id: res.locals.course.id,
+        question_id: res.locals.question.id,
+        sharing_set_id: req.body.sharing_set_id,
+      },
       (err, _result) => {
         if (ERR(err, next)) return;
 
