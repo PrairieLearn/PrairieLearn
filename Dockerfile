@@ -35,7 +35,7 @@ RUN chmod +x /PrairieLearn/docker/init.sh \
     && /PrairieLearn/docker/start_postgres.sh \
     && cd /PrairieLearn \
     && make build \
-    && node server.js --migrate-and-exit \
+    && node apps/prairielearn/dist/server.js --migrate-and-exit \
     && su postgres -c "createuser -s root" \
     && /PrairieLearn/docker/start_postgres.sh stop \
     && /PrairieLearn/docker/gen_ssl.sh \
