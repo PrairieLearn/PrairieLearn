@@ -96,6 +96,10 @@
             "description": "Whether the question will give partial points for fractional scores (defaults to \"false\" for v2 questions and \"true\" for v3.).",
             "type": "boolean"
         },
+        "crossOriginIsolated": {
+            "description": "Enables cross origin isolation headers for the question. This is needed if you want to use a WASM program that requires multithreading or using SharedArrayBuffers (defaults to \"false\").",
+            "type": "boolean"
+        },
         "options": {
             "description": "Options that define how the question will work, specific to the individual question type.",
             "type": "object"

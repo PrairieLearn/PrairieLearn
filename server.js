@@ -1013,6 +1013,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'preview';
       next();
     },
+    require('./middlewares/crossOriginIsolatedQuestion'),
     require('./pages/shared/floatFormatters'),
     require('./pages/instructorQuestionPreview/instructorQuestionPreview'),
   ]);
@@ -1341,6 +1342,7 @@ module.exports.initExpress = function () {
     require('./middlewares/selectAndAuthzInstanceQuestion'),
     // don't use logPageView here, we load it inside the page so it can get the variant_id
     require('./middlewares/studentAssessmentAccess'),
+    require('./middlewares/crossOriginIsolatedQuestion'),
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
     require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
   ]);
@@ -1450,6 +1452,7 @@ module.exports.initExpress = function () {
       res.locals.navSubPage = 'preview';
       next();
     },
+    require('./middlewares/crossOriginIsolatedQuestion'),
     require('./pages/shared/floatFormatters'),
     require('./pages/instructorQuestionPreview/instructorQuestionPreview'),
   ]);

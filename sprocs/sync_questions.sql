@@ -162,6 +162,7 @@ BEGIN
         workspace_url_rewrite = (src.data->>'workspace_url_rewrite')::boolean,
         workspace_enable_networking = (src.data->>'workspace_enable_networking')::boolean,
         workspace_environment = (src.data->>'workspace_environment')::jsonb,
+        cross_origin_isolated = (src.data->>'cross_origin_isolated')::boolean,
         sync_errors = NULL,
         sync_warnings = src.warnings
     FROM
