@@ -8,12 +8,15 @@ var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var async = require('async');
 var requirejs = require('requirejs');
+var path = require('node:path');
 
 const { logger } = require('@prairielearn/logger');
 
+const { APP_ROOT_PATH } = require('./paths');
+
 requirejs.config({
   nodeRequire: require,
-  baseUrl: './public/localscripts/calculationQuestion',
+  baseUrl: path.join(APP_ROOT_PATH, 'public/localscripts/calculationQuestion'),
 });
 
 requirejs.onError = function (err) {
