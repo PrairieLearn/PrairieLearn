@@ -2631,6 +2631,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/prairielearn@workspace:apps/prairielearn":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/prairielearn@workspace:apps/prairielearn"
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/prettier-plugin-sql@workspace:^, @prairielearn/prettier-plugin-sql@workspace:packages/prettier-plugin-sql":
   version: 0.0.0-use.local
   resolution: "@prairielearn/prettier-plugin-sql@workspace:packages/prettier-plugin-sql"
