@@ -65,13 +65,8 @@ describe('Course element extensions', function () {
 
     it("shouldn't fail when there are no extensions to load", async () => {
       const extensions = await freeform.loadExtensions(
-<<<<<<< HEAD
         path.join(TEST_COURSE_PATH, 'elementExtensions'),
         path.join(TEST_COURSE_PATH, 'elementExtensions')
-=======
-        path.join(__dirname, '..', '..', '..', '..', 'testCourse', 'elementExtensions'),
-        path.join(__dirname, '..', '..', '..', '..', 'testCourse', 'elementExtensions')
->>>>>>> 8ab2c826f (Adjust paths in tests; work on testing infra)
       );
       assert.isEmpty(
         extensions,
