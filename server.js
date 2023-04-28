@@ -65,6 +65,7 @@ const { isEnterprise } = require('./lib/license');
 const { enrichSentryScope } = require('./lib/sentry');
 const lifecycleHooks = require('./lib/lifecycle-hooks');
 const { APP_ROOT_PATH } = require('./lib/paths');
+const staticNodeModules = require('./middlewares/staticNodeModules');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -390,28 +391,26 @@ module.exports.initExpress = function () {
   // us to treat those files as immutable and cache them essentially forever.
   app.use(
     '/cacheable_node_modules/:cachebuster',
-    express.static(path.join(__dirname, 'node_modules'), {
+    staticNodeModules('.', {
       maxAge: '31536000s',
       immutable: true,
     })
   );
+
   // This is included for backwards-compatibility with pages that might still
   // expect to be able to load files from the `/node_modules` route.
-  app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
+  app.use('/node_modules', staticNodeModules('.'));
 
   // Included for backwards-compatibility; new code should load MathJax from
   // `/cacheable_node_modules` instead.
-  app.use('/MathJax', express.static(path.join(__dirname, 'node_modules', 'mathjax', 'es5')));
+  app.use('/MathJax', staticNodeModules(path.join('mathjax', 'es5')));
 
   // Support legacy use of ace by v2 questions
   app.use(
     '/localscripts/calculationQuestion/ace',
-    express.static(path.join(__dirname, 'node_modules/ace-builds/src-min-noconflict'))
+    staticNodeModules(path.join('ace-builds', 'src-min-noconflict'))
   );
-  app.use(
-    '/javascripts/ace',
-    express.static(path.join(__dirname, 'node_modules/ace-builds/src-min-noconflict'))
-  );
+  app.use('/javascripts/ace', staticNodeModules(path.join('ace-builds', 'src-min-noconflict')));
 
   // Middleware for all requests
   // response_id is logged on request, response, and error to link them together
