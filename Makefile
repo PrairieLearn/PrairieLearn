@@ -61,8 +61,12 @@ format-python:
 	@python3 -m black ./
 
 typecheck: typecheck-js typecheck-python
+# This is just an alias to our build script, which will perform typechecking
+# as a side-effect.
+# TODO: Do we want to have a separate typecheck command for all packages/apps?
+# Maybe using TypeScript project references?
 typecheck-js:
-	@yarn tsc
+	@yarn turbo run build
 typecheck-python:
 	@yarn pyright --skipunannotated
 
