@@ -79,114 +79,111 @@ describe('@prairielearn/postgres', function () {
   });
 
   describe('queryValidatedCursor', () => {
-    it('validates with provided schema', async () => {
-      const WorkspaceSchema = z.object({
-        id: z.string(),
-      });
-      const cursor = await queryValidatedCursor(
-        'SELECT * FROM workspaces WHERE id <= 10 ORDER BY id ASC;',
-        {},
-        WorkspaceSchema
-      );
-      const allRows = [];
-      for await (const rows of cursor.iterate(10)) {
-        allRows.push(...rows);
-      }
-      assert.lengthOf(allRows, 10);
-      const workspace = allRows[0] as any;
-      assert.equal(workspace.id, '1');
-      assert.isUndefined(workspace.state);
+    const WorkspaceSchema = z.object({
+      id: z.string(),
     });
 
-    it('throws error when validation fails', async () => {
-      const BadWorkspaceSchema = z.object({
-        badProperty: z.string(),
-      });
-      const cursor = await queryValidatedCursor(
-        'SELECT * FROM workspaces WHERE id <= 10 ORDER BY id ASC;',
-        {},
-        BadWorkspaceSchema
-      );
+    const BadWorkspaceSchema = z.object({
+      badProperty: z.string(),
+    });
 
-      async function readAllRows() {
+    describe('iterator', () => {
+      it('validates with provided schema', async () => {
+        const cursor = await queryValidatedCursor(
+          'SELECT * FROM workspaces WHERE id <= 10 ORDER BY id ASC;',
+          {},
+          WorkspaceSchema
+        );
         const allRows = [];
         for await (const rows of cursor.iterate(10)) {
           allRows.push(...rows);
         }
-        return allRows;
-      }
+        assert.lengthOf(allRows, 10);
+        const workspace = allRows[0] as any;
+        assert.equal(workspace.id, '1');
+        assert.isUndefined(workspace.state);
+      });
 
-      const maybeError = await readAllRows().catch((err) => err);
-      assert.instanceOf(maybeError, ZodError);
-      assert.lengthOf(maybeError.errors, 10);
+      it('throws error when validation fails', async () => {
+        const cursor = await queryValidatedCursor(
+          'SELECT * FROM workspaces WHERE id <= 10 ORDER BY id ASC;',
+          {},
+          BadWorkspaceSchema
+        );
+
+        async function readAllRows() {
+          const allRows = [];
+          for await (const rows of cursor.iterate(10)) {
+            allRows.push(...rows);
+          }
+          return allRows;
+        }
+
+        const maybeError = await readAllRows().catch((err) => err);
+        assert.instanceOf(maybeError, ZodError);
+        assert.lengthOf(maybeError.errors, 10);
+      });
     });
 
-    it('returns a stream', async () => {
-      const WorkspaceSchema = z.object({
-        id: z.string(),
-      });
-      const cursor = await queryValidatedCursor(
-        'SELECT * FROM workspaces WHERE id <= 10 ORDER BY id ASC;',
-        {},
-        WorkspaceSchema
-      );
-      const stream = cursor.stream(1);
-      const allRows = [];
-      for await (const row of stream) {
-        allRows.push(row);
-      }
-
-      assert.lengthOf(allRows, 10);
-    });
-
-    it('emits an error when validation fails', async () => {
-      const BadWorkspaceSchema = z.object({
-        badProperty: z.string(),
-      });
-      const cursor = await queryValidatedCursor(
-        'SELECT * FROM workspaces ORDER BY id ASC;',
-        {},
-        BadWorkspaceSchema
-      );
-      const stream = cursor.stream(1);
-
-      async function readAllRows() {
+    describe('stream', () => {
+      it('validates with provided schema', async () => {
+        const cursor = await queryValidatedCursor(
+          'SELECT * FROM workspaces WHERE id <= 10 ORDER BY id ASC;',
+          {},
+          WorkspaceSchema
+        );
+        const stream = cursor.stream(1);
         const allRows = [];
         for await (const row of stream) {
           allRows.push(row);
         }
-        return allRows;
-      }
 
-      const maybeError = await readAllRows().catch((err) => err);
-      assert.instanceOf(maybeError, ZodError);
-      assert.lengthOf(maybeError.errors, 1);
-    });
-
-    it('closes the cursor when the stream is closed', async () => {
-      const WorkspaceSchema = z.object({
-        id: z.string(),
-      });
-      const cursor = await queryValidatedCursor('SELECT * FROM workspaces;', {}, WorkspaceSchema);
-      const stream = cursor.stream(1);
-
-      const rows: any[] = [];
-      const ac = new AbortController();
-      const writable = new Writable({
-        objectMode: true,
-        write: function (chunk, _encoding, callback) {
-          rows.push(chunk);
-
-          // After receiving the first row, abort the stream. This lets us test
-          // that the underlying cursor is closed. If it is *not* closed, this
-          // `after` hook will fail with a timeout.
-          ac.abort();
-          callback();
-        },
+        assert.lengthOf(allRows, 10);
       });
 
-      await assert.isRejected(pipeline(stream, writable, { signal: ac.signal }));
-      assert.lengthOf(rows, 1);
+      it('emits an error when validation fails', async () => {
+        const cursor = await queryValidatedCursor(
+          'SELECT * FROM workspaces ORDER BY id ASC;',
+          {},
+          BadWorkspaceSchema
+        );
+        const stream = cursor.stream(1);
+
+        async function readAllRows() {
+          const allRows = [];
+          for await (const row of stream) {
+            allRows.push(row);
+          }
+          return allRows;
+        }
+
+        const maybeError = await readAllRows().catch((err) => err);
+        assert.instanceOf(maybeError, ZodError);
+        assert.lengthOf(maybeError.errors, 1);
+      });
+
+      it('closes the cursor when the stream is closed', async () => {
+        const cursor = await queryValidatedCursor('SELECT * FROM workspaces;', {}, WorkspaceSchema);
+        const stream = cursor.stream(1);
+
+        const rows: any[] = [];
+        const ac = new AbortController();
+        const writable = new Writable({
+          objectMode: true,
+          write: function (chunk, _encoding, callback) {
+            rows.push(chunk);
+
+            // After receiving the first row, abort the stream. This lets us test
+            // that the underlying cursor is closed. If it is *not* closed, this
+            // `after` hook will fail with a timeout.
+            ac.abort();
+            callback();
+          },
+        });
+
+        await assert.isRejected(pipeline(stream, writable, { signal: ac.signal }));
+        assert.lengthOf(rows, 1);
+      });
     });
   });
 });
