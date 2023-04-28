@@ -17,7 +17,7 @@ const postgresTestUtils = makePostgresTestUtils({
 describe('@prairielearn/postgres', function () {
   before(async () => {
     await postgresTestUtils.createDatabase();
-    await queryAsync('CREATE TABLE workspaces (id BIGSERIAL PRIMARY KEY, state TEXT);', {});
+    await queryAsync('CREATE TABLE workspaces (id BIGSERIAL PRIMARY KEY);', {});
     await queryAsync('INSERT INTO workspaces (id) SELECT s FROM generate_series(1, 100) AS s', {});
   });
 
