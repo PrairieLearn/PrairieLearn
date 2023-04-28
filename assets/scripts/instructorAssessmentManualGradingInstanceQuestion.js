@@ -156,26 +156,9 @@ function resetInstructorGradingPanel() {
     .forEach((button) => button.addEventListener('click', addRubricItemRow));
 
   document.querySelectorAll('.js-replace-auto-points-input').forEach((input) => {
-    input.addEventListener('change', function () {
-      const selected = document.querySelector('.js-replace-auto-points-input:checked');
-      const points = Number(selected.dataset.maxPoints);
-      const pointsStr = points === 1 ? '1 point' : `${points} points`;
-
-      document.querySelectorAll('.js-negative-grading').forEach((input) => {
-        input.value = points;
-      });
-      document.querySelectorAll('.js-rubric-max-points-info').forEach((node) => {
-        node.innerText = pointsStr;
-      });
-      document.querySelectorAll('.js-rubric-max-points-positive').forEach((node) => {
-        node.style.display = points ? '' : 'none';
-      });
-      document.querySelectorAll('.js-rubric-max-points-zero').forEach((node) => {
-        node.style.display = points ? 'none' : '';
-      });
-    });
-    input.dispatchEvent(new Event('change'));
+    input.addEventListener('change', updateSettingsPointValues);
   });
+  updateSettingsPointValues();
 
   document
     .querySelectorAll('.js-rubric-settings-modal form')
@@ -192,6 +175,26 @@ function resetInstructorGradingPanel() {
   resetRubricItemRowsListeners();
   updateRubricItemOrderField();
   computePointsFromRubric();
+}
+
+function updateSettingsPointValues() {
+  const form = document.querySelector('.js-rubric-settings-modal form');
+  const selected = form.querySelector('.js-replace-auto-points-input:checked');
+  const points = Number((selected ?? form).dataset.maxPoints);
+  const pointsStr = points === 1 ? '1 point' : `${points} points`;
+
+  form.querySelectorAll('.js-negative-grading').forEach((input) => {
+    input.value = points;
+  });
+  form.querySelectorAll('.js-rubric-max-points-info').forEach((node) => {
+    node.innerText = pointsStr;
+  });
+  form.querySelectorAll('.js-rubric-max-points-positive').forEach((node) => {
+    node.style.display = points ? '' : 'none';
+  });
+  form.querySelectorAll('.js-rubric-max-points-zero').forEach((node) => {
+    node.style.display = points ? 'none' : '';
+  });
 }
 
 function submitSettings(e, use_rubric) {
@@ -222,7 +225,6 @@ function submitSettings(e, use_rubric) {
     .then(async (response) => {
       const data = await response.json().catch(() => ({ err: `Error: ${response.statusText}` }));
       if (data.err) {
-        console.error(response);
         console.error(data);
         return addAlert(this, data.err);
       }
