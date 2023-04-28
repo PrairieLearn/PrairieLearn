@@ -64,6 +64,7 @@ const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
 const { enrichSentryScope } = require('./lib/sentry');
 const lifecycleHooks = require('./lib/lifecycle-hooks');
+const { APP_ROOT_PATH } = require('./lib/paths');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -2128,8 +2129,8 @@ if (config.startServer) {
       async () => {
         compiledAssets.init({
           dev: config.devMode,
-          sourceDirectory: path.resolve(__dirname, 'assets'),
-          buildDirectory: path.resolve(__dirname, 'public/build'),
+          sourceDirectory: path.resolve(APP_ROOT_PATH, 'assets'),
+          buildDirectory: path.resolve(APP_ROOT_PATH, 'public/build'),
           publicPath: '/build',
         });
       },
