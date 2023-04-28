@@ -37,7 +37,7 @@ async function setSharingName(courseId, name) {
     method: 'POST',
     headers: { 'Content-type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      __action: 'choose_sharing_name',
+      __action: 'unsafe_choose_sharing_name',
       __csrf_token: token,
       course_sharing_name: name,
     }).toString(),
@@ -156,7 +156,7 @@ describe('Question Sharing', function () {
         method: 'POST',
         headers: { 'Content-type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
-          __action: 'sharing_set_create',
+          __action: 'unsafe_sharing_set_create',
           __csrf_token: token,
           sharing_set_name: sharingSetName,
         }).toString(),
@@ -182,7 +182,7 @@ describe('Question Sharing', function () {
         method: 'POST',
         headers: { 'Content-type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
-          __action: 'course_sharing_set_add',
+          __action: 'unsafe_course_sharing_set_add',
           __csrf_token: token,
           sharing_set_id: '1',
           course_sharing_id: exampleCourseSharingId,
@@ -220,7 +220,7 @@ describe('Question Sharing', function () {
         method: 'POST',
         headers: { 'Content-type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
-          __action: 'sharing_set_add',
+          __action: 'unsafe_sharing_set_add',
           __csrf_token: token,
           sharing_set_id: '1',
         }).toString(),
