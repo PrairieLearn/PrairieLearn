@@ -937,7 +937,11 @@ export class PostgresPool {
         } catch (err: any) {
           throw enhanceError(err, sql, params);
         } finally {
-          client.release();
+          try {
+            await cursor.close();
+          } finally {
+            client.release();
+          }
         }
       },
       stream: function (batchSize: number) {
@@ -953,7 +957,20 @@ export class PostgresPool {
         });
 
         // TODO: use native `node:stream#compose` once it's stable.
-        return multipipe(Readable.from(iterator.iterate(batchSize)), transform);
+        const generator = iterator.iterate(batchSize);
+        const pipe = multipipe(Readable.from(generator), transform);
+
+        // When the underlying stream is closed, we need to make sure that the
+        // cursor is also closed. We do this by calling `return()` on the generator,
+        // which will trigger its `finally` block, which will in turn release
+        // the client and close the cursor. The fact that the stream is already
+        // closed by this point means that someone reading from the stream will
+        // never actually see the `null` value that's returned.
+        pipe.once('close', () => {
+          generator.return(null);
+        });
+
+        return pipe;
       },
     };
     return iterator;
