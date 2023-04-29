@@ -64,6 +64,7 @@ include = [
     "./apps/prairielearn/elements/pl-code",
     "./apps/prairielearn/elements/pl-dataframe",
     "./apps/prairielearn/elements/pl-external-grader-variables",
+    "./apps/prairielearn/elements/pl-file-download",
     "./apps/prairielearn/elements/pl-file-preview",
     "./apps/prairielearn/elements/pl-file-upload",
     "./apps/prairielearn/elements/pl-graph",
