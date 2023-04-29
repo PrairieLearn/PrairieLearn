@@ -19,8 +19,8 @@ module.exports = function (req, res, next) {
         if (ERR(err, next)) return;
         if (result.rowCount === 0) return next(error.make(403, 'Access denied'));
         let row = result.rows[0];
-        if ((row.question.id !== row.course_id) && !row.shared_with_course) return next(error.make(403, 'Access denied'));
-
+        if (row.question.course_id !== row.course_id && !row.shared_with_course)
+          return next(error.make(403, 'Access denied'));
         _.assign(res.locals, result.rows[0]);
         next();
       }
@@ -33,6 +33,9 @@ module.exports = function (req, res, next) {
     sqldb.queryZeroOrOneRow(sql.select_and_auth, params, function (err, result) {
       if (ERR(err, next)) return;
       if (result.rowCount === 0) return next(error.make(403, 'Access denied'));
+      let row = result.rows[0];
+      if (row.question.course_id !== res.locals.course.id && !row.shared_with_course)
+        return next(error.make(403, 'Access denied'));
       _.assign(res.locals, result.rows[0]);
       next();
     });
