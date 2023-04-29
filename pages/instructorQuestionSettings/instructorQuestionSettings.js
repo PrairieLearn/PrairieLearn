@@ -22,6 +22,9 @@ const { idsEqual } = require('../../lib/id');
 const { generateSignedToken } = require('@prairielearn/signed-token');
 
 router.post('/test', function (req, res, next) {
+  if (res.locals.question.course_id !== res.locals.course.id) {
+    return next(error.make(403, 'Access denied'));
+  }
   // We use a separate `test/` POST route so that we can always use the
   // route to distinguish between pages that need to execute course code
   // (this `test/` handler) and pages that need access to course content
@@ -81,6 +84,9 @@ router.post('/test', function (req, res, next) {
 });
 
 router.post('/', function (req, res, next) {
+  if (res.locals.question.course_id !== res.locals.course.id) {
+    return next(error.make(403, 'Access denied'));
+  }
   if (req.body.__action === 'change_id') {
     debug(`Change qid from ${res.locals.question.qid} to ${req.body.id}`);
     if (!req.body.id) return next(new Error(`Invalid QID (was falsy): ${req.body.id}`));
@@ -231,6 +237,9 @@ router.post('/', function (req, res, next) {
 });
 
 router.get('/', function (req, res, next) {
+  if (res.locals.question.course_id !== res.locals.course.id) {
+    return next(error.make(403, 'Access denied'));
+  }
   // Construct the path of the question test route. We'll do this based on
   // `originalUrl` so that this router doesn't have to be aware of where it's
   // mounted.

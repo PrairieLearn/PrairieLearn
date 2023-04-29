@@ -17,7 +17,10 @@ const setFilenames = function (locals) {
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req, res, next) => {
+    if (res.locals.question.course_id !== res.locals.course.id) {
+      return next(error.make(403, 'Access denied'));
+    }
     setFilenames(res.locals);
     const statsResult = await sqldb.queryAsync(sql.assessment_question_stats, {
       question_id: res.locals.question.id,
@@ -30,7 +33,10 @@ router.get(
 
 router.get(
   '/:filename',
-  asyncHandler(async (req, res) => {
+  asyncHandler(async (req, res, next) => {
+    if (res.locals.question.course_id !== res.locals.course.id) {
+      return next(error.make(403, 'Access denied'));
+    }
     setFilenames(res.locals);
 
     if (req.params.filename === res.locals.questionStatsCsvFilename) {

@@ -197,6 +197,9 @@ function browseFile(file_browser, callback) {
 
 router.get('/*', function (req, res, next) {
   debug('GET /');
+  if (res.locals.question.course_id !== res.locals.course.id) {
+    return next(error.make(403, 'Access denied'));
+  }
   if (!res.locals.authz_data.has_course_permission_view) {
     // Access denied, but instead of sending them to an error page, we'll show
     // them an explanatory message and prompt them to get view permissions.
@@ -268,7 +271,10 @@ router.get('/*', function (req, res, next) {
 
 router.post('/*', function (req, res, next) {
   debug('POST /');
-  if (!res.locals.authz_data.has_course_permission_edit) {
+  if (
+    !res.locals.authz_data.has_course_permission_edit ||
+    res.locals.question.course_id !== res.locals.course.id
+  ) {
     return next(error.make(403, 'Access denied (must be a course Editor)'));
   }
   getPaths(req, res, (err, paths) => {
