@@ -58,7 +58,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             )
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
 
     # Get file name or raise exception if one does not exist
