@@ -28,10 +28,9 @@ WHERE
 WITH
   course AS (
     SELECT
-      c.id AS id
+      course_id AS id
     FROM
       course_instances AS ci
-      JOIN pl_courses AS c on ci.course_id = c.id
     WHERE
       ci.id = $course_instance_id
   ),
@@ -63,7 +62,8 @@ SELECT
   tags_for_question (q.id) AS tags,
   assessments_format_for_question (q.id, ci.id) AS assessments,
   issue_count.open_issue_count,
-  sharing_info.shared_with_course
+  sharing_info.shared_with_course,
+  ci.course_id as course_id
 FROM
   questions as q
   JOIN topics as top ON (top.id = q.topic_id),
@@ -73,5 +73,4 @@ FROM
 WHERE
   q.id = $question_id
   AND ci.id = $course_instance_id
-  -- AND q.course_id = ci.course_id
   AND q.deleted_at IS NULL;
