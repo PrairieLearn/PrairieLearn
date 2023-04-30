@@ -33,22 +33,29 @@ def test_only_units_grading_fn(
 
 
 @pytest.mark.parametrize(
-    "a_true, a_sub, atol, expected_grade",
+    "a_true, a_sub, rtol, atol, expected_grade",
     [
-        ("1m", "1 meter", "1cm", True),
-        ("1m", "1.009 meter", "1cm", True),
-        ("1m", "3.28 feet", "1cm", True),
-        ("1m", "1.010001 meters", "1cm", False),
-        ("1m", "1 foot", "1cm", False),
-        ("1m", "1 m/s", "1cm", False),
-        ("1m", "1 second", "1cm", False),
-        ("1m", "1 us", "1cm", False),
+        ("1m", "1 meter", 0.0, "1cm", True),
+        ("1m", "1.009 meter", 0.0, "1cm", True),
+        ("1m", "3.28 feet", 0.0, "1cm", True),
+        ("1m", "1.010001 meters", 0.0, "1cm", False),
+        ("1m", "1 foot", 0.0, "1cm", False),
+        ("1m", "1 m/s", 0.0, "1cm", False),
+        ("1m", "1 second", 0.0, "1cm", False),
+        ("1m", "1 us", 0.0, "1cm", False),
     ],
 )
 def test_with_units_grading_fn(
-    ureg: UnitRegistry, a_true: str, a_sub: str, atol: str, expected_grade: bool
+    ureg: UnitRegistry,
+    a_true: str,
+    a_sub: str,
+    rtol: float,
+    atol: str,
+    expected_grade: bool,
 ) -> None:
-    grading_fn = uu.get_with_units_grading_fn(ureg=ureg, correct_ans=a_true, atol=atol)
+    grading_fn = uu.get_with_units_grading_fn(
+        ureg=ureg, correct_ans=a_true, rtol=rtol, atol=atol
+    )
     score, _ = grading_fn(a_sub)
     assert score == expected_grade
 
