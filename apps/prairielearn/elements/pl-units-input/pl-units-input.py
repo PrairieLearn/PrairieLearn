@@ -113,9 +113,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 'Cannot set attribute "comparison" in "with-units" grading.'
             )
 
-        # if pl.has_attrib(element, "rtol"):
-        #    raise ValueError('Cannot set parameter "rtol" in unit agnostic grading.')
-
         partial_credit = pl.get_float_attrib(
             element, "magnitude-partial-credit", MAGNITUDE_PARTIAL_CREDIT_DEFAULT
         )
