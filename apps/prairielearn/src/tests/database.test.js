@@ -1,8 +1,9 @@
 // @ts-check
 const _ = require('lodash');
 const path = require('node:path');
-
 const { describeDatabase, diffDirectoryAndDatabase } = require('@prairielearn/postgres-tools');
+
+const { REPOSITORY_ROOT_PATH } = require('../lib/paths');
 const helperDb = require('./helperDb');
 
 // Custom error type so we can display our own message and omit a stacktrace
@@ -25,7 +26,7 @@ describe('database', function () {
       outputFormat: 'string',
       coloredOutput: process.stdout.isTTY,
     };
-    const dbDirectory = path.resolve(__dirname, '..', '..', '..', '..', 'database');
+    const dbDirectory = path.resolve(REPOSITORY_ROOT_PATH, 'database');
     const dbName = helperDb.getDatabaseNameForCurrentWorker();
     const diff = await diffDirectoryAndDatabase(dbDirectory, dbName, options);
     if (diff) {
