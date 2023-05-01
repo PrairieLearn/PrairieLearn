@@ -76,8 +76,6 @@ jobs:
       run: docker exec test_container /PrairieLearn/docker/lint_html.sh
     - name: Run the Python typechecker
       run: docker exec test_container /PrairieLearn/docker/typecheck_python.sh
-    - name: Run the JavaScript typechecker
-      run: docker exec test_container /PrairieLearn/docker/typecheck_js.sh
     - name: Run the Python tests
       run: docker exec test_container /PrairieLearn/docker/test_python.sh
       timeout-minutes: 5

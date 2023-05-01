@@ -4,11 +4,10 @@ import warnings
 
 import chevron
 import defaults
+import elements
 import lxml.etree
 import lxml.html
 import prairielearn as pl
-
-import elements
 
 
 def union_drawing_items(e1, e2):

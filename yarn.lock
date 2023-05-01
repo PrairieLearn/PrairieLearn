@@ -2634,6 +2634,185 @@ __metadata:
 "@prairielearn/prairielearn@workspace:apps/prairielearn":
   version: 0.0.0-use.local
   resolution: "@prairielearn/prairielearn@workspace:apps/prairielearn"
+  dependencies:
+    "@aws-sdk/client-auto-scaling": ^3.304.0
+    "@fortawesome/fontawesome-free": ^6.4.0
+    "@octokit/rest": ^19.0.7
+    "@prairielearn/bind-mount": "workspace:^"
+    "@prairielearn/compiled-assets": "workspace:^"
+    "@prairielearn/config": "workspace:^"
+    "@prairielearn/csv": "workspace:^"
+    "@prairielearn/docker-utils": "workspace:^"
+    "@prairielearn/error": "workspace:^"
+    "@prairielearn/html": "workspace:^"
+    "@prairielearn/html-ejs": "workspace:^"
+    "@prairielearn/logger": "workspace:^"
+    "@prairielearn/migrations": "workspace:^"
+    "@prairielearn/named-locks": "workspace:^"
+    "@prairielearn/opentelemetry": "workspace:^"
+    "@prairielearn/path-utils": "workspace:^"
+    "@prairielearn/postgres": "workspace:^"
+    "@prairielearn/postgres-tools": "workspace:^"
+    "@prairielearn/sanitize": "workspace:^"
+    "@prairielearn/sentry": "workspace:^"
+    "@prairielearn/signed-token": "workspace:^"
+    "@prairielearn/tsconfig": "workspace:^"
+    "@prairielearn/workspace-utils": "workspace:^"
+    "@pyroscope/nodejs": ^0.2.5
+    "@sentry/profiling-node": ^0.3.0
+    "@sentry/tracing": ^7.46.0
+    "@types/async": ^3.2.18
+    "@types/body-parser": ^1.19.2
+    "@types/chai": ^4.3.4
+    "@types/chai-as-promised": ^7.1.5
+    "@types/cheerio": ^0.22.31
+    "@types/dockerode": ^3.3.16
+    "@types/folder-hash": ^4.0.2
+    "@types/fs-extra": ^11.0.1
+    "@types/klaw": ^3.0.3
+    "@types/lodash": ^4.14.192
+    "@types/loopbench": ^1.2.1
+    "@types/memorystream": ^0.3.1
+    "@types/mime": ^3.0.1
+    "@types/mocha": ^10.0.1
+    "@types/node": ^18.16.1
+    "@types/node-fetch": ^2.6.2
+    "@types/object-hash": ^3.0.2
+    "@types/passport": ^1.0.12
+    "@types/passport-azure-ad": ^4.3.1
+    "@types/pem": ^1.9.6
+    "@types/pg": ^8.6.6
+    "@types/tmp": ^0.2.3
+    "@types/uuid": ^9.0.1
+    ace-builds: ^1.16.0
+    ace-code: ^1.16.0
+    ajv: ^8.12.0
+    ansi_up: ^5.2.1
+    archiver: ^5.3.1
+    async: ^3.2.4
+    async-mutex: ^0.4.0
+    async-stacktrace: ^0.0.2
+    aws-sdk: ^2.1354.0
+    backbone: ^1.4.1
+    better-ajv-errors: ^1.2.0
+    blocked: ^1.3.0
+    blocked-at: ^1.2.0
+    body-parser: ^1.20.2
+    bootstrap: ^4.6.2
+    bootstrap-icons: ^1.10.3
+    bootstrap-table: 1.21.2
+    bowser: ^2.11.0
+    byline: ^5.0.0
+    chai: ^4.3.7
+    chai-as-promised: ^7.1.1
+    chalk: ^4.1.2
+    cheerio: ^0.22.0
+    clipboard: ^2.0.11
+    cookie-parser: ^1.4.6
+    crypto-js: ^4.1.1
+    csv-parse: ^5.3.6
+    csvtojson: ^2.0.10
+    d3: ^7.8.4
+    date-fns: ^2.29.3
+    date-fns-tz: ^2.0.0
+    debug: ^4.3.4
+    delay: ^5.0.0
+    detect-mocha: ^0.1.0
+    dockerode: ^3.3.5
+    dropzone: ^5.9.3
+    ejs: ^3.1.9
+    execa: ^5.1.1
+    express: ^4.18.2
+    express-async-handler: ^1.2.0
+    fabric: ^4.6.0
+    fast-glob: ^3.2.12
+    file-type: ^16.5.4
+    filesize: ^10.0.7
+    folder-hash: ^4.0.4
+    form-data: ^4.0.0
+    fs-extra: ^11.1.1
+    generic-pool: ^3.9.0
+    google-auth-library: ^8.7.0
+    he: ^1.2.0
+    highlight.js: ^11.7.0
+    http-proxy-middleware: ^2.0.6
+    http-status: ^1.6.2
+    isbinaryfile: ^5.0.0
+    jju: ^1.4.0
+    jose: ^4.13.1
+    jquery: ^3.6.3
+    jquery-ui-dist: ^1.13.2
+    jquery-ui-touch-punch: ^0.2.3
+    js-cookie: ^3.0.1
+    json-stable-stringify: ^1.0.2
+    json-stringify-safe: ^5.0.1
+    klaw: ^4.1.0
+    lodash: ^4.17.21
+    loopbench: ^2.0.0
+    lru-cache: ^8.0.5
+    mathjax: ^3.2.2
+    memorystream: ^0.3.1
+    mersenne: 0.0.4
+    mime: ^3.0.0
+    mocha: ^10.2.0
+    mocha-steps: ^1.3.0
+    multer: ^1.4.5-lts.1
+    mustache: ^4.2.0
+    ncp: ^2.0.0
+    node-fetch: ^2.6.9
+    nodemon: ^2.0.22
+    numeric: ^1.2.6
+    oauth-signature: ^1.5.0
+    object-hash: ^3.0.0
+    on-finished: ^2.4.1
+    parse5: ^6.0.1
+    passport: ^0.6.0
+    passport-azure-ad: ^4.3.4
+    passport-saml: ^3.2.4
+    pem: ^1.14.6
+    pg: ^8.9.0
+    plist: ^3.0.6
+    popper.js: ^1.16.1
+    qrcode-svg: ^1.1.0
+    quill: ^1.3.7
+    quilljs-markdown: ^1.2.0
+    redis: ^3.1.2
+    redis-lru: ^0.6.0
+    rehype-raw: ^5.1.0
+    rehype-sanitize: 4.0.0
+    rehype-stringify: ^8.0.0
+    remark-gfm: ^1.0.0
+    remark-math: ^4.0.0
+    remark-parse: ^9.0.0
+    remark-rehype: ^8.1.0
+    request: ^2.88.2
+    requirejs: ^2.3.6
+    search-string: ^3.1.0
+    serve-favicon: ^2.5.0
+    showdown: ^2.1.0
+    sinon: ^15.0.3
+    socket.io: ^4.6.1
+    socket.io-client: ^4.6.1
+    socket.io-redis: ^6.1.1
+    streamifier: ^0.1.1
+    tablesorter: ^2.31.3
+    tar: ^6.1.13
+    three: ^0.151.3
+    tmp: ^0.2.1
+    tmp-promise: ^3.0.3
+    ts-node: ^10.9.1
+    typescript: ^5.0.4
+    typescript-cp: ^0.1.7
+    tzientist: ^2.3.0
+    unified: ^9.2.2
+    unist-util-visit: ^2.0.3
+    unzipper: ^0.10.11
+    uuid: ^9.0.0
+    winston: ^3.8.2
+    xml2js: ^0.5.0
+    xss: ^1.0.14
+    yargs-parser: ^21.1.1
+    zod: ^3.21.4
   languageName: unknown
   linkType: soft
 
@@ -3699,212 +3878,6 @@ __metadata:
   checksum: 66e37b7800132f891b885b2eceeeebc53f60b69789da10276f1584256b963d79a28c7ae2071bc53a9cd842d9b03554c761b2701fe8036d6052f26bcd0ae8f2bb
   languageName: node
   linkType: hard
-
-"PrairieLearn@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "PrairieLearn@workspace:."
-  dependencies:
-    "@aws-sdk/client-auto-scaling": ^3.304.0
-    "@changesets/cli": ^2.26.1
-    "@fortawesome/fontawesome-free": ^6.4.0
-    "@octokit/rest": ^19.0.7
-    "@prairielearn/bind-mount": "workspace:^"
-    "@prairielearn/compiled-assets": "workspace:^"
-    "@prairielearn/config": "workspace:^"
-    "@prairielearn/csv": "workspace:^"
-    "@prairielearn/error": "workspace:^"
-    "@prairielearn/html": "workspace:^"
-    "@prairielearn/html-ejs": "workspace:^"
-    "@prairielearn/migrations": "workspace:^"
-    "@prairielearn/named-locks": "workspace:^"
-    "@prairielearn/opentelemetry": "workspace:^"
-    "@prairielearn/path-utils": "workspace:^"
-    "@prairielearn/postgres": "workspace:^"
-    "@prairielearn/postgres-tools": "workspace:^"
-    "@prairielearn/prettier-plugin-sql": "workspace:^"
-    "@prairielearn/sanitize": "workspace:^"
-    "@prairielearn/sentry": "workspace:^"
-    "@prairielearn/signed-token": "workspace:^"
-    "@prairielearn/tsconfig": "workspace:^"
-    "@prairielearn/workspace-utils": "workspace:^"
-    "@pyroscope/nodejs": ^0.2.5
-    "@sentry/profiling-node": ^0.3.0
-    "@sentry/tracing": ^7.46.0
-    "@types/async": ^3.2.18
-    "@types/body-parser": ^1.19.2
-    "@types/chai": ^4.3.4
-    "@types/chai-as-promised": ^7.1.5
-    "@types/cheerio": ^0.22.31
-    "@types/diff": ^5.0.3
-    "@types/dockerode": ^3.3.16
-    "@types/folder-hash": ^4.0.2
-    "@types/fs-extra": ^11.0.1
-    "@types/klaw": ^3.0.3
-    "@types/lodash": ^4.14.192
-    "@types/loopbench": ^1.2.1
-    "@types/memorystream": ^0.3.1
-    "@types/mime": ^3.0.1
-    "@types/mocha": ^10.0.1
-    "@types/node": ^18.16.1
-    "@types/node-fetch": ^2.6.2
-    "@types/object-hash": ^3.0.2
-    "@types/passport": ^1.0.12
-    "@types/passport-azure-ad": ^4.3.1
-    "@types/pem": ^1.9.6
-    "@types/pg": ^8.6.6
-    "@types/tmp": ^0.2.3
-    "@types/uuid": ^9.0.1
-    "@types/yargs": ^17.0.24
-    "@typescript-eslint/eslint-plugin": ^5.57.1
-    "@typescript-eslint/parser": ^5.57.1
-    ace-builds: ^1.16.0
-    ace-code: ^1.16.0
-    ajv: ^8.12.0
-    ansi_up: ^5.2.1
-    archiver: ^5.3.1
-    async: ^3.2.4
-    async-mutex: ^0.4.0
-    async-stacktrace: ^0.0.2
-    aws-sdk: ^2.1354.0
-    backbone: ^1.4.1
-    base64url: ^3.0.1
-    better-ajv-errors: ^1.2.0
-    blocked: ^1.3.0
-    blocked-at: ^1.2.0
-    body-parser: ^1.20.2
-    bootstrap: ^4.6.2
-    bootstrap-icons: ^1.10.3
-    bootstrap-table: 1.21.2
-    bowser: ^2.11.0
-    byline: ^5.0.0
-    chai: ^4.3.7
-    chai-as-promised: ^7.1.1
-    chalk: ^4.1.2
-    cheerio: ^0.22.0
-    chokidar: ^3.5.3
-    clipboard: ^2.0.11
-    cookie-parser: ^1.4.6
-    crypto-js: ^4.1.1
-    csv-parse: ^5.3.6
-    csvtojson: ^2.0.10
-    d3: ^7.8.4
-    date-fns: ^2.29.3
-    date-fns-tz: ^2.0.0
-    debug: ^4.3.4
-    detect-mocha: ^0.1.0
-    diff: ^5.1.0
-    dockerode: ^3.3.5
-    dropzone: ^5.9.3
-    ejs: ^3.1.9
-    eslint: ^8.37.0
-    eslint-config-prettier: ^8.8.0
-    eslint-import-resolver-typescript: ^3.5.5
-    eslint-plugin-import: 2.27.5
-    eslint-plugin-mocha: ^10.1.0
-    eslint-plugin-no-floating-promise: ^1.0.2
-    eslint-plugin-no-only-tests: ^3.1.0
-    execa: ^5.1.1
-    express: ^4.18.2
-    express-async-handler: ^1.2.0
-    fabric: ^4.6.0
-    fast-glob: ^3.2.12
-    file-type: ^16.5.4
-    filesize: ^10.0.7
-    folder-hash: ^4.0.4
-    form-data: ^4.0.0
-    fs-extra: ^11.1.1
-    generic-pool: ^3.9.0
-    google-auth-library: ^8.7.0
-    he: ^1.2.0
-    highlight.js: ^11.7.0
-    htmlhint: ^1.1.4
-    http-proxy-middleware: ^2.0.6
-    http-status: ^1.6.2
-    isbinaryfile: ^5.0.0
-    jju: ^1.4.0
-    jose: ^4.13.1
-    jquery: ^3.6.3
-    jquery-ui-dist: ^1.13.2
-    jquery-ui-touch-punch: ^0.2.3
-    js-cookie: ^3.0.1
-    jsdoc: ^4.0.2
-    json-stable-stringify: ^1.0.2
-    json-stringify-safe: ^5.0.1
-    klaw: ^4.1.0
-    lodash: ^4.17.21
-    logform: ^2.4.2
-    loopbench: ^2.0.0
-    lru-cache: ^8.0.5
-    mathjax: ^3.2.2
-    memorystream: ^0.3.1
-    mersenne: 0.0.4
-    mime: ^3.0.0
-    mocha: ^10.2.0
-    mocha-steps: ^1.3.0
-    multer: ^1.4.5-lts.1
-    mustache: ^4.2.0
-    ncp: ^2.0.0
-    node-fetch: ^2.6.9
-    nodemon: ^2.0.22
-    numeric: ^1.2.6
-    oauth-signature: ^1.5.0
-    object-hash: ^3.0.0
-    on-finished: ^2.4.1
-    parse5: ^6.0.1
-    passport: ^0.6.0
-    passport-azure-ad: ^4.3.4
-    passport-saml: ^3.2.4
-    pem: ^1.14.6
-    pg: ^8.9.0
-    plist: ^3.0.6
-    popper.js: ^1.16.1
-    prettier: 2.8.7
-    pyright: ^1.1.301
-    qrcode-svg: ^1.1.0
-    quill: ^1.3.7
-    quilljs-markdown: ^1.2.0
-    redis: ^3.1.2
-    redis-lru: ^0.6.0
-    rehype-raw: ^5.1.0
-    rehype-sanitize: 4.0.0
-    rehype-stringify: ^8.0.0
-    remark-gfm: ^1.0.0
-    remark-math: ^4.0.0
-    remark-parse: ^9.0.0
-    remark-rehype: ^8.1.0
-    request: ^2.88.2
-    requirejs: ^2.3.6
-    s3-streamlogger: 1.7.0
-    s3rver: ^3.7.1
-    search-string: ^3.1.0
-    serve-favicon: ^2.5.0
-    showdown: ^2.1.0
-    sinon: ^15.0.3
-    socket.io: ^4.6.1
-    socket.io-client: ^4.6.1
-    socket.io-redis: ^6.1.1
-    streamifier: ^0.1.1
-    tablesorter: ^2.31.3
-    tar: ^6.1.13
-    three: ^0.151.3
-    tmp: ^0.2.1
-    tmp-promise: ^3.0.3
-    turbo: ^1.8.8
-    typescript: ^5.0.4
-    tzientist: ^2.3.0
-    unified: ^9.2.2
-    unist-util-visit: ^2.0.3
-    unzipper: ^0.10.11
-    uuid: ^9.0.0
-    winston: ^3.8.2
-    winston-aws-cloudwatch: ^3.0.0
-    xml2js: ^0.5.0
-    xss: ^1.0.14
-    yargs: ^17.7.1
-    yargs-parser: ^21.1.1
-    zod: ^3.21.4
-  languageName: unknown
-  linkType: soft
 
 "abab@npm:^2.0.0":
   version: 2.0.6
@@ -5092,7 +5065,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"chokidar@npm:3.5.3, chokidar@npm:^3.5.1, chokidar@npm:^3.5.2, chokidar@npm:^3.5.3":
+"chokidar@npm:3.5.3, chokidar@npm:^3.5.1, chokidar@npm:^3.5.2":
   version: 3.5.3
   resolution: "chokidar@npm:3.5.3"
   dependencies:
@@ -12320,6 +12293,30 @@ __metadata:
   languageName: node
   linkType: hard
 
+"root-workspace-0b6124@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "root-workspace-0b6124@workspace:."
+  dependencies:
+    "@changesets/cli": ^2.26.1
+    "@prairielearn/prettier-plugin-sql": "workspace:^"
+    "@typescript-eslint/eslint-plugin": ^5.57.1
+    "@typescript-eslint/parser": ^5.57.1
+    eslint: ^8.37.0
+    eslint-config-prettier: ^8.8.0
+    eslint-import-resolver-typescript: ^3.5.5
+    eslint-plugin-import: 2.27.5
+    eslint-plugin-mocha: ^10.1.0
+    eslint-plugin-no-floating-promise: ^1.0.2
+    eslint-plugin-no-only-tests: ^3.1.0
+    htmlhint: ^1.1.4
+    jsdoc: ^4.0.2
+    prettier: 2.8.7
+    pyright: ^1.1.301
+    s3rver: ^3.7.1
+    turbo: ^1.8.8
+  languageName: unknown
+  linkType: soft
+
 "run-parallel@npm:^1.1.9":
   version: 1.2.0
   resolution: "run-parallel@npm:1.2.0"
@@ -14663,8 +14660,8 @@ __metadata:
   linkType: hard
 
 "yargs@npm:^17.1.1, yargs@npm:^17.7.1":
-  version: 17.7.1
-  resolution: "yargs@npm:17.7.1"
+  version: 17.7.2
+  resolution: "yargs@npm:17.7.2"
   dependencies:
     cliui: ^8.0.1
     escalade: ^3.1.1
@@ -14673,7 +14670,7 @@ __metadata:
     string-width: ^4.2.3
     y18n: ^5.0.5
     yargs-parser: ^21.1.1
-  checksum: 3d8a43c336a4942bc68080768664aca85c7bd406f018bad362fd255c41c8f4e650277f42fd65d543fce99e084124ddafee7bbfc1a5c6a8fda4cec78609dcf8d4
+  checksum: 73b572e863aa4a8cbef323dd911d79d193b772defd5a51aab0aca2d446655216f5002c42c5306033968193bdbf892a7a4c110b0d77954a7fdf563e653967b56a
   languageName: node
   linkType: hard
 

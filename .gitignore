@@ -38,6 +38,7 @@ docker-compose.override.yml
 
 ## Config
 /config.json
+/apps/prairielearn/config.json
 
 ## Generated HTML
 
@@ -51,6 +52,7 @@ docker-compose.override.yml
 
 ### Logs
 /server.log
+/apps/prairielearn/server.log
 
 ### Tests
 /tests/testFileEditor/courseLive/
