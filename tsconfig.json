@@ -1,17 +1,8 @@
 {
+  "extends": "@prairielearn/tsconfig/tsconfig.app.json",
   "compilerOptions": {
-    "allowJs": true,
-    "esModuleInterop": true,
     "noEmit": true,
-    // Allow spreading Maps/Sets into arrays
-    "downlevelIteration": true,
-    "allowSyntheticDefaultImports": true,
-    "skipLibCheck": true,
-    "strictNullChecks": true,
-    "module": "NodeNext",
-    // Corresponds to Node 16.x, which we currently run on.
-    // To check compatibility in the future, see https://node.green/.
-    "target": "ES2021",
+    "esModuleInterop": true,
   },
   // We don't actually use any TypeScript; we just use it to validate our
   // standard JavaScript with JSDoc comments.
