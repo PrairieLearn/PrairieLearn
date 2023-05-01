@@ -1,19 +1,18 @@
-// @ts-check
-const { Router } = require('express');
-const asyncHandler = require('express-async-handler');
-const z = require('zod');
+import { Router } from 'express';
+import asyncHandler = require('express-async-handler');
+import z from 'zod';
 
-const sqldb = require('@prairielearn/postgres');
+import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
-const { InstitutionAdminSso } = require('./sso.html');
-const {
+import { InstitutionAdminSso } from './sso.html';
+import {
   getInstitution,
   getSupportedAuthenticationProviders,
   getInstitutionAuthenticationProviders,
   getInstitutionSamlProvider,
-} = require('../utils');
+} from '../utils';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
 
 const enabledProvidersSchema = z.array(z.string());
@@ -44,7 +43,7 @@ router.post(
     let defaultProvider = req.body.default_authn_provider_id;
     if (defaultProvider === '') defaultProvider = null;
 
-    await sqldb.queryAsync(sql.update_institution_sso_config, {
+    await queryAsync(sql.update_institution_sso_config, {
       institution_id: req.params.institution_id,
       enabled_authn_provider_ids: enabledProviders,
       default_authn_provider_id: defaultProvider,
@@ -79,4 +78,4 @@ router.get(
   })
 );
 
-module.exports = router;
+export default router;

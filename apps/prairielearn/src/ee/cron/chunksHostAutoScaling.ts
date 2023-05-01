@@ -1,9 +1,8 @@
-// @ts-check
-const AWS = require('aws-sdk');
-const { callbackify } = require('util');
-const _ = require('lodash');
+import * as AWS from 'aws-sdk';
+import { callbackify } from 'util';
+import * as _ from 'lodash';
 
-const { config } = require('../../lib/config');
+import { config } from '../../lib/config';
 
 // These are used as IDs when reading CloudWatch metrics. They must start with
 // a lowercase letter and contain only numbers, letters, and underscores.
@@ -11,7 +10,7 @@ const PAGE_VIEWS_PER_SECOND = 'pageViewsPerSecond';
 const ACTIVE_WORKERS_PER_SECOND = 'activeWorkersPerSecond';
 const LOAD_BALANCER_REQUESTS_PER_MINUTE = 'loadBalancerRequestsPerMinute';
 
-module.exports.run = callbackify(async () => {
+export const run = callbackify(async () => {
   if (
     !config.runningInEc2 ||
     !config.chunksLoadBalancerDimensionName ||

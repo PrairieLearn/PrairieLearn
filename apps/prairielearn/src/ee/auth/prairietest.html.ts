@@ -1,7 +1,7 @@
-const { html } = require('@prairielearn/html');
-const { renderEjs } = require('@prairielearn/html-ejs');
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
 
-const AuthPrairieTest = ({ jwt, prairieTestCallback, resLocals }) => {
+export const AuthPrairieTest = ({ jwt, prairieTestCallback, resLocals }) => {
   return html`
     <!DOCTYPE html>
     <html lang="en">
@@ -58,5 +58,3 @@ const AuthPrairieTest = ({ jwt, prairieTestCallback, resLocals }) => {
     </html>
   `.toString();
 };
-
-module.exports.AuthPrairieTest = AuthPrairieTest;
