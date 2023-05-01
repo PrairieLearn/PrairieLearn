@@ -74,6 +74,8 @@ jobs:
       run: docker exec test_container /PrairieLearn/docker/lint_js.sh
     - name: Run the HTML linter
       run: docker exec test_container /PrairieLearn/docker/lint_html.sh
+    - name: Run the links linter
+      run: docker exec test_container /PrairieLearn/docker/lint_links.sh
     - name: Run the Python typechecker
       run: docker exec test_container /PrairieLearn/docker/typecheck_python.sh
     - name: Run the Python tests
