@@ -2433,7 +2433,7 @@ __metadata:
     "@prairielearn/sanitize": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
     "@types/async": ^3.2.18
-    "@types/chai": ^4.3.4
+    "@types/chai": ^4.3.5
     "@types/dockerode": ^3.3.16
     "@types/fs-extra": ^11.0.1
     "@types/node": ^18.16.1
@@ -2560,7 +2560,7 @@ __metadata:
     "@opentelemetry/sdk-trace-node": ^1.9.1
     "@opentelemetry/semantic-conventions": ^1.11.0
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/chai": ^4.3.4
+    "@types/chai": ^4.3.5
     "@types/mocha": ^10.0.1
     "@types/node": ^18.16.1
     chai: ^4.3.7
@@ -2575,7 +2575,7 @@ __metadata:
   resolution: "@prairielearn/path-utils@workspace:packages/path-utils"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/chai": ^4.3.4
+    "@types/chai": ^4.3.5
     "@types/mocha": ^10.0.1
     "@types/node": ^18.16.1
     chai: ^4.3.7
@@ -3043,10 +3043,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/chai@npm:*, @types/chai@npm:^4.3.4":
+"@types/chai@npm:*":
   version: 4.3.4
   resolution: "@types/chai@npm:4.3.4"
   checksum: 571184967beb03bf64c4392a13a7d44e72da9af5a1e83077ff81c39cf59c0fda2a5c78d2005084601cf8f3d11726608574d8b5b4a0e3e9736792807afd926cd0
+  languageName: node
+  linkType: hard
+
+"@types/chai@npm:^4.3.5":
+  version: 4.3.5
+  resolution: "@types/chai@npm:4.3.5"
+  checksum: c8f26a88c6b5b53a3275c7f5ff8f107028e3cbb9ff26795fff5f3d9dea07106a54ce9e2dce5e40347f7c4cc35657900aaf0c83934a25a1ae12e61e0f5516e431
   languageName: node
   linkType: hard
 
@@ -3726,7 +3733,7 @@ __metadata:
     "@sentry/tracing": ^7.46.0
     "@types/async": ^3.2.18
     "@types/body-parser": ^1.19.2
-    "@types/chai": ^4.3.4
+    "@types/chai": ^4.3.5
     "@types/chai-as-promised": ^7.1.5
     "@types/cheerio": ^0.22.31
     "@types/diff": ^5.0.3
