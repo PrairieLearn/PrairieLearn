@@ -5,6 +5,7 @@ const _ = require('lodash');
 
 const chunks = require('../../lib/chunks');
 const { config } = require('../../lib/config');
+const { APP_ROOT_PATH } = require('../../lib/paths');
 const ERR = require('async-stacktrace');
 
 /**
@@ -58,7 +59,7 @@ router.get('/*', function (req, res, next) {
       res.sendFile(filename, { root: elementFilesDir, ...sendFileOptions });
     });
   } else {
-    elementFilesDir = path.join(__dirname, '..', '..', 'elements');
+    elementFilesDir = path.join(APP_ROOT_PATH, 'elements');
     res.sendFile(filename, { root: elementFilesDir, ...sendFileOptions });
   }
 });

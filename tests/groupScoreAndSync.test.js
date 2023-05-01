@@ -1,8 +1,8 @@
 var ERR = require('async-stacktrace');
 
 const { config } = require('../lib/config');
+const { TEST_COURSE_PATH } = require('../lib/paths');
 const _ = require('lodash');
-const path = require('path');
 var assert = require('chai').assert;
 var request = require('request');
 var cheerio = require('cheerio');
@@ -11,7 +11,6 @@ var sqldb = require('@prairielearn/postgres');
 var sql = sqldb.loadSqlEquiv(__filename);
 var page, form, elemList;
 const helperServer = require('./helperServer');
-const courseDir = path.join(__dirname, '..', 'testCourse');
 
 const locals = {};
 locals.helperClient = require('./helperClient');
@@ -36,7 +35,7 @@ describe('assessment instance group synchronization test', function () {
     Object.assign(config, storedConfig);
   });
 
-  before('set up testing server', helperServer.before(courseDir));
+  before('set up testing server', helperServer.before(TEST_COURSE_PATH));
   after('shut down testing server', helperServer.after);
   describe('1. database initialization', function () {
     it('get group-based homework assessment id', function (callback) {

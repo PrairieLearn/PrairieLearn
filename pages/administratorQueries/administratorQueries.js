@@ -7,7 +7,7 @@ const _ = require('lodash');
 
 const jsonLoad = require('../../lib/json-load');
 
-const queriesDir = 'admin_queries';
+const queriesDir = path.resolve(__dirname, '..', '..', 'admin_queries');
 
 router.get(
   '/',

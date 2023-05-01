@@ -62,12 +62,12 @@ async function runMigrationsAndSprocs(dbName, runMigrations) {
   // so we need to make sure the batched migration machinery is initialized.
   initBatchedMigrations({
     project: 'prairielearn',
-    directories: [path.join(__dirname, '..', 'batched-migrations')],
+    directories: [path.resolve(__dirname, '..', 'batched-migrations')],
   });
 
   if (runMigrations) {
     await initMigrations(
-      [path.join(__dirname, '..', 'migrations'), SCHEMA_MIGRATIONS_PATH],
+      [path.resolve(__dirname, '..', 'migrations'), SCHEMA_MIGRATIONS_PATH],
       'prairielearn'
     );
   }

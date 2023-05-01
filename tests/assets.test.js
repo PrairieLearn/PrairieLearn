@@ -6,11 +6,12 @@ const fetch = require('node-fetch').default;
 
 const { config } = require('../lib/config');
 const assets = require('../lib/assets');
+const { APP_ROOT_PATH } = require('../lib/paths');
 
 const helperServer = require('./helperServer');
 
 const SITE_URL = 'http://localhost:' + config.serverPort;
-const ELEMENTS_PATH = path.resolve(__dirname, '..', 'elements');
+const ELEMENTS_PATH = path.resolve(APP_ROOT_PATH, 'elements');
 
 /** @type {Record<string, any> | null} */
 let cachedElementsInfo = null;

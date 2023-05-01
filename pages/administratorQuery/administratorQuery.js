@@ -12,8 +12,8 @@ const sqldb = require('@prairielearn/postgres');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-const queriesDir = 'admin_queries';
-const schemaFilename = 'schemas/schemas/adminQuery.json';
+const queriesDir = path.resolve(__dirname, '..', '..', 'admin_queries');
+const schemaFilename = path.resolve(__dirname, '..', '..', 'schemas', 'schemas', 'adminQuery.json');
 
 router.get(
   '/:query',

@@ -64,6 +64,8 @@ const nodeMetrics = require('./lib/node-metrics');
 const { isEnterprise } = require('./lib/license');
 const { enrichSentryScope } = require('./lib/sentry');
 const lifecycleHooks = require('./lib/lifecycle-hooks');
+const { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } = require('./lib/paths');
+const staticNodeModules = require('./middlewares/staticNodeModules');
 
 process.on('warning', (e) => console.warn(e));
 
@@ -356,8 +358,8 @@ module.exports.initExpress = function () {
   app.use(bodyParser.urlencoded({ extended: false, limit: 5 * 1536 * 1024 }));
   app.use(cookieParser());
   app.use(passport.initialize());
-  if (config.devMode) app.use(favicon(path.join(__dirname, 'public', 'favicon-dev.ico')));
-  else app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+  if (config.devMode) app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon-dev.ico')));
+  else app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon.ico')));
 
   if ('localRootFilesDir' in config) {
     logger.info(`localRootFilesDir: Mapping ${config.localRootFilesDir} into /`);
@@ -371,7 +373,7 @@ module.exports.initExpress = function () {
   // implementation details.
   app.use(
     '/assets/:cachebuster',
-    express.static(path.join(__dirname, 'public'), {
+    express.static(path.join(APP_ROOT_PATH, 'public'), {
       // In dev mode, assets are likely to change while the server is running,
       // so we'll prevent them from being cached.
       maxAge: config.devMode ? 0 : '31536000s',
@@ -380,7 +382,7 @@ module.exports.initExpress = function () {
   );
   // This route is kept around for legacy reasons - new code should prefer the
   // "cacheable" route above.
-  app.use(express.static(path.join(__dirname, 'public')));
+  app.use(express.static(path.join(APP_ROOT_PATH, 'public')));
 
   app.use('/build/', compiledAssets.handler());
 
@@ -389,28 +391,26 @@ module.exports.initExpress = function () {
   // us to treat those files as immutable and cache them essentially forever.
   app.use(
     '/cacheable_node_modules/:cachebuster',
-    express.static(path.join(__dirname, 'node_modules'), {
+    staticNodeModules('.', {
       maxAge: '31536000s',
       immutable: true,
     })
   );
+
   // This is included for backwards-compatibility with pages that might still
   // expect to be able to load files from the `/node_modules` route.
-  app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
+  app.use('/node_modules', staticNodeModules('.'));
 
   // Included for backwards-compatibility; new code should load MathJax from
   // `/cacheable_node_modules` instead.
-  app.use('/MathJax', express.static(path.join(__dirname, 'node_modules', 'mathjax', 'es5')));
+  app.use('/MathJax', staticNodeModules(path.join('mathjax', 'es5')));
 
   // Support legacy use of ace by v2 questions
   app.use(
     '/localscripts/calculationQuestion/ace',
-    express.static(path.join(__dirname, 'node_modules/ace-builds/src-min-noconflict'))
+    staticNodeModules(path.join('ace-builds', 'src-min-noconflict'))
   );
-  app.use(
-    '/javascripts/ace',
-    express.static(path.join(__dirname, 'node_modules/ace-builds/src-min-noconflict'))
-  );
+  app.use('/javascripts/ace', staticNodeModules(path.join('ace-builds', 'src-min-noconflict')));
 
   // Middleware for all requests
   // response_id is logged on request, response, and error to link them together
@@ -1847,13 +1847,24 @@ if (config.startServer) {
       async () => {
         logger.verbose('PrairieLearn server start');
 
-        let configFilename = 'config.json';
+        // For backwards compatibility, we'll default to trying to load config
+        // files from both the application and repository root.
+        //
+        // We'll put the app config file second so that it can override anything
+        // in the repository root config file.
+        let configPaths = [
+          path.join(REPOSITORY_ROOT_PATH, 'config.json'),
+          path.join(APP_ROOT_PATH, 'config.json'),
+        ];
+
+        // If a config file was specified on the command line, we'll use that
+        // instead of the default locations.
         if ('config' in argv) {
-          configFilename = argv['config'];
+          configPaths = [argv['config']];
         }
 
         // Load config immediately so we can use it configure everything else.
-        await loadConfig(configFilename);
+        await loadConfig(configPaths);
         awsHelper.init();
 
         // This should be done as soon as we load our config so that we can
@@ -2128,8 +2139,8 @@ if (config.startServer) {
       async () => {
         compiledAssets.init({
           dev: config.devMode,
-          sourceDirectory: path.resolve(__dirname, 'assets'),
-          buildDirectory: path.resolve(__dirname, 'public/build'),
+          sourceDirectory: path.resolve(APP_ROOT_PATH, 'assets'),
+          buildDirectory: path.resolve(APP_ROOT_PATH, 'public/build'),
           publicPath: '/build',
         });
       },
