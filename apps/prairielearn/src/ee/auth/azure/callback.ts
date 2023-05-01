@@ -1,10 +1,10 @@
-import passport = require('passport');
-import express = require('express');
+import * as passport from 'passport';
+import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
 
-import authnLib = require('../../../lib/authn');
+import * as authnLib from '../../../lib/authn';
 
-const router = express.Router();
+const router = Router();
 
 function authenticate(req, res): Promise<any> {
   return new Promise((resolve, reject) => {

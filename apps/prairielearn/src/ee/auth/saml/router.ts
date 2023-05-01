@@ -1,7 +1,7 @@
 import ERR from 'async-stacktrace';
 import asyncHandler = require('express-async-handler');
 import { Router } from 'express';
-import passport = require('passport');
+import * as passport from 'passport';
 
 import * as authnLib from '../../../lib/authn';
 

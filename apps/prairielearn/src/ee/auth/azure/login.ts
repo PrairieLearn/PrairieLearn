@@ -1,7 +1,7 @@
-import passport = require('passport');
-import express = require('express');
+import * as passport from 'passport';
+import { Router } from 'express';
 
-const router = express.Router();
+const router = Router();
 
 router.get(
   '/',
