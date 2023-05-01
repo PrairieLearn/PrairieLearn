@@ -84,6 +84,17 @@ module.exports = {
       },
     },
     {
+      files: ['*.ts'],
+      rules: {
+        // TypeScript performs similar checks, so we disable these for TS files.
+        // https://typescript-eslint.io/linting/troubleshooting/performance-troubleshooting/#eslint-plugin-import
+        'import/named': 'off',
+        'import/namespace': 'off',
+        'import/default': 'off',
+        'import/no-named-as-default-member': 'off',
+      },
+    },
+    {
       files: ['*.test.{js,ts,mjs}'],
       env: {
         mocha: true,

@@ -1,13 +1,12 @@
-// @ts-check
-const passport = require('passport');
-const express = require('express');
-const asyncHandler = require('express-async-handler');
+import passport = require('passport');
+import express = require('express');
+import asyncHandler = require('express-async-handler');
 
-const authnLib = require('../../../lib/authn');
+import authnLib = require('../../../lib/authn');
 
 const router = express.Router();
 
-function authenticate(req, res) {
+function authenticate(req, res): Promise<any> {
   return new Promise((resolve, reject) => {
     passport.authenticate(
       'azuread-openidconnect',
@@ -47,4 +46,4 @@ router.post(
   })
 );
 
-module.exports = router;
+export default router;

@@ -1,8 +1,7 @@
-// @ts-check
-const { html } = require('@prairielearn/html');
-const { renderEjs } = require('@prairielearn/html-ejs');
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
 
-const InstitutionAdminSso = ({
+export const InstitutionAdminSso = ({
   institution,
   supportedAuthenticationProviders,
   institutionSamlProvider,
@@ -129,5 +128,3 @@ const InstitutionAdminSso = ({
     </html>
   `.toString();
 };
-
-module.exports.InstitutionAdminSso = InstitutionAdminSso;

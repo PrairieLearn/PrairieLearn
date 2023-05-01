@@ -1,25 +1,22 @@
-// @ts-check
-const { Router } = require('express');
-const asyncHandler = require('express-async-handler');
-const pem = require('pem');
+import { Router } from 'express';
+import asyncHandler = require('express-async-handler');
+import * as pem from 'pem';
 
-const error = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
-const { InstitutionAdminSaml } = require('./saml.html');
-const {
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+import { InstitutionAdminSaml } from './saml.html';
+import {
   getInstitution,
   getInstitutionSamlProvider,
   getInstitutionAuthenticationProviders,
-} = require('../utils');
+} from '../utils';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
 
-/**
- * @param {import('pem').CertificateCreationOptions} options
- * @returns {Promise<import('pem').CertificateCreationResult>}
- */
-function createCertificate(options) {
+function createCertificate(
+  options: pem.CertificateCreationOptions
+): Promise<pem.CertificateCreationResult> {
   return new Promise((resolve, reject) => {
     pem.createCertificate(options, (err, keys) => {
       if (err) return reject(err);
@@ -109,4 +106,4 @@ router.get(
   })
 );
 
-module.exports = router;
+export default router;
