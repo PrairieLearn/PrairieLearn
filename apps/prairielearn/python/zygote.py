@@ -139,7 +139,7 @@ def worker_loop():
                 result = subprocess.run(
                     [
                         "node",
-                        "./question-servers/calculation-worker.js",
+                        "./apps/prairielearn/dist/question-servers/calculation-worker.js",
                     ],
                     cwd=cwd,
                     capture_output=True,
