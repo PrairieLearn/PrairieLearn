@@ -214,7 +214,7 @@
         "s3rver": "^3.7.1",
         "sinon": "^15.0.3",
         "tmp": "^0.2.1",
-        "turbo": "^1.8.8",
+        "turbo": "^1.9.3",
         "typescript": "^5.0.4"
     },
     "nodemonConfig": {
