@@ -1,11 +1,10 @@
-// @ts-check
-const asyncHandler = require('express-async-handler');
-const { Router } = require('express');
-const jose = require('jose');
-const crypto = require('crypto');
+import asyncHandler = require('express-async-handler');
+import { Router } from 'express';
+import * as jose from 'jose';
+import * as crypto from 'node:crypto';
 
-const { config } = require('../../lib/config');
-const { AuthPrairieTest } = require('./prairietest.html');
+import { config } from '../../lib/config';
+import { AuthPrairieTest } from './prairietest.html';
 
 const router = Router({ mergeParams: true });
 
@@ -36,4 +35,4 @@ router.get(
   })
 );
 
-module.exports = router;
+export default router;

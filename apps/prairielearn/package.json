@@ -198,6 +198,6 @@
       "public/*",
       "elements/**/*.js"
     ],
-    "ext": "js,json,sql"
+    "ext": "js,ts,json,sql"
   }
 }

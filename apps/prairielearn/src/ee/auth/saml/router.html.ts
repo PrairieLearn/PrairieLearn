@@ -1,7 +1,7 @@
-const { html } = require('@prairielearn/html');
-const { renderEjs } = require('@prairielearn/html-ejs');
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
 
-const SamlTest = ({
+export const SamlTest = ({
   uid,
   uin,
   name,
@@ -104,5 +104,3 @@ const SamlTest = ({
     </html>
   `.toString();
 };
-
-module.exports.SamlTest = SamlTest;
