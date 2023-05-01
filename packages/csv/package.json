@@ -24,6 +24,6 @@
   "dependencies": {
     "csv-stringify": "^6.3.0",
     "multipipe": "^4.0.0",
-    "stream-transform": "^3.2.2"
+    "stream-transform": "^3.2.5"
   }
 }
