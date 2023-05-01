@@ -20,7 +20,7 @@
     "@types/diff": "^5.0.3",
     "@types/fs-extra": "^11.0.1",
     "@types/lodash": "^4.14.192",
-    "@types/node": "^18.16.1",
+    "@types/node": "^18.16.3",
     "@types/yargs": "^17.0.24",
     "typescript": "^5.0.4",
     "typescript-cp": "^0.1.7"
