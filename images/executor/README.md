@@ -8,7 +8,7 @@ This image is built and pushed to the container registry as `prairielearn/execut
 
 There are scripts in the `/tools` directory that will aid with the building and releasing of this image. They will automatically determine the correct tag from the underlying Git repository. The scripts should be run from the root of the repository.
 
-To build and tag the image for local testing, first ensure that you've built an up-to-date `prairielearn/prairielearn` image, as the `priarielearn/executor` image uses that as its base. You can build a new version by running the following in the root of the repository:
+To build and tag the image for local testing, first ensure that you've built an up-to-date `prairielearn/prairielearn` image, as the `prairielearn/executor` image uses that as its base. You can build a new version by running the following in the root of the repository:
 
 ```sh
 docker build -t prairielearn/prairielearn:latest .
