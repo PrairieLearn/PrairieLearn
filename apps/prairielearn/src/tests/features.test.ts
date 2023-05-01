@@ -1,14 +1,13 @@
-// @ts-check
-const { assert } = require('chai');
-const { queryAsync } = require('@prairielearn/postgres');
+import { assert } from 'chai';
+import { queryAsync } from '@prairielearn/postgres';
 
-const helperCourse = require('./helperCourse');
-const helperDb = require('./helperDb');
-const { FeatureManager, FeatureGrantType } = require('../lib/features/manager');
+import helperCourse from './helperCourse';
+import helperDb from './helperDb';
+import { FeatureManager, FeatureGrantType } from '../lib/features/manager';
 
 describe('features', () => {
-  before(async () => {
-    await helperDb.before();
+  before(async function () {
+    await helperDb.before.call(this);
     await helperCourse.syncCourse();
     await queryAsync('INSERT INTO users (name, uid) VALUES ($name, $uid);', {
       name: 'Test User',
@@ -20,8 +19,8 @@ describe('features', () => {
     await queryAsync('DELETE FROM feature_grants', {});
   });
 
-  after(async () => {
-    await helperDb.after();
+  after(async function () {
+    await helperDb.after.call(this);
   });
 
   it('enables and disables a global feature flag', async () => {
@@ -29,8 +28,8 @@ describe('features', () => {
 
     await features.enable('test:example-feature-flag', FeatureGrantType.Manual);
     assert.isTrue(await features.enabled('test:example-feature-flag'));
-    assert.isTrue(await features.enabled('test:example-feature-flag', { institution_id: 1 }));
-    assert.isTrue(await features.enabled('test:example-feature-flag', { user_id: 1 }));
+    assert.isTrue(await features.enabled('test:example-feature-flag', { institution_id: '1' }));
+    assert.isTrue(await features.enabled('test:example-feature-flag', { user_id: '1' }));
 
     await features.disable('test:example-feature-flag');
     assert.isFalse(await features.enabled('test:example-feature-flag'));
@@ -38,7 +37,7 @@ describe('features', () => {
 
   it('enables and disables a feature flag for an institution', async () => {
     const features = new FeatureManager(['test:example-feature-flag']);
-    const context = { institution_id: 1 };
+    const context = { institution_id: '1' };
 
     await features.enable('test:example-feature-flag', FeatureGrantType.Manual, context);
     assert.isTrue(await features.enabled('test:example-feature-flag', context));
@@ -50,7 +49,7 @@ describe('features', () => {
 
   it('enables and disables a feature flag for a course', async () => {
     const features = new FeatureManager(['test:example-feature-flag']);
-    const context = { institution_id: 1, course_id: 1 };
+    const context = { institution_id: '1', course_id: '1' };
 
     await features.enable('test:example-feature-flag', FeatureGrantType.Manual, context);
     assert.isTrue(await features.enabled('test:example-feature-flag', context));
@@ -62,7 +61,7 @@ describe('features', () => {
 
   it('enables and disables a feature flag for a course instance', async () => {
     const features = new FeatureManager(['test:example-feature-flag']);
-    const context = { institution_id: 1, course_id: 1, course_instance_id: 1 };
+    const context = { institution_id: '1', course_id: '1', course_instance_id: '1' };
 
     await features.enable('test:example-feature-flag', FeatureGrantType.Manual, context);
     assert.isTrue(await features.enabled('test:example-feature-flag', context));
@@ -74,7 +73,7 @@ describe('features', () => {
 
   it('enables and disables a feature flag for a user', async () => {
     const features = new FeatureManager(['test:example-feature-flag']);
-    const context = { user_id: 1 };
+    const context = { user_id: '1' };
 
     await features.enable('test:example-feature-flag', FeatureGrantType.Manual, context);
     assert.isTrue(await features.enabled('test:example-feature-flag', context));
@@ -85,14 +84,14 @@ describe('features', () => {
 
   it('enables and disables a flag for a user in a course instance', async () => {
     const features = new FeatureManager(['test:example-feature-flag']);
-    const context = { institution_id: 1, course_id: 1, course_instance_id: 1, user_id: 1 };
+    const context = { institution_id: '1', course_id: '1', course_instance_id: '1', user_id: '1' };
 
     await features.enable('test:example-feature-flag', FeatureGrantType.Manual, context);
     assert.isTrue(await features.enabled('test:example-feature-flag', context));
-    assert.isFalse(await features.enabled('test:example-feature-flag', { user_id: 1 }));
+    assert.isFalse(await features.enabled('test:example-feature-flag', { user_id: '1' }));
 
     await features.disable('test:example-feature-flag', context);
     assert.isFalse(await features.enabled('test:example-feature-flag', context));
-    assert.isFalse(await features.enabled('test:example-feature-flag', { user_id: 1 }));
+    assert.isFalse(await features.enabled('test:example-feature-flag', { user_id: '1' }));
   });
 });

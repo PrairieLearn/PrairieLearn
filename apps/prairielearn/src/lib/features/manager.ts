@@ -1,12 +1,7 @@
-// @ts-check
-const {
-  loadSqlEquiv,
-  queryAsync,
-  queryValidatedSingleColumnOneRow,
-} = require('@prairielearn/postgres');
-const { z } = require('zod');
+import { loadSqlEquiv, queryAsync, queryValidatedSingleColumnOneRow } from '@prairielearn/postgres';
+import { z } from 'zod';
 
-const { config } = require('../config');
+import { config } from '../config';
 
 const sql = loadSqlEquiv(__filename);
 
@@ -23,55 +18,50 @@ const DEFAULT_CONTEXT = {
  * were applied. These are mostly meant to be consumed by administrators who
  * need to be able to tell if a feature was enabled by default, set manually
  * by another administrator, or enabled as part of a subscription plan.
- *
- * @enum {string}
  */
-const FeatureGrantType = {
+export enum FeatureGrantType {
   /**
    * A feature grant that was applied by default for a given context. For
    * instance, we might want to enable a certain feature for all courses when
    * they are created.
    */
-  Default: 'default',
+  Default = 'default',
   /**
    * A feature flag that has been manually enabled by an administrator.
    */
-  Manual: 'manual',
+  Manual = 'manual',
   /**
    * A feature flag that has been enabled as part of a subscription plan.
    */
-  Subscription: 'subscription',
-};
+  Subscription = 'subscription',
+}
 
-/**
- * @typedef {{}} EmptyContext
- */
+type EmptyContext = Record<string, never>;
 
-/**
- * @typedef {Object} UserContext
- * @property {string} user_id
- */
+interface UserContext {
+  user_id: string;
+}
 
-/**
- * @typedef {Partial<UserContext> & { institution_id: string }} InstitutionContext
- */
+interface InstitutionContext extends Partial<UserContext> {
+  institution_id: string;
+}
 
-/**
- * @typedef {InstitutionContext & { course_id: string }} CourseContext
- */
+interface CourseContext extends InstitutionContext {
+  course_id: string;
+}
 
-/**
- * @typedef {CourseContext & { course_instance_id: string }} CourseInstanceContext
- */
+interface CourseInstanceContext extends CourseContext {
+  course_instance_id: string;
+}
 
-/**
- * @typedef {EmptyContext | UserContext | InstitutionContext | CourseContext | CourseInstanceContext} FeatureContext
- */
+type FeatureContext =
+  | EmptyContext
+  | UserContext
+  | InstitutionContext
+  | CourseContext
+  | CourseInstanceContext;
 
-/**
- * @param {FeatureContext} context
- */
-function validateContext(context) {
+function validateContext(context: FeatureContext) {
   let hasAllParents = true;
   CONTEXT_HIERARCHY.forEach((key, index) => {
     const hasKey = !!context[key];
@@ -83,9 +73,10 @@ function validateContext(context) {
   });
 }
 
-class FeatureManager {
-  /** @param {string[]} features */
-  constructor(features) {
+export class FeatureManager {
+  features: Set<string>;
+
+  constructor(features: string[]) {
     features.forEach((feature) => {
       if (!feature.match(/^[a-z0-9:_-]+$/)) {
         throw new Error(`Invalid feature name: ${feature}`);
@@ -94,12 +85,7 @@ class FeatureManager {
     this.features = new Set(features);
   }
 
-  /**
-   * @private
-   * @param {string} name
-   * @param {FeatureContext} context
-   */
-  validateFeature(name, context) {
+  private validateFeature(name: string, context: FeatureContext) {
     if (!this.features.has(name)) {
       throw new Error(`Unknown feature: ${name}`);
     }
@@ -113,11 +99,11 @@ class FeatureManager {
   /**
    * Checks if the given feature is enabled for the given context.
    *
-   * @param {string} name The name of the feature.
-   * @param {FeatureContext} [context] A context to use when evaluating the feature.
-   * @returns {Promise<boolean>} Whether or not the feature is enabled
+   * @param name The name of the feature.
+   * @param context A context to use when evaluating the feature.
+   * @returns Whether or not the feature is enabled
    */
-  async enabled(name, context = {}) {
+  async enabled(name: string, context: FeatureContext = {}): Promise<boolean> {
     this.validateFeature(name, context);
 
     const featureIsEnabled = await queryValidatedSingleColumnOneRow(
@@ -141,11 +127,11 @@ class FeatureManager {
   /**
    * Enables the feature for the given context.
    *
-   * @param {string} name The name of the feature.
-   * @param {FeatureGrantType} type The type of grant that is being applied.
-   * @param {FeatureContext} [context] The context for which the feature should be enabled.
+   * @param name The name of the feature.
+   * @param type The type of grant that is being applied.
+   * @param context The context for which the feature should be enabled.
    */
-  async enable(name, type, context = {}) {
+  async enable(name: string, type: FeatureGrantType, context: FeatureContext = {}) {
     this.validateFeature(name, context);
     await queryAsync(sql.enable_feature, { name, type, ...DEFAULT_CONTEXT, ...context });
   }
@@ -153,14 +139,11 @@ class FeatureManager {
   /**
    * Disables the feature for the given context.
    *
-   * @param {string} name The name of the feature.
-   * @param {FeatureContext} [context] The context for which the feature should be disabled.
+   * @param name The name of the feature.
+   * @param context The context for which the feature should be disabled.
    */
-  async disable(name, context = {}) {
+  async disable(name: string, context: FeatureContext = {}) {
     this.validateFeature(name, context);
     await queryAsync(sql.disable_feature, { name, ...DEFAULT_CONTEXT, ...context });
   }
 }
-
-module.exports.FeatureManager = FeatureManager;
-module.exports.FeatureGrantType = FeatureGrantType;

@@ -1,5 +1,4 @@
-// @ts-check
-const { FeatureManager, FeatureGrantType } = require('./manager');
+import { FeatureManager, FeatureGrantType } from './manager';
 
 const features = new FeatureManager(['course:manual-grading']);
 
