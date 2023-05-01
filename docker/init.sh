@@ -8,7 +8,7 @@ cd /PrairieLearn
 make -s start-support
 
 if [[ $NODEMON == "true" || DEV == "true" ]]; then
-    make dev-migrate > /dev/null
+    make migrate-dev > /dev/null
     # `dev` is listed first so it can use standard input
     make -s -j 2 dev dev-workspace-host
 else
