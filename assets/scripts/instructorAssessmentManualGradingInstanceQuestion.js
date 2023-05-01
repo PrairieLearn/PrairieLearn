@@ -195,6 +195,40 @@ function updateSettingsPointValues() {
   form.querySelectorAll('.js-rubric-max-points-zero').forEach((node) => {
     node.style.display = points ? 'none' : '';
   });
+  checkRubricItemTotals();
+}
+
+function checkRubricItemTotals() {
+  const form = document.querySelector('.js-rubric-settings-modal form');
+  const startingPoints = Number(form.querySelector('[name="starting_points"]:checked')?.value ?? 0);
+  const [totalPositive, totalNegative] = Array.from(form.querySelectorAll('.js-rubric-item-points'))
+    .map((input) => Number(input.value))
+    .reduce(
+      ([pos, neg], value) => (value > 0 ? [pos + value, neg] : [pos, neg + value]),
+      [startingPoints, startingPoints]
+    );
+  const minPoints = Number(form.querySelector('[name="min_points"]').value);
+  const maxPoints =
+    Number(form.querySelector('[name="max_extra_points"]').value) +
+    Number(form.querySelector('.js-negative-grading').value);
+  document.querySelectorAll('.js-rubric-item-total-warning').forEach((alert) => alert.remove());
+
+  if (totalPositive < maxPoints) {
+    addAlert(
+      form,
+      `Rubric item points reach at most ${totalPositive} points. ${
+        maxPoints - totalPositive
+      } left to reach maximum.`,
+      ['alert-warning', 'js-rubric-item-total-warning']
+    );
+  }
+
+  if (totalNegative > minPoints) {
+    addAlert(form, `Minimum grade from rubric item penalties is ${totalNegative} points.`, [
+      'alert-warning',
+      'js-rubric-item-total-warning',
+    ]);
+  }
 }
 
 function submitSettings(e, use_rubric) {
@@ -261,10 +295,13 @@ function submitSettings(e, use_rubric) {
     });
 }
 
-function addAlert(parent, msg) {
+function addAlert(parent, msg, classes = ['alert-danger']) {
   const alertPH = parent.querySelector('.js-settings-error-alert-placeholder');
   const alert = document.createElement('div');
-  alert.classList.add('alert', 'alert-danger', 'alert-dismissible', 'fade', 'show');
+  alert.classList.add('alert', 'alert-dismissible', 'fade', 'show');
+  if (classes) {
+    alert.classList.add(...classes);
+  }
   alert.setAttribute('role', 'alert');
   alert.innerText = msg;
   const closeBtn = document.createElement('button');
@@ -295,6 +332,9 @@ function resetRubricItemRowsListeners() {
   document
     .querySelectorAll('.js-rubric-item-delete')
     .forEach((button) => button.addEventListener('click', deleteRow));
+  document
+    .querySelectorAll('.js-rubric-item-points, .js-rubric-item-limits')
+    .forEach((input) => input.addEventListener('input', checkRubricItemTotals));
 }
 
 function updateQueryObjects(parent, query, values) {
@@ -471,4 +511,5 @@ function addRubricItemRow() {
 
   resetRubricItemRowsListeners();
   updateRubricItemOrderField();
+  checkRubricItemTotals();
 }
