@@ -43,6 +43,10 @@ jobs:
         uses: docker/build-push-action@v4 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: .
+          # QEMU is *extremely* slow on GitHub Actions, taking over 2 hours to
+          # build the `priarielearn/prairielearn` image for the `linux/arm64`
+          # platform. We will avoid building an ARM image for now. If GitHub
+          # ever offers ARM hosted runners, we can consider building ARM images.
           platforms: linux/amd64
           push: true
           no-cache: true
@@ -159,41 +163,3 @@ jobs:
           push: true
           no-cache: true
           tags: prairielearn/workspace-xtermjs:latest
-
-
-      ######################################################################################################
-      ######################################################################################################
-      ######################################################################################################
-      ######################################################################################################
-      #
-      # ARM64
-      #
-      # We should be able to use `platforms: linux/amd64,linux/arm64`
-      # above to build all images on both platforms simultaneously,
-      # but the arm64 builds with postgres are currently not reliable
-      # on GitHub Actions. This seems to be because we are using qemu
-      # on x86 build hosts to build the arm64 images. A similar issue
-      # with postgis:
-      # https://github.com/postgis/docker-postgis/issues/216
-      #
-      # Note that we have also set `continue-on-error: true` for the
-      # separate arm64 builds. If these become reliable in the future
-      # then we should remove this.
-      #
-      ######################################################################################################
-      ######################################################################################################
-      ######################################################################################################
-      ######################################################################################################
-
-
-      ######################################################################################################
-      # prairielearn
-      - name: Build and push prairielearn/prairielearn
-        uses: docker/build-push-action@v4 # https://github.com/marketplace/actions/build-and-push-docker-images
-        with:
-          context: .
-          platforms: linux/arm64
-          push: true
-          no-cache: true
-          tags: prairielearn/prairielearn:arm
-        continue-on-error: true
