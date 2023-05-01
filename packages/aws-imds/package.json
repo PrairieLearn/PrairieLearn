@@ -17,7 +17,7 @@
     "typescript": "^5.0.4"
   },
   "dependencies": {
-    "@aws-sdk/client-ec2": "^3.304.0",
+    "@aws-sdk/client-ec2": "^3.322.0",
     "node-fetch": "^2.6.9",
     "zod": "^3.21.4"
   }
