@@ -3,7 +3,7 @@ const { assert } = require('chai');
 const cheerio = require('cheerio');
 const fetch = require('node-fetch').default;
 
-const config = require('../lib/config');
+const { config } = require('../lib/config');
 const helperServer = require('./helperServer');
 
 const sqldb = require('@prairielearn/postgres');
