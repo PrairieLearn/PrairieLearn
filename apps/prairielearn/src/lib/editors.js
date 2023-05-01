@@ -17,7 +17,6 @@ const { v4: uuidv4 } = require('uuid');
 const sha256 = require('crypto-js/sha256');
 const util = require('util');
 const chunks = require('./chunks');
-const { EXAMPLE_COURSE_PATH } = require('./paths');
 const { escapeRegExp } = require('@prairielearn/sanitize');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
