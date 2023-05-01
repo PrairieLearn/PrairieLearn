@@ -7,6 +7,11 @@
 //
 // It's important that nothing in this file relies on config or other global
 // server state, as this won't be executed in the main process.
+//
+// Note that the zygote will load the *transpiled* version of this file in the
+// `dist` directory, not the original source file in `src`. If you're making
+// changes to this file, you'll need to run `yarn build` in `apps/prairielearn`
+// in order to update the file in `dist`.
 
 const path = require('path');
 const readline = require('readline');

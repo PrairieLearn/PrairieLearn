@@ -1,9 +1,9 @@
 // @ts-check
 const path = require('node:path');
 
-const REPOSITORY_ROOT_PATH = path.resolve(__dirname, '..');
+const REPOSITORY_ROOT_PATH = path.resolve(__dirname, '..', '..', '..', '..');
 
-const APP_ROOT_PATH = path.resolve(__dirname, '..');
+const APP_ROOT_PATH = path.resolve(__dirname, '..', '..');
 
 const EXAMPLE_COURSE_PATH = path.resolve(REPOSITORY_ROOT_PATH, 'exampleCourse');
 

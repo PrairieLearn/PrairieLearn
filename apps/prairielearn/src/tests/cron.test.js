@@ -24,7 +24,7 @@ describe('Cron', function () {
     // set all other cron jobs to execute soon
     config.cronOverrideAllIntervalsSec = 3;
 
-    helperServer.before()(callback);
+    helperServer.before().call(this, callback);
   });
   after('shut down testing server', helperServer.after);
 
