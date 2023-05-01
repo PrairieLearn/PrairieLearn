@@ -1,8 +1,8 @@
 import { assert } from 'chai';
 import { queryAsync } from '@prairielearn/postgres';
 
-import helperCourse from './helperCourse';
-import helperDb from './helperDb';
+import * as helperCourse from './helperCourse';
+import * as helperDb from './helperDb';
 import { FeatureManager, FeatureGrantType } from '../lib/features/manager';
 
 describe('features', () => {

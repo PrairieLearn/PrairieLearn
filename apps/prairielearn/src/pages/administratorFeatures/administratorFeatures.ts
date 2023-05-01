@@ -1,12 +1,12 @@
-import asyncHandler from 'express-async-handler';
-import express from 'express';
+import asyncHandler = require('express-async-handler');
+import { Router } from 'express';
 import { z } from 'zod';
 import { loadSqlEquiv, queryValidatedRows } from '@prairielearn/postgres';
 
 import { features } from '../../lib/features';
 import { AdministratorFeatures, AdministratorFeature } from './administratorFeatures.html';
 
-const router = express.Router();
+const router = Router();
 const sql = loadSqlEquiv(__filename);
 
 const FeatureGrantRowSchema = z.object({
