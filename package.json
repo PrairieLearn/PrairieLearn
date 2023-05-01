@@ -8,7 +8,9 @@
     "dev-workspace-host": "yarn workspace @prairielearn/workspace-host dev",
     "dev": "yarn workspace @prairielearn/prairielearn dev",
     "start-workspace-host": "yarn workspace @prairielearn/workspace-host start",
-    "start": "yarn workspace @prairielearn/prairielearn start"
+    "start": "yarn workspace @prairielearn/prairielearn start",
+    "migrate-dev": "yarn workspace @prairielearn/prairielearn dev:no-watch --migrate-and-exit",
+    "migrate": "yarn workspace @prairielearn/prairielearn start --migrate-and-exit"
   },
   "devDependencies": {
     "@changesets/cli": "^2.26.1",
