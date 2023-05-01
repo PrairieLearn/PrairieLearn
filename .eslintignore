@@ -1,13 +1,16 @@
 /docs/
 /node_modules/
-/public/
 /exampleCourse/
 /testCourse/
-/question-servers/default-calculation/
 /coverage/
 /out/
 /workspaces/
 /site/
 
+# We don't want to lint these files.
+/apps/prairielearn/src/question-servers/default-calculation/
+/apps/prairielearn/public/
+
 # Transpiled code
-packages/*/dist/
+/apps/*/dist/
+/packages/*/dist/

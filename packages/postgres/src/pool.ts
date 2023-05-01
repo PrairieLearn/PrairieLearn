@@ -1,7 +1,6 @@
 import _ from 'lodash';
 import pg, { QueryResult } from 'pg';
 import Cursor from 'pg-cursor';
-import path from 'node:path';
 import debugFactory from 'debug';
 import { callbackify } from 'node:util';
 import { AsyncLocalStorage } from 'node:async_hooks';
@@ -16,7 +15,7 @@ export interface CursorIterator<T> {
   stream: (batchSize: number) => NodeJS.ReadWriteStream;
 }
 
-const debug = debugFactory('prairielib:' + path.basename(__filename, '.js'));
+const debug = debugFactory('@prairielearn/postgres');
 const lastQueryMap: WeakMap<pg.PoolClient, string> = new WeakMap();
 const searchSchemaMap: WeakMap<pg.PoolClient, string> = new WeakMap();
 
@@ -938,7 +937,11 @@ export class PostgresPool {
         } catch (err: any) {
           throw enhanceError(err, sql, params);
         } finally {
-          client.release();
+          try {
+            await cursor.close();
+          } finally {
+            client.release();
+          }
         }
       },
       stream: function (batchSize: number) {
@@ -954,7 +957,20 @@ export class PostgresPool {
         });
 
         // TODO: use native `node:stream#compose` once it's stable.
-        return multipipe(Readable.from(iterator.iterate(batchSize)), transform);
+        const generator = iterator.iterate(batchSize);
+        const pipe = multipipe(Readable.from(generator), transform);
+
+        // When the underlying stream is closed, we need to make sure that the
+        // cursor is also closed. We do this by calling `return()` on the generator,
+        // which will trigger its `finally` block, which will in turn release
+        // the client and close the cursor. The fact that the stream is already
+        // closed by this point means that someone reading from the stream will
+        // never actually see the `null` value that's returned.
+        pipe.once('close', () => {
+          generator.return(null);
+        });
+
+        return pipe;
       },
     };
     return iterator;

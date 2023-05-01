@@ -357,7 +357,7 @@ WHERE
 
 ## DB schema modification
 
-See [`migrations/README.md`](https://github.com/PrairieLearn/PrairieLearn/blob/master/migrations/README.md)
+See [`migrations/README.md`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/migrations/README.md)
 
 ## JSON syncing
 
@@ -524,7 +524,7 @@ WHERE
   );
 ```
 
-- To pass a lot of data to SQL a useful pattern is to send a JSON object array and unpack it in SQL to the equivalent of a table. This is the pattern used by the "sync" code, such as [sprocs/sync_news_items.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/sprocs/sync_news_items.sql). For example:
+- To pass a lot of data to SQL a useful pattern is to send a JSON object array and unpack it in SQL to the equivalent of a table. This is the pattern used by the "sync" code, such as [sprocs/sync_news_items.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/sprocs/sync_news_items.sql). For example:
 
 ```javascript
 let data = [
@@ -778,7 +778,7 @@ function foo(p, callback) {
 
   2. The remote authentication service redirects back to `/pl/shibcallback` (for Shibboleth) or `/pl/auth2callback` (for Google). These endpoints confirm authentication, create the user in the `users` table if necessary, set a signed `pl_authn` cookie in the browser with the authenticated `user_id`, and then redirect to the main PL homepage. This cookie is set with the `HttpOnly` attribute, which prevents client-side JavaScript from reading the cookie.
 
-  3. Every other page authenticates using the signed browser `pl_authn` cookie. This is read by [`middlewares/authn.js`](https://github.com/PrairieLearn/PrairieLearn/blob/master/middlewares/authn.js) which checks the signature and then loads the user data from the DB using the `user_id`, storing it as `res.locals.authn_user`.
+  3. Every other page authenticates using the signed browser `pl_authn` cookie. This is read by [`middlewares/authn.js`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/middlewares/authn.js) which checks the signature and then loads the user data from the DB using the `user_id`, storing it as `res.locals.authn_user`.
 
 - Similar to unix, we distinguish between the real and effective user. The real user is stored as `res.locals.authn_user` and is the user that authenticated. The effective user is stored as `res.locals.user`. Only users with `role = TA` or higher can set an effective user that is different from their real user. Moreover, users with `role = TA` or higher can also set an effective `role` and `mode` that is different to the real values.
 
@@ -855,7 +855,7 @@ To automatically fix lint and formatting errors, run `make format`.
 
 ## Question-rendering control flow
 
-- The core files involved in question rendering are [lib/question.js](https://github.com/PrairieLearn/PrairieLearn/blob/master/lib/question.js), [lib/question.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/lib/question.sql), and [pages/partials/question.ejs](https://github.com/PrairieLearn/PrairieLearn/blob/master/pages/partials/question.ejs).
+- The core files involved in question rendering are [lib/question.js](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question.js), [lib/question.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question.sql), and [pages/partials/question.ejs](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/pages/partials/question.ejs).
 
 - The above files are all called/included by each of the top-level pages that needs to render a question (e.g., `pages/instructorQuestionPreview`, `pages/studentInstanceQuestionExam`, etc). Unfortunately the control-flow is complicated because we need to call `lib/question.js` during page data load, store the data it generates, and then later include the `pages/partials/question.ejs` template to actually render this data.
 
