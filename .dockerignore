@@ -18,6 +18,8 @@
 !pyproject.toml
 !admin_queries/
 !api/
+!apps/
+!batched-migrations/
 !cron/
 !database/
 !docs/
@@ -26,7 +28,6 @@
 !elements/
 !exampleCourse/
 !executor.js
-!grader_host/
 !lib/
 !Makefile
 !middlewares/
@@ -37,7 +38,6 @@
 !yarn.lock
 !pages/
 !packages/
-!prairielib/
 !public/
 public/build/
 !python/
@@ -51,4 +51,3 @@ public/build/
 !tests/
 !tools/
 !webhooks/
-!workspace_host/
