@@ -448,11 +448,11 @@ module.exports.initExpress = function () {
 
   if (isEnterprise()) {
     if (config.hasAzure) {
-      app.use('/pl/azure_login', require('./ee/auth/azure/login'));
-      app.use('/pl/azure_callback', require('./ee/auth/azure/callback'));
+      app.use('/pl/azure_login', require('./ee/auth/azure/login').default);
+      app.use('/pl/azure_callback', require('./ee/auth/azure/callback').default);
     }
 
-    app.use('/pl/auth/institution/:institution_id/saml', require('./ee/auth/saml/router'));
+    app.use('/pl/auth/institution/:institution_id/saml', require('./ee/auth/saml/router').default);
   }
 
   app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
@@ -466,7 +466,7 @@ module.exports.initExpress = function () {
   app.use('/pl/api', require('./middlewares/authnToken')); // authn for the API, set res.locals.authn_user
 
   if (isEnterprise()) {
-    app.use('/pl/prairietest/auth', require('./ee/auth/prairietest'));
+    app.use('/pl/prairietest/auth', require('./ee/auth/prairietest').default);
   }
 
   // Must come before CSRF middleware; we do our own signature verification here.
@@ -768,7 +768,7 @@ module.exports.initExpress = function () {
   app.use('/pl/api/v1', require('./api/v1'));
 
   if (isEnterprise()) {
-    app.use('/pl/institution/:institution_id/admin', require('./ee/institution/admin'));
+    app.use('/pl/institution/:institution_id/admin', require('./ee/institution/admin').default);
   }
 
   //////////////////////////////////////////////////////////////////////
