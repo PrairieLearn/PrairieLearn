@@ -209,7 +209,7 @@
         "mocha-steps": "^1.3.0",
         "node-fetch": "^2.6.9",
         "prettier": "2.8.7",
-        "pyright": "^1.1.301",
+        "pyright": "^1.1.305",
         "request": "^2.88.2",
         "s3rver": "^3.7.1",
         "sinon": "^15.0.3",
