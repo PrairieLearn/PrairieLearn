@@ -1,31 +1,25 @@
 // @ts-check
-const { html } = require('@prairielearn/html');
-const { renderEjs } = require('@prairielearn/html-ejs');
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
 
-/** @typedef {import('./administratorFeatures').FeatureGrantRow} FeatureGrantRow */
+import { FeatureGrantRow } from './administratorFeatures';
 
-/**
- * @typedef {Object} AdministratorFeaturesProps
- * @property {string[]} features
- * @property {Record<string, any>} resLocals
- */
+interface AdministratorFeaturesProps {
+  features: string[];
+  resLocals: Record<string, any>;
+}
 
-/**
- * @typedef {Object} AdministratorFeatureProps
- * @property {string} feature
- * @property {FeatureGrantRow[]} featureGrants
- * @property {Record<string, any>} resLocals
- */
+interface AdministratorFeatureProps {
+  feature: string;
+  featureGrants: FeatureGrantRow[];
+  resLocals: Record<string, any>;
+}
 
-/**
- * @typedef {Object} FeatureGrantProps
- * @property {FeatureGrantRow} featureGrant
- */
+interface FeatureGrantProps {
+  featureGrant: FeatureGrantRow;
+}
 
-/**
- * @param {AdministratorFeaturesProps} props
- */
-function AdministratorFeatures({ features, resLocals }) {
+export function AdministratorFeatures({ features, resLocals }: AdministratorFeaturesProps) {
   return html`
     <!DOCTYPE html>
     <html>
@@ -64,10 +58,11 @@ function AdministratorFeatures({ features, resLocals }) {
   `.toString();
 }
 
-/**
- * @param {AdministratorFeatureProps} props
- */
-function AdministratorFeature({ feature, featureGrants, resLocals }) {
+export function AdministratorFeature({
+  feature,
+  featureGrants,
+  resLocals,
+}: AdministratorFeatureProps) {
   return html`
     <!DOCTYPE html>
     <html>
@@ -111,10 +106,7 @@ function AdministratorFeature({ feature, featureGrants, resLocals }) {
   `.toString();
 }
 
-/**
- * @param {FeatureGrantProps} props
- */
-function FeatureGrantBreadcrumbs({ featureGrant }) {
+function FeatureGrantBreadcrumbs({ featureGrant }: FeatureGrantProps) {
   const hasInstitution = featureGrant.institution_id !== null;
   const hasCourse = featureGrant.course_id !== null;
   const hasCourseInstance = featureGrant.course_instance_id !== null;
@@ -156,8 +148,7 @@ function FeatureGrantBreadcrumbs({ featureGrant }) {
   `;
 }
 
-/** @param {FeatureGrantProps} props */
-function FeatureGrantBadge({ featureGrant }) {
+function FeatureGrantBadge({ featureGrant }: FeatureGrantProps) {
   switch (featureGrant.type) {
     case 'default':
       return html`<span class="badge badge-pill badge-secondary">default</span>`;
@@ -168,10 +159,7 @@ function FeatureGrantBadge({ featureGrant }) {
   }
 }
 
-/**
- * @param {FeatureGrantProps} props
- */
-function FeatureGrant({ featureGrant }) {
+function FeatureGrant({ featureGrant }: FeatureGrantProps) {
   return html`
     <div class="list-group-item d-flex flex-row align-items-center">
       <div>${FeatureGrantBreadcrumbs({ featureGrant })}</div>
@@ -179,5 +167,3 @@ function FeatureGrant({ featureGrant }) {
     </div>
   `;
 }
-
-module.exports = { AdministratorFeatures, AdministratorFeature };

@@ -1,11 +1,10 @@
-// @ts-check
-const asyncHandler = require('express-async-handler');
-const express = require('express');
-const { z } = require('zod');
-const { loadSqlEquiv, queryValidatedRows } = require('@prairielearn/postgres');
+import asyncHandler from 'express-async-handler';
+import express from 'express';
+import { z } from 'zod';
+import { loadSqlEquiv, queryValidatedRows } from '@prairielearn/postgres';
 
-const { features } = require('../../lib/features');
-const { AdministratorFeatures, AdministratorFeature } = require('./administratorFeatures.html');
+import { features } from '../../lib/features';
+import { AdministratorFeatures, AdministratorFeature } from './administratorFeatures.html';
 
 const router = express.Router();
 const sql = loadSqlEquiv(__filename);
@@ -28,7 +27,7 @@ const FeatureGrantRowSchema = z.object({
   user_name: z.string().nullable(),
 });
 
-/** @typedef {z.infer<FeatureGrantRowSchema>} FeatureGrantRow */
+export type FeatureGrantRow = z.infer<typeof FeatureGrantRowSchema>;
 
 router.get(
   '/',
