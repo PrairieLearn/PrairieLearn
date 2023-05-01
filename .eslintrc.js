@@ -90,7 +90,7 @@ module.exports = {
       },
     },
     {
-      files: ['assets/scripts/*.js'],
+      files: ['apps/prairielearn/assets/scripts/**/*'],
       env: {
         browser: true,
         jquery: true,
