@@ -68,7 +68,7 @@
         "csv-parse": "^5.3.6",
         "csvtojson": "^2.0.10",
         "d3": "^7.8.4",
-        "date-fns": "^2.29.3",
+        "date-fns": "^2.30.0",
         "date-fns-tz": "^2.0.0",
         "debug": "^4.3.4",
         "detect-mocha": "^0.1.0",
