@@ -40,7 +40,7 @@ def check_tags(element_html: str) -> None:
                 )
 
 
-def get_file_path(data: pl.QuestionData, element: lxml.html.HtmlElement) -> str:
+def get_file_path(element: lxml.html.HtmlElement, data: pl.QuestionData) -> str:
     parent_dir_dict = {
         "question": "question_path",
         "clientFilesQuestion": "client_files_question_path",
@@ -102,7 +102,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 )
 
             elif has_template_file:
-                with open(get_file_path(data, child), "r") as f:
+                with open(get_file_path(child, data), "r") as f:
                     variable_dict[name] = f.read()
 
             else:
@@ -127,7 +127,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "log-tag-warnings", LOG_TAG_WARNINGS_DEFAULT
     )
 
-    with open(get_file_path(data, element), "r") as f:
+    with open(get_file_path(element, data), "r") as f:
         res = chevron.render(f, variable_dict, warn=log_variable_warnings)
 
     if log_tag_warnings:
