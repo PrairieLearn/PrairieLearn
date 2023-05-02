@@ -5,7 +5,6 @@
 const { disableInstrumentations } = require('@prairielearn/opentelemetry');
 disableInstrumentations();
 
-const path = require('path');
 const { test } = require('mocha');
 const axe = require('axe-core');
 const jsdom = require('jsdom');
@@ -19,9 +18,9 @@ const server = require('../../server');
 const news_items = require('../../news_items');
 const { config } = require('../../lib/config');
 const helperServer = require('../helperServer');
+const { EXAMPLE_COURSE_PATH } = require('../../lib/paths');
 
 const SITE_URL = 'http://localhost:' + config.serverPort;
-const EXAMPLE_COURSE_DIR = path.resolve(__dirname, '..', '..', 'exampleCourse');
 
 /**
  * Several pages have very large DOMs or attributes that AXE runs very slow on.
@@ -262,7 +261,7 @@ describe('accessibility', () => {
   let routeParams = {};
   before('set up testing server', async function () {
     config.cronActive = false;
-    await util.promisify(helperServer.before(EXAMPLE_COURSE_DIR).bind(this))();
+    await util.promisify(helperServer.before(EXAMPLE_COURSE_PATH).bind(this))();
     config.cronActive = true;
 
     // We want to test a news item page, so we need to "init" them.
