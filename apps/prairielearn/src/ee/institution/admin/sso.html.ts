@@ -29,7 +29,7 @@ export const InstitutionAdminSso = ({
           navSubPage: 'sso',
         })}
 
-        <div class="container">
+        <main class="container">
           <form method="POST">
             <div class="form-group">
               <div class="h5">Enabled single sign-on providers</div>
@@ -101,7 +101,7 @@ export const InstitutionAdminSso = ({
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <button type="submit" class="btn btn-primary">Save</button>
           </form>
-        </div>
+        </main>
 
         <script>
           $(function () {

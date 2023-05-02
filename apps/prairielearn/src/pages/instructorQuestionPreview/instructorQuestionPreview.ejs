@@ -20,7 +20,7 @@
     <div class="container-fluid">
       <%- include('../partials/questionSyncErrorsAndWarnings'); %>
     </div>
-    <div id="content" class="container">
+    <main id="content" class="container">
       <div class="row">
           <div class="col-lg-9 col-sm-12">
               <%- include('../partials/question', {question_context: 'instructor'}); %>
@@ -39,7 +39,7 @@
           </div>
       </div>
 
-    </div>
+    </main>
     <!-- Needs to be located below element scripts -->
     <script src="<%= asset_path('localscripts/questionPageScripts.js') %>"></script>
   </body>

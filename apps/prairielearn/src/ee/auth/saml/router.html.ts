@@ -32,7 +32,7 @@ export const SamlTest = ({
         })}
       </head>
       <body>
-        <div class="container mb-4">
+        <main class="container mb-4">
           ${
             hasError
               ? html`
@@ -99,7 +99,7 @@ export const SamlTest = ({
 
           <h2 class="h4">All SAML attributes</h1>
           <pre><code>${JSON.stringify(attributes, null, 2)}</code></pre>
-        </div>
+        </main>
       </body>
     </html>
   `.toString();

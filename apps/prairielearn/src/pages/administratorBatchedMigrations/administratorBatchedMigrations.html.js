@@ -31,7 +31,7 @@ function AdministratorBatchedMigrations({ batchedMigrations, resLocals }) {
   const hasBatchedMigrations = batchedMigrations.length > 0;
   return html`
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
       </head>
@@ -82,7 +82,7 @@ function AdministratorBatchedMigration({
 }) {
   return html`
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
       </head>

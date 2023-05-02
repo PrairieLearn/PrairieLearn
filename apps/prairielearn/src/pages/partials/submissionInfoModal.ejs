@@ -1,8 +1,8 @@
-<div class="modal fade" id="submissionInfoModal-<%= submission.id %>" tabindex="-1" role="dialog" aria-labelledby="submissionInfoModalLabel" aria-hidden="true">
+<div class="modal fade" id="submissionInfoModal-<%= submission.id %>" tabindex="-1" role="dialog" aria-labelledby="submissionInfoModalLabel-<%= submission.id %>" aria-hidden="true">
   <div class="modal-dialog" role="document">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="submissionInfoModalLabel">Submission info</h5>
+        <h5 class="modal-title" id="submissionInfoModalLabel-<%= submission.id %>">Submission info</h5>
         <button type="button" class="close" data-dismiss="modal" aria-label="Close">
           <span aria-hidden="true">&times;</span>
         </button>
