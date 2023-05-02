@@ -73,7 +73,7 @@ export function makeImdsConfigSource(): ConfigSource {
       return {
         hostname,
         instanceId: identity.instanceId,
-        region: identity.region,
+        awsRegion: identity.region,
       };
     },
   };
