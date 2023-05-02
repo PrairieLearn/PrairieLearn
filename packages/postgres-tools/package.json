@@ -12,23 +12,25 @@
     "directory": "packages/postgres-tools"
   },
   "scripts": {
-    "build": "tsc && copyfiles -u 1 \"./src/**/*.sql\" dist",
-    "dev": "tsc --watch --preserveWatchOutput"
+    "build": "tsc && tscp",
+    "dev": "tsc --watch --preserveWatchOutput & tscp --watch"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/diff": "^5.0.3",
     "@types/fs-extra": "^11.0.1",
-    "@types/node": "^18.15.11",
-    "copyfiles": "^2.4.1",
-    "typescript": "^4.9.4"
+    "@types/lodash": "^4.14.194",
+    "@types/node": "^18.16.3",
+    "@types/yargs": "^17.0.24",
+    "typescript": "^5.0.4",
+    "typescript-cp": "^0.1.7"
   },
   "dependencies": {
     "@prairielearn/postgres": "workspace:^",
-    "@types/lodash": "^4.14.192",
     "chalk": "^4.1.2",
     "diff": "^5.1.0",
     "fs-extra": "^11.1.1",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.21",
+    "yargs": "^17.7.2"
   }
 }

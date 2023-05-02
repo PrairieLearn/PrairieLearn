@@ -41,7 +41,7 @@ export default configLoader.config;
 
 If you're running in AWS, you can use `makeImdsConfig()` and `makeSecretsManagerConfig()` to load config from IMDS and Secrets Manager, respectively:
 
-- `makeImdsConfig()` will load `hostname`, `instanceId`, and `region`, which will be available if you config schema contains these values.
+- `makeImdsConfig()` will load `hostname`, `instanceId`, and `awsRegion`, which will be available if you config schema contains these values.
 - `makeSecretsManagerConfig()` will look for a `ConfSecret` tag on the instance. If found, the value of that tag will be used treated as a Secrets Manager secret ID, and that secret's value will be parsed as JSON and merged into the config.
 
 Note that both of these config sources are no-ops by default. To active them, you must do one of the following:
