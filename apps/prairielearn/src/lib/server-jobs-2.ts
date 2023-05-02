@@ -21,16 +21,14 @@ type JobSequenceExecutionFunction = (
 
 class Job {
   public readonly options: any;
-  private jobSequenceId: string;
   private id: string;
   private stdout: string;
   private stderr: string;
   private output: string;
   private finished = false;
 
-  constructor(jobSequenceId: string, id: string, options: any) {
+  constructor(id: string, options: any) {
     this.options = options;
-    this.jobSequenceId = jobSequenceId;
     this.id = id;
     this.stdout = '';
     this.stderr = '';
@@ -47,7 +45,7 @@ class Job {
     this.addToOutput(msg);
   }
 
-  addToOutput(msg: string) {
+  private addToOutput(msg: string) {
     this.output += msg;
     const ansiUp = new AnsiUp();
     const ansifiedOutput = ansiUp.ansi_to_html(this.output);
@@ -75,6 +73,10 @@ class Job {
   debug(_msg: string) {
     // do nothing
   }
+
+  async run() {}
+
+  async exec() {}
 
   async finish(code: number | null, signal: NodeJS.Signals | null) {
     // Guard against handling job finish more than once.
@@ -194,7 +196,7 @@ class JobSequence {
     };
     const jobResult = await queryOneRowAsync(sql.insert_job, params);
     const jobId = jobResult.rows[0].id;
-    const job = new Job(this.id, jobId, options);
+    const job = new Job(jobId, options);
     serverJobs.liveJobs[jobId] = job;
     socketServer.io.to('jobSequence-' + this.id).emit('update');
 
