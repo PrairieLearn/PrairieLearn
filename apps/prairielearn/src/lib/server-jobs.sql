@@ -169,8 +169,6 @@ WITH
     SET
       finish_date = CURRENT_TIMESTAMP,
       status = 'Error'::enum_job_status,
-      stderr = $stderr,
-      stdout = $stdout,
       output = $output,
       error_message = $error_message
     WHERE
