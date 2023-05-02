@@ -1,19 +1,21 @@
 import _ from 'lodash';
 import pg, { QueryResult } from 'pg';
 import Cursor from 'pg-cursor';
-import path from 'node:path';
 import debugFactory from 'debug';
 import { callbackify } from 'node:util';
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { z } from 'zod';
+import { Readable, Transform } from 'node:stream';
+import multipipe from 'multipipe';
 
 export type QueryParams = Record<string, any> | any[];
 
 export interface CursorIterator<T> {
   iterate: (batchSize: number) => AsyncGenerator<T[]>;
+  stream: (batchSize: number) => NodeJS.ReadWriteStream;
 }
 
-const debug = debugFactory('prairielib:' + path.basename(__filename, '.js'));
+const debug = debugFactory('@prairielearn/postgres');
 const lastQueryMap: WeakMap<pg.PoolClient, string> = new WeakMap();
 const searchSchemaMap: WeakMap<pg.PoolClient, string> = new WeakMap();
 
@@ -236,7 +238,7 @@ export class PostgresPool {
 
     // If we're inside a transaction, we'll reuse the same client to avoid a
     // potential deadlock.
-    let client = this.alsClient.getStore() ?? (await this.pool.connect());
+    const client = this.alsClient.getStore() ?? (await this.pool.connect());
 
     // If we're configured to use a particular schema, we'll store whether or
     // not the search path has already been configured for this particular
@@ -470,19 +472,33 @@ export class PostgresPool {
    * will be committed otherwise.
    */
   async runInTransactionAsync<T>(fn: (client: pg.PoolClient) => Promise<T>): Promise<T> {
-    const client = await this.beginTransactionAsync();
+    // Check if we're already inside a transaction. If so, we won't start another one,
+    // as Postgres doesn't support nested transactions.
+    const client = this.alsClient.getStore();
+    const isNestedTransaction = client !== undefined;
+    const transactionClient = client ?? (await this.beginTransactionAsync());
+
     let result: T;
     try {
-      result = await this.alsClient.run(client, () => fn(client));
+      result = await this.alsClient.run(transactionClient, () => fn(transactionClient));
     } catch (err: any) {
-      await this.endTransactionAsync(client, err);
+      if (!isNestedTransaction) {
+        // If we're inside another transaction, we assume that the root transaction
+        // will catch this error and roll back the transaction.
+        await this.endTransactionAsync(transactionClient, err);
+      }
       throw err;
     }
 
-    // Note that we don't invoke `endTransactionAsync` inside the `try` block
-    // because we don't want an error thrown by it to trigger *another* call
-    // to `endTransactionAsync` in the `catch` block.
-    await this.endTransactionAsync(client, null);
+    if (!isNestedTransaction) {
+      // If we're inside another transaction; don't commit it prematurely. Allow
+      // the root transaction to commit it instead.
+      //
+      // Note that we don't invoke `endTransactionAsync` inside the `try` block
+      // because we don't want an error thrown by it to trigger *another* call
+      // to `endTransactionAsync` in the `catch` block.
+      await this.endTransactionAsync(transactionClient, null);
+    }
 
     return result;
   }
@@ -737,7 +753,7 @@ export class PostgresPool {
     model: Model
   ): Promise<z.infer<Model> | null> {
     const results = await this.queryZeroOrOneRowAsync(query, params);
-    if (results.rows.length == 0) {
+    if (results.rows.length === 0) {
       return null;
     } else {
       return model.parse(results.rows[0]);
@@ -755,7 +771,7 @@ export class PostgresPool {
     model: Model
   ): Promise<z.infer<Model>[]> {
     const results = await this.queryAsync(query, params);
-    if (results.fields.length != 1) {
+    if (results.fields.length !== 1) {
       throw new Error(`Expected one column, got ${results.fields.length}`);
     }
     const columnName = results.fields[0].name;
@@ -774,7 +790,7 @@ export class PostgresPool {
     model: Model
   ): Promise<z.infer<Model>> {
     const results = await this.queryOneRowAsync(query, params);
-    if (results.fields.length != 1) {
+    if (results.fields.length !== 1) {
       throw new Error(`Expected one column, got ${results.fields.length}`);
     }
     const columnName = results.fields[0].name;
@@ -792,10 +808,10 @@ export class PostgresPool {
     model: Model
   ): Promise<z.infer<Model> | null> {
     const results = await this.queryZeroOrOneRowAsync(query, params);
-    if (results.fields.length != 1) {
+    if (results.fields.length !== 1) {
       throw new Error(`Expected one column, got ${results.fields.length}`);
     }
-    if (results.rows.length == 0) {
+    if (results.rows.length === 0) {
       return null;
     } else {
       const columnName = results.fields[0].name;
@@ -839,7 +855,7 @@ export class PostgresPool {
     model: Model
   ): Promise<z.infer<Model> | null> {
     const results = await this.callZeroOrOneRowAsync(sprocName, params);
-    if (results.rows.length == 0) {
+    if (results.rows.length === 0) {
       return null;
     } else {
       return model.parse(results.rows[0]);
@@ -896,7 +912,7 @@ export class PostgresPool {
     const cursor = await this.queryCursorWithClient(client, sql, params);
 
     let iterateCalled = false;
-    return {
+    const iterator: CursorIterator<z.infer<Model>> = {
       iterate: async function* (batchSize: number) {
         // Safety check: if someone calls iterate multiple times, they're
         // definitely doing something wrong.
@@ -921,10 +937,43 @@ export class PostgresPool {
         } catch (err: any) {
           throw enhanceError(err, sql, params);
         } finally {
-          client.release();
+          try {
+            await cursor.close();
+          } finally {
+            client.release();
+          }
         }
       },
+      stream: function (batchSize: number) {
+        const transform = new Transform({
+          readableObjectMode: true,
+          writableObjectMode: true,
+          transform(chunk, _encoding, callback) {
+            for (const row of chunk) {
+              this.push(row);
+            }
+            callback();
+          },
+        });
+
+        // TODO: use native `node:stream#compose` once it's stable.
+        const generator = iterator.iterate(batchSize);
+        const pipe = multipipe(Readable.from(generator), transform);
+
+        // When the underlying stream is closed, we need to make sure that the
+        // cursor is also closed. We do this by calling `return()` on the generator,
+        // which will trigger its `finally` block, which will in turn release
+        // the client and close the cursor. The fact that the stream is already
+        // closed by this point means that someone reading from the stream will
+        // never actually see the `null` value that's returned.
+        pipe.once('close', () => {
+          generator.return(null);
+        });
+
+        return pipe;
+      },
     };
+    return iterator;
   }
 
   /**
