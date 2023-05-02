@@ -717,8 +717,8 @@ module.exports.getRuntimeDirectoryForCourse = (course) => {
  * @param {string} options.coursePath
  * @param {string} options.courseId
  * @param {import('../sync/course-db').CourseData} options.courseData
- * @param {string} [options.oldHash]
- * @param {string} [options.newHash]
+ * @param {string | null} [options.oldHash]
+ * @param {string | null} [options.newHash]
  *
  * @returns {Promise<{ updatedChunks: ChunkMetadata[], deletedChunks: ChunkMetadata[] }>}
  */

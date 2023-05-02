@@ -1,58 +1,3 @@
--- BLOCK insert_job
-WITH
-  max_over_jobs_with_same_sequence AS (
-    SELECT
-      coalesce(max(j.number_in_sequence) + 1, 1) AS new_number_in_sequence
-    FROM
-      jobs AS j
-    WHERE
-      j.course_id IS NOT DISTINCT FROM $course_id
-      AND j.job_sequence_id = $job_sequence_id
-      AND j.job_sequence_id IS NOT NULL
-  )
-INSERT INTO
-  jobs (
-    course_id,
-    course_instance_id,
-    course_request_id,
-    assessment_id,
-    job_sequence_id,
-    number_in_sequence,
-    last_in_sequence,
-    no_job_sequence_update,
-    user_id,
-    authn_user_id,
-    type,
-    description,
-    status,
-    command,
-    arguments,
-    working_directory,
-    env
-  )
-SELECT
-  $course_id,
-  $course_instance_id,
-  $course_request_id,
-  $assessment_id,
-  $job_sequence_id,
-  new_number_in_sequence,
-  $last_in_sequence,
-  $no_job_sequence_update,
-  $user_id,
-  $authn_user_id,
-  $type,
-  $description,
-  'Running',
-  $command,
-  $arguments::TEXT[],
-  $working_directory,
-  $env
-FROM
-  max_over_jobs_with_same_sequence
-RETURNING
-  jobs.id;
-
 -- BLOCK insert_job_sequence
 WITH
   max_over_job_sequences_with_same_course AS (
@@ -62,135 +7,93 @@ WITH
       job_sequences AS js
     WHERE
       js.course_id IS NOT DISTINCT FROM $course_id
-  )
-INSERT INTO
-  job_sequences (
-    course_id,
-    course_instance_id,
-    course_request_id,
-    assessment_id,
-    number,
-    user_id,
-    authn_user_id,
-    type,
-    description
+  ),
+  new_job_sequence AS (
+    INSERT INTO
+      job_sequences (
+        course_id,
+        course_instance_id,
+        course_request_id,
+        assessment_id,
+        number,
+        user_id,
+        authn_user_id,
+        type,
+        description
+      )
+    SELECT
+      $course_id,
+      $course_instance_id,
+      $course_request_id,
+      $assessment_id,
+      new_number,
+      $user_id,
+      $authn_user_id,
+      $type,
+      $description
+    FROM
+      max_over_job_sequences_with_same_course
+    RETURNING
+      id
+  ),
+  new_job AS (
+    INSERT INTO
+      jobs (
+        course_id,
+        course_instance_id,
+        course_request_id,
+        assessment_id,
+        job_sequence_id,
+        number_in_sequence,
+        last_in_sequence,
+        user_id,
+        authn_user_id,
+        type,
+        description,
+        status
+      )
+    SELECT
+      $course_id,
+      $course_instance_id,
+      $course_request_id,
+      $assessment_id,
+      new_job_sequence.id,
+      1,
+      TRUE,
+      $user_id,
+      $authn_user_id,
+      $type,
+      $description,
+      'Running'
+    FROM
+      new_job_sequence
+    RETURNING
+      jobs.id
   )
 SELECT
-  $course_id,
-  $course_instance_id,
-  $course_request_id,
-  $assessment_id,
-  new_number,
-  $user_id,
-  $authn_user_id,
-  $type,
-  $description
+  new_job_sequence.id AS job_sequence_id,
+  new_job.id AS job_id
 FROM
-  max_over_job_sequences_with_same_course
-RETURNING
-  id;
+  new_job_sequence,
+  new_job;
 
--- BLOCK update_job_on_close
+-- BLOCK update_job_on_finish
 WITH
-  updated_jobs AS (
+  updated_job AS (
     UPDATE jobs AS j
     SET
       finish_date = CURRENT_TIMESTAMP,
-      status = CASE
-        WHEN $exit_code = 0 THEN 'Success'::enum_job_status
-        ELSE 'Error'::enum_job_status
-      END,
-      stderr = $stderr,
-      stdout = $stdout,
+      status = $status::enum_job_status,
       output = $output,
-      exit_code = $exit_code,
-      exit_signal = $exit_signal
+      error_message = 'TODO ERROR MESSAGE'
     WHERE
       j.id = $job_id
-      -- Ensure we can't finish the same job multiple times.
-      AND status = 'Running'
-    RETURNING
-      j.*
-  ),
-  job_sequence_updates AS (
-    SELECT
-      j.*,
-      CASE
-        WHEN j.no_job_sequence_update THEN FALSE
-        WHEN j.status = 'Error' THEN TRUE
-        WHEN j.last_in_sequence THEN TRUE
-        ELSE FALSE
-      END AS update_job_sequence
-    FROM
-      updated_jobs AS j
-  ),
-  update_results AS (
-    UPDATE job_sequences AS js
-    SET
-      finish_date = j.finish_date,
-      status = j.status
-    FROM
-      job_sequence_updates AS j
-    WHERE
-      js.id = j.job_sequence_id
-      AND j.update_job_sequence
+      AND j.status = 'Running'::enum_job_status
   )
-SELECT
-  j.*
-FROM
-  updated_jobs AS j;
-
--- BLOCK update_job_on_error
-WITH
-  updated_jobs AS (
-    UPDATE jobs AS j
-    SET
-      finish_date = CURRENT_TIMESTAMP,
-      status = 'Error'::enum_job_status,
-      stderr = $stderr,
-      stdout = $stdout,
-      output = $output,
-      error_message = $error_message
-    WHERE
-      j.id = $job_id
-      -- Ensure we can't finish the same job multiple times.
-      AND status = 'Running'::enum_job_status
-    RETURNING
-      j.*
-  ),
-  job_sequence_updates AS (
-    SELECT
-      j.*,
-      CASE
-        WHEN j.no_job_sequence_update THEN FALSE
-        ELSE TRUE
-      END AS update_job_sequence
-    FROM
-      updated_jobs AS j
-  )
-UPDATE job_sequences AS js
-SET
-  finish_date = j.finish_date,
-  status = j.status
-FROM
-  job_sequence_updates AS j
-WHERE
-  js.id = j.job_sequence_id
-  AND j.update_job_sequence;
-
--- BLOCK finish_job_sequence
 UPDATE job_sequences AS js
 SET
   finish_date = CURRENT_TIMESTAMP,
-  status = 'Success'
+  status = $status::enum_job_status
 WHERE
   js.id = $job_sequence_id
-  AND js.status = 'Running';
-
--- BLOCK fail_job_sequence
-UPDATE job_sequences AS js
-SET
-  finish_date = CURRENT_TIMESTAMP,
-  status = 'Error'
-WHERE
-  js.id = $job_sequence_id;
+  AND js.status = 'Running'::enum_job_status;

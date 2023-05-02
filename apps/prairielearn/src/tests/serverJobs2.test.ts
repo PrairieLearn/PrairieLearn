@@ -2,7 +2,7 @@ import { assert } from 'chai';
 import { logger } from '@prairielearn/logger';
 
 import * as serverJobs from '../lib/server-jobs';
-import { createServerJob } from '../lib/server-jobs-3';
+import { createServerJob } from '../lib/server-jobs-2';
 import * as helperServer from './helperServer';
 
 function disableLoggingForTests() {
@@ -16,7 +16,7 @@ function disableLoggingForTests() {
   });
 }
 
-describe('server-jobs-3', () => {
+describe('server-jobs-s', () => {
   before(helperServer.before());
   after(helperServer.after);
 
