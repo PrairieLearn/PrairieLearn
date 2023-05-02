@@ -10,14 +10,12 @@ router.get('/', function (req, res) {
 });
 
 router.post('/', function (req, res) {
-  if (req.body.__action === 'assessmentPassword') {
-    var pl_pw_origUrl = req.cookies.pl_pw_origUrl;
-    var maxAge = 1000 * 60 * 60 * 12; // 12 hours
+  var redirectUrl = req.cookies.pl_pw_origUrl ?? '/';
+  var maxAge = 1000 * 60 * 60 * 12; // 12 hours
 
-    var pwCookie = generateSignedToken({ password: req.body.password, maxAge }, config.secretKey);
-    res.cookie('pl_assessmentpw', pwCookie, { maxAge, httpOnly: true, secure: true });
-    res.clearCookie('pl_pw_origUrl');
-    return res.redirect(pl_pw_origUrl);
-  }
+  var pwCookie = generateSignedToken({ password: req.body.password, maxAge }, config.secretKey);
+  res.cookie('pl_assessmentpw', pwCookie, { maxAge, httpOnly: true, secure: true });
+  res.clearCookie('pl_pw_origUrl');
+  return res.redirect(redirectUrl);
 });
 module.exports = router;

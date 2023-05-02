@@ -1,8 +1,7 @@
-// @ts-check
-const { html } = require('@prairielearn/html');
-const { renderEjs } = require('@prairielearn/html-ejs');
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
 
-const InstitutionAdminSaml = ({
+export const InstitutionAdminSaml = ({
   institution,
   samlProvider,
   institutionAuthenticationProviders,
@@ -38,7 +37,7 @@ const InstitutionAdminSaml = ({
           navPage: 'institution_admin',
           navSubPage: 'saml',
         })}
-        <div class="container mb-4">
+        <main class="container mb-4">
           ${hasSamlProvider && !hasEnabledSaml
             ? html`
                 <div class="alert alert-warning">
@@ -237,7 +236,7 @@ ${samlProvider?.certificate ?? ''}</textarea
                 </button>
               `
             : ''}
-        </div>
+        </main>
 
         <div class="modal" tabindex="-1" id="deleteModal">
           <div class="modal-dialog">
@@ -282,5 +281,3 @@ ${samlProvider?.certificate ?? ''}</textarea
     </html>
   `.toString();
 };
-
-module.exports.InstitutionAdminSaml = InstitutionAdminSaml;

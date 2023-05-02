@@ -24,4 +24,5 @@ FROM
   LEFT JOIN open_instances AS oi ON (TRUE)
 WHERE
   aq.assessment_id = $assessment_id
-  AND aq.id = $assessment_question_id;
+  AND aq.id = $assessment_question_id
+  AND q.deleted_at IS NULL;

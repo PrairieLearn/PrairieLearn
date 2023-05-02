@@ -10,7 +10,7 @@
       });
     </script>
     <%- include('../partials/navbar', {navPage: 'assessments'}); %>
-    <div id="content" class="container">
+    <main id="content" class="container">
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">Assessments</div>
@@ -18,8 +18,8 @@
         <table class="table table-sm table-hover">
           <thead>
             <tr>
-              <th style="width: 1%"></th>
-              <th></th>
+              <th style="width: 1%"><span class="sr-only">Label</span></th>
+              <th><span class="sr-only">Title</span></th>
               <th class="text-center">Available credit</th>
               <th class="text-center">Score</th>
             </tr>
@@ -58,7 +58,7 @@
                 <% } else { %>
                 <a href="<%= urlPrefix %><%= row.link %>"><%= row.title %>
                 <% if (row.group_work) { %>
-                  <i class="fas fa-users" aria-label="Group work"></i>
+                  <i class="fas fa-users" aria-hidden="true"></i>
                 <% } %>
                 </a>
                 <% } %>
@@ -98,6 +98,6 @@
       <% if (authz_data.mode == 'Exam') { %>
       <p>Don't see your exam? Exams for this course are only made available to students with checked-in exam reservations. See a proctor for assistance.</p>
       <% } %>
-    </div>
+    </main>
   </body>
 </html>
