@@ -88,10 +88,10 @@ class ServerJob {
 
     try {
       await fn(this);
-      await this.finish('Success');
+      await this.finish();
     } catch (err) {
       try {
-        await this.fail(err);
+        await this.finish(err);
       } catch (err) {
         logger.error(`Error failing job ${this.jobId}`, err);
         Sentry.captureException(err);
@@ -118,27 +118,24 @@ class ServerJob {
       .emit('change:output', { job_id: this.jobId, output: ansifiedOutput });
   }
 
-  private async fail(err: any) {
-    // If the error has a stack, it will already include the stringified error.
-    // Otherwise, just use the stringified error.
-    if (err.stack) {
-      this.addToOutput(err.stack);
-    } else {
-      this.addToOutput(err.toString());
-    }
-
-    if (err.data) {
-      this.addToOutput('\n' + JSON.stringify(err.data, null, 2));
-    }
-
-    await this.finish('Error');
-  }
-
-  // TODO: use enum for status?
-  private async finish(status: 'Success' | 'Error') {
+  private async finish(err: any = undefined) {
     // Guard against handling job finish more than once.
     if (this.finished) return;
     this.finished = true;
+
+    if (err) {
+      // If the error has a stack, it will already include the stringified error.
+      // Otherwise, just use the stringified error.
+      if (err.stack) {
+        this.addToOutput(err.stack);
+      } else {
+        this.addToOutput(err.toString());
+      }
+
+      if (err.data) {
+        this.addToOutput('\n' + JSON.stringify(err.data, null, 2));
+      }
+    }
 
     delete serverJobs.liveJobs[this.jobId];
 
@@ -146,7 +143,8 @@ class ServerJob {
       job_sequence_id: this.jobSequenceId,
       job_id: this.jobId,
       output: this.output,
-      status,
+      status: err ? 'Error' : 'Success',
+      error_message: err?.toString() ?? null,
     });
 
     // Notify sockets.

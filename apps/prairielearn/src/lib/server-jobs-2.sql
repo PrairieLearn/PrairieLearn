@@ -85,7 +85,7 @@ WITH
       finish_date = CURRENT_TIMESTAMP,
       status = $status::enum_job_status,
       output = $output,
-      error_message = 'TODO ERROR MESSAGE'
+      error_message = $error_message
     WHERE
       j.id = $job_id
       AND j.status = 'Running'::enum_job_status
