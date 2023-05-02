@@ -124,8 +124,6 @@ WITH
         WHEN $exit_code = 0 THEN 'Success'::enum_job_status
         ELSE 'Error'::enum_job_status
       END,
-      stderr = $stderr,
-      stdout = $stdout,
       output = $output,
       exit_code = $exit_code,
       exit_signal = $exit_signal
@@ -171,8 +169,6 @@ WITH
     SET
       finish_date = CURRENT_TIMESTAMP,
       status = 'Error'::enum_job_status,
-      stderr = $stderr,
-      stdout = $stdout,
       output = $output,
       error_message = $error_message
     WHERE
