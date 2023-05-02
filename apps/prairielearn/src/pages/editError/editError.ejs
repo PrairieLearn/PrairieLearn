@@ -8,7 +8,7 @@
 <body>
     <%- include('../partials/navbar', {navPage: 'error'}); %>
 
-    <div id="content" class="container">
+    <main id="content" class="container">
         <script>
             $(function() {
                 let showDetailElement = $("#results-some-uuid-button");
@@ -68,7 +68,7 @@
         <div class="collapse" id="results-some-uuid">
             <%- include('../partials/jobSequenceResults', {job_sequence: job_sequence, job_sequence_enable_live_update: false}); %>
         </div>
-    </div>
+    </main>
 </body>
 
 </html>

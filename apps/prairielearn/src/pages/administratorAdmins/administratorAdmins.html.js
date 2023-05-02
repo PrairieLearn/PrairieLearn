@@ -5,7 +5,7 @@ const { renderEjs } = require('@prairielearn/html-ejs');
 function AdministratorAdmins({ admins, resLocals }) {
   return html`
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../../pages/partials/head') %>", resLocals)}
       </head>
@@ -20,7 +20,7 @@ function AdministratorAdmins({ admins, resLocals }) {
           navPage: 'admin',
           navSubPage: 'administrators',
         })}
-        <div id="content" class="container-fluid">
+        <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
               Administrators
@@ -54,7 +54,7 @@ function AdministratorAdmins({ admins, resLocals }) {
                   <tr>
                     <th>UID</th>
                     <th>Name</th>
-                    <th></th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
 
@@ -104,7 +104,7 @@ function AdministratorAdmins({ admins, resLocals }) {
               </small>
             </div>
           </div>
-        </div>
+        </main>
       </body>
     </html>
   `.toString();

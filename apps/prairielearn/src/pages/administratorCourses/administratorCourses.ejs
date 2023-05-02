@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     <%- include('../partials/head'); %>
   </head>
@@ -10,7 +10,7 @@
       });
     </script>
     <%- include('../partials/navbar', {navPage: 'admin', navSubPage: 'courses'}); %>
-    <div id="content" class="container-fluid">
+    <main id="content" class="container-fluid">
       <div id="institutions" class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           Institutions
@@ -71,7 +71,7 @@
                 <th>Timezone</th>
                 <th>Path</th>
                 <th>Repository</th>
-                <th></th>
+                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -112,6 +112,6 @@
           </small>
         </div>
       </div>
-    </div>
+    </main>
   </body>
 </html>

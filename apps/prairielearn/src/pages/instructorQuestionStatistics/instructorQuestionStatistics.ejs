@@ -21,7 +21,7 @@
       });
     </script>
     <%- include('../partials/navbar'); %>
-    <div id="content" class="container-fluid">
+    <main id="content" class="container-fluid">
       <%- include('../partials/questionSyncErrorsAndWarnings'); %>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -29,7 +29,7 @@
         </div>
 
         <div class="table-responsive">
-          <table id="questionsTable" class="table table-sm table-hover tablesorter table-bordered">
+          <table class="table table-sm table-hover tablesorter table-bordered">
             <thead>
             <tr>
               <th class="text-center">Course Instance</th>
@@ -218,6 +218,6 @@
         </div>
       </div>
 
-    </div>
+    </main>
   </body>
 </html>
