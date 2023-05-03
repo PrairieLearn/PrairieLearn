@@ -5,6 +5,7 @@ import * as Sentry from '@prairielearn/sentry';
 import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryAsync, queryValidatedOneRow } from '@prairielearn/postgres';
 
+import { chalk } from './chalk';
 import serverJobs = require('./server-jobs');
 import socketServer = require('./socket-server');
 
@@ -34,7 +35,7 @@ class ServerJob {
   public jobId: string;
   private started = false;
   private finished = false;
-  private output = '';
+  public output = '';
 
   constructor(jobSequenceId: string, jobId: string) {
     this.jobSequenceId = jobSequenceId;
@@ -58,6 +59,8 @@ class ServerJob {
   }
 
   async exec(file: string, args: string[] = [], options: ServerJobExecOptions = {}): Promise<void> {
+    const msg = `$ ${file} ${args.join(' ')}\n`;
+    this.addToOutput(chalk.greenBright(msg));
     const proc2 = execa(file, args, {
       ...options,
       reject: false,
@@ -175,5 +178,7 @@ export async function createServerJob(options: CreateServerJobOptions): Promise<
     })
   );
 
-  return new ServerJob(job_sequence_id, job_id);
+  const serverJob = new ServerJob(job_sequence_id, job_id);
+  serverJobs.liveJobs[job_id] = serverJob;
+  return serverJob;
 }

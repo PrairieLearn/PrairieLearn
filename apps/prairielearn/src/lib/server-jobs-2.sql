@@ -19,7 +19,8 @@ WITH
         user_id,
         authn_user_id,
         type,
-        description
+        description,
+        legacy
       )
     SELECT
       $course_id,
@@ -30,7 +31,8 @@ WITH
       $user_id,
       $authn_user_id,
       $type,
-      $description
+      $description,
+      FALSE
     FROM
       max_over_job_sequences_with_same_course
     RETURNING

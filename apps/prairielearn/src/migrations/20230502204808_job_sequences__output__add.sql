@@ -1,2 +1,0 @@
-ALTER TABLE job_sequences
-ADD COLUMN IF NOT EXISTS output TEXT;

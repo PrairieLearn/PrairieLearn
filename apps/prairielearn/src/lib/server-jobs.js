@@ -1,3 +1,4 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const util = require('util');
@@ -48,9 +49,15 @@ const sql = sqldb.loadSqlEquiv(__filename);
   instead.
 */
 
-// Store currently active job information in memory. This is used
-// to accumulate stderr/stdout, which are only written to the DB
-// once the job is finished.
+/** @typedef {{ output: string }} AbstractJob */
+
+/**
+ * Store currently active job information in memory. This is used
+ * to accumulate stderr/stdout, which are only written to the DB
+ * once the job is finished.
+ *
+ * @type {Record<string, AbstractJob>}
+ */
 module.exports.liveJobs = {};
 
 /********************************************************************/
@@ -284,7 +291,7 @@ module.exports.connection = function (socket) {
 
 /**
  * @param {any} options
- * @param {(err: Error | undefined, job: Job) => void} callback
+ * @param {(err: Error | null | undefined, job: Job) => void} callback
  */
 module.exports.createJob = function (options, callback) {
   options = _.assign(
@@ -353,33 +360,33 @@ module.exports.spawnJob = function (options, callback) {
       cwd: job.options.working_directory,
       env: job.options.env,
     };
-    job.proc = child_process.spawn(job.options.command, job.options.arguments, spawnOptions);
+    const proc = child_process.spawn(job.options.command, job.options.arguments, spawnOptions);
 
-    job.proc.stderr.setEncoding('utf8');
-    job.proc.stdout.setEncoding('utf8');
-    job.proc.stderr.on('data', function (text) {
+    proc.stderr.setEncoding('utf8');
+    proc.stdout.setEncoding('utf8');
+    proc.stderr.on('data', function (text) {
       job.addToStderr(text);
     });
-    job.proc.stdout.on('data', function (text) {
+    proc.stdout.on('data', function (text) {
       job.addToStdout(text);
     });
-    job.proc.stderr.on('error', function (err) {
+    proc.stderr.on('error', function (err) {
       job.addToStderr('ERROR: ' + err.toString() + '\n');
     });
-    job.proc.stdout.on('error', function (err) {
+    proc.stdout.on('error', function (err) {
       job.addToStderr('ERROR: ' + err.toString() + '\n');
     });
 
     // when a process exists, first 'exit' is fired with stdio
     // streams possibly still open, then 'close' is fired once all
     // stdio is done
-    job.proc.on('exit', function (_code, _signal) {
+    proc.on('exit', function (_code, _signal) {
       // do nothing
     });
-    job.proc.on('close', function (code, signal) {
+    proc.on('close', function (code, signal) {
       job.finish(code, signal);
     });
-    job.proc.on('error', function (err) {
+    proc.on('error', function (err) {
       job.fail(err);
     });
 
@@ -419,6 +426,11 @@ module.exports.errorAbandonedJobs = async function () {
   });
 };
 
+/**
+ *
+ * @param {any} options
+ * @param {Function} callback
+ */
 module.exports.createJobSequence = function (options, callback) {
   options = _.assign(
     {
@@ -457,6 +469,11 @@ module.exports.createJobSequenceAsync = async (options) => {
   return job_sequence_id;
 };
 
+/**
+ *
+ * @param {string} job_sequence_id
+ * @param {Function | undefined} [callback]
+ */
 module.exports.failJobSequence = function (job_sequence_id, callback) {
   var params = {
     job_sequence_id,
@@ -465,9 +482,9 @@ module.exports.failJobSequence = function (job_sequence_id, callback) {
     socketServer.io.to('jobSequence-' + job_sequence_id).emit('update');
     if (ERR(err, () => {})) {
       logger.error('error failing job_sequence_id ' + job_sequence_id + ' with error', err);
-      if (callback) return callback(err);
+      return callback?.(err);
     } else {
-      if (callback) return callback(null);
+      return callback?.(null);
     }
   });
 };
@@ -480,7 +497,7 @@ module.exports.failJobSequenceAsync = async (job_sequence_id) => {
  *
  * @param {string} job_sequence_id
  * @param {string | null} course_id
- * @param {(err: Error | undefined, jobSequence: any) => void} callback
+ * @param {(err: Error | null | undefined, jobSequence: any) => void} callback
  */
 module.exports.getJobSequence = function (job_sequence_id, course_id, callback) {
   var params = {

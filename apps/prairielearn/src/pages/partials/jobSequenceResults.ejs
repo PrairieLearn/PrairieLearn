@@ -68,12 +68,14 @@
     <% job_sequence.jobs.forEach(function(job) { %>
     <div class="list-group">
         <li class="list-group-item">
-            <h4 class="list-group-item-heading">Stage <%= job.number_in_sequence %>: <%= job.description %></h4>
-            <% if (job.command) { %>
-            <p class="mb-1">
-                Command <code><%= job.command %><% job.arguments.forEach(function(arg) { %> <%= arg %><% }); %></code>
-                <% if (job.working_directory) { %> run in <code><%= job.working_directory %></code><% } %>
-            </p>
+            <% if (job_sequence.legacy) { %>
+                <h4 class="list-group-item-heading">Stage <%= job.number_in_sequence %>: <%= job.description %></h4>
+                <% if (job.command) { %>
+                <p class="mb-1">
+                    Command <code><%= job.command %><% job.arguments.forEach(function(arg) { %> <%= arg %><% }); %></code>
+                    <% if (job.working_directory) { %> run in <code><%= job.working_directory %></code><% } %>
+                </p>
+                <% } %>
             <% } %>
             <p class="mb-1">
                 Started at <%= job.start_date_formatted %><% if (job_sequence.user_uid) { %> by <%= job_sequence.user_uid %><% } %><% if (job_sequence.authn_user_uid != job_sequence.user_uid) { %> (really <%= job_sequence.authn_user_uid %>)<% } %><% if (job.finish_date_formatted) { %>, finished at <%= job.finish_date_formatted %><% } %>
@@ -82,9 +84,13 @@
                 <%- include('../partials/jobStatus', {status: job.status}); %>
                 <% if (job.status == 'Running') { %><i class="fa fa-sync fa-spin fa-fw"></i><% } %>
             </p>
-            <% if (job.status == 'Error' && job.exit_code != null) { %><p class="mb-1">Exit code: <%= job.exit_code %></p><% } %>
-            <% if (job.exit_signal != null) { %><p class="mb-1">Exit signal: <%= job.exit_signal %></p><% } %>
-            <% if (job.error_message != null) { %><p class="mb-1">Error message: <%= job.error_message %></p><% } %>
+            <% if (job_sequence.legacy) { %>
+                <% if (job.status == 'Error' && job.exit_code != null) { %><p class="mb-1">Exit code: <%= job.exit_code %></p><% } %>
+                <% if (job.exit_signal != null) { %><p class="mb-1">Exit signal: <%= job.exit_signal %></p><% } %>
+            <% } %>
+            <% if (job.error_message != null) { %>
+                <p class="mb-1">Error message: <%= job.error_message %></p>
+            <% } %>
             <pre id="output-<%= job.id %>" class="text-white rounded p-3 mb-0 mt-3" style="background-color: black;"><%- job.output %></pre>
         </li>
     </div>
