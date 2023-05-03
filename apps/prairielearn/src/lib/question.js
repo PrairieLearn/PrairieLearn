@@ -21,7 +21,7 @@ const questionServers = require('../question-servers');
 const workspaceHelper = require('./workspace');
 const issues = require('./issues');
 const error = require('@prairielearn/error');
-const { createServerJob } = require('./server-jobs-2');
+const { createServerJob } = require('./server-jobs');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
