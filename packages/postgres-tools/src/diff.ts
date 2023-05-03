@@ -88,7 +88,6 @@ async function diff(db1: DiffTarget, db2: DiffTarget, options: DiffOptions): Pro
     result += formatText(`Differences in ${boldTable} table\n`, chalk.underline);
 
     patch.hunks.forEach((hunk, index) => {
-      console.log(hunk);
       if (index !== 0) {
         result += formatText('...\n', chalk.gray);
       }
