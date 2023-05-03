@@ -3,7 +3,7 @@ import fs from 'fs-extra';
 import path from 'node:path';
 import chalk from 'chalk';
 import _ from 'lodash';
-import { diffLines } from 'diff';
+import { structuredPatch } from 'diff';
 
 import { describeDatabase, formatDatabaseDescription } from './describe';
 
@@ -75,38 +75,30 @@ async function diff(db1: DiffTarget, db2: DiffTarget, options: DiffOptions): Pro
   // Determine if the columns of any table differ
   const intersection = _.intersection(_.keys(description1.tables), _.keys(description2.tables));
   _.forEach(intersection, (table) => {
-    // We normalize each blob to end with a newline to make diffs print cleaner
-    const diff = diffLines(
-      description1.tables[table].trim() + '\n',
-      description2.tables[table].trim() + '\n'
+    const patch = structuredPatch(
+      `tables/${table}`,
+      `tables/${table}`,
+      description1.tables[table],
+      description2.tables[table]
     );
-    if (diff.length === 1) return;
+
+    if (patch.hunks.length === 0) return;
 
     const boldTable = formatText(table, chalk.bold);
     result += formatText(`Differences in ${boldTable} table\n`, chalk.underline);
 
-    // Shift around the newlines so that we can cleanly show +/- symbols
-    for (let i = 1; i < diff.length; i++) {
-      const prev = diff[i - 1].value;
-      if (prev[prev.length - 1] === '\n') {
-        diff[i - 1].value = prev.slice(0, -1);
-        diff[i].value = '\n' + diff[i].value;
+    patch.hunks.forEach((hunk, index) => {
+      console.log(hunk);
+      if (index !== 0) {
+        result += formatText('...\n', chalk.gray);
       }
-    }
-
-    _.forEach(diff, (part, index) => {
-      if (index === 0) {
-        part.value = '\n' + part.value;
-      }
-      const mark = part.added ? '+ ' : part.removed ? '- ' : '  ';
-      let change = part.value.split('\n').join(`\n${mark}`);
-      if (index === 0) {
-        change = change.slice(1, change.length);
-      }
-      if (part.added || part.removed) {
-        result += formatText(change, part.added ? chalk.green : part.removed ? chalk.red : null);
-      }
+      hunk.lines.forEach((line) => {
+        const color = line[0] === '+' ? chalk.green : line[0] === '-' ? chalk.red : null;
+        result += formatText(line, color);
+        result += '\n';
+      });
     });
+
     result += '\n\n';
   });
 
