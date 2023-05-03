@@ -178,8 +178,8 @@ This is a rough outline of the notes for setting up AWS autoscaling for PrairieL
 
 ## CloudWatch
 
-- <https://github.com/PrairieLearn/PrairieLearn/blob/master/cron/externalGraderLoad.js>
-- <https://github.com/PrairieLearn/PrairieLearn/blob/master/sprocs/grader_loads_current.sql>
+- <https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/cron/externalGraderLoad.js>
+- <https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/sprocs/grader_loads_current.sql>
 
 - Write into same time series table as external grader
   - put workspace\_ prefix on all workspace values

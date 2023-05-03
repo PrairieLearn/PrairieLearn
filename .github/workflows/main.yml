@@ -32,6 +32,14 @@ jobs:
         # what images need to be built.
         fetch-depth: 0
 
+    - name: Set up Node
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+        cache: 'yarn'
+    - name: Install dependencies
+      run: yarn install --immutable
+
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v2 # https://github.com/marketplace/actions/docker-setup-qemu
     - name: Set up Docker Buildx
@@ -74,6 +82,9 @@ jobs:
       run: docker exec test_container /PrairieLearn/docker/lint_js.sh
     - name: Run the HTML linter
       run: docker exec test_container /PrairieLearn/docker/lint_html.sh
+    # This is run outside the container so that it can see the full repository.
+    - name: Run the links linter
+      run: make lint-links
     - name: Run the Python typechecker
       run: docker exec test_container /PrairieLearn/docker/typecheck_python.sh
     - name: Run the Python tests
@@ -87,13 +98,6 @@ jobs:
       # ensure that the tests fail more quickly so that people can fix them.
       timeout-minutes: 30
 
-    - name: Set up Node
-      uses: actions/setup-node@v3
-      with:
-        node-version: '16'
-        cache: 'yarn'
-    - name: Install dependencies
-      run: yarn install --immutable
     - name: Build executor image
       run: ./tools/executor/build.js
 

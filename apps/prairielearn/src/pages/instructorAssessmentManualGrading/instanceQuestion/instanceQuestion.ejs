@@ -60,7 +60,7 @@
     <div class="container-fluid">
       <%- include('../../partials/questionSyncErrorsAndWarnings'); %>
     </div>
-    <div id="content" class="container">
+    <main id="content" class="container">
       <% if (assessment_instance.open) { %>
       <div class="alert alert-danger" role="alert">
         This assessment instance is still open. Student may still be able to submit new answers.
@@ -137,7 +137,7 @@
         </div>
       </div>
 
-    </div>
+    </main>
     <!-- Needs to be located below element scripts -->
     <script src="/localscripts/questionPageScripts.js"></script>
   </body>

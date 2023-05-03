@@ -6,6 +6,11 @@ deps:
 	@yarn
 	@make python-deps build
 
+migrate:
+	@yarn migrate
+migrate-dev:
+	@yarn migrate-dev
+
 dev: start-support
 	@yarn dev
 dev-workspace-host: start-support kill-running-workspaces
