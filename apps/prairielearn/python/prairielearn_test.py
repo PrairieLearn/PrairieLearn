@@ -314,9 +314,14 @@ def test_get_uuid() -> None:
     pl_uuid = pl.get_uuid()
     clauses = pl_uuid.split("-")
 
+    # Assert clauses have standard structure.
     assert len(clauses) == 5
     assert [8, 4, 4, 4, 12] == list(map(len, clauses))
 
+    # Assert that all characters are valid.
     seen_characters = set().union(*(clause for clause in clauses))
     allowed_hex_characters = set(string.hexdigits[:16])
     assert seen_characters.issubset(allowed_hex_characters)
+
+    # Assert that the first character is a valid hex letter.
+    assert pl_uuid[0] in set("abcdef")
