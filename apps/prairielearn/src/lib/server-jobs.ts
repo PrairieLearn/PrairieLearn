@@ -158,7 +158,6 @@ class ServerJob {
       job_id: this.jobId,
       output: this.output,
       status: err ? 'Error' : 'Success',
-      error_message: err?.toString() ?? null,
     });
 
     // Notify sockets.

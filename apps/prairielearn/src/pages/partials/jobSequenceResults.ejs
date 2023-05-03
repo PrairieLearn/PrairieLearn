@@ -87,9 +87,7 @@
             <% if (job_sequence.legacy) { %>
                 <% if (job.status == 'Error' && job.exit_code != null) { %><p class="mb-1">Exit code: <%= job.exit_code %></p><% } %>
                 <% if (job.exit_signal != null) { %><p class="mb-1">Exit signal: <%= job.exit_signal %></p><% } %>
-            <% } %>
-            <% if (job.error_message != null) { %>
-                <p class="mb-1">Error message: <%= job.error_message %></p>
+                <% if (job.error_message != null) { %><p class="mb-1">Error message: <%= job.error_message %></p><% } %>
             <% } %>
             <pre id="output-<%= job.id %>" class="text-white rounded p-3 mb-0 mt-3" style="background-color: black;"><%- job.output %></pre>
         </li>

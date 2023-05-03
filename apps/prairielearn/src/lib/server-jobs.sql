@@ -86,8 +86,7 @@ WITH
     SET
       finish_date = CURRENT_TIMESTAMP,
       status = $status::enum_job_status,
-      output = $output,
-      error_message = $error_message
+      output = $output
     WHERE
       j.id = $job_id
       AND j.status = 'Running'::enum_job_status

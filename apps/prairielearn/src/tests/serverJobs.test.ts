@@ -67,6 +67,5 @@ describe('server-jobs', () => {
     const job = finishedJobSequence.jobs[0];
     assert.equal(job.status, 'Error');
     assert.match(stripAnsi(job.output), /^testing info\nError: failing job\n\s+at/);
-    assert.equal(job.error_message, 'Error: failing job');
   });
 });
