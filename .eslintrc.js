@@ -8,11 +8,13 @@ module.exports = {
     'plugin:import/recommended',
     'plugin:import/typescript',
     'plugin:@typescript-eslint/recommended',
+    'plugin:@typescript-eslint/recommended-requiring-type-checking',
     'prettier',
   ],
   plugins: ['@typescript-eslint', 'no-floating-promise', 'no-only-tests', 'mocha'],
   parserOptions: {
     ecmaVersion: 13,
+    project: true,
   },
   settings: {
     'import/parsers': {
