@@ -1236,12 +1236,12 @@ module.exports = {
       description: 'Test ' + question.qid,
     });
 
-    serverJob.executeInBackground(async (context) => {
+    serverJob.executeInBackground(async (job) => {
       await async.eachSeries(_.range(count * test_types.length), (iter, callback) => {
         let type = test_types[iter % test_types.length];
-        context.verbose(`Test ${Math.floor(iter / test_types.length) + 1}, type ${type}`);
+        job.verbose(`Test ${Math.floor(iter / test_types.length) + 1}, type ${type}`);
         module.exports._runTest(
-          context,
+          job,
           showDetails,
           question,
           group_work,

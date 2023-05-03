@@ -27,8 +27,8 @@ interface ServerJobExecOptions {
   env?: NodeJS.ProcessEnv;
 }
 
-type ServerJobContext = Omit<ServerJob, 'execute' | 'executeInBackground'>;
-type JobExecutionFunction = (context: ServerJobContext) => Promise<void>;
+type ExecutionJob = Omit<ServerJob, 'execute' | 'executeInBackground'>;
+type ExecutionFunction = (job: ExecutionJob) => Promise<void>;
 
 class ServerJob {
   public jobSequenceId: string;
@@ -63,7 +63,6 @@ class ServerJob {
     this.addToOutput(chalk.greenBright(msg));
     const proc2 = execa(file, args, {
       ...options,
-      reject: false,
       all: true,
     });
 
@@ -72,10 +71,7 @@ class ServerJob {
       this.addToOutput(data);
     });
 
-    const result = await proc2;
-    if (result.exitCode !== 0) {
-      throw new Error(`Process exited with code ${result.exitCode}`);
-    }
+    await proc2;
   }
 
   /**
@@ -83,12 +79,30 @@ class ServerJob {
    * sequence has completed. The returned promise will not reject if the job
    * sequence fails.
    */
-  async execute(fn: JobExecutionFunction): Promise<void> {
+  async execute(fn: ExecutionFunction): Promise<void> {
+    this.checkAndMarkStarted();
+    await this.executeInternal(fn);
+  }
+
+  /**
+   * Identical to {@link execute}, except it doesn't return a Promise. This is
+   * just used as a hint to the caller that they don't need to wait for the job
+   * to finish. Useful for tools like TypeScript and ESLint that ensure that
+   * promises are awaited.
+   */
+  executeInBackground(fn: ExecutionFunction): void {
+    this.checkAndMarkStarted();
+    this.executeInternal(fn);
+  }
+
+  private checkAndMarkStarted() {
     if (this.started) {
       throw new Error('ServerJob already started');
     }
     this.started = true;
+  }
 
+  private async executeInternal(fn: ExecutionFunction): Promise<void> {
     try {
       await fn(this);
       await this.finish();
@@ -100,16 +114,6 @@ class ServerJob {
         Sentry.captureException(err);
       }
     }
-  }
-
-  /**
-   * Identical to {@link execute}, except it doesn't return a Promise. This is
-   * just used as a hint to the caller that they don't need to wait for the job
-   * to finish. Useful for tools like TypeScript and ESLint that ensure that
-   * promises are awaited.
-   */
-  executeInBackground(fn: JobExecutionFunction): void {
-    this.execute(fn);
   }
 
   private addToOutput(msg: string) {

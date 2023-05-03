@@ -36,13 +36,13 @@ module.exports.pullAndUpdate = async function (locals) {
     gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
   }
 
-  serverJob.executeInBackground(async (context) => {
+  serverJob.executeInBackground(async (job) => {
     let startGitHash = null;
     const coursePathExists = await fs.pathExists(locals.course.path);
     if (coursePathExists) {
       // path does not exist, start with 'git clone'
-      context.info('Clone from remote git repository');
-      await context.exec(
+      job.info('Clone from remote git repository');
+      await job.exec(
         'git',
         ['clone', '-b', locals.course.branch, locals.course.repository, locals.course.path],
         { env: gitEnv }
@@ -52,20 +52,20 @@ module.exports.pullAndUpdate = async function (locals) {
 
       startGitHash = await courseUtil.getOrUpdateCourseCommitHashAsync(locals.course);
 
-      context.info('Updating to latest remote origin address');
-      await context.exec('git', ['remote', 'set-url', 'origin', locals.course.repository], {
+      job.info('Updating to latest remote origin address');
+      await job.exec('git', ['remote', 'set-url', 'origin', locals.course.repository], {
         cwd: locals.course.path,
         env: gitEnv,
       });
 
-      context.info('Fetch from remote git repository');
-      await context.exec('git', ['fetch'], { cwd: locals.course.path, env: gitEnv });
+      job.info('Fetch from remote git repository');
+      await job.exec('git', ['fetch'], { cwd: locals.course.path, env: gitEnv });
 
-      context.info('Clean local files not in remote git repository');
-      await context.exec('git', ['clean', '-fdx'], { cwd: locals.course.path, env: gitEnv });
+      job.info('Clean local files not in remote git repository');
+      await job.exec('git', ['clean', '-fdx'], { cwd: locals.course.path, env: gitEnv });
 
-      context.info('Reset state to remote git repository');
-      await context.exec('git', ['reset', '--hard', `origin/${locals.course.branch}`], {
+      job.info('Reset state to remote git repository');
+      await job.exec('git', ['reset', '--hard', `origin/${locals.course.branch}`], {
         cwd: locals.course.path,
         env: gitEnv,
       });
@@ -78,11 +78,11 @@ module.exports.pullAndUpdate = async function (locals) {
     // hash next time.
     const endGitHash = await courseUtil.getCommitHashAsync(locals.course.path);
 
-    context.info('Sync git repository to database');
+    job.info('Sync git repository to database');
     const syncResult = await syncFromDisk.syncDiskToSqlAsync(
       locals.course.path,
       locals.course.id,
-      context
+      job
     );
 
     if (config.chunksGenerator) {
@@ -93,15 +93,15 @@ module.exports.pullAndUpdate = async function (locals) {
         oldHash: startGitHash,
         newHash: endGitHash,
       });
-      chunks.logChunkChangesToJob(chunkChanges, context);
+      chunks.logChunkChangesToJob(chunkChanges, job);
     }
 
     await courseUtil.updateCourseCommitHashAsync(locals.course);
 
     // Before erroring the job from sync errors, reload server.js files.
-    context.info('Reload question server.js files');
+    job.info('Reload question server.js files');
     const coursePath = locals.course.path;
-    await util.promisify(requireFrontend.undefQuestionServers)(coursePath, context);
+    await util.promisify(requireFrontend.undefQuestionServers)(coursePath, job);
 
     if (syncResult.hadJsonErrors) {
       throw new Error('One or more JSON files contained errors and were unable to be synced');
@@ -120,14 +120,14 @@ module.exports.gitStatus = async function (locals) {
     description: 'Show server git status',
   });
 
-  serverJob.executeInBackground(async (context) => {
-    context.info('Describe current git HEAD');
-    await context.exec('git', ['show', '--format=fuller', '--quiet', 'HEAD'], {
+  serverJob.executeInBackground(async (job) => {
+    job.info('Describe current git HEAD');
+    await job.exec('gitt', ['show', '--format=fuller', '--quiet', 'HEAD'], {
       cwd: locals.course.path,
     });
 
-    context.info('List git history');
-    await context.exec(
+    job.info('List git history');
+    await job.exec(
       'git',
       ['log', '--all', '--graph', '--date=short', '--format=format:%h %cd%d %cn %s'],
       {

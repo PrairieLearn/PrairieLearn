@@ -16,7 +16,7 @@ function disableLoggingForTests() {
   });
 }
 
-describe('server-jobs-s', () => {
+describe('server-jobs-2', () => {
   before(helperServer.before());
   after(helperServer.after);
 
@@ -66,5 +66,6 @@ describe('server-jobs-s', () => {
     const job = finishedJobSequence.jobs[0];
     assert.equal(job.status, 'Error');
     assert.match(job.output, /^testing info\nError: failing job\n\s+at/);
+    assert.equal(job.error_message, 'Error: failing job');
   });
 });
