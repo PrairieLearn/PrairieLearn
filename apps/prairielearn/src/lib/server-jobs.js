@@ -22,11 +22,9 @@ const sql = sqldb.loadSqlEquiv(__filename);
   Room 'job-231' for job_id = 231 in DB.
 
   Receives messages:
-  'joinJob', arguments: job_id, returns: status, stderr, stdout, output
+  'joinJob', arguments: job_id, returns: status, output
 
   Sends messages:
-  'change:stderr', arguments: job_id, stderr
-  'change:stdout', arguments: job_id, stdout
   'change:output', arguments: job_id, output
   'update', arguments: job_id
 
@@ -44,8 +42,8 @@ const sql = sqldb.loadSqlEquiv(__filename);
   'update' events are sent for bulk changes to the object when
   there is no specific 'change' event available.
 
-  For example, an 'update' will not be sent when stderr changes
-  because the more specific 'change:stderr' event will be sent
+  For example, an 'update' will not be sent when output changes
+  because the more specific 'change:output' event will be sent
   instead.
 */
 
@@ -66,22 +64,10 @@ class Job {
   constructor(id, options) {
     this.id = id;
     this.options = options;
-    this.stderr = '';
-    this.stdout = '';
     this.output = '';
     this.finished = false;
   }
-  addToStderr(text) {
-    this.stderr += text;
-    this.output += text;
-    const ansiUp = new AnsiUp();
-    const ansifiedOutput = ansiUp.ansi_to_html(this.output);
-    socketServer.io
-      .to('job-' + this.id)
-      .emit('change:output', { job_id: this.id, output: ansifiedOutput });
-  }
-  addToStdout(text) {
-    this.stdout += text;
+  addToOutput(text) {
     this.output += text;
     const ansiUp = new AnsiUp();
     const ansifiedOutput = ansiUp.ansi_to_html(this.output);
@@ -90,16 +76,16 @@ class Job {
       .emit('change:output', { job_id: this.id, output: ansifiedOutput });
   }
   error(msg) {
-    this.addToStderr(msg + '\n');
+    this.addToOutput(msg + '\n');
   }
   warn(msg) {
-    this.addToStdout(msg + '\n');
+    this.addToOutput(msg + '\n');
   }
   info(msg) {
-    this.addToStdout(msg + '\n');
+    this.addToOutput(msg + '\n');
   }
   verbose(msg) {
-    this.addToStdout(msg + '\n');
+    this.addToOutput(msg + '\n');
   }
   debug(_msg) {
     // do nothing
@@ -111,8 +97,6 @@ class Job {
 
     const params = {
       job_id: this.id,
-      stderr: this.stderr,
-      stdout: this.stdout,
       output: this.output,
       exit_code: code,
       exit_signal: signal,
@@ -149,17 +133,15 @@ class Job {
     this.finished = true;
 
     var errMsg = err.toString();
-    this.addToStderr(errMsg);
+    this.addToOutput(errMsg);
     if (_.has(err, 'stack')) {
-      this.addToStderr('\n' + err.stack);
+      this.addToOutput('\n' + err.stack);
     }
     if (_.has(err, 'data')) {
-      this.addToStderr('\n' + JSON.stringify(err.data, null, '    '));
+      this.addToOutput('\n' + JSON.stringify(err.data, null, '    '));
     }
     const params = {
       job_id: this.id,
-      stderr: this.stderr,
-      stdout: this.stdout,
       output: this.output,
       error_message: errMsg,
     };
@@ -365,16 +347,16 @@ module.exports.spawnJob = function (options, callback) {
     proc.stderr.setEncoding('utf8');
     proc.stdout.setEncoding('utf8');
     proc.stderr.on('data', function (text) {
-      job.addToStderr(text);
+      job.addToOutput(text);
     });
     proc.stdout.on('data', function (text) {
-      job.addToStdout(text);
+      job.addToOutput(text);
     });
     proc.stderr.on('error', function (err) {
-      job.addToStderr('ERROR: ' + err.toString() + '\n');
+      job.addToOutput('ERROR: ' + err.toString() + '\n');
     });
     proc.stdout.on('error', function (err) {
-      job.addToStderr('ERROR: ' + err.toString() + '\n');
+      job.addToOutput('ERROR: ' + err.toString() + '\n');
     });
 
     // when a process exists, first 'exit' is fired with stdio
@@ -405,8 +387,6 @@ module.exports.errorAbandonedJobs = async function () {
     try {
       await sqldb.queryAsync(sql.update_job_on_error, {
         job_id: row.id,
-        stderr: null,
-        stdout: null,
         output: null,
         error_message: 'Job abandoned by server',
       });
