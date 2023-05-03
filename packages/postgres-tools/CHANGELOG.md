@@ -1,5 +1,11 @@
 # @prairielearn/postgres-tools
 
+## 1.1.0
+
+### Minor Changes
+
+- c121ed133: Improve formatting of database diffs
+
 ## 1.0.1
 
 ### Patch Changes
