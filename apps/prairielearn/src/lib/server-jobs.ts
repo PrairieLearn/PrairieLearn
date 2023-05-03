@@ -23,7 +23,7 @@ interface CreateServerJobOptions {
 }
 
 interface ServerJobExecOptions {
-  cwd?: string;
+  cwd: string;
   env?: NodeJS.ProcessEnv;
 }
 
@@ -58,14 +58,14 @@ class ServerJob {
     this.addToOutput(chalkDim(msg) + '\n');
   }
 
-  async exec(file: string, args: string[] = [], options: ServerJobExecOptions = {}): Promise<void> {
-    const msg = `$ ${file} ${args.join(' ')}\n`;
-    this.addToOutput(chalk.greenBright(msg));
+  async exec(file: string, args: string[] = [], options: ServerJobExecOptions): Promise<void> {
+    this.addToOutput(chalk.blueBright(`Command: ${file} ${args.join(' ')}\n`));
+    this.addToOutput(chalk.blueBright(`Working directory: ${options.cwd}\n`));
+
     const proc2 = execa(file, args, {
       ...options,
       all: true,
     });
-
     proc2.all?.setEncoding('utf-8');
     proc2.all?.on('data', (data) => {
       this.addToOutput(data);

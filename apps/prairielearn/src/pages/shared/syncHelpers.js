@@ -45,7 +45,11 @@ module.exports.pullAndUpdate = async function (locals) {
       await job.exec(
         'git',
         ['clone', '-b', locals.course.branch, locals.course.repository, locals.course.path],
-        { env: gitEnv }
+        {
+          // Executed in the root directory, but this shouldn't really matter.
+          cwd: '/',
+          env: gitEnv,
+        }
       );
     } else {
       // path exists, update remote origin address, then 'git fetch' and reset to latest with 'git reset'

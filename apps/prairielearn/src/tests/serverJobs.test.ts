@@ -1,5 +1,5 @@
 import { assert } from 'chai';
-import stripAnsi from 'strip-ansi';
+import stripAnsi = require('strip-ansi');
 import { logger } from '@prairielearn/logger';
 
 import * as serverJobs from '../lib/server-jobs-legacy';
