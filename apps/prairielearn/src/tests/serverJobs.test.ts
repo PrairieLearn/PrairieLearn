@@ -1,4 +1,5 @@
 import { assert } from 'chai';
+import stripAnsi from 'strip-ansi';
 import { logger } from '@prairielearn/logger';
 
 import * as serverJobs from '../lib/server-jobs-legacy';
@@ -44,7 +45,7 @@ describe('server-jobs', () => {
     assert.equal(job.type, 'test');
     assert.equal(job.description, 'test server job');
     assert.equal(job.status, 'Success');
-    assert.equal(job.output, 'testing info\ntesting error\n');
+    assert.equal(stripAnsi(job.output), 'testing info\ntesting error\n');
   });
 
   it('runs a job with an error', async () => {
@@ -65,7 +66,7 @@ describe('server-jobs', () => {
 
     const job = finishedJobSequence.jobs[0];
     assert.equal(job.status, 'Error');
-    assert.match(job.output, /^testing info\nError: failing job\n\s+at/);
+    assert.match(stripAnsi(job.output), /^testing info\nError: failing job\n\s+at/);
     assert.equal(job.error_message, 'Error: failing job');
   });
 });
