@@ -1,7 +1,7 @@
 import { assert } from 'chai';
 import { logger } from '@prairielearn/logger';
 
-import * as serverJobs from '../lib/server-jobs';
+import * as serverJobs from '../lib/server-jobs-legacy';
 import { createServerJob } from '../lib/server-jobs-2';
 import * as helperServer from './helperServer';
 

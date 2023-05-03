@@ -9,7 +9,7 @@ const { logger } = require('@prairielearn/logger');
 const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
 
 const { config } = require('../../lib/config');
-const serverJobs = require('../../lib/server-jobs');
+const serverJobs = require('../../lib/server-jobs-legacy');
 const { createServerJob } = require('../../lib/server-jobs-2');
 const syncFromDisk = require('../../sync/syncFromDisk');
 const requireFrontend = require('../../lib/require-frontend');

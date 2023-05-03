@@ -1,7 +1,7 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
-const serverJobs = require('../../lib/server-jobs');
+const serverJobs = require('../../lib/server-jobs-legacy');
 const error = require('@prairielearn/error');
 
 router.get('/:job_sequence_id', function (req, res, next) {

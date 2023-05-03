@@ -11,7 +11,7 @@ const { v4: uuidv4 } = require('uuid');
 const { chalk, chalkDim } = require('../lib/chalk');
 
 const { logger } = require('@prairielearn/logger');
-const serverJobs = require('../lib/server-jobs');
+const serverJobs = require('./server-jobs-legacy');
 const namedLocks = require('@prairielearn/named-locks');
 const courseDB = require('../sync/course-db');
 const sqldb = require('@prairielearn/postgres');
@@ -1106,7 +1106,7 @@ module.exports.getTemplateQuestionIds = util.callbackify(
  * Logs the changes to chunks for a given job.
  *
  * @param {{ updatedChunks: ChunkMetadata[], deletedChunks: ChunkMetadata[] }} chunkMetadata
- * @param {Pick<import('./server-jobs').Job, 'verbose'>} job
+ * @param {Pick<import('./server-jobs-legacy').Job, 'verbose'>} job
  * @returns
  */
 module.exports.logChunkChangesToJob = ({ updatedChunks, deletedChunks }, job) => {

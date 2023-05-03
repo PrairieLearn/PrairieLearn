@@ -5,7 +5,7 @@ const _ = require('lodash');
 const ERR = require('async-stacktrace');
 const { config } = require('./config');
 const { logger } = require('@prairielearn/logger');
-const serverJobs = require('./server-jobs');
+const serverJobs = require('./server-jobs-legacy');
 const courseUtil = require('./courseUtil');
 const syncFromDisk = require('../sync/syncFromDisk');
 const opsbot = require('./opsbot');
@@ -173,7 +173,7 @@ module.exports = {
    * @param {any} options
    * @param {string} job_sequence_id
    * @param {string} user_id
-   * @param {(job: import('./server-jobs').Job) => Promise<void>} func
+   * @param {(job: import('./server-jobs-legacy').Job) => Promise<void>} func
    * @returns
    */
   _runJobAsync: function (options, job_sequence_id, user_id, func) {

@@ -6,7 +6,7 @@ import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryAsync, queryValidatedOneRow } from '@prairielearn/postgres';
 
 import { chalk } from './chalk';
-import serverJobs = require('./server-jobs');
+import serverJobs = require('./server-jobs-legacy');
 import socketServer = require('./socket-server');
 
 const sql = loadSqlEquiv(__filename);
