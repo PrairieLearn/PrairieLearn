@@ -5,7 +5,7 @@ import * as Sentry from '@prairielearn/sentry';
 import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryAsync, queryValidatedOneRow } from '@prairielearn/postgres';
 
-import { chalk } from './chalk';
+import { chalk, chalkDim } from './chalk';
 import serverJobs = require('./server-jobs-legacy');
 import socketServer = require('./socket-server');
 
@@ -43,11 +43,11 @@ class ServerJob {
   }
 
   error(msg: string) {
-    this.addToOutput(msg + '\n');
+    this.addToOutput(chalk.redBright(msg) + '\n');
   }
 
   warn(msg: string) {
-    this.addToOutput(msg + '\n');
+    this.addToOutput(chalk.yellowBright(msg) + '\n');
   }
 
   info(msg: string) {
@@ -55,7 +55,7 @@ class ServerJob {
   }
 
   verbose(msg: string) {
-    this.addToOutput(msg + '\n');
+    this.addToOutput(chalkDim(msg) + '\n');
   }
 
   async exec(file: string, args: string[] = [], options: ServerJobExecOptions = {}): Promise<void> {
@@ -71,7 +71,14 @@ class ServerJob {
       this.addToOutput(data);
     });
 
-    await proc2;
+    try {
+      await proc2;
+    } finally {
+      // Ensure there is an empty line after all command output.
+      if (!this.output.endsWith('\n\n')) {
+        this.addToOutput('\n');
+      }
+    }
   }
 
   /**
@@ -134,13 +141,13 @@ class ServerJob {
       // If the error has a stack, it will already include the stringified error.
       // Otherwise, just use the stringified error.
       if (err.stack) {
-        this.addToOutput(err.stack);
+        this.error(err.stack);
       } else {
-        this.addToOutput(err.toString());
+        this.error(err.toString());
       }
 
       if (err.data) {
-        this.addToOutput('\n' + JSON.stringify(err.data, null, 2));
+        this.verbose('\n' + JSON.stringify(err.data, null, 2));
       }
     }
 

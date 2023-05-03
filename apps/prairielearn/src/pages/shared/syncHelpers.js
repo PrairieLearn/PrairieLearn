@@ -122,7 +122,7 @@ module.exports.gitStatus = async function (locals) {
 
   serverJob.executeInBackground(async (job) => {
     job.info('Describe current git HEAD');
-    await job.exec('gitt', ['show', '--format=fuller', '--quiet', 'HEAD'], {
+    await job.exec('git', ['show', '--format=fuller', '--quiet', 'HEAD'], {
       cwd: locals.course.path,
     });
 
