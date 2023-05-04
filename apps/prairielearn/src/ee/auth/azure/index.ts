@@ -1,9 +1,8 @@
-// @ts-check
-const { OIDCStrategy } = require('passport-azure-ad');
+import { OIDCStrategy } from 'passport-azure-ad';
 
-const { config } = require('../../../lib/config');
+import { config } from '../../../lib/config';
 
-module.exports.getAzureStrategy = function () {
+export function getAzureStrategy() {
   return new OIDCStrategy(
     {
       identityMetadata: 'https://login.microsoftonline.com/common/.well-known/openid-configuration',
@@ -25,4 +24,4 @@ module.exports.getAzureStrategy = function () {
       return done(null, profile);
     }
   );
-};
+}

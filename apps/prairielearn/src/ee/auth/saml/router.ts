@@ -1,14 +1,13 @@
-// @ts-check
-const ERR = require('async-stacktrace');
-const asyncHandler = require('express-async-handler');
-const { Router } = require('express');
-const passport = require('passport');
+import ERR from 'async-stacktrace';
+import asyncHandler = require('express-async-handler');
+import { Router } from 'express';
+import * as passport from 'passport';
 
-const authnLib = require('../../../lib/authn');
+import * as authnLib from '../../../lib/authn';
 
-const { strategy } = require('./index');
-const { SamlTest } = require('./router.html');
-const { getInstitutionSamlProvider } = require('../../institution/utils');
+import { strategy } from './index';
+import { SamlTest } from './router.html';
+import { getInstitutionSamlProvider } from '../../institution/utils';
 
 const router = Router({ mergeParams: true });
 
@@ -29,7 +28,7 @@ router.get('/login', (req, res, next) => {
   })(req, res, next);
 });
 
-function authenticate(req, res) {
+function authenticate(req, res): Promise<any> {
   return new Promise((resolve, reject) => {
     passport.authenticate(
       'saml',
@@ -91,7 +90,7 @@ router.post(
       throw new Error('Missing one or more SAML attributes');
     }
 
-    let authnParams = {
+    const authnParams = {
       uid: authnUid,
       name: authnName,
       uin: authnUin,
@@ -122,4 +121,4 @@ router.get(
   })
 );
 
-module.exports = router;
+export default router;

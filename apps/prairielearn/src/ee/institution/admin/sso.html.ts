@@ -1,8 +1,7 @@
-// @ts-check
-const { html } = require('@prairielearn/html');
-const { renderEjs } = require('@prairielearn/html-ejs');
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
 
-const InstitutionAdminSso = ({
+export const InstitutionAdminSso = ({
   institution,
   supportedAuthenticationProviders,
   institutionSamlProvider,
@@ -30,7 +29,7 @@ const InstitutionAdminSso = ({
           navSubPage: 'sso',
         })}
 
-        <div class="container">
+        <main class="container">
           <form method="POST">
             <div class="form-group">
               <div class="h5">Enabled single sign-on providers</div>
@@ -102,7 +101,7 @@ const InstitutionAdminSso = ({
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <button type="submit" class="btn btn-primary">Save</button>
           </form>
-        </div>
+        </main>
 
         <script>
           $(function () {
@@ -129,5 +128,3 @@ const InstitutionAdminSso = ({
     </html>
   `.toString();
 };
-
-module.exports.InstitutionAdminSso = InstitutionAdminSso;
