@@ -1,9 +1,8 @@
-// @ts-check
-const { MultiSamlStrategy } = require('passport-saml');
+import { MultiSamlStrategy } from 'passport-saml';
 
-const { getInstitutionSamlProvider } = require('../../institution/utils');
+import { getInstitutionSamlProvider } from '../../institution/utils';
 
-const strategy = new MultiSamlStrategy(
+export const strategy = new MultiSamlStrategy(
   {
     passReqToCallback: true,
     getSamlOptions(req, done) {
@@ -39,5 +38,3 @@ const strategy = new MultiSamlStrategy(
     done(null, profile ?? undefined);
   }
 );
-
-module.exports.strategy = strategy;

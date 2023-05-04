@@ -20,7 +20,7 @@
       });
     </script>
     <%- include('../partials/navbar'); %>
-    <div id="content" class="container-fluid">
+    <main id="content" class="container-fluid">
       <%- include('../partials/questionSyncErrorsAndWarnings'); %>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
@@ -123,7 +123,7 @@
             <div class="col-auto">
               <button class="btn btn-sm btn-primary" href="#" data-toggle="modal" data-target="#deleteQuestionModal"><i class="fa fa-times" aria-hidden="true"></i> Delete this question</button>
             </div>
-            <div class="modal fade" id="deleteQuestionModal" tabindex="-1" role="dialog" aria-labelledby="deleteQuestion">
+            <div class="modal fade" id="deleteQuestionModal" tabindex="-1" role="dialog" aria-labelledby="deleteQuestionModalLabel">
               <div class="modal-dialog" role="document">
                 <div class="modal-content">
                   <div class="modal-header">
@@ -170,6 +170,6 @@
         </div>
         <% } %>
       </div>
-    </div>
+    </main>
   </body>
 </html>
