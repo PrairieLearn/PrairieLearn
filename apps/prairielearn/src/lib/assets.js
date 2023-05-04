@@ -1,12 +1,15 @@
 // @ts-check
 const crypto = require('crypto');
+const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const { hashElement } = require('folder-hash');
+const compiledAssets = require('@prairielearn/compiled-assets');
+const staticNodeModules = require('../middlewares/staticNodeModules');
+
 const { APP_ROOT_PATH } = require('./paths');
 
-let assetsHash = 'NOT_SET';
-let elementsHash = 'NOT_SET';
+let cachebuster = null;
 const cachedPackageVersionHashes = {};
 
 /**
@@ -20,12 +23,14 @@ async function hashDirectory(dir) {
   return hash.slice(0, 16);
 }
 
-async function computeAssetsHash() {
-  assetsHash = await hashDirectory(path.join(APP_ROOT_PATH, 'public'));
-}
-
-async function computeElementsHash() {
-  elementsHash = await hashDirectory(path.join(APP_ROOT_PATH, 'elements'));
+async function computeCachebuster() {
+  const hashes = await Promise.all([
+    hashDirectory(path.join(APP_ROOT_PATH, 'public')),
+    hashDirectory(path.join(APP_ROOT_PATH, 'elements')),
+  ]);
+  const hash = crypto.createHash('sha256');
+  hashes.forEach((h) => hash.update(h));
+  cachebuster = hash.digest('hex').slice(0, 16);
 }
 
 function getPackageVersion(packageName) {
@@ -64,7 +69,34 @@ function getPackageVersion(packageName) {
  * Should be run at server startup before any responses are served.
  */
 module.exports.init = async () => {
-  await Promise.all([computeAssetsHash(), computeElementsHash()]);
+  await computeCachebuster();
+  await compiledAssets.init({
+    dev: config.devMode,
+    sourceDirectory: path.resolve(APP_ROOT_PATH, 'assets'),
+    buildDirectory: path.resolve(APP_ROOT_PATH, 'public/build'),
+    publicPath: '/build',
+  });
+};
+
+module.exports.middleware = () => {
+  const router = express.Router();
+
+  router.use('/build', compiledAssets.handler());
+  router.use(
+    '/node_modules',
+    staticNodeModules('.', {
+      maxAge: '31536000s',
+      immutable: true,
+    })
+  );
+  router.use(
+    express.static(path.join(APP_ROOT_PATH, 'public'), {
+      // In dev mode, assets are likely to change while the server is running,
+      // so we'll prevent them from being cached.
+      maxAge: config.devMode ? 0 : '31536000s',
+      immutable: true,
+    })
+  );
 };
 
 /**
@@ -156,4 +188,12 @@ module.exports.courseElementExtensionAssetPath = (courseHash, urlPrefix, assetPa
   }
 
   return `${urlPrefix}/cacheableElementExtensions/${courseHash}/${assetPath}`;
+};
+
+/**
+ * @param {string} sourceFile
+ * @returns string
+ */
+module.exports.compiledScriptTag = (sourceFile) => {
+  return compiledAssets.compiledScriptTag(sourceFile);
 };

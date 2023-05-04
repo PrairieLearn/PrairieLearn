@@ -114,7 +114,7 @@ module.exports.initExpress = function () {
   app.use((req, res, next) => {
     res.locals.asset_path = assets.assetPath;
     res.locals.node_modules_asset_path = assets.nodeModulesAssetPath;
-    res.locals.compiled_script_tag = compiledAssets.compiledScriptTag;
+    res.locals.compiled_script_tag = assets.compiledScriptTag;
     next();
   });
   app.use(function (req, res, next) {
@@ -367,31 +367,14 @@ module.exports.initExpress = function () {
   // In requests for resources, the cachebuster will be a hash of the contents
   // of `/public`, which we will compute at startup. See `lib/assets.js` for
   // implementation details.
-  app.use(
-    '/assets/:cachebuster',
-    express.static(path.join(APP_ROOT_PATH, 'public'), {
-      // In dev mode, assets are likely to change while the server is running,
-      // so we'll prevent them from being cached.
-      maxAge: config.devMode ? 0 : '31536000s',
-      immutable: true,
-    })
-  );
+  const assetsPath = config.assetsUseCachebuster
+    ? `${config.assetsPrefix}/:cachebuster`
+    : config.assetsPrefix;
+  app.use(assetsPath, assets.middleware());
+
   // This route is kept around for legacy reasons - new code should prefer the
   // "cacheable" route above.
   app.use(express.static(path.join(APP_ROOT_PATH, 'public')));
-
-  app.use('/build/', compiledAssets.handler());
-
-  // To allow for more aggressive caching of files served from node_modules/,
-  // we insert a hash of the module version into the resource path. This allows
-  // us to treat those files as immutable and cache them essentially forever.
-  app.use(
-    '/cacheable_node_modules/:cachebuster',
-    staticNodeModules('.', {
-      maxAge: '31536000s',
-      immutable: true,
-    })
-  );
 
   // This is included for backwards-compatibility with pages that might still
   // expect to be able to load files from the `/node_modules` route.
@@ -2128,14 +2111,7 @@ if (require.main === module && config.startServer) {
           callback(null);
         });
       },
-      async () => {
-        compiledAssets.init({
-          dev: config.devMode,
-          sourceDirectory: path.resolve(APP_ROOT_PATH, 'assets'),
-          buildDirectory: path.resolve(APP_ROOT_PATH, 'public/build'),
-          publicPath: '/build',
-        });
-      },
+      async () => {},
       // We need to initialize these first, as the code callers require these
       // to be set up.
       function (callback) {
