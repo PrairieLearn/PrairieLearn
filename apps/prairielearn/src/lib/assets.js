@@ -43,9 +43,7 @@ async function computeCachebuster() {
  */
 module.exports.init = async () => {
   const cachebuster = await computeCachebuster();
-  assetsPrefix = config.assetsUseCachebuster
-    ? `${config.assetsPrefix}/${cachebuster}`
-    : config.assetsPrefix;
+  assetsPrefix = `${config.assetsPrefix}/${cachebuster}`;
 
   compiledAssets.init({
     dev: config.devMode,
@@ -81,10 +79,7 @@ module.exports.applyMiddleware = (app) => {
     })
   );
 
-  const routerPath = config.assetsUseCachebuster
-    ? `${config.assetsPrefix}/:cachebuster`
-    : config.assetsPrefix;
-  app.use(routerPath, router);
+  app.use(`${config.assetsPrefix}/:cachebuster`, router);
 };
 
 /**

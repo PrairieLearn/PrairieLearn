@@ -39,10 +39,9 @@ const ConfigSchema = z.object({
   assetsPrefix: z
     .string()
     .default('/assets')
-    .refine((s) => s.startsWith('/'), {
-      message: 'must be an absolute path',
+    .refine((s) => s.startsWith('/') && !s.endsWith('/'), {
+      message: 'must be an absolute path and not end with a slash',
     }),
-  assetsUseCachebuster: z.boolean().default(true),
   coursesRoot: z.string().default('/data1/courses'),
   /** Set to null or '' to disable Redis. */
   redisUrl: z.string().nullable().default('redis://localhost:6379/'),
