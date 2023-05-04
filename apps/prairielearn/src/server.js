@@ -2100,7 +2100,6 @@ if (require.main === module && config.startServer) {
           callback(null);
         });
       },
-      async () => {},
       // We need to initialize these first, as the code callers require these
       // to be set up.
       function (callback) {
