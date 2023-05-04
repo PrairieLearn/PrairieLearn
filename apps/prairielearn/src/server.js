@@ -362,11 +362,6 @@ module.exports.initExpress = function () {
   if (config.devMode) app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon-dev.ico')));
   else app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon.ico')));
 
-  if ('localRootFilesDir' in config) {
-    logger.info(`localRootFilesDir: Mapping ${config.localRootFilesDir} into /`);
-    app.use(express.static(config.localRootFilesDir));
-  }
-
   // To allow for more aggressive caching of static files served from public/,
   // we use an `assets/` path that includes a cachebuster in the path.
   // In requests for resources, the cachebuster will be a hash of the contents
