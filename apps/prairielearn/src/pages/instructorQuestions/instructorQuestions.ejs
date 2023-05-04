@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  
+  <head>
+    <%- include('../partials/head'); %>
+    <script src="<%= node_modules_asset_path('lodash/lodash.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('datatables.net/js/jquery.dataTables.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('datatables.net-buttons/js/dataTables.buttons.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('datatables.net-buttons/js/buttons.colVis.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('datatables.net-fixedheader/js/dataTables.fixedHeader.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('datatables.net-fixedcolumns/js/dataTables.fixedColumns.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('datatables.net-bs4/js/dataTables.bootstrap4.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('datatables.net-buttons-bs4/js/buttons.bootstrap4.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('datatables.net-fixedheader-bs4/js/fixedHeader.bootstrap4.min.js') %>"></script>
+    <script src="<%= node_modules_asset_path('datatables.net-fixedcolumns-bs4/js/fixedColumns.bootstrap4.min.js') %>"></script>
+    <link href="<%= node_modules_asset_path('datatables.net-bs4/css/dataTables.bootstrap4.min.css') %>" rel="stylesheet" />
+    <link href="<%= node_modules_asset_path('datatables.net-buttons-bs4/css/buttons.bootstrap4.min.css') %>" rel="stylesheet" />
+    <link href="<%= node_modules_asset_path('datatables.net-fixedcolumns-bs4/css/fixedColumns.bootstrap4.min.css') %>" rel="stylesheet" />
+    <%- compiled_script_tag('instructorQuestions.js') %>
+  </head>
+  
+  <body>
+    <%- include('../partials/navbar'); %>
+    <form class="btn-group" name="add-question-form" method="POST">
+      <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+      <input type="hidden" name="__action" value="add_question">
+    </form>
+    <main id="content" class="container-fluid">
+      <%- include('../partials/courseSyncErrorsAndWarnings'); %>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Questions
+        </div>
+        
+        <table id="questionsTable"
+               data-data="<%= JSON.stringify(questions) %>"
+               data-course-instances="<%= JSON.stringify(authz_data.course_instances || []) %>"
+               data-url-prefix="<%= urlPrefix %>"
+               data-plain-url-prefix="<%= plainUrlPrefix %>"
+               data-has-legacy-questions="<%= has_legacy_questions %>"
+               data-current-course-instance="<%= locals.course_instance?.id ?? '' %>"
+               data-new-question-allowed="<%= authz_data.has_course_permission_edit && !course.example_course && !locals.needToSync %>"
+               class="table table-sm table-hover table-bordered w-100">
+          <thead class="thead-light">
+          </thead>
+        </table>
+      </div>
+    </main>
+  </body>
+</html>

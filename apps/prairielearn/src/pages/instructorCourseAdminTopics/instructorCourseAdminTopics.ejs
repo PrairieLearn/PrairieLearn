@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <%- include('../partials/head'); %>
+    </head>
+    <body>
+        <%- include('../partials/navbar'); %>
+        <main id="content" class="container-fluid">
+            <%- include('../partials/courseSyncErrorsAndWarnings'); %>
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">Topics</div>
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover table-striped">
+                        <thead>
+                            <tr>
+                            <th>Number</th>
+                            <th>Name</th>
+                            <th>Color</th>
+                            <th>Description</th>
+                        </thead>
+                        <tbody>
+                            <% topics.forEach(function(topic) { %>
+                                <tr>
+                                    <td class="align-middle"><%= topic.number %></td>
+                                    <td class="align-middle"><%- include('../partials/topic', {topic}); %></td>
+                                    <td class="align-middle"><%= topic.color %></td>
+                                    <td class="align-middle"><%= topic.description %></td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </body>
+</html>
