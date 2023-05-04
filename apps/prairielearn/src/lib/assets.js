@@ -35,6 +35,12 @@ async function computeCachebuster() {
   return hash.digest('hex').slice(0, 16);
 }
 
+function assertAssetsPrefix() {
+  if (!assetsPrefix) {
+    throw new Error('init() must be called before accessing assets');
+  }
+}
+
 /**
  * Computes the hashes of directories from which we serve cacheable assets.
  * Should be run at server startup before any responses are served.
@@ -59,6 +65,7 @@ module.exports.init = async () => {
  * @param {import('express').Application} app
  */
 module.exports.applyMiddleware = (app) => {
+  assertAssetsPrefix();
   const router = express.Router();
 
   router.use('/build', compiledAssets.handler());
@@ -88,6 +95,7 @@ module.exports.applyMiddleware = (app) => {
  * @param {string} assetPath - The path to the file inside the `/public` directory.
  */
 module.exports.assetPath = (assetPath) => {
+  assertAssetsPrefix();
   return `${assetsPrefix}/${assetPath}`;
 };
 
@@ -98,6 +106,7 @@ module.exports.assetPath = (assetPath) => {
  * @param {string} assetPath - The path to the file inside the `/node_modules` directory.
  */
 module.exports.nodeModulesAssetPath = (assetPath) => {
+  assertAssetsPrefix();
   return `${assetsPrefix}/node_modules/${assetPath}`;
 };
 
@@ -110,6 +119,7 @@ module.exports.nodeModulesAssetPath = (assetPath) => {
  * @returns {string}
  */
 module.exports.coreElementAssetPath = (assetPath) => {
+  assertAssetsPrefix();
   return `${assetsPrefix}/elements/${assetPath}`;
 };
 
@@ -160,5 +170,6 @@ module.exports.courseElementExtensionAssetPath = (courseHash, urlPrefix, assetPa
  * @returns string
  */
 module.exports.compiledScriptTag = (sourceFile) => {
+  assertAssetsPrefix();
   return compiledAssets.compiledScriptTag(sourceFile);
 };
