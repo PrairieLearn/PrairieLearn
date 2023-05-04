@@ -1,0 +1,23 @@
+columns
+    batch_size: integer not null
+    created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
+    filename: text not null
+    id: bigint not null default nextval('batched_migrations_id_seq'::regclass)
+    max_value: bigint not null
+    min_value: bigint not null
+    project: text not null default 'prairielearn'::text
+    started_at: timestamp with time zone
+    status: enum_batched_migration_status not null default 'pending'::enum_batched_migration_status
+    timestamp: text not null
+    updated_at: timestamp with time zone not null default CURRENT_TIMESTAMP
+
+indexes
+    batched_migrations_pkey: PRIMARY KEY (id) USING btree (id)
+    batched_migrations_project_timestamp_key: UNIQUE (project, "timestamp") USING btree (project, "timestamp")
+
+check constraints
+    batched_migrations_max_value_check: CHECK (max_value >= min_value)
+    batched_migrations_min_value_check: CHECK (min_value > 0)
+
+referenced by
+    batched_migration_jobs: FOREIGN KEY (batched_migration_id) REFERENCES batched_migrations(id) ON UPDATE CASCADE ON DELETE CASCADE

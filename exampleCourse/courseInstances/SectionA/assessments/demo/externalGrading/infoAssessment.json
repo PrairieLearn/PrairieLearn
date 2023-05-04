@@ -25,9 +25,11 @@
         {
             "title": "Questions using C External Grader",
             "questions": [
-                {"id": "demo/autograder/c/drawTriangle", "points": 1},
-                {"id": "demo/autograder/c/square",       "points": 1},
-                {"id": "demo/autograder/c/salesTax",     "points": 1}
+                {"id": "demo/autograder/c/drawTriangle",     "points": 1},
+                {"id": "demo/autograder/c/square",           "points": 1},
+                {"id": "demo/autograder/c/salesTax",         "points": 1},
+                {"id": "demo/autograder/c/squareCheck",      "points": 1},
+                {"id": "demo/autograder/c/linkedListDelete", "points": 1}
             ]
         },
         {
