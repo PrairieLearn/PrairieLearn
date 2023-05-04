@@ -397,10 +397,8 @@ module.exports.initExpress = function () {
   // route to the new `cacheable_node_modules` route.
   app.use('/node_modules', (req, res) => {
     // Strip the leading slash.
-    const url = req.url.slice(1);
-
-    const newUrl = assets.nodeModulesAssetPath(url);
-    res.redirect(newUrl);
+    const assetPath = req.url.slice(1);
+    res.redirect(assets.nodeModulesAssetPath(assetPath));
   });
 
   // Included for backwards-compatibility; new code should load MathJax from
