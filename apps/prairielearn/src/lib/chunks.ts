@@ -12,9 +12,9 @@ import { logger } from '@prairielearn/logger';
 import namedLocks = require('@prairielearn/named-locks');
 import sqldb = require('@prairielearn/postgres');
 
-import { chalk, chalkDim } from '../lib/chalk';
-import serverJobs = require('./server-jobs');
-import type { Job } from './server-jobs';
+import { chalk, chalkDim } from './chalk';
+import serverJobs = require('./server-jobs-legacy');
+import type { Job } from './server-jobs-legacy';
 import courseDB = require('../sync/course-db');
 import type { CourseData } from '../sync/course-db';
 import { config } from './config';
@@ -717,8 +717,8 @@ interface UpdateChunksForCourseOptions {
   coursePath: string;
   courseId: string;
   courseData: CourseData;
-  oldHash?: string;
-  newHash?: string;
+  oldHash?: string | null;
+  newHash?: string | null;
 }
 
 export async function updateChunksForCourse({
@@ -1089,7 +1089,10 @@ export const getTemplateQuestionIds = util.callbackify(getTemplateQuestionIdsAsy
 /**
  * Logs the changes to chunks for a given job.
  */
-export function logChunkChangesToJob({ updatedChunks, deletedChunks }: ChunksDiff, job: Job) {
+export function logChunkChangesToJob(
+  { updatedChunks, deletedChunks }: ChunksDiff,
+  job: Pick<Job, 'verbose'>
+) {
   if (updatedChunks.length === 0 && deletedChunks.length === 0) {
     job.verbose('No chunks changed.');
     return;

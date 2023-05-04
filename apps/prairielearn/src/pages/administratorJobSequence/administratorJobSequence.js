@@ -1,7 +1,7 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
-const serverJobs = require('../../lib/server-jobs');
+const serverJobs = require('../../lib/server-jobs-legacy');
 
 router.get('/:job_sequence_id', function (req, res, next) {
   const job_sequence_id = req.params.job_sequence_id;
