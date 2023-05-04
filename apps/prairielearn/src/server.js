@@ -397,10 +397,6 @@ module.exports.initExpress = function () {
   // expect to be able to load files from the `/node_modules` route.
   app.use('/node_modules', staticNodeModules('.'));
 
-  // Included for backwards-compatibility; new code should load MathJax from
-  // `/cacheable_node_modules` instead.
-  app.use('/MathJax', staticNodeModules(path.join('mathjax', 'es5')));
-
   // Support legacy use of ace by v2 questions
   app.use(
     '/localscripts/calculationQuestion/ace',
