@@ -1,21 +1,23 @@
-// @ts-check
-const AWS = require('aws-sdk');
-const { callbackify } = require('util');
+import * as AWS from 'aws-sdk';
+import { callbackify } from 'util';
 
-const { config } = require('../../lib/config');
-const sqldb = require('@prairielearn/postgres');
-const sql = sqldb.loadSqlEquiv(__filename);
+import { config } from '../../lib/config';
+import { loadSqlEquiv, queryAsync, callAsync, callOneRowAsync } from '@prairielearn/postgres';
 
-module.exports.run = callbackify(async () => {
+const sql = loadSqlEquiv(__filename);
+
+type WorkspaceLoadStats = Record<string, any>;
+
+export const run = callbackify(async () => {
   if (!config.runningInEc2) return;
   const stats = await getLoadStats();
   await sendStatsToCloudwatch(stats);
   await handleWorkspaceAutoscaling(stats);
 });
 
-async function getLoadStats() {
+async function getLoadStats(): Promise<WorkspaceLoadStats> {
   const params = [config.workspaceLoadCapacityFactor, config.workspaceLoadHostCapacity];
-  return (await sqldb.callOneRowAsync('workspace_loads_current', params)).rows[0];
+  return (await callOneRowAsync('workspace_loads_current', params)).rows[0];
 }
 
 const cloudwatch_definitions = {
@@ -109,7 +111,7 @@ const cloudwatch_definitions = {
   },
 };
 
-async function sendStatsToCloudwatch(stats) {
+async function sendStatsToCloudwatch(stats: WorkspaceLoadStats) {
   const cloudwatch = new AWS.CloudWatch(config.awsServiceGlobalOptions);
   const dimensions = [{ Name: 'By Server', Value: config.workspaceCloudWatchName }];
   const cloudwatch_metricdata_limit = 20; // AWS limits to 20 items within each list
@@ -136,7 +138,7 @@ async function sendStatsToCloudwatch(stats) {
   }
 }
 
-async function handleWorkspaceAutoscaling(stats) {
+async function handleWorkspaceAutoscaling(stats: WorkspaceLoadStats) {
   if (!config.workspaceAutoscalingEnabled || !config.workspaceLoadLaunchTemplateId) return;
 
   const desired_hosts = stats.workspace_hosts_desired;
@@ -147,8 +149,8 @@ async function handleWorkspaceAutoscaling(stats) {
     // First thing we can try is to "re-capture" draining hosts to be ready.
     // This is very cheap to do because we don't need to call out to AWS.
     const recaptured_hosts =
-      (await sqldb.callAsync('workspace_hosts_recapture_draining', [needed])).rows[0]
-        .recaptured_hosts || 0;
+      (await callAsync('workspace_hosts_recapture_draining', [needed])).rows[0].recaptured_hosts ||
+      0;
     needed -= recaptured_hosts;
     if (needed > 0) {
       // We couldn't get enough hosts, so lets spin up some more and insert them into the DB.
@@ -163,10 +165,10 @@ async function handleWorkspaceAutoscaling(stats) {
         })
         .promise();
       const instance_ids = (data.Instances ?? []).map((instance) => instance.InstanceId);
-      await sqldb.queryAsync(sql.insert_new_instances, { instance_ids });
+      await queryAsync(sql.insert_new_instances, { instance_ids });
     }
   } else if (desired_hosts < ready_hosts) {
     const surplus = ready_hosts - desired_hosts;
-    await sqldb.callAsync('workspace_hosts_drain_extra', [surplus]);
+    await callAsync('workspace_hosts_drain_extra', [surplus]);
   }
 }

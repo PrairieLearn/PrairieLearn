@@ -15,7 +15,7 @@
       });
     </script>
     <%- include('../partials/navbar'); %>
-    <div id="content" class="container-fluid">
+    <main id="content" class="container-fluid">
       <%- include('../partials/courseSyncErrorsAndWarnings'); %>
       <div class="card mb-4">
         <div class="card-header bg-primary">
@@ -49,7 +49,7 @@
             <th>Name</th>
             <th>Course content access</th>
             <th>Student data access</th>
-            <th></th>
+            <th>Actions</th>
           </thead>
           <tbody>
             <% let hasUnknownUsers = false; %>
@@ -270,6 +270,6 @@
         </small>
       </div>
 
-    </div>
+    </main>
   </body>
 </html>

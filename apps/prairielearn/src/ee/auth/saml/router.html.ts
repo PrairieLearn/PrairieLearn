@@ -1,7 +1,7 @@
-const { html } = require('@prairielearn/html');
-const { renderEjs } = require('@prairielearn/html-ejs');
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
 
-const SamlTest = ({
+export const SamlTest = ({
   uid,
   uin,
   name,
@@ -32,7 +32,7 @@ const SamlTest = ({
         })}
       </head>
       <body>
-        <div class="container mb-4">
+        <main class="container mb-4">
           ${
             hasError
               ? html`
@@ -99,10 +99,8 @@ const SamlTest = ({
 
           <h2 class="h4">All SAML attributes</h1>
           <pre><code>${JSON.stringify(attributes, null, 2)}</code></pre>
-        </div>
+        </main>
       </body>
     </html>
   `.toString();
 };
-
-module.exports.SamlTest = SamlTest;

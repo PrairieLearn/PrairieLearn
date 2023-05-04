@@ -1,7 +1,7 @@
-const { html } = require('@prairielearn/html');
-const { renderEjs } = require('@prairielearn/html-ejs');
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
 
-const AuthPrairieTest = ({ jwt, prairieTestCallback, resLocals }) => {
+export const AuthPrairieTest = ({ jwt, prairieTestCallback, resLocals }) => {
   return html`
     <!DOCTYPE html>
     <html lang="en">
@@ -15,24 +15,26 @@ const AuthPrairieTest = ({ jwt, prairieTestCallback, resLocals }) => {
         </style>
       </head>
       <body>
-        <form id="form" action="${prairieTestCallback}" method="POST">
-          <input type="hidden" name="jwt" value="${jwt}" />
+        <main>
+          <form id="form" action="${prairieTestCallback}" method="POST">
+            <input type="hidden" name="jwt" value="${jwt}" />
 
-          <div class="continue-card-container mx-auto">
-            <div class="card continue-card m-3">
-              <div class="card-body d-flex flex-column align-items-center">
-                <div class="spinner-border mb-3" role="status">
-                  <span class="sr-only">Signing in...</span>
+            <div class="continue-card-container mx-auto">
+              <div class="card continue-card m-3">
+                <div class="card-body d-flex flex-column align-items-center">
+                  <div class="spinner-border mb-3" role="status">
+                    <span class="sr-only">Signing in...</span>
+                  </div>
+                  <h1 class="h4">PrairieTest authentication</h1>
+                  <p>Signing in to PrairieTest...</p>
+                  <button class="btn btn-success btn-block" type="submit" id="continue">
+                    Continue
+                  </button>
                 </div>
-                <h1 class="h4">PrairieTest authentication</h1>
-                <p>Signing in to PrairieTest...</p>
-                <button class="btn btn-success btn-block" type="submit" id="continue">
-                  Continue
-                </button>
               </div>
             </div>
-          </div>
-        </form>
+          </form>
+        </main>
         <script>
           // If JavaScript is enabled, immediately disable the button. But if
           // it's disabled, the user can click the button to continue.
@@ -58,5 +60,3 @@ const AuthPrairieTest = ({ jwt, prairieTestCallback, resLocals }) => {
     </html>
   `.toString();
 };
-
-module.exports.AuthPrairieTest = AuthPrairieTest;
