@@ -30,7 +30,6 @@ const multer = require('multer');
 const { filesize } = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const compiledAssets = require('@prairielearn/compiled-assets');
 const {
   SCHEMA_MIGRATIONS_PATH,
   initBatchedMigrations,
@@ -362,18 +361,10 @@ module.exports.initExpress = function () {
   if (config.devMode) app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon-dev.ico')));
   else app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon.ico')));
 
-  // To allow for more aggressive caching of static files served from public/,
-  // we use an `assets/` path that includes a cachebuster in the path.
-  // In requests for resources, the cachebuster will be a hash of the contents
-  // of `/public`, which we will compute at startup. See `lib/assets.js` for
-  // implementation details.
-  const assetsPath = config.assetsUseCachebuster
-    ? `${config.assetsPrefix}/:cachebuster`
-    : config.assetsPrefix;
-  app.use(assetsPath, assets.middleware());
+  assets.applyMiddleware(app);
 
   // This route is kept around for legacy reasons - new code should prefer the
-  // "cacheable" route above.
+  // assets system with cacheable assets.
   app.use(express.static(path.join(APP_ROOT_PATH, 'public')));
 
   // This is included for backwards-compatibility with pages that might still
@@ -680,10 +671,6 @@ module.exports.initExpress = function () {
   // from `node_modules`, we include a cachebuster in the URL. This allows
   // files to be treated as immutable in production and cached aggressively.
   app.use(
-    '/pl/static/cacheableElements/:cachebuster',
-    require('./pages/elementFiles/elementFiles')
-  );
-  app.use(
     '/pl/course_instance/:course_instance_id/cacheableElements/:cachebuster',
     require('./pages/elementFiles/elementFiles')
   );
@@ -712,6 +699,8 @@ module.exports.initExpress = function () {
   // files.
   // TODO: if we can determine that these routes are no longer receiving
   // traffic in the future, we can delete these.
+  //
+  // TODO: the only internal usage of this is in the `pl-drawing` element. Fix that.
   app.use('/pl/static/elements', require('./pages/elementFiles/elementFiles'));
   app.use(
     '/pl/course_instance/:course_instance_id/elements',

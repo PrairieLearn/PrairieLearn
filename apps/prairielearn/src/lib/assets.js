@@ -2,93 +2,76 @@
 const crypto = require('crypto');
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
 const { hashElement } = require('folder-hash');
 const compiledAssets = require('@prairielearn/compiled-assets');
+
+const { config } = require('./config');
+const { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } = require('./paths');
 const staticNodeModules = require('../middlewares/staticNodeModules');
+const elementFiles = require('../pages/elementFiles/elementFiles');
 
-const { APP_ROOT_PATH } = require('./paths');
-
-let cachebuster = null;
-const cachedPackageVersionHashes = {};
+let assetsPrefix = null;
 
 /**
- * Computes the hash of the given directory and returns the first 16 characters.
+ * Computes the hash of the given path and returns the first 16 characters.
+ * The path can be a file or a directory.
  *
- * @param {string} dir
+ * @param {string} pathToHash
  * @returns {Promise<string>}
  */
-async function hashDirectory(dir) {
-  const { hash } = await hashElement(dir, { encoding: 'hex' });
+async function hashPath(pathToHash) {
+  const { hash } = await hashElement(pathToHash, { encoding: 'hex' });
   return hash.slice(0, 16);
 }
 
 async function computeCachebuster() {
   const hashes = await Promise.all([
-    hashDirectory(path.join(APP_ROOT_PATH, 'public')),
-    hashDirectory(path.join(APP_ROOT_PATH, 'elements')),
+    hashPath(path.join(APP_ROOT_PATH, 'public')),
+    hashPath(path.join(APP_ROOT_PATH, 'elements')),
+    hashPath(path.join(REPOSITORY_ROOT_PATH, 'yarn.lock')),
   ]);
   const hash = crypto.createHash('sha256');
   hashes.forEach((h) => hash.update(h));
-  cachebuster = hash.digest('hex').slice(0, 16);
-}
-
-function getPackageVersion(packageName) {
-  try {
-    return require(`${packageName}/package.json`).version;
-  } catch (e) {
-    if (e.code !== 'ERR_PACKAGE_PATH_NOT_EXPORTED') {
-      throw e;
-    }
-
-    // If we can't directly resolve the package's `package.json` file, we'll
-    // `require.resolve` the package itself, and then do a little manipulation
-    // to get the `package.json` path from there.
-
-    // Get the resolved path to the package entrypoint, which will look something
-    // like `/absolute/path/to/node_modules/package-name/index.js`.
-    const pkgPath = require.resolve(packageName);
-
-    // Strip off everything after the last `/node_modules/`, then append the
-    // package name.
-    const nodeModulesToken = '/node_modules/';
-    const lastNodeModulesIndex = pkgPath.lastIndexOf(nodeModulesToken);
-    const pkgJsonPath = path.resolve(
-      pkgPath.slice(0, lastNodeModulesIndex + nodeModulesToken.length),
-      packageName,
-      'package.json'
-    );
-
-    const pkgJson = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
-    return pkgJson.version;
-  }
+  return hash.digest('hex').slice(0, 16);
 }
 
 /**
  * Computes the hashes of directories from which we serve cacheable assets.
  * Should be run at server startup before any responses are served.
+ *
+ * Also initializes the assets compiler.
  */
 module.exports.init = async () => {
-  await computeCachebuster();
-  await compiledAssets.init({
+  const cachebuster = await computeCachebuster();
+  assetsPrefix = config.assetsUseCachebuster
+    ? `${config.assetsPrefix}/${cachebuster}`
+    : config.assetsPrefix;
+
+  compiledAssets.init({
     dev: config.devMode,
     sourceDirectory: path.resolve(APP_ROOT_PATH, 'assets'),
     buildDirectory: path.resolve(APP_ROOT_PATH, 'public/build'),
-    publicPath: '/build',
+    publicPath: `${assetsPrefix}/build`,
   });
 };
 
-module.exports.middleware = () => {
+/**
+ * Applies middleware to the given Express app to serve static assets.
+ *
+ * @param {import('express').Application} app
+ */
+module.exports.applyMiddleware = (app) => {
   const router = express.Router();
 
   router.use('/build', compiledAssets.handler());
   router.use(
-    '/node_modules',
+    '/node_modules/',
     staticNodeModules('.', {
       maxAge: '31536000s',
       immutable: true,
     })
   );
+  router.use('/elements', elementFiles);
   router.use(
     express.static(path.join(APP_ROOT_PATH, 'public'), {
       // In dev mode, assets are likely to change while the server is running,
@@ -97,6 +80,11 @@ module.exports.middleware = () => {
       immutable: true,
     })
   );
+
+  const routerPath = config.assetsUseCachebuster
+    ? `${config.assetsPrefix}/:cachebuster`
+    : config.assetsPrefix;
+  app.use(routerPath, router);
 };
 
 /**
@@ -105,7 +93,7 @@ module.exports.middleware = () => {
  * @param {string} assetPath - The path to the file inside the `/public` directory.
  */
 module.exports.assetPath = (assetPath) => {
-  return `/assets/${assetsHash}/${assetPath}`;
+  return `${assetsPrefix}/${assetPath}`;
 };
 
 /**
@@ -115,25 +103,7 @@ module.exports.assetPath = (assetPath) => {
  * @param {string} assetPath - The path to the file inside the `/node_modules` directory.
  */
 module.exports.nodeModulesAssetPath = (assetPath) => {
-  const [maybeScope, maybeModule] = assetPath.split('/');
-  let moduleName;
-  if (maybeScope.indexOf('@') === 0) {
-    // This is a scoped module
-    moduleName = `${maybeScope}/${maybeModule}`;
-  } else {
-    moduleName = maybeScope;
-  }
-
-  // Reading files synchronously and computing cryptographic hashes are both
-  // relatively expensive; cache the hashes for each package.
-  let hash = cachedPackageVersionHashes[moduleName];
-  if (!hash) {
-    const version = getPackageVersion(moduleName);
-    hash = crypto.createHash('sha256').update(version).digest('hex').slice(0, 16);
-    cachedPackageVersionHashes[moduleName] = hash;
-  }
-
-  return `/cacheable_node_modules/${hash}/${assetPath}`;
+  return `${assetsPrefix}/node_modules/${assetPath}`;
 };
 
 /**
@@ -145,7 +115,7 @@ module.exports.nodeModulesAssetPath = (assetPath) => {
  * @returns {string}
  */
 module.exports.coreElementAssetPath = (assetPath) => {
-  return `/pl/static/cacheableElements/${elementsHash}/${assetPath}`;
+  return `${assetsPrefix}/elements/${assetPath}`;
 };
 
 /**
