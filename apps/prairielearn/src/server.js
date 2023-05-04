@@ -393,9 +393,15 @@ module.exports.initExpress = function () {
     })
   );
 
-  // This is included for backwards-compatibility with pages that might still
-  // expect to be able to load files from the `/node_modules` route.
-  app.use('/node_modules', staticNodeModules('.'));
+  // For backwards compatibility, we redirect requests for the old `node_modules`
+  // route to the new `cacheable_node_modules` route.
+  app.use('/node_modules', (req, res) => {
+    // Strip the leading slash.
+    const url = req.url.slice(1);
+
+    const newUrl = assets.nodeModulesAssetPath(url);
+    res.redirect(newUrl);
+  });
 
   // Included for backwards-compatibility; new code should load MathJax from
   // `/cacheable_node_modules` instead.
