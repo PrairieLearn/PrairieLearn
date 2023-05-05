@@ -1,41 +1,106 @@
 import crypto = require('crypto');
 import express = require('express');
+import fs = require('fs');
 import path = require('path');
-import { hashElement } from 'folder-hash';
+import { hashElement, type HashElementNode } from 'folder-hash';
 import compiledAssets = require('@prairielearn/compiled-assets');
 
 import { config } from './config';
-import { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } from './paths';
+import { APP_ROOT_PATH } from './paths';
 import staticNodeModules = require('../middlewares/staticNodeModules');
 import elementFiles = require('../pages/elementFiles/elementFiles');
 import { HtmlSafeString } from '@prairielearn/html';
 
 let assetsPrefix: string | null = null;
+let elementsHash: HashElementNode | null = null;
+let publicHash: HashElementNode | null = null;
+const cachedPackageVersionHashes: Record<string, string> = {};
 
-/**
- * Computes the hash of the given path and returns the first 16 characters.
- * The path can be a file or a directory.
- */
-async function hashPath(pathToHash) {
-  const { hash } = await hashElement(pathToHash, { encoding: 'hex' });
-  return hash.slice(0, 16);
+async function computeElementsHash() {
+  elementsHash = await hashElement(path.join(APP_ROOT_PATH, 'elements'), { encoding: 'hex' });
 }
 
-async function computeCachebuster() {
-  const hashes = await Promise.all([
-    hashPath(path.join(APP_ROOT_PATH, 'public')),
-    hashPath(path.join(APP_ROOT_PATH, 'elements')),
-    hashPath(path.join(REPOSITORY_ROOT_PATH, 'yarn.lock')),
-  ]);
-  const hash = crypto.createHash('sha256');
-  hashes.forEach((h) => hash.update(h));
-  return hash.digest('hex').slice(0, 16);
+async function computePublicHash() {
+  publicHash = await hashElement(path.join(APP_ROOT_PATH, 'public'), { encoding: 'hex' });
 }
 
-function assertAssetsPrefix() {
+function getHashForPath(hashes: HashElementNode, assetPath: string): string {
+  const components = assetPath.split('/');
+  let currentHashes = hashes;
+  for (const component of components) {
+    const child = currentHashes.children.find((c) => c.name === component);
+    if (!child) {
+      // If we can't find a hash, the file probably doesn't exist. Use the highest
+      // level hash we have.
+      break;
+    }
+    currentHashes = child;
+  }
+
+  return currentHashes.hash.slice(0, 16);
+}
+
+function getPackageNameForAssetPath(assetPath: string): string {
+  const [maybeScope, maybeModule] = assetPath.split('/');
+  if (maybeScope.indexOf('@') === 0) {
+    // This is a scoped module
+    return `${maybeScope}/${maybeModule}`;
+  } else {
+    return maybeScope;
+  }
+}
+
+function getPackageVersion(packageName: string): string {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return require(`${packageName}/package.json`).version;
+  } catch (e) {
+    if (e.code !== 'ERR_PACKAGE_PATH_NOT_EXPORTED') {
+      throw e;
+    }
+
+    // If we can't directly resolve the package's `package.json` file, we'll
+    // `require.resolve` the package itself, and then do a little manipulation
+    // to get the `package.json` path from there.
+
+    // Get the resolved path to the package entrypoint, which will look something
+    // like `/absolute/path/to/node_modules/package-name/index.js`.
+    const pkgPath = require.resolve(packageName);
+
+    // Strip off everything after the last `/node_modules/`, then append the
+    // package name.
+    const nodeModulesToken = '/node_modules/';
+    const lastNodeModulesIndex = pkgPath.lastIndexOf(nodeModulesToken);
+    const pkgJsonPath = path.resolve(
+      pkgPath.slice(0, lastNodeModulesIndex + nodeModulesToken.length),
+      packageName,
+      'package.json'
+    );
+
+    const pkgJson = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8'));
+    return pkgJson.version;
+  }
+}
+
+function getNodeModulesAssetHash(assetPath: string): string {
+  const packageName = getPackageNameForAssetPath(assetPath);
+
+  // Reading files synchronously and computing cryptographic hashes are both
+  // relatively expensive; cache the hashes for each package.
+  let hash = cachedPackageVersionHashes[packageName];
+  if (!hash) {
+    const version = getPackageVersion(packageName);
+    hash = crypto.createHash('sha256').update(version).digest('hex').slice(0, 16);
+    cachedPackageVersionHashes[packageName] = hash;
+  }
+  return hash;
+}
+
+function assertAssetsPrefix(): string {
   if (!assetsPrefix) {
     throw new Error('init() must be called before accessing assets');
   }
+  return assetsPrefix;
 }
 
 /**
@@ -45,8 +110,8 @@ function assertAssetsPrefix() {
  * Also initializes the assets compiler.
  */
 export async function init() {
-  const cachebuster = await computeCachebuster();
-  assetsPrefix = `${config.assetsPrefix}/${cachebuster}`;
+  await Promise.all([computeElementsHash(), computePublicHash()]);
+  assetsPrefix = config.assetsPrefix;
 
   compiledAssets.init({
     dev: config.devMode,
@@ -60,28 +125,34 @@ export async function init() {
  * Applies middleware to the given Express app to serve static assets.
  */
 export function applyMiddleware(app: express.Application) {
-  assertAssetsPrefix();
+  const assetsPrefix = assertAssetsPrefix();
   const router = express.Router();
 
+  // Compiled assets have a digest/hash embedded in their filenames, so they
+  // don't require a separate cachebuster.
   router.use('/build', compiledAssets.handler());
+
   router.use(
-    '/node_modules/',
+    '/node_modules/:cachebuster',
     staticNodeModules('.', {
-      maxAge: '31536000s',
+      // In dev mode, we assume that `node_modules` won't change while the server
+      // is running, so we'll enable long-term caching.
+      maxAge: '1y',
       immutable: true,
     })
   );
-  router.use('/elements', elementFiles);
   router.use(
+    '/public/:cachebuster',
     express.static(path.join(APP_ROOT_PATH, 'public'), {
       // In dev mode, assets are likely to change while the server is running,
       // so we'll prevent them from being cached.
-      maxAge: config.devMode ? 0 : '31536000s',
-      immutable: true,
+      maxAge: config.devMode ? 0 : '1y',
+      immutable: !config.devMode,
     })
   );
+  router.use('/elements/:cachebuster', elementFiles);
 
-  app.use(`${config.assetsPrefix}/:cachebuster`, router);
+  app.use(assetsPrefix, router);
 }
 
 /**
@@ -90,8 +161,9 @@ export function applyMiddleware(app: express.Application) {
  * @param assetPath The path to the file inside the `/public` directory.
  */
 export function assetPath(assetPath: string): string {
-  assertAssetsPrefix();
-  return `${assetsPrefix}/${assetPath}`;
+  const assetsPrefix = assertAssetsPrefix();
+  const hash = getHashForPath(publicHash as HashElementNode, assetPath);
+  return `${assetsPrefix}/public/${hash}/${assetPath}`;
 }
 
 /**
@@ -101,8 +173,9 @@ export function assetPath(assetPath: string): string {
  * @param assetPath The path to the file inside the `/node_modules` directory.
  */
 export function nodeModulesAssetPath(assetPath: string): string {
-  assertAssetsPrefix();
-  return `${assetsPrefix}/node_modules/${assetPath}`;
+  const assetsPrefix = assertAssetsPrefix();
+  const hash = getNodeModulesAssetHash(assetPath);
+  return `${assetsPrefix}/node_modules/${hash}/${assetPath}`;
 }
 
 /**
@@ -111,8 +184,9 @@ export function nodeModulesAssetPath(assetPath: string): string {
  * assets to be immutably cached by clients.
  */
 export function coreElementAssetPath(assetPath: string): string {
-  assertAssetsPrefix();
-  return `${assetsPrefix}/elements/${assetPath}`;
+  const assetsPrefix = assertAssetsPrefix();
+  const hash = getHashForPath(elementsHash as HashElementNode, assetPath);
+  return `${assetsPrefix}/elements/${hash}/${assetPath}`;
 }
 
 /**
@@ -156,6 +230,5 @@ export function courseElementExtensionAssetPath(
 }
 
 export function compiledScriptTag(sourceFile: string): HtmlSafeString {
-  assertAssetsPrefix();
   return compiledAssets.compiledScriptTag(sourceFile);
 }
