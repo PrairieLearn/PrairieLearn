@@ -1,7 +1,7 @@
-import { compiledScriptTag } from '../../lib/assets';
-
 const { html } = require('@prairielearn/html');
 const { renderEjs } = require('@prairielearn/html-ejs');
+
+const { compiledScriptTag } = require('../../lib/assets');
 
 function Workspace({ navTitle, showLogs, heartbeatIntervalSec, visibilityTimeoutSec, resLocals }) {
   return html`
