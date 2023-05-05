@@ -1,19 +1,14 @@
-// @ts-check
-const stream = require('stream');
-const winston = require('winston');
+import stream = require('stream');
+import winston = require('winston');
 
-/**
- * @typedef {Object} MockLogger
- * @property {import('winston').Logger} logger
- * @property {() => string} getOutput
- */
+interface MockLogger {
+  logger: winston.Logger;
+  getOutput: () => string;
+}
 
-/**
- * @returns {MockLogger}
- */
-function makeMockLogger() {
+export function makeMockLogger(): MockLogger {
   const logStream = new stream.Writable();
-  const messages = [];
+  const messages: string[] = [];
 
   logStream._write = (chunk, encoding, next) => {
     const logString = chunk.toString('utf8');
@@ -31,5 +26,3 @@ function makeMockLogger() {
 
   return { logger, getOutput };
 }
-
-module.exports.makeMockLogger = makeMockLogger;
