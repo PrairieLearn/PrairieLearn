@@ -4,5 +4,5 @@
     "rootDir": "./",
     "types": ["jquery", "bootstrap"],
   },
-  "include": ["assets/scripts/**/*"],
+  "include": ["**/*"],
 }

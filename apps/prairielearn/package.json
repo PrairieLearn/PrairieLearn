@@ -37,6 +37,8 @@
     "@pyroscope/nodejs": "^0.2.5",
     "@sentry/profiling-node": "^0.3.0",
     "@sentry/tracing": "^7.50.0",
+    "@types/bootstrap": "^5.2.6",
+    "@types/jquery": "^3.5.16",
     "ace-builds": "^1.18.0",
     "ace-code": "^1.18.0",
     "ajv": "^8.12.0",
