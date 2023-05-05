@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "types": ["jquery", "bootstrap"],
+    "noEmit": true,
+  },
+  "include": ["assets/scripts/**/*"],
+}
