@@ -21,7 +21,7 @@ start: start-support
 start-workspace-host: start-support kill-running-workspaces
 	@yarn start-workspace-host
 start-executor:
-	@node executor.js
+	@node apps/prairielearn/dist/executor.js
 
 kill-running-workspaces:
 	@docker/kill_running_workspaces.sh
