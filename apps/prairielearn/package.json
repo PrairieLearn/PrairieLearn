@@ -202,8 +202,9 @@
   },
   "nodemonConfig": {
     "ignore": [
-      "public/*",
-      "elements/**/*.js"
+      "elements/**/*.js",
+      "dist/*",
+      "public/*"
     ],
     "ext": "js,ts,json,sql"
   }

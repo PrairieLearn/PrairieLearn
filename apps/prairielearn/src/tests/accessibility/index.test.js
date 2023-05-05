@@ -129,8 +129,8 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/instances.json',
 
   // Static assets.
+  '/assets/elements/:cachebuster/*',
   '/pl/static/elements/*',
-  '/pl/static/cacheableElements/:cachebuster/*',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances/client.js',
 
   // File downloads.

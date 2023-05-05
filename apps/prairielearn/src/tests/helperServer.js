@@ -8,6 +8,7 @@ const assert = require('chai').assert;
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const opentelemetry = require('@prairielearn/opentelemetry');
 
+const assets = require('../lib/assets');
 const { config } = require('../lib/config');
 const load = require('../lib/load');
 const aws = require('../lib/aws');
@@ -81,6 +82,7 @@ module.exports = {
             debug('before(): initialize code callers');
             await codeCaller.init();
           },
+          async () => assets.init(),
           async () => {
             debug('before(): start server');
             httpServer = await server.startServer();
