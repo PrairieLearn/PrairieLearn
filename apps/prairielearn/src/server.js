@@ -53,7 +53,7 @@ const sprocs = require('./sprocs');
 const news_items = require('./news_items');
 const cron = require('./cron');
 const socketServer = require('./lib/socket-server');
-const serverJobs = require('./lib/server-jobs');
+const serverJobs = require('./lib/server-jobs-legacy');
 const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
 const { LocalCache } = require('./lib/local-cache');
@@ -69,8 +69,9 @@ const staticNodeModules = require('./middlewares/staticNodeModules');
 
 process.on('warning', (e) => console.warn(e));
 
-// If there is only one argument, legacy it into the config option
-if (argv['_'].length === 1) {
+// If there is only one argument and `server.js` is being executed directly,
+// legacy it into the config option.
+if (require.main === module && argv['_'].length === 1) {
   argv['config'] = argv['_'][0];
   argv['_'] = [];
 }
@@ -361,11 +362,6 @@ module.exports.initExpress = function () {
   if (config.devMode) app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon-dev.ico')));
   else app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon.ico')));
 
-  if ('localRootFilesDir' in config) {
-    logger.info(`localRootFilesDir: Mapping ${config.localRootFilesDir} into /`);
-    app.use(express.static(config.localRootFilesDir));
-  }
-
   // To allow for more aggressive caching of static files served from public/,
   // we use an `assets/` path that includes a cachebuster in the path.
   // In requests for resources, the cachebuster will be a hash of the contents
@@ -400,10 +396,6 @@ module.exports.initExpress = function () {
   // This is included for backwards-compatibility with pages that might still
   // expect to be able to load files from the `/node_modules` route.
   app.use('/node_modules', staticNodeModules('.'));
-
-  // Included for backwards-compatibility; new code should load MathJax from
-  // `/cacheable_node_modules` instead.
-  app.use('/MathJax', staticNodeModules(path.join('mathjax', 'es5')));
 
   // Support legacy use of ace by v2 questions
   app.use(
@@ -1845,7 +1837,7 @@ module.exports.insertDevUser = function (callback) {
   });
 };
 
-if (config.startServer) {
+if (require.main === module && config.startServer) {
   async.series(
     [
       async () => {

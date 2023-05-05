@@ -175,7 +175,7 @@
       <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
       <input type="hidden" name="__action" value="add_question">
     </form>
-    <div id="content" class="container-fluid">
+    <main id="content" class="container-fluid">
       <%- include('../partials/courseSyncErrorsAndWarnings'); %>
       <div class="card mb-4">
         <div class="card-header bg-primary">
@@ -274,10 +274,9 @@
               <% }); %>
             </tr>
           </thead>
-          </table>
-        </div>
+        </table>
       </div>
-    </div>
+    </main>
 </body>
 
 </html>

@@ -7,8 +7,7 @@
         <% } %>
         course requests
         <% if (!locals.show_all) { %>
-        <a class="btn btn-sm btn-light ml-auto" href="<%= urlPrefix %>/administrator/courseRequests"
-            id="courseInsertButton" tabindex="0">
+        <a class="btn btn-sm btn-light ml-auto" href="<%= urlPrefix %>/administrator/courseRequests" tabindex="0">
             <i class="fa fa-search" aria-hidden="true"></i>
             <span class="d-none d-sm-inline"> View All </span>
         </a>
@@ -27,8 +26,9 @@
                     <th>GitHub Username</th>
                     <th>Status</th>
                     <% if (locals.show_all) { %> <th>Updated By</th> <% } %>
-                    <th></th>
-                    <th></th>
+                    <th>Actions</th>
+                    <th>Details</th>
+                </tr>
             </thead>
             <tbody>
                 <% course_requests.forEach(function(req) { %>

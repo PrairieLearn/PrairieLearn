@@ -42,7 +42,7 @@ const ConfigSchema = z.object({
   logFilename: z.string().default('server.log'),
   logErrorFilename: z.string().nullable().default(null),
   /** `'none'` allows bypassing auth in development. */
-  authType: z.enum(['none', 'x-trust-auth']).default('none'),
+  authType: z.enum(['none', 'x-auth', 'x-trust-auth']).default('none'),
   /** Overrides the user UID in development with `authType: 'none'` */
   authUid: z.string().nullable().default('dev@illinois.edu'),
   /** Overrides the user name in development with `authType: 'none'` */
