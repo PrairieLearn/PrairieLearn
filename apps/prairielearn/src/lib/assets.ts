@@ -1,23 +1,20 @@
-// @ts-check
-const crypto = require('crypto');
-const express = require('express');
-const path = require('path');
-const { hashElement } = require('folder-hash');
-const compiledAssets = require('@prairielearn/compiled-assets');
+import crypto = require('crypto');
+import express = require('express');
+import path = require('path');
+import { hashElement } from 'folder-hash';
+import compiledAssets = require('@prairielearn/compiled-assets');
 
-const { config } = require('./config');
-const { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } = require('./paths');
-const staticNodeModules = require('../middlewares/staticNodeModules');
-const elementFiles = require('../pages/elementFiles/elementFiles');
+import { config } from './config';
+import { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } from './paths';
+import staticNodeModules = require('../middlewares/staticNodeModules');
+import elementFiles = require('../pages/elementFiles/elementFiles');
+import { HtmlSafeString } from '@prairielearn/html';
 
-let assetsPrefix = null;
+let assetsPrefix: string | null = null;
 
 /**
  * Computes the hash of the given path and returns the first 16 characters.
  * The path can be a file or a directory.
- *
- * @param {string} pathToHash
- * @returns {Promise<string>}
  */
 async function hashPath(pathToHash) {
   const { hash } = await hashElement(pathToHash, { encoding: 'hex' });
@@ -47,7 +44,7 @@ function assertAssetsPrefix() {
  *
  * Also initializes the assets compiler.
  */
-module.exports.init = async () => {
+export async function init() {
   const cachebuster = await computeCachebuster();
   assetsPrefix = `${config.assetsPrefix}/${cachebuster}`;
 
@@ -57,14 +54,12 @@ module.exports.init = async () => {
     buildDirectory: path.resolve(APP_ROOT_PATH, 'public/build'),
     publicPath: `${assetsPrefix}/build`,
   });
-};
+}
 
 /**
  * Applies middleware to the given Express app to serve static assets.
- *
- * @param {import('express').Application} app
  */
-module.exports.applyMiddleware = (app) => {
+export function applyMiddleware(app: express.Application) {
   assertAssetsPrefix();
   const router = express.Router();
 
@@ -87,53 +82,49 @@ module.exports.applyMiddleware = (app) => {
   );
 
   app.use(`${config.assetsPrefix}/:cachebuster`, router);
-};
+}
 
 /**
  * Returns the path that the given asset should be accessed from by clients.
  *
- * @param {string} assetPath - The path to the file inside the `/public` directory.
+ * @param assetPath The path to the file inside the `/public` directory.
  */
-module.exports.assetPath = (assetPath) => {
+export function assetPath(assetPath: string): string {
   assertAssetsPrefix();
   return `${assetsPrefix}/${assetPath}`;
-};
+}
 
 /**
  * Returns the path that the given asset in node_modules should be accessed
  * from by clients.
  *
- * @param {string} assetPath - The path to the file inside the `/node_modules` directory.
+ * @param assetPath The path to the file inside the `/node_modules` directory.
  */
-module.exports.nodeModulesAssetPath = (assetPath) => {
+export function nodeModulesAssetPath(assetPath: string): string {
   assertAssetsPrefix();
   return `${assetsPrefix}/node_modules/${assetPath}`;
-};
+}
 
 /**
  * Returns the path a given core element asset path should be served from.
  * Will include a hash of the `/elements` directory in the URL to allow for
  * assets to be immutably cached by clients.
- *
- * @param {string} assetPath
- * @returns {string}
  */
-module.exports.coreElementAssetPath = (assetPath) => {
+export function coreElementAssetPath(assetPath: string): string {
   assertAssetsPrefix();
   return `${assetsPrefix}/elements/${assetPath}`;
-};
+}
 
 /**
  * Returns the path a given course element asset should be served from.
  * Takes into account the URL prefix and course hash to allow for
  * clients to immutably cache assets.
- *
- * @param {string} urlPrefix
- * @param {string} courseHash
- * @param {string} assetPath
- * @returns {string}
  */
-module.exports.courseElementAssetPath = (courseHash, urlPrefix, assetPath) => {
+export function courseElementAssetPath(
+  courseHash: string,
+  urlPrefix: string,
+  assetPath: string
+): string {
   if (!courseHash) {
     // If for some reason we don't have a course hash, fall back to the
     // non-cached path so that we don't accidentally instruct the client
@@ -142,19 +133,18 @@ module.exports.courseElementAssetPath = (courseHash, urlPrefix, assetPath) => {
   }
 
   return `${urlPrefix}/cacheableElements/${courseHash}/${assetPath}`;
-};
+}
 
 /**
  * Returns the path a given course element extension asset should be served from.
  * Takes into account the URL prefix and course hash to allow for
  * clients to immutably cache assets.
- *
- * @param {string} courseHash
- * @param {string} urlPrefix
- * @param {string} assetPath
- * @returns {string}
  */
-module.exports.courseElementExtensionAssetPath = (courseHash, urlPrefix, assetPath) => {
+export function courseElementExtensionAssetPath(
+  courseHash: string,
+  urlPrefix: string,
+  assetPath: string
+): string {
   if (!courseHash) {
     // If for some reason we don't have a course hash, fall back to the
     // non-cached path so that we don't accidentally instruct the client
@@ -163,13 +153,9 @@ module.exports.courseElementExtensionAssetPath = (courseHash, urlPrefix, assetPa
   }
 
   return `${urlPrefix}/cacheableElementExtensions/${courseHash}/${assetPath}`;
-};
+}
 
-/**
- * @param {string} sourceFile
- * @returns string
- */
-module.exports.compiledScriptTag = (sourceFile) => {
+export function compiledScriptTag(sourceFile: string): HtmlSafeString {
   assertAssetsPrefix();
   return compiledAssets.compiledScriptTag(sourceFile);
-};
+}

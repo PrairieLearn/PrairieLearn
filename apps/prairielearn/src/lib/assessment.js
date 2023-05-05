@@ -13,7 +13,7 @@ const { logger } = require('@prairielearn/logger');
 const question = require('../lib/question');
 const externalGrader = require('./externalGrader');
 const externalGradingSocket = require('../lib/externalGradingSocket');
-const serverJobs = require('../lib/server-jobs');
+const serverJobs = require('./server-jobs-legacy');
 const sqldb = require('@prairielearn/postgres');
 const ltiOutcomes = require('../lib/ltiOutcomes');
 
