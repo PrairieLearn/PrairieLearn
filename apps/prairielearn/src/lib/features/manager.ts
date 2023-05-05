@@ -106,6 +106,9 @@ export class FeatureManager {
   async enabled(name: string, context: FeatureContext = {}): Promise<boolean> {
     this.validateFeature(name, context);
 
+    // Allow config to globally override a feature.
+    if (name in config.features) return config.features[name];
+
     const featureIsEnabled = await queryValidatedSingleColumnOneRow(
       sql.is_feature_enabled,
       {
@@ -116,9 +119,6 @@ export class FeatureManager {
       z.boolean()
     );
     if (featureIsEnabled) return true;
-
-    // Allow config to globally enable a feature; mostly useful for testing.
-    if (config.enabledFeatures.includes(name)) return true;
 
     // Default to disabled if not explicitly enabled by a specific grant or config.
     return false;
