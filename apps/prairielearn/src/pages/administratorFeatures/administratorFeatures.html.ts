@@ -22,7 +22,7 @@ interface FeatureGrantProps {
 export function AdministratorFeatures({ features, resLocals }: AdministratorFeaturesProps) {
   return html`
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
       </head>
@@ -65,7 +65,7 @@ export function AdministratorFeature({
 }: AdministratorFeatureProps) {
   return html`
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
         <style>
