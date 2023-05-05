@@ -1,5 +1,5 @@
 import { FeatureManager, FeatureGrantType } from './manager';
 
-const features = new FeatureManager(['course:manual-grading']);
+const features = new FeatureManager([]);
 
 export { features, FeatureGrantType };
