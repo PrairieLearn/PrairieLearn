@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "tsc && tscp && compiled-assets build ./assets ./public/build",
+    "build": "tsc --build --incremental && tscp && compiled-assets build ./assets ./public/build",
     "dev:no-watch": "ts-node src/server.js",
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
     "start-executor": "node dist/executor.js",
