@@ -1642,6 +1642,10 @@ module.exports.initExpress = function () {
     require('./pages/administratorWorkspaces/administratorWorkspaces')
   );
   app.use(
+    '/pl/administrator/features',
+    require('./pages/administratorFeatures/administratorFeatures')
+  );
+  app.use(
     '/pl/administrator/queries',
     require('./pages/administratorQueries/administratorQueries')
   );
