@@ -79,7 +79,8 @@ make lint # or lint-js for Javascript only, or lint-python for Python only
 
 ```sh
 cd PrairieLearn
-node server
+make build
+make start
 ```
 
 This should end with `PrairieLearn server ready` and will remain running in the foreground, so this terminal can't be used for anything else. To stop the server use `Ctrl-C`, and to restart it repeat the `node server` command above.
