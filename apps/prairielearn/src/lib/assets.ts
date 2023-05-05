@@ -24,6 +24,10 @@ async function computePublicHash() {
   publicHash = await hashElement(path.join(APP_ROOT_PATH, 'public'), { encoding: 'hex' });
 }
 
+/**
+ * With a {@link HashElementNode} representing the hash of a directory, returns
+ * a hash of a file within that directory.
+ */
 function getHashForPath(hashes: HashElementNode, assetPath: string): string {
   const components = assetPath.split('/');
   let currentHashes = hashes;
@@ -40,6 +44,12 @@ function getHashForPath(hashes: HashElementNode, assetPath: string): string {
   return currentHashes.hash.slice(0, 16);
 }
 
+/**
+ * For an asset path to a file within a `node_modules` directory, returns the
+ * name of the package that contains the file. For instance, for an asset path
+ * `foo/bar.js`, returns `foo`, and for an asset path `@scope/foo/bar/baz.js`,
+ * returns `@scope/foo`.
+ */
 function getPackageNameForAssetPath(assetPath: string): string {
   const [maybeScope, maybeModule] = assetPath.split('/');
   if (maybeScope.indexOf('@') === 0) {
@@ -50,6 +60,9 @@ function getPackageNameForAssetPath(assetPath: string): string {
   }
 }
 
+/**
+ * Returns the version of the given package within `node_modules`.
+ */
 function getPackageVersion(packageName: string): string {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -82,6 +95,10 @@ function getPackageVersion(packageName: string): string {
   }
 }
 
+/**
+ * For an asset path to a file within a `node_modules` directory, returns a
+ * hash of the version of the package that contains the file.
+ */
 function getNodeModulesAssetHash(assetPath: string): string {
   const packageName = getPackageNameForAssetPath(assetPath);
 
