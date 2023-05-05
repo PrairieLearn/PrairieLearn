@@ -1,57 +1,36 @@
-# Installing natively
+# Running natively
 
 _WARNING:_ The recommended setup for PrairieLearn development is [within Docker](installingLocal.md). The setup described on this page is not recommended or supported.
 
 This page describes the procedure to install and run PrairieLearn without any use of Docker. This means that PrairieLearn is running fully natively on the local OS.
 
-- Install the pre-requisites:
+- Install the prerequisites:
 
   - [Node.js](http://nodejs.org/)
   - [Yarn](https://classic.yarnpkg.com/lang/en/docs/install/)
-  - [PostgreSQL](https://www.postgresql.org)
-  - [Python 3](https://www.python.org)
+  - [PostgreSQL 14](https://www.postgresql.org)
+  - [Python 3.10](https://www.python.org)
   - command-line git or [GitHub Desktop](https://desktop.github.com)
 
-On OS X these can be installed with [MacPorts](http://www.macports.org/) or [Homebrew](http://brew.sh/). On Linux these should all be standard packages from the OS distrbution.
-
-Note that with MacPorts you need to select the active version of PostgreSQL, for example `port select postgresql postgresql96`.
+  On macOS these can be installed with [Homebrew](http://brew.sh/). On Linux these should all be standard packages from the OS distribution.
 
 - Clone the latest code:
 
 ```sh
 git clone https://github.com/PrairieLearn/PrairieLearn.git
-```
-
-- Install the Node.js libraries:
-
-```sh
 cd PrairieLearn
+```
+
+- Install all dependencies and transpile local packages:
+
+```sh
+# This one command will do everything!
+make deps
+
+# Alternatively, you can run each step individually:
 yarn
-```
-
-- Transpile code in `packages/`:
-
-```sh
 make build
-
-# If you're actively working on the code in this directory, you can
-# run the following command instead to automatically rebuild the files
-# whenever you modify code.
-make dev
-```
-
-- Make sure `python3` and `python3.6` will run the right version, and make executable links if needed:
-
-```sh
-python3 --version     # should return "Python 3.6" or higher
-python3.6 --version   # should return "Python 3.6" or higher
-```
-
-- Install the Python libraries:
-
-```sh
-cd PrairieLearn/images/plbase
-python3 -m pip install -r python-requirements.txt
+make python-deps
 ```
 
 - Create the database (one time only):
@@ -100,9 +79,10 @@ make lint # or lint-js for Javascript only, or lint-python for Python only
 
 ```sh
 cd PrairieLearn
-node server
+make build
+make start
 ```
 
-This should end with `PrairieLearn server ready` and will remain running in the foreground, so this terminal can't be used for anything else. Stopping or restarting the server can be done with `Crtl-C`.
+This should end with `PrairieLearn server ready` and will remain running in the foreground, so this terminal can't be used for anything else. To stop the server use `Ctrl-C`, and to restart it repeat the `node server` command above.
 
-- In a web-browswer go to [http://localhost:3000](http://localhost:3000)
+- In a web-browser go to [http://localhost:3000](http://localhost:3000).
