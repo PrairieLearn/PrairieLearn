@@ -1,5 +1,17 @@
 # @prairielearn/html
 
+## 3.0.0
+
+### Major Changes
+
+- 638d27585: Render booleans in templates
+
+## 2.2.0
+
+### Minor Changes
+
+- 915320e1f: Support interpolating BigInt values
+
 ## 2.1.1
 
 ### Patch Changes

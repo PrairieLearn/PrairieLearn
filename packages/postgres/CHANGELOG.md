@@ -1,5 +1,17 @@
 # @prairielearn/postgres
 
+## 1.6.1
+
+### Patch Changes
+
+- 00d1b045d: Remove unused `pg-describe`/`pg-diff` commands from `package.json`
+
+## 1.6.0
+
+### Minor Changes
+
+- dbfa7a689: Allow cursor results to be consumed as a stream
+
 ## 1.5.0
 
 ### Minor Changes

@@ -11,7 +11,7 @@ export function loadSql(filename: string): SqlFile {
   const blockRE = /^ *-- *BLOCK +([^ ]+) *$/;
   let blockName: string | null = null;
   lines.forEach((line) => {
-    var result = blockRE.exec(line);
+    const result = blockRE.exec(line);
     if (result) {
       blockName = result[1];
       if (sql[blockName]) throw new Error(`${filename}: duplicate BLOCK name: ${blockName}`);

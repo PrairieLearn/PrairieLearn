@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('../partials/head', {pageTitle: `Error ${error.status}`}); %>
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: 'error'}); %>
+    <main id="content" class="container">
+      <div class="card mb-4">
+        <div class="card-header bg-danger text-white">
+          Error processing request
+        </div>
+
+        <div class="card-body">
+          <h4><%= error.message %></h4>
+
+          <% if (error.info) { %>
+          <%- error.info %>
+          <% } %>
+
+          <p>
+            Error ID: <code><%= id %></code>
+          </p>
+
+          <p>
+            <a href="<%= referrer %>" class="btn btn-primary"
+               <% if (!referrer) { %>disabled<% } %>
+               >
+              <i class="fa fa-arrow-left" aria-hidden="true"></i>
+              Back to previous page
+            </a>
+            <a href="<%= urlPrefix %>" class="btn btn-primary">
+              <i class="fa fa-home" aria-hidden="true"></i>
+              PrairieLearn home
+            </a>
+          </p>
+
+          <% if (error.status) { %><p><strong>Status:</strong> <%= error.status %></p><% } %>
+
+          <% if (error.data && error.data.outputStderr) { %>
+          <p><strong>Standard error:</strong></p><pre class="bg-dark text-white rounded p-2"><%= error.data.outputStderr %></pre>
+          <% } %>
+
+          <% if (error.data && error.data.outputStdout) { %>
+          <p><strong>Standard output:</strong></p><pre class="bg-dark text-white rounded p-2"><%= error.data.outputStdout %></pre>
+          <% } %>
+
+          <% if (error.stack) { %><p><strong>Stack trace:</strong></p><pre class="bg-dark text-white rounded p-2"><%= error.stack %></pre><% } %>
+
+          <% if (error.data && error.data.sqlError) {%>
+          <p><strong>SQL error:</strong></p><pre class="bg-dark text-white rounded p-2">error: <%= error.data.sqlError.message %>
+detail: <%= error.data.sqlError.detail %>
+where: <%= error.data.sqlError.where %>
+internal query:
+<%= error.data.sqlError.internalQuery %></pre>
+          <% } %>
+          <% if (error.data && error.data.sql) {%>
+          <p><strong>SQL query:</strong></p><pre class="bg-dark text-white rounded p-2"><%= error_data_sqlQuery %></pre>
+          <% } %>
+          <% if (error.data && error.data.sqlParams) {%>
+          <p><strong>SQL params:</strong></p><pre class="bg-dark text-white rounded p-2"><%= error_data_sqlParams %></pre>
+          <% } %>
+          <% if (error.data && error.data.sqlError) {%>
+          <p><strong>SQL error data:</strong></p><pre class="bg-dark text-white rounded p-2"><%= error_data_sqlError %></pre>
+          <% } %>
+
+          <% if (error.data) { %><p><strong>Additional data:</strong></p><pre class="bg-dark text-white rounded p-2"><%= error_data %></pre><% } %>
+
+        </div>
+
+      </div>
+    </main>
+  </body>
+</html>
