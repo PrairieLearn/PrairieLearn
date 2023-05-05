@@ -15,6 +15,7 @@ const { syncCourseData } = require('./sync/util');
 const helperServer = require('./helperServer');
 const { URLSearchParams } = require('url');
 const { getGroupRoleReassignmentsAfterLeave } = require('../lib/groups');
+const { TEST_COURSE_PATH } = require('../lib/paths');
 
 let elemList;
 const locals = {};
@@ -23,7 +24,7 @@ locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceUrl = locals.baseUrl + '/course_instance/1';
 locals.assessmentsUrl = locals.courseInstanceUrl + '/assessments';
-locals.courseDir = path.join(__dirname, '..', 'testCourse');
+locals.courseDir = TEST_COURSE_PATH;
 
 const storedConfig = {};
 
@@ -1056,7 +1057,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
   before('set up testing server', async function () {
     // Create a copy of the course that we can safely manipulate.
     tempTestCourseDir = await tmp.dir({ unsafeCleanup: true });
-    await fs.copy(path.resolve(__dirname, '..', 'testCourse'), tempTestCourseDir.path, {
+    await fs.copy(TEST_COURSE_PATH, tempTestCourseDir.path, {
       overwrite: true,
     });
 
