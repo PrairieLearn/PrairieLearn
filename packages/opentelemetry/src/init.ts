@@ -313,3 +313,11 @@ export async function shutdown(): Promise<void> {
     tracerProvider = null;
   }
 }
+
+/**
+ * Disables all OpenTelemetry instrumentations. This is useful for tests that
+ * need to access the unwrapped modules.
+ */
+export function disableInstrumentations() {
+  instrumentations.forEach((i) => i.disable());
+}

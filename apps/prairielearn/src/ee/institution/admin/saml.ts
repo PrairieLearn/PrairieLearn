@@ -1,25 +1,22 @@
-// @ts-check
-const { Router } = require('express');
-const asyncHandler = require('express-async-handler');
-const pem = require('pem');
+import { Router } from 'express';
+import asyncHandler = require('express-async-handler');
+import * as pem from 'pem';
 
-const error = require('@prairielearn/error');
-const sqldb = require('@prairielearn/postgres');
-const { InstitutionAdminSaml } = require('./saml.html');
-const {
+import * as error from '@prairielearn/error';
+import { loadSqlEquiv, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
+import { InstitutionAdminSaml } from './saml.html';
+import {
   getInstitution,
   getInstitutionSamlProvider,
   getInstitutionAuthenticationProviders,
-} = require('../utils');
+} from '../utils';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(__filename);
 const router = Router({ mergeParams: true });
 
-/**
- * @param {import('pem').CertificateCreationOptions} options
- * @returns {Promise<import('pem').CertificateCreationResult>}
- */
-function createCertificate(options) {
+function createCertificate(
+  options: pem.CertificateCreationOptions
+): Promise<pem.CertificateCreationResult> {
   return new Promise((resolve, reject) => {
     pem.createCertificate(options, (err, keys) => {
       if (err) return reject(err);
@@ -32,7 +29,7 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'save') {
-      await sqldb.runInTransactionAsync(async () => {
+      await runInTransactionAsync(async () => {
         // Check if there's an existing SAML provider configured. We'll use
         // that to determine if we need to create a new keypair. That is, we'll
         // only create a new keypair if there's no existing provider.
@@ -55,7 +52,7 @@ router.post(
           privateKey = keys.serviceKey;
         }
 
-        await sqldb.queryAsync(sql.insert_institution_saml_provider, {
+        await queryAsync(sql.insert_institution_saml_provider, {
           institution_id: req.params.institution_id,
           sso_login_url: req.body.sso_login_url,
           issuer: req.body.issuer,
@@ -72,7 +69,7 @@ router.post(
         });
       });
     } else if (req.body.__action === 'delete') {
-      await sqldb.queryAsync(sql.delete_institution_saml_provider, {
+      await queryAsync(sql.delete_institution_saml_provider, {
         institution_id: req.params.institution_id,
         // For audit logs
         authn_user_id: res.locals.authn_user.user_id,
@@ -109,4 +106,4 @@ router.get(
   })
 );
 
-module.exports = router;
+export default router;

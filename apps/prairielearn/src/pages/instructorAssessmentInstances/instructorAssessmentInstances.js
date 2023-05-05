@@ -32,6 +32,7 @@ router.get('/client.js', function (req, res, next) {
   if (!res.locals.authz_data.has_course_instance_permission_view) {
     return next(error.make(403, 'Access denied (must be a student data viewer)'));
   }
+  res.type('text/javascript');
   res.render(__filename.replace(/\.js$/, 'ClientJS.ejs'), res.locals);
 });
 

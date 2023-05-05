@@ -8,13 +8,13 @@ const assert = require('chai').assert;
 const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 const opentelemetry = require('@prairielearn/opentelemetry');
 
+const assets = require('../lib/assets');
 const { config } = require('../lib/config');
 const load = require('../lib/load');
 const aws = require('../lib/aws');
 const cron = require('../cron');
 const socketServer = require('../lib/socket-server');
-const serverJobs = require('../lib/server-jobs');
-const syncFromDisk = require('../sync/syncFromDisk');
+const serverJobs = require('../lib/server-jobs-legacy');
 const freeformServer = require('../question-servers/freeform');
 const cache = require('../lib/cache');
 const localCache = require('../lib/local-cache');
@@ -31,8 +31,8 @@ config.startServer = false;
 config.serverPort = 3007 + Number.parseInt(process.env.MOCHA_WORKER_ID ?? '0', 10);
 const server = require('../server');
 
-const logger = require('./dummyLogger');
 const helperDb = require('./helperDb');
+const helperCourse = require('./helperCourse');
 
 module.exports = {
   before: (courseDir) => {
@@ -67,20 +67,9 @@ module.exports = {
               callback(null);
             });
           },
-          function (callback) {
+          async () => {
             debug('before(): sync from disk');
-            syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
-              if (ERR(err, callback)) return;
-              if (result.hadJsonErrorsOrWarnings) {
-                console.log(logger.getOutput());
-                return callback(
-                  new Error(
-                    `Errors or warnings found during sync of ${courseDir} (output printed to console)`
-                  )
-                );
-              }
-              callback(null);
-            });
+            await helperCourse.syncCourse(courseDir);
           },
           function (callback) {
             debug('before(): set up load estimators');
@@ -93,6 +82,7 @@ module.exports = {
             debug('before(): initialize code callers');
             await codeCaller.init();
           },
+          async () => assets.init(),
           async () => {
             debug('before(): start server');
             httpServer = await server.startServer();

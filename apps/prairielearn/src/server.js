@@ -30,7 +30,6 @@ const multer = require('multer');
 const { filesize } = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const compiledAssets = require('@prairielearn/compiled-assets');
 const {
   SCHEMA_MIGRATIONS_PATH,
   initBatchedMigrations,
@@ -53,7 +52,7 @@ const sprocs = require('./sprocs');
 const news_items = require('./news_items');
 const cron = require('./cron');
 const socketServer = require('./lib/socket-server');
-const serverJobs = require('./lib/server-jobs');
+const serverJobs = require('./lib/server-jobs-legacy');
 const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
 const { LocalCache } = require('./lib/local-cache');
@@ -69,8 +68,9 @@ const staticNodeModules = require('./middlewares/staticNodeModules');
 
 process.on('warning', (e) => console.warn(e));
 
-// If there is only one argument, legacy it into the config option
-if (argv['_'].length === 1) {
+// If there is only one argument and `server.js` is being executed directly,
+// legacy it into the config option.
+if (require.main === module && argv['_'].length === 1) {
   argv['config'] = argv['_'][0];
   argv['_'] = [];
 }
@@ -113,7 +113,7 @@ module.exports.initExpress = function () {
   app.use((req, res, next) => {
     res.locals.asset_path = assets.assetPath;
     res.locals.node_modules_asset_path = assets.nodeModulesAssetPath;
-    res.locals.compiled_script_tag = compiledAssets.compiledScriptTag;
+    res.locals.compiled_script_tag = assets.compiledScriptTag;
     next();
   });
   app.use(function (req, res, next) {
@@ -361,49 +361,15 @@ module.exports.initExpress = function () {
   if (config.devMode) app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon-dev.ico')));
   else app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon.ico')));
 
-  if ('localRootFilesDir' in config) {
-    logger.info(`localRootFilesDir: Mapping ${config.localRootFilesDir} into /`);
-    app.use(express.static(config.localRootFilesDir));
-  }
+  assets.applyMiddleware(app);
 
-  // To allow for more aggressive caching of static files served from public/,
-  // we use an `assets/` path that includes a cachebuster in the path.
-  // In requests for resources, the cachebuster will be a hash of the contents
-  // of `/public`, which we will compute at startup. See `lib/assets.js` for
-  // implementation details.
-  app.use(
-    '/assets/:cachebuster',
-    express.static(path.join(APP_ROOT_PATH, 'public'), {
-      // In dev mode, assets are likely to change while the server is running,
-      // so we'll prevent them from being cached.
-      maxAge: config.devMode ? 0 : '31536000s',
-      immutable: true,
-    })
-  );
   // This route is kept around for legacy reasons - new code should prefer the
-  // "cacheable" route above.
+  // assets system with cacheable assets.
   app.use(express.static(path.join(APP_ROOT_PATH, 'public')));
-
-  app.use('/build/', compiledAssets.handler());
-
-  // To allow for more aggressive caching of files served from node_modules/,
-  // we insert a hash of the module version into the resource path. This allows
-  // us to treat those files as immutable and cache them essentially forever.
-  app.use(
-    '/cacheable_node_modules/:cachebuster',
-    staticNodeModules('.', {
-      maxAge: '31536000s',
-      immutable: true,
-    })
-  );
 
   // This is included for backwards-compatibility with pages that might still
   // expect to be able to load files from the `/node_modules` route.
   app.use('/node_modules', staticNodeModules('.'));
-
-  // Included for backwards-compatibility; new code should load MathJax from
-  // `/cacheable_node_modules` instead.
-  app.use('/MathJax', staticNodeModules(path.join('mathjax', 'es5')));
 
   // Support legacy use of ace by v2 questions
   app.use(
@@ -448,11 +414,11 @@ module.exports.initExpress = function () {
 
   if (isEnterprise()) {
     if (config.hasAzure) {
-      app.use('/pl/azure_login', require('./ee/auth/azure/login'));
-      app.use('/pl/azure_callback', require('./ee/auth/azure/callback'));
+      app.use('/pl/azure_login', require('./ee/auth/azure/login').default);
+      app.use('/pl/azure_callback', require('./ee/auth/azure/callback').default);
     }
 
-    app.use('/pl/auth/institution/:institution_id/saml', require('./ee/auth/saml/router'));
+    app.use('/pl/auth/institution/:institution_id/saml', require('./ee/auth/saml/router').default);
   }
 
   app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
@@ -466,7 +432,7 @@ module.exports.initExpress = function () {
   app.use('/pl/api', require('./middlewares/authnToken')); // authn for the API, set res.locals.authn_user
 
   if (isEnterprise()) {
-    app.use('/pl/prairietest/auth', require('./ee/auth/prairietest'));
+    app.use('/pl/prairietest/auth', require('./ee/auth/prairietest').default);
   }
 
   // Must come before CSRF middleware; we do our own signature verification here.
@@ -705,10 +671,6 @@ module.exports.initExpress = function () {
   // from `node_modules`, we include a cachebuster in the URL. This allows
   // files to be treated as immutable in production and cached aggressively.
   app.use(
-    '/pl/static/cacheableElements/:cachebuster',
-    require('./pages/elementFiles/elementFiles')
-  );
-  app.use(
     '/pl/course_instance/:course_instance_id/cacheableElements/:cachebuster',
     require('./pages/elementFiles/elementFiles')
   );
@@ -737,6 +699,8 @@ module.exports.initExpress = function () {
   // files.
   // TODO: if we can determine that these routes are no longer receiving
   // traffic in the future, we can delete these.
+  //
+  // TODO: the only internal usage of this is in the `pl-drawing` element. Fix that.
   app.use('/pl/static/elements', require('./pages/elementFiles/elementFiles'));
   app.use(
     '/pl/course_instance/:course_instance_id/elements',
@@ -768,7 +732,7 @@ module.exports.initExpress = function () {
   app.use('/pl/api/v1', require('./api/v1'));
 
   if (isEnterprise()) {
-    app.use('/pl/institution/:institution_id/admin', require('./ee/institution/admin'));
+    app.use('/pl/institution/:institution_id/admin', require('./ee/institution/admin').default);
   }
 
   //////////////////////////////////////////////////////////////////////
@@ -1650,6 +1614,10 @@ module.exports.initExpress = function () {
     require('./pages/administratorWorkspaces/administratorWorkspaces')
   );
   app.use(
+    '/pl/administrator/features',
+    require('./pages/administratorFeatures/administratorFeatures')
+  );
+  app.use(
     '/pl/administrator/queries',
     require('./pages/administratorQueries/administratorQueries')
   );
@@ -1841,7 +1809,7 @@ module.exports.insertDevUser = function (callback) {
   });
 };
 
-if (config.startServer) {
+if (require.main === module && config.startServer) {
   async.series(
     [
       async () => {
@@ -2134,14 +2102,6 @@ if (config.startServer) {
         news_items.init(notify_with_new_server, function (err) {
           if (ERR(err, callback)) return;
           callback(null);
-        });
-      },
-      async () => {
-        compiledAssets.init({
-          dev: config.devMode,
-          sourceDirectory: path.resolve(APP_ROOT_PATH, 'assets'),
-          buildDirectory: path.resolve(APP_ROOT_PATH, 'public/build'),
-          publicPath: '/build',
         });
       },
       // We need to initialize these first, as the code callers require these
