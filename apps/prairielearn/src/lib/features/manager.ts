@@ -132,13 +132,36 @@ export class FeatureManager {
    * @param locals The locals field authenticated and populated by middlewares.
    * @returns Whether or not the feature is enabled
    */
-  async enabledFromLocals(name: string, locals: object): Promise<boolean> {
-    return enabled(name, {
-      institution_id: locals.institution?.id ?? null,
-      course_id: locals.course?.id ?? null,
-      course_instance_id: locals.course_instance?.id ?? null,
-      user_id: locals.user?.id ?? null,
-    });
+  async enabledFromLocals(
+    name: string,
+    locals: {
+      institution?: { id: string };
+      course?: { id: string };
+      course_instance?: { id: string };
+      user?: { user_id: string };
+    }
+  ): Promise<boolean> {
+    if (!locals.institution) {
+      return this.enabled(name, locals.user ? { user_id: locals.user.user_id } : {});
+    } else if (!locals.course) {
+      return this.enabled(name, {
+        institution_id: locals.institution.id,
+        ...(locals.user ? { user_id: locals.user.user_id } : {}),
+      });
+    } else if (!locals.course_instance) {
+      return this.enabled(name, {
+        institution_id: locals.institution.id,
+        course_id: locals.course.id,
+        ...(locals.user ? { user_id: locals.user.user_id } : {}),
+      });
+    } else {
+      return this.enabled(name, {
+        institution_id: locals.institution.id,
+        course_id: locals.course.id,
+        course_instance_id: locals.course_instance.id,
+        ...(locals.user ? { user_id: locals.user.user_id } : {}),
+      });
+    }
   }
 
   /**
