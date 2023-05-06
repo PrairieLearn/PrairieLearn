@@ -141,7 +141,7 @@ export class FeatureManager {
       user?: { user_id: string };
     }
   ): Promise<boolean> {
-    const user_context = locals.user ? { user_id: locals.user.user_id } : {};
+    const user_context = locals.user && { user_id: locals.user.user_id };
     if (!locals.institution) {
       return this.enabled(name, user_context);
     } else if (!locals.course) {
