@@ -362,11 +362,6 @@ module.exports.initExpress = function () {
   if (config.devMode) app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon-dev.ico')));
   else app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon.ico')));
 
-  if ('localRootFilesDir' in config) {
-    logger.info(`localRootFilesDir: Mapping ${config.localRootFilesDir} into /`);
-    app.use(express.static(config.localRootFilesDir));
-  }
-
   // To allow for more aggressive caching of static files served from public/,
   // we use an `assets/` path that includes a cachebuster in the path.
   // In requests for resources, the cachebuster will be a hash of the contents
@@ -401,10 +396,6 @@ module.exports.initExpress = function () {
   // This is included for backwards-compatibility with pages that might still
   // expect to be able to load files from the `/node_modules` route.
   app.use('/node_modules', staticNodeModules('.'));
-
-  // Included for backwards-compatibility; new code should load MathJax from
-  // `/cacheable_node_modules` instead.
-  app.use('/MathJax', staticNodeModules(path.join('mathjax', 'es5')));
 
   // Support legacy use of ace by v2 questions
   app.use(
