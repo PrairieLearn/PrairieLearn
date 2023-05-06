@@ -2789,6 +2789,7 @@ __metadata:
     socket.io-client: ^4.6.1
     socket.io-redis: ^6.1.1
     streamifier: ^0.1.1
+    strip-ansi: ^6.0.1
     tablesorter: ^2.31.3
     tar: ^6.1.13
     three: ^0.152.2

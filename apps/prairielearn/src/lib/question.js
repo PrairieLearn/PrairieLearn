@@ -15,8 +15,6 @@ const { workspaceFastGlobDefaultOptions } = require('@prairielearn/workspace-uti
 const { config, setLocalsFromConfig } = require('./config');
 const { generateSignedToken } = require('@prairielearn/signed-token');
 const externalGrader = require('./externalGrader');
-const { logger } = require('@prairielearn/logger');
-const serverJobs = require('./server-jobs');
 const manualGrading = require('./manualGrading');
 const ltiOutcomes = require('../lib/ltiOutcomes');
 const sqldb = require('@prairielearn/postgres');
@@ -24,6 +22,7 @@ const questionServers = require('../question-servers');
 const workspaceHelper = require('./workspace');
 const issues = require('./issues');
 const error = require('@prairielearn/error');
+const { createServerJob } = require('./server-jobs');
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
@@ -1216,84 +1215,55 @@ module.exports = {
    * @param {Object} course_instance - The course instance for the variant; may be null for instructor questions
    * @param {Object} course - The course for the variant.
    * @param {number} authn_user_id - The currently authenticated user.
-   * @param {function} callback - A callback(err, job_sequence_id) function.
+   * @return {string} The job sequence ID.
    */
-  startTestQuestion(
+  async startTestQuestion(
     count,
     showDetails,
     question,
     group_work,
     course_instance,
     course,
-    authn_user_id,
-    callback
+    authn_user_id
   ) {
     let success = true;
-    const options = {
-      course_id: course.id,
-      course_instance_id: null,
-      assessment_id: null,
-      user_id: authn_user_id,
-      authn_user_id: authn_user_id,
+    const test_types = ['correct', 'incorrect', 'invalid'];
+
+    const serverJob = await createServerJob({
+      courseId: course.id,
+      userId: authn_user_id,
+      authnUserId: authn_user_id,
       type: 'test_question',
       description: 'Test ' + question.qid,
-    };
-    let test_types = ['correct', 'incorrect', 'invalid'];
+    });
 
-    serverJobs.createJobSequence(options, (err, job_sequence_id) => {
-      if (ERR(err, callback)) return;
-      callback(null, job_sequence_id);
-
-      // We've now triggered the callback to our caller, but we
-      // continue executing below to launch the jobs themselves.
-
-      var jobOptions = {
-        course_id: course.id,
-        course_instance_id: null,
-        assessment_id: null,
-        user_id: authn_user_id,
-        authn_user_id: authn_user_id,
-        type: 'test_question',
-        description: 'Test ' + question.qid,
-        job_sequence_id: job_sequence_id,
-        last_in_sequence: true,
-      };
-      serverJobs.createJob(jobOptions, (err, job) => {
-        if (err) {
-          logger.error('Error in createJob()', err);
-          serverJobs.failJobSequence(job_sequence_id);
-          return;
-        }
-
-        async.eachSeries(
-          _.range(count * test_types.length),
-          (iter, callback) => {
-            let type = test_types[iter % test_types.length];
-            job.verbose(`Test ${Math.floor(iter / test_types.length) + 1}, type ${type}`);
-            module.exports._runTest(
-              job,
-              showDetails,
-              question,
-              group_work,
-              course_instance,
-              course,
-              type,
-              authn_user_id,
-              (err, ret_success) => {
-                if (ERR(err, callback)) return;
-                success = success && ret_success;
-                callback(null);
-              }
-            );
-          },
-          (err) => {
-            if (ERR(err, () => {})) return job.fail(err);
-            if (!success) return job.fail('Some tests failed. See the "Errors" page for details.');
-            job.succeed();
+    serverJob.executeInBackground(async (job) => {
+      await async.eachSeries(_.range(count * test_types.length), (iter, callback) => {
+        let type = test_types[iter % test_types.length];
+        job.verbose(`Test ${Math.floor(iter / test_types.length) + 1}, type ${type}`);
+        module.exports._runTest(
+          job,
+          showDetails,
+          question,
+          group_work,
+          course_instance,
+          course,
+          type,
+          authn_user_id,
+          (err, ret_success) => {
+            if (ERR(err, callback)) return;
+            success = success && ret_success;
+            callback(null);
           }
         );
       });
+
+      if (!success) {
+        throw new Error('Some tests failed. See the "Errors" page for details.');
+      }
     });
+
+    return serverJob.jobSequenceId;
   },
 
   /**
