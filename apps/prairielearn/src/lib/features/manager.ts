@@ -141,25 +141,26 @@ export class FeatureManager {
       user?: { user_id: string };
     }
   ): Promise<boolean> {
+    const user_context = locals.user ? { user_id: locals.user.user_id } : {};
     if (!locals.institution) {
-      return this.enabled(name, locals.user ? { user_id: locals.user.user_id } : {});
+      return this.enabled(name, user_context);
     } else if (!locals.course) {
       return this.enabled(name, {
         institution_id: locals.institution.id,
-        ...(locals.user ? { user_id: locals.user.user_id } : {}),
+        ...user_context,
       });
     } else if (!locals.course_instance) {
       return this.enabled(name, {
         institution_id: locals.institution.id,
         course_id: locals.course.id,
-        ...(locals.user ? { user_id: locals.user.user_id } : {}),
+        ...user_context,
       });
     } else {
       return this.enabled(name, {
         institution_id: locals.institution.id,
         course_id: locals.course.id,
         course_instance_id: locals.course_instance.id,
-        ...(locals.user ? { user_id: locals.user.user_id } : {}),
+        ...user_context,
       });
     }
   }
