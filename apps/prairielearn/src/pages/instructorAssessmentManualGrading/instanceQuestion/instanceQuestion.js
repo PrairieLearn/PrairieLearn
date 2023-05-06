@@ -8,6 +8,7 @@ const path = require('path');
 
 const question = require('../../../lib/question');
 const manualGrading = require('../../../lib/manualGrading');
+const { features } = require('../../../lib/features/index');
 
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
@@ -32,6 +33,11 @@ async function prepareLocalsForRender(req, res) {
       res.locals
     );
   }
+
+  res.locals.rubric_settings_visible = await features.enabledFromLocals(
+    'manual-grading-rubrics',
+    res.locals
+  );
 
   // If student never loaded question or never submitted anything (submission is null)
   if (!res.locals.submission) {

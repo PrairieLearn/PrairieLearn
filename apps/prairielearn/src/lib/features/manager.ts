@@ -125,6 +125,23 @@ export class FeatureManager {
   }
 
   /**
+   * Checks if the given feature is enabled based on the context derived from locals populated from
+   * middlewares.
+   *
+   * @param name The name of the feature.
+   * @param locals The locals field authenticated and populated by middlewares.
+   * @returns Whether or not the feature is enabled
+   */
+  async enabledFromLocals(name: string, locals: object): Promise<boolean> {
+    return enabled(name, {
+      institution_id: locals.institution?.id ?? null,
+      course_id: locals.course?.id ?? null,
+      course_instance_id: locals.course_instance?.id ?? null,
+      user_id: locals.user?.id ?? null,
+    });
+  }
+
+  /**
    * Enables the feature for the given context.
    *
    * @param name The name of the feature.
