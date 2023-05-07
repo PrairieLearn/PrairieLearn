@@ -13,6 +13,7 @@ const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 const { setUser, parseInstanceQuestionId, saveOrGrade } = require('./helperClient');
 const { TEST_COURSE_PATH } = require('../lib/paths');
+const { features } = require('../lib/features/index');
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -338,7 +339,7 @@ describe('Manual Grading', function () {
   after('shut down testing server', helperServer.after);
 
   before('ensure course has manual grading enabled', async () => {
-    await sqldb.queryAsync(sql.enable_manual_grading, {});
+    await features.enable('manual-grading-rubrics', 'manual');
   });
 
   before('build assessment manual grading page URL', async () => {
