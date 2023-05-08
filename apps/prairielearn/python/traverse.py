@@ -106,8 +106,9 @@ def traverse_and_replace(
                 # as well as the `parse5` npm package that we use for parsing in JavaScript.
                 tail = new_elements.tail
                 new_elements.tail = None
-                instruction = lxml.html.tostring(new_elements, encoding="unicode").removeprefix("<?").removesuffix("?>")
-                result.append('<!--?' + instruction + '?-->')
+                instruction = lxml.html.tostring(new_elements, encoding="unicode")
+                instruction = instruction.removeprefix("<?").removesuffix("?>")
+                result.append("<!--?" + instruction + "?-->")
                 if tail:
                     result.append(tail)
             else:
