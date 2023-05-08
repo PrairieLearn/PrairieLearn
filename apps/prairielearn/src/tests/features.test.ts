@@ -94,4 +94,13 @@ describe('features', () => {
     assert.isFalse(await features.enabled('test:example-feature-flag', context));
     assert.isFalse(await features.enabled('test:example-feature-flag', { user_id: '1' }));
   });
+
+  it('validates and typechecks feature flags', async () => {
+    const features = new FeatureManager(['valid']);
+
+    await assert.isFulfilled(features.enable('valid', FeatureGrantType.Manual));
+
+    // @ts-expect-error -- Invalid feature flag name.
+    await assert.isRejected(features.enable('invalid', FeatureGrantType.Manual));
+  });
 });
