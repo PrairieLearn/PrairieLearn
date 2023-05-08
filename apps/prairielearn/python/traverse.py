@@ -1,6 +1,6 @@
-from html import escape as html_escape
 import timeit
 from collections import deque
+from html import escape as html_escape
 from typing import Callable, Deque, List, Optional, Tuple, Union
 
 import lxml.html
