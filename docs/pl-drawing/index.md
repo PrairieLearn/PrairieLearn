@@ -1627,7 +1627,7 @@ elements["pl-point"] = Point
 
 ### JavaScript
 
-The clientside JavaScript portion of `pl-drawing` is built on [Fabric.js](http://fabricjs.com/docs/), any elements should therefore be built on top of Fabric's shapes and those that are defined in the included [`mechanicsObjects.js`](https://github.com/PrairieLearn/PrairieLearn/blob/master/elements/pl-drawing/mechanicsObjects.js) file.
+The clientside JavaScript portion of `pl-drawing` is built on [Fabric.js](http://fabricjs.com/docs/), any elements should therefore be built on top of Fabric's shapes and those that are defined in the included [`mechanicsObjects.js`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/elements/pl-drawing/mechanicsObjects.js) file.
 
 Similarly to the Python code, each element inherits from a base JavaScript class:
 
