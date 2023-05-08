@@ -903,7 +903,9 @@ module.exports = {
       fileData,
       renderedElementNames,
     } = await processFunction(...args);
-    console.log(`Processing question in ${phase} (${data.panel}) took ${Date.now() - start}ms`);
+    console.log(
+      `Processing question.html in ${phase} (${data.panel}) took ${Date.now() - start}ms`
+    );
 
     if (phase === 'grade' || phase === 'test') {
       if (context.question.partial_credit) {
@@ -974,7 +976,7 @@ module.exports = {
       );
       return { courseIssues, data };
     } finally {
-      console.log(`Processing question in ${phase} (${data.panel}) took ${Date.now() - start}ms`);
+      console.log(`Processing server.py in ${phase} (${data.panel}) took ${Date.now() - start}ms`);
     }
 
     if (_.isString(output) && output.length > 0) {

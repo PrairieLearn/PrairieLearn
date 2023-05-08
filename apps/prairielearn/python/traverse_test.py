@@ -302,3 +302,19 @@ def test_traverse_and_replace_angle_brackets() -> None:
 
     html = traverse_and_replace("<pl-code></pl-code>", replace)
     assert html == "<pre><code>&lt;div&gt;</code></pre>"
+
+
+def test_traverse_and_replace_xml_processing_instruction() -> None:
+    def replace(e) -> ElementReplacement:
+        return e
+
+    html = traverse_and_replace('hello <?xml version="1.0"?> world', replace)
+    assert html == 'hello <!--?xml version="1.0"?--> world'
+
+
+def test_traverse_and_replace_empty_paragraph() -> None:
+    def replace(e) -> ElementReplacement:
+        return e
+
+    html = traverse_and_replace("<p></p>", replace)
+    assert html == "<p></p>"

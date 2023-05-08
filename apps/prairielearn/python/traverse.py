@@ -98,6 +98,18 @@ def traverse_and_replace(
 
             if isinstance(new_elements, lxml.html.HtmlComment):
                 result.append(lxml.html.tostring(new_elements, encoding="unicode"))
+            elif isinstance(new_elements, lxml.html.HtmlProcessingInstruction):
+                # Handling processing instructions is necessary for elements like `<pl-graph>`
+                # that produce SVG documents.
+                #
+                # We transform these into comments to match the behavior of the HTML spec,
+                # as well as the `parse5` npm package that we use for parsing in JavaScript.
+                tail = new_elements.tail
+                new_elements.tail = None
+                instruction = lxml.html.tostring(new_elements, encoding="unicode").removeprefix("<?").removesuffix("?>")
+                result.append('<!--?' + instruction + '?-->')
+                if tail:
+                    result.append(tail)
             else:
                 # Add opening tag and text
                 result.append(get_source_definition(new_elements))

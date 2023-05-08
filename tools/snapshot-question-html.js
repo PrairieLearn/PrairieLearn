@@ -2,7 +2,7 @@ const fetch = require('node-fetch').default;
 const cheerio = require('cheerio');
 const fs = require('fs-extra');
 
-const COURSE_URL = 'http://localhost:3000/pl/course/2';
+const COURSE_URL = 'http://localhost:3000/pl/course/4';
 const QUESTIONS_URL = `${COURSE_URL}/course_admin/questions`;
 const QUESTION_URL_BASE = `${COURSE_URL}/question`;
 
@@ -15,7 +15,8 @@ async function loadQuestions() {
 }
 
 async function loadQuestion(id) {
-  const questionUrl = `${QUESTION_URL_BASE}/${id}/preview`;
+  // Hardcode the variant seed for consistent results.
+  const questionUrl = `${QUESTION_URL_BASE}/${id}/preview?variant_seed=1`;
   const response = await fetch(questionUrl);
   const text = await response.text();
   const $ = cheerio.load(text);
@@ -23,8 +24,11 @@ async function loadQuestion(id) {
 }
 
 function sanitizeHtml(html) {
-  // Replace anything matching a UUID regexp with a placeholder
-  return html.replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, '<UUID>');
+  // Replace dynamic values (UUIDs, IDs, etc.) with static placeholders.
+  return html
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g, '<UUID>')
+    .replace(/(generatedFilesQuestion\/variant\/)(\d+)/, '$1<VARIANT_ID>')
+    .replace(/(\/pl\/workspace\/)(\d+)/, '$1<WORKSPACE_ID>');
 }
 
 /**
