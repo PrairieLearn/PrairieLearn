@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <%- include('../partials/head', {pageTitle: 'Course Instances'}); %>
+    </head>
+    <body>
+        <script>
+            $(function() {
+                $('#earliest-access-date [data-toggle="popover"]').popover({
+                    sanitize: false,
+                });
+                $('#latest-access-date [data-toggle="popover"]').popover({
+                    sanitize: false,
+                });
+            });
+        </script>
+        <%- include('../partials/navbar'); %>
+        <main id="content" class="container-fluid">
+            <%- include('../partials/courseSyncErrorsAndWarnings'); %>
+            <div class="card mb-4">
+                <div class="card-header bg-primary">
+                    <div class="row align-items-center justify-content-between">
+                        <div class="col-auto">
+                            <span class="text-white">Course instances</span>
+                        </div>
+                        <% if ((authz_data.has_course_permission_edit) && (! course.example_course) && (! locals.needToSync)) { %>
+                        <div class="col-auto">
+                            <form name="add-course-instance-form" method="POST">
+                                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                                <button name="__action" value="add_course_instance" class="btn btn-sm btn-light"><i class="fa fa-plus" aria-hidden="true"></i>
+                                <span class="d-none d-sm-inline">Add course instance</span></button>
+                            </form>
+                        </div>
+                        <% } %>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-sm table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <th>Long Name</th>
+                                <th>CIID</th>
+                                <th id="earliest-access-date">
+                                    Earliest Access Date
+                                    <a role="button" class="btn btn-xs btn-light" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="Order By" tabindex="0"
+                                        data-content="<%= include('popoverStartDate'); %>">
+                                        <i class="far fa-question-circle" aria-hidden="true"></i>
+                                    </a>
+                                </th>
+                                <th id="latest-access-date">
+                                    Latest Access Date
+                                    <a role="button" class="btn btn-xs btn-light" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="Order By" tabindex="0"
+                                        data-content="<%= include('popoverEndDate'); %>">
+                                        <i class="far fa-question-circle" aria-hidden="true"></i>
+                                    </a>
+                                </th>
+                                <th>Students</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (locals.authz_data && authz_data.course_instances) { %>
+                                <% authz_data.course_instances.forEach(function(row) { %>
+                                    <tr>
+                                        <td class="align-left"><a href="<%= plainUrlPrefix %>/course_instance/<%= row.id %>/instructor/instance_admin"><%= row.long_name %></a></td>
+                                        <td class="align-left"><%= row.short_name %></td>
+                                        <td class="align-left"><%= row.formatted_start_date %></td>
+                                        <td class="align-left"><%= row.formatted_end_date %></td>
+                                        <td class="align-middle"><%= row.number %></td>
+                                    </tr>
+                                <% }); %>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </body>
+</html>

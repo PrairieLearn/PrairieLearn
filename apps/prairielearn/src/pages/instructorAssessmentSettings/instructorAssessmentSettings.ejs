@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <%- include('../partials/head'); %>
+    <script src="<%= node_modules_asset_path('clipboard/dist/clipboard.min.js') %>"></script>
+    <script>
+      $(() => {
+          let clipboard = new ClipboardJS('.btn-copy');
+          clipboard.on('success', (e) => {
+              $(e.trigger).popover({
+                  content: 'Copied!',
+                  placement: 'bottom',
+              }).popover('show');
+              window.setTimeout(function () {
+                  $(e.trigger).popover('hide');
+              }, 1000);
+          });
+          $('.js-student-link-qrcode-button').popover({
+              content: $('#js-student-link-qrcode'),
+              html: true,
+              trigger: 'click',
+              container: 'body'
+          });
+      });
+    </script>
+    <style>
+        .popover{
+            max-width: 50%;
+        }
+    </style>
+</head>
+
+<body>
+    <script>
+        $(function() {
+            $('[data-toggle="popover"]').popover({
+                sanitize: false
+            })
+        });
+    </script>
+    <%- include('../partials/navbar'); %>
+    <main id="content" class="container-fluid">
+        <%- include('../partials/assessmentSyncErrorsAndWarnings'); %>
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white d-flex">
+                <%= assessment_set.name %> <%= assessment.number %>: Settings
+            </div>
+            <table class="table table-sm table-hover two-column-description">
+                <tbody>
+                    <tr><th scope="row">Title</th><td><%= assessment.title %></td></tr>
+                    <tr><th scope="row">Type</th><td><%= assessment.type %></td></tr>
+                    <tr>
+                        <th scope="row">Set</th>
+                        <td>
+                            <%= assessment_set.name %> 
+                            <span class="text-muted">(<%= assessment_set.abbreviation %>)</span>
+                        </td>
+                    </tr>
+                    <tr><th scope="row">Number</th><td><%= assessment.number %></td></tr>
+                    <tr>
+                        <th scope="row">Module</th>
+                        <td>
+                            <% if (assessment_module) { %>
+                            <%= assessment_module.heading %> 
+                            <span class="text-muted">(<%= assessment_module.name %>)</span>
+                            <% } else { %>
+                            &mdash;
+                            <% } %>
+                        </td>
+                    </tr>                    
+                    <tr><th scope="row">AID</th>
+                        <td>
+                            <span class="pr-2"><%= assessment.tid %></span>
+                            <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
+                            <button id="changeAidButton" tabindex="0" class="btn btn-xs btn-secondary" type="button" data-toggle="popover" data-container="body" data-html="true" data-placement="auto" title="Change AID" data-content="<%= include('../partials/changeIdForm', {id_label: 'AID', buttonID: 'changeAidButton', id_old: assessment.tid, ids: tids}) %>" data-trigger="manual" onclick="$(this).popover('show')">
+                                <i class="fa fa-i-cursor"></i>
+                                <span>Change AID</span>
+                            </button>
+                            <% } %>
+                        </td>
+                    </tr>
+                    <tr><th>Configuration</th>
+                        <td>
+                            <% if (authz_data.has_course_permission_view) { %>
+                                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/file_view/<%= infoAssessmentPath %>">
+                                    infoAssessment.json
+                                </a>
+                                <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
+                                    <a tabindex="0" class="btn btn-xs btn-secondary mx-2" role="button" href="<%= urlPrefix %>/assessment/<%= assessment.id %>/file_edit/<%= infoAssessmentPath %>">
+                                        <i class="fa fa-edit"></i>
+                                        <span>Edit</span>
+                                    </a>
+                                <% } %>
+                            <% } else { %>
+                              infoAssessment.json
+                            <% } %>
+                        </td>
+                    </tr>
+                    <tr>
+                      <th class="align-middle">Student Link</th>
+                      <td class="form-inline align-middle">
+                        <span class="input-group">
+                          <span readonly class="form-control form-control-sm"><%= studentLink %></span>
+                          <div class="input-group-append">
+                            <button type="button" class="btn btn-sm btn-outline-secondary btn-copy" data-clipboard-text="<%= studentLink %>" aria-label="Copy student link">
+                              <i class="far fa-clipboard"></i>
+                            </button>
+                            <button type="button" title="Student Link QR Code"
+                                    class="btn btn-sm btn-outline-secondary js-student-link-qrcode-button">
+                              <i class="fas fa-qrcode"></i>
+                            </button>
+                            <div class="d-none"><div id="js-student-link-qrcode"><center><%- studentLinkQRCode %></center></div></div>
+                          </div>
+                        </span>
+                      </td>
+                    </tr>
+                </tbody>
+            </table>
+            <% if ((authz_data.has_course_permission_edit) && (! course.example_course)) { %>
+            <div class="card-footer">
+                <div class="row">
+                    <div class="col-auto">
+                        <form name="copy-assessment-form" class="form-inline" method="POST">
+                            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                            <button name="__action" value="copy_assessment" class="btn btn-sm btn-primary"><i class="fa fa-clone"></i> Make a copy of this assessment</button>
+                        </form>
+                    </div>
+                    <div class="col-auto">
+                        <button class="btn btn-sm btn-primary" href="#" data-toggle="modal" data-target="#deleteAssessmentModal"><i class="fa fa-times" aria-hidden="true"></i> Delete this assessment</button>
+                    </div>
+                    <div class="modal fade" id="deleteAssessmentModal" tabindex="-1" role="dialog" aria-labelledby="deleteAssessmentModalLabel">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h4 class="modal-title" id="deleteAssessmentModalLabel">Delete assessment</h4>
+                                </div>
+                                <div class="modal-body">
+                                    <p>
+                                        Are you sure you want to delete the assessment <strong><%= assessment.tid %></strong>?
+                                    </p>
+                                </div>
+                                <div class="modal-footer">
+                                    <form name="delete-assessment-form" method="POST">
+                                        <input type="hidden" name="__action" value="delete_assessment">
+                                        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn btn-danger">Delete</button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <% } %>
+        </div>
+    </main>
+</body>
+
+</html>
