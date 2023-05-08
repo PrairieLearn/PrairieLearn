@@ -73,10 +73,10 @@ function validateContext(context: FeatureContext) {
   });
 }
 
-export class FeatureManager<FeatureNames extends string> {
+export class FeatureManager<FeatureName extends string> {
   features: Set<string>;
 
-  constructor(features: FeatureNames[]) {
+  constructor(features: FeatureName[]) {
     features.forEach((feature) => {
       if (!feature.match(/^[a-z0-9:_-]+$/)) {
         throw new Error(`Invalid feature name: ${feature}`);
@@ -85,7 +85,7 @@ export class FeatureManager<FeatureNames extends string> {
     this.features = new Set(features);
   }
 
-  private validateFeature(name: FeatureNames, context: FeatureContext) {
+  private validateFeature(name: FeatureName, context: FeatureContext) {
     if (!this.features.has(name)) {
       throw new Error(`Unknown feature: ${name}`);
     }
@@ -103,7 +103,7 @@ export class FeatureManager<FeatureNames extends string> {
    * @param context A context to use when evaluating the feature.
    * @returns Whether or not the feature is enabled
    */
-  async enabled(name: FeatureNames, context: FeatureContext = {}): Promise<boolean> {
+  async enabled(name: FeatureName, context: FeatureContext = {}): Promise<boolean> {
     this.validateFeature(name, context);
 
     // Allow config to globally override a feature.
@@ -131,7 +131,7 @@ export class FeatureManager<FeatureNames extends string> {
    * @param type The type of grant that is being applied.
    * @param context The context for which the feature should be enabled.
    */
-  async enable(name: FeatureNames, type: FeatureGrantType, context: FeatureContext = {}) {
+  async enable(name: FeatureName, type: FeatureGrantType, context: FeatureContext = {}) {
     this.validateFeature(name, context);
     await queryAsync(sql.enable_feature, { name, type, ...DEFAULT_CONTEXT, ...context });
   }
@@ -142,7 +142,7 @@ export class FeatureManager<FeatureNames extends string> {
    * @param name The name of the feature.
    * @param context The context for which the feature should be disabled.
    */
-  async disable(name: FeatureNames, context: FeatureContext = {}) {
+  async disable(name: FeatureName, context: FeatureContext = {}) {
     this.validateFeature(name, context);
     await queryAsync(sql.disable_feature, { name, ...DEFAULT_CONTEXT, ...context });
   }
