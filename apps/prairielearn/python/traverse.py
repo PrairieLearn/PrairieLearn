@@ -1,3 +1,4 @@
+from html import escape as html_escape
 import timeit
 from collections import deque
 from typing import Callable, Deque, List, Optional, Tuple, Union
@@ -116,7 +117,7 @@ def traverse_and_replace(
                 result.append(get_source_definition(new_elements))
 
                 if new_elements.text is not None:
-                    result.append(new_elements.text)
+                    result.append(html_escape(new_elements.text))
 
                 # Add all children to the work stack
                 children = list(new_elements)

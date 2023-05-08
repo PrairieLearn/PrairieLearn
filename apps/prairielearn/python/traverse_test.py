@@ -237,9 +237,7 @@ def test_traverse_and_replace_leading_trailing_recursive_8() -> None:
 
 
 def test_traverse_indentation() -> None:
-    original_html = (
-        "<div><pre><code>def hello():\n    print('Hello!')</code></pre></div>"
-    )
+    original_html = "<div><pre><code>def hello(msg):\n    print(msg)</code></pre></div>"
     html = traverse_and_replace(
         original_html,
         lambda e: e,
