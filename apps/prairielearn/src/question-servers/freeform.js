@@ -559,7 +559,8 @@ module.exports = {
         config.workersExecutionMode === 'container' ? '/course' : context.course_dir_host,
     };
     const courseIssues = [];
-    let result, output;
+    let result = null;
+    let output = null;
 
     try {
       const res = await codeCaller.call(
@@ -580,7 +581,7 @@ module.exports = {
     // Temporarily prevent output from creating a course issue.
     // TODO: revert this once we remove debug output from the renderer.
     // eslint-disable-next-line no-constant-condition
-    if (output?.length > 0 && false) {
+    if ((output?.length ?? 0) > 0 && false) {
       courseIssues.push(
         new CourseIssueError(`output logged on console during ${phase}()`, {
           data: { outputBoth: output },
