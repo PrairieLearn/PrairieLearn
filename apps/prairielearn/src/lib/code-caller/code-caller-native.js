@@ -107,6 +107,7 @@ class CodeCallerNative {
     this.child = null;
     this.callback = null;
     this.timeoutID = null;
+    this.callStart = Date.now();
 
     this.options = options;
 
@@ -390,9 +391,8 @@ class CodeCallerNative {
       // If `data` contains a newline, then `outputData` must contain a newline as well.
       // We avoid looking in `outputData` because it's a potentially very large string.
       if (data.indexOf('\n') >= 0) {
-        console.log(
-          `Call finished after ${Date.now() - this.callStart}ms (${this.outputData.length} chars)`
-        );
+        const debugSize = this.outputData.reduce((acc, cur) => acc + cur.length, 0);
+        console.log(`Call finished after ${Date.now() - this.callStart}ms (${debugSize} chars)`);
         this._callIsFinished();
       }
     }
