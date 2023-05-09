@@ -133,7 +133,7 @@ export class FeatureManager<FeatureName extends string> {
    * @returns Whether or not the feature is enabled
    */
   async enabledFromLocals(
-    name: string,
+    name: FeatureName,
     locals: {
       institution?: { id: string };
       course?: { id: string };
