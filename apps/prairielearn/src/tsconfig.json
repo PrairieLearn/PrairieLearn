@@ -5,7 +5,4 @@
     "outDir": "../dist"
   },
   "include": ["**/*"],
-  "ts-node": {
-    "transpileOnly": true
-  }
 }

@@ -32,6 +32,7 @@ export interface CompiledAssetsOptions {
 }
 
 let options: Required<CompiledAssetsOptions> = { ...DEFAULT_OPTIONS };
+let esbuildContext: esbuild.BuildContext | null = null;
 let esbuildServer: esbuild.ServeResult | null = null;
 
 export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<void> {
@@ -51,7 +52,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
     // new entrypoints that are added while the server is running.
     const sourceGlob = path.join(options.sourceDirectory, '*', '*.{js,ts,css}');
     const sourcePaths = await globby(sourceGlob);
-    const ctx = await esbuild.context({
+    esbuildContext = await esbuild.context({
       entryPoints: sourcePaths,
       target: 'es6',
       format: 'iife',
@@ -67,8 +68,15 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       entryNames: '[dir]/[name]',
     });
 
-    esbuildServer = await ctx.serve();
+    esbuildServer = await esbuildContext.serve();
   }
+}
+
+/**
+ * Shuts down the development assets compiler if it is running.
+ */
+export async function close() {
+  esbuildContext?.dispose();
 }
 
 export function assertConfigured(): void {

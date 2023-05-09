@@ -139,6 +139,13 @@ export async function init() {
 }
 
 /**
+ * Shuts down the development assets compiler if it is running.
+ */
+export async function close() {
+  await compiledAssets.close();
+}
+
+/**
  * Applies middleware to the given Express app to serve static assets.
  */
 export function applyMiddleware(app: express.Application) {
