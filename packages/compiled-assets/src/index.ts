@@ -1,6 +1,6 @@
 import type { RequestHandler } from 'express';
 import expressStaticGzip from 'express-static-gzip';
-import esbuild from 'esbuild';
+import esbuild, { Metafile } from 'esbuild';
 import path from 'path';
 import globby from 'globby';
 import fs from 'fs-extra';
@@ -12,6 +12,8 @@ const DEFAULT_OPTIONS = {
   buildDirectory: './public/build',
   publicPath: '/build/',
 };
+
+type AssetsManifest = Record<string, string>;
 
 export interface CompiledAssetsOptions {
   /**
@@ -108,36 +110,49 @@ export function handler(): RequestHandler {
   };
 }
 
-let cachedScriptsManifest: Record<string, string> | null = null;
-function readScriptsManifest(): Record<string, string> {
+let cachedManifest: AssetsManifest | null = null;
+function readManifest(): AssetsManifest {
   assertConfigured();
 
-  if (!cachedScriptsManifest) {
-    const manifestPath = path.join(options.buildDirectory, 'scripts', 'manifest.json');
-    cachedScriptsManifest = fs.readJSONSync(manifestPath) as Record<string, string>;
+  if (!cachedManifest) {
+    const manifestPath = path.join(options.buildDirectory, 'manifest.json');
+    cachedManifest = fs.readJSONSync(manifestPath) as AssetsManifest;
   }
 
-  return cachedScriptsManifest;
+  return cachedManifest;
+}
+
+function compiledPath(type: 'scripts' | 'styles', sourceFile: string): string {
+  assertConfigured();
+  const sourceFilePath = `${type}/${sourceFile}`;
+
+  if (options.dev) {
+    return options.publicPath + sourceFilePath;
+  }
+
+  const manifest = readManifest();
+  const assetPath = manifest[sourceFilePath];
+  if (!assetPath) {
+    throw new Error(`Unknown ${type} asset: ${sourceFile}`);
+  }
+
+  return options.publicPath + type + '/' + assetPath;
 }
 
 export function compiledScriptPath(sourceFile: string): string {
-  assertConfigured();
+  return compiledPath('scripts', sourceFile);
+}
 
-  if (options.dev) {
-    return options.publicPath + 'scripts/' + sourceFile;
-  }
-
-  const scriptsManifest = readScriptsManifest();
-  const scriptPath = scriptsManifest[sourceFile];
-  if (!scriptPath) {
-    throw new Error(`Unknown script: ${sourceFile}`);
-  }
-
-  return options.publicPath + 'scripts/' + scriptPath;
+export function compiledStylesPath(sourceFile: string): string {
+  return compiledPath('styles', sourceFile);
 }
 
 export function compiledScriptTag(sourceFile: string): HtmlSafeString {
   return html`<script src="${compiledScriptPath(sourceFile)}"></script>`;
+}
+
+export function compiledStylesTag(sourceFile: string): HtmlSafeString {
+  return html`<link rel="stylesheet" href="${compiledStylesPath(sourceFile)}" />`;
 }
 
 async function buildScripts(sourceDirectory: string, buildDirectory: string) {
@@ -158,22 +173,7 @@ async function buildScripts(sourceDirectory: string, buildDirectory: string) {
     metafile: true,
   });
 
-  // Write asset manifest so that we can map from "input" names to built names
-  // at runtime.
-  const { metafile } = buildResult;
-  const manifest: Record<string, string> = {};
-  Object.entries(metafile.outputs).forEach(([outputPath, meta]) => {
-    if (!meta.entryPoint) return;
-
-    const entryPath = path.basename(meta.entryPoint);
-    const assetPath = path.basename(outputPath);
-
-    manifest[entryPath] = assetPath;
-  });
-  const manifestPath = path.join(scriptsBuildRoot, 'manifest.json');
-  await fs.writeJSON(manifestPath, manifest);
-
-  return metafile;
+  return buildResult.metafile;
 }
 
 async function buildStyles(sourceDirectory: string, buildDirectory: string) {
@@ -192,28 +192,25 @@ async function buildStyles(sourceDirectory: string, buildDirectory: string) {
     metafile: true,
   });
 
-  // Write asset manifest so that we can map from "input" names to built names
-  // at runtime.
-  const { metafile } = buildResult;
+  return buildResult.metafile;
+}
+
+function makeManifest(type: 'scripts' | 'styles', metafile: Metafile): Record<string, string> {
   const manifest: Record<string, string> = {};
   Object.entries(metafile.outputs).forEach(([outputPath, meta]) => {
     if (!meta.entryPoint) return;
 
-    const entryPath = path.basename(meta.entryPoint);
-    const assetPath = path.basename(outputPath);
-
+    const entryPath = path.join(type, path.basename(meta.entryPoint));
+    const assetPath = path.join(type, path.basename(outputPath));
     manifest[entryPath] = assetPath;
   });
-  const manifestPath = path.join(stylesBuildRoot, 'manifest.json');
-  await fs.writeJSON(manifestPath, manifest);
-
-  return metafile;
+  return manifest;
 }
 
 export async function build(
   sourceDirectory: string,
   buildDirectory: string
-): Promise<esbuild.Metafile> {
+): Promise<AssetsManifest> {
   // Remove existing assets to ensure that no stale assets are left behind.
   await fs.remove(buildDirectory);
 
@@ -222,11 +219,13 @@ export async function build(
     buildStyles(sourceDirectory, buildDirectory),
   ]);
 
-  const manifest: Record<string, string> = {};
-  console.log(scriptsMetafile, stylesMetafile);
+  const manifest: AssetsManifest = {
+    ...makeManifest('scripts', scriptsMetafile),
+    ...makeManifest('styles', stylesMetafile),
+  };
 
   const manifestPath = path.join(buildDirectory, 'manifest.json');
   await fs.writeJSON(manifestPath, manifest);
 
-  return scriptsMetafile;
+  return manifest;
 }
