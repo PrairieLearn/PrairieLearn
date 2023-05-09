@@ -9,6 +9,7 @@ const helperClient = require('./helperClient');
 const helperServer = require('./helperServer');
 const sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
+const { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } = require('../lib/paths');
 
 const syncFromDisk = require('../sync/syncFromDisk');
 
@@ -65,11 +66,11 @@ describe('Question Sharing', function () {
   describe('Create a sharing set and add a question to it', () => {
     let exampleCourseSharingId;
 
-    step('set up testing server', helperServer.before(path.join(__dirname, '..', 'testCourse')));
+    step('set up testing server', helperServer.before(TEST_COURSE_PATH));
+    after('shut down testing server', helperServer.after);
 
     step('Initial sync of example course, fails because sharing not enabled', (callback) => {
-      const courseDir = path.join(__dirname, '..', 'exampleCourse');
-      syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
+      syncFromDisk.syncOrCreateDiskToSql(EXAMPLE_COURSE_PATH, logger, function (err, result) {
         if (ERR(err, callback)) return;
         assert(result?.hadJsonErrorsOrWarnings);
         callback(null);
@@ -81,13 +82,14 @@ describe('Question Sharing', function () {
     });
 
     step('Resync coures with sharing enabled', (callback) => {
-      const courseDir = path.join(__dirname, '..', 'exampleCourse');
-      syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
+      syncFromDisk.syncOrCreateDiskToSql(EXAMPLE_COURSE_PATH, logger, function (err, result) {
         if (ERR(err, callback)) return;
         // TODO: technically this would have an error because there is no permissions on the
         // shared question, but we are configured to ignore sharing errors locally. Is this the right thing to do?
         if (result?.hadJsonErrorsOrWarnings) {
-          return callback(new Error(`Errors or warnings found during sync of ${courseDir}`));
+          return callback(
+            new Error(`Errors or warnings found during sync of ${EXAMPLE_COURSE_PATH}`)
+          );
         }
         callback(null);
       });
@@ -189,7 +191,7 @@ describe('Question Sharing', function () {
           sharing_set_id: '1',
           course_sharing_id: exampleCourseSharingId,
         }).toString(),
-      }); // TODO: should this endpoint return an error if the sharing set passed in is not valid or doesn't belong to the course?
+      });
 
       let sharingPage = await (await fetch(sharingPageUrl(testCourseId))).text();
       assert(sharingPage.includes('XC 101'));
@@ -226,20 +228,21 @@ describe('Question Sharing', function () {
           __csrf_token: token,
           sharing_set_id: '1',
         }).toString(),
-      }); // TODO: should this endpoint return an error if the sharing set passed in is not valid or doesn't belong to the course?
+      });
 
-      let settingsPage = await (await fetch(questionSettingsUrl)).text();
-      assert(settingsPage.includes('share-set-example'));
+      let settingsPageResponse = await helperClient.fetchCheerio(questionSettingsUrl);
+      assert.equal(settingsPageResponse.text().includes('share-set-example'), true);
     });
 
     step(
       'Re-sync example course so that the shared question gets added in properly',
       (callback) => {
-        const courseDir = path.join(__dirname, '..', 'exampleCourse');
-        syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function (err, result) {
+        syncFromDisk.syncOrCreateDiskToSql(EXAMPLE_COURSE_PATH, logger, function (err, result) {
           if (ERR(err, callback)) return;
           if (result === undefined || result.hadJsonErrorsOrWarnings) {
-            return callback(new Error(`Errors or warnings found during sync of ${courseDir}`));
+            return callback(
+              new Error(`Errors or warnings found during sync of ${EXAMPLE_COURSE_PATH}`)
+            );
           }
           callback(null);
         });
@@ -254,6 +257,6 @@ describe('Question Sharing', function () {
       assert(res.ok);
     });
 
-    step('shut down testing server', helperServer.after);
+    // after('shut down testing server', helperServer.after);
   });
 });
