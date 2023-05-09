@@ -2,7 +2,6 @@
 const ERR = require('async-stacktrace');
 const { assert } = require('chai');
 const { step } = require('mocha-steps');
-const path = require('path');
 const { config } = require('../lib/config');
 const fetch = require('node-fetch').default;
 const helperClient = require('./helperClient');
