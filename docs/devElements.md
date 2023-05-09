@@ -1,8 +1,8 @@
 # Element developer guide
 
-See [`elements/`](https://github.com/PrairieLearn/PrairieLearn/tree/master/elements) for example elements.
+See [`elements/`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/elements) for example elements.
 
-Element code uses the libraries in [the `python/` module](https://github.com/PrairieLearn/PrairieLearn/tree/master/python).
+Element code uses the libraries in [the `python/` module](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/python).
 
 ### Anatomy of an element
 
@@ -138,5 +138,5 @@ The `coreScripts` and `coreStyles` properties are used in legacy elements and qu
 
 You can also find the types of dependencies defined in these schema files:
 
-- [Schema for system-wide elements](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoElementCore.json)
-- [Schema for course-specific elements](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/schemas/infoElementCourse.json)
+- [Schema for system-wide elements](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/schemas/infoElementCore.json)
+- [Schema for course-specific elements](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/schemas/infoElementCourse.json)
