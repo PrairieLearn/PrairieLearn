@@ -2293,6 +2293,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@popperjs/core@npm:^2.9.2":
+  version: 2.11.7
+  resolution: "@popperjs/core@npm:2.11.7"
+  checksum: 5b6553747899683452a1d28898c1b39173a4efd780e74360bfcda8eb42f1c5e819602769c81a10920fc68c881d07fb40429604517d499567eac079cfa6470f19
+  languageName: node
+  linkType: hard
+
 "@prairielearn/aws-imds@workspace:^, @prairielearn/aws-imds@workspace:packages/aws-imds":
   version: 0.0.0-use.local
   resolution: "@prairielearn/aws-imds@workspace:packages/aws-imds"
@@ -2651,12 +2658,14 @@ __metadata:
     "@sentry/tracing": ^7.50.0
     "@types/async": ^3.2.20
     "@types/body-parser": ^1.19.2
+    "@types/bootstrap": ^5.2.6
     "@types/chai": ^4.3.5
     "@types/chai-as-promised": ^7.1.5
     "@types/cheerio": ^0.22.31
     "@types/dockerode": ^3.3.16
     "@types/folder-hash": ^4.0.2
     "@types/fs-extra": ^11.0.1
+    "@types/jquery": ^3.5.16
     "@types/jsdom": ^21.1.1
     "@types/klaw": ^3.0.3
     "@types/lodash": ^4.14.194
@@ -3271,6 +3280,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/bootstrap@npm:^5.2.6":
+  version: 5.2.6
+  resolution: "@types/bootstrap@npm:5.2.6"
+  dependencies:
+    "@popperjs/core": ^2.9.2
+  checksum: e8e161fcaa193bf0bfb70be37f887e7111ac0c3d562a52e0ebc9ed6dfefecfc7bfe662f69409ab22cbf15be9cedc9457a147916899a7d41eca093511da708216
+  languageName: node
+  linkType: hard
+
 "@types/chai-as-promised@npm:^7.1.5":
   version: 7.1.5
   resolution: "@types/chai-as-promised@npm:7.1.5"
@@ -3438,6 +3456,15 @@ __metadata:
   dependencies:
     ci-info: ^3.1.0
   checksum: 7c1f1f16c1fa2134de7400d82766c83fa76057261ba890628af77a09382ebb92d945bb077b98cfcf3d40ab1469c9ffbd2278112867edbe57aa655f53547eb139
+  languageName: node
+  linkType: hard
+
+"@types/jquery@npm:^3.5.16":
+  version: 3.5.16
+  resolution: "@types/jquery@npm:3.5.16"
+  dependencies:
+    "@types/sizzle": "*"
+  checksum: 13c995f15d1c2f1d322103dc1cb0a22b95eecc3e7546f00279b8731aea21d7ec04550af40e609ee48e755d4e11bf61c25b4aa9f53df3bcbec4b8fe8e81471732
   languageName: node
   linkType: hard
 
@@ -3749,6 +3776,13 @@ __metadata:
     "@types/mime": "*"
     "@types/node": "*"
   checksum: b6ac93d471fb0f53ddcac1f9b67572a09cd62806f7db5855244b28f6f421139626f24799392566e97d1ffc61b12f9de7f30380c39fcae3c8a161fe161d44edf2
+  languageName: node
+  linkType: hard
+
+"@types/sizzle@npm:*":
+  version: 2.3.3
+  resolution: "@types/sizzle@npm:2.3.3"
+  checksum: 586a9fb1f6ff3e325e0f2cc1596a460615f0bc8a28f6e276ac9b509401039dd242fa8b34496d3a30c52f5b495873922d09a9e76c50c2ab2bcc70ba3fb9c4e160
   languageName: node
   linkType: hard
 
