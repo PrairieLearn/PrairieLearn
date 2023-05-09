@@ -22,7 +22,7 @@
           <table class="table table-sm table-hover" data-testid="table-defined-access-rules">
             <thead>
               <tr>
-                <th></th>
+                <th><span class="sr-only">Note</span></th>
                 <th>Mode</th>
                 <th>UIDs</th>
                 <th>Start date</th>
@@ -97,7 +97,7 @@
       
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
-          <%= assessment_set.name %> <%= assessment.number %>: Interpreted <%= set_partition_index ? 'exception' : 'general' %> access rules
+          Interpreted <%= set_partition_index ? 'exception' : 'general' %> access rules
         </div>
 
         <% if (!sets.length) { %>
@@ -107,35 +107,34 @@
           <table class="table table-sm table-hover" data-testid="table-interpreted-<%= set_partition_index ? 'exception' : 'general' %>">
             <thead>
               <tr>
-                <th colspan="3"></th>
-                <th>Starting the Assessment</th>
+                <th rowspan="2">Students</th>
+                <th rowspan="2">Mode / Exam</th>
+                <th rowspan="2">When</th>
+                <th rowspan="2">Starting the Assessment</th>
                 <th colspan="3">While Assessment is Open</th>
-                <th>After Assessment is Closed</th>
+                <th rowspan="2">After Assessment is Closed</th>
               </tr>
               <tr>
-                <th><%= set_partition_index ? 'Students' : '' %></th>
-                <th>Mode / Exam</th>
-                <th>When</th>
-                <th></th>
                 <th>Credit</th>
                 <th>Time limit</th>
                 <th>Password</th>
-                <th></th>
               </tr>
             </thead>
             <tbody>
               <% sets.forEach(function(set) { %>
-              <% if (!set.general_rules) { %>
               <tr>
                 <th colspan="8">
+                  <% if (set.general_rules) { %>
+                  All Students
+                  <% } else { %>
                   <% if (authz_data.has_course_instance_permission_view) { %>
                   <%= set.uids.map(uid => set.names[uid] ?? uid).join(', ') %>
                   <% } else { %>
                   <span data-toggle="tooltip" title="This access rule is specific to individual students. You need permission to view student data in order to see which ones.">Hidden</span>
                   <% } %>
+                  <% } %>
                 </th>
               </tr>
-              <% } %>
               <% set.rules.forEach(function(access_rule) { %>
               <tr>
                 <td>
@@ -183,7 +182,7 @@
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
-          <%= assessment_set.name %> <%= assessment.number %>: Other access-related settings
+          Other access-related settings
         </div>
 
         <div class="table-responsive">
