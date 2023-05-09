@@ -22,11 +22,13 @@ docker run -it --rm -p 3000:3000 -w /PrairieLearn -v /path/to/PrairieLearn:/Prai
 # If editing code in `packages/`, you should also repeat either this command or `make build`.
 make deps
 
-# Run the PrairieLearn server.
+# Run the PrairieLearn server in development mode.
+make dev
+
+# Or, run PrairieLearn like it's run in production.
 make start
 
 # To stop the server, press Ctrl-C.
-# To restart PrairieLearn after editing code, press Ctrl-C and run "make build && make start".
 # To exit the container, press Ctrl-C and then Ctrl-D.
 ```
 
@@ -65,7 +67,8 @@ docker run -it --rm -p 3000:3000 -w /PrairieLearn -v /path/to/PrairieLearn:/Prai
 
 # following commands are inside the container:
 make start-support
-mocha tests/testGetHomepage.js
+cd apps/prairielearn
+yarn mocha src/tests/getHomepage.test.js
 ```
 
 ## Working on packages

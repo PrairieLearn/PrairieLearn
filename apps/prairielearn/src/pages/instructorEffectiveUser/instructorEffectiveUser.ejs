@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('../partials/head', {pageTitle: 'Change Effective User'}); %>
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: 'effective'}); %>
+    <main id="content" class="container-fluid">
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Authenticated user
+        </div>
+
+        <div class="card-body">
+          <p><strong>Authenticated UID:</strong> <%= authz_data.authn_user.uid %></p>
+          <p><strong>Authenticated name:</strong> <%= authz_data.authn_user.name %></p>
+          <p><strong>Authenticated course role:</strong> <%= authz_data.authn_course_role %></p>
+          <% if (locals.course_instance) { %>
+          <p><strong>Authenticated course instance role:</strong> <%= authz_data.authn_course_instance_role %></p>
+          <% } %>
+          <p><strong>Authenticated mode:</strong> <%= authz_data.authn_mode %></p>
+          <p><strong>Authenticated date:</strong> <%= true_req_date_for_display %></p>
+
+          <p><form id="resetForm" method="POST">
+            <input type="hidden" name="__action" value="reset">
+            <button type="submit" class="btn btn-info">Reset to these values</button>
+            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+        </form></p>
+
+          <p><strong>Connecting from IP:</strong> <%= ipaddress %></p>
+        </div>
+
+        <div class="card-footer">
+          <small>
+            The <em>authenticated</em> values above are the ones that you logged in with. The <em>effective</em> values below allow you to view PrairieLearn as if you had a different <em>course role</em> or as if you were a specific other person with a different <em>UID</em>. This can be used to test out how PrairieLearn will look from different points of view. The “Reset to these values” button above will reset all effective values below to your authenticated values. Effective values are also reset when you choose a course instance or when you switch to a different course.
+          </small>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Effective user
+        </div>
+
+        <div class="card-body">
+          <p><strong>Effective UID:</strong> <%= user.uid %></p>
+          <p><strong>Effective name:</strong> <%= user.name %></p>
+
+          <div class="alert alert-secondary mb-0">
+            <form id="changeUidForm" class="form-inline" method="POST">
+              <div class="form-group">
+                <label class="mr-2" for="changeEffectiveUid">Change effective UID to:</label>
+                <input list="userList" type="text" class="form-control mr-2"
+                       style="width: 20em;" name="pl_requested_uid"
+                       id="changeEffectiveUid" placeholder="username@domain.org">
+                <datalist id="userList">
+                  <% if (available_uids) { %>
+                  <% available_uids.forEach(function(available_uid) { %>
+                  <option value="<%= available_uid %>"><%= available_uid %></option>
+                  <% }); %>
+                  <% } %>
+                </datalist>
+              </div>
+              <input type="hidden" name="__action" value="changeUid">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+              <button type="submit" class="btn btn-primary">Change UID</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <small>
+            Changing your effective user identity to another person allows you to see PrairieLearn exactly as they would see it. You cannot emulate an effective user with a higher access level than your own.
+          </small>
+        </div>
+      </div>
+
+      <!-- #################################################################################### -->
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Effective course role
+        </div>
+
+        <div class="card-body">
+          <p><strong>Effective course role:</strong> <%= authz_data.course_role %></p>
+
+          <div class="alert alert-secondary mb-0">
+            <form class="form-inline" id="changeCourseRoleForm" method="POST">
+              <div class="form-group">
+                <label class="mr-2" for="changeEffectiveCourseRole">Change effective course role to:</label>
+                <select class="form-control mr-2" id="changeEffectiveCourseRole" name="pl_requested_course_role">
+                  <% available_course_roles.reverse().forEach(function(available_course_role) { %>
+                  <% if (available_course_role == authz_data.course_role) { %>
+                  <option value="<%= available_course_role %>" selected><%= available_course_role %> (current)</option>
+                  <% } else { %>
+                  <option value="<%= available_course_role %>"><%= available_course_role %></option>
+                  <% } %>
+                  <% }); %>
+                </select>
+              </div>
+              <input type="hidden" name="__action" value="changeCourseRole">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+              <button type="submit" class="btn btn-primary">Change course role</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <small>
+            Your <em>course role</em> determines the permissions that you have to view and edit course content in PrairieLearn. It is specific to this course, so you can be an Editor in one course but a Previewer in a different course.
+          </small>
+        </div>
+      </div>
+
+      <!-- #################################################################################### -->
+
+      <% if (locals.course_instance) { %>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Effective course instance role
+        </div>
+
+        <div class="card-body">
+          <p><strong>Effective course instance role:</strong> <%= authz_data.course_instance_role %></p>
+
+          <div class="alert alert-secondary mb-0">
+            <form class="form-inline" id="changeCourseInstanceRoleForm" method="POST">
+              <div class="form-group">
+                <label class="mr-2" for="changeEffectiveCourseInstanceRole">Change effective course instance role to:</label>
+                <select class="form-control mr-2" id="changeEffectiveCourseInstanceRole" name="pl_requested_course_instance_role">
+                  <% available_course_instance_roles.reverse().forEach(function(available_course_instance_role) { %>
+                  <% if (available_course_instance_role == authz_data.course_instance_role) { %>
+                  <option value="<%= available_course_instance_role %>" selected><%= available_course_instance_role %> (current)</option>
+                  <% } else { %>
+                  <option value="<%= available_course_instance_role %>"><%= available_course_instance_role %></option>
+                  <% } %>
+                  <% }); %>
+                </select>
+              </div>
+              <input type="hidden" name="__action" value="changeCourseInstanceRole">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+              <button type="submit" class="btn btn-primary">Change course instance role</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <small>
+            Your <em>course instance role</em> determines the permissions that you have to view and edit student data in PrairieLearn. It is specific to this course instance, so you can be a Student Data Editor in one course instance but a Student Data Viewer in a different course instance.
+          </small>
+        </div>
+      </div>
+      <% } %>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Effective mode
+        </div>
+
+        <div class="card-body">
+          <p><strong>Effective mode:</strong> <%= authz_data.mode %></p>
+
+          <div class="alert alert-secondary mb-0">
+            <form class="form-inline" id="changeModeForm" method="POST">
+              <div class="form-group">
+                <label class="mr-2" for="changeMode">Change effective mode to:</label>
+                <select class="form-control mr-2" id="changeMode" name="pl_requested_mode">
+                  <% if (authz_data.mode == 'Public') { %>
+                  <option value="Public" selected>Public (current)</option>
+                  <% } else { %>
+                  <option value="Public">Public</option>
+                  <% } %>
+
+                  <% if (authz_data.mode == 'Exam') { %>
+                  <option value="Exam" selected>Exam (current)</option>
+                  <% } else { %>
+                  <option value="Exam">Exam</option>
+                  <% } %>
+
+                  <% if (authz_data.mode == 'SEB') { %>
+                  <option value='SEB' selected>SEB (current)</option>
+                  <% } else { %>
+                  <option value='SEB'>SEB</option>
+                  <% } %>
+                </select>
+              </div>
+              <input type="hidden" name="__action" value="changeMode">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+              <button type="submit" class="btn btn-primary">Change mode</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <small>
+            The <em>mode</em> of the server determines which assessments are available. The <em>Public</em> mode is used when PrairieLearn is accessed from the general internet (on campus, at home, etc). The <em>Exam</em> mode is used when the user is physically sitting at a computer in the CBTF (Computer-Based Testing Facility). The options above allow you to test out the different modes to see which assessments will be seen in either Public or Exam mode.
+          </small>
+        </div>
+      </div>
+
+      <!-- #################################################################################### -->
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Effective date
+        </div>
+
+        <div class="card-body">
+          <p><strong>Effective date:</strong> <%= locals.req_date_for_display %></p>
+
+          <div class="alert alert-secondary mb-0">
+            <form class="form-inline" id="changeDateForm" method="POST">
+              <div class="form-group">
+                <label class="mr-2" for="changeDate">Change effective date to:</label>
+                <input type="text" class="form-control mr-2" style="width:30em;" id="changeDate" name="pl_requested_date" value="<%= locals.req_date_for_display %>">
+              </div>
+              <input type="hidden" name="__action" value="changeDate">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+              <button type="submit" class="btn btn-primary">Change date</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <small>
+            The <em>date</em> of the server determines which assessments are available. Changing the effective date to something other than the current date allows you to check if homework and exam assessments will be available to students when you mean them to be. The date has the format <code>YYYY-MM-DDTHH:MM:SS.SSS</code>, with a suffix that gives the offset from UTC (i.e., the time zone) in the format <code>&plusmn;HH:MM</code>.
+          </small>
+        </div>
+      </div>
+
+    </main>
+  </body>
+</html>
