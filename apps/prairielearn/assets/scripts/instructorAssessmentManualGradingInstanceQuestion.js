@@ -1,4 +1,4 @@
-/* global ClipboardJS */
+import ClipboardJS from 'clipboard';
 
 $(() => {
   resetInstructorGradingPanel();
