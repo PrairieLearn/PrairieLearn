@@ -187,6 +187,10 @@ async function buildStyles(sourceDirectory: string, buildDirectory: string) {
     sourcemap: 'linked',
     bundle: true,
     minify: true,
+    loader: {
+      '.woff': 'file',
+      '.woff2': 'file',
+    },
     entryNames: '[name]-[hash]',
     outdir: stylesBuildRoot,
     metafile: true,
