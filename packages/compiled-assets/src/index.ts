@@ -140,13 +140,7 @@ export function compiledScriptTag(sourceFile: string): HtmlSafeString {
   return html`<script src="${compiledScriptPath(sourceFile)}"></script>`;
 }
 
-export async function build(
-  sourceDirectory: string,
-  buildDirectory: string
-): Promise<esbuild.Metafile> {
-  // Remove existing assets to ensure that no stale assets are left behind.
-  await fs.remove(buildDirectory);
-
+async function buildScripts(sourceDirectory: string, buildDirectory: string) {
   const scriptsSourceRoot = path.resolve(sourceDirectory, 'scripts');
   const scriptsBuildRoot = path.resolve(buildDirectory, 'scripts');
   await fs.ensureDir(scriptsBuildRoot);
@@ -180,4 +174,59 @@ export async function build(
   await fs.writeJSON(manifestPath, manifest);
 
   return metafile;
+}
+
+async function buildStyles(sourceDirectory: string, buildDirectory: string) {
+  const stylesSourceRoot = path.resolve(sourceDirectory, 'styles');
+  const stylesBuildRoot = path.resolve(buildDirectory, 'styles');
+  await fs.ensureDir(stylesBuildRoot);
+
+  const files = await globby(path.join(stylesSourceRoot, '*.css'));
+  const buildResult = await esbuild.build({
+    entryPoints: files,
+    sourcemap: 'linked',
+    bundle: true,
+    minify: true,
+    entryNames: '[name]-[hash]',
+    outdir: stylesBuildRoot,
+    metafile: true,
+  });
+
+  // Write asset manifest so that we can map from "input" names to built names
+  // at runtime.
+  const { metafile } = buildResult;
+  const manifest: Record<string, string> = {};
+  Object.entries(metafile.outputs).forEach(([outputPath, meta]) => {
+    if (!meta.entryPoint) return;
+
+    const entryPath = path.basename(meta.entryPoint);
+    const assetPath = path.basename(outputPath);
+
+    manifest[entryPath] = assetPath;
+  });
+  const manifestPath = path.join(stylesBuildRoot, 'manifest.json');
+  await fs.writeJSON(manifestPath, manifest);
+
+  return metafile;
+}
+
+export async function build(
+  sourceDirectory: string,
+  buildDirectory: string
+): Promise<esbuild.Metafile> {
+  // Remove existing assets to ensure that no stale assets are left behind.
+  await fs.remove(buildDirectory);
+
+  const [scriptsMetafile, stylesMetafile] = await Promise.all([
+    buildScripts(sourceDirectory, buildDirectory),
+    buildStyles(sourceDirectory, buildDirectory),
+  ]);
+
+  const manifest: Record<string, string> = {};
+  console.log(scriptsMetafile, stylesMetafile);
+
+  const manifestPath = path.join(buildDirectory, 'manifest.json');
+  await fs.writeJSON(manifestPath, manifest);
+
+  return scriptsMetafile;
 }
