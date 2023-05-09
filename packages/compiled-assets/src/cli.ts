@@ -20,7 +20,9 @@ async function writeCompressedAssets(
   const compressedSizes: CompressedSizes = {};
   await Promise.all(
     Object.values(manifest).map(async (filePath) => {
+      console.log(filePath);
       const destinationFilePath = path.resolve(destination, filePath);
+      console.log('destinationFilePath', destinationFilePath);
       const contents = await fs.readFile(destinationFilePath);
       const gzipCompressed = await gzip(contents);
       const brotliCompressed = await brotli(contents);
@@ -46,9 +48,11 @@ program.command('build <source> <destination>').action(async (source, destinatio
   // Format the output into an object that we can pass to `console.table`.
   const results: Record<string, any> = {};
   Object.entries(manifest).forEach(([entryPoint, assetPath]) => {
+    const sourceFile = path.relative(source, entryPoint);
+    const destinationFile = path.relative(destination, assetPath);
     const sizes = compressedSizes[assetPath];
-    results[path.basename(entryPoint)] = {
-      'Output file': path.basename(assetPath),
+    results[sourceFile] = {
+      'Output file': destinationFile,
       Size: prettyBytes(sizes.raw),
       'Size (gzip)': prettyBytes(sizes.gzip),
       'Size (brotli)': prettyBytes(sizes.brotli),
