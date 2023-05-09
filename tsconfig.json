@@ -4,7 +4,7 @@
     "noEmit": true,
     "esModuleInterop": true,
   },
-  // We don't actually use any TypeScript; we just use it to validate our
+  // We use a mix of TypeScript and validating our
   // standard JavaScript with JSDoc comments.
   // Adding new code? Consider opting in to type checking!
   "include": [
