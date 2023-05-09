@@ -12573,6 +12573,7 @@ __metadata:
     pyright: ^1.1.305
     s3rver: ^3.7.1
     turbo: ^1.9.3
+    typescript: ^5.0.4
   languageName: unknown
   linkType: soft
 
