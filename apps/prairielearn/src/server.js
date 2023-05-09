@@ -30,7 +30,6 @@ const multer = require('multer');
 const { filesize } = require('filesize');
 const url = require('url');
 const { createProxyMiddleware } = require('http-proxy-middleware');
-const compiledAssets = require('@prairielearn/compiled-assets');
 const {
   SCHEMA_MIGRATIONS_PATH,
   initBatchedMigrations,
@@ -53,7 +52,7 @@ const sprocs = require('./sprocs');
 const news_items = require('./news_items');
 const cron = require('./cron');
 const socketServer = require('./lib/socket-server');
-const serverJobs = require('./lib/server-jobs');
+const serverJobs = require('./lib/server-jobs-legacy');
 const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
 const { LocalCache } = require('./lib/local-cache');
@@ -114,7 +113,7 @@ module.exports.initExpress = function () {
   app.use((req, res, next) => {
     res.locals.asset_path = assets.assetPath;
     res.locals.node_modules_asset_path = assets.nodeModulesAssetPath;
-    res.locals.compiled_script_tag = compiledAssets.compiledScriptTag;
+    res.locals.compiled_script_tag = assets.compiledScriptTag;
     next();
   });
   app.use(function (req, res, next) {
@@ -362,36 +361,11 @@ module.exports.initExpress = function () {
   if (config.devMode) app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon-dev.ico')));
   else app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon.ico')));
 
-  // To allow for more aggressive caching of static files served from public/,
-  // we use an `assets/` path that includes a cachebuster in the path.
-  // In requests for resources, the cachebuster will be a hash of the contents
-  // of `/public`, which we will compute at startup. See `lib/assets.js` for
-  // implementation details.
-  app.use(
-    '/assets/:cachebuster',
-    express.static(path.join(APP_ROOT_PATH, 'public'), {
-      // In dev mode, assets are likely to change while the server is running,
-      // so we'll prevent them from being cached.
-      maxAge: config.devMode ? 0 : '31536000s',
-      immutable: true,
-    })
-  );
+  assets.applyMiddleware(app);
+
   // This route is kept around for legacy reasons - new code should prefer the
-  // "cacheable" route above.
+  // assets system with cacheable assets.
   app.use(express.static(path.join(APP_ROOT_PATH, 'public')));
-
-  app.use('/build/', compiledAssets.handler());
-
-  // To allow for more aggressive caching of files served from node_modules/,
-  // we insert a hash of the module version into the resource path. This allows
-  // us to treat those files as immutable and cache them essentially forever.
-  app.use(
-    '/cacheable_node_modules/:cachebuster',
-    staticNodeModules('.', {
-      maxAge: '31536000s',
-      immutable: true,
-    })
-  );
 
   // For backwards compatibility, we redirect requests for the old `node_modules`
   // route to the new `cacheable_node_modules` route.
@@ -400,10 +374,6 @@ module.exports.initExpress = function () {
     const assetPath = req.url.slice(1);
     res.redirect(assets.nodeModulesAssetPath(assetPath));
   });
-
-  // Included for backwards-compatibility; new code should load MathJax from
-  // `/cacheable_node_modules` instead.
-  app.use('/MathJax', staticNodeModules(path.join('mathjax', 'es5')));
 
   // Support legacy use of ace by v2 questions
   app.use(
@@ -705,10 +675,6 @@ module.exports.initExpress = function () {
   // from `node_modules`, we include a cachebuster in the URL. This allows
   // files to be treated as immutable in production and cached aggressively.
   app.use(
-    '/pl/static/cacheableElements/:cachebuster',
-    require('./pages/elementFiles/elementFiles')
-  );
-  app.use(
     '/pl/course_instance/:course_instance_id/cacheableElements/:cachebuster',
     require('./pages/elementFiles/elementFiles')
   );
@@ -737,6 +703,8 @@ module.exports.initExpress = function () {
   // files.
   // TODO: if we can determine that these routes are no longer receiving
   // traffic in the future, we can delete these.
+  //
+  // TODO: the only internal usage of this is in the `pl-drawing` element. Fix that.
   app.use('/pl/static/elements', require('./pages/elementFiles/elementFiles'));
   app.use(
     '/pl/course_instance/:course_instance_id/elements',
@@ -1650,6 +1618,10 @@ module.exports.initExpress = function () {
     require('./pages/administratorWorkspaces/administratorWorkspaces')
   );
   app.use(
+    '/pl/administrator/features',
+    require('./pages/administratorFeatures/administratorFeatures')
+  );
+  app.use(
     '/pl/administrator/queries',
     require('./pages/administratorQueries/administratorQueries')
   );
@@ -2134,14 +2106,6 @@ if (require.main === module && config.startServer) {
         news_items.init(notify_with_new_server, function (err) {
           if (ERR(err, callback)) return;
           callback(null);
-        });
-      },
-      async () => {
-        compiledAssets.init({
-          dev: config.devMode,
-          sourceDirectory: path.resolve(APP_ROOT_PATH, 'assets'),
-          buildDirectory: path.resolve(APP_ROOT_PATH, 'public/build'),
-          publicPath: '/build',
         });
       },
       // We need to initialize these first, as the code callers require these

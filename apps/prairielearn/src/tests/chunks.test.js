@@ -11,7 +11,7 @@ const courseDB = require('../sync/course-db');
 const chunksLib = require('../lib/chunks');
 const { config } = require('../lib/config');
 const { TEST_COURSE_PATH } = require('../lib/paths');
-const logger = require('./dummyLogger');
+const { makeMockLogger } = require('./mockLogger');
 const sql = sqldb.loadSqlEquiv(__filename);
 
 const helperServer = require('./helperServer');
@@ -370,6 +370,7 @@ describe('chunks', () => {
       await fs.move(tempPath, newPath);
 
       // Sync course to DB.
+      const { logger } = makeMockLogger();
       await syncDiskToSqlAsync(courseDir, courseId, logger);
 
       // Regenerate chunks.
@@ -467,6 +468,7 @@ describe('chunks', () => {
       await fs.remove(path.join(courseDir, 'elementExtensions'));
 
       // Sync course to DB.
+      const { logger } = makeMockLogger();
       await syncDiskToSqlAsync(courseDir, courseId, logger);
 
       // Regenerate chunks
