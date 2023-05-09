@@ -10,9 +10,6 @@ function Workspace({ navTitle, showLogs, heartbeatIntervalSec, visibilityTimeout
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
         <link href="${resLocals.asset_path('stylesheets/workspace.css')}" rel="stylesheet" />
-        <script src="${resLocals.node_modules_asset_path(
-            'socket.io-client/dist/socket.io.min.js'
-          )}"></script>
         ${compiledScriptTag('workspaceClient.ts')}
       </head>
 
