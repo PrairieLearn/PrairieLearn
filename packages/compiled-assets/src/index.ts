@@ -18,7 +18,7 @@ type AssetsManifest = Record<string, string>;
 
 export interface CompiledAssetsOptions {
   /**
-   * Whether the app is running in dev mode. If dev modde is enabled, then
+   * Whether the app is running in dev mode. If dev mode is enabled, then
    * assets will be built on the fly as they're requested. Otherwise, assets
    * should have been pre-compiled to the `buildDirectory` directory.
    */
@@ -64,8 +64,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
       },
       outbase: options.sourceDirectory,
       outdir: options.buildDirectory,
-      entryNames: '[dir]/[name]-[hash]',
-      logLevel: 'verbose',
+      entryNames: '[dir]/[name]',
     });
 
     esbuildServer = await ctx.serve();
@@ -101,12 +100,10 @@ export function handler(): RequestHandler {
   }
 
   const { host, port } = esbuildServer;
-  console.log('returning middleware');
 
   // We're running in dev mode, so we need to boot up ESBuild to start building
   // and watching our assets.
   return function (req, res) {
-    console.log('proxying request', req.url);
     const proxyReq = http.request(
       {
         hostname: host,
@@ -116,7 +113,6 @@ export function handler(): RequestHandler {
         headers: req.headers,
       },
       (proxyRes) => {
-        console.log();
         res.writeHead(proxyRes.statusCode ?? 500, proxyRes.headers);
         proxyRes.pipe(res, { end: true });
       }
@@ -142,7 +138,7 @@ function compiledPath(type: 'scripts' | 'styles', sourceFile: string): string {
   const sourceFilePath = `${type}/${sourceFile}`;
 
   if (options.dev) {
-    return options.publicPath + sourceFilePath;
+    return options.publicPath + sourceFilePath.replace(/\.(js|ts)x?$/, '.js');
   }
 
   const manifest = readManifest();
