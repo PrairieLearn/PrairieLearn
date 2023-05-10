@@ -200,7 +200,7 @@
     "sinon": "^15.0.4",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.4",
-    "typescript-cp": "^0.1.7"
+    "typescript-cp": "^0.1.8"
   },
   "nodemonConfig": {
     "ignore": [
