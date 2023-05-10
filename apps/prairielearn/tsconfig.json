@@ -5,7 +5,4 @@
     { "path": "./src/tsconfig.json" },
     { "path": "./assets/scripts/tsconfig.json" }
   ],
-  "ts-node": {
-    "transpileOnly": true
-  }
 }
