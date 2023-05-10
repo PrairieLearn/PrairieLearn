@@ -69,6 +69,8 @@ typecheck: typecheck-js typecheck-python
 # as a side-effect.
 # TODO: Do we want to have a separate typecheck command for all packages/apps?
 # Maybe using TypeScript project references?
+typecheck-tools:
+	@yarn tsc
 typecheck-js:
 	@yarn turbo run build
 typecheck-python:
