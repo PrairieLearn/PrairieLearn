@@ -560,7 +560,6 @@ module.exports = {
    * @param {string} html
    */
   async experimentalProcess(phase, codeCaller, data, context, html) {
-    const start = Date.now();
     const pythonContext = {
       html,
       elements: {
@@ -587,10 +586,8 @@ module.exports = {
       result = res.result;
       output = res.output;
     } catch (err) {
-      console.error('process error', err);
       courseIssues.push(err);
     }
-    console.log(`processed in ${Date.now() - start}ms`);
 
     if ((output?.length ?? 0) > 0) {
       courseIssues.push(
@@ -909,7 +906,6 @@ module.exports = {
       args = [phase, codeCaller, data, context, $];
     }
 
-    const start = Date.now();
     const {
       courseIssues,
       data: resultData,
@@ -917,9 +913,6 @@ module.exports = {
       fileData,
       renderedElementNames,
     } = await processFunction(...args);
-    console.log(
-      `Processing question.html in ${phase} (${data.panel}) took ${Date.now() - start}ms`
-    );
 
     if (phase === 'grade' || phase === 'test') {
       if (context.question.partial_credit) {
@@ -970,7 +963,6 @@ module.exports = {
     }
 
     let result, output;
-    const start = Date.now();
     try {
       ({ result, output } = await module.exports.execPythonServer(
         codeCaller,
