@@ -1289,7 +1289,6 @@ module.exports = {
 
     return {
       ...cachedData,
-      renderer: context.renderer,
       cacheHit,
     };
   },
@@ -1649,7 +1648,7 @@ module.exports = {
           },
         ]);
 
-        return { courseIssues, htmls, renderer: context.renderer };
+        return { courseIssues, htmls };
       });
     });
   },
