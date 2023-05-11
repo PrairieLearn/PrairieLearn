@@ -2461,7 +2461,6 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/mocha": ^10.0.1
     "@types/node": ^18.16.3
-    aws-sdk: ^2.1369.0
     date-fns: ^2.30.0
     mocha: ^10.2.0
     ts-node: ^10.9.1
