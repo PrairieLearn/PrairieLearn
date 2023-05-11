@@ -26,12 +26,7 @@ function authDataExtractLogin(data: AuthorizationData): DockerAuth {
   };
 }
 
-export async function setupDockerAuthAsync(
-  region: string,
-  imageRegistry: string | null | undefined
-): Promise<DockerAuth | null> {
-  if (!imageRegistry) return null;
-
+export async function setupDockerAuthAsync(region: string): Promise<DockerAuth | null> {
   // If we have cached data that's not within an hour of expiring, use it.
   if (dockerAuthData && dockerAuthDataExpiresAt && isFuture(subHours(dockerAuthDataExpiresAt, 1))) {
     logger.info('Using cached ECR authorization token');
