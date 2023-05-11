@@ -78,7 +78,7 @@ async function ensureImage() {
     if (e.statusCode === 404) {
       logger.info('Image not found, pulling from registry');
       const start = Date.now();
-      const dockerAuth = await setupDockerAuthAsync(config.cacheImageRegistry);
+      const dockerAuth = await setupDockerAuthAsync(config.awsRegion, config.cacheImageRegistry);
       const stream = await docker.createImage(dockerAuth, { fromImage: imageName });
       await new Promise((resolve, reject) => {
         docker.modem.followProgress(
