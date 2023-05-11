@@ -384,15 +384,10 @@ class CodeCallerNative {
     this.debug('enter _handleStdio3Data()');
     this._checkState([IN_CALL, EXITING]);
     if (this.state === IN_CALL) {
-      if (this.outputData.length === 0) {
-        console.log(`Got first data chunk after ${Date.now() - this.callStart}ms`);
-      }
       this.outputData.push(data);
       // If `data` contains a newline, then `outputData` must contain a newline as well.
       // We avoid looking in `outputData` because it's a potentially very large string.
       if (data.indexOf('\n') >= 0) {
-        const debugSize = this.outputData.reduce((acc, cur) => acc + cur.length, 0);
-        console.log(`Call finished after ${Date.now() - this.callStart}ms (${debugSize} chars)`);
         this._callIsFinished();
       }
     }

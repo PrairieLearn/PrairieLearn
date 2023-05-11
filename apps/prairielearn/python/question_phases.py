@@ -158,7 +158,6 @@ def process(
             delta = end - start
             nonlocal total_time
             total_time += delta
-            print(f"Processed {element.tag} in {delta * 1000}ms")
 
             if phase == "render":
                 # TODO: validate that return value was a string?
@@ -184,7 +183,5 @@ def process(
     # We may have added an `extensions` property to the `data` object; remove it.
     if "extensions" in data:
         del data["extensions"]
-
-    print(f"Total process time: {total_time * 1000}ms")
 
     return result, processed_elements

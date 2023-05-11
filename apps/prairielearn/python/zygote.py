@@ -197,10 +197,7 @@ def worker_loop():
                 data = args[0]
                 context = args[1]
 
-                start = time.time()
                 result, processed_elements = question_phases.process(fcn, data, context)
-                end = time.time()
-                print(f"processed in {(end - start) * 1000}ms")
                 val = {
                     "html": result if fcn == "render" else None,
                     "file": result if fcn == "file" else None,

@@ -2053,4 +2053,17 @@ module.exports = {
       );
     });
   },
+
+  /**
+   * Expose the renderer in use to the client so that we can easily see
+   * which renderer was used for a given request.
+   *
+   * @param {import('express').Response} res
+   */
+  setRendererHeader(res) {
+    const renderer = res.locals.question_renderer;
+    if (renderer) {
+      res.set('X-PrairieLearn-Question-Renderer', renderer);
+    }
+  },
 };

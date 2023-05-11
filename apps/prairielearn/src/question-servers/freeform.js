@@ -21,6 +21,20 @@ const markdown = require('../lib/markdown');
 const chunks = require('../lib/chunks');
 const assets = require('../lib/assets');
 const { APP_ROOT_PATH } = require('../lib/paths');
+const { features } = require('../lib/features');
+
+/**
+ * @typedef {Object} QuestionProcessingContext
+ * @property {Object} course
+ * @property {Object} question
+ * @property {string} course_dir
+ * @property {string} course_dir_host
+ * @property {string} question_dir
+ * @property {string} question_dir_host
+ * @property {'experimental' | 'default' | 'legacy'} renderer
+ * @property {any} course_elements
+ * @property {any} course_element_extensions
+ */
 
 // Maps core element names to element info
 let coreElementsCache = {};
@@ -578,10 +592,7 @@ module.exports = {
     }
     console.log(`processed in ${Date.now() - start}ms`);
 
-    // Temporarily prevent output from creating a course issue.
-    // TODO: revert this once we remove debug output from the renderer.
-    // eslint-disable-next-line no-constant-condition
-    if ((output?.length ?? 0) > 0 && false) {
+    if ((output?.length ?? 0) > 0) {
       courseIssues.push(
         new CourseIssueError(`output logged on console during ${phase}()`, {
           data: { outputBoth: output },
@@ -848,6 +859,12 @@ module.exports = {
     };
   },
 
+  /**
+   * @param {string} phase
+   * @param {import('../lib/code-caller').CodeCaller} codeCaller
+   * @param {any} data
+   * @param {QuestionProcessingContext} context
+   */
   async processQuestionHtml(phase, codeCaller, data, context) {
     const origData = JSON.parse(JSON.stringify(data));
 
@@ -878,16 +895,13 @@ module.exports = {
       };
     }
 
-    // Switch based on which renderer is enabled for this course
-    const useNewQuestionRenderer = _.get(context, 'course.options.useNewQuestionRenderer', false);
     let processFunction;
-    /** @type {[string, import('../lib/code-caller/index').CodeCaller, any, any, string]} */
+    /** @type {[string, import('../lib/code-caller/index').CodeCaller, any, any, any]} */
     let args;
-    // eslint-disable-next-line no-constant-condition
-    if (true) {
+    if (context.renderer === 'experimental') {
       processFunction = module.exports.experimentalProcess;
       args = [phase, codeCaller, data, context, html];
-    } else if (useNewQuestionRenderer) {
+    } else if (context.renderer === 'default') {
       processFunction = module.exports.traverseQuestionAndExecuteFunctions;
       args = [phase, codeCaller, data, context, html];
     } else {
@@ -975,8 +989,6 @@ module.exports = {
         })
       );
       return { courseIssues, data };
-    } finally {
-      console.log(`Processing server.py in ${phase} (${data.panel}) took ${Date.now() - start}ms`);
     }
 
     if (_.isString(output) && output.length > 0) {
@@ -1030,6 +1042,14 @@ module.exports = {
     return { courseIssues, data, html, fileData };
   },
 
+  /**
+   *
+   * @param {string} phase
+   * @param {import('../lib/code-caller').CodeCaller} codeCaller
+   * @param {any} data
+   * @param {QuestionProcessingContext} context
+   * @returns
+   */
   async processQuestion(phase, codeCaller, data, context) {
     const meter = metrics.getMeter('prairielearn');
     return instrumentedWithMetrics(meter, `freeform.${phase}`, async () => {
@@ -1186,6 +1206,7 @@ module.exports = {
    * @typedef {Object} RenderPanelResult
    * @property {any[]} courseIssues
    * @property {string} html
+   * @property {string} [renderer]
    * @property {string[]} [renderedElementNames]
    * @property {boolean} [cacheHit]
    */
@@ -1197,7 +1218,7 @@ module.exports = {
    * @param {any} submission
    * @param {any} course
    * @param {any} locals
-   * @param {any} context
+   * @param {QuestionProcessingContext} context
    * @returns {Promise<RenderPanelResult>}
    */
   async renderPanel(panel, codeCaller, variant, submission, course, locals, context) {
@@ -1276,6 +1297,7 @@ module.exports = {
 
     return {
       ...cachedData,
+      renderer: context.renderer,
       cacheHit,
     };
   },
@@ -1333,6 +1355,15 @@ module.exports = {
       let allRenderedElementNames = [];
       const courseIssues = [];
       const context = await module.exports.getContext(question, course);
+
+      // Hack: we need to propagate this back up to the original caller so
+      // they can expose the selected renderer to the client via a header, but
+      // parent functions don't actually return things. So we'll just stick it
+      // in the `locals` object that the parent will be able to read from.
+      //
+      // See the `setRendererHeader` function in `lib/question` for where this
+      // is actually used.
+      locals.question_renderer = context.renderer;
 
       return withCodeCaller(context.course_dir_host, async (codeCaller) => {
         await async.series([
@@ -1626,7 +1657,7 @@ module.exports = {
           },
         ]);
 
-        return { courseIssues, htmls };
+        return { courseIssues, htmls, renderer: context.renderer };
       });
     });
   },
@@ -1880,6 +1911,11 @@ module.exports = {
     );
   },
 
+  /**
+   * @param {Object} question
+   * @param {Object} course
+   * @returns {Promise<QuestionProcessingContext>}
+   */
   async getContext(question, course) {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
     /** @type {chunks.Chunk[]} */
@@ -1903,6 +1939,20 @@ module.exports = {
     ];
     await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
 
+    // Select which rendering strategy we'll use. This is computed here so that
+    // in can factor into the cache key.
+    const useNewQuestionRenderer = course?.options?.useNewQuestionRenderer ?? false;
+    const useExperimentalRenderer = await features.enabled('process-questions-in-worker', {
+      institution_id: course.institution_id,
+      course_id: course.id,
+    });
+
+    const renderer = useExperimentalRenderer
+      ? 'experimental'
+      : useNewQuestionRenderer
+      ? 'default'
+      : 'legacy';
+
     // The `*Host` values here refer to the paths relative to PrairieLearn;
     // the other values refer to the paths as they will be seen by the worker
     // that actually executes the question.
@@ -1910,23 +1960,26 @@ module.exports = {
     const courseDirectoryHost = coursePath;
     const questionDirectory = path.join(courseDirectory, 'questions', question.directory);
     const questionDirectoryHost = path.join(coursePath, 'questions', question.directory);
-    const context = {
+
+    // Load elements and any extensions
+    const elements = await module.exports.loadElementsForCourse(course);
+    const extensions = await module.exports.loadExtensionsForCourse({
+      course,
+      course_dir: courseDirectory,
+      course_dir_host: courseDirectoryHost,
+    });
+
+    return {
       question,
       course,
       course_dir: courseDirectory,
       course_dir_host: courseDirectoryHost,
       question_dir: questionDirectory,
       question_dir_host: questionDirectoryHost,
+      course_elements: elements,
+      course_element_extensions: extensions,
+      renderer,
     };
-
-    // Load elements and any extensions
-    const elements = await module.exports.loadElementsForCourse(course);
-    const extensions = await module.exports.loadExtensionsForCourse(context);
-
-    context.course_elements = elements;
-    context.course_element_extensions = extensions;
-
-    return context;
   },
 
   async getCacheKey(course, data, context) {
