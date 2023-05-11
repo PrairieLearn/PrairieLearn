@@ -23,7 +23,7 @@
     "@types/node": "^18.16.3",
     "@types/yargs": "^17.0.24",
     "typescript": "^5.0.4",
-    "typescript-cp": "^0.1.7"
+    "typescript-cp": "^0.1.8"
   },
   "dependencies": {
     "@prairielearn/postgres": "workspace:^",

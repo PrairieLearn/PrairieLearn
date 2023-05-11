@@ -11,7 +11,7 @@ const byline = require('byline');
 const Sentry = require('@prairielearn/sentry');
 const sqldb = require('@prairielearn/postgres');
 const { sanitizeObject } = require('@prairielearn/sanitize');
-const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
+const { DockerName, setupDockerAuthAsync } = require('@prairielearn/docker-utils');
 
 const globalLogger = require('./lib/logger');
 const jobLogger = require('./lib/jobLogger');
@@ -251,16 +251,10 @@ function initDocker(info, callback) {
           callback(null);
         });
       },
-      (callback) => {
+      async () => {
         if (config.cacheImageRegistry) {
           logger.info('Authenticating to docker');
-          setupDockerAuth(config.cacheImageRegistry, (err, auth) => {
-            if (ERR(err, callback)) return;
-            dockerAuth = auth;
-            callback(null);
-          });
-        } else {
-          callback(null);
+          dockerAuth = await setupDockerAuthAsync(config.awsRegion);
         }
       },
       async () => {

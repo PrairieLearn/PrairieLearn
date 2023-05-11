@@ -134,6 +134,7 @@ module.exports = {
     // start() functions above
     async.series(
       [
+        async () => assets.close(),
         async function () {
           debug('after(): finish workers');
           await codeCaller.finish();

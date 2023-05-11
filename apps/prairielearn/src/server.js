@@ -114,6 +114,7 @@ module.exports.initExpress = function () {
     res.locals.asset_path = assets.assetPath;
     res.locals.node_modules_asset_path = assets.nodeModulesAssetPath;
     res.locals.compiled_script_tag = assets.compiledScriptTag;
+    res.locals.compiled_stylesheet_tag = assets.compiledStylesheetTag;
     next();
   });
   app.use(function (req, res, next) {
@@ -367,9 +368,13 @@ module.exports.initExpress = function () {
   // assets system with cacheable assets.
   app.use(express.static(path.join(APP_ROOT_PATH, 'public')));
 
-  // This is included for backwards-compatibility with pages that might still
-  // expect to be able to load files from the `/node_modules` route.
-  app.use('/node_modules', staticNodeModules('.'));
+  // For backwards compatibility, we redirect requests for the old `node_modules`
+  // route to the new `cacheable_node_modules` route.
+  app.use('/node_modules', (req, res) => {
+    // Strip the leading slash.
+    const assetPath = req.url.slice(1);
+    res.redirect(assets.nodeModulesAssetPath(assetPath));
+  });
 
   // Support legacy use of ace by v2 questions
   app.use(

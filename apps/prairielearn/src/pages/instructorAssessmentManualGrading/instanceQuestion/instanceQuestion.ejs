@@ -8,10 +8,10 @@
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
     <% if (question.type != 'Freeform') { %>
-    <script src="/javascripts/lodash.min.js"></script>
-    <script src="/javascripts/require.js"></script>
-    <script src="/localscripts/question.js"></script>
-    <script src="/localscripts/question<%= effectiveQuestionType %>.js"></script>
+    <script src="<%= asset_path('javascripts/lodash.min.js') %>"></script>
+    <script src="<%= asset_path('javascripts/require.js') %>"></script>
+    <script src="<%= asset_path('localscripts/question.js') %>"></script>
+    <script src="<%= asset_path('localscripts/question${effectiveQuestionType}.js') %>"></script>
     <% } %>
     <%- extraHeadersHtml %>
   </head>
@@ -139,6 +139,6 @@
 
     </main>
     <!-- Needs to be located below element scripts -->
-    <script src="/localscripts/questionPageScripts.js"></script>
+    <script src="<%= asset_path('localscripts/questionPageScripts.js') %>"></script>
   </body>
 </html>
