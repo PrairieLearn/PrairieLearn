@@ -6,7 +6,15 @@ import { assert } from 'chai';
 import express from 'express';
 import fetch from 'node-fetch';
 
-import { init, close, compiledScriptPath, handler, CompiledAssetsOptions, build } from './index';
+import {
+  init,
+  close,
+  handler,
+  build,
+  compiledScriptPath,
+  compiledStylesPath,
+  type CompiledAssetsOptions,
+} from './index';
 
 async function testProject(options: CompiledAssetsOptions) {
   await tmp.withDir(
@@ -18,10 +26,17 @@ async function testProject(options: CompiledAssetsOptions) {
       const scriptsRoot = path.join(tmpDir, 'assets', 'scripts');
       await fs.ensureDir(scriptsRoot);
 
+      const stylesRoot = path.join(tmpDir, 'assets', 'styles');
+      await fs.ensureDir(stylesRoot);
+
       const jsScriptPath = path.join(scriptsRoot, 'foo.js');
+      await fs.writeFile(jsScriptPath, 'console.log("foo")');
+
       const tsScriptPath = path.join(scriptsRoot, 'bar.ts');
-      fs.writeFile(jsScriptPath, 'console.log("foo")');
-      fs.writeFile(tsScriptPath, 'interface Foo {};\n\nconsole.log("bar")');
+      await fs.writeFile(tsScriptPath, 'interface Foo {};\n\nconsole.log("bar")');
+
+      const stylesPath = path.join(stylesRoot, 'baz.css');
+      await fs.writeFile(stylesPath, 'body { color: red; }');
 
       if (!options.dev) {
         await build(path.join(tmpDir, 'assets'), path.join(tmpDir, 'public', 'build'));
@@ -40,9 +55,15 @@ async function testProject(options: CompiledAssetsOptions) {
       const server = app.listen(port);
 
       try {
-        const res = await fetch(`http://localhost:${port}${compiledScriptPath('foo.js')}`);
-        assert.isTrue(res.ok);
-        assert.match(await res.text(), /console\.log\("foo"\)/);
+        const jsRes = await fetch(`http://localhost:${port}${compiledScriptPath('foo.js')}`);
+        assert.isTrue(jsRes.ok);
+        assert.match(await jsRes.text(), /console\.log\("foo"\)/);
+
+        const cssRes = await fetch(`http://localhost:${port}${compiledStylesPath('baz.css')}`);
+        assert.isTrue(cssRes.ok);
+        const cssText = await cssRes.text();
+        assert.match(cssText, /body\s*\{/);
+        assert.match(cssText, /color:\s*red/);
       } finally {
         server.close();
       }
