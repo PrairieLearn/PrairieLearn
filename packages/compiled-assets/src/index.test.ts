@@ -26,7 +26,7 @@ async function testProject(options: CompiledAssetsOptions) {
       const scriptsRoot = path.join(tmpDir, 'assets', 'scripts');
       await fs.ensureDir(scriptsRoot);
 
-      const stylesRoot = path.join(tmpDir, 'assets', 'styles');
+      const stylesRoot = path.join(tmpDir, 'assets', 'stylesheets');
       await fs.ensureDir(stylesRoot);
 
       const jsScriptPath = path.join(scriptsRoot, 'foo.js');
