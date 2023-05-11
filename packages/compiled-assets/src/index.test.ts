@@ -6,12 +6,16 @@ import { assert } from 'chai';
 import express from 'express';
 import fetch from 'node-fetch';
 
-import { init, compiledScriptPath, handler, CompiledAssetsOptions, build } from './index';
+import { init, close, compiledScriptPath, handler, CompiledAssetsOptions, build } from './index';
 
 async function testProject(options: CompiledAssetsOptions) {
   await tmp.withDir(
     async (dir) => {
-      const scriptsRoot = path.join(dir.path, 'assets', 'scripts');
+      // macOS does weird things with symlinks in its tmp directories. Resolve
+      // the real path so that our asset-building machinery doesn't get confused.
+      const tmpDir = await fs.realpath(dir.path);
+
+      const scriptsRoot = path.join(tmpDir, 'assets', 'scripts');
       await fs.ensureDir(scriptsRoot);
 
       const jsScriptPath = path.join(scriptsRoot, 'foo.js');
@@ -20,12 +24,12 @@ async function testProject(options: CompiledAssetsOptions) {
       fs.writeFile(tsScriptPath, 'interface Foo {};\n\nconsole.log("bar")');
 
       if (!options.dev) {
-        await build(path.join(dir.path, 'assets'), path.join(dir.path, 'public', 'build'));
+        await build(path.join(tmpDir, 'assets'), path.join(tmpDir, 'public', 'build'));
       }
 
-      init({
-        sourceDirectory: path.join(dir.path, 'assets'),
-        buildDirectory: path.join(dir.path, 'public', 'build'),
+      await init({
+        sourceDirectory: path.join(tmpDir, 'assets'),
+        buildDirectory: path.join(tmpDir, 'public', 'build'),
         publicPath: '/build',
         ...options,
       });
@@ -50,6 +54,8 @@ async function testProject(options: CompiledAssetsOptions) {
 }
 
 describe('compiled-assets', () => {
+  afterEach(async () => close());
+
   it('works in dev mode', async () => {
     await testProject({ dev: true });
   });
