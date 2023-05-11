@@ -10,6 +10,7 @@
     "test": "mocha --no-config --require ts-node/register src/**/*.test.{js,ts}"
   },
   "dependencies": {
+    "@aws-sdk/client-sqs": "^3.329.0",
     "@prairielearn/config": "workspace:^",
     "@prairielearn/docker-utils": "workspace:^",
     "@prairielearn/postgres": "workspace:^",
