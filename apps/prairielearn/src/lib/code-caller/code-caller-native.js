@@ -107,7 +107,6 @@ class CodeCallerNative {
     this.child = null;
     this.callback = null;
     this.timeoutID = null;
-    this.callStart = Date.now();
 
     this.options = options;
 
@@ -158,7 +157,6 @@ class CodeCallerNative {
    */
   async call(type, directory, file, fcn, args) {
     this.debug('enter call()');
-    this.callStart = Date.now();
 
     // Reset this so that we don't include old data if the checks below fail.
     this.lastCallData = null;
