@@ -141,7 +141,7 @@ function readManifest(): AssetsManifest {
   return cachedManifest;
 }
 
-function compiledPath(type: 'scripts' | 'styles', sourceFile: string): string {
+function compiledPath(type: 'scripts' | 'stylesheets', sourceFile: string): string {
   assertConfigured();
   const sourceFilePath = `${type}/${sourceFile}`;
 
@@ -162,16 +162,16 @@ export function compiledScriptPath(sourceFile: string): string {
   return compiledPath('scripts', sourceFile);
 }
 
-export function compiledStylesPath(sourceFile: string): string {
-  return compiledPath('styles', sourceFile);
+export function compiledStylesheetPath(sourceFile: string): string {
+  return compiledPath('stylesheets', sourceFile);
 }
 
 export function compiledScriptTag(sourceFile: string): HtmlSafeString {
   return html`<script src="${compiledScriptPath(sourceFile)}"></script>`;
 }
 
-export function compiledStylesTag(sourceFile: string): HtmlSafeString {
-  return html`<link rel="stylesheet" href="${compiledStylesPath(sourceFile)}" />`;
+export function compiledStylesheetTag(sourceFile: string): HtmlSafeString {
+  return html`<link rel="stylesheet" href="${compiledStylesheetPath(sourceFile)}" />`;
 }
 
 async function buildAssets(sourceDirectory: string, buildDirectory: string) {

@@ -257,6 +257,6 @@ export function compiledScriptTag(sourceFile: string): HtmlSafeString {
   return compiledAssets.compiledScriptTag(sourceFile);
 }
 
-export function compiledStylesTag(sourceFile: string): HtmlSafeString {
-  return compiledAssets.compiledStylesTag(sourceFile);
+export function compiledStylesheetTag(sourceFile: string): HtmlSafeString {
+  return compiledAssets.compiledStylesheetTag(sourceFile);
 }

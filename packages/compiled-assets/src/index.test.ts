@@ -12,7 +12,7 @@ import {
   handler,
   build,
   compiledScriptPath,
-  compiledStylesPath,
+  compiledStylesheetPath,
   type CompiledAssetsOptions,
 } from './index';
 
@@ -59,7 +59,7 @@ async function testProject(options: CompiledAssetsOptions) {
         assert.isTrue(jsRes.ok);
         assert.match(await jsRes.text(), /console\.log\("foo"\)/);
 
-        const cssRes = await fetch(`http://localhost:${port}${compiledStylesPath('baz.css')}`);
+        const cssRes = await fetch(`http://localhost:${port}${compiledStylesheetPath('baz.css')}`);
         assert.isTrue(cssRes.ok);
         const cssText = await cssRes.text();
         assert.match(cssText, /body\s*\{/);
