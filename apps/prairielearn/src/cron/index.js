@@ -133,6 +133,12 @@ module.exports = {
       throw new Error('Cannot set both cronEnabledJobs and cronDisabledJobs');
     }
 
+    module.exports.jobs.forEach((job) => {
+      if (typeof job.module.run !== 'function') {
+        throw new Error(`Cron job ${job.name} does not have a run() function`);
+      }
+    });
+
     module.exports.jobs = module.exports.jobs.filter((job) => {
       if (enabledJobs) {
         return enabledJobs.includes(job.name);
