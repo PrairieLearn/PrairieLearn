@@ -254,7 +254,7 @@ function initDocker(info, callback) {
       (callback) => {
         if (config.cacheImageRegistry) {
           logger.info('Authenticating to docker');
-          setupDockerAuth(config.awsRegion, config.cacheImageRegistry, (err, auth) => {
+          setupDockerAuth(config.awsRegion, (err, auth) => {
             if (ERR(err, callback)) return;
             dockerAuth = auth;
             callback(null);

@@ -303,7 +303,7 @@ module.exports.ecrUpdate = function (locals, callback) {
     return callback(new Error('cacheImageRegistry not defined'));
   }
 
-  setupDockerAuth(config.awsRegion, config.cacheImageRegistry, (err, auth) => {
+  setupDockerAuth(config.awsRegion, (err, auth) => {
     if (ERR(err, callback)) return;
 
     const options = {
