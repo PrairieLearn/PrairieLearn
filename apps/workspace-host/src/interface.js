@@ -560,7 +560,7 @@ async function _pullImage(workspace) {
   await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Checking image');
   const workspace_image = workspace.settings.workspace_image;
   logger.info(`Pulling docker image: ${workspace_image}`);
-  const auth = await setupDockerAuthAsync(config.cacheImageRegistry);
+  const auth = await setupDockerAuthAsync(config.awsRegion, config.cacheImageRegistry);
 
   let percentDisplayed = false;
   let stream;
