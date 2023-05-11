@@ -24,7 +24,11 @@ module.exports.run = (callback) => {
     return callback(null);
   }
 
-  const sqs = new SQSClient(config.awsServiceGlobalOptions);
+  const sqs = new SQSClient({
+    region: config.awsRegion,
+    ...config.awsServiceGlobalOptions,
+  });
+
   let msg;
   async.series(
     [

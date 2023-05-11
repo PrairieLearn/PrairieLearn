@@ -25,7 +25,10 @@ module.exports.init = async function () {
   // If we're not configured to use AWS, don't try to do anything here
   if (!config.externalGradingUseAws) return;
 
-  const sqs = new SQSClient(config.awsServiceGlobalOptions);
+  const sqs = new SQSClient({
+    region: config.awsRegion,
+    ...config.awsServiceGlobalOptions,
+  });
   const queueUrl = await loadQueueUrl(sqs);
 
   // Start work in an IIFE so we can keep going asynchronously

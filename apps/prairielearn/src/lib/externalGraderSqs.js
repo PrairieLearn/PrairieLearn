@@ -92,7 +92,11 @@ function getS3RootKey(jobId) {
 }
 
 async function sendJobToQueue(jobId, question, config) {
-  const sqs = new SQSClient(config.awsServiceGlobalOptions);
+  const sqs = new SQSClient({
+    region: config.awsRegion,
+    ...config.awsServiceGlobalOptions,
+  });
+
   await async.series([
     async () => {
       if (QUEUE_URL) return;
