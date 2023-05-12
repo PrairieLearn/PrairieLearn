@@ -458,6 +458,14 @@ module.exports.updateGroupRoles = async function (requestBody, assessmentId, use
         "Couldn't access the user's group ID with the provided assessment and user IDs"
       );
     }
+
+    const permissions = await module.exports.getAssessmentPermissions(assessmentId, userId);
+    if (!permissions.can_assign_roles_at_start) {
+      throw new Error(
+        'User does not have permission to assign roles at the start of this assessment'
+      );
+    }
+
     const groupConfig = await module.exports.getGroupConfig(assessmentId);
     const groupInfo = await module.exports.getGroupInfo(groupId, groupConfig);
 

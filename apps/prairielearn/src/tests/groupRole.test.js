@@ -409,6 +409,30 @@ describe('Test group based assessments with custom group roles from student side
     await switchUserAndLoadAssessment(locals.studentUsers[1], locals.assessmentUrl, '00000002', 1);
   });
 
+  step('second user cannot update roles as non-assigner', async function () {
+    const roleUpdates = [
+      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+    ];
+
+    const checkedElementIds = {};
+    for (const { roleId, groupUserId } of roleUpdates) {
+      checkedElementIds[`user_role_${groupUserId}-${roleId}`] = 'on';
+    }
+    const form = {
+      __action: 'update_group_roles',
+      __csrf_token: locals.__csrf_token,
+      ...checkedElementIds,
+    };
+    const res = await fetch(locals.assessmentUrl, {
+      method: 'POST',
+      body: new URLSearchParams(form),
+    });
+
+    // Second user cannot update group roles
+    assert.isNotOk(res.ok);
+  });
+
   step('first user can edit role table to make both users manager', async function () {
     // Switch to first user
     await switchUserAndLoadAssessment(locals.studentUsers[0], locals.assessmentUrl, '00000001', 2);
