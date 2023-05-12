@@ -1,5 +1,4 @@
 // @ts-check
-const AWS = require('aws-sdk');
 const { Upload } = require('@aws-sdk/lib-storage');
 const { S3 } = require('@aws-sdk/client-s3');
 const fs = require('fs-extra');
@@ -12,12 +11,9 @@ const { pipeline } = require('node:stream/promises');
 const { logger } = require('@prairielearn/logger');
 const { config } = require('./config');
 
-// https://github.com/aws/aws-sdk-js/issues/4354#issuecomment-1450660391
-require('aws-sdk/lib/maintenance_mode_message').suppress = true;
-
 module.exports.init = function () {
   if (process.env.AWS_ENDPOINT) {
-    config.awsServiceGlobalOptions.endpoint = new AWS.Endpoint(process.env.AWS_ENDPOINT);
+    config.awsServiceGlobalOptions.endpoint = process.env.AWS_ENDPOINT;
   }
 };
 
@@ -238,7 +234,7 @@ module.exports.deleteFromS3 = util.callbackify(module.exports.deleteFromS3Async)
  * @param {string} bucket - S3 bucket name.
  * @param {string} key - The S3 target path.
  * @param {boolean} buffer - Defaults to true to return buffer.
- * @return {Promise<AWS.S3.Body>} Buffer or ReadableStream type from S3 file contents.
+ * @return {Promise<Buffer | import('@aws-sdk/client-s3').GetObjectOutput['Body']>} Buffer or ReadableStream type from S3 file contents.
  */
 module.exports.getFromS3Async = async function (bucket, key, buffer = true) {
   const s3 = new S3(module.exports.getS3ClientConfig());

@@ -75,7 +75,7 @@ async function emit() {
       region: config.awsRegion,
       ...config.awsServiceGlobalOptions,
     });
-    /** @type {import('aws-sdk').CloudWatch.Types.Dimensions} */
+    /** @type {import('@aws-sdk/client-cloudwatch').Dimension[]} */
     const dimensions = [
       { Name: 'Server Group', Value: config.groupName },
       { Name: 'InstanceId', Value: `${config.instanceId}:${config.serverPort}` },
