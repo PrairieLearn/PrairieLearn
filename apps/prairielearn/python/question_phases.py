@@ -4,7 +4,7 @@ import io
 import os
 import pathlib
 import sys
-from typing import Any, Dict, Literal, Optional, Set, Tuple, TypedDict
+from typing import Any, Literal, Optional, Tuple, TypedDict
 
 import lxml.html
 from check_data import Phase, check_data
@@ -26,10 +26,10 @@ class RenderContext(TypedDict):
     html: str
     """A string consisting of `question.html` with Mustache templating applied."""
 
-    elements: Dict[str, ElementInfo]
+    elements: dict[str, ElementInfo]
     """A dict mapping an element name to information about them."""
 
-    element_extensions: Dict[str, Dict[str, Dict]]
+    element_extensions: dict[str, dict[str, dict]]
     """A dict mapping an element name to a dict of extensions for that element."""
 
     course_path: str
@@ -57,14 +57,14 @@ def filelike_to_string(filelike: Any) -> str:
 
 def process(
     phase: Phase, data: dict, context: RenderContext
-) -> Tuple[Optional[str], Set[str]]:
+) -> Tuple[Optional[str], set[str]]:
     html = context["html"]
     elements = context["elements"]
     element_extensions = context["element_extensions"]
     course_path = context["course_path"]
 
     # This will track which elements have been processed.
-    processed_elements: Set[str] = set()
+    processed_elements: set[str] = set()
 
     # If we're in the `render` phase, we'll eventually capture the HTML here.
     # If we're in the `file` phase, we'll capture file data here.
