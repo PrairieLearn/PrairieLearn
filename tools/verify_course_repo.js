@@ -1,4 +1,4 @@
-const courseDB = require('../sync/course-db');
+const courseDB = require('../apps/prairielearn/dist/sync/course-db');
 (async () => {
   const courseData = await courseDB.loadFullCourse('/course');
   const errors = [];
@@ -9,4 +9,4 @@ const courseDB = require('../sync/course-db');
     errors.forEach((line) => console.error(line));
     process.exit(1);
   }
-})();
+})().then(() => {});

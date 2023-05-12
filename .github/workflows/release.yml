@@ -1,24 +1,14 @@
 name: Release
 
-# We want this workflow to run on master, but only after we've finished the
-# main CI workflow. This ensures that, for instance, if integration tests
-# fail on master, we don't accidentally publish broken versions of pacakges.
-#
-# See the `if` condition on the `release` job for the second half of this logic.
 on:
-  workflow_run:
-    workflows:
-      - CI
+  push:
     branches:
-      - master
-    types:
-      - completed
+      - 'master'
 
 jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -27,17 +17,28 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Node.js 16.x
-        uses: actions/setup-node@v3.4.0
+        uses: actions/setup-node@v3.6.0
         with:
           node-version: 16.x
+          cache: 'yarn'
 
       - name: Install Dependencies
-        run: yarn --frozen-lockfile
+        run: yarn --immutable
+
+      # `changesets` will use Prettier to format our changelogs. Because our
+      # config points to a custom plugin, we need to build that plugin first.
+      # We'll build everything for good measure.
+      - name: Build Packages
+        run: make build
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets
         uses: changesets/action@v1
         with:
+          # This invokes the `version` script in `package.json`, which will run
+          # `changeset version` and then `yarn`. We need to run `yarn` in order
+          # to update `yarn.lock`:  https://github.com/changesets/action/issues/170
+          version: yarn version
           # This invokes the `release` script in `package.json`, which will build
           # all the packages and then invoke `changeset publish`.
           publish: yarn release

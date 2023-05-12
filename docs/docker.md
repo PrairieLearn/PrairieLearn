@@ -84,7 +84,8 @@ To run PrairieLearn with `docker-compose`, run `docker-compose up pl`. This will
 - Build the PL docker image, and tag it as `prairielearn/prairielearn:local`
 - Mount `./testCourse` as a volume for a test course
 - Set up the container to run [external grading jobs](externalGrading.md)
-- Mount the current directory as `/PrairieLearn` and enable `nodemon`, so the container live reloads
+- Mount the current directory as `/PrairieLearn`
+- Configure the server to automatically restart when files are modified
 
 The server will be available on port `3000`.
 
@@ -93,12 +94,14 @@ The equivalent `docker run` command to perform all these actions would be:
 ```sh
 docker build -t prairielearn/prairielearn:local .
 docker run -it --rm \
-      -p 3000:3000 \
-      - ./testCourse:/course \
-      -v ${HOME}/pl_ag_jobs:/jobs -e HOST_JOBS_DIR=${HOME}/pl_ag_jobs \
-      -v .:/PrairieLearn -e NODEMON=true \
-      -v /var/run/docker.sock:/var/run/docker.sock
-      prairielearn/prairielearn
+  -p 3000:3000 \
+  -v $PWD/testCourse:/course \
+  -v $HOME/pl_ag_jobs:/jobs \
+  -v $PWD:/PrairieLearn \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -e HOST_JOBS_DIR=$HOME/pl_ag_jobs \
+  -e DEV=true \
+  prairielearn/prairielearn
 ```
 
 ### Useful Commands

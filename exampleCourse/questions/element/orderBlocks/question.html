@@ -5,7 +5,7 @@ This question illustrates different use cases for the
 </p>
 <hr>
 <p>
-<strong>Example 1:</strong> Drag all the prime numbers below to the yellow box. Remember 1 is not a prime number.
+<strong>Example 1:</strong> Drag all the prime numbers below to the answer zone. Remember 1 is not a prime number.
 </p>
 
 <p> This example uses the attribute <code>source-blocks-order="ordered"</code> so that
@@ -29,7 +29,7 @@ This question illustrates different use cases for the
 
 <pl-question-panel>
 <p>
-  <strong>Example 2:</strong> Drag all the prime numbers below to the yellow box <strong> in ascending order</strong>.
+  <strong>Example 2:</strong> Drag all the prime numbers below to the answer zone <strong> in ascending order</strong>.
 </p>
 
 <p> This example uses the attributes <code>min-incorrect="2"</code> and
@@ -103,4 +103,26 @@ to display the input area above the output area.</p>
   <pl-answer correct="true" tag="2" depends="1" > Then $A$ is true. </pl-answer>
   <pl-answer correct="true" tag="3" depends="1" > Then $C$ is true. </pl-answer>
   <pl-answer correct="true" tag="4" depends="2,3" > Since $A$ and $C$, we know $A \land C$</pl-answer>
+</pl-order-blocks>
+
+<hr>
+
+<pl-question-panel>
+  <p>
+    <strong>Example 5:</strong> Drag all fruits to the answer zone.
+  </p>
+
+  <p>
+    This example uses the attribute <code>source-blocks-order="alphabetized"</code>
+    to order the source blocks alphabetically, even though they appear in a random
+    order in <code>question.html</code>.
+  </p>
+</pl-question-panel>
+
+<pl-order-blocks answers-name="alphabetized" source-blocks-order="alphabetized" grading-method="unordered">
+  <pl-answer correct="true">eggplant</pl-answer>
+  <pl-answer correct="true">banana</pl-answer>
+  <pl-answer correct="true">date</pl-answer>
+  <pl-answer correct="false">carrot</pl-answer>
+  <pl-answer correct="true">apple</pl-answer>
 </pl-order-blocks>
