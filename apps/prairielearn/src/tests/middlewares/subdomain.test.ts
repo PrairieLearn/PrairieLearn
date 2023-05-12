@@ -1,17 +1,17 @@
-// @ts-check
-const assert = require('chai').assert;
-const sinon = require('sinon');
+import { assert } from 'chai';
+import express = require('express');
+import sinon = require('sinon');
 
-const config = require('../../lib/config');
-const {
+import { config } from '../../lib/config';
+import {
   allowAccess,
   validateSubdomainRequest,
   assertSubdomainOrRedirect,
-} = require('../../middlewares/subdomain');
+} from '../../middlewares/subdomain';
 
 describe('subdomain middleware', () => {
-  let originalServerCanonicalHost = config.serverCanonicalHost;
-  let originalServeUntrustedContentFromSubdomains = config.serveUntrustedContentFromSubdomains;
+  const originalServerCanonicalHost = config.serverCanonicalHost;
+  const originalServeUntrustedContentFromSubdomains = config.serveUntrustedContentFromSubdomains;
 
   before(() => {
     config.serverCanonicalHost = 'https://us.prairielearn.com';
@@ -95,14 +95,14 @@ describe('subdomain middleware', () => {
 
   /**
    * Constructs a fake Express request object for use in tests.
-   *
-   * @param {string} hostname
-   * @param {string | null | undefined} origin
-   * @param {string} originalUrl
    */
-  function makeFakeRequest(hostname, origin, originalUrl) {
-    return /** @type {import('express').Request} */ ({
-      get(header) {
+  function makeFakeRequest(
+    hostname: string,
+    origin: string | null | undefined,
+    originalUrl: string
+  ) {
+    return {
+      get(header: string) {
         if (header.toLowerCase() === 'origin') {
           return origin;
         }
@@ -110,7 +110,7 @@ describe('subdomain middleware', () => {
       },
       hostname,
       originalUrl,
-    });
+    } as unknown as express.Request;
   }
 
   /**
@@ -120,13 +120,11 @@ describe('subdomain middleware', () => {
     const statusSpy = sinon.stub();
     const sendSpy = sinon.stub();
     const redirectSpy = sinon.stub();
-    const res = /** @type {import('express').Response} */ (
-      /** @type {unknown} */ ({
-        status: statusSpy,
-        send: sendSpy,
-        redirect: redirectSpy,
-      })
-    );
+    const res = {
+      status: statusSpy,
+      send: sendSpy,
+      redirect: redirectSpy,
+    } as unknown as express.Response;
     statusSpy.returns(res);
     return {
       res,

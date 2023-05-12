@@ -1,6 +1,6 @@
-// @ts-check
-const error = require('@prairielearn/error');
-const config = require('../lib/config');
+import express = require('express');
+import error = require('@prairielearn/error');
+import { config } from '../lib/config';
 
 /**
  * Specifies all routes that should always be accessible from any subdomain.
@@ -36,21 +36,16 @@ const SUBDOMAINS = [
  * Returns whether or not the server is configured to serve untrusted content
  * from subdomains. `serverCanonicalHost` and `serveUntrustedContentFromSubdomains`
  * must both be set and truthy for this to return true.
- *
- * @returns {boolean}
  */
 function shouldUseSubdomains() {
   return !!config.serverCanonicalHost && !!config.serveUntrustedContentFromSubdomains;
 }
 
-/**
- *
- * @param {string} requestHostname
- * @param {string} requestOrigin
- * @param {string} originalUrl
- * @returns {boolean}
- */
-function allowAccess(requestHostname, requestOrigin, originalUrl) {
+export function allowAccess(
+  requestHostname: string,
+  requestOrigin: string | null | undefined,
+  originalUrl: string
+): boolean {
   const requestSubdomain = requestHostname.split('.')[0];
 
   const matchedSubdomain = SUBDOMAINS.find((sub) => requestSubdomain.match(sub.pattern));
@@ -84,9 +79,7 @@ function allowAccess(requestHostname, requestOrigin, originalUrl) {
       // is allowed to access the resource for the current request.
       // TODO: actually do that validation.
       return allowedRoutes.some((r) => originalUrl.match(r));
-    }
-
-    if (!isToSubdomain) {
+    } else {
       // The current request might be crossing origins from a subdomain to
       // a non-subdomain, or it might be a request from and to a non-subdomain.
 
@@ -128,12 +121,12 @@ function allowAccess(requestHostname, requestOrigin, originalUrl) {
  * indicates that the request is coming from a subdomain. If it is, we'll
  * validate that it's a request that should be able to be made from that
  * particular subdomain. If it is not, we'll error.
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @param {import('express').NextFunction} next
  */
-function validateSubdomainRequest(req, res, next) {
+export function validateSubdomainRequest(
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) {
   if (!shouldUseSubdomains()) {
     next();
     return;
@@ -149,19 +142,17 @@ function validateSubdomainRequest(req, res, next) {
   }
 }
 
-/**
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @param {import('express').NextFunction} next
- */
-function subdomainRedirect(req, res, next) {
+export function subdomainRedirect(
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) {
   if (!shouldUseSubdomains()) {
     next();
     return;
   }
 
-  const canonicalHost = config.serverCanonicalHost;
+  const canonicalHost = config.serverCanonicalHost as string;
   const canonicalHostUrl = new URL(canonicalHost);
 
   // If the deepest subdomain matches a subdomain where we would actually serve
@@ -190,12 +181,9 @@ function subdomainRedirect(req, res, next) {
   next();
 }
 
-/**
- *
- * @param {(req: import('express').Request, res: import('express').Response) => string} getExpectedSubdomain
- * @returns {import('express').RequestHandler}
- */
-function assertSubdomainOrRedirect(getExpectedSubdomain) {
+export function assertSubdomainOrRedirect(
+  getExpectedSubdomain: (req: express.Request, res: express.Response) => string
+): express.RequestHandler {
   return function (req, res, next) {
     if (!shouldUseSubdomains()) {
       next();
@@ -205,7 +193,7 @@ function assertSubdomainOrRedirect(getExpectedSubdomain) {
     const expectedSubdomain = getExpectedSubdomain(req, res);
 
     // Validate the subdomain.
-    const canonicalHost = config.serverCanonicalHost;
+    const canonicalHost = config.serverCanonicalHost as string;
     const canonicalHostUrl = new URL(canonicalHost);
     const requestHostname = req.hostname;
     const requestSubdomain = requestHostname.split('.')[0];
@@ -222,23 +210,14 @@ function assertSubdomainOrRedirect(getExpectedSubdomain) {
   };
 }
 
-const assertQuestionSubdomainOrRedirect = assertSubdomainOrRedirect(
+export const assertQuestionSubdomainOrRedirect = assertSubdomainOrRedirect(
   (req, res) => `q${res.locals.question.id}`
 );
 
-const assertInstanceQuestionSubdomainOrRedirect = assertSubdomainOrRedirect(
+export const assertInstanceQuestionSubdomainOrRedirect = assertSubdomainOrRedirect(
   (req, res) => `iq${res.locals.instance_question.id}`
 );
 
-const assertWorkspaceSubdomainOrRedirect = assertSubdomainOrRedirect(
+export const assertWorkspaceSubdomainOrRedirect = assertSubdomainOrRedirect(
   (req, res) => `w${res.locals.workspace_id}`
 );
-
-module.exports.allowAccess = allowAccess;
-module.exports.validateSubdomainRequest = validateSubdomainRequest;
-module.exports.subdomainRedirect = subdomainRedirect;
-module.exports.assertSubdomainOrRedirect = assertSubdomainOrRedirect;
-module.exports.assertQuestionSubdomainOrRedirect = assertQuestionSubdomainOrRedirect;
-module.exports.assertInstanceQuestionSubdomainOrRedirect =
-  assertInstanceQuestionSubdomainOrRedirect;
-module.exports.assertWorkspaceSubdomainOrRedirect = assertWorkspaceSubdomainOrRedirect;
