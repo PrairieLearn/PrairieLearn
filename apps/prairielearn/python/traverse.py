@@ -1,6 +1,7 @@
 import timeit
 from collections import deque
 from html import escape as html_escape
+from itertools import chain
 from typing import Callable, Deque, List, Optional, Tuple, Union
 
 import lxml.html
@@ -10,21 +11,23 @@ ElementReplacement = Optional[
 ]
 
 # https://developer.mozilla.org/en-US/docs/Glossary/Void_element
-VOID_ELEMENTS = {
-    "area",
-    "base",
-    "br",
-    "col",
-    "embed",
-    "hr",
-    "img",
-    "input",
-    "link",
-    "meta",
-    "source",
-    "track",
-    "wbr",
-}
+VOID_ELEMENTS = frozenset(
+    {
+        "area",
+        "base",
+        "br",
+        "col",
+        "embed",
+        "hr",
+        "img",
+        "input",
+        "link",
+        "meta",
+        "source",
+        "track",
+        "wbr",
+    }
+)
 
 
 def traverse_and_execute(
@@ -37,9 +40,8 @@ def traverse_and_execute(
     if isinstance(elements[0], str):
         del elements[0]
 
-    for element in elements:
-        for e in element.iter():
-            fn(e)
+    for e in chain.from_iterable(element.iter() for element in elements):
+        fn(e)
 
 
 def format_attrib_value(v: str) -> str:
@@ -107,9 +109,12 @@ def traverse_and_replace(
                 # as well as the `parse5` npm package that we use for parsing in JavaScript.
                 tail = new_elements.tail
                 new_elements.tail = None
-                instruction = lxml.html.tostring(new_elements, encoding="unicode")
-                instruction = instruction.removeprefix("<?").removesuffix("?>")
-                result.append("<!--?" + instruction + "?-->")
+                instruction = (
+                    lxml.html.tostring(new_elements, encoding="unicode")
+                    .removeprefix("<?")
+                    .removesuffix("?>")
+                )
+                result.append(f"<!--?{instruction}?-->")
                 if tail:
                     result.append(tail)
             else:

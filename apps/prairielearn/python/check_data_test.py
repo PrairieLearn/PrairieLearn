@@ -15,15 +15,19 @@ def test_check_data_missing_props() -> None:
 
 
 def test_check_data_invalid_type() -> None:
-    with pytest.raises(ValueError, match="Expected data.score to be a number"):
+    with pytest.raises(ValueError, match=r'Expected data\["score"\] to be a number'):
         check_data({"score": 1}, {"score": "string"}, "render")
 
 
 def test_check_data_invalid_modification() -> None:
-    with pytest.raises(ValueError, match="data.panel has been illegally modified"):
+    with pytest.raises(
+        ValueError, match=r'data\["panel"\] has been illegally modified'
+    ):
         check_data({"panel": "question"}, {"panel": "submission"}, "render")
 
 
 def test_check_data_invalid_modification_nested() -> None:
-    with pytest.raises(ValueError, match="data.params has been illegally modified"):
+    with pytest.raises(
+        ValueError, match=r'data\["params"\] has been illegally modified'
+    ):
         check_data({"params": {"foo": "bar"}}, {"params": {"foo": "baz"}}, "test")

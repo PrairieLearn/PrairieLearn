@@ -4,7 +4,6 @@ import io
 import os
 import pathlib
 import sys
-import time
 from typing import Any, Dict, Literal, Optional, Set, Tuple, TypedDict
 
 import lxml.html
@@ -72,8 +71,6 @@ def process(
     # Otherwise, this will remain `None`.
     result = None
 
-    total_time = 0
-
     def process_element(element: lxml.html.HtmlElement) -> Optional[str]:
         nonlocal result
 
@@ -81,7 +78,6 @@ def process(
             return element
 
         try:
-            start = time.time()
             processed_elements.add(element.tag)
 
             element_info = elements[element.tag]
@@ -153,11 +149,6 @@ def process(
             element.tail = temp_tail
 
             check_data(old_data, data, phase)
-
-            end = time.time()
-            delta = end - start
-            nonlocal total_time
-            total_time += delta
 
             if phase == "render":
                 # TODO: validate that return value was a string?
