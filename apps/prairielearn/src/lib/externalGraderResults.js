@@ -1,16 +1,22 @@
 // @ts-check
-const sqldb = require('@prairielearn/postgres');
-const error = require('@prairielearn/error');
 const AWS = require('aws-sdk');
+const {
+  SQSClient,
+  GetQueueUrlCommand,
+  ReceiveMessageCommand,
+  DeleteMessageCommand,
+} = require('@aws-sdk/client-sqs');
+const error = require('@prairielearn/error');
+const { logger } = require('@prairielearn/logger');
+const sqldb = require('@prairielearn/postgres');
+const Sentry = require('@prairielearn/sentry');
 
 const { config } = require('./config');
 const sql = sqldb.loadSqlEquiv(__filename);
 const externalGradingSocket = require('./externalGradingSocket');
 const assessment = require('./assessment');
 const externalGraderCommon = require('./externalGraderCommon');
-const { logger } = require('@prairielearn/logger');
 const { deferredPromise } = require('./deferred');
-const Sentry = require('@prairielearn/sentry');
 
 const abortController = new AbortController();
 const processingFinished = deferredPromise();
@@ -19,7 +25,10 @@ module.exports.init = async function () {
   // If we're not configured to use AWS, don't try to do anything here
   if (!config.externalGradingUseAws) return;
 
-  const sqs = new AWS.SQS(config.awsServiceGlobalOptions);
+  const sqs = new SQSClient({
+    region: config.awsRegion,
+    ...config.awsServiceGlobalOptions,
+  });
   const queueUrl = await loadQueueUrl(sqs);
 
   // Start work in an IIFE so we can keep going asynchronously
@@ -39,13 +48,13 @@ module.exports.init = async function () {
         }
 
         try {
-          const data = await sqs
-            .receiveMessage({
+          const data = await sqs.send(
+            new ReceiveMessageCommand({
               MaxNumberOfMessages: 10,
               QueueUrl: queueUrl,
               WaitTimeSeconds: 20,
             })
-            .promise();
+          );
           messages = data.Messages;
         } catch (err) {
           logger.error('Error receiving messages from SQS', err);
@@ -66,12 +75,12 @@ module.exports.init = async function () {
 
             await processMessage(parsedMessage);
 
-            await sqs
-              .deleteMessage({
+            await sqs.send(
+              new DeleteMessageCommand({
                 QueueUrl: queueUrl,
                 ReceiptHandle: receiptHandle,
               })
-              .promise();
+            );
           } catch (err) {
             logger.error('Error processing external grader results', err);
             Sentry.captureException(err);
@@ -99,17 +108,16 @@ module.exports.stop = async function () {
 };
 
 /**
- *
- * @param {import('aws-sdk').SQS} sqs
+ * @param {SQSClient} sqs
  * @returns {Promise<string>} The URL of the results queue.
  */
 async function loadQueueUrl(sqs) {
   logger.verbose(
     `External grading results queue ${config.externalGradingResultsQueueName}: getting URL...`
   );
-  const data = await sqs
-    .getQueueUrl({ QueueName: config.externalGradingResultsQueueName })
-    .promise();
+  const data = await sqs.send(
+    new GetQueueUrlCommand({ QueueName: config.externalGradingResultsQueueName })
+  );
   const queueUrl = data.QueueUrl;
   if (!queueUrl) {
     throw new Error(`Could not get URL for queue ${config.externalGradingResultsQueueName}`);

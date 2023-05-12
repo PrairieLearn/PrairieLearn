@@ -1,15 +1,12 @@
-// @ts-check
-const util = require('util');
-const { logger } = require('@prairielearn/logger');
-const { metrics, getCounter, ValueType } = require('@prairielearn/opentelemetry');
-const sqldb = require('@prairielearn/postgres');
-const workspaceUtils = require('@prairielearn/workspace-utils');
+import util = require('util');
+import { logger } from '@prairielearn/logger';
+import { metrics, getCounter, ValueType } from '@prairielearn/opentelemetry';
+import sqldb = require('@prairielearn/postgres');
+import workspaceUtils = require('@prairielearn/workspace-utils');
 
-const { config } = require('../lib/config');
+import { config } from '../lib/config';
 
 const sql = sqldb.loadSqlEquiv(__filename);
-
-module.exports = {};
 
 async function stopLaunchedTimeoutWorkspaces() {
   const meter = metrics.getMeter('prairielearn');
@@ -80,9 +77,8 @@ async function stopInLaunchingTimeoutWorkspaces() {
   }
 }
 
-module.exports.runAsync = async () => {
+export const run = util.callbackify(async () => {
   await stopLaunchedTimeoutWorkspaces();
   await stopHeartbeatTimeoutWorkspaces();
   await stopInLaunchingTimeoutWorkspaces();
-};
-module.exports.run = util.callbackify(module.exports.runAsync);
+});

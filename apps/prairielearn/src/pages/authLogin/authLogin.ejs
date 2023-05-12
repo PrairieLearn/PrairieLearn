@@ -109,20 +109,20 @@
               <% if (config.shibLinkLogo != null) { %>
                 <img src="<%- config.shibLinkLogo %>" class="social-icon"/>
               <% } else { %>
-                <span class="social-icon">
+                <span class="social-icon"></span>
               <% } %>
               <span class="font-weight-bold"><%= config.shibLinkText %></span>
             </a>
           <% } %>
           <% if (config.hasOauth) { %>
             <a class="btn btn-primary w-100 position-relative" href="/pl/oauth2login" role="button">
-              <img src="/images/google_logo.svg" class="social-icon"/>
-              <span class="font-weight-bold">Sign in with Google
+              <img src="<%= asset_path('images/google_logo.svg') %>" class="social-icon"/>
+              <span class="font-weight-bold">Sign in with Google</span>
             </a>
           <% } %>
           <% if (hasAzure) { %>
             <a class="btn btn-dark w-100 position-relative" href="/pl/azure_login" role="button">
-              <img src="/images/ms_logo.svg" class="social-icon"/>
+              <img src="<%= asset_path('images/ms_logo.svg') %>" class="social-icon"/>
               <span class="font-weight-bold">Sign in with Microsoft</span>
             </a>
           <% } %>
