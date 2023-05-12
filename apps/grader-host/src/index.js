@@ -5,13 +5,14 @@ const async = require('async');
 const tmp = require('tmp');
 const Docker = require('dockerode');
 const AWS = require('aws-sdk');
+const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
 const { exec } = require('child_process');
 const path = require('path');
 const byline = require('byline');
 const Sentry = require('@prairielearn/sentry');
 const sqldb = require('@prairielearn/postgres');
 const { sanitizeObject } = require('@prairielearn/sanitize');
-const { DockerName, setupDockerAuth } = require('@prairielearn/docker-utils');
+const { DockerName, setupDockerAuthAsync } = require('@prairielearn/docker-utils');
 
 const globalLogger = require('./lib/logger');
 const jobLogger = require('./lib/jobLogger');
@@ -99,7 +100,7 @@ async.series(
     },
     () => {
       globalLogger.info('Initialization complete; beginning to process jobs');
-      const sqs = new AWS.SQS();
+      const sqs = new SQSClient({ region: config.awsRegion });
       for (let i = 0; i < config.maxConcurrentJobs; i++) {
         async.forever((next) => {
           if (!healthCheck.isHealthy() || processTerminating) return;
@@ -207,13 +208,12 @@ function context(info, callback) {
   });
 }
 
-function reportReceived(info, callback) {
+async function reportReceived(info) {
   const {
     context: { job, receivedTime, logger },
   } = info;
   logger.info('Sending job acknowledgement to PrairieLearn');
 
-  const sqs = new AWS.SQS();
   const messageBody = {
     jobId: job.jobId,
     event: 'job_received',
@@ -221,15 +221,19 @@ function reportReceived(info, callback) {
       receivedTime: receivedTime,
     },
   };
-  const params = {
-    QueueUrl: config.resultsQueueUrl,
-    MessageBody: JSON.stringify(messageBody),
-  };
-  sqs.sendMessage(params, (err) => {
+  const sqs = new SQSClient({ region: config.awsRegion });
+  try {
+    await sqs.send(
+      new SendMessageCommand({
+        QueueUrl: config.resultsQueueUrl,
+        MessageBody: JSON.stringify(messageBody),
+      })
+    );
+  } catch (err) {
     // We don't want to fail the job if this notification fails
-    if (ERR(err, (err) => logger.error('sendMessage error:', err)));
-    callback(null);
-  });
+    logger.error('sendMessage error:', err);
+    Sentry.captureException(err);
+  }
 }
 
 function initDocker(info, callback) {
@@ -251,16 +255,10 @@ function initDocker(info, callback) {
           callback(null);
         });
       },
-      (callback) => {
+      async () => {
         if (config.cacheImageRegistry) {
           logger.info('Authenticating to docker');
-          setupDockerAuth(config.cacheImageRegistry, (err, auth) => {
-            if (ERR(err, callback)) return;
-            dockerAuth = auth;
-            callback(null);
-          });
-        } else {
-          callback(null);
+          dockerAuth = await setupDockerAuthAsync(config.awsRegion);
         }
       },
       async () => {
@@ -631,11 +629,10 @@ function uploadResults(info, callback) {
           callback(null);
         });
       },
-      (callback) => {
+      async () => {
         // Let's send the results back to PrairieLearn now; the archive will
         // be uploaded later
         logger.info('Sending results to PrairieLearn with results');
-        const sqs = new AWS.SQS();
         const messageBody = {
           jobId,
           event: 'grading_result',
@@ -648,14 +645,13 @@ function uploadResults(info, callback) {
           messageBody.data = results;
         }
 
-        const params = {
-          QueueUrl: config.resultsQueueUrl,
-          MessageBody: JSON.stringify(messageBody),
-        };
-        sqs.sendMessage(params, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+        const sqs = new SQSClient({ region: config.awsRegion });
+        await sqs.send(
+          new SendMessageCommand({
+            QueueUrl: config.resultsQueueUrl,
+            MessageBody: JSON.stringify(messageBody),
+          })
+        );
       },
     ],
     (err) => {
