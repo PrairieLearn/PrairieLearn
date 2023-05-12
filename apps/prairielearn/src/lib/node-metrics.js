@@ -71,7 +71,10 @@ async function emit() {
       },
     ];
 
-    const cloudwatch = new CloudWatch(config.awsServiceGlobalOptions);
+    const cloudwatch = new CloudWatch({
+      region: config.awsRegion,
+      ...config.awsServiceGlobalOptions,
+    });
     /** @type {import('aws-sdk').CloudWatch.Types.Dimensions} */
     const dimensions = [
       { Name: 'Server Group', Value: config.groupName },

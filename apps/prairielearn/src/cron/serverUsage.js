@@ -11,7 +11,10 @@ module.run = util.callbackify(async () => {
     config.serverUsageIntervalSec,
   ]);
   const stats = result.rows[0];
-  const cloudwatch = new CloudWatch(config.awsServiceGlobalOptions);
+  const cloudwatch = new CloudWatch({
+    region: config.awsRegion,
+    ...config.awsServiceGlobalOptions,
+  });
   const dimensions = [{ Name: 'Server Group', Value: config.groupName }];
 
   await cloudwatch.putMetricData({

@@ -4,10 +4,10 @@ const _ = require('lodash');
 const express = require('express');
 const { pipeline } = require('node:stream');
 const { S3 } = require('@aws-sdk/client-s3');
-
-const { config } = require('../../lib/config');
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
+
+const aws = require('../../lib/aws');
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -84,7 +84,7 @@ router.get('/:job_id/file/:file', (req, res, next) => {
     };
     res.attachment(file);
 
-    const s3 = new S3(config.awsServiceGlobalOptions);
+    const s3 = new S3(aws.getS3ClientConfig());
     s3.getObject(params).then((object) => {
       pipeline(/** @type {import('stream').Readable} */ (object.Body), res, (err) => {
         ERR(err, next);

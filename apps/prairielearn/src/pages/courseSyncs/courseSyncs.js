@@ -29,7 +29,7 @@ router.get('/', function (req, res, next) {
       res.locals.imageSyncNeeded = false;
 
       if (config.cacheImageRegistry) {
-        const ecr = new ECR();
+        const ecr = new ECR({ region: config.awsRegion });
         async.each(
           res.locals.images,
           (image, callback) => {

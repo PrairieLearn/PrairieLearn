@@ -16,10 +16,6 @@ const { config } = require('./config');
 require('aws-sdk/lib/maintenance_mode_message').suppress = true;
 
 module.exports.init = function () {
-  // It is important that we always do this:
-  // https://docs.aws.amazon.com/sdk-for-javascript/v2/developer-guide/setting-region.html
-  AWS.config.update({ region: config.awsRegion });
-
   if (process.env.AWS_ENDPOINT) {
     config.awsServiceGlobalOptions.endpoint = new AWS.Endpoint(process.env.AWS_ENDPOINT);
   }

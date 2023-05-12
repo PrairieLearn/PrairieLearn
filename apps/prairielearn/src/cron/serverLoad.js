@@ -16,7 +16,10 @@ module.exports.run = util.callbackify(async () => {
     // Nothing to report.
     return;
   }
-  const cloudwatch = new CloudWatch(config.awsServiceGlobalOptions);
+  const cloudwatch = new CloudWatch({
+    region: config.awsRegion,
+    ...config.awsServiceGlobalOptions,
+  });
   await async.each(result.rows, async (row) => {
     const dimensions = [
       { Name: 'Server Group', Value: config.groupName },
