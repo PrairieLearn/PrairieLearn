@@ -1,17 +1,17 @@
-const { makeBatchedMigration } = require('@prairielearn/migrations');
-const { queryOneRowAsync, queryAsync } = require('@prairielearn/postgres');
+import { makeBatchedMigration } from '@prairielearn/migrations';
+import { queryOneRowAsync, queryAsync } from '@prairielearn/postgres';
 
 module.exports = makeBatchedMigration({
   async getParameters() {
     const result = await queryOneRowAsync('SELECT MAX(id) as max from variants;', {});
     return {
-      min: 1,
+      min: 1n,
       max: result.rows[0].max,
       batchSize: 1000,
     };
   },
 
-  async execute(min, max) {
+  async execute(start: bigint, end: bigint): Promise<void> {
     await queryAsync(
       `
       UPDATE variants AS v
@@ -22,9 +22,9 @@ module.exports = makeBatchedMigration({
       WHERE
         v.course_id IS NULL AND
         v.question_id = q.id AND
-        v.id >= $min AND
-        v.id <= $max`,
-      { min, max }
+        v.id >= $start AND
+        v.id <= $end`,
+      { start, end }
     );
   },
 });
