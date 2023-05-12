@@ -1,5 +1,5 @@
 // @ts-check
-const AWS = require('aws-sdk');
+const { ECR } = require('@aws-sdk/client-ecr');
 const _ = require('lodash');
 const ERR = require('async-stacktrace');
 const fs = require('fs-extra');
@@ -158,7 +158,7 @@ function locateImage(image, callback) {
 }
 
 function confirmOrCreateECRRepo(repo, job, callback) {
-  const ecr = new AWS.ECR();
+  const ecr = new ECR({ region: config.awsRegion });
   job.info(`Describing repositories with name: ${repo}`);
   ecr.describeRepositories({ repositoryNames: [repo] }, (err, data) => {
     let repositoryFound = false;

@@ -1,13 +1,15 @@
+// @ts-check
 const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const express = require('express');
-const router = express.Router();
-const AWS = require('aws-sdk');
+const { pipeline } = require('node:stream');
+const { S3 } = require('@aws-sdk/client-s3');
 
 const { config } = require('../../lib/config');
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 
+const router = express.Router();
 const sql = sqldb.loadSqlEquiv(__filename);
 
 // NOTE: We assume that instructorGradingJob is only mounted on the course_instance
@@ -81,13 +83,13 @@ router.get('/:job_id/file/:file', (req, res, next) => {
       Key: `${grading_job.s3_root_key}/${file}`,
     };
     res.attachment(file);
-    new AWS.S3(config.awsServiceGlobalOptions)
-      .getObject(params)
-      .createReadStream()
-      .on('error', (err) => {
-        return ERR(err, next);
-      })
-      .pipe(res);
+
+    const s3 = new S3(config.awsServiceGlobalOptions);
+    s3.getObject(params).then((object) => {
+      pipeline(/** @type {import('stream').Readable} */ (object.Body), res, (err) => {
+        ERR(err, next);
+      });
+    });
   });
 });
 

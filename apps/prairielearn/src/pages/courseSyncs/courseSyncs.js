@@ -1,5 +1,5 @@
 const ERR = require('async-stacktrace');
-const AWS = require('aws-sdk');
+const { ECR } = require('@aws-sdk/client-ecr');
 const _ = require('lodash');
 const async = require('async');
 const { formatISO } = require('date-fns');
@@ -29,7 +29,7 @@ router.get('/', function (req, res, next) {
       res.locals.imageSyncNeeded = false;
 
       if (config.cacheImageRegistry) {
-        const ecr = new AWS.ECR();
+        const ecr = new ECR();
         async.each(
           res.locals.images,
           (image, callback) => {
