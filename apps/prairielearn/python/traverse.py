@@ -1,4 +1,3 @@
-import timeit
 from collections import deque
 from html import escape as html_escape
 from itertools import chain
@@ -152,37 +151,3 @@ def traverse_and_replace(
     # assert not tail_stack
 
     return "".join(result)
-
-
-if __name__ == "__main__":
-    html = """
-    <pl-question-panel>
-    <p> Consider two numbers $a = {{params.a}}$ and $b = {{params.b}}$.</p>
-    <p> What is the sum $c = a + b$?</p>
-    </pl-question-panel>
-
-    <pl-integer-input answers-name="c" label="$c=$"></pl-integer-input>
-
-    <pl-answer-panel>
-      <pl-code-tabs filename="foo.py"></pl-code-tabs>
-    </pl-answer-panel>
-    """
-
-    def replace(e: lxml.html.Element) -> str:
-        if e.tag == "<pl-integer-input>":
-            return "<pl-number-input></pl-number-input>"
-        if e.tag == "pl-number-input":
-            return '<input type="number" />'
-        if e.tag == "pl-code-tabs":
-            return "<div><pl-code></pl-code><pl-code></pl-code></div>"
-        if e.tag == "pl-code":
-            return "<pre><code>foo</code></pre>"
-        return e
-
-    number = 1000
-    total_time = timeit.timeit(
-        lambda: traverse_and_replace(html, replace), number=number
-    )
-    time_per_iter = total_time / number
-
-    print(f"${number} loops, {time_per_iter * 1000}ms per loop")
