@@ -441,7 +441,7 @@ module.exports.initExpress = function () {
   }
 
   // Must come before CSRF middleware; we do our own signature verification here.
-  app.use('/pl/webhooks/terminate', require('./webhooks/terminate'));
+  app.use('/pl/webhooks/terminate', require('./webhooks/terminate').default);
 
   app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
   app.use(require('./middlewares/logRequest'));
@@ -1620,7 +1620,7 @@ module.exports.initExpress = function () {
   );
   app.use(
     '/pl/administrator/features',
-    require('./pages/administratorFeatures/administratorFeatures')
+    require('./pages/administratorFeatures/administratorFeatures').default
   );
   app.use(
     '/pl/administrator/queries',

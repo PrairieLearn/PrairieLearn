@@ -251,6 +251,52 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@aws-sdk/client-sqs@npm:^3.329.0":
+  version: 3.329.0
+  resolution: "@aws-sdk/client-sqs@npm:3.329.0"
+  dependencies:
+    "@aws-crypto/sha256-browser": 3.0.0
+    "@aws-crypto/sha256-js": 3.0.0
+    "@aws-sdk/client-sts": 3.329.0
+    "@aws-sdk/config-resolver": 3.329.0
+    "@aws-sdk/credential-provider-node": 3.329.0
+    "@aws-sdk/fetch-http-handler": 3.329.0
+    "@aws-sdk/hash-node": 3.329.0
+    "@aws-sdk/invalid-dependency": 3.329.0
+    "@aws-sdk/md5-js": 3.329.0
+    "@aws-sdk/middleware-content-length": 3.329.0
+    "@aws-sdk/middleware-endpoint": 3.329.0
+    "@aws-sdk/middleware-host-header": 3.329.0
+    "@aws-sdk/middleware-logger": 3.329.0
+    "@aws-sdk/middleware-recursion-detection": 3.329.0
+    "@aws-sdk/middleware-retry": 3.329.0
+    "@aws-sdk/middleware-sdk-sqs": 3.329.0
+    "@aws-sdk/middleware-serde": 3.329.0
+    "@aws-sdk/middleware-signing": 3.329.0
+    "@aws-sdk/middleware-stack": 3.329.0
+    "@aws-sdk/middleware-user-agent": 3.329.0
+    "@aws-sdk/node-config-provider": 3.329.0
+    "@aws-sdk/node-http-handler": 3.329.0
+    "@aws-sdk/protocol-http": 3.329.0
+    "@aws-sdk/smithy-client": 3.329.0
+    "@aws-sdk/types": 3.329.0
+    "@aws-sdk/url-parser": 3.329.0
+    "@aws-sdk/util-base64": 3.310.0
+    "@aws-sdk/util-body-length-browser": 3.310.0
+    "@aws-sdk/util-body-length-node": 3.310.0
+    "@aws-sdk/util-defaults-mode-browser": 3.329.0
+    "@aws-sdk/util-defaults-mode-node": 3.329.0
+    "@aws-sdk/util-endpoints": 3.329.0
+    "@aws-sdk/util-retry": 3.329.0
+    "@aws-sdk/util-user-agent-browser": 3.329.0
+    "@aws-sdk/util-user-agent-node": 3.329.0
+    "@aws-sdk/util-utf8": 3.310.0
+    fast-xml-parser: 4.1.2
+    tslib: ^2.5.0
+  checksum: 10559224f1d77ed6ddef93fd1b91518e5b24b0c75a71287cc5b3e9000424af1b253a17ad1bc852c48849cecd735b99aed916f04370d0f3755ba3b65bd45a478c
+  languageName: node
+  linkType: hard
+
 "@aws-sdk/client-sso-oidc@npm:3.329.0":
   version: 3.329.0
   resolution: "@aws-sdk/client-sso-oidc@npm:3.329.0"
@@ -527,6 +573,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@aws-sdk/md5-js@npm:3.329.0":
+  version: 3.329.0
+  resolution: "@aws-sdk/md5-js@npm:3.329.0"
+  dependencies:
+    "@aws-sdk/types": 3.329.0
+    "@aws-sdk/util-utf8": 3.310.0
+    tslib: ^2.5.0
+  checksum: 3471b9c5e62a4c37c609a6575ea521028cd2852bbaf1a55e8d077ed0c4d90c4339e6c6a3015553e9549d1e519ade4d68acc98571a1fa9e880d66c907cfd12977
+  languageName: node
+  linkType: hard
+
 "@aws-sdk/middleware-content-length@npm:3.329.0":
   version: 3.329.0
   resolution: "@aws-sdk/middleware-content-length@npm:3.329.0"
@@ -610,6 +667,18 @@ __metadata:
     "@aws-sdk/util-format-url": 3.329.0
     tslib: ^2.5.0
   checksum: 0226995cffb088bc49497801472b3f2e6ad581443d230daf825eeaf4706e2ffebd3e8e35fba247cbe14320cbee6b38f45d684cf7f99c7042c56a94c2dbc38399
+  languageName: node
+  linkType: hard
+
+"@aws-sdk/middleware-sdk-sqs@npm:3.329.0":
+  version: 3.329.0
+  resolution: "@aws-sdk/middleware-sdk-sqs@npm:3.329.0"
+  dependencies:
+    "@aws-sdk/types": 3.329.0
+    "@aws-sdk/util-hex-encoding": 3.310.0
+    "@aws-sdk/util-utf8": 3.310.0
+    tslib: ^2.5.0
+  checksum: 77faadbf799b37ac036cba465174cabbc5557aa59944c20d05b8253e54266aed7846bf6135f7b7f0ab183da555ba255782e257a3d4364a3ffe0efe6ea738f97a
   languageName: node
   linkType: hard
 
@@ -2486,6 +2555,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/grader-host@workspace:apps/grader-host"
   dependencies:
+    "@aws-sdk/client-sqs": ^3.329.0
     "@prairielearn/config": "workspace:^"
     "@prairielearn/docker-utils": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
@@ -2695,6 +2765,7 @@ __metadata:
   resolution: "@prairielearn/prairielearn@workspace:apps/prairielearn"
   dependencies:
     "@aws-sdk/client-auto-scaling": ^3.329.0
+    "@aws-sdk/client-sqs": ^3.329.0
     "@fortawesome/fontawesome-free": ^6.4.0
     "@octokit/rest": ^19.0.7
     "@prairielearn/bind-mount": "workspace:^"

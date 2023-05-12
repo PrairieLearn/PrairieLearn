@@ -1,13 +1,12 @@
-// @ts-check
-const { callbackify } = require('util');
+import { callbackify } from 'util';
+import { logger } from '@prairielearn/logger';
+import sqldb = require('@prairielearn/postgres');
 
-const { config } = require('../lib/config');
-const { logger } = require('@prairielearn/logger');
-const sqldb = require('@prairielearn/postgres');
+import { config } from '../lib/config';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 
-module.exports.run = callbackify(async () => {
+export const run = callbackify(async () => {
   const results = await sqldb.queryAsync(sql.clean_time_series, {
     retention_period_sec: config.timeSeriesRetentionPeriodSec,
   });
