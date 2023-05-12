@@ -196,14 +196,9 @@ module.exports.downloadFromS3Async = async function (s3Bucket, s3Path, localPath
 
   await pipeline(s3Stream, fileStream);
 
-  return new Promise((resolve, reject) => {
-    if (options.owner != null && options.group != null) {
-      fs.chown(localPath, options.owner, options.group, (err) => {
-        if (err) return reject(err);
-        resolve(null);
-      });
-    }
-  });
+  if (options.owner != null && options.group != null) {
+    await fs.chown(localPath, options.owner, options.group);
+  }
 };
 module.exports.downloadFromS3 = util.callbackify(module.exports.downloadFromS3Async);
 
