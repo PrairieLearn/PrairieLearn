@@ -1,6 +1,7 @@
 // @ts-check
 const ERR = require('async-stacktrace');
 const async = require('async');
+const { SQSClient, GetQueueUrlCommand } = require('@aws-sdk/client-sqs');
 const AWS = require('aws-sdk');
 const { z } = require('zod');
 const {
@@ -103,8 +104,7 @@ module.exports.loadConfig = function (callback) {
         ]);
 
         AWS.config.update({ region: loader.config.awsRegion });
-      },
-      (callback) => {
+
         // Initialize CloudWatch logging if it's enabled
         if (module.exports.config.useCloudWatchLogging) {
           const groupName = module.exports.config.globalLogGroup;
@@ -113,13 +113,9 @@ module.exports.loadConfig = function (callback) {
           logger.initCloudWatchLogging(groupName, streamName);
           logger.info(`CloudWatch logging enabled! Logging to ${groupName}/${streamName}`);
         }
-        callback(null);
-      },
-      (callback) => {
-        getQueueUrl('jobs', callback);
-      },
-      (callback) => {
-        getQueueUrl('results', callback);
+
+        await getQueueUrl('jobs');
+        await getQueueUrl('results');
       },
     ],
     (err) => {
@@ -133,29 +129,23 @@ module.exports.loadConfig = function (callback) {
  * Will attempt to load the key [prefix]QueueUrl from config; if that's not
  * present, will use [prefix]QueueName to look up the queue URL with AWS.
  */
-function getQueueUrl(prefix, callback) {
+async function getQueueUrl(prefix) {
   const queueUrlKey = `${prefix}QueueUrl`;
   const queueNameKey = `${prefix}QueueName`;
   if (module.exports.config[queueUrlKey]) {
     logger.info(`Using queue url from config: ${module.exports.config[queueUrlKey]}`);
-    callback(null);
-  } else {
-    logger.info(`Loading url for queue "${module.exports.config[queueNameKey]}"`);
-    const sqs = new AWS.SQS();
-    const params = {
-      QueueName: module.exports.config[queueNameKey],
-    };
-    sqs.getQueueUrl(params, (err, data) => {
-      if (err) {
-        logger.error(`Unable to load url for queue "${module.exports.config[queueNameKey]}"`);
-        logger.error('getQueueUrl error:', err);
-        process.exit(1);
-      }
-      module.exports.config[queueUrlKey] = data.QueueUrl;
-      logger.info(
-        `Loaded url for queue "${module.exports.config[queueNameKey]}": ${module.exports.config[queueUrlKey]}`
-      );
-      callback(null);
-    });
+    return;
+  }
+
+  const queueName = module.exports.config[queueNameKey];
+  logger.info(`Loading url for queue "${queueName}"`);
+  const sqs = new SQSClient({ region: module.exports.config.awsRegion });
+  try {
+    const data = await sqs.send(new GetQueueUrlCommand({ QueueName: queueName }));
+    module.exports.config[queueUrlKey] = data.QueueUrl;
+    logger.info(`Loaded url for queue "${queueName}": ${data.QueueUrl}`);
+  } catch (err) {
+    logger.error(`Unable to load url for queue "${queueName}"`);
+    throw err;
   }
 }
