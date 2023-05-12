@@ -1,5 +1,5 @@
 // @ts-check
-const AWS = require('aws-sdk');
+const { S3 } = require('@aws-sdk/client-s3');
 const {
   SQSClient,
   GetQueueUrlCommand,
@@ -163,15 +163,14 @@ async function processMessage(data) {
       return;
     } else {
       // We should fetch it from S3, and then process it
-      const s3Client = new AWS.S3(config.awsServiceGlobalOptions);
-      const data = await s3Client
-        .getObject({
-          Bucket: s3Bucket,
-          Key: `${s3RootKey}/results.json`,
-          ResponseContentType: 'application/json',
-        })
-        .promise();
-      await processResults(jobId, data.Body);
+      const s3Client = new S3(config.awsServiceGlobalOptions);
+      const data = await s3Client.getObject({
+        Bucket: s3Bucket,
+        Key: `${s3RootKey}/results.json`,
+        ResponseContentType: 'application/json',
+      });
+      if (!data.Body) throw new Error('No body in S3 response');
+      await processResults(jobId, data.Body.transformToString());
       return;
     }
   } else {
