@@ -1,7 +1,7 @@
 import { makeBatchedMigration } from '@prairielearn/migrations';
 import { queryOneRowAsync, queryAsync } from '@prairielearn/postgres';
 
-module.exports = makeBatchedMigration({
+export default makeBatchedMigration({
   async getParameters() {
     const result = await queryOneRowAsync('SELECT MAX(id) as max from variants;', {});
     return {
