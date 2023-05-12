@@ -1,23 +1,32 @@
-// @ts-check
-const async = require('async');
-const AWS = require('aws-sdk');
-const { callbackify } = require('util');
-const fetch = require('node-fetch').default;
-const { logger } = require('@prairielearn/logger');
+import async = require('async');
+import AWS = require('aws-sdk');
+import { callbackify } from 'util';
+import fetch from 'node-fetch';
+import { logger } from '@prairielearn/logger';
 
-const { config } = require('../lib/config');
-const workspaceHelper = require('../lib/workspace');
+import { config } from '../lib/config';
+import workspaceHelper = require('../lib/workspace');
 
-const sqldb = require('@prairielearn/postgres');
+import sqldb = require('@prairielearn/postgres');
 const sql = sqldb.loadSqlEquiv(__filename);
 
-module.exports.run = callbackify(async () => {
+export const run = callbackify(async () => {
   if (!config.runningInEc2) return;
 
   await checkDBConsistency();
   await terminateHosts();
   await checkHealth();
 });
+
+function set_difference<T>(a: Set<T>, b: Set<T>): Set<T> {
+  const diff = new Set<T>();
+  for (const val of a) {
+    if (!b.has(val)) {
+      diff.add(val);
+    }
+  }
+  return diff;
+}
 
 /**
  * Attempts to make the list of hosts in EC2 consistent with what is in
@@ -54,16 +63,6 @@ async function checkDBConsistency() {
       (instance) => instance.instance_id
     )
   );
-
-  const set_difference = (a, b) => {
-    const diff = new Set();
-    for (const val of a) {
-      if (!b.has(val)) {
-        diff.add(val);
-      }
-    }
-    return diff;
-  };
 
   // Kill off any host that is running but not in the db
   const not_in_db = set_difference(running_host_set, db_hosts_nonterminated);
