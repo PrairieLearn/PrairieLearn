@@ -11,8 +11,8 @@ export interface InstitutionAuthnProvider {
 }
 
 interface AuthLoginProps {
-  institutionAuthnProviders?: InstitutionAuthnProvider[] | null;
-  service?: string | null;
+  institutionAuthnProviders: InstitutionAuthnProvider[] | null;
+  service: string | null;
   resLocals: Record<string, any>;
 }
 
