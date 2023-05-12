@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const asyncHandler = require('express-async-handler');
-const AWS = require('aws-sdk');
+const { S3 } = require('@aws-sdk/client-s3');
 
 const { config } = require('../../lib/config');
 const error = require('@prairielearn/error');
@@ -55,20 +55,19 @@ async function loadLogsForWorkspaceVersion(workspaceId, version) {
   });
   const workspace = workspaceRes.rows[0];
 
+  /** @type {string[]} */
   const logParts = [];
 
   // Load the logs from S3. When workspaces are rebooted, we write the logs to
   // an object before shutting down the container. This means that we may have
   // multiple objects for each container. Load all of them. The objects are keyed
   // such that they are sorted by date, so we can just load them in order.
-  const s3Client = new AWS.S3({ maxRetries: 3 });
-  const logItems = await s3Client
-    .listObjectsV2({
-      Bucket: config.workspaceLogsS3Bucket,
-      Prefix: `${workspaceId}/${version}/`,
-      MaxKeys: 1000,
-    })
-    .promise();
+  const s3Client = new S3({ maxAttempts: 3 });
+  const logItems = await s3Client.listObjectsV2({
+    Bucket: config.workspaceLogsS3Bucket,
+    Prefix: `${workspaceId}/${version}/`,
+    MaxKeys: 1000,
+  });
 
   // Load all parts serially to avoid hitting S3 rate limits.
   for (const item of logItems.Contents ?? []) {
@@ -76,17 +75,14 @@ async function loadLogsForWorkspaceVersion(workspaceId, version) {
     // possible undefined.
     if (!item.Key) continue;
 
-    const res = await s3Client
-      .getObject({
-        Bucket: config.workspaceLogsS3Bucket,
-        Key: item.Key,
-      })
-      .promise();
+    const res = await s3Client.getObject({
+      Bucket: config.workspaceLogsS3Bucket,
+      Key: item.Key,
+    });
 
-    // Once again, the AWS SDK types aren't narrow enough. This should never be
-    // falsy in practice.
-    if (res.Body) {
-      res.Body.toString('utf-8');
+    const body = await res.Body?.transformToString();
+    if (body) {
+      logParts.push(body);
     }
   }
 
