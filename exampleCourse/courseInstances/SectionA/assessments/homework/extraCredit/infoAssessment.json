@@ -3,6 +3,7 @@
     "type": "Homework",
     "title": "Homework template including extra credit",
     "set": "Homework",
+    "module": "AnotherModule",
     "number": "2",
     "allowAccess": [
       {
@@ -36,7 +37,8 @@
             "questions": [
                 {"id": "demo/calculation",          "points": 1, "maxPoints": 3},
                 {"id": "demo/randomCheckbox",       "points": 1, "maxPoints": 3},
-                {"id": "demo/randomPlot",           "points": 1, "maxPoints": 3}
+                {"id": "demo/randomPlot",           "points": 1, "maxPoints": 3},
+                {"id": "demo/randomFakeData",       "points": 1, "maxPoints": 3}
             ]
         },
         {

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <% if (typeof news_item_notification_count != 'undefined' && news_item_notification_count > 0) { %>
+        <%- include('../partials/head', {pageNote: news_item_notification_count.toString() + ' Unread'}); %>
+    <% } else { %>
+        <%- include('../partials/head'); %>
+    <% } %>
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: 'news_items'}); %>
+    <main id="content" class="container">
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex">
+          News
+        </div>
+
+        <% if (news_items.length == 0) { %>
+        <div class="card-body">
+          <div class="text-center text-muted">No news items</div>
+        </div>
+        <% } else { %>
+        <div class="table-responsive">
+          <table class="table table-hover table-striped news-items-table">
+            <tbody>
+              <% news_items.forEach(news_item => { %>
+              <tr>
+                <td class="align-middle" style="width: 1%; white-space: nowrap;">
+                  <%= news_item.formatted_date %>
+                </td>
+                <td class="align-middle">
+                  <a href="<%= urlPrefix %>/news_item/<%= news_item.id %>/">
+                    <%= news_item.title %>
+                    <% if (news_item.unread) { %>
+                    <span class="badge badge-primary ml-2">Unread</span>
+                    <% } %>
+                    <% if (news_item.show_student_badge) { %>
+                    <span class="badge badge-secondary ml-2">Visible to students</span>
+                    <% } %>
+                  </a>
+                </td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+        <% } %>
+
+      </div>
+    </main>
+  </body>
+</html>

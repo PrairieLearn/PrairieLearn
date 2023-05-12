@@ -77,7 +77,7 @@ Here's an example of a complete `externalGradingOptions` portion of a question's
 ```json
 "externalGradingOptions": {
     "enabled": true,
-    "image": "prairielearn/centos7-python",
+    "image": "prairielearn/grader-python",
     "serverFilesCourse": ["python_autograder/"],
     "entrypoint": "/grade/serverFilesCourse/python_autograder/run.sh",
     "timeout": 5
@@ -250,11 +250,11 @@ For a working example of this, see `PrairieLearn/elements/pl_file_upload/pl_file
 
 ## Running locally for development
 
-In production, PrairieLearn runs external grading jobs on a distributed system called [https://github.com/PrairieLearn/PrairieGrader](PrairieGrader). This system uses a variety of AWS services to efficiently run many jobs in parallel. When developing questions locally, you won't have access to this infrastructure, but PrairieLearn allows you to still run external grading jobs locally with a few workarounds.
+In production, PrairieLearn runs external grading jobs on a distributed system that uses a variety of AWS services to efficiently run many jobs in parallel. When developing questions locally, you won't have access to this infrastructure, but PrairieLearn allows you to still run external grading jobs locally with a few workarounds.
 
 - Instead of running jobs on an EC2 instance, they will be run locally and directly with Docker on the host machine.
 - Instead of sending jobs to the grading containers with S3, we write them to a directory on the host machine and then mount that directory directly into the grading container as `/grade`.
-- Instead of receiving a webhook to indicate that results are available, PrairieLearn will simply wait for the grading container to die, and then attempt to read `results/results.json` from the folder that was mounted in as `/grade`.
+- Instead of receiving an SQS message to indicate that results are available, PrairieLearn will simply wait for the grading container to die, and then attempt to read `results/results.json` from the folder that was mounted in as `/grade`.
 
 PrairieLearn supports two ways of running on your own machine: natively, and inside a Docker container. We support running external autograders for each way. If the `HOST_JOBS_DIR` environment variable is set (more on that later), PrairieLearn will assume it's running in a container; otherwise, it assumes it's running natively.
 

@@ -1,0 +1,100 @@
+<pl-question-panel>
+<p>
+This
+<a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-order-blocks-element"><code>pl-order-blocks</code></a>
+has become increasingly complex, with many different possible combinations of options. Here we test a bunch of these different configurations.
+</p>
+</pl-question-panel>
+
+<pl-order-blocks answers-name="test1"
+  grading-method="ranking"
+  indentation="true"
+  partial-credit="none"
+  feedback="none">
+  <pl-answer correct="true" ranking="1" indent="0">def my_sum(first, second):</pl-answer>
+  <pl-answer correct="true" ranking="2" indent="1">return first + second</pl-answer>
+</pl-order-blocks>
+
+<pl-order-blocks answers-name="test2"
+  grading-method="ranking"
+  indentation="true"
+  partial-credit="none">
+  <!-- feedback="first-wrong"> --> <!-- FIXME this option works fine in practice, but tests currently don't pass with it enabled -->
+  <pl-answer correct="true" ranking="1" indent="0">def my_sum(first, second):</pl-answer>
+  <pl-answer correct="true" ranking="2" indent="1">return first + second</pl-answer>
+</pl-order-blocks>
+
+<pl-order-blocks answers-name="test3"
+  source-blocks-order="ordered"
+  grading-method="dag"
+  solution-placement="bottom"
+  partial-credit="none"
+  feedback="none">
+  <pl-answer correct="true" tag="1" depends=""  > Assume $A \land B \land C$.</pl-answer>
+  <pl-answer correct="true" tag="2" depends="1" > Then $A$ is true. </pl-answer>
+  <pl-answer correct="true" tag="3" depends="1" > Then $C$ is true. </pl-answer>
+  <pl-answer correct="true" tag="4" depends="2,3" > Since $A$ and $C$, we know $A \land C$</pl-answer>
+</pl-order-blocks>
+
+<pl-order-blocks answers-name="test4"
+  source-blocks-order="random"
+  grading-method="dag"
+  partial-credit="none"
+  feedback="first-wrong">
+  <pl-answer correct="true" tag="1" depends=""  > Assume $A \land B \land C$.</pl-answer>
+  <pl-answer correct="true" tag="2" depends="1" > Then $A$ is true. </pl-answer>
+  <pl-answer correct="true" tag="3" depends="1" > Then $C$ is true. </pl-answer>
+  <pl-answer correct="true" tag="4" depends="2,3" > Since $A$ and $C$, we know $A \land C$</pl-answer>
+</pl-order-blocks>
+
+
+<pl-order-blocks answers-name="test-solving-1" grading-method="ranking" indentation="true">
+  <pl-answer correct="true" ranking="4" indent="1">return sum</pl-answer>
+  <pl-answer correct="true" ranking="3" indent="1">sum += second</pl-answer>
+  <pl-answer correct="true" ranking="2" indent="1">sum = 0</pl-answer>
+  <pl-answer correct="true" ranking="3" indent="1">sum += first</pl-answer>
+  <pl-answer correct="true" ranking="1" indent="0">def my_sum(first, second):</pl-answer>
+  <pl-answer correct="false">sum + first</pl-answer>
+  <pl-answer correct="false">sum + second</pl-answer>
+</pl-order-blocks>
+
+
+<pl-order-blocks answers-name="test-solving-2" source-blocks-order="random" grading-method="dag">
+  <pl-answer correct="true" tag="1"> 1</pl-answer>
+  <pl-block-group tag="g3" depends="1, g2">
+    <pl-answer correct="true" tag="10">10</pl-answer>
+  </pl-block-group>
+  <pl-block-group tag="g1" depends="1">
+    <pl-answer correct="true" tag="5" depends="3,4"> 5</pl-answer>
+    <pl-answer correct="true" tag="4">4 </pl-answer>
+    <pl-answer correct="true" tag="3" depends="2"> 3</pl-answer>
+    <pl-answer correct="true" tag="2"> 2</pl-answer>
+  </pl-block-group>
+  <pl-block-group tag="g2" depends="1">
+    <pl-answer correct="true" tag="6"> 6</pl-answer>
+    <pl-answer correct="true" tag="7" depends="8"> 7</pl-answer>
+    <pl-answer correct="true" tag="8"> 8</pl-answer>
+    <pl-answer correct="true" tag="9" depends="7"> 9</pl-answer>
+  </pl-block-group>
+  <pl-answer correct="true" tag="11" depends="g1,g2,g3">11</pl-answer>
+</pl-order-blocks>
+
+
+<pl-order-blocks answers-name="test-duplicate-tags"
+  grading-method="dag"
+  partial-credit="none"
+  feedback="none">
+  <pl-answer correct="true"  tag="1" >A</pl-answer>
+  <pl-answer correct="true"  tag="2" depends="1">AA</pl-answer>
+  <pl-answer correct="false" tag="1" >B</pl-answer>
+  <pl-answer correct="false" tag="" >C</pl-answer>
+  <pl-answer correct="false" tag="" >D</pl-answer>
+</pl-order-blocks>
+
+<pl-order-blocks
+  answers-name="test-not-grading-indent"
+  indentation="true"
+  grading-method="ranking">
+  <pl-answer ranking="1" indent="-1" correct="true">first</pl-answer>
+  <pl-answer ranking="2" indent="-1" correct="true">second</pl-answer>
+</pl-order-blocks>

@@ -1,17 +1,29 @@
-export PATH := node_modules/.bin/:$(PATH)
-
 build:
-	@turbo run build
+	@yarn turbo run build
+build-sequential:
+	@yarn turbo run --concurrency 1 build
+python-deps:
+	@python3 -m pip install -r images/plbase/python-requirements.txt --root-user-action=ignore
+deps:
+	@yarn
+	@make python-deps build
 
-dev:
-	@turbo run dev
+migrate:
+	@yarn migrate
+migrate-dev:
+	@yarn migrate-dev
+
+dev: start-support
+	@yarn dev
+dev-workspace-host: start-support kill-running-workspaces
+	@yarn dev-workspace-host
 
 start: start-support
-	@node server.js
-start-nodemon: start-support
-	@nodemon -L server.js
+	@yarn start
 start-workspace-host: start-support kill-running-workspaces
-	@node workspace_host/interface.js
+	@yarn start-workspace-host
+start-executor:
+	@node apps/prairielearn/dist/executor.js
 
 kill-running-workspaces:
 	@docker/kill_running_workspaces.sh
@@ -25,54 +37,48 @@ start-s3rver:
 	@docker/start_s3rver.sh
 
 test: test-js test-python
-test-js: test-prairielearn test-prairielib test-grader-host test-packages
-test-prairielearn: start-support
-	@mocha --parallel "tests/**/*.test.{js,mjs}"
-test-prairielearn-serial: start-support
-	@mocha "tests/**/*.test.{js,mjs}"
-test-prairielib:
-	@jest prairielib/
-test-grader-host:
-	@jest grader_host/
-test-packages:
-	@turbo run test
+test-js: start-support
+	@yarn turbo run test
 test-python:
 # `pl_unit_test.py` has an unfortunate file name - it matches the pattern that
 # pytest uses to discover tests, but it isn't actually a test file itself. We
 # explicitly exclude it here.
 	@python3 -m pytest --ignore graders/python/python_autograder/pl_unit_test.py
-	
+test-prairielearn: start-support
+	@yarn workspace @prairielearn/prairielearn run test
+
 lint: lint-js lint-python lint-html lint-links
 lint-js:
-	@eslint --ext js "**/*.js"
-	@prettier --check "**/*.{js,ts,md}"
+	@yarn eslint --ext js --report-unused-disable-directives "**/*.{js,ts}"
+	@yarn prettier --check "**/*.{js,ts,md,sql}"
 lint-python:
 	@python3 -m flake8 ./
 lint-html:
-	@htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html"
+	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html"
 lint-links:
 	@node tools/validate-links.mjs
 
-format: format-js
+format: format-js format-python
 format-js:
-	@eslint --ext js --fix "**/*.js"
-	@prettier --write "**/*.{js,ts,md}"
+	@yarn eslint --ext js --fix "**/*.{js,ts}"
+	@yarn prettier --write "**/*.{js,ts,md,sql}"
+format-python:
+	@python3 -m isort ./
+	@python3 -m black ./
 
 typecheck: typecheck-js typecheck-python
+# This is just an alias to our build script, which will perform typechecking
+# as a side-effect.
+# TODO: Do we want to have a separate typecheck command for all packages/apps?
+# Maybe using TypeScript project references?
+typecheck-tools:
+	@yarn tsc
 typecheck-js:
-	@tsc
+	@yarn turbo run build
 typecheck-python:
-	@pyright
-
-depcheck:
-	-depcheck --ignore-patterns=public/**
-	@echo WARNING:
-	@echo WARNING: Before removing an unused package, also check that it is not used
-	@echo WARNING: by client-side code. Do this by running '"git grep <packagename>"'
-	@echo WARNING:
-	@echo WARNING: Note that many devDependencies will show up as unused. This is not
-	@echo WARNING: a problem.
-	@echo WARNING:
+	@yarn pyright --skipunannotated
 
 changeset:
-	@changeset
+	@yarn changeset
+
+ci: lint typecheck test

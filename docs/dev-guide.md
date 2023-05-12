@@ -31,8 +31,7 @@ PrairieLearn
 +-- lib                # miscellaneous helper code
 +-- middlewares        # Express.js middleware, one per file
 +-- migrations         # DB migrations
-|   +-- index.js       # entry point for migrations
-|   `-- ...            # one PGSQL file per migration, executed in order by index.js
+|   +-- ...            # one PGSQL file per migration, executed in order of their timestamp
 +-- package.json       # JavaScript package manifest
 +-- pages              # one sub-dir per web page
 |   +-- partials       # EJS helper sub-templates
@@ -90,7 +89,7 @@ debug('func()', 'param:', param);
 
 - As of 2017-08-08 we don't have very good coverage with debug output in code, but we are trying to add more as needed, especially in code in `lib/`.
 
-- `UnhandledPromiseRejectionWarning` errors are frequently due to improper async/await handling. Make sure you are calling async functions with `await`, and that async functions are not being called from callback-style code without a `callbackify()`. To get more information, NodeJS v14 can be run with the `--trace-warnings` flag. For example, `node_modules/.bin/mocha --trace-warnings tests/index.js`.
+- `UnhandledPromiseRejectionWarning` errors are frequently due to improper async/await handling. Make sure you are calling async functions with `await`, and that async functions are not being called from callback-style code without a `callbackify()`. To get more information, Node >= 14 can be run with the `--trace-warnings` flag. For example, `node_modules/.bin/mocha --trace-warnings tests/index.js`.
 
 ## Debugging client-side JavaScript
 
@@ -109,13 +108,16 @@ psql postgres
 - To follow execution flow in PL/pgSQL use `RAISE NOTICE`. This will log to the console when run from `psql` and to the server log file when run from within PrairieLearn. The syntax is:
 
 ```sql
-RAISE NOTICE 'This is logging: % and %', var1, var2;
+RAISE NOTICE 'This is logging: % and %',
+var1,
+var2;
 ```
 
 - To manually run a function:
 
 ```sql
-SELECT the_sql_function(arg1, arg2);
+SELECT
+  the_sql_function (arg1, arg2);
 ```
 
 ## HTML page generation
@@ -150,9 +152,8 @@ var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var express = require('express');
 var router = express.Router();
-var sqldb = require('../prairielib/sql-db'); // adjust path as needed
-var sqlLoader = require('../prairielib/sql-loader'); // adjust path as needed
-var sql = sqlLoader.loadSqlEquiv(__filename);
+var sqldb = require('@prairielearn/postgres');
+var sql = sqldb.loadSqlEquiv(__filename);
 
 router.get('/', function (req, res, next) {
   var params = { course_instance_id: res.params.courseInstanceId };
@@ -209,17 +210,27 @@ module.exports = router;
 
 ```sql
 -- BLOCK select_question
-SELECT * FROM questions WHERE id = $question_id;
+SELECT
+  *
+FROM
+  questions
+WHERE
+  id = $question_id;
 
 -- BLOCK insert_submission
-INSERT INTO submissions (submitted_answer) VALUES ($submitted_answer) RETURNING *;
+INSERT INTO
+  submissions (submitted_answer)
+VALUES
+  ($submitted_answer)
+RETURNING
+  *;
 ```
 
 From JavaScript you can then do:
 
 ```javascript
-var sqlLoader = require('../prairielib/sql-loader'); // adjust path as needed
-var sql = sqlLoader.loadSqlEquiv(__filename); // from filename.js will load filename.sql
+var sqldb = require('@prairielearn/postgres');
+var sql = sqldb.loadSqlEquiv(__filename); // from filename.js will load filename.sql
 
 // run the entire contents of the SQL file
 sqldb.query(sql.all, params, ...);
@@ -232,35 +243,36 @@ sqldb.query(sql.select_question, params, ...);
 
 ```sql
 SELECT
-    ft.col1,
-    ft.col2 AS renamed_col,
-    st.col1
+  ft.col1,
+  ft.col2 AS renamed_col,
+  st.col1
 FROM
-    first_table AS ft
-    JOIN second_table AS st ON (st.first_table_id = ft.id)
+  first_table AS ft
+  JOIN second_table AS st ON (st.first_table_id = ft.id)
 WHERE
-    ft.col3 = select3
-    AND st.col2 = select2
+  ft.col3 = select3
+  AND st.col2 = select2
 ORDER BY
-    ft.col1;
+  ft.col1;
 ```
 
 - To keep SQL code organized it is a good idea to use [CTEs (`WITH` queries)](https://www.postgresql.org/docs/current/static/queries-with.html). These are formatted like:
 
 ```sql
-WITH first_preliminary_table AS (
+WITH
+  first_preliminary_table AS (
     SELECT
-        -- first preliminary query
-),
-second_preliminary_table AS (
+      -- first preliminary query
+  ),
+  second_preliminary_table AS (
     SELECT
-        -- second preliminary query
-)
+      -- second preliminary query
+  )
 SELECT
-    -- main query here
+  -- main query here
 FROM
-    first_preliminary_table AS fpt,
-    second_preliminary_table AS spt;
+  first_preliminary_table AS fpt,
+  second_preliminary_table AS spt;
 ```
 
 ## DB stored procedures (sprocs)
@@ -332,47 +344,20 @@ set search_path to "server_2021-07-07T20:25:04.779Z_T75V6Y",public;
 ```sql
 -- select all active assessment_instances for a given assessment
 SELECT
-    ai.*
+  ai.*
 FROM
-    assessments AS a
-    JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
+  assessments AS a
+  JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
 WHERE
-    a.id = 45
-    AND ai.deleted_at IS NULL;
+  a.id = 45
+  AND ai.deleted_at IS NULL;
 ```
 
 - We (almost) never delete student data from the DB. To avoid having rows with broken or missing foreign keys, course configuration tables (e.g. `assessments`) can't be actually deleted. Instead they are "soft-deleted" by setting the `deleted_at` column to non-NULL. This means that when using any soft-deletable table we need to have a `WHERE deleted_at IS NULL` to get only the active rows.
 
 ## DB schema modification
 
-- The database is built with a series of consecutive "migrations". A migration is a modification to table schema and is represented as a file in `migrations/`.
-
-- The filenames in `migrations/` are of the form `<nnn>_<description>.sql` where `<nnn>` is a number to ensure ordering. The leading number must be unique among all migrations. A suggested form for the `<description>` is `<table name>__<column name>__<operation>` if only a single column is being changed.
-
-- It's fine to put multiple logically-related migration statements in the same file.
-
-- The database has a special `migrations` table that tracks which migrations have already been applied. This ensures that migrations are always applied exactly once.
-
-- The current state of the DB schema is stored in a human-readable form in the `database/` directory. This is checked automatically by the unit tests and needs to be manually updated after migrations and the updates should be committed to git along with the migrations.
-
-- _Historical node_: Migration statements started with PrairieLearn version 2.0.0. Starting with 2.0.0, the schema was maintained with separate `models` and `migrations` directories, which had to be kept in sync. In version 2.0.10, that was switched to solely `migrations`, and the state of `models` as of 2.0.0 was captured in `migrations/000_initial_state.sql`. All future migrations are applied on top of that.
-
-- Some useful migration statements follow.
-
-```sql
--- add a column to a table
-ALTER TABLE assessments ADD COLUMN auto_close boolean DEFAULT true;
-
--- add a foreign key to a table
-ALTER TABLE variants ADD COLUMN authn_user_id bigint;
-ALTER TABLE variants ADD FOREIGN KEY (authn_user_id) REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE;
-
--- remove a constraint
-ALTER TABLE alternative_groups DROP CONSTRAINT alternative_groups_number_assessment_id_key;
-
--- add a constraint
-ALTER TABLE alternative_groups ADD UNIQUE (assessment_id, number);
-```
+See [`migrations/README.md`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/migrations/README.md)
 
 ## JSON syncing
 
@@ -474,7 +459,12 @@ Where the corresponding `filename.sql` file contains:
 
 ```sql
 -- BLOCK select_questions_by_course
-SELECT * FROM questions WHERE course_id = $course_id;
+SELECT
+  *
+FROM
+  questions
+WHERE
+  course_id = $course_id;
 ```
 
 - For queries where it would be an error to not return exactly one result row:
@@ -483,48 +473,6 @@ SELECT * FROM questions WHERE course_id = $course_id;
 sqldb.queryOneRow(sql.block_name, params, function (err, result) {
   if (ERR(err, callback)) return;
   var obj = result.rows[0]; // guaranteed to exist and no more
-});
-```
-
-- For transactions with correct error handling use following pattern. It is important to use `async.series()` to run all the operations rather than using a callback stack, because with `async.series()` we can guarantee that `endTransaction()` is called no matter whether any of the intermediate operations produce an error.
-
-```javascript
-// do this
-sqldb.beginTransaction(function (err, client, done) {
-  if (ERR(err, callback)) return;
-  async.series(
-    [
-      function (callback) {
-        // only use queryWithClient() and queryWithClientOneRow() inside the transaction
-        sqldb.queryWithClient(client, sql.block_name, params, function (err, result) {
-          if (ERR(err, callback)) return;
-          // do things
-          callback(null);
-        });
-      },
-      // more series functions inside the transaction
-    ],
-    function (err) {
-      sqldb.endTransaction(client, done, err, function (err) {
-        // will rollback if err is defined
-        if (ERR(err, callback)) return;
-        // transaction successfully committed at this point
-        callback(null);
-      });
-    }
-  );
-});
-
-// don't do this
-sqldb.beginTransaction(function (err, client, done) {
-  if (ERR(err, callback)) return;
-  sqldb.queryWithClient(client, sql.block_name, params, function (err, result) {
-    if (ERR(err, callback)) return; // THIS IS WRONG, it may exit without endTransaction()
-    sqldb.endTransaction(client, done, err, function (err) {
-      if (ERR(err, callback)) return;
-      callback(null);
-    });
-  });
 });
 ```
 
@@ -548,7 +496,10 @@ sqldb.query(sql.insert_assessment_question, params, ...);
 
 ```sql
 -- BLOCK insert_assessment_question
-INSERT INTO assessment_questions (points_list) VALUES ($points_list::INTEGER[]);
+INSERT INTO
+  assessment_questions (points_list)
+VALUES
+  ($points_list::INTEGER[]);
 ```
 
 - To use a JavaScript array for membership testing in SQL use [`unnest()`](https://www.postgresql.org/docs/9.5/static/functions-array.html) like:
@@ -562,10 +513,18 @@ sqldb.query(sql.select_questions, params, ...);
 
 ```sql
 -- BLOCK select_questions
-SELECT * FROM questions WHERE id IN (SELECT unnest($id_list::INTEGER[]));
+SELECT
+  *
+FROM
+  questions
+WHERE
+  id IN (
+    SELECT
+      unnest($id_list::INTEGER[])
+  );
 ```
 
-- To pass a lot of data to SQL a useful pattern is to send a JSON object array and unpack it in SQL to the equivalent of a table. This is the pattern used by the "sync" code, such as [sprocs/sync_news_items.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/sprocs/sync_news_items.sql). For example:
+- To pass a lot of data to SQL a useful pattern is to send a JSON object array and unpack it in SQL to the equivalent of a table. This is the pattern used by the "sync" code, such as [sprocs/sync_news_items.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/sprocs/sync_news_items.sql). For example:
 
 ```javascript
 let data = [
@@ -578,22 +537,28 @@ sqldb.query(sql.insert_data, params, ...);
 
 ```sql
 -- BLOCK insert_data
-INSERT INTO my_table (a, b)
-SELECT *
-FROM jsonb_to_recordset($data) AS (a INTEGER, b TEXT);
+INSERT INTO
+  my_table (a, b)
+SELECT
+  *
+FROM
+  jsonb_to_recordset($data) AS (a INTEGER, b TEXT);
 ```
 
 - To use a JSON object array in the above fashion, but where the order of rows is important, use `ROWS FROM () WITH ORDINALITY` to generate a row index like this:
 
 ```sql
 -- BLOCK insert_data
-INSERT INTO my_table (a, b, order_by)
-SELECT *
+INSERT INTO
+  my_table (a, b, order_by)
+SELECT
+  *
 FROM
-    ROWS FROM (
-        jsonb_to_recordset($data)
-        AS (a INTEGER, b TEXT)
-    ) WITH ORDINALITY AS data(a, b, order_by);
+  ROWS
+FROM
+  (jsonb_to_recordset($data) AS (a INTEGER, b TEXT))
+WITH
+  ORDINALITY AS data (a, b, order_by);
 ```
 
 ## Asynchronous control flow in JavaScript
@@ -813,7 +778,7 @@ function foo(p, callback) {
 
   2. The remote authentication service redirects back to `/pl/shibcallback` (for Shibboleth) or `/pl/auth2callback` (for Google). These endpoints confirm authentication, create the user in the `users` table if necessary, set a signed `pl_authn` cookie in the browser with the authenticated `user_id`, and then redirect to the main PL homepage. This cookie is set with the `HttpOnly` attribute, which prevents client-side JavaScript from reading the cookie.
 
-  3. Every other page authenticates using the signed browser `pl_authn` cookie. This is read by [`middlewares/authn.js`](https://github.com/PrairieLearn/PrairieLearn/blob/master/middlewares/authn.js) which checks the signature and then loads the user data from the DB using the `user_id`, storing it as `res.locals.authn_user`.
+  3. Every other page authenticates using the signed browser `pl_authn` cookie. This is read by [`middlewares/authn.js`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/middlewares/authn.js) which checks the signature and then loads the user data from the DB using the `user_id`, storing it as `res.locals.authn_user`.
 
 - Similar to unix, we distinguish between the real and effective user. The real user is stored as `res.locals.authn_user` and is the user that authenticated. The effective user is stored as `res.locals.user`. Only users with `role = TA` or higher can set an effective user that is different from their real user. Moreover, users with `role = TA` or higher can also set an effective `role` and `mode` that is different to the real values.
 
@@ -882,13 +847,15 @@ router.post('/', function (req, res, next) {
 
 [ESLint](http://eslint.org/) and [Prettier](https://prettier.io/) are used to enforce consistent code conventions and formatting throughout the codebase. See `.eslintrc.js` and `.prettierrc.json` in the root of the PrairieLearn repository to view our specific configuration. The repo includes an [`.editorconfig`](https://editorconfig.org/) file that most editors will detect and use to automatically configure things like indentation. If your editor doesn't natively support an EditorConfig file, there are [plugins](https://editorconfig.org/#download) available for most other editors.
 
+For Python files, [Black](https://black.readthedocs.io/en/stable/), [isort](https://pycqa.github.io/isort/), and [flake8](https://flake8.pycqa.org/en/latest/) are used to enforce code conventions, and [Pyright](https://github.com/microsoft/pyright) is used for static typechecking. See `pyproject.toml` in the root of the PrairieLearn repository to view our specific configuration. We encourage all new Python code to include type hints for use with the static typechecker, as this makes it easier to read, review, and verify contributions.
+
 To lint the code, use `make lint`. This is also run by the CI tests.
 
 To automatically fix lint and formatting errors, run `make format`.
 
 ## Question-rendering control flow
 
-- The core files involved in question rendering are [lib/question.js](https://github.com/PrairieLearn/PrairieLearn/blob/master/lib/question.js), [lib/question.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/lib/question.sql), and [pages/partials/question.ejs](https://github.com/PrairieLearn/PrairieLearn/blob/master/pages/partials/question.ejs).
+- The core files involved in question rendering are [lib/question.js](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question.js), [lib/question.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question.sql), and [pages/partials/question.ejs](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/pages/partials/question.ejs).
 
 - The above files are all called/included by each of the top-level pages that needs to render a question (e.g., `pages/instructorQuestionPreview`, `pages/studentInstanceQuestionExam`, etc). Unfortunately the control-flow is complicated because we need to call `lib/question.js` during page data load, store the data it generates, and then later include the `pages/partials/question.ejs` template to actually render this data.
 
@@ -911,21 +878,6 @@ To automatically fix lint and formatting errors, run `make format`.
 | `assessment_instance.open` | ✓                              | ✓                    | ✓                       |
 | `instance_question.open`   |                                | ✓                    | ✓                       |
 | `variant.open`             |                                |                      | ✓                       |
-
-## v3 question code calling
-
-- v3 questions run course code in subprocesses. follows. A separate child process is started for every page request (actually, for every call to a top-level `freeform.js` function) which adds robustness but causes some slowdown. As of 2017-08-16 the calling sequence is as follows.
-
-1. We get a page request that’s handled in `pages/studentInstanceQuestionHomework` or similar.
-2. This calls a function in `lib/question.js` (possibly via `lib/assessment.js`) which starts a DB transaction and creates a DB `client` object.
-3. This calls a function in `question-servers/freeform.js`. Functions in `freeform` do not interact with the DB.
-4. The `freeform` function creates a `PythonCaller` object from `lib/code-caller.js`.
-5. The `PythonCaller` object starts a new python process and runs `lib/python-caller-trampoline.py`.
-6. `python-caller-trampoline` listens for function calls specified by a JSON write on STDIN, loads the specified python module and calls the specified function inside it, returning the output as JSON on file descriptor 3.
-7. The `PythonCaller` object unpacks the return value, captures STDIN+STDOUT, and returns all this back up the chain.
-8. Once the `freeform` functions have finished making all the python calls they want, they call `PythonCaller.done()` that terminates the python process.
-9. The `question.js` function that we are inside finishes, and ends the DB transaction, committing the changes.
-10. Page render completes and the response is sent, finishing this request cycle.
 
 ## Errors in question handling
 

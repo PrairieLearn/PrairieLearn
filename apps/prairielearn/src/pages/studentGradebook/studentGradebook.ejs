@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover({sanitize: false})
+      });
+    </script>
+    <%- include('../partials/navbar', {navPage: 'gradebook'}); %>
+    <main id="content" class="container">
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">Gradebook</div>
+
+        <table class="table table-sm table-hover">
+          <thead>
+            <tr>
+              <th style="width: 1%"><span class="sr-only">Label</span></th>
+              <th><span class="sr-only">Title</span></th>
+              <th class="text-center">Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% rows.forEach(function(row) { %>
+            <% if (row.start_new_set) { %>
+            <tr>
+              <th colspan="3"><%= row.assessment_set_heading %></th>
+            </tr>
+            <% } %>
+            <tr>
+              <td class="align-middle" style="width: 1%">
+                <% if (row.multiple_instance_header) { %>
+                <span class="badge color-<%= row.assessment_set_color %>"><%= row.label %></span>
+                <% } else { %>
+                <span class="badge color-<%= row.assessment_set_color %> color-hover">
+                  <%= row.label %>
+                </span>
+                <% } %>
+              </td>
+              <td class="align-middle">
+                <%= row.title %>
+                <% if (row.assessment_group_work) { %>
+                  <i class="fas fa-users" aria-hidden="true"></i>
+                <% } %>
+              </td>
+              <td class="text-center align-middle">
+                <% if (!row.multiple_instance_header) { %>
+                <% if(!row.show_closed_assessment_score) { %>
+                Score not shown
+                <% } else { %>
+                <%- include('../partials/scorebar', {score: row.assessment_instance_score_perc}) %>
+                <% } %>
+                <% } %>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </body>
+</html>

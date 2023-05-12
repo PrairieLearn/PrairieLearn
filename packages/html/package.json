@@ -1,19 +1,22 @@
 {
   "name": "@prairielearn/html",
-  "version": "1.0.2",
+  "version": "3.0.0",
   "main": "dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/html"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
     "test": "mocha --no-config --require ts-node/register src/index.test.ts"
   },
-  "dependencies": {
-    "ejs": "^3.1.6"
-  },
   "devDependencies": {
-    "@types/ejs": "^3.1.0",
-    "mocha": "^9.2.2",
-    "ts-node": "^10.7.0",
-    "typescript": "^4.6.3"
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/node": "^18.16.3",
+    "mocha": "^10.2.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.4"
   }
 }

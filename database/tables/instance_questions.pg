@@ -3,6 +3,7 @@ columns
     assessment_question_id: bigint not null
     assigned_grader: bigint
     authn_user_id: bigint
+    auto_points: double precision
     average_submission_score: double precision
     created_at: timestamp with time zone default CURRENT_TIMESTAMP
     current_value: double precision
@@ -15,6 +16,7 @@ columns
     incremental_submission_score_array: double precision[]
     last_grader: bigint
     last_submission_score: double precision
+    manual_points: double precision
     max_submission_score: double precision
     modified_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     number: integer
@@ -22,12 +24,10 @@ columns
     open: boolean default true
     order_by: integer default floor((random() * (1000000)::double precision))
     points: double precision default 0
-    points_in_grading: double precision default 0
     points_list: double precision[]
     points_list_original: double precision[]
     requires_manual_grading: boolean not null default false
     score_perc: double precision default 0
-    score_perc_in_grading: double precision default 0
     some_nonzero_submission: boolean
     some_perfect_submission: boolean
     some_submission: boolean

@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 
-import { escapeHtml, html, renderEjs } from './index';
+import { escapeHtml, html } from './index';
 
 describe('html', () => {
   it('escapes string value', () => {
@@ -9,6 +9,19 @@ describe('html', () => {
 
   it('interpolates multiple values', () => {
     assert.equal(html`<p>${'cats'} and ${'dogs'}</p>`.toString(), '<p>cats and dogs</p>');
+  });
+
+  it('interpolates a number', () => {
+    assert.equal(html`<p>${123}</p>`.toString(), '<p>123</p>');
+  });
+
+  it('interpolates a bigint', () => {
+    assert.equal(html`<p>${123n}</p>`.toString(), '<p>123</p>');
+  });
+
+  it('interpolates a boolean', () => {
+    assert.equal(html`<p>${true}</p>`.toString(), '<p>true</p>');
+    assert.equal(html`<p>${false}</p>`.toString(), '<p>false</p>');
   });
 
   it('escapes values when rendering array', () => {
@@ -31,13 +44,10 @@ describe('html', () => {
 
   it('errors when interpolating object', () => {
     assert.throws(
+      // @ts-expect-error -- Testing runtime behavior of bad input.
       () => html`<p>${{ foo: 'bar' }}</p>`.toString(),
       'Cannot interpolate object in template'
     );
-  });
-
-  it('omits boolean values from template', () => {
-    assert.equal(html`<p>${true}${false}</p>`.toString(), '<p></p>');
   });
 
   it('omits nullish values from template', () => {
@@ -52,18 +62,5 @@ describe('escapeHtml', () => {
 
   it('works when nested inside html tag', () => {
     assert.equal(html`a${escapeHtml(html`<p></p>`)}b`.toString(), 'a&lt;p&gt;&lt;/p&gt;b');
-  });
-});
-
-describe('renderEjs', () => {
-  it('renders EJS template without data', () => {
-    assert.equal(renderEjs(__filename, '<p>Hello</p>', {}).toString(), '<p>Hello</p>');
-  });
-
-  it('renders EJS template with data', () => {
-    assert.equal(
-      renderEjs(__filename, '<p>Hello <%= name %></p>', { name: 'Divya' }).toString(),
-      '<p>Hello Divya</p>'
-    );
   });
 });
