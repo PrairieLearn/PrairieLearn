@@ -431,6 +431,7 @@ describe('Test group based assessments with custom group roles from student side
 
     // Second user cannot update group roles
     assert.isNotOk(res.ok);
+    assert.equal(res.status, 403);
   });
 
   step('first user can edit role table to make both users manager', async function () {

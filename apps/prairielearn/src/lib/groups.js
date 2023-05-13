@@ -1,5 +1,6 @@
 //@ts-check
 const ERR = require('async-stacktrace');
+const error = require('@prairielearn/error');
 const z = require('zod');
 const _ = require('lodash');
 
@@ -461,7 +462,8 @@ module.exports.updateGroupRoles = async function (requestBody, assessmentId, use
 
     const permissions = await module.exports.getAssessmentPermissions(assessmentId, userId);
     if (!permissions.can_assign_roles_at_start) {
-      throw new Error(
+      throw error.make(
+        403,
         'User does not have permission to assign roles at the start of this assessment'
       );
     }
