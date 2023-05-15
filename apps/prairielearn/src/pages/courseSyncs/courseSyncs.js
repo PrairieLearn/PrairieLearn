@@ -1,5 +1,5 @@
 const ERR = require('async-stacktrace');
-const AWS = require('aws-sdk');
+const { ECR } = require('@aws-sdk/client-ecr');
 const _ = require('lodash');
 const async = require('async');
 const { formatISO } = require('date-fns');
@@ -9,6 +9,7 @@ const { DockerName } = require('@prairielearn/docker-utils');
 const error = require('@prairielearn/error');
 
 const syncHelpers = require('../shared/syncHelpers');
+const { makeAwsClientConfig } = require('../../lib/aws');
 const { config } = require('../../lib/config');
 
 const sql = sqldb.loadSqlEquiv(__filename);
@@ -29,7 +30,7 @@ router.get('/', function (req, res, next) {
       res.locals.imageSyncNeeded = false;
 
       if (config.cacheImageRegistry) {
-        const ecr = new AWS.ECR();
+        const ecr = new ECR(makeAwsClientConfig());
         async.each(
           res.locals.images,
           (image, callback) => {

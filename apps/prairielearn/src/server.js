@@ -40,7 +40,6 @@ const {
 const { logger, addFileLogging } = require('@prairielearn/logger');
 const { config, loadConfig, setLocalsFromConfig } = require('./lib/config');
 const load = require('./lib/load');
-const awsHelper = require('./lib/aws.js');
 const externalGrader = require('./lib/externalGrader');
 const externalGraderResults = require('./lib/externalGraderResults');
 const externalGradingSocket = require('./lib/externalGradingSocket');
@@ -1838,7 +1837,6 @@ if (require.main === module && config.startServer) {
 
         // Load config immediately so we can use it configure everything else.
         await loadConfig(configPaths);
-        awsHelper.init();
 
         // This should be done as soon as we load our config so that we can
         // start exporting spans.
