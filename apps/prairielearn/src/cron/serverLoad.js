@@ -23,6 +23,8 @@ module.exports.run = util.callbackify(async () => {
       { Name: 'Server Group', Value: config.groupName },
       { Name: 'Job Type', Value: row.job_type },
     ];
+    const timestamp = new Date(row.timestamp_formatted);
+
     await cloudwatch.putMetricData({
       Namespace: 'PrairieLearn',
       MetricData: [
@@ -30,7 +32,7 @@ module.exports.run = util.callbackify(async () => {
           MetricName: 'InstanceCount',
           Dimensions: dimensions,
           StorageResolution: 1,
-          Timestamp: row.timestamp_formatted,
+          Timestamp: timestamp,
           Unit: 'Count',
           Value: row.instance_count,
         },
@@ -38,7 +40,7 @@ module.exports.run = util.callbackify(async () => {
           MetricName: 'CurrentJobs',
           Dimensions: dimensions,
           StorageResolution: 1,
-          Timestamp: row.timestamp_formatted,
+          Timestamp: timestamp,
           Unit: 'Count',
           Value: row.current_jobs,
         },
@@ -46,7 +48,7 @@ module.exports.run = util.callbackify(async () => {
           MetricName: 'MaxJobs',
           Dimensions: dimensions,
           StorageResolution: 1,
-          Timestamp: row.timestamp_formatted,
+          Timestamp: timestamp,
           Unit: 'Count',
           Value: row.max_jobs,
         },
@@ -54,7 +56,7 @@ module.exports.run = util.callbackify(async () => {
           MetricName: 'LoadPercentage',
           Dimensions: dimensions,
           StorageResolution: 1,
-          Timestamp: row.timestamp_formatted,
+          Timestamp: timestamp,
           Unit: 'Percent',
           Value: row.load_perc,
         },

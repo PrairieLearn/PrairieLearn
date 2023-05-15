@@ -12,9 +12,10 @@ module.exports.run = util.callbackify(async () => {
     config.serverUsageIntervalSec,
   ]);
   const stats = result.rows[0];
-  const cloudwatch = new CloudWatch(makeAwsClientConfig());
   const dimensions = [{ Name: 'Server Group', Value: config.groupName }];
+  const timestamp = new Date(stats.timestamp_formatted);
 
+  const cloudwatch = new CloudWatch(makeAwsClientConfig());
   await cloudwatch.putMetricData({
     Namespace: 'PrairieLearn',
     MetricData: [
@@ -22,7 +23,7 @@ module.exports.run = util.callbackify(async () => {
         MetricName: 'UserCount',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Count',
         Value: stats.user_count,
       },
@@ -30,7 +31,7 @@ module.exports.run = util.callbackify(async () => {
         MetricName: 'PageViewsPerSecond',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Count/Second',
         Value: stats.page_views_per_second,
       },
@@ -38,7 +39,7 @@ module.exports.run = util.callbackify(async () => {
         MetricName: 'SubmissionsPerSecond',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Count/Second',
         Value: stats.submissions_per_second,
       },
@@ -46,7 +47,7 @@ module.exports.run = util.callbackify(async () => {
         MetricName: 'InternalGradingJobsPerSecond',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Count/Second',
         Value: stats.internal_grading_jobs_per_second,
       },
@@ -54,7 +55,7 @@ module.exports.run = util.callbackify(async () => {
         MetricName: 'ExternalGradingJobsPerSecond',
         Dimensions: dimensions,
         StorageResolution: 1,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: timestamp,
         Unit: 'Count/Second',
         Value: stats.external_grading_jobs_per_second,
       },
