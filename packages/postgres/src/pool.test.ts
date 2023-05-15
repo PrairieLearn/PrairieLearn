@@ -81,7 +81,7 @@ describe('@prairielearn/postgres', function () {
       assert.equal(row.id, '1');
     });
 
-    it('rejects results with single row', async () => {
+    it('rejects results with zero rows', async () => {
       const rows = queryRow('SELECT * FROM workspaces WHERE id = -1;', WorkspaceSchema);
       await assert.isRejected(rows, 'Incorrect rowCount: 0');
     });
