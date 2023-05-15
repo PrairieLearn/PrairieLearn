@@ -130,7 +130,7 @@ async function sendStatsToCloudwatch(stats: WorkspaceLoadStats) {
       return {
         MetricName: def.name,
         Dimensions: dimensions,
-        Timestamp: stats.timestamp_formatted,
+        Timestamp: new Date(stats.timestamp_formatted),
         Unit: def.unit,
         Value: value,
         StorageResolution: 1,
