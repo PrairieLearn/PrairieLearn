@@ -114,6 +114,8 @@ module.exports.initExpress = function () {
     res.locals.node_modules_asset_path = assets.nodeModulesAssetPath;
     res.locals.compiled_script_tag = assets.compiledScriptTag;
     res.locals.compiled_stylesheet_tag = assets.compiledStylesheetTag;
+    res.locals.compiled_script_path = assets.compiledScriptPath;
+    res.locals.compiled_stylesheet_path = assets.compiledStylesheetPath;
     next();
   });
   app.use(function (req, res, next) {
