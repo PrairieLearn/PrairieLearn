@@ -4,7 +4,7 @@ const fs = require('fs-extra');
 const async = require('async');
 const tmp = require('tmp');
 const Docker = require('dockerode');
-const AWS = require('aws-sdk');
+const { S3 } = require('@aws-sdk/client-s3');
 const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
 const { exec } = require('child_process');
 const path = require('path');
@@ -154,7 +154,7 @@ function handleJob(job, done) {
 
   const info = {
     docker: new Docker(),
-    s3: new AWS.S3(),
+    s3: new S3({ region: config.awsRegion }),
     logger,
     job,
   };
