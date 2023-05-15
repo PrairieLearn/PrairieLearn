@@ -3579,7 +3579,7 @@ __metadata:
     ts-node: ^10.9.1
     typescript: ^5.0.4
     typescript-cp: ^0.1.8
-    tzientist: ^2.4.0
+    tzientist: ^3.1.0
     unified: ^9.2.2
     unist-util-visit: ^2.0.3
     unzipper: ^0.10.11
@@ -15006,10 +15006,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tzientist@npm:^2.4.0":
-  version: 2.4.0
-  resolution: "tzientist@npm:2.4.0"
-  checksum: 83206c9ebce6fb78c18bad3c877b4cbafcb1cc58e07fabb070a4ba3bd81c95d7aff35e89fa5e88450ded1d777ec912ec75919e84624e7c087cac29b25aeb08a8
+"tzientist@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "tzientist@npm:3.1.0"
+  checksum: 4bbead04312add2e3323f319e3ae9b3006efbbcc2d5c622c8a116336eab657adef5f3b8414c6acb1b3b97452b65f99054d4237f3e42f8c8ddec81b83b0e169a7
   languageName: node
   linkType: hard
 
