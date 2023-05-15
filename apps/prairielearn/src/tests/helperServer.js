@@ -11,7 +11,6 @@ const opentelemetry = require('@prairielearn/opentelemetry');
 const assets = require('../lib/assets');
 const { config } = require('../lib/config');
 const load = require('../lib/load');
-const aws = require('../lib/aws');
 const cron = require('../cron');
 const socketServer = require('../lib/socket-server');
 const serverJobs = require('../lib/server-jobs-legacy');
