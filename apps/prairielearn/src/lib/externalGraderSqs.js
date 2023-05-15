@@ -54,7 +54,7 @@ class Grader {
             Body: passthrough,
           };
 
-          const s3 = new S3(aws.getS3ClientConfig());
+          const s3 = new S3(aws.makeS3ClientConfig());
           await new Upload({
             client: s3,
             params,
@@ -89,10 +89,7 @@ function getS3RootKey(jobId) {
 }
 
 async function sendJobToQueue(jobId, question, config) {
-  const sqs = new SQSClient({
-    region: config.awsRegion,
-    ...config.awsServiceGlobalOptions,
-  });
+  const sqs = new SQSClient(aws.makeAwsClientConfig());
 
   await async.series([
     async () => {

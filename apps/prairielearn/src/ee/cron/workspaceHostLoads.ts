@@ -2,6 +2,7 @@ import { CloudWatch } from '@aws-sdk/client-cloudwatch';
 import { EC2 } from '@aws-sdk/client-ec2';
 import { callbackify } from 'util';
 
+import { makeAwsClientConfig } from '../../lib/aws';
 import { config } from '../../lib/config';
 import { loadSqlEquiv, queryAsync, callAsync, callOneRowAsync } from '@prairielearn/postgres';
 
@@ -113,10 +114,7 @@ const cloudwatch_definitions = {
 };
 
 async function sendStatsToCloudwatch(stats: WorkspaceLoadStats) {
-  const cloudwatch = new CloudWatch({
-    region: config.awsRegion,
-    ...config.awsServiceGlobalOptions,
-  });
+  const cloudwatch = new CloudWatch(makeAwsClientConfig());
   const dimensions = [{ Name: 'By Server', Value: config.workspaceCloudWatchName }];
   const cloudwatch_metricdata_limit = 20; // AWS limits to 20 items within each list
   const entries = Object.entries(stats).filter(([key, _value]) => {
@@ -158,10 +156,7 @@ async function handleWorkspaceAutoscaling(stats: WorkspaceLoadStats) {
     needed -= recaptured_hosts;
     if (needed > 0) {
       // We couldn't get enough hosts, so lets spin up some more and insert them into the DB.
-      const ec2 = new EC2({
-        region: config.awsRegion,
-        ...config.awsServiceGlobalOptions,
-      });
+      const ec2 = new EC2(makeAwsClientConfig());
       const data = await ec2.runInstances({
         MaxCount: needed,
         MinCount: 1,

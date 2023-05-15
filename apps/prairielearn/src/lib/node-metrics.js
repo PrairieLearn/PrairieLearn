@@ -1,9 +1,10 @@
 // @ts-check
-const { CloudWatch } = require('@aws-sdk/client-cloudwatch');
 const loopbench = require('loopbench')();
+const { CloudWatch } = require('@aws-sdk/client-cloudwatch');
 const Sentry = require('@prairielearn/sentry');
-
 const { logger } = require('@prairielearn/logger');
+
+const { makeAwsClientConfig } = require('./aws');
 const { config } = require('./config');
 
 let intervalId;
@@ -71,10 +72,7 @@ async function emit() {
       },
     ];
 
-    const cloudwatch = new CloudWatch({
-      region: config.awsRegion,
-      ...config.awsServiceGlobalOptions,
-    });
+    const cloudwatch = new CloudWatch(makeAwsClientConfig());
     /** @type {import('@aws-sdk/client-cloudwatch').Dimension[]} */
     const dimensions = [
       { Name: 'Server Group', Value: config.groupName },

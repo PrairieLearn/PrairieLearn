@@ -620,7 +620,7 @@ export async function createAndUploadChunks(
     const passthrough = new PassThroughStream();
     tarball.pipe(passthrough);
 
-    const s3 = new S3(aws.getS3ClientConfig());
+    const s3 = new S3(aws.makeS3ClientConfig());
     await new Upload({
       client: s3,
       params: {

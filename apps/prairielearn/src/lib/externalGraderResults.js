@@ -11,12 +11,14 @@ const { logger } = require('@prairielearn/logger');
 const sqldb = require('@prairielearn/postgres');
 const Sentry = require('@prairielearn/sentry');
 
+const { makeS3ClientConfig, makeAwsClientConfig } = require('./aws');
 const { config } = require('./config');
-const sql = sqldb.loadSqlEquiv(__filename);
 const externalGradingSocket = require('./externalGradingSocket');
 const assessment = require('./assessment');
 const externalGraderCommon = require('./externalGraderCommon');
 const { deferredPromise } = require('./deferred');
+
+const sql = sqldb.loadSqlEquiv(__filename);
 
 const abortController = new AbortController();
 const processingFinished = deferredPromise();
@@ -25,10 +27,7 @@ module.exports.init = async function () {
   // If we're not configured to use AWS, don't try to do anything here
   if (!config.externalGradingUseAws) return;
 
-  const sqs = new SQSClient({
-    region: config.awsRegion,
-    ...config.awsServiceGlobalOptions,
-  });
+  const sqs = new SQSClient(makeAwsClientConfig());
   const queueUrl = await loadQueueUrl(sqs);
 
   // Start work in an IIFE so we can keep going asynchronously
@@ -163,7 +162,7 @@ async function processMessage(data) {
       return;
     } else {
       // We should fetch it from S3, and then process it
-      const s3Client = new S3(config.awsServiceGlobalOptions);
+      const s3Client = new S3(makeS3ClientConfig());
       const data = await s3Client.getObject({
         Bucket: s3Bucket,
         Key: `${s3RootKey}/results.json`,

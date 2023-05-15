@@ -84,7 +84,7 @@ router.get('/:job_id/file/:file', (req, res, next) => {
     };
     res.attachment(file);
 
-    const s3 = new S3(aws.getS3ClientConfig());
+    const s3 = new S3(aws.makeS3ClientConfig());
     s3.getObject(params).then((object) => {
       pipeline(/** @type {import('stream').Readable} */ (object.Body), res, (err) => {
         ERR(err, next);

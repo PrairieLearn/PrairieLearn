@@ -11,23 +11,12 @@ const { pipeline } = require('node:stream/promises');
 const { logger } = require('@prairielearn/logger');
 const { config } = require('./config');
 
-module.exports.init = function () {
-  if (process.env.AWS_ENDPOINT) {
-    config.awsServiceGlobalOptions.endpoint = process.env.AWS_ENDPOINT;
-  }
-};
-
 /**
  * @param {import('@aws-sdk/client-s3').S3ClientConfig} extraConfig
  * @returns {import('@aws-sdk/client-s3').S3ClientConfig}
  */
-module.exports.getS3ClientConfig = function (extraConfig = {}) {
-  /** @type {import('@aws-sdk/client-s3').S3ClientConfig} */
-  const newConfig = {
-    region: config.awsRegion,
-    ...config.awsServiceGlobalOptions,
-    ...extraConfig,
-  };
+module.exports.makeS3ClientConfig = function (extraConfig = {}) {
+  const newConfig = this.makeAwsClientConfig(extraConfig);
 
   if (!config.runningInEc2) {
     // If we're not running in EC2, assume we're running with a local s3rver instance.
@@ -41,6 +30,19 @@ module.exports.getS3ClientConfig = function (extraConfig = {}) {
   }
 
   return newConfig;
+};
+
+/**
+ * @template {Record<string, any>} [T={}]
+ * @param {T} extraConfig
+ */
+module.exports.makeAwsClientConfig = (extraConfig = /** @type {T} */ ({})) => {
+  return {
+    region: config.awsRegion,
+    endpoint: process.env.AWS_ENDPOINT,
+    ...config.awsServiceGlobalOptions,
+    ...extraConfig,
+  };
 };
 
 /**
@@ -59,7 +61,7 @@ module.exports.uploadToS3Async = async function (
   isDirectory = false,
   buffer = null
 ) {
-  const s3 = new S3(module.exports.getS3ClientConfig());
+  const s3 = new S3(module.exports.makeS3ClientConfig());
 
   let body;
   if (isDirectory) {
@@ -108,7 +110,7 @@ module.exports.uploadDirectoryToS3Async = async function (
   localPath,
   ignoreList = []
 ) {
-  const s3 = new S3(module.exports.getS3ClientConfig());
+  const s3 = new S3(module.exports.makeS3ClientConfig());
   const ignoreSet = new Set(ignoreList);
 
   async function walkDirectory(subDir) {
@@ -186,7 +188,7 @@ module.exports.downloadFromS3Async = async function (s3Bucket, s3Path, localPath
     await fs.promises.chown(path.dirname(localPath), options.owner, options.group);
   }
 
-  const s3 = new S3(module.exports.getS3ClientConfig());
+  const s3 = new S3(module.exports.makeS3ClientConfig());
   const res = await s3.getObject({
     Bucket: s3Bucket,
     Key: s3Path,
@@ -210,7 +212,7 @@ module.exports.downloadFromS3 = util.callbackify(module.exports.downloadFromS3As
  * @param {boolean=} isDirectory - Whether the deletion target is a directory (defaults to false).
  */
 module.exports.deleteFromS3Async = async function (s3Bucket, s3Path, isDirectory = false) {
-  const s3 = new S3(module.exports.getS3ClientConfig());
+  const s3 = new S3(module.exports.makeS3ClientConfig());
 
   if (isDirectory) {
     s3Path += s3Path.endsWith('/') ? '' : '/';
@@ -232,7 +234,7 @@ module.exports.deleteFromS3 = util.callbackify(module.exports.deleteFromS3Async)
  * @return {Promise<Buffer | import('@aws-sdk/client-s3').GetObjectOutput['Body']>} Buffer or ReadableStream type from S3 file contents.
  */
 module.exports.getFromS3Async = async function (bucket, key, buffer = true) {
-  const s3 = new S3(module.exports.getS3ClientConfig());
+  const s3 = new S3(module.exports.makeS3ClientConfig());
   const res = await s3.getObject({ Bucket: bucket, Key: key });
   if (!res.Body) throw new Error('No data returned from S3');
   logger.verbose(`Fetched data from s3://${bucket}/${key}`);

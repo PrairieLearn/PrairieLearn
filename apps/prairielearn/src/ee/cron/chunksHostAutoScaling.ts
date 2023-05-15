@@ -3,6 +3,7 @@ import { AutoScaling } from '@aws-sdk/client-auto-scaling';
 import { callbackify } from 'util';
 import * as _ from 'lodash';
 
+import { makeAwsClientConfig } from '../../lib/aws';
 import { config } from '../../lib/config';
 
 // These are used as IDs when reading CloudWatch metrics. They must start with
@@ -22,10 +23,7 @@ export const run = callbackify(async () => {
   }
 
   const now = Date.now();
-  const cloudwatch = new CloudWatch({
-    region: config.awsRegion,
-    ...config.awsServiceGlobalOptions,
-  });
+  const cloudwatch = new CloudWatch(makeAwsClientConfig());
 
   const metrics = await cloudwatch.getMetricData({
     StartTime: new Date(now - 1000 * config.chunksHostAutoScalingHistoryIntervalSec),
@@ -171,10 +169,7 @@ export const run = callbackify(async () => {
 async function setAutoScalingGroupCapacity(groupName: string, capacity: number) {
   if (!groupName) return;
 
-  const autoscaling = new AutoScaling({
-    region: config.awsRegion,
-    ...config.awsServiceGlobalOptions,
-  });
+  const autoscaling = new AutoScaling(makeAwsClientConfig());
   await autoscaling.setDesiredCapacity({
     AutoScalingGroupName: groupName,
     DesiredCapacity: capacity,

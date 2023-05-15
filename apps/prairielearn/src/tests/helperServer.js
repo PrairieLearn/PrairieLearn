@@ -45,7 +45,6 @@ module.exports = {
         [
           // We (currently) don't ever want tracing to run during tests.
           async () => opentelemetry.init({ openTelemetryEnabled: false }),
-          async () => aws.init(),
           async () => {
             debug('before(): initializing DB');
             // pass "this" explicitly to enable this.timeout() calls

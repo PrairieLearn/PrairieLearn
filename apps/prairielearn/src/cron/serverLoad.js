@@ -1,9 +1,10 @@
 const async = require('async');
 const util = require('node:util');
 const { CloudWatch } = require('@aws-sdk/client-cloudwatch');
-
-const { config } = require('../lib/config');
 const sqldb = require('@prairielearn/postgres');
+
+const { makeAwsClientConfig } = require('../lib/aws');
+const { config } = require('../lib/config');
 
 module.exports.run = util.callbackify(async () => {
   if (!config.runningInEc2) return null;
@@ -16,10 +17,7 @@ module.exports.run = util.callbackify(async () => {
     // Nothing to report.
     return;
   }
-  const cloudwatch = new CloudWatch({
-    region: config.awsRegion,
-    ...config.awsServiceGlobalOptions,
-  });
+  const cloudwatch = new CloudWatch(makeAwsClientConfig());
   await async.each(result.rows, async (row) => {
     const dimensions = [
       { Name: 'Server Group', Value: config.groupName },

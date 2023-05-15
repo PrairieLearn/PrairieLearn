@@ -6,7 +6,7 @@ const { S3 } = require('@aws-sdk/client-s3');
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 
-const { getS3ClientConfig } = require('../../lib/aws');
+const { makeS3ClientConfig } = require('../../lib/aws');
 const { config } = require('../../lib/config');
 const { WorkspaceLogs, WorkspaceVersionLogs } = require('./workspaceLogs.html');
 
@@ -62,7 +62,7 @@ async function loadLogsForWorkspaceVersion(workspaceId, version) {
   // an object before shutting down the container. This means that we may have
   // multiple objects for each container. Load all of them. The objects are keyed
   // such that they are sorted by date, so we can just load them in order.
-  const s3Client = new S3(getS3ClientConfig({ maxAttempts: 3 }));
+  const s3Client = new S3(makeS3ClientConfig({ maxAttempts: 3 }));
   const logItems = await s3Client.listObjectsV2({
     Bucket: config.workspaceLogsS3Bucket,
     Prefix: `${workspaceId}/${version}/`,

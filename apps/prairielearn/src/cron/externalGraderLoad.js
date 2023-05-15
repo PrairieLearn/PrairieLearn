@@ -3,10 +3,11 @@ const _ = require('lodash');
 const util = require('node:util');
 const { AutoScaling } = require('@aws-sdk/client-auto-scaling');
 const { CloudWatch } = require('@aws-sdk/client-cloudwatch');
-
-const { config } = require('../lib/config');
 const { logger } = require('@prairielearn/logger');
 const sqldb = require('@prairielearn/postgres');
+
+const { makeAwsClientConfig } = require('../lib/aws');
+const { config } = require('../lib/config');
 
 module.exports.run = util.callbackify(async () => {
   if (!config.runningInEc2) return;
@@ -29,10 +30,7 @@ async function getLoadStats() {
 }
 
 async function sendStatsToCloudWatch(stats) {
-  const cloudwatch = new CloudWatch({
-    region: config.awsRegion,
-    ...config.awsServiceGlobalOptions,
-  });
+  const cloudwatch = new CloudWatch(makeAwsClientConfig());
   const dimensions = [{ Name: 'By Queue', Value: config.externalGradingJobsQueueName }];
   await cloudwatch.putMetricData({
     // AWS limits to 20 items within each MetricData list
@@ -344,10 +342,7 @@ async function setAutoScalingGroupCapacity(stats) {
   if (stats.desired_instances < 1 || stats.desired_instances > 1e6) return;
   if (stats.desired_instances === stats.instance_count) return;
 
-  const autoscaling = new AutoScaling({
-    region: config.awsRegion,
-    ...config.awsServiceGlobalOptions,
-  });
+  const autoscaling = new AutoScaling(makeAwsClientConfig());
   logger.verbose(`setting AutoScalingGroup capacity to ${stats.desired_instances}`);
   await autoscaling.setDesiredCapacity({
     AutoScalingGroupName: config.externalGradingAutoScalingGroupName,
