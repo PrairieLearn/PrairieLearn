@@ -1,10 +1,6 @@
 import { type S3ClientConfig } from '@aws-sdk/client-s3';
 import { config } from './config';
 
-/**
- * @param {import('@aws-sdk/client-s3').S3ClientConfig} extraConfig
- * @returns {import('@aws-sdk/client-s3').S3ClientConfig}
- */
 export function makeS3ClientConfig(extraConfig: S3ClientConfig = {}): S3ClientConfig {
   const newConfig = makeAwsClientConfig(extraConfig);
 
