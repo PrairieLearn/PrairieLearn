@@ -1,10 +1,9 @@
-// @ts-check
-const { Router } = require('express');
-const asyncHandler = require('express-async-handler');
+import { Router } from 'express';
+import asyncHandler = require('express-async-handler');
+import sqldb = require('@prairielearn/postgres');
 
-const { config } = require('../../lib/config');
-const sqldb = require('@prairielearn/postgres');
-const { isEnterprise } = require('../../lib/license');
+import { config } from '../../lib/config';
+import { isEnterprise } from '../../lib/license';
 
 const sql = sqldb.loadSqlEquiv(__filename);
 const router = Router();
@@ -25,7 +24,7 @@ router.get(
           // Special case: omit the default institution.
           if (provider.id === '1') return null;
 
-          let url = null;
+          let url: string | null = null;
           switch (provider.default_authn_provider_name) {
             case 'SAML':
               url = `/pl/auth/institution/${provider.id}/saml/login`;
@@ -53,8 +52,8 @@ router.get(
 
     res.locals.hasAzure = config.hasAzure && isEnterprise();
 
-    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.render(__filename.replace(/\.[jt]s$/, '.ejs'), res.locals);
   })
 );
 
-module.exports = router;
+export default router;
