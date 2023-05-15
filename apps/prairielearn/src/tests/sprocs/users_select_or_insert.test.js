@@ -1,13 +1,9 @@
 // @ts-check
-const chai = require('chai');
-const chaiAsPromised = require('chai-as-promised');
+const { assert } = require('chai');
 const { step } = require('mocha-steps');
 
 const sqldb = require('@prairielearn/postgres');
 const helperDb = require('../helperDb');
-
-chai.use(chaiAsPromised);
-const { assert } = chai;
 
 const sql = sqldb.loadSqlEquiv(__filename);
 

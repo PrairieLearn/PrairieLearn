@@ -129,8 +129,8 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/instances.json',
 
   // Static assets.
+  '/assets/elements/:cachebuster/*',
   '/pl/static/elements/*',
-  '/pl/static/cacheableElements/:cachebuster/*',
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/instances/client.js',
 
   // File downloads.
@@ -215,8 +215,9 @@ const SKIP_ROUTES = [
   '/pl/oauth2callback',
   '/pl/oauth2login',
 
-  // Admin page; we aren't guaranteed to have a batched migration to navigate to.
+  // Admin page; we aren't guaranteed to have subpages to navigate to.
   '/pl/administrator/batchedMigrations/:batched_migration_id',
+  '/pl/administrator/features/:feature',
 
   // TODO: add tests for file editing/viewing.
   /\/file_edit\/\*$/,

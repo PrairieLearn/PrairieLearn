@@ -5,7 +5,7 @@
     <link href="<%= asset_path('stylesheets/home.css') %>" rel="stylesheet">
   </head>
 
-  <body class="d-flex flex-column h-100">
+  <body class="d-flex flex-column h-100" style="--flourish-image-url: url('<%= asset_path('images/grassy_landscape.svg') %>')">
     <header>
       <% if (isAuthenticated) { %>
       <%- include('../partials/navbar', {navPage: 'home'}); %>

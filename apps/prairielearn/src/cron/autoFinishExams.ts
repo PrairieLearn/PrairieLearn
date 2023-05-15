@@ -1,12 +1,11 @@
-// @ts-check
-var ERR = require('async-stacktrace');
-var async = require('async');
+import ERR = require('async-stacktrace');
+import async = require('async');
+import error = require('@prairielearn/error');
+import { logger } from '@prairielearn/logger';
+import sqldb = require('@prairielearn/postgres');
 
-const error = require('@prairielearn/error');
-const { config } = require('../lib/config');
-const { logger } = require('@prairielearn/logger');
-var assessment = require('../lib/assessment');
-var sqldb = require('@prairielearn/postgres');
+import assessment = require('../lib/assessment');
+import { config } from '../lib/config';
 
 /**
  * This cron job runs periodically to check for any exams that need to be
@@ -15,14 +14,12 @@ var sqldb = require('@prairielearn/postgres');
  * closed but not completely graded.
  *
  * @see assessment.gradeAssessmentInstance
- *
- * @param {(err?: Error | null) => void} callback
  */
-module.exports.run = function (callback) {
-  var params = [config.autoFinishAgeMins];
+export function run(callback: (err?: Error | null) => void): void {
+  const params = [config.autoFinishAgeMins];
   sqldb.call('assessment_instances_select_for_auto_finish', params, function (err, result) {
     if (ERR(err, callback)) return;
-    var examList = result.rows;
+    const examList = result.rows;
 
     async.eachSeries(
       examList,
@@ -57,4 +54,4 @@ module.exports.run = function (callback) {
       }
     );
   });
-};
+}

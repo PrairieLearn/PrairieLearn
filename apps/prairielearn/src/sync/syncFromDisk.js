@@ -27,6 +27,7 @@ const { promisify } = require('util');
 /**
  * @typedef {Object} SyncResults
  * @property {boolean} hadJsonErrors
+ * @property {boolean} hadJsonErrorsOrWarnings
  * @property {string} courseId
  * @property {import('./course-db').CourseData} courseData
  */
@@ -175,3 +176,4 @@ module.exports.syncOrCreateDiskToSql = function (courseDir, logger, callback) {
     });
   });
 };
+module.exports.syncOrCreateDiskToSqlAsync = promisify(module.exports.syncOrCreateDiskToSql);

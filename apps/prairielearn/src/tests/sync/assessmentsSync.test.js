@@ -1,7 +1,5 @@
 // @ts-check
-const chaiAsPromised = require('chai-as-promised');
-const chai = require('chai');
-chai.use(chaiAsPromised);
+const { assert } = require('chai');
 const fs = require('fs-extra');
 const path = require('path');
 const sqldb = require('@prairielearn/postgres');
@@ -11,7 +9,6 @@ const util = require('./util');
 const helperDb = require('../helperDb');
 
 const sql = sqldb.loadSqlEquiv(__filename);
-const { assert } = chai;
 
 /**
  * Makes an empty assessment.

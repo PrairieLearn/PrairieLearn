@@ -1,11 +1,7 @@
-import AWS from 'aws-sdk';
+import { ECRClient, AuthorizationData, GetAuthorizationTokenCommand } from '@aws-sdk/client-ecr';
 import { subHours, isFuture } from 'date-fns';
 import util from 'util';
 import { logger } from '@prairielearn/logger';
-
-// @ts-expect-error -- Types don't reflect that this path exists.
-import mmm from 'aws-sdk/lib/maintenance_mode_message';
-mmm.suppress = true;
 
 interface DockerAuth {
   username: string;
@@ -15,7 +11,7 @@ interface DockerAuth {
 let dockerAuthData: DockerAuth | null = null;
 let dockerAuthDataExpiresAt: Date | null | undefined = null;
 
-function authDataExtractLogin(data: AWS.ECR.AuthorizationData): DockerAuth {
+function authDataExtractLogin(data: AuthorizationData): DockerAuth {
   const token = data.authorizationToken;
   if (!token) {
     throw new Error('No authorization token in ECR authorization data');
@@ -30,11 +26,7 @@ function authDataExtractLogin(data: AWS.ECR.AuthorizationData): DockerAuth {
   };
 }
 
-export async function setupDockerAuthAsync(
-  imageRegistry: string | null | undefined
-): Promise<DockerAuth | null> {
-  if (!imageRegistry) return null;
-
+export async function setupDockerAuthAsync(region: string): Promise<DockerAuth | null> {
   // If we have cached data that's not within an hour of expiring, use it.
   if (dockerAuthData && dockerAuthDataExpiresAt && isFuture(subHours(dockerAuthDataExpiresAt, 1))) {
     logger.info('Using cached ECR authorization token');
@@ -42,8 +34,8 @@ export async function setupDockerAuthAsync(
   }
 
   logger.info('Getting ECR authorization token');
-  const ecr = new AWS.ECR();
-  const data = await ecr.getAuthorizationToken({}).promise();
+  const ecr = new ECRClient({ region });
+  const data = await ecr.send(new GetAuthorizationTokenCommand({}));
   const authorizationData = data.authorizationData;
   if (!authorizationData) {
     throw new Error('No authorization data in ECR response');
