@@ -1,25 +1,34 @@
 import { Router } from 'express';
 import asyncHandler = require('express-async-handler');
-import sqldb = require('@prairielearn/postgres');
+import { z } from 'zod';
+import { loadSqlEquiv, queryValidatedRows } from '@prairielearn/postgres';
 
-import { config } from '../../lib/config';
 import { isEnterprise } from '../../lib/license';
+import { AuthLogin, type InstitutionAuthnProvider } from './authLogin.html';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(__filename);
 const router = Router();
+
+const InstitutionAuthnProviderSchema = z.object({
+  id: z.string(),
+  long_name: z.string(),
+  short_name: z.string(),
+  default_authn_provider_name: z.string(),
+});
+const ServiceSchema = z.string().nullable();
 
 router.get(
   '/',
   asyncHandler(async (req, res, _next) => {
-    res.locals.service = req.query.service ?? null;
-    res.locals.institutionAuthnProviders = null;
+    let institutionAuthnProviders: InstitutionAuthnProvider[] | null = null;
 
     if (isEnterprise()) {
-      const institutionAuthnProviders = await sqldb.queryAsync(
+      const institutionAuthnProvidersRes = await queryValidatedRows(
         sql.select_institution_authn_providers,
-        {}
+        {},
+        InstitutionAuthnProviderSchema
       );
-      res.locals.institutionAuthnProviders = institutionAuthnProviders.rows
+      institutionAuthnProviders = institutionAuthnProvidersRes
         .map((provider) => {
           // Special case: omit the default institution.
           if (provider.id === '1') return null;
@@ -47,12 +56,16 @@ router.get(
             url,
           };
         })
-        .filter(Boolean);
+        .filter((provider): provider is InstitutionAuthnProvider => provider !== null);
     }
 
-    res.locals.hasAzure = config.hasAzure && isEnterprise();
-
-    res.render(__filename.replace(/\.[jt]s$/, '.ejs'), res.locals);
+    res.send(
+      AuthLogin({
+        institutionAuthnProviders,
+        service: ServiceSchema.parse(req.query.service ?? null),
+        resLocals: res.locals,
+      })
+    );
   })
 );
 
