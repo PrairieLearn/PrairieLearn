@@ -16,7 +16,7 @@ const { config } = require('./config');
  * @returns {import('@aws-sdk/client-s3').S3ClientConfig}
  */
 module.exports.makeS3ClientConfig = function (extraConfig = {}) {
-  const newConfig = this.makeAwsClientConfig(extraConfig);
+  const newConfig = module.exports.makeAwsClientConfig(extraConfig);
 
   if (!config.runningInEc2) {
     // If we're not running in EC2, assume we're running with a local s3rver instance.
