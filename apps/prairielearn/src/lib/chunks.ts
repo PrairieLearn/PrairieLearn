@@ -14,7 +14,7 @@ import sqldb = require('@prairielearn/postgres');
 
 import aws = require('./aws');
 import { chalk, chalkDim } from './chalk';
-import { createServerJob, ExecutionJob } from './server-jobs';
+import { createServerJob, ServerJob } from './server-jobs';
 import courseDB = require('../sync/course-db');
 import type { CourseData } from '../sync/course-db';
 import { config } from './config';
@@ -772,7 +772,7 @@ export async function generateAllChunksForCourseList(course_ids: string[], authn
 /**
  * Helper function to generate all chunks for a single course.
  */
-async function _generateAllChunksForCourseWithJob(course_id: string, job: ExecutionJob) {
+async function _generateAllChunksForCourseWithJob(course_id: string, job: ServerJob) {
   job.info(chalk.bold(`Looking up course directory`));
   const result = await sqldb.queryOneRowAsync(sql.select_course_dir, { course_id });
   let courseDir = result.rows[0].path;
@@ -1039,7 +1039,7 @@ export const getTemplateQuestionIds = util.callbackify(getTemplateQuestionIdsAsy
  */
 export function logChunkChangesToJob(
   { updatedChunks, deletedChunks }: ChunksDiff,
-  job: Pick<Job, 'verbose'>
+  job: Pick<ServerJob, 'verbose'>
 ) {
   if (updatedChunks.length === 0 && deletedChunks.length === 0) {
     job.verbose('No chunks changed.');

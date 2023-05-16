@@ -27,12 +27,28 @@ interface ServerJobExecOptions {
   env?: NodeJS.ProcessEnv;
 }
 
-export type ExecutionFunction = (job: ServerJob) => Promise<void>;
+export interface ServerJob {
+  error(msg: string): void;
+  warn(msg: string): void;
+  info(msg: string): void;
+  verbose(msg: string): void;
+  exec(file: string, args?: string[], options?: ServerJobExecOptions): Promise<void>;
+}
 
-class ServerJob {
+export interface ServerJobExecutor {
+  jobSequenceId: string;
+  execute(fn: ServerJobExecutionFunction): Promise<void>;
+  executeInBackground(fn: ServerJobExecutionFunction): void;
+}
+
+export type ServerJobExecutionFunction = (job: ServerJob) => Promise<void>;
+
+class ServerJobImpl implements ServerJob, ServerJobExecutor {
   public jobSequenceId: string;
   public jobId: string;
-  private _output = '';
+  private started = false;
+  private finished = false;
+  public output = '';
 
   constructor(jobSequenceId: string, jobId: string) {
     this.jobSequenceId = jobSequenceId;
@@ -79,26 +95,12 @@ class ServerJob {
   }
 
   private addToOutput(msg: string) {
-    this._output += msg;
+    this.output += msg;
     const ansiUp = new AnsiUp();
-    const ansifiedOutput = ansiUp.ansi_to_html(this._output);
+    const ansifiedOutput = ansiUp.ansi_to_html(this.output);
     socketServer.io
       .to('job-' + this.jobId)
       .emit('change:output', { job_id: this.jobId, output: ansifiedOutput });
-  }
-
-  get output() {
-    return this._output;
-  }
-}
-
-class ServerJobExecutor {
-  private job: ServerJob;
-  private started = false;
-  private finished = false;
-
-  constructor(job: ServerJob) {
-    this.job = job;
   }
 
   /**
@@ -106,7 +108,7 @@ class ServerJobExecutor {
    * sequence has completed. The returned promise will not reject if the job
    * sequence fails.
    */
-  async execute(fn: ExecutionFunction): Promise<void> {
+  async execute(fn: ServerJobExecutionFunction): Promise<void> {
     this.checkAndMarkStarted();
     await this.executeInternal(fn);
   }
@@ -117,7 +119,7 @@ class ServerJobExecutor {
    * to finish. Useful for tools like TypeScript and ESLint that ensure that
    * promises are awaited.
    */
-  executeInBackground(fn: ExecutionFunction): void {
+  executeInBackground(fn: ServerJobExecutionFunction): void {
     this.checkAndMarkStarted();
     this.executeInternal(fn);
   }
@@ -129,15 +131,15 @@ class ServerJobExecutor {
     this.started = true;
   }
 
-  private async executeInternal(fn: ExecutionFunction): Promise<void> {
+  private async executeInternal(fn: ServerJobExecutionFunction): Promise<void> {
     try {
-      await fn(this.job);
+      await fn(this);
       await this.finish();
     } catch (err) {
       try {
         await this.finish(err);
       } catch (err) {
-        logger.error(`Error failing job ${this.job.jobId}`, err);
+        logger.error(`Error failing job ${this.jobId}`, err);
         Sentry.captureException(err);
       }
     }
@@ -152,28 +154,28 @@ class ServerJobExecutor {
       // If the error has a stack, it will already include the stringified error.
       // Otherwise, just use the stringified error.
       if (err.stack) {
-        this.job.error(err.stack);
+        this.error(err.stack);
       } else {
-        this.job.error(err.toString());
+        this.error(err.toString());
       }
 
       if (err.data) {
-        this.job.verbose('\n' + JSON.stringify(err.data, null, 2));
+        this.verbose('\n' + JSON.stringify(err.data, null, 2));
       }
     }
 
-    delete serverJobs.liveJobs[this.job.jobId];
+    delete serverJobs.liveJobs[this.jobId];
 
     await queryAsync(sql.update_job_on_finish, {
-      job_sequence_id: this.job.jobSequenceId,
-      job_id: this.job.jobId,
-      output: this.job.output,
+      job_sequence_id: this.jobSequenceId,
+      job_id: this.jobId,
+      output: this.output,
       status: err ? 'Error' : 'Success',
     });
 
     // Notify sockets.
-    socketServer.io.to('job-' + this.job.jobId).emit('update');
-    socketServer.io.to('jobSequence-' + this.job.jobSequenceId).emit('update');
+    socketServer.io.to('job-' + this.jobId).emit('update');
+    socketServer.io.to('jobSequence-' + this.jobSequenceId).emit('update');
   }
 }
 
@@ -199,9 +201,7 @@ export async function createServerJob(options: CreateServerJobOptions): Promise<
     })
   );
 
-  const serverJob = new ServerJob(job_sequence_id, job_id);
+  const serverJob = new ServerJobImpl(job_sequence_id, job_id);
   serverJobs.liveJobs[job_id] = serverJob;
-
-  const executor = new ServerJobExecutor(serverJob);
-  return executor;
+  return serverJob;
 }
