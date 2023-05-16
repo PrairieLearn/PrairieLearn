@@ -3,7 +3,7 @@ const ERR = require('async-stacktrace');
 const _ = require('lodash');
 const express = require('express');
 const { pipeline } = require('node:stream');
-const { S3 } = require('@aws-sdk/client-s3');
+const { S3, NoSuchKey } = require('@aws-sdk/client-s3');
 const error = require('@prairielearn/error');
 const sqldb = require('@prairielearn/postgres');
 
@@ -85,11 +85,19 @@ router.get('/:job_id/file/:file', (req, res, next) => {
     res.attachment(file);
 
     const s3 = new S3(aws.makeS3ClientConfig());
-    s3.getObject(params).then((object) => {
-      pipeline(/** @type {import('stream').Readable} */ (object.Body), res, (err) => {
-        ERR(err, next);
+    s3.getObject(params)
+      .then((object) => {
+        pipeline(/** @type {import('stream').Readable} */ (object.Body), res, (err) => {
+          ERR(err, next);
+        });
+      })
+      .catch((err) => {
+        if (err instanceof NoSuchKey) {
+          res.status(404).send();
+        } else {
+          ERR(err, next);
+        }
       });
-    });
   });
 });
 

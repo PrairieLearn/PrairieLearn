@@ -6,6 +6,7 @@ const tmp = require('tmp');
 const Docker = require('dockerode');
 const { S3 } = require('@aws-sdk/client-s3');
 const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
+const { Upload } = require('@aws-sdk/lib-storage');
 const { exec } = require('child_process');
 const path = require('path');
 const byline = require('byline');
@@ -685,17 +686,16 @@ function uploadArchive(results, callback) {
           callback(null);
         });
       },
-      (callback) => {
+      async () => {
         logger.info(`Uploading archive to s3 bucket ${s3Bucket}/${s3RootKey}`);
-        const params = {
-          Bucket: s3Bucket,
-          Key: `${s3RootKey}/archive.tar.gz`,
-          Body: fs.createReadStream(tempArchive),
-        };
-        s3.upload(params, (err) => {
-          if (ERR(err, callback)) return;
-          callback(null);
-        });
+        await new Upload({
+          client: s3,
+          params: {
+            Bucket: s3Bucket,
+            Key: `${s3RootKey}/archive.tar.gz`,
+            Body: fs.createReadStream(tempArchive),
+          },
+        }).done();
       },
     ],
     (err) => {

@@ -13,6 +13,7 @@
     "@aws-sdk/client-auto-scaling": "^3.332.0",
     "@aws-sdk/client-s3": "^3.332.0",
     "@aws-sdk/client-sqs": "^3.332.0",
+    "@aws-sdk/lib-storage": "^3.332.0",
     "@prairielearn/config": "workspace:^",
     "@prairielearn/docker-utils": "workspace:^",
     "@prairielearn/postgres": "workspace:^",
