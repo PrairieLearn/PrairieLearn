@@ -94,15 +94,6 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     }
   }
 
-  private addToOutput(msg: string) {
-    this.output += msg;
-    const ansiUp = new AnsiUp();
-    const ansifiedOutput = ansiUp.ansi_to_html(this.output);
-    socketServer.io
-      .to('job-' + this.jobId)
-      .emit('change:output', { job_id: this.jobId, output: ansifiedOutput });
-  }
-
   /**
    * Runs the job sequence and returns a Promise that resolves when the job
    * sequence has completed. The returned promise will not reject if the job
@@ -143,6 +134,15 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
         Sentry.captureException(err);
       }
     }
+  }
+
+  private addToOutput(msg: string) {
+    this.output += msg;
+    const ansiUp = new AnsiUp();
+    const ansifiedOutput = ansiUp.ansi_to_html(this.output);
+    socketServer.io
+      .to('job-' + this.jobId)
+      .emit('change:output', { job_id: this.jobId, output: ansifiedOutput });
   }
 
   private async finish(err: any = undefined) {
