@@ -27,15 +27,12 @@ interface ServerJobExecOptions {
   env?: NodeJS.ProcessEnv;
 }
 
-type ExecutionJob = Omit<ServerJob, 'execute' | 'executeInBackground'>;
-type ExecutionFunction = (job: ExecutionJob) => Promise<void>;
+export type ExecutionFunction = (job: ServerJob) => Promise<void>;
 
 class ServerJob {
   public jobSequenceId: string;
   public jobId: string;
-  private started = false;
-  private finished = false;
-  public output = '';
+  private _output = '';
 
   constructor(jobSequenceId: string, jobId: string) {
     this.jobSequenceId = jobSequenceId;
@@ -81,6 +78,29 @@ class ServerJob {
     }
   }
 
+  private addToOutput(msg: string) {
+    this._output += msg;
+    const ansiUp = new AnsiUp();
+    const ansifiedOutput = ansiUp.ansi_to_html(this._output);
+    socketServer.io
+      .to('job-' + this.jobId)
+      .emit('change:output', { job_id: this.jobId, output: ansifiedOutput });
+  }
+
+  get output() {
+    return this._output;
+  }
+}
+
+class ServerJobExecutor {
+  private job: ServerJob;
+  private started = false;
+  private finished = false;
+
+  constructor(job: ServerJob) {
+    this.job = job;
+  }
+
   /**
    * Runs the job sequence and returns a Promise that resolves when the job
    * sequence has completed. The returned promise will not reject if the job
@@ -111,25 +131,16 @@ class ServerJob {
 
   private async executeInternal(fn: ExecutionFunction): Promise<void> {
     try {
-      await fn(this);
+      await fn(this.job);
       await this.finish();
     } catch (err) {
       try {
         await this.finish(err);
       } catch (err) {
-        logger.error(`Error failing job ${this.jobId}`, err);
+        logger.error(`Error failing job ${this.job.jobId}`, err);
         Sentry.captureException(err);
       }
     }
-  }
-
-  private addToOutput(msg: string) {
-    this.output += msg;
-    const ansiUp = new AnsiUp();
-    const ansifiedOutput = ansiUp.ansi_to_html(this.output);
-    socketServer.io
-      .to('job-' + this.jobId)
-      .emit('change:output', { job_id: this.jobId, output: ansifiedOutput });
   }
 
   private async finish(err: any = undefined) {
@@ -141,35 +152,35 @@ class ServerJob {
       // If the error has a stack, it will already include the stringified error.
       // Otherwise, just use the stringified error.
       if (err.stack) {
-        this.error(err.stack);
+        this.job.error(err.stack);
       } else {
-        this.error(err.toString());
+        this.job.error(err.toString());
       }
 
       if (err.data) {
-        this.verbose('\n' + JSON.stringify(err.data, null, 2));
+        this.job.verbose('\n' + JSON.stringify(err.data, null, 2));
       }
     }
 
-    delete serverJobs.liveJobs[this.jobId];
+    delete serverJobs.liveJobs[this.job.jobId];
 
     await queryAsync(sql.update_job_on_finish, {
-      job_sequence_id: this.jobSequenceId,
-      job_id: this.jobId,
-      output: this.output,
+      job_sequence_id: this.job.jobSequenceId,
+      job_id: this.job.jobId,
+      output: this.job.output,
       status: err ? 'Error' : 'Success',
     });
 
     // Notify sockets.
-    socketServer.io.to('job-' + this.jobId).emit('update');
-    socketServer.io.to('jobSequence-' + this.jobSequenceId).emit('update');
+    socketServer.io.to('job-' + this.job.jobId).emit('update');
+    socketServer.io.to('jobSequence-' + this.job.jobSequenceId).emit('update');
   }
 }
 
 /**
  * Creates a job sequence with a single job.
  */
-export async function createServerJob(options: CreateServerJobOptions): Promise<ServerJob> {
+export async function createServerJob(options: CreateServerJobOptions): Promise<ServerJobExecutor> {
   const { job_sequence_id, job_id } = await queryValidatedOneRow(
     sql.insert_job_sequence,
     {
@@ -190,5 +201,7 @@ export async function createServerJob(options: CreateServerJobOptions): Promise<
 
   const serverJob = new ServerJob(job_sequence_id, job_id);
   serverJobs.liveJobs[job_id] = serverJob;
-  return serverJob;
+
+  const executor = new ServerJobExecutor(serverJob);
+  return executor;
 }

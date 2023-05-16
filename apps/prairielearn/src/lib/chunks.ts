@@ -9,14 +9,12 @@ import tar = require('tar');
 import util = require('util');
 import { v4 as uuidv4 } from 'uuid';
 
-import { logger } from '@prairielearn/logger';
 import namedLocks = require('@prairielearn/named-locks');
 import sqldb = require('@prairielearn/postgres');
 
 import aws = require('./aws');
 import { chalk, chalkDim } from './chalk';
-import serverJobs = require('./server-jobs-legacy');
-import type { Job } from './server-jobs-legacy';
+import { createServerJob, ExecutionJob } from './server-jobs';
 import courseDB = require('../sync/course-db');
 import type { CourseData } from '../sync/course-db';
 import { config } from './config';
@@ -754,73 +752,33 @@ export async function updateChunksForCourse({
  * Generates all chunks for a list of courses.
  */
 export async function generateAllChunksForCourseList(course_ids: string[], authn_user_id: string) {
-  const jobSequenceOptions = {
-    user_id: authn_user_id,
-    authn_user_id: authn_user_id,
+  const serverJob = await createServerJob({
+    userId: authn_user_id,
+    authnUserId: authn_user_id,
     type: 'generate_all_chunks',
     description: 'Generate all chunks for a list of courses',
-  };
-  const job_sequence_id = await serverJobs.createJobSequenceAsync(jobSequenceOptions);
+  });
 
-  // don't await this, we want it to run in the background
-  // eslint-disable-next-line no-floating-promise/no-floating-promise
-  _generateAllChunksForCourseListWithJobSequence(course_ids, authn_user_id, job_sequence_id);
-
-  // return immediately, while the generation is still running
-  return job_sequence_id;
-}
-
-/**
- * Helper function to actually generate all chunks for a list of courses.
- */
-async function _generateAllChunksForCourseListWithJobSequence(
-  course_ids: string[],
-  authn_user_id: string,
-  job_sequence_id: string
-) {
-  try {
-    for (let i = 0; i < course_ids.length; i++) {
-      const course_id = course_ids[i];
-      const jobOptions = {
-        course_id: null /* Set the job's course_id to null so we can find it from the admin page */,
-        type: 'generate_all_chunks',
-        description: `Generate all chunks for course ID = ${course_id}`,
-        job_sequence_id,
-        user_id: authn_user_id,
-        authn_user_id,
-        last_in_sequence: i === course_ids.length - 1,
-      };
-      const job = await serverJobs.createJobAsync(jobOptions);
-      job.info(chalkDim(`Course ID = ${course_id}`));
-
-      try {
-        await _generateAllChunksForCourseWithJob(course_id, job);
-        job.succeed();
-      } catch (err) {
-        job.error(chalk.red(JSON.stringify(err)));
-        await job.failAsync(err);
-        throw err;
-      }
+  serverJob.executeInBackground(async (job) => {
+    for (const [i, courseId] of course_ids.entries()) {
+      job.info(`Generating chunks for course ${courseId} [${i + 1}/${course_ids.length}]`);
+      await _generateAllChunksForCourseWithJob(courseId, job);
     }
-  } catch (err) {
-    try {
-      await serverJobs.failJobSequenceAsync(job_sequence_id);
-    } catch (err) {
-      logger.error(`Failed to fail job_sequence_id=${job_sequence_id}`);
-    }
-  }
+  });
+
+  return serverJob.jobSequenceId;
 }
 
 /**
  * Helper function to generate all chunks for a single course.
  */
-async function _generateAllChunksForCourseWithJob(course_id: string, job: Job) {
+async function _generateAllChunksForCourseWithJob(course_id: string, job: ExecutionJob) {
   job.info(chalk.bold(`Looking up course directory`));
   const result = await sqldb.queryOneRowAsync(sql.select_course_dir, { course_id });
   let courseDir = result.rows[0].path;
-  job.info(chalkDim(`Found course directory = ${courseDir}`));
+  job.info(chalkDim(`Found course directory: ${courseDir}`));
   courseDir = path.resolve(process.cwd(), courseDir);
-  job.info(chalkDim(`Resolved course directory = ${courseDir}`));
+  job.info(chalkDim(`Resolved course directory: ${courseDir}`));
 
   const lockName = `coursedir:${courseDir}`;
   job.info(chalk.bold(`Acquiring lock ${lockName}`));
