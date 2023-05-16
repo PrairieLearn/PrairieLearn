@@ -9,6 +9,7 @@ const { SQSClient, SendMessageCommand } = require('@aws-sdk/client-sqs');
 const { exec } = require('child_process');
 const path = require('path');
 const byline = require('byline');
+const { pipeline } = require('node:stream/promises');
 const Sentry = require('@prairielearn/sentry');
 const sqldb = require('@prairielearn/postgres');
 const { sanitizeObject } = require('@prairielearn/sanitize');
@@ -339,21 +340,14 @@ function initFiles(info, callback) {
           }
         );
       },
-      (callback) => {
+      async () => {
         logger.info('Loading job files');
         const params = {
           Bucket: s3Bucket,
           Key: `${s3RootKey}/job.tar.gz`,
         };
-        s3.getObject(params)
-          .createReadStream()
-          .on('error', (err) => {
-            return ERR(err, callback);
-          })
-          .on('end', () => {
-            callback(null);
-          })
-          .pipe(fs.createWriteStream(jobArchiveFile));
+        const object = await s3.getObject(params);
+        await pipeline(object.Body, fs.createWriteStream(jobArchiveFile));
       },
       (callback) => {
         logger.info('Unzipping files');
