@@ -40,7 +40,7 @@ module.exports.pullAndUpdate = async function (locals) {
   serverJob.executeInBackground(async (job) => {
     let startGitHash = null;
     const coursePathExists = await fs.pathExists(locals.course.path);
-    if (coursePathExists) {
+    if (!coursePathExists) {
       // path does not exist, start with 'git clone'
       job.info('Clone from remote git repository');
       await job.exec(
