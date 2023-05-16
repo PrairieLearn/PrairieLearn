@@ -1,18 +1,47 @@
-// @ts-check
-const { html, unsafeHtml } = require('@prairielearn/html');
-const { renderEjs } = require('@prairielearn/html-ejs');
+import { html, type HtmlValue } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
 
-const { config } = require('../../lib/config');
-const { isEnterprise } = require('../../lib/license');
+import { config } from '../../lib/config';
+import { isEnterprise } from '../../lib/license';
 
-function LoginPageContainer({ children, service, resLocals }) {
+export interface InstitutionAuthnProvider {
+  name: string;
+  url: string;
+}
+
+export interface InstitutionSupportedProviders {
+  name: string;
+  is_default: boolean;
+}
+
+interface AuthLoginProps {
+  institutionAuthnProviders: InstitutionAuthnProvider[] | null;
+  service: string | null;
+  resLocals: Record<string, any>;
+}
+
+interface AuthLoginUnsupportedProviderProps {
+  supportedProviders: InstitutionSupportedProviders[];
+  institutionId: string;
+  service: string | null;
+  resLocals: Record<string, any>;
+}
+
+interface LoginPageContainerProps {
+  children: HtmlValue;
+  service: string | null;
+  resLocals: Record<string, any>;
+}
+
+function LoginPageContainer({ children, service, resLocals }: LoginPageContainerProps) {
   return html`
     <!DOCTYPE html>
     <html lang="en" class="bg-dark">
       <head>
         ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
         <style>
-          html, body {
+          html,
+          body {
             height: 100%;
             background-color: #e9ecef;
           }
@@ -36,7 +65,7 @@ function LoginPageContainer({ children, service, resLocals }) {
             }
             .login-container {
               border-radius: 5px;
-              box-shadow: 0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22);
+              box-shadow: 0 19px 38px rgba(0, 0, 0, 0.3), 0 15px 12px rgba(0, 0, 0, 0.22);
               height: auto;
               margin: 20px;
             }
@@ -71,15 +100,14 @@ function LoginPageContainer({ children, service, resLocals }) {
             border-color: ${config.shibLinkColors.active.border};
             color: ${config.shibLinkColors.active.text};
           }
-          ${isEnterprise()
-            ? unsafeHtml(`
           .institution-header {
             overflow: hidden;
             text-align: center;
           }
-          .institution-header:before, .institution-header:after {
+          .institution-header:before,
+          .institution-header:after {
             background-color: #000;
-            content: "";
+            content: '';
             display: inline-block;
             height: 1px;
             position: relative;
@@ -94,8 +122,6 @@ function LoginPageContainer({ children, service, resLocals }) {
             left: 0.5em;
             margin-right: -50%;
           }
-          `)
-            : ''}
         </style>
       </head>
       <body class="d-flex bg-dark">
@@ -152,7 +178,7 @@ function SamlLoginButton({ institutionId }) {
   `;
 }
 
-function AuthLogin({ institutionAuthnProviders, service, resLocals }) {
+export function AuthLogin({ institutionAuthnProviders, service, resLocals }: AuthLoginProps) {
   return LoginPageContainer({
     service,
     resLocals,
@@ -169,7 +195,7 @@ function AuthLogin({ institutionAuthnProviders, service, resLocals }) {
         ${config.hasOauth ? GoogleLoginButton() : ''}
         ${config.hasAzure && isEnterprise() ? MicrosoftLoginButton() : ''}
       </div>
-      ${institutionAuthnProviders.length > 0
+      ${institutionAuthnProviders?.length
         ? html`
             <div class="institution-header text-muted my-3">Institution sign-on</div>
             <div class="login-methods">
@@ -187,7 +213,12 @@ function AuthLogin({ institutionAuthnProviders, service, resLocals }) {
   }).toString();
 }
 
-function AuthLoginUnsupportedProvider({ supportedProviders, institutionId, service, resLocals }) {
+export function AuthLoginUnsupportedProvider({
+  supportedProviders,
+  institutionId,
+  service,
+  resLocals,
+}: AuthLoginUnsupportedProviderProps) {
   const supportsLti = supportedProviders.some((p) => p.name === 'LTI');
   const supportsNonLti = supportedProviders.some((p) => p.name !== 'LTI');
 
@@ -210,7 +241,7 @@ function AuthLoginUnsupportedProvider({ supportedProviders, institutionId, servi
   const showGoogle = config.hasOauth && supportsGoogle && defaultProvider?.name !== 'Google';
   const showAzure = config.hasAzure && supportsAzure && defaultProvider?.name !== 'Azure';
 
-  let defaultProviderButton = null;
+  let defaultProviderButton: HtmlValue = null;
   switch (defaultProvider?.name) {
     case 'SAML':
       defaultProviderButton = SamlLoginButton({ institutionId });
@@ -235,9 +266,7 @@ function AuthLoginUnsupportedProvider({ supportedProviders, institutionId, servi
         ${!supportsNonLti && supportsLti
           ? "You must start a session from your course's Learning Management System (LMS)."
           : ''}
-        ${supportedProviders.length === 0
-          ? 'Pleaes contact your institution for more information.'
-          : ''}
+        ${supportedProviders.length === 0 ? 'Contact your institution for more information.' : ''}
       </div>
       ${defaultProviderButton
         ? html`
@@ -260,6 +289,3 @@ function AuthLoginUnsupportedProvider({ supportedProviders, institutionId, servi
     `,
   }).toString();
 }
-
-module.exports.AuthLogin = AuthLogin;
-module.exports.AuthLoginUnsupportedProvider = AuthLoginUnsupportedProvider;
